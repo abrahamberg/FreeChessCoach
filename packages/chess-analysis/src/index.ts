@@ -16,6 +16,7 @@ export * from './move-metrics.js';
 export * from './move-flags.js';
 export * from './move-reasons.js';
 export * from './opening-development.js';
+export * from './opening-score.js';
 export * from './opening-book.js';
 export * from './opening-book-key.js';
 export * from './phase-accuracy.js';

@@ -576,11 +576,16 @@ don't hand-tune weights without ground truth.
 **Read:** `docs/algorith.md` §7.1 only.
 
 **Files:** `packages/chess-analysis/src/opening-score.ts` + test.
-- [ ] `bookDepthScore`, `developmentScore` (using Task 14.2's
+- [x] `bookDepthScore`, `developmentScore` (using Task 14.2's
       castledPly/developedMinorPieceCount + existing
       centerControlScore/controlledSquares), `openingScore` per §7.1's
-      weighted sum.
-- [ ] Commit: `feat: opening score`.
+      weighted sum. `developmentScore`'s 5 sub-bonuses (🔴, calibration-only
+      per Phase 21 — this task builds the mechanism, not final weights):
+      castled-or-king-safe-with-connected-rook, developed minors (capped at
+      40), center control advantage, no piece moved twice without a capture
+      "causing" it, and no more than one pawn move beyond 2 "necessary"
+      ones — all as separately named, independently testable helpers.
+- [x] Commit: `feat: opening score`.
 
 ### Task 17.2: Tactics score
 
