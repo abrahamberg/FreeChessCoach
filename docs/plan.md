@@ -187,19 +187,19 @@ imports are bundled, not left external).
 Phase 16 `game_report` column if that lands first — sequence these together
 if convenient).
 
-- [ ] Call `inBookWalk`/`resolveOpening` after `classifyMoves` in
+- [x] Call `inBookWalk`/`resolveOpening` after `classifyMoves` in
       `runAnalyzeGameJob`, using the parsed game's FENs.
-- [ ] Persist the `BookReport`/`PlayerBookReport` shape from §12.7 (add to
+- [x] Persist the `BookReport`/`PlayerBookReport` shape from §12.7 (add to
       `packages/shared/src/analysis.ts` as zod schemas first).
-- [ ] Integration test (`apps/api/src/services/analysis.test.ts`): a fixture
+- [x] Integration test (`apps/api/src/services/analysis.test.ts`): a fixture
       PGN with a known named opening produces the expected `eco`/`name`/
       `lastBookPly`.
-- [ ] Verify the shipped artifact: after `npm run bundle -w apps/api`, grep
+- [x] Verify the shipped artifact: after `npm run bundle -w apps/api`, grep
       `dist-bundle/worker.mjs` for a known opening name string to confirm the
       JSON asset actually got inlined (one-time manual check, not a
       permanent test — but worth a comment in the bundle script or this plan
       recording that it was checked).
-- [ ] Commit: `feat: detect opening book moves and name during game analysis`.
+- [x] Commit: `feat: detect opening book moves and name during game analysis`.
 
 ---
 

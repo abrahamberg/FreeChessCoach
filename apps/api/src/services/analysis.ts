@@ -1,5 +1,15 @@
-import { assertEvalSignConvention, classifyMoves, findCandidateMoments, parsePgn } from '@chess-coach/chess-analysis';
-import type { CoachingPlan, EngineEval } from '@chess-coach/shared';
+import {
+  assertEvalSignConvention,
+  classifyMoves,
+  findCandidateMoments,
+  inBookWalk,
+  OPENING_BOOK_SOURCE,
+  parsePgn,
+  positionKey,
+  resolveOpening,
+  type ParsedPosition
+} from '@chess-coach/chess-analysis';
+import type { BookReport, CoachingPlan, EngineEval, PlayerBookReport } from '@chess-coach/shared';
 import { buildPlannerMessages, type PlannerPromptInput } from '@chess-coach/prompts';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
@@ -57,6 +67,7 @@ export async function runAnalyzeGameJob(
 
     const classifiedMoves = classifyMoves(parsedGame, evals, game.userColor);
     await analysesRepo.storeClassifiedMoves(db, analysis.id, classifiedMoves);
+    await analysesRepo.storeBookReport(db, analysis.id, buildBookReport(parsedGame.positions));
     const candidateMoments = findCandidateMoments(classifiedMoves, evals);
 
     await analysesRepo.updateStatus(db, analysis.id, 'planning');
@@ -76,6 +87,45 @@ export async function runAnalyzeGameJob(
   } catch (error) {
     await analysesRepo.markFailed(db, analysis.id, describeError(error));
   }
+}
+
+function buildBookReport(positions: ParsedPosition[]): BookReport {
+  const bookWalk = inBookWalk(positions);
+  const opening = resolveOpening(positions.map((position) => positionKey(position.fen)));
+  const lastBookPly = Math.max(bookWalk.lastBookPly.white, bookWalk.lastBookPly.black);
+
+  return {
+    source: OPENING_BOOK_SOURCE,
+    eco: opening?.eco ?? null,
+    ecoVolume: opening?.ecoVolume ?? null,
+    name: opening?.name ?? null,
+    family: opening?.family ?? null,
+    variation: opening?.variation ?? null,
+    namedAtPly: opening?.ply ?? null,
+    lastBookPly,
+    players: {
+      white: buildPlayerBookReport('white', positions, bookWalk),
+      black: buildPlayerBookReport('black', positions, bookWalk)
+    }
+  };
+}
+
+function buildPlayerBookReport(
+  colour: 'white' | 'black',
+  positions: ParsedPosition[],
+  bookWalk: ReturnType<typeof inBookWalk>
+): PlayerBookReport {
+  const leftBook = bookWalk.find((result) => {
+    const position = positions[result.ply];
+    return result.leftBook !== undefined && position?.mover === colour;
+  })?.leftBook;
+
+  return {
+    lastBookPly: bookWalk.lastBookPly[colour],
+    leftBookPly: leftBook?.ply ?? null,
+    leftBookMove: leftBook?.played ?? null,
+    bookAlternatives: leftBook?.alternatives ?? []
+  };
 }
 
 /**

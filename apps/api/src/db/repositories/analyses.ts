@@ -1,6 +1,6 @@
 import type { ClassifiedMove } from '@chess-coach/chess-analysis';
 import { sql, type Kysely } from 'kysely';
-import type { AnalysisStatus, CoachingPlan, EngineEval } from '@chess-coach/shared';
+import type { AnalysisStatus, BookReport, CoachingPlan, EngineEval } from '@chess-coach/shared';
 import type { Database } from '../schema.js';
 
 export interface AnalysisRow {
@@ -117,6 +117,19 @@ export function storeClassifiedMoves(
   return db
     .updateTable('analyses')
     .set({ classifiedMoves: JSON.stringify(moves) })
+    .where('id', '=', id)
+    .execute()
+    .then(() => undefined);
+}
+
+export function storeBookReport(
+  db: Kysely<Database>,
+  id: string,
+  report: BookReport
+): Promise<void> {
+  return db
+    .updateTable('analyses')
+    .set({ bookReport: JSON.stringify(report) })
     .where('id', '=', id)
     .execute()
     .then(() => undefined);

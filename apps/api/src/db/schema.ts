@@ -48,6 +48,7 @@ export interface AnalysesTable {
   engineEvals: Jsonb<unknown> | null;
   coachingPlan: Jsonb<unknown> | null;
   classifiedMoves: Jsonb<unknown> | null;
+  bookReport: Jsonb<unknown> | null;
   createdAt: Generated<Date>;
   completedAt: Date | null;
 }

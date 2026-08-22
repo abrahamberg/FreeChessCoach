@@ -13,6 +13,7 @@ import * as engineMode from './migrations/0011_engine_mode.js';
 import * as positionEvaluationsTrust from './migrations/0012_position_evaluations_trust.js';
 import * as subjectPly from './migrations/0013_subject_ply.js';
 import * as coachPersona from './migrations/0014_coach_persona.js';
+import * as bookReport from './migrations/0015_book_report.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -30,7 +31,8 @@ const provider: MigrationProvider = {
       '0011_engine_mode': engineMode,
       '0012_position_evaluations_trust': positionEvaluationsTrust,
       '0013_subject_ply': subjectPly,
-      '0014_coach_persona': coachPersona
+      '0014_coach_persona': coachPersona,
+      '0015_book_report': bookReport
     })
 };
 

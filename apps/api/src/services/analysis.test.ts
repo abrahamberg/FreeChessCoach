@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import { CoachingPlanSchema, type EngineEval } from '@chess-coach/shared';
+import { BookReportSchema, CoachingPlanSchema, type EngineEval } from '@chess-coach/shared';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
@@ -14,6 +14,14 @@ const PGN = `[Event "Test"]
 [Result "1-0"]
 
 1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0`;
+
+const NAJDORF_PGN = `[Event "Test"]
+[White "Ann"]
+[Black "Bob"]
+[Result "*"]
+
+1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6
+6. Be3 e5 7. Nb3 Be6 8. f3 *`;
 
 const VALID_PLAN = CoachingPlanSchema.parse({
   gameSummary: 'A sharp Scholar\'s-mate-adjacent game.',
@@ -50,11 +58,11 @@ describe('runAnalyzeGameJob', () => {
     await testDb.cleanup();
   });
 
-  async function setupGame(): Promise<{ gameId: string; analysisId: string }> {
+  async function setupGame(pgn = PGN): Promise<{ gameId: string; analysisId: string }> {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
     const game = await gamesRepo.insert(db, {
       userId: user.id,
-      pgn: PGN,
+      pgn,
       source: 'paste',
       userColor: 'white',
       whiteName: 'Ann',
@@ -94,6 +102,34 @@ describe('runAnalyzeGameJob', () => {
     const classifiedMoves = row.classifiedMoves as Array<{ ply: number; moveSan: string; quality: string }>;
     expect(classifiedMoves.length).toBeGreaterThan(0);
     expect(classifiedMoves[0]).toMatchObject({ ply: 1, moveSan: 'e4' });
+  });
+
+  test('persists the opening book report for a named opening', async () => {
+    const { gameId, analysisId } = await setupGame(NAJDORF_PGN);
+    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
+
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), callPlanner }, gameId);
+
+    const row = await db
+      .selectFrom('analyses')
+      .select('bookReport')
+      .where('id', '=', analysisId)
+      .executeTakeFirstOrThrow();
+    const report = BookReportSchema.parse(row.bookReport);
+
+    expect(report).toMatchObject({
+      source: 'lichess-org/chess-openings@2026-08-22',
+      eco: 'B90',
+      name: 'Sicilian Defense: Najdorf Variation, English Attack',
+      family: 'Sicilian Defense',
+      variation: 'Najdorf Variation, English Attack',
+      namedAtPly: 15,
+      lastBookPly: 15,
+      players: {
+        white: { lastBookPly: 15, leftBookPly: null, leftBookMove: null, bookAlternatives: [] },
+        black: { lastBookPly: 14, leftBookPly: null, leftBookMove: null, bookAlternatives: [] }
+      }
+    });
   });
 
   // The planner is now constrained to CoachingPlanSchema by the provider, so

@@ -4,6 +4,8 @@ import { positionKey } from './opening-book-key.js';
 export type EcoVolume = 'A' | 'B' | 'C' | 'D' | 'E';
 export type BookColour = 'white' | 'black';
 
+export const OPENING_BOOK_SOURCE = 'lichess-org/chess-openings@2026-08-22';
+
 export interface BookPosition {
   fen: string;
   moveSan: string | null;
