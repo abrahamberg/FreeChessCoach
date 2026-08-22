@@ -553,11 +553,16 @@ MoveExplorer, GameEvalChart, EvalBar}.tsx` and their tests.
 
 **Files:** `packages/chess-analysis/src/phase-accuracy.ts` + test.
 
-- [ ] `phaseAccuracy(colour, phase, moves, fullGameWeights): number | null` —
+- [x] `phaseAccuracy(colour, phase, moves, fullGameWeights): number | null` —
       §6.4, restricted to that phase's plies but weights come from the
       **full-game** series (explicitly not recomputed per phase — test this
-      distinction directly, it's easy to get backwards).
-- [ ] Commit: `feat: per-phase accuracy`.
+      distinction directly, it's easy to get backwards). `fullGameWeights` is
+      a `ReadonlyMap<ply, weight>` — `volatilityWeights`' output is parallel
+      to its `moverPlies` input, not ply-indexed, so the caller zips them
+      into a map once per game; this function has no way to recompute
+      weights itself, which is what makes the "never recomputed per phase"
+      rule structural rather than a convention to remember.
+- [x] Commit: `feat: per-phase accuracy`.
 
 ---
 
