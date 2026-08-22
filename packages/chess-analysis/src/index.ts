@@ -28,5 +28,6 @@ export * from './position-enrichment.js';
 export * from './phase-signals.js';
 export * from './resolve-san-move.js';
 export * from './see.js';
+export * from './strategy-score.js';
 export * from './tactics-score.js';
 export * from './win-probability.js';

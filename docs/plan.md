@@ -611,13 +611,17 @@ don't hand-tune weights without ground truth.
 **Read:** `docs/algorith.md` §7.3 only.
 
 **Files:** `packages/chess-analysis/src/strategy-score.ts` + test.
-- [ ] `positionalTrend` — §7.3's five weighted deltas
+- [x] `positionalTrend` — §7.3's five weighted deltas
       (pawnStructure/space/files/centre/kingSafety), all already available
       from `PositionFeatures` at `openingEndPly` vs. the final/decisive
-      position.
-- [ ] `strategyScore = clamp(quietAccuracy + positionalTrend, 0, 100)`, same
+      position. Exception: `kingSafety`'s "escape squares" and "opponent
+      attackers near the king" aren't literal `PositionFeatures` fields (the
+      feature bag only tracks attackers on *occupied* squares) — recomputed
+      from the FEN via the existing pure `buildAttackMap`, not a new engine
+      call, so still no I/O.
+- [x] `strategyScore = clamp(quietAccuracy + positionalTrend, 0, 100)`, same
       `< 4` quiet-position `null` guard as tactics.
-- [ ] Commit: `feat: strategy score`.
+- [x] Commit: `feat: strategy score`.
 
 ### Task 17.4: Endgame score
 
