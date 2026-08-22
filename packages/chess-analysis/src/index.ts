@@ -13,4 +13,5 @@ export * from './pgn-mutation.js';
 export * from './pgn.js';
 export * from './position-features.js';
 export * from './resolve-san-move.js';
+export * from './see.js';
 export * from './win-probability.js';

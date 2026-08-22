@@ -272,19 +272,19 @@ the rest of §1.3 (that's Task 14.1's).
 
 **Files:** `packages/chess-analysis/src/see.ts` + test.
 
-- [ ] `see(fen, targetSquare, sideToMove): number` — §1.3 contract: full
+- [x] `see(fen, targetSquare, sideToMove): number` — §1.3 contract: full
       capture sequence on `targetSquare`, least-valuable-attacker first each
       side, either side free to stand pat. Piece values as specified
       (P100/N320/B330/R500/Q900/K20000).
-- [ ] `seeOnAllOpponentCaptures(fenAfterMove, movingColor): number` — most
+- [x] `seeOnAllOpponentCaptures(fenAfterMove, movingColor): number` — most
       negative SEE the opponent can obtain against the mover; the "is my
       piece really hanging" test §5.5 B5 needs.
-- [ ] Unit tests on known exchange sequences: simple even trade (0), a
+- [x] Unit tests on known exchange sequences: simple even trade (0), a
       piece defended once attacked twice (attacker wins the exchange), a
       piece defended by a lower-value piece behind a higher one (attacker
       should stand pat after the first capture — the classic SEE
       correctness case), an undefended hanging piece (full value).
-- [ ] Commit: `feat: static exchange evaluation`.
+- [x] Commit: `feat: static exchange evaluation`.
 
 ---
 
