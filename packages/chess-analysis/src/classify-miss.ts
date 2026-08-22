@@ -1,6 +1,9 @@
 import type { MoveQuality } from '@chess-coach/shared';
 import { toCpWhite, winPctFor } from './win-probability.js';
 import type { MoveClassificationInput, SeverityQuality } from './classify-context.js';
+import { CONFIG } from './config.js';
+
+const { opportunityWinPctMin: OPPORTUNITY_WIN_PCT_MIN, threwAwayDropMin: THREW_AWAY_DROP_MIN } = CONFIG.miss;
 
 export interface MissClassificationInput {
   severity: SeverityQuality;
@@ -34,14 +37,14 @@ function hasOpportunity(input: MissClassificationInput, bestLine: typeof input.e
     const mateForMover = input.mover === 'white' ? bestLine.mateIn > 0 : bestLine.mateIn < 0;
     if (mateForMover) return true;
   }
-  return winPctFor(input.mover, toCpWhite(bestLine)) >= 75;
+  return winPctFor(input.mover, toCpWhite(bestLine)) >= OPPORTUNITY_WIN_PCT_MIN;
 }
 
 function threwAwayOpportunity(input: MissClassificationInput, bestLine: typeof input.evalBefore.lines[number]): boolean {
   const bestWin = winPctFor(input.mover, toCpWhite(bestLine));
   const afterLine = input.evalAfter.lines[0];
   const afterWin = afterLine ? winPctFor(input.mover, toCpWhite(afterLine)) : 0;
-  if (afterWin <= bestWin - 15) return true;
+  if (afterWin <= bestWin - THREW_AWAY_DROP_MIN) return true;
 
   const mateBefore = bestLine.mateIn !== null
     && (input.mover === 'white' ? bestLine.mateIn > 0 : bestLine.mateIn < 0);

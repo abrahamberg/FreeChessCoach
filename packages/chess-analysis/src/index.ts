@@ -8,6 +8,7 @@ export * from './classify-great.js';
 export * from './classify-miss.js';
 export * from './classify-move.js';
 export * from './classify-severity.js';
+export * from './config.js';
 export * from './critical-moments.js';
 export * from './diff-features.js';
 export * from './endgame-score.js';

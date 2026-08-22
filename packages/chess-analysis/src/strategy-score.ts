@@ -1,18 +1,20 @@
 import { Chess, type Square } from 'chess.js';
 import type { PositionFeatures } from '@chess-coach/shared';
 import { buildAttackMap, type ColorName } from './attack-map.js';
+import { CONFIG } from './config.js';
 
-const MIN_QUIET_POSITIONS = 4;
-const TREND_CLAMP = 15;
-
-const DOUBLED_PAWN_WEIGHT = -8;
-const ISOLATED_PAWN_WEIGHT = -8;
-const PASSED_PAWN_WEIGHT = 10;
-const SPACE_WEIGHT = 0.4;
-const OPEN_FILE_WEIGHT = 6;
-const CENTER_WEIGHT = 5;
-const KING_SAFETY_PENALTY = -10;
-const KING_SAFETY_ATTACKER_THRESHOLD = 2;
+const {
+  minQuietPositions: MIN_QUIET_POSITIONS,
+  trendClamp: TREND_CLAMP,
+  doubledPawnWeight: DOUBLED_PAWN_WEIGHT,
+  isolatedPawnWeight: ISOLATED_PAWN_WEIGHT,
+  passedPawnWeight: PASSED_PAWN_WEIGHT,
+  spaceWeight: SPACE_WEIGHT,
+  openFileWeight: OPEN_FILE_WEIGHT,
+  centerWeight: CENTER_WEIGHT,
+  kingSafetyPenalty: KING_SAFETY_PENALTY,
+  kingSafetyAttackerThreshold: KING_SAFETY_ATTACKER_THRESHOLD
+} = CONFIG.strategyScore;
 
 export interface PositionalTrendInput {
   color: ColorName;

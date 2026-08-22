@@ -1,24 +1,7 @@
 import type { MoveQuality } from '@chess-coach/shared';
+import { CONFIG } from './config.js';
 
-const RATING_MIN = 100;
-const RATING_MAX = 3200;
-
-/** §8.2's Elo anchor table — [accuracy, elo] pairs, ascending. */
-const ACCURACY_ELO_ANCHORS: readonly [number, number][] = [
-  [40, 250],
-  [50, 450],
-  [60, 750],
-  [65, 950],
-  [70, 1150],
-  [75, 1380],
-  [80, 1620],
-  [84, 1870],
-  [88, 2120],
-  [91, 2360],
-  [94, 2620],
-  [97, 2900],
-  [99, 3100]
-];
+const { ratingMin: RATING_MIN, ratingMax: RATING_MAX, accuracyEloAnchors: ACCURACY_ELO_ANCHORS } = CONFIG.ratingEstimate;
 
 /** §8.2 — piecewise-linear interpolation over the anchor table, flat outside it. */
 export function accuracyToElo(accuracy: number): number {
@@ -47,10 +30,12 @@ export interface ErrorRatingCounts {
   miss: number;
 }
 
-const INACCURACY_WEIGHT = 26;
-const MISTAKE_WEIGHT = 55;
-const BLUNDER_OR_MISS_WEIGHT = 95;
-const ERROR_RATING_BASE = 2600;
+const {
+  inaccuracyWeight: INACCURACY_WEIGHT,
+  mistakeWeight: MISTAKE_WEIGHT,
+  blunderOrMissWeight: BLUNDER_OR_MISS_WEIGHT,
+  errorRatingBase: ERROR_RATING_BASE
+} = CONFIG.ratingEstimate;
 
 /** §8.3 — per-100-move error-rate cross-check, so a quiet, error-free game
  * can't game the accuracy-only anchor. */
@@ -64,17 +49,18 @@ export function errorRating(counts: ErrorRatingCounts, movesPlayed: number): num
   return clamp(raw, RATING_MIN, RATING_MAX);
 }
 
-const ACCURACY_RATING_WEIGHT = 0.65;
-const ERROR_RATING_WEIGHT = 0.35;
+const { accuracyRatingWeight: ACCURACY_RATING_WEIGHT, errorRatingWeight: ERROR_RATING_WEIGHT } = CONFIG.ratingEstimate;
 
 /** §8.3 — the raw pre-shrinkage rating, before §8.4-8.6's adjustments. */
 export function combinedRawRating(accuracyRating: number, errorRatingValue: number): number {
   return ACCURACY_RATING_WEIGHT * accuracyRating + ERROR_RATING_WEIGHT * errorRatingValue;
 }
 
-const COMPLEXITY_DIVISOR = 4;
-const MIN_COMPLEXITY = 0.5;
-const MAX_COMPLEXITY = 1.5;
+const {
+  complexityDivisor: COMPLEXITY_DIVISOR,
+  minComplexity: MIN_COMPLEXITY,
+  maxComplexity: MAX_COMPLEXITY
+} = CONFIG.ratingEstimate;
 
 /** §8.4 — a game that was never sharp gives inflated accuracy; this scales
  * down the effective sample size for a low-volatility (quiet) game. */
@@ -82,7 +68,7 @@ export function complexity(meanVolatility: number): number {
   return clamp(meanVolatility / COMPLEXITY_DIVISOR, MIN_COMPLEXITY, MAX_COMPLEXITY);
 }
 
-const FORCED_SEQUENCE_MIN_LENGTH = 8;
+const { forcedSequenceMinLength: FORCED_SEQUENCE_MIN_LENGTH } = CONFIG.ratingEstimate;
 
 /**
  * §8.6's second guard rail: a forced sequence longer than 8 plies (e.g. a
@@ -113,11 +99,15 @@ function forcedRunLengths(qualities: readonly MoveQuality[]): number[] {
   return runs;
 }
 
-const SHRINK_K = 14;
-const MIN_MOVES_PLAYED = 12;
-const DEFAULT_PRIOR = 1200;
-const PRIOR_CAP_MARGIN = 600;
-const STD_ERR_BASE = 260;
+const {
+  shrinkK: SHRINK_K,
+  minMovesPlayed: MIN_MOVES_PLAYED,
+  defaultPrior: DEFAULT_PRIOR,
+  priorCapMargin: PRIOR_CAP_MARGIN,
+  stdErrBase: STD_ERR_BASE,
+  stdErrNEffDivisor: STD_ERR_NEFF_DIVISOR,
+  roundToNearest: ROUND_TO_NEAREST
+} = CONFIG.ratingEstimate;
 
 export interface RatingEstimateInput {
   raw: number;
@@ -148,16 +138,16 @@ export function estimateRating(input: RatingEstimateInput): RatingEstimateResult
   const nEff = input.movesPlayed * input.complexity;
   const shrunk = (nEff * input.raw + SHRINK_K * prior) / (nEff + SHRINK_K);
   const capped = Math.min(shrunk, prior + PRIOR_CAP_MARGIN);
-  const stdErr = STD_ERR_BASE / Math.sqrt(Math.max(nEff, 1) / 10);
+  const stdErr = STD_ERR_BASE / Math.sqrt(Math.max(nEff, 1) / STD_ERR_NEFF_DIVISOR);
 
   return {
-    value: roundToNearest25(capped),
-    range: [roundToNearest25(capped - stdErr), roundToNearest25(capped + stdErr)]
+    value: roundToNearest(capped),
+    range: [roundToNearest(capped - stdErr), roundToNearest(capped + stdErr)]
   };
 }
 
-function roundToNearest25(value: number): number {
-  return Math.round(value / 25) * 25;
+function roundToNearest(value: number): number {
+  return Math.round(value / ROUND_TO_NEAREST) * ROUND_TO_NEAREST;
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {

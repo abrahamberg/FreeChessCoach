@@ -1,11 +1,15 @@
 import type { MoveQuality } from '@chess-coach/shared';
 import { moveAccuracy } from './accuracy-curve.js';
+import { CONFIG } from './config.js';
 
-const MIN_WINDOW = 2;
-const MAX_WINDOW = 8;
-const MIN_WEIGHT = 0.5;
-const MAX_WEIGHT = 12;
-const BOOK_DROP_OVERRIDE_THRESHOLD = 10;
+const {
+  minWindow: MIN_WINDOW,
+  maxWindow: MAX_WINDOW,
+  windowDivisor: WINDOW_DIVISOR,
+  minWeight: MIN_WEIGHT,
+  maxWeight: MAX_WEIGHT,
+  bookDropOverrideThreshold: BOOK_DROP_OVERRIDE_THRESHOLD
+} = CONFIG.gameAccuracy;
 
 /**
  * §4.1 — per-ply volatility weight: the population stdev of a local window
@@ -14,7 +18,7 @@ const BOOK_DROP_OVERRIDE_THRESHOLD = 10;
  */
 export function volatilityWeights(winPctSeries: number[], moverPlies: number[]): number[] {
   const lastPly = winPctSeries.length - 1;
-  const windowSize = clamp(Math.ceil((lastPly + 1) / 10), MIN_WINDOW, MAX_WINDOW);
+  const windowSize = clamp(Math.ceil((lastPly + 1) / WINDOW_DIVISOR), MIN_WINDOW, MAX_WINDOW);
 
   return moverPlies.map((ply) => {
     const lo = Math.max(0, ply - windowSize + 1);

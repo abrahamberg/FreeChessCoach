@@ -724,17 +724,41 @@ don't hand-tune weights without ground truth.
 already implemented in Phases 12–18, no new formula content.
 
 **Files:** `packages/chess-analysis/src/config.ts`.
-- [ ] Pull every magic number introduced across Phases 12–18 (accuracy curve
+- [x] Pull every magic number introduced across Phases 12–18 (accuracy curve
       constant, aggregation window/clamp bounds, severity tier cutoffs,
       damping thresholds, Brilliant SEE threshold, Great gap threshold, phase
       unit threshold, rating anchor table, error-rate weights, shrink `k`)
       into one exported object. Downstream modules import from here instead
       of hardcoding — recalibration (Phase 20) becomes a data change.
-- [ ] This is a refactor of code written earlier in this plan, not new logic
+      Landed as a single `export const CONFIG = {...} as const`, namespaced
+      by module (`winProbability`, `accuracyCurve`, `gameAccuracy`,
+      `severity`, `resultBand`, `brilliant`, `great`, `miss`,
+      `phaseSegmentation`, `openingScore`, `tacticsScore`, `strategyScore`,
+      `endgameScore`, `ratingEstimate`, `moveReasons`). Every consuming module
+      destructures its slice at module scope back into the same
+      UPPER_SNAKE_CASE local names it used before, so function bodies needed
+      no changes beyond the constant declarations. Went a bit further than
+      the named list: also centralized inline literals the task description
+      didn't call out by name but that are equally calibration knobs (e.g.
+      Great's `topMoveDropTolerance`/`materialityBandGap`, Miss's
+      `opportunityWinPctMin`/`threwAwayDropMin`, the mate-score decay-per-ply
+      and win% aggregation window divisor, rating's stdErr divisor and
+      rounding granularity). Left alone: board-geometry constants (file
+      letters, adjacency math), SEE's own piece-value table (`see.ts` — kept
+      separate from Brilliant's material-restoration table since SEE
+      deliberately values the king at 20000 so it's never treated as
+      capturable, a different contract than Brilliant's lookup), and
+      structural facts like "one legal move = forced" (not a tunable, a
+      definition).
+- [x] This is a refactor of code written earlier in this plan, not new logic
       — do it as its own pass once Phases 12–18 are green, not
       incrementally (fighting merge churn against tests that reference the
       old inline constants otherwise).
-- [ ] Commit: `refactor: centralize game-report tunable constants`.
+      Zero test changes were needed — every existing test still asserts on
+      the same behavior, since destructuring preserves both the values and
+      the local names. Full `packages/chess-analysis` + `packages/shared`
+      suites (346 + 68 tests) and `tsc -b`/`eslint .` all green after.
+- [x] Commit: `refactor: centralize game-report tunable constants`.
 
 ### Task 19.3: Wire the full pipeline
 

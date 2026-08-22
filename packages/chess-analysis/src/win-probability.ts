@@ -1,8 +1,7 @@
 import type { EngineLine } from '@chess-coach/shared';
+import { CONFIG } from './config.js';
 
-const MATE_BASE = 2000;
-const CP_CLAMP = 2000;
-const WIN_PROBABILITY_SLOPE = 0.00368208;
+const { mateBase: MATE_BASE, cpClamp: CP_CLAMP, slope: WIN_PROBABILITY_SLOPE, mateDecayPerPly: MATE_DECAY_PER_PLY, mateInClamp: MATE_IN_CLAMP } = CONFIG.winProbability;
 
 type EvaluationScore = Pick<EngineLine, 'cp' | 'mateIn'>;
 export type PlayerColor = 'white' | 'black';
@@ -27,7 +26,7 @@ export function winPctFor(color: PlayerColor, cpWhite: number): number {
 
 function mateScore(mateIn: number): number {
   const sign = mateIn >= 0 ? 1 : -1;
-  return sign * (MATE_BASE - 10 * Math.min(Math.abs(mateIn), 50));
+  return sign * (MATE_BASE - MATE_DECAY_PER_PLY * Math.min(Math.abs(mateIn), MATE_IN_CLAMP));
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {

@@ -1,13 +1,14 @@
+import { CONFIG } from './config.js';
+
 export type GameResultForColour = 'win' | 'draw' | 'loss';
 
-const WINNING_THRESHOLD = 75;
-const EQUAL_THRESHOLD = 45;
-
-const CONVERSION_TABLE: Record<'winning' | 'equal' | 'worse', Record<GameResultForColour, number>> = {
-  winning: { win: 100, draw: 40, loss: 0 },
-  equal: { win: 100, draw: 75, loss: 35 },
-  worse: { win: 100, draw: 90, loss: 60 }
-};
+const {
+  winningThreshold: WINNING_THRESHOLD,
+  equalThreshold: EQUAL_THRESHOLD,
+  conversionTable: CONVERSION_TABLE,
+  accuracyWeight: ENDGAME_ACCURACY_WEIGHT,
+  conversionWeight: CONVERSION_WEIGHT
+} = CONFIG.endgameScore;
 
 /**
  * §7.4's conversionScore: did the colour convert (or hold, or lose) the
@@ -24,9 +25,6 @@ function standingBucket(winPct: number): 'winning' | 'equal' | 'worse' {
   if (winPct >= EQUAL_THRESHOLD) return 'equal';
   return 'worse';
 }
-
-const ENDGAME_ACCURACY_WEIGHT = 0.7;
-const CONVERSION_WEIGHT = 0.3;
 
 /**
  * §7.4's endgameScore. `null` when the game never reached the endgame phase

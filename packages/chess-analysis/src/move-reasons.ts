@@ -2,6 +2,7 @@ import { Chess, type PieceSymbol, type Square } from 'chess.js';
 import type { EngineEval, FeatureDeltaDto, PositionFeatures } from '@chess-coach/shared';
 import { toColorName } from './attack-map.js';
 import { see } from './see.js';
+import { CONFIG } from './config.js';
 
 export interface MoveReasonsInput {
   mover: 'white' | 'black';
@@ -23,9 +24,11 @@ interface Reason {
   text: string;
 }
 
-const MAX_REASONS = 2;
-const CENTER_SWING_THRESHOLD = 3;
-const MOBILITY_DROP_THRESHOLD = -8;
+const {
+  maxReasons: MAX_REASONS,
+  centerSwingThreshold: CENTER_SWING_THRESHOLD,
+  mobilityDropThreshold: MOBILITY_DROP_THRESHOLD
+} = CONFIG.moveReasons;
 const PIECE_NAMES: Record<PieceSymbol, string> = {
   p: 'pawn',
   n: 'knight',

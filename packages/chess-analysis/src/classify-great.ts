@@ -2,6 +2,13 @@ import type { MoveClassificationInput } from './classify-context.js';
 import { isBrilliantMove } from './classify-brilliant.js';
 import { bandIndex, resultBand } from './classify-severity.js';
 import { toCpWhite, winPctFor } from './win-probability.js';
+import { CONFIG } from './config.js';
+
+const {
+  minGapWinPct: MIN_GAP_WIN_PCT,
+  topMoveDropTolerance: TOP_MOVE_DROP_TOLERANCE,
+  materialityBandGap: MATERIALITY_BAND_GAP
+} = CONFIG.great;
 
 /** Evaluates G1-G4. Missing MultiPV data fails closed. */
 export function isGreatMove(input: MoveClassificationInput): boolean {
@@ -9,11 +16,11 @@ export function isGreatMove(input: MoveClassificationInput): boolean {
 
   const [best, second] = input.evalBefore.lines;
   if (!best || !second) return false;
-  const isTopMove = input.moveSan === best.moveSan || input.drop <= 1;
+  const isTopMove = input.moveSan === best.moveSan || input.drop <= TOP_MOVE_DROP_TOLERANCE;
   if (!isTopMove) return false;
 
   const gap = Math.abs(winPctFor(input.mover, toCpWhite(best)) - winPctFor(input.mover, toCpWhite(second)));
-  if (gap < 10) return false;
+  if (gap < MIN_GAP_WIN_PCT) return false;
   return hasMateriality(input, second);
 }
 
@@ -23,7 +30,7 @@ function hasMateriality(input: MoveClassificationInput, second: typeof input.eva
   if (afterBand > beforeBand) return true;
 
   const secondBand = bandIndex(resultBand(winPctFor(input.mover, toCpWhite(second))));
-  if (beforeBand - secondBand >= 2) return true;
+  if (beforeBand - secondBand >= MATERIALITY_BAND_GAP) return true;
 
   return entersForcedMate(input.evalBefore.lines[0]?.mateIn, input.mover)
     && !entersForcedMate(second.mateIn, input.mover);

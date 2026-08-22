@@ -1,11 +1,20 @@
-import { Chess, type PieceSymbol, type Square } from 'chess.js';
+import { Chess, type Square } from 'chess.js';
 import { see, seeOnAllOpponentCaptures } from './see.js';
 import type { MoveClassificationInput } from './classify-context.js';
 import { toCpWhite } from './win-probability.js';
+import { CONFIG } from './config.js';
 
-const SACRIFICE_SEE_THRESHOLD = -180;
-const RESTORED_VALUE_RATIO = 0.8;
-const PIECE_VALUES: Record<PieceSymbol, number> = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
+const {
+  maxDrop: MAX_DROP,
+  lostToDrawBeforeWinMax: LOST_TO_DRAW_BEFORE_WIN_MAX,
+  lostToDrawAfterWinMin: LOST_TO_DRAW_AFTER_WIN_MIN,
+  minAfterWin: MIN_AFTER_WIN,
+  maxBeforeWin: MAX_BEFORE_WIN,
+  sacrificeSeeThreshold: SACRIFICE_SEE_THRESHOLD,
+  nonObviousAlternativeCpMargin: NON_OBVIOUS_ALTERNATIVE_CP_MARGIN,
+  restoredValueRatio: RESTORED_VALUE_RATIO,
+  pieceValues: PIECE_VALUES
+} = CONFIG.brilliant;
 
 /** Evaluates B1-B8. The API-layer soundness result is deliberately an input;
  * this pure package never performs the extra engine call. */
@@ -22,10 +31,10 @@ export function isBrilliantMove(input: MoveClassificationInput): boolean {
 
 function passesBasicGates(input: MoveClassificationInput): boolean {
   if (input.isBookMove || input.moveFlags.legalMoveCount <= 1) return false;
-  if (input.drop > 2) return false;
-  const lostToDraw = input.beforeWin <= 15 && input.afterWin >= 40;
+  if (input.drop > MAX_DROP) return false;
+  const lostToDraw = input.beforeWin <= LOST_TO_DRAW_BEFORE_WIN_MAX && input.afterWin >= LOST_TO_DRAW_AFTER_WIN_MIN;
   if (lostToDraw) return true;
-  return input.afterWin >= 30 && input.beforeWin <= 92;
+  return input.afterWin >= MIN_AFTER_WIN && input.beforeWin <= MAX_BEFORE_WIN;
 }
 
 function playedMove(input: MoveClassificationInput): ReturnType<Chess['move']> | null {
@@ -50,7 +59,7 @@ function hasNonObviousAlternative(input: MoveClassificationInput, destination: s
   return input.evalBefore.lines.slice(1).some((line) => {
     if (!isNonSacrificialAlternative(input, line.moveSan, destination)) return false;
     const alternativeCp = moverPerspective(toCpWhite(line), input.mover);
-    return alternativeCp <= playedCp - 100;
+    return alternativeCp <= playedCp - NON_OBVIOUS_ALTERNATIVE_CP_MARGIN;
   });
 }
 

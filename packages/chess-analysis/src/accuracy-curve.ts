@@ -1,6 +1,6 @@
-const ACCURACY_SCALE = 103.1668;
-const ACCURACY_DECAY = 0.04354;
-const ACCURACY_OFFSET = 3.1669;
+import { CONFIG } from './config.js';
+
+const { scale: ACCURACY_SCALE, decay: ACCURACY_DECAY, offset: ACCURACY_OFFSET } = CONFIG.accuracyCurve;
 
 /** Converts a mover's win-percentage drop into a 0-to-100 move accuracy. */
 export function moveAccuracy(drop: number): number {

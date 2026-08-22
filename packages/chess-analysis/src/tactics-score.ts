@@ -3,19 +3,21 @@ import type { EngineEval, FeatureDeltaDto, MoveQuality, PositionFeatures } from 
 import { toColorName } from './attack-map.js';
 import { see } from './see.js';
 import { toCpWhite, winPctFor } from './win-probability.js';
+import { CONFIG } from './config.js';
 
-const EVAL_GAP_THRESHOLD = 8;
-const MIN_TACTICAL_POSITIONS = 4;
-
-const BRILLIANT_BONUS = 6;
-const GREAT_BONUS = 3;
-const BEST_IN_TACTICAL_BONUS = 1.5;
-const MISS_PENALTY = -4;
-const BLUNDER_IN_TACTICAL_PENALTY = -3;
-const MISTAKE_IN_TACTICAL_PENALTY = -1.5;
-const NEW_HANGING_PIECE_PENALTY = -2;
-const NEW_OPPONENT_FORK_PENALTY = -2;
-const EVIDENCE_CLAMP = 15;
+const {
+  evalGapThreshold: EVAL_GAP_THRESHOLD,
+  minTacticalPositions: MIN_TACTICAL_POSITIONS,
+  brilliantBonus: BRILLIANT_BONUS,
+  greatBonus: GREAT_BONUS,
+  bestInTacticalBonus: BEST_IN_TACTICAL_BONUS,
+  missPenalty: MISS_PENALTY,
+  blunderInTacticalPenalty: BLUNDER_IN_TACTICAL_PENALTY,
+  mistakeInTacticalPenalty: MISTAKE_IN_TACTICAL_PENALTY,
+  newHangingPiecePenalty: NEW_HANGING_PIECE_PENALTY,
+  newOpponentForkPenalty: NEW_OPPONENT_FORK_PENALTY,
+  evidenceClamp: EVIDENCE_CLAMP
+} = CONFIG.tacticsScore;
 
 export interface TacticalPositionInput {
   mover: 'white' | 'black';

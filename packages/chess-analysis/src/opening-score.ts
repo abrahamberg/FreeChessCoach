@@ -2,20 +2,21 @@ import { Chess, type Square } from 'chess.js';
 import { castledPly, developedMinorPieceCount, type DevelopmentColor } from './opening-development.js';
 import { computePositionFeatures } from './position-features.js';
 import type { ParsedPosition } from './pgn.js';
+import { CONFIG } from './config.js';
 
-const BOOK_DEPTH_FULL_SCORE_PLY = 16; // 8 full moves of theory = 100
-const CASTLED_BONUS = 25;
-const DEVELOPED_MINOR_BONUS_PER_PIECE = 10;
-const MAX_DEVELOPED_MINOR_BONUS = 40;
-const CENTER_CONTROL_BONUS = 15;
-const NO_REPEATED_MOVE_BONUS = 10;
-const NO_EXCESS_PAWN_MOVE_BONUS = 10;
-const NECESSARY_PAWN_MOVES = 2;
-const MAX_ALLOWED_PAWN_MOVES = NECESSARY_PAWN_MOVES + 1;
-
-const OPENING_ACCURACY_WEIGHT = 0.55;
-const BOOK_DEPTH_WEIGHT = 0.2;
-const DEVELOPMENT_WEIGHT = 0.25;
+const {
+  bookDepthFullScorePly: BOOK_DEPTH_FULL_SCORE_PLY,
+  castledBonus: CASTLED_BONUS,
+  developedMinorBonusPerPiece: DEVELOPED_MINOR_BONUS_PER_PIECE,
+  maxDevelopedMinorBonus: MAX_DEVELOPED_MINOR_BONUS,
+  centerControlBonus: CENTER_CONTROL_BONUS,
+  noRepeatedMoveBonus: NO_REPEATED_MOVE_BONUS,
+  noExcessPawnMoveBonus: NO_EXCESS_PAWN_MOVE_BONUS,
+  maxAllowedPawnMoves: MAX_ALLOWED_PAWN_MOVES,
+  accuracyWeight: OPENING_ACCURACY_WEIGHT,
+  bookDepthWeight: BOOK_DEPTH_WEIGHT,
+  developmentWeight: DEVELOPMENT_WEIGHT
+} = CONFIG.openingScore;
 
 /** §7.1 — 8 full moves (ply 16) of book coverage for this colour is a full score. */
 export function bookDepthScore(lastBookPlyForColour: number): number {

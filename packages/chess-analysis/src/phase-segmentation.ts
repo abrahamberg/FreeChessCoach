@@ -1,11 +1,14 @@
 import type { MovePhase } from '@chess-coach/shared';
 import { phaseUnits } from './phase-signals.js';
+import { CONFIG } from './config.js';
 
-const OPENING_FALLBACK_PLY = 10;
-const OPENING_MAX_PLY = 30;
-const OPENING_BOOK_MIN_PLY = 8;
-const ENDGAME_PHASE_UNIT_THRESHOLD = 10;
-const LOW_CONFIDENCE_MAX_MOVES = 2;
+const {
+  openingFallbackPly: OPENING_FALLBACK_PLY,
+  openingMaxPly: OPENING_MAX_PLY,
+  openingBookMinPly: OPENING_BOOK_MIN_PLY,
+  endgamePhaseUnitThreshold: ENDGAME_PHASE_UNIT_THRESHOLD,
+  lowConfidenceMaxMoves: LOW_CONFIDENCE_MAX_MOVES
+} = CONFIG.phaseSegmentation;
 
 export interface PhasePosition {
   ply: number;
