@@ -877,10 +877,23 @@ check current feature-folder boundary before choosing).
 in Task 15.3 — re-open only if that context has aged out).
 
 **Files:** `apps/web/src/features/board/MoveExplorer.tsx`,`MoveStrip.tsx`.
-- [ ] Book moves show the opening name/ECO (§11's last trigger row); the
+- [x] Book moves show the opening name/ECO (§11's last trigger row); the
       alternatives panel shows `bestMoveSan` + PV and the two runners-up by
       win% (not raw cp) per §11's closing paragraph.
-- [ ] Commit: `feat: opening labels and win%-based alternatives in move explorer`.
+      In `MoveExplorer.tsx`: `OpeningLabel` renders the move's book reason
+      (already exactly `"Theory — {name} ({eco})"` from Task 15.3's
+      `buildReasons`) unconditionally — not gated behind the "show notes"
+      toggle, since leaving book is something a player should see without an
+      extra click — while `MoveNote` now skips `quality === 'book'` so the
+      same line never renders twice if notes are also toggled on. A new
+      `AlternativesPanel`, gated behind the notes toggle alongside
+      `MoveNote`, renders `bestLinePvSan` joined as the "Best:" line and the
+      first two `alternatives` entries by their pre-computed `winPct` (never
+      `cp`, which the type doesn't even surface a use for here). `MoveStrip`
+      has no room for an inline note (it's a bare chip strip), so its one
+      change is folding the same opening-reason text into the long-press
+      inspector modal's title instead of a dedicated panel.
+- [x] Commit: `feat: opening labels and win%-based alternatives in move explorer`.
 
 ---
 

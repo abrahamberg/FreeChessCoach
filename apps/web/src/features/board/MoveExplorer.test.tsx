@@ -213,4 +213,52 @@ describe('MoveExplorer', () => {
 
     expect(screen.queryByText(/better was/i)).not.toBeInTheDocument();
   });
+
+  test('a book move shows its opening name/ECO unconditionally, without toggling notes (§11)', () => {
+    const classifiedMoves = [
+      classifiedMove({
+        ply: 1,
+        moveSan: 'e4',
+        quality: 'book',
+        reasons: ['Theory — Italian Game (C50)']
+      })
+    ];
+    render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={1} onSelect={vi.fn()} />);
+
+    expect(screen.getByText('Theory — Italian Game (C50)')).toBeInTheDocument();
+  });
+
+  test('a non-book move never shows an opening label', () => {
+    const classifiedMoves = [classifiedMove({ ply: 1, moveSan: 'e4', quality: 'good' })];
+    render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={1} onSelect={vi.fn()} />);
+
+    expect(screen.queryByText(/theory/i)).not.toBeInTheDocument();
+  });
+
+  test('the alternatives panel shows the best PV and win%-ranked runners-up, not raw cp', async () => {
+    const user = userEvent.setup();
+    const classifiedMoves = [
+      classifiedMove({
+        ply: 3,
+        moveSan: 'Qh5',
+        quality: 'mistake',
+        bestMoveSan: 'Nf3',
+        bestLinePvSan: ['Nf3', 'Nc6', 'Bb5'],
+        alternatives: [
+          { san: 'Bc4', cp: 40, winPct: 58.2 },
+          { san: 'Nc3', cp: 15, winPct: 52.9 }
+        ]
+      })
+    ];
+    render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={3} onSelect={vi.fn()} />);
+
+    expect(screen.queryByText(/Best: Nf3/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /show notes/i }));
+
+    expect(screen.getByText('Best: Nf3 Nc6 Bb5')).toBeInTheDocument();
+    expect(screen.getByText('Bc4 (58.2%)')).toBeInTheDocument();
+    expect(screen.getByText('Nc3 (52.9%)')).toBeInTheDocument();
+    expect(screen.queryByText(/40/)).not.toBeInTheDocument();
+  });
 });

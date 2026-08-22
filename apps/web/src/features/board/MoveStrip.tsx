@@ -31,6 +31,13 @@ export function MoveStrip({ sanMoves, classifiedMoves, positions, currentPly, mo
   const momentSet = new Set(momentPlies);
   const qualityByPly = new Map(classifiedMoves.map((move) => [move.ply, move.quality]));
   const fenByPly = new Map(positions.map((position) => [position.ply, position.fen]));
+  // §11's last trigger row: MoveStrip has no room for an inline note, so a
+  // book move's opening name/ECO rides along in the inspector's title instead.
+  const openingLabelByPly = new Map(
+    classifiedMoves
+      .filter((move) => move.quality === 'book' && move.reasons?.[0])
+      .map((move) => [move.ply, move.reasons?.[0] ?? ''])
+  );
 
   return (
     <div className="move-strip">
@@ -50,7 +57,8 @@ export function MoveStrip({ sanMoves, classifiedMoves, positions, currentPly, mo
           );
         }
         const fen = fenByPly.get(ply + 1);
-        const label = `${Math.floor(ply / 2) + 1}${ply % 2 === 0 ? '.' : '...'} ${san}`;
+        const openingLabel = openingLabelByPly.get(ply + 1);
+        const label = `${Math.floor(ply / 2) + 1}${ply % 2 === 0 ? '.' : '...'} ${san}${openingLabel ? ` — ${openingLabel}` : ''}`;
         children.push(
           <MoveChip
             key={ply}

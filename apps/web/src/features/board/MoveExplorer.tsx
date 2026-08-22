@@ -24,10 +24,11 @@ function isImprovableQuality(quality: MoveQuality | undefined): boolean {
   return quality !== undefined && IMPROVABLE_QUALITIES.has(quality);
 }
 
-/** §11's deterministic coaching reasons, already ordered and capped at two by
- * the backend; falls back to the legacy single-line note for analyses stored
- * before `reasons` existed. */
+/** §11's closing paragraph: a book move's theory label is shown unconditionally
+ * via `OpeningLabel` below, not gated behind the notes toggle — so `MoveNote`
+ * skips it here to avoid rendering the same "Theory — …" line twice. */
 function MoveNote({ move }: { move: ClassifiedMoveDto }): ReactNode {
+  if (move.quality === 'book') return null;
   if (move.reasons && move.reasons.length > 0) {
     return (
       <ul className="move-explorer__note">
@@ -45,6 +46,39 @@ function MoveNote({ move }: { move: ClassifiedMoveDto }): ReactNode {
     );
   }
   return null;
+}
+
+/** §11's last trigger row: a book move always shows the opening name/ECO,
+ * regardless of whether notes are toggled on — theory context is cheap to
+ * show and is what tells a player they've left book. */
+function OpeningLabel({ move }: { move: ClassifiedMoveDto }): ReactNode {
+  const theory = move.reasons?.[0];
+  if (move.quality !== 'book' || !theory) return null;
+  return <p className="move-explorer__opening-label">{theory}</p>;
+}
+
+/** §11's closing paragraph: the engine's actual best line plus its two
+ * win%-ranked (not raw-cp) runners-up, so a player can see what else was
+ * playable without leaving the move list. */
+function AlternativesPanel({ move }: { move: ClassifiedMoveDto }): ReactNode {
+  if (!move.bestMoveSan) return null;
+  const pv = move.bestLinePvSan && move.bestLinePvSan.length > 0 ? move.bestLinePvSan.join(' ') : move.bestMoveSan;
+  const runnersUp = (move.alternatives ?? []).slice(0, 2);
+
+  return (
+    <div className="move-explorer__alternatives">
+      <p className="move-explorer__alternatives-best">Best: {pv}</p>
+      {runnersUp.length > 0 && (
+        <ul className="move-explorer__alternatives-list">
+          {runnersUp.map((alternative) => (
+            <li key={alternative.san}>
+              {alternative.san} ({alternative.winPct.toFixed(1)}%)
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 interface MovePair {
@@ -143,7 +177,13 @@ export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly,
           );
         })}
       </ol>
-      {notesVisible && currentMove && <MoveNote move={currentMove} />}
+      {currentMove && <OpeningLabel move={currentMove} />}
+      {notesVisible && currentMove && (
+        <>
+          <MoveNote move={currentMove} />
+          <AlternativesPanel move={currentMove} />
+        </>
+      )}
       <GameEvalChart classifiedMoves={classifiedMoves} currentPly={currentPly} onSelect={onSelect} />
       {inspecting && (
         <MoveAnalysisModal fen={inspecting.fen} moveLabel={inspecting.label} onClose={() => setInspecting(null)} />

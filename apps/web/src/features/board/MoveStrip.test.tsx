@@ -133,4 +133,49 @@ describe('MoveStrip', () => {
 
     expect(screen.getByRole('button', { name: 'e4' }).className).not.toMatch(/move-quality-/);
   });
+
+  test("long-pressing a book move includes its opening name/ECO in the inspector's title (§11) — there's no room for an inline note here", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(ANALYSIS_FIXTURE), { status: 200, headers: { 'content-type': 'application/json' } })
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const positions = [{ ply: 1, fen: 'fen-after-e4' }];
+    const classifiedMoves = [
+      {
+        ply: 1,
+        moveSan: 'e4',
+        mover: 'white' as const,
+        isUserMove: true,
+        cpLoss: 0,
+        quality: 'book' as const,
+        bestLineSan: ['e4'],
+        evalAfterCp: 20,
+        hangsPiece: false,
+        reasons: ['Theory — Italian Game (C50)']
+      }
+    ];
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MoveStrip
+          sanMoves={SAN_MOVES}
+          classifiedMoves={classifiedMoves}
+          positions={positions}
+          currentPly={0}
+          momentPlies={[]}
+          onSelect={vi.fn()}
+        />
+      </QueryClientProvider>
+    );
+
+    const chip = screen.getByText('e4');
+    fireEvent.pointerDown(chip);
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    fireEvent.pointerUp(chip);
+
+    expect(await screen.findByRole('dialog', { name: /Theory — Italian Game \(C50\)/ })).toBeInTheDocument();
+  });
 });
