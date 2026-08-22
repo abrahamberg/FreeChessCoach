@@ -5,7 +5,7 @@ const CP_CLAMP = 2000;
 const WIN_PROBABILITY_SLOPE = 0.00368208;
 
 type EvaluationScore = Pick<EngineLine, 'cp' | 'mateIn'>;
-type PlayerColor = 'white' | 'black';
+export type PlayerColor = 'white' | 'black';
 
 /** Folds a White-perspective engine evaluation into the shared cp scale. */
 export function toCpWhite(evalObj: EvaluationScore): number {

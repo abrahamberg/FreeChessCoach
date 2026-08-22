@@ -244,19 +244,19 @@ replaces `classify.ts`'s ad-hoc `cpLoss`/`epLoss` computation as the single
 source of truth every downstream phase reads from — `classify.ts` itself is
 refactored onto it in Phase 15, not touched yet here.
 
-- [ ] `buildWinPctSeries(evals: EngineEval[]): number[]` — §2.3, one entry
+- [x] `buildWinPctSeries(evals: EngineEval[]): number[]` — §2.3, one entry
       per position (`N+1` for `N` plies), each `winPctWhite(toCpWhite(eval))`.
       Test: does **not** substitute a previous position's PV eval for the
       next position's own eval (the exact bug the spec calls out) — assert by
       fixture where they'd differ if the bug were present.
-- [ ] `computeMoveDrop(before: number, after: number, mover): number` — §2.4,
+- [x] `computeMoveDrop(before: number, after: number, mover): number` — §2.4,
       `max(0, before - after)` in mover's win% terms.
-- [ ] `MoveMetrics = {ply, cpBeforeWhite, cpAfterWhite, winPctBefore,
+- [x] `MoveMetrics = {ply, cpBeforeWhite, cpAfterWhite, winPctBefore,
       winPctAfter, drop, accuracy}[]` assembling the above plus
       `moveAccuracy(drop)` per ply — this is the `cpBefore`/`cpAfter`/
       `winPctBefore`/`winPctAfter`/`drop`/`accuracy` fields of §9's
       `MoveReport`.
-- [ ] Commit: `feat: per-move win% series and drop/accuracy metrics`.
+- [x] Commit: `feat: per-move win% series and drop/accuracy metrics`.
 
 ---
 
