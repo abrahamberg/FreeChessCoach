@@ -93,11 +93,11 @@ that a future refresh should record the new source commit SHA at that time.
   at runtime, but a checked-in data *fixture* consumed by an offline build
   script (Phase 11) is the same pattern `apps/api/test/helpers` already uses
   for fixtures — it's fine for it to sit inside a package tree.
-- [ ] `git mv all.tsv packages/chess-analysis/data/openings.tsv`.
-- [ ] Update `.gitignore`/lint globs if anything currently excludes `*.tsv`.
-- [ ] Delete the stray `docs/algorith.md` typo duplicate check — N/A, keep
+- [x] `git mv all.tsv packages/chess-analysis/data/openings.tsv`.
+- [x] Update `.gitignore`/lint globs if anything currently excludes `*.tsv`.
+- [x] Delete the stray `docs/algorith.md` typo duplicate check — N/A, keep
       `docs/algorith.md` filename as-is (already referenced in this plan).
-- [ ] Commit: `chore: relocate opening dataset into chess-analysis package`.
+- [x] Commit: `chore: relocate opening dataset into chess-analysis package`.
 
 ---
 
