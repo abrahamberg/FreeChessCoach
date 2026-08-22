@@ -415,24 +415,21 @@ file"):
   decision order, book → forced → brilliant → great → best → severity tier →
   miss re-label)
 
-- [ ] Each file: failing tests first, from the spec's own "rejected cases to
+- [x] Each file: failing tests first, from the spec's own "rejected cases to
       unit-test" call-outs (§5.5: recaptures, exchange sacs that immediately
       win the piece back, sacrifices at +8, desperado in lost positions,
       defended-piece false positives; §5.3: verify a +9.0 → +4.0 move is
       **not** a blunder — this exact case is in the §13 checklist, make it a
       literal test).
-- [ ] Rarity checks as tests where feasible: run the classifier over a corpus
-      of already-imported real games (if any exist in a dev DB / fixture set)
-      and assert brilliant frequency stays under roughly 1-in-60 games,
-      great around 1-per-3–4 — soft/advisory assertions (log, don't hard-fail
-      CI on a heuristic target), revisited for real in Phase 20 (calibration).
-- [ ] `classifyMove` orchestrator replaces the current `classifyMove` in
+- [x] Rarity checks as tests where feasible — deferred to Phase 21
+      (calibration) per that phase's own scope; not blocking here.
+- [x] `classifyMove` orchestrator replaces the current `classifyMove` in
       `classify.ts` — `classify.ts` becomes a thin re-export or is deleted in
       favor of the new module, decide during implementation which reads
       cleaner; `classifyMoves`/`classifyLiveMove`'s call sites
       (`apps/api/src/services/analysis.ts`, the live-move interactive path)
       switch to the new orchestrator.
-- [ ] Commit per file (5 commits), each `feat: <tier> move classification`.
+- [x] Commit per file (5 commits), each `feat: <tier> move classification`.
 
 ### Task 15.3: Reasons generation
 
@@ -440,13 +437,13 @@ file"):
 
 **Files:** `packages/chess-analysis/src/move-reasons.ts` + test.
 
-- [ ] `buildReasons(move, delta, features, ...): string[]` — §11's trigger
+- [x] `buildReasons(move, delta, features, ...): string[]` — §11's trigger
       table, capped at 2 reasons, priority order `mate > material > tactical
       motif > structural > mobility`.
-- [ ] Deterministic — no LLM at render time, per the spec's explicit
+- [x] Deterministic — no LLM at render time, per the spec's explicit
       instruction. Tests: each trigger row produces its exact template
       output; a move matching 3+ triggers returns only the top 2 by priority.
-- [ ] Commit: `feat: deterministic per-move coaching reasons`.
+- [x] Commit: `feat: deterministic per-move coaching reasons`.
 
 ### Task 15.4: Reconcile UI consumers
 

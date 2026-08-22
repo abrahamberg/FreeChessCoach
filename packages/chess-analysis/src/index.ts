@@ -13,6 +13,7 @@ export * from './diff-features.js';
 export * from './move-ref.js';
 export * from './move-metrics.js';
 export * from './move-flags.js';
+export * from './move-reasons.js';
 export * from './opening-development.js';
 export * from './opening-book.js';
 export * from './opening-book-key.js';

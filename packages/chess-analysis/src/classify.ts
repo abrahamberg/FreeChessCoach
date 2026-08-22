@@ -9,8 +9,10 @@ import type {
 } from '@chess-coach/shared';
 import { computeMoveDrop } from './move-metrics.js';
 import { enrichPositions } from './position-enrichment.js';
-import { inBookWalk } from './opening-book.js';
+import { inBookWalk, resolveOpening, type OpeningResolution } from './opening-book.js';
+import { positionKey } from './opening-book-key.js';
 import { classifyMove, type MoveClassificationInput } from './classify-move.js';
+import { buildReasons } from './move-reasons.js';
 import { moveFlags } from './move-flags.js';
 import { computePositionFeatures } from './position-features.js';
 import { moveAccuracy as calculateMoveAccuracy } from './accuracy-curve.js';
@@ -33,6 +35,7 @@ export function classifyMoves(
 ): ClassifiedMove[] {
   const enrichment = enrichPositions(game.positions);
   const bookWalk = inBookWalk(game.positions);
+  const opening = resolveOpening(game.positions.map((position) => positionKey(position.fen)));
 
   return game.positions.slice(1).map((position, index) => {
     const before = game.positions[index];
@@ -40,6 +43,7 @@ export function classifyMoves(
     const currentEval = evalAt(evals[index], before.fen);
     const nextEval = evalAt(evals[index + 1], position.fen);
     const positionEnrichment = enrichment[position.ply];
+    const beforeEnrichment = enrichment[index];
     if (!positionEnrichment?.moveFlags || !positionEnrichment.featureDelta) {
       throw new Error(`Missing move enrichment for ply ${position.ply}`);
     }
@@ -52,8 +56,10 @@ export function classifyMoves(
       userColor,
       moveFlags: positionEnrichment.moveFlags,
       features: positionEnrichment.features,
+      featuresBefore: beforeEnrichment?.features,
       featureDelta: positionEnrichment.featureDelta,
       isBookMove: bookWalk[index]?.classification === 'book',
+      opening,
       brilliantSoundness: options.brilliantSoundnessByPly?.get(position.ply),
       isRecapture: isRecapture(game.positions[index - 1], before, position)
     });
@@ -95,12 +101,14 @@ export function classifyLiveMove(input: {
     userColor: input.userColor,
     moveFlags: flags,
     features: featuresAfter,
+    featuresBefore,
     featureDelta: {
       newForks: featuresAfter.forks,
       newHangingPieces: featuresAfter.hangingPieces,
       mobilityDelta: featuresAfter.availableMoves.length - featuresBefore.availableMoves.length
     },
     isBookMove: false,
+    opening: null,
     brilliantSoundness: input.brilliantSoundness,
     isRecapture: false
   });
@@ -114,8 +122,10 @@ function buildClassifiedMove(input: {
   userColor: 'white' | 'black';
   moveFlags: ReturnType<typeof moveFlags>;
   features: PositionFeatures;
+  featuresBefore?: PositionFeatures;
   featureDelta: FeatureDeltaDto;
   isBookMove: boolean;
+  opening: OpeningResolution | null;
   brilliantSoundness: boolean | undefined;
   isRecapture: boolean;
 }): ClassifiedMove {
@@ -151,6 +161,19 @@ function buildClassifiedMove(input: {
   };
   const result = classifyMove(classificationInput);
   const hangs = input.position.moveSan !== null && hangsPiece(input.beforeFen, input.position.moveSan);
+  const reasons = buildReasons({
+    mover,
+    fenBefore: input.beforeFen,
+    fenAfter: input.position.fen,
+    moveSan: input.position.moveSan ?? '',
+    evalBefore: input.evalBefore,
+    isBookMove: input.isBookMove,
+    openingName: input.opening?.name,
+    eco: input.opening?.eco,
+    featureDelta: input.featureDelta,
+    featuresBefore: input.featuresBefore,
+    featuresAfter: input.features
+  });
 
   return {
     ply: input.position.ply,
@@ -182,7 +205,8 @@ function buildClassifiedMove(input: {
     })),
     features: input.features,
     moveFlags: input.moveFlags,
-    featureDelta: input.featureDelta
+    featureDelta: input.featureDelta,
+    reasons
   };
 }
 
