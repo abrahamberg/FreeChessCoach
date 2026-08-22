@@ -206,11 +206,10 @@ describe('buildCoachSystemPrompt', () => {
     expect(staticPart).toContain('more than one ply from the current position');
   });
 
-  test('analyze-mode staticPart tells the coach about reveal_move\'s preview/full modes', () => {
+  test('staticPart tells the coach about show_position\'s preMove option — the pre-move anchor + red arrow are folded into show_position itself, not a separate reveal tool', () => {
     const { staticPart } = buildCoachSystemPrompt(baseInput());
-    expect(staticPart).toContain('reveal_move');
-    expect(staticPart).toContain('"preview"');
-    expect(staticPart).toContain('"full"');
+    expect(staticPart).toContain('preMove');
+    expect(staticPart).not.toContain('reveal_move');
   });
 
   describe('engine visibility (always on, no per-user toggle)', () => {
@@ -255,11 +254,12 @@ describe('buildCoachSystemPrompt', () => {
       expect(staticPart).toContain('record_move_note');
     });
 
-    // reveal_move is analyze-mode only (a live move just played has nothing
-    // to preview or reveal) — it must never appear in the play-mode prompt,
-    // in either the tool list or howYouRunTheSession's mode-conditional text.
-    test('mode: "play" staticPart never mentions reveal_move', () => {
+    // preMove is a show_position option, not a separate tool, so it's
+    // available in both modes — a live move just played still has an
+    // earlier position worth flashing back to pre-move (architecture §14).
+    test('mode: "play" staticPart also mentions preMove and never mentions reveal_move', () => {
       const { staticPart } = buildCoachSystemPrompt(basePlayInput());
+      expect(staticPart).toContain('preMove');
       expect(staticPart).not.toContain('reveal_move');
     });
 

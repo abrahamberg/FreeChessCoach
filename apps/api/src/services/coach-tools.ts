@@ -13,7 +13,6 @@ import {
   recordMoveNoteParameters,
   renderFocusAreasBlock,
   renderRecentFindingsBlock,
-  revealMoveParameters,
   showPositionParameters,
   updateThreadsParameters
 } from '@chess-coach/prompts';
@@ -127,15 +126,7 @@ export function buildCoachTools(ctx: CoachToolsContext, deps: CoachToolsDependen
   };
 
   if (mode !== 'play') {
-    // Analyze mode only — a live move just played (play mode) has nothing
-    // to preview or reveal, so this tool isn't registered there at all.
-    return {
-      ...analyzeTools,
-      reveal_move: tool({
-        description: coachToolDescription('reveal_move'),
-        inputSchema: revealMoveParameters
-      })
-    };
+    return analyzeTools;
   }
   return { ...analyzeTools, ...buildPlayCoachTools(ctx, deps, guardState) };
 }

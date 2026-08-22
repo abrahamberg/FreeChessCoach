@@ -21,9 +21,8 @@ export interface UseSessionBoardStateResult {
   highlights: BoardHighlight[];
   setAnnotations: (next: AnnotationState) => void;
   /** True while the board is showing the position BEFORE the move currently
-   * being discussed — arrow-free by default; the red arrow for the move
-   * actually played only appears once the coach calls reveal_move({mode:
-   * 'preview'}) (analyze mode only), see showMoveArrow. False once
+   * being discussed, with a red arrow for the move actually played — set by
+   * show_position's own preMove: true (see playedMoveArrowFor). False once
    * revealPlayedMove() has been called, while peeking, or at the game's
    * starting position (nothing to anchor before). */
   isAnchoredPreMove: boolean;
@@ -79,8 +78,8 @@ function lastMoveHighlightsFor(moveUci: string | null | undefined): BoardHighlig
 
 /** Same from/to slicing as lastMoveHighlightsFor, drawn as a red arrow
  * instead of square highlights — shown while anchored one position before
- * the move being discussed ONLY once the coach has opted in via
- * reveal_move({mode: 'preview'}), see useSessionBoardState's showMoveArrow. */
+ * the move being discussed, i.e. whenever show_position was called with
+ * preMove: true (see useSessionBoardState's isAnchoredPreMove). */
 function playedMoveArrowFor(moveUci: string | null | undefined): BoardArrow[] {
   if (!moveUci) return [];
   return [{ from: moveUci.slice(0, 2), to: moveUci.slice(2, 4), color: 'var(--played-move)' }];
@@ -104,14 +103,15 @@ export function useSessionBoardState(
   // array — owned outside this hook — actually contains it (same render or
   // a later one; both must work, see applyServerMove's doc comment).
   const [pendingServerPosition, setPendingServerPosition] = useState<SessionPosition | null>(null);
-  // A fresh show_position anchors the board one ply BEFORE the move being
-  // discussed — see isAnchoredPreMove.
+  // show_position's own preMove: true anchors the board one ply BEFORE the
+  // move being discussed (with a red arrow, see isAnchoredPreMove) —
+  // revealResult false means "still anchored".
   const [revealResult, setRevealResult] = useState(true);
-  // Off by default: the pre-move red arrow is opt-in, via the coach's
-  // reveal_move({mode: 'preview'}) tool call (analyze mode only) — never
-  // automatic. Reset to false everywhere revealResult is reset, so a stale
-  // preview never leaks into the next position.
-  const [showMoveArrow, setShowMoveArrow] = useState(false);
+  // revealResult at coachPly, i.e. whatever show_position/applyServerMove
+  // actually left the coach's own position in — backToCoach restores this
+  // (not a blanket re-anchor) so a preMove: false position doesn't come
+  // back anchored just because peeking moved `revealResult` away from it.
+  const [coachRevealResult, setCoachRevealResult] = useState(true);
   const annotations = useAnnotationLayer();
 
   // initialPly arrives after the session fetch resolves (a later render, not
@@ -125,7 +125,7 @@ export function useSessionBoardState(
       setPly(initialPly);
       setCoachPly(initialPly);
       setRevealResult(initialPly === 0);
-      setShowMoveArrow(false);
+      setCoachRevealResult(initialPly === 0);
     }
   }, [initialPly]);
 
@@ -139,7 +139,7 @@ export function useSessionBoardState(
     : currentPosition;
   const fen = previewFen ?? displayPosition?.fen ?? '';
   const lastMoveHighlights = isAnchoredPreMove ? [] : lastMoveHighlightsFor(currentPosition?.moveUci);
-  const playedMoveArrows = isAnchoredPreMove && showMoveArrow ? playedMoveArrowFor(currentPosition?.moveUci) : [];
+  const playedMoveArrows = isAnchoredPreMove ? playedMoveArrowFor(currentPosition?.moveUci) : [];
 
   const previewMove = useCallback((newFen: string) => {
     setPreviewFen(newFen);
@@ -152,38 +152,33 @@ export function useSessionBoardState(
   const handleToolCall = useCallback(
     (toolCall: CoachToolCall): unknown => {
       if (toolCall.toolName === 'show_position') {
-        const { moveNumber, color, intent } = toolCall.input as {
+        const { moveNumber, color, intent, preMove } = toolCall.input as {
           moveNumber: number;
           color: 'white' | 'black' | null;
           intent: 'flashback' | 'subject';
+          preMove: boolean;
         };
         const newPly = moveRefToPly(moveNumber, color);
         setPly(newPly);
         setCoachPly(newPly);
         setMode('answer');
         setPreviewFen(null);
-        setRevealResult(newPly === 0);
-        setShowMoveArrow(false);
+        // preMove: true anchors the board one ply before newPly (with a red
+        // arrow, see isAnchoredPreMove) — meaningless at ply 0 (nothing to
+        // anchor before), so always revealed there regardless of the flag.
+        const revealed = newPly === 0 ? true : !preMove;
+        setRevealResult(revealed);
+        setCoachRevealResult(revealed);
         annotations.clear();
         // intent round-trips to the server as-is (apps/api's
         // applyClientToolResult reads it to decide whether to move the
         // conversation's subject, not just the board) — the board itself
         // behaves identically either way.
-        return { moveNumber, color, ply: newPly, intent };
+        return { moveNumber, color, ply: newPly, intent, preMove };
       }
       if (toolCall.toolName === 'annotate_board') {
         annotations.setAnnotations(toolCall.input as AnnotationState);
         return { acknowledged: true };
-      }
-      if (toolCall.toolName === 'reveal_move') {
-        const { mode: revealMode } = toolCall.input as { mode: 'preview' | 'full' };
-        if (revealMode === 'full') {
-          setRevealResult(true);
-          setShowMoveArrow(false);
-        } else {
-          setShowMoveArrow(true);
-        }
-        return { acknowledged: true, mode: revealMode };
       }
       return undefined;
     },
@@ -200,11 +195,11 @@ export function useSessionBoardState(
     setPly(coachPly);
     setMode('answer');
     setPreviewFen(null);
-    // Re-anchor pre-move for the coach's position, same as a fresh
-    // show_position would — not whatever reveal state peeking left behind.
-    setRevealResult(coachPly === 0);
-    setShowMoveArrow(false);
-  }, [coachPly]);
+    // Restore whatever reveal state the coach's own position was actually
+    // left in (preMove: true or false) — not a blanket re-anchor, which
+    // would wrongly re-anchor a position show_position had fully revealed.
+    setRevealResult(coachRevealResult);
+  }, [coachPly, coachRevealResult]);
 
   const anchorHere = useCallback(() => {
     setCoachPly(ply);
@@ -213,12 +208,12 @@ export function useSessionBoardState(
     // saw this exact position — promoting it shouldn't suddenly swap the
     // board to one move earlier behind their back.
     setRevealResult(true);
-    setShowMoveArrow(false);
+    setCoachRevealResult(true);
   }, [ply]);
 
   const revealPlayedMove = useCallback(() => {
     setRevealResult(true);
-    setShowMoveArrow(false);
+    setCoachRevealResult(true);
   }, []);
 
   const applyServerMove = useCallback(
@@ -232,7 +227,7 @@ export function useSessionBoardState(
       // (a deliberate "guess before you see it" quiz device for reviewing a
       // past move), a move just actually played live has nothing to guess.
       setRevealResult(true);
-      setShowMoveArrow(false);
+      setCoachRevealResult(true);
       annotations.clear();
     },
     [annotations]

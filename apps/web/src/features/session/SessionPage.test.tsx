@@ -364,11 +364,13 @@ describe('SessionPage', () => {
     expect(divider).toHaveTextContent('e5');
 
     // The board anchors one ply BEFORE the move being discussed, so this
-    // reopens showing the position after 1.e4, not after 1...e5. No arrow —
-    // the red arrow is opt-in via the coach's reveal_move tool, not automatic.
+    // reopens showing the position after 1.e4, not after 1...e5, with a red
+    // arrow for the move actually played (1...e5) — resuming a session at a
+    // nonzero subjectPly reconstructs the same anchor+arrow state a fresh
+    // show_position(..., preMove: true) call would leave it in.
     const options = capturedOptions.at(-1);
     expect(options?.position).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
-    expect(options?.arrows).toEqual([]);
+    expect(options?.arrows).toEqual([{ startSquare: 'e7', endSquare: 'e5', color: 'var(--played-move)' }]);
   });
 
   test('the played-move reveal pill shows the real outcome on click', async () => {
@@ -431,11 +433,13 @@ describe('SessionPage', () => {
     expect(divider).toHaveTextContent('e5');
 
     // The board anchors one ply BEFORE the move being discussed, so this
-    // reopens showing the position after 1.e4, not after 1...e5. No arrow —
-    // the red arrow is opt-in via the coach's reveal_move tool, not automatic.
+    // reopens showing the position after 1.e4, not after 1...e5, with a red
+    // arrow for the move actually played (1...e5) — same as the reload test
+    // above, this old {ply} data shape only affects the position divider's
+    // parsing, not the resumed anchor/arrow state.
     const options = capturedOptions.at(-1);
     expect(options?.position).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
-    expect(options?.arrows).toEqual([]);
+    expect(options?.arrows).toEqual([{ startSquare: 'e7', endSquare: 'e5', color: 'var(--played-move)' }]);
   });
 
   test('a fresh session (only the internal [session_start] marker, no assistant reply yet) auto-kicks off the coach opening turn', async () => {
@@ -626,7 +630,11 @@ describe('SessionPage', () => {
       return turn === 1
         ? streamResponse([
             ...textFrames('Let me show you.'),
-            toolCallFrame({ toolCallId: 'call-1', toolName: 'show_position', input: { moveNumber: 1, color: 'black' } })
+            toolCallFrame({
+              toolCallId: 'call-1',
+              toolName: 'show_position',
+              input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: true }
+            })
           ])
         : streamResponse([...textFrames('There it is.')]);
     });
@@ -640,7 +648,7 @@ describe('SessionPage', () => {
     await user.type(screen.getByPlaceholderText(/type a reply/i), 'show me move 1 for black');
     await user.keyboard('{Enter}');
 
-    // Anchors one ply BEFORE the move being discussed (the pre-move default),
+    // preMove: true anchors one ply BEFORE the move being discussed,
     // i.e. the position after 1.e4.
     await vi.waitFor(() =>
       expect(capturedOptions.at(-1)?.position).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1')

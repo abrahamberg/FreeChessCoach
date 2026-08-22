@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { FindingSchema, FocusAreaUpdateSchema, ThreadSchema } from '@chess-coach/shared';
 
-/** architecture §7.1 — parameter schemas for the coach agent's 14 tools. Pure
+/** architecture §7.1 — parameter schemas for the coach agent's 13 tools. Pure
  * (no execute functions here); apps/api/src/services/coach-tools.ts binds
  * these to real services to build the AI SDK ToolSet. */
 
@@ -40,25 +40,23 @@ export const checkPositionParameters = z
  * conversation's subject doesn't) from a "subject" change (you're moving on
  * to actually discuss this move — both the board and the subject move, and
  * the old subject's episode folds into a summary, same as show_position's
- * only behavior before this field existed). Required, not defaulted: the
- * model must decide every time, the same way reveal_move's mode is
- * required. */
+ * only behavior before this field existed). `preMove` decides what the
+ * board actually shows: false is the normal case — the real, final position
+ * for this move, fully revealed. true anchors the board one ply BEFORE this
+ * move instead, with a red arrow drawn for the move that was actually
+ * played — for setting up a moment for the student to look at the position
+ * fresh (e.g. before exploring alternatives with hypothetical_line), not a
+ * hidden-answer quiz (the arrow always shows what was played; the student
+ * already knows their own move). Both fields required, not defaulted: the
+ * model must decide every time, never fall back to remembering a previous
+ * choice. */
 export const showPositionParameters = z
-  .object({ ...moveAddressShape, intent: z.enum(['flashback', 'subject']) })
+  .object({ ...moveAddressShape, intent: z.enum(['flashback', 'subject']), preMove: z.boolean() })
   .refine(refineMoveAddress, { message: MOVE_ADDRESS_REFINEMENT_MESSAGE });
 
 export const annotateBoardParameters = z.object({
   arrows: z.array(z.object({ from: z.string(), to: z.string(), color: z.string() })),
   highlights: z.array(z.object({ square: z.string(), color: z.string() }))
-});
-
-/** Analyze mode only (apps/api/src/services/coach-tools.ts excludes this from
- * play mode's tool set, and tools-play.ts's PLAY_COACH_TOOL_SPECS filters it
- * out of the play-mode prompt) — a live move just played has nothing to
- * preview or reveal. No { moveNumber, color } address: like hypothetical_line,
- * it acts on whatever the board is currently anchored pre-move on. */
-export const revealMoveParameters = z.object({
-  mode: z.enum(['preview', 'full'])
 });
 
 export const getEngineAnalysisParameters = z.object({
@@ -130,12 +128,7 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'show_position',
     description:
-      'Move the student\'s board to a given position, addressed by move number and color. Use standard chess move-pair numbering everywhere, in your prose AND in this tool: "move 18" means White\'s 18th move, or say "move 18 for Black" — never a bare ply. show_position takes { moveNumber, color, intent } — e.g. White\'s move 18 is { moveNumber: 18, color: "white" }, Black\'s move 18 is { moveNumber: 18, color: "black" }. There is no arithmetic to do; say the same move you\'d say out loud. For the game\'s starting position, use { moveNumber: 0, color: null }. When in doubt, name the move by its SAN instead of a number. Always call this before discussing a new position, and wait for its result before you speak about the move: this call is also what loads that move\'s own engine analysis into "## Current position" — the move played and its continuation, the engine\'s best move and line, the other options it considered. Until you make it, the analysis you can see is still the PREVIOUS move\'s, and nothing warns you about the mismatch. Its result includes the position\'s real "fen" — that is the ONLY position you actually know; treat it as ground truth and never assume you remember the board from the PGN or from earlier in the conversation. intent: "flashback" is for glancing at another move to make a point about the one you\'re ACTUALLY discussing — "remember how you missed this same fork on move 18? same idea here" — the board moves and you get fresh analysis on it, but the conversation you\'re having about the current move keeps its full context; nothing about it is lost or folded. intent: "subject" is for genuinely moving on to discuss a different move — the conversation\'s subject moves with the board, and what you were just discussing folds into a short summary you can pick back up later (record_move_note, "Other moves discussed") instead of staying in view. If you\'re not sure which, ask yourself: after this, are we still talking about the move we were just on, or a new one? Still the same one — flashback. A new one — subject.'
-  },
-  {
-    name: 'reveal_move',
-    description:
-      'Controls what the board shows for the move under discussion while it\'s anchored pre-move (the position show_position leaves you on for any real move: one ply before what was actually played, arrow-free by default). Two modes: "preview" draws a red arrow for the move that was actually played while the board STAYS on the pre-move position — a hint, not an answer; use it while you\'re still setting up or clarifying the question, never while you\'re genuinely testing whether the student sees it themselves. "full" switches the board to the real post-move position, exactly like the student\'s own reveal button — call it once they\'ve committed to an answer, or asked to see it. Nothing to call it for once the board is past the pre-move anchor. Analyze mode only.'
+      'Move the student\'s board to a given position, addressed by move number and color. Use standard chess move-pair numbering everywhere, in your prose AND in this tool: "move 18" means White\'s 18th move, or say "move 18 for Black" — never a bare ply. show_position takes { moveNumber, color, intent, preMove } — e.g. White\'s move 18 is { moveNumber: 18, color: "white" }, Black\'s move 18 is { moveNumber: 18, color: "black" }. There is no arithmetic to do; say the same move you\'d say out loud. For the game\'s starting position, use { moveNumber: 0, color: null } (preMove is meaningless there — nothing to anchor before). When in doubt, name the move by its SAN instead of a number. Always call this before discussing a new position, and wait for its result before you speak about the move: this call is also what loads that move\'s own engine analysis into "## Current position" — the move played and its continuation, the engine\'s best move and line, the other options it considered. Until you make it, the analysis you can see is still the PREVIOUS move\'s, and nothing warns you about the mismatch. Its result includes the position\'s real "fen" — the position AFTER this move — that is the ONLY position you actually know; treat it as ground truth and never assume you remember the board from the PGN or from earlier in the conversation. preMove: false is the normal case, and what "show me move N" means by default — the board shows this real fen, fully revealed, matching what you just got back. preMove: true instead anchors the board one ply BEFORE this move, with a red arrow drawn for the move that was actually played — use it when you want the student looking at the position fresh, e.g. right before exploring alternatives together with hypothetical_line ("before you played Nf3 here — what else did you consider?"); it is not a hidden-answer quiz, the arrow always shows what was played. intent: "flashback" is for glancing at another move to make a point about the one you\'re ACTUALLY discussing — "remember how you missed this same fork on move 18? same idea here" — the board moves and you get fresh analysis on it, but the conversation you\'re having about the current move keeps its full context; nothing about it is lost or folded. intent: "subject" is for genuinely moving on to discuss a different move — the conversation\'s subject moves with the board, and what you were just discussing folds into a short summary you can pick back up later (record_move_note, "Other moves discussed") instead of staying in view. If you\'re not sure which, ask yourself: after this, are we still talking about the move we were just on, or a new one? Still the same one — flashback. A new one — subject.'
   },
   {
     name: 'check_position',

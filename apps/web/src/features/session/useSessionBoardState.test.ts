@@ -92,15 +92,15 @@ describe('useSessionBoardState', () => {
       toolResult = result.current.handleToolCall({
         toolCallId: '1',
         toolName: 'show_position',
-        input: { moveNumber: 2, color: 'black' }
+        input: { moveNumber: 2, color: 'black', intent: 'subject', preMove: false }
       });
     });
 
     expect(result.current.fen).toBe(POSITIONS[1]?.fen);
-    // The old coach-drawn annotate_board arrow is cleared, and no automatic
-    // pre-move arrow replaces it — that's opt-in via reveal_move now.
+    // The old coach-drawn annotate_board arrow is cleared, and preMove:
+    // false means no pre-move arrow either.
     expect(result.current.arrows).toEqual([]);
-    expect(toolResult).toEqual({ moveNumber: 2, color: 'black', ply: 4 });
+    expect(toolResult).toEqual({ moveNumber: 2, color: 'black', ply: 4, intent: 'subject', preMove: false });
   });
 
   test('an annotate_board tool call sets arrows/highlights and returns a result (client tool round-trip)', () => {
@@ -148,7 +148,7 @@ describe('useSessionBoardState', () => {
       result.current.handleToolCall({
         toolCallId: '5',
         toolName: 'show_position',
-        input: { moveNumber: 0, color: null }
+        input: { moveNumber: 0, color: null, intent: 'subject', preMove: false }
       });
     });
     act(() => {
@@ -200,7 +200,7 @@ describe('useSessionBoardState', () => {
       result.current.handleToolCall({
         toolCallId: '7',
         toolName: 'show_position',
-        input: { moveNumber: 2, color: 'black' }
+        input: { moveNumber: 2, color: 'black', intent: 'subject', preMove: false }
       });
     });
 
@@ -256,7 +256,7 @@ describe('useSessionBoardState', () => {
       result.current.handleToolCall({
         toolCallId: '4',
         toolName: 'show_position',
-        input: { moveNumber: 0, color: null }
+        input: { moveNumber: 0, color: null, intent: 'subject', preMove: false }
       });
     });
 
@@ -333,62 +333,32 @@ describe('applyServerMove (architecture §14: play mode)', () => {
   });
 });
 
-describe('pre-move anchor + reveal_move-gated red arrow (opt-in, not automatic)', () => {
-  test('a show_position landing on a real move anchors the board one ply before it, with no arrow by default', () => {
+describe('show_position\'s preMove option — pre-move anchor + red arrow, folded into one tool call', () => {
+  test('preMove: true anchors the board one ply before the move, with a red arrow for the move actually played', () => {
     const { result } = renderHook(() => useSessionBoardState(ANCHOR_POSITIONS));
 
     act(() => {
       result.current.handleToolCall({
         toolCallId: '1',
         toolName: 'show_position',
-        input: { moveNumber: 1, color: 'black' }
-      });
-    });
-
-    expect(result.current.isAnchoredPreMove).toBe(true);
-    expect(result.current.fen).toBe(ANCHOR_POSITIONS[1]?.fen);
-    expect(result.current.arrows).toEqual([]);
-    expect(result.current.highlights).toEqual([]);
-  });
-
-  test('reveal_move({mode: "preview"}) draws the red arrow while the board stays anchored pre-move', () => {
-    const { result } = renderHook(() => useSessionBoardState(ANCHOR_POSITIONS));
-
-    act(() => {
-      result.current.handleToolCall({
-        toolCallId: '1',
-        toolName: 'show_position',
-        input: { moveNumber: 1, color: 'black' }
-      });
-    });
-    act(() => {
-      result.current.handleToolCall({
-        toolCallId: '2',
-        toolName: 'reveal_move',
-        input: { mode: 'preview' }
+        input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: true }
       });
     });
 
     expect(result.current.isAnchoredPreMove).toBe(true);
     expect(result.current.fen).toBe(ANCHOR_POSITIONS[1]?.fen);
     expect(result.current.arrows).toEqual([{ from: 'e7', to: 'e5', color: 'var(--played-move)' }]);
+    expect(result.current.highlights).toEqual([]);
   });
 
-  test('reveal_move({mode: "full"}) behaves the same as revealPlayedMove — switches to the post-move position, no arrow', () => {
+  test('preMove: false (the default case) shows the real, final position, fully revealed, no arrow', () => {
     const { result } = renderHook(() => useSessionBoardState(ANCHOR_POSITIONS));
 
     act(() => {
       result.current.handleToolCall({
         toolCallId: '1',
         toolName: 'show_position',
-        input: { moveNumber: 1, color: 'black' }
-      });
-    });
-    act(() => {
-      result.current.handleToolCall({
-        toolCallId: '2',
-        toolName: 'reveal_move',
-        input: { mode: 'full' }
+        input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: false }
       });
     });
 
@@ -397,88 +367,69 @@ describe('pre-move anchor + reveal_move-gated red arrow (opt-in, not automatic)'
     expect(result.current.arrows).toEqual([]);
   });
 
-  test('reveal_move returns a defined result (client tool round-trip)', () => {
+  test('show_position returns preMove in its round-trip result (client tool round-trip)', () => {
     const { result } = renderHook(() => useSessionBoardState(ANCHOR_POSITIONS));
 
     let toolResult: unknown;
     act(() => {
-      result.current.handleToolCall({
+      toolResult = result.current.handleToolCall({
         toolCallId: '1',
         toolName: 'show_position',
-        input: { moveNumber: 1, color: 'black' }
-      });
-    });
-    act(() => {
-      toolResult = result.current.handleToolCall({
-        toolCallId: '2',
-        toolName: 'reveal_move',
-        input: { mode: 'preview' }
+        input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: true }
       });
     });
 
-    expect(toolResult).toEqual({ acknowledged: true, mode: 'preview' });
+    expect(toolResult).toEqual({ moveNumber: 1, color: 'black', ply: 2, intent: 'subject', preMove: true });
   });
 
-  test('a fresh show_position after a preview resets the arrow — the next position starts arrow-free again', () => {
+  test('a fresh show_position with preMove: false after an anchored one un-anchors and clears the arrow', () => {
     const { result } = renderHook(() => useSessionBoardState(ANCHOR_POSITIONS));
 
     act(() => {
       result.current.handleToolCall({
         toolCallId: '1',
         toolName: 'show_position',
-        input: { moveNumber: 1, color: 'black' }
+        input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: true }
       });
     });
     act(() => {
       result.current.handleToolCall({
         toolCallId: '2',
-        toolName: 'reveal_move',
-        input: { mode: 'preview' }
-      });
-    });
-    act(() => {
-      result.current.handleToolCall({
-        toolCallId: '3',
         toolName: 'show_position',
-        input: { moveNumber: 2, color: 'white' }
+        input: { moveNumber: 2, color: 'white', intent: 'subject', preMove: false }
       });
     });
 
+    expect(result.current.isAnchoredPreMove).toBe(false);
     expect(result.current.arrows).toEqual([]);
   });
 
-  test('applyServerMove after a preview also resets the arrow', () => {
+  test('applyServerMove after an anchored preMove position also reveals and clears the arrow', () => {
     const { result } = renderHook(() => useSessionBoardState(ANCHOR_POSITIONS));
 
     act(() => {
       result.current.handleToolCall({
         toolCallId: '1',
         toolName: 'show_position',
-        input: { moveNumber: 1, color: 'black' }
-      });
-    });
-    act(() => {
-      result.current.handleToolCall({
-        toolCallId: '2',
-        toolName: 'reveal_move',
-        input: { mode: 'preview' }
+        input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: true }
       });
     });
     act(() => {
       result.current.applyServerMove(3, 'irrelevant-fen', 'e5f6');
     });
 
+    expect(result.current.isAnchoredPreMove).toBe(false);
     expect(result.current.arrows).toEqual([]);
   });
 
-  test('show_position to the game start (ply 0) never anchors — nothing to show before it', () => {
+  test('show_position to the game start (ply 0) never anchors, regardless of preMove — nothing to show before it', () => {
     const { result } = renderHook(() => useSessionBoardState(ANCHOR_POSITIONS));
 
     act(() => {
       result.current.handleToolCall({
         toolCallId: '1',
         toolName: 'show_position',
-        input: { moveNumber: 0, color: null }
+        input: { moveNumber: 0, color: null, intent: 'subject', preMove: true }
       });
     });
 
@@ -494,7 +445,7 @@ describe('pre-move anchor + reveal_move-gated red arrow (opt-in, not automatic)'
       result.current.handleToolCall({
         toolCallId: '1',
         toolName: 'show_position',
-        input: { moveNumber: 1, color: 'black' }
+        input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: true }
       });
     });
     act(() => {
@@ -512,18 +463,15 @@ describe('pre-move anchor + reveal_move-gated red arrow (opt-in, not automatic)'
     );
   });
 
-  test('backToCoach re-anchors pre-move for the coach position, discarding whatever reveal state peeking left behind', () => {
+  test('backToCoach restores the coach position\'s actual anchor state — an anchored (preMove: true) position stays anchored with its arrow after a peek', () => {
     const { result } = renderHook(() => useSessionBoardState(ANCHOR_POSITIONS));
 
     act(() => {
       result.current.handleToolCall({
         toolCallId: '1',
         toolName: 'show_position',
-        input: { moveNumber: 1, color: 'black' }
+        input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: true }
       });
-    });
-    act(() => {
-      result.current.revealPlayedMove();
     });
     act(() => {
       result.current.peekAt(0);
@@ -537,28 +485,19 @@ describe('pre-move anchor + reveal_move-gated red arrow (opt-in, not automatic)'
     expect(result.current.mode).toBe('answer');
     expect(result.current.isAnchoredPreMove).toBe(true);
     expect(result.current.fen).toBe(ANCHOR_POSITIONS[1]?.fen);
-    expect(result.current.arrows).toEqual([]);
+    expect(result.current.arrows).toEqual([{ from: 'e7', to: 'e5', color: 'var(--played-move)' }]);
   });
 
-  test('backToCoach resets a previewed arrow — it does not carry over from before the peek', () => {
+  test('backToCoach does NOT re-anchor a preMove: false position — it was fully revealed, and peeking away and back must not silently add an anchor+arrow', () => {
     const { result } = renderHook(() => useSessionBoardState(ANCHOR_POSITIONS));
 
     act(() => {
       result.current.handleToolCall({
         toolCallId: '1',
         toolName: 'show_position',
-        input: { moveNumber: 1, color: 'black' }
+        input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: false }
       });
     });
-    act(() => {
-      result.current.handleToolCall({
-        toolCallId: '2',
-        toolName: 'reveal_move',
-        input: { mode: 'preview' }
-      });
-    });
-    expect(result.current.arrows).toEqual([{ from: 'e7', to: 'e5', color: 'var(--played-move)' }]);
-
     act(() => {
       result.current.peekAt(0);
     });
@@ -566,7 +505,32 @@ describe('pre-move anchor + reveal_move-gated red arrow (opt-in, not automatic)'
       result.current.backToCoach();
     });
 
-    expect(result.current.isAnchoredPreMove).toBe(true);
+    expect(result.current.isAnchoredPreMove).toBe(false);
+    expect(result.current.fen).toBe(ANCHOR_POSITIONS[2]?.fen);
+    expect(result.current.arrows).toEqual([]);
+  });
+
+  test('revealPlayedMove\'s manual reveal survives a peek and backToCoach, same as show_position\'s own preMove: false', () => {
+    const { result } = renderHook(() => useSessionBoardState(ANCHOR_POSITIONS));
+
+    act(() => {
+      result.current.handleToolCall({
+        toolCallId: '1',
+        toolName: 'show_position',
+        input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: true }
+      });
+    });
+    act(() => {
+      result.current.revealPlayedMove();
+    });
+    act(() => {
+      result.current.peekAt(0);
+    });
+    act(() => {
+      result.current.backToCoach();
+    });
+
+    expect(result.current.isAnchoredPreMove).toBe(false);
     expect(result.current.arrows).toEqual([]);
   });
 
@@ -585,26 +549,19 @@ describe('pre-move anchor + reveal_move-gated red arrow (opt-in, not automatic)'
     expect(result.current.fen).toBe(ANCHOR_POSITIONS[2]?.fen);
   });
 
-  test('a coach-drawn annotate_board arrow is layered after, not instead of, a previewed red arrow', () => {
+  test('a coach-drawn annotate_board arrow is layered after, not instead of, the preMove red arrow', () => {
     const { result } = renderHook(() => useSessionBoardState(ANCHOR_POSITIONS));
 
     act(() => {
       result.current.handleToolCall({
         toolCallId: '1',
         toolName: 'show_position',
-        input: { moveNumber: 1, color: 'black' }
+        input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: true }
       });
     });
     act(() => {
       result.current.handleToolCall({
         toolCallId: '2',
-        toolName: 'reveal_move',
-        input: { mode: 'preview' }
-      });
-    });
-    act(() => {
-      result.current.handleToolCall({
-        toolCallId: '3',
         toolName: 'annotate_board',
         input: { arrows: [{ from: 'g1', to: 'f3', color: '#4a7fb5' }], highlights: [] }
       });

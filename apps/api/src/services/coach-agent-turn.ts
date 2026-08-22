@@ -240,7 +240,7 @@ async function advancePlyForPlayMove(
     const closedEpisode = currentEpisode(historyAfterTurn, closedPly);
     await coachContext.closeEpisodeIfNeeded(deps, sessionId, closedEpisode.messages, closedPly);
     // A newly-played move is always a subject change — play mode has no
-    // flashback concept (see reveal_move's same analyze-mode-only scoping).
+    // flashback concept.
     await sessionsRepo.updateSubjectAndCurrentPly(deps.db, sessionId, coachMove.ply);
     return;
   }
