@@ -644,30 +644,42 @@ don't hand-tune weights without ground truth.
 **Read:** `docs/algorith.md` §8.1–§8.3 only.
 
 **Files:** `packages/chess-analysis/src/rating-estimate.ts` + test.
-- [ ] `accuracyToElo(accuracy): number` — §8.2 piecewise-linear over the
+- [x] `accuracyToElo(accuracy): number` — §8.2 piecewise-linear over the
       anchor table, clamp `[100,3200]`, flat extrapolation outside the table.
-- [ ] `errorRating(counts, movesPlayed): number` — §8.3.
-- [ ] `raw = 0.65*accuracyRating + 0.35*errorRating` — §8.3.
-- [ ] Commit: `feat: rating estimate — accuracy anchor and error-rate cross-check`.
+- [x] `errorRating(counts, movesPlayed): number` — §8.3.
+- [x] `raw = 0.65*accuracyRating + 0.35*errorRating` — §8.3 (`combinedRawRating`).
+- [x] Commit: `feat: rating estimate — accuracy anchor and error-rate cross-check`.
 
 ### Task 18.2: Complexity adjustment, shrink-to-prior, guard rails
 
 **Read:** `docs/algorith.md` §8.4–§8.6 only.
 
 **Files:** same file, continued.
-- [ ] `complexity` from mean volatility (§8.4); `estimate`/`range` via the
+- [x] `complexity` from mean volatility (§8.4); `estimate`/`range` via the
       shrink-toward-prior formula (§8.5), rounded to nearest 25; `null` (with
       reason) when `movesPlayed < 12`.
-- [ ] Guard rails (§8.6): cap `prior + 600` when a prior exists; subtract
-      forced-sequence plies (>8 consecutive) from `movesPlayed`.
-- [ ] Where does `prior` come from? Wire to the existing user rating field
-      (`apps/api/src/services/user-profile.ts` / `packages/shared/src/user.ts`
-      already has a rating concept — confirm its exact field name and units
-      before wiring, don't assume) — falls back to 1200 when absent.
-- [ ] Tests: the §8 worked examples (movesPlayed<12 → null; low-nEff game
+- [x] Guard rails (§8.6): cap `prior + 600` when a prior exists; subtract
+      forced-sequence plies (>8 consecutive) from `movesPlayed`. Cap is
+      applied against the *resolved* prior (real or the 1200 default) —
+      "when a prior exists" reads as "when we have a prior value to check
+      against" (we always do), not "only for a real known rating"; otherwise
+      the literal worked example two lines below (a 15-move miniature must
+      not report 2800) would be unguarded for the common case of no known
+      rating.
+- [x] Where does `prior` come from? **Confirmed, not wired yet (belongs to
+      Phase 19's pipeline assembly):** checked both files named in this
+      task — there is **no numeric rating field**. `packages/shared/src/user.ts`
+      only has `ratingBand: 'novice'|'improving'|'club'|'advanced'`
+      (`packages/shared/src/constants.ts`'s `RATING_BANDS`), a coarse
+      self-reported band, not an Elo number. Phase 19 will need a small
+      band→representative-Elo lookup (e.g. novice≈800, improving≈1200,
+      club≈1600, advanced≈2000 — placeholder numbers, calibrate in Phase 21)
+      to turn `ratingBand` into `prior`, falling back to 1200 when the user
+      never set one.
+- [x] Tests: the §8 worked examples (movesPlayed<12 → null; low-nEff game
       capped near prior; a 15-move miniature with an opponent blunder doesn't
       report 2800).
-- [ ] Commit: `feat: rating estimate — complexity, prior shrinkage, guard rails`.
+- [x] Commit: `feat: rating estimate — complexity, prior shrinkage, guard rails`.
 
 ---
 

@@ -23,6 +23,7 @@ export * from './opening-book-key.js';
 export * from './phase-accuracy.js';
 export * from './phase-segmentation.js';
 export * from './pgn-mutation.js';
+export * from './rating-estimate.js';
 export * from './pgn.js';
 export * from './position-features.js';
 export * from './position-enrichment.js';
