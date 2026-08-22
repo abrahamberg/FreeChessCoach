@@ -526,17 +526,26 @@ MoveExplorer, GameEvalChart, EvalBar}.tsx` and their tests.
 
 **Files:** `packages/chess-analysis/src/phase-segmentation.ts` + test.
 
-- [ ] `openingEndPly(lastBookPly): number` — §6.1 (book-derived, fallback 10,
+- [x] `openingEndPly(lastBookPly): number` — §6.1 (book-derived, fallback 10,
       cap 30).
-- [ ] `endgameStartPly(positions): number | null` — §6.2, using `phaseUnits`
+- [x] `endgameStartPly(positions): number | null` — §6.2, using `phaseUnits`
       from Task 14.1, monotone, threshold `10` kept in the config object
-      (Phase 18).
-- [ ] Guards from §6.3 as tests: `endgameStartPly > openingEndPly` forced
+      (Phase 18). Signature ended up taking `openingEndPly` as a second
+      argument — the §6.3 guard below needs it to force the boundary, and
+      baking it directly into this function (rather than a separate
+      reconciliation step) keeps "endgameStartPly is always internally
+      consistent" a property of the type, not a caller obligation.
+- [x] Guards from §6.3 as tests: `endgameStartPly > openingEndPly` forced
       when material vanishes inside book; a phase with zero moves for a
       colour is `null` not `0`; 1–2 move phases carry `lowConfidence: true`.
-- [ ] Sanity-check table from §6.2 (Q vs Q → endgame, Q+R vs Q+R → not, etc.)
+      (Zero-moves→null is already `aggregateAccuracy`'s existing empty-array
+      guard from Task 16.1, not new code; added `isLowConfidencePhase(count)`
+      here for the 1–2-move case, and `phaseForPly` to classify a ply against
+      resolved boundaries — needed by every downstream consumer of these two
+      boundary numbers.)
+- [x] Sanity-check table from §6.2 (Q vs Q → endgame, Q+R vs Q+R → not, etc.)
       as literal test fixtures.
-- [ ] Commit: `feat: opening/middlegame/endgame phase segmentation`.
+- [x] Commit: `feat: opening/middlegame/endgame phase segmentation`.
 
 ### Task 16.3: Phase accuracy
 

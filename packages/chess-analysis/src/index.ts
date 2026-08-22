@@ -18,6 +18,7 @@ export * from './move-reasons.js';
 export * from './opening-development.js';
 export * from './opening-book.js';
 export * from './opening-book-key.js';
+export * from './phase-segmentation.js';
 export * from './pgn-mutation.js';
 export * from './pgn.js';
 export * from './position-features.js';
