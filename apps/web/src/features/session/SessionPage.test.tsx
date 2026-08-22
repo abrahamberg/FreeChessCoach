@@ -521,7 +521,7 @@ describe('SessionPage', () => {
             mover: 'white',
             isUserMove: false,
             cpLoss: 60,
-            quality: 'dubious',
+            quality: 'inaccuracy',
             bestLineSan: ['Bc4'],
             evalAfterCp: -40,
             hangsPiece: false
@@ -531,7 +531,7 @@ describe('SessionPage', () => {
     );
     renderSessionPage();
 
-    expect(await screen.findByRole('button', { name: '?!Nf3' })).toHaveClass('move-quality-dubious');
+    expect(await screen.findByRole('button', { name: '?!Nf3' })).toHaveClass('move-quality-inaccuracy');
     expect(document.querySelector('.move-strip')).not.toBeInTheDocument();
   });
 

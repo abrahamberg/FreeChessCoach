@@ -231,18 +231,19 @@ export function qualityFor(cpLoss: number, epLoss: number, isSacrifice = false, 
   if (isMiss && epLoss < MISTAKE_EP) return 'miss';
   if (epLoss >= BLUNDER_EP) return 'blunder';
   if (epLoss >= MISTAKE_EP) return 'mistake';
-  if (epLoss >= DUBIOUS_EP) return 'dubious';
-  if (epLoss >= INTERESTING_EP) return 'interesting';
+  // Transitional mapping for the legacy classifier. Task 15.2 replaces this
+  // EP ladder with the report decision order; until then, preserve its
+  // severity boundaries using the new report vocabulary.
+  if (epLoss >= DUBIOUS_EP) return 'inaccuracy';
+  if (epLoss >= INTERESTING_EP) return 'excellent';
   if (isSacrifice) return 'brilliant';
   return cpLoss === 0 ? 'best' : 'good';
 }
 
-/** True for any tier that isn't an error (dubious/mistake/miss/blunder) —
- * the "this move was fine" check used by callers that only cared about the
- * old two-way good/bad split before quality grew brilliant/interesting/
- * best/miss tiers. */
+/** True for any tier that isn't an error — the "this move was fine" check used
+ * by callers that only cared about the old two-way good/bad split. */
 export function isSoundQuality(quality: MoveQuality): boolean {
-  return quality !== 'dubious' && quality !== 'mistake' && quality !== 'blunder' && quality !== 'miss';
+  return quality !== 'inaccuracy' && quality !== 'mistake' && quality !== 'blunder' && quality !== 'miss';
 }
 
 function clamp(value: number, min: number, max: number): number {

@@ -32,22 +32,42 @@ export const EngineEvalSchema = z.object({
 });
 export type EngineEval = z.infer<typeof EngineEvalSchema>;
 
-export const MOVE_QUALITIES = ['brilliant', 'best', 'good', 'interesting', 'dubious', 'mistake', 'miss', 'blunder'] as const;
+export const MOVE_QUALITIES = [
+  'brilliant',
+  'great',
+  'best',
+  'excellent',
+  'good',
+  'book',
+  'inaccuracy',
+  'mistake',
+  'miss',
+  'blunder',
+  'forced'
+] as const;
 export type MoveQuality = (typeof MOVE_QUALITIES)[number];
+/** The algorithm specification calls this value a Classification. The
+ * existing API uses `quality`, so keep both names conceptually aligned until
+ * the classifier migration is complete. */
+export type Classification = MoveQuality;
 
 /** Chess.com/lichess-style NAG symbols for each quality tier. */
 export const MOVE_QUALITY_SYMBOLS: Record<MoveQuality, string> = {
   brilliant: '!!',
+  great: '!',
   best: '★',
+  excellent: '✓',
   good: '!',
-  interesting: '!?',
-  dubious: '?!',
+  book: '📖',
+  inaccuracy: '?!',
   mistake: '?',
   miss: '✕',
-  blunder: '??'
+  blunder: '??',
+  forced: '→'
 };
 
 export const MoveQualitySchema = z.enum(MOVE_QUALITIES);
+export const ClassificationSchema = MoveQualitySchema;
 
 export const AnalyzeGameRequestSchema = z.object({
   fens: z.array(z.string()).min(1),
@@ -187,12 +207,27 @@ export const FeatureDeltaSchema = z.object({
 });
 export type FeatureDeltaDto = z.infer<typeof FeatureDeltaSchema>;
 
-/** A legacy classified move plus the static batch-enrichment signals used by
- * later game-report phases. The enrichment fields stay optional so old JSON
- * analyses and live play-mode rows remain readable. */
+export const MovePhaseSchema = z.enum(['opening', 'middlegame', 'endgame']);
+export type MovePhase = z.infer<typeof MovePhaseSchema>;
+
+export const AlternativeMoveSchema = z.object({
+  san: z.string(),
+  cp: z.number(),
+  winPct: z.number().min(0).max(100)
+});
+export type AlternativeMove = z.infer<typeof AlternativeMoveSchema>;
+
+/** A legacy classified move extended with the report fields from algorith.md
+ * §9. The report fields are optional during this migration so analyses stored
+ * before the report pipeline and live-play rows remain readable. `quality` is
+ * the existing API name for the report's `classification`; `moveSan` and
+ * `bestLineSan` likewise preserve the existing API names for `san` and the
+ * first-move-only legacy PV. */
 export const ClassifiedMoveSchema = z.object({
   ply: z.number().int().nonnegative(),
+  moveNumber: z.number().int().positive().optional(),
   moveSan: z.string(),
+  uci: z.string().optional(),
   mover: z.enum(['white', 'black']),
   isUserMove: z.boolean(),
   cpLoss: z.number().int().nonnegative(),
@@ -200,11 +235,27 @@ export const ClassifiedMoveSchema = z.object({
   bestLineSan: z.array(z.string()),
   evalAfterCp: z.number().int(),
   hangsPiece: z.boolean().default(false),
+  fenBefore: z.string().optional(),
+  fenAfter: z.string().optional(),
+  cpBefore: z.number().int().optional(),
+  cpAfter: z.number().int().optional(),
+  winPctBefore: z.number().min(0).max(100).optional(),
+  winPctAfter: z.number().min(0).max(100).optional(),
+  drop: z.number().min(0).max(100).optional(),
+  accuracy: z.number().min(0).max(100).optional(),
+  underlyingSeverity: MoveQualitySchema.optional(),
+  phase: MovePhaseSchema.optional(),
+  isTacticalPosition: z.boolean().optional(),
+  bestMoveSan: z.string().optional(),
+  bestLinePvSan: z.array(z.string()).optional(),
+  alternatives: z.array(AlternativeMoveSchema).optional(),
+  reasons: z.array(z.string()).optional(),
   features: PositionFeaturesSchema.optional(),
   moveFlags: MoveFlagsSchema.optional(),
   featureDelta: FeatureDeltaSchema.optional()
 });
 export type ClassifiedMoveDto = z.infer<typeof ClassifiedMoveSchema>;
+export type MoveReport = ClassifiedMoveDto;
 
 export const PositionAnalysisSchema = z.object({
   fen: z.string(),

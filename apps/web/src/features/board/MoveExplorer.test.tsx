@@ -120,7 +120,7 @@ describe('MoveExplorer', () => {
 
   test('renders a NAG symbol for a non-good move, but none for a good move', () => {
     const classifiedMoves = [
-      classifiedMove({ ply: 3, moveSan: 'Qh5', quality: 'dubious' }),
+      classifiedMove({ ply: 3, moveSan: 'Qh5', quality: 'inaccuracy' }),
       classifiedMove({ ply: 1, moveSan: 'e4', quality: 'good' })
     ];
     render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={0} onSelect={vi.fn()} />);
@@ -160,7 +160,7 @@ describe('MoveExplorer', () => {
 
   test('a "show notes" toggle reveals a plain-language note for the current non-good move, hidden by default', async () => {
     const user = userEvent.setup();
-    const classifiedMoves = [classifiedMove({ ply: 3, moveSan: 'Qh5', quality: 'dubious', bestLineSan: ['Nf3'] })];
+    const classifiedMoves = [classifiedMove({ ply: 3, moveSan: 'Qh5', quality: 'inaccuracy', bestLineSan: ['Nf3'] })];
     render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={3} onSelect={vi.fn()} />);
 
     expect(screen.queryByText(/better was nf3/i)).not.toBeInTheDocument();

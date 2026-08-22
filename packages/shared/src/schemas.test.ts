@@ -76,25 +76,55 @@ describe('EngineEvalSchema', () => {
 describe('ClassifiedMoveSchema', () => {
   const validMove = {
     ply: 4,
+    moveNumber: 2,
     moveSan: 'Qxf7#',
+    uci: 'd1f7',
     mover: 'white',
     isUserMove: true,
     cpLoss: 0,
     quality: 'brilliant',
     bestLineSan: ['Qxf7#'],
     evalAfterCp: 1000,
-    hangsPiece: false
+    hangsPiece: false,
+    fenBefore: 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3',
+    fenAfter: 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 3 3',
+    cpBefore: 35,
+    cpAfter: 1000,
+    winPctBefore: 53.22,
+    winPctAfter: 99.94,
+    drop: 0,
+    accuracy: 100,
+    phase: 'opening',
+    isTacticalPosition: true,
+    bestMoveSan: 'Qxf7#',
+    bestLinePvSan: ['Qxf7#'],
+    alternatives: [{ san: 'Nxe5', cp: 20, winPct: 51.84 }],
+    reasons: ['You delivered checkmate.']
   };
   test('accepts a valid classified move', () => {
-    expect(ClassifiedMoveSchema.safeParse(validMove).success).toBe(true);
+    const result = ClassifiedMoveSchema.safeParse(validMove);
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual(validMove);
   });
   test('accepts every MOVE_QUALITIES tier', () => {
-    for (const quality of ['brilliant', 'best', 'good', 'interesting', 'dubious', 'mistake', 'miss', 'blunder']) {
+    for (const quality of [
+      'brilliant',
+      'great',
+      'best',
+      'excellent',
+      'good',
+      'book',
+      'inaccuracy',
+      'mistake',
+      'miss',
+      'blunder',
+      'forced'
+    ]) {
       expect(ClassifiedMoveSchema.safeParse({ ...validMove, quality }).success).toBe(true);
     }
   });
-  test('rejects an unknown quality tier (e.g. the old "inaccuracy" name)', () => {
-    expect(ClassifiedMoveSchema.safeParse({ ...validMove, quality: 'inaccuracy' }).success).toBe(false);
+  test('rejects a quality tier removed by the report classification set', () => {
+    expect(ClassifiedMoveSchema.safeParse({ ...validMove, quality: 'dubious' }).success).toBe(false);
   });
   test('defaults hangsPiece to false when missing (backward compatibility with pre-branch persisted games)', () => {
     const { hangsPiece, ...withoutHangsPiece } = validMove;

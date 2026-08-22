@@ -31,7 +31,7 @@ describe('findCandidateMoments', () => {
       move({ ply: 1, isUserMove: true, quality: 'mistake', cpLoss: 120 }),
       move({ ply: 2, isUserMove: true, quality: 'blunder', cpLoss: 400 }),
       move({ ply: 3, isUserMove: true, quality: 'good', cpLoss: 0 }),
-      move({ ply: 4, isUserMove: true, quality: 'dubious', cpLoss: 60 })
+      move({ ply: 4, isUserMove: true, quality: 'inaccuracy', cpLoss: 60 })
     ];
     const evals = [evalWithLines([line('e4', 0)])];
 

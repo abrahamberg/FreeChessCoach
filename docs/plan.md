@@ -374,14 +374,14 @@ phase: touches the shared `MoveQuality` enum and every UI consumer.
 
 **Files:** `packages/shared/src/analysis.ts`.
 
-- [ ] Replace `MOVE_QUALITIES` with the spec's §5 label set: `brilliant,
+- [x] Replace `MOVE_QUALITIES` with the spec's §5 label set: `brilliant,
       great, best, excellent, good, book, inaccuracy, mistake, miss, blunder,
       forced` (drops `interesting`/`dubious`, adds `great`, `excellent`,
       `book`, `inaccuracy`, `forced`). Update `MOVE_QUALITY_SYMBOLS`
       accordingly (chess.com's own glyphs: `!!`, `!`, best has none/★ per
       current convention — keep a symbol for every tier, decide gaps here
       rather than leaving TODOs).
-- [ ] Extend `ClassifiedMoveSchema` → effectively §9's `MoveReport`: add
+- [x] Extend `ClassifiedMoveSchema` → effectively §9's `MoveReport`: add
       `moveNumber`, `fenBefore`, `fenAfter`, `cpBefore`, `cpAfter`,
       `winPctBefore`, `winPctAfter`, `drop`, `accuracy`, `underlyingSeverity?`,
       `phase`, `isTacticalPosition`, `bestMoveSan`, `bestLinePvSan`,
@@ -391,9 +391,9 @@ phase: touches the shared `MoveQuality` enum and every UI consumer.
       (e.g. keep `mover` not `color` if that's simpler — note the mapping
       explicitly in a comment so `docs/algorith.md` §9 and this schema stay
       cross-referenceable).
-- [ ] Schema tests: valid fixture round-trips; an unknown quality value is
+- [x] Schema tests: valid fixture round-trips; an unknown quality value is
       rejected.
-- [ ] Commit: `feat: extend move schema to full move-report shape`.
+- [x] Commit: `feat: extend move schema to full move-report shape`.
 
 ### Task 15.2: Decision-order classifier
 

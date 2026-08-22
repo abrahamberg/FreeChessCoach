@@ -71,20 +71,20 @@ describe('qualityFor', () => {
     expect(qualityFor(0, 0)).toBe('best');
   });
 
-  test('epLoss just below the interesting boundary (0.05) is good', () => {
+  test('epLoss just below the excellent boundary (0.05) is good', () => {
     expect(qualityFor(50, 0.049)).toBe('good');
   });
 
-  test('epLoss at the interesting boundary (0.05) is interesting', () => {
-    expect(qualityFor(50, 0.05)).toBe('interesting');
+  test('epLoss at the excellent boundary (0.05) is excellent', () => {
+    expect(qualityFor(50, 0.05)).toBe('excellent');
   });
 
-  test('epLoss just below the dubious boundary (0.10) stays interesting', () => {
-    expect(qualityFor(100, 0.099)).toBe('interesting');
+  test('epLoss just below the inaccuracy boundary (0.10) stays excellent', () => {
+    expect(qualityFor(100, 0.099)).toBe('excellent');
   });
 
-  test('epLoss at the dubious boundary (0.10) is dubious', () => {
-    expect(qualityFor(100, 0.1)).toBe('dubious');
+  test('epLoss at the inaccuracy boundary (0.10) is inaccuracy', () => {
+    expect(qualityFor(100, 0.1)).toBe('inaccuracy');
   });
 
   test('epLoss at the mistake boundary (0.20) is mistake', () => {
@@ -427,7 +427,7 @@ describe('classifyMoves', () => {
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
     expect(whiteMove?.cpLoss).toBe(200);
-    expect(whiteMove?.quality).toBe('dubious');
+    expect(whiteMove?.quality).toBe('inaccuracy');
   });
 
   test('does not flag miss when evalBefore has only one line (no multiPv data)', () => {
