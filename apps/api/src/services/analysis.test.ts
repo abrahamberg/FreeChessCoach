@@ -160,8 +160,8 @@ describe('runAnalyzeGameJob', () => {
     if (!move) throw new Error('classified move fixture is empty');
 
     expect(move.moveFlags).toMatchObject({ movedPieceType: 'n' });
-    expect(move.features.forks).toEqual(expect.arrayContaining([{ square: 'd5' }]));
-    expect(move.featureDelta.newForks).toEqual(expect.arrayContaining([{ square: 'd5' }]));
+    expect(move.features.forks.some((fork) => fork.square === 'd5')).toBe(true);
+    expect(move.featureDelta.newForks.some((fork) => fork.square === 'd5')).toBe(true);
   });
 
   // The planner is now constrained to CoachingPlanSchema by the provider, so
