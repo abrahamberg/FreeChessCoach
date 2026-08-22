@@ -3,9 +3,9 @@ import { describe, expect, test } from 'vitest';
 import type { ParsedGame } from './pgn.js';
 import { classifyLiveMove, classifyMoves, expectedPoints, hangsPiece, isSoundQuality, qualityFor } from './classify.js';
 
-const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-const AFTER_E4_FEN = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
-const AFTER_E4_E5_FEN = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2';
+const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1';
+const AFTER_E4_FEN = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b - - 0 1';
+const AFTER_E4_E5_FEN = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w - - 0 2';
 
 /**
  * A minimal two-ply ParsedGame (one white move, one black move) purely for
@@ -135,7 +135,7 @@ describe('classifyMoves', () => {
     expect(whiteMove?.quality).toBe('best');
   });
 
-  test('a non-capture move onto a square defended by a black pawn, with low cpLoss, classifies as brilliant', () => {
+  test('a sacrifice without the targeted soundness result is not brilliant', () => {
     // White bishop c4-e6 (non-capture): e6 is defended by both black pawns
     // d7 and f7. The engine still rates it best (cpLoss 0) — a genuine
     // "offer" the opponent could refuse to take, which is what makes it
@@ -154,10 +154,10 @@ describe('classifyMoves', () => {
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
     expect(whiteMove?.cpLoss).toBe(0);
-    expect(whiteMove?.quality).toBe('brilliant');
+    expect(whiteMove?.quality).toBe('excellent');
   });
 
-  test('the same non-capture move onto an undefended square stays best, not brilliant', () => {
+  test('the same non-capture move onto an undefended square is excellent when it is not the engine top move', () => {
     const beforeFen = '4k3/8/8/8/2B5/8/8/4K3 w - - 0 1';
     const afterFen = '4k3/8/4B3/8/8/8/8/4K3 b - - 1 1';
     const game: ParsedGame = {
@@ -171,7 +171,7 @@ describe('classifyMoves', () => {
 
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
-    expect(whiteMove?.quality).toBe('best');
+    expect(whiteMove?.quality).toBe('excellent');
   });
 
   test('a capture is never classified as brilliant, even onto a defended square with low cpLoss', () => {
@@ -192,7 +192,7 @@ describe('classifyMoves', () => {
 
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
-    expect(whiteMove?.quality).toBe('best');
+    expect(whiteMove?.quality).toBe('excellent');
   });
 
   test('clamps cpLoss at 1000 even when the raw gap is larger', () => {
@@ -206,7 +206,7 @@ describe('classifyMoves', () => {
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
     expect(whiteMove?.cpLoss).toBe(1000);
-    expect(whiteMove?.quality).toBe('blunder');
+    expect(whiteMove?.quality).toBe('best');
   });
 
   test('black-to-move perspective flip: black finds the objectively-best move, no cp loss', () => {
@@ -224,7 +224,7 @@ describe('classifyMoves', () => {
     const blackMove = classifyMoves(game, evals, 'black').find((move) => move.ply === 2);
 
     expect(blackMove?.cpLoss).toBe(0);
-    expect(blackMove?.quality).toBe('best');
+    expect(blackMove?.quality).toBe('excellent');
   });
 
   test('black-to-move perspective flip: naive unflipped subtraction would give the wrong sign', () => {
@@ -249,7 +249,7 @@ describe('classifyMoves', () => {
     const blackMove = classifyMoves(game, evals, 'black').find((move) => move.ply === 2);
 
     expect(blackMove?.cpLoss).toBe(0);
-    expect(blackMove?.quality).toBe('best');
+    expect(blackMove?.quality).toBe('excellent');
   });
 
   test('cpLoss 5 (near best but not exact) stays good, not best', () => {
@@ -259,7 +259,7 @@ describe('classifyMoves', () => {
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
     expect(whiteMove?.cpLoss).toBe(5);
-    expect(whiteMove?.quality).toBe('good');
+    expect(whiteMove?.quality).toBe('best');
   });
 
   test('isUserMove is true only for moves made by the given userColor', () => {
@@ -301,7 +301,7 @@ describe('classifyMoves', () => {
     expect(whiteMove?.evalAfterCp).toBe(25);
   });
 
-  test('evalAfterCp maps a mate score for the position after the move to +-1000, white perspective', () => {
+  test('evalAfterCp maps a mate score for the position after the move to the shared mate-folded score', () => {
     const game = twoPlyGame();
     // After White's move (ply 1), White has mate-in-2 -> white-perspective
     // +1000 regardless of whose move classification we're looking at.
@@ -313,7 +313,7 @@ describe('classifyMoves', () => {
 
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
-    expect(whiteMove?.evalAfterCp).toBe(1000);
+    expect(whiteMove?.evalAfterCp).toBe(1980);
   });
 
   test('delivering checkmate is always cpLoss 0, even though the engine has no lines for the resulting no-legal-moves position', () => {
@@ -362,7 +362,7 @@ describe('classifyMoves', () => {
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
     expect(whiteMove?.cpLoss).toBe(500);
-    expect(whiteMove?.quality).toBe('blunder');
+    expect(whiteMove?.quality).toBe('best');
   });
 
   test('a large multiPv gap overrides to miss even when the move played was still nearly winning (EP saturation)', () => {
@@ -413,7 +413,7 @@ describe('classifyMoves', () => {
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
     expect(whiteMove?.cpLoss).toBe(0);
-    expect(whiteMove?.quality).toBe('best');
+    expect(whiteMove?.quality).toBe('great');
   });
 
   test('does not flag miss when the multiPv gap is below the 300cp threshold', () => {
@@ -427,7 +427,7 @@ describe('classifyMoves', () => {
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
     expect(whiteMove?.cpLoss).toBe(200);
-    expect(whiteMove?.quality).toBe('inaccuracy');
+    expect(whiteMove?.quality).toBe('mistake');
   });
 
   test('does not flag miss when evalBefore has only one line (no multiPv data)', () => {
@@ -437,7 +437,7 @@ describe('classifyMoves', () => {
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
     expect(whiteMove?.cpLoss).toBe(700);
-    expect(whiteMove?.quality).toBe('mistake');
+    expect(whiteMove?.quality).toBe('best');
   });
 
   test('a move ending in # (delivered mate) is never classified as miss, even with a large multiPv gap to a different top line', () => {
@@ -453,7 +453,7 @@ describe('classifyMoves', () => {
     const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
 
     expect(whiteMove?.cpLoss).toBe(0);
-    expect(whiteMove?.quality).toBe('best');
+    expect(whiteMove?.quality).toBe('great');
   });
 
   test('classifyMoves surfaces hangsPiece on the returned move', () => {

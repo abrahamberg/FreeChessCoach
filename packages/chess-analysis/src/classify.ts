@@ -1,155 +1,261 @@
-import { Chess } from 'chess.js';
+import { Chess, type PieceSymbol } from 'chess.js';
 import type {
+  ClassifiedMoveDto,
   EngineEval,
   EngineLine,
   FeatureDeltaDto,
-  MoveFlagsDto,
   MoveQuality,
   PositionFeatures
 } from '@chess-coach/shared';
+import { computeMoveDrop } from './move-metrics.js';
+import { enrichPositions } from './position-enrichment.js';
+import { inBookWalk } from './opening-book.js';
+import { classifyMove, type MoveClassificationInput } from './classify-move.js';
+import { moveFlags } from './move-flags.js';
+import { computePositionFeatures } from './position-features.js';
+import { moveAccuracy as calculateMoveAccuracy } from './accuracy-curve.js';
+import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
 import type { ParsedGame } from './pgn.js';
 
-const MATE_CP = 1000;
-const INTERESTING_EP = 0.05;
-const DUBIOUS_EP = 0.1;
-const MISTAKE_EP = 0.2;
-const BLUNDER_EP = 0.3;
-const MISS_GAP_CP = 300;
+export type ClassifiedMove = ClassifiedMoveDto;
 
-/** Static piece values for the sacrifice heuristic — not engine-precise, just
- * enough to tell "gave up more than it's worth" from "traded evenly". */
-const PIECE_VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
-
-export interface ClassifiedMove {
-  ply: number;
-  moveSan: string;
-  mover: 'white' | 'black';
-  isUserMove: boolean;
-  cpLoss: number;
-  quality: MoveQuality;
-  bestLineSan: string[];
-  evalAfterCp: number;
-  hangsPiece: boolean;
-  features?: PositionFeatures;
-  moveFlags?: MoveFlagsDto;
-  featureDelta?: FeatureDeltaDto;
+export interface ClassifyMovesOptions {
+  /** Results of the API-layer B6 engine check, keyed by move ply. */
+  brilliantSoundnessByPly?: ReadonlyMap<number, boolean>;
 }
 
-/**
- * Classifies every move of a parsed game by centipawn loss relative to the
- * engine's best move, using `evals[i]` as the engine evaluation of the
- * position at `game.positions[i]` (evals and positions are index-aligned).
- *
- * Every move (both colors) is classified; only `isUserMove` distinguishes
- * moves made by `userColor`.
- */
+/** Classifies every move through the report's decision order. */
 export function classifyMoves(
   game: ParsedGame,
   evals: EngineEval[],
-  userColor: 'white' | 'black'
+  userColor: 'white' | 'black',
+  options: ClassifyMovesOptions = {}
 ): ClassifiedMove[] {
+  const enrichment = enrichPositions(game.positions);
+  const bookWalk = inBookWalk(game.positions);
+
   return game.positions.slice(1).map((position, index) => {
-    const evalBefore = evals[index];
-    const evalAfter = evals[index + 1];
-    const fenBefore = game.positions[index]?.fen;
-    return classifyMove(position, evalBefore, evalAfter, userColor, fenBefore);
+    const before = game.positions[index];
+    if (!before) throw new Error(`Missing position before ply ${position.ply}`);
+    const currentEval = evalAt(evals[index], before.fen);
+    const nextEval = evalAt(evals[index + 1], position.fen);
+    const positionEnrichment = enrichment[position.ply];
+    if (!positionEnrichment?.moveFlags || !positionEnrichment.featureDelta) {
+      throw new Error(`Missing move enrichment for ply ${position.ply}`);
+    }
+
+    return buildClassifiedMove({
+      position,
+      beforeFen: before.fen,
+      evalBefore: currentEval,
+      evalAfter: nextEval,
+      userColor,
+      moveFlags: positionEnrichment.moveFlags,
+      features: positionEnrichment.features,
+      featureDelta: positionEnrichment.featureDelta,
+      isBookMove: bookWalk[index]?.classification === 'book',
+      brilliantSoundness: options.brilliantSoundnessByPly?.get(position.ply),
+      isRecapture: isRecapture(game.positions[index - 1], before, position)
+    });
   });
 }
 
-/**
- * Classifies a single live move (the "play with the coach" interactive path,
- * one move at a time) through the exact same classifyMove logic the batch
- * classifyMoves path uses, so live and post-hoc batch classification can
- * never drift apart. Builds the minimal ParsedPosition-shaped object
- * classifyMove actually reads (ply/moveSan/mover — it never touches
- * position.fen or position.moveUci) and delegates.
- */
+/** Classifies one live move using the same orchestrator as batch analysis. */
 export function classifyLiveMove(input: {
   ply: number;
   moveSan: string;
   mover: 'white' | 'black';
   fenBefore: string;
+  fenAfter?: string;
   evalBefore: EngineEval | undefined;
   evalAfter: EngineEval | undefined;
   userColor: 'white' | 'black';
+  brilliantSoundness?: boolean;
 }): ClassifiedMove {
-  const position: ParsedGame['positions'][number] = {
-    ply: input.ply,
-    fen: input.fenBefore,
-    moveSan: input.moveSan,
-    moveUci: null,
-    mover: input.mover
-  };
-  return classifyMove(position, input.evalBefore, input.evalAfter, input.userColor, input.fenBefore);
+  const chess = new Chess(input.fenBefore);
+  const applied = chess.move(input.moveSan);
+  const fenAfter = input.fenAfter ?? chess.fen();
+  const currentEval = evalAt(input.evalBefore, input.fenBefore);
+  const nextEval = evalAt(input.evalAfter, fenAfter);
+  const flags = moveFlags(input.fenBefore, input.moveSan);
+  const featuresBefore = computePositionFeatures(input.fenBefore);
+  const featuresAfter = computePositionFeatures(fenAfter);
+
+  return buildClassifiedMove({
+    position: {
+      ply: input.ply,
+      fen: fenAfter,
+      moveSan: applied.san,
+      moveUci: `${applied.from}${applied.to}${applied.promotion ?? ''}`,
+      mover: input.mover
+    },
+    beforeFen: input.fenBefore,
+    evalBefore: currentEval,
+    evalAfter: nextEval,
+    userColor: input.userColor,
+    moveFlags: flags,
+    features: featuresAfter,
+    featureDelta: {
+      newForks: featuresAfter.forks,
+      newHangingPieces: featuresAfter.hangingPieces,
+      mobilityDelta: featuresAfter.availableMoves.length - featuresBefore.availableMoves.length
+    },
+    isBookMove: false,
+    brilliantSoundness: input.brilliantSoundness,
+    isRecapture: false
+  });
 }
 
-function classifyMove(
-  position: ParsedGame['positions'][number],
-  evalBefore: EngineEval | undefined,
-  evalAfter: EngineEval | undefined,
-  userColor: 'white' | 'black',
-  fenBefore: string | undefined
-): ClassifiedMove {
-  const mover = position.mover ?? 'white';
-  const bestCp = toMoverPerspective(whitePerspectiveCp(bestLine(evalBefore)), mover);
-  // A checkmating move ends the game — there are no legal moves left to
-  // search, so the engine returns no lines for the resulting position, and
-  // whitePerspectiveCp's `undefined` fallback (0) would otherwise make
-  // delivering mate look like the biggest possible blunder. Delivering mate
-  // is definitionally the best move, so skip the cp-loss math entirely.
-  const deliveredMate = position.moveSan?.endsWith('#') ?? false;
-  const playedCp = deliveredMate ? bestCp : toMoverPerspective(whitePerspectiveCp(bestLine(evalAfter)), mover);
-  const cpLoss = clamp(bestCp - playedCp, 0, MATE_CP);
-  const epLoss = clamp(expectedPoints(bestCp) - expectedPoints(playedCp), 0, 1);
-  const sacrifice =
-    fenBefore !== undefined && position.moveSan !== null && isSacrifice(fenBefore, position.moveSan);
-  const hangs = fenBefore !== undefined && position.moveSan !== null && hangsPiece(fenBefore, position.moveSan);
-  const isMiss = computeIsMiss(evalBefore, position.moveSan, mover, bestCp, deliveredMate);
+function buildClassifiedMove(input: {
+  position: ParsedGame['positions'][number];
+  beforeFen: string;
+  evalBefore: EngineEval;
+  evalAfter: EngineEval;
+  userColor: 'white' | 'black';
+  moveFlags: ReturnType<typeof moveFlags>;
+  features: PositionFeatures;
+  featureDelta: FeatureDeltaDto;
+  isBookMove: boolean;
+  brilliantSoundness: boolean | undefined;
+  isRecapture: boolean;
+}): ClassifiedMove {
+  const mover = input.position.mover ?? 'white';
+  const cpBefore = toCpWhite(firstLine(input.evalBefore) ?? EMPTY_SCORE);
+  const deliveredMate = input.position.moveSan?.endsWith('#') ?? false;
+  const cpAfter = toCpWhite(firstLine(input.evalAfter) ?? EMPTY_SCORE);
+  const winPctBefore = winPctFor(mover, cpBefore);
+  const winPctAfter = winPctFor(mover, cpAfter);
+  const drop = deliveredMate ? 0 : computeMoveDrop(winPctWhite(cpBefore), winPctWhite(cpAfter), mover);
+  const bestMoveSan = firstLine(input.evalBefore)?.moveSan ?? '';
+  const classificationInput: MoveClassificationInput = {
+    ply: input.position.ply,
+    moveSan: input.position.moveSan ?? '',
+    moveUci: input.position.moveUci ?? '',
+    mover,
+    fenBefore: input.beforeFen,
+    fenAfter: input.position.fen,
+    evalBefore: input.evalBefore,
+    evalAfter: input.evalAfter,
+    moveFlags: input.moveFlags,
+    beforeWin: winPctBefore,
+    afterWin: winPctAfter,
+    drop,
+    cpBefore,
+    cpAfter,
+    isBookMove: input.isBookMove,
+    brilliantSoundness: input.brilliantSoundness,
+    bestLinePvSan: bestMoveSan ? [bestMoveSan] : [],
+    features: input.features,
+    featureDelta: input.featureDelta,
+    isRecapture: input.isRecapture
+  };
+  const result = classifyMove(classificationInput);
+  const hangs = input.position.moveSan !== null && hangsPiece(input.beforeFen, input.position.moveSan);
 
   return {
-    ply: position.ply,
-    moveSan: position.moveSan ?? '',
+    ply: input.position.ply,
+    moveNumber: Math.ceil(input.position.ply / 2),
+    moveSan: input.position.moveSan ?? '',
+    uci: input.position.moveUci ?? undefined,
     mover,
-    isUserMove: mover === userColor,
-    cpLoss,
-    quality: qualityFor(cpLoss, epLoss, sacrifice, isMiss),
-    bestLineSan: bestLineSan(evalBefore),
-    evalAfterCp: whitePerspectiveCp(bestLine(evalAfter)),
-    hangsPiece: hangs
+    isUserMove: mover === input.userColor,
+    cpLoss: cpLoss(classificationInput),
+    quality: result.classification,
+    underlyingSeverity: result.underlyingSeverity,
+    bestLineSan: bestMoveSan ? [bestMoveSan] : [],
+    evalAfterCp: cpAfter,
+    hangsPiece: hangs,
+    fenBefore: input.beforeFen,
+    fenAfter: input.position.fen,
+    cpBefore,
+    cpAfter,
+    winPctBefore,
+    winPctAfter,
+    drop,
+    accuracy: calculateMoveAccuracy(drop),
+    bestMoveSan,
+    bestLinePvSan: bestMoveSan ? [bestMoveSan] : [],
+    alternatives: input.evalBefore.lines.slice(1).map((line) => ({
+      san: line.moveSan,
+      cp: toCpWhite(line),
+      winPct: winPctFor(mover, toCpWhite(line))
+    })),
+    features: input.features,
+    moveFlags: input.moveFlags,
+    featureDelta: input.featureDelta
   };
 }
 
-/** True multi-PV "miss": the pre-move position had a much better line
- * (>=MISS_GAP_CP better, mover perspective) than the one actually played,
- * and the mover didn't deliver mate instead (which would otherwise
- * spuriously trigger this via the mate-vs-non-mate cp gap, even though
- * delivering mate is definitionally the best possible outcome). */
-function computeIsMiss(
-  evalBefore: EngineEval | undefined,
-  playedSan: string | null,
-  mover: 'white' | 'black',
-  bestCp: number,
-  deliveredMate: boolean
-): boolean {
-  if (deliveredMate) return false;
-  const lines = evalBefore?.lines ?? [];
-  const bestMoveSan = lines[0]?.moveSan;
-  const secondLine = lines[1];
-  if (bestMoveSan === undefined || secondLine === undefined || playedSan === bestMoveSan) return false;
-  const secondBestCp = toMoverPerspective(whitePerspectiveCp(secondLine), mover);
-  return bestCp - secondBestCp >= MISS_GAP_CP;
+function cpLoss(input: MoveClassificationInput): number {
+  if (input.moveSan.endsWith('#')) return 0;
+  const before = moverPerspective(input.cpBefore, input.mover);
+  const after = moverPerspective(input.cpAfter, input.mover);
+  return Math.min(1000, Math.max(0, Math.round(before - after)));
 }
 
-/**
- * Best-effort brilliancy signal: true when a NON-capture move by a piece
- * other than a pawn/king lands on a square an enemy piece of equal-or-lesser
- * value could capture — an "offer" the opponent could refuse, not an
- * ordinary trade. Captures are excluded on purpose (they're evaluated by
- * cpLoss already, not by this heuristic). This is not static-exchange
- * evaluation — it only looks one ply deep — so it will miss real sacrifices
- * that involve a longer tactical sequence and can occasionally flag a move
- * that's "offered" but never actually en prise in a meaningful sense.
- */
+function moverPerspective(cpWhite: number, mover: 'white' | 'black'): number {
+  return mover === 'white' ? cpWhite : -cpWhite;
+}
+
+function evalAt(value: EngineEval | undefined, fen: string): EngineEval {
+  return value ?? { ply: 0, fen, depth: 1, lines: [] };
+}
+
+const EMPTY_SCORE = { cp: null, mateIn: null } as const;
+
+function firstLine(engineEval: EngineEval): EngineLine | undefined {
+  return engineEval.lines[0];
+}
+
+function isRecapture(
+  previousBefore: ParsedGame['positions'][number] | undefined,
+  previousMove: ParsedGame['positions'][number],
+  currentMove: ParsedGame['positions'][number]
+): boolean {
+  if (!previousBefore || !previousMove.moveSan || !currentMove.moveSan) return false;
+  try {
+    const previousBoard = new Chess(previousBefore.fen);
+    const previous = previousBoard.move(previousMove.moveSan);
+    const currentBoard = new Chess(previousMove.fen);
+    const current = currentBoard.move(currentMove.moveSan);
+    return previous.captured !== undefined && current.captured !== undefined && previous.to === current.to;
+  } catch {
+    return false;
+  }
+}
+
+/** Legacy expected-points helper retained for existing consumers. */
+export function expectedPoints(cp: number): number {
+  return 1 / (1 + Math.exp(-0.00368208 * cp));
+}
+
+/** Legacy name for the shared White-perspective score conversion. */
+export function whitePerspectiveCp(line: EngineLine | undefined): number {
+  return toCpWhite(line ?? EMPTY_SCORE);
+}
+
+/** Converts a White-perspective centipawn score to mover perspective. */
+export function toMoverPerspective(whiteCp: number, mover: 'white' | 'black'): number {
+  return mover === 'white' ? whiteCp : -whiteCp;
+}
+
+/** Legacy quality ladder retained as an API compatibility helper. */
+export function qualityFor(cpLoss: number, epLoss: number, isSacrifice = false, isMiss = false): MoveQuality {
+  if (isMiss && epLoss < 0.2) return 'miss';
+  if (epLoss >= 0.3) return 'blunder';
+  if (epLoss >= 0.2) return 'mistake';
+  if (epLoss >= 0.1) return 'inaccuracy';
+  if (epLoss >= 0.05) return 'excellent';
+  if (isSacrifice) return 'brilliant';
+  return cpLoss === 0 ? 'best' : 'good';
+}
+
+/** A move is sound unless it is one of the report's error labels. */
+export function isSoundQuality(quality: MoveQuality): boolean {
+  return quality !== 'inaccuracy' && quality !== 'mistake' && quality !== 'blunder' && quality !== 'miss';
+}
+
+/** Compatibility sacrifice signal; Brilliant classification uses real SEE. */
 export function isSacrifice(fenBefore: string, moveSan: string): boolean {
   const chess = new Chess(fenBefore);
   let move;
@@ -158,25 +264,17 @@ export function isSacrifice(fenBefore: string, moveSan: string): boolean {
   } catch {
     return false;
   }
-  if (!move || move.captured) return false;
-  if (move.piece === 'p' || move.piece === 'k') return false;
-
+  if (!move || move.captured || move.piece === 'p' || move.piece === 'k') return false;
   const opponentColor = move.color === 'w' ? 'b' : 'w';
   if (!chess.isAttacked(move.to, opponentColor)) return false;
-
-  const movedValue = PIECE_VALUES[move.piece] ?? 0;
+  const values: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
   return chess.attackers(move.to, opponentColor).some((square) => {
     const piece = chess.get(square);
-    return piece !== undefined && (PIECE_VALUES[piece.type] ?? 0) <= movedValue;
+    return piece !== undefined && values[piece.type] <= values[move.piece];
   });
 }
 
-/** Best-effort "left a piece hanging" signal: true when the piece that just
- * moved lands on a square the opponent attacks with nothing of the mover's
- * own defending it. Simpler than isSacrifice -- no equal-or-lesser-attacker
- * comparison, no capture exclusion (a bad recapture that hangs the
- * recapturing piece still counts) -- and, like isSacrifice, only looks one
- * ply deep at the moved piece itself, not the whole board or later plies. */
+/** Compatibility one-ply hanging-piece signal used by existing UI fields. */
 export function hangsPiece(fenBefore: string, moveSan: string): boolean {
   const chess = new Chess(fenBefore);
   let move;
@@ -186,82 +284,9 @@ export function hangsPiece(fenBefore: string, moveSan: string): boolean {
     return false;
   }
   if (!move || move.piece === 'p' || move.piece === 'k') return false;
-
   const opponentColor = move.color === 'w' ? 'b' : 'w';
-  if (!chess.isAttacked(move.to, opponentColor)) return false;
-  return !chess.isAttacked(move.to, move.color);
+  return chess.isAttacked(move.to, opponentColor) && !chess.isAttacked(move.to, move.color);
 }
 
-/** Converts a white-perspective centipawn score to the given mover's perspective. */
-export function toMoverPerspective(whiteCp: number, mover: 'white' | 'black'): number {
-  return mover === 'white' ? whiteCp : -whiteCp;
-}
-
-/** Converts a mover-perspective centipawn score to that mover's expected
- * points (0-1) via the standard logistic win-probability curve (the same
- * conversion chess.com/Lichess-adjacent tooling uses). Symmetric around
- * cp=0 (0.5) and monotonic; mate scores arrive pre-clamped to +-MATE_CP by
- * whitePerspectiveCp/mateToCp, so they saturate near 0/1 rather than
- * exploding. */
-export function expectedPoints(cp: number): number {
-  return 1 / (1 + Math.exp(-0.00368208 * cp));
-}
-
-/** Maps a mate-in-N score to a white-perspective centipawn value: +N (white mates) -> +1000, -N (black mates) -> -1000. */
-function mateToCp(mateIn: number): number {
-  return mateIn > 0 ? MATE_CP : -MATE_CP;
-}
-
-/**
- * Buckets a move into a quality tier using Expected-Points-loss (`epLoss`,
- * 0-1, via `expectedPoints`) as the primary signal, plus two overrides:
- * `isSacrifice` (unchanged detection, gated to low epLoss) and `isMiss`
- * (true multi-PV "you had a much better line and didn't play it" signal,
- * which overrides the ladder result -- but only when the move's own epLoss
- * hasn't already reached `mistake` severity, so a genuinely severe,
- * independent blunder keeps its real tier instead of being masked as
- * `miss` -- see `classifyMove`).
- *
- * `cpLoss === 0` is the one exception that stays cp-based rather than
- * EP-based: it is the exact "played the engine's own top choice" case, and
- * using raw cp for it sidesteps any floating-point-equality concerns from
- * the EP conversion.
- */
-export function qualityFor(cpLoss: number, epLoss: number, isSacrifice = false, isMiss = false): MoveQuality {
-  if (isMiss && epLoss < MISTAKE_EP) return 'miss';
-  if (epLoss >= BLUNDER_EP) return 'blunder';
-  if (epLoss >= MISTAKE_EP) return 'mistake';
-  // Transitional mapping for the legacy classifier. Task 15.2 replaces this
-  // EP ladder with the report decision order; until then, preserve its
-  // severity boundaries using the new report vocabulary.
-  if (epLoss >= DUBIOUS_EP) return 'inaccuracy';
-  if (epLoss >= INTERESTING_EP) return 'excellent';
-  if (isSacrifice) return 'brilliant';
-  return cpLoss === 0 ? 'best' : 'good';
-}
-
-/** True for any tier that isn't an error — the "this move was fine" check used
- * by callers that only cared about the old two-way good/bad split. */
-export function isSoundQuality(quality: MoveQuality): boolean {
-  return quality !== 'inaccuracy' && quality !== 'mistake' && quality !== 'blunder' && quality !== 'miss';
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function bestLine(engineEval: EngineEval | undefined): EngineLine | undefined {
-  return engineEval?.lines[0];
-}
-
-/** The best line's score in white-perspective centipawns, mapping mate scores to +-1000 first. */
-export function whitePerspectiveCp(line: EngineLine | undefined): number {
-  if (!line) return 0;
-  if (line.mateIn !== null) return mateToCp(line.mateIn);
-  return line.cp ?? 0;
-}
-
-function bestLineSan(engineEval: EngineEval | undefined): string[] {
-  const line = bestLine(engineEval);
-  return line ? [line.moveSan] : [];
-}
+export { classifyMove } from './classify-move.js';
+export type { MoveClassificationInput } from './classify-context.js';
