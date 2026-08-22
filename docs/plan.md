@@ -344,20 +344,20 @@ guideline); reuses `computePositionFeatures`, `diffPositionFeatures`
 from the classification step in Phase 15, not from `analysis.ts` directly (keeps
 `analysis.ts` from growing a chess-judgment responsibility it shouldn't have).
 
-- [ ] Pure candidate pre-filter lives in chess-analysis (Phase 15, B1–B5/B7/B8
+- [x] Pure candidate pre-filter lives in chess-analysis (Phase 15, B1–B5/B7/B8
       of §5.5); only B6 (soundness after the opponent's actual best reply)
       needs a live engine call, and only for moves that already passed every
       other Brilliant gate — this is the "1 extra shallow engine call...only
       for Brilliant candidates" the spec budgets for, and it must stay that
       narrow or game analysis time balloons.
-- [ ] `checkBrilliantSoundness(engine, fenAfterMove, mover, beforeWin):
+- [x] `checkBrilliantSoundness(engine, fenAfterMove, mover, beforeWin):
       Promise<boolean>` — one `analyzePosition` call at the same depth, feed
       the result's best line back through `winPctFor`.
-- [ ] Test with a mocked engine backend (existing pattern —
+- [x] Test with a mocked engine backend (existing pattern —
       `apps/api/src/services/analysis.test.ts` already mocks
       `analyzeGamePositions`): a candidate whose reply holds the win%
       threshold passes; one that doesn't gets rejected.
-- [ ] Commit: `feat: brilliant-move soundness check via targeted engine reply`.
+- [x] Commit: `feat: brilliant-move soundness check via targeted engine reply`.
 
 ---
 
