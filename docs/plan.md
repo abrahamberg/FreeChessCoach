@@ -134,23 +134,23 @@ output: `packages/chess-analysis/src/generated/opening-book-index.json`
 (checked into git — deterministic, small, versioned with the dataset it was
 built from; regenerate only when `data/openings.tsv` or this script changes).
 
-- [ ] Script reads `data/openings.tsv`, walks each row's `pgn` with
+- [x] Script reads `data/openings.tsv`, walks each row's `pgn` with
       `chess.js`, builds `bookIndex: Record<PositionKey, BookEntry[]>` (san,
       uci, eco, name; dedupe by san within a key) and `nameIndex:
       Record<PositionKey, {eco, ecoVolume, name, ply}>` (terminal position of
       each row, keeping the deepest ply on collision) — per §12.2. No 24-ply
       cap on the build.
-- [ ] `ecoVolume` derives from `eco[0]` (A–E).
-- [ ] Add an npm script (`build-book` on `packages/chess-analysis`) and add
+- [x] `ecoVolume` derives from `eco[0]` (A–E).
+- [x] Add an npm script (`build-book` on `packages/chess-analysis`) and add
       it to root `README`/AGENTS.md commands section describing when to
       re-run it (dataset refresh only, not every build).
-- [ ] Sanity-check the output: expect on the order of a few thousand unique
+- [x] Sanity-check the output: expect on the order of a few thousand unique
       position keys given `openings.tsv`'s ~3.8k rows (not the ~18k the spec
       quotes for the full multi-volume set with denser transposition
       coverage — this file already looks like the merged `a+b+c+d+e.tsv`, so
       just assert the count is non-trivial and stable, don't hardcode an
       exact number in a test).
-- [ ] Run once, commit the generated JSON: `feat: build opening book index from lichess dataset`.
+- [x] Run once, commit the generated JSON: `feat: build opening book index from lichess dataset`.
 
 ### Task 11.3: Runtime book lookup
 
