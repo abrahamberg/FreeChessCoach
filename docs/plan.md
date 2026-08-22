@@ -216,13 +216,13 @@ constants").
 
 **Files:** `packages/chess-analysis/src/win-probability.ts` + test.
 
-- [ ] `toCpWhite(evalObj: {cp, mateIn}): number` — §2.1 mate folding
+- [x] `toCpWhite(evalObj: {cp, mateIn}): number` — §2.1 mate folding
       (`MATE_BASE=2000`, `CP_CLAMP=2000`).
-- [ ] `winPctWhite(cpWhite: number): number` — §2.2, constant `0.00368208`
+- [x] `winPctWhite(cpWhite: number): number` — §2.2, constant `0.00368208`
       untouched. Unit tests: reproduce the §2.2 reference table to 2 decimals
       exactly (0→50.00 … 2000→99.94).
-- [ ] `winPctFor(color, cpWhite): number` — per-colour mirror.
-- [ ] Commit: `feat: win probability primitives (win%, mate folding)`.
+- [x] `winPctFor(color, cpWhite): number` — per-colour mirror.
+- [x] Commit: `feat: win probability primitives (win%, mate folding)`.
 
 ### Task 12.2: `moveAccuracy`
 
