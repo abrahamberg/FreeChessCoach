@@ -49,19 +49,6 @@ export const MOVE_QUALITY_SYMBOLS: Record<MoveQuality, string> = {
 
 export const MoveQualitySchema = z.enum(MOVE_QUALITIES);
 
-export const ClassifiedMoveSchema = z.object({
-  ply: z.number().int().nonnegative(),
-  moveSan: z.string(),
-  mover: z.enum(['white', 'black']),
-  isUserMove: z.boolean(),
-  cpLoss: z.number().int().nonnegative(),
-  quality: MoveQualitySchema,
-  bestLineSan: z.array(z.string()),
-  evalAfterCp: z.number().int(),
-  hangsPiece: z.boolean().default(false)
-});
-export type ClassifiedMoveDto = z.infer<typeof ClassifiedMoveSchema>;
-
 export const AnalyzeGameRequestSchema = z.object({
   fens: z.array(z.string()).min(1),
   depth: z.number().int().positive().optional(),
@@ -85,6 +72,17 @@ export type AnalyzePositionRequest = z.infer<typeof AnalyzePositionRequestSchema
  */
 export const PieceSymbolSchema = z.enum(['p', 'n', 'b', 'r', 'q', 'k']);
 export type PieceSymbolDto = z.infer<typeof PieceSymbolSchema>;
+
+export const MoveFlagsSchema = z.object({
+  isCapture: z.boolean(),
+  isCheck: z.boolean(),
+  isPromotion: z.boolean(),
+  isCastle: z.boolean(),
+  movedPieceType: PieceSymbolSchema,
+  capturedPieceType: PieceSymbolSchema.nullable(),
+  legalMoveCount: z.number().int().nonnegative()
+});
+export type MoveFlagsDto = z.infer<typeof MoveFlagsSchema>;
 
 const ColorSchema = z.enum(['white', 'black']);
 const PerColorCountSchema = z.object({ white: z.number().int().nonnegative(), black: z.number().int().nonnegative() });
@@ -181,6 +179,32 @@ export const PositionFeaturesSchema = z.object({
   captureOpportunities: z.array(CaptureOpportunitySchema)
 });
 export type PositionFeatures = z.infer<typeof PositionFeaturesSchema>;
+
+export const FeatureDeltaSchema = z.object({
+  newForks: z.array(ForkSchema),
+  newHangingPieces: z.array(AttackedPieceSchema),
+  mobilityDelta: z.number().int()
+});
+export type FeatureDeltaDto = z.infer<typeof FeatureDeltaSchema>;
+
+/** A legacy classified move plus the static batch-enrichment signals used by
+ * later game-report phases. The enrichment fields stay optional so old JSON
+ * analyses and live play-mode rows remain readable. */
+export const ClassifiedMoveSchema = z.object({
+  ply: z.number().int().nonnegative(),
+  moveSan: z.string(),
+  mover: z.enum(['white', 'black']),
+  isUserMove: z.boolean(),
+  cpLoss: z.number().int().nonnegative(),
+  quality: MoveQualitySchema,
+  bestLineSan: z.array(z.string()),
+  evalAfterCp: z.number().int(),
+  hangsPiece: z.boolean().default(false),
+  features: PositionFeaturesSchema.optional(),
+  moveFlags: MoveFlagsSchema.optional(),
+  featureDelta: FeatureDeltaSchema.optional()
+});
+export type ClassifiedMoveDto = z.infer<typeof ClassifiedMoveSchema>;
 
 export const PositionAnalysisSchema = z.object({
   fen: z.string(),

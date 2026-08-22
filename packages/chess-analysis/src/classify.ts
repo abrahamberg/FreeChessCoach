@@ -1,5 +1,12 @@
 import { Chess } from 'chess.js';
-import type { EngineEval, EngineLine, MoveQuality } from '@chess-coach/shared';
+import type {
+  EngineEval,
+  EngineLine,
+  FeatureDeltaDto,
+  MoveFlagsDto,
+  MoveQuality,
+  PositionFeatures
+} from '@chess-coach/shared';
 import type { ParsedGame } from './pgn.js';
 
 const MATE_CP = 1000;
@@ -23,6 +30,9 @@ export interface ClassifiedMove {
   bestLineSan: string[];
   evalAfterCp: number;
   hangsPiece: boolean;
+  features?: PositionFeatures;
+  moveFlags?: MoveFlagsDto;
+  featureDelta?: FeatureDeltaDto;
 }
 
 /**

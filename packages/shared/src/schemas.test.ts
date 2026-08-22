@@ -102,6 +102,23 @@ describe('ClassifiedMoveSchema', () => {
     expect(result.success).toBe(true);
     expect(result.data?.hangsPiece).toBe(false);
   });
+  test('accepts static batch enrichment fields', () => {
+    const enriched = {
+      ...validMove,
+      features: validPositionFeaturesFixture(),
+      moveFlags: {
+        isCapture: false,
+        isCheck: false,
+        isPromotion: false,
+        isCastle: false,
+        movedPieceType: 'n',
+        capturedPieceType: null,
+        legalMoveCount: 12
+      },
+      featureDelta: { newForks: [], newHangingPieces: [], mobilityDelta: -2 }
+    };
+    expect(ClassifiedMoveSchema.safeParse(enriched).success).toBe(true);
+  });
 });
 
 describe('AnalyzeGameRequestSchema', () => {

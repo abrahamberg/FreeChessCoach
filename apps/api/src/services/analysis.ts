@@ -3,6 +3,7 @@ import {
   classifyMoves,
   findCandidateMoments,
   inBookWalk,
+  enrichPositions,
   OPENING_BOOK_SOURCE,
   parsePgn,
   positionKey,
@@ -65,7 +66,10 @@ export async function runAnalyzeGameJob(
     const fens = parsedGame.positions.map((position) => position.fen);
     const evals = await analyzeInChunks(db, deps, analysis.id, fens);
 
-    const classifiedMoves = classifyMoves(parsedGame, evals, game.userColor);
+    const classifiedMoves = attachEnrichment(
+      classifyMoves(parsedGame, evals, game.userColor),
+      enrichPositions(parsedGame.positions)
+    );
     await analysesRepo.storeClassifiedMoves(db, analysis.id, classifiedMoves);
     await analysesRepo.storeBookReport(db, analysis.id, buildBookReport(parsedGame.positions));
     const candidateMoments = findCandidateMoments(classifiedMoves, evals);
@@ -87,6 +91,24 @@ export async function runAnalyzeGameJob(
   } catch (error) {
     await analysesRepo.markFailed(db, analysis.id, describeError(error));
   }
+}
+
+function attachEnrichment(
+  moves: ReturnType<typeof classifyMoves>,
+  enrichment: ReturnType<typeof enrichPositions>
+): ReturnType<typeof classifyMoves> {
+  return moves.map((move) => {
+    const position = enrichment[move.ply];
+    if (!position?.moveFlags || !position.featureDelta) {
+      throw new Error(`Missing move enrichment for ply ${move.ply}`);
+    }
+    return {
+      ...move,
+      features: position.features,
+      moveFlags: position.moveFlags,
+      featureDelta: position.featureDelta
+    };
+  });
 }
 
 function buildBookReport(positions: ParsedPosition[]): BookReport {

@@ -303,27 +303,27 @@ the SEE contract block (already read in Task 13.1).
 guideline); reuses `computePositionFeatures`, `diffPositionFeatures`
 (existing), plus new small pure helpers.
 
-- [ ] New pure helper in `packages/chess-analysis`:
+- [x] New pure helper in `packages/chess-analysis`:
       `moveFlags(fenBefore, moveSan): {isCapture, isCheck, isPromotion,
       isCastle, movedPieceType, capturedPieceType, legalMoveCount}` — all
       derivable from a `chess.js` move object + `moves().length`, per §1.3's
       table.
-- [ ] New pure helper: `phaseUnits(fen): number` and `nonPawnMaterial(fen):
+- [x] New pure helper: `phaseUnits(fen): number` and `nonPawnMaterial(fen):
       {white, black}` — §6.2's material-based phase signal, derived from FEN.
-- [ ] In the batch job, compute `PositionFeatures` for every position (one
+- [x] In the batch job, compute `PositionFeatures` for every position (one
       call per FEN, already free) and `moveFlags` for every played move; wire
       `diffPositionFeatures` between consecutive positions to get
       `newForks`/`newHangingPieces`/`mobilityDelta` per move — the exact
       inputs §7.2/§7.3's tactics/strategy evidence need.
-- [ ] Decide storage shape now (used by every later phase): a parallel
+- [x] Decide storage shape now (used by every later phase): a parallel
       per-ply enrichment array stored alongside `engineEvals`/
       `classifiedMoves`, or folded directly into an expanded
       `ClassifiedMove`. Recommend folding in — Phase 15 already needs to
       extend `ClassifiedMove` to `MoveReport` shape, do both extensions in
       one schema pass rather than two.
-- [ ] Test: a fixture game's enrichment includes a known fork/hanging-piece
+- [x] Test: a fixture game's enrichment includes a known fork/hanging-piece
       delta at a known ply.
-- [ ] Commit: `feat: compute position features and move flags in batch analysis`.
+- [x] Commit: `feat: compute position features and move flags in batch analysis`.
 
 ### Task 14.2: `castledPly` / `developedPieces`
 

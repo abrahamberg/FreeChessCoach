@@ -1,17 +1,8 @@
-import type { AttackedPieceDto, ForkSchema, PositionFeatures } from '@chess-coach/shared';
+import type { AttackedPieceDto, FeatureDeltaDto, ForkSchema, PositionFeatures } from '@chess-coach/shared';
 import type { z } from 'zod';
 
 export type Fork = z.infer<typeof ForkSchema>;
-
-export interface FeatureDelta {
-  /** Forks present after but not before (by square+piece — a fork "moving"
-   * counts as a new one, which is fine for a coaching callout). */
-  newForks: Fork[];
-  /** Hanging pieces present after but not before. */
-  newHangingPieces: AttackedPieceDto[];
-  /** after.availableMoves.length - before.availableMoves.length. */
-  mobilityDelta: number;
-}
+export type FeatureDelta = FeatureDeltaDto;
 
 function forkKey(fork: Fork): string {
   return `${fork.square}:${fork.piece}`;

@@ -23,6 +23,15 @@ const NAJDORF_PGN = `[Event "Test"]
 1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6
 6. Be3 e5 7. Nb3 Be6 8. f3 *`;
 
+const FORK_PGN = `[Event "Test"]
+[SetUp "1"]
+[FEN "4k3/8/1r3n2/8/8/2N5/8/7K w - - 0 1"]
+[White "Ann"]
+[Black "Bob"]
+[Result "*"]
+
+1. Nd5 *`;
+
 const VALID_PLAN = CoachingPlanSchema.parse({
   gameSummary: 'A sharp Scholar\'s-mate-adjacent game.',
   openingNote: 'Fine through the opening.',
@@ -130,6 +139,29 @@ describe('runAnalyzeGameJob', () => {
         black: { lastBookPly: 14, leftBookPly: null, leftBookMove: null, bookAlternatives: [] }
       }
     });
+  });
+
+  test('persists per-move feature enrichment and move flags', async () => {
+    const { gameId, analysisId } = await setupGame(FORK_PGN);
+    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
+
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), callPlanner }, gameId);
+
+    const row = await db
+      .selectFrom('analyses')
+      .select('classifiedMoves')
+      .where('id', '=', analysisId)
+      .executeTakeFirstOrThrow();
+    const move = (row.classifiedMoves as Array<{
+      features: { forks: Array<{ square: string }> };
+      moveFlags: { movedPieceType: string };
+      featureDelta: { newForks: Array<{ square: string }> };
+    }>)[0];
+    if (!move) throw new Error('classified move fixture is empty');
+
+    expect(move.moveFlags).toMatchObject({ movedPieceType: 'n' });
+    expect(move.features.forks).toEqual(expect.arrayContaining([{ square: 'd5' }]));
+    expect(move.featureDelta.newForks).toEqual(expect.arrayContaining([{ square: 'd5' }]));
   });
 
   // The planner is now constrained to CoachingPlanSchema by the provider, so
