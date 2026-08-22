@@ -158,14 +158,9 @@ describe('MoveExplorer', () => {
     expect(onSelect).toHaveBeenLastCalledWith(7);
   });
 
-  test('a "show notes" toggle reveals a plain-language note for the current non-good move, hidden by default', async () => {
-    const user = userEvent.setup();
+  test('the notes panel shows a plain-language note for the current non-good move, open by default', () => {
     const classifiedMoves = [classifiedMove({ ply: 3, moveSan: 'Qh5', quality: 'inaccuracy', bestLineSan: ['Nf3'] })];
     render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={3} onSelect={vi.fn()} />);
-
-    expect(screen.queryByText(/better was nf3/i)).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /show notes/i }));
 
     expect(screen.getByText(/better was nf3/i)).toBeInTheDocument();
   });
@@ -184,8 +179,7 @@ describe('MoveExplorer', () => {
     expect(screen.getByRole('button', { name: '✕Qh5' })).toHaveClass('move-quality-miss');
   });
 
-  test('the "show notes" panel renders the backend-supplied reasons list when present', async () => {
-    const user = userEvent.setup();
+  test('the notes panel renders the backend-supplied reasons list when present', () => {
     const classifiedMoves = [
       classifiedMove({
         ply: 3,
@@ -197,19 +191,14 @@ describe('MoveExplorer', () => {
     ];
     render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={3} onSelect={vi.fn()} />);
 
-    await user.click(screen.getByRole('button', { name: /show notes/i }));
-
     expect(screen.getByText('Leaves the knight on d4 undefended')).toBeInTheDocument();
     expect(screen.getByText('Costs 9 squares of piece mobility')).toBeInTheDocument();
     expect(screen.queryByText(/better was/i)).not.toBeInTheDocument();
   });
 
-  test('the "show notes" panel does not show a "better was" note for a best move (nothing to improve on)', async () => {
-    const user = userEvent.setup();
+  test('the notes panel does not show a "better was" note for a best move (nothing to improve on)', () => {
     const classifiedMoves = [classifiedMove({ ply: 1, moveSan: 'e4', quality: 'best', bestLineSan: ['e4'] })];
     render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={1} onSelect={vi.fn()} />);
-
-    await user.click(screen.getByRole('button', { name: /show notes/i }));
 
     expect(screen.queryByText(/better was/i)).not.toBeInTheDocument();
   });
@@ -235,8 +224,7 @@ describe('MoveExplorer', () => {
     expect(screen.queryByText(/theory/i)).not.toBeInTheDocument();
   });
 
-  test('the alternatives panel shows the best PV and win%-ranked runners-up, not raw cp', async () => {
-    const user = userEvent.setup();
+  test('the alternatives panel shows the best PV and win%-ranked runners-up, not raw cp', () => {
     const classifiedMoves = [
       classifiedMove({
         ply: 3,
@@ -251,10 +239,6 @@ describe('MoveExplorer', () => {
       })
     ];
     render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={3} onSelect={vi.fn()} />);
-
-    expect(screen.queryByText(/Best: Nf3/)).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /show notes/i }));
 
     expect(screen.getByText('Best: Nf3 Nc6 Bb5')).toBeInTheDocument();
     expect(screen.getByText('Bc4 (58.2%)')).toBeInTheDocument();

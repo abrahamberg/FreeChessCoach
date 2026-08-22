@@ -1,7 +1,13 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import type { GameReport, PlayerReport } from '@chess-coach/shared';
 import { GameReportSummary } from './GameReportSummary.js';
+
+/** The report renders collapsed by default (a slim preview bar) — tests
+ * that need the full breakdown open it first via the header toggle. */
+function expandReport(): void {
+  fireEvent.click(screen.getByRole('button', { name: /game report/i }));
+}
 
 function buildPlayerReport(overrides: Partial<PlayerReport> = {}): PlayerReport {
   return {
@@ -57,19 +63,23 @@ function buildReport(overrides: { white?: Partial<PlayerReport>; black?: Partial
 describe('GameReportSummary', () => {
   test('renders both colours\' accuracy headline', () => {
     render(<GameReportSummary report={buildReport({ black: { accuracy: 65.2 } })} />);
+    expandReport();
     expect(screen.getByText('87.4%')).toBeInTheDocument();
     expect(screen.getByText('65.2%')).toBeInTheDocument();
   });
 
   test('renders a dash for a null phase accuracy or score', () => {
     render(<GameReportSummary report={buildReport()} />);
+    expandReport();
     // Both colours' endgame phase accuracy and endgame score are null in the fixture.
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4);
   });
 
-  test('renders the estimated rating as a range, never a bare point estimate', () => {
+  test('renders the estimated rating as a bare number, no parenthetical range', () => {
     render(<GameReportSummary report={buildReport()} />);
-    expect(screen.getAllByText('1550 (1400–1700)').length).toBe(2);
+    expandReport();
+    expect(screen.getAllByText('1550').length).toBe(2);
+    expect(screen.queryByText(/1400.*1700/)).not.toBeInTheDocument();
   });
 
   test('falls back to the reason when a rating estimate is unavailable', () => {
@@ -80,11 +90,13 @@ describe('GameReportSummary', () => {
         })}
       />
     );
+    expandReport();
     expect(screen.getByText('insufficient moves')).toBeInTheDocument();
   });
 
   test('renders classification counts for both colours, including inaccuracies/mistakes/blunders', () => {
     render(<GameReportSummary report={buildReport()} />);
+    expandReport();
     expect(screen.getAllByText('Inaccuracies').length).toBe(2);
     expect(screen.getAllByText('Mistakes').length).toBe(2);
     expect(screen.getAllByText('Blunders').length).toBe(2);

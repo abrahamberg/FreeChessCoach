@@ -172,7 +172,6 @@ export function SessionPage(): ReactNode {
               />
             ) : (
               <div className="session-move-explorer-column">
-                {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} />}
                 <MoveExplorer
                   sanMoves={sanMoves}
                   classifiedMoves={gameQuery.data?.classifiedMoves ?? []}
@@ -180,6 +179,7 @@ export function SessionPage(): ReactNode {
                   currentPly={boardState.ply}
                   onSelect={peekAt}
                 />
+                {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} />}
               </div>
             ))}
           {board}

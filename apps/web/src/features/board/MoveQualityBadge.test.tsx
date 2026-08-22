@@ -8,6 +8,11 @@ describe('MoveQualityBadge', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  test('renders nothing for an excellent move — only tiers worth flagging get a badge', () => {
+    const { container } = render(<MoveQualityBadge quality="excellent" size="md" />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
   test('renders nothing when quality is undefined', () => {
     const { container } = render(<MoveQualityBadge quality={undefined} size="md" />);
     expect(container).toBeEmptyDOMElement();
@@ -35,11 +40,6 @@ describe('MoveQualityBadge', () => {
   test('renders the exclamation glyph for great', () => {
     render(<MoveQualityBadge quality="great" size="md" />);
     expect(screen.getByText('!')).toHaveClass('move-quality-badge--great');
-  });
-
-  test('renders the check glyph for excellent', () => {
-    render(<MoveQualityBadge quality="excellent" size="md" />);
-    expect(screen.getByText('✓')).toHaveClass('move-quality-badge--excellent');
   });
 
   test('renders the book glyph for a theory move', () => {

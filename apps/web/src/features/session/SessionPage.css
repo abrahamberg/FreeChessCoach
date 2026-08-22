@@ -316,6 +316,15 @@
   align-items: center;
 }
 
+/* GameEvalChart docks in the space this column deliberately leaves below
+ * the fixed-size board (see the comment above .session-board-row) — pinned
+ * to the bottom via margin-top: auto and stretched to the column's full
+ * width, overriding the centered/shrink-to-content alignment other
+ * board-column children use. */
+.session-body.desktop .session-board-column .game-eval-chart {
+  align-self: stretch;
+}
+
 /* The board is a fixed, non-growing square (never flex:1 on height) — sized
  * from the column's width and capped by it, with aspect-ratio holding it
  * square. A previous height-driven (flex:1 1 0) approach let the frame claim
@@ -344,19 +353,40 @@
 /* The move explorer (and its game-report summary, when the game has one)
  * only ever render when useIsDesktop() is true (>=1080px, a narrower gate
  * than the 768px side-by-side breakpoint above) — there's no room for a
- * third column on tablet, let alone mobile. */
+ * third column on tablet, let alone mobile.
+ *
+ * --explorer-col-label is the one shared source of truth for the "number /
+ * row-label" column width in both the move list (MoveExplorer.css) and the
+ * game report's tables (GameReportSummary.css) — keeping it here, set once,
+ * is what guarantees their White/Black columns land at the same
+ * x-position instead of drifting whenever either file's layout changes. */
 .session-body.desktop .session-move-explorer-column {
+  --explorer-col-label: 34px;
   width: 300px;
   flex: 0 0 300px;
   height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .session-body.desktop .session-move-explorer-column .move-explorer {
   flex: 1;
   min-height: 0;
+}
+
+/* Collapsed (the default): a slim header bar, in flow, at the bottom of the
+ * column — "takes less space" per Daniel's request. Expanded: it floats
+ * over the move list instead of pushing it around, so opening the report
+ * never disturbs where the student was scrolled to. */
+.session-body.desktop .session-move-explorer-column .game-report-summary--expanded {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 70%;
+  z-index: 2;
 }
 
 .session-body.desktop .chat-pane {

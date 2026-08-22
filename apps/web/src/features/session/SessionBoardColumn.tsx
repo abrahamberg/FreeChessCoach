@@ -5,6 +5,7 @@ import { CoachBoard, type BoardArrow, type BoardHighlight } from '../board/Coach
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { EvalBar } from '../board/EvalBar.js';
 import { ExplorePanel } from '../board/ExplorePanel.js';
+import { GameEvalChart } from '../board/GameEvalChart.js';
 import { MoveStrip } from '../board/MoveStrip.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
@@ -200,6 +201,9 @@ export function SessionBoardColumn({
         />
       ) : (
         <ExplorePanel fen={fen} mode={boardState.mode} onEnterPeekMode={() => boardState.setMode('peek')} engine={engine} />
+      )}
+      {isDesktop && classifiedMoves && classifiedMoves.length > 0 && (
+        <GameEvalChart classifiedMoves={classifiedMoves} currentPly={boardState.ply} onSelect={peekAt} />
       )}
     </div>
   );

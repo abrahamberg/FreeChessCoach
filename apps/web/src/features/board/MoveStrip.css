@@ -57,7 +57,6 @@
 .move-strip button.move-quality-brilliant { color: var(--quality-brilliant); font-weight: 600; }
 .move-strip button.move-quality-great { color: var(--quality-great); font-weight: 600; }
 .move-strip button.move-quality-best { color: var(--quality-best); font-weight: 600; }
-.move-strip button.move-quality-excellent { color: var(--quality-excellent); }
 .move-strip button.move-quality-book { color: var(--quality-book); }
 .move-strip button.move-quality-inaccuracy { color: var(--quality-inaccuracy); }
 .move-strip button.move-quality-mistake { color: var(--quality-mistake); }
@@ -68,7 +67,6 @@
 .move-strip button[aria-current='true'].move-quality-brilliant,
 .move-strip button[aria-current='true'].move-quality-great,
 .move-strip button[aria-current='true'].move-quality-best,
-.move-strip button[aria-current='true'].move-quality-excellent,
 .move-strip button[aria-current='true'].move-quality-book,
 .move-strip button[aria-current='true'].move-quality-inaccuracy,
 .move-strip button[aria-current='true'].move-quality-mistake,

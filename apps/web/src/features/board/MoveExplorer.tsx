@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from 'react';
 import type { ClassifiedMoveDto, MoveQuality } from '@chess-coach/shared';
-import { GameEvalChart } from './GameEvalChart.js';
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import './MoveExplorer.css';
@@ -105,10 +104,11 @@ function pairMoves(sanMoves: string[]): MovePair[] {
 /** design.md-adjacent move explorer (not yet in design.md — Daniel requested
  * a chess.com/lichess-style panel): paired move list, NAG symbols and
  * quality color-coding from the persisted classification, nav pills, and a
- * collapsible plain-language note for the current move. Sidelines/PGN
- * comments are out of scope here — parsePgn only produces a mainline. */
+ * plain-language note for the current move. The note lives in a native
+ * <details>, open by default — no separate show/hide button, just click the
+ * "Notes" summary to collapse it. Sidelines/PGN comments are out of scope
+ * here — parsePgn only produces a mainline. */
 export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly, onSelect }: MoveExplorerProps): ReactNode {
-  const [notesVisible, setNotesVisible] = useState(false);
   const [inspecting, setInspecting] = useState<{ fen: string; label: string } | null>(null);
   const qualityByPly = new Map(classifiedMoves.map((move) => [move.ply, move]));
   const fenByPly = new Map(positions.map((position) => [position.ply, position.fen]));
@@ -139,14 +139,6 @@ export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly,
           ⏭
         </button>
       </div>
-      <button
-        type="button"
-        className="move-explorer__notes-toggle"
-        aria-pressed={notesVisible}
-        onClick={() => setNotesVisible((visible) => !visible)}
-      >
-        {notesVisible ? 'Hide notes' : 'Show notes'}
-      </button>
       <ol className="move-explorer__list">
         {pairs.map((pair) => {
           const { moveNumber, white, black } = pair;
@@ -178,13 +170,17 @@ export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly,
         })}
       </ol>
       {currentMove && <OpeningLabel move={currentMove} />}
-      {notesVisible && currentMove && (
-        <>
-          <MoveNote move={currentMove} />
-          <AlternativesPanel move={currentMove} />
-        </>
-      )}
-      <GameEvalChart classifiedMoves={classifiedMoves} currentPly={currentPly} onSelect={onSelect} />
+      <details className="move-explorer__notes" open>
+        <summary className="move-explorer__notes-summary">Notes</summary>
+        {currentMove ? (
+          <>
+            <MoveNote move={currentMove} />
+            <AlternativesPanel move={currentMove} />
+          </>
+        ) : (
+          <p className="move-explorer__notes-empty">Select a move to see notes.</p>
+        )}
+      </details>
       {inspecting && (
         <MoveAnalysisModal fen={inspecting.fen} moveLabel={inspecting.label} onClose={() => setInspecting(null)} />
       )}
