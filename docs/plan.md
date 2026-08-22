@@ -592,15 +592,19 @@ don't hand-tune weights without ground truth.
 **Read:** `docs/algorith.md` §7.2 only.
 
 **Files:** `packages/chess-analysis/src/tactics-score.ts` + test.
-- [ ] `isTacticalPosition(analysis, mover): boolean` — §7.2's seven-clause OR,
+- [x] `isTacticalPosition(analysis, mover): boolean` — §7.2's seven-clause OR,
       reusing MultiPV gap (already computed for Great's G3), `features.*`
       (already computed per Task 14.1), SEE (Phase 13) for the
       "capture with SEE ≥ 0" clause.
-- [ ] `tacticalEvidence`/`tacticsScore` per §7.2, using `diffPositionFeatures`
-      deltas already threaded through in Task 14.1.
-- [ ] `< 4` tactical positions for the colour → `null` with reason, per spec
+- [x] `tacticalEvidence`/`tacticsScore` per §7.2, using `diffPositionFeatures`
+      deltas already threaded through in Task 14.1. `tacticsScore` takes the
+      caller-computed `tacticalAccuracy` (the existing §4/Task 16.1 machinery,
+      restricted to tactical-position plies with full-game weights) rather
+      than recomputing it — same "don't duplicate the aggregation" reasoning
+      as Task 16.3's `phaseAccuracy`.
+- [x] `< 4` tactical positions for the colour → `null` with reason, per spec
       — test this guard explicitly.
-- [ ] Commit: `feat: tactics score`.
+- [x] Commit: `feat: tactics score`.
 
 ### Task 17.3: Strategy score
 
