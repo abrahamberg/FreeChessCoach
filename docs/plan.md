@@ -112,16 +112,16 @@ opening name in the UI) can start until this phase's runtime lookup exists.
 
 **Files:** `packages/chess-analysis/src/opening-book-key.ts` + test.
 
-- [ ] Implement `positionKey(fullFen: string): string` exactly per §12.3:
+- [x] Implement `positionKey(fullFen: string): string` exactly per §12.3:
       drop halfmove/fullmove clocks; drop the en-passant field unless a legal
       en-passant capture actually exists in the position (verify against the
       installed chess.js version's EP-flagging behavior — don't trust the
       spec's comment blindly).
-- [ ] Unit test: the §12.3 vector — after `1.e4 e5 2.Nf3 Nc6 3.d4`, the key's
+- [x] Unit test: the §12.3 vector — after `1.e4 e5 2.Nf3 Nc6 3.d4`, the key's
       EP field must be `-`, not `d3`.
-- [ ] Unit test: a position with a genuinely legal EP capture keeps the
+- [x] Unit test: a position with a genuinely legal EP capture keeps the
       square.
-- [ ] Commit: `feat: opening-book position key with EP normalization`.
+- [x] Commit: `feat: opening-book position key with EP normalization`.
 
 ### Task 11.2: Offline index build script
 
