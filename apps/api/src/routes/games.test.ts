@@ -1,4 +1,4 @@
-import type { CoachingPlan } from '@chess-coach/shared';
+import type { CoachingPlan, GameReport } from '@chess-coach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildApp } from '../app.js';
@@ -40,6 +40,51 @@ const PLAN: CoachingPlan = {
     }
   ]
 };
+
+function buildGameReportFixture(): GameReport {
+  const playerReport = {
+    accuracy: 87.4,
+    phaseAccuracy: { opening: 92.1, middlegame: 80.5, endgame: null },
+    phaseConfidence: { opening: 'ok' as const, middlegame: 'ok' as const, endgame: 'none' as const },
+    scores: { opening: 90, tactics: 75, strategy: 82, endgame: null },
+    counts: {
+      brilliant: 0,
+      great: 0,
+      best: 2,
+      excellent: 0,
+      good: 1,
+      book: 0,
+      inaccuracy: 0,
+      mistake: 0,
+      miss: 0,
+      blunder: 0,
+      forced: 0
+    },
+    acpl: 24.6,
+    estimatedRating: { value: 1550, range: [1400, 1700] as [number, number], confidence: 'medium' as const }
+  };
+
+  return {
+    engine: { name: 'stockfish', depth: 16, multiPv: 3 },
+    book: {
+      source: 'test-fixture@1',
+      eco: 'C50',
+      ecoVolume: 'C',
+      name: 'Italian Game',
+      family: 'Italian Game',
+      variation: null,
+      namedAtPly: 4,
+      lastBookPly: 6,
+      players: {
+        white: { lastBookPly: 6, leftBookPly: null, leftBookMove: null, bookAlternatives: [] },
+        black: { lastBookPly: 6, leftBookPly: null, leftBookMove: null, bookAlternatives: [] }
+      }
+    },
+    phases: { openingEndPly: 10, endgameStartPly: null, openingSource: 'book' },
+    players: { white: playerReport, black: playerReport },
+    moves: []
+  };
+}
 
 const UNMATCHED_HEADERS_PGN = `[Event "Test"]
 [White "Somebody"]
@@ -338,6 +383,29 @@ describe('POST/GET /api/games', () => {
     ]);
   });
 
+  test('GET /api/games/:id includes the persisted game report once analysis stored it', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('gamereport@example.com', 'Reporter');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId } = imported.json();
+    const analysis = await analysesRepo.findByGameId(db, gameId);
+    if (!analysis) throw new Error('expected an analysis row to exist for the imported game');
+    await analysesRepo.storeGameReport(db, analysis.id, buildGameReportFixture());
+
+    const detail = await app.inject({ method: 'GET', url: `/api/games/${gameId}`, headers });
+
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json().gameReport).toMatchObject({
+      engine: { name: 'stockfish', depth: 16 },
+      players: { white: { accuracy: 87.4 } }
+    });
+  });
+
   test('GET /api/games/:id returns liveMoveQualities (never classifiedMoves) for a coach_play game, with no analyses lookup', async () => {
     const app = buildTestApp();
     const headers = headersFor('playgame@example.com', 'Playgame');
@@ -374,6 +442,7 @@ describe('POST/GET /api/games', () => {
     expect(detail.statusCode).toBe(200);
     expect(detail.json().classifiedMoves).toBeNull();
     expect(detail.json().liveMoveQualities).toEqual([expect.objectContaining({ ply: 1, moveSan: 'e4', quality: 'best' })]);
+    expect(detail.json().gameReport).toBeNull();
   });
 
   test('GET /api/games lists a coach_play game with source and its resumable sessionId, not "analyzing"', async () => {

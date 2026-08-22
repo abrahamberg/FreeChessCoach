@@ -1,6 +1,7 @@
 export * from './apply-san-sequence.js';
 export * from './accuracy-curve.js';
 export * from './assert-eval-sign.js';
+export * from './build-game-report.js';
 export * from './candidate-moves.js';
 export * from './classify.js';
 export * from './classify-brilliant.js';

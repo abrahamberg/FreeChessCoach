@@ -50,12 +50,19 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
     // data sources apart.
     if (game.source === 'coach_play') {
       const liveMoveQualities = await gameMoveQualitiesRepo.listByGameId(db, game.id);
-      return { ...game, analysisStatus: null, classifiedMoves: null, liveMoveQualities };
+      return { ...game, analysisStatus: null, classifiedMoves: null, liveMoveQualities, gameReport: null };
     }
 
     const analysis = await analysesRepo.findByGameId(db, game.id);
     const classifiedMoves = await analysesRepo.findClassifiedMovesByGameId(db, game.id);
-    return { ...game, analysisStatus: analysis?.status ?? null, classifiedMoves: classifiedMoves ?? null, liveMoveQualities: null };
+    const gameReport = await analysesRepo.findGameReportByGameId(db, game.id);
+    return {
+      ...game,
+      analysisStatus: analysis?.status ?? null,
+      classifiedMoves: classifiedMoves ?? null,
+      liveMoveQualities: null,
+      gameReport: gameReport ?? null
+    };
   });
 
   app.delete<{ Params: { id: string } }>('/api/games/:id', async (request, reply) => {

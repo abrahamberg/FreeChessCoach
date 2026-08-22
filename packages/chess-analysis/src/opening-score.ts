@@ -66,7 +66,9 @@ export function openingScore(input: OpeningScoreInput): number | null {
   );
 }
 
-function positionAtOrBefore(positions: readonly ParsedPosition[], ply: number): ParsedPosition {
+/** The last position reached at or before `ply` — shared with build-game-report.ts,
+ * which needs the same "boundary position" concept for strategy-score's trend inputs. */
+export function positionAtOrBefore(positions: readonly ParsedPosition[], ply: number): ParsedPosition {
   let candidate: ParsedPosition | undefined;
   for (const position of positions) {
     if (position.ply > ply) break;

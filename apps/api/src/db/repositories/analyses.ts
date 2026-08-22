@@ -1,6 +1,6 @@
 import type { ClassifiedMove } from '@chess-coach/chess-analysis';
 import { sql, type Kysely } from 'kysely';
-import type { AnalysisStatus, BookReport, CoachingPlan, EngineEval } from '@chess-coach/shared';
+import type { AnalysisStatus, BookReport, CoachingPlan, EngineEval, GameReport } from '@chess-coach/shared';
 import type { Database } from '../schema.js';
 
 export interface AnalysisRow {
@@ -133,6 +133,32 @@ export function storeBookReport(
     .where('id', '=', id)
     .execute()
     .then(() => undefined);
+}
+
+export function storeGameReport(
+  db: Kysely<Database>,
+  id: string,
+  report: GameReport
+): Promise<void> {
+  return db
+    .updateTable('analyses')
+    .set({ gameReport: JSON.stringify(report) })
+    .where('id', '=', id)
+    .execute()
+    .then(() => undefined);
+}
+
+/** Reads back the assembled game report (game report summary panel). */
+export function findGameReportByGameId(
+  db: Kysely<Database>,
+  gameId: string
+): Promise<GameReport | undefined> {
+  return db
+    .selectFrom('analyses')
+    .select('gameReport')
+    .where('gameId', '=', gameId)
+    .executeTakeFirst()
+    .then((row) => row?.gameReport as GameReport | undefined);
 }
 
 /** Reads back the stored per-move classification for a ready analysis (move

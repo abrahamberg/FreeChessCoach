@@ -17,6 +17,7 @@ import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
+import { buildGameReportForAnalysis } from './build-game-report.js';
 
 /** Positions per engine call. Small enough that the progress percentage moves
  * often, large enough not to pay per-request overhead on every ply — and it
@@ -71,7 +72,16 @@ export async function runAnalyzeGameJob(
       enrichPositions(parsedGame.positions)
     );
     await analysesRepo.storeClassifiedMoves(db, analysis.id, classifiedMoves);
-    await analysesRepo.storeBookReport(db, analysis.id, buildBookReport(parsedGame.positions));
+    const bookReport = buildBookReport(parsedGame.positions);
+    await analysesRepo.storeBookReport(db, analysis.id, bookReport);
+    const gameReport = buildGameReportForAnalysis({
+      game: parsedGame,
+      evals,
+      moves: classifiedMoves,
+      book: bookReport,
+      pgnResult: game.result
+    });
+    await analysesRepo.storeGameReport(db, analysis.id, gameReport);
     const candidateMoments = findCandidateMoments(classifiedMoves, evals);
 
     await analysesRepo.updateStatus(db, analysis.id, 'planning');

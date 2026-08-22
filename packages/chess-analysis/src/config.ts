@@ -189,7 +189,11 @@ export const CONFIG = {
     priorCapMargin: 600,
     stdErrBase: 260,
     stdErrNEffDivisor: 10,
-    roundToNearest: 25
+    roundToNearest: 25,
+    /** Not from algorith.md directly — the report's `confidence` field needs
+     * some threshold, and doubling the §8.6 minimum is the least arbitrary
+     * choice available until Phase 21 calibrates against real data. */
+    mediumConfidenceMinMoves: 24
   },
 
   /** §11 — deterministic per-move coaching reasons. */

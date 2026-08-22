@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import { BookReportSchema, CoachingPlanSchema, type EngineEval } from '@chess-coach/shared';
+import { BookReportSchema, CoachingPlanSchema, GameReportSchema, type EngineEval } from '@chess-coach/shared';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
@@ -139,6 +139,31 @@ describe('runAnalyzeGameJob', () => {
         black: { lastBookPly: 14, leftBookPly: null, leftBookMove: null, bookAlternatives: [] }
       }
     });
+  });
+
+  test('assembles and persists a full, schema-valid game report', async () => {
+    const { gameId, analysisId } = await setupGame(NAJDORF_PGN);
+    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
+
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), callPlanner }, gameId);
+
+    const row = await db
+      .selectFrom('analyses')
+      .select('gameReport')
+      .where('id', '=', analysisId)
+      .executeTakeFirstOrThrow();
+    const report = GameReportSchema.parse(row.gameReport);
+
+    expect(report.engine).toMatchObject({ name: 'stockfish' });
+    expect(report.book.name).toBe('Sicilian Defense: Najdorf Variation, English Attack');
+    expect(report.moves.length).toBeGreaterThan(0);
+    for (const move of report.moves) {
+      expect(['opening', 'middlegame', 'endgame']).toContain(move.phase);
+    }
+    // §6.4: phase accuracies merely have to be present, not average out to
+    // the game accuracy.
+    expect(typeof report.players.white.accuracy).toBe('number');
+    expect(typeof report.players.black.accuracy).toBe('number');
   });
 
   test('persists per-move feature enrichment and move flags', async () => {
