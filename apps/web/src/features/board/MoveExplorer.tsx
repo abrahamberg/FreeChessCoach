@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import type { ClassifiedMoveDto } from '@chess-coach/shared';
+import type { ClassifiedMoveDto, MoveQuality } from '@chess-coach/shared';
 import { GameEvalChart } from './GameEvalChart.js';
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
@@ -13,6 +13,38 @@ export interface MoveExplorerProps {
   positions: { ply: number; fen: string }[];
   currentPly: number;
   onSelect: (ply: number) => void;
+}
+
+/** Tiers worth a "better was" coaching note — everything else (book, forced,
+ * brilliant/great/best/excellent/good) had nothing meaningfully better to
+ * play. */
+const IMPROVABLE_QUALITIES: ReadonlySet<MoveQuality> = new Set(['inaccuracy', 'mistake', 'miss', 'blunder']);
+
+function isImprovableQuality(quality: MoveQuality | undefined): boolean {
+  return quality !== undefined && IMPROVABLE_QUALITIES.has(quality);
+}
+
+/** §11's deterministic coaching reasons, already ordered and capped at two by
+ * the backend; falls back to the legacy single-line note for analyses stored
+ * before `reasons` existed. */
+function MoveNote({ move }: { move: ClassifiedMoveDto }): ReactNode {
+  if (move.reasons && move.reasons.length > 0) {
+    return (
+      <ul className="move-explorer__note">
+        {move.reasons.map((reason) => (
+          <li key={reason}>{reason}</li>
+        ))}
+      </ul>
+    );
+  }
+  if (isImprovableQuality(move.quality) && move.bestLineSan.length > 0) {
+    return (
+      <p className="move-explorer__note">
+        {move.quality}: better was {move.bestLineSan.join(' ')}
+      </p>
+    );
+  }
+  return null;
 }
 
 interface MovePair {
@@ -111,15 +143,7 @@ export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly,
           );
         })}
       </ol>
-      {notesVisible &&
-        currentMove &&
-        currentMove.quality !== 'good' &&
-        currentMove.quality !== 'best' &&
-        currentMove.bestLineSan.length > 0 && (
-          <p className="move-explorer__note">
-            {currentMove.quality}: better was {currentMove.bestLineSan.join(' ')}
-          </p>
-        )}
+      {notesVisible && currentMove && <MoveNote move={currentMove} />}
       <GameEvalChart classifiedMoves={classifiedMoves} currentPly={currentPly} onSelect={onSelect} />
       {inspecting && (
         <MoveAnalysisModal fen={inspecting.fen} moveLabel={inspecting.label} onClose={() => setInspecting(null)} />

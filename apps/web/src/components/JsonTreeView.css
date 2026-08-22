@@ -32,7 +32,7 @@
 }
 
 .json-string {
-  color: var(--quality-interesting);
+  color: var(--syntax-string);
 }
 
 .json-boolean {

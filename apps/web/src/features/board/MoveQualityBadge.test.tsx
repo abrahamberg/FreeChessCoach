@@ -31,4 +31,29 @@ describe('MoveQualityBadge', () => {
     render(<MoveQualityBadge quality="brilliant" size="md" />);
     expect(screen.getByText('!!')).toHaveClass('move-quality-badge--brilliant');
   });
+
+  test('renders the exclamation glyph for great', () => {
+    render(<MoveQualityBadge quality="great" size="md" />);
+    expect(screen.getByText('!')).toHaveClass('move-quality-badge--great');
+  });
+
+  test('renders the check glyph for excellent', () => {
+    render(<MoveQualityBadge quality="excellent" size="md" />);
+    expect(screen.getByText('✓')).toHaveClass('move-quality-badge--excellent');
+  });
+
+  test('renders the book glyph for a theory move', () => {
+    render(<MoveQualityBadge quality="book" size="md" />);
+    expect(screen.getByText('📖')).toHaveClass('move-quality-badge--book');
+  });
+
+  test('renders the inaccuracy glyph', () => {
+    render(<MoveQualityBadge quality="inaccuracy" size="md" />);
+    expect(screen.getByText('?!')).toHaveClass('move-quality-badge--inaccuracy');
+  });
+
+  test('renders the forced-move glyph', () => {
+    render(<MoveQualityBadge quality="forced" size="md" />);
+    expect(screen.getByText('→')).toHaveClass('move-quality-badge--forced');
+  });
 });

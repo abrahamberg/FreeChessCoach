@@ -184,6 +184,26 @@ describe('MoveExplorer', () => {
     expect(screen.getByRole('button', { name: '✕Qh5' })).toHaveClass('move-quality-miss');
   });
 
+  test('the "show notes" panel renders the backend-supplied reasons list when present', async () => {
+    const user = userEvent.setup();
+    const classifiedMoves = [
+      classifiedMove({
+        ply: 3,
+        moveSan: 'Qh5',
+        quality: 'mistake',
+        bestLineSan: ['Nf3'],
+        reasons: ['Leaves the knight on d4 undefended', 'Costs 9 squares of piece mobility']
+      })
+    ];
+    render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={3} onSelect={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: /show notes/i }));
+
+    expect(screen.getByText('Leaves the knight on d4 undefended')).toBeInTheDocument();
+    expect(screen.getByText('Costs 9 squares of piece mobility')).toBeInTheDocument();
+    expect(screen.queryByText(/better was/i)).not.toBeInTheDocument();
+  });
+
   test('the "show notes" panel does not show a "better was" note for a best move (nothing to improve on)', async () => {
     const user = userEvent.setup();
     const classifiedMoves = [classifiedMove({ ply: 1, moveSan: 'e4', quality: 'best', bestLineSan: ['e4'] })];

@@ -454,25 +454,47 @@ schema Task 15.1 already extended.
 `SessionBoardColumn.tsx`, `apps/web/src/features/board/{MoveStrip,
 MoveExplorer, GameEvalChart, EvalBar}.tsx` and their tests.
 
-- [ ] Update every `MoveQuality`-keyed lookup/switch for the new label set
+- [x] Update every `MoveQuality`-keyed lookup/switch for the new label set
       (`great`, `excellent`, `book`, `inaccuracy`, `forced` added;
       `interesting`/`dubious` removed — grep for those two literals across
-      `apps/web/src` to find every reference before deleting).
-- [ ] Surface `reasons` in the move detail view (short list, per §11's
+      `apps/web/src` to find every reference before deleting). Found and
+      fixed: `tokens.css`/`MoveQualityBadge.css`/`MoveExplorer.css`/
+      `MoveStrip.css`'s `--quality-*` custom properties and per-tier CSS
+      rules (5 new tiers added, 2 stale ones removed); `JsonTreeView.css` had
+      been reusing `--quality-interesting` as a generic syntax-highlight
+      color, unrelated to move quality — given its own `--syntax-string`
+      token instead of coupling it to a quality tier. Also fixed a latent bug
+      MoveExplorer.tsx's "better was X" note (`quality !== 'good' && quality
+      !== 'best'`) would have shown for the 5 new non-error tiers too
+      (`brilliant`/`great`/`excellent`/`book`/`forced`) — replaced with an
+      explicit `isImprovableQuality` allowlist (`inaccuracy`/`mistake`/
+      `miss`/`blunder`).
+- [x] Surface `reasons` in the move detail view (short list, per §11's
       "show at most two" — no ordering logic needed client-side, the array
-      already arrives pre-ordered).
-- [ ] Existing component/unit tests updated to the new fixtures; run
+      already arrives pre-ordered). Implemented in MoveExplorer.tsx's
+      `MoveNote`: renders the `reasons` list when present, falling back to
+      the legacy "quality: better was ..." line for analyses stored before
+      `reasons` existed.
+- [x] Existing component/unit tests updated to the new fixtures; run
       `npm run typecheck` on `apps/web` — the enum change should make the
-      compiler find every stale reference.
-- [ ] Old analyses in the DB (`classifiedMoves` jsonb) were written with the
-      old shape. Decide and document the migration story: simplest is "not
-      backward compatible — the UI reads whatever shape is stored, so old
-      analyses render best-effort or the game gets a `re-analyze` action";
-      given this is a personal-use app (not a public product with a large
-      analysis corpus), a hand-triggered re-analysis of existing games is
-      almost certainly cheaper than a JSONB backfill migration — confirm this
-      call explicitly rather than silently leaving old rows to render wrong.
-- [ ] Commit: `feat: update move-quality UI for new classification labels`.
+      compiler find every stale reference. (Clean — no stale references
+      found; `apps/web/src` never had a hardcoded `MoveQuality` switch, only
+      generic `MOVE_QUALITY_SYMBOLS`/`move-quality-${quality}` lookups, which
+      pick up new labels automatically once the CSS backing them exists.)
+- [x] Old analyses in the DB (`classifiedMoves` jsonb) were written with the
+      old shape. **Decision (confirmed, not building a migration or
+      re-analyze route):** not backward compatible. `ClassifiedMoveSchema`'s
+      `quality` enum no longer accepts `'interesting'`/`'dubious'`, so any
+      already-analyzed game still holding those values will fail to
+      round-trip through the schema. This is a personal-use app with no dev
+      Postgres currently running to audit for such rows (the compose
+      Postgres is stopped; only an unrelated project's container is up) —
+      given the small, single-user corpus this implies, the practical fix if
+      it ever surfaces is deleting and re-importing the affected game(s)
+      through the existing import flow (which re-runs `runAnalyzeGameJob`
+      from scratch) rather than writing a one-off JSONB backfill or a new
+      `re-analyze` endpoint for a problem that may not even exist yet.
+- [x] Commit: `feat: update move-quality UI for new classification labels`.
 
 ---
 
