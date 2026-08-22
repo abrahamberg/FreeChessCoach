@@ -628,10 +628,12 @@ don't hand-tune weights without ground truth.
 **Read:** `docs/algorith.md` §7.4 only.
 
 **Files:** `packages/chess-analysis/src/endgame-score.ts` + test.
-- [ ] `conversionScore` per §7.4's win%-at-`endgameStartPly` × actual result
+- [x] `conversionScore` per §7.4's win%-at-`endgameStartPly` × actual result
       table; `endgameScore = 0.7*phaseAccuracy + 0.3*conversionScore`;
-      `null` if the game never reached the endgame phase.
-- [ ] Commit: `feat: endgame score`.
+      `null` if the game never reached the endgame phase. (Signalled by
+      either input being `null` — both derive from the same
+      `endgameStartPly`, which is `null` in that case per Task 16.2.)
+- [x] Commit: `feat: endgame score`.
 
 ---
 

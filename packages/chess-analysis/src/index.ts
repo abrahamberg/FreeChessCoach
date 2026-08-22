@@ -10,6 +10,7 @@ export * from './classify-move.js';
 export * from './classify-severity.js';
 export * from './critical-moments.js';
 export * from './diff-features.js';
+export * from './endgame-score.js';
 export * from './game-accuracy.js';
 export * from './move-ref.js';
 export * from './move-metrics.js';
