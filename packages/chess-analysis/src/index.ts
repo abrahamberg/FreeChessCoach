@@ -1,4 +1,5 @@
 export * from './apply-san-sequence.js';
+export * from './assert-eval-sign.js';
 export * from './candidate-moves.js';
 export * from './classify.js';
 export * from './critical-moments.js';

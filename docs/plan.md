@@ -66,15 +66,15 @@ that can't be pure — it lives in a service, not in chess-analysis.
 **Files:** `packages/chess-analysis/src/assert-eval-sign.ts` + test; call site
 in the batch job (`apps/api/src/services/analysis.ts`).
 
-- [ ] Write a function `assertEvalSignConvention(fen, lines)` implementing
+- [x] Write a function `assertEvalSignConvention(fen, lines)` implementing
       the §1.2 check (black-to-move → `lines[0].cp <= lines[1].cp`; white →
       `>=`) — throws a descriptive error rather than silently proceeding.
-- [ ] Unit tests: a correctly-ordered white-to-move and black-to-move eval
+- [x] Unit tests: a correctly-ordered white-to-move and black-to-move eval
       each pass; a deliberately-flipped fixture of each throws.
-- [ ] Call it once per stored `EngineEval` in `analyzeInChunks`
+- [x] Call it once per stored `EngineEval` in `analyzeInChunks`
       (`apps/api/src/services/analysis.ts`) — cheap, catches an engine/parser
       regression at ingest instead of downstream as "plausible garbage".
-- [ ] Commit: `feat: assert engine eval sign convention at ingest`.
+- [x] Commit: `feat: assert engine eval sign convention at ingest`.
 
 ### Task 10.2: Relocate the opening dataset
 

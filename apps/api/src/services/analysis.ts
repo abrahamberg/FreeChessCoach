@@ -1,4 +1,4 @@
-import { classifyMoves, findCandidateMoments, parsePgn } from '@chess-coach/chess-analysis';
+import { assertEvalSignConvention, classifyMoves, findCandidateMoments, parsePgn } from '@chess-coach/chess-analysis';
 import type { CoachingPlan, EngineEval } from '@chess-coach/shared';
 import { buildPlannerMessages, type PlannerPromptInput } from '@chess-coach/prompts';
 import type { Kysely } from 'kysely';
@@ -105,7 +105,9 @@ async function analyzeInChunks(
     // Each EngineEval's `ply` is chunk-relative (0..chunk.length-1) — the
     // backend only ever sees this one chunk — so it has to be shifted by
     // `start` to become the position's real index in the game.
-    evals.push(...chunkEvals.map((evalResult, i) => ({ ...evalResult, ply: start + i })));
+    const renumberedChunkEvals = chunkEvals.map((evalResult, i) => ({ ...evalResult, ply: start + i }));
+    renumberedChunkEvals.forEach((evalResult) => assertEvalSignConvention(evalResult.fen, evalResult.lines));
+    evals.push(...renumberedChunkEvals);
     await analysesRepo.storeEngineEvals(db, analysisId, evals);
   }
 
