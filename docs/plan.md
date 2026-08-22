@@ -163,20 +163,20 @@ generated JSON directly (`import bookData from './generated/opening-book-index.j
 needed** (verified against `apps/api/scripts/bundle.mjs` — first-party
 imports are bundled, not left external).
 
-- [ ] `inBookWalk(positions: {fen, moveSan, mover}[]): PerPlyBookResult[]` —
+- [x] `inBookWalk(positions: {fen, moveSan, mover}[]): PerPlyBookResult[]` —
       §12.4: walks plies in order, flips `inBook = false` permanently once
       either side deviates, returns per-ply `{classification: 'book' |
       undefined, leftBook?: {ply, played, alternatives}}` plus
       `lastBookPly: {white, black}`.
-- [ ] `resolveOpening(positionKeys: string[]): {eco, ecoVolume, name, family,
+- [x] `resolveOpening(positionKeys: string[]): {eco, ecoVolume, name, family,
       variation, ply} | null` — §12.5 deepest-match-wins (search backwards
       from `min(length-1, 30)`), split `name` on `': '` into family/variation.
-- [ ] Tests: a known Sicilian Najdorf PGN resolves the deepest named line,
+- [x] Tests: a known Sicilian Najdorf PGN resolves the deepest named line,
       not "Sicilian Defense"; a transposed move order (`1.Nf3 d5 2.d4 Nf6
       3.c4` vs. QGD order) resolves to the same key/name; a game that leaves
       book at move 6 reports `leftBookPly`/`leftBookMove`/`bookAlternatives`
       correctly for both colors independently.
-- [ ] Commit: `feat: opening book runtime lookup (book detection, opening name)`.
+- [x] Commit: `feat: opening book runtime lookup (book detection, opening name)`.
 
 ### Task 11.4: Wire book info into the analyze-game job
 

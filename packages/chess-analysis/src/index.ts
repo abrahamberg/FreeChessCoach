@@ -5,6 +5,7 @@ export * from './classify.js';
 export * from './critical-moments.js';
 export * from './diff-features.js';
 export * from './move-ref.js';
+export * from './opening-book.js';
 export * from './opening-book-key.js';
 export * from './pgn-mutation.js';
 export * from './pgn.js';
