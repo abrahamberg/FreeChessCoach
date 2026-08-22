@@ -506,15 +506,19 @@ MoveExplorer, GameEvalChart, EvalBar}.tsx` and their tests.
 
 **Files:** `packages/chess-analysis/src/game-accuracy.ts` + test.
 
-- [ ] `volatilityWeights(winPctSeries, moverPlies): number[]` — §4.1, window
+- [x] `volatilityWeights(winPctSeries, moverPlies): number[]` — §4.1, window
       size `clamp(ceil((N+1)/10), 2, 8)`, population stdev, clamp `[0.5,12]`.
-- [ ] `aggregateAccuracy(accs, weights): number` — §4.2/§4.3: weighted mean,
+- [x] `aggregateAccuracy(accs, weights): number` — §4.2/§4.3: weighted mean,
       harmonic mean, `clamp((weighted+harmonic)/2, 0, 100)`, 1 decimal.
-- [ ] Edge cases from §4.4 as explicit tests: 0 moves → `null`; 1 move →
+- [x] Edge cases from §4.4 as explicit tests: 0 moves → `null`; 1 move →
       that move's own accuracy; book moves included at 100% unless the
       engine says the book move loses ≥10 win% (real drop used instead);
-      forced (1-legal-move) moves included, not excluded.
-- [ ] Commit: `feat: CAPS-style game accuracy aggregation`.
+      forced (1-legal-move) moves included, not excluded. (Book/forced
+      handling lives in a third small export, `accuracyForAggregate(quality,
+      drop)`, since §4.2's `accs` array needs to know quality to apply the
+      book override — not part of the spec's named functions but required to
+      build their input.)
+- [x] Commit: `feat: CAPS-style game accuracy aggregation`.
 
 ### Task 16.2: Phase boundaries
 
