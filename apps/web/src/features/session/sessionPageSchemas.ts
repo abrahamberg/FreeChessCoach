@@ -1,4 +1,4 @@
-import { ClassifiedMoveSchema, MoveQualitySchema } from '@chess-coach/shared';
+import { ClassifiedMoveSchema, GameReportSchema, MoveQualitySchema } from '@chess-coach/shared';
 import { z } from 'zod';
 
 export const SessionMessageSchema = z.object({
@@ -49,7 +49,8 @@ export const GameDetailSchema = z.object({
   blackName: z.string().nullable(),
   result: z.string().nullable(),
   classifiedMoves: z.array(ClassifiedMoveSchema).nullable(),
-  liveMoveQualities: z.array(LiveMoveQualitySchema).nullable().default(null)
+  liveMoveQualities: z.array(LiveMoveQualitySchema).nullable().default(null),
+  gameReport: GameReportSchema.nullable().default(null)
 });
 
 /** POST /api/sessions/:id/play-move's response (architecture §14). */

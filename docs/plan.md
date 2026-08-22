@@ -842,14 +842,34 @@ point estimate" requirement isn't already clear from Task 18.2.
 **Files:** new component(s) under `apps/web/src/features/games/` or
 `apps/web/src/features/board/` (co-locate with existing move-explorer UI —
 check current feature-folder boundary before choosing).
-- [ ] Accuracy headline (both colours), phase accuracy breakdown, the four
+- [x] Accuracy headline (both colours), phase accuracy breakdown, the four
       scores (opening/tactics/strategy/endgame), classification counts
       (inaccuracy/mistake/blunder/etc. — the exact ask from the user's
       original request), estimated rating **as a range**, per §8.1's explicit
       "ship a range or users lose trust" instruction — do not render a bare
       point estimate.
-- [ ] Component tests with a fixture `GameReport`.
-- [ ] Commit: `feat: game report summary panel`.
+      Landed as `GameReportSummary` in `apps/web/src/features/board/`
+      (co-located with `MoveExplorer`, per this task's own suggestion) — a
+      two-column (White/Black) table covering every metric listed above, plus
+      a per-colour classification-count list reusing `MoveQualityBadge` for
+      the same iconography already used in the move list. `formatRating`
+      renders `reason` (e.g. "insufficient moves") when `value`/`range` are
+      `null`, and always pairs a non-null value with its range — there is no
+      code path that prints a bare number. Wired into `SessionPage.tsx` above
+      `MoveExplorer` (both now share a new `.session-move-explorer-column`
+      flex wrapper, since the panel needs to sit above the explorer rather
+      than *be* it), gated on `gameQuery.data?.gameReport` so a `coach_play`
+      game (no `analyses` row, hence no report) shows just the explorer as
+      before. Required extending the frontend's `GameDetailSchema`
+      (`sessionPageSchemas.ts`) with the new `gameReport` field the backend
+      route now returns (Task 19.3).
+- [x] Component tests with a fixture `GameReport`.
+      5 tests in `GameReportSummary.test.tsx`: both colours' accuracy render,
+      null phase-accuracy/score values render as "—", the rating range always
+      renders paired with its value, the `reason` fallback renders when the
+      rating is null, and classification counts (explicitly including
+      inaccuracies/mistakes/blunders) render per colour.
+- [x] Commit: `feat: game report summary panel`.
 
 ### Task 20.2: Alternatives + book label in the move explorer
 

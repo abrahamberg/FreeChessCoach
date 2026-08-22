@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
+import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { ChatPane } from '../chat/ChatPane.js';
@@ -170,13 +171,16 @@ export function SessionPage(): ReactNode {
                 onChangeAutoplayInterval={setAutoplayIntervalMs}
               />
             ) : (
-              <MoveExplorer
-                sanMoves={sanMoves}
-                classifiedMoves={gameQuery.data?.classifiedMoves ?? []}
-                positions={positions}
-                currentPly={boardState.ply}
-                onSelect={peekAt}
-              />
+              <div className="session-move-explorer-column">
+                {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} />}
+                <MoveExplorer
+                  sanMoves={sanMoves}
+                  classifiedMoves={gameQuery.data?.classifiedMoves ?? []}
+                  positions={positions}
+                  currentPly={boardState.ply}
+                  onSelect={peekAt}
+                />
+              </div>
             ))}
           {board}
           {chatPanel}
