@@ -230,10 +230,10 @@ constants").
 
 **Files:** `packages/chess-analysis/src/accuracy-curve.ts` + test.
 
-- [ ] `moveAccuracy(drop: number): number` — §3 formula, clamped [0,100].
+- [x] `moveAccuracy(drop: number): number` — §3 formula, clamped [0,100].
       Unit tests reproduce the §3 reference table to 2 decimals (0→100.00 …
       70→0.00 clamped).
-- [ ] Commit: `feat: per-move accuracy curve`.
+- [x] Commit: `feat: per-move accuracy curve`.
 
 ### Task 12.3: Per-ply win% series and per-move drop
 
