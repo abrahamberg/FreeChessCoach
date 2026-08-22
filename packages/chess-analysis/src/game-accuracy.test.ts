@@ -82,4 +82,11 @@ describe('accuracyForAggregate', () => {
   test('a forced move is included with its own computed drop, not excluded or overridden', () => {
     expect(accuracyForAggregate('forced', 0)).toBeCloseTo(moveAccuracy(0), 5);
   });
+
+  test('a miss-labeled move uses its raw drop like any other quality — no miss-specific penalty', () => {
+    // §5.9: `miss` is a re-label of an underlying severity for display only;
+    // the accuracy math must never special-case it the way it special-cases `book`.
+    expect(accuracyForAggregate('miss', 22)).toBeCloseTo(moveAccuracy(22), 5);
+    expect(accuracyForAggregate('miss', 22)).toBe(accuracyForAggregate('mistake', 22));
+  });
 });

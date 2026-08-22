@@ -1,0 +1,82 @@
+import { describe, expect, test } from 'vitest';
+import { MOVE_QUALITIES } from './analysis.js';
+import {
+  ClassificationCountsSchema,
+  GameReportSchema,
+  type ClassificationCounts,
+  type GameReport
+} from './game-report.js';
+
+function zeroCounts(): ClassificationCounts {
+  const entries = MOVE_QUALITIES.map((quality) => [quality, 0] as const);
+  return Object.fromEntries(entries) as ClassificationCounts;
+}
+
+describe('ClassificationCountsSchema', () => {
+  test('has exactly one field per MoveQuality — §5.9', () => {
+    expect(Object.keys(ClassificationCountsSchema.shape).sort()).toEqual([...MOVE_QUALITIES].sort());
+  });
+
+  test('accepts an all-zero count object', () => {
+    expect(ClassificationCountsSchema.safeParse(zeroCounts()).success).toBe(true);
+  });
+
+  test('rejects a negative count', () => {
+    const invalid = { ...zeroCounts(), blunder: -1 };
+    expect(ClassificationCountsSchema.safeParse(invalid).success).toBe(false);
+  });
+});
+
+describe('GameReportSchema', () => {
+  function buildPlayerReport() {
+    return {
+      accuracy: 87.4,
+      phaseAccuracy: { opening: 92.1, middlegame: 80.5, endgame: null },
+      phaseConfidence: { opening: 'ok', middlegame: 'ok', endgame: 'none' },
+      scores: { opening: 90, tactics: 75, strategy: 82, endgame: null },
+      counts: { ...zeroCounts(), best: 10, good: 15, inaccuracy: 2 },
+      acpl: 24.6,
+      estimatedRating: { value: 1550, range: [1400, 1700], confidence: 'medium' }
+    };
+  }
+
+  function buildFixture(): GameReport {
+    return {
+      engine: { name: 'stockfish', depth: 18, multiPv: 3 },
+      book: {
+        source: 'lichess-chess-openings@2024.01',
+        eco: 'C50',
+        ecoVolume: 'C',
+        name: 'Italian Game',
+        family: 'Italian Game',
+        variation: null,
+        namedAtPly: 4,
+        lastBookPly: 6,
+        players: {
+          white: { lastBookPly: 6, leftBookPly: 7, leftBookMove: 'Bc4', bookAlternatives: ['Nf3', 'Bb5'] },
+          black: { lastBookPly: 6, leftBookPly: 8, leftBookMove: 'Nf6', bookAlternatives: ['Nc6'] }
+        }
+      },
+      phases: { openingEndPly: 12, endgameStartPly: null, openingSource: 'book' },
+      players: { white: buildPlayerReport(), black: buildPlayerReport() },
+      moves: []
+    } as unknown as GameReport;
+  }
+
+  test('parses a fully-populated fixture report', () => {
+    const result = GameReportSchema.safeParse(buildFixture());
+    expect(result.success).toBe(true);
+  });
+
+  test('rejects an out-of-range accuracy', () => {
+    const fixture = buildFixture();
+    fixture.players.white.accuracy = 150;
+    expect(GameReportSchema.safeParse(fixture).success).toBe(false);
+  });
+
+  test('allows a null estimatedRating value with a reason, per §8.6 insufficient-moves case', () => {
+    const fixture = buildFixture();
+    fixture.players.white.estimatedRating = { value: null, range: null, confidence: 'low', reason: 'insufficient moves' };
+    expect(GameReportSchema.safeParse(fixture).success).toBe(true);
+  });
+});

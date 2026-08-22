@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ClassifiedMoveSchema, MOVE_QUALITIES } from './analysis.js';
 
 export const PlayerBookReportSchema = z.object({
   lastBookPly: z.number().int().nonnegative(),
@@ -23,3 +24,81 @@ export const BookReportSchema = z.object({
   })
 });
 export type BookReport = z.infer<typeof BookReportSchema>;
+
+/** §5.9 — per-colour counts of each classification. `miss` is counted only
+ * here, never re-added under its `underlyingSeverity`; accuracy math always
+ * reads the move's raw `drop`, never these counts. */
+export const ClassificationCountsSchema = z.object(
+  Object.fromEntries(MOVE_QUALITIES.map((quality) => [quality, z.number().int().nonnegative()]))
+) as z.ZodObject<Record<(typeof MOVE_QUALITIES)[number], z.ZodNumber>>;
+export type ClassificationCounts = z.infer<typeof ClassificationCountsSchema>;
+
+export const EstimatedRatingReportSchema = z.object({
+  value: z.number().int().nullable(),
+  range: z.tuple([z.number().int(), z.number().int()]).nullable(),
+  confidence: z.enum(['low', 'medium']),
+  reason: z.string().optional()
+});
+export type EstimatedRatingReport = z.infer<typeof EstimatedRatingReportSchema>;
+
+const PhaseConfidenceSchema = z.enum(['ok', 'low', 'none']);
+export type PhaseConfidence = z.infer<typeof PhaseConfidenceSchema>;
+
+const NullablePercentSchema = z.number().min(0).max(100).nullable();
+const NullableScoreSchema = z.number().nullable();
+
+export const PlayerReportSchema = z.object({
+  accuracy: z.number().min(0).max(100),
+  phaseAccuracy: z.object({
+    opening: NullablePercentSchema,
+    middlegame: NullablePercentSchema,
+    endgame: NullablePercentSchema
+  }),
+  phaseConfidence: z.object({
+    opening: PhaseConfidenceSchema,
+    middlegame: PhaseConfidenceSchema,
+    endgame: PhaseConfidenceSchema
+  }),
+  scores: z.object({
+    opening: NullableScoreSchema,
+    tactics: NullableScoreSchema,
+    strategy: NullableScoreSchema,
+    endgame: NullableScoreSchema
+  }),
+  counts: ClassificationCountsSchema,
+  acpl: z.number().nonnegative(),
+  estimatedRating: EstimatedRatingReportSchema
+});
+export type PlayerReport = z.infer<typeof PlayerReportSchema>;
+
+export const GamePhasesSchema = z.object({
+  openingEndPly: z.number().int().nonnegative(),
+  endgameStartPly: z.number().int().nonnegative().nullable(),
+  openingSource: z.enum(['book', 'heuristic'])
+});
+export type GamePhases = z.infer<typeof GamePhasesSchema>;
+
+export const EngineReportSchema = z.object({
+  name: z.string().min(1),
+  depth: z.number().int().positive(),
+  multiPv: z.number().int().positive()
+});
+export type EngineReport = z.infer<typeof EngineReportSchema>;
+
+/**
+ * §9's top-level report. `book` reuses the richer `BookReportSchema` above
+ * (per-colour book-exit detail) rather than the spec's leaner inline shape —
+ * it is a superset of the fields §9 asks for and that schema already backs
+ * the shipped book-resolution pipeline.
+ */
+export const GameReportSchema = z.object({
+  engine: EngineReportSchema,
+  book: BookReportSchema,
+  phases: GamePhasesSchema,
+  players: z.object({
+    white: PlayerReportSchema,
+    black: PlayerReportSchema
+  }),
+  moves: z.array(ClassifiedMoveSchema)
+});
+export type GameReport = z.infer<typeof GameReportSchema>;

@@ -692,14 +692,31 @@ don't hand-tune weights without ground truth.
 **Files:** `packages/shared/src/analysis.ts` (or split into
 `packages/shared/src/game-report.ts` if `analysis.ts` would cross the
 200-line guideline — check current length before deciding).
-- [ ] Schemas per §9, reusing the `MoveReport` shape already landed in Task
+- [x] Schemas per §9, reusing the `MoveReport` shape already landed in Task
       15.1 for `moves`.
-- [ ] `ClassificationCounts` (§5.9) — `miss` counted only under `miss`,
+      Landed in the pre-existing `packages/shared/src/game-report.ts` (already
+      home to the book-resolution schemas from an earlier phase) rather than
+      `analysis.ts`, which is already over the 200-line guideline. Added
+      `ClassificationCountsSchema`, `EstimatedRatingReportSchema`,
+      `PlayerReportSchema`, `GamePhasesSchema`, `EngineReportSchema`, and
+      `GameReportSchema`. `GameReport.book` reuses the existing, richer
+      `BookReportSchema` (per-colour book-exit detail) instead of §9's leaner
+      inline shape — it's a strict superset of what §9 asks for and already
+      backs the shipped book pipeline, so there's no reason to shadow it with
+      a second, narrower type.
+- [x] `ClassificationCounts` (§5.9) — `miss` counted only under `miss`,
       `underlyingSeverity` kept separate; accuracy math always reads raw
       `drop`, never the label — assert this with a test (a `miss`-labeled
       move's accuracy still reflects its actual drop, not a miss-specific
       penalty).
-- [ ] Commit: `feat: game report output schema`.
+      `ClassificationCountsSchema` is derived from the existing
+      `MOVE_QUALITIES` tuple (one non-negative int field per quality) rather
+      than hand-duplicated, with a test asserting the key set stays in sync.
+      The raw-drop invariant was already structurally true —
+      `accuracyForAggregate` only special-cases `'book'`, never `'miss'` — so
+      added a regression test in `game-accuracy.test.ts` pinning it
+      (`accuracyForAggregate('miss', 22) === accuracyForAggregate('mistake', 22)`).
+- [x] Commit: `feat: game report output schema`.
 
 ### Task 19.2: Single tunable-constants config object
 
