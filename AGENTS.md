@@ -11,6 +11,14 @@ Socratically while tracking their progress over time. The initial build
 (Phases 0–9) is complete and merged — read before coding:
 
 - `docs/architecture.md` — how it fits together (layout, DB, agent, K8s). Always relevant.
+- `docs/plan.md` — remaining work: the Game Report feature (accuracy, phase
+  accuracy, opening/tactics/strategy/endgame scores, classification counts,
+  estimated rating, opening-book integration). Only relevant when a task
+  touches that feature — irrelevant to everything else in the repo, do not
+  read it otherwise. When it is relevant: open it, find the one Phase/Task
+  being worked on, and read only that task's `docs/algorith.md` section per
+  its own "Read:" pointer — never open `docs/algorith.md` cold or read it
+  end-to-end; it's long and most of it won't apply to any single task.
 
 
 ## Commands
