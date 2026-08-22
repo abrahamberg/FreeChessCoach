@@ -331,10 +331,10 @@ guideline); reuses `computePositionFeatures`, `diffPositionFeatures`
 
 **Files:** `packages/chess-analysis/src/opening-development.ts` + test.
 
-- [ ] `castledPly(positions, color): number | null` and
+- [x] `castledPly(positions, color): number | null` and
       `developedMinorPieceCount(fen, color): number` — derived from the move
       list / FEN, feeding §7.1's `developmentScore`.
-- [ ] Commit: `feat: opening development signals (castling, piece development)`.
+- [x] Commit: `feat: opening development signals (castling, piece development)`.
 
 ### Task 14.3: Opponent-reply eval for Brilliant candidates only
 
