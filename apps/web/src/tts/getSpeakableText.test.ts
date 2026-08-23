@@ -62,4 +62,10 @@ describe('getSpeakableText', () => {
   test('converts multiple arrow tokens and bold spans together', () => {
     expect(getSpeakableText(msg('assistant', '**Play** [e2-e4], not [d2-d4].'))).toBe('Play e2 to e4, not d2 to d4.');
   });
+
+  test('translates chess notation to natural spoken English (sanToSpokenText.ts)', () => {
+    expect(getSpeakableText(msg('assistant', '24. a4 Qh5+ was crushing, and 26...c6 is forced.'))).toBe(
+      "move 24, a4 Queen h5 check was crushing, and move 26, black's move, c6 is forced."
+    );
+  });
 });

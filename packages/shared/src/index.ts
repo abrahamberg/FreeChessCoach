@@ -9,4 +9,5 @@ export * from './game.js';
 export * from './game-report.js';
 export * from './llm.js';
 export * from './session.js';
+export * from './tts.js';
 export * from './user.js';

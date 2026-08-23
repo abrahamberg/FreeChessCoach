@@ -14,7 +14,9 @@ const PROFILE = {
   selfAssessment: null,
   creditBalance: 42,
   engineMode: 'native',
-  coachPersona: 'general'
+  coachPersona: 'general',
+  ttsEnabled: false,
+  ttsBackend: 'openai'
 };
 
 function jsonResponse(body: unknown, status = 200) {
@@ -140,11 +142,36 @@ describe('SettingsPage', () => {
 
     await screen.findByText(/42/);
     await user.click(screen.getByRole('radio', { name: /the gambler/i }));
+    await user.click(screen.getByRole('button', { name: /continue with the gambler/i }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/users/me',
         expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ coachPersona: 'gambler' }) })
+      )
+    );
+  });
+
+  test('enabling coach voice PATCHes the profile after confirming the dialog', async () => {
+    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
+      if (path === '/api/users/me' && (!init || init.method === undefined)) return Promise.resolve(jsonResponse(PROFILE));
+      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
+      if (path === '/api/users/me' && init?.method === 'PATCH') {
+        return Promise.resolve(jsonResponse({ ...PROFILE, ttsEnabled: true }));
+      }
+      throw new Error(`unexpected fetch: ${path} ${init?.method ?? 'GET'}`);
+    });
+    renderSettings(fetchMock);
+    const user = userEvent.setup();
+
+    await screen.findByText(/42/);
+    await user.click(screen.getByRole('checkbox', { name: /enable coach voice/i }));
+    await user.click(screen.getByRole('button', { name: /use openai voice/i }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/users/me',
+        expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ ttsEnabled: true }) })
       )
     );
   });

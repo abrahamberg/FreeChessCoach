@@ -298,7 +298,15 @@ describe('buildCoachSystemPrompt', () => {
   });
 
   describe('coach persona (coaches.md — cosmetic voice only)', () => {
-    const NON_GENERAL_PERSONAS = COACH_PERSONAS.filter((persona): persona is Exclude<CoachPersona, 'general'> => persona !== 'general');
+    // 'general' and 'general_female' are the same coach, byte-identical
+    // prompts — they differ only in which TTS voice reads them aloud
+    // (COACH_PERSONA_INFO.voiceProfile), not in any prompt text, so neither
+    // gets a "## Voice" block.
+    const GENERAL_EQUIVALENT_PERSONAS = ['general', 'general_female'] as const;
+    const NON_GENERAL_PERSONAS = COACH_PERSONAS.filter(
+      (persona): persona is Exclude<CoachPersona, (typeof GENERAL_EQUIVALENT_PERSONAS)[number]> =>
+        !GENERAL_EQUIVALENT_PERSONAS.includes(persona as (typeof GENERAL_EQUIVALENT_PERSONAS)[number])
+    );
 
     test('persona: "general" staticPart is identical to omitting a voice block — the default coach is untouched', () => {
       const { staticPart } = buildCoachSystemPrompt(baseInput());
@@ -310,6 +318,12 @@ describe('buildCoachSystemPrompt', () => {
       const analyze = buildCoachSystemPrompt(baseInput({ band: 'novice' }));
       const analyzeAgain = buildCoachSystemPrompt(baseInput({ band: 'novice' }));
       expect(analyze.staticPart).toBe(analyzeAgain.staticPart);
+    });
+
+    test('persona: "general_female" staticPart is byte-identical to "general" — only the TTS voice differs, never the prompt', () => {
+      const general = buildCoachSystemPrompt(baseInput());
+      const generalFemale = buildCoachSystemPrompt(baseInput({ persona: 'general_female' }));
+      expect(generalFemale.staticPart).toBe(general.staticPart);
     });
 
     test.each(NON_GENERAL_PERSONAS)('persona: "%s" adds a "## Voice" block and keeps everything else byte-identical to "general"', (persona) => {

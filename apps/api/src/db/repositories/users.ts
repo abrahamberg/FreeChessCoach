@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { CoachPersona, EngineMode, RatingBand } from '@chess-coach/shared';
+import type { CoachPersona, EngineMode, RatingBand, TtsBackend } from '@chess-coach/shared';
 import type { Database } from '../schema.js';
 
 export interface UserRow {
@@ -12,6 +12,8 @@ export interface UserRow {
   lichessUsername: string | null;
   chesscomUsername: string | null;
   selfAssessment: string | null;
+  ttsEnabled: boolean;
+  ttsBackend: TtsBackend;
   createdAt: Date;
 }
 
@@ -31,6 +33,8 @@ export interface UserPatch {
   lichessUsername?: string | null;
   chesscomUsername?: string | null;
   selfAssessment?: string | null;
+  ttsEnabled?: boolean;
+  ttsBackend?: TtsBackend;
 }
 
 export function findByEmail(db: Kysely<Database>, email: string): Promise<UserRow | undefined> {

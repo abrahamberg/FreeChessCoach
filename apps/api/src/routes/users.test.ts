@@ -34,7 +34,9 @@ describe('GET/PATCH /api/users/me', () => {
       lichessUsername: null,
       chesscomUsername: null,
       selfAssessment: null,
-      creditBalance: 100
+      creditBalance: 100,
+      ttsEnabled: false,
+      ttsBackend: 'openai'
     });
     expect(typeof body.id).toBe('string');
   });
@@ -165,6 +167,38 @@ describe('GET/PATCH /api/users/me', () => {
       url: '/api/users/me',
       headers,
       payload: { coachPersona: 'wizard' }
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.headers['content-type']).toContain('application/problem+json');
+  });
+
+  test('PATCH enables coach voice and switches its backend', async () => {
+    const app = buildApp({ authMode: 'proxy', db });
+    const headers = { 'x-auth-request-email': 'voice@example.com', 'x-auth-request-user': 'Voice' };
+    await app.inject({ method: 'GET', url: '/api/users/me', headers });
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/api/users/me',
+      headers,
+      payload: { ttsEnabled: true, ttsBackend: 'browser' }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ ttsEnabled: true, ttsBackend: 'browser' });
+  });
+
+  test('PATCH rejects a ttsBackend outside TTS_BACKENDS as 400 problem+json', async () => {
+    const app = buildApp({ authMode: 'proxy', db });
+    const headers = { 'x-auth-request-email': 'voice-bad@example.com', 'x-auth-request-user': 'VoiceBad' };
+    await app.inject({ method: 'GET', url: '/api/users/me', headers });
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/api/users/me',
+      headers,
+      payload: { ttsBackend: 'cassette' }
     });
 
     expect(response.statusCode).toBe(400);

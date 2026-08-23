@@ -52,3 +52,10 @@
   color: var(--text-muted);
   font-size: 13px;
 }
+
+.coach-persona-select__confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}

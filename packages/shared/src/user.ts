@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { COACH_PERSONAS, ENGINE_MODES, RATING_BANDS } from './constants.js';
+import { COACH_PERSONAS, ENGINE_MODES, RATING_BANDS, TTS_BACKENDS } from './constants.js';
 
 export const UserProfileSchema = z.object({
   id: z.string().uuid(),
@@ -11,7 +11,9 @@ export const UserProfileSchema = z.object({
   lichessUsername: z.string().nullable(),
   chesscomUsername: z.string().nullable(),
   selfAssessment: z.string().nullable(),
-  creditBalance: z.number().int()
+  creditBalance: z.number().int(),
+  ttsEnabled: z.boolean(),
+  ttsBackend: z.enum(TTS_BACKENDS)
 });
 export type UserProfile = z.infer<typeof UserProfileSchema>;
 
@@ -22,6 +24,8 @@ export const UpdateUserProfileRequestSchema = z.object({
   coachPersona: z.enum(COACH_PERSONAS).optional(),
   lichessUsername: z.string().nullable().optional(),
   chesscomUsername: z.string().nullable().optional(),
-  selfAssessment: z.string().nullable().optional()
+  selfAssessment: z.string().nullable().optional(),
+  ttsEnabled: z.boolean().optional(),
+  ttsBackend: z.enum(TTS_BACKENDS).optional()
 });
 export type UpdateUserProfileRequest = z.infer<typeof UpdateUserProfileRequestSchema>;

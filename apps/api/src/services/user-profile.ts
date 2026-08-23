@@ -90,6 +90,8 @@ export async function toUserProfile(
     lichessUsername: user.lichessUsername,
     chesscomUsername: user.chesscomUsername,
     selfAssessment: user.selfAssessment,
-    creditBalance
+    creditBalance,
+    ttsEnabled: user.ttsEnabled,
+    ttsBackend: user.ttsBackend
   };
 }

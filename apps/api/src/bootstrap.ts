@@ -9,6 +9,7 @@ import { generateProse } from './llm/text.js';
 import type { KeyVault } from './llm/key-vault.js';
 import type { CoachAgentDependencies } from './services/coach-agent.js';
 import { createStripeClient, type StripeClient } from './services/stripe.js';
+import type { TtsConfig } from './services/tts.js';
 import type { EngineTunnelTransport } from './services/engine/engine-tunnel-transport.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
 
@@ -142,6 +143,30 @@ export function buildStripeClientFromEnv(): StripeClient | undefined {
     successUrl: requireEnv('STRIPE_CHECKOUT_SUCCESS_URL'),
     cancelUrl: requireEnv('STRIPE_CHECKOUT_CANCEL_URL')
   });
+}
+
+const DEFAULT_TTS_MODEL_OPENAI = 'gpt-4o-mini-tts';
+
+/** Optional: only wired when OPENAI_API_KEY is set, the same "missing key,
+ * the route simply doesn't register" pattern as Stripe
+ * (buildStripeClientFromEnv) — a deployment with no OpenAI key just doesn't
+ * offer the OpenAI TTS backend. Unlike the LLM gateway's model ids
+ * (LLM_STANDARD_MODEL_OPENAI etc., which are required with no default —
+ * getting those wrong is expensive and provider-specific), TTS_MODEL_OPENAI
+ * defaults to 'gpt-4o-mini-tts' (cheaper and more expressive than 'tts-1',
+ * and the model this app's persona voices in services/tts.ts were chosen
+ * against) and only needs overriding to pick a different voice model; it
+ * must never be a hard requirement that can crash the whole API process
+ * just because OPENAI_API_KEY happens to be set for the (unrelated) LLM
+ * gateway. TTS_OPENAI_CREDITS_PER_1K_CHARS has a working default too. */
+export function buildTtsConfigFromEnv(): TtsConfig | undefined {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return undefined;
+  return {
+    apiKey,
+    modelId: process.env.TTS_MODEL_OPENAI ?? DEFAULT_TTS_MODEL_OPENAI,
+    creditsPer1kChars: parsePositiveInt('TTS_OPENAI_CREDITS_PER_1K_CHARS', 5)
+  };
 }
 
 /** Reads ENGINE_TUNNEL_TIMEOUT_MS (design spec §2 self-review fix — every

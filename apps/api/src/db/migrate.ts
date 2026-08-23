@@ -16,6 +16,8 @@ import * as coachPersona from './migrations/0014_coach_persona.js';
 import * as bookReport from './migrations/0015_book_report.js';
 import * as gameReport from './migrations/0016_game_report.js';
 import * as moveReasons from './migrations/0017_move_reasons.js';
+import * as ttsSettings from './migrations/0018_tts_settings.js';
+import * as generalFemaleCoach from './migrations/0019_general_female_coach.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -36,7 +38,9 @@ const provider: MigrationProvider = {
       '0014_coach_persona': coachPersona,
       '0015_book_report': bookReport,
       '0016_game_report': gameReport,
-      '0017_move_reasons': moveReasons
+      '0017_move_reasons': moveReasons,
+      '0018_tts_settings': ttsSettings,
+      '0019_general_female_coach': generalFemaleCoach
     })
 };
 

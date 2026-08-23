@@ -294,14 +294,54 @@ describe('MessageList', () => {
       expect(onPlayMessage).toHaveBeenCalledWith('m1', 'Consider e2 to e4 here.');
     });
 
-    test('reflects loading and playing state via data-state', () => {
+    test('reflects loading and playing state via data-state, and both read as "stop" while active', () => {
       const { rerender } = render(
         <MessageList messages={[msg('m1', 'Good move.')]} onPlayMessage={vi.fn()} loadingMessageId="m1" />
       );
-      expect(screen.getByRole('button', { name: 'Play coach message' })).toHaveAttribute('data-state', 'loading');
+      expect(screen.getByRole('button', { name: 'Stop coach message' })).toHaveAttribute('data-state', 'loading');
 
       rerender(<MessageList messages={[msg('m1', 'Good move.')]} onPlayMessage={vi.fn()} playingMessageId="m1" />);
-      expect(screen.getByRole('button', { name: 'Replay coach message' })).toHaveAttribute('data-state', 'playing');
+      expect(screen.getByRole('button', { name: 'Stop coach message' })).toHaveAttribute('data-state', 'playing');
+    });
+
+    test('clicking while idle calls onPlayMessage; clicking while playing or loading calls onStopMessage instead', async () => {
+      const onPlayMessage = vi.fn();
+      const onStopMessage = vi.fn();
+      const user = userEvent.setup();
+
+      const { rerender } = render(
+        <MessageList
+          messages={[msg('m1', 'Good move.')]}
+          onPlayMessage={onPlayMessage}
+          onStopMessage={onStopMessage}
+        />
+      );
+      await user.click(screen.getByRole('button', { name: 'Play coach message' }));
+      expect(onPlayMessage).toHaveBeenCalledWith('m1', 'Good move.');
+      expect(onStopMessage).not.toHaveBeenCalled();
+
+      rerender(
+        <MessageList
+          messages={[msg('m1', 'Good move.')]}
+          onPlayMessage={onPlayMessage}
+          onStopMessage={onStopMessage}
+          playingMessageId="m1"
+        />
+      );
+      await user.click(screen.getByRole('button', { name: 'Stop coach message' }));
+      expect(onStopMessage).toHaveBeenCalledTimes(1);
+      expect(onPlayMessage).toHaveBeenCalledTimes(1); // still just the one call from before
+
+      rerender(
+        <MessageList
+          messages={[msg('m1', 'Good move.')]}
+          onPlayMessage={onPlayMessage}
+          onStopMessage={onStopMessage}
+          loadingMessageId="m1"
+        />
+      );
+      await user.click(screen.getByRole('button', { name: 'Stop coach message' }));
+      expect(onStopMessage).toHaveBeenCalledTimes(2);
     });
   });
 });

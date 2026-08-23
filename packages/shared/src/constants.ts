@@ -22,25 +22,99 @@ export const ENGINE_MODES = ['native', 'browser'] as const;
 export type EngineMode = (typeof ENGINE_MODES)[number];
 
 /**
- * Cosmetic coach personalities (coaches.md). `general` is the coach as it
- * has always existed — every other value only changes voice/tone, never
- * chess judgment, method, or the rules the coach follows (see
- * packages/prompts/src/coach-persona.ts).
+ * Cosmetic coach personalities (coaches.md). `general` and `general_female`
+ * are both the coach as it has always existed — byte-identical prompts (see
+ * packages/prompts/src/coach-persona.ts), differing only in which TTS voice
+ * reads them aloud, so a student can pick the default coach's gender without
+ * changing anything about how the coach teaches. Every other value changes
+ * voice/tone too, but never chess judgment, method, or the rules the coach
+ * follows.
  */
-export const COACH_PERSONAS = ['general', 'commander', 'scholar', 'huntress', 'shark', 'sunzi', 'gambler'] as const;
+export const COACH_PERSONAS = [
+  'general',
+  'general_female',
+  'commander',
+  'scholar',
+  'huntress',
+  'shark',
+  'sunzi',
+  'gambler'
+] as const;
 export type CoachPersona = (typeof COACH_PERSONAS)[number];
 
-export const COACH_PERSONA_INFO: Record<CoachPersona, { label: string; avatar: string; tagline: string; explicit: boolean }> = {
-  general: { label: 'General Daniel', avatar: '♞', tagline: 'The coach as you know them today', explicit: false },
-  commander: { label: 'The Commander', avatar: '🎖️', tagline: 'Direct, demanding, no excuses', explicit: false },
-  scholar: { label: 'The Scholar', avatar: '🎓', tagline: 'Patient, curious, explains the why', explicit: false },
-  huntress: { label: 'The Huntress', avatar: '🗡️', tagline: 'Sharp, relentless, attack-minded', explicit: false },
+export const COACH_PERSONA_INFO: Record<
+  CoachPersona,
+  { label: string; avatar: string; tagline: string; explicit: boolean; voiceProfile: string }
+> = {
+  general: {
+    label: 'Coach',
+    avatar: '♞',
+    tagline: 'The coach as you know them today',
+    explicit: false,
+    voiceProfile: 'Male, 40s'
+  },
+  general_female: {
+    label: 'Coach',
+    avatar: '♞',
+    tagline: 'The coach as you know them today',
+    explicit: false,
+    voiceProfile: 'Female, 40s'
+  },
+  commander: {
+    label: 'The Commander',
+    avatar: '🎖️',
+    tagline: 'Direct, demanding, no excuses',
+    explicit: false,
+    voiceProfile: 'Male, 60s'
+  },
+  scholar: {
+    label: 'The Scholar',
+    avatar: '🎓',
+    tagline: 'Patient, curious, explains the why',
+    explicit: false,
+    voiceProfile: 'Male, 70s'
+  },
+  huntress: {
+    label: 'The Huntress',
+    avatar: '🗡️',
+    tagline: 'Sharp, relentless, attack-minded',
+    explicit: false,
+    voiceProfile: 'Female, 20s'
+  },
   // coaches.md: unfiltered slang, trash talk, and profanity are part of the character.
-  shark: { label: 'The Street Shark', avatar: '🦈', tagline: 'Loud, funny, thrives in chaos', explicit: true },
-  sunzi: { label: 'Art of the Board', avatar: '⚖️', tagline: 'Calm, strategic, aphoristic', explicit: false },
+  shark: {
+    label: 'The Street Shark',
+    avatar: '🦈',
+    tagline: 'Loud, funny, thrives in chaos',
+    explicit: true,
+    voiceProfile: 'Male, 20s'
+  },
+  sunzi: {
+    label: 'Art of the Board',
+    avatar: '⚖️',
+    tagline: 'Calm, strategic, aphoristic',
+    explicit: false,
+    voiceProfile: 'Male, 60s'
+  },
   // coaches.md: profanity and insults are part of the character.
-  gambler: { label: 'The Gambler', avatar: '🎲', tagline: 'Charismatic, fearless, roasts you', explicit: true }
+  gambler: {
+    label: 'The Gambler',
+    avatar: '🎲',
+    tagline: 'Charismatic, fearless, roasts you',
+    explicit: true,
+    voiceProfile: 'Male, 40s'
+  }
 };
+
+/**
+ * Coach-voice (TTS) backend. 'openai' calls the cloud API (better quality
+ * and latency, spends AI credits); 'browser' runs Kokoro WASM locally on the
+ * user's device (free, but slow and depends on their machine). Master toggle
+ * is `users.tts_enabled`, off by default; `ttsBackend` only matters once
+ * that's on. SettingsPage confirms either choice with a dialog before saving.
+ */
+export const TTS_BACKENDS = ['openai', 'browser'] as const;
+export type TtsBackend = (typeof TTS_BACKENDS)[number];
 
 /**
  * Search depth every backend analyzes at by default. Lives here, in the one

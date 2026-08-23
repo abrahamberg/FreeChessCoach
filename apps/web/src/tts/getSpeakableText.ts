@@ -2,6 +2,7 @@ import { decodeAnnotationNote, decodePositionContext, decodePositionDivider } fr
 import { decodeDivergedLine, decodeDivergedLineStart } from '../features/chat/divergedLine.js';
 import { BOARD_MOVE_PATTERN, PLAYER_MOVE_PATTERN } from '../features/chat/sentinels.js';
 import type { CoachMessage } from '../hooks/useCoachChat.js';
+import { translateChessNotationForSpeech } from './sanToSpokenText.js';
 
 const ARROW_TOKEN_PATTERN = /\[([a-h][1-8])-([a-h][1-8])\]/g;
 const BOLD_PATTERN = /\*\*(.+?)\*\*/g;
@@ -21,10 +22,18 @@ function isSentinel(text: string): boolean {
   );
 }
 
-/** Coach text spoken aloud shouldn't contain literal markup — an arrow token
- * reads naturally as "e2 to e4", and bold asterisks just unwrap. */
+/** Coach text spoken aloud shouldn't contain literal markup or chess
+ * notation — an arrow token reads naturally as "e2 to e4", bold asterisks
+ * just unwrap, and SAN move mentions ("Qh5+", "24. a4", "26...c6") get
+ * translated to natural English (sanToSpokenText.ts) so they're
+ * intelligible read aloud instead of spelled out letter by letter. Applied
+ * once here, ahead of either TTS backend — model-independent, since neither
+ * OpenAI nor the browser's Kokoro backend needs its own notation-reading
+ * logic. */
 function toSpokenText(text: string): string {
-  return text.replace(ARROW_TOKEN_PATTERN, (_match, from, to) => `${from} to ${to}`).replace(BOLD_PATTERN, '$1');
+  return translateChessNotationForSpeech(
+    text.replace(ARROW_TOKEN_PATTERN, (_match, from, to) => `${from} to ${to}`).replace(BOLD_PATTERN, '$1')
+  );
 }
 
 /** The text Kokoro should read for a given message, or null if it's not

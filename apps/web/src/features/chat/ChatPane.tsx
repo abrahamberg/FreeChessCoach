@@ -42,14 +42,16 @@ export interface ChatPaneProps {
   /** The selected coach persona's avatar glyph (coaches.md) — passed
    * through to MessageList. Defaults to the original coach's ♞ glyph. */
   coachAvatar?: string;
-  /** Coach voice (Kokoro TTS): whether a finished turn's audio plays
-   * automatically. Omit both this and onToggleAutoplay to hide the toggle
-   * (and the per-message play buttons stay available regardless — see
-   * onPlayMessage). */
+  /** Coach voice (TTS, OpenAI or browser — Settings): whether a finished
+   * turn's audio plays automatically. Omit both this and onToggleAutoplay to
+   * hide the toggle (SessionPage does this whenever the account's TTS master
+   * switch is off); onPlayMessage gates the per-message play buttons the
+   * same way. */
   autoplayEnabled?: boolean;
   onToggleAutoplay?: (enabled: boolean) => void;
   /** Passed straight through to MessageList — see its own doc comments. */
   onPlayMessage?: (messageId: string, text: string) => void;
+  onStopMessage?: () => void;
   playingMessageId?: string | null;
   loadingMessageId?: string | null;
 }
@@ -75,6 +77,7 @@ export function ChatPane({
   autoplayEnabled,
   onToggleAutoplay,
   onPlayMessage,
+  onStopMessage,
   playingMessageId,
   loadingMessageId
 }: ChatPaneProps): ReactNode {
@@ -126,6 +129,7 @@ export function ChatPane({
         onHoverMove={onHoverMove}
         coachAvatar={coachAvatar}
         onPlayMessage={onPlayMessage}
+        onStopMessage={onStopMessage}
         playingMessageId={playingMessageId}
         loadingMessageId={loadingMessageId}
       />

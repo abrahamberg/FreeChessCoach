@@ -5,6 +5,7 @@ import {
   buildGatewayConfigFromEnv,
   buildResolveEngineBackendOptions,
   buildStripeClientFromEnv,
+  buildTtsConfigFromEnv,
   requireEnv
 } from './bootstrap.js';
 import { createDb } from './db/index.js';
@@ -34,6 +35,7 @@ async function main(): Promise<void> {
   const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, engineTunnelRegistry);
   const coachAgentBaseDeps = buildCoachAgentBaseDependencies(db, jobQueue, gatewayConfig);
   const stripeClient = buildStripeClientFromEnv();
+  const ttsConfig = buildTtsConfigFromEnv();
 
   const app = buildApp({
     db,
@@ -43,7 +45,8 @@ async function main(): Promise<void> {
     engineBackendOptions,
     engineTunnelRegistry,
     internalToken: requireEnv('ENGINE_TUNNEL_INTERNAL_TOKEN'),
-    stripeClient
+    stripeClient,
+    ttsConfig
   });
   const port = Number(process.env.PORT ?? 3000);
   await app.listen({ port, host: '0.0.0.0' });

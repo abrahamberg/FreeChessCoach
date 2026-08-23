@@ -66,4 +66,30 @@ describe('parseMessageSegments', () => {
       { type: 'text', value: 'a good idea and a bad one', bold: false }
     ]);
   });
+
+  // Regression: a trailing `\b` after an optional `+`/`#` suffix fails when
+  // that non-word char is followed by whitespace/end-of-string (both sides
+  // non-word, no boundary) — the engine used to backtrack and drop the
+  // suffix from the match, leaving a stray "+"/"#" as unmatched text.
+  test('keeps a check suffix on a bare SAN move followed by a space', () => {
+    expect(parseMessageSegments('what about Qh5+ here?')).toEqual([
+      { type: 'text', value: 'what about ', bold: false },
+      { type: 'move', text: 'Qh5+', san: 'Qh5+', bold: false },
+      { type: 'text', value: ' here?', bold: false }
+    ]);
+  });
+
+  test('keeps a checkmate suffix on a bare SAN move at the end of the message', () => {
+    expect(parseMessageSegments('and that was Qxh5#')).toEqual([
+      { type: 'text', value: 'and that was ', bold: false },
+      { type: 'move', text: 'Qxh5#', san: 'Qxh5#', bold: false }
+    ]);
+  });
+
+  test('keeps a check suffix on a numbered move mention', () => {
+    expect(parseMessageSegments('24. Qh5+ was crushing')).toEqual([
+      { type: 'move', text: '24. Qh5+', san: 'Qh5+', bold: false, moveNumber: 24, color: 'white' },
+      { type: 'text', value: ' was crushing', bold: false }
+    ]);
+  });
 });

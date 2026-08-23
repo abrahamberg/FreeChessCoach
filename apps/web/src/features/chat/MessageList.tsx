@@ -97,10 +97,17 @@ export interface MessageListProps {
   /** The selected coach persona's avatar glyph (coaches.md). Defaults to
    * the original coach's ♞ glyph, unchanged from before personas existed. */
   coachAvatar?: string;
-  /** Coach voice (Kokoro TTS): plays/replays one message's audio. Omitting
+  /** Coach voice (TTS, OpenAI or browser — Settings): plays/replays one message's audio. Omitting
    * this prop hides the play button entirely — the feature is fully
    * optional for callers that don't wire up useCoachVoice. */
   onPlayMessage?: (messageId: string, text: string) => void;
+  /** Stops whatever is currently playing/loading (useCoachVoice's stop()).
+   * The per-message button calls this instead of onPlayMessage while that
+   * message is the one playing or loading — already-synthesized audio stays
+   * cached, so a later play click on the same message replays instantly
+   * rather than re-fetching (and, on the OpenAI backend, re-spending
+   * credits). */
+  onStopMessage?: () => void;
   /** The message id currently playing, if any. */
   playingMessageId?: string | null;
   /** The message id currently being synthesized (first play, cache miss), if any. */
@@ -121,6 +128,7 @@ export function MessageList({
   onHoverMove,
   coachAvatar = DEFAULT_COACH_AVATAR,
   onPlayMessage,
+  onStopMessage,
   playingMessageId = null,
   loadingMessageId = null
 }: MessageListProps): ReactNode {
@@ -212,8 +220,10 @@ export function MessageList({
                   type="button"
                   className="coach-voice-button"
                   data-state={voiceState}
-                  aria-label={voiceState === 'playing' ? 'Replay coach message' : 'Play coach message'}
-                  onClick={() => onPlayMessage?.(message.id, speakableText)}
+                  aria-label={voiceState === 'idle' ? 'Play coach message' : 'Stop coach message'}
+                  onClick={() =>
+                    voiceState === 'idle' ? onPlayMessage?.(message.id, speakableText) : onStopMessage?.()
+                  }
                 >
                   {voiceState === 'loading' ? '…' : voiceState === 'playing' ? '⏸' : '▶'}
                 </button>

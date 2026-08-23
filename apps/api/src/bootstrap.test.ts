@@ -6,6 +6,7 @@ import {
   buildModelTuningFromEnv,
   buildResolveEngineBackendOptions,
   buildStripeClientFromEnv,
+  buildTtsConfigFromEnv,
   requireEnv
 } from './bootstrap.js';
 
@@ -126,6 +127,52 @@ describe('buildStripeClientFromEnv', () => {
     expect(client).toBeDefined();
     expect(client?.createCheckoutSession).toBeInstanceOf(Function);
     expect(client?.parseWebhookEvent).toBeInstanceOf(Function);
+  });
+});
+
+describe('buildTtsConfigFromEnv', () => {
+  const TTS_ENV_KEYS = ['OPENAI_API_KEY', 'TTS_MODEL_OPENAI', 'TTS_OPENAI_CREDITS_PER_1K_CHARS'] as const;
+  const ORIGINAL = Object.fromEntries(TTS_ENV_KEYS.map((key) => [key, process.env[key]]));
+
+  afterEach(() => {
+    for (const key of TTS_ENV_KEYS) {
+      const original = ORIGINAL[key];
+      if (original === undefined) delete process.env[key];
+      else process.env[key] = original;
+    }
+  });
+
+  test('returns undefined when OPENAI_API_KEY is unset, so docker-compose dev works with no OpenAI key configured', () => {
+    for (const key of TTS_ENV_KEYS) delete process.env[key];
+    expect(buildTtsConfigFromEnv()).toBeUndefined();
+  });
+
+  // Regression: OPENAI_API_KEY is shared with the (unrelated) LLM gateway —
+  // a deployment that sets it there for chat, with no TTS_MODEL_OPENAI
+  // override, must not have the whole API process crash on boot (it did,
+  // when TTS_MODEL_OPENAI was a hard requireEnv rather than defaulted).
+  test('builds a TtsConfig from OPENAI_API_KEY alone, defaulting the model id and credit cost', () => {
+    for (const key of TTS_ENV_KEYS) delete process.env[key];
+    process.env.OPENAI_API_KEY = 'sk-oai-for-chat-and-tts';
+
+    expect(buildTtsConfigFromEnv()).toEqual({
+      apiKey: 'sk-oai-for-chat-and-tts',
+      modelId: 'gpt-4o-mini-tts',
+      creditsPer1kChars: 5
+    });
+  });
+
+  test('honors TTS_MODEL_OPENAI and TTS_OPENAI_CREDITS_PER_1K_CHARS when set', () => {
+    for (const key of TTS_ENV_KEYS) delete process.env[key];
+    process.env.OPENAI_API_KEY = 'sk-oai-tts';
+    process.env.TTS_MODEL_OPENAI = 'tts-1-hd';
+    process.env.TTS_OPENAI_CREDITS_PER_1K_CHARS = '10';
+
+    expect(buildTtsConfigFromEnv()).toEqual({
+      apiKey: 'sk-oai-tts',
+      modelId: 'tts-1-hd',
+      creditsPer1kChars: 10
+    });
   });
 });
 

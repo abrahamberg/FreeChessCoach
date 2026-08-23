@@ -1,9 +1,8 @@
-import type { CoachPersona } from '@chess-coach/shared';
+import type { CoachPersona, TtsBackend } from '@chess-coach/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CoachMessage } from './useCoachChat.js';
 import { getSpeakableText } from '../tts/getSpeakableText.js';
-import { PERSONA_VOICES } from '../tts/persona-voices.js';
-import { getSharedTtsWorker } from '../tts/shared-tts-worker-instance.js';
+import { resolveTtsClient } from '../tts/resolve-tts-client.js';
 
 const AUTOPLAY_STORAGE_KEY = 'chess-coach:coach-voice-autoplay';
 
@@ -41,6 +40,15 @@ export interface UseCoachVoiceOptions {
   messages: CoachMessage[];
   isStreaming: boolean;
   persona: CoachPersona;
+  /** users.tts_enabled — the Settings master switch, off by default. Play
+   * and autoplay both no-op while this is false, so a stale autoplay
+   * preference or in-flight queue from before the user turned voice off
+   * can't still trigger playback (or, on the OpenAI backend, spend credits
+   * via a route the server would reject anyway). */
+  enabled: boolean;
+  /** users.tts_backend — which client (openai-tts-client.ts vs.
+   * kokoro-tts-client.ts) actually synthesizes the audio. */
+  backend: TtsBackend;
 }
 
 export interface UseCoachVoiceResult {
@@ -54,13 +62,15 @@ export interface UseCoachVoiceResult {
   loadingMessageId: string | null;
 }
 
-/** Reads each finished coach turn aloud with Kokoro TTS, voiced per the
- * active persona (persona-voices.ts), and lets any message be replayed on
- * demand. Kokoro synthesizes sentence-by-sentence (kokoro-worker.ts's
- * stream() call) rather than all at once — playback starts on the first
- * chunk instead of waiting for the whole (often multi-sentence) reply to
- * finish generating, then plays each later chunk as it arrives. Every
- * chunk is cached per message id, so replaying never re-runs inference.
+/** Reads each finished coach turn aloud, voiced per the active persona, and
+ * lets any message be replayed on demand. `enabled`/`backend` mirror the
+ * Settings-page coach-voice toggle (users.tts_enabled/tts_backend): OpenAI
+ * (openai-tts-client.ts) delivers one chunk per message; the browser backend
+ * (kokoro-tts-client.ts, wrapping kokoro-worker.ts) synthesizes sentence by
+ * sentence — either way, playback starts on the first chunk instead of
+ * waiting for the whole (often multi-sentence) reply to finish generating,
+ * then plays each later chunk as it arrives. Every chunk is cached per
+ * message id, so replaying never re-synthesizes.
  *
  * Autoplay fires once per newly-finished turn: the `isStreaming` true→false
  * edge (useCoachChat resolves nested client-tool-result round-trips before
@@ -68,7 +78,7 @@ export interface UseCoachVoiceResult {
  * ids seen before the *first* edge — i.e. everything from session history —
  * are marked handled without queuing audio, so reopening an in-progress
  * session doesn't autoplay its whole transcript. */
-export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceOptions): UseCoachVoiceResult {
+export function useCoachVoice({ messages, isStreaming, persona, enabled, backend }: UseCoachVoiceOptions): UseCoachVoiceResult {
   const [autoplayEnabled, setAutoplayEnabledState] = useState(readStoredAutoplay);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [loadingMessageId, setLoadingMessageId] = useState<string | null>(null);
@@ -77,6 +87,16 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
   useEffect(() => {
     personaRef.current = persona;
   }, [persona]);
+
+  const backendRef = useRef(backend);
+  useEffect(() => {
+    backendRef.current = backend;
+  }, [backend]);
+
+  const enabledRef = useRef(enabled);
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
 
   const cacheRef = useRef(new Map<string, MessageAudioState>());
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -176,11 +196,12 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
     cacheRef.current.set(messageId, state);
     setLoadingMessageId(messageId);
 
-    const promise = getSharedTtsWorker()
-      .speak({ text, voice: PERSONA_VOICES[personaRef.current] }, (index, audio) => {
+    const client = resolveTtsClient(backendRef.current);
+    const promise = client
+      .speak({ text, persona: personaRef.current }, (index, audio) => {
         console.log(`[useCoachVoice] chunk ${index} received for ${messageId}`, { bytes: audio.byteLength });
         const isFirstChunk = state.urls.length === 0;
-        state.urls.push(URL.createObjectURL(new Blob([audio], { type: 'audio/wav' })));
+        state.urls.push(URL.createObjectURL(new Blob([audio], { type: client.mimeType })));
         // "Loading" means "nothing audible yet" — once the first chunk
         // lands there's real sound to play, even while later sentences are
         // still generating in the background.
@@ -220,6 +241,7 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
   }
 
   const play = useCallback((messageId: string, text: string) => {
+    if (!enabledRef.current) return;
     queueRef.current = [];
     audioRef.current?.pause();
     activeRef.current = false;
@@ -255,7 +277,7 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
     const newMessages = messages.filter((message) => !handled.has(message.id));
     for (const message of newMessages) handled.add(message.id);
 
-    if (!wasStreaming || !autoplayEnabled) return;
+    if (!wasStreaming || !autoplayEnabled || !enabled) return;
     for (const message of newMessages) {
       const text = getSpeakableText(message);
       if (text) queueRef.current.push({ messageId: message.id, text });
@@ -265,7 +287,7 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
     // of the dep list: they close only over refs and stable setters, so
     // every render's version is behaviorally identical — listing them would
     // just re-run this effect on every render for no reason.
-  }, [isStreaming, messages, autoplayEnabled]);
+  }, [isStreaming, messages, autoplayEnabled, enabled]);
 
   useEffect(() => {
     return () => {

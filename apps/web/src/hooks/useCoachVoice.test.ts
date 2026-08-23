@@ -1,15 +1,18 @@
-import type { CoachPersona } from '@chess-coach/shared';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CoachMessage } from './useCoachChat.js';
-import { useCoachVoice } from './useCoachVoice.js';
+import { useCoachVoice, type UseCoachVoiceOptions } from './useCoachVoice.js';
 
 type OnChunk = (index: number, audio: ArrayBuffer) => void;
 
-const { speakMock } = vi.hoisted(() => ({ speakMock: vi.fn() }));
+const { speakMock, openaiSpeakMock } = vi.hoisted(() => ({ speakMock: vi.fn(), openaiSpeakMock: vi.fn() }));
 
 vi.mock('../tts/shared-tts-worker-instance.js', () => ({
   getSharedTtsWorker: () => ({ speak: speakMock })
+}));
+
+vi.mock('../tts/openai-tts-client.js', () => ({
+  openaiTtsClient: { mimeType: 'audio/mpeg', speak: openaiSpeakMock }
 }));
 
 class FakeAudio {
@@ -34,6 +37,12 @@ let audioInstances: FakeAudio[] = [];
 
 function msg(id: string, role: CoachMessage['role'], text: string): CoachMessage {
   return { id, role, text };
+}
+
+/** Every existing test exercises the browser (Kokoro) backend, enabled —
+ * this is that baseline, overridable per test. */
+function baseProps(overrides: Partial<UseCoachVoiceOptions> = {}): UseCoachVoiceOptions {
+  return { messages: [], isStreaming: false, persona: 'general', enabled: true, backend: 'browser', ...overrides };
 }
 
 async function flush(): Promise<void> {
@@ -65,7 +74,12 @@ describe('useCoachVoice', () => {
   beforeEach(() => {
     audioInstances = [];
     speakMock.mockReset();
+    openaiSpeakMock.mockReset();
     speakMock.mockImplementation((_request: unknown, onChunk: OnChunk) => {
+      onChunk(0, new ArrayBuffer(1));
+      return Promise.resolve();
+    });
+    openaiSpeakMock.mockImplementation((_request: unknown, onChunk: OnChunk) => {
       onChunk(0, new ArrayBuffer(1));
       return Promise.resolve();
     });
@@ -86,18 +100,18 @@ describe('useCoachVoice', () => {
   });
 
   test('autoplay toggle defaults to false and persists across mounts', () => {
-    const { result } = renderHook(() => useCoachVoice({ messages: [], isStreaming: false, persona: 'general' }));
+    const { result } = renderHook(() => useCoachVoice(baseProps()));
     expect(result.current.autoplayEnabled).toBe(false);
 
     act(() => result.current.setAutoplayEnabled(true));
     expect(result.current.autoplayEnabled).toBe(true);
 
-    const { result: second } = renderHook(() => useCoachVoice({ messages: [], isStreaming: false, persona: 'general' }));
+    const { result: second } = renderHook(() => useCoachVoice(baseProps()));
     expect(second.current.autoplayEnabled).toBe(true);
   });
 
   test('replaying the same message never re-synthesizes', async () => {
-    const { result } = renderHook(() => useCoachVoice({ messages: [], isStreaming: false, persona: 'general' }));
+    const { result } = renderHook(() => useCoachVoice(baseProps()));
 
     await act(async () => {
       result.current.play('m1', 'hello');
@@ -113,7 +127,7 @@ describe('useCoachVoice', () => {
   });
 
   test('stop() pauses playback and clears playingMessageId', async () => {
-    const { result } = renderHook(() => useCoachVoice({ messages: [], isStreaming: false, persona: 'general' }));
+    const { result } = renderHook(() => useCoachVoice(baseProps()));
 
     await act(async () => {
       result.current.play('m1', 'hello');
@@ -129,7 +143,7 @@ describe('useCoachVoice', () => {
   test('plays a message\'s chunks in order as they stream in, before advancing past it', async () => {
     const controller = controllableSpeak();
     speakMock.mockImplementation(controller.impl);
-    const { result } = renderHook(() => useCoachVoice({ messages: [], isStreaming: false, persona: 'general' }));
+    const { result } = renderHook(() => useCoachVoice(baseProps()));
 
     await act(async () => {
       result.current.play('m1', 'hello there, this is two sentences.');
@@ -171,7 +185,7 @@ describe('useCoachVoice', () => {
   test('autoplay only fires for messages added after a turn finishes, not history seeded at mount', async () => {
     const history = [msg('h1', 'assistant', 'welcome back')];
     const { result, rerender } = renderHook((props) => useCoachVoice(props), {
-      initialProps: { messages: history, isStreaming: false, persona: 'general' as CoachPersona }
+      initialProps: baseProps({ messages: history })
     });
     act(() => result.current.setAutoplayEnabled(true));
     await act(async () => {
@@ -180,26 +194,26 @@ describe('useCoachVoice', () => {
     expect(speakMock).not.toHaveBeenCalled();
 
     const duringTurn = [...history, msg('u1', 'user', 'hi')];
-    rerender({ messages: duringTurn, isStreaming: true, persona: 'general' });
+    rerender(baseProps({ messages: duringTurn, isStreaming: true }));
     const afterTurn = [...duringTurn, msg('a1', 'assistant', 'good to see you')];
-    rerender({ messages: afterTurn, isStreaming: true, persona: 'general' });
-    rerender({ messages: afterTurn, isStreaming: false, persona: 'general' });
+    rerender(baseProps({ messages: afterTurn, isStreaming: true }));
+    rerender(baseProps({ messages: afterTurn, isStreaming: false }));
 
     await act(async () => {
       await flush();
     });
     expect(speakMock).toHaveBeenCalledTimes(1);
-    expect(speakMock).toHaveBeenCalledWith({ text: 'good to see you', voice: 'af_heart' }, expect.any(Function));
+    expect(speakMock).toHaveBeenCalledWith({ text: 'good to see you', voice: 'bm_daniel' }, expect.any(Function));
   });
 
   test('autoplay off never auto-fires, but explicit play() still works', async () => {
     const { result, rerender } = renderHook((props) => useCoachVoice(props), {
-      initialProps: { messages: [] as CoachMessage[], isStreaming: false, persona: 'general' as CoachPersona }
+      initialProps: baseProps({ messages: [] })
     });
 
-    rerender({ messages: [msg('u1', 'user', 'hi')], isStreaming: true, persona: 'general' });
+    rerender(baseProps({ messages: [msg('u1', 'user', 'hi')], isStreaming: true }));
     const afterTurn = [msg('u1', 'user', 'hi'), msg('a1', 'assistant', 'hello there')];
-    rerender({ messages: afterTurn, isStreaming: false, persona: 'general' });
+    rerender(baseProps({ messages: afterTurn, isStreaming: false }));
     await act(async () => {
       await flush();
     });
@@ -214,16 +228,16 @@ describe('useCoachVoice', () => {
 
   test('a turn ending on a sentinel-only message does not crash or queue audio', async () => {
     const { result, rerender } = renderHook((props) => useCoachVoice(props), {
-      initialProps: { messages: [] as CoachMessage[], isStreaming: false, persona: 'general' as CoachPersona }
+      initialProps: baseProps({ messages: [] })
     });
     act(() => result.current.setAutoplayEnabled(true));
 
-    rerender({ messages: [msg('u1', 'user', '[board_move] I played e4 (position now: fen)')], isStreaming: true, persona: 'general' });
+    rerender(baseProps({ messages: [msg('u1', 'user', '[board_move] I played e4 (position now: fen)')], isStreaming: true }));
     const afterTurn = [
       msg('u1', 'user', '[board_move] I played e4 (position now: fen)'),
       msg('a1', 'assistant', '[position_divider]|2|e4')
     ];
-    rerender({ messages: afterTurn, isStreaming: false, persona: 'general' });
+    rerender(baseProps({ messages: afterTurn, isStreaming: false }));
 
     await act(async () => {
       await flush();
@@ -233,18 +247,18 @@ describe('useCoachVoice', () => {
 
   test('a turn producing multiple prose bubbles queues and plays them in order', async () => {
     const { result, rerender } = renderHook((props) => useCoachVoice(props), {
-      initialProps: { messages: [] as CoachMessage[], isStreaming: false, persona: 'general' as CoachPersona }
+      initialProps: baseProps({ messages: [] })
     });
     act(() => result.current.setAutoplayEnabled(true));
 
-    rerender({ messages: [msg('u1', 'user', 'hi')], isStreaming: true, persona: 'general' });
+    rerender(baseProps({ messages: [msg('u1', 'user', 'hi')], isStreaming: true }));
     const afterTurn = [
       msg('u1', 'user', 'hi'),
       msg('a1', 'assistant', 'first line'),
       msg('a2', 'assistant', '[position_divider]|2|e4'),
       msg('a3', 'assistant', 'second line')
     ];
-    rerender({ messages: afterTurn, isStreaming: false, persona: 'general' });
+    rerender(baseProps({ messages: afterTurn, isStreaming: false }));
 
     await act(async () => {
       await flush();
@@ -258,7 +272,48 @@ describe('useCoachVoice', () => {
     });
     expect(result.current.playingMessageId).toBe('a3');
     expect(speakMock).toHaveBeenCalledTimes(2);
-    expect(speakMock).toHaveBeenNthCalledWith(1, { text: 'first line', voice: 'af_heart' }, expect.any(Function));
-    expect(speakMock).toHaveBeenNthCalledWith(2, { text: 'second line', voice: 'af_heart' }, expect.any(Function));
+    expect(speakMock).toHaveBeenNthCalledWith(1, { text: 'first line', voice: 'bm_daniel' }, expect.any(Function));
+    expect(speakMock).toHaveBeenNthCalledWith(2, { text: 'second line', voice: 'bm_daniel' }, expect.any(Function));
+  });
+
+  test('disabled (master switch off): play() is a no-op', async () => {
+    const { result } = renderHook(() => useCoachVoice(baseProps({ enabled: false })));
+
+    await act(async () => {
+      result.current.play('m1', 'hello');
+      await flush();
+    });
+
+    expect(speakMock).not.toHaveBeenCalled();
+    expect(result.current.playingMessageId).toBeNull();
+  });
+
+  test('disabled (master switch off): autoplay never fires even with autoplayEnabled true', async () => {
+    const { result, rerender } = renderHook((props) => useCoachVoice(props), {
+      initialProps: baseProps({ messages: [], enabled: false })
+    });
+    act(() => result.current.setAutoplayEnabled(true));
+
+    rerender(baseProps({ messages: [msg('u1', 'user', 'hi')], isStreaming: true, enabled: false }));
+    const afterTurn = [msg('u1', 'user', 'hi'), msg('a1', 'assistant', 'hello there')];
+    rerender(baseProps({ messages: afterTurn, isStreaming: false, enabled: false }));
+
+    await act(async () => {
+      await flush();
+    });
+    expect(speakMock).not.toHaveBeenCalled();
+  });
+
+  test('backend "openai" plays through the OpenAI client, not Kokoro', async () => {
+    const { result } = renderHook(() => useCoachVoice(baseProps({ backend: 'openai' })));
+
+    await act(async () => {
+      result.current.play('m1', 'hello');
+      await flush();
+    });
+
+    expect(openaiSpeakMock).toHaveBeenCalledWith({ text: 'hello', persona: 'general' }, expect.any(Function));
+    expect(speakMock).not.toHaveBeenCalled();
+    expect(result.current.playingMessageId).toBe('m1');
   });
 });

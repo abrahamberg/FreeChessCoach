@@ -16,6 +16,7 @@ import { CreditBalance } from './CreditBalance.js';
 import { EngineModeSelect } from './EngineModeSelect.js';
 import { NicknameForm } from './NicknameForm.js';
 import { PlatformUsernameForm } from './PlatformUsernameForm.js';
+import { TtsSection, type TtsProfilePatch } from './TtsSection.js';
 import './SettingsPage.css';
 
 type Theme = 'light' | 'dark';
@@ -83,6 +84,11 @@ export function SettingsPage(): ReactNode {
     onSuccess: (profile) => queryClient.setQueryData(['profile'], profile)
   });
 
+  const ttsMutation = useMutation({
+    mutationFn: (patch: TtsProfilePatch) => apiPatch('/api/users/me', patch, UserProfileSchema),
+    onSuccess: (profile) => queryClient.setQueryData(['profile'], profile)
+  });
+
   const saveKeyMutation = useMutation({
     mutationFn: ({ provider, apiKey }: { provider: LlmProvider; apiKey: string }) =>
       apiPut(`/api/users/me/llm-keys/${provider}`, { apiKey }),
@@ -116,6 +122,16 @@ export function SettingsPage(): ReactNode {
         <CoachPersonaSelect
           value={profile.coachPersona}
           onChange={(coachPersona) => coachPersonaMutation.mutate(coachPersona)}
+        />
+      </section>
+
+      <section aria-label="Coach voice">
+        <h2>Coach voice</h2>
+        <p>Have the coach's replies read aloud. Off by default.</p>
+        <TtsSection
+          enabled={profile.ttsEnabled}
+          backend={profile.ttsBackend}
+          onChange={(patch) => ttsMutation.mutate(patch)}
         />
       </section>
 

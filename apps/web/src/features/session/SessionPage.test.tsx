@@ -54,6 +54,9 @@ interface SessionFixture {
   /** The signed-in user's selected coach persona (coaches.md) — defaults to
    * 'general', the original coach's ♞ avatar. */
   coachPersona?: string;
+  /** Settings-page coach-voice master switch — defaults to false (off),
+   * matching the real default; tests exercising the voice UI opt in. */
+  ttsEnabled?: boolean;
 }
 
 // Most tests aren't about the fresh-session kickoff behavior — default to a
@@ -98,7 +101,9 @@ function mockFetch(session: SessionFixture = {}, extra: (path: string) => Respon
             lichessUsername: null,
             chesscomUsername: null,
             selfAssessment: null,
-            creditBalance: 100
+            creditBalance: 100,
+            ttsEnabled: session.ttsEnabled ?? false,
+            ttsBackend: 'openai'
           }),
           { status: 200, headers: { 'content-type': 'application/json' } }
         )
@@ -205,7 +210,7 @@ describe('SessionPage', () => {
   });
 
   test('renders the coach voice autoplay toggle and a play button on the coach message, and toggling it does not throw', async () => {
-    vi.stubGlobal('fetch', mockFetch());
+    vi.stubGlobal('fetch', mockFetch({ ttsEnabled: true }));
     const user = userEvent.setup();
     renderSessionPage();
 
@@ -215,6 +220,15 @@ describe('SessionPage', () => {
 
     await user.click(screen.getByRole('checkbox', { name: /autoplay/i }));
     expect(screen.getByRole('checkbox', { name: /autoplay/i })).toBeChecked();
+  });
+
+  test('coach voice UI is hidden entirely when the account has not enabled it (default off)', async () => {
+    vi.stubGlobal('fetch', mockFetch());
+    renderSessionPage();
+
+    const messageList = await screen.findByTestId('message-list');
+    expect(screen.queryByRole('checkbox', { name: /autoplay/i })).not.toBeInTheDocument();
+    expect(within(messageList).queryByRole('button', { name: 'Play coach message' })).not.toBeInTheDocument();
   });
 
   test('design.md §5.3: hovering a move mention in chat previews it on the board in a distinct color from the coach\'s own arrows', async () => {

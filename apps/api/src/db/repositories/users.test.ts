@@ -53,4 +53,20 @@ describe('users repository', () => {
 
     expect(updated.coachPersona).toBe('gambler');
   });
+
+  test('insert() defaults ttsEnabled to false and ttsBackend to "openai"', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Frank' });
+
+    expect(user.ttsEnabled).toBe(false);
+    expect(user.ttsBackend).toBe('openai');
+  });
+
+  test('update() can change ttsEnabled and ttsBackend', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Grace' });
+
+    const updated = await usersRepo.update(db, user.id, { ttsEnabled: true, ttsBackend: 'browser' });
+
+    expect(updated.ttsEnabled).toBe(true);
+    expect(updated.ttsBackend).toBe('browser');
+  });
 });

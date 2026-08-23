@@ -54,7 +54,15 @@ export function SessionPage(): ReactNode {
   const [hoverMove, setHoverMove] = useState<HoverMove>(null);
   const mobileView = useMobileSessionView(chat.messages.length);
   const persona = profileQuery.data?.coachPersona ?? 'general';
-  const coachVoice = useCoachVoice({ messages: chat.messages, isStreaming: chat.isStreaming, persona });
+  const ttsEnabled = profileQuery.data?.ttsEnabled ?? false;
+  const ttsBackend = profileQuery.data?.ttsBackend ?? 'openai';
+  const coachVoice = useCoachVoice({
+    messages: chat.messages,
+    isStreaming: chat.isStreaming,
+    persona,
+    enabled: ttsEnabled,
+    backend: ttsBackend
+  });
 
   if (sessionQuery.isLoading || gameQuery.isLoading) return <p>Loading…</p>;
   if (sessionQuery.isError || !sessionQuery.data) return <p>Could not load this session.</p>;
@@ -150,8 +158,9 @@ export function SessionPage(): ReactNode {
         onHoverMove={setHoverMove}
         coachAvatar={coachAvatar}
         autoplayEnabled={coachVoice.autoplayEnabled}
-        onToggleAutoplay={coachVoice.setAutoplayEnabled}
-        onPlayMessage={coachVoice.play}
+        onToggleAutoplay={ttsEnabled ? coachVoice.setAutoplayEnabled : undefined}
+        onPlayMessage={ttsEnabled ? coachVoice.play : undefined}
+        onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
         playingMessageId={coachVoice.playingMessageId}
         loadingMessageId={coachVoice.loadingMessageId}
       />

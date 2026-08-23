@@ -1,7 +1,9 @@
 import type { CoachPersona } from '@chess-coach/shared';
 
 /**
- * coaches.md: 6 cosmetic personas layered on top of the one coach.
+ * coaches.md: 6 cosmetic personas layered on top of the one coach, plus a
+ * `general_female` variant that's byte-identical to `general` (voice-only,
+ * no prompt text — see its entry in PERSONA_VOICE below).
  *
  * Four things kept producing a flat, generic-AI tone: (1) position — the
  * voice block sat AFTER "## Who you are" and BEFORE several thousand words
@@ -72,6 +74,10 @@ const BOARD_DISCIPLINE_REMINDER =
 
 export const PERSONA_VOICE: Record<CoachPersona, string> = {
   general: '',
+  // Same coach, same prompt, byte-identical to 'general' — the only
+  // difference is which TTS voice reads it aloud (coaches.md,
+  // COACH_PERSONA_INFO). Not a new voice/tone, so no block to add here.
+  general_female: '',
 
   commander: `## Voice — read this first, it governs every line you write below
 

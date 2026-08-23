@@ -188,8 +188,9 @@ describe('ChatPane', () => {
     expect(onToggleAutoplay).toHaveBeenCalledWith(true);
   });
 
-  test('forwards onPlayMessage/playingMessageId/loadingMessageId through to MessageList', async () => {
+  test('forwards onPlayMessage/onStopMessage/playingMessageId/loadingMessageId through to MessageList', async () => {
     const onPlayMessage = vi.fn();
+    const onStopMessage = vi.fn();
     const user = userEvent.setup();
     render(
       <ChatPane
@@ -198,13 +199,15 @@ describe('ChatPane', () => {
         activeToolName={null}
         onSend={vi.fn()}
         onPlayMessage={onPlayMessage}
+        onStopMessage={onStopMessage}
         playingMessageId="m1"
       />
     );
 
-    const playButton = screen.getByRole('button', { name: 'Replay coach message' });
+    const playButton = screen.getByRole('button', { name: 'Stop coach message' });
     expect(playButton).toHaveAttribute('data-state', 'playing');
     await user.click(playButton);
-    expect(onPlayMessage).toHaveBeenCalledWith('m1', 'Good move.');
+    expect(onStopMessage).toHaveBeenCalledTimes(1);
+    expect(onPlayMessage).not.toHaveBeenCalled();
   });
 });
