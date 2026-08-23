@@ -1,4 +1,4 @@
-import type { PositionAnalysis } from '@chess-coach/shared';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import { describe, expect, test, vi } from 'vitest';
 import { buildInvestigatorTools, type InvestigatorToolsDependencies } from './investigator-tools.js';
 

@@ -1,5 +1,5 @@
 import type { Chess, PieceSymbol } from 'chess.js';
-import type { PositionFeatures } from '@chess-coach/shared';
+import type { PositionFeatures } from '@freechesscoach/shared';
 import { occupiedSquares, opponentOf, toColorName, type AttackMap } from './attack-map.js';
 
 /** Same static piece-value table classify.ts uses for its sacrifice/hangs

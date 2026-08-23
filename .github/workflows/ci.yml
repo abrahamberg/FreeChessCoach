@@ -44,6 +44,6 @@ jobs:
             | tar xz kubeconform
           sudo mv kubeconform /usr/local/bin/kubeconform
 
-      - run: helm lint deploy/helm/chess-ai-coach -f deploy/helm/chess-ai-coach/values.example.yaml
+      - run: helm lint deploy/helm/freechesscoach -f deploy/helm/freechesscoach/values.example.yaml
 
       - run: deploy/helm/test.sh

@@ -1,4 +1,4 @@
-import type { LlmProvider } from '@chess-coach/shared';
+import type { LlmProvider } from '@freechesscoach/shared';
 import { useState, type FormEvent, type ReactNode } from 'react';
 
 export interface ByokKeyFormProps {

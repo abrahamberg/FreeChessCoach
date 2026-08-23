@@ -105,7 +105,7 @@ so it needs no external credentials at all.
 ## Migrations
 
 `migrate` runs once as part of `docker compose up` and exits
-(`npm run migrate --workspace=@chess-coach/api`, i.e.
+(`npm run migrate --workspace=@freechesscoach/api`, i.e.
 `apps/api/src/db/migrate-cli.ts`). To re-run it by hand (e.g. after adding a
 new migration file):
 

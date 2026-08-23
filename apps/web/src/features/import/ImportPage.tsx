@@ -1,4 +1,4 @@
-import { parsePgn } from '@chess-coach/chess-analysis';
+import { parsePgn } from '@freechesscoach/chess-analysis';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,7 @@ import {
   LichessRecentGamesResponseSchema,
   type ImportGameRequest,
   type PlayerColor
-} from '@chess-coach/shared';
+} from '@freechesscoach/shared';
 import { apiGet, apiPost, ApiError } from '../../api/client.js';
 import { useAnalysisStatus } from '../../hooks/useAnalysisStatus.js';
 import { AnalysisProgress } from './AnalysisProgress.js';

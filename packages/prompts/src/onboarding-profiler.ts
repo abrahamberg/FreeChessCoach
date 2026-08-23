@@ -1,4 +1,4 @@
-import type { RatingBand } from '@chess-coach/shared';
+import type { RatingBand } from '@freechesscoach/shared';
 import { MISTAKE_CATEGORIES_BLOCK } from './render.js';
 
 export interface ProfilerPromptInput {

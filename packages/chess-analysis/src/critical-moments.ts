@@ -1,4 +1,4 @@
-import type { EngineEval } from '@chess-coach/shared';
+import type { EngineEval } from '@freechesscoach/shared';
 import type { ClassifiedMove } from './classify.js';
 import { whitePerspectiveCp } from './classify.js';
 import { winPctWhite } from './win-probability.js';

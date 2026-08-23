@@ -1,4 +1,4 @@
-import type { AttackedPieceDto, ForkSchema, PositionAnalysis, PositionFeatures } from '@chess-coach/shared';
+import type { AttackedPieceDto, ForkSchema, PositionAnalysis, PositionFeatures } from '@freechesscoach/shared';
 import type { z } from 'zod';
 import { formatEval } from './format-eval.js';
 

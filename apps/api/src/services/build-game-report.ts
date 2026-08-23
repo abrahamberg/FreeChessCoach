@@ -2,9 +2,9 @@ import {
   buildGameReport as assembleGameReport,
   type GameResultForColour,
   type ParsedGame
-} from '@chess-coach/chess-analysis';
-import { ENGINE_DEFAULT_DEPTH } from '@chess-coach/shared';
-import type { BookReport, ClassifiedMoveDto, EngineEval, GameReport } from '@chess-coach/shared';
+} from '@freechesscoach/chess-analysis';
+import { ENGINE_DEFAULT_DEPTH } from '@freechesscoach/shared';
+import type { BookReport, ClassifiedMoveDto, EngineEval, GameReport } from '@freechesscoach/shared';
 import { ENGINE_MULTI_PV } from './engine-client.js';
 
 const ENGINE_NAME = 'stockfish';

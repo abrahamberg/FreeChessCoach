@@ -1,5 +1,5 @@
-import { InvalidPgnError } from '@chess-coach/chess-analysis';
-import { ImportGameRequestSchema } from '@chess-coach/shared';
+import { InvalidPgnError } from '@freechesscoach/chess-analysis';
+import { ImportGameRequestSchema } from '@freechesscoach/shared';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';

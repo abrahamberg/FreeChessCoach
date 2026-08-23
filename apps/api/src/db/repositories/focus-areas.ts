@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { MistakeCategory } from '@chess-coach/shared';
+import type { MistakeCategory } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export type FocusAreaStatus = 'active' | 'improving' | 'resolved';

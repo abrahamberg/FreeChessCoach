@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import type { PositionAnalysis } from '@chess-coach/shared';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import { getCandidateMoveBriefing } from './play-candidates.js';
 
 const START_FEN = 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3';

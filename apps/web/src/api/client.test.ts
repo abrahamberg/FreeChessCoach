@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { UserProfileSchema } from '@chess-coach/shared';
+import { UserProfileSchema } from '@freechesscoach/shared';
 import { apiDelete, apiGet, apiPatch, apiPut, ApiError } from './client.js';
 
 const VALID_PROFILE = {

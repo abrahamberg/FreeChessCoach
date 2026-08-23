@@ -1,4 +1,4 @@
-import type { CoachPersona } from '@chess-coach/shared';
+import type { CoachPersona } from '@freechesscoach/shared';
 import type { KokoroTTS } from 'kokoro-js';
 
 /** Kokoro-js has no named export for its voice-id union — `voices` is a

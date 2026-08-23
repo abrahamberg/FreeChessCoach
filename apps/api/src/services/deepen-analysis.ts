@@ -1,5 +1,5 @@
-import { parsePgn } from '@chess-coach/chess-analysis';
-import type { PositionAnalysis } from '@chess-coach/shared';
+import { parsePgn } from '@freechesscoach/chess-analysis';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as positionEvaluationsRepo from '../db/repositories/position-evaluations.js';

@@ -6,38 +6,38 @@ chart builds its container spec out of these — no copy-pasted env blocks.
 {{/* Base name for every resource. Deliberately just the release name: the
 oauth2-proxy subchart's upstream URLs (values.yaml) are release-name derived and
 cannot call a parent helper, so there is no fullnameOverride to drift from. */}}
-{{- define "chess-ai-coach.fullname" -}}
+{{- define "freechesscoach.fullname" -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{/* Name of one component's resources, e.g. "chess-coach-api". */}}
-{{- define "chess-ai-coach.componentName" -}}
-{{- printf "%s-%s" (include "chess-ai-coach.fullname" .ctx) .component | trunc 63 | trimSuffix "-" -}}
+{{/* Name of one component's resources, e.g. "freechesscoach-api". */}}
+{{- define "freechesscoach.componentName" -}}
+{{- printf "%s-%s" (include "freechesscoach.fullname" .ctx) .component | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "chess-ai-coach.chart" -}}
+{{- define "freechesscoach.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/* Labels that identify a pod/workload. Call as:
-     {{- include "chess-ai-coach.selectorLabels" (dict "ctx" . "component" "api") }} */}}
-{{- define "chess-ai-coach.selectorLabels" -}}
+     {{- include "freechesscoach.selectorLabels" (dict "ctx" . "component" "api") }} */}}
+{{- define "freechesscoach.selectorLabels" -}}
 app.kubernetes.io/name: {{ .ctx.Chart.Name }}
 app.kubernetes.io/instance: {{ .ctx.Release.Name }}
 app.kubernetes.io/component: {{ .component }}
 {{- end -}}
 
 {{/* Full label set for resource metadata. Same call signature. */}}
-{{- define "chess-ai-coach.labels" -}}
-helm.sh/chart: {{ include "chess-ai-coach.chart" .ctx }}
-{{ include "chess-ai-coach.selectorLabels" . }}
+{{- define "freechesscoach.labels" -}}
+helm.sh/chart: {{ include "freechesscoach.chart" .ctx }}
+{{ include "freechesscoach.selectorLabels" . }}
 app.kubernetes.io/version: {{ .ctx.Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .ctx.Release.Service }}
 {{- end -}}
 
 {{/* Fully-qualified image reference for a component. Call as:
-     {{ include "chess-ai-coach.image" (dict "ctx" . "image" .Values.api.image) }} */}}
-{{- define "chess-ai-coach.image" -}}
+     {{ include "freechesscoach.image" (dict "ctx" . "image" .Values.api.image) }} */}}
+{{- define "freechesscoach.image" -}}
 {{- $registry := .ctx.Values.image.registry -}}
 {{- $tag := .image.tag | default .ctx.Chart.AppVersion -}}
 {{- if $registry -}}
@@ -47,7 +47,7 @@ app.kubernetes.io/managed-by: {{ .ctx.Release.Service }}
 {{- end -}}
 {{- end -}}
 
-{{- define "chess-ai-coach.imagePullSecrets" -}}
+{{- define "freechesscoach.imagePullSecrets" -}}
 {{- with .Values.image.pullSecrets }}
 imagePullSecrets:
   {{- toYaml . | nindent 2 }}
@@ -59,19 +59,19 @@ imagePullSecrets:
      values are the single source of truth; otherwise `externalDatabase` is.
      --------------------------------------------------------------------- */}}
 
-{{- define "chess-ai-coach.database.host" -}}
+{{- define "freechesscoach.database.host" -}}
 {{- if .Values.postgresql.enabled -}}
-{{- printf "%s-postgresql" (include "chess-ai-coach.fullname" .) -}}
+{{- printf "%s-postgresql" (include "freechesscoach.fullname" .) -}}
 {{- else -}}
 {{- required "externalDatabase.host is required when postgresql.enabled is false" .Values.externalDatabase.host -}}
 {{- end -}}
 {{- end -}}
 
-{{- define "chess-ai-coach.database.port" -}}
+{{- define "freechesscoach.database.port" -}}
 {{- if .Values.postgresql.enabled -}}5432{{- else -}}{{ .Values.externalDatabase.port }}{{- end -}}
 {{- end -}}
 
-{{- define "chess-ai-coach.database.user" -}}
+{{- define "freechesscoach.database.user" -}}
 {{- if .Values.postgresql.enabled -}}
 {{- .Values.postgresql.auth.username -}}
 {{- else -}}
@@ -79,7 +79,7 @@ imagePullSecrets:
 {{- end -}}
 {{- end -}}
 
-{{- define "chess-ai-coach.database.name" -}}
+{{- define "freechesscoach.database.name" -}}
 {{- if .Values.postgresql.enabled -}}
 {{- .Values.postgresql.auth.database -}}
 {{- else -}}
@@ -87,7 +87,7 @@ imagePullSecrets:
 {{- end -}}
 {{- end -}}
 
-{{- define "chess-ai-coach.database.secretName" -}}
+{{- define "freechesscoach.database.secretName" -}}
 {{- if .Values.postgresql.enabled -}}
 {{- required "postgresql.auth.existingSecret is required (architecture §11: no credentials in values.yaml)" .Values.postgresql.auth.existingSecret -}}
 {{- else -}}
@@ -95,7 +95,7 @@ imagePullSecrets:
 {{- end -}}
 {{- end -}}
 
-{{- define "chess-ai-coach.database.passwordKey" -}}
+{{- define "freechesscoach.database.passwordKey" -}}
 {{- if .Values.postgresql.enabled -}}
 {{- .Values.postgresql.auth.secretKeys.userPasswordKey -}}
 {{- else -}}
@@ -103,8 +103,8 @@ imagePullSecrets:
 {{- end -}}
 {{- end -}}
 
-{{- define "chess-ai-coach.engineUrl" -}}
-{{- printf "http://%s:%v" (include "chess-ai-coach.componentName" (dict "ctx" . "component" "engine")) .Values.engine.service.port -}}
+{{- define "freechesscoach.engineUrl" -}}
+{{- printf "http://%s:%v" (include "freechesscoach.componentName" (dict "ctx" . "component" "engine")) .Values.engine.service.port -}}
 {{- end -}}
 
 {{/* ---------------------------------------------------------------------
@@ -113,7 +113,7 @@ imagePullSecrets:
      DATABASE_URL by kubelet's $(VAR) expansion (which only resolves names
      declared earlier in this same container's env list).
      --------------------------------------------------------------------- */}}
-{{- define "chess-ai-coach.env.database" -}}
+{{- define "freechesscoach.env.database" -}}
 {{- if not .Values.postgresql.enabled }}
 - name: DATABASE_URL
   valueFrom:
@@ -124,19 +124,19 @@ imagePullSecrets:
 - name: PGPASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ include "chess-ai-coach.database.secretName" . }}
-      key: {{ include "chess-ai-coach.database.passwordKey" . }}
+      name: {{ include "freechesscoach.database.secretName" . }}
+      key: {{ include "freechesscoach.database.passwordKey" . }}
 - name: DATABASE_URL
-  value: postgresql://{{ include "chess-ai-coach.database.user" . }}:$(PGPASSWORD)@{{ include "chess-ai-coach.database.host" . }}:{{ include "chess-ai-coach.database.port" . }}/{{ include "chess-ai-coach.database.name" . }}?sslmode={{ .Values.database.sslMode }}
+  value: postgresql://{{ include "freechesscoach.database.user" . }}:$(PGPASSWORD)@{{ include "freechesscoach.database.host" . }}:{{ include "freechesscoach.database.port" . }}/{{ include "freechesscoach.database.name" . }}?sslmode={{ .Values.database.sslMode }}
 {{- end }}
 {{- end -}}
 
 {{/* Everything apps/api/src/{server,worker}.ts read at boot beyond the DB. */}}
-{{- define "chess-ai-coach.env.app" -}}
+{{- define "freechesscoach.env.app" -}}
 - name: AUTH_MODE
   value: {{ .Values.api.authMode | quote }}
 - name: ENGINE_URL
-  value: {{ include "chess-ai-coach.engineUrl" . | quote }}
+  value: {{ include "freechesscoach.engineUrl" . | quote }}
 - name: LLM_STANDARD_MODEL_ANTHROPIC
   value: {{ .Values.llm.standardModel.anthropic | quote }}
 - name: LLM_STANDARD_MODEL_OPENAI
@@ -210,10 +210,10 @@ imagePullSecrets:
 {{- end -}}
 
 {{/* Pod- and container-level hardening shared by every workload (§12). */}}
-{{- define "chess-ai-coach.podSecurityContext" -}}
+{{- define "freechesscoach.podSecurityContext" -}}
 {{- toYaml .Values.podSecurityContext -}}
 {{- end -}}
 
-{{- define "chess-ai-coach.containerSecurityContext" -}}
+{{- define "freechesscoach.containerSecurityContext" -}}
 {{- toYaml .Values.containerSecurityContext -}}
 {{- end -}}

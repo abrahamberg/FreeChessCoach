@@ -1,4 +1,4 @@
-import type { LlmProvider, ReasoningEffort } from '@chess-coach/shared';
+import type { LlmProvider, ReasoningEffort } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';

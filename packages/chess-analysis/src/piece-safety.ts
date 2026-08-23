@@ -1,5 +1,5 @@
 import type { Chess, PieceSymbol, Square } from 'chess.js';
-import type { PositionFeatures } from '@chess-coach/shared';
+import type { PositionFeatures } from '@freechesscoach/shared';
 import { occupiedSquares, opponentOf, toColorName, type AttackMap, type ColorName } from './attack-map.js';
 
 const CENTER_SQUARES: Square[] = ['d4', 'd5', 'e4', 'e5'];

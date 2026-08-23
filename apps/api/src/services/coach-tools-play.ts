@@ -3,7 +3,7 @@ import {
   playCoachMoveParameters,
   playCoachToolDescription,
   undoLastMoveParameters
-} from '@chess-coach/prompts';
+} from '@freechesscoach/prompts';
 import { tool, type ToolSet } from '../llm/tools.js';
 import { withTurnGuards, type TurnGuardState } from './coach-tool-guards.js';
 import type { CoachToolsContext, CoachToolsDependencies } from './coach-tools.js';

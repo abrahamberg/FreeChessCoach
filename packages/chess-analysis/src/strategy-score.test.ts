@@ -1,4 +1,4 @@
-import type { PositionFeatures } from '@chess-coach/shared';
+import type { PositionFeatures } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { positionalTrend, strategyScore, type PositionalTrendInput } from './strategy-score.js';
 

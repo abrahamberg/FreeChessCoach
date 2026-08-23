@@ -1,6 +1,6 @@
-import { CANDIDATE_BRIEFING_SYSTEM_PROMPT } from '@chess-coach/prompts';
-import { annotateCandidateMoves, type CandidateMoveAnnotation } from '@chess-coach/chess-analysis';
-import type { PositionAnalysis } from '@chess-coach/shared';
+import { CANDIDATE_BRIEFING_SYSTEM_PROMPT } from '@freechesscoach/prompts';
+import { annotateCandidateMoves, type CandidateMoveAnnotation } from '@freechesscoach/chess-analysis';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import type { SummarizeFn } from './session-context.js';
 
 export interface CandidateBriefingDependencies {

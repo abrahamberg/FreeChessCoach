@@ -1,5 +1,5 @@
-import { buildSummarizerMessages } from '@chess-coach/prompts';
-import { SessionOutcomeSchema } from '@chess-coach/shared';
+import { buildSummarizerMessages } from '@freechesscoach/prompts';
+import { SessionOutcomeSchema } from '@freechesscoach/shared';
 import type { Task } from 'graphile-worker';
 import type { Kysely } from 'kysely';
 import * as findingsRepo from '../db/repositories/findings.js';

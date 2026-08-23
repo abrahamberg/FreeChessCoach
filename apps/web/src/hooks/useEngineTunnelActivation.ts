@@ -1,4 +1,4 @@
-import { UserProfileSchema } from '@chess-coach/shared';
+import { UserProfileSchema } from '@freechesscoach/shared';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '../api/client.js';
 import { useEngineTunnelClient } from './useEngineTunnelClient.js';

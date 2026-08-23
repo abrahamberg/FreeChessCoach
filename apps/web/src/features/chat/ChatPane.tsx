@@ -1,4 +1,4 @@
-import type { ParsedPosition } from '@chess-coach/chess-analysis';
+import type { ParsedPosition } from '@freechesscoach/chess-analysis';
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { ArrowRef } from './arrowToken.js';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';

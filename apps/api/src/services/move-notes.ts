@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import { moveRefToPly } from '@chess-coach/chess-analysis';
+import { moveRefToPly } from '@freechesscoach/chess-analysis';
 import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import type { Database } from '../db/schema.js';

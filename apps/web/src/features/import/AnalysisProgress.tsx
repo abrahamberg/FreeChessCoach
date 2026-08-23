@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { Chessboard, type ChessboardOptions } from 'react-chessboard';
-import type { AnalysisStatus } from '@chess-coach/shared';
+import type { AnalysisStatus } from '@freechesscoach/shared';
 import './AnalysisProgress.css';
 
 export interface AnalysisProgressProps {

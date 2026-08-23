@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { SessionMode } from '@chess-coach/shared';
+import type { SessionMode } from '@freechesscoach/shared';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import type { SessionMessageRow } from '../db/repositories/session-messages.js';

@@ -6,7 +6,7 @@ import { asSchema, tool, type Tool, type ToolSet } from 'ai';
 export { tool, type Tool, type ToolSet };
 
 /** JSON Schema for a tool's input, for the coach debug snapshot. Tools are
- * declared with zod schemas from `@chess-coach/prompts`; `asSchema` accepts
+ * declared with zod schemas from `@freechesscoach/prompts`; `asSchema` accepts
  * either those or an already-converted Schema and exposes the JSON Schema the
  * provider actually sees. Never serializes the `execute` closures. */
 export function toolJsonSchema(definition: Tool): unknown {

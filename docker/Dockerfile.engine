@@ -1,5 +1,5 @@
 FROM node:22-slim
-LABEL org.opencontainers.image.source="https://github.com/abrahamberg/chess-ai-coach"
+LABEL org.opencontainers.image.source="https://github.com/abrahamberg/FreeChessCoach"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends stockfish \
@@ -16,9 +16,9 @@ COPY packages/shared/package.json packages/shared/
 COPY packages/chess-analysis/package.json packages/chess-analysis/
 COPY services/engine/package.json services/engine/
 RUN npm ci --omit=dev --no-audit --no-fund \
-    --workspace=@chess-coach/shared \
-    --workspace=@chess-coach/chess-analysis \
-    --workspace=@chess-coach/engine \
+    --workspace=@freechesscoach/shared \
+    --workspace=@freechesscoach/chess-analysis \
+    --workspace=@freechesscoach/engine \
     --include-workspace-root
 
 # The application bundle is created by scripts/build-images.sh on the runner.

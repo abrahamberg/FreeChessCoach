@@ -1,5 +1,5 @@
 apiVersion: v2
-name: chess-ai-coach
+name: freechesscoach
 description: |
   Umbrella chart for the AI chess coach (architecture.md §11): nginx-served SPA,
   Fastify API, graphile-worker job runner, Stockfish engine service, fronted by

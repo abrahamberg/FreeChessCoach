@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { expectedPoints } from '@chess-coach/chess-analysis';
-import type { ClassifiedMoveDto } from '@chess-coach/shared';
+import { expectedPoints } from '@freechesscoach/chess-analysis';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import './EvalBar.css';
 
 export interface EvalBarProps {

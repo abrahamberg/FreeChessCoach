@@ -1,4 +1,4 @@
-import type { EngineEval, PositionAnalysis } from '@chess-coach/shared';
+import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
 import { analyzePositionViaEngine, analyzeGameViaEngine, ENGINE_MULTI_PV } from '../engine-client.js';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';
 

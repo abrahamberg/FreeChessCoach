@@ -1,4 +1,4 @@
-import { OpenAiServiceTierSchema, ReasoningEffortSchema } from '@chess-coach/shared';
+import { OpenAiServiceTierSchema, ReasoningEffortSchema } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { Database } from './db/schema.js';
 import type { JobQueue } from './jobs/queue.js';

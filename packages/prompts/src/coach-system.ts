@@ -1,4 +1,4 @@
-import type { CoachingPlan, CoachPersona, RatingBand, SessionMode } from '@chess-coach/shared';
+import type { CoachingPlan, CoachPersona, RatingBand, SessionMode } from '@freechesscoach/shared';
 import { CALIBRATION } from './calibration.js';
 import { PERSONA_VOICE } from './coach-persona.js';
 import {

@@ -1,5 +1,5 @@
 import { Chess, type PieceSymbol, type Square } from 'chess.js';
-import type { EngineEval, FeatureDeltaDto, PositionFeatures } from '@chess-coach/shared';
+import type { EngineEval, FeatureDeltaDto, PositionFeatures } from '@freechesscoach/shared';
 import { toColorName } from './attack-map.js';
 import { see } from './see.js';
 import { CONFIG } from './config.js';

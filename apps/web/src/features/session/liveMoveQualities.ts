@@ -1,4 +1,4 @@
-import type { ClassifiedMoveDto } from '@chess-coach/shared';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import type { LiveMoveQuality } from './sessionPageSchemas.js';
 
 /**

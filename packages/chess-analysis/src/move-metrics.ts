@@ -1,4 +1,4 @@
-import type { EngineEval } from '@chess-coach/shared';
+import type { EngineEval } from '@freechesscoach/shared';
 import { moveAccuracy } from './accuracy-curve.js';
 import { toCpWhite, winPctFor, winPctWhite, type PlayerColor } from './win-probability.js';
 

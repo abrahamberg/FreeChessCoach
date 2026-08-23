@@ -1,7 +1,7 @@
 import type { LanguageModelV4StreamPart } from '@ai-sdk/provider';
-import type { CoachingPlan, PositionAnalysis } from '@chess-coach/shared';
+import type { CoachingPlan, PositionAnalysis } from '@freechesscoach/shared';
 import { MockLanguageModelV4 } from 'ai/test';
-import { EPISODE_FOLD_SYSTEM_PROMPT } from '@chess-coach/prompts';
+import { EPISODE_FOLD_SYSTEM_PROMPT } from '@freechesscoach/prompts';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';

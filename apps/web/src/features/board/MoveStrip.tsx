@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import type { ClassifiedMoveDto } from '@chess-coach/shared';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { useLongPress } from '../../hooks/useLongPress.js';
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';

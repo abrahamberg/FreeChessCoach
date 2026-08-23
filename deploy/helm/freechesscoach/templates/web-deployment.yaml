@@ -3,28 +3,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "chess-ai-coach.componentName" (dict "ctx" . "component" "web") }}
+  name: {{ include "freechesscoach.componentName" (dict "ctx" . "component" "web") }}
   labels:
-    {{- include "chess-ai-coach.labels" (dict "ctx" . "component" "web") | nindent 4 }}
+    {{- include "freechesscoach.labels" (dict "ctx" . "component" "web") | nindent 4 }}
 spec:
   replicas: {{ .Values.web.replicaCount }}
   selector:
     matchLabels:
-      {{- include "chess-ai-coach.selectorLabels" (dict "ctx" . "component" "web") | nindent 6 }}
+      {{- include "freechesscoach.selectorLabels" (dict "ctx" . "component" "web") | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "chess-ai-coach.selectorLabels" (dict "ctx" . "component" "web") | nindent 8 }}
+        {{- include "freechesscoach.selectorLabels" (dict "ctx" . "component" "web") | nindent 8 }}
     spec:
-      {{- include "chess-ai-coach.imagePullSecrets" . | nindent 6 }}
+      {{- include "freechesscoach.imagePullSecrets" . | nindent 6 }}
       securityContext:
-        {{- include "chess-ai-coach.podSecurityContext" . | nindent 8 }}
+        {{- include "freechesscoach.podSecurityContext" . | nindent 8 }}
       containers:
         - name: web
-          image: {{ include "chess-ai-coach.image" (dict "ctx" . "image" .Values.web.image) | quote }}
+          image: {{ include "freechesscoach.image" (dict "ctx" . "image" .Values.web.image) | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
-            {{- include "chess-ai-coach.containerSecurityContext" . | nindent 12 }}
+            {{- include "freechesscoach.containerSecurityContext" . | nindent 12 }}
           ports:
             - name: http
               containerPort: {{ .Values.web.containerPort }}

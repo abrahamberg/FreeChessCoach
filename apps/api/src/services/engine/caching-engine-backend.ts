@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
-import { computePositionFeatures } from '@chess-coach/chess-analysis';
-import type { EngineEval, PositionAnalysis, PositionAnalysisLine } from '@chess-coach/shared';
+import { computePositionFeatures } from '@freechesscoach/chess-analysis';
+import type { EngineEval, PositionAnalysis, PositionAnalysisLine } from '@freechesscoach/shared';
 import * as positionEvaluationsRepo from '../../db/repositories/position-evaluations.js';
 import type { Database } from '../../db/schema.js';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';

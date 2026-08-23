@@ -28,7 +28,7 @@ const DEV_STUB_USER: AuthUser = { email: 'dev@local.test', displayName: 'dev@loc
 //     the webhook signature (routes/stripe-webhook.ts).
 //   /healthz, /readyz — the k8s kubelet probes these directly, bypassing the proxy,
 //     with no headers of any kind; requiring auth here would keep every pod out of
-//     the Ready state (deploy/helm/chess-ai-coach api Deployment).
+//     the Ready state (deploy/helm/freechesscoach api Deployment).
 // /internal/* (checked separately below, not added to this set since it's a prefix
 //   match rather than an exact path) — the worker process calls these directly, never
 //   through oauth2-proxy, and is authenticated instead by a shared-secret

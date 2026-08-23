@@ -1,5 +1,5 @@
 {
-  "name": "@chess-coach/shared",
+  "name": "@freechesscoach/shared",
   "version": "0.0.1",
   "private": true,
   "type": "module",

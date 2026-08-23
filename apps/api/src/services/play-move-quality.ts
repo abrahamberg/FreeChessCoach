@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
-import { classifyLiveMove, type ClassifiedMove } from '@chess-coach/chess-analysis';
-import type { EngineEval, PositionAnalysis } from '@chess-coach/shared';
+import { classifyLiveMove, type ClassifiedMove } from '@freechesscoach/chess-analysis';
+import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
 import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
 import type { Database } from '../db/schema.js';
 

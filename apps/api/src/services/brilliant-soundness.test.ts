@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
-import type { PositionAnalysis } from '@chess-coach/shared';
-import { winPctFor } from '@chess-coach/chess-analysis';
+import type { PositionAnalysis } from '@freechesscoach/shared';
+import { winPctFor } from '@freechesscoach/chess-analysis';
 import { checkBrilliantSoundness } from './brilliant-soundness.js';
 
 const FEN_AFTER_MOVE = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2';

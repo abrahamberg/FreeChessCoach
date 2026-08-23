@@ -1,6 +1,6 @@
-import type { ClassifiedMove } from '@chess-coach/chess-analysis';
+import type { ClassifiedMove } from '@freechesscoach/chess-analysis';
 import { sql, type Kysely } from 'kysely';
-import type { AnalysisStatus, BookReport, CoachingPlan, EngineEval, GameReport } from '@chess-coach/shared';
+import type { AnalysisStatus, BookReport, CoachingPlan, EngineEval, GameReport } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export interface AnalysisRow {

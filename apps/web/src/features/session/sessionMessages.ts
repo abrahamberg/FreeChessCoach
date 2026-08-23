@@ -1,4 +1,4 @@
-import { moveRefToPly } from '@chess-coach/chess-analysis';
+import { moveRefToPly } from '@freechesscoach/chess-analysis';
 import type { z } from 'zod';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { encodePositionDivider, sanForPly } from '../chat/positionDivider.js';

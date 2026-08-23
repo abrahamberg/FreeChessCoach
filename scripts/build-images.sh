@@ -78,14 +78,14 @@ if [[ "$SKIP_ARTIFACTS" -eq 0 ]]; then
   npm ci
 
   log "2/4 building artifacts: apps/api/dist-bundle + apps/web/dist + services/engine/dist-bundle"
-  npm run bundle --workspace=@chess-coach/api
-  npm run build --workspace=@chess-coach/web
+  npm run bundle --workspace=@freechesscoach/api
+  npm run build --workspace=@freechesscoach/web
   node services/engine/scripts/bundle.mjs
 
   log "3/4 pruning node_modules to apps/api's production dependencies"
   # This must happen after all runner-side builds: esbuild is needed to bundle
   # the engine, but its platform-specific binary must not enter the API image.
-  npm ci --omit=dev --workspace=@chess-coach/api --include-workspace-root
+  npm ci --omit=dev --workspace=@freechesscoach/api --include-workspace-root
 else
   log "1-3/4 skipped (--skip-artifacts)"
 fi
@@ -129,14 +129,14 @@ for COMPONENT in api web engine; do
   # only way "latest" and the version tag cannot drift apart.
   TAG_ARGS=()
   for TAG in "${TAGS[@]}"; do
-    TAG_ARGS+=(-t "${PREFIX}chess-ai-coach:${COMPONENT}-${TAG}")
+    TAG_ARGS+=(-t "${PREFIX}freechesscoach:${COMPONENT}-${TAG}")
   done
-  log "4/4 building ${PREFIX}chess-ai-coach:${COMPONENT}-{$(joined_tags)}${PLATFORM:+ ($PLATFORM)}"
+  log "4/4 building ${PREFIX}freechesscoach:${COMPONENT}-{$(joined_tags)}${PLATFORM:+ ($PLATFORM)}"
   docker buildx build "${BUILD_ARGS[@]}" \
     -f "docker/Dockerfile.${COMPONENT}" \
     "${TAG_ARGS[@]}" \
     .
 done
 
-log "done: ${PREFIX}chess-ai-coach:{api,web,engine}-{$(joined_tags)}"
+log "done: ${PREFIX}freechesscoach:{api,web,engine}-{$(joined_tags)}"
 restore_dev_deps

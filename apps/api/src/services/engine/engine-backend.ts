@@ -1,4 +1,4 @@
-import type { EngineEval, PositionAnalysis } from '@chess-coach/shared';
+import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
 
 /**
  * Options for engine backend analysis methods.

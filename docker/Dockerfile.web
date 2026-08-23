@@ -3,7 +3,7 @@
 # oauth2-proxy (architecture §11), not to nginx.
 #
 # COPY-only by design — `apps/web/dist` is produced on the CI runner by
-# `npm run build --workspace=@chess-coach/web` before this build runs. See
+# `npm run build --workspace=@freechesscoach/web` before this build runs. See
 # docs/deploy-build.md.
 #
 # Static HTML/JS/CSS is architecture-independent by construction: nothing in the
@@ -13,14 +13,14 @@
 # nginx-unprivileged listens on 8080 as a non-root user, which is what the Helm
 # chart's runAsNonRoot pod securityContext requires (architecture §12).
 FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
-LABEL org.opencontainers.image.source="https://github.com/abrahamberg/chess-ai-coach"
+LABEL org.opencontainers.image.source="https://github.com/abrahamberg/FreeChessCoach"
 COPY docker/nginx.web.conf /etc/nginx/conf.d/default.conf
 COPY apps/web/dist /usr/share/nginx/html
 
 # The base image already declares a numeric non-root user (101), which satisfies
 # `runAsNonRoot: true` on its own. Restating it as 1000 keeps every image in this
 # repo on the same uid as podSecurityContext.runAsUser in
-# deploy/helm/chess-ai-coach/values.yaml, so `docker run` and a chart-deployed pod
+# deploy/helm/freechesscoach/values.yaml, so `docker run` and a chart-deployed pod
 # behave identically. Safe here: nginx.conf puts the pid file and every *_temp_path
 # under /tmp, and the served files are world-readable.
 USER 1000

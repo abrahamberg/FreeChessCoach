@@ -1,4 +1,4 @@
-import type { EngineEval } from '@chess-coach/shared';
+import type { EngineEval } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { classifyMove, type MoveClassificationInput } from './classify-move.js';
 

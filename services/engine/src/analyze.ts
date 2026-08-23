@@ -1,6 +1,6 @@
 import { validateFen } from 'chess.js';
-import { computePositionFeatures } from '@chess-coach/chess-analysis';
-import type { EngineEval, PositionAnalysis } from '@chess-coach/shared';
+import { computePositionFeatures } from '@freechesscoach/chess-analysis';
+import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
 import type { EnginePool } from './engine-pool.js';
 import { DEFAULT_DEPTH, pvUciToSan, type AnalyzeOptions } from './uci.js';
 

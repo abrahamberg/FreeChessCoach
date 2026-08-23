@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
-import type { GameReport, PlayerReport } from '@chess-coach/shared';
+import type { GameReport, PlayerReport } from '@freechesscoach/shared';
 import { GameReportSummary } from './GameReportSummary.js';
 
 /** The report renders collapsed by default (a slim preview bar) — tests

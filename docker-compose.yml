@@ -49,20 +49,20 @@ services:
       <<: *node-dev-env
       STOCKFISH_PATH: /usr/games/stockfish
       PORT: '8081'
-    command: npm run dev --workspace=@chess-coach/engine
+    command: npm run dev --workspace=@freechesscoach/engine
     ports:
       - '8081:8081'
 
   migrate:
     <<: *node-dev
-    command: npm run migrate --workspace=@chess-coach/api
+    command: npm run migrate --workspace=@freechesscoach/api
     depends_on:
       postgres:
         condition: service_healthy
 
   api:
     <<: *node-dev
-    command: npm run dev --workspace=@chess-coach/api
+    command: npm run dev --workspace=@freechesscoach/api
     ports:
       - '3000:3000'
     depends_on:
@@ -75,7 +75,7 @@ services:
 
   worker:
     <<: *node-dev
-    command: npm run dev:worker --workspace=@chess-coach/api
+    command: npm run dev:worker --workspace=@freechesscoach/api
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,7 +91,7 @@ services:
       - .:/app
     environment:
       VITE_API_PROXY_TARGET: http://api:3000
-    command: npm run dev --workspace=@chess-coach/web -- --host
+    command: npm run dev --workspace=@freechesscoach/web -- --host
     ports:
       - '5173:5173'
     depends_on:

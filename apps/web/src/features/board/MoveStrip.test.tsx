@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import type { PositionAnalysis } from '@chess-coach/shared';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import { MoveStrip } from './MoveStrip.js';
 
 const SAN_MOVES = ['e4', 'e5', 'Nf3', 'Nc6'];

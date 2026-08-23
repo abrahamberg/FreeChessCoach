@@ -1,4 +1,4 @@
-import type { TtsBackend } from '@chess-coach/shared';
+import type { TtsBackend } from '@freechesscoach/shared';
 import { kokoroTtsClient } from './kokoro-tts-client.js';
 import { openaiTtsClient } from './openai-tts-client.js';
 import type { TtsClient } from './tts-client.js';

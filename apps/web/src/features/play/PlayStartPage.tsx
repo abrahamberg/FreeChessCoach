@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
-import type { PlayerColor } from '@chess-coach/shared';
+import type { PlayerColor } from '@freechesscoach/shared';
 import { apiPost } from '../../api/client.js';
 import './PlayStartPage.css';
 

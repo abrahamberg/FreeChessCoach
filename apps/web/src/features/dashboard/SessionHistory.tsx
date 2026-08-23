@@ -1,4 +1,4 @@
-import type { SessionHistoryEntry } from '@chess-coach/shared';
+import type { SessionHistoryEntry } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 
 export interface SessionHistoryProps {

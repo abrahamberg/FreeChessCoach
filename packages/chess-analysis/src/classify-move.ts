@@ -1,4 +1,4 @@
-import type { MoveQuality } from '@chess-coach/shared';
+import type { MoveQuality } from '@freechesscoach/shared';
 import { isBrilliantMove } from './classify-brilliant.js';
 import type { MoveClassificationInput } from './classify-context.js';
 import { isGreatMove } from './classify-great.js';

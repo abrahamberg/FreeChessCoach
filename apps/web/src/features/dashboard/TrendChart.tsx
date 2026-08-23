@@ -1,4 +1,4 @@
-import type { MistakeCategory, MistakeTrend } from '@chess-coach/shared';
+import type { MistakeCategory, MistakeTrend } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { CATEGORY_LABELS } from './categoryLabels.js';
 

@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
-import type { ClassifiedMoveDto } from '@chess-coach/shared';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import type { HoverMove } from '../chat/MessageList.js';
 import { CoachBoard, type BoardArrow, type BoardHighlight } from '../board/CoachBoard.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';

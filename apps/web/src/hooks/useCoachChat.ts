@@ -1,4 +1,4 @@
-import { moveRefToPly } from '@chess-coach/chess-analysis';
+import { moveRefToPly } from '@freechesscoach/chess-analysis';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { readCoachStream } from './coachStream.js';
 import { encodeDivergedLineStart } from '../features/chat/divergedLine.js';

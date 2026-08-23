@@ -1,4 +1,4 @@
-import type { CoachingPlan, GameReport } from '@chess-coach/shared';
+import type { CoachingPlan, GameReport } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildApp } from '../app.js';

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Golden tests for the chess-ai-coach umbrella chart (plan Task 9.1, architecture §11).
+# Golden tests for the freechesscoach umbrella chart (plan Task 9.1, architecture §11).
 #
 # These are *rendering* tests: they run `helm template` with values.example.yaml and
 # assert on the resulting manifests. No cluster is required. Run:
@@ -11,10 +11,10 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CHART_DIR="$SCRIPT_DIR/chess-ai-coach"
+CHART_DIR="$SCRIPT_DIR/freechesscoach"
 VALUES="$CHART_DIR/values.example.yaml"
 # Pinned so rendering does not depend on the caller's current kube-context.
-NAMESPACE="chess-coach"
+NAMESPACE="freechesscoach"
 
 PASS=0
 FAIL=0
@@ -53,7 +53,7 @@ assert_not_matches() {
 # ---------------------------------------------------------------------------
 # Setup: the chart must exist and its pinned dependencies must be vendored.
 # ---------------------------------------------------------------------------
-echo "==> chess-ai-coach chart golden tests"
+echo "==> freechesscoach chart golden tests"
 
 if [ ! -f "$CHART_DIR/Chart.yaml" ]; then
   echo "  FAIL chart exists"
@@ -79,7 +79,7 @@ ALL="$RENDER_DIR/all.yaml"
 render() { # render <output-file> [extra helm template args...]
   local out="$1"
   shift
-  helm template chess-coach "$CHART_DIR" -f "$VALUES" -n "$NAMESPACE" "$@" >"$out" 2>"$out.err"
+  helm template freechesscoach "$CHART_DIR" -f "$VALUES" -n "$NAMESPACE" "$@" >"$out" 2>"$out.err"
 }
 
 # ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ assert_contains "api deployment runs the server bundle" '"node", "dist-bundle/se
 assert_contains "api deployment declares ENGINE_URL" "name: ENGINE_URL" "$API"
 assert_contains "api deployment declares DATABASE_URL" "name: DATABASE_URL" "$API"
 assert_contains "api deployment declares LLM_KEY_MASTER_KEY" "name: LLM_KEY_MASTER_KEY" "$API"
-assert_contains "api ENGINE_URL points at the engine service" "http://chess-coach-engine:8081" "$API"
+assert_contains "api ENGINE_URL points at the engine service" "http://freechesscoach-engine:8081" "$API"
 assert_contains "api readiness probe is /readyz (architecture §11)" "path: /readyz" "$API"
 
 # The production cluster can provide a complete DATABASE_URL through the
@@ -114,7 +114,7 @@ EXTERNAL_API="$RENDER_DIR/external-api.yaml"
 render "$EXTERNAL_API" --set postgresql.enabled=false --set migrate.enabled=false \
   --show-only templates/api-deployment.yaml
 assert_contains "external database URL comes from a Secret" \
-  "name: chess-coach-database-url" "$EXTERNAL_API"
+  "name: freechesscoach-database-url" "$EXTERNAL_API"
 assert_contains "external database URL uses the DATABASE_URL key" \
   "key: DATABASE_URL" "$EXTERNAL_API"
 assert_not_matches "external database mode does not render PGPASSWORD" \
@@ -145,7 +145,7 @@ assert_contains "oauth2-proxy forwards identity headers" "--set-xauthrequest=tru
 #    (architecture §11 "templated existingSecret pattern").
 # ---------------------------------------------------------------------------
 OURS="$RENDER_DIR/ours.yaml"
-helm template chess-coach "$CHART_DIR" -f "$VALUES" -n "$NAMESPACE" \
+helm template freechesscoach "$CHART_DIR" -f "$VALUES" -n "$NAMESPACE" \
   --show-only templates/api-deployment.yaml \
   --show-only templates/worker-deployment.yaml \
   --show-only templates/migrate-job.yaml \
@@ -164,7 +164,7 @@ assert_contains "master key references the llm-key-master-key secret" "name: llm
 assert_contains "platform LLM keys reference the platform-llm-keys secret" "name: platform-llm-keys" "$OURS"
 assert_contains "stripe values reference the stripe secret" "name: stripe" "$OURS"
 assert_contains "external database URL references the configured Secret" \
-  "name: chess-coach-database-url" "$OURS"
+  "name: freechesscoach-database-url" "$OURS"
 
 # values.yaml / values.example.yaml themselves must not ship real-looking keys.
 assert_not_matches "values.yaml ships no secret literals" \
@@ -180,15 +180,15 @@ render "$MIGRATE" --show-only templates/migrate-job.yaml
 assert_contains "migrate job is a pre-install/pre-upgrade hook" '"helm.sh/hook": pre-install,pre-upgrade' "$MIGRATE"
 assert_contains "migrate job runs the kysely migrations" \
   '"node", "dist-bundle/migrate.mjs"' "$MIGRATE"
-assert_contains "migrate job reuses the api image" "chess-ai-coach:api-" "$MIGRATE"
+assert_contains "migrate job reuses the api image" "freechesscoach:api-" "$MIGRATE"
 
 NETPOL="$RENDER_DIR/netpol.yaml"
-helm template chess-coach "$CHART_DIR" -f "$VALUES" -n "$NAMESPACE" \
+helm template freechesscoach "$CHART_DIR" -f "$VALUES" -n "$NAMESPACE" \
   --show-only templates/networkpolicy-api.yaml \
   --show-only templates/networkpolicy-worker.yaml \
   --show-only templates/networkpolicy-engine.yaml \
   --show-only templates/networkpolicy-web.yaml >"$NETPOL" 2>/dev/null
-assert_contains "engine NetworkPolicy exists" "chess-coach-engine" "$NETPOL"
+assert_contains "engine NetworkPolicy exists" "freechesscoach-engine" "$NETPOL"
 assert_contains "engine accepts only api + worker" "component: worker" "$NETPOL"
 assert_not_matches "no NetworkPolicy opens a component to the whole world" 'ipBlock' "$NETPOL"
 
@@ -198,11 +198,11 @@ assert_contains "api NetworkPolicy accepts oauth2-proxy" "name: oauth2-proxy" "$
 assert_contains "api NetworkPolicy also accepts the worker (engine-tunnel relay)" "component: worker" "$API_NETPOL"
 
 INGRESS="$RENDER_DIR/ingress.yaml"
-render "$INGRESS" --set ingress.backend.serviceName=chess-coach-oauth2-proxy \
+render "$INGRESS" --set ingress.backend.serviceName=freechesscoach-oauth2-proxy \
   --set ingress.backend.servicePort=80 --show-only templates/ingress.yaml
-assert_contains "ingress targets oauth2-proxy only" "chess-coach-oauth2-proxy" "$INGRESS"
+assert_contains "ingress targets oauth2-proxy only" "freechesscoach-oauth2-proxy" "$INGRESS"
 assert_not_matches "ingress does not expose api/web directly" \
-  'name: chess-coach-(api|web)$' "$INGRESS"
+  'name: freechesscoach-(api|web)$' "$INGRESS"
 
 # ---------------------------------------------------------------------------
 # 6. Pod admission: `runAsNonRoot: true` needs a *numeric* `runAsUser`.

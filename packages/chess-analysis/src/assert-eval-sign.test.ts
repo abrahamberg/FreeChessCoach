@@ -1,4 +1,4 @@
-import type { EngineLine } from '@chess-coach/shared';
+import type { EngineLine } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { assertEvalSignConvention } from './assert-eval-sign.js';
 

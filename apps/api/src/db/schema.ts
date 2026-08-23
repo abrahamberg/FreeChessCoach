@@ -1,5 +1,5 @@
 import type { ColumnType, Generated } from 'kysely';
-import type { CoachPersona, EngineMode, MistakeCategory, MoveQuality, RatingBand, SessionMode, TtsBackend } from '@chess-coach/shared';
+import type { CoachPersona, EngineMode, MistakeCategory, MoveQuality, RatingBand, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;

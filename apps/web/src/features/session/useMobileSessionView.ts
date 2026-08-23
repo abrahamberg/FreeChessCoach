@@ -4,7 +4,7 @@ export type SessionView = 'board' | 'coach';
 
 /** Deliberately not keyed by session id: the student's preference is about
  * how they like to work, not about one game. */
-const STORAGE_KEY = 'chess-coach:session-view';
+const STORAGE_KEY = 'freechesscoach:session-view';
 
 export interface UseMobileSessionViewResult {
   view: SessionView;

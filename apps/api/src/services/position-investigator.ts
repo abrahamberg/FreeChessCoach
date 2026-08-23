@@ -1,6 +1,6 @@
-import { applySanSequence } from '@chess-coach/chess-analysis';
-import { INVESTIGATE_POSITION_SYSTEM_PROMPT, renderInvestigatePositionPrompt } from '@chess-coach/prompts';
-import type { PositionAnalysis } from '@chess-coach/shared';
+import { applySanSequence } from '@freechesscoach/chess-analysis';
+import { INVESTIGATE_POSITION_SYSTEM_PROMPT, renderInvestigatePositionPrompt } from '@freechesscoach/prompts';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { runBoundedToolLoop } from '../llm/agent-text.js';
 import type { GatewayConfig } from '../llm/gateway.js';

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { MISTAKE_CATEGORIES } from '@chess-coach/shared';
-import type { ClassifiedMove, CandidateMoment } from '@chess-coach/chess-analysis';
+import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
+import type { ClassifiedMove, CandidateMoment } from '@freechesscoach/chess-analysis';
 import { buildPlannerMessages, type PlannerPromptInput } from './analysis-planner.js';
 
 const moves: ClassifiedMove[] = [

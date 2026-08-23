@@ -3,7 +3,7 @@ import {
   CreatePlaySessionRequestSchema,
   CreateSessionRequestSchema,
   PostSessionMessageRequestSchema
-} from '@chess-coach/shared';
+} from '@freechesscoach/shared';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';

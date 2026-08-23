@@ -1,4 +1,4 @@
-import { buildCoachSystemPrompt } from '@chess-coach/prompts';
+import { buildCoachSystemPrompt } from '@freechesscoach/prompts';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';

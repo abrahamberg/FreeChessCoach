@@ -16,9 +16,9 @@
 #     --from-literal=price-small=... --from-literal=price-medium=... \
 #     --from-literal=price-large=...
 #
-#   helm dependency build deploy/helm/chess-ai-coach
-#   helm upgrade --install chess-coach deploy/helm/chess-ai-coach \
-#     -f deploy/helm/chess-ai-coach/values.example.yaml
+#   helm dependency build deploy/helm/freechesscoach
+#   helm upgrade --install freechesscoach deploy/helm/freechesscoach \
+#     -f deploy/helm/freechesscoach/values.example.yaml
 #
 # No credential values appear in this file — only the names of the Secrets and
 # of the keys inside them (architecture §11).
@@ -29,12 +29,12 @@ image:
 
 web:
   image:
-    repository: chess-ai-coach
+    repository: freechesscoach
     tag: "web-v0.0.1"
 
 api:
   image:
-    repository: chess-ai-coach
+    repository: freechesscoach
     tag: "api-v0.0.1"
   authMode: proxy
   autoscaling:
@@ -48,7 +48,7 @@ worker:
 
 engine:
   image:
-    repository: chess-ai-coach
+    repository: freechesscoach
     tag: "engine-v0.0.1"
   poolSize: 4
   defaultDepth: 20
@@ -99,9 +99,9 @@ database:
   sslMode: disable
 
 # The cluster ExternalSecret syncs the Bitwarden item
-# `chess-coach-database-url` into this Secret under DATABASE_URL.
+# `freechesscoach-database-url` into this Secret under DATABASE_URL.
 externalDatabase:
-  existingSecret: chess-coach-database-url
+  existingSecret: freechesscoach-database-url
   existingSecretDatabaseUrlKey: DATABASE_URL
 
 migrate:
@@ -116,13 +116,13 @@ networkPolicy:
 ingress:
   enabled: true
   className: nginx
-  host: golvor.com
+  host: freechesscoach.org
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
   tls:
-    - secretName: chess-coach-tls
+    - secretName: freechesscoach-tls
       hosts:
-        - golvor.com
+        - freechesscoach.org
 
 postgresql:
   # Use the complete DATABASE_URL supplied by External Secrets.
@@ -141,7 +141,7 @@ postgresql:
       size: 50Gi
 
 oauth2-proxy:
-  # This is a separate instance for chess-ai-coach. The server-level
+  # This is a separate instance for freechesscoach. The server-level
   # oauth2-proxy may use Azure; this instance is configured for Google.
   enabled: true
   replicaCount: 2
@@ -175,7 +175,7 @@ oauth2-proxy:
     # Public landing page + robots.txt (see values.yaml for the full note).
     - --skip-auth-route=^/$
     - --skip-auth-route=^/robots.txt$
-    - --redirect-url=https://golvor.com/oauth2/callback
+    - --redirect-url=https://freechesscoach.org/oauth2/callback
   service:
     portNumber: 80
   ingress:

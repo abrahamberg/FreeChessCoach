@@ -1,4 +1,4 @@
-import type { MoveQuality } from '@chess-coach/shared';
+import type { MoveQuality } from '@freechesscoach/shared';
 import { toCpWhite, winPctFor } from './win-probability.js';
 import type { MoveClassificationInput, SeverityQuality } from './classify-context.js';
 import { CONFIG } from './config.js';

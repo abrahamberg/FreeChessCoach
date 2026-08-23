@@ -1,5 +1,5 @@
-import { MOVE_QUALITY_SYMBOLS, type RatingBand } from '@chess-coach/shared';
-import type { CandidateMoment, ClassifiedMove } from '@chess-coach/chess-analysis';
+import { MOVE_QUALITY_SYMBOLS, type RatingBand } from '@freechesscoach/shared';
+import type { CandidateMoment, ClassifiedMove } from '@freechesscoach/chess-analysis';
 import { CALIBRATION } from './calibration.js';
 import {
   MISTAKE_CATEGORIES_BLOCK,

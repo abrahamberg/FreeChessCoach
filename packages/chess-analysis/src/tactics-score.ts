@@ -1,5 +1,5 @@
 import { Chess, type Square } from 'chess.js';
-import type { EngineEval, FeatureDeltaDto, MoveQuality, PositionFeatures } from '@chess-coach/shared';
+import type { EngineEval, FeatureDeltaDto, MoveQuality, PositionFeatures } from '@freechesscoach/shared';
 import { toColorName } from './attack-map.js';
 import { see } from './see.js';
 import { toCpWhite, winPctFor } from './win-probability.js';

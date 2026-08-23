@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent, type ReactNode } from 'react';
-import type { ImportGameRequest } from '@chess-coach/shared';
+import type { ImportGameRequest } from '@freechesscoach/shared';
 
 export interface PgnUploadFormProps {
   onSubmit: (body: Pick<ImportGameRequest, 'pgn' | 'source'>) => void;

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { PlayerColor } from '@chess-coach/shared';
+import type { PlayerColor } from '@freechesscoach/shared';
 
 export interface ColorConfirmProps {
   onConfirm: (color: PlayerColor) => void;

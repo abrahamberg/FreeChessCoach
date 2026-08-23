@@ -1,4 +1,4 @@
-# Chess AI Coach — Game Report Implementation Plan
+# FreeChessCoach — Game Report Implementation Plan
 
 **Source spec:** `docs/algorith.md` (chess.com-style Game Review reproduction).
 It is long (~930 lines) and most of it is irrelevant to any single task — do

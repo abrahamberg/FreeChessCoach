@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { PositionAnalysis, PositionAnalysisLine, PositionFeatures } from '@chess-coach/shared';
+import type { PositionAnalysis, PositionAnalysisLine, PositionFeatures } from '@freechesscoach/shared';
 import { renderEngineAnalysisSummary } from './position-analysis-summary.js';
 
 function line(overrides: Partial<PositionAnalysisLine> & Pick<PositionAnalysisLine, 'moveSan' | 'pvSan'>): PositionAnalysisLine {

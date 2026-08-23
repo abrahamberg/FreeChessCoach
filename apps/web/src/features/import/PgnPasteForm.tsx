@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import type { ImportGameRequest } from '@chess-coach/shared';
+import type { ImportGameRequest } from '@freechesscoach/shared';
 
 export interface PgnPasteFormProps {
   onSubmit: (body: ImportGameRequest) => void;

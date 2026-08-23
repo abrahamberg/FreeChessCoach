@@ -1,4 +1,4 @@
-import type { CoachPersona } from '@chess-coach/shared';
+import type { CoachPersona } from '@freechesscoach/shared';
 
 export interface TtsSpeakRequest {
   text: string;

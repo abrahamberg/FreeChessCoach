@@ -1,4 +1,4 @@
-import type { MoveQuality, MovePhase } from '@chess-coach/shared';
+import type { MoveQuality, MovePhase } from '@freechesscoach/shared';
 import { accuracyForAggregate, aggregateAccuracy } from './game-accuracy.js';
 
 export interface PhaseAccuracyMove {

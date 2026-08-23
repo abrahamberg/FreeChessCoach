@@ -1,5 +1,5 @@
 {
-  "name": "chess-ai-coach",
+  "name": "freechesscoach",
   "private": true,
   "type": "module",
   "workspaces": [

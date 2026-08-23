@@ -1,4 +1,4 @@
-import { UpdateUserProfileRequestSchema } from '@chess-coach/shared';
+import { UpdateUserProfileRequestSchema } from '@freechesscoach/shared';
 import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import { ValidationError } from '../lib/errors.js';

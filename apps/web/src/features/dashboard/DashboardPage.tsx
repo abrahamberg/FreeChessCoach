@@ -1,4 +1,4 @@
-import { DashboardResponseSchema } from '@chess-coach/shared';
+import { DashboardResponseSchema } from '@freechesscoach/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';

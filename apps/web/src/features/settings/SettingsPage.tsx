@@ -5,7 +5,7 @@ import {
   type EngineMode,
   type LlmProvider,
   type RatingBand
-} from '@chess-coach/shared';
+} from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { apiDelete, apiGet, apiPatch, apiPut } from '../../api/client.js';
@@ -20,7 +20,7 @@ import { TtsSection, type TtsProfilePatch } from './TtsSection.js';
 import './SettingsPage.css';
 
 type Theme = 'light' | 'dark';
-const THEME_STORAGE_KEY = 'chess-coach-theme';
+const THEME_STORAGE_KEY = 'freechesscoach-theme';
 const LLM_PROVIDERS: LlmProvider[] = ['anthropic', 'openai'];
 
 function readStoredTheme(): Theme | null {

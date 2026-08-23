@@ -1,6 +1,6 @@
-import type { ClassifiedMove, FeatureDelta } from '@chess-coach/chess-analysis';
-import { isSoundQuality } from '@chess-coach/chess-analysis';
-import { MOVE_QUALITY_SYMBOLS, type MoveQuality, type PositionAnalysis, type PositionAnalysisLine } from '@chess-coach/shared';
+import type { ClassifiedMove, FeatureDelta } from '@freechesscoach/chess-analysis';
+import { isSoundQuality } from '@freechesscoach/chess-analysis';
+import { MOVE_QUALITY_SYMBOLS, type MoveQuality, type PositionAnalysis, type PositionAnalysisLine } from '@freechesscoach/shared';
 import { describeMoveRef } from './render.js';
 import { formatEval } from './format-eval.js';
 

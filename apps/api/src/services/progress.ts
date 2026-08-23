@@ -1,5 +1,5 @@
-import { MISTAKE_CATEGORIES } from '@chess-coach/shared';
-import type { Finding, FocusAreaUpdate, MistakeCategory, SessionOutcome } from '@chess-coach/shared';
+import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
+import type { Finding, FocusAreaUpdate, MistakeCategory, SessionOutcome } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';

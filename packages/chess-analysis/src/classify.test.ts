@@ -1,4 +1,4 @@
-import type { EngineEval, EngineLine } from '@chess-coach/shared';
+import type { EngineEval, EngineLine } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import type { ParsedGame } from './pgn.js';
 import { classifyLiveMove, classifyMoves, expectedPoints, hangsPiece, isSoundQuality, qualityFor } from './classify.js';

@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { ENGINE_DEFAULT_DEPTH, ENGINE_TUNNEL_PER_POSITION_MS } from '@chess-coach/shared';
+import { ENGINE_DEFAULT_DEPTH, ENGINE_TUNNEL_PER_POSITION_MS } from '@freechesscoach/shared';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
 import { BrowserTunnelEngineBackend } from './browser-tunnel-engine-backend.js';
 

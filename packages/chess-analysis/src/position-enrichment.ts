@@ -1,4 +1,4 @@
-import type { PositionFeatures } from '@chess-coach/shared';
+import type { PositionFeatures } from '@freechesscoach/shared';
 import { diffPositionFeatures, type FeatureDelta } from './diff-features.js';
 import { moveFlags, type MoveFlags } from './move-flags.js';
 import { computePositionFeatures } from './position-features.js';

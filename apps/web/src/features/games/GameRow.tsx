@@ -1,4 +1,4 @@
-import type { GameListItem } from '@chess-coach/shared';
+import type { GameListItem } from '@freechesscoach/shared';
 import type { MouseEvent, ReactNode } from 'react';
 import './GameRow.css';
 

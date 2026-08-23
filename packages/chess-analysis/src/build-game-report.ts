@@ -9,7 +9,7 @@ import {
   type MovePhase,
   type PhaseConfidence,
   type PlayerReport
-} from '@chess-coach/shared';
+} from '@freechesscoach/shared';
 import type { ParsedGame } from './pgn.js';
 import {
   endgameStartPly as resolveEndgameStartPly,

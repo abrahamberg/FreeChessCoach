@@ -1,4 +1,4 @@
-import type { EngineEval } from '@chess-coach/shared';
+import type { EngineEval } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { buildMoveMetrics, buildWinPctSeries, computeMoveDrop } from './move-metrics.js';
 import { moveAccuracy } from './accuracy-curve.js';

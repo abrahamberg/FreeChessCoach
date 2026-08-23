@@ -1,4 +1,4 @@
-import type { LlmProvider, OpenAiServiceTier, ReasoningEffort } from '@chess-coach/shared';
+import type { LlmProvider, OpenAiServiceTier, ReasoningEffort } from '@freechesscoach/shared';
 import type { JSONValue } from 'ai';
 
 /** architecture §8: `standard` is the coach agent itself, `light` every

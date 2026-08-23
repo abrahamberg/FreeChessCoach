@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { RATING_BANDS } from '@chess-coach/shared';
+import { RATING_BANDS } from '@freechesscoach/shared';
 import { CALIBRATION } from './calibration.js';
 
 describe('CALIBRATION', () => {

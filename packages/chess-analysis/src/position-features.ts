@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import type { PositionFeatures } from '@chess-coach/shared';
+import type { PositionFeatures } from '@freechesscoach/shared';
 import { buildAttackMap, toColorName } from './attack-map.js';
 import {
   centerControlScore,

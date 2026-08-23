@@ -1,5 +1,5 @@
-import { parsePgn, resolveSanMove } from '@chess-coach/chess-analysis';
-import { UserProfileSchema } from '@chess-coach/shared';
+import { parsePgn, resolveSanMove } from '@freechesscoach/chess-analysis';
+import { UserProfileSchema } from '@freechesscoach/shared';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';

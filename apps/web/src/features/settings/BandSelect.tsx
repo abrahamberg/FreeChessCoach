@@ -1,4 +1,4 @@
-import { RATING_BANDS, type RatingBand } from '@chess-coach/shared';
+import { RATING_BANDS, type RatingBand } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 
 export interface BandSelectProps {

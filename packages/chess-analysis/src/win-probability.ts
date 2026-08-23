@@ -1,4 +1,4 @@
-import type { EngineLine } from '@chess-coach/shared';
+import type { EngineLine } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 
 const { mateBase: MATE_BASE, cpClamp: CP_CLAMP, slope: WIN_PROBABILITY_SLOPE, mateDecayPerPly: MATE_DECAY_PER_PLY, mateInClamp: MATE_IN_CLAMP } = CONFIG.winProbability;

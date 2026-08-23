@@ -1,4 +1,4 @@
-import { parsePgn, type ParsedPosition } from '@chess-coach/chess-analysis';
+import { parsePgn, type ParsedPosition } from '@freechesscoach/chess-analysis';
 import type { Kysely } from 'kysely';
 import * as gamesRepo from '../db/repositories/games.js';
 import type { Database } from '../db/schema.js';

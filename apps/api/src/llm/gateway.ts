@@ -1,4 +1,4 @@
-import type { LlmProvider } from '@chess-coach/shared';
+import type { LlmProvider } from '@freechesscoach/shared';
 import type { LanguageModel } from 'ai';
 import type { Kysely } from 'kysely';
 import * as creditsRepo from '../db/repositories/credits.js';

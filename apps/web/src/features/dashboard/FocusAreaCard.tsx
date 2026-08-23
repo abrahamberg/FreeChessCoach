@@ -1,4 +1,4 @@
-import type { FocusAreaSummary } from '@chess-coach/shared';
+import type { FocusAreaSummary } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { CATEGORY_LABELS } from './categoryLabels.js';
 

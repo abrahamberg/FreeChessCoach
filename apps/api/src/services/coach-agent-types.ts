@@ -1,4 +1,4 @@
-import type { ClientToolResult, PositionAnalysis } from '@chess-coach/shared';
+import type { ClientToolResult, PositionAnalysis } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
 import type { GatewayConfig, ModelResolution, Tier } from '../llm/gateway.js';

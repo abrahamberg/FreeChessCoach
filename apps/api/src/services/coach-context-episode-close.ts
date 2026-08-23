@@ -1,5 +1,5 @@
-import { EPISODE_FOLD_SYSTEM_PROMPT } from '@chess-coach/prompts';
-import { moveRefToPly } from '@chess-coach/chess-analysis';
+import { EPISODE_FOLD_SYSTEM_PROMPT } from '@freechesscoach/prompts';
+import { moveRefToPly } from '@freechesscoach/chess-analysis';
 import type { SessionMessageRow } from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import { compact } from './session-context.js';

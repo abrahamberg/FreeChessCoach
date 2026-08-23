@@ -1,5 +1,5 @@
-import { detectUserColor, parsePgn, type Usernames } from '@chess-coach/chess-analysis';
-import type { ImportGameRequest, PlayerColor } from '@chess-coach/shared';
+import { detectUserColor, parsePgn, type Usernames } from '@freechesscoach/chess-analysis';
+import type { ImportGameRequest, PlayerColor } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
@@ -8,7 +8,7 @@ import type { Database } from '../db/schema.js';
 import { RateLimitError } from '../lib/errors.js';
 import type { JobQueue } from '../jobs/queue.js';
 
-export { InvalidPgnError } from '@chess-coach/chess-analysis';
+export { InvalidPgnError } from '@freechesscoach/chess-analysis';
 
 export class MissingUserColorError extends Error {
   constructor() {

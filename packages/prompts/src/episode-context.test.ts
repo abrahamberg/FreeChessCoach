@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import type { ClassifiedMove, FeatureDelta } from '@chess-coach/chess-analysis';
-import type { PositionAnalysis, PositionAnalysisLine } from '@chess-coach/shared';
+import type { ClassifiedMove, FeatureDelta } from '@freechesscoach/chess-analysis';
+import type { PositionAnalysis, PositionAnalysisLine } from '@freechesscoach/shared';
 import {
   renderAnnotatedPgn,
   renderCurrentMoveBlock,

@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { CoachPersona, EngineMode, RatingBand, TtsBackend } from '@chess-coach/shared';
+import type { CoachPersona, EngineMode, RatingBand, TtsBackend } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export interface UserRow {

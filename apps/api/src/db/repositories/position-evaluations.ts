@@ -1,5 +1,5 @@
 import { sql, type Kysely } from 'kysely';
-import type { PositionAnalysis } from '@chess-coach/shared';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export interface PositionEvaluationEntry {

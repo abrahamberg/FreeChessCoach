@@ -1,4 +1,4 @@
-import { applySanSequence } from '@chess-coach/chess-analysis';
+import { applySanSequence } from '@freechesscoach/chess-analysis';
 import { useCallback, useState } from 'react';
 import type { CoachToolCall } from '../../hooks/useCoachChat.js';
 

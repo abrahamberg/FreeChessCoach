@@ -15,17 +15,17 @@
 # JavaScript — no native binaries, no install scripts, no os/cpu constraints
 # (audited; see docs/deploy-build.md) — so the copied tree is portable.
 FROM node:22-slim AS runtime
-LABEL org.opencontainers.image.source="https://github.com/abrahamberg/chess-ai-coach"
+LABEL org.opencontainers.image.source="https://github.com/abrahamberg/FreeChessCoach"
 WORKDIR /app
 ENV NODE_ENV=production
 
 # Pre-built on the runner by:
-#   npm ci --omit=dev --workspace=@chess-coach/api --include-workspace-root
+#   npm ci --omit=dev --workspace=@freechesscoach/api --include-workspace-root
 # First-party workspace code is inlined into the bundle, so the dangling
-# @chess-coach/* symlinks this tree contains are never resolved at runtime.
+# @freechesscoach/* symlinks this tree contains are never resolved at runtime.
 COPY node_modules ./node_modules
 
-# Pre-built on the runner by `npm run bundle --workspace=@chess-coach/api`.
+# Pre-built on the runner by `npm run bundle --workspace=@freechesscoach/api`.
 # Self-contained ESM (`.mjs`), so no package.json is needed alongside it.
 COPY apps/api/dist-bundle ./dist-bundle
 
@@ -34,7 +34,7 @@ COPY apps/api/dist-bundle ./dist-bundle
 # image: a named user makes every pod fail admission with "image has non-numeric
 # user (node), cannot verify user is non-root". 1000 is exactly the `node` user's
 # uid in node:22-slim, and it matches podSecurityContext.runAsUser in
-# deploy/helm/chess-ai-coach/values.yaml. Everything COPY'd above is owned by
+# deploy/helm/freechesscoach/values.yaml. Everything COPY'd above is owned by
 # root but world-readable, so uid 1000 can read node_modules and dist-bundle.
 USER 1000
 ENV PORT=3000

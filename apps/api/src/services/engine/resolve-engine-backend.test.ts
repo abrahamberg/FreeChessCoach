@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi, beforeAll, afterAll } from 'vitest';
 import type { Kysely } from 'kysely';
-import { ENGINE_TUNNEL_PER_POSITION_MS } from '@chess-coach/shared';
+import { ENGINE_TUNNEL_PER_POSITION_MS } from '@freechesscoach/shared';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import * as usersRepo from '../../db/repositories/users.js';
 import type { Database } from '../../db/schema.js';

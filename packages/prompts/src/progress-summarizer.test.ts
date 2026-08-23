@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { MISTAKE_CATEGORIES } from '@chess-coach/shared';
+import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
 import { buildSummarizerMessages, type SummarizerPromptInput } from './progress-summarizer.js';
 
 const now = new Date('2026-07-28T12:00:00Z');

@@ -1,4 +1,4 @@
-import { COACH_PERSONAS } from '@chess-coach/shared';
+import { COACH_PERSONAS } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { PERSONA_VOICES } from './persona-voices.js';
 

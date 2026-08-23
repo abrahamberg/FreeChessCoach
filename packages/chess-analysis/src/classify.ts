@@ -6,7 +6,7 @@ import type {
   FeatureDeltaDto,
   MoveQuality,
   PositionFeatures
-} from '@chess-coach/shared';
+} from '@freechesscoach/shared';
 import { computeMoveDrop } from './move-metrics.js';
 import { enrichPositions } from './position-enrichment.js';
 import { inBookWalk, resolveOpening, type OpeningResolution } from './opening-book.js';

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { COACH_PERSONAS, MISTAKE_CATEGORIES, type CoachingPlan, type CoachPersona } from '@chess-coach/shared';
+import { COACH_PERSONAS, MISTAKE_CATEGORIES, type CoachingPlan, type CoachPersona } from '@freechesscoach/shared';
 import { buildCoachSystemPrompt, type CoachPromptInput } from './coach-system.js';
 
 const now = new Date('2026-07-28T12:00:00Z');

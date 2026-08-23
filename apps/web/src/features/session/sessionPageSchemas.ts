@@ -1,4 +1,4 @@
-import { ClassifiedMoveSchema, GameReportSchema, MoveQualitySchema } from '@chess-coach/shared';
+import { ClassifiedMoveSchema, GameReportSchema, MoveQualitySchema } from '@freechesscoach/shared';
 import { z } from 'zod';
 
 export const SessionMessageSchema = z.object({

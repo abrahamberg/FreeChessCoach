@@ -1,5 +1,5 @@
 import { useMemo, useState, type MouseEvent, type ReactNode } from 'react';
-import type { ClassifiedMoveDto } from '@chess-coach/shared';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import './GameEvalChart.css';
 
 export interface GameEvalChartProps {

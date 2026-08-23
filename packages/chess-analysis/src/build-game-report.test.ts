@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { GameReportSchema, type BookReport, type EngineEval } from '@chess-coach/shared';
+import { GameReportSchema, type BookReport, type EngineEval } from '@freechesscoach/shared';
 import { buildGameReport } from './build-game-report.js';
 import { classifyMoves } from './classify.js';
 import { parsePgn, type ParsedPosition } from './pgn.js';

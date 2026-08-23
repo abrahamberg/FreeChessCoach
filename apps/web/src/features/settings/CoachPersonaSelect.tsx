@@ -1,4 +1,4 @@
-import { COACH_PERSONAS, COACH_PERSONA_INFO, type CoachPersona } from '@chess-coach/shared';
+import { COACH_PERSONAS, COACH_PERSONA_INFO, type CoachPersona } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { Modal } from '../../components/Modal.js';
 import './CoachPersonaSelect.css';

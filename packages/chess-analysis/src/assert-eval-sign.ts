@@ -1,4 +1,4 @@
-import type { EngineLine } from '@chess-coach/shared';
+import type { EngineLine } from '@freechesscoach/shared';
 
 /**
  * Verifies that engine centipawn scores are stored from White's perspective.

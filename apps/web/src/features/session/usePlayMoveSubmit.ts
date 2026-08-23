@@ -1,4 +1,4 @@
-import type { MoveQuality } from '@chess-coach/shared';
+import type { MoveQuality } from '@freechesscoach/shared';
 import { useState } from 'react';
 import { apiPost, ApiError } from '../../api/client.js';
 import { CommitPlayMoveResponseSchema } from './sessionPageSchemas.js';

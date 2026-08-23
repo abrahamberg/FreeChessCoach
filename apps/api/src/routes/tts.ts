@@ -1,4 +1,4 @@
-import { TtsSpeakRequestSchema } from '@chess-coach/shared';
+import { TtsSpeakRequestSchema } from '@freechesscoach/shared';
 import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';

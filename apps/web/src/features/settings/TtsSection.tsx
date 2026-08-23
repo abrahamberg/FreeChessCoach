@@ -1,4 +1,4 @@
-import { TTS_BACKENDS, type TtsBackend } from '@chess-coach/shared';
+import { TTS_BACKENDS, type TtsBackend } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { Modal } from '../../components/Modal.js';
 import './TtsSection.css';

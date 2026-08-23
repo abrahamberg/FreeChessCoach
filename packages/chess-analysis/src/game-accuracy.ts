@@ -1,4 +1,4 @@
-import type { MoveQuality } from '@chess-coach/shared';
+import type { MoveQuality } from '@freechesscoach/shared';
 import { moveAccuracy } from './accuracy-curve.js';
 import { CONFIG } from './config.js';
 

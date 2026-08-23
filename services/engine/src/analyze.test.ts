@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import type { EngineLine } from '@chess-coach/shared';
+import type { EngineLine } from '@freechesscoach/shared';
 import { analyzeGame, analyzePosition, analyzePositionDetailed, InvalidFenError } from './analyze.js';
 import { EnginePool } from './engine-pool.js';
 import { UciEngine, type AnalyzeOptions, type DetailedEngineLine } from './uci.js';

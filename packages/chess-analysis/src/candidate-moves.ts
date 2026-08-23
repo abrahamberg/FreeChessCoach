@@ -1,4 +1,4 @@
-import type { AttackedPieceDto } from '@chess-coach/shared';
+import type { AttackedPieceDto } from '@freechesscoach/shared';
 import { applySanSequence } from './apply-san-sequence.js';
 import { diffPositionFeatures } from './diff-features.js';
 import { computePositionFeatures } from './position-features.js';

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { MOVE_QUALITY_SYMBOLS, type MoveQuality } from '@chess-coach/shared';
+import { MOVE_QUALITY_SYMBOLS, type MoveQuality } from '@freechesscoach/shared';
 import './MoveQualityBadge.css';
 
 export interface MoveQualityBadgeProps {

@@ -1,4 +1,4 @@
-import type { LichessRecentGame } from '@chess-coach/shared';
+import type { LichessRecentGame } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 
 export interface LichessGamePickerProps {

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FindingSchema, FocusAreaUpdateSchema, ThreadSchema } from '@chess-coach/shared';
+import { FindingSchema, FocusAreaUpdateSchema, ThreadSchema } from '@freechesscoach/shared';
 
 /** architecture §7.1 — parameter schemas for the coach agent's 13 tools. Pure
  * (no execute functions here); apps/api/src/services/coach-tools.ts binds

@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { MoveQuality, PositionAnalysis } from '@chess-coach/shared';
+import type { MoveQuality, PositionAnalysis } from '@freechesscoach/shared';
 import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { SessionRow } from '../db/repositories/sessions.js';

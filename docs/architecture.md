@@ -1,4 +1,4 @@
-# Chess AI Coach — Architecture
+# FreeChessCoach — Architecture
 
 
 ## 1. System overview

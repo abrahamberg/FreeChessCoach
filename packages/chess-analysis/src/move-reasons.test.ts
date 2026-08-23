@@ -1,4 +1,4 @@
-import type { EngineEval, PositionFeatures } from '@chess-coach/shared';
+import type { EngineEval, PositionFeatures } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { buildReasons, type MoveReasonsInput } from './move-reasons.js';
 

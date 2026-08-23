@@ -19,7 +19,7 @@ const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');
  * picks up source edits with no rebuild. Plain `node` cannot import that, so
  * their source is inlined into the bundle (esbuild type-strips it on the way
  * in) rather than resolved from node_modules at runtime. */
-const FIRST_PARTY_SCOPE = '@chess-coach/';
+const FIRST_PARTY_SCOPE = '@freechesscoach/';
 
 /** Manifests whose `dependencies` end up reachable from an entrypoint: the api
  * itself plus every first-party package that gets inlined into the bundle. */

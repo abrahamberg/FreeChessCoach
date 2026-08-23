@@ -1,4 +1,4 @@
-import { LlmProviderSchema, SetLlmKeyRequestSchema } from '@chess-coach/shared';
+import { LlmProviderSchema, SetLlmKeyRequestSchema } from '@freechesscoach/shared';
 import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import * as llmKeysRepo from '../db/repositories/llm-keys.js';

@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { SessionMode, Thread } from '@chess-coach/shared';
+import type { SessionMode, Thread } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export type SessionStatus = 'active' | 'completed' | 'paused_no_credits' | 'abandoned';

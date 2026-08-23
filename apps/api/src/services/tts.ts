@@ -1,4 +1,4 @@
-import type { CoachPersona } from '@chess-coach/shared';
+import type { CoachPersona } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as creditsRepo from '../db/repositories/credits.js';
 import type { Database } from '../db/schema.js';

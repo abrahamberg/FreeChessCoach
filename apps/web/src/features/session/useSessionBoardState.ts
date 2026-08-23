@@ -1,4 +1,4 @@
-import { moveRefToPly } from '@chess-coach/chess-analysis';
+import { moveRefToPly } from '@freechesscoach/chess-analysis';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BoardArrow, BoardHighlight } from '../board/CoachBoard.js';
 import { useAnnotationLayer, type AnnotationState } from '../board/AnnotationLayer.js';

@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
-import type { PositionAnalysis } from '@chess-coach/shared';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import { buildApp } from '../app.js';
 import { buildResolveEngineBackendOptions, type CoachAgentBaseDependencies } from '../bootstrap.js';
 import type { Database } from '../db/schema.js';

@@ -1,4 +1,4 @@
-import { ThreadSchema, type Thread } from '@chess-coach/shared';
+import { ThreadSchema, type Thread } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';

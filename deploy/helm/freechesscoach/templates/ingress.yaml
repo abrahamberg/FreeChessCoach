@@ -5,9 +5,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "chess-ai-coach.fullname" . }}
+  name: {{ include "freechesscoach.fullname" . }}
   labels:
-    {{- include "chess-ai-coach.labels" (dict "ctx" . "component" "ingress") | nindent 4 }}
+    {{- include "freechesscoach.labels" (dict "ctx" . "component" "ingress") | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -28,7 +28,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ default (printf "%s-oauth2-proxy" (include "chess-ai-coach.fullname" .)) .Values.ingress.backend.serviceName }}
+                name: {{ default (printf "%s-oauth2-proxy" (include "freechesscoach.fullname" .)) .Values.ingress.backend.serviceName }}
                 port:
                   number: {{ default (index .Values "oauth2-proxy" "service" "portNumber") .Values.ingress.backend.servicePort }}
 {{- end }}

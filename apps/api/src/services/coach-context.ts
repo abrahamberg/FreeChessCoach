@@ -5,7 +5,7 @@ import {
   diffPositionFeatures,
   moveRefToPly,
   type FeatureDelta
-} from '@chess-coach/chess-analysis';
+} from '@freechesscoach/chess-analysis';
 import {
   renderAnnotatedPgn,
   renderCurrentMoveBlock,
@@ -13,8 +13,8 @@ import {
   renderOtherMovesSummary,
   renderThreadsBlock,
   type AnnotatedMoveLike
-} from '@chess-coach/prompts';
-import type { PositionAnalysis } from '@chess-coach/shared';
+} from '@freechesscoach/prompts';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';

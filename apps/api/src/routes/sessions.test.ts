@@ -2,7 +2,7 @@ import type { Kysely } from 'kysely';
 import type { LanguageModelV4StreamPart } from '@ai-sdk/provider';
 import { MockLanguageModelV4 } from 'ai/test';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
-import type { CoachingPlan, PositionAnalysis } from '@chess-coach/shared';
+import type { CoachingPlan, PositionAnalysis } from '@freechesscoach/shared';
 import { buildApp } from '../app.js';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as creditsRepo from '../db/repositories/credits.js';

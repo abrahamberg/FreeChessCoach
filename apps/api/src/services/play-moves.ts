@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
-import { appendMoveToPgn, parsePgn, removeLastMoveFromPgn } from '@chess-coach/chess-analysis';
-import type { MoveQuality, PositionAnalysis } from '@chess-coach/shared';
+import { appendMoveToPgn, parsePgn, removeLastMoveFromPgn } from '@freechesscoach/chess-analysis';
+import type { MoveQuality, PositionAnalysis } from '@freechesscoach/shared';
 import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';

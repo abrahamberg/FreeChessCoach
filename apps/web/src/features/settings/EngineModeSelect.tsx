@@ -1,4 +1,4 @@
-import { ENGINE_MODES, type EngineMode } from '@chess-coach/shared';
+import { ENGINE_MODES, type EngineMode } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { useEngineStatus } from '../../hooks/useEngineStatus.js';
 import './EngineModeSelect.css';

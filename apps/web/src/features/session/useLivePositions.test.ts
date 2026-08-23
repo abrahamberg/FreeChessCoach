@@ -1,4 +1,4 @@
-import type { ParsedPosition } from '@chess-coach/chess-analysis';
+import type { ParsedPosition } from '@freechesscoach/chess-analysis';
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { useLivePositions } from './useLivePositions.js';

@@ -1,6 +1,6 @@
-import { plyToMoveRef } from '@chess-coach/chess-analysis';
-import { MISTAKE_CATEGORIES } from '@chess-coach/shared';
-import type { CoachingPlan, MistakeCategory, Thread } from '@chess-coach/shared';
+import { plyToMoveRef } from '@freechesscoach/chess-analysis';
+import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
+import type { CoachingPlan, MistakeCategory, Thread } from '@freechesscoach/shared';
 
 export const MISTAKE_CATEGORIES_BLOCK = MISTAKE_CATEGORIES.join(', ');
 

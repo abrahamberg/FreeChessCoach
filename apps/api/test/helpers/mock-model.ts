@@ -1,5 +1,5 @@
 import type { LanguageModelV4Content, LanguageModelV4GenerateResult, LanguageModelV4StreamPart, LanguageModelV4Usage } from '@ai-sdk/provider';
-import type { LlmProvider } from '@chess-coach/shared';
+import type { LlmProvider } from '@freechesscoach/shared';
 import { MockLanguageModelV4 } from 'ai/test';
 import { vi } from 'vitest';
 import type { ModelResolution } from '../../src/llm/gateway.js';

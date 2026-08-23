@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { UpdateUserProfileRequest, UserProfile } from '@chess-coach/shared';
+import type { UpdateUserProfileRequest, UserProfile } from '@freechesscoach/shared';
 import * as creditsRepo from '../db/repositories/credits.js';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';

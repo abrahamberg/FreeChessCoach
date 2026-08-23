@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { MOVE_QUALITIES, type ClassificationCounts, type EstimatedRatingReport, type GameReport, type MoveQuality } from '@chess-coach/shared';
+import { MOVE_QUALITIES, type ClassificationCounts, type EstimatedRatingReport, type GameReport, type MoveQuality } from '@freechesscoach/shared';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import './GameReportSummary.css';
 

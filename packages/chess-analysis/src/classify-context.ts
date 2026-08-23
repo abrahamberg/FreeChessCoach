@@ -4,7 +4,7 @@ import type {
   MoveFlagsDto,
   MoveQuality,
   PositionFeatures
-} from '@chess-coach/shared';
+} from '@freechesscoach/shared';
 
 export type SeverityQuality = Extract<MoveQuality, 'excellent' | 'good' | 'inaccuracy' | 'mistake' | 'blunder'>;
 

@@ -1,4 +1,4 @@
-import type { AttackedPieceDto, FeatureDeltaDto, ForkSchema, PositionFeatures } from '@chess-coach/shared';
+import type { AttackedPieceDto, FeatureDeltaDto, ForkSchema, PositionFeatures } from '@freechesscoach/shared';
 import type { z } from 'zod';
 
 export type Fork = z.infer<typeof ForkSchema>;

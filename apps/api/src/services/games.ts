@@ -1,4 +1,4 @@
-import type { GameListResponse } from '@chess-coach/shared';
+import type { GameListResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as findingsRepo from '../db/repositories/findings.js';

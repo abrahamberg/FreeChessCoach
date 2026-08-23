@@ -1,4 +1,4 @@
-import { COACH_PERSONA_INFO } from '@chess-coach/shared';
+import { COACH_PERSONA_INFO } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCoachVoice } from '../../hooks/useCoachVoice.js';

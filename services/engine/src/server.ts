@@ -1,6 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import Fastify, { type FastifyInstance, type FastifyReply } from 'fastify';
-import { AnalyzeGameRequestSchema, AnalyzePositionRequestSchema } from '@chess-coach/shared';
+import { AnalyzeGameRequestSchema, AnalyzePositionRequestSchema } from '@freechesscoach/shared';
 import { analyzeGame, analyzePositionDetailed, InvalidFenError } from './analyze.js';
 import { EnginePool } from './engine-pool.js';
 import { DEFAULT_DEPTH, DEFAULT_TIMEOUT_MS, UciEngine } from './uci.js';

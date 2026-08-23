@@ -1,4 +1,4 @@
-import { GameListResponseSchema, type GameListItem } from '@chess-coach/shared';
+import { GameListResponseSchema, type GameListItem } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';

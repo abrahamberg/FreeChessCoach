@@ -1,4 +1,4 @@
-import { moveRefToPly, resolveSanMove, type ParsedPosition } from '@chess-coach/chess-analysis';
+import { moveRefToPly, resolveSanMove, type ParsedPosition } from '@freechesscoach/chess-analysis';
 import { Fragment, useEffect, useRef, type ReactNode } from 'react';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { AnnotationNote } from './AnnotationNote.js';

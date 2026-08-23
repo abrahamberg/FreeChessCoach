@@ -1,5 +1,5 @@
-import { toCpWhite, winPctFor, type PlayerColor } from '@chess-coach/chess-analysis';
-import type { PositionAnalysis } from '@chess-coach/shared';
+import { toCpWhite, winPctFor, type PlayerColor } from '@freechesscoach/chess-analysis';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import type { EngineBackend } from './engine/engine-backend.js';
 
 type PositionAnalyzer = Pick<EngineBackend, 'analyzePosition'>;

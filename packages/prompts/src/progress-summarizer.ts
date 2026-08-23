@@ -1,4 +1,4 @@
-import type { CoachingPlan, RatingBand } from '@chess-coach/shared';
+import type { CoachingPlan, RatingBand } from '@freechesscoach/shared';
 import { CALIBRATION } from './calibration.js';
 import {
   MISTAKE_CATEGORIES_BLOCK,

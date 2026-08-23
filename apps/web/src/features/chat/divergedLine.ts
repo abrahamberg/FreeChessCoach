@@ -1,4 +1,4 @@
-import { moveRefToPly } from '@chess-coach/chess-analysis';
+import { moveRefToPly } from '@freechesscoach/chess-analysis';
 import { describePly } from './positionDivider.js';
 
 export interface DivergedMoveSan {

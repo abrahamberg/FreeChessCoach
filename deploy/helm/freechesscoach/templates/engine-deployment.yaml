@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "chess-ai-coach.componentName" (dict "ctx" . "component" "engine") }}
+  name: {{ include "freechesscoach.componentName" (dict "ctx" . "component" "engine") }}
   labels:
-    {{- include "chess-ai-coach.labels" (dict "ctx" . "component" "engine") | nindent 4 }}
+    {{- include "freechesscoach.labels" (dict "ctx" . "component" "engine") | nindent 4 }}
 spec:
   {{- if not .Values.engine.autoscaling.enabled }}
   replicas: {{ .Values.engine.replicaCount }}
@@ -12,21 +12,21 @@ spec:
     {{- toYaml (.Values.engine.strategy | default (dict "type" "RollingUpdate" "rollingUpdate" (dict "maxSurge" 0 "maxUnavailable" 1))) | nindent 4 }}
   selector:
     matchLabels:
-      {{- include "chess-ai-coach.selectorLabels" (dict "ctx" . "component" "engine") | nindent 6 }}
+      {{- include "freechesscoach.selectorLabels" (dict "ctx" . "component" "engine") | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "chess-ai-coach.selectorLabels" (dict "ctx" . "component" "engine") | nindent 8 }}
+        {{- include "freechesscoach.selectorLabels" (dict "ctx" . "component" "engine") | nindent 8 }}
     spec:
-      {{- include "chess-ai-coach.imagePullSecrets" . | nindent 6 }}
+      {{- include "freechesscoach.imagePullSecrets" . | nindent 6 }}
       securityContext:
-        {{- include "chess-ai-coach.podSecurityContext" . | nindent 8 }}
+        {{- include "freechesscoach.podSecurityContext" . | nindent 8 }}
       containers:
         - name: engine
-          image: {{ include "chess-ai-coach.image" (dict "ctx" . "image" .Values.engine.image) | quote }}
+          image: {{ include "freechesscoach.image" (dict "ctx" . "image" .Values.engine.image) | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
-            {{- include "chess-ai-coach.containerSecurityContext" . | nindent 12 }}
+            {{- include "freechesscoach.containerSecurityContext" . | nindent 12 }}
           ports:
             - name: http
               containerPort: {{ .Values.engine.containerPort }}

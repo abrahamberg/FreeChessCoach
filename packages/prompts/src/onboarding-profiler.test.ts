@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { MISTAKE_CATEGORIES } from '@chess-coach/shared';
+import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
 import { buildOnboardingProfilerMessages } from './onboarding-profiler.js';
 
 describe('buildOnboardingProfilerMessages', () => {

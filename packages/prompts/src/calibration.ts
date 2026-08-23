@@ -1,4 +1,4 @@
-import type { RatingBand } from '@chess-coach/shared';
+import type { RatingBand } from '@freechesscoach/shared';
 
 export interface BandCalibration {
   label: string;

@@ -1,4 +1,4 @@
-import type { EngineEval, EngineLine } from '@chess-coach/shared';
+import type { EngineEval, EngineLine } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import type { ClassifiedMove } from './classify.js';
 import { findCandidateMoments } from './critical-moments.js';

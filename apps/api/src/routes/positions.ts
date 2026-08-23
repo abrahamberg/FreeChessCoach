@@ -1,4 +1,4 @@
-import { AnalyzePositionRequestSchema } from '@chess-coach/shared';
+import { AnalyzePositionRequestSchema } from '@freechesscoach/shared';
 import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';

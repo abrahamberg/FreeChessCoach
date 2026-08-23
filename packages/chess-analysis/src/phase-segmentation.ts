@@ -1,4 +1,4 @@
-import type { MovePhase } from '@chess-coach/shared';
+import type { MovePhase } from '@freechesscoach/shared';
 import { phaseUnits } from './phase-signals.js';
 import { CONFIG } from './config.js';
 

@@ -1,7 +1,7 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import type { PositionAnalysis } from '@chess-coach/shared';
-import { computePositionFeatures } from '@chess-coach/chess-analysis';
+import type { PositionAnalysis } from '@freechesscoach/shared';
+import { computePositionFeatures } from '@freechesscoach/chess-analysis';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import type { Database } from '../schema.js';
 import * as positionEvaluationsRepo from './position-evaluations.js';

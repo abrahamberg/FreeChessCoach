@@ -1,4 +1,4 @@
-import type { Thread } from '@chess-coach/shared';
+import type { Thread } from '@freechesscoach/shared';
 import { isToolResultPart, toolResultValue } from '../lib/tool-parts.js';
 
 const CHARS_PER_TOKEN = 4;

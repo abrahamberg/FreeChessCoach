@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
-import { ImportGameRequestSchema } from '@chess-coach/shared';
+import { ImportGameRequestSchema } from '@freechesscoach/shared';
 import { PgnPasteForm } from './PgnPasteForm.js';
 
 describe('PgnPasteForm', () => {

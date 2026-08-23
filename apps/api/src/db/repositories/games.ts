@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { AnalysisStatus, GameSource, PlayerColor } from '@chess-coach/shared';
+import type { AnalysisStatus, GameSource, PlayerColor } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export interface GameRow {

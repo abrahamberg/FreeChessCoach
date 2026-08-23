@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import type { ClassifiedMoveDto, MoveQuality } from '@chess-coach/shared';
+import type { ClassifiedMoveDto, MoveQuality } from '@freechesscoach/shared';
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import './MoveExplorer.css';

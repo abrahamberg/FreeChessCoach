@@ -1,6 +1,6 @@
 import type { ChatMessage } from '../llm/messages.js';
 import type { Kysely } from 'kysely';
-import { EPISODE_FOLD_SYSTEM_PROMPT } from '@chess-coach/prompts';
+import { EPISODE_FOLD_SYSTEM_PROMPT } from '@freechesscoach/prompts';
 import type { SessionMessageRow } from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import type { Database } from '../db/schema.js';

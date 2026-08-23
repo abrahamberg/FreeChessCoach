@@ -6,7 +6,7 @@ import {
   PositionAnalysisSchema,
   type EngineEval,
   type PositionAnalysis
-} from '@chess-coach/shared';
+} from '@freechesscoach/shared';
 import { ENGINE_MULTI_PV } from '../engine-client.js';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';

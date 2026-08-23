@@ -1,5 +1,5 @@
 import { Chess, type Square } from 'chess.js';
-import type { PositionFeatures } from '@chess-coach/shared';
+import type { PositionFeatures } from '@freechesscoach/shared';
 import { buildAttackMap, type ColorName } from './attack-map.js';
 import { CONFIG } from './config.js';
 

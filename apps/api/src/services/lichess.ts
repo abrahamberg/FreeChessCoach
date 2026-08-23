@@ -1,5 +1,5 @@
-import { parsePgn } from '@chess-coach/chess-analysis';
-import type { LichessRecentGame } from '@chess-coach/shared';
+import { parsePgn } from '@freechesscoach/chess-analysis';
+import type { LichessRecentGame } from '@freechesscoach/shared';
 
 const RECENT_GAMES_LIMIT = 20;
 

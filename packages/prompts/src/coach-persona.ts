@@ -1,4 +1,4 @@
-import type { CoachPersona } from '@chess-coach/shared';
+import type { CoachPersona } from '@freechesscoach/shared';
 
 /**
  * coaches.md: 6 cosmetic personas layered on top of the one coach, plus a

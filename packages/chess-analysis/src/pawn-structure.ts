@@ -1,5 +1,5 @@
 import type { Chess, Square } from 'chess.js';
-import type { PositionFeatures } from '@chess-coach/shared';
+import type { PositionFeatures } from '@freechesscoach/shared';
 import { occupiedSquares, toColorName } from './attack-map.js';
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;

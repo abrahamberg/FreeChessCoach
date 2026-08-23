@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { MoveQuality } from '@chess-coach/shared';
+import type { MoveQuality } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export interface GameMoveQualityRow {

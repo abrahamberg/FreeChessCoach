@@ -9,9 +9,9 @@ import {
   positionKey,
   resolveOpening,
   type ParsedPosition
-} from '@chess-coach/chess-analysis';
-import type { BookReport, CoachingPlan, EngineEval, PlayerBookReport } from '@chess-coach/shared';
-import { buildPlannerMessages, type PlannerPromptInput } from '@chess-coach/prompts';
+} from '@freechesscoach/chess-analysis';
+import type { BookReport, CoachingPlan, EngineEval, PlayerBookReport } from '@freechesscoach/shared';
+import { buildPlannerMessages, type PlannerPromptInput } from '@freechesscoach/prompts';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';

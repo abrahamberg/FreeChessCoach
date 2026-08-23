@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { PlayerColor } from '@chess-coach/shared';
+import type { PlayerColor } from '@freechesscoach/shared';
 import * as gamesRepo from '../db/repositories/games.js';
 import type { SessionRow } from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';

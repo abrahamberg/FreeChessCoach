@@ -1,5 +1,5 @@
 import { generateObject, generateText, streamText } from 'ai';
-import { CoachingPlanSchema, SessionOutcomeSchema } from '@chess-coach/shared';
+import { CoachingPlanSchema, SessionOutcomeSchema } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { buildFakeModel } from './fake.js';
 

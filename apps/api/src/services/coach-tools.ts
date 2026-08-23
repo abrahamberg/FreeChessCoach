@@ -17,9 +17,9 @@ import {
   renderRecentFindingsBlock,
   showPositionParameters,
   updateThreadsParameters
-} from '@chess-coach/prompts';
-import { moveRefToPly } from '@chess-coach/chess-analysis';
-import type { Finding, FocusAreaUpdate, PositionAnalysis, SessionMode, Thread } from '@chess-coach/shared';
+} from '@freechesscoach/prompts';
+import { moveRefToPly } from '@freechesscoach/chess-analysis';
+import type { Finding, FocusAreaUpdate, PositionAnalysis, SessionMode, Thread } from '@freechesscoach/shared';
 import { tool, type ToolSet } from '../llm/tools.js';
 import type { Kysely } from 'kysely';
 import * as sessionsRepo from '../db/repositories/sessions.js';

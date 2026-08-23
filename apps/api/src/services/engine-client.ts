@@ -1,4 +1,4 @@
-import type { EngineEval, PositionAnalysis } from '@chess-coach/shared';
+import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
 
 /**
  * Requests 3 principal variations (the engine's own default is 2) so callers

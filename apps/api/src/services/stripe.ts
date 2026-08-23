@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import type { CreditPack } from '@chess-coach/shared';
+import type { CreditPack } from '@freechesscoach/shared';
 
 export interface StripeConfig {
   secretKey: string;

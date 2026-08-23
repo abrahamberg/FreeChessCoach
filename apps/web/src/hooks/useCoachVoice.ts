@@ -1,10 +1,10 @@
-import type { CoachPersona, TtsBackend } from '@chess-coach/shared';
+import type { CoachPersona, TtsBackend } from '@freechesscoach/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CoachMessage } from './useCoachChat.js';
 import { getSpeakableText } from '../tts/getSpeakableText.js';
 import { resolveTtsClient } from '../tts/resolve-tts-client.js';
 
-const AUTOPLAY_STORAGE_KEY = 'chess-coach:coach-voice-autoplay';
+const AUTOPLAY_STORAGE_KEY = 'freechesscoach:coach-voice-autoplay';
 
 function readStoredAutoplay(): boolean {
   try {

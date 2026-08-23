@@ -1,6 +1,6 @@
 import { describe, expect, test, vi, beforeAll, afterAll } from 'vitest';
 import type { Kysely } from 'kysely';
-import type { PositionAnalysis } from '@chess-coach/shared';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import * as usersRepo from '../db/repositories/users.js';
 import * as gamesRepo from '../db/repositories/games.js';

@@ -1,4 +1,4 @@
-import { CoachingPlanSchema, type CoachingPlan } from '@chess-coach/shared';
+import { CoachingPlanSchema, type CoachingPlan } from '@freechesscoach/shared';
 import type { Task } from 'graphile-worker';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';

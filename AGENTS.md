@@ -32,7 +32,7 @@ Socratically while tracking their progress over time. The initial build
   (Vite), `npm run dev -w services/engine` (Stockfish HTTP service).
 - `npm run migrate -w apps/api` — run DB migrations directly.
 - `npm run build:images` — build all Docker images (`scripts/build-images.sh`).
-- `npm run build-book -w @chess-coach/chess-analysis` — regenerate the checked-in
+- `npm run build-book -w @freechesscoach/chess-analysis` — regenerate the checked-in
   opening-book index only after refreshing `packages/chess-analysis/data/openings.tsv`.
 
 ## Directory map

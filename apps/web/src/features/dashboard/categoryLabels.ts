@@ -1,4 +1,4 @@
-import type { MistakeCategory } from '@chess-coach/shared';
+import type { MistakeCategory } from '@freechesscoach/shared';
 
 /** design.md §4.3/§4.4: "category name in plain words" — never the raw enum. */
 export const CATEGORY_LABELS: Record<MistakeCategory, string> = {

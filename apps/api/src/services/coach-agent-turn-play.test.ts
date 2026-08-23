@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { PositionAnalysis } from '@chess-coach/shared';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { drain, mockResolution, multiStepModel } from '../../test/helpers/mock-model.js';

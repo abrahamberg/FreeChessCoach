@@ -24,7 +24,7 @@ every flag; the ones that matter are `--registry`, `--tag`, `--platform`
 
 ```bash
 npm run build:images -- --registry <registry> --tag latest --tag v0.3.8 --push
-# -> <registry>/chess-ai-coach:api-latest and :api-v0.3.8, one digest, one push
+# -> <registry>/freechesscoach:api-latest and :api-v0.3.8, one digest, one push
 ```
 
 Build twice instead and you get two digests that can drift apart the moment one
@@ -43,16 +43,16 @@ successful and produces nothing.
 npm ci
 
 # 2. Build the artifacts the Dockerfiles will copy.
-npm run bundle --workspace=@chess-coach/api   # -> apps/api/dist-bundle/*.mjs
-npm run build  --workspace=@chess-coach/web   # -> apps/web/dist/
+npm run bundle --workspace=@freechesscoach/api   # -> apps/api/dist-bundle/*.mjs
+npm run build  --workspace=@freechesscoach/web   # -> apps/web/dist/
 node services/engine/scripts/bundle.mjs       # -> services/engine/dist-bundle/server.mjs
 
 # 3. Verify the prepared artifacts before building the images.
 
 # 4. Build the images.
-docker buildx build --platform linux/amd64,linux/arm64 --push -f docker/Dockerfile.api    -t <registry>/chess-ai-coach:api-<tag>    .
-docker buildx build --platform linux/amd64,linux/arm64 --push -f docker/Dockerfile.web    -t <registry>/chess-ai-coach:web-<tag>    .
-docker buildx build --platform linux/amd64,linux/arm64 --push -f docker/Dockerfile.engine -t <registry>/chess-ai-coach:engine-<tag> .
+docker buildx build --platform linux/amd64,linux/arm64 --push -f docker/Dockerfile.api    -t <registry>/freechesscoach:api-<tag>    .
+docker buildx build --platform linux/amd64,linux/arm64 --push -f docker/Dockerfile.web    -t <registry>/freechesscoach:web-<tag>    .
+docker buildx build --platform linux/amd64,linux/arm64 --push -f docker/Dockerfile.engine -t <registry>/freechesscoach:engine-<tag> .
 ```
 
 Run the script rather than these commands — they are here to explain it, and
@@ -129,7 +129,7 @@ revisiting — re-run the audit above when adding one.
 
 ## Why apps/web needs no special handling
 
-`npm run build --workspace=@chess-coach/web` (`tsc -b && vite build`) emits a
+`npm run build --workspace=@freechesscoach/web` (`tsc -b && vite build`) emits a
 fully self-contained static bundle: Vite inlines the workspace-package imports
 into the client bundle already. The result is HTML/JS/CSS that nginx serves and
 Node never executes, so it has no architecture dependency at all.
@@ -151,7 +151,7 @@ the runtime image.
 
 `docker/Dockerfile.{api,web,engine}` each end in `USER 1000`, and the Helm
 chart's `podSecurityContext` sets `runAsNonRoot: true` **with**
-`runAsUser: 1000` (`deploy/helm/chess-ai-coach/values.yaml`). The two must stay
+`runAsUser: 1000` (`deploy/helm/freechesscoach/values.yaml`). The two must stay
 in agreement: with `runAsNonRoot` alone, kubelet has to derive the uid from the
 image and refuses to start a container it cannot prove is non-root — an image
 with no `USER` fails with *"image will run as root"*, and a *named* user

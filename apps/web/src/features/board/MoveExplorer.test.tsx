@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import type { ClassifiedMoveDto, PositionAnalysis } from '@chess-coach/shared';
+import type { ClassifiedMoveDto, PositionAnalysis } from '@freechesscoach/shared';
 import { MoveExplorer } from './MoveExplorer.js';
 
 const SAN_MOVES = ['e4', 'e5', 'Qh5', 'Nc6', 'Bc4', 'Nf6', 'Qxf7#'];

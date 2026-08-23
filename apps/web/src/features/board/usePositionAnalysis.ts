@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { PositionAnalysisSchema } from '@chess-coach/shared';
+import { PositionAnalysisSchema } from '@freechesscoach/shared';
 import { apiPost } from '../../api/client.js';
 
 /** Fetches the saved/cached engine analysis for a single position (the

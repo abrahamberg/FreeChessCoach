@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import type { MoveFlagsDto } from '@chess-coach/shared';
+import type { MoveFlagsDto } from '@freechesscoach/shared';
 
 export type MoveFlags = MoveFlagsDto;
 

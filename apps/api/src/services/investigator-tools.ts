@@ -1,6 +1,6 @@
-import { annotateCandidateMoves, applySanSequence } from '@chess-coach/chess-analysis';
-import { renderEngineAnalysisSummary } from '@chess-coach/prompts';
-import type { PositionAnalysis } from '@chess-coach/shared';
+import { annotateCandidateMoves, applySanSequence } from '@freechesscoach/chess-analysis';
+import { renderEngineAnalysisSummary } from '@freechesscoach/prompts';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import { z } from 'zod';
 import { tool, type ToolSet } from '../llm/tools.js';
 import { createTurnGuardState, withTurnGuards, type TurnGuardState } from './coach-tool-guards.js';

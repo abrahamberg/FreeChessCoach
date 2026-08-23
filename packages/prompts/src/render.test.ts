@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { MISTAKE_CATEGORIES } from '@chess-coach/shared';
+import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
 import {
   MISTAKE_CATEGORIES_BLOCK,
   relativeDate,
@@ -9,7 +9,7 @@ import {
   describeMoveRef,
   renderThreadsBlock
 } from './render.js';
-import type { Thread } from '@chess-coach/shared';
+import type { Thread } from '@freechesscoach/shared';
 
 describe('MISTAKE_CATEGORIES_BLOCK', () => {
   test('contains all 13 categories, comma-separated', () => {

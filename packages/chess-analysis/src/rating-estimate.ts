@@ -1,4 +1,4 @@
-import type { MoveQuality } from '@chess-coach/shared';
+import type { MoveQuality } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 
 const { ratingMin: RATING_MIN, ratingMax: RATING_MAX, accuracyEloAnchors: ACCURACY_ELO_ANCHORS } = CONFIG.ratingEstimate;
