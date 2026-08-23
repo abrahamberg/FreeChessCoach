@@ -197,7 +197,7 @@ describe('renderCurrentMoveBlock', () => {
     expect(text).toContain("Played d5 (eval +0.06, cost ~163cp) instead of the engine's best, d6 (eval +0.17).");
     expect(text).toContain('Best line: 8...d6 9.O-O a6');
     expect(text).toContain('Played line: 8...d5');
-    expect(text).toContain('Other engine options:\n- Ba3 (eval +0.14): 8...Ba3 9.a6 O-O');
+    expect(text).toContain('Other engine options:\n- Ba3 (eval +0.14)');
   });
 
   test('extends the played line with the post-move continuation when provided', () => {

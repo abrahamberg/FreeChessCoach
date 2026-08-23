@@ -5,6 +5,7 @@ export * from './coach-persona.js';
 export * from './coach-system.js';
 export * from './episode-context.js';
 export * from './episode-fold.js';
+export * from './investigate-position.js';
 export * from './onboarding-profiler.js';
 export * from './position-analysis-summary.js';
 export * from './progress-summarizer.js';

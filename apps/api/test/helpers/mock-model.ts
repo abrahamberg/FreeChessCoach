@@ -1,4 +1,4 @@
-import type { LanguageModelV4StreamPart, LanguageModelV4Usage } from '@ai-sdk/provider';
+import type { LanguageModelV4Content, LanguageModelV4GenerateResult, LanguageModelV4StreamPart, LanguageModelV4Usage } from '@ai-sdk/provider';
 import type { LlmProvider } from '@chess-coach/shared';
 import { MockLanguageModelV4 } from 'ai/test';
 import { vi } from 'vitest';
@@ -114,6 +114,42 @@ export function multiStepModel(steps: MockStep[]): MockLanguageModelV4 {
     });
   });
   return new MockLanguageModelV4({ doStream });
+}
+
+/** The `content` parts one `doGenerate` step returns, mirroring `stepParts`
+ * for the streaming path — used by `runBoundedToolLoop` (`generateText`
+ * calls `doGenerate` once per step, never `doStream`). */
+function generateContent(step: MockStep): LanguageModelV4Content[] {
+  const content: LanguageModelV4Content[] = [];
+  if (step.reasoning !== undefined) content.push({ type: 'reasoning', text: step.reasoning });
+  if (step.text !== undefined) content.push({ type: 'text', text: step.text });
+  if (step.toolCall) {
+    content.push({
+      type: 'tool-call',
+      toolCallId: step.toolCall.toolCallId,
+      toolName: step.toolCall.toolName,
+      input: JSON.stringify(step.toolCall.input)
+    });
+  }
+  return content;
+}
+
+/** Resolves each of `steps` in order — one doGenerate() call per step. The
+ * `generateText`-based counterpart to `multiStepModel` (which drives
+ * `doStream` for `streamText`). */
+export function multiStepGenerateModel(steps: MockStep[]): MockLanguageModelV4 {
+  let call = 0;
+  const doGenerate = vi.fn().mockImplementation((): Promise<LanguageModelV4GenerateResult> => {
+    const step = steps[call++];
+    if (!step) throw new Error('multiStepGenerateModel: doGenerate called more times than steps provided');
+    return Promise.resolve({
+      content: generateContent(step),
+      finishReason: { unified: step.finishReason, raw: undefined },
+      usage: mockUsage(),
+      warnings: []
+    });
+  });
+  return new MockLanguageModelV4({ doGenerate });
 }
 
 /** A model that fails mid-stream: onFinish never runs, only onError. */

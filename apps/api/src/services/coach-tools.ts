@@ -7,6 +7,7 @@ import {
   getEngineAnalysisParameters,
   getUserProfileParameters,
   hypotheticalLineParameters,
+  investigatePositionParameters,
   proposeFocusAreaUpdateParameters,
   recallMoveParameters,
   recordFindingParameters,
@@ -45,6 +46,10 @@ export interface CoachToolsDependencies {
   analyzePosition: (fen: string) => Promise<PositionAnalysis>;
   /** wraps the gateway's light-tier model call; returns the raw model text. */
   callLightModel: (messages: { system: string; user: string }) => Promise<string>;
+  /** Delegates to the investigate_position sub-agent
+   * (position-investigator.ts) — never throws, returns a plain-text answer
+   * or a fallback sentence. */
+  investigatePosition: (args: { fen: string; moves?: string[]; question: string }) => Promise<string>;
 }
 
 /** Fresh budget/repeat-call state per call — buildCoachTools is expected to be
@@ -119,6 +124,13 @@ export function buildCoachTools(ctx: CoachToolsContext, deps: CoachToolsDependen
       inputSchema: recallMoveParameters,
       execute: withTurnGuards(guardState, 'recall_move', (args: MoveAddress) => recallMoveTool(deps, ctx, args))
     }),
+    investigate_position: tool({
+      description: coachToolDescription('investigate_position'),
+      inputSchema: investigatePositionParameters,
+      execute: withTurnGuards(guardState, 'investigate_position', (args: InvestigatePositionArgs) =>
+        deps.investigatePosition(args)
+      )
+    }),
     end_session: tool({
       description: coachToolDescription('end_session'),
       inputSchema: endSessionParameters,
@@ -134,6 +146,12 @@ export function buildCoachTools(ctx: CoachToolsContext, deps: CoachToolsDependen
 
 interface EngineAnalysisArgs {
   fen: string;
+}
+
+interface InvestigatePositionArgs {
+  fen: string;
+  moves?: string[];
+  question: string;
 }
 
 /** Returns a curated digest, not the raw PositionAnalysis/PositionFeatures

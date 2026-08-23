@@ -109,6 +109,16 @@ export const hypotheticalLineParameters = z.object({
   moves: z.array(z.string().min(1)).min(1).max(12)
 });
 
+/** Delegates an open-ended, potentially multi-position question to the
+ * investigation sub-agent (apps/api/src/services/position-investigator.ts)
+ * — `moves` optionally walks a line onto `fen` first (same SAN-sequence
+ * convention as hypothetical_line) before the sub-agent starts exploring. */
+export const investigatePositionParameters = z.object({
+  fen: z.string(),
+  moves: z.array(z.string().min(1)).max(12).optional(),
+  question: z.string().min(1)
+});
+
 export interface CoachToolSpec {
   name: string;
   description: string;
@@ -184,6 +194,11 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
     name: 'recall_move',
     description:
       'Look up more detail on a specific earlier move in THIS session than the one-line summary already gives you (in "Other moves discussed" below) — call this when that summary isn\'t enough to answer the student. Addressed the same way as show_position/check_position ({ moveNumber, color }) — never a bare ply.'
+  },
+  {
+    name: 'investigate_position',
+    description:
+      "Delegates an open-ended chess question that needs checking OTHER positions — candidate replies, a few plies of a line, a sibling variation, even a position that never happened in this game — to a sub-agent that investigates on its own and returns one short, concrete, engine-grounded answer. Use this when answering well requires looking at more than the position already in front of you: 'does Black have a defense to this plan a few moves out?', 'is this candidate actually sound, or does it hang something two moves later?', 'compare these two replies.' Do NOT use this for a single position you can already see or could check with one get_engine_analysis call — that stays free and instant; this tool runs its own multi-step investigation and is budgeted tightly, so fold related sub-questions into one call rather than issuing several. Pass a fen you got from show_position/check_position/hypothetical_line's resultFen — never one you reconstructed yourself. Optionally pass moves (SAN) to have it start from a line applied on top of that fen. You get back a short answer only — none of its intermediate lookups reach your context."
   },
   {
     name: 'end_session',

@@ -12,6 +12,7 @@ import {
   instantTextModel,
   mockResolution,
   mockUsage,
+  multiStepGenerateModel,
   multiStepModel,
   stepParts
 } from '../../test/helpers/mock-model.js';
@@ -723,6 +724,58 @@ describe('coach-agent startTurn concurrency', () => {
     expect(systemOther).toMatchObject({ role: 'system' });
     expect(systemCurrent).toMatchObject({ role: 'system' });
   }, 20000);
+
+  test('investigate_position resolves the light tier for its own sub-agent call, separate from the turn\'s own standard-tier resolution', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
+    await creditsRepo.insertSignupGrant(db, user.id);
+    const game = await gamesRepo.insert(db, {
+      userId: user.id,
+      pgn: PGN,
+      source: 'paste',
+      userColor: 'white',
+      whiteName: 'Ann',
+      blackName: 'Bob',
+      result: '1-0',
+      timeControl: '10+0',
+      eco: null,
+      playedAt: null
+    });
+    const analysis = await analysesRepo.insertQueued(db, game.id);
+    await analysesRepo.markReady(db, analysis.id, PLAN);
+    const session = await coachAgent.createSession(db, user.id, game.id);
+
+    const outerModel = multiStepModel([
+      {
+        toolCall: {
+          toolCallId: 'call-inv-1',
+          toolName: 'investigate_position',
+          input: { fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', question: 'is e4 sound?' }
+        },
+        finishReason: 'tool-calls'
+      },
+      { text: 'Yes, e4 is sound.', finishReason: 'stop' }
+    ]);
+    const lightModel = multiStepGenerateModel([{ text: 'Yes — the engine keeps e4 at +0.20.', finishReason: 'stop' }]);
+
+    const resolveModel = vi
+      .fn()
+      .mockImplementation((_db: unknown, _config: unknown, _userId: string, tier: 'standard' | 'light') =>
+        Promise.resolve(
+          mockResolution(tier === 'light' ? lightModel : outerModel, {
+            modelId: tier === 'light' ? 'claude-light' : 'claude-standard'
+          })
+        )
+      );
+
+    const agentDeps = deps(outerModel);
+    agentDeps.resolveModel = resolveModel;
+
+    const turn = await coachAgent.startTurn(agentDeps, session, { content: 'hi coach' });
+    await drain(turn);
+
+    expect(resolveModel).toHaveBeenCalledWith(expect.anything(), expect.anything(), user.id, 'standard');
+    expect(resolveModel).toHaveBeenCalledWith(expect.anything(), expect.anything(), user.id, 'light');
+  }, 15000);
 
   test('an out-of-range client-reported ply from show_position does not brick the session', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });

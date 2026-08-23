@@ -85,11 +85,12 @@ describe('buildCoachTools', () => {
       db,
       analyzePosition: vi.fn().mockResolvedValue(ENGINE_EVAL),
       callLightModel: vi.fn().mockResolvedValue('Bb5 pins the knight; the idea is to double pawns after Bxc6.'),
+      investigatePosition: vi.fn().mockResolvedValue('mocked investigation answer'),
       ...overrides
     };
   }
 
-  test('exposes all 13 architecture §7.1 tools', async () => {
+  test('exposes all 14 architecture §7.1 tools', async () => {
     const ctx = await setupCtx();
     const tools = buildCoachTools(ctx, makeDeps());
 
@@ -102,6 +103,7 @@ describe('buildCoachTools', () => {
         'get_engine_analysis',
         'get_user_profile',
         'hypothetical_line',
+        'investigate_position',
         'propose_focus_area_update',
         'recall_move',
         'record_finding',
@@ -121,14 +123,14 @@ describe('buildCoachTools', () => {
     expect(tools.undo_last_move).toBeUndefined();
   });
 
-  test('mode: "play" adds get_candidate_moves, play_coach_move, and undo_last_move alongside the 13 analyze-mode tools, without removing any of them', async () => {
+  test('mode: "play" adds get_candidate_moves, play_coach_move, and undo_last_move alongside the 14 analyze-mode tools, without removing any of them', async () => {
     const ctx = await setupCtx();
     const tools = buildCoachTools(ctx, makeDeps(), 'play');
 
     expect(tools.get_candidate_moves).toBeDefined();
     expect(tools.play_coach_move).toBeDefined();
     expect(tools.undo_last_move).toBeDefined();
-    expect(Object.keys(tools)).toHaveLength(16);
+    expect(Object.keys(tools)).toHaveLength(17);
   });
 
   test('show_position, annotate_board, expect_move, and hypothetical_line have no execute (client tools)', async () => {
@@ -189,6 +191,49 @@ describe('buildCoachTools', () => {
 
       expect(second).toEqual(first);
       expect(deps.analyzePosition).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('investigate_position', () => {
+    test('returns the plain string from deps.investigatePosition, never a raw object', async () => {
+      const ctx = await setupCtx();
+      const deps = makeDeps();
+      const tools = buildCoachTools(ctx, deps);
+
+      const result = await tools.investigate_position?.execute?.(
+        { fen: ENGINE_EVAL.fen, question: 'is this sound?' },
+        TOOL_OPTIONS
+      );
+
+      expect(result).toBe('mocked investigation answer');
+      expect(deps.investigatePosition).toHaveBeenCalledWith({ fen: ENGINE_EVAL.fen, question: 'is this sound?' });
+    });
+
+    test('2nd call in one turn returns a budget_exhausted error instead of executing (budget: 1)', async () => {
+      const ctx = await setupCtx();
+      const deps = makeDeps();
+      const tools = buildCoachTools(ctx, deps);
+      const call = (question: string) =>
+        tools.investigate_position?.execute?.({ fen: ENGINE_EVAL.fen, question }, TOOL_OPTIONS);
+
+      await call('first question');
+      const second = await call('second question');
+
+      expect(second).toEqual({ error: 'budget_exhausted — answer with what you have' });
+      expect(deps.investigatePosition).toHaveBeenCalledTimes(1);
+    });
+
+    test('identical repeated call (same args) returns the cached result without a second invocation', async () => {
+      const ctx = await setupCtx();
+      const deps = makeDeps();
+      const tools = buildCoachTools(ctx, deps);
+      const args = { fen: ENGINE_EVAL.fen, question: 'is this sound?' };
+
+      const first = await tools.investigate_position?.execute?.(args, TOOL_OPTIONS);
+      const second = await tools.investigate_position?.execute?.(args, TOOL_OPTIONS);
+
+      expect(second).toEqual(first);
+      expect(deps.investigatePosition).toHaveBeenCalledTimes(1);
     });
   });
 

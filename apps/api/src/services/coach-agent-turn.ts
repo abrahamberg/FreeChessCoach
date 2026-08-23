@@ -8,13 +8,14 @@ import { InsufficientCreditsError } from '../lib/errors.js';
 import { createKeyedLock } from '../lib/keyedLock.js';
 import { currentEpisode } from '../lib/episodes.js';
 import { findSuccessfulToolResult } from '../lib/tool-parts.js';
-import { buildCoachTools } from './coach-tools.js';
+import { buildCoachTools, type CoachToolsDependencies } from './coach-tools.js';
 import * as coachContext from './coach-context.js';
 import { createCreditsService } from './credits.js';
 import { applyClientToolResult } from './coach-agent-client-tool-result.js';
 import { buildSystemPromptForSession } from './coach-agent-system-prompt.js';
 import { serializeTools, type TurnDebugSnapshot } from './coach-agent-debug.js';
-import type { CoachAgentDependencies, StartTurnInput } from './coach-agent-types.js';
+import { investigatePosition } from './position-investigator.js';
+import type { CoachAgentDependencies, ModelResolver, StartTurnInput } from './coach-agent-types.js';
 
 /** Serializes startTurn calls per session — see createKeyedLock's doc comment
  * for why this is needed (the client-tool round-trip race). */
@@ -106,12 +107,7 @@ export async function startTurn(
 
     const tools = buildCoachTools(
       { userId: session.userId, sessionId: session.id, gameId: session.gameId },
-      {
-        db: deps.db,
-        jobQueue: deps.jobQueue,
-        analyzePosition: deps.analyzePosition,
-        callLightModel: deps.callLightModel
-      },
+      buildTurnToolsDependencies(deps, session, resolveModel),
       session.mode
     );
     const requestTools = serializeTools(tools);
@@ -197,6 +193,32 @@ export async function startTurn(
     releaseOnce();
     throw error;
   }
+}
+
+/** Assembles buildCoachTools' dependency object for one turn — split out of
+ * startTurn (AGENTS.md rule 2: ~250-line file guideline) once
+ * investigate_position's own closure needed to be wired in here alongside
+ * the rest. `resolveModel` is the SAME resolver startTurn already resolved
+ * for its own standard-tier call above — investigatePosition calls it again
+ * itself, with 'light', so a test that injects a mock resolveModel controls
+ * both tiers by branching on the tier argument. */
+function buildTurnToolsDependencies(
+  deps: CoachAgentDependencies,
+  session: SessionRow,
+  resolveModel: ModelResolver
+): CoachToolsDependencies {
+  return {
+    db: deps.db,
+    jobQueue: deps.jobQueue,
+    analyzePosition: deps.analyzePosition,
+    callLightModel: deps.callLightModel,
+    investigatePosition: (args) =>
+      investigatePosition(
+        { db: deps.db, gatewayConfig: deps.gatewayConfig, resolveModel, analyzePosition: deps.analyzePosition },
+        { userId: session.userId, sessionId: session.id },
+        args
+      )
+  };
 }
 
 interface PlayCoachMoveResult {

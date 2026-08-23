@@ -6,7 +6,12 @@ export const TOOL_BUDGETS: Partial<Record<string, number>> = {
   get_engine_analysis: 2,
   get_user_profile: 1,
   recall_move: 3,
-  get_candidate_moves: 3
+  get_candidate_moves: 3,
+  // Categorically heavier than any other tool here — its own internal
+  // bounded loop (position-investigator.ts) can itself make several engine
+  // calls, so the outer per-turn count stays tight; the tool's own
+  // description tells the coach to fold related sub-questions into one call.
+  investigate_position: 1
 };
 export const BUDGET_EXHAUSTED = { error: 'budget_exhausted — answer with what you have' } as const;
 
@@ -25,14 +30,15 @@ export function createTurnGuardState(): TurnGuardState {
 export function withTurnGuards<Args, Result>(
   state: TurnGuardState,
   name: string,
-  fn: (args: Args) => Promise<Result>
+  fn: (args: Args) => Promise<Result>,
+  budgets: Partial<Record<string, number>> = TOOL_BUDGETS
 ): (args: Args) => Promise<Result | typeof BUDGET_EXHAUSTED> {
   return async (args: Args) => {
     const cacheKey = `${name}:${JSON.stringify(args)}`;
     const cached = state.cache.get(cacheKey);
     if (cached !== undefined) return cached as Result;
 
-    const budget = TOOL_BUDGETS[name];
+    const budget = budgets[name];
     if (budget !== undefined && (state.callCounts.get(name) ?? 0) >= budget) {
       return BUDGET_EXHAUSTED;
     }

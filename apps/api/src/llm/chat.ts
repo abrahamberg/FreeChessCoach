@@ -27,6 +27,7 @@ const TOOL_ORDER = [
   'update_threads',
   'record_move_note',
   'recall_move',
+  'investigate_position',
   'end_session',
   // Play mode's tools (architecture §14) — fixed at the end, never
   // interleaved with the analyze-mode 13 above, so an analyze-mode

@@ -196,11 +196,12 @@ function renderAnalysisSection(ply: number, playedMove: string | null, ctx: Curr
     if (bullets) parts.push(`What changed vs. the best move:\n${bullets}`);
   }
 
+  // Move + eval only, no PV — a deep dive into an alternative's continuation
+  // is investigate_position's job now (tools.ts), not something resent
+  // uncached on every turn this move stays under discussion.
   const otherLines = bestLine ? analysis.lines.filter((line) => line !== bestLine) : analysis.lines;
   if (otherLines.length > 0) {
-    const otherText = otherLines
-      .map((line) => `- ${line.moveSan} (${formatEval(line.cp, line.mateIn)}): ${formatPvLine(linePly, line.pvSan)}`)
-      .join('\n');
+    const otherText = otherLines.map((line) => `- ${line.moveSan} (${formatEval(line.cp, line.mateIn)})`).join('\n');
     parts.push(`Other engine options:\n${otherText}`);
   }
 

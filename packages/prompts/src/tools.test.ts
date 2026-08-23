@@ -9,6 +9,7 @@ import {
   getEngineAnalysisParameters,
   getUserProfileParameters,
   hypotheticalLineParameters,
+  investigatePositionParameters,
   recordFindingParameters,
   proposeFocusAreaUpdateParameters,
   recallMoveParameters,
@@ -125,6 +126,18 @@ describe('coach agent tool parameter schemas (architecture §7.1)', () => {
     expect(hypotheticalLineParameters.safeParse({}).success).toBe(false);
   });
 
+  test('investigate_position: { fen, moves?, question } — moves is optional and capped at 12', () => {
+    expect(investigatePositionParameters.safeParse({ fen: 'startpos', question: 'is Nf3 sound?' }).success).toBe(true);
+    expect(
+      investigatePositionParameters.safeParse({ fen: 'startpos', moves: ['e4', 'e5'], question: 'is Nf3 sound?' }).success
+    ).toBe(true);
+    expect(investigatePositionParameters.safeParse({ fen: 'startpos', question: '' }).success).toBe(false);
+    expect(investigatePositionParameters.safeParse({ fen: 'startpos' }).success).toBe(false);
+    expect(
+      investigatePositionParameters.safeParse({ fen: 'startpos', moves: Array(13).fill('e4'), question: 'q' }).success
+    ).toBe(false);
+  });
+
 });
 
 describe('record_move_note: { moveNumber, color, note } — same address as show_position, never a bare ply (final review #1)', () => {
@@ -172,10 +185,11 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
     'update_threads',
     'record_move_note',
     'recall_move',
+    'investigate_position',
     'end_session'
   ];
 
-  test('has exactly the coach agent\'s 13 tools, each with a unique name and a non-empty description', () => {
+  test('has exactly the coach agent\'s 14 tools, each with a unique name and a non-empty description', () => {
     expect(COACH_TOOL_SPECS.map((spec) => spec.name)).toEqual(EXPECTED_NAMES);
     for (const spec of COACH_TOOL_SPECS) {
       expect(spec.description.length).toBeGreaterThan(0);

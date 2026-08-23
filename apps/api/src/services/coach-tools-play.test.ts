@@ -80,6 +80,7 @@ describe('play mode coach tools (architecture §14)', () => {
       db,
       analyzePosition: vi.fn().mockImplementation((fen: string) => Promise.resolve(positionAnalysisFixture(fen))),
       callLightModel: vi.fn().mockResolvedValue('e4 is sound; no tactic set up.'),
+      investigatePosition: vi.fn().mockResolvedValue('mocked investigation answer'),
       ...overrides
     };
   }
