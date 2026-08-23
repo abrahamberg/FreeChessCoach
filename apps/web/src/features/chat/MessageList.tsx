@@ -13,6 +13,7 @@ import { MoveMention } from './MoveMention.js';
 import { PositionContextMessage } from './PositionContextMessage.js';
 import { decodeAnnotationNote, decodePositionContext, decodePositionDivider } from './positionDivider.js';
 import { PositionDivider } from './PositionDivider.js';
+import { BOARD_MOVE_PATTERN, PLAYER_MOVE_PATTERN } from './sentinels.js';
 
 export type HoverMove = { from: string; to: string } | null;
 
@@ -73,12 +74,6 @@ function renderTextSegment(
     );
   });
 }
-
-const BOARD_MOVE_PATTERN = /^\[board_move\] I played (\S+) \(position now: (.+)\)$/;
-// architecture §14: play mode's student move sentinel — no fen, since the
-// board is already at the resulting position by the time this arrives
-// (see SessionBoardColumn's submitPlayMove).
-const PLAYER_MOVE_PATTERN = /^\[player_move\] I played (\S+)\.$/;
 
 export interface MessageListProps {
   messages: CoachMessage[];
