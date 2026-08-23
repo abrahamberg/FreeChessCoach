@@ -1,6 +1,7 @@
 import { COACH_PERSONA_INFO } from '@chess-coach/shared';
 import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useCoachVoice } from '../../hooks/useCoachVoice.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
@@ -52,6 +53,8 @@ export function SessionPage(): ReactNode {
   const [boardArrows, setBoardArrows] = useState<ArrowRef[]>([]);
   const [hoverMove, setHoverMove] = useState<HoverMove>(null);
   const mobileView = useMobileSessionView(chat.messages.length);
+  const persona = profileQuery.data?.coachPersona ?? 'general';
+  const coachVoice = useCoachVoice({ messages: chat.messages, isStreaming: chat.isStreaming, persona });
 
   if (sessionQuery.isLoading || gameQuery.isLoading) return <p>Loading…</p>;
   if (sessionQuery.isError || !sessionQuery.data) return <p>Could not load this session.</p>;
@@ -95,7 +98,7 @@ export function SessionPage(): ReactNode {
     void chat.sendMessage(content);
   }
 
-  const coachAvatar = COACH_PERSONA_INFO[profileQuery.data?.coachPersona ?? 'general'].avatar;
+  const coachAvatar = COACH_PERSONA_INFO[persona].avatar;
   const orientation = gameQuery.data?.userColor ?? 'white';
   // Same fen SessionBoardColumn computes for the board itself — needed here
   // too so ChatPane can resolve move mentions against the position actually
@@ -146,6 +149,11 @@ export function SessionPage(): ReactNode {
         positions={positions}
         onHoverMove={setHoverMove}
         coachAvatar={coachAvatar}
+        autoplayEnabled={coachVoice.autoplayEnabled}
+        onToggleAutoplay={coachVoice.setAutoplayEnabled}
+        onPlayMessage={coachVoice.play}
+        playingMessageId={coachVoice.playingMessageId}
+        loadingMessageId={coachVoice.loadingMessageId}
       />
     );
 

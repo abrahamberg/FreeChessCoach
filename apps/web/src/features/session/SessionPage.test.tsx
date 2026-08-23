@@ -204,6 +204,19 @@ describe('SessionPage', () => {
     expect(await within(messageList).findByText('♞')).toBeInTheDocument();
   });
 
+  test('renders the coach voice autoplay toggle and a play button on the coach message, and toggling it does not throw', async () => {
+    vi.stubGlobal('fetch', mockFetch());
+    const user = userEvent.setup();
+    renderSessionPage();
+
+    const messageList = await screen.findByTestId('message-list');
+    expect(screen.getByRole('checkbox', { name: /autoplay/i })).not.toBeChecked();
+    expect(within(messageList).getByRole('button', { name: 'Play coach message' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: /autoplay/i }));
+    expect(screen.getByRole('checkbox', { name: /autoplay/i })).toBeChecked();
+  });
+
   test('design.md §5.3: hovering a move mention in chat previews it on the board in a distinct color from the coach\'s own arrows', async () => {
     vi.stubGlobal(
       'fetch',
