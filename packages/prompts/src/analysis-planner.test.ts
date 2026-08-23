@@ -35,7 +35,8 @@ const moves: ClassifiedMove[] = [
     quality: 'mistake',
     bestLineSan: ['d4', 'exd4'],
     evalAfterCp: -160,
-    hangsPiece: false
+    hangsPiece: false,
+    reasons: ['Leaves the knight on d5 undefended']
   }
 ];
 
@@ -69,6 +70,16 @@ describe('buildPlannerMessages', () => {
     expect(user).toContain('h3');
     expect(user).toContain('mistake');
     expect(user).toContain('180');
+  });
+
+  test('an unsound move\'s pre-computed reasons are included in the moves table', () => {
+    const { user } = buildPlannerMessages(baseInput());
+    expect(user).toContain('Leaves the knight on d5 undefended');
+  });
+
+  test('a sound move with no reasons renders no trailing "; " noise', () => {
+    const { user } = buildPlannerMessages(baseInput());
+    expect(user).toContain('1. e4 | best line: e4 e5');
   });
 
   test('user message includes the pre-computed candidate moments', () => {

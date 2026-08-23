@@ -371,7 +371,7 @@ describe('coach-context', () => {
       expect(serialized).toContain("instead of the engine's best, c5");
     });
 
-    test('still fetches the post-move analysis when the student played the engine\'s own best move — it feeds the raw JSON sections even though the curated prose collapses to one sentence', async () => {
+    test('skips the post-move analysis fetch when the student played the engine\'s own best move — nothing downstream reads it in that branch', async () => {
       const { session, gameId } = await seedSession();
       await analysesRepo.insertQueued(db, gameId).then((a) => analysesRepo.storeClassifiedMoves(db, a.id, []));
       await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
@@ -400,12 +400,14 @@ describe('coach-context', () => {
         analyzePosition
       });
 
-      expect(analyzePosition).toHaveBeenCalledTimes(2);
+      // Only the pre-move fen is analyzed — no second call for the post-move
+      // fen, since the isBestMove branch never reads postMoveAnalysis.
+      expect(analyzePosition).toHaveBeenCalledTimes(1);
       const messages = [...context.instructions, ...context.messages];
       const serialized = JSON.stringify(messages);
       expect(serialized).toContain('This was the engine’s top choice.');
-      expect(serialized).toContain('## Position full analyse');
-      expect(serialized).toContain('## Delta against best move');
+      expect(serialized).not.toContain('## Position full analyse');
+      expect(serialized).not.toContain('## Delta against best move');
     });
 
     test('a revisit to a previously-closed ply seeds this episode\'s digest from that ply\'s earlier closing note, while still excluding that ply\'s earlier raw messages', async () => {
@@ -554,7 +556,8 @@ describe('coach-context', () => {
           quality: 'best',
           cpLoss: 0,
           bestLineSan: ['e4'],
-          evalAfterCp: 20
+          evalAfterCp: 20,
+          reasons: []
         });
         await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
         const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
@@ -588,7 +591,8 @@ describe('coach-context', () => {
           quality: 'best',
           cpLoss: 0,
           bestLineSan: ['e4'],
-          evalAfterCp: 20
+          evalAfterCp: 20,
+          reasons: []
         });
         await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
         const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);

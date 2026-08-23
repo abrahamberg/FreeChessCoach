@@ -51,7 +51,8 @@ export async function classifyAndRecordMove(
     quality: classified.quality,
     cpLoss: classified.cpLoss,
     bestLineSan: classified.bestLineSan,
-    evalAfterCp: classified.evalAfterCp
+    evalAfterCp: classified.evalAfterCp,
+    reasons: classified.reasons ?? []
   });
 
   return classified;

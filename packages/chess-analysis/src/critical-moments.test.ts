@@ -26,7 +26,7 @@ function evalWithLines(lines: EngineLine[]): EngineEval {
 }
 
 describe('findCandidateMoments', () => {
-  test('flags every user mistake/blunder', () => {
+  test('flags every user mistake/blunder/inaccuracy, but not a good move', () => {
     const moves = [
       move({ ply: 1, isUserMove: true, quality: 'mistake', cpLoss: 120 }),
       move({ ply: 2, isUserMove: true, quality: 'blunder', cpLoss: 400 }),
@@ -39,8 +39,35 @@ describe('findCandidateMoments', () => {
 
     expect(moments).toEqual([
       { ply: 1, kind: 'user_mistake', cpLoss: 120 },
-      { ply: 2, kind: 'user_mistake', cpLoss: 400 }
+      { ply: 2, kind: 'user_mistake', cpLoss: 400 },
+      { ply: 4, kind: 'user_mistake', cpLoss: 60 }
     ]);
+  });
+
+  test('flags the user\'s own brilliant/great moves as instructive', () => {
+    const moves = [
+      move({ ply: 1, isUserMove: true, quality: 'brilliant', cpLoss: 0 }),
+      move({ ply: 2, isUserMove: true, quality: 'great', cpLoss: 0 }),
+      move({ ply: 3, isUserMove: false, quality: 'brilliant', cpLoss: 0 }),
+      move({ ply: 4, isUserMove: true, quality: 'best', cpLoss: 0 })
+    ];
+    const evals = [evalWithLines([line('e4', 0)])];
+
+    const moments = findCandidateMoments(moves, evals);
+
+    expect(moments).toEqual([
+      { ply: 1, kind: 'instructive', cpLoss: 0 },
+      { ply: 2, kind: 'instructive', cpLoss: 0 }
+    ]);
+  });
+
+  test('dedups by ply, preferring instructive over a turning_point on the same move', () => {
+    const moves = [move({ ply: 1, isUserMove: true, quality: 'great', cpLoss: 0, evalAfterCp: 300 })];
+    const evals = [evalWithLines([line('e4', 0)])];
+
+    const moments = findCandidateMoments(moves, evals);
+
+    expect(moments).toEqual([{ ply: 1, kind: 'instructive', cpLoss: 0 }]);
   });
 
   test('flags a user miss the same as mistake/blunder', () => {
@@ -57,7 +84,7 @@ describe('findCandidateMoments', () => {
     expect(findCandidateMoments(moves, evals)).toEqual([]);
   });
 
-  test('flags a turning_point when the white-perspective eval crosses the +-150cp band', () => {
+  test('flags a turning_point when the white-perspective win% crosses the turning-point band', () => {
     const moves = [
       move({ ply: 1, evalAfterCp: 50 }),
       move({ ply: 2, evalAfterCp: 250 }),

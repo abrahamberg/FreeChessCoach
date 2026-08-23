@@ -136,6 +136,7 @@ export interface GameMoveQualitiesTable {
   cpLoss: number;
   bestLineSan: Jsonb<string[]>;
   evalAfterCp: number;
+  reasons: Jsonb<string[]>;
   createdAt: Generated<Date>;
 }
 

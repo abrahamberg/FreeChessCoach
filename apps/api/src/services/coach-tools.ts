@@ -11,6 +11,7 @@ import {
   recallMoveParameters,
   recordFindingParameters,
   recordMoveNoteParameters,
+  renderEngineAnalysisSummary,
   renderFocusAreasBlock,
   renderRecentFindingsBlock,
   showPositionParameters,
@@ -135,15 +136,22 @@ interface EngineAnalysisArgs {
   fen: string;
 }
 
-/** Returns the full structured position analysis directly — see
- * docs/design.md principle 4 (opt-in override of "engine invisible") and
- * coach-system.ts's engineVisibility, which instructs the coach on whether
- * it may repeat raw numbers to the student based on their preference. */
-async function getEngineAnalysis(
-  deps: CoachToolsDependencies,
-  args: EngineAnalysisArgs
-): Promise<PositionAnalysis> {
-  return deps.analyzePosition(args.fen);
+/** Returns a curated digest, not the raw PositionAnalysis/PositionFeatures
+ * JSON (AGENTS.md golden rule 8) — the same discipline play mode's
+ * get_candidate_moves already applies to this class of engine output, just
+ * without that tool's light-model round-trip: the shape here is fixed and
+ * small enough to render deterministically (packages/prompts's
+ * renderEngineAnalysisSummary), matching how the "Current position" block
+ * curates the same PositionAnalysis shape instead of dumping it. Numbers and
+ * lines are still fully visible to the coach — see docs/design.md principle
+ * 4 (opt-in override of "engine invisible") and coach-system.ts's
+ * engineVisibility, which instructs the coach on whether it may repeat raw
+ * numbers to the student based on their preference — this only removes the
+ * fields nothing downstream reads (every legal move, per-square control,
+ * etc.), not the ones that inform coaching. */
+async function getEngineAnalysis(deps: CoachToolsDependencies, args: EngineAnalysisArgs): Promise<string> {
+  const analysis = await deps.analyzePosition(args.fen);
+  return renderEngineAnalysisSummary(analysis);
 }
 
 interface CheckPositionArgs {

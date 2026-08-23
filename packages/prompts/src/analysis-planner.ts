@@ -79,17 +79,24 @@ ${COACHING_PLAN_JSON_SCHEMA}`;
 }
 
 /** One row per user move, with the immediately preceding opponent move shown
- * inline for context (prompts.md §3.2). */
+ * inline for context (prompts.md §3.2). Unsound moves also carry their
+ * pre-computed `reasons` (classify.ts's deterministic per-move coaching
+ * reasons, §11) — grounds the planner's whatHappened/socraticQuestion in the
+ * engine's own diagnosis instead of the LLM re-deriving or guessing "why". */
 function renderMovesTable(moves: ClassifiedMove[]): string {
   const rows = moves.map((move, index) => {
     if (!move.isUserMove) return null;
     const opponentMove = moves[index - 1];
     const context = opponentMove && !opponentMove.isUserMove ? `${opponentMove.moveSan} ` : '';
     const qualityNote =
-      move.quality === 'good' ? '' : `${MOVE_QUALITY_SYMBOLS[move.quality]} (cpLoss ${move.cpLoss}, ${move.quality})`;
+      move.quality === 'good' ? '' : `${MOVE_QUALITY_SYMBOLS[move.quality]} (cpLoss ${move.cpLoss}, ${move.quality}${reasonsNote(move)})`;
     return `${move.ply}. ${context}${move.moveSan}${qualityNote} | best line: ${move.bestLineSan.join(' ')}`;
   });
   return rows.filter((row): row is string => row !== null).join('\n');
+}
+
+function reasonsNote(move: ClassifiedMove): string {
+  return move.reasons && move.reasons.length > 0 ? `; ${move.reasons.join('; ')}` : '';
 }
 
 function renderCandidateMomentsBlock(moments: CandidateMoment[]): string {

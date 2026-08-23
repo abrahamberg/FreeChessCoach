@@ -12,6 +12,7 @@ export interface GameMoveQualityRow {
   cpLoss: number;
   bestLineSan: string[];
   evalAfterCp: number;
+  reasons: string[];
   createdAt: Date;
 }
 
@@ -24,6 +25,7 @@ export interface NewGameMoveQuality {
   cpLoss: number;
   bestLineSan: string[];
   evalAfterCp: number;
+  reasons: string[];
 }
 
 /** Play mode's live equivalent of the batch pipeline's analyses.classified_moves
@@ -32,7 +34,7 @@ export interface NewGameMoveQuality {
 export function insert(db: Kysely<Database>, values: NewGameMoveQuality): Promise<GameMoveQualityRow> {
   return db
     .insertInto('gameMoveQualities')
-    .values({ ...values, bestLineSan: JSON.stringify(values.bestLineSan) })
+    .values({ ...values, bestLineSan: JSON.stringify(values.bestLineSan), reasons: JSON.stringify(values.reasons) })
     .returningAll()
     .executeTakeFirstOrThrow();
 }

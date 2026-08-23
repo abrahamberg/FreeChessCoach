@@ -40,6 +40,22 @@ describe('renderAnnotatedPgn', () => {
     const moves = [move({ ply: 17, moveSan: 'Bg4', quality: 'mistake', cpLoss: 180, bestLineSan: ['h6', 'Bh4'] })];
     expect(renderAnnotatedPgn(moves)).toBe('## This game (annotated)\n\n9.Bg4? (lost ~180cp, best h6)');
   });
+
+  test('an unsound move with pre-computed reasons appends them inline', () => {
+    const moves = [
+      move({
+        ply: 17,
+        moveSan: 'Bg4',
+        quality: 'mistake',
+        cpLoss: 180,
+        bestLineSan: ['h6', 'Bh4'],
+        reasons: ['Leaves the bishop on g4 undefended']
+      })
+    ];
+    expect(renderAnnotatedPgn(moves)).toBe(
+      '## This game (annotated)\n\n9.Bg4? (lost ~180cp, best h6; Leaves the bishop on g4 undefended)'
+    );
+  });
 });
 
 describe('renderGameSoFarInline (architecture §14, play mode\'s live layer-3 replacement)', () => {
@@ -252,6 +268,26 @@ describe('renderCurrentMoveBlock', () => {
       featureDelta: { newForks: [], newHangingPieces: [], mobilityDelta: 0 }
     });
     expect(withEmptyDelta).not.toContain('What changed vs. the best move');
+  });
+
+  test('a played non-best move with pre-computed reasons gets a "Why:" line', () => {
+    const ctx: CurrentMoveAnalysisContext = {
+      analysis: analysis({ bestMove: 'd6', lines: [line({ moveSan: 'd6', pvSan: ['d6'], cp: 17 })] }),
+      classifiedMove: { cpLoss: 163, evalAfterCp: 6, reasons: ['Leaves the knight on d5 undefended'] }
+    };
+    const text = renderCurrentMoveBlock(16, 'pre-move-fen', 'white', '(empty — no parked topics right now)', 'd5', ctx);
+
+    expect(text).toContain('Why: Leaves the knight on d5 undefended');
+  });
+
+  test('omits the "Why:" line when the classified move has no reasons', () => {
+    const ctx: CurrentMoveAnalysisContext = {
+      analysis: analysis({ bestMove: 'd6', lines: [line({ moveSan: 'd6', pvSan: ['d6'], cp: 17 })] }),
+      classifiedMove: { cpLoss: 163, evalAfterCp: 6, reasons: [] }
+    };
+    const text = renderCurrentMoveBlock(16, 'pre-move-fen', 'white', '(empty — no parked topics right now)', 'd5', ctx);
+
+    expect(text).not.toContain('Why:');
   });
 
   test('omits classified-move-dependent cost clause when no classified move is available yet', () => {

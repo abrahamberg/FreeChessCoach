@@ -15,6 +15,7 @@ import * as subjectPly from './migrations/0013_subject_ply.js';
 import * as coachPersona from './migrations/0014_coach_persona.js';
 import * as bookReport from './migrations/0015_book_report.js';
 import * as gameReport from './migrations/0016_game_report.js';
+import * as moveReasons from './migrations/0017_move_reasons.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -34,7 +35,8 @@ const provider: MigrationProvider = {
       '0013_subject_ply': subjectPly,
       '0014_coach_persona': coachPersona,
       '0015_book_report': bookReport,
-      '0016_game_report': gameReport
+      '0016_game_report': gameReport,
+      '0017_move_reasons': moveReasons
     })
 };
 

@@ -45,7 +45,8 @@ describe('game-move-qualities repository', () => {
       quality: 'best',
       cpLoss: 0,
       bestLineSan: ['e5'],
-      evalAfterCp: 20
+      evalAfterCp: 20,
+      reasons: []
     });
     await gameMoveQualitiesRepo.insert(db, {
       gameId: game.id,
@@ -55,14 +56,17 @@ describe('game-move-qualities repository', () => {
       quality: 'good',
       cpLoss: 5,
       bestLineSan: ['d4'],
-      evalAfterCp: 15
+      evalAfterCp: 15,
+      reasons: ['Leaves the knight on d5 undefended']
     });
 
     const rows = await gameMoveQualitiesRepo.listByGameId(db, game.id);
     expect(rows.map((row) => row.ply)).toEqual([1, 2]);
     expect(rows[0]?.moveSan).toBe('e4');
     expect(rows[0]?.bestLineSan).toEqual(['d4']);
+    expect(rows[0]?.reasons).toEqual(['Leaves the knight on d5 undefended']);
     expect(rows[1]?.quality).toBe('best');
+    expect(rows[1]?.reasons).toEqual([]);
   });
 
   test('deleteByPly() removes only the targeted ply', async () => {
@@ -75,7 +79,8 @@ describe('game-move-qualities repository', () => {
       quality: 'good',
       cpLoss: 5,
       bestLineSan: ['d4'],
-      evalAfterCp: 15
+      evalAfterCp: 15,
+      reasons: []
     });
     await gameMoveQualitiesRepo.insert(db, {
       gameId: game.id,
@@ -85,7 +90,8 @@ describe('game-move-qualities repository', () => {
       quality: 'best',
       cpLoss: 0,
       bestLineSan: ['e5'],
-      evalAfterCp: 20
+      evalAfterCp: 20,
+      reasons: []
     });
 
     await gameMoveQualitiesRepo.deleteByPly(db, game.id, 2);

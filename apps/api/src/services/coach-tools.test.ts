@@ -142,7 +142,7 @@ describe('buildCoachTools', () => {
   });
 
   describe('get_engine_analysis', () => {
-    test('returns the full structured position analysis, not an interpreted summary', async () => {
+    test('returns a curated digest of the position analysis, not the raw PositionAnalysis/PositionFeatures JSON', async () => {
       const ctx = await setupCtx();
       const deps = makeDeps();
       const tools = buildCoachTools(ctx, deps);
@@ -152,7 +152,14 @@ describe('buildCoachTools', () => {
         TOOL_OPTIONS
       );
 
-      expect(result).toEqual(ENGINE_EVAL);
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Best move: Bb5 (eval +0.35)');
+      expect(result).toContain('Line: Bb5 a6 Ba4');
+      // No raw JSON escape hatch — AGENTS.md golden rule 8 (digest, don't
+      // dump); this tool needs no light-model round-trip since the shape is
+      // fixed and small enough to render deterministically.
+      expect(result).not.toContain('"features"');
+      expect(result).not.toContain('availableMoves');
       expect(deps.analyzePosition).toHaveBeenCalledWith(ENGINE_EVAL.fen);
       expect(deps.callLightModel).not.toHaveBeenCalled();
     });

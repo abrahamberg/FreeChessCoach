@@ -1,7 +1,8 @@
 import type { ClassifiedMove, FeatureDelta } from '@chess-coach/chess-analysis';
-import { diffPositionFeatures, isSoundQuality } from '@chess-coach/chess-analysis';
+import { isSoundQuality } from '@chess-coach/chess-analysis';
 import { MOVE_QUALITY_SYMBOLS, type MoveQuality, type PositionAnalysis, type PositionAnalysisLine } from '@chess-coach/shared';
 import { describeMoveRef } from './render.js';
+import { formatEval } from './format-eval.js';
 
 /**
  * Coach context restructure design §5, layer 3: the whole game as annotated
@@ -18,7 +19,7 @@ import { describeMoveRef } from './render.js';
  * for analyze mode's existing callers). */
 export type AnnotatedMoveLike = Pick<
   ClassifiedMove,
-  'ply' | 'moveSan' | 'quality' | 'cpLoss' | 'bestLineSan' | 'evalAfterCp'
+  'ply' | 'moveSan' | 'quality' | 'cpLoss' | 'bestLineSan' | 'evalAfterCp' | 'reasons'
 >;
 
 export function renderAnnotatedPgn(moves: AnnotatedMoveLike[]): string {
@@ -31,7 +32,8 @@ export function renderAnnotatedMove(move: AnnotatedMoveLike): string {
   const base = `${movePrefix(move.ply)}${move.moveSan}${symbol}`;
   if (isSoundQuality(move.quality)) return base;
   const bestLine = move.bestLineSan[0] ? `, best ${move.bestLineSan[0]}` : '';
-  return `${base} (lost ~${move.cpLoss}cp${bestLine})`;
+  const reasons = move.reasons && move.reasons.length > 0 ? `; ${move.reasons.join('; ')}` : '';
+  return `${base} (lost ~${move.cpLoss}cp${bestLine}${reasons})`;
 }
 
 /**
@@ -93,27 +95,19 @@ export interface CurrentMoveAnalysisContext {
   analysis: PositionAnalysis;
   /** This ply's classified-move entry, if the batch pipeline (analyze mode)
    * or the live classifier (play mode, game_move_qualities) has reached it
-   * yet — supplies the cp-loss headline. Only the two fields actually read
+   * yet — supplies the cp-loss headline and the deterministic "why" text
+   * (move-reasons.ts's §11 reasons). Only the three fields actually read
    * below are required, so a play-mode game_move_qualities row satisfies
    * this without a fake shim for the ClassifiedMove-only fields it lacks
    * (isUserMove, hangsPiece). Absent for a freshly-imported game the batch
    * job hasn't classified yet. */
-  classifiedMove?: Pick<ClassifiedMove, 'cpLoss' | 'evalAfterCp'>;
+  classifiedMove?: Pick<ClassifiedMove, 'cpLoss' | 'evalAfterCp' | 'reasons'>;
   /** Engine analysis of the position AFTER the played move — supplies the "Played line" continuation. Omitted when the student played the engine's own best move (nothing to add) or when not fetched. */
   postMoveAnalysis?: PositionAnalysis;
   /** Diff between "after the engine's best move" and "after the move actually played" — omitted when there's no best move to compare against. */
   featureDelta?: FeatureDelta;
 }
 
-/** cp is white-perspective centipawns (services/engine/src/uci.ts normalizes
- * UCI's side-to-move-relative score before it ever reaches this layer),
- * matching ClassifiedMove.evalAfterCp's convention. */
-function formatEval(cp: number | null, mateIn: number | null): string {
-  if (mateIn !== null) return `mate in ${Math.abs(mateIn)}`;
-  if (cp === null) return 'eval unknown';
-  const pawns = (cp / 100).toFixed(2);
-  return `eval ${cp >= 0 ? '+' : ''}${pawns}`;
-}
 
 /**
  * Renders a principal variation as standard interleaved PGN move text
@@ -194,6 +188,7 @@ function renderAnalysisSection(ply: number, playedMove: string | null, ctx: Curr
     parts.push(`Best line: ${formatPvLine(linePly, bestLine.pvSan)}`);
     const continuation = postMoveAnalysis?.lines[0]?.pvSan ?? [];
     parts.push(`Played line: ${formatPvLine(linePly, [playedMove, ...continuation])}`);
+    if (classifiedMove?.reasons?.length) parts.push(`Why: ${classifiedMove.reasons.join('; ')}`);
   }
 
   if (featureDelta) {
@@ -209,18 +204,12 @@ function renderAnalysisSection(ply: number, playedMove: string | null, ctx: Curr
     parts.push(`Other engine options:\n${otherText}`);
   }
 
-  // The raw JSON below sits alongside the curated prose above rather than
-  // replacing it — for the cases the curated summary can't anticipate
-  // (investigating a non-obvious eval drop may need fields no bullet covers).
-  // Both postMoveAnalysis and analysis are already-fetched, cached-by-fen
-  // engine results (no extra engine round trip to produce this).
-  if (postMoveAnalysis) {
-    parts.push(`## Position full analyse\n\n${JSON.stringify(postMoveAnalysis, null, 2)}`);
-    parts.push(
-      `## Delta against best move\n\n${JSON.stringify(diffPositionFeatures(analysis.features, postMoveAnalysis.features), null, 2)}`
-    );
-  }
-
+  // No raw PositionAnalysis/PositionFeatures JSON here (AGENTS.md golden
+  // rule 8: digest, don't dump) — this block is resent uncached on every
+  // turn the move stays under discussion, so a case the curated prose above
+  // and `reasons` (classify.ts's §11 "why") can't anticipate is the coach's
+  // get_engine_analysis tool's job: one deliberate, budgeted call instead of
+  // an unconditional per-turn cost nobody may ever read.
   return parts.length > 0 ? `\n\n${parts.join('\n\n')}` : '';
 }
 
