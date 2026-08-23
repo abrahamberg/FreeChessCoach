@@ -1,4 +1,4 @@
-import { KokoroTTS } from 'kokoro-js';
+import { KokoroTTS, TextSplitterStream } from 'kokoro-js';
 import type { KokoroVoiceId } from './persona-voices.js';
 import type { TtsSpeakMessage, TtsWorkerMessage } from './shared-tts-worker.js';
 
@@ -28,10 +28,22 @@ const MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
 // confirmed to produce correct audio.
 let ttsPromise: Promise<KokoroTTS> | null = null;
 
+// TEMPORARY diagnostic logging — remove once the real-world latency/cutoff
+// issue this is instrumenting is root-caused and fixed.
+const startedAt = performance.now();
+function log(...args: unknown[]): void {
+  console.log(`[kokoro-worker +${Math.round(performance.now() - startedAt)}ms]`, ...args);
+}
+
 function loadModel(): Promise<KokoroTTS> {
   if (!ttsPromise) {
+    log('model load starting', {
+      crossOriginIsolated: (self as unknown as { crossOriginIsolated?: boolean }).crossOriginIsolated,
+      hardwareConcurrency: navigator.hardwareConcurrency
+    });
     ctx.postMessage({ type: 'status', status: 'loading' });
     const promise = KokoroTTS.from_pretrained(MODEL_ID, { dtype: 'q8' }).then((tts) => {
+      log('model load finished');
       ctx.postMessage({ type: 'status', status: 'ready' });
       return tts;
     });
@@ -50,17 +62,33 @@ function loadModel(): Promise<KokoroTTS> {
 // a few seconds instead of waiting for the whole (often multi-sentence)
 // coach reply to finish generating before any sound plays. Total synthesis
 // time is the same; only time-to-first-audio improves.
+//
+// stream() takes a TextSplitterStream, not a plain string, even though the
+// type signature allows a bare string — kokoro-js's own README only
+// documents the TextSplitterStream form (push text incrementally as an LLM
+// produces it, then close() once done). Passing a string directly hung
+// forever with zero chunks yielded and no error: whatever internal stream it
+// creates from the string is apparently never closed, so the generator just
+// waits for more input that never arrives. We already have the whole text
+// upfront, so push it once and close immediately.
 async function handleSpeak(id: string, text: string, voice: KokoroVoiceId): Promise<void> {
+  log('handleSpeak start', { textLength: text.length, text });
   try {
     const tts = await loadModel();
+    const splitter = new TextSplitterStream();
+    splitter.push(text);
+    splitter.close();
     let index = 0;
-    for await (const { audio } of tts.stream(text, { voice })) {
+    for await (const { text: chunkText, audio } of tts.stream(splitter, { voice })) {
+      log('chunk ready', { index, chunkText, durationSec: audio.audio.length / audio.sampling_rate });
       const wav = audio.toWav();
       ctx.postMessage({ type: 'chunk', id, index, audio: wav }, [wav]);
       index += 1;
     }
+    log('stream done', { totalChunks: index });
     ctx.postMessage({ type: 'done', id });
   } catch (error) {
+    log('error', error);
     ctx.postMessage({ type: 'error', id, message: error instanceof Error ? error.message : String(error) });
   }
 }

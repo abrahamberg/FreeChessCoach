@@ -104,9 +104,18 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
     if (!audioRef.current) {
       const audio = new Audio();
       audio.addEventListener('ended', () => {
+        console.log(`[useCoachVoice] chunk ended for ${currentMessageIdRef.current}`);
         const messageId = currentMessageIdRef.current;
         const state = currentStateRef.current;
         if (messageId && state) playNextChunk(messageId, state);
+      });
+      // A chunk's WAV blob failing to decode/play (corrupt data, unsupported
+      // format) used to leave playback stuck forever — 'ended' never fires,
+      // so nothing would ever call finishMessage(). Now it's treated the
+      // same as a stream error: stop cleanly rather than hang.
+      audio.addEventListener('error', () => {
+        console.log(`[useCoachVoice] audio error for ${currentMessageIdRef.current}`, audio.error);
+        finishMessage();
       });
       audioRef.current = audio;
     }
@@ -131,7 +140,11 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
       audio.currentTime = 0;
       nextChunkIndexRef.current = index + 1;
       setPlayingMessageId(messageId);
-      Promise.resolve(audio.play()).catch(() => finishMessage());
+      console.log(`[useCoachVoice] playing chunk ${index} for ${messageId}`);
+      Promise.resolve(audio.play()).catch((error: unknown) => {
+        console.log(`[useCoachVoice] audio.play() rejected for ${messageId} chunk ${index}`, error);
+        finishMessage();
+      });
       return;
     }
     if (state.complete || state.errored) {
@@ -164,7 +177,8 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
     setLoadingMessageId(messageId);
 
     const promise = getSharedTtsWorker()
-      .speak({ text, voice: PERSONA_VOICES[personaRef.current] }, (_index, audio) => {
+      .speak({ text, voice: PERSONA_VOICES[personaRef.current] }, (index, audio) => {
+        console.log(`[useCoachVoice] chunk ${index} received for ${messageId}`, { bytes: audio.byteLength });
         const isFirstChunk = state.urls.length === 0;
         state.urls.push(URL.createObjectURL(new Blob([audio], { type: 'audio/wav' })));
         // "Loading" means "nothing audible yet" — once the first chunk
