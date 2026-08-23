@@ -161,4 +161,50 @@ describe('ChatPane', () => {
 
     vi.unstubAllGlobals();
   });
+
+  test('does not render an autoplay toggle when onToggleAutoplay is omitted', () => {
+    render(<ChatPane sessionId="test-session" messages={[]} activeToolName={null} onSend={vi.fn()} />);
+    expect(screen.queryByRole('checkbox', { name: /autoplay/i })).not.toBeInTheDocument();
+  });
+
+  test('renders and forwards the autoplay toggle', async () => {
+    const onToggleAutoplay = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ChatPane
+        sessionId="test-session"
+        messages={[]}
+        activeToolName={null}
+        onSend={vi.fn()}
+        autoplayEnabled={false}
+        onToggleAutoplay={onToggleAutoplay}
+      />
+    );
+
+    const toggle = screen.getByRole('checkbox', { name: /autoplay/i });
+    expect(toggle).not.toBeChecked();
+    await user.click(toggle);
+
+    expect(onToggleAutoplay).toHaveBeenCalledWith(true);
+  });
+
+  test('forwards onPlayMessage/playingMessageId/loadingMessageId through to MessageList', async () => {
+    const onPlayMessage = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ChatPane
+        sessionId="test-session"
+        messages={[{ id: 'm1', role: 'assistant', text: 'Good move.' }]}
+        activeToolName={null}
+        onSend={vi.fn()}
+        onPlayMessage={onPlayMessage}
+        playingMessageId="m1"
+      />
+    );
+
+    const playButton = screen.getByRole('button', { name: 'Replay coach message' });
+    expect(playButton).toHaveAttribute('data-state', 'playing');
+    await user.click(playButton);
+    expect(onPlayMessage).toHaveBeenCalledWith('m1', 'Good move.');
+  });
 });

@@ -42,6 +42,16 @@ export interface ChatPaneProps {
   /** The selected coach persona's avatar glyph (coaches.md) — passed
    * through to MessageList. Defaults to the original coach's ♞ glyph. */
   coachAvatar?: string;
+  /** Coach voice (Kokoro TTS): whether a finished turn's audio plays
+   * automatically. Omit both this and onToggleAutoplay to hide the toggle
+   * (and the per-message play buttons stay available regardless — see
+   * onPlayMessage). */
+  autoplayEnabled?: boolean;
+  onToggleAutoplay?: (enabled: boolean) => void;
+  /** Passed straight through to MessageList — see its own doc comments. */
+  onPlayMessage?: (messageId: string, text: string) => void;
+  playingMessageId?: string | null;
+  loadingMessageId?: string | null;
 }
 
 /** Composes MessageList + ToolActivity + the reply input. No fetching — the
@@ -61,7 +71,12 @@ export function ChatPane({
   fen,
   positions,
   onHoverMove,
-  coachAvatar
+  coachAvatar,
+  autoplayEnabled,
+  onToggleAutoplay,
+  onPlayMessage,
+  playingMessageId,
+  loadingMessageId
 }: ChatPaneProps): ReactNode {
   const [parts, setParts] = useState<DraftPart[]>(createEmptyDraft);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
@@ -83,6 +98,16 @@ export function ChatPane({
   return (
     <div className="chat-pane">
       <div className="chat-pane__header">
+        {onToggleAutoplay && (
+          <label className="chat-pane__autoplay-toggle">
+            <input
+              type="checkbox"
+              checked={autoplayEnabled ?? false}
+              onChange={(event) => onToggleAutoplay(event.target.checked)}
+            />
+            Autoplay coach voice
+          </label>
+        )}
         <button
           type="button"
           className="chat-pane__debug-trigger"
@@ -100,6 +125,9 @@ export function ChatPane({
         positions={positions}
         onHoverMove={onHoverMove}
         coachAvatar={coachAvatar}
+        onPlayMessage={onPlayMessage}
+        playingMessageId={playingMessageId}
+        loadingMessageId={loadingMessageId}
       />
       <ThinkingIndicator visible={isThinking} />
       <ToolActivity toolName={activeToolName} />
