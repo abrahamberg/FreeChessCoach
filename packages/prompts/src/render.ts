@@ -72,18 +72,21 @@ export function describeMoveRef(ply: number): string {
 
 /**
  * prompts.md §2.2: numbered moments with a move-pair reference, kind,
- * question, and key line. Uses "White's/Black's move N" (standard PGN
- * terminology) rather than a bare ply — the model must later address this
- * same moment via show_position's {moveNumber, color}, so the reference it
- * reads here has to be the one it can hand back unchanged, not one it has
- * to convert.
+ * diagnosis (whatHappened), question, and key line. Uses "White's/Black's
+ * move N" (standard PGN terminology) rather than a bare ply — the model
+ * must later address this same moment via show_position's {moveNumber,
+ * color}, so the reference it reads here has to be the one it can hand
+ * back unchanged, not one it has to convert. whatHappened is included so
+ * the coach walks in already knowing the diagnosis instead of having to
+ * re-derive "what was wrong" live before it can decide whether there's a
+ * genuine question worth asking.
  */
 export function renderCoachingPlanBlock(plan: CoachingPlan): string {
   return plan.moments.map((moment, index) => `${index + 1}. ${renderMoment(moment)}`).join('\n');
 }
 
 function renderMoment(moment: CoachingPlan['moments'][number]): string {
-  return `${describeMoveRef(moment.ply)} (${moment.kind}): "${moment.socraticQuestion}" Key line: ${moment.keyLine}`;
+  return `${describeMoveRef(moment.ply)} (${moment.kind}): ${moment.whatHappened} "${moment.socraticQuestion}" Key line: ${moment.keyLine}`;
 }
 
 /** Coach context restructure design §5, layer 5: the backstage conversation

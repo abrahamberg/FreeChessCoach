@@ -121,7 +121,7 @@ describe('renderCoachingPlanBlock', () => {
     });
 
     expect(block).toBe(
-      '1. White\'s move 12 (user_mistake): "Before pushing this pawn, where is your king going to live?" Key line: O-O Re8 d3 h6'
+      '1. White\'s move 12 (user_mistake): Pushed g4 in front of the uncastled king. "Before pushing this pawn, where is your king going to live?" Key line: O-O Re8 d3 h6'
     );
   });
 

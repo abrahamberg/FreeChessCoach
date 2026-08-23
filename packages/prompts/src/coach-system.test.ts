@@ -118,6 +118,17 @@ describe('buildCoachSystemPrompt', () => {
     expect(staticPart).toContain("never carry the real position's evaluation into the line");
   });
 
+  // Regression: the coach used to assert a claim like "the queen defends the
+  // knight" without checking whether something actually blocked that
+  // defense — hypothetical_line's legality validation says nothing about
+  // whether such a specific tactical/positional claim is true.
+  test('staticPart tells the coach to verify a specific claim about a line (defends/wins/escapes) with get_engine_analysis or investigate_position before stating it as fact', () => {
+    const { staticPart } = buildCoachSystemPrompt(baseInput());
+    expect(staticPart).toContain('VERIFY A THEORY BEFORE YOU STATE IT AS FACT');
+    expect(staticPart).toContain("hypothetical_line only validates that moves are legal");
+    expect(staticPart).toContain('does Qe7 actually defend the knight here, or is something in the way?');
+  });
+
   test('staticPart tells the coach show_position\'s result carries the real fen and never to invent one itself', () => {
     const { staticPart } = buildCoachSystemPrompt(baseInput());
     expect(staticPart).toContain('check_position');
