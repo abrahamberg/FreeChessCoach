@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CoachMessage } from './useCoachChat.js';
 import { useCoachVoice } from './useCoachVoice.js';
 
+type OnChunk = (index: number, audio: ArrayBuffer) => void;
+
 const { speakMock } = vi.hoisted(() => ({ speakMock: vi.fn() }));
 
 vi.mock('../tts/shared-tts-worker-instance.js', () => ({
@@ -38,10 +40,35 @@ async function flush(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+/** Lets a test control exactly when chunks arrive and when the stream
+ * finishes/fails, instead of the default single-chunk-then-resolve mock. */
+function controllableSpeak() {
+  let resolve = () => {};
+  let reject: (error: Error) => void = () => {};
+  let onChunk: OnChunk | null = null;
+  const promise = new Promise<void>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return {
+    impl: (_request: unknown, chunkCallback: OnChunk) => {
+      onChunk = chunkCallback;
+      return promise;
+    },
+    emitChunk: (index: number) => onChunk?.(index, new ArrayBuffer(1)),
+    done: () => resolve(),
+    fail: (message: string) => reject(new Error(message))
+  };
+}
+
 describe('useCoachVoice', () => {
   beforeEach(() => {
     audioInstances = [];
     speakMock.mockReset();
+    speakMock.mockImplementation((_request: unknown, onChunk: OnChunk) => {
+      onChunk(0, new ArrayBuffer(1));
+      return Promise.resolve();
+    });
     vi.stubGlobal(
       'Audio',
       vi.fn(() => {
@@ -70,7 +97,6 @@ describe('useCoachVoice', () => {
   });
 
   test('replaying the same message never re-synthesizes', async () => {
-    speakMock.mockResolvedValue(new ArrayBuffer(4));
     const { result } = renderHook(() => useCoachVoice({ messages: [], isStreaming: false, persona: 'general' }));
 
     await act(async () => {
@@ -87,7 +113,6 @@ describe('useCoachVoice', () => {
   });
 
   test('stop() pauses playback and clears playingMessageId', async () => {
-    speakMock.mockResolvedValue(new ArrayBuffer(4));
     const { result } = renderHook(() => useCoachVoice({ messages: [], isStreaming: false, persona: 'general' }));
 
     await act(async () => {
@@ -101,8 +126,49 @@ describe('useCoachVoice', () => {
     expect(audioInstances[0]?.pause).toHaveBeenCalled();
   });
 
+  test('plays a message\'s chunks in order as they stream in, before advancing past it', async () => {
+    const controller = controllableSpeak();
+    speakMock.mockImplementation(controller.impl);
+    const { result } = renderHook(() => useCoachVoice({ messages: [], isStreaming: false, persona: 'general' }));
+
+    await act(async () => {
+      result.current.play('m1', 'hello there, this is two sentences.');
+      await flush();
+    });
+    // Nothing has arrived yet — still "loading", not "playing".
+    expect(result.current.loadingMessageId).toBe('m1');
+    expect(result.current.playingMessageId).toBeNull();
+
+    await act(async () => {
+      controller.emitChunk(0);
+      await flush();
+    });
+    expect(result.current.loadingMessageId).toBeNull();
+    expect(result.current.playingMessageId).toBe('m1');
+    expect(audioInstances[0]?.src).toBe('blob:fake-url');
+
+    // First sentence finishes playing before the second sentence's chunk has
+    // arrived — playback should wait rather than treating the message as done.
+    act(() => audioInstances[0]?.dispatchEnded());
+    expect(result.current.playingMessageId).toBe('m1');
+
+    await act(async () => {
+      controller.emitChunk(1);
+      await flush();
+    });
+    expect(result.current.playingMessageId).toBe('m1');
+    expect(audioInstances[0]?.play).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      controller.done();
+      audioInstances[0]?.dispatchEnded();
+      await flush();
+    });
+    expect(result.current.playingMessageId).toBeNull();
+    expect(speakMock).toHaveBeenCalledTimes(1);
+  });
+
   test('autoplay only fires for messages added after a turn finishes, not history seeded at mount', async () => {
-    speakMock.mockResolvedValue(new ArrayBuffer(4));
     const history = [msg('h1', 'assistant', 'welcome back')];
     const { result, rerender } = renderHook((props) => useCoachVoice(props), {
       initialProps: { messages: history, isStreaming: false, persona: 'general' as CoachPersona }
@@ -123,11 +189,10 @@ describe('useCoachVoice', () => {
       await flush();
     });
     expect(speakMock).toHaveBeenCalledTimes(1);
-    expect(speakMock).toHaveBeenCalledWith({ text: 'good to see you', voice: 'af_heart' });
+    expect(speakMock).toHaveBeenCalledWith({ text: 'good to see you', voice: 'af_heart' }, expect.any(Function));
   });
 
   test('autoplay off never auto-fires, but explicit play() still works', async () => {
-    speakMock.mockResolvedValue(new ArrayBuffer(4));
     const { result, rerender } = renderHook((props) => useCoachVoice(props), {
       initialProps: { messages: [] as CoachMessage[], isStreaming: false, persona: 'general' as CoachPersona }
     });
@@ -167,7 +232,6 @@ describe('useCoachVoice', () => {
   });
 
   test('a turn producing multiple prose bubbles queues and plays them in order', async () => {
-    speakMock.mockImplementation(async ({ text }: { text: string }) => new TextEncoder().encode(text).buffer);
     const { result, rerender } = renderHook((props) => useCoachVoice(props), {
       initialProps: { messages: [] as CoachMessage[], isStreaming: false, persona: 'general' as CoachPersona }
     });
@@ -194,7 +258,7 @@ describe('useCoachVoice', () => {
     });
     expect(result.current.playingMessageId).toBe('a3');
     expect(speakMock).toHaveBeenCalledTimes(2);
-    expect(speakMock).toHaveBeenNthCalledWith(1, { text: 'first line', voice: 'af_heart' });
-    expect(speakMock).toHaveBeenNthCalledWith(2, { text: 'second line', voice: 'af_heart' });
+    expect(speakMock).toHaveBeenNthCalledWith(1, { text: 'first line', voice: 'af_heart' }, expect.any(Function));
+    expect(speakMock).toHaveBeenNthCalledWith(2, { text: 'second line', voice: 'af_heart' }, expect.any(Function));
   });
 });

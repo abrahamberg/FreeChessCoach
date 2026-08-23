@@ -25,30 +25,48 @@ describe('SharedTtsWorker', () => {
     const worker = fakeTtsWorker();
     const client = new SharedTtsWorker({ createWorker: () => worker });
 
-    void client.speak({ text: 'hello', voice: 'af_heart' });
+    void client.speak({ text: 'hello', voice: 'af_heart' }, () => {});
 
     expect(worker.sent).toHaveLength(1);
     expect(worker.sent[0]).toMatchObject({ type: 'speak', text: 'hello', voice: 'af_heart' });
     expect(worker.sent[0]?.id).toEqual(expect.any(String));
   });
 
-  test('resolves with the audio ArrayBuffer from a result message', async () => {
+  test('delivers each chunk via onChunk, in order, as it arrives', () => {
+    const worker = fakeTtsWorker();
+    const client = new SharedTtsWorker({ createWorker: () => worker });
+    const received: Array<{ index: number; audio: ArrayBuffer }> = [];
+
+    void client.speak({ text: 'hello', voice: 'af_heart' }, (index, audio) => received.push({ index, audio }));
+    const id = worker.sent[0]?.id ?? '';
+    const chunk0 = new ArrayBuffer(1);
+    const chunk1 = new ArrayBuffer(2);
+    worker.emit({ type: 'chunk', id, index: 0, audio: chunk0 });
+    worker.emit({ type: 'chunk', id, index: 1, audio: chunk1 });
+
+    expect(received).toEqual([
+      { index: 0, audio: chunk0 },
+      { index: 1, audio: chunk1 }
+    ]);
+  });
+
+  test('resolves once a done message arrives, after any chunks', async () => {
     const worker = fakeTtsWorker();
     const client = new SharedTtsWorker({ createWorker: () => worker });
 
-    const pending = client.speak({ text: 'hello', voice: 'af_heart' });
-    const audio = new ArrayBuffer(4);
+    const pending = client.speak({ text: 'hello', voice: 'af_heart' }, () => {});
     const id = worker.sent[0]?.id ?? '';
-    worker.emit({ type: 'result', id, audio });
+    worker.emit({ type: 'chunk', id, index: 0, audio: new ArrayBuffer(1) });
+    worker.emit({ type: 'done', id });
 
-    await expect(pending).resolves.toBe(audio);
+    await expect(pending).resolves.toBeUndefined();
   });
 
   test('rejects with an Error on an error message', async () => {
     const worker = fakeTtsWorker();
     const client = new SharedTtsWorker({ createWorker: () => worker });
 
-    const pending = client.speak({ text: 'hello', voice: 'af_heart' });
+    const pending = client.speak({ text: 'hello', voice: 'af_heart' }, () => {});
     const id = worker.sent[0]?.id ?? '';
     worker.emit({ type: 'error', id, message: 'boom' });
 
@@ -63,7 +81,7 @@ describe('SharedTtsWorker', () => {
 
     expect(statuses).toEqual(['absent']);
 
-    void client.speak({ text: 'hi', voice: 'af_heart' });
+    void client.speak({ text: 'hi', voice: 'af_heart' }, () => {});
     worker.emit({ type: 'status', status: 'loading' });
     worker.emit({ type: 'status', status: 'ready' });
 
@@ -74,17 +92,17 @@ describe('SharedTtsWorker', () => {
     const worker = fakeTtsWorker();
     const client = new SharedTtsWorker({ createWorker: () => worker });
 
-    const first = client.speak({ text: 'one', voice: 'af_heart' });
-    const second = client.speak({ text: 'two', voice: 'af_heart' });
+    const first = client.speak({ text: 'one', voice: 'af_heart' }, () => {});
+    const second = client.speak({ text: 'two', voice: 'af_heart' }, () => {});
     expect(worker.sent).toHaveLength(1);
 
     const firstId = worker.sent[0]?.id ?? '';
-    worker.emit({ type: 'result', id: firstId, audio: new ArrayBuffer(1) });
+    worker.emit({ type: 'done', id: firstId });
     await first;
 
     expect(worker.sent).toHaveLength(2);
     const secondId = worker.sent[1]?.id ?? '';
-    worker.emit({ type: 'result', id: secondId, audio: new ArrayBuffer(1) });
+    worker.emit({ type: 'done', id: secondId });
     await second;
   });
 
@@ -93,12 +111,12 @@ describe('SharedTtsWorker', () => {
     const createWorker = vi.fn(() => worker);
     const client = new SharedTtsWorker({ createWorker });
 
-    const first = client.speak({ text: 'one', voice: 'af_heart' });
-    worker.emit({ type: 'result', id: worker.sent[0]?.id ?? '', audio: new ArrayBuffer(1) });
+    const first = client.speak({ text: 'one', voice: 'af_heart' }, () => {});
+    worker.emit({ type: 'done', id: worker.sent[0]?.id ?? '' });
     await first;
 
-    const second = client.speak({ text: 'two', voice: 'af_heart' });
-    worker.emit({ type: 'result', id: worker.sent[1]?.id ?? '', audio: new ArrayBuffer(1) });
+    const second = client.speak({ text: 'two', voice: 'af_heart' }, () => {});
+    worker.emit({ type: 'done', id: worker.sent[1]?.id ?? '' });
     await second;
 
     expect(createWorker).toHaveBeenCalledOnce();
@@ -111,7 +129,7 @@ describe('SharedTtsWorker', () => {
       }
     });
 
-    await expect(client.speak({ text: 'hi', voice: 'af_heart' })).rejects.toThrow('no Worker support');
+    await expect(client.speak({ text: 'hi', voice: 'af_heart' }, () => {})).rejects.toThrow('no Worker support');
     expect(client.status).toBe('absent');
   });
 });

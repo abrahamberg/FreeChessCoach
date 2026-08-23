@@ -29,6 +29,14 @@ interface QueueEntry {
   text: string;
 }
 
+/** One message's streamed audio: object URLs for each sentence chunk
+ * received so far (in order), plus whether the stream is still in flight. */
+interface MessageAudioState {
+  urls: string[];
+  complete: boolean;
+  errored: boolean;
+}
+
 export interface UseCoachVoiceOptions {
   messages: CoachMessage[];
   isStreaming: boolean;
@@ -48,8 +56,11 @@ export interface UseCoachVoiceResult {
 
 /** Reads each finished coach turn aloud with Kokoro TTS, voiced per the
  * active persona (persona-voices.ts), and lets any message be replayed on
- * demand. Synthesized audio is cached per message id — replaying never
- * re-runs inference.
+ * demand. Kokoro synthesizes sentence-by-sentence (kokoro-worker.ts's
+ * stream() call) rather than all at once — playback starts on the first
+ * chunk instead of waiting for the whole (often multi-sentence) reply to
+ * finish generating, then plays each later chunk as it arrives. Every
+ * chunk is cached per message id, so replaying never re-runs inference.
  *
  * Autoplay fires once per newly-finished turn: the `isStreaming` true→false
  * edge (useCoachChat resolves nested client-tool-result round-trips before
@@ -67,10 +78,25 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
     personaRef.current = persona;
   }, [persona]);
 
-  const cacheRef = useRef(new Map<string, Promise<string>>());
+  const cacheRef = useRef(new Map<string, MessageAudioState>());
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const queueRef = useRef<QueueEntry[]>([]);
   const activeRef = useRef(false);
+  // Which message the shared <audio> element is currently working through,
+  // and its audio state — captured once per playNow() call and read by name
+  // (not re-fetched from cacheRef) for the rest of that message's playback,
+  // so a later play() on a different message can never cross wires with it.
+  const currentMessageIdRef = useRef<string | null>(null);
+  const currentStateRef = useRef<MessageAudioState | null>(null);
+  // Index of the next not-yet-played chunk for currentMessageIdRef — reset
+  // to 0 at the start of every playNow(), including a replay, so a message
+  // already fully cached still plays chunk 0 first rather than resuming
+  // wherever a previous playthrough left off.
+  const nextChunkIndexRef = useRef(0);
+  // True once playback has caught up to every chunk received so far but the
+  // stream isn't finished yet — onChunkArrived/onStreamSettled resume from
+  // here as more audio lands.
+  const waitingForChunkRef = useRef(false);
   const wasStreamingRef = useRef(isStreaming);
   const handledIdsRef = useRef(new Set<string>());
 
@@ -78,49 +104,99 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
     if (!audioRef.current) {
       const audio = new Audio();
       audio.addEventListener('ended', () => {
-        activeRef.current = false;
-        setPlayingMessageId(null);
-        advanceQueue();
+        const messageId = currentMessageIdRef.current;
+        const state = currentStateRef.current;
+        if (messageId && state) playNextChunk(messageId, state);
       });
       audioRef.current = audio;
     }
     return audioRef.current;
   }
 
-  function synthesize(messageId: string, text: string): Promise<string> {
-    const cached = cacheRef.current.get(messageId);
-    if (cached) return cached;
+  function finishMessage(): void {
+    waitingForChunkRef.current = false;
+    activeRef.current = false;
+    currentMessageIdRef.current = null;
+    currentStateRef.current = null;
+    setPlayingMessageId(null);
+    advanceQueue();
+  }
 
+  function playNextChunk(messageId: string, state: MessageAudioState): void {
+    const index = nextChunkIndexRef.current;
+    if (index < state.urls.length) {
+      waitingForChunkRef.current = false;
+      const audio = getAudio();
+      audio.src = state.urls[index] ?? '';
+      audio.currentTime = 0;
+      nextChunkIndexRef.current = index + 1;
+      setPlayingMessageId(messageId);
+      Promise.resolve(audio.play()).catch(() => finishMessage());
+      return;
+    }
+    if (state.complete || state.errored) {
+      finishMessage();
+      return;
+    }
+    // Caught up to what's arrived so far, but more is still generating —
+    // onChunkArrived/onStreamSettled resume playback from here.
+    waitingForChunkRef.current = true;
+  }
+
+  function onChunkArrived(messageId: string): void {
+    if (currentMessageIdRef.current !== messageId || !waitingForChunkRef.current) return;
+    const state = currentStateRef.current;
+    if (state) playNextChunk(messageId, state);
+  }
+
+  function onStreamSettled(messageId: string): void {
+    if (currentMessageIdRef.current !== messageId || !waitingForChunkRef.current) return;
+    const state = currentStateRef.current;
+    if (state) playNextChunk(messageId, state);
+  }
+
+  function ensureStream(messageId: string, text: string): MessageAudioState {
+    const cached = cacheRef.current.get(messageId);
+    if (cached && !cached.errored) return cached;
+
+    const state: MessageAudioState = { urls: [], complete: false, errored: false };
+    cacheRef.current.set(messageId, state);
     setLoadingMessageId(messageId);
+
     const promise = getSharedTtsWorker()
-      .speak({ text, voice: PERSONA_VOICES[personaRef.current] })
-      .then((audio) => URL.createObjectURL(new Blob([audio], { type: 'audio/wav' })))
-      .finally(() => setLoadingMessageId((current) => (current === messageId ? null : current)));
-    cacheRef.current.set(messageId, promise);
-    // A failed synthesis shouldn't stay cached as a rejected promise forever
-    // — the next play() attempt should retry instead of replaying the
-    // failure.
-    promise.catch(() => cacheRef.current.delete(messageId));
-    return promise;
+      .speak({ text, voice: PERSONA_VOICES[personaRef.current] }, (_index, audio) => {
+        const isFirstChunk = state.urls.length === 0;
+        state.urls.push(URL.createObjectURL(new Blob([audio], { type: 'audio/wav' })));
+        // "Loading" means "nothing audible yet" — once the first chunk
+        // lands there's real sound to play, even while later sentences are
+        // still generating in the background.
+        if (isFirstChunk) setLoadingMessageId((current) => (current === messageId ? null : current));
+        onChunkArrived(messageId);
+      })
+      .then(() => {
+        state.complete = true;
+        onStreamSettled(messageId);
+      })
+      .catch((error: unknown) => {
+        state.errored = true;
+        setLoadingMessageId((current) => (current === messageId ? null : current));
+        onStreamSettled(messageId);
+        throw error;
+      });
+    // Failures are observed via state.errored (checked in playNextChunk);
+    // this just prevents an unhandled-rejection console warning.
+    promise.catch(() => {});
+    return state;
   }
 
   function playNow(messageId: string, text: string): void {
     activeRef.current = true;
-    setPlayingMessageId(messageId);
-    const audio = getAudio();
-    synthesize(messageId, text)
-      .then((url) => {
-        audio.src = url;
-        audio.currentTime = 0;
-        return Promise.resolve(audio.play());
-      })
-      .catch(() => {
-        // Synthesis failure, or the browser blocked autoplay without a user
-        // gesture — either way, nothing more to do than fall back to idle.
-        activeRef.current = false;
-        setPlayingMessageId((current) => (current === messageId ? null : current));
-        advanceQueue();
-      });
+    currentMessageIdRef.current = messageId;
+    nextChunkIndexRef.current = 0;
+    waitingForChunkRef.current = false;
+    const state = ensureStream(messageId, text);
+    currentStateRef.current = state;
+    playNextChunk(messageId, state);
   }
 
   function advanceQueue(): void {
@@ -133,6 +209,9 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
     queueRef.current = [];
     audioRef.current?.pause();
     activeRef.current = false;
+    waitingForChunkRef.current = false;
+    currentMessageIdRef.current = null;
+    currentStateRef.current = null;
     playNow(messageId, text);
   }, []);
 
@@ -140,6 +219,9 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
     queueRef.current = [];
     audioRef.current?.pause();
     activeRef.current = false;
+    waitingForChunkRef.current = false;
+    currentMessageIdRef.current = null;
+    currentStateRef.current = null;
     setPlayingMessageId(null);
   }, []);
 
@@ -165,15 +247,18 @@ export function useCoachVoice({ messages, isStreaming, persona }: UseCoachVoiceO
       if (text) queueRef.current.push({ messageId: message.id, text });
     }
     advanceQueue();
-    // advanceQueue/playNow/synthesize/getAudio are intentionally left out of
-    // the dep list: they close only over refs and stable setters, so every
-    // render's version is behaviorally identical — listing them would just
-    // re-run this effect on every render for no reason.
+    // advanceQueue/playNow/ensureStream/getAudio are intentionally left out
+    // of the dep list: they close only over refs and stable setters, so
+    // every render's version is behaviorally identical — listing them would
+    // just re-run this effect on every render for no reason.
   }, [isStreaming, messages, autoplayEnabled]);
 
   useEffect(() => {
     return () => {
       audioRef.current?.pause();
+      for (const state of cacheRef.current.values()) {
+        for (const url of state.urls) URL.revokeObjectURL(url);
+      }
     };
   }, []);
 

@@ -45,12 +45,21 @@ function loadModel(): Promise<KokoroTTS> {
   return ttsPromise;
 }
 
+// stream() (vs. generate()) synthesizes sentence-by-sentence, yielding each
+// chunk as it's ready — lets the client start playing the first sentence in
+// a few seconds instead of waiting for the whole (often multi-sentence)
+// coach reply to finish generating before any sound plays. Total synthesis
+// time is the same; only time-to-first-audio improves.
 async function handleSpeak(id: string, text: string, voice: KokoroVoiceId): Promise<void> {
   try {
     const tts = await loadModel();
-    const raw = await tts.generate(text, { voice });
-    const wav = raw.toWav();
-    ctx.postMessage({ type: 'result', id, audio: wav }, [wav]);
+    let index = 0;
+    for await (const { audio } of tts.stream(text, { voice })) {
+      const wav = audio.toWav();
+      ctx.postMessage({ type: 'chunk', id, index, audio: wav }, [wav]);
+      index += 1;
+    }
+    ctx.postMessage({ type: 'done', id });
   } catch (error) {
     ctx.postMessage({ type: 'error', id, message: error instanceof Error ? error.message : String(error) });
   }

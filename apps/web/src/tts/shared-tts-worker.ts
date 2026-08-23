@@ -23,11 +23,21 @@ export interface TtsStatusMessage {
   status: 'loading' | 'ready';
 }
 
-export interface TtsResultMessage {
-  type: 'result';
+/** One sentence's worth of audio — kokoro-js's stream() API synthesizes and
+ * yields sentence-by-sentence rather than waiting for the whole message, so
+ * playback can start on the first chunk instead of after the full (often
+ * multi-sentence) reply finishes generating. */
+export interface TtsChunkMessage {
+  type: 'chunk';
   id: string;
+  index: number;
   /** WAV bytes (RawAudio#toWav()), transferred rather than copied. */
   audio: ArrayBuffer;
+}
+
+export interface TtsDoneMessage {
+  type: 'done';
+  id: string;
 }
 
 export interface TtsErrorMessage {
@@ -36,7 +46,7 @@ export interface TtsErrorMessage {
   message: string;
 }
 
-export type TtsWorkerMessage = TtsStatusMessage | TtsResultMessage | TtsErrorMessage;
+export type TtsWorkerMessage = TtsStatusMessage | TtsChunkMessage | TtsDoneMessage | TtsErrorMessage;
 
 export type TtsInstallStatus = 'absent' | 'loading' | 'ready';
 
@@ -55,7 +65,8 @@ function defaultCreateWorker(): TtsWorkerLike {
 
 interface QueuedSpeak {
   request: TtsSpeakMessage;
-  resolve: (audio: ArrayBuffer) => void;
+  onChunk: (index: number, audio: ArrayBuffer) => void;
+  resolve: () => void;
   reject: (error: Error) => void;
 }
 
@@ -71,7 +82,8 @@ export class SharedTtsWorker {
   private ttsStatus: TtsInstallStatus = 'absent';
   private readonly listeners = new Set<(status: TtsInstallStatus) => void>();
   private active = false;
-  private currentResolve: ((audio: ArrayBuffer) => void) | null = null;
+  private currentOnChunk: ((index: number, audio: ArrayBuffer) => void) | null = null;
+  private currentResolve: (() => void) | null = null;
   private currentReject: ((error: Error) => void) | null = null;
   private readonly pending: QueuedSpeak[] = [];
 
@@ -92,10 +104,14 @@ export class SharedTtsWorker {
     return () => this.listeners.delete(listener);
   }
 
-  speak(request: SpeakRequest): Promise<ArrayBuffer> {
+  /** Streams one message's audio, sentence by sentence — `onChunk` fires
+   * once per chunk, in order, as each arrives; the returned promise resolves
+   * once the whole message has finished synthesizing (all chunks delivered),
+   * or rejects on error. */
+  speak(request: SpeakRequest, onChunk: (index: number, audio: ArrayBuffer) => void): Promise<void> {
     return new Promise((resolve, reject) => {
       const id = crypto.randomUUID();
-      this.pending.push({ request: { type: 'speak', id, text: request.text, voice: request.voice }, resolve, reject });
+      this.pending.push({ request: { type: 'speak', id, text: request.text, voice: request.voice }, onChunk, resolve, reject });
       this.ensureWorker();
       this.pump();
     });
@@ -136,12 +152,17 @@ export class SharedTtsWorker {
       this.setStatus(data.status);
       return;
     }
+    if (data.type === 'chunk') {
+      this.currentOnChunk?.(data.index, data.audio);
+      return;
+    }
     this.active = false;
     const resolve = this.currentResolve;
     const reject = this.currentReject;
+    this.currentOnChunk = null;
     this.currentResolve = null;
     this.currentReject = null;
-    if (data.type === 'result') resolve?.(data.audio);
+    if (data.type === 'done') resolve?.();
     else reject?.(new Error(data.message));
     this.pump();
   }
@@ -153,6 +174,7 @@ export class SharedTtsWorker {
     const next = this.pending.shift();
     if (!next) return;
     this.active = true;
+    this.currentOnChunk = next.onChunk;
     this.currentResolve = next.resolve;
     this.currentReject = next.reject;
     worker.postMessage(next.request);
