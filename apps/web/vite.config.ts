@@ -10,6 +10,13 @@ const apiProxyTarget = process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:30
 
 export default defineConfig({
   plugins: [react()],
+  // kokoro-js (apps/web/src/tts/kokoro-worker.ts) pulls in transformers.js,
+  // which uses dynamic import() internally to load its WASM backends — Vite's
+  // default worker output (iife) can't inline those, so the worker needs the
+  // ESM format instead.
+  worker: {
+    format: 'es'
+  },
   server: {
     proxy: {
       '/api': { target: apiProxyTarget, changeOrigin: true, ws: true }
