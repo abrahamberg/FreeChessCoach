@@ -252,4 +252,56 @@ describe('MessageList', () => {
     await user.hover(move);
     expect(onHoverMove).toHaveBeenCalledWith({ from: 'b2', to: 'b3' });
   });
+
+  describe('coach voice play button', () => {
+    test('renders for a plain coach message when onPlayMessage is provided', () => {
+      render(<MessageList messages={[msg('1', 'Good move.')]} onPlayMessage={vi.fn()} />);
+      expect(screen.getByRole('button', { name: 'Play coach message' })).toBeInTheDocument();
+    });
+
+    test('does not render when onPlayMessage is omitted', () => {
+      render(<MessageList messages={[msg('1', 'Good move.')]} />);
+      expect(screen.queryByRole('button', { name: 'Play coach message' })).not.toBeInTheDocument();
+    });
+
+    test('does not render for a user message', () => {
+      const { container } = render(
+        <MessageList messages={[{ id: '1', role: 'user', text: 'what should I play?' }]} onPlayMessage={vi.fn()} />
+      );
+      expect(container.querySelector('.coach-voice-button')).not.toBeInTheDocument();
+    });
+
+    test('does not render for sentinel messages (MoveCard, PositionDivider, ...)', () => {
+      const { container } = render(
+        <MessageList
+          messages={[
+            msg('1', '[board_move] I played e4 (position now: fen)'),
+            msg('2', '[position_divider]|2|e4'),
+            msg('3', '[annotation_note]|{"arrows":[],"highlights":[]}')
+          ]}
+          onPlayMessage={vi.fn()}
+        />
+      );
+      expect(container.querySelector('.coach-voice-button')).not.toBeInTheDocument();
+    });
+
+    test('calls onPlayMessage with the message id and spoken text on click', async () => {
+      const onPlayMessage = vi.fn();
+      const user = userEvent.setup();
+      render(<MessageList messages={[msg('m1', 'Consider [e2-e4] here.')]} onPlayMessage={onPlayMessage} />);
+
+      await user.click(screen.getByRole('button', { name: 'Play coach message' }));
+      expect(onPlayMessage).toHaveBeenCalledWith('m1', 'Consider e2 to e4 here.');
+    });
+
+    test('reflects loading and playing state via data-state', () => {
+      const { rerender } = render(
+        <MessageList messages={[msg('m1', 'Good move.')]} onPlayMessage={vi.fn()} loadingMessageId="m1" />
+      );
+      expect(screen.getByRole('button', { name: 'Play coach message' })).toHaveAttribute('data-state', 'loading');
+
+      rerender(<MessageList messages={[msg('m1', 'Good move.')]} onPlayMessage={vi.fn()} playingMessageId="m1" />);
+      expect(screen.getByRole('button', { name: 'Replay coach message' })).toHaveAttribute('data-state', 'playing');
+    });
+  });
 });

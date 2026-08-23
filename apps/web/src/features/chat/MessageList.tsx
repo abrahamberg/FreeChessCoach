@@ -14,6 +14,7 @@ import { PositionContextMessage } from './PositionContextMessage.js';
 import { decodeAnnotationNote, decodePositionContext, decodePositionDivider } from './positionDivider.js';
 import { PositionDivider } from './PositionDivider.js';
 import { BOARD_MOVE_PATTERN, PLAYER_MOVE_PATTERN } from './sentinels.js';
+import { getSpeakableText } from '../../tts/getSpeakableText.js';
 
 export type HoverMove = { from: string; to: string } | null;
 
@@ -96,6 +97,14 @@ export interface MessageListProps {
   /** The selected coach persona's avatar glyph (coaches.md). Defaults to
    * the original coach's ♞ glyph, unchanged from before personas existed. */
   coachAvatar?: string;
+  /** Coach voice (Kokoro TTS): plays/replays one message's audio. Omitting
+   * this prop hides the play button entirely — the feature is fully
+   * optional for callers that don't wire up useCoachVoice. */
+  onPlayMessage?: (messageId: string, text: string) => void;
+  /** The message id currently playing, if any. */
+  playingMessageId?: string | null;
+  /** The message id currently being synthesized (first play, cache miss), if any. */
+  loadingMessageId?: string | null;
 }
 
 const NO_POSITIONS: ParsedPosition[] = [];
@@ -110,7 +119,10 @@ export function MessageList({
   fen = '',
   positions = NO_POSITIONS,
   onHoverMove,
-  coachAvatar = DEFAULT_COACH_AVATAR
+  coachAvatar = DEFAULT_COACH_AVATAR,
+  onPlayMessage,
+  playingMessageId = null,
+  loadingMessageId = null
 }: MessageListProps): ReactNode {
   const containerRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
@@ -184,6 +196,9 @@ export function MessageList({
           // not on every message — only when the previous visible message
           // wasn't also from the assistant.
           const startsCoachRun = message.role === 'assistant' && visible[index - 1]?.role !== 'assistant';
+          const speakableText = onPlayMessage ? getSpeakableText(message) : null;
+          const voiceState =
+            loadingMessageId === message.id ? 'loading' : playingMessageId === message.id ? 'playing' : 'idle';
           return (
             <p key={message.id} data-role={message.role}>
               {startsCoachRun && (
@@ -192,6 +207,17 @@ export function MessageList({
                 </span>
               )}
               {renderMessageText(message.text, fen, positions, onHoverMove)}
+              {speakableText && (
+                <button
+                  type="button"
+                  className="coach-voice-button"
+                  data-state={voiceState}
+                  aria-label={voiceState === 'playing' ? 'Replay coach message' : 'Play coach message'}
+                  onClick={() => onPlayMessage?.(message.id, speakableText)}
+                >
+                  {voiceState === 'loading' ? '…' : voiceState === 'playing' ? '⏸' : '▶'}
+                </button>
+              )}
             </p>
           );
         })}

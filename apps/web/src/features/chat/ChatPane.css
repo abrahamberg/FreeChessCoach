@@ -57,6 +57,33 @@
   border-bottom-left-radius: 4px;
 }
 
+.coach-voice-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.coach-voice-button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.coach-voice-button[data-state='playing'] {
+  color: var(--accent);
+}
+
 .coach-avatar {
   display: inline-flex;
   align-items: center;
