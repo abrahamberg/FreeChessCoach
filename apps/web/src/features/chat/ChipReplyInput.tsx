@@ -35,7 +35,7 @@ export function ChipReplyInput({ parts, onChange }: ChipReplyInputProps): ReactN
             aria-label="Reply"
             value={part.value}
             onChange={(event) => onChange(updateText(parts, part.id, event.target.value))}
-            placeholder="type a reply…"
+            placeholder="Ask about this position…"
           />
         )
       )}

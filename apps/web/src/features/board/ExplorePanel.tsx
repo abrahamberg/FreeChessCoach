@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { EyeIcon } from '../../components/Icon.js';
 import type { UseWasmEngineResult } from '../../hooks/useWasmEngine.js';
 import type { BoardMode } from '../session/useSessionBoardState.js';
 import './ExplorePanel.css';
@@ -28,13 +29,14 @@ export function ExplorePanel({ fen, mode, onEnterPeekMode, engine }: ExplorePane
     return (
       <button
         type="button"
-        className="explore-panel-toggle"
+        className="explore-panel-toggle btn-secondary"
         onClick={() => {
           setIsOpen(true);
           engine.analyze(fen);
           onEnterPeekMode();
         }}
       >
+        <EyeIcon width={16} height={16} />
         Explore on your own
       </button>
     );

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import type { ClassifiedMoveDto, MoveQuality } from '@freechesscoach/shared';
+import { ChevronLeftIcon, ChevronRightIcon, SkipBackIcon, SkipForwardIcon } from '../../components/Icon.js';
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import './MoveExplorer.css';
@@ -124,19 +125,19 @@ export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly,
     <div className="move-explorer">
       <div className="move-explorer__nav">
         <button type="button" aria-label="first move" onClick={() => goTo(0)}>
-          ⏮
+          <SkipBackIcon width={15} height={15} />
         </button>
         <button type="button" aria-label="previous move" onClick={() => goTo(currentPly - 1)}>
-          ◀
+          <ChevronLeftIcon width={16} height={16} />
         </button>
         <span className="move-explorer__position">
           move {currentPly} of {totalPlies}
         </span>
         <button type="button" aria-label="next move" onClick={() => goTo(currentPly + 1)}>
-          ▶
+          <ChevronRightIcon width={16} height={16} />
         </button>
         <button type="button" aria-label="last move" onClick={() => goTo(totalPlies)}>
-          ⏭
+          <SkipForwardIcon width={15} height={15} />
         </button>
       </div>
       <ol className="move-explorer__list">

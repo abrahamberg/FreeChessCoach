@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { useLongPress } from '../../hooks/useLongPress.js';
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
@@ -28,6 +28,17 @@ export interface MoveStripProps {
  * badge it should line up with. */
 export function MoveStrip({ sanMoves, classifiedMoves, positions, currentPly, momentPlies, onSelect }: MoveStripProps): ReactNode {
   const [inspecting, setInspecting] = useState<{ fen: string; label: string } | null>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  // design-improvements.md §4.2 (P0): keep the selected move chip in view on
+  // a narrow strip instead of leaving the student to hunt for it by scrolling.
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    stripRef.current
+      ?.querySelector('[aria-current="true"]')
+      ?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+  }, [currentPly]);
+
   const momentSet = new Set(momentPlies);
   const qualityByPly = new Map(classifiedMoves.map((move) => [move.ply, move.quality]));
   const fenByPly = new Map(positions.map((position) => [position.ply, position.fen]));
@@ -40,7 +51,7 @@ export function MoveStrip({ sanMoves, classifiedMoves, positions, currentPly, mo
   );
 
   return (
-    <div className="move-strip">
+    <div className="move-strip" ref={stripRef}>
       {sanMoves.map((san, ply) => {
         const isCurrent = ply === currentPly;
         const isMoment = momentSet.has(ply);

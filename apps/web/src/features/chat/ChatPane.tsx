@@ -4,7 +4,6 @@ import type { ArrowRef } from './arrowToken.js';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { ChipReplyInput } from './ChipReplyInput.js';
 import { createEmptyDraft, isDraftEmpty, reconcileArrowChips, serializeDraft, type DraftPart } from './composerDraft.js';
-import { DebugPanel } from './DebugPanel.js';
 import { MessageList, type HoverMove } from './MessageList.js';
 import { ThinkingIndicator } from './ThinkingIndicator.js';
 import { ToolActivity } from './ToolActivity.js';
@@ -13,7 +12,6 @@ import './ChatPane.css';
 const NO_ARROWS: ArrowRef[] = [];
 
 export interface ChatPaneProps {
-  sessionId: string;
   messages: CoachMessage[];
   activeToolName: string | null;
   /** design.md §5.7: shows the delayed 3-dot typing indicator. */
@@ -57,12 +55,10 @@ export interface ChatPaneProps {
 }
 
 /** Composes MessageList + ToolActivity + the reply input. No fetching — the
- * parent (SessionPage) owns useCoachChat. The "debug last answer" trigger is
- * the one exception: its data is only ever fetched on demand, when clicked,
- * so DebugPanel owns that fetch itself rather than routing it through
- * useCoachChat. */
+ * parent (SessionPage) owns useCoachChat. The "Debug last answer" trigger
+ * now lives in SessionHeader's overflow menu (SessionPage owns that state
+ * and DebugPanel), not here. */
 export function ChatPane({
-  sessionId,
   messages,
   activeToolName,
   isThinking = false,
@@ -82,9 +78,7 @@ export function ChatPane({
   loadingMessageId
 }: ChatPaneProps): ReactNode {
   const [parts, setParts] = useState<DraftPart[]>(createEmptyDraft);
-  const [isDebugOpen, setIsDebugOpen] = useState(false);
   const prevArrowsRef = useRef<ArrowRef[]>([]);
-  const hasCompletedTurn = messages.some((message) => message.role === 'assistant' && message.text !== '');
 
   useEffect(() => {
     setParts((current) => reconcileArrowChips(current, prevArrowsRef.current, boardArrows));
@@ -100,27 +94,19 @@ export function ChatPane({
 
   return (
     <div className="chat-pane">
-      <div className="chat-pane__header">
-        {onToggleAutoplay && (
+      {onToggleAutoplay && (
+        <div className="chat-pane__header">
           <label className="chat-pane__autoplay-toggle">
+            <span>Autoplay coach voice</span>
             <input
               type="checkbox"
+              className="toggle-switch"
               checked={autoplayEnabled ?? false}
               onChange={(event) => onToggleAutoplay(event.target.checked)}
             />
-            Autoplay coach voice
           </label>
-        )}
-        <button
-          type="button"
-          className="chat-pane__debug-trigger"
-          disabled={!hasCompletedTurn}
-          title="Debug last answer"
-          onClick={() => setIsDebugOpen(true)}
-        >
-          Debug last answer
-        </button>
-      </div>
+        </div>
+      )}
       <MessageList
         messages={messages}
         onSelectPly={onSelectPly}
@@ -137,9 +123,10 @@ export function ChatPane({
       <ToolActivity toolName={activeToolName} />
       <form onSubmit={handleSubmit}>
         <ChipReplyInput parts={parts} onChange={setParts} />
-        <button type="submit">Send</button>
+        <button type="submit" className="btn-primary">
+          Send
+        </button>
       </form>
-      {isDebugOpen && <DebugPanel sessionId={sessionId} onClose={() => setIsDebugOpen(false)} />}
     </div>
   );
 }

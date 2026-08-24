@@ -39,31 +39,39 @@
 
 .undo-pill {
   align-self: center;
-  background: var(--surface-2);
-  border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 14px;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 
 .undo-pill button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--color-primary);
   font-weight: 600;
   padding: 0 0 0 6px;
 }
 
 .peek-pill {
   align-self: center;
-  background: color-mix(in srgb, var(--annotate-2) 15%, var(--surface-2));
-  border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 14px;
+  background: color-mix(in srgb, var(--annotate-2) 15%, var(--color-surface-subtle));
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 
 .peek-pill button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
   background: none;
   border: none;
   color: var(--annotate-2);
@@ -73,14 +81,18 @@
 
 .played-move-pill {
   align-self: center;
-  background: color-mix(in srgb, var(--played-move) 15%, var(--surface-2));
-  border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 14px;
+  background: color-mix(in srgb, var(--played-move) 15%, var(--color-surface-subtle));
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 
 .played-move-pill button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
   background: none;
   border: none;
   color: var(--played-move);
@@ -93,11 +105,11 @@
  * blocks most illegal drops before this ever POSTs. */
 .play-move-error {
   align-self: center;
-  background: color-mix(in srgb, var(--quality-blunder) 15%, var(--surface-2));
+  background: color-mix(in srgb, var(--quality-blunder) 15%, var(--color-surface-subtle));
   color: var(--quality-blunder);
-  border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 14px;
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 
@@ -106,16 +118,16 @@
   margin: 16px;
   padding: 20px;
   border-radius: 12px;
-  background: var(--surface);
-  border: 1px solid rgb(0 0 0 / 8%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   text-align: center;
 }
 
 .session-summary-card .homework-chip {
   display: inline-block;
-  background: var(--surface-2);
-  border-radius: 999px;
-  padding: 6px 14px;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-4);
   margin: 8px 0;
 }
 
@@ -140,8 +152,8 @@
   flex: 0 0 auto;
   margin: 8px 12px;
   padding: 3px;
-  border-radius: 999px;
-  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
 }
 
 .session-view-tabs button {
@@ -150,20 +162,20 @@
   flex: 1;
   min-height: 44px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: none;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   font-size: 15px;
   font-weight: 600;
   transition: color 160ms ease;
 }
 
 .session-view-tabs button[aria-selected='true'] {
-  color: var(--accent-contrast);
+  color: var(--color-on-primary);
 }
 
 .session-view-tabs button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -174,8 +186,8 @@
   bottom: 3px;
   left: 3px;
   width: calc(50% - 5px);
-  border-radius: 999px;
-  background: var(--accent);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
   transform: translateX(calc(var(--session-view-progress, 0) * (100% + 4px)));
   transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -193,7 +205,7 @@
 }
 
 .session-view-tabs button[aria-selected='true'] .session-view-tabs__dot {
-  background: var(--accent-contrast);
+  background: var(--color-on-primary);
 }
 
 .session-views {
@@ -252,8 +264,8 @@
   width: 100%;
   padding: 8px 12px;
   border: none;
-  border-bottom: 1px solid rgb(0 0 0 / 8%);
-  background: var(--surface);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
   text-align: left;
 }
 
@@ -263,12 +275,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
-  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 .session-peek-bar__cue {
-  color: var(--accent);
+  color: var(--color-primary);
   font-size: 20px;
   font-weight: 600;
 }
@@ -303,6 +315,9 @@
 .session-body.desktop {
   flex-direction: row;
   overflow: hidden;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-bg);
 }
 
 .session-body.desktop .session-board-column {
@@ -369,6 +384,11 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .session-body.desktop .session-move-explorer-column .move-explorer {
@@ -390,8 +410,11 @@
 }
 
 .session-body.desktop .chat-pane {
-  width: 420px;
-  flex: 0 0 420px;
-  border-left: 1px solid rgb(0 0 0 / 8%);
+  width: 400px;
+  flex: 0 0 400px;
   height: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }

@@ -110,13 +110,24 @@ export function SettingsPage(): ReactNode {
 
   return (
     <div className="page settings-page">
-      <section aria-label="Profile">
+      <header className="settings-page__header">
+        <h1>Settings</h1>
+        <p className="settings-page__description">Manage your profile, coach, and account.</p>
+      </header>
+
+      <section aria-label="Profile" className="card">
         <h2>Profile</h2>
-        <NicknameForm value={profile.displayName} onSave={(displayName) => displayNameMutation.mutate(displayName)} />
+        <div className="settings-page__profile-row">
+          <span className="settings-page__profile-avatar" aria-hidden="true">
+            {profile.displayName.trim()[0]?.toUpperCase() ?? '?'}
+          </span>
+          <NicknameForm value={profile.displayName} onSave={(displayName) => displayNameMutation.mutate(displayName)} />
+        </div>
+        <div className="settings-page__field-label">Playing level</div>
         <BandSelect value={profile.ratingBand} onChange={(band) => bandMutation.mutate(band)} />
       </section>
 
-      <section aria-label="Coach">
+      <section aria-label="Coach" className="card">
         <h2>Coach</h2>
         <p>Pick who coaches you. It's cosmetic — every coach gives the same advice, just in a different voice.</p>
         <CoachPersonaSelect
@@ -125,7 +136,7 @@ export function SettingsPage(): ReactNode {
         />
       </section>
 
-      <section aria-label="Coach voice">
+      <section aria-label="Coach voice" className="card">
         <h2>Coach voice</h2>
         <p>Have the coach's replies read aloud. Off by default.</p>
         <TtsSection
@@ -135,7 +146,7 @@ export function SettingsPage(): ReactNode {
         />
       </section>
 
-      <section aria-label="Linked accounts">
+      <section aria-label="Linked accounts" className="card">
         <h2>Linked accounts</h2>
         <p>
           Set these so we can tell which side you played when you import a game — you won&rsquo;t be asked
@@ -157,12 +168,12 @@ export function SettingsPage(): ReactNode {
         />
       </section>
 
-      <section aria-label="Engine">
+      <section aria-label="Engine" className="card">
         <h2>Engine</h2>
         <EngineModeSelect value={profile.engineMode} onChange={(mode) => engineModeMutation.mutate(mode)} />
       </section>
 
-      <section aria-label="API keys">
+      <section aria-label="API keys" className="card">
         <h2>API keys</h2>
         {LLM_PROVIDERS.map((provider) => (
           <ByokKeyForm
@@ -175,12 +186,12 @@ export function SettingsPage(): ReactNode {
         ))}
       </section>
 
-      <section aria-label="Credits">
+      <section aria-label="Credits" className="card">
         <h2>Credits</h2>
         <CreditBalance balance={profile.creditBalance} />
       </section>
 
-      <section aria-label="Appearance">
+      <section aria-label="Appearance" className="card">
         <h2>Appearance</h2>
         <button type="button" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>
           Light
@@ -190,7 +201,7 @@ export function SettingsPage(): ReactNode {
         </button>
       </section>
 
-      <section aria-label="Account">
+      <section aria-label="Account" className="card">
         <h2>Account</h2>
         <p>{profile.email}</p>
         {/* Ends the oauth2-proxy session (architecture §11) and lands back on

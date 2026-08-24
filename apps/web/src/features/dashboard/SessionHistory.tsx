@@ -24,9 +24,10 @@ export function SessionHistory({ sessions, onSelect }: SessionHistoryProps): Rea
             <time dateTime={session.startedAt}>{new Date(session.startedAt).toLocaleDateString()}</time>
             <p>{session.summary}</p>
             {session.homework && (
-              <p className="session-history__homework">
-                <span aria-hidden="true">☐</span> {session.homework}
-              </p>
+              <span className="session-history__homework">
+                <span className="session-history__homework-box" aria-hidden="true" />
+                {session.homework}
+              </span>
             )}
           </button>
         </li>

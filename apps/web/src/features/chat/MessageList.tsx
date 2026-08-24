@@ -1,5 +1,6 @@
 import { moveRefToPly, resolveSanMove, type ParsedPosition } from '@freechesscoach/chess-analysis';
 import { Fragment, useEffect, useRef, type ReactNode } from 'react';
+import { PauseIcon, PlaySmallIcon } from '../../components/Icon.js';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { AnnotationNote } from './AnnotationNote.js';
 import { ArrowToken } from './ArrowToken.js';
@@ -225,7 +226,13 @@ export function MessageList({
                     voiceState === 'idle' ? onPlayMessage?.(message.id, speakableText) : onStopMessage?.()
                   }
                 >
-                  {voiceState === 'loading' ? '…' : voiceState === 'playing' ? '⏸' : '▶'}
+                  {voiceState === 'loading' ? (
+                    <span className="coach-voice-button__spinner" aria-hidden="true" />
+                  ) : voiceState === 'playing' ? (
+                    <PauseIcon width={11} height={11} />
+                  ) : (
+                    <PlaySmallIcon width={11} height={11} />
+                  )}
                 </button>
               )}
             </p>

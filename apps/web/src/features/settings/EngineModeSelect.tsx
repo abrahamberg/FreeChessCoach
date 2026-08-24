@@ -1,6 +1,7 @@
 import { ENGINE_MODES, type EngineMode } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { useEngineStatus } from '../../hooks/useEngineStatus.js';
+import '../../components/RadioCard.css';
 import './EngineModeSelect.css';
 
 export interface EngineModeSelectProps {
@@ -33,9 +34,9 @@ export function EngineModeSelect({ value, onChange }: EngineModeSelectProps): Re
   const percent = progress ? Math.round(progress.percent * 100) : null;
 
   return (
-    <div role="radiogroup" aria-label="Engine mode">
+    <div role="radiogroup" aria-label="Engine mode" className="radio-card-group">
       {ENGINE_MODES.map((mode) => (
-        <label key={mode}>
+        <label key={mode} className="radio-card">
           <input type="radio" name="engine-mode" checked={value === mode} onChange={() => onChange(mode)} />
           {ENGINE_MODE_LABELS[mode]}
         </label>

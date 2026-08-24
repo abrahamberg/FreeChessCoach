@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
+import { ChevronLeftIcon, ChevronRightIcon, UndoIcon } from '../../components/Icon.js';
 import type { HoverMove } from '../chat/MessageList.js';
 import { CoachBoard, type BoardArrow, type BoardHighlight } from '../board/CoachBoard.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
@@ -153,14 +154,16 @@ export function SessionBoardColumn({
         <p className="undo-pill">
           Sending {pendingMove.san}…{' '}
           <button type="button" onClick={handleUndoMove}>
-            ↩︎ undo
+            <UndoIcon width={13} height={13} />
+            undo
           </button>
         </p>
       )}
       {!pendingMove && divergedLine.line && (
         <p className="undo-pill">
           <button type="button" onClick={divergedLine.undoLastMove}>
-            ↩︎ undo last move
+            <UndoIcon width={13} height={13} />
+            undo last move
           </button>
         </p>
       )}
@@ -168,7 +171,8 @@ export function SessionBoardColumn({
         <p className="peek-pill">
           exploring —{' '}
           <button type="button" onClick={boardState.backToCoach}>
-            ⟲ back to coach
+            <ChevronLeftIcon width={13} height={13} />
+            back to coach
           </button>
         </p>
       )}
@@ -176,7 +180,8 @@ export function SessionBoardColumn({
         <p className="played-move-pill">
           {describePly(boardState.ply).color} played {sanForPly(sanMoves, boardState.ply)}{' '}
           <button type="button" onClick={boardState.revealPlayedMove}>
-            reveal →
+            reveal
+            <ChevronRightIcon width={13} height={13} />
           </button>
         </p>
       )}

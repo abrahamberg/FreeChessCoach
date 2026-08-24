@@ -141,12 +141,12 @@ export function GameEvalChart({ classifiedMoves, currentPly, onSelect }: GameEva
             <rect x={0} y={VIEW_HEIGHT / 2} width={VIEW_WIDTH} height={VIEW_HEIGHT / 2} />
           </clipPath>
           <linearGradient id="game-eval-chart-white-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--text)" stopOpacity="0.16" />
-            <stop offset="100%" stopColor="var(--text)" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--color-text)" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="var(--color-text)" stopOpacity="0.02" />
           </linearGradient>
           <linearGradient id="game-eval-chart-black-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--text)" stopOpacity="0.03" />
-            <stop offset="100%" stopColor="var(--text)" stopOpacity="0.22" />
+            <stop offset="0%" stopColor="var(--color-text)" stopOpacity="0.03" />
+            <stop offset="100%" stopColor="var(--color-text)" stopOpacity="0.22" />
           </linearGradient>
         </defs>
         {GRID_LINES_CP.map((cp) => (

@@ -197,8 +197,10 @@ describe('SessionPage', () => {
     vi.stubGlobal('fetch', mockFetch({ coachPersona: 'gambler' }));
     renderSessionPage();
 
+    // design-improvements.md §6: no emoji identity — "The Gambler" shows as
+    // its initial, "G".
     const messageList = await screen.findByTestId('message-list');
-    expect(await within(messageList).findByText('🎲')).toBeInTheDocument();
+    expect(await within(messageList).findByText('G')).toBeInTheDocument();
   });
 
   test('coaches.md: defaults to the original ♞ avatar for the "general" persona', async () => {
@@ -672,7 +674,7 @@ describe('SessionPage', () => {
     await vi.waitFor(() => expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument());
     expect(capturedOptions.at(-1)?.position).toBe(START_FEN);
 
-    await user.type(screen.getByPlaceholderText(/type a reply/i), 'show me move 1 for black');
+    await user.type(screen.getByPlaceholderText(/ask about this position/i), 'show me move 1 for black');
     await user.keyboard('{Enter}');
 
     // preMove: true anchors one ply BEFORE the move being discussed,

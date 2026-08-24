@@ -77,7 +77,14 @@ function renderGamesPage(games: unknown[] = GAMES_RESPONSE, { deleteStatus = 204
   return fetchMock;
 }
 
-describe('GamesPage (design.md §4.1)', () => {
+async function deleteFirstGame(): Promise<void> {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: /more actions/i }));
+  await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
+  await user.click(screen.getByRole('button', { name: 'Delete game' }));
+}
+
+describe('GamesPage (design-improvements.md §3.3)', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -89,32 +96,32 @@ describe('GamesPage (design.md §4.1)', () => {
     expect(screen.getByText('Marta')).toBeInTheDocument();
   });
 
-  test('the "Analyze a game" CTA navigates to Import', async () => {
+  test('the "Analyze game" CTA navigates to Import', async () => {
     const user = userEvent.setup();
     renderGamesPage();
     await screen.findByText('daniel');
 
-    await user.click(screen.getByRole('link', { name: /analyze a game/i }));
+    await user.click(screen.getByRole('link', { name: /analyze game/i }));
     expect(await screen.findByText('import-page-marker')).toBeInTheDocument();
   });
 
   // architecture §14: the second entry point into a coaching session — a
   // live game against the coach, rather than reviewing an imported one.
-  test('the "Play the coach" CTA navigates to the play-mode start page', async () => {
+  test('the "Play coach" CTA navigates to the play-mode start page', async () => {
     const user = userEvent.setup();
     renderGamesPage();
     await screen.findByText('daniel');
 
-    await user.click(screen.getByRole('link', { name: /play the coach/i }));
+    await user.click(screen.getByRole('link', { name: /play coach/i }));
     expect(await screen.findByText('play-start-page-marker')).toBeInTheDocument();
   });
 
-  test('tapping a ready row starts a session and navigates to it', async () => {
+  test('the "Start session" action starts a session and navigates to it', async () => {
     const user = userEvent.setup();
     const fetchMock = renderGamesPage();
     await screen.findByText('daniel');
 
-    await user.click(screen.getByRole('button', { name: /daniel.*marta/is }));
+    await user.click(screen.getByRole('button', { name: 'Start session' }));
 
     expect(await screen.findByText('session-page-marker')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
@@ -126,12 +133,12 @@ describe('GamesPage (design.md §4.1)', () => {
   // architecture §14: a coach_play row must link back into its existing
   // session directly, never through analyze mode's gated POST /api/sessions
   // (which would 409 — a play-mode game never has an `analyses` row).
-  test('tapping an in-progress play-mode row navigates straight to its session', async () => {
+  test('the "Continue" action on an in-progress play-mode row navigates straight to its session', async () => {
     const user = userEvent.setup();
     const fetchMock = renderGamesPage([PLAY_MODE_GAME]);
     await screen.findByText('daniel');
 
-    await user.click(screen.getByRole('button', { name: /daniel.*coach/is }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(await screen.findByText('session-page-marker')).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith('/api/sessions', expect.anything());
@@ -144,43 +151,44 @@ describe('GamesPage (design.md §4.1)', () => {
   });
 
   test('deleting a game confirms, calls DELETE, and removes it from the list', async () => {
-    const user = userEvent.setup();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const fetchMock = renderGamesPage();
     await screen.findByText('daniel');
 
-    await user.click(screen.getByRole('button', { name: /^delete$/i }));
+    await deleteFirstGame();
 
     expect(fetchMock).toHaveBeenCalledWith('/api/games/g1', expect.objectContaining({ method: 'DELETE' }));
     expect(await screen.findByText(/no games yet|analyze your first game/i)).toBeInTheDocument();
   });
 
-  test('declining the confirm dialog does not delete the game', async () => {
+  test('canceling the confirmation dialog does not delete the game', async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     const fetchMock = renderGamesPage();
     await screen.findByText('daniel');
 
-    await user.click(screen.getByRole('button', { name: /^delete$/i }));
+    await user.click(screen.getByRole('button', { name: /more actions/i }));
+    await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(fetchMock).not.toHaveBeenCalledWith('/api/games/g1', expect.objectContaining({ method: 'DELETE' }));
     expect(screen.getByText('daniel')).toBeInTheDocument();
   });
 
   test('shows an error message if deleting a game fails', async () => {
-    const user = userEvent.setup();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderGamesPage(GAMES_RESPONSE, { deleteStatus: 500 });
     await screen.findByText('daniel');
 
-    await user.click(screen.getByRole('button', { name: /^delete$/i }));
+    await deleteFirstGame();
 
     expect(await screen.findByText(/could not delete/i)).toBeInTheDocument();
     expect(screen.getByText('daniel')).toBeInTheDocument();
   });
 
-  test('a failed-to-analyse game shows a "Delete failed game" button', async () => {
+  test('a failed-to-analyse game has no action button, and can still be deleted from the overflow menu', async () => {
     renderGamesPage([{ ...GAMES_RESPONSE[0], analysisStatus: 'failed' }]);
-    expect(await screen.findByRole('button', { name: /delete failed game/i })).toBeInTheDocument();
+    await screen.findByText('daniel');
+
+    expect(screen.getByText('Failed')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /start session/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /more actions/i })).toBeInTheDocument();
   });
 });

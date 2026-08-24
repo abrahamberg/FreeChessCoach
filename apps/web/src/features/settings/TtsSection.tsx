@@ -1,6 +1,7 @@
 import { TTS_BACKENDS, type TtsBackend } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { Modal } from '../../components/Modal.js';
+import '../../components/RadioCard.css';
 import './TtsSection.css';
 
 export interface TtsProfilePatch {
@@ -63,18 +64,19 @@ export function TtsSection({ enabled, backend, onChange }: TtsSectionProps): Rea
   return (
     <div className="tts-section">
       <label className="tts-section__master">
+        <span>Enable coach voice (text-to-speech)</span>
         <input
           type="checkbox"
+          className="toggle-switch"
           checked={enabled}
           onChange={(event) => handleToggleEnabled(event.target.checked)}
         />
-        Enable coach voice (text-to-speech)
       </label>
 
       {enabled && (
-        <div className="tts-section__backends" role="radiogroup" aria-label="Coach voice backend">
+        <div className="tts-section__backends radio-card-group" role="radiogroup" aria-label="Coach voice backend">
           {TTS_BACKENDS.map((option) => (
-            <label key={option} className="tts-section__backend-option">
+            <label key={option} className="tts-section__backend-option radio-card">
               <input
                 type="radio"
                 name="tts-backend"

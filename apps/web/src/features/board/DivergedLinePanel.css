@@ -1,5 +1,5 @@
 .diverged-line-panel {
-  background: var(--surface-2);
+  background: var(--color-surface-subtle);
   border-radius: 8px;
   padding: 12px;
   border: 1px solid var(--annotate-2);
@@ -30,7 +30,7 @@
 }
 
 .diverged-line-panel__number {
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   min-width: 24px;
 }
 

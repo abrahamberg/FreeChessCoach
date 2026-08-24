@@ -7,14 +7,22 @@ const cssPath = join(dirname(fileURLToPath(import.meta.url)), 'tokens.css');
 const css = readFileSync(cssPath, 'utf8');
 
 const TOKENS = [
-  '--bg',
-  '--surface',
-  '--surface-2',
-  '--text',
-  '--text-muted',
-  '--accent',
-  '--accent-contrast',
-  '--warn',
+  '--color-bg',
+  '--color-surface',
+  '--color-surface-subtle',
+  '--color-border',
+  '--color-border-strong',
+  '--color-text',
+  '--color-text-secondary',
+  '--color-text-muted',
+  '--color-primary',
+  '--color-primary-hover',
+  '--color-primary-soft',
+  '--color-on-primary',
+  '--color-info',
+  '--color-warning',
+  '--color-danger',
+  '--color-success',
   '--board-light',
   '--board-dark',
   '--annotate-1',
@@ -39,8 +47,8 @@ describe('tokens.css (design.md §2.1)', () => {
     expect(css).toContain("data-theme='light'");
   });
 
-  test('light and dark --bg values differ (sanity check the theming is real)', () => {
-    expect(css).toContain('#faf9f7');
+  test('light and dark --color-bg values differ (sanity check the theming is real)', () => {
+    expect(css).toContain('#f7f8f5');
     expect(css).toContain('#15140f');
   });
 

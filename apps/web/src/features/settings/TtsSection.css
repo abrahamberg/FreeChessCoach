@@ -8,22 +8,15 @@
 .tts-section__master {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: var(--space-4);
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.tts-section__backends {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-left: 24px;
-}
-
-.tts-section__backend-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
+.tts-section__backends.radio-card-group {
+  margin-left: var(--space-6);
 }
 
 .tts-section__confirm-actions {

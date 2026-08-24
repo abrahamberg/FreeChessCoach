@@ -7,14 +7,14 @@
   gap: 4px;
   margin-bottom: 20px;
   padding: 14px 18px;
-  border: 1px solid rgb(0 0 0 / 12%);
+  border: 1px solid var(--color-border-strong);
   border-left: 4px solid var(--import-error-rule);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--color-surface);
 }
 
 .import-error--limit {
-  --import-error-rule: var(--warn);
+  --import-error-rule: var(--color-warning);
 }
 
 .import-error--failure {
@@ -23,13 +23,13 @@
 
 .import-error__title {
   margin: 0;
-  color: var(--text);
+  color: var(--color-text);
   font-weight: 600;
 }
 
 .import-error__hint {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   font-size: 14px;
   line-height: 1.45;
 }

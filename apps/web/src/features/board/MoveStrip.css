@@ -3,12 +3,14 @@
   align-items: center;
   gap: 2px;
   overflow-x: auto;
+  overflow-y: hidden;
   padding: 8px 4px;
   white-space: nowrap;
+  scroll-snap-type: x proximity;
 }
 
 .move-strip .move-number {
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   font-feature-settings: 'tnum';
   font-size: 14px;
   padding-left: 4px;
@@ -20,15 +22,16 @@
   gap: 2px;
   background: none;
   border: none;
-  border-radius: 6px;
-  padding: 6px 8px;
-  min-height: 32px;
-  font-size: 14px;
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  min-height: 40px;
+  font-size: var(--font-size-sm);
+  scroll-snap-align: center;
 }
 
 .move-strip button[aria-current='true'] {
-  background: var(--accent);
-  color: var(--accent-contrast);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
   font-weight: 600;
 }
 
@@ -73,5 +76,5 @@
 .move-strip button[aria-current='true'].move-quality-miss,
 .move-strip button[aria-current='true'].move-quality-blunder,
 .move-strip button[aria-current='true'].move-quality-forced {
-  color: var(--accent-contrast);
+  color: var(--color-on-primary);
 }

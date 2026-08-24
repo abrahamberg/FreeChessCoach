@@ -3,20 +3,20 @@
   align-items: center;
   gap: 8px;
   margin: 8px 0 0;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
 .engine-status--ready {
-  color: var(--accent);
+  color: var(--color-primary);
 }
 
 .engine-status__spinner {
   flex: none;
   width: 12px;
   height: 12px;
-  border: 2px solid var(--surface-2);
-  border-top-color: var(--accent);
+  border: 2px solid var(--color-surface-subtle);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
 }
 
@@ -30,7 +30,7 @@
    case a solid marker instead of a half-drawn circle. */
 @media (prefers-reduced-motion: reduce) {
   .engine-status__spinner {
-    border-color: var(--accent);
+    border-color: var(--color-primary);
   }
 }
 
@@ -51,17 +51,17 @@
 }
 
 .engine-status__bar::-webkit-progress-bar {
-  background: var(--surface-2);
+  background: var(--color-surface-subtle);
   border-radius: 3px;
 }
 
 .engine-status__bar::-webkit-progress-value {
-  background: var(--accent);
+  background: var(--color-primary);
   border-radius: 3px;
   transition: width 200ms ease-out;
 }
 
 .engine-status__bar::-moz-progress-bar {
-  background: var(--accent);
+  background: var(--color-primary);
   border-radius: 3px;
 }

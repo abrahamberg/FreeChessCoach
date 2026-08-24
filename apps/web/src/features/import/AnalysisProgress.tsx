@@ -69,7 +69,7 @@ function cellStates(status: AnalysisProgressProps['status'], enginePercent: numb
 }
 
 function styleForActiveSquare(): CSSProperties {
-  return { backgroundColor: 'var(--accent)', animation: 'analysis-progress-pulse 1s ease-in-out infinite' };
+  return { backgroundColor: 'var(--color-primary)', animation: 'analysis-progress-pulse 1s ease-in-out infinite' };
 }
 
 function styleForWaveSquare(waveIndex: number): CSSProperties {

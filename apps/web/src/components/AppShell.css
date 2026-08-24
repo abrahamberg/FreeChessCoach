@@ -1,13 +1,13 @@
-/* design.md §3: icon rail (desktop, >=1080px) / bottom tab bar (mobile, tablet). */
+/* design-improvements.md (redesign, 2026-08-24): sticky top bar (brand +
+ * primary nav + account menu) on every route except an active session;
+ * below the desktop breakpoint the primary nav repeats as a bottom tab bar. */
 
 .app-shell {
   height: 100%;
   display: flex;
+  flex-direction: column;
 }
 
-/* The single scroll region for every non-session page (Games, Progress,
- * Settings, Import). The session screen fills this exactly (height: 100%)
- * and manages its own internal scrolling (chat pane) instead. */
 .app-shell__content {
   flex: 1;
   min-width: 0;
@@ -15,87 +15,135 @@
   overflow-y: auto;
 }
 
-.icon-rail,
-.bottom-tab-bar {
+.app-shell[data-bottom-bar='true'] .app-shell__content {
+  padding-bottom: calc(60px + env(safe-area-inset-bottom));
+}
+
+/* --- top bar --- */
+.app-shell__topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex: none;
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-shell__topbar-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  height: 64px;
   display: flex;
-  background: var(--surface);
-  border-color: rgb(0 0 0 / 8%);
+  align-items: center;
+  gap: var(--space-6);
+  padding: 0 var(--space-4);
 }
 
-.icon-rail a,
-.bottom-tab-bar a {
-  color: var(--text-muted);
+@media (min-width: 1080px) {
+  .app-shell__topbar-inner {
+    height: 68px;
+    padding: 0 var(--space-8);
+  }
+}
+
+.app-shell__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text);
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
+  flex: none;
 }
 
-.icon-rail a.active,
-.bottom-tab-bar a.active {
-  color: var(--accent);
+.app-shell__mark {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  object-fit: contain;
 }
 
-/* mobile/tablet: bottom tab bar */
-.app-shell[data-layout='mobile'] {
-  flex-direction: column;
+.app-shell__wordmark {
+  font-family: 'Inter Tight', Inter, sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
-/* Matches the tab bar's full occupied height — 56px plus the home-indicator
- * inset it pads itself with — so content never sits under it. */
-.app-shell[data-layout='mobile'] .app-shell__content {
-  padding-bottom: calc(56px + env(safe-area-inset-bottom));
+@media (max-width: 1079px) {
+  .app-shell__wordmark {
+    display: none;
+  }
 }
 
+.app-shell__pill-nav {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-pill);
+  gap: 2px;
+}
+
+.app-shell__pill-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.app-shell__pill-nav a:hover {
+  color: var(--color-text);
+}
+
+.app-shell__pill-nav a.active {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-xs);
+}
+
+.app-shell__topbar-end {
+  margin-left: auto;
+  flex: none;
+}
+
+/* --- bottom tab bar (mobile) --- */
 .bottom-tab-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 56px;
-  border-top: 1px solid rgb(0 0 0 / 8%);
-  justify-content: space-around;
-  align-items: center;
+  z-index: 10;
+  height: 60px;
+  display: flex;
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--color-border);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 .bottom-tab-bar a {
   flex: 1;
-  text-align: center;
-  min-height: 44px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* desktop: icon rail */
-.app-shell[data-layout='desktop'] .icon-rail {
   flex-direction: column;
-  width: 64px;
-  min-height: 100vh;
-  border-right: 1px solid rgb(0 0 0 / 8%);
-  padding: 16px 0;
-  gap: 8px;
-  align-items: center;
-}
-
-.icon-rail a {
-  width: 44px;
-  height: 44px;
-  display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  text-align: center;
+  gap: 2px;
+  min-height: 44px;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: 11.5px;
+  font-weight: 600;
 }
 
-.icon-rail a:hover {
-  background: var(--surface-2);
-}
-
-.icon-rail__brand {
-  margin-bottom: 8px;
-}
-
-.icon-rail__brand img {
-  border-radius: 6px;
+.bottom-tab-bar a.active {
+  color: var(--color-primary);
 }

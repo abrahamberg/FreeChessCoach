@@ -1,26 +1,20 @@
-.explore-panel-toggle {
-  background: none;
-  border: 1px dashed rgb(0 0 0 / 20%);
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: var(--text-muted);
-  font-size: 14px;
+.explore-panel-toggle.btn-secondary {
   width: 100%;
-  text-align: left;
+  justify-content: center;
 }
 
 .explore-panel {
-  background: var(--surface-2);
-  border-radius: 8px;
-  padding: 12px;
-  border: 1px solid var(--annotate-2);
+  background: var(--color-info-soft);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-info);
 }
 
 .explore-panel-caption {
   margin: 0 0 4px;
-  font-size: 14px;
+  font-size: 13px;
   font-style: italic;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
 }
 
 .explore-panel-eval {

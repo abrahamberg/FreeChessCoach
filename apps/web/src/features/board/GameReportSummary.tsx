@@ -84,6 +84,11 @@ export function GameReportSummary({ report }: GameReportSummaryProps): ReactNode
 }
 
 function HeadlineCard({ label, accuracy, rating }: { label: string; accuracy: number; rating: EstimatedRatingReport }): ReactNode {
+  const ratingText = formatRating(rating);
+  // A numeric rating reads fine at the same large size as the accuracy
+  // figure; the textual fallback ("Not enough data"/a reason string) is a
+  // whole phrase, not a stat — full size wraps it into the caption below it.
+  const ratingIsNumeric = rating.value !== null;
   return (
     <div className="game-report-summary__headline-card">
       <h4>{label}</h4>
@@ -92,7 +97,15 @@ function HeadlineCard({ label, accuracy, rating }: { label: string; accuracy: nu
         <span className="game-report-summary__headline-caption">accuracy</span>
       </div>
       <div className="game-report-summary__headline-stat">
-        <span className="game-report-summary__headline-value">{formatRating(rating)}</span>
+        <span
+          className={
+            ratingIsNumeric
+              ? 'game-report-summary__headline-value'
+              : 'game-report-summary__headline-value game-report-summary__headline-value--text'
+          }
+        >
+          {ratingText}
+        </span>
         <span className="game-report-summary__headline-caption">rating</span>
       </div>
     </div>

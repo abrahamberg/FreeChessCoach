@@ -1,0 +1,52 @@
+.band-select {
+  display: flex;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+  margin-top: var(--space-2);
+}
+
+.band-select__option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  text-align: center;
+  padding: 0 var(--space-2);
+}
+
+.band-select__option:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.band-select__option.selected {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: 0 1px 2px rgb(18 28 22 / 10%);
+}
+
+.band-select__option input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+@media (max-width: 479px) {
+  .band-select {
+    flex-wrap: wrap;
+    border-radius: var(--radius-md);
+  }
+
+  .band-select__option {
+    flex: 1 1 45%;
+  }
+}

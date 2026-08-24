@@ -1,4 +1,4 @@
-import { COACH_PERSONA_INFO } from '@freechesscoach/shared';
+import { COACH_PERSONA_INFO, type CoachPersona } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCoachVoice } from '../../hooks/useCoachVoice.js';
@@ -9,6 +9,7 @@ import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { ChatPane } from '../chat/ChatPane.js';
+import { DebugPanel } from '../chat/DebugPanel.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
 import type { HoverMove } from '../chat/MessageList.js';
 import { encodePositionContext, sanForPly } from '../chat/positionDivider.js';
@@ -19,6 +20,18 @@ import { SessionHeader } from './SessionHeader.js';
 import { useMobileSessionView } from './useMobileSessionView.js';
 import { useSessionPageData } from './useSessionPageData.js';
 import './SessionPage.css';
+
+const DEFAULT_COACH_GLYPH = '♞';
+
+/** design-improvements.md §6: avoid emoji as the coach's identity — the
+ * default persona keeps the knight glyph (already the app's own chess
+ * symbol), every other persona shows as an initial instead of its raw
+ * COACH_PERSONA_INFO emoji. */
+function coachAvatarGlyphFor(persona: CoachPersona): string {
+  const info = COACH_PERSONA_INFO[persona];
+  if (info.avatar === DEFAULT_COACH_GLYPH) return DEFAULT_COACH_GLYPH;
+  return info.label.replace(/^The\s+/, '').trim()[0]?.toUpperCase() ?? DEFAULT_COACH_GLYPH;
+}
 
 /** design.md §5: composes board + chat for an active coaching session.
  * All fetching lives in useSessionPageData (AGENTS.md rule 7); this is
@@ -52,6 +65,7 @@ export function SessionPage(): ReactNode {
 
   const [boardArrows, setBoardArrows] = useState<ArrowRef[]>([]);
   const [hoverMove, setHoverMove] = useState<HoverMove>(null);
+  const [isDebugOpen, setIsDebugOpen] = useState(false);
   const mobileView = useMobileSessionView(chat.messages.length);
   const persona = profileQuery.data?.coachPersona ?? 'general';
   const ttsEnabled = profileQuery.data?.ttsEnabled ?? false;
@@ -106,8 +120,9 @@ export function SessionPage(): ReactNode {
     void chat.sendMessage(content);
   }
 
-  const coachAvatar = COACH_PERSONA_INFO[persona].avatar;
+  const coachAvatar = coachAvatarGlyphFor(persona);
   const orientation = gameQuery.data?.userColor ?? 'white';
+  const hasCompletedTurn = chat.messages.some((message) => message.role === 'assistant' && message.text !== '');
   // Same fen SessionBoardColumn computes for the board itself — needed here
   // too so ChatPane can resolve move mentions against the position actually
   // on screen (design.md §5.3), and so the mobile peek shows it.
@@ -145,7 +160,6 @@ export function SessionPage(): ReactNode {
       </div>
     ) : (
       <ChatPane
-        sessionId={sessionId}
         messages={chat.messages}
         activeToolName={chat.activeToolName}
         isThinking={chat.isThinking}
@@ -174,7 +188,10 @@ export function SessionPage(): ReactNode {
         result={gameQuery.data?.result ?? null}
         onBack={() => navigate('/games')}
         onReset={handleReset}
+        onDebug={import.meta.env.DEV ? () => setIsDebugOpen(true) : undefined}
+        debugDisabled={!hasCompletedTurn}
       />
+      {isDebugOpen && <DebugPanel sessionId={sessionId} onClose={() => setIsDebugOpen(false)} />}
       {isSideBySide ? (
         <div className="session-body desktop">
           {isDesktop &&

@@ -1,0 +1,42 @@
+/* Shared "selectable card" look for radiogroup options across Settings
+ * (design-improvements.md §3.2/§6: RadioCard — consistent avatar, strong
+ * selected state, not a bare native radio). Each consumer keeps its own
+ * native <input type="radio"> inside a <label class="radio-card">, so
+ * accessibility semantics and existing tests (role="radio", label text)
+ * are unchanged — only the visual treatment is shared. */
+
+.radio-card-group {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.radio-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.radio-card:hover {
+  border-color: var(--color-border-strong);
+}
+
+.radio-card:has(input:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.radio-card:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.radio-card input[type='radio'] {
+  flex: 0 0 auto;
+}

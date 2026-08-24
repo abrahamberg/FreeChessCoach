@@ -1,97 +1,54 @@
 .session-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  height: 40px;
-  flex: 0 0 40px;
-  padding: 0 12px;
-  background: var(--surface);
-  border-bottom: 1px solid rgb(0 0 0 / 8%);
+  gap: var(--space-3);
+  height: 56px;
+  flex: 0 0 56px;
+  padding: 0 var(--space-3);
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .session-header__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
-  font-size: 16px;
-  padding: 4px 8px;
-  min-width: 44px;
-  min-height: 44px;
-  color: var(--text);
+  border-radius: var(--radius-sm);
+  min-width: 40px;
+  min-height: 40px;
+  color: var(--color-text-secondary);
+}
+
+.session-header__back:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
 }
 
 .session-header__players {
   font-weight: 600;
+  font-size: 14.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.session-header__vs {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  font-size: 12.5px;
 }
 
 .session-header__actions {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-2);
 }
 
 .session-header__result {
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-.session-header__menu {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.session-header__more {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: none;
-  color: var(--text-muted);
-  font-size: 20px;
-  line-height: 1;
-}
-
-.session-header__more:hover,
-.session-header__more[aria-expanded='true'] {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-/* Anchored to the button's right edge so it can never run off-screen on a
- * phone, where the header sits flush against the viewport. */
-.session-header__menu-items {
-  position: absolute;
-  top: calc(100% + 2px);
-  right: 0;
-  z-index: 10;
-  min-width: 168px;
-  padding: 4px;
-  border-radius: 12px;
-  background: var(--surface);
-  border: 1px solid rgb(0 0 0 / 8%);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
-}
-
-.session-header__menu-items button {
-  display: block;
-  width: 100%;
-  min-height: 44px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 8px;
-  background: none;
-  color: var(--text);
-  font-size: 15px;
-  text-align: left;
-}
-
-.session-header__menu-items button:hover {
-  background: var(--surface-2);
+  flex: none;
 }

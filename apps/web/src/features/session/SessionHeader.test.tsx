@@ -45,4 +45,50 @@ describe('SessionHeader (design.md §5.1/§5.2)', () => {
     expect(screen.queryByRole('menuitem', { name: /reset session/i })).not.toBeInTheDocument();
     expect(onReset).not.toHaveBeenCalled();
   });
+
+  test('does not show "Debug last answer" in the menu when onDebug is omitted', async () => {
+    const user = userEvent.setup();
+    render(<SessionHeader whiteName="daniel" blackName="Marta" result={null} onBack={vi.fn()} onReset={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: /session options/i }));
+    expect(screen.queryByRole('menuitem', { name: /debug last answer/i })).not.toBeInTheDocument();
+  });
+
+  test('"Debug last answer" lives in the overflow menu, not the bar itself, when onDebug is provided', async () => {
+    const onDebug = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <SessionHeader whiteName="daniel" blackName="Marta" result={null} onBack={vi.fn()} onReset={vi.fn()} onDebug={onDebug} />
+    );
+
+    expect(screen.queryByRole('button', { name: /debug last answer/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /session options/i }));
+    await user.click(screen.getByRole('menuitem', { name: /debug last answer/i }));
+
+    expect(onDebug).toHaveBeenCalledOnce();
+  });
+
+  test('"Debug last answer" stays visible but disabled (not hidden) until an assistant turn has completed', async () => {
+    const onDebug = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <SessionHeader
+        whiteName="daniel"
+        blackName="Marta"
+        result={null}
+        onBack={vi.fn()}
+        onReset={vi.fn()}
+        onDebug={onDebug}
+        debugDisabled
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /session options/i }));
+    const debugItem = screen.getByRole('menuitem', { name: /debug last answer/i });
+    expect(debugItem).toBeDisabled();
+
+    await user.click(debugItem);
+    expect(onDebug).not.toHaveBeenCalled();
+  });
 });

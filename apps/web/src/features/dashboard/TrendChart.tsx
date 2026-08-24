@@ -11,10 +11,13 @@ export interface TrendChartProps {
   onBarClick: (category: MistakeCategory) => void;
 }
 
-/** design.md §4.3: one bar per category, last-5/last-20 toggle, tap a bar to
- * see its findings. No color-coded good/bad — just the count. */
+/** design-improvements.md §3.5: a horizontal ranked bar per category (never
+ * rotated/clipped vertical labels), last-5/last-20 toggle, tap a bar to see
+ * its findings. No color-coded good/bad — just the count. Sorted so the
+ * category needing the most attention reads first. */
 export function TrendChart({ trends, range, onRangeChange, onBarClick }: TrendChartProps): ReactNode {
   const maxCount = Math.max(1, ...trends.map((trend) => trend[range]));
+  const ranked = [...trends].sort((a, b) => b[range] - a[range]);
 
   return (
     <div className="trend-chart">
@@ -30,17 +33,21 @@ export function TrendChart({ trends, range, onRangeChange, onBarClick }: TrendCh
         <p>No mistakes recorded yet.</p>
       ) : (
         <div className="trend-chart__bars">
-          {trends.map((trend) => {
+          {ranked.map((trend) => {
             const count = trend[range];
             return (
               <button
                 key={trend.category}
                 type="button"
-                className="trend-chart__bar"
-                style={{ height: `${(count / maxCount) * 100}%` }}
+                className="trend-chart__row"
+                aria-label={`${CATEGORY_LABELS[trend.category]}: ${count}`}
                 onClick={() => onBarClick(trend.category)}
               >
-                {CATEGORY_LABELS[trend.category]}: {count}
+                <span className="trend-chart__row-label">{CATEGORY_LABELS[trend.category]}</span>
+                <span className="trend-chart__row-track">
+                  <span className="trend-chart__row-bar" style={{ width: `${(count / maxCount) * 100}%` }} />
+                </span>
+                <span className="trend-chart__row-count">{count}</span>
               </button>
             );
           })}

@@ -1,13 +1,23 @@
 import { GameListResponseSchema, type GameListItem } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiDelete, apiGet, apiPost } from '../../api/client.js';
-import { GameRow } from './GameRow.js';
+import { PlayCircleIcon, PlusIcon } from '../../components/Icon.js';
+import { GameRow, statusAndActionFor } from './GameRow.js';
 import './GamesPage.css';
 
 const SessionSummarySchema = z.object({ id: z.string() });
+
+const FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'Ready', label: 'Ready' },
+  { key: 'In progress', label: 'In progress' },
+  { key: 'Completed', label: 'Completed' }
+] as const;
+
+type FilterKey = (typeof FILTERS)[number]['key'];
 
 /** design.md §4.1: Games (home) — "Analyze a game" CTA, the game list, and
  * a no-dummy-data empty state. Owns fetching (AGENTS.md rule 7); GameRow is
@@ -20,6 +30,7 @@ const SessionSummarySchema = z.object({ id: z.string() });
 export function GamesPage(): ReactNode {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<FilterKey>('all');
 
   const gamesQuery = useQuery({
     queryKey: ['games'],
@@ -51,13 +62,22 @@ export function GamesPage(): ReactNode {
 
   return (
     <div className="page games-page">
-      <h1>Games</h1>
-      <Link to="/import" className="games-page__cta">
-        Analyze a game
-      </Link>
-      <Link to="/play/new" className="games-page__cta games-page__cta--secondary">
-        Play the coach
-      </Link>
+      <header className="games-page__header">
+        <div className="games-page__heading">
+          <h1>Games</h1>
+          <p className="games-page__description">Review your games and continue coaching sessions.</p>
+        </div>
+        <div className="games-page__header-actions">
+          <Link to="/play/new" className="btn-secondary">
+            <PlayCircleIcon width={16} height={16} />
+            Play coach
+          </Link>
+          <Link to="/import" className="btn-primary">
+            <PlusIcon width={16} height={16} />
+            Analyze game
+          </Link>
+        </div>
+      </header>
 
       {gamesQuery.isLoading && <p>Loading…</p>}
       {gamesQuery.isError && <p>Could not load your games.</p>}
@@ -72,11 +92,28 @@ export function GamesPage(): ReactNode {
       {deleteMutation.isError && <p>Could not delete that game — try again.</p>}
 
       {gamesQuery.data && gamesQuery.data.length > 0 && (
-        <ul className="games-page__list">
-          {gamesQuery.data.map((game) => (
-            <GameRow key={game.id} game={game} onSelect={() => handleSelect(game)} onDelete={(gameId) => deleteMutation.mutate(gameId)} />
-          ))}
-        </ul>
+        <>
+          <div className="games-page__filters" role="group" aria-label="Filter by status">
+            {FILTERS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={filter === option.key ? 'games-page__filter active' : 'games-page__filter'}
+                onClick={() => setFilter(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          <ul className="games-page__list">
+            {gamesQuery.data
+              .filter((game) => filter === 'all' || statusAndActionFor(game).statusLabel === filter)
+              .map((game) => (
+                <GameRow key={game.id} game={game} onSelect={() => handleSelect(game)} onDelete={(gameId) => deleteMutation.mutate(gameId)} />
+              ))}
+          </ul>
+        </>
       )}
     </div>
   );

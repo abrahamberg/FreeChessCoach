@@ -6,7 +6,7 @@
 
 .json-tree__children {
   margin-left: 16px;
-  border-left: 1px solid rgb(0 0 0 / 8%);
+  border-left: 1px solid var(--color-border);
   padding-left: 8px;
 }
 
@@ -19,7 +19,7 @@
 
 .json-tree summary {
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   user-select: none;
 }
 
@@ -28,7 +28,7 @@
 }
 
 .json-punct {
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
 }
 
 .json-string {
@@ -36,16 +36,16 @@
 }
 
 .json-boolean {
-  color: var(--warn);
+  color: var(--color-warning);
 }
 
 .json-null {
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   font-style: italic;
 }
 
 .json-number {
-  color: var(--text);
+  color: var(--color-text);
 }
 
 .json-number--positive {

@@ -69,15 +69,22 @@ describe('DashboardPage', () => {
   test('fetches the dashboard and renders focus areas, trends, and session history', async () => {
     const fetchMock = renderDashboard();
 
-    await screen.findByRole('heading', { name: /king safety/i });
+    await screen.findByRole('heading', { level: 3, name: /king safety/i });
     expect(fetchMock).toHaveBeenCalledWith('/api/users/me/dashboard', expect.anything());
     expect(screen.getByText(/worked on king safety today/i)).toBeInTheDocument();
+  });
+
+  test('the top active focus area appears as this week\'s focus', async () => {
+    renderDashboard();
+    await screen.findByRole('heading', { level: 3, name: /king safety/i });
+    expect(screen.getByText(/this week's focus/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /king safety/i })).toBeInTheDocument();
   });
 
   test('resolved focus areas start collapsed behind a "Resolved" accordion', async () => {
     const user = userEvent.setup();
     renderDashboard();
-    await screen.findByRole('heading', { name: /king safety/i });
+    await screen.findByRole('heading', { level: 3, name: /king safety/i });
 
     expect(screen.queryByText(/passive play/i)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /resolved/i }));

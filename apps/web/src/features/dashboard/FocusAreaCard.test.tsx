@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { FocusAreaCard } from './FocusAreaCard.js';
 
 describe('FocusAreaCard', () => {
-  test('shows the category in plain words, the coach note, evidence count, and an improving trend arrow', () => {
+  test('shows the category in plain words, the coach note, evidence count, and an "Improving" trend badge', () => {
     render(
       <FocusAreaCard
         area={{
@@ -19,10 +19,10 @@ describe('FocusAreaCard', () => {
     expect(screen.getByText(/king safety/i)).toBeInTheDocument();
     expect(screen.getByText(/delays castling under pressure/i)).toBeInTheDocument();
     expect(screen.getByText(/3/)).toBeInTheDocument();
-    expect(screen.getByText('↗')).toBeInTheDocument();
+    expect(screen.getByText('Improving')).toBeInTheDocument();
   });
 
-  test('shows a steady arrow for an active (non-improving) area', () => {
+  test('shows a "Needs attention" trend badge for an active (non-improving) area', () => {
     render(
       <FocusAreaCard
         area={{
@@ -34,10 +34,10 @@ describe('FocusAreaCard', () => {
         }}
       />
     );
-    expect(screen.getByText('→')).toBeInTheDocument();
+    expect(screen.getByText('Needs attention')).toBeInTheDocument();
   });
 
-  test('shows a resolved checkmark for a resolved area', () => {
+  test('shows a "Resolved" trend badge for a resolved area', () => {
     render(
       <FocusAreaCard
         area={{
@@ -49,6 +49,6 @@ describe('FocusAreaCard', () => {
         }}
       />
     );
-    expect(screen.getByText('✓')).toBeInTheDocument();
+    expect(screen.getByText('Resolved')).toBeInTheDocument();
   });
 });

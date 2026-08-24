@@ -16,12 +16,18 @@ const BASE_GAME = {
   sessionId: null
 };
 
-describe('GameRow (design.md §4.1)', () => {
+async function openOverflowMenu(): Promise<ReturnType<typeof userEvent.setup>> {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: /more actions/i }));
+  return user;
+}
+
+describe('GameRow (design-improvements.md §3.3)', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  test('shows both players with the user\'s side bold, and a win dot (design.md: dot, not raw score)', () => {
+  test('shows both players with the user\'s side bold, and a win dot (not raw score)', () => {
     render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onDelete={vi.fn()} />);
 
     expect(screen.getByText('daniel')).toBeInTheDocument();
@@ -29,27 +35,30 @@ describe('GameRow (design.md §4.1)', () => {
     expect(screen.getByTitle('win')).toBeInTheDocument();
   });
 
-  test('shows an "analyzing…" chip while queued', () => {
+  test('shows an "Analyzing…" status while queued, with no action button', () => {
     render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'queued' }} onSelect={vi.fn()} onDelete={vi.fn()} />);
     expect(screen.getByText(/analyzing/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /start session|continue/i })).not.toBeInTheDocument();
   });
 
-  test('shows a "ready — start session" chip when analysis is ready', () => {
+  test('shows a separate "Ready" status badge and "Start session" action when analysis is ready', () => {
     render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onDelete={vi.fn()} />);
-    expect(screen.getByText(/ready.*start session/i)).toBeInTheDocument();
+    expect(screen.getByText('Ready')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start session' })).toBeInTheDocument();
   });
 
-  // Plain "failed", not "failed — retry": clicking the row no-ops for a
-  // failed game (handleSelect gates on analysisStatus === 'ready'), so a
-  // label promising a retry that doesn't exist is worse than no label.
-  test('shows a "failed" chip when analysis failed', () => {
+  // Plain "Failed" status, no action button: clicking has nothing to do
+  // (handleSelect gates on analysisStatus === 'ready'), so no action label
+  // promising something that doesn't exist.
+  test('shows a "Failed" status when analysis failed, with no action button', () => {
     render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'failed' }} onSelect={vi.fn()} onDelete={vi.fn()} />);
-    expect(screen.getByText('failed')).toBeInTheDocument();
+    expect(screen.getByText('Failed')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /start session|continue/i })).not.toBeInTheDocument();
   });
 
   // architecture §14: a coach_play game never gets an `analyses` row, so it
   // must not fall into the analyze-mode "analyzing…" default forever.
-  test('shows an "in progress — continue" chip for an unfinished play-mode game', () => {
+  test('shows an "In progress" status and "Continue" action for an unfinished play-mode game', () => {
     render(
       <GameRow
         game={{ ...BASE_GAME, source: 'coach_play', analysisStatus: null, sessionId: 'session-1' }}
@@ -57,10 +66,11 @@ describe('GameRow (design.md §4.1)', () => {
         onDelete={vi.fn()}
       />
     );
-    expect(screen.getByText(/in progress.*continue/i)).toBeInTheDocument();
+    expect(screen.getByText('In progress')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   });
 
-  test('shows a "game over" chip for a play-mode game with no resumable session', () => {
+  test('shows a "Completed" status for a play-mode game with no resumable session', () => {
     render(
       <GameRow
         game={{ ...BASE_GAME, source: 'coach_play', analysisStatus: null, sessionId: null }}
@@ -68,50 +78,51 @@ describe('GameRow (design.md §4.1)', () => {
         onDelete={vi.fn()}
       />
     );
-    expect(screen.getByText(/game over/i)).toBeInTheDocument();
+    expect(screen.getByText('Completed')).toBeInTheDocument();
   });
 
-  test('tapping the row calls onSelect with the game id', async () => {
+  test('clicking the action button calls onSelect with the game id', async () => {
     const onSelect = vi.fn();
     const user = userEvent.setup();
     render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={onSelect} onDelete={vi.fn()} />);
 
-    await user.click(screen.getByRole('button', { name: /daniel.*marta/is }));
+    await user.click(screen.getByRole('button', { name: 'Start session' }));
     expect(onSelect).toHaveBeenCalledWith('g1');
   });
 
-  test('shows a "Delete failed game" button for a game that failed to analyse', () => {
+  test('delete lives in the overflow menu for every row, failed or not', async () => {
     render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'failed' }} onSelect={vi.fn()} onDelete={vi.fn()} />);
-    expect(screen.getByRole('button', { name: /delete failed game/i })).toBeInTheDocument();
+    const user = await openOverflowMenu();
+    expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
   });
 
-  test('shows a plain "Delete" button for a game that is not failed', () => {
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onDelete={vi.fn()} />);
-    expect(screen.getByRole('button', { name: /^delete$/i })).toBeInTheDocument();
-  });
-
-  test('clicking delete confirms, then calls onDelete with the game id without selecting the row', async () => {
+  test('choosing Delete opens a confirmation dialog naming the game, and confirming calls onDelete', async () => {
     const onSelect = vi.fn();
     const onDelete = vi.fn();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const user = userEvent.setup();
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'failed' }} onSelect={onSelect} onDelete={onDelete} />);
+    const user = await (async () => {
+      render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={onSelect} onDelete={onDelete} />);
+      return openOverflowMenu();
+    })();
 
-    await user.click(screen.getByRole('button', { name: /delete failed game/i }));
+    await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent(/daniel vs\. marta/i);
 
-    expect(window.confirm).toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Delete game' }));
+
     expect(onDelete).toHaveBeenCalledWith('g1');
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  test('clicking delete does nothing if the confirm dialog is declined', async () => {
+  test('canceling the confirmation dialog does not delete the game', async () => {
     const onDelete = vi.fn();
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-    const user = userEvent.setup();
     render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onDelete={onDelete} />);
+    const user = await openOverflowMenu();
 
-    await user.click(screen.getByRole('button', { name: /^delete$/i }));
+    await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
