@@ -43,7 +43,7 @@ function IconRail(): ReactNode {
   return (
     <nav className="icon-rail" aria-label="icon rail">
       <NavLink to="/games" className="icon-rail__brand" title="FreeChessCoach">
-        <img src="/logo.png" alt="FreeChessCoach" width="28" height="28" />
+        <img src="/brand/logo.png" alt="FreeChessCoach" width="28" height="28" />
       </NavLink>
       {NAV_DESTINATIONS.map((item) => (
         <NavLink

@@ -314,6 +314,14 @@ oauth2-proxy:
     - --skip-auth-route=^/privacy$
     - --skip-auth-route=^/terms$
     - --skip-auth-route=^/legal\.css$
+    # Shared brand assets (apps/web/public/favicon.ico, public/brand/*) —
+    # favicons, touch icons, manifest, and logo. These render on the public
+    # landing/legal pages and in browser chrome/OS UI for logged-out
+    # visitors, so they must load without a session. Everything under
+    # public/brand/ is fair game to skip auth for (no per-file route needed
+    # as the set grows — just drop new shared assets in that directory).
+    - --skip-auth-route=^/favicon\.ico$
+    - --skip-auth-route=^/brand/
   service:
     portNumber: 80
   # Our own templates/ingress.yaml owns the public route.
