@@ -1,3 +1,5 @@
+<img src="docs/assets/logo.png" alt="FreeChessCoach logo" width="96" height="96" />
+
 # FreeChessCoach
 
 **A personal AI chess coach. Free, forever.** [freechesscoach.org](https://freechesscoach.org)

@@ -46,12 +46,19 @@ main.page {
 }
 
 .brand {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-weight: 600;
   font-size: 18px;
   text-decoration: none;
   color: var(--text);
   padding: 16px 0 40px;
+}
+
+.brand img {
+  width: 28px;
+  height: 28px;
 }
 
 article h1 {

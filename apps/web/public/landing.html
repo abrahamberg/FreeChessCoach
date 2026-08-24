@@ -16,12 +16,20 @@
       property="og:description"
       content="Free, forever. Bring your own AI API key. Personalized, engine-backed chess coaching."
     />
+    <meta property="og:image" content="https://freechesscoach.org/icon-512.png" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="FreeChessCoach" />
     <meta
       name="twitter:description"
       content="Free, forever. Bring your own AI API key. Personalized, engine-backed chess coaching."
     />
+    <meta name="twitter:image" content="https://freechesscoach.org/icon-512.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#3d6b48" />
     <style>
       /* Mirrors apps/web/src/styles/tokens.css — this page is static and
          can't reach the SPA's hashed, auth-gated bundle, so the palette is
@@ -73,9 +81,17 @@
       }
 
       .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
         font-weight: 600;
         font-size: 18px;
         padding: 16px 0 40px;
+      }
+
+      .brand img {
+        width: 28px;
+        height: 28px;
       }
 
       .hero {
@@ -124,8 +140,9 @@
         overflow: hidden;
       }
 
-      .hero__board span {
-        font-size: 96px;
+      .hero__board img {
+        width: 60%;
+        height: 60%;
         filter: drop-shadow(0 2px 3px rgb(0 0 0 / 25%));
       }
 
@@ -188,9 +205,9 @@
   </head>
   <body>
     <main class="page">
-      <div class="brand">FreeChessCoach</div>
+      <div class="brand"><img src="/logo.png" alt="" width="28" height="28" />FreeChessCoach</div>
       <section class="hero">
-        <div class="hero__board" aria-hidden="true"><span>♞</span></div>
+        <div class="hero__board" aria-hidden="true"><img src="/logo.png" alt="" /></div>
         <div class="hero__copy">
           <h1>A personal chess coach. Free, forever.</h1>
           <p>

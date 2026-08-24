@@ -91,3 +91,11 @@
 .icon-rail a:hover {
   background: var(--surface-2);
 }
+
+.icon-rail__brand {
+  margin-bottom: 8px;
+}
+
+.icon-rail__brand img {
+  border-radius: 6px;
+}
