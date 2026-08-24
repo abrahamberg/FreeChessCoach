@@ -1,5 +1,7 @@
 import { moveRefToPly, resolveSanMove, type ParsedPosition } from '@freechesscoach/chess-analysis';
+import type { CoachPersona } from '@freechesscoach/shared';
 import { Fragment, useEffect, useRef, type ReactNode } from 'react';
+import { CoachAvatar } from '../../components/CoachAvatar.js';
 import { PauseIcon, PlaySmallIcon } from '../../components/Icon.js';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { AnnotationNote } from './AnnotationNote.js';
@@ -95,9 +97,8 @@ export interface MessageListProps {
    * on the board, in a color distinct from the coach's own annotate_board
    * arrows (design.md §5.3). */
   onHoverMove?: (move: HoverMove) => void;
-  /** The selected coach persona's avatar glyph (coaches.md). Defaults to
-   * the original coach's ♞ glyph, unchanged from before personas existed. */
-  coachAvatar?: string;
+  /** The selected coach persona. Defaults to the original coach. */
+  coachPersona?: CoachPersona;
   /** Coach voice (TTS, OpenAI or browser — Settings): plays/replays one message's audio. Omitting
    * this prop hides the play button entirely — the feature is fully
    * optional for callers that don't wire up useCoachVoice. */
@@ -117,7 +118,7 @@ export interface MessageListProps {
 
 const NO_POSITIONS: ParsedPosition[] = [];
 const AT_BOTTOM_THRESHOLD_PX = 24;
-const DEFAULT_COACH_AVATAR = '♞';
+const DEFAULT_COACH_PERSONA: CoachPersona = 'general';
 
 /** design.md §5.3: auto-scroll only if the user is already at the bottom —
  * never yank them while reading history. */
@@ -127,7 +128,7 @@ export function MessageList({
   fen = '',
   positions = NO_POSITIONS,
   onHoverMove,
-  coachAvatar = DEFAULT_COACH_AVATAR,
+  coachPersona = DEFAULT_COACH_PERSONA,
   onPlayMessage,
   onStopMessage,
   playingMessageId = null,
@@ -211,9 +212,7 @@ export function MessageList({
           return (
             <p key={message.id} data-role={message.role}>
               {startsCoachRun && (
-                <span className="coach-avatar" aria-hidden="true">
-                  {coachAvatar}
-                </span>
+                <CoachAvatar persona={coachPersona} />
               )}
               {renderMessageText(message.text, fen, positions, onHoverMove)}
               {speakableText && (

@@ -24,7 +24,7 @@ describe('MessageList', () => {
     vi.restoreAllMocks();
   });
 
-  test('design.md §5.3: one small avatar starts each coach run, not every message', () => {
+  test('design.md §5.3: one small portrait starts each coach run, not every message', () => {
     render(
       <MessageList
         messages={[
@@ -36,7 +36,16 @@ describe('MessageList', () => {
       />
     );
 
-    expect(screen.getAllByText('♞')).toHaveLength(2);
+    const avatars = screen.getAllByTestId('coach-avatar');
+    expect(avatars).toHaveLength(2);
+    expect(avatars[0]).toHaveAttribute('data-coach-persona', 'general');
+    expect(avatars[1]).toHaveAttribute('data-coach-persona', 'general');
+  });
+
+  test('uses the selected coach portrait for each coach run', () => {
+    render(<MessageList messages={[msg('1', 'first coach line')]} coachPersona="gambler" />);
+
+    expect(screen.getByTestId('coach-avatar')).toHaveAttribute('data-coach-persona', 'gambler');
   });
 
   test('design.md §7: coach messages stream into an aria-live polite region', () => {

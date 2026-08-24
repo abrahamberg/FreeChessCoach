@@ -109,12 +109,16 @@ describe('ChatPane', () => {
     expect(screen.queryByTestId('arrow-chip')).not.toBeInTheDocument();
   });
 
-  test('does not render an autoplay toggle when onToggleAutoplay is omitted', () => {
+  test('keeps the coach identity visible when autoplay is unavailable', () => {
     render(<ChatPane messages={[]} activeToolName={null} onSend={vi.fn()} />);
-    expect(screen.queryByRole('checkbox', { name: /autoplay/i })).not.toBeInTheDocument();
+    expect(screen.getByText('Coach')).toBeInTheDocument();
+    expect(screen.getByTestId('coach-avatar')).toHaveAttribute('data-coach-persona', 'general');
+    expect(screen.getByRole('link', { name: /change coach/i })).toHaveAttribute('href', '/settings');
+    expect(screen.queryByText(/male|female|\d+s/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /automatic coach voice/i })).not.toBeInTheDocument();
   });
 
-  test('renders and forwards the autoplay toggle', async () => {
+  test('renders the selected coach and forwards the speaker toggle', async () => {
     const onToggleAutoplay = vi.fn();
     const user = userEvent.setup();
     render(
@@ -122,13 +126,17 @@ describe('ChatPane', () => {
         messages={[]}
         activeToolName={null}
         onSend={vi.fn()}
+        coachPersona="gambler"
         autoplayEnabled={false}
         onToggleAutoplay={onToggleAutoplay}
       />
     );
 
-    const toggle = screen.getByRole('checkbox', { name: /autoplay/i });
-    expect(toggle).not.toBeChecked();
+    expect(screen.getByText('The Gambler')).toBeInTheDocument();
+    expect(screen.getByTestId('coach-avatar')).toHaveAttribute('data-coach-persona', 'gambler');
+    expect(screen.queryByText(/male|female|\d+s/i)).not.toBeInTheDocument();
+    const toggle = screen.getByRole('button', { name: /enable automatic coach voice/i });
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
     await user.click(toggle);
 
     expect(onToggleAutoplay).toHaveBeenCalledWith(true);

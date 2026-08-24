@@ -1,0 +1,64 @@
+/* The source image is a 4-column by 2-row portrait sheet. Each avatar keeps
+ * the source ratio while the square frame crops toward the eyes/shoulders,
+ * which stays recognizable at chat size. */
+.coach-avatar-image {
+  --coach-avatar-x: 0%;
+  --coach-avatar-y: 16%;
+  display: inline-block;
+  flex: none;
+  aspect-ratio: 1;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background-color: var(--color-surface-strong);
+  background-image: url('/brand/coaches.png');
+  background-repeat: no-repeat;
+  background-size: 400% 400%;
+  background-position: var(--coach-avatar-x) var(--coach-avatar-y);
+  box-shadow: 0 1px 3px rgb(18 28 22 / 18%), 0 0 0 1px rgb(18 28 22 / 8%);
+  vertical-align: middle;
+}
+
+.coach-avatar-image--settings {
+  width: 152px;
+}
+
+.coach-avatar-image--header {
+  width: 88px;
+}
+
+.coach-avatar-image--chat {
+  width: 64px;
+  margin-right: 7px;
+}
+
+.coach-avatar-image[data-coach-persona='general_female'] {
+  --coach-avatar-x: 33.3333%;
+}
+
+.coach-avatar-image[data-coach-persona='commander'] {
+  --coach-avatar-x: 66.6667%;
+}
+
+.coach-avatar-image[data-coach-persona='scholar'] {
+  --coach-avatar-x: 100%;
+}
+
+.coach-avatar-image[data-coach-persona='huntress'] {
+  --coach-avatar-x: 0%;
+  --coach-avatar-y: 70%;
+}
+
+.coach-avatar-image[data-coach-persona='shark'] {
+  --coach-avatar-x: 33.3333%;
+  --coach-avatar-y: 70%;
+}
+
+.coach-avatar-image[data-coach-persona='sunzi'] {
+  --coach-avatar-x: 66.6667%;
+  --coach-avatar-y: 70%;
+}
+
+.coach-avatar-image[data-coach-persona='gambler'] {
+  --coach-avatar-x: 100%;
+  --coach-avatar-y: 70%;
+}

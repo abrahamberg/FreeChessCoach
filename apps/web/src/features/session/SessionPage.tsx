@@ -1,4 +1,3 @@
-import { COACH_PERSONA_INFO, type CoachPersona } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCoachVoice } from '../../hooks/useCoachVoice.js';
@@ -20,18 +19,6 @@ import { SessionHeader } from './SessionHeader.js';
 import { useMobileSessionView } from './useMobileSessionView.js';
 import { useSessionPageData } from './useSessionPageData.js';
 import './SessionPage.css';
-
-const DEFAULT_COACH_GLYPH = '♞';
-
-/** design-improvements.md §6: avoid emoji as the coach's identity — the
- * default persona keeps the knight glyph (already the app's own chess
- * symbol), every other persona shows as an initial instead of its raw
- * COACH_PERSONA_INFO emoji. */
-function coachAvatarGlyphFor(persona: CoachPersona): string {
-  const info = COACH_PERSONA_INFO[persona];
-  if (info.avatar === DEFAULT_COACH_GLYPH) return DEFAULT_COACH_GLYPH;
-  return info.label.replace(/^The\s+/, '').trim()[0]?.toUpperCase() ?? DEFAULT_COACH_GLYPH;
-}
 
 /** design.md §5: composes board + chat for an active coaching session.
  * All fetching lives in useSessionPageData (AGENTS.md rule 7); this is
@@ -120,7 +107,6 @@ export function SessionPage(): ReactNode {
     void chat.sendMessage(content);
   }
 
-  const coachAvatar = coachAvatarGlyphFor(persona);
   const orientation = gameQuery.data?.userColor ?? 'white';
   const hasCompletedTurn = chat.messages.some((message) => message.role === 'assistant' && message.text !== '');
   // Same fen SessionBoardColumn computes for the board itself — needed here
@@ -170,7 +156,7 @@ export function SessionPage(): ReactNode {
         fen={fen}
         positions={positions}
         onHoverMove={setHoverMove}
-        coachAvatar={coachAvatar}
+        coachPersona={persona}
         autoplayEnabled={coachVoice.autoplayEnabled}
         onToggleAutoplay={ttsEnabled ? coachVoice.setAutoplayEnabled : undefined}
         onPlayMessage={ttsEnabled ? coachVoice.play : undefined}

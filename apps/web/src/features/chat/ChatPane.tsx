@@ -1,7 +1,10 @@
 import type { ParsedPosition } from '@freechesscoach/chess-analysis';
+import { COACH_PERSONA_INFO, type CoachPersona } from '@freechesscoach/shared';
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { ArrowRef } from './arrowToken.js';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
+import { CoachAvatar } from '../../components/CoachAvatar.js';
+import { VolumeOffIcon, VolumeOnIcon } from '../../components/Icon.js';
 import { ChipReplyInput } from './ChipReplyInput.js';
 import { createEmptyDraft, isDraftEmpty, reconcileArrowChips, serializeDraft, type DraftPart } from './composerDraft.js';
 import { MessageList, type HoverMove } from './MessageList.js';
@@ -10,6 +13,7 @@ import { ToolActivity } from './ToolActivity.js';
 import './ChatPane.css';
 
 const NO_ARROWS: ArrowRef[] = [];
+const DEFAULT_COACH_PERSONA: CoachPersona = 'general';
 
 export interface ChatPaneProps {
   messages: CoachMessage[];
@@ -37,9 +41,8 @@ export interface ChatPaneProps {
   /** Fired on hover/focus of a resolved move mention; lifted by the parent
    * to preview it on the board. */
   onHoverMove?: (move: HoverMove) => void;
-  /** The selected coach persona's avatar glyph (coaches.md) — passed
-   * through to MessageList. Defaults to the original coach's ♞ glyph. */
-  coachAvatar?: string;
+  /** The selected coach persona — passed through to MessageList. */
+  coachPersona?: CoachPersona;
   /** Coach voice (TTS, OpenAI or browser — Settings): whether a finished
    * turn's audio plays automatically. Omit both this and onToggleAutoplay to
    * hide the toggle (SessionPage does this whenever the account's TTS master
@@ -69,7 +72,7 @@ export function ChatPane({
   fen,
   positions,
   onHoverMove,
-  coachAvatar,
+  coachPersona = DEFAULT_COACH_PERSONA,
   autoplayEnabled,
   onToggleAutoplay,
   onPlayMessage,
@@ -94,26 +97,38 @@ export function ChatPane({
 
   return (
     <div className="chat-pane">
-      {onToggleAutoplay && (
-        <div className="chat-pane__header">
-          <label className="chat-pane__autoplay-toggle">
-            <span>Autoplay coach voice</span>
-            <input
-              type="checkbox"
-              className="toggle-switch"
-              checked={autoplayEnabled ?? false}
-              onChange={(event) => onToggleAutoplay(event.target.checked)}
-            />
-          </label>
-        </div>
-      )}
+      <div className="chat-pane__header">
+        <a
+          href="/settings"
+          className="chat-pane__coach-identity"
+          aria-label={`Change coach (currently ${COACH_PERSONA_INFO[coachPersona].label})`}
+          title="Change coach"
+        >
+          <CoachAvatar persona={coachPersona} size="header" />
+          <div className="chat-pane__coach-details">
+            <strong className="chat-pane__coach-name">{COACH_PERSONA_INFO[coachPersona].label}</strong>
+          </div>
+        </a>
+        {onToggleAutoplay && (
+          <button
+            type="button"
+            className="chat-pane__voice-toggle"
+            aria-label={autoplayEnabled ? 'Disable automatic coach voice' : 'Enable automatic coach voice'}
+            aria-pressed={autoplayEnabled ?? false}
+            title={autoplayEnabled ? 'Disable automatic coach voice' : 'Enable automatic coach voice'}
+            onClick={() => onToggleAutoplay(!(autoplayEnabled ?? false))}
+          >
+            {autoplayEnabled ? <VolumeOnIcon width={25} height={25} /> : <VolumeOffIcon width={25} height={25} />}
+          </button>
+        )}
+      </div>
       <MessageList
         messages={messages}
         onSelectPly={onSelectPly}
         fen={fen}
         positions={positions}
         onHoverMove={onHoverMove}
-        coachAvatar={coachAvatar}
+        coachPersona={coachPersona}
         onPlayMessage={onPlayMessage}
         onStopMessage={onStopMessage}
         playingMessageId={playingMessageId}

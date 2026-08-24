@@ -193,43 +193,46 @@ describe('SessionPage', () => {
     expect(options?.boardOrientation).toBe('black');
   });
 
-  test('coaches.md: the chat avatar reflects the signed-in user\'s selected coach persona', async () => {
+  test('coaches.md: the chat portrait reflects the signed-in user\'s selected coach persona', async () => {
     vi.stubGlobal('fetch', mockFetch({ coachPersona: 'gambler' }));
     renderSessionPage();
 
-    // design-improvements.md §6: no emoji identity — "The Gambler" shows as
-    // its initial, "G".
     const messageList = await screen.findByTestId('message-list');
-    expect(await within(messageList).findByText('G')).toBeInTheDocument();
+    expect(await within(messageList).findByTestId('coach-avatar')).toHaveAttribute('data-coach-persona', 'gambler');
   });
 
-  test('coaches.md: defaults to the original ♞ avatar for the "general" persona', async () => {
+  test('coaches.md: defaults to the original coach portrait for the "general" persona', async () => {
     vi.stubGlobal('fetch', mockFetch());
     renderSessionPage();
 
     const messageList = await screen.findByTestId('message-list');
-    expect(await within(messageList).findByText('♞')).toBeInTheDocument();
+    expect(await within(messageList).findByTestId('coach-avatar')).toHaveAttribute('data-coach-persona', 'general');
   });
 
-  test('renders the coach voice autoplay toggle and a play button on the coach message, and toggling it does not throw', async () => {
+  test('renders the coach identity and speaker toggle with a play button on the coach message', async () => {
     vi.stubGlobal('fetch', mockFetch({ ttsEnabled: true }));
     const user = userEvent.setup();
     renderSessionPage();
 
     const messageList = await screen.findByTestId('message-list');
-    expect(screen.getByRole('checkbox', { name: /autoplay/i })).not.toBeChecked();
+    const voiceToggle = screen.getByRole('button', { name: /enable automatic coach voice/i });
+    expect(voiceToggle).toHaveAttribute('aria-pressed', 'false');
     expect(within(messageList).getByRole('button', { name: 'Play coach message' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('checkbox', { name: /autoplay/i }));
-    expect(screen.getByRole('checkbox', { name: /autoplay/i })).toBeChecked();
+    await user.click(voiceToggle);
+    expect(screen.getByRole('button', { name: /disable automatic coach voice/i })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
   });
 
-  test('coach voice UI is hidden entirely when the account has not enabled it (default off)', async () => {
+  test('coach identity remains visible when the account has not enabled voice (default off)', async () => {
     vi.stubGlobal('fetch', mockFetch());
     renderSessionPage();
 
     const messageList = await screen.findByTestId('message-list');
-    expect(screen.queryByRole('checkbox', { name: /autoplay/i })).not.toBeInTheDocument();
+    expect(screen.getByText('Coach')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /automatic coach voice/i })).not.toBeInTheDocument();
     expect(within(messageList).queryByRole('button', { name: 'Play coach message' })).not.toBeInTheDocument();
   });
 

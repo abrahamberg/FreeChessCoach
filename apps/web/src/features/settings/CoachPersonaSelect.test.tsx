@@ -7,21 +7,40 @@ describe('CoachPersonaSelect', () => {
   test('renders all 8 personas, marking the current one', () => {
     render(<CoachPersonaSelect value="scholar" onChange={vi.fn()} />);
 
-    expect(screen.getByRole('radio', { name: /coach.*\bmale, 40s/i })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /coach.*female, 40s/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /coach, classic portrait/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /coach, alternate portrait/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /the scholar/i })).toBeChecked();
     expect(screen.getByRole('radio', { name: /the gambler/i })).not.toBeChecked();
+    expect(screen.queryByText(/male|female|\d+s/i)).not.toBeInTheDocument();
   });
 
-  test('the two default "Coach" entries (male/female) stay distinguishable and each selects its own persona', async () => {
+  test('renders the eight supplied portraits in persona order', () => {
+    render(<CoachPersonaSelect value="general" onChange={vi.fn()} />);
+
+    const personas = [...document.querySelectorAll('[data-testid="coach-avatar"]')].map((avatar) =>
+      avatar.getAttribute('data-coach-persona')
+    );
+    expect(personas).toEqual([
+      'general',
+      'general_female',
+      'commander',
+      'scholar',
+      'huntress',
+      'shark',
+      'sunzi',
+      'gambler'
+    ]);
+  });
+
+  test('the two default Coach portraits stay distinguishable and each selects its own persona', async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();
     render(<CoachPersonaSelect value="scholar" onChange={onChange} />);
 
-    await user.click(screen.getByRole('radio', { name: /coach.*\bmale, 40s/i }));
+    await user.click(screen.getByRole('radio', { name: /coach, classic portrait/i }));
     expect(onChange).toHaveBeenCalledWith('general');
 
-    await user.click(screen.getByRole('radio', { name: /coach.*female, 40s/i }));
+    await user.click(screen.getByRole('radio', { name: /coach, alternate portrait/i }));
     expect(onChange).toHaveBeenCalledWith('general_female');
   });
 

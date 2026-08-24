@@ -209,6 +209,26 @@ export function PauseIcon(props: IconProps): ReactNode {
   );
 }
 
+export function VolumeOnIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+      <path d="M17 9a4 4 0 0 1 0 6" />
+      <path d="M19.5 6.5a7.5 7.5 0 0 1 0 11" />
+    </svg>
+  );
+}
+
+export function VolumeOffIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+      <line x1="17" y1="9" x2="21" y2="15" />
+      <line x1="21" y1="9" x2="17" y2="15" />
+    </svg>
+  );
+}
+
 export function UndoIcon(props: IconProps): ReactNode {
   return (
     <svg {...iconProps(props)}>
