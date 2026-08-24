@@ -175,6 +175,11 @@ oauth2-proxy:
     # Public landing page + robots.txt (see values.yaml for the full note).
     - --skip-auth-route=^/$
     - --skip-auth-route=^/robots.txt$
+    # Public Privacy Policy / Terms of Service + shared stylesheet, required
+    # for the Google OAuth consent screen (see values.yaml for the full note).
+    - --skip-auth-route=^/privacy$
+    - --skip-auth-route=^/terms$
+    - --skip-auth-route=^/legal\.css$
     - --redirect-url=https://freechesscoach.org/oauth2/callback
   service:
     portNumber: 80

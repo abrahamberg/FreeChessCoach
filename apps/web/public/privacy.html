@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy — FreeChessCoach</title>
+    <meta
+      name="description"
+      content="How FreeChessCoach collects, uses, and protects your data."
+    />
+    <link rel="canonical" href="https://freechesscoach.org/privacy" />
+    <link rel="stylesheet" href="/legal.css" />
+  </head>
+  <body>
+    <main class="page">
+      <a class="brand" href="/">FreeChessCoach</a>
+      <article>
+        <h1>Privacy Policy</h1>
+        <p class="effective-date">Effective August 24, 2026</p>
+
+        <p>
+          FreeChessCoach ("FreeChessCoach", "we", "us") is an independent,
+          individually operated project — there is no company behind it. This
+          policy explains what data the service collects when you use it, why,
+          and what you can do about it. If anything here is unclear, email
+          <a href="mailto:hello@freechesscoach.org">hello@freechesscoach.org</a>
+          and ask.
+        </p>
+
+        <h2>Information we collect</h2>
+        <ul>
+          <li>
+            <strong>Account information.</strong> When you sign in with
+            Google, we receive your email address and the display name Google
+            provides. We don't see or store your Google password.
+          </li>
+          <li>
+            <strong>Profile information you provide.</strong> Rating band,
+            Lichess/Chess.com usernames, free-text self-assessment notes,
+            and coaching preferences (coach persona, voice/TTS settings) you
+            enter in Settings.
+          </li>
+          <li>
+            <strong>Game data.</strong> The games you import — via Lichess,
+            pasted PGN, or file upload — including move data, results, and
+            any player names embedded in the PGN. If you play against other
+            people, their names may appear in your imported games too.
+          </li>
+          <li>
+            <strong>Coaching sessions.</strong> The messages, analysis, and
+            progress data generated as you work through a game with the
+            coach, so it can pick up where you left off next time.
+          </li>
+          <li>
+            <strong>Your AI provider API key.</strong> FreeChessCoach is
+            bring-your-own-key (BYOK) only — you connect your own Anthropic
+            or OpenAI API key, either by pasting a key directly or by
+            connecting through a supported platform integration. The key is
+            encrypted at rest with a passphrase only you know. We don't
+            generate, hold, or have access to that passphrase — it's never
+            stored or logged anywhere. Practically, this means your key is
+            unreadable to us by default: we can decrypt and use it only for
+            the moment you supply the passphrase to start or resume a
+            coaching session, and we discard the decrypted key from memory
+            as soon as that session's calls are done. If you forget your
+            passphrase, we cannot recover your key for you — you'll need to
+            remove it and connect it again.
+          </li>
+        </ul>
+
+        <h2>How we use it</h2>
+        <p>
+          To run the service: authenticate you, analyze and store your
+          games, generate coaching responses, and track your progress across
+          sessions. We don't sell your data, and we don't use it for
+          advertising. FreeChessCoach has no paid features, credits, or
+          purchases of any kind — nothing you do here involves paying us.
+        </p>
+
+        <h2>Who your data is shared with</h2>
+        <p>
+          FreeChessCoach's whole model is that AI calls happen using your own
+          credentials, which you can trace. Depending on how you use the
+          service, your data passes through:
+        </p>
+        <ul>
+          <li>
+            <strong>Google</strong> — for sign-in (OAuth). Google's own
+            privacy policy governs what Google does with your authentication
+            activity.
+          </li>
+          <li>
+            <strong>Anthropic and/or OpenAI, or the platform you've
+            connected</strong> — to generate coaching responses and
+            analysis. Once you've supplied your passphrase for a session,
+            the relevant game and session content is sent directly to that
+            provider using your own key, under your account with them, and
+            their terms and privacy policy apply to that processing.
+          </li>
+          <li>
+            <strong>OpenAI</strong> — separately, if you choose the
+            higher-quality synthesized coach voice, using your own connected
+            key. The default voice engine (Kokoro) runs entirely in your
+            browser instead, and never leaves your device.
+          </li>
+          <li>
+            Our hosting and infrastructure providers, to the extent needed to
+            run servers and a database in the ordinary course of operating
+            the service.
+          </li>
+        </ul>
+        <p>
+          We do not sell or rent your information to anyone, and we don't
+          share it with third parties beyond what's needed to provide the
+          service described above.
+        </p>
+
+        <h2>Cookies</h2>
+        <p>
+          FreeChessCoach doesn't set its own tracking or analytics cookies.
+          Staying signed in relies on a session cookie set by our
+          authentication layer (Google OAuth) — necessary for the service to
+          work, not used for tracking across other sites.
+        </p>
+
+        <h2>Data retention and deletion</h2>
+        <p>
+          We keep your account, games, and session data for as long as your
+          account exists, so your coaching history and progress stay
+          available to you. There's currently no self-serve "delete my
+          account" button — email
+          <a href="mailto:hello@freechesscoach.org">hello@freechesscoach.org</a>
+          from the address on your account and we'll delete your account and
+          associated data by hand. Deleting a connected API key from Settings
+          removes it immediately and permanently.
+        </p>
+
+        <h2>Security</h2>
+        <p>
+          We take reasonable, standard precautions: encryption in transit,
+          passphrase-based encryption at rest for API keys (so the key is
+          unusable without you), and access controls around the database.
+          That said, no online service can be guaranteed perfectly secure,
+          and we don't claim FreeChessCoach is immune to bugs,
+          misconfigurations, or attacks by third parties. See the
+          <a href="/terms">Terms of Service</a> for how that risk is
+          allocated.
+        </p>
+
+        <h2>Children's privacy</h2>
+        <p>
+          FreeChessCoach is not directed at children under 16, and we don't
+          knowingly collect personal information from them. If you believe a
+          child has created an account, email us and we'll remove it.
+        </p>
+
+        <h2>International use</h2>
+        <p>
+          FreeChessCoach is operated from Sweden and processed on servers and
+          by the third-party providers listed above, which may be located in
+          countries other than your own. By using the service, you
+          understand your information may be processed outside your country
+          of residence.
+        </p>
+
+        <h2>Changes to this policy</h2>
+        <p>
+          If this policy changes materially, we'll update the effective date
+          above. Continuing to use FreeChessCoach after a change means you
+          accept the update.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          Questions, requests, or concerns:
+          <a href="mailto:hello@freechesscoach.org">hello@freechesscoach.org</a>
+        </p>
+      </article>
+      <footer>
+        <nav>
+          <a href="/">Home</a>
+          <a href="/terms">Terms of Service</a>
+        </nav>
+        &copy; FreeChessCoach
+      </footer>
+    </main>
+  </body>
+</html>

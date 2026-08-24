@@ -83,3 +83,14 @@
 .credit-balance {
   font-size: 20px;
 }
+
+.settings-page__legal {
+  display: flex;
+  gap: 16px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+.settings-page__legal a {
+  color: var(--text-muted);
+}

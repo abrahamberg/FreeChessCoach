@@ -199,6 +199,13 @@ export function SettingsPage(): ReactNode {
           Sign out
         </a>
       </section>
+
+      <footer className="settings-page__legal">
+        {/* /privacy and /terms are static, unauthenticated pages
+         * (apps/web/public/) — plain links, not client-side routes. */}
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+      </footer>
     </div>
   );
 }

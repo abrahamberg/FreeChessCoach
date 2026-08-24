@@ -307,6 +307,13 @@ oauth2-proxy:
     # and crawlers can reach them without a Google session.
     - --skip-auth-route=^/$
     - --skip-auth-route=^/robots.txt$
+    # Public Privacy Policy / Terms of Service (apps/web/public/privacy.html,
+    # terms.html) and their shared stylesheet — required so the Google OAuth
+    # consent screen review, and logged-out visitors generally, can reach
+    # them without a Google session.
+    - --skip-auth-route=^/privacy$
+    - --skip-auth-route=^/terms$
+    - --skip-auth-route=^/legal\.css$
   service:
     portNumber: 80
   # Our own templates/ingress.yaml owns the public route.
