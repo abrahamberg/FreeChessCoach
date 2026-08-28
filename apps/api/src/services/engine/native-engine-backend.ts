@@ -14,7 +14,7 @@ export class NativeEngineBackend implements EngineBackend {
     opts?: EngineBackendAnalyzeOptions
   ): Promise<PositionAnalysis> {
     const multiPv = opts?.multiPv ?? ENGINE_MULTI_PV;
-    return analyzePositionViaEngine(this.engineUrl, fen, multiPv);
+    return analyzePositionViaEngine(this.engineUrl, fen, multiPv, opts?.depth);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

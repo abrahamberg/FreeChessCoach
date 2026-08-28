@@ -32,7 +32,7 @@ export interface StatusAndAction {
  * analysisStatus is always null — it needs its own branch rather than
  * falling into analyze mode's "analyzing…" default. */
 export function statusAndActionFor(game: GameListItem): StatusAndAction {
-  if (game.source === 'coach_play') {
+  if (game.source === 'coach_play' || game.source === 'vs_bot') {
     if (game.sessionId) return { statusLabel: 'In progress', statusVariant: 'primary', actionLabel: 'Continue' };
     return { statusLabel: 'Completed', statusVariant: 'neutral' };
   }

@@ -83,6 +83,21 @@ export const AnalyzePositionRequestSchema = z.object({
 });
 export type AnalyzePositionRequest = z.infer<typeof AnalyzePositionRequestSchema>;
 
+/** The bot session's hint feature, stage 2 ("top 3 moves") — POST
+ * /api/positions/hint-moves. Deliberately its own endpoint rather than
+ * reusing /api/positions/analyze: that one always runs through
+ * CachingEngineBackend, whose position_evaluations cache is keyed by `fen`
+ * alone (no depth/multiPv discrimination — see ENGINE_DEFAULT_DEPTH's doc
+ * comment), so a request-supplied multiPv there would silently poison the
+ * standard-depth cache other callers share. This one runs uncached, at a
+ * fixed hint-appropriate depth/multiPv the server controls, the same way
+ * the bot's own move selection does (resolveRawEngineBackend). */
+export const HintMovesRequestSchema = z.object({ fen: z.string() });
+export type HintMovesRequest = z.infer<typeof HintMovesRequestSchema>;
+
+export const HintMovesResponseSchema = z.object({ lines: z.array(EngineLineSchema) });
+export type HintMovesResponse = z.infer<typeof HintMovesResponseSchema>;
+
 /**
  * Rich, single-position analysis (interactive path only — see
  * PositionAnalysisSchema below). Deliberately separate from

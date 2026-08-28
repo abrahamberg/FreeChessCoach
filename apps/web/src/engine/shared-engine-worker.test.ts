@@ -3,14 +3,20 @@ import { SharedEngineWorker, type EngineDownloadProgress, type EngineWorkerLike 
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
-function fakeWorker(): EngineWorkerLike & { sent: string[]; emit: (line: string) => void } {
+function fakeWorker(): EngineWorkerLike & {
+  sent: string[];
+  emit: (line: string) => void;
+  emitError: (message?: string) => void;
+} {
   const sent: string[] = [];
-  const worker: EngineWorkerLike & { sent: string[]; emit: (line: string) => void } = {
+  const worker: EngineWorkerLike & { sent: string[]; emit: (line: string) => void; emitError: (message?: string) => void } = {
     sent,
     onmessage: null,
+    onerror: null,
     postMessage: (message: string) => sent.push(message),
     terminate: vi.fn(),
-    emit: (line: string) => worker.onmessage?.({ data: line })
+    emit: (line: string) => worker.onmessage?.({ data: line }),
+    emitError: (message?: string) => worker.onerror?.({ message })
   };
   return worker;
 }
@@ -200,6 +206,48 @@ describe('SharedEngineWorker', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // Reproduces a real failure mode: the worker script loads far enough to
+  // accept postMessage calls but then fails during its own bootstrap (e.g. a
+  // WASM instantiation error) and fires a plain `error` event instead of
+  // ever answering 'uci' with 'uciok'. Without onerror wiring this used to
+  // hang every analyze() call forever — isReady never becomes true, so
+  // pump() silently no-ops and SEARCH_TIMEOUT_MS's timer (which only starts
+  // once a search is actually dequeued) never even gets set.
+  test('a worker that errors before answering uci rejects immediately instead of hanging forever', async () => {
+    const worker = fakeWorker();
+    const client = new SharedEngineWorker({ createWorker: () => worker });
+
+    const pending = client.analyze({ fen: START_FEN, depth: 10, multiPv: 1 });
+    worker.emitError('WebAssembly instantiation failed');
+
+    await expect(pending).rejects.toThrow(/WebAssembly instantiation failed/);
+    expect(worker.terminate).toHaveBeenCalledOnce();
+    expect(client.status).toBe('absent');
+  });
+
+  test('a worker error also rejects whatever else was queued behind it, and a later call gets a fresh worker', async () => {
+    const failingWorker = fakeWorker();
+    const freshWorker = fakeWorker();
+    const createWorker = vi.fn().mockReturnValueOnce(failingWorker).mockReturnValueOnce(freshWorker);
+    const client = new SharedEngineWorker({ createWorker });
+
+    const first = client.analyze({ fen: START_FEN, depth: 10, multiPv: 1 });
+    const second = client.analyze({ fen: START_FEN, depth: 10, multiPv: 1 });
+    const firstAssertion = expect(first).rejects.toThrow();
+    const secondAssertion = expect(second).rejects.toThrow();
+    failingWorker.emitError();
+    await firstAssertion;
+    await secondAssertion;
+
+    const recovered = client.analyze({ fen: START_FEN, depth: 10, multiPv: 1 });
+    freshWorker.emit('uciok');
+    freshWorker.emit('readyok');
+    freshWorker.emit('info depth 10 multipv 1 score cp 5 pv e2e4');
+    freshWorker.emit('bestmove e2e4');
+    await expect(recovered).resolves.toMatchObject([{ moveUci: 'e2e4' }]);
+    expect(createWorker).toHaveBeenCalledTimes(2);
   });
 
   // preload() runs from a React effect, so a throw here would surface during

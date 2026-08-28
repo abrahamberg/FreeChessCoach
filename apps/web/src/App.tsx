@@ -6,6 +6,8 @@ import { DashboardPage } from './features/dashboard/DashboardPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
 import { ImportPage } from './features/import/ImportPage.js';
 import { PlayStartPage } from './features/play/PlayStartPage.js';
+import { PlayBotStartPage } from './features/play-bot/PlayBotStartPage.js';
+import { BotSessionPage } from './features/session/BotSessionPage.js';
 import { SessionPage } from './features/session/SessionPage.js';
 import { SettingsPage } from './features/settings/SettingsPage.js';
 import { useEngineTunnelActivation } from './hooks/useEngineTunnelActivation.js';
@@ -20,6 +22,16 @@ const queryClient = new QueryClient();
 function SessionRoute(): ReactNode {
   const { id } = useParams<{ id: string }>();
   return <SessionPage key={id} />;
+}
+
+/** "Play vs Bot" plan: a play_bot session gets its own route rather than a
+ * runtime mode-check inside SessionRoute — every caller that navigates here
+ * (PlayBotStartPage's mutation, GamesPage's handleSelect for a `vs_bot` row)
+ * already knows it's a bot session at click time, so there's no need to
+ * fetch first just to decide which component to render. */
+function BotSessionRoute(): ReactNode {
+  const { id } = useParams<{ id: string }>();
+  return <BotSessionPage key={id} sessionId={id ?? ''} />;
 }
 
 export function App(): ReactNode {
@@ -41,8 +53,10 @@ export function AppRoutes(): ReactNode {
         <Route path="/" element={<Navigate to="/games" replace />} />
         <Route path="/import" element={<ImportPage />} />
         <Route path="/play/new" element={<PlayStartPage />} />
+        <Route path="/play-bot/new" element={<PlayBotStartPage />} />
         <Route path="/games" element={<GamesPage />} />
         <Route path="/session/:id" element={<SessionRoute />} />
+        <Route path="/bot-session/:id" element={<BotSessionRoute />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>

@@ -1,0 +1,30 @@
+/* The source image is a 6-column by 5-row uniform portrait grid, so (unlike
+ * coaches.png) every crop uses the same background-size and a
+ * mechanically-computed position — see BotAvatar.tsx. */
+.bot-avatar-image {
+  display: inline-block;
+  flex: none;
+  aspect-ratio: 1;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background-color: var(--color-surface-strong);
+  background-image: url('/brand/bots.png');
+  background-repeat: no-repeat;
+  background-size: var(--bot-avatar-size-x) var(--bot-avatar-size-y);
+  background-position: var(--bot-avatar-x) var(--bot-avatar-y);
+  box-shadow: 0 1px 3px rgb(18 28 22 / 18%), 0 0 0 1px rgb(18 28 22 / 8%);
+  vertical-align: middle;
+}
+
+.bot-avatar-image--picker {
+  width: 64px;
+}
+
+.bot-avatar-image--panel {
+  width: 72px;
+}
+
+.bot-avatar-image--grid {
+  width: 88px;
+  border-width: 3px;
+}

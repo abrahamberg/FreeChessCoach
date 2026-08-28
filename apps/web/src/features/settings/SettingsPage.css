@@ -53,7 +53,8 @@
 }
 
 .settings-page section[aria-label='API keys'] button[aria-pressed],
-.settings-page section[aria-label='Appearance'] button {
+.settings-page section[aria-label='Appearance'] button,
+.settings-page section[aria-label='Board'] button {
   border: 1px solid var(--color-border-strong);
   background: transparent;
   border-radius: var(--radius-md);
@@ -62,7 +63,8 @@
   min-height: 40px;
 }
 
-.settings-page section[aria-label='Appearance'] button[aria-pressed='true'] {
+.settings-page section[aria-label='Appearance'] button[aria-pressed='true'],
+.settings-page section[aria-label='Board'] button[aria-pressed='true'] {
   background: var(--color-primary);
   color: var(--color-on-primary);
   border-color: var(--color-primary);

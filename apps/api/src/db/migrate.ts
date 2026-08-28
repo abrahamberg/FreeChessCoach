@@ -18,6 +18,8 @@ import * as gameReport from './migrations/0016_game_report.js';
 import * as moveReasons from './migrations/0017_move_reasons.js';
 import * as ttsSettings from './migrations/0018_tts_settings.js';
 import * as generalFemaleCoach from './migrations/0019_general_female_coach.js';
+import * as playBotMode from './migrations/0020_play_bot_mode.js';
+import * as botGameClock from './migrations/0021_bot_game_clock.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -40,7 +42,9 @@ const provider: MigrationProvider = {
       '0016_game_report': gameReport,
       '0017_move_reasons': moveReasons,
       '0018_tts_settings': ttsSettings,
-      '0019_general_female_coach': generalFemaleCoach
+      '0019_general_female_coach': generalFemaleCoach,
+      '0020_play_bot_mode': playBotMode,
+      '0021_bot_game_clock': botGameClock
     })
 };
 

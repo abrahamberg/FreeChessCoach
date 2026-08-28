@@ -47,8 +47,8 @@ export async function deleteGameForUser(db: Kysely<Database>, gameId: string, us
 }
 
 async function toListItem(db: Kysely<Database>, userId: string, row: GameListRow) {
-  const sessionId =
-    row.source === 'coach_play' ? ((await sessionsRepo.findActiveByGameIdForUser(db, row.id, userId))?.id ?? null) : null;
+  const isLiveSource = row.source === 'coach_play' || row.source === 'vs_bot';
+  const sessionId = isLiveSource ? ((await sessionsRepo.findActiveByGameIdForUser(db, row.id, userId))?.id ?? null) : null;
   return {
     id: row.id,
     source: row.source,
@@ -60,6 +60,7 @@ async function toListItem(db: Kysely<Database>, userId: string, row: GameListRow
     playedAt: row.playedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     analysisStatus: row.analysisStatus,
-    sessionId
+    sessionId,
+    botId: row.botId
   };
 }

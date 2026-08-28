@@ -119,6 +119,26 @@ function findBookEntries(fen: string): BookEntry[] {
   return getOwnEntry(openingBook.bookIndex, positionKey(fen)) ?? [];
 }
 
+export interface BookMoveOption {
+  san: string;
+  uci: string;
+  eco: string;
+  name: string;
+}
+
+/**
+ * Known book continuations from a live position (as opposed to
+ * inBookWalk/resolveOpening, which classify an already-played mainline).
+ * Used by bot move selection (the "Play vs Bot" plan) to follow known
+ * theory instead of a shallow/personality-biased search in the opening —
+ * empty once the position is out of book. Entries carry no frequency/weight
+ * data, just the flat list of known alternatives from lichess-org's opening
+ * database.
+ */
+export function bookMovesForFen(fen: string): BookMoveOption[] {
+  return findBookEntries(fen);
+}
+
 function isBookMove(position: BookPosition, entries: BookEntry[]): position is BookPosition & {
   mover: BookColour;
   moveSan: string;

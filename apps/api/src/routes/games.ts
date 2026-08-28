@@ -53,6 +53,24 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
       return { ...game, analysisStatus: null, classifiedMoves: null, liveMoveQualities, gameReport: null };
     }
 
+    // Play-vs-bot plan: a vs_bot game gets both worlds — live per-move quality
+    // rows while the game is in progress (same as coach_play) AND, once the
+    // deferred standard-depth post-game analysis job (queued by
+    // commitBotTurn when the game ends) completes, a real Game Report —
+    // unlike coach_play, which never gets one.
+    if (game.source === 'vs_bot') {
+      const liveMoveQualities = await gameMoveQualitiesRepo.listByGameId(db, game.id);
+      const botAnalysis = await analysesRepo.findByGameId(db, game.id);
+      const botGameReport = await analysesRepo.findGameReportByGameId(db, game.id);
+      return {
+        ...game,
+        analysisStatus: botAnalysis?.status ?? null,
+        classifiedMoves: null,
+        liveMoveQualities,
+        gameReport: botGameReport ?? null
+      };
+    }
+
     const analysis = await analysesRepo.findByGameId(db, game.id);
     const classifiedMoves = await analysesRepo.findClassifiedMovesByGameId(db, game.id);
     const gameReport = await analysesRepo.findGameReportByGameId(db, game.id);

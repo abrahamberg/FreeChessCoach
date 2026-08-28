@@ -13,7 +13,8 @@ const BASE_GAME = {
   timeControl: '10+0',
   playedAt: '2026-07-20T10:00:00.000Z',
   createdAt: '2026-07-20T10:05:00.000Z',
-  sessionId: null
+  sessionId: null,
+  botId: null
 };
 
 async function openOverflowMenu(): Promise<ReturnType<typeof userEvent.setup>> {

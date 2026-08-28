@@ -246,3 +246,22 @@ export function EyeIcon(props: IconProps): ReactNode {
     </svg>
   );
 }
+
+export function FlagIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <line x1="5" y1="3" x2="5" y2="21" />
+      <path d="M5 4.5c3-1.5 5 1.5 8 0s5-1.5 5-1.5v9s-2 1.5-5 1.5-5-3-8-1.5Z" />
+    </svg>
+  );
+}
+
+export function LightbulbIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M9 18h6" />
+      <path d="M10 21h4" />
+      <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.45 1.1 1.2 1.1 2.2h5c0-1 .5-1.75 1.1-2.2A6 6 0 0 0 12 3Z" />
+    </svg>
+  );
+}

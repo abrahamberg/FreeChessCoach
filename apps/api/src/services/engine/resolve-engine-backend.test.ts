@@ -4,7 +4,7 @@ import { ENGINE_TUNNEL_PER_POSITION_MS } from '@freechesscoach/shared';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import * as usersRepo from '../../db/repositories/users.js';
 import type { Database } from '../../db/schema.js';
-import { resolveEngineBackend, type ResolveEngineBackendOptions } from './resolve-engine-backend.js';
+import { resolveEngineBackend, resolveRawEngineBackend, type ResolveEngineBackendOptions } from './resolve-engine-backend.js';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
 
 describe('resolveEngineBackend', () => {
@@ -97,5 +97,26 @@ describe('resolveEngineBackend', () => {
       8000 + ENGINE_TUNNEL_PER_POSITION_MS
     );
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('resolveRawEngineBackend bypasses CachingEngineBackend — repeated calls for the same fen hit the raw backend every time', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cam' });
+    const fen = `raw-${crypto.randomUUID()}`;
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ analysis: { fen, depth: 1, multiPv: 1, bestMove: null, eval: { cp: null, mateIn: null }, lines: [], features: {} } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const tunnelTransport: EngineTunnelTransport = { request: vi.fn() };
+
+    const backend = await resolveRawEngineBackend(options(tunnelTransport), user.id);
+    await backend.analyzePosition(fen);
+    await backend.analyzePosition(fen);
+
+    // A CachingEngineBackend-wrapped backend would only ever hit fetch once
+    // (see the "native" test above) — the raw backend must be called every time.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

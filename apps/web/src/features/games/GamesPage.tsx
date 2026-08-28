@@ -50,10 +50,16 @@ export function GamesPage(): ReactNode {
   // architecture §14: a coach_play game already has its session (created by
   // POST /api/sessions/play) — link straight back into it rather than
   // routing through analyze mode's POST /api/sessions, which gates on an
-  // `analyses` row a play-mode game never has.
+  // `analyses` row a play-mode game never has. A vs_bot game (the "Play vs
+  // Bot" plan) is the same story, but links into the dedicated /bot-session
+  // route rather than /session — see App.tsx's BotSessionRoute doc comment.
   function handleSelect(game: GameListItem): void {
     if (game.source === 'coach_play') {
       if (game.sessionId) void navigate(`/session/${game.sessionId}`);
+      return;
+    }
+    if (game.source === 'vs_bot') {
+      if (game.sessionId) void navigate(`/bot-session/${game.sessionId}`);
       return;
     }
     if (game.analysisStatus !== 'ready') return;
@@ -71,6 +77,10 @@ export function GamesPage(): ReactNode {
           <Link to="/play/new" className="btn-secondary">
             <PlayCircleIcon width={16} height={16} />
             Play coach
+          </Link>
+          <Link to="/play-bot/new" className="btn-secondary">
+            <PlayCircleIcon width={16} height={16} />
+            Play a bot
           </Link>
           <Link to="/import" className="btn-primary">
             <PlusIcon width={16} height={16} />

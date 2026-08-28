@@ -1,0 +1,450 @@
+import type { BotConfig } from './bot.js';
+
+/**
+ * Curated roster of preset bots (chess.com-style) — the whole roster for v1,
+ * no DB table, no user-facing builder. `games.bot_config_snapshot` freezes a
+ * copy of one of these at game-start time, so editing an entry here never
+ * rewrites the story of an already-played game.
+ *
+ * Grouped into five skill tiers (Beginner, Developing, Intermediate,
+ * Advanced, Expert), six bots each, in the same order as the portrait sheet
+ * at public/brand/bots.png (row = tier, column = position within the tier —
+ * `avatarIndex` is `row * 6 + column`). `elo` (300-2300) is the display
+ * rating; the knobs that actually make a bot play weaker/stronger/differently
+ * are `depth`, `personality`, `temperature`, and the opening-book pair.
+ */
+export const BOT_ROSTER: readonly BotConfig[] = [
+  // --- Beginner ---
+  {
+    id: 'nate-brooks',
+    name: 'Nate Brooks',
+    avatarIndex: 0,
+    description: '"The Newcomer." Moves fast, attacks early, and often forgets what you\'re threatening.',
+    elo: 300,
+    depth: 3,
+    multiPv: 4,
+    personality: { aggression: 70, trapSeeking: 20, defensiveness: 10 },
+    aiEnabled: false,
+    temperature: 0.7,
+    bookPlies: 2,
+    bookMistakeChance: 0.5
+  },
+  {
+    id: 'clara-lind',
+    name: 'Clara Lind',
+    avatarIndex: 1,
+    description: '"The Curious." Plays carefully and experiments with new ideas instead of the safe move.',
+    elo: 350,
+    depth: 4,
+    multiPv: 4,
+    personality: { aggression: 35, trapSeeking: 45, defensiveness: 40 },
+    aiEnabled: false,
+    temperature: 0.6,
+    bookPlies: 3,
+    bookMistakeChance: 0.4
+  },
+  {
+    id: 'carl-mendes',
+    name: 'Carl Mendes',
+    avatarIndex: 2,
+    description: '"The Club Regular." Sticks to familiar openings and solid development, avoids unnecessary risk.',
+    elo: 420,
+    depth: 5,
+    multiPv: 3,
+    personality: { aggression: 20, trapSeeking: 15, defensiveness: 65 },
+    aiEnabled: false,
+    temperature: 0.4,
+    bookPlies: 6,
+    bookMistakeChance: 0.25
+  },
+  {
+    id: 'tara-okafor',
+    name: 'Tara Okafor',
+    avatarIndex: 3,
+    description: '"The Puzzle Hunter." Constantly searches for forks, pins, and discoveries — sound or not.',
+    elo: 380,
+    depth: 4,
+    multiPv: 6,
+    personality: { aggression: 45, trapSeeking: 80, defensiveness: 15 },
+    aiEnabled: false,
+    temperature: 0.55,
+    bookPlies: 2,
+    bookMistakeChance: 0.45
+  },
+  {
+    id: 'sam-novak',
+    name: 'Sam Novak',
+    avatarIndex: 4,
+    description: '"The Planner." Builds a clear plan but sometimes misses a tactic sitting right in front of it.',
+    elo: 400,
+    depth: 5,
+    multiPv: 3,
+    personality: { aggression: 30, trapSeeking: 10, defensiveness: 45 },
+    aiEnabled: false,
+    temperature: 0.45,
+    bookPlies: 4,
+    bookMistakeChance: 0.35
+  },
+  {
+    id: 'sophie-chen',
+    name: 'Sophie Chen',
+    avatarIndex: 5,
+    description: '"The Prodigy." Balanced, accurate, adaptable, and surprisingly hard to rattle for her level.',
+    elo: 500,
+    depth: 7,
+    multiPv: 5,
+    personality: { aggression: 40, trapSeeking: 40, defensiveness: 40 },
+    aiEnabled: true,
+    temperature: 0.3,
+    bookPlies: 8,
+    bookMistakeChance: 0.15
+  },
+
+  // --- Developing ---
+  {
+    id: 'alex-romero',
+    name: 'Alex Romero',
+    avatarIndex: 6,
+    description: '"The Storm." Attacks aggressively, sacrifices material freely, and hates quiet positions.',
+    elo: 600,
+    depth: 7,
+    multiPv: 5,
+    personality: { aggression: 85, trapSeeking: 35, defensiveness: 10 },
+    aiEnabled: false,
+    temperature: 0.5,
+    bookPlies: 5,
+    bookMistakeChance: 0.25
+  },
+  {
+    id: 'steven-anders',
+    name: 'Steven Anders',
+    avatarIndex: 7,
+    description: '"The Anchor." Develops safely, protects every weakness, and rarely makes a reckless move.',
+    elo: 650,
+    depth: 8,
+    multiPv: 3,
+    personality: { aggression: 10, trapSeeking: 15, defensiveness: 85 },
+    aiEnabled: false,
+    temperature: 0.2,
+    bookPlies: 8,
+    bookMistakeChance: 0.15
+  },
+  {
+    id: 'chloe-bennett',
+    name: 'Chloe Bennett',
+    avatarIndex: 8,
+    description: '"The Inventor." Finds unusual plans and surprising sacrifices instead of the obvious move.',
+    elo: 620,
+    depth: 7,
+    multiPv: 5,
+    personality: { aggression: 55, trapSeeking: 50, defensiveness: 20 },
+    aiEnabled: true,
+    temperature: 0.55,
+    bookPlies: 3,
+    bookMistakeChance: 0.3
+  },
+  {
+    id: 'calvin-park',
+    name: 'Calvin Park',
+    avatarIndex: 9,
+    description: '"The Calculator." Calculates deeply and precisely, one line at a time.',
+    elo: 700,
+    depth: 9,
+    multiPv: 6,
+    personality: { aggression: 35, trapSeeking: 45, defensiveness: 40 },
+    aiEnabled: false,
+    temperature: 0.15,
+    bookPlies: 6,
+    bookMistakeChance: 0.15
+  },
+  {
+    id: 'diana-moretti',
+    name: 'Diana Moretti',
+    avatarIndex: 10,
+    description: '"The Chameleon." Switches easily between aggressive and positional play mid-game.',
+    elo: 680,
+    depth: 8,
+    multiPv: 5,
+    personality: { aggression: 50, trapSeeking: 35, defensiveness: 35 },
+    aiEnabled: false,
+    temperature: 0.5,
+    bookPlies: 5,
+    bookMistakeChance: 0.2
+  },
+  {
+    id: 'paul-mensah',
+    name: 'Paul Mensah',
+    avatarIndex: 11,
+    description: '"The Architect." Improves his position slowly and values structure over tactics.',
+    elo: 750,
+    depth: 8,
+    multiPv: 3,
+    personality: { aggression: 15, trapSeeking: 10, defensiveness: 75 },
+    aiEnabled: false,
+    temperature: 0.2,
+    bookPlies: 10,
+    bookMistakeChance: 0.1
+  },
+
+  // --- Intermediate ---
+  {
+    id: 'tony-varga',
+    name: 'Tony Varga',
+    avatarIndex: 12,
+    description: '"The Tactician." Creates complications and searches relentlessly for forcing moves.',
+    elo: 1150,
+    depth: 10,
+    multiPv: 8,
+    personality: { aggression: 65, trapSeeking: 90, defensiveness: 20 },
+    aiEnabled: true,
+    temperature: 0.3,
+    bookPlies: 8,
+    bookMistakeChance: 0.12
+  },
+  {
+    id: 'ella-fischer',
+    name: 'Ella Fischer',
+    avatarIndex: 13,
+    description: '"The Finisher." Trades patiently, neutralizes danger, and converts small edges accurately.',
+    elo: 1100,
+    depth: 11,
+    multiPv: 4,
+    personality: { aggression: 20, trapSeeking: 25, defensiveness: 70 },
+    aiEnabled: false,
+    temperature: 0.15,
+    bookPlies: 10,
+    bookMistakeChance: 0.08
+  },
+  {
+    id: 'raj-patel',
+    name: 'Raj Patel',
+    avatarIndex: 14,
+    description: '"The Survivor." Defends resourcefully, sets practical problems, and refuses to resign early.',
+    elo: 1000,
+    depth: 10,
+    multiPv: 5,
+    personality: { aggression: 25, trapSeeking: 45, defensiveness: 75 },
+    aiEnabled: false,
+    temperature: 0.35,
+    bookPlies: 6,
+    bookMistakeChance: 0.15
+  },
+  {
+    id: 'fiona-reyes',
+    name: 'Fiona Reyes',
+    avatarIndex: 15,
+    description: '"The Fearless." Welcomes complications and accepts sacrifices with total confidence.',
+    elo: 1150,
+    depth: 10,
+    multiPv: 6,
+    personality: { aggression: 75, trapSeeking: 60, defensiveness: 15 },
+    aiEnabled: true,
+    temperature: 0.4,
+    bookPlies: 7,
+    bookMistakeChance: 0.15
+  },
+  {
+    id: 'ethan-cole',
+    name: 'Ethan Cole',
+    avatarIndex: 16,
+    description: '"The Veteran." Leans on decades of experience, avoiding unnecessary calculation.',
+    elo: 1250,
+    depth: 11,
+    multiPv: 4,
+    personality: { aggression: 35, trapSeeking: 30, defensiveness: 55 },
+    aiEnabled: false,
+    temperature: 0.2,
+    bookPlies: 14,
+    bookMistakeChance: 0.06
+  },
+  {
+    id: 'ruby-tanaka',
+    name: 'Ruby Tanaka',
+    avatarIndex: 17,
+    description: '"The Rising Star." Plays ambitious, energetic chess backed by strong preparation.',
+    elo: 1300,
+    depth: 11,
+    multiPv: 5,
+    personality: { aggression: 60, trapSeeking: 50, defensiveness: 30 },
+    aiEnabled: true,
+    temperature: 0.3,
+    bookPlies: 12,
+    bookMistakeChance: 0.08
+  },
+
+  // --- Advanced ---
+  {
+    id: 'marcus-king',
+    name: 'Marcus King',
+    avatarIndex: 18,
+    description: '"The Grinder." Extends games, keeps up the pressure, and waits for you to collapse.',
+    elo: 1550,
+    depth: 12,
+    multiPv: 4,
+    personality: { aggression: 30, trapSeeking: 30, defensiveness: 70 },
+    aiEnabled: false,
+    temperature: 0.15,
+    bookPlies: 12,
+    bookMistakeChance: 0.06
+  },
+  {
+    id: 'maya-das',
+    name: 'Maya Das',
+    avatarIndex: 19,
+    description: '"The Queen Hunter." Gains tempo through threats and hunts your loose or exposed pieces.',
+    elo: 1600,
+    depth: 12,
+    multiPv: 8,
+    personality: { aggression: 70, trapSeeking: 75, defensiveness: 20 },
+    aiEnabled: true,
+    temperature: 0.25,
+    bookPlies: 10,
+    bookMistakeChance: 0.08
+  },
+  {
+    id: 'marco-silva',
+    name: 'Marco Silva',
+    avatarIndex: 20,
+    description: '"The Marathoner." Calculates steadily and stays accurate deep into long games.',
+    elo: 1700,
+    depth: 13,
+    multiPv: 4,
+    personality: { aggression: 35, trapSeeking: 35, defensiveness: 55 },
+    aiEnabled: false,
+    temperature: 0.12,
+    bookPlies: 12,
+    bookMistakeChance: 0.05
+  },
+  {
+    id: 'leo-haddad',
+    name: 'Leo Haddad',
+    avatarIndex: 21,
+    description: '"The Improviser." Steps off known theory early, trusting intuition over preparation.',
+    elo: 1500,
+    depth: 11,
+    multiPv: 5,
+    personality: { aggression: 55, trapSeeking: 55, defensiveness: 25 },
+    aiEnabled: true,
+    temperature: 0.5,
+    bookPlies: 3,
+    bookMistakeChance: 0.4
+  },
+  {
+    id: 'viktor-hahn',
+    name: 'Viktor Hahn',
+    avatarIndex: 22,
+    description: '"The Iron Wall." Eliminates weaknesses, absorbs attacks, and frustrates aggressive opponents.',
+    elo: 1750,
+    depth: 13,
+    multiPv: 3,
+    personality: { aggression: 10, trapSeeking: 20, defensiveness: 90 },
+    aiEnabled: false,
+    temperature: 0.12,
+    bookPlies: 14,
+    bookMistakeChance: 0.04
+  },
+  {
+    id: 'arun-kapoor',
+    name: 'Arun Kapoor',
+    avatarIndex: 23,
+    description: '"The Sniper." Waits quietly for one weakness, then finishes with a short forcing sequence.',
+    elo: 1650,
+    depth: 12,
+    multiPv: 6,
+    personality: { aggression: 45, trapSeeking: 80, defensiveness: 45 },
+    aiEnabled: true,
+    temperature: 0.15,
+    bookPlies: 10,
+    bookMistakeChance: 0.06
+  },
+
+  // --- Expert ---
+  {
+    id: 'hannah-torres',
+    name: 'Hannah Torres',
+    avatarIndex: 24,
+    description: '"The Hustler." Reads opponents quickly and sets practical traps that pay off under pressure.',
+    elo: 2000,
+    depth: 14,
+    multiPv: 6,
+    personality: { aggression: 55, trapSeeking: 80, defensiveness: 30 },
+    aiEnabled: true,
+    temperature: 0.25,
+    bookPlies: 12,
+    bookMistakeChance: 0.05
+  },
+  {
+    id: 'elias-grant',
+    name: 'Professor Elias Grant',
+    avatarIndex: 25,
+    description: '"The Theorist." Deep opening knowledge and classical principles, applied with total discipline.',
+    elo: 2200,
+    depth: 14,
+    multiPv: 4,
+    personality: { aggression: 30, trapSeeking: 30, defensiveness: 55 },
+    aiEnabled: false,
+    temperature: 0.1,
+    bookPlies: 20,
+    bookMistakeChance: 0.02
+  },
+  {
+    id: 'william-hart',
+    name: 'William Hart',
+    avatarIndex: 26,
+    description: '"The Wildcard." Chooses sharp sidelines that force you to think for yourself early.',
+    elo: 2050,
+    depth: 14,
+    multiPv: 5,
+    personality: { aggression: 60, trapSeeking: 55, defensiveness: 25 },
+    aiEnabled: true,
+    temperature: 0.35,
+    bookPlies: 10,
+    bookMistakeChance: 0.08
+  },
+  {
+    id: 'yuna-seo',
+    name: 'Yuna Seo',
+    avatarIndex: 27,
+    description: '"The Ice Queen." Controlled, clinical chess that snuffs out counterplay before converting.',
+    elo: 2300,
+    depth: 15,
+    multiPv: 4,
+    personality: { aggression: 25, trapSeeking: 35, defensiveness: 75 },
+    aiEnabled: true,
+    temperature: 0.08,
+    bookPlies: 16,
+    bookMistakeChance: 0.02
+  },
+  {
+    id: 'mateo-cruz',
+    name: 'Mateo Cruz',
+    avatarIndex: 28,
+    description: '"The Comeback Kid." Builds resilient defenses and turns dangerous the moment you relax.',
+    elo: 1950,
+    depth: 13,
+    multiPv: 5,
+    personality: { aggression: 45, trapSeeking: 55, defensiveness: 60 },
+    aiEnabled: false,
+    temperature: 0.3,
+    bookPlies: 10,
+    bookMistakeChance: 0.1
+  },
+  {
+    id: 'adrian-laurent',
+    name: 'Adrian Laurent',
+    avatarIndex: 29,
+    description: '"The Artist." Favors harmonious attacks and elegant sacrifices over the merely correct move.',
+    elo: 2150,
+    depth: 14,
+    multiPv: 6,
+    personality: { aggression: 70, trapSeeking: 70, defensiveness: 20 },
+    aiEnabled: true,
+    temperature: 0.3,
+    bookPlies: 10,
+    bookMistakeChance: 0.06
+  }
+] as const;
+
+export function findBotConfig(id: string): BotConfig | undefined {
+  return BOT_ROSTER.find((bot) => bot.id === id);
+}

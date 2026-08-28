@@ -1,5 +1,6 @@
 import type { Kysely } from 'kysely';
 import type { LanguageModelV4StreamPart } from '@ai-sdk/provider';
+import { Chess } from 'chess.js';
 import { MockLanguageModelV4 } from 'ai/test';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CoachingPlan, PositionAnalysis } from '@freechesscoach/shared';
@@ -915,6 +916,249 @@ describe('sessions routes', () => {
       });
 
       expect(response.statusCode).toBe(404);
+    });
+  });
+
+  describe('play-bot mode routes ("Play vs Bot" plan)', () => {
+    /** Unlike enginePositionFixture (fixed 'e4', fine for "play mode" tests
+     * which only ever commit one White-to-move opening move), a bot turn
+     * commits two moves in a row for opposite colors — the engine's
+     * suggested move MUST be legal for whichever side is actually on move,
+     * or commitBotMove rejects it as illegal and the whole turn 500s. Reads
+     * the FEN out of the actual request body and returns chess.js's own
+     * first legal move from that exact position. */
+    function legalEngineFixture(fen: string): PositionAnalysis {
+      const move = new Chess(fen).moves({ verbose: true })[0];
+      if (!move) throw new Error(`legalEngineFixture: no legal moves for fen "${fen}"`);
+      return {
+        ...enginePositionFixture(fen),
+        bestMove: move.san,
+        lines: [
+          {
+            moveUci: `${move.from}${move.to}${move.promotion ?? ''}`,
+            moveSan: move.san,
+            pvSan: [move.san],
+            cp: 10,
+            mateIn: null
+          }
+        ]
+      };
+    }
+
+    // Same reasoning as "play mode routes" above: play-move resolves a real
+    // (stubbed) native engine backend per request — both the standard-depth
+    // classification path AND the bot's own uncached move-selection search
+    // go through this same fetch stub, since resolveRawEngineBackend still
+    // talks to the same engine HTTP API, just uncached.
+    beforeEach(() => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation((_url: string | URL, init?: RequestInit) => {
+          const requestBody = init?.body ? (JSON.parse(String(init.body)) as { fen: string }) : undefined;
+          const fen = requestBody?.fen ?? new Chess().fen();
+          return Promise.resolve(
+            new Response(JSON.stringify({ analysis: legalEngineFixture(fen) }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' }
+            })
+          );
+        })
+      );
+    });
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    test('POST /api/sessions/play-bot creates a vs_bot game + play_bot session for a known bot', async () => {
+      const user = await usersRepo.insert(db, { email: 'botstart@example.com', displayName: 'Ann' });
+      const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/sessions/play-bot',
+        headers: headersFor(user),
+        payload: { studentColor: 'white', botId: 'nate-brooks' }
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body.mode).toBe('play_bot');
+      expect(body.status).toBe('active');
+      expect(body.currentPly).toBe(0);
+
+      const game = await gamesRepo.findById(db, body.gameId);
+      expect(game?.source).toBe('vs_bot');
+      expect(game?.botId).toBe('nate-brooks');
+    });
+
+    test('POST /api/sessions/play-bot 404s for an unknown botId', async () => {
+      const user = await usersRepo.insert(db, { email: 'botunknown@example.com', displayName: 'Ann' });
+      const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/sessions/play-bot',
+        headers: headersFor(user),
+        payload: { studentColor: 'white', botId: 'no-such-bot' }
+      });
+
+      expect(response.statusCode).toBe(404);
+    });
+
+    async function setupBotSession(
+      email: string,
+      botId = 'nate-brooks',
+      clock?: { initialMs: number; incrementMs: number } | null
+    ) {
+      const user = await usersRepo.insert(db, { email, displayName: 'Ann' });
+      const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/sessions/play-bot',
+        headers: headersFor(user),
+        payload: { studentColor: 'white', botId, clock }
+      });
+      const session = created.json();
+      return { user, app, sessionId: session.id as string, gameId: session.gameId as string };
+    }
+
+    test('POST /api/sessions/:id/play-move on a play_bot session commits the student move AND the bot\'s synchronous reply', async () => {
+      const { user, app, sessionId } = await setupBotSession('botmove@example.com');
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/sessions/${sessionId}/play-move`,
+        headers: headersFor(user),
+        payload: { san: 'e4' }
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body.player.san).toBe('e4');
+      expect(body.player.ply).toBe(1);
+      expect(typeof body.bot?.san).toBe('string');
+      expect(body.bot.san.length).toBeGreaterThan(0);
+      expect(body.bot.ply).toBe(2);
+      expect(body.gameOver).toBeNull();
+
+      const session = await sessionsRepo.findById(db, sessionId);
+      expect(session?.currentPly).toBe(2);
+    }, 15000);
+
+    test('POST /api/sessions/:id/play-move 422s on an illegal move without involving the bot', async () => {
+      const { user, app, sessionId } = await setupBotSession('botillegal@example.com');
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/sessions/${sessionId}/play-move`,
+        headers: headersFor(user),
+        payload: { san: 'Qh5+++' }
+      });
+
+      expect(response.statusCode).toBe(422);
+      const session = await sessionsRepo.findById(db, sessionId);
+      expect(session?.currentPly).toBe(0);
+    });
+
+    test('a timed game reports remaining time on each move and seeds it on creation', async () => {
+      const { user, app, sessionId, gameId } = await setupBotSession('botclock@example.com', 'nate-brooks', {
+        initialMs: 300000,
+        incrementMs: 0
+      });
+
+      const game = await gamesRepo.findById(db, gameId);
+      expect(game?.clockInitialMs).toBe(300000);
+      expect(game?.whiteRemainingMs).toBe(300000);
+      expect(game?.blackRemainingMs).toBe(300000);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/sessions/${sessionId}/play-move`,
+        headers: headersFor(user),
+        payload: { san: 'e4' }
+      });
+
+      const body = response.json();
+      expect(body.whiteRemainingMs).toBeLessThan(300000);
+      expect(body.whiteRemainingMs).toBeGreaterThan(0);
+      expect(body.blackRemainingMs).toBeLessThan(300000);
+    }, 15000);
+
+    test('an untimed game reports null remaining time', async () => {
+      const { user, app, sessionId } = await setupBotSession('botuntimed@example.com');
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/sessions/${sessionId}/play-move`,
+        headers: headersFor(user),
+        payload: { san: 'e4' }
+      });
+
+      const body = response.json();
+      expect(body.whiteRemainingMs).toBeNull();
+      expect(body.blackRemainingMs).toBeNull();
+    }, 15000);
+
+    test('POST /api/sessions/:id/undo-bot-move removes the last round trip', async () => {
+      const { user, app, sessionId } = await setupBotSession('botundo@example.com');
+      await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/play-move`, headers: headersFor(user), payload: { san: 'e4' } });
+
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/undo-bot-move`, headers: headersFor(user) });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().ply).toBe(0);
+      const session = await sessionsRepo.findById(db, sessionId);
+      expect(session?.currentPly).toBe(0);
+    }, 15000);
+
+    test('POST /api/sessions/:id/undo-bot-move 422s when there is nothing to undo', async () => {
+      const { user, app, sessionId } = await setupBotSession('botundoempty@example.com');
+
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/undo-bot-move`, headers: headersFor(user) });
+
+      expect(response.statusCode).toBe(422);
+    });
+
+    test('POST /api/sessions/:id/resign ends the game as a loss for the student', async () => {
+      const { user, app, sessionId, gameId } = await setupBotSession('botresign@example.com');
+
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/resign`, headers: headersFor(user) });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().result).toBe('0-1');
+      const session = await sessionsRepo.findById(db, sessionId);
+      expect(session?.status).toBe('completed');
+      const game = await gamesRepo.findById(db, gameId);
+      expect(game?.result).toBe('0-1');
+    });
+
+    test('POST /api/sessions/:id/claim-timeout is a no-op before time actually runs out', async () => {
+      const { user, app, sessionId } = await setupBotSession('botclaimok@example.com', 'nate-brooks', {
+        initialMs: 300000,
+        incrementMs: 0
+      });
+
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/claim-timeout`, headers: headersFor(user) });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().gameOver).toBeNull();
+      const session = await sessionsRepo.findById(db, sessionId);
+      expect(session?.status).toBe('active');
+    });
+
+    test('POST /api/sessions/:id/claim-timeout ends the game once the mover\'s clock has actually run out', async () => {
+      const { user, app, sessionId, gameId } = await setupBotSession('botclaimexpired@example.com', 'nate-brooks', {
+        initialMs: 1,
+        incrementMs: 0
+      });
+
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/claim-timeout`, headers: headersFor(user) });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().gameOver).toEqual({ result: '0-1', reason: 'timeout' });
+      const session = await sessionsRepo.findById(db, sessionId);
+      expect(session?.status).toBe('completed');
+      const game = await gamesRepo.findById(db, gameId);
+      expect(game?.result).toBe('0-1');
     });
   });
 });

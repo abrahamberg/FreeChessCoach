@@ -1,0 +1,349 @@
+/* --- Hero header --- */
+
+.play-bot-start-page__hero {
+  position: relative;
+  padding: var(--space-8) var(--space-6);
+  margin-bottom: var(--space-6);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: radial-gradient(120% 160% at 0% 0%, var(--color-primary-soft) 0%, var(--color-primary-tint) 55%, var(--color-bg) 100%);
+}
+
+.play-bot-start-page__eyebrow {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary-hover);
+}
+
+.play-bot-start-page__hero h1 {
+  margin: 0 0 var(--space-2);
+}
+
+.play-bot-start-page__subtitle {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--color-text-secondary);
+}
+
+/* --- Tier filter pills --- */
+
+.play-bot-start-page__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.play-bot-start-page__filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.play-bot-start-page__filters button:hover {
+  border-color: var(--color-border-strong);
+}
+
+.play-bot-start-page__filters button.is-active {
+  background: var(--color-text);
+  color: var(--color-on-primary);
+  border-color: var(--color-text);
+}
+
+.play-bot-start-page__filter-count {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+}
+
+.play-bot-start-page__filters button.is-active .play-bot-start-page__filter-count {
+  background: rgb(255 255 255 / 20%);
+  color: inherit;
+}
+
+.play-bot-start-page__filter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tier-accent, var(--color-text-muted));
+}
+
+/* --- Tier accent tokens --- */
+
+.play-bot-start-page__filters button[data-bot-tier='beginner'],
+.play-bot-start-page__tier-section[data-bot-tier='beginner'],
+.bot-card[data-bot-tier='beginner'] {
+  --tier-accent: var(--color-info);
+  --tier-accent-soft: var(--color-info-soft);
+}
+
+.play-bot-start-page__filters button[data-bot-tier='developing'],
+.play-bot-start-page__tier-section[data-bot-tier='developing'],
+.bot-card[data-bot-tier='developing'] {
+  --tier-accent: var(--color-primary);
+  --tier-accent-soft: var(--color-primary-soft);
+}
+
+.play-bot-start-page__filters button[data-bot-tier='intermediate'],
+.play-bot-start-page__tier-section[data-bot-tier='intermediate'],
+.bot-card[data-bot-tier='intermediate'] {
+  --tier-accent: var(--color-gold);
+  --tier-accent-soft: var(--color-gold-soft);
+}
+
+.play-bot-start-page__filters button[data-bot-tier='advanced'],
+.play-bot-start-page__tier-section[data-bot-tier='advanced'],
+.bot-card[data-bot-tier='advanced'] {
+  --tier-accent: var(--color-warning);
+  --tier-accent-soft: var(--color-warning-soft);
+}
+
+.play-bot-start-page__filters button[data-bot-tier='expert'],
+.play-bot-start-page__tier-section[data-bot-tier='expert'],
+.bot-card[data-bot-tier='expert'] {
+  --tier-accent: var(--color-danger);
+  --tier-accent-soft: var(--color-danger-soft);
+}
+
+/* --- Tier sections --- */
+
+.play-bot-start-page__roster {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-bottom: var(--space-6);
+}
+
+.play-bot-start-page__tier-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  font-family: 'Inter Tight', Inter, -apple-system, sans-serif;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.play-bot-start-page__tier-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tier-accent);
+}
+
+.play-bot-start-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+
+/* --- Bot card --- */
+
+.bot-card {
+  position: relative;
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease, background-color 140ms ease;
+}
+
+@media (hover: hover) {
+  .bot-card:hover {
+    border-color: var(--tier-accent, var(--color-border-strong));
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+  }
+}
+
+.bot-card:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.bot-card.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: var(--shadow-sm);
+}
+
+.bot-card__avatar-wrap {
+  position: relative;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--tier-accent-soft, var(--color-surface-subtle));
+}
+
+.bot-card__check {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: var(--shadow-xs);
+}
+
+.bot-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bot-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.bot-card__name {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.bot-card__elo {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--tier-accent-soft, var(--color-surface-subtle));
+  color: var(--tier-accent, var(--color-text-secondary));
+}
+
+.bot-card__description {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  line-height: var(--line-height-normal);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* --- Selection confirm (inside the Modal opened on picking a bot) --- */
+
+.play-bot-start-page__summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.play-bot-start-page__summary-bot {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.play-bot-start-page__summary-bot-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.play-bot-start-page__summary-bot-elo {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.play-bot-start-page__summary-bot-description {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.play-bot-start-page__time-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.play-bot-start-page__time-controls button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.play-bot-start-page__time-controls button.is-selected {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
+}
+
+.play-bot-start-page__color-button {
+  position: relative;
+}
+
+.play-bot-start-page__color-button::before {
+  margin-right: var(--space-2);
+  font-size: 1.2em;
+}
+
+.play-bot-start-page__color-button--white::before {
+  content: '♔';
+}
+
+.play-bot-start-page__color-button--black::before {
+  content: '♚';
+}
+
+.play-bot-start-page__color-button--random::before {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  background: linear-gradient(135deg, #fff 50%, #1a1a1a 50%);
+  vertical-align: -0.1em;
+}
+
+/* Three color options is tighter than the two-button .color-confirm layout
+ * elsewhere was designed for, so stack them once the modal gets narrow. */
+@media (max-width: 480px) {
+  .play-bot-start-page__summary .color-confirm__options {
+    flex-direction: column;
+  }
+
+  .play-bot-start-page__summary .color-confirm__options button {
+    padding: var(--space-4);
+  }
+}

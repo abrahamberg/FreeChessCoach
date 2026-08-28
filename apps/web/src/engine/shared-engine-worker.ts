@@ -1,6 +1,14 @@
 export interface EngineWorkerLike {
   postMessage(message: string): void;
   onmessage: ((event: { data: string }) => void) | null;
+  /** Fires if the worker script fails to load or throws during its own
+   * bootstrap (a WASM instantiation failure, for example) — without this
+   * wired up, a broken worker never sends `uciok`, so `isReady` never
+   * becomes true and every queued analyze() call hangs forever instead of
+   * failing (SEARCH_TIMEOUT_MS only ever starts once a search is actually
+   * dequeued, which requires isReady). Optional only because test fakes
+   * don't need to simulate this. */
+  onerror?: ((event: { message?: string }) => void) | null;
   terminate(): void;
   /** Hands the worker a MessagePort it can stream WASM download progress on
    * (see defaultCreateWorker). Optional because test fakes have no download
@@ -198,15 +206,16 @@ export class SharedEngineWorker {
     while (this.pending.length > 0) this.pending.shift()?.reject(reason);
   }
 
-  /** Recovers from a `go` that never answered (see SEARCH_TIMEOUT_MS): the
-   * worker that owned it may still be alive but wedged (or may go on to
+  /** Recovers from a `go` that never answered (see SEARCH_TIMEOUT_MS) or a
+   * worker that failed outright (see the `onerror` wiring in ensureWorker()):
+   * the worker that owned it may still be alive but wedged (or may go on to
    * deliver a late, now-unwanted `bestmove` for a request nothing is
    * awaiting anymore), so it's terminated outright rather than reused —
    * `ensureWorker()` builds a fresh one on the next analyze(). Whatever else
-   * was queued behind the stuck request is rejected too, on the same
+   * was queued behind the stuck/failed request is rejected too, on the same
    * reasoning as a failed worker construction: nothing left in `pending` can
    * still run on a worker that's being thrown away. */
-  private resetStuckWorker(): void {
+  private resetStuckWorker(reason: string): void {
     this.active = false;
     this.isReady = false;
     const worker = this.worker;
@@ -214,7 +223,7 @@ export class SharedEngineWorker {
     worker?.terminate();
     this.setStatus('absent');
     this.setProgress(null);
-    this.rejectPending(new Error('Engine reset after a stuck search'));
+    this.rejectPending(new Error(reason));
   }
 
   private setStatus(status: EngineInstallStatus): void {
@@ -289,6 +298,13 @@ export class SharedEngineWorker {
         this.pump();
       }
     };
+    // Without this, a worker that fails during its own bootstrap (a bad
+    // fetch, a WASM instantiation failure) never sends `uciok`/`readyok`,
+    // isReady stays false forever, and pump() silently no-ops on every
+    // future analyze() call — the caller just hangs with no error, ever.
+    worker.onerror = (event) => {
+      this.resetStuckWorker(event.message ? `Engine worker failed: ${event.message}` : 'Engine worker failed to start');
+    };
     worker.postMessage('uci');
   }
 
@@ -304,7 +320,7 @@ export class SharedEngineWorker {
     const lines = new Map<number, RawEngineLine>();
     const timeoutId = setTimeout(() => {
       reject(new Error(`Engine search timed out after ${SEARCH_TIMEOUT_MS}ms`));
-      this.resetStuckWorker();
+      this.resetStuckWorker('Engine reset after a stuck search');
     }, SEARCH_TIMEOUT_MS);
     worker.onmessage = (event) => {
       const line = event.data;

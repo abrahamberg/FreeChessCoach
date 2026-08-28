@@ -17,7 +17,8 @@ const GAMES_RESPONSE = [
     playedAt: '2026-07-20T10:00:00.000Z',
     createdAt: '2026-07-20T10:05:00.000Z',
     analysisStatus: 'ready',
-    sessionId: null
+    sessionId: null,
+    botId: null
   }
 ];
 
@@ -32,7 +33,8 @@ const PLAY_MODE_GAME = {
   playedAt: null,
   createdAt: '2026-08-05T10:05:00.000Z',
   analysisStatus: null,
-  sessionId: 'session-2'
+  sessionId: 'session-2',
+  botId: null
 };
 
 function renderGamesPage(games: unknown[] = GAMES_RESPONSE, { deleteStatus = 204 }: { deleteStatus?: number } = {}) {

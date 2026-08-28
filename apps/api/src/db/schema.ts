@@ -1,5 +1,5 @@
 import type { ColumnType, Generated } from 'kysely';
-import type { CoachPersona, EngineMode, MistakeCategory, MoveQuality, RatingBand, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { BotConfig, CoachPersona, EngineMode, MistakeCategory, MoveQuality, RatingBand, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -31,7 +31,7 @@ export interface GamesTable {
   id: Generated<string>;
   userId: string;
   pgn: string;
-  source: 'paste' | 'upload' | 'lichess' | 'coach_play';
+  source: 'paste' | 'upload' | 'lichess' | 'coach_play' | 'vs_bot';
   userColor: 'white' | 'black';
   whiteName: string | null;
   blackName: string | null;
@@ -40,6 +40,20 @@ export interface GamesTable {
   eco: string | null;
   playedAt: Date | null;
   createdAt: Generated<Date>;
+  /** Set iff source === 'vs_bot' — the BOT_ROSTER id. */
+  botId: string | null;
+  /** Set iff source === 'vs_bot' — a frozen copy of the BotConfig at
+   * game-start time, so a later roster edit never rewrites the story of an
+   * already-played game. */
+  botConfigSnapshot: Jsonb<BotConfig> | null;
+  /** The chosen time control, frozen at game-start (null = untimed). See
+   * 0021_bot_game_clock.ts — all four clock columns are null together. */
+  clockInitialMs: number | null;
+  clockIncrementMs: number | null;
+  /** Live remaining time, updated after every committed move
+   * (bot-move-commit.ts) and read by the claim-timeout endpoint. */
+  whiteRemainingMs: number | null;
+  blackRemainingMs: number | null;
 }
 
 export interface AnalysesTable {

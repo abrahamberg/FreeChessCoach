@@ -1,7 +1,32 @@
-import { Chess } from 'chess.js';
-import type { ReactNode } from 'react';
-import { Chessboard, type Arrow, type ChessboardOptions, type PieceDropHandlerArgs } from 'react-chessboard';
+import { Chess, type Square } from 'chess.js';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  Chessboard,
+  type Arrow,
+  type ChessboardOptions,
+  type PieceDropHandlerArgs,
+  type PieceHandlerArgs,
+  type SquareHandlerArgs
+} from 'react-chessboard';
 import './CoachBoard.css';
+
+const SELECTED_SQUARE_STYLE: CSSProperties = { backgroundColor: 'rgba(0, 140, 60, 0.65)' };
+const MOVE_DOT_STYLE: CSSProperties = {
+  backgroundImage: 'radial-gradient(circle, rgba(20, 20, 20, 0.28) 22%, transparent 23%)',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat'
+};
+const CAPTURE_RING_STYLE: CSSProperties = { boxShadow: 'inset 0 0 0 4px rgba(20, 20, 20, 0.28)' };
+
+function mergeSquareStyles(...maps: Record<string, CSSProperties>[]): Record<string, CSSProperties> {
+  const merged: Record<string, CSSProperties> = {};
+  for (const map of maps) {
+    for (const [square, style] of Object.entries(map)) {
+      merged[square] = { ...merged[square], ...style };
+    }
+  }
+  return merged;
+}
 
 export interface BoardArrow {
   from: string;
@@ -37,6 +62,11 @@ export interface CoachBoardProps {
    * onUserMove, which is answer-mode-only and drives the chat side-effect —
    * peek mode must keep updating the display without notifying the coach. */
   onLocalMove?: (fen: string) => void;
+  /** Settings > Board's "show legal moves" toggle (useShowLegalMoveDots) —
+   * clicking a piece always selects it and lets you click a destination to
+   * move regardless of this flag; the flag only controls whether the
+   * chess.com/lichess-style dot/ring indicators are drawn. Defaults on. */
+  showLegalMoveDots?: boolean;
 }
 
 /** Presentational react-chessboard wrapper (AGENTS.md rule 7) — no fetching,
@@ -50,15 +80,22 @@ export function CoachBoard({
   highlights = [],
   onUserMove,
   onLocalMove,
-  onArrowsChange
+  onArrowsChange,
+  showLegalMoveDots = true
 }: CoachBoardProps): ReactNode {
-  function handlePieceDrop({ sourceSquare, targetSquare }: PieceDropHandlerArgs): boolean {
-    if (!targetSquare) return false;
+  const justDroppedRef = useRef(false);
+  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
 
+  // A stale selection (e.g. the bot's reply just landed, or the student
+  // navigated the move strip) would otherwise dot squares from a position
+  // that's no longer on the board.
+  useEffect(() => setSelectedSquare(null), [fen]);
+
+  function applyMove(from: string, to: string): boolean {
     const chess = new Chess(fen);
     let move;
     try {
-      move = chess.move({ from: sourceSquare, to: targetSquare, promotion: 'q' });
+      move = chess.move({ from, to, promotion: 'q' });
     } catch {
       return false;
     }
@@ -71,14 +108,86 @@ export function CoachBoard({
     return true;
   }
 
+  function handlePieceDrop({ sourceSquare, targetSquare }: PieceDropHandlerArgs): boolean {
+    if (!targetSquare) return false;
+    const applied = applyMove(sourceSquare, targetSquare);
+    // A completed pointer-drag from one square to another still ends with a
+    // click-ish event landing back on the drag's origin (pointer capture
+    // semantics) — swallow the one immediately following a drop so it can't
+    // be misread as a click-to-move selection of the square the piece just
+    // left.
+    if (applied) justDroppedRef.current = true;
+    return applied;
+  }
+
+  const legalMovesFromSelection = selectedSquare ? new Chess(fen).moves({ square: selectedSquare, verbose: true }) : [];
+
+  function handleSquareClick(square: string): void {
+    if (justDroppedRef.current) {
+      justDroppedRef.current = false;
+      return;
+    }
+    if (selectedSquare) {
+      if (square === selectedSquare) {
+        setSelectedSquare(null);
+        return;
+      }
+      if (legalMovesFromSelection.some((move) => move.to === square)) {
+        applyMove(selectedSquare, square);
+        setSelectedSquare(null);
+        return;
+      }
+    }
+
+    const chess = new Chess(fen);
+    const piece = chess.get(square as Square);
+    setSelectedSquare(piece && piece.color === chess.turn() ? (square as Square) : null);
+  }
+
+  // Both wired to the same handler: react-chessboard fires onSquareClick for
+  // a click landing on an empty square and onPieceClick for one landing on a
+  // piece, each already carrying its own reliable click AND mobile-tap
+  // detection (Square/Piece's own onClick + onTouchStart/onTouchEnd) — no
+  // need for a custom document-level listener. That used to be necessary
+  // because dnd-kit's drag sensor had no activation distance, so it
+  // "activated" (swallowing the next native click) on every single
+  // pointerdown/touchstart regardless of whether a drag actually happened;
+  // the `dragActivationDistance` option below now means a plain tap/click
+  // (no real movement) never triggers that at all.
+  function handleSquareClickOption({ square }: SquareHandlerArgs): void {
+    handleSquareClick(square);
+  }
+  function handlePieceClickOption({ square }: PieceHandlerArgs): void {
+    if (square) handleSquareClick(square);
+  }
+
+  const legalMoveSquareStyles: Record<string, CSSProperties> =
+    showLegalMoveDots && selectedSquare
+      ? Object.fromEntries(
+          legalMovesFromSelection.map((move) => [move.to, move.captured ? CAPTURE_RING_STYLE : MOVE_DOT_STYLE])
+        )
+      : {};
+
   const options: ChessboardOptions = {
     position: fen,
     boardOrientation: orientation,
     onPieceDrop: handlePieceDrop,
+    onSquareClick: handleSquareClickOption,
+    onPieceClick: handlePieceClickOption,
     arrows: arrows.map((arrow) => ({ startSquare: arrow.from, endSquare: arrow.to, color: arrow.color })),
-    squareStyles: Object.fromEntries(
-      highlights.map((highlight) => [highlight.square, { backgroundColor: highlight.color }])
+    squareStyles: mergeSquareStyles(
+      Object.fromEntries(highlights.map((highlight) => [highlight.square, { backgroundColor: highlight.color }])),
+      selectedSquare ? { [selectedSquare]: SELECTED_SQUARE_STYLE } : {},
+      legalMoveSquareStyles
     ),
+    // dnd-kit's default distance constraint is 1px — a real click/tap almost
+    // always jitters past that between pointerdown/pointerup, so nearly
+    // every plain click was spinning up full drag-start machinery (droppable
+    // rect measurement across all 64 squares) and swallowing the click that
+    // would otherwise have reached onSquareClick/onPieceClick above.
+    // Raising the threshold means only a deliberate drag (moving well over a
+    // square's width) starts that machinery.
+    dragActivationDistance: 6,
     allowDrawingArrows: true,
     clearArrowsOnPositionChange: true,
     onArrowsChange: ({ arrows: drawn }: { arrows: Arrow[] }) => {

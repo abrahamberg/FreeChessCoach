@@ -1,6 +1,8 @@
 export * from './constants.js';
 
 export * from './analysis.js';
+export * from './bot.js';
+export * from './bot-roster.js';
 export * from './coaching-plan.js';
 export * from './credits.js';
 export * from './dashboard.js';

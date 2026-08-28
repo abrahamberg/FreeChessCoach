@@ -13,6 +13,14 @@ export interface RemovedMove {
   fen: string;
 }
 
+export interface AppendMoveOptions {
+  /** When given, embeds a standard `{[%clk h:mm:ss]}` comment after the SAN
+   * token (same convention Lichess/chess.com use) — the wall-clock time the
+   * mover took since their previous move on this game. Used for timed
+   * play_bot games; omitted, this behaves exactly as before. */
+  elapsedMs?: number;
+}
+
 /**
  * Applies a single SAN move to a full PGN (headers + movetext), unlike
  * applySanSequence (apply-san-sequence.ts) which replays from a bare FEN and
@@ -20,12 +28,20 @@ export interface RemovedMove {
  * empty or header-only PGN (no moves yet, e.g. movetext just `*`) works the
  * same as one with existing moves.
  */
-export function appendMoveToPgn(pgn: string, san: string): AppendedMove | { error: string } {
+export function appendMoveToPgn(
+  pgn: string,
+  san: string,
+  options?: AppendMoveOptions
+): AppendedMove | { error: string } {
   const chess = new Chess();
   chess.loadPgn(pgn);
 
   const move = tryMove(chess, san);
   if (!move) return { error: `Illegal move: ${san}` };
+
+  if (options?.elapsedMs !== undefined) {
+    chess.setComment(`[%clk ${formatClock(options.elapsedMs)}]`);
+  }
 
   return {
     pgn: chess.pgn(),
@@ -34,6 +50,15 @@ export function appendMoveToPgn(pgn: string, san: string): AppendedMove | { erro
     uci: `${move.from}${move.to}${move.promotion ?? ''}`,
     ply: chess.history().length
   };
+}
+
+/** h:mm:ss, hours unpadded (Lichess/chess.com convention), e.g. `0:01:23`. */
+function formatClock(elapsedMs: number): string {
+  const totalSeconds = Math.max(0, Math.round(elapsedMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 /**

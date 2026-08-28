@@ -141,4 +141,54 @@ describe('POST /api/positions/analyze', () => {
 
     expect(response.statusCode).toBe(401);
   });
+
+  describe('POST /api/positions/hint-moves', () => {
+    test('returns the raw engine lines at a fixed hint depth/multiPv, uncached', async () => {
+      const headers = headersFor('hint@example.com', 'Hint');
+      const { app, fetchMock } = buildTestApp();
+      await app.inject({ method: 'GET', url: '/api/users/me', headers });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/positions/hint-moves',
+        headers,
+        payload: { fen: ANALYSIS_FEN }
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ lines: analysisFixture().lines });
+      const [, requestInit] = fetchMock.mock.calls[0] as [string, { body: string }];
+      const body = JSON.parse(requestInit.body) as { depth: number; multiPv: number };
+      expect(body.depth).toBe(12);
+      expect(body.multiPv).toBe(3);
+    });
+
+    test('400s on a missing fen, without calling the engine', async () => {
+      const headers = headersFor('hintbadbody@example.com', 'Bad');
+      const { app, fetchMock } = buildTestApp();
+      await app.inject({ method: 'GET', url: '/api/users/me', headers });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/positions/hint-moves',
+        headers,
+        payload: {}
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    test('rejects requests with no auth headers as 401', async () => {
+      const { app } = buildTestApp();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/positions/hint-moves',
+        payload: { fen: ANALYSIS_FEN }
+      });
+
+      expect(response.statusCode).toBe(401);
+    });
+  });
 });

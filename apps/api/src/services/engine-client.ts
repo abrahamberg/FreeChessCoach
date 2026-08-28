@@ -24,16 +24,24 @@ export async function analyzeGameViaEngine(engineUrl: string, fens: string[]): P
 
 /** Wraps `POST engine/analyze-position` — the rich, single-position path
  * used by the coach's live analyzePosition dependency and the
- * deepen-analysis background job. */
+ * deepen-analysis background job. `depth` is deliberately omitted by every
+ * one of those callers (undefined lets the engine service fall back to its
+ * own default) — position_evaluations caches by `fen` alone, so a caller
+ * requesting a different depth would silently corrupt that cache for
+ * everyone else. The one caller that does pass `depth` today is the "Play
+ * vs Bot" plan's bot move-selection engine, which always goes through
+ * resolveRawEngineBackend (bypassing CachingEngineBackend entirely), so
+ * this cache-correctness concern doesn't apply to it. */
 export async function analyzePositionViaEngine(
   engineUrl: string,
   fen: string,
-  multiPv: number = ENGINE_MULTI_PV
+  multiPv: number = ENGINE_MULTI_PV,
+  depth?: number
 ): Promise<PositionAnalysis> {
   const response = await fetch(`${engineUrl}/analyze-position`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ fen, multiPv })
+    body: JSON.stringify({ fen, multiPv, depth })
   });
   if (!response.ok) throw new Error(`engine analyze-position failed: HTTP ${response.status}`);
   const body = (await response.json()) as { analysis: PositionAnalysis };

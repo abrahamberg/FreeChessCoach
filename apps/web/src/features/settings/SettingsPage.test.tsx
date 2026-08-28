@@ -36,6 +36,7 @@ function renderSettings(fetchMock: ReturnType<typeof vi.fn>) {
 describe('SettingsPage', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    localStorage.clear();
   });
 
   test('renders the profile band, credit balance, and which provider has a saved key', async () => {
@@ -257,6 +258,24 @@ describe('SettingsPage', () => {
       '/api/users/me/llm-keys/openai',
       expect.objectContaining({ method: 'PUT', body: JSON.stringify({ apiKey: 'sk-oai-secret' }) })
     );
+  });
+
+  test('defaults the legal-move dots toggle to Show, and Hide persists across remounts', async () => {
+    const fetchMock = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/users/me') return Promise.resolve(jsonResponse(PROFILE));
+      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
+      throw new Error(`unexpected fetch: ${path}`);
+    });
+    renderSettings(fetchMock);
+    const user = userEvent.setup();
+
+    await screen.findByText(/42/);
+    expect(screen.getByRole('button', { name: 'Show' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Hide' })).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'Hide' }));
+    expect(screen.getByRole('button', { name: 'Hide' })).toHaveAttribute('aria-pressed', 'true');
+    expect(localStorage.getItem('freechesscoach-show-legal-move-dots')).toBe('false');
   });
 
   test('renders a sign-out link that ends the oauth2-proxy session and returns to the landing page', async () => {

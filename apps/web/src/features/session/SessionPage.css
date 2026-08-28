@@ -37,6 +37,57 @@
   min-width: 0;
 }
 
+.bot-move-toolbar {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.bot-move-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.bot-move-toolbar button:disabled {
+  opacity: 0.4;
+}
+
+.bot-move-toolbar__undo {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.bot-move-toolbar__hint {
+  margin-left: auto;
+  color: var(--color-gold);
+  font-weight: 600;
+}
+
+.bot-move-toolbar__hint[aria-pressed='true'] {
+  background: var(--color-gold-soft);
+  border-color: var(--color-gold);
+}
+
+.hint-bubble {
+  align-self: center;
+  max-width: 90%;
+  text-align: center;
+  background: var(--color-gold-soft);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
 .undo-pill {
   align-self: center;
   background: var(--color-surface-subtle);
@@ -321,7 +372,7 @@
 }
 
 .session-body.desktop .session-board-column {
-  width: min(66vh, 640px);
+  width: min(72vh, 720px);
   max-width: 100%;
   min-width: 0;
   flex: 0 1 auto;
@@ -360,6 +411,8 @@
 .session-body.desktop .peek-pill,
 .session-body.desktop .played-move-pill,
 .session-body.desktop .move-strip,
+.session-body.desktop .bot-move-toolbar,
+.session-body.desktop .hint-bubble,
 .session-body.desktop .explore-panel-toggle,
 .session-body.desktop .explore-panel {
   flex-shrink: 0;
@@ -409,7 +462,8 @@
   z-index: 2;
 }
 
-.session-body.desktop .chat-pane {
+.session-body.desktop .chat-pane,
+.session-body.desktop .bot-status-panel {
   width: 400px;
   flex: 0 0 400px;
   height: 100%;
@@ -417,4 +471,5 @@
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
+  background: var(--color-surface);
 }

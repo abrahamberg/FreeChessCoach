@@ -22,6 +22,29 @@ export interface ResolveEngineBackendOptions {
  * than once at process start (design spec §3).
  */
 export async function resolveEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
+  const { raw, mode } = await resolveRawBackendForUser(options, userId);
+  return new CachingEngineBackend(options.db, raw, { isExternalSource: mode === 'browser' });
+}
+
+/**
+ * Same backend selection as resolveEngineBackend, but WITHOUT the
+ * CachingEngineBackend wrapper — for the "Play vs Bot" bot move-selection
+ * engine, which searches at a shallow, level-dependent depth/multiPv that
+ * must never collide with or pollute the standard-depth cache every other
+ * caller shares (position_evaluations is keyed by `fen` alone, with no
+ * depth/multiPv discrimination — see ENGINE_DEFAULT_DEPTH's doc comment in
+ * packages/shared/src/constants.ts). Bot search is cheap enough that not
+ * caching it is a deliberate simplification, not a missed optimization.
+ */
+export async function resolveRawEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
+  const { raw } = await resolveRawBackendForUser(options, userId);
+  return raw;
+}
+
+async function resolveRawBackendForUser(
+  options: ResolveEngineBackendOptions,
+  userId: string
+): Promise<{ raw: EngineBackend; mode: 'native' | 'browser' }> {
   const user = await usersRepo.findById(options.db, userId);
   if (!user) throw new EngineUnavailableError(`Unknown user ${userId}`);
 
@@ -31,5 +54,5 @@ export async function resolveEngineBackend(options: ResolveEngineBackendOptions,
       ? new BrowserTunnelEngineBackend(options.tunnelTransport, userId, options.tunnelTimeoutMs)
       : new NativeEngineBackend(options.engineUrl);
 
-  return new CachingEngineBackend(options.db, raw, { isExternalSource: mode === 'browser' });
+  return { raw, mode };
 }

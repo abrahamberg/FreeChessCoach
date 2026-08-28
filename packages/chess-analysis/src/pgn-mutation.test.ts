@@ -74,6 +74,30 @@ describe('appendMoveToPgn', () => {
 
     expect(result).toEqual({ error: 'Illegal move: Zz9' });
   });
+
+  test('with no options, behaves identically to before (no clock comment)', () => {
+    const result = appendMoveToPgn(EMPTY_PGN, 'e4');
+
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.pgn).not.toContain('%clk');
+  });
+
+  test('passing elapsedMs embeds a standard {[%clk h:mm:ss]} comment after the move', () => {
+    const result = appendMoveToPgn(EMPTY_PGN, 'e4', { elapsedMs: 83_000 });
+
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.pgn).toContain('1. e4 {[%clk 0:01:23]}');
+  });
+
+  test('elapsedMs of exactly one hour formats the hours component unpadded', () => {
+    const result = appendMoveToPgn(EMPTY_PGN, 'e4', { elapsedMs: 3_600_000 });
+
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.pgn).toContain('{[%clk 1:00:00]}');
+  });
 });
 
 describe('removeLastMoveFromPgn', () => {

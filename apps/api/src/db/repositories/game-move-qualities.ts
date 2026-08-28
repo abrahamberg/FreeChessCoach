@@ -63,3 +63,15 @@ export function deleteByPly(db: Kysely<Database>, gameId: string, ply: number): 
 export function deleteByGameId(db: Kysely<Database>, gameId: string): Promise<void> {
   return db.deleteFrom('gameMoveQualities').where('gameId', '=', gameId).execute().then(() => undefined);
 }
+
+/** Play-vs-bot's timed-PGN feature: the previous move's timestamp, to compute
+ * elapsed wall-clock time for the next mover's `{[%clk h:mm:ss]}` comment. */
+export function findLatestByGameId(db: Kysely<Database>, gameId: string): Promise<GameMoveQualityRow | undefined> {
+  return db
+    .selectFrom('gameMoveQualities')
+    .selectAll()
+    .where('gameId', '=', gameId)
+    .orderBy('ply', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+}

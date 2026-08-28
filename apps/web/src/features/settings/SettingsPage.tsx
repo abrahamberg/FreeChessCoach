@@ -9,6 +9,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { apiDelete, apiGet, apiPatch, apiPut } from '../../api/client.js';
+import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
 import { BandSelect } from './BandSelect.js';
 import { ByokKeyForm } from './ByokKeyForm.js';
 import { CoachPersonaSelect } from './CoachPersonaSelect.js';
@@ -33,6 +34,7 @@ function readStoredTheme(): Theme | null {
 export function SettingsPage(): ReactNode {
   const queryClient = useQueryClient();
   const [theme, setTheme] = useState<Theme | null>(() => readStoredTheme());
+  const [showLegalMoveDots, setShowLegalMoveDots] = useShowLegalMoveDots();
 
   useEffect(() => {
     if (theme) {
@@ -166,6 +168,17 @@ export function SettingsPage(): ReactNode {
           onSave={(username) => chesscomUsernameMutation.mutate(username)}
           onDelete={() => chesscomUsernameMutation.mutate(null)}
         />
+      </section>
+
+      <section aria-label="Board" className="card">
+        <h2>Board</h2>
+        <p>Show dots on the squares a selected piece can legally move to.</p>
+        <button type="button" aria-pressed={showLegalMoveDots} onClick={() => setShowLegalMoveDots(true)}>
+          Show
+        </button>
+        <button type="button" aria-pressed={!showLegalMoveDots} onClick={() => setShowLegalMoveDots(false)}>
+          Hide
+        </button>
       </section>
 
       <section aria-label="Engine" className="card">

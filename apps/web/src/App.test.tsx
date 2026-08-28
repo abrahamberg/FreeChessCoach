@@ -36,6 +36,7 @@ describe('AppRoutes', () => {
 
   test.each([
     ['/session/:id', '/session/abc-123'],
+    ['/bot-session/:id', '/bot-session/abc-123'],
     ['/dashboard', '/dashboard'],
     ['/settings', '/settings']
   ])('renders the %s route (page owns its own fetching, error state shown when unavailable)', async (_route, path) => {

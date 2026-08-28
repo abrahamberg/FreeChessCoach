@@ -93,7 +93,13 @@ function playedMoveArrowFor(moveUci: string | null | undefined): BoardArrow[] {
  */
 export function useSessionBoardState(
   positions: SessionPosition[],
-  initialPly?: number
+  initialPly?: number,
+  /** play_bot games have no "pre-move quiz" concept (that's a coach
+   * show_position device, see isAnchoredPreMove's doc comment) — a resumed
+   * bot game must always open on the real position, never anchored one ply
+   * behind a hidden "reveal" pill. Defaults false so analyze/play mode's
+   * existing seeding (revealed only at ply 0) is unchanged. */
+  alwaysReveal = false
 ): UseSessionBoardStateResult {
   const [ply, setPly] = useState(0);
   const [mode, setMode] = useState<BoardMode>('answer');
@@ -124,10 +130,10 @@ export function useSessionBoardState(
       seededRef.current = true;
       setPly(initialPly);
       setCoachPly(initialPly);
-      setRevealResult(initialPly === 0);
-      setCoachRevealResult(initialPly === 0);
+      setRevealResult(alwaysReveal || initialPly === 0);
+      setCoachRevealResult(alwaysReveal || initialPly === 0);
     }
-  }, [initialPly]);
+  }, [initialPly, alwaysReveal]);
 
   const currentPosition =
     positions.find((position) => position.ply === ply) ??

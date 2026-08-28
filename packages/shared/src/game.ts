@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { AnalysisStatusSchema } from './analysis.js';
 
-export const GameSourceSchema = z.enum(['paste', 'upload', 'lichess', 'coach_play']);
+export const GameSourceSchema = z.enum(['paste', 'upload', 'lichess', 'coach_play', 'vs_bot']);
 export type GameSource = z.infer<typeof GameSourceSchema>;
 
 /** architecture §14: 'coach_play' is set only by createPlaySession
  * (server-side, POST /api/sessions/play) — never a client-supplied import
- * source, so ImportGameRequestSchema below deliberately excludes it. */
+ * source, so ImportGameRequestSchema below deliberately excludes it. Same
+ * reasoning applies to 'vs_bot', set only by createBotSession. */
 export const ImportableGameSourceSchema = z.enum(['paste', 'upload', 'lichess']);
 export type ImportableGameSource = z.infer<typeof ImportableGameSourceSchema>;
 
@@ -60,7 +61,11 @@ export const GameListItemSchema = z.object({
    * without going through analyze mode's POST /api/sessions (which gates on
    * an `analyses` row a play-mode game never has). Null once that session has
    * ended (completed/abandoned) or, for analyze-mode games, always. */
-  sessionId: z.string().nullable()
+  sessionId: z.string().nullable(),
+  /** Only ever set for source === 'vs_bot' — the BOT_ROSTER id the game was
+   * played against, so the Games list can show which bot without a
+   * follow-up request. Null for every other source. */
+  botId: z.string().nullable()
 });
 export type GameListItem = z.infer<typeof GameListItemSchema>;
 

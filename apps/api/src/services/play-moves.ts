@@ -20,6 +20,13 @@ export interface CommittedMove {
   quality: MoveQuality;
 }
 
+export interface CommitMoveOptions {
+  /** Play-vs-bot's timed-PGN feature: wall-clock time (ms) the mover took
+   * since their previous move on this game. Omitted for ordinary play-mode
+   * moves, which stay untimed exactly as before. */
+  elapsedMs?: number;
+}
+
 /**
  * The student's move — validated and persisted before any chat turn starts
  * (architecture.md §14), symmetric with commitCoachMove below. Neither this
@@ -31,9 +38,10 @@ export interface CommittedMove {
 export async function commitPlayerMove(
   deps: PlayMovesDependencies,
   gameId: string,
-  san: string
+  san: string,
+  options?: CommitMoveOptions
 ): Promise<CommittedMove | { error: string }> {
-  return commitMove(deps, gameId, san);
+  return commitMove(deps, gameId, san, options);
 }
 
 /** The coach's own move, played via the play_coach_move tool. See
@@ -47,16 +55,29 @@ export async function commitCoachMove(
   return commitMove(deps, gameId, san);
 }
 
+/** A play-vs-bot bot's own move. Same mechanics as commitCoachMove — a
+ * distinct name so each mode's call site reads clearly — but threads
+ * `options.elapsedMs` through, since bot games are timed. */
+export async function commitBotMove(
+  deps: PlayMovesDependencies,
+  gameId: string,
+  san: string,
+  options?: CommitMoveOptions
+): Promise<CommittedMove | { error: string }> {
+  return commitMove(deps, gameId, san, options);
+}
+
 async function commitMove(
   deps: PlayMovesDependencies,
   gameId: string,
-  san: string
+  san: string,
+  options?: CommitMoveOptions
 ): Promise<CommittedMove | { error: string }> {
   const game = await gamesRepo.findById(deps.db, gameId);
   if (!game) throw new NotFoundError('Game not found');
 
   const fenBefore = currentFen(game.pgn);
-  const applied = appendMoveToPgn(game.pgn, san);
+  const applied = appendMoveToPgn(game.pgn, san, options);
   if ('error' in applied) return applied;
 
   await gamesRepo.updatePgn(deps.db, gameId, applied.pgn);

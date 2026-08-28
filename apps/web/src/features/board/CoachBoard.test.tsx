@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
+import { Chess, type Square } from 'chess.js';
 import { describe, expect, test, vi } from 'vitest';
 import type { ChessboardOptions } from 'react-chessboard';
 
@@ -15,6 +16,27 @@ vi.mock('react-chessboard', () => ({
 const { CoachBoard } = await import('./CoachBoard.js');
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+// Mirrors react-chessboard's own dispatch: a click landing on an occupied
+// square fires onPieceClick (any piece, either color — the Piece element
+// covers the whole square regardless), an empty one fires onSquareClick.
+// `fen` is the position CoachBoard was rendered with — fixed per test, since
+// CoachBoard doesn't own the fen itself (see its onLocalMove doc comment).
+function clickSquare(square: string, fen: string = START_FEN): void {
+  const options = capturedOptions.at(-1);
+  const piece = new Chess(fen).get(square as Square);
+  // handleSquareClick sets state (the selection) — act() flushes that
+  // synchronously so the very next capturedOptions.at(-1) read reflects it,
+  // the same way fireEvent (which wraps dispatch in act() internally) did
+  // when this test drove clicks through real DOM elements.
+  act(() => {
+    if (piece) {
+      options?.onPieceClick?.({ isSparePiece: false, piece: { pieceType: `${piece.color}${piece.type.toUpperCase()}` }, square });
+    } else {
+      options?.onSquareClick?.({ piece: null, square });
+    }
+  });
+}
 
 describe('CoachBoard', () => {
   test('answer mode: a legal move calls onUserMove with the SAN and resulting fen', () => {
@@ -150,6 +172,101 @@ describe('CoachBoard', () => {
   test('renders nothing extra for screen readers beyond the board itself', () => {
     render(<CoachBoard fen={START_FEN} orientation="white" mode="answer" />);
     expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument();
+  });
+
+  test('click-to-move: selecting a piece then clicking a legal destination plays the move', () => {
+    capturedOptions.length = 0;
+    const onUserMove = vi.fn();
+    render(<CoachBoard fen={START_FEN} orientation="white" mode="answer" onUserMove={onUserMove} />);
+
+    clickSquare('e2');
+    clickSquare('e4');
+
+    expect(onUserMove).toHaveBeenCalledWith('e4', expect.stringContaining('4P3'), 'e2e4');
+  });
+
+  test('click-to-move: clicking a legal capture target plays it', () => {
+    capturedOptions.length = 0;
+    const onUserMove = vi.fn();
+    const CAPTURE_READY_FEN = 'rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2';
+    render(<CoachBoard fen={CAPTURE_READY_FEN} orientation="white" mode="answer" onUserMove={onUserMove} />);
+
+    clickSquare('e4', CAPTURE_READY_FEN);
+    clickSquare('d5', CAPTURE_READY_FEN);
+
+    expect(onUserMove).toHaveBeenCalledWith('exd5', expect.any(String), 'e4d5');
+  });
+
+  test('click-to-move: clicking the opponent’s piece, or an empty square, with nothing selected does nothing', () => {
+    capturedOptions.length = 0;
+    render(<CoachBoard fen={START_FEN} orientation="white" mode="answer" />);
+
+    clickSquare('e7');
+    expect(capturedOptions.at(-1)?.squareStyles?.e7).toBeUndefined();
+
+    clickSquare('e3');
+    expect(capturedOptions.at(-1)?.squareStyles?.e3).toBeUndefined();
+  });
+
+  test('click-to-move: clicking the selected square again deselects it', () => {
+    capturedOptions.length = 0;
+    render(<CoachBoard fen={START_FEN} orientation="white" mode="answer" />);
+
+    clickSquare('e2');
+    expect(capturedOptions.at(-1)?.squareStyles?.e4).toBeDefined();
+
+    clickSquare('e2');
+    expect(capturedOptions.at(-1)?.squareStyles?.e4).toBeUndefined();
+  });
+
+  test('selecting a piece dots its legal destinations by default, and rings a capturable one', () => {
+    capturedOptions.length = 0;
+    const CAPTURE_READY_FEN = 'rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2';
+    render(<CoachBoard fen={CAPTURE_READY_FEN} orientation="white" mode="answer" />);
+
+    clickSquare('e4', CAPTURE_READY_FEN);
+
+    const withSelection = capturedOptions.at(-1);
+    expect(withSelection?.squareStyles?.e5).toMatchObject({ backgroundImage: expect.stringContaining('radial-gradient') });
+    expect(withSelection?.squareStyles?.d5).toMatchObject({ boxShadow: expect.stringContaining('inset') });
+  });
+
+  test('showLegalMoveDots=false suppresses the dots but click-to-move still works', () => {
+    capturedOptions.length = 0;
+    const onUserMove = vi.fn();
+    render(
+      <CoachBoard fen={START_FEN} orientation="white" mode="answer" onUserMove={onUserMove} showLegalMoveDots={false} />
+    );
+
+    clickSquare('e2');
+    expect(capturedOptions.at(-1)?.squareStyles?.e4).toBeUndefined();
+
+    clickSquare('e4');
+    expect(onUserMove).toHaveBeenCalledWith('e4', expect.stringContaining('4P3'), 'e2e4');
+  });
+
+  test('a click right after a drag-drop is not misread as a click-to-move selection', () => {
+    capturedOptions.length = 0;
+    render(<CoachBoard fen={START_FEN} orientation="white" mode="answer" />);
+
+    capturedOptions.at(-1)?.onPieceDrop?.({
+      piece: { pieceType: 'wP' } as never,
+      sourceSquare: 'e2',
+      targetSquare: 'e4'
+    });
+
+    // The browser still synthesizes a "click" at mouseup after a completed
+    // drag. Clicking e2 (still a white pawn — CoachBoard doesn't own the fen
+    // itself, so this test's fen prop is unchanged) would normally select it
+    // and dot e4; the guard should swallow this one stray click instead.
+    clickSquare('e2');
+
+    expect(capturedOptions.at(-1)?.squareStyles?.e4).toBeUndefined();
+
+    // A genuine next click still works normally — only the one immediately
+    // after the drop is swallowed.
+    clickSquare('e2');
+    expect(capturedOptions.at(-1)?.squareStyles?.e4).toBeDefined();
   });
 
   test('allows drawing arrows and reports the student-drawn set through onArrowsChange, distinct from the coach-controlled arrows prop', () => {
