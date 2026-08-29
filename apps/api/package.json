@@ -13,6 +13,7 @@
     "migrate": "tsx src/db/migrate-cli.ts",
     "bundle": "node scripts/bundle.mjs",
     "build-lichess-eval-index": "tsx scripts/build-lichess-eval-index.mjs",
+    "find-lichess-eval-fen": "tsx scripts/find-lichess-eval-fen.mjs",
     "test": "vitest run"
   },
   "dependencies": {

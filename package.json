@@ -15,6 +15,7 @@
     "dev:down": "docker compose down",
     "build:images": "scripts/build-images.sh",
     "build-eval": "npm run build-lichess-eval-index -w @freechesscoach/api --",
+    "find-eval": "npm run find-lichess-eval-fen -w @freechesscoach/api --",
     "docs:prompts": "npm run docs:prompts -w @freechesscoach/prompts",
     "fetch-and-build-eval": "apps/api/scripts/fetch-and-build-lichess-eval-index.sh",
     "deploy-eval": "apps/api/scripts/deploy-lichess-eval-index.sh",
