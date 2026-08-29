@@ -50,8 +50,9 @@ export interface CoachSystemPrompt {
 }
 
 /**
- * prompts.md §2.1. Reordered relative to the doc's human-reading order (which
- * opens with the greeting) into architecture §8.1's cache-safe shape: the fully
+ * See docs/prompts.md's "Coach agent system prompt" section for a rendered
+ * example. Ordered for architecture §8.1's cache-safe shape rather than
+ * human-reading order (which would open with the greeting): the fully
  * user-invariant instructions first (`staticPart`, byte-identical for every
  * user sharing a rating band and every turn), then the per-session user/game
  * data (`dynamicPart`, stable for the whole session but not across users).

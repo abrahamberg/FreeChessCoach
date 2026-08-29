@@ -8,6 +8,7 @@
   },
   "types": "./src/index.ts",
   "scripts": {
+    "docs:prompts": "tsx scripts/generate-doc.ts",
     "test": "vitest run"
   },
   "dependencies": {

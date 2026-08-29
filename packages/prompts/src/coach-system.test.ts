@@ -1,47 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { COACH_PERSONAS, MISTAKE_CATEGORIES, type CoachingPlan, type CoachPersona } from '@freechesscoach/shared';
+import { COACH_PERSONAS, MISTAKE_CATEGORIES, type CoachPersona } from '@freechesscoach/shared';
 import { buildCoachSystemPrompt, type CoachPromptInput } from './coach-system.js';
-
-const now = new Date('2026-07-28T12:00:00Z');
-
-const basePlan: CoachingPlan = {
-  gameSummary: 'summary',
-  openingNote: 'opening',
-  themes: ['king_safety'],
-  connectionToHistory: 'Second game in a row with a delayed castle.',
-  moments: [
-    {
-      ply: 23,
-      kind: 'user_mistake' as const,
-      category: 'king_safety' as const,
-      whatHappened: 'Pushed g4 in front of the uncastled king.',
-      socraticQuestion: 'Before pushing this pawn, where is your king going to live?',
-      keyLine: 'O-O Re8 d3 h6',
-      revealDepthPlies: 6
-    }
-  ]
-};
-
-function baseInput(overrides: Partial<CoachPromptInput> = {}): CoachPromptInput {
-  return {
-    user: { displayName: 'Ann', selfAssessment: 'I blunder pieces', sessionCount: 3 },
-    band: 'club',
-    persona: 'general',
-    mode: 'analyze',
-    game: {
-      whiteName: 'Ann',
-      blackName: 'Bob',
-      result: '1-0',
-      timeControl: '10+0',
-      userColor: 'white'
-    },
-    plan: basePlan,
-    focusAreas: [],
-    recentFindings: [],
-    now,
-    ...overrides
-  };
-}
+import { baseCoachInput as baseInput, now } from './fixtures.js';
 
 describe('buildCoachSystemPrompt', () => {
   test('staticPart is byte-identical for two different same-band users', () => {

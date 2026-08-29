@@ -19,8 +19,8 @@ Categories: ${MISTAKE_CATEGORIES_BLOCK}
 Output JSON: { "selfAssessment": string,
                "provisionalFocusAreas": [{ "category": ..., "note": ... }] }`;
 
-/** prompts.md §6 — one light-tier call at onboarding, seeding the profile so the
- * very first session already feels personal. */
+/** One light-tier call at onboarding, seeding the profile so the very first
+ * session already feels personal. */
 export function buildOnboardingProfilerMessages(input: ProfilerPromptInput): ProfilerMessages {
   const linkedAccounts = input.linkedAccounts.length > 0 ? input.linkedAccounts.join(', ') : 'none linked';
   const user = `Intake: rating_band=${input.band}; linked accounts: ${linkedAccounts}; their words: "${input.rawSelfAssessment}"`;

@@ -7,14 +7,14 @@ describe('CALIBRATION', () => {
     expect(Object.keys(CALIBRATION).sort()).toEqual([...RATING_BANDS].sort());
   });
 
-  test('matches prompts.md §2.3 revealDepthPlies values', () => {
+  test('revealDepthPlies is calibrated per band, increasing with level', () => {
     expect(CALIBRATION.novice.revealDepthPlies).toBe(2);
     expect(CALIBRATION.improving.revealDepthPlies).toBe(4);
     expect(CALIBRATION.club.revealDepthPlies).toBe(6);
     expect(CALIBRATION.advanced.revealDepthPlies).toBe(10);
   });
 
-  test('descriptions match prompts.md §2.3 verbatim', () => {
+  test('band descriptions are stable (regression guard — coach-system.ts injects these verbatim)', () => {
     expect(CALIBRATION.novice.description).toBe(
       'Around 500–900 chess.com. Knows the rules and basic tactics by name. Biggest wins come from board vision and a consistent blunder-check. Use plain language, no jargon beyond fork/pin/skewer. Show very short lines (a move or two) and always say the idea in words. Celebrate every good habit.'
     );

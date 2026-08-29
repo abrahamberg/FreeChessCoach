@@ -6,7 +6,8 @@ export interface BandCalibration {
   revealDepthPlies: number;
 }
 
-/** prompts.md §2.3 — verbatim descriptions injected into the coach system prompt. */
+/** Verbatim descriptions injected into the coach system prompt (coach-system.ts's
+ * yourStudent) — see docs/prompts.md's generated calibration table. */
 export const CALIBRATION: Record<RatingBand, BandCalibration> = {
   novice: {
     label: 'Novice',

@@ -25,8 +25,9 @@ export interface SummarizeSessionTaskOptions {
 }
 
 /** graphile-worker Task for the post-session progress summary (architecture §5,
- * prompts.md §5): light-tier call, validated against SessionOutcomeSchema, applied
- * via services/progress.ts (dedup + focus-area state machine + summary storage). */
+ * packages/prompts/src/progress-summarizer.ts): light-tier call, validated
+ * against SessionOutcomeSchema, applied via services/progress.ts (dedup +
+ * focus-area state machine + summary storage). */
 export function createSummarizeSessionTask(options: SummarizeSessionTaskOptions): Task {
   return async (payload) => {
     const { sessionId } = payload as SummarizeSessionJobPayload;

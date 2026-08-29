@@ -54,8 +54,9 @@ const COACHING_PLAN_JSON_SCHEMA = `{
     "keyLine": string, "revealDepthPlies": number }] (4-8 items)
 }`;
 
-/** prompts.md §3 — one light-tier call per game, JSON validated against
- * CoachingPlanSchema (one retry on validation failure). */
+/** One light-tier call per game, JSON validated against CoachingPlanSchema
+ * (one retry on validation failure). See docs/prompts.md's "Analysis planner"
+ * section for a rendered example. */
 export function buildPlannerMessages(input: PlannerPromptInput): PlannerMessages {
   const now = input.now ?? new Date();
   const calibration = CALIBRATION[input.band];
@@ -79,10 +80,10 @@ ${COACHING_PLAN_JSON_SCHEMA}`;
 }
 
 /** One row per user move, with the immediately preceding opponent move shown
- * inline for context (prompts.md §3.2). Unsound moves also carry their
- * pre-computed `reasons` (classify.ts's deterministic per-move coaching
- * reasons, §11) — grounds the planner's whatHappened/socraticQuestion in the
- * engine's own diagnosis instead of the LLM re-deriving or guessing "why". */
+ * inline for context. Unsound moves also carry their pre-computed `reasons`
+ * (classify.ts's deterministic per-move coaching reasons) — grounds the
+ * planner's whatHappened/socraticQuestion in the engine's own diagnosis
+ * instead of the LLM re-deriving or guessing "why". */
 function renderMovesTable(moves: ClassifiedMove[]): string {
   const rows = moves.map((move, index) => {
     if (!move.isUserMove) return null;

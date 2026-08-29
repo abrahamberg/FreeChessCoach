@@ -78,8 +78,9 @@ export interface FocusAreaUpdateResult {
 
 /**
  * The max-3-active cap and category validation live here (architecture §7.1):
- * a 'create' beyond the cap is silently not inserted ("queued" per prompts.md
- * §5.1 — the LLM ranked it, but the system enforces the limit, not an error).
+ * a 'create' beyond the cap is silently not inserted ("queued" per
+ * packages/prompts/src/progress-summarizer.ts's system prompt — the LLM
+ * ranked it, but the system enforces the limit, not an error).
  */
 export async function applyFocusAreaUpdate(
   db: Kysely<Database>,

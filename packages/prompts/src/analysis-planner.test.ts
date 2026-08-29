@@ -1,60 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
-import type { ClassifiedMove, CandidateMoment } from '@freechesscoach/chess-analysis';
-import { buildPlannerMessages, type PlannerPromptInput } from './analysis-planner.js';
-
-const moves: ClassifiedMove[] = [
-  {
-    ply: 1,
-    moveSan: 'e4',
-    mover: 'white',
-    isUserMove: true,
-    cpLoss: 0,
-    quality: 'good',
-    bestLineSan: ['e4', 'e5'],
-    evalAfterCp: 20,
-    hangsPiece: false
-  },
-  {
-    ply: 2,
-    moveSan: 'e5',
-    mover: 'black',
-    isUserMove: false,
-    cpLoss: 0,
-    quality: 'good',
-    bestLineSan: ['e5'],
-    evalAfterCp: 15,
-    hangsPiece: false
-  },
-  {
-    ply: 3,
-    moveSan: 'h3',
-    mover: 'white',
-    isUserMove: true,
-    cpLoss: 180,
-    quality: 'mistake',
-    bestLineSan: ['d4', 'exd4'],
-    evalAfterCp: -160,
-    hangsPiece: false,
-    reasons: ['Leaves the knight on d5 undefended']
-  }
-];
-
-const candidateMoments: CandidateMoment[] = [{ ply: 3, kind: 'user_mistake', cpLoss: 180 }];
-
-function baseInput(overrides: Partial<PlannerPromptInput> = {}): PlannerPromptInput {
-  return {
-    band: 'club',
-    focusAreas: [],
-    recentFindings: [],
-    selfAssessment: 'I blunder pieces',
-    userColor: 'white',
-    moves,
-    candidateMoments,
-    now: new Date('2026-07-28T12:00:00Z'),
-    ...overrides
-  };
-}
+import { buildPlannerMessages } from './analysis-planner.js';
+import { basePlannerInput as baseInput } from './fixtures.js';
 
 describe('buildPlannerMessages', () => {
   test('system prompt lists all 13 categories and the moment-selection rules', () => {

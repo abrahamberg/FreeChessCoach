@@ -1,5 +1,4 @@
 import {
-  assertEvalSignConvention,
   classifyMoves,
   findCandidateMoments,
   inBookWalk,
@@ -7,6 +6,7 @@ import {
   OPENING_BOOK_SOURCE,
   parsePgn,
   positionKey,
+  repairEvalSignConvention,
   resolveOpening,
   type ParsedPosition
 } from '@freechesscoach/chess-analysis';
@@ -191,8 +191,15 @@ async function analyzeInChunks(
     // Each EngineEval's `ply` is chunk-relative (0..chunk.length-1) — the
     // backend only ever sees this one chunk — so it has to be shifted by
     // `start` to become the position's real index in the game.
-    const renumberedChunkEvals = chunkEvals.map((evalResult, i) => ({ ...evalResult, ply: start + i }));
-    renumberedChunkEvals.forEach((evalResult) => assertEvalSignConvention(evalResult.fen, evalResult.lines));
+    // repairEvalSignConvention swaps a near-tied first/second line back into
+    // best-first order instead of the whole job dying over engine search
+    // noise (a real Stockfish multiPv quirk under time pressure, not corrupt
+    // data — see its doc comment).
+    const renumberedChunkEvals = chunkEvals.map((evalResult, i) => ({
+      ...evalResult,
+      ply: start + i,
+      lines: repairEvalSignConvention(evalResult.fen, evalResult.lines)
+    }));
     evals.push(...renumberedChunkEvals);
     await analysesRepo.storeEngineEvals(db, analysisId, evals);
   }

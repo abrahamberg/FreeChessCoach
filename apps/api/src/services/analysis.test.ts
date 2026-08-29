@@ -281,6 +281,40 @@ describe('runAnalyzeGameJob', () => {
     expect(evals.map((e) => e.ply)).toEqual(evals.map((_, i) => i));
   });
 
+  // Regression: a near-tied multiPv result that comes back fractionally
+  // out of order (a real Stockfish quirk under time pressure, not corrupt
+  // data) used to throw out of analyzeInChunks and fail the whole game's
+  // analysis. It should now self-heal by reordering the two lines instead.
+  test('a near-tied multiPv ordering violation self-heals instead of failing the analysis', async () => {
+    const { gameId, analysisId } = await setupGame();
+    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
+    const analyzeGamePositions = vi.fn(async (fens: string[]) =>
+      fens.map((fen, chunkRelativePly): EngineEval => ({
+        ply: chunkRelativePly,
+        fen,
+        depth: 10,
+        lines: [
+          { moveUci: 'e2e4', moveSan: 'e4', cp: 10, mateIn: null },
+          { moveUci: 'd2d4', moveSan: 'd4', cp: 40, mateIn: null }
+        ]
+      }))
+    );
+
+    await runAnalyzeGameJob(db, { analyzeGamePositions, callPlanner }, gameId);
+
+    const row = await db
+      .selectFrom('analyses')
+      .select(['status', 'engineEvals'])
+      .where('id', '=', analysisId)
+      .executeTakeFirstOrThrow();
+    expect(row.status).toBe('ready');
+    const evals = row.engineEvals as EngineEval[];
+    // Ply 0 is the starting position (white to move): d4's cp (40) beats
+    // e4's (10), so it should now lead after the repair swaps them.
+    expect(evals[0]!.lines[0]!.moveSan).toBe('d4');
+    expect(evals[0]!.lines[1]!.moveSan).toBe('e4');
+  });
+
   test('engine failure -> failed with an error message, planner never called', async () => {
     const { gameId, analysisId } = await setupGame();
     const callPlanner = vi.fn();

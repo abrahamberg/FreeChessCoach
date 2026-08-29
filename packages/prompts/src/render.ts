@@ -31,7 +31,8 @@ export interface FocusAreaSummary {
   lastSeenAt: Date;
 }
 
-/** prompts.md §2.2: `- [status] category: note (seen Nx, last {date})`. */
+/** Format: `- [status] category: note (seen Nx, last {date})`. Injected into
+ * coach-system.ts's yourStudent and analysis-planner.ts's user message. */
 export function renderFocusAreasBlock(focusAreas: FocusAreaSummary[], now: Date): string {
   if (focusAreas.length === 0) return FOCUS_AREAS_EMPTY_FALLBACK;
   return focusAreas
@@ -49,7 +50,8 @@ export interface RecentFinding {
   createdAt: Date;
 }
 
-/** prompts.md §2.2: `- [+/-] category: description ({relative date})`. */
+/** Format: `- [+/-] category: description ({relative date})`. Injected into
+ * coach-system.ts's yourStudent and analysis-planner.ts's user message. */
 export function renderRecentFindingsBlock(findings: RecentFinding[], now: Date): string {
   if (findings.length === 0) return RECENT_FINDINGS_EMPTY_FALLBACK;
   return findings
@@ -71,8 +73,9 @@ export function describeMoveRef(ply: number): string {
 }
 
 /**
- * prompts.md §2.2: numbered moments with a move-pair reference, kind,
- * diagnosis (whatHappened), question, and key line. Uses "White's/Black's
+ * Renders coach-system.ts's "pre-session preparation notes" block: numbered
+ * moments with a move-pair reference, kind, diagnosis (whatHappened),
+ * question, and key line. Uses "White's/Black's
  * move N" (standard PGN terminology) rather than a bare ply — the model
  * must later address this same moment via show_position's {moveNumber,
  * color}, so the reference it reads here has to be the one it can hand

@@ -46,8 +46,9 @@ Socratically while tracking their progress over time. The initial build
   for API/DB shapes.
 - `packages/chess-analysis` — pure chess logic (PGN parsing, move
   classification, position features); no I/O.
-- `packages/prompts` — LLM prompt templates/builders; text must match
-  `docs/prompts.md`.
+- `packages/prompts` — LLM prompt templates/builders, the single source of
+  truth for prompt text. `docs/prompts.md` is *generated* from it (`npm run
+  docs:prompts`) — never hand-edit that file.
 - `services/engine` — standalone Stockfish/UCI HTTP microservice.
 - `deploy/helm` — Kubernetes Helm chart for deploy.
 - `docs/` — see the reading list above.
@@ -101,8 +102,11 @@ Socratically while tracking their progress over time. The initial build
    ```
 
    This is what keeps the next SDK major a handful of files instead of thirty.
-   Prompt text lives only in `packages/prompts` and must match
-   `docs/prompts.md` — update both together.
+   Prompt text lives only in `packages/prompts`. `docs/prompts.md` is
+   generated from it (`npm run docs:prompts`), not hand-maintained —
+   `packages/prompts/scripts/generate-doc.test.ts` fails `npm test` if the
+   checked-in doc drifts from a fresh generation, so run that script after
+   any prompt-text change instead of hand-editing the doc.
 
 7. **React: components + hooks, small.** Presentational components in
    `components/` take props and render — no fetching. Data fetching lives in
@@ -117,6 +121,32 @@ Socratically while tracking their progress over time. The initial build
    raw engine lines, JSON rows, or >~120 words of non-conversational data into
    the coach's context, digest it with a light subagent first. Breaking
    cache-friendliness is a bug even if the output looks correct.
+
+9. **Prompt files follow one convention** (`packages/prompts/src/`) — this is
+   what keeps a large prompt-text rewrite from turning into copy-paste
+   spaghetti. Every prompt builder file:
+   - Exports one `buildXPrompt`/`buildXMessages` (or `renderX`) function per
+     concern — one file per prompt in the inventory (see docs/prompts.md).
+   - Gives each logical section its own named constant or small function
+     (`coach-system.ts`'s `WHO_YOU_ARE`, `FORMATTING`, `howYouRunTheSession()`,
+     ...) — never inline string-builds a section inside the assembler.
+   - Assembles sections with `[...].filter(Boolean).join('\n\n')` so an
+     optional section (e.g. a persona's voice block, `''` for `general`)
+     drops out cleanly instead of leaving a blank line or a conditional.
+   - Factors any fragment reused by more than one variant into a helper
+     (`coach-persona.ts`'s `voiceGuardrail()`, `BOARD_DISCIPLINE_REMINDER`)
+     instead of copy-pasting it per variant.
+   - Puts data-shaped/dynamic rendering (lists, tables) in `render.ts`-style
+     pure functions, unit-tested directly with edge cases (empty list, etc.)
+     — never built inline with string concatenation in the assembler.
+   - Adds a full-text case to `coach-system.snapshot.test.ts` (or the
+     equivalent for a new prompt builder) so an edit's actual blast radius
+     shows up as a snapshot diff, not just the structural `.toContain`
+     assertions. When two blocks reference each other in the prompt's own
+     prose ("see 'X' above"), add the pair to `coach-system.refs.test.ts` —
+     these can't be compiler-checked (the model reads the prose, not an ID),
+     so a test asserting the referenced text still exists verbatim is the
+     guardrail against a silent rename/reword breaking the reference.
 
 ## TypeScript rules
 
