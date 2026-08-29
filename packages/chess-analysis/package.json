@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./lichess-eval-index-format": "./src/lichess-eval-index-format.ts"
+  },
   "types": "./src/index.ts",
   "scripts": {
     "build-book": "tsx scripts/build-opening-book.mjs",

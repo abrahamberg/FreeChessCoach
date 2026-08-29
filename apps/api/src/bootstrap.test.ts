@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { noopJobQueue } from './jobs/queue.js';
 import {
@@ -7,6 +10,7 @@ import {
   buildResolveEngineBackendOptions,
   buildStripeClientFromEnv,
   buildTtsConfigFromEnv,
+  openLichessEvalIndexFromEnv,
   requireEnv
 } from './bootstrap.js';
 
@@ -259,38 +263,81 @@ describe('buildResolveEngineBackendOptions', () => {
     delete process.env.ENGINE_TUNNEL_TIMEOUT_MS;
     delete process.env.CHESS_API_TIMEOUT_MS;
     delete process.env.CHESS_API_REQUEST_DELAY_MS;
+    delete process.env.LICHESS_EVAL_MIN_DEPTH;
   });
 
   test('defaults tunnelTimeoutMs to 10000', () => {
-    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, null);
     expect(options.tunnelTimeoutMs).toBe(10000);
   });
 
   test('reads ENGINE_TUNNEL_TIMEOUT_MS when set', () => {
     process.env.ENGINE_TUNNEL_TIMEOUT_MS = '5000';
-    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, null);
     expect(options.tunnelTimeoutMs).toBe(5000);
   });
 
   test('defaults chessApiTimeoutMs to 15000', () => {
-    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, null);
     expect(options.chessApiTimeoutMs).toBe(15000);
   });
 
   test('reads CHESS_API_TIMEOUT_MS when set', () => {
     process.env.CHESS_API_TIMEOUT_MS = '20000';
-    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, null);
     expect(options.chessApiTimeoutMs).toBe(20000);
   });
 
   test('defaults chessApiRequestDelayMs to 100', () => {
-    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, null);
     expect(options.chessApiRequestDelayMs).toBe(100);
   });
 
   test('reads CHESS_API_REQUEST_DELAY_MS when set', () => {
     process.env.CHESS_API_REQUEST_DELAY_MS = '250';
-    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, null);
     expect(options.chessApiRequestDelayMs).toBe(250);
+  });
+
+  test('defaults lichessEvalMinDepth to ENGINE_DEFAULT_DEPTH and passes the given index through as-is', () => {
+    const fakeIndex = { lookup: vi.fn() } as never;
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, fakeIndex);
+    expect(options.lichessEvalMinDepth).toBe(16);
+    expect(options.lichessEvalIndex).toBe(fakeIndex);
+  });
+
+  test('is null by default and reads LICHESS_EVAL_MIN_DEPTH when set', () => {
+    process.env.LICHESS_EVAL_MIN_DEPTH = '20';
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, null);
+    expect(options.lichessEvalIndex).toBeNull();
+    expect(options.lichessEvalMinDepth).toBe(20);
+  });
+});
+
+describe('openLichessEvalIndexFromEnv', () => {
+  afterEach(() => {
+    delete process.env.LICHESS_EVAL_INDEX_PATH;
+  });
+
+  test('returns null when LICHESS_EVAL_INDEX_PATH is unset', async () => {
+    delete process.env.LICHESS_EVAL_INDEX_PATH;
+    await expect(openLichessEvalIndexFromEnv()).resolves.toBeNull();
+  });
+
+  test('returns null and warns when LICHESS_EVAL_INDEX_PATH points at a missing file (PVC not populated yet)', async () => {
+    process.env.LICHESS_EVAL_INDEX_PATH = '/nonexistent/lichess-eval-index.bin';
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(openLichessEvalIndexFromEnv()).resolves.toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('/nonexistent/lichess-eval-index.bin'));
+    warn.mockRestore();
+  });
+
+  test('throws when LICHESS_EVAL_INDEX_PATH points at a corrupt (wrong-size) file', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'bootstrap-lichess-eval-index-test-'));
+    const filePath = join(dir, 'lichess-eval-index.bin');
+    await writeFile(filePath, Buffer.alloc(10));
+    process.env.LICHESS_EVAL_INDEX_PATH = filePath;
+    await expect(openLichessEvalIndexFromEnv()).rejects.toThrow();
+    await rm(dir, { recursive: true, force: true });
   });
 });

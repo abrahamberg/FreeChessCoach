@@ -96,7 +96,7 @@ describe('POST /api/positions/analyze', () => {
       },
       callLightModel: vi.fn()
     };
-    const engineBackendOptions = buildResolveEngineBackendOptions(db, ENGINE_URL, { request: vi.fn() });
+    const engineBackendOptions = buildResolveEngineBackendOptions(db, ENGINE_URL, { request: vi.fn() }, null);
     return {
       app: buildApp({ authMode: 'proxy', db, coachAgentBaseDeps, engineBackendOptions }),
       fetchMock

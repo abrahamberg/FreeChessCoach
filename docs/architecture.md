@@ -140,6 +140,48 @@ Responsibilities:
 
 Single purpose service.
 
+## Lichess evaluation index
+
+A read-only, pre-built lookup checked ahead of the engine chain
+(`resolveEngineBackend` → `LichessEvalEngineBackend` →
+`CachingEngineBackend` → native/browser/chess_api — see
+`apps/api/src/services/engine/`) for a position the Lichess community has
+already evaluated (~394M positions, published at
+https://database.lichess.org/#evals, CC0). A hit skips the live engine call
+entirely and is never written to `position_evaluations`: that table exists
+to cache the app's own engine calls, and duplicating data already durably
+available here would only cost storage for no benefit. A miss falls through
+unchanged to the existing cache/engine chain.
+
+Deliberately **not** a database engine: the data is immutable at runtime
+(read-only lookups by FEN, no writes), so this is a single sorted,
+fixed-width binary file (`packages/chess-analysis/src/lichess-eval-index-format.ts`
+for the record layout, `apps/api/src/services/engine/lichess-eval-index.ts`
+for the binary-search reader) — a plain binary search against an open file
+descriptor, no server process, no native dependency (respects
+`docker/Dockerfile.api`'s "pure JavaScript, no native binaries" invariant).
+Same spirit as the opening-book index
+(`packages/chess-analysis/src/generated/opening-book-index.json`) — a
+read-only static data asset, not app state — just far too large (~10GB) to
+bundle into the image the way that one is.
+
+Built and refreshed **independently of app deploys, entirely by hand**:
+`apps/api/scripts/build-lichess-eval-index.mjs`
+(`npm run build-lichess-eval-index -w @freechesscoach/api`) is a standalone
+offline pipeline, run on a developer's own machine — never wired into
+`build:images`, the Helm migrate-job, or any CI workflow. There is no object
+storage in this deployment, so the built file is copied once via `kubectl cp`
+onto a `PersistentVolumeClaim` (`deploy/helm/freechesscoach/values.yaml`'s
+`lichessEvalIndex` block, disabled by default) that `api`/`worker` mount
+read-only — a normal app deploy (new image tag via ArgoCD) or pod restart
+never touches this volume, so refreshing the dataset and shipping an app
+change are fully decoupled operations, and the multi-GB file is never
+committed to git or uploaded as part of any pipeline. If the PVC exists but
+hasn't been populated yet, `openLichessEvalIndexFromEnv`
+(`apps/api/src/bootstrap.ts`) logs a warning and returns null rather than
+crash-looping the pod — `resolveEngineBackend` simply skips this tier until
+the file shows up. See `apps/api/data/README.md` for the build/copy steps.
+
 ---
 
 # Analysis Flow

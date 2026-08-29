@@ -1,5 +1,11 @@
 import { run } from 'graphile-worker';
-import { buildGatewayConfigFromEnv, buildResolveEngineBackendOptions, parsePositiveInt, requireEnv } from './bootstrap.js';
+import {
+  buildGatewayConfigFromEnv,
+  buildResolveEngineBackendOptions,
+  openLichessEvalIndexFromEnv,
+  parsePositiveInt,
+  requireEnv
+} from './bootstrap.js';
 import { createDb } from './db/index.js';
 import { createTaskList } from './jobs/index.js';
 import { createKeyVault } from './llm/key-vault.js';
@@ -20,7 +26,8 @@ async function main(): Promise<void> {
     apiInternalUrl: requireEnv('API_INTERNAL_URL'),
     internalToken: requireEnv('ENGINE_TUNNEL_INTERNAL_TOKEN')
   });
-  const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, tunnelTransport);
+  const lichessEvalIndex = await openLichessEvalIndexFromEnv();
+  const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, tunnelTransport, lichessEvalIndex);
 
   const taskList = createTaskList({
     db,

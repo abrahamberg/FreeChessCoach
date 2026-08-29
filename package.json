@@ -14,6 +14,9 @@
     "dev": "docker compose up -d --build postgres engine migrate api worker web-dev",
     "dev:down": "docker compose down",
     "build:images": "scripts/build-images.sh",
+    "build-eval": "npm run build-lichess-eval-index -w @freechesscoach/api --",
+    "fetch-and-build-eval": "apps/api/scripts/fetch-and-build-lichess-eval-index.sh",
+    "deploy-eval": "apps/api/scripts/deploy-lichess-eval-index.sh",
     "test": "vitest run",
     "typecheck": "tsc -b",
     "lint": "eslint ."

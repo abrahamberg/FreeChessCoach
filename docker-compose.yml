@@ -20,6 +20,15 @@ x-node-dev: &node-dev
     AUTH_MODE: ${AUTH_MODE:-dev-stub}
     POSITION_EVAL_CACHE_MAX_ROWS: ${POSITION_EVAL_CACHE_MAX_ROWS:-200000}
     POSITION_EVAL_CACHE_MIN_AGE_DAYS: ${POSITION_EVAL_CACHE_MIN_AGE_DAYS:-3}
+    # Optional — unset by default, so resolveEngineBackend simply skips this tier.
+    # Prod mounts this from a PersistentVolumeClaim populated out-of-band (never
+    # fetched on pod start/deploy — see deploy/helm/.../lichessEvalIndex and
+    # apps/api/data/README.md); locally the repo bind mount below is the same
+    # kind of persistent, already-there path, so just point this at a file built
+    # with `npm run build-lichess-eval-index -w @freechesscoach/api`, e.g.
+    # apps/api/data/lichess-eval-index.bin — no extra volume needed.
+    LICHESS_EVAL_INDEX_PATH: ${LICHESS_EVAL_INDEX_PATH:-}
+    LICHESS_EVAL_MIN_DEPTH: ${LICHESS_EVAL_MIN_DEPTH:-16}
     ENGINE_TUNNEL_INTERNAL_TOKEN: ${ENGINE_TUNNEL_INTERNAL_TOKEN:-dev-internal-token}
     API_INTERNAL_URL: http://api:3000
 

@@ -31,8 +31,16 @@ spec:
           env:
             {{- include "freechesscoach.env.database" . | nindent 12 }}
             {{- include "freechesscoach.env.app" . | nindent 12 }}
+          {{- with include "freechesscoach.lichessEvalIndexVolumeMount" . }}
+          volumeMounts:
+            {{- . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.worker.resources | nindent 12 }}
+      {{- with include "freechesscoach.lichessEvalIndexVolume" . }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}
       {{- with .Values.worker.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

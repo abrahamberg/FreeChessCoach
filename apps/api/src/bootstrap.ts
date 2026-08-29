@@ -1,4 +1,4 @@
-import { OpenAiServiceTierSchema, ReasoningEffortSchema } from '@freechesscoach/shared';
+import { ENGINE_DEFAULT_DEPTH, OpenAiServiceTierSchema, ReasoningEffortSchema } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { Database } from './db/schema.js';
 import type { JobQueue } from './jobs/queue.js';
@@ -11,6 +11,7 @@ import type { CoachAgentDependencies } from './services/coach-agent.js';
 import { createStripeClient, type StripeClient } from './services/stripe.js';
 import type { TtsConfig } from './services/tts.js';
 import type { EngineTunnelTransport } from './services/engine/engine-tunnel-transport.js';
+import { LichessEvalIndex } from './services/engine/lichess-eval-index.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
 
 export function requireEnv(name: string): string {
@@ -184,10 +185,23 @@ export function buildTtsConfigFromEnv(): TtsConfig | undefined {
  * mid-way through an unpaced back-to-back run (chess-api-engine-backend.ts's
  * MALFORMED_RESPONSE_RETRY_DELAYS_MS handles the case where pacing alone
  * isn't enough). */
+/**
+ * `lichessEvalIndex` is opened once at process start — see
+ * openLichessEvalIndexFromEnv — and threaded through here rather than
+ * opened by this function, which stays synchronous so its existing
+ * env-parsing tests don't need to become async.
+ *
+ * LICHESS_EVAL_MIN_DEPTH floors how deep a Lichess index hit must be before
+ * it's trusted in place of a fresh engine call — defaults to
+ * ENGINE_DEFAULT_DEPTH, the same depth every other backend targets, so a
+ * hit never silently under-delivers relative to what a live call would have
+ * produced.
+ */
 export function buildResolveEngineBackendOptions(
   db: Kysely<Database>,
   engineUrl: string,
-  tunnelTransport: EngineTunnelTransport
+  tunnelTransport: EngineTunnelTransport,
+  lichessEvalIndex: LichessEvalIndex | null
 ): ResolveEngineBackendOptions {
   return {
     db,
@@ -195,8 +209,41 @@ export function buildResolveEngineBackendOptions(
     tunnelTransport,
     tunnelTimeoutMs: parsePositiveInt('ENGINE_TUNNEL_TIMEOUT_MS', 10000),
     chessApiTimeoutMs: parsePositiveInt('CHESS_API_TIMEOUT_MS', 15000),
-    chessApiRequestDelayMs: parsePositiveInt('CHESS_API_REQUEST_DELAY_MS', 100)
+    chessApiRequestDelayMs: parsePositiveInt('CHESS_API_REQUEST_DELAY_MS', 100),
+    lichessEvalIndex,
+    lichessEvalMinDepth: parsePositiveInt('LICHESS_EVAL_MIN_DEPTH', ENGINE_DEFAULT_DEPTH)
   };
+}
+
+/** Opens the pre-built Lichess evaluation index (see
+ * services/engine/lichess-eval-index.ts and
+ * scripts/build-lichess-eval-index.mts) when LICHESS_EVAL_INDEX_PATH is set,
+ * once per process at startup — never per request/session, since opening
+ * the file is the one part of this feature that's genuinely I/O, unlike the
+ * read-only binary-search lookups against it. Returns null when unset, the
+ * safe default for local dev and any deployment that hasn't provisioned the
+ * index yet: resolveEngineBackend simply skips the Lichess tier in that case.
+ *
+ * A missing file at the configured path (ENOENT) also resolves to null rather
+ * than throwing: the index lives on a PersistentVolumeClaim that's populated
+ * out-of-band (apps/api/data/README.md), so `enabled: true` can legitimately
+ * be applied before the file has actually been copied in — that shouldn't
+ * crash-loop the api/worker pods. Any other error (e.g. a corrupt/wrong-size
+ * file) still throws, since that indicates a real problem worth surfacing loudly. */
+export async function openLichessEvalIndexFromEnv(): Promise<LichessEvalIndex | null> {
+  const filePath = process.env.LICHESS_EVAL_INDEX_PATH;
+  if (!filePath) return null;
+  try {
+    return await LichessEvalIndex.open(filePath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      console.warn(
+        `LICHESS_EVAL_INDEX_PATH is set to "${filePath}" but no file exists there yet — skipping the Lichess eval tier until it's populated.`
+      );
+      return null;
+    }
+    throw error;
+  }
 }
 
 /** The light model as a ModelResolution, so it carries the same reasoning and

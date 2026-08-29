@@ -6,6 +6,7 @@ import {
   buildResolveEngineBackendOptions,
   buildStripeClientFromEnv,
   buildTtsConfigFromEnv,
+  openLichessEvalIndexFromEnv,
   requireEnv
 } from './bootstrap.js';
 import { createDb } from './db/index.js';
@@ -32,7 +33,8 @@ async function main(): Promise<void> {
 
   const { queue: jobQueue } = await createGraphileJobQueue(connectionString);
   const engineTunnelRegistry = new EngineTunnelRegistry();
-  const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, engineTunnelRegistry);
+  const lichessEvalIndex = await openLichessEvalIndexFromEnv();
+  const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, engineTunnelRegistry, lichessEvalIndex);
   const coachAgentBaseDeps = buildCoachAgentBaseDependencies(db, jobQueue, gatewayConfig);
   const stripeClient = buildStripeClientFromEnv();
   const ttsConfig = buildTtsConfigFromEnv();

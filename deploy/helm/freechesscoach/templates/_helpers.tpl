@@ -204,8 +204,42 @@ imagePullSecrets:
 - name: STRIPE_CHECKOUT_CANCEL_URL
   value: {{ required "stripe.checkoutCancelUrl is required when stripe.enabled" .Values.stripe.checkoutCancelUrl | quote }}
 {{- end }}
+{{- if .Values.lichessEvalIndex.enabled }}
+- name: LICHESS_EVAL_INDEX_PATH
+  value: {{ .Values.lichessEvalIndex.mountPath | quote }}
+- name: LICHESS_EVAL_MIN_DEPTH
+  value: {{ .Values.lichessEvalIndex.minDepth | quote }}
+{{- end }}
 {{- with .Values.extraEnv }}
 {{ toYaml . }}
+{{- end }}
+{{- end -}}
+
+{{/* ---------------------------------------------------------------------
+     Lichess eval index: a read-only static data asset far too large to bake
+     into the api image (docs/architecture.md). Lives on a PersistentVolumeClaim
+     that's populated out-of-band (apps/api/data/README.md's `kubectl cp` flow)
+     — not fetched per pod-start, so an ordinary app deploy or pod restart never
+     re-touches it. Included identically by api-deployment.yaml and
+     worker-deployment.yaml, only when lichessEvalIndex.enabled.
+     --------------------------------------------------------------------- */}}
+{{- define "freechesscoach.lichessEvalIndexClaimName" -}}
+{{- .Values.lichessEvalIndex.existingClaim | default (include "freechesscoach.componentName" (dict "ctx" . "component" "lichess-eval-index")) -}}
+{{- end -}}
+
+{{- define "freechesscoach.lichessEvalIndexVolume" -}}
+{{- if .Values.lichessEvalIndex.enabled }}
+- name: lichess-eval-index
+  persistentVolumeClaim:
+    claimName: {{ include "freechesscoach.lichessEvalIndexClaimName" . }}
+{{- end }}
+{{- end -}}
+
+{{- define "freechesscoach.lichessEvalIndexVolumeMount" -}}
+{{- if .Values.lichessEvalIndex.enabled }}
+- name: lichess-eval-index
+  mountPath: {{ dir .Values.lichessEvalIndex.mountPath | quote }}
+  readOnly: true
 {{- end }}
 {{- end -}}
 

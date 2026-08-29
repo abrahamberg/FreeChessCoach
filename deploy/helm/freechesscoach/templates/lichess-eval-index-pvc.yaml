@@ -1,0 +1,18 @@
+{{/* Only rendered when enabled and no existingClaim was supplied — see
+     lichessEvalIndex.existingClaim in values.yaml to bring your own PVC
+     instead (e.g. one pre-provisioned and already populated). */}}
+{{- if and .Values.lichessEvalIndex.enabled (not .Values.lichessEvalIndex.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "freechesscoach.componentName" (dict "ctx" . "component" "lichess-eval-index") }}
+  labels:
+    {{- include "freechesscoach.labels" (dict "ctx" . "component" "lichess-eval-index") | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.lichessEvalIndex.accessMode }}
+  storageClassName: {{ .Values.lichessEvalIndex.storageClassName }}
+  resources:
+    requests:
+      storage: {{ .Values.lichessEvalIndex.size }}
+{{- end }}

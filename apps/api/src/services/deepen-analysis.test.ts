@@ -29,6 +29,21 @@ function makePositionAnalysis(fen: string): PositionAnalysis {
   };
 }
 
+/** A fake `analyzePosition` that persists on every call, exactly like the
+ * real `CachingEngineBackend` does on a genuine engine miss — the shape
+ * every test in this file except the Lichess-hit regression test below
+ * needs, since `runDeepenAnalysisJob` itself deliberately never persists
+ * (see deepen-analysis.ts's doc comments). */
+function makePersistingAnalyzePosition(db: Kysely<Database>, isExternalEval: boolean) {
+  return vi.fn(async (fen: string) => {
+    const analysis = makePositionAnalysis(fen);
+    await positionEvaluationsRepo.upsertMany(db, [{ fen, depth: analysis.depth, multiPv: analysis.multiPv, analysis }], {
+      isExternalEval
+    });
+    return analysis;
+  });
+}
+
 describe('runDeepenAnalysisJob', () => {
   let testDb: TestDb;
   let db: Kysely<Database>;
@@ -69,7 +84,11 @@ describe('runDeepenAnalysisJob', () => {
       maxInFlight = Math.max(maxInFlight, inFlight);
       await new Promise((resolve) => setTimeout(resolve, 5));
       inFlight -= 1;
-      return makePositionAnalysis(fen);
+      const analysis = makePositionAnalysis(fen);
+      await positionEvaluationsRepo.upsertMany(db, [{ fen, depth: analysis.depth, multiPv: analysis.multiPv, analysis }], {
+        isExternalEval: false
+      });
+      return analysis;
     });
     const deps: DeepenAnalysisJobDependencies = { analyzePosition, isExternalSource: false };
 
@@ -110,7 +129,7 @@ describe('runDeepenAnalysisJob', () => {
       eco: null,
       playedAt: null
     });
-    const analyzePosition = vi.fn(async (fen: string) => makePositionAnalysis(fen));
+    const analyzePosition = makePersistingAnalyzePosition(db, false);
 
     // Prime the cache with just the shared starting position before the job runs.
     const startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -152,7 +171,7 @@ describe('runDeepenAnalysisJob', () => {
       eco: null,
       playedAt: null
     });
-    const analyzePosition = vi.fn(async (fen: string) => makePositionAnalysis(fen));
+    const analyzePosition = makePersistingAnalyzePosition(db, true);
 
     await runDeepenAnalysisJob(db, { analyzePosition, isExternalSource: true }, game.id);
 
@@ -192,7 +211,7 @@ describe('runDeepenAnalysisJob', () => {
       { isExternalEval: false }
     );
 
-    const analyzePosition = vi.fn(async (fen: string) => makePositionAnalysis(fen));
+    const analyzePosition = makePersistingAnalyzePosition(db, true);
     await runDeepenAnalysisJob(db, { analyzePosition, isExternalSource: true }, game.id);
 
     // Read trust for a browser-sourced pass allows external rows, so the
@@ -201,5 +220,45 @@ describe('runDeepenAnalysisJob', () => {
     expect(analyzePosition).not.toHaveBeenCalledWith(startFen);
     const stillNative = await positionEvaluationsRepo.findManyByFens(db, [startFen], { allowExternal: false });
     expect(stillNative.size).toBe(1);
+  });
+
+  // Regression: found by actually running a game through the full local
+  // pipeline with a Lichess eval index configured (not caught by any test
+  // that predated this one) — this job used to unconditionally persist
+  // whatever analyzePosition returned, even when analyzePosition was really
+  // LichessEvalEngineBackend serving a hit against the pre-built index,
+  // which deliberately never writes to position_evaluations (see
+  // docs/architecture.md). That silently duplicated Lichess-covered data
+  // into the app's own cache on every deepen pass. Simulated here with a
+  // non-persisting fake — a real Lichess-hit analyzePosition never touches
+  // position_evaluations either.
+  test('never force-writes a result whose analyzePosition did not persist it (a Lichess eval index hit)', async () => {
+    const PGN = `[Event "Test"]
+[White "Ann"]
+[Black "Bob"]
+[Result "*"]
+
+1. c4 c5 2. Nc3 Nc6 3. g3 g6 *`;
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
+    const game = await gamesRepo.insert(db, {
+      userId: user.id,
+      pgn: PGN,
+      source: 'paste',
+      userColor: 'white',
+      whiteName: 'Ann',
+      blackName: 'Bob',
+      result: '*',
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+    const analyzePosition = vi.fn(async (fen: string) => makePositionAnalysis(fen));
+
+    await runDeepenAnalysisJob(db, { analyzePosition, isExternalSource: false }, game.id);
+
+    const fens = analyzePosition.mock.calls.map(([fen]) => fen);
+    expect(fens.length).toBeGreaterThan(0);
+    const written = await positionEvaluationsRepo.findManyByFens(db, fens, { allowExternal: true });
+    expect(written.size).toBe(0);
   });
 });

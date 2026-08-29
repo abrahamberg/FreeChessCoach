@@ -168,6 +168,35 @@ stripe:
   checkoutSuccessUrl: ""
   checkoutCancelUrl: ""
 
+## Read-only Lichess evaluation index (~394M pre-analyzed positions), checked
+## before the live engine chain — see docs/architecture.md and
+## apps/api/data/README.md for the design. Built locally, refreshed by hand
+## (`npm run build-lichess-eval-index -w @freechesscoach/api`, never wired
+## into build:images, the migrate-job, or any CI pipeline — the built file is
+## multi-GB, never committed to git and never uploaded as part of a deploy).
+##
+## Deliberately a PersistentVolumeClaim, not an init-container fetch: the
+## file is copied onto it once (see apps/api/data/README.md's `kubectl cp`
+## flow) and then just sits there across ordinary app deploys and pod
+## restarts — a rollout of a new api/worker image never re-touches it, only
+## an explicit dataset refresh does. Disabled by default: no PVC, no volume,
+## no env vars, until you've built and copied a file in — resolveEngineBackend
+## then simply skips this tier.
+lichessEvalIndex:
+  enabled: false
+  # Set to reuse a PVC you provisioned yourself; leave empty and the chart
+  # creates one from storageClassName/accessMode/size below.
+  existingClaim: ""
+  storageClassName: shared-nas
+  accessMode: ReadWriteOnce
+  size: 12Gi
+  # Mounted into api and worker at this path; becomes LICHESS_EVAL_INDEX_PATH.
+  mountPath: /var/run/lichess-eval-index/lichess-eval-index.bin
+  # LICHESS_EVAL_MIN_DEPTH — a hit shallower than this is treated as a miss
+  # and falls through to the live engine chain, same as a position the
+  # index has never seen.
+  minDepth: 16
+
 ## Extra env vars appended to the api and worker containers, as a raw k8s env
 ## list. Escape hatch for settings the chart doesn't model yet.
 extraEnv: []

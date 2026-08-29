@@ -12,6 +12,7 @@
     "dev:worker": "tsx watch src/worker.ts",
     "migrate": "tsx src/db/migrate-cli.ts",
     "bundle": "node scripts/bundle.mjs",
+    "build-lichess-eval-index": "tsx scripts/build-lichess-eval-index.mjs",
     "test": "vitest run"
   },
   "dependencies": {

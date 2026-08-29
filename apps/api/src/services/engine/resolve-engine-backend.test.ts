@@ -6,6 +6,7 @@ import * as usersRepo from '../../db/repositories/users.js';
 import type { Database } from '../../db/schema.js';
 import { resolveEngineBackend, resolveRawEngineBackend, type ResolveEngineBackendOptions } from './resolve-engine-backend.js';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
+import type { LichessEvalReader } from './lichess-eval-index.js';
 
 describe('resolveEngineBackend', () => {
   let testDb: TestDb;
@@ -22,14 +23,20 @@ describe('resolveEngineBackend', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  function options(tunnelTransport: EngineTunnelTransport): ResolveEngineBackendOptions {
+  function options(
+    tunnelTransport: EngineTunnelTransport,
+    overrides: Partial<ResolveEngineBackendOptions> = {}
+  ): ResolveEngineBackendOptions {
     return {
       db,
       engineUrl: 'http://engine:4001',
       tunnelTransport,
       tunnelTimeoutMs: 8000,
       chessApiTimeoutMs: 5000,
-      chessApiRequestDelayMs: 0
+      chessApiRequestDelayMs: 0,
+      lichessEvalIndex: null,
+      lichessEvalMinDepth: 16,
+      ...overrides
     };
   }
 
@@ -126,6 +133,47 @@ describe('resolveEngineBackend', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  test('when lichessEvalIndex is configured and hits, the underlying engine is never called, regardless of engineMode', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Dee' });
+    // A real, legal position — unlike the other tests' opaque fen strings,
+    // this one is actually parsed (uciToSan, computePositionFeatures) by
+    // LichessEvalEngineBackend on a hit.
+    const fen = 'rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq - 1 1';
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const tunnelTransport: EngineTunnelTransport = { request: vi.fn() };
+    const lichessEvalIndex: LichessEvalReader = {
+      lookup: vi.fn().mockResolvedValue({ cp: 20, mate: null, depth: 40, moveUci: 'e7e5' })
+    };
+
+    const backend = await resolveEngineBackend(options(tunnelTransport, { lichessEvalIndex }), user.id);
+    const result = await backend.analyzePosition(fen);
+
+    expect(result.eval).toEqual({ cp: 20, mateIn: null });
+    expect(result.bestMove).toBe('e5');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(tunnelTransport.request).not.toHaveBeenCalled();
+  });
+
+  test('when lichessEvalIndex is configured but misses, the request still falls through to the underlying engine', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Eli' });
+    const fen = `lichess-miss-${crypto.randomUUID()}`;
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ analysis: { fen, depth: 1, multiPv: 1, bestMove: null, eval: { cp: null, mateIn: null }, lines: [], features: {} } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const tunnelTransport: EngineTunnelTransport = { request: vi.fn() };
+    const lichessEvalIndex: LichessEvalReader = { lookup: vi.fn().mockResolvedValue(null) };
+
+    const backend = await resolveEngineBackend(options(tunnelTransport, { lichessEvalIndex }), user.id);
+    await backend.analyzePosition(fen);
+
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
   test('resolveRawEngineBackend bypasses CachingEngineBackend — repeated calls for the same fen hit the raw backend every time', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cam' });
     const fen = `raw-${crypto.randomUUID()}`;
@@ -150,5 +198,88 @@ describe('resolveEngineBackend', () => {
     // A CachingEngineBackend-wrapped backend would only ever hit fetch once
     // (see the "native" test above) — the raw backend must be called every time.
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  describe('engine-source-usage logging', () => {
+    test('resolveEngineBackend with no lichessEvalIndex logs the fallback engine, tagged internal for "native"', async () => {
+      const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Fay' });
+      const fen = `log-native-${crypto.randomUUID()}`;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(
+          new Response(JSON.stringify({ analysis: { fen, depth: 1, multiPv: 1, bestMove: null, eval: { cp: null, mateIn: null }, lines: [], features: {} } }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' }
+          })
+        )
+      );
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      const backend = await resolveEngineBackend(options({ request: vi.fn() }), user.id);
+      await backend.analyzePosition(fen);
+
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('internalEngine=1'));
+      logSpy.mockRestore();
+    });
+
+    test('resolveEngineBackend with a lichessEvalIndex hit logs it as lichessIndex, not the fallback engine', async () => {
+      const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Gus' });
+      const fen = 'rnbqkbnr/pppppppp/8/8/8/6N1/PPPPPPPP/RNBQKB1R b KQkq - 1 1';
+      vi.stubGlobal('fetch', vi.fn());
+      const lichessEvalIndex: LichessEvalReader = {
+        lookup: vi.fn().mockResolvedValue({ cp: 5, mate: null, depth: 40, moveUci: 'e7e5' })
+      };
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      const backend = await resolveEngineBackend(options({ request: vi.fn() }, { lichessEvalIndex }), user.id);
+      await backend.analyzePosition(fen);
+
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('lichessIndex=1'));
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('internalEngine=0'));
+      logSpy.mockRestore();
+    });
+
+    test('resolveRawEngineBackend (bot path) also logs engine usage, tagged external for "browser" mode', async () => {
+      const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Hana' });
+      await usersRepo.update(db, user.id, { engineMode: 'browser' });
+      const fen = `log-bot-${crypto.randomUUID()}`;
+      const tunnelTransport: EngineTunnelTransport = {
+        request: vi.fn().mockResolvedValue({
+          fen,
+          depth: 1,
+          multiPv: 1,
+          bestMove: null,
+          eval: { cp: null, mateIn: null },
+          lines: [],
+          features: {
+            turn: 'white',
+            boardState: 'none',
+            availableMoves: [],
+            mobility: { white: 0, black: 0 },
+            controlledSquares: [],
+            piecesUnderAttack: [],
+            hangingPieces: [],
+            underDefendedPieces: [],
+            overloadedDefenders: [],
+            centerControlScore: { white: 0, black: 0 },
+            openFiles: [],
+            semiOpenFiles: [],
+            doubledPawns: [],
+            isolatedPawns: [],
+            passedPawns: [],
+            targetsAttacked: [],
+            forks: [],
+            captureOpportunities: []
+          }
+        })
+      };
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      const backend = await resolveRawEngineBackend(options(tunnelTransport), user.id);
+      await backend.analyzePosition(fen);
+
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('externalEngine=1'));
+      logSpy.mockRestore();
+    });
   });
 });

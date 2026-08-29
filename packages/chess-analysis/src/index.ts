@@ -29,6 +29,10 @@ export * from './phase-accuracy.js';
 export * from './phase-segmentation.js';
 export * from './pgn-mutation.js';
 export * from './rating-estimate.js';
+// lichess-eval-index-format.js is deliberately NOT re-exported here — it
+// imports node:crypto, and this barrel is imported by the browser (web)
+// bundle too. Node-only callers import it via the package's dedicated
+// subpath export instead (see package.json's "exports").
 export * from './pgn.js';
 export * from './position-features.js';
 export * from './position-enrichment.js';
@@ -38,4 +42,5 @@ export * from './resolve-san-move.js';
 export * from './see.js';
 export * from './strategy-score.js';
 export * from './tactics-score.js';
+export * from './uci-move.js';
 export * from './win-probability.js';

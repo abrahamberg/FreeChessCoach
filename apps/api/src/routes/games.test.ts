@@ -129,7 +129,7 @@ describe('POST/GET /api/games', () => {
       },
       callLightModel: vi.fn()
     };
-    const engineBackendOptions = buildResolveEngineBackendOptions(db, 'http://engine:4001', { request: vi.fn() });
+    const engineBackendOptions = buildResolveEngineBackendOptions(db, 'http://engine:4001', { request: vi.fn() }, null);
     return buildApp({ authMode: 'proxy', db, jobQueue, coachAgentBaseDeps, engineBackendOptions });
   }
 

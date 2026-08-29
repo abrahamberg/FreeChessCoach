@@ -164,7 +164,7 @@ describe('sessions routes', () => {
   }
 
   function fakeEngineBackendOptions() {
-    return buildResolveEngineBackendOptions(db, 'http://engine:4001', { request: vi.fn() });
+    return buildResolveEngineBackendOptions(db, 'http://engine:4001', { request: vi.fn() }, null);
   }
 
   /** Minimal well-formed engine response for the stubbed native engine HTTP call

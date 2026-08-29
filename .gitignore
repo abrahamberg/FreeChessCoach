@@ -16,3 +16,9 @@ deploy/helm/*/charts/
 # Staged by apps/web/scripts/copy-stockfish-assets.mjs (predev/prebuild) from
 # the `stockfish` npm package — not committed, the .wasm alone is ~108MB.
 apps/web/src/engine/stockfish/
+
+# Output of apps/api/scripts/build-lichess-eval-index.mjs — a multi-GB
+# read-only data asset, built offline and published to object storage
+# (see apps/api/data/README.md), never committed to git.
+apps/api/data/*
+!apps/api/data/README.md
