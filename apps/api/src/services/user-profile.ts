@@ -17,7 +17,12 @@ export interface Identity {
 }
 
 /** Finds the user by email, or creates them with a one-time 100-credit signup
- * grant (inserted atomically with the user row). Safe to call on every request. */
+ * grant (inserted atomically with the user row). Safe to call on every request.
+ *
+ * engineMode defaults to 'chess_api' here — not in the users table's own
+ * DEFAULT — so this is the one place that speaks for "what a brand-new user
+ * gets," while every other row-creation path (test fixtures, seeds) keeps
+ * getting the column's 'native' default undisturbed. */
 export async function getOrCreate(
   db: Kysely<Database>,
   identity: Identity
@@ -26,7 +31,7 @@ export async function getOrCreate(
   if (existing) return healDisplayNameIfNeeded(db, existing, identity.displayName);
 
   return db.transaction().execute(async (trx) => {
-    const user = await usersRepo.insert(trx, identity);
+    const user = await usersRepo.insert(trx, { ...identity, engineMode: 'chess_api' });
     await creditsRepo.insertSignupGrant(trx, user.id);
     return user;
   });

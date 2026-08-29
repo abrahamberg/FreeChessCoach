@@ -255,7 +255,11 @@ describe('buildModelTuningFromEnv', () => {
 });
 
 describe('buildResolveEngineBackendOptions', () => {
-  afterEach(() => delete process.env.ENGINE_TUNNEL_TIMEOUT_MS);
+  afterEach(() => {
+    delete process.env.ENGINE_TUNNEL_TIMEOUT_MS;
+    delete process.env.CHESS_API_TIMEOUT_MS;
+    delete process.env.CHESS_API_REQUEST_DELAY_MS;
+  });
 
   test('defaults tunnelTimeoutMs to 10000', () => {
     const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
@@ -266,5 +270,27 @@ describe('buildResolveEngineBackendOptions', () => {
     process.env.ENGINE_TUNNEL_TIMEOUT_MS = '5000';
     const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
     expect(options.tunnelTimeoutMs).toBe(5000);
+  });
+
+  test('defaults chessApiTimeoutMs to 15000', () => {
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
+    expect(options.chessApiTimeoutMs).toBe(15000);
+  });
+
+  test('reads CHESS_API_TIMEOUT_MS when set', () => {
+    process.env.CHESS_API_TIMEOUT_MS = '20000';
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
+    expect(options.chessApiTimeoutMs).toBe(20000);
+  });
+
+  test('defaults chessApiRequestDelayMs to 100', () => {
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
+    expect(options.chessApiRequestDelayMs).toBe(100);
+  });
+
+  test('reads CHESS_API_REQUEST_DELAY_MS when set', () => {
+    process.env.CHESS_API_REQUEST_DELAY_MS = '250';
+    const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() });
+    expect(options.chessApiRequestDelayMs).toBe(250);
   });
 });

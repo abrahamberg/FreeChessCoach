@@ -15,6 +15,12 @@ export type BoardMode = 'answer' | 'peek';
 export interface UseSessionBoardStateResult {
   fen: string;
   ply: number;
+  /** The board's last *actually current* position — set by applyServerMove/
+   * anchorHere, untouched by peekAt. Unlike `ply` (which peekAt freely
+   * reassigns for local-only move-strip/Explore navigation), this is safe to
+   * use as "where the game really is right now" while the student may be
+   * peeking at history — see e.g. useBotSessionPageData's isBotTurn. */
+  coachPly: number;
   mode: BoardMode;
   setMode: (mode: BoardMode) => void;
   arrows: BoardArrow[];
@@ -242,6 +248,7 @@ export function useSessionBoardState(
   return {
     fen,
     ply,
+    coachPly,
     mode,
     setMode,
     arrows: [...playedMoveArrows, ...annotations.arrows],

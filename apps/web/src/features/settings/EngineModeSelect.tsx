@@ -10,8 +10,9 @@ export interface EngineModeSelectProps {
 }
 
 const ENGINE_MODE_LABELS: Record<EngineMode, string> = {
-  native: 'Server engine (default)',
-  browser: 'Your browser (runs Stockfish locally — keep this tab open)'
+  chess_api: 'External engine (default) — a free cloud chess engine',
+  native: 'Our server engine — runs on our infrastructure',
+  browser: 'Your browser — runs locally, so it depends on your device'
 };
 
 const ENGINE_STATUS_TEXT = {

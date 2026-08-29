@@ -27,11 +27,16 @@ export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
     if (!parsed.success) return sendValidationProblem(reply, parsed.error.issues);
 
     try {
-      const evals = await analyzeGame(pool, parsed.data.fens, {
-        depth: parsed.data.depth ?? defaultDepth,
-        multiPv: parsed.data.multiPv,
-        timeoutMs: moveTimeoutMs
-      });
+      const evals = await analyzeGame(
+        pool,
+        parsed.data.fens,
+        {
+          depth: parsed.data.depth ?? defaultDepth,
+          multiPv: parsed.data.multiPv,
+          timeoutMs: moveTimeoutMs
+        },
+        parsed.data.priority
+      );
       return { evals };
     } catch (error) {
       return sendEngineErrorProblem(reply, error);
@@ -43,11 +48,16 @@ export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
     if (!parsed.success) return sendValidationProblem(reply, parsed.error.issues);
 
     try {
-      const analysis = await analyzePositionDetailed(pool, parsed.data.fen, {
-        depth: parsed.data.depth ?? defaultDepth,
-        multiPv: parsed.data.multiPv,
-        timeoutMs: moveTimeoutMs
-      });
+      const analysis = await analyzePositionDetailed(
+        pool,
+        parsed.data.fen,
+        {
+          depth: parsed.data.depth ?? defaultDepth,
+          multiPv: parsed.data.multiPv,
+          timeoutMs: moveTimeoutMs
+        },
+        parsed.data.priority
+      );
       return { analysis };
     } catch (error) {
       return sendEngineErrorProblem(reply, error);

@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { SharedEngineWorker, type EngineDownloadProgress, type EngineWorkerLike } from './shared-engine-worker.js';
+import { SharedEngineWorker, type EngineActivity, type EngineDownloadProgress, type EngineWorkerLike } from './shared-engine-worker.js';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -248,6 +248,34 @@ describe('SharedEngineWorker', () => {
     freshWorker.emit('bestmove e2e4');
     await expect(recovered).resolves.toMatchObject([{ moveUci: 'e2e4' }]);
     expect(createWorker).toHaveBeenCalledTimes(2);
+  });
+
+  // Backs the global engine-activity indicator: it has no other way to tell
+  // "idle" apart from "mid-search", since install status alone reads 'ready'
+  // in both cases.
+  test('reports searching/queueLength across a queued pair of analyze() calls', async () => {
+    const worker = fakeWorker();
+    const client = new SharedEngineWorker({ createWorker: () => worker });
+    const seen: EngineActivity[] = [];
+    client.subscribeActivity((activity) => seen.push(activity));
+
+    expect(seen).toEqual([{ searching: false, queueLength: 0 }]);
+
+    const first = client.analyze({ fen: START_FEN, depth: 10, multiPv: 1 });
+    const second = client.analyze({ fen: START_FEN, depth: 10, multiPv: 1 });
+    worker.emit('uciok');
+    worker.emit('readyok');
+
+    expect(seen).toContainEqual({ searching: true, queueLength: 1 });
+
+    worker.emit('info depth 10 multipv 1 score cp 25 pv e2e4');
+    worker.emit('bestmove e2e4');
+    await first;
+    worker.emit('info depth 10 multipv 1 score cp 25 pv d2d4');
+    worker.emit('bestmove d2d4');
+    await second;
+
+    expect(client.activity).toEqual({ searching: false, queueLength: 0 });
   });
 
   // preload() runs from a React effect, so a throw here would surface during

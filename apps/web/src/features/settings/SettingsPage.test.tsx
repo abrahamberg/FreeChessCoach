@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { SettingsPage } from './SettingsPage.js';
 
@@ -23,12 +24,14 @@ function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 }
 
-function renderSettings(fetchMock: ReturnType<typeof vi.fn>) {
+function renderSettings(fetchMock: ReturnType<typeof vi.fn>, initialEntries: string[] = ['/settings']) {
   vi.stubGlobal('fetch', fetchMock);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <SettingsPage />
+      <MemoryRouter initialEntries={initialEntries}>
+        <SettingsPage />
+      </MemoryRouter>
     </QueryClientProvider>
   );
 }
@@ -288,5 +291,21 @@ describe('SettingsPage', () => {
 
     await screen.findByText(/42/);
     expect(screen.getByRole('link', { name: /sign out/i })).toHaveAttribute('href', '/oauth2/sign_out?rd=/');
+  });
+
+  test('a #settings-engine deep link (e.g. from the topbar engine indicator) scrolls the Engine card into view', async () => {
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
+    const fetchMock = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/users/me') return Promise.resolve(jsonResponse(PROFILE));
+      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
+      throw new Error(`unexpected fetch: ${path}`);
+    });
+    renderSettings(fetchMock, ['/settings#settings-engine']);
+
+    await screen.findByText(/42/);
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    expect(scrollIntoView.mock.instances[0]).toBe(document.getElementById('settings-engine'));
+
+    scrollIntoView.mockRestore();
   });
 });

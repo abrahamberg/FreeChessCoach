@@ -20,6 +20,10 @@ export interface UserRow {
 export interface NewUser {
   email: string;
   displayName: string;
+  /** Omitted, most callers get the column's own DEFAULT ('native') — see
+   * user-profile.ts's getOrCreate, the one production call site, which
+   * passes 'chess_api' explicitly for every genuinely new signup. */
+  engineMode?: EngineMode;
 }
 
 export interface UserPatch {

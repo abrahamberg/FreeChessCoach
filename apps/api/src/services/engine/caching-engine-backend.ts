@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import { computePositionFeatures } from '@freechesscoach/chess-analysis';
+import { assertEvalSignConvention, computePositionFeatures } from '@freechesscoach/chess-analysis';
 import type { EngineEval, PositionAnalysis, PositionAnalysisLine } from '@freechesscoach/shared';
 import * as positionEvaluationsRepo from '../../db/repositories/position-evaluations.js';
 import type { Database } from '../../db/schema.js';
@@ -41,7 +41,7 @@ export class CachingEngineBackend implements EngineBackend {
     const cached = await positionEvaluationsRepo.findByFen(this.db, fen, {
       allowExternal: this.options.isExternalSource
     });
-    if (cached) return cached;
+    if (cached && isSignConventionValid(cached.fen, cached.lines)) return cached;
 
     const analysis = await this.raw.analyzePosition(fen, opts);
     await this.writeAnalyses([analysis]);
@@ -63,7 +63,14 @@ export class CachingEngineBackend implements EngineBackend {
 
     const resultByFen = new Map<string, EngineEval>();
     for (const [fen, analysis] of cachedByFen) {
-      resultByFen.set(fen, toLeanEval(analysis));
+      // A row that predates (or otherwise violates) the sign-convention
+      // invariant would deterministically fail assertEvalSignConvention
+      // downstream on every future analysis touching this fen — treating it
+      // as a miss instead lets the raw backend recompute it and self-heals
+      // the cache on write-back, rather than permanently wedging this fen.
+      if (isSignConventionValid(fen, analysis.lines)) {
+        resultByFen.set(fen, toLeanEval(analysis));
+      }
     }
 
     const missedFens = uniqueFens.filter((fen) => !resultByFen.has(fen));
@@ -95,6 +102,30 @@ export class CachingEngineBackend implements EngineBackend {
       })),
       { isExternalEval: this.options.isExternalSource }
     );
+  }
+}
+
+/** Guards a cache hit before trusting it — see the call sites' comments for
+ * why either kind of violation should be treated as a miss rather than left
+ * to cause problems further downstream.
+ *
+ * Two independent checks: `assertEvalSignConvention` catches a *misordered*
+ * multi-line result, but can't see a single bad line on its own (it needs a
+ * second line to compare against — see its doc comment). The empty-score
+ * check below catches that case: a non-terminal position (`lines.length >
+ * 0`) whose first line has neither `cp` nor `mateIn` means the engine that
+ * produced it didn't actually return a usable score (observed once in
+ * production from chess-api.com's un-typed response shape — see
+ * chess-api-engine-backend.ts's Number.isFinite guard, added after this). */
+function isSignConventionValid(fen: string, lines: PositionAnalysisLine[]): boolean {
+  const firstLine = lines[0];
+  if (firstLine && firstLine.cp === null && firstLine.mateIn === null) return false;
+
+  try {
+    assertEvalSignConvention(fen, lines);
+    return true;
+  } catch {
+    return false;
   }
 }
 

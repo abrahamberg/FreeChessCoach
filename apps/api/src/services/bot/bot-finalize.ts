@@ -20,6 +20,13 @@ export interface FinalizeBotGameDependencies {
  * at full depth rather than the bot's own shallow playing depth, since this
  * phase is about accurate review. Factored out of commitBotTurn so every
  * way a bot game can end shares one finish line.
+ *
+ * A play_bot game can now reach this from two independent triggers racing
+ * each other — a clock-timeout claim (claimBotGameTimeout) and a recovered
+ * bot reply (requestBotMove, via useBotTurnFailover's poll) — so the session
+ * completion is claimed atomically first (completeIfActive); a caller that
+ * loses the race returns early instead of double-writing the result or
+ * queuing a second analysis job for the same game.
  */
 export async function finalizeBotGame(
   deps: FinalizeBotGameDependencies,
@@ -27,9 +34,11 @@ export async function finalizeBotGame(
   finalPly: number,
   result: '1-0' | '0-1' | '1/2-1/2'
 ): Promise<void> {
+  const won = await sessionsRepo.completeIfActive(deps.db, session.id);
+  if (!won) return;
+
   await gamesRepo.updateResult(deps.db, session.gameId, result);
   await sessionsRepo.updateSubjectAndCurrentPly(deps.db, session.id, finalPly);
-  await sessionsRepo.markCompleted(deps.db, session.id);
   await analysesRepo.insertQueued(deps.db, session.gameId);
   await deps.jobQueue.enqueueAnalyzeGame(session.gameId);
 }

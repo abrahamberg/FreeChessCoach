@@ -99,6 +99,10 @@ export async function runAnalyzeGameJob(
 
     await analysesRepo.markReady(db, analysis.id, plan);
   } catch (error) {
+    // markFailed only persists the message to `analyses.error` — without this,
+    // the job queue still logs the job as completed (it caught its own
+    // error), so a failure is otherwise invisible to log-based ops tooling.
+    console.error(`runAnalyzeGameJob failed for game ${gameId} (analysis ${analysis.id}):`, error);
     await analysesRepo.markFailed(db, analysis.id, describeError(error));
   }
 }

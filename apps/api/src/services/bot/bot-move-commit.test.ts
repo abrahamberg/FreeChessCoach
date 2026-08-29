@@ -7,7 +7,7 @@ import * as sessionsRepo from '../../db/repositories/sessions.js';
 import * as usersRepo from '../../db/repositories/users.js';
 import type { Database } from '../../db/schema.js';
 import { createSessionForGame } from '../coach-agent-session.js';
-import { commitBotTurn, type BotMoveCommitDependencies } from './bot-move-commit.js';
+import { commitBotTurn, requestBotMove, type BotMoveCommitDependencies } from './bot-move-commit.js';
 
 const GENERIC_ANALYSIS: PositionAnalysis = {
   fen: 'irrelevant-for-classification-mock',
@@ -145,24 +145,29 @@ describe('commitBotTurn', () => {
   });
 
   test('when the bot\'s reply ends the game, both moves are recorded and the game is finalized', async () => {
-    // 1.Nb8-c6 by the (irrelevant) student, then the bot delivers a back-rank
-    // mate with Ra8# — bot.multiPv/depth are irrelevant since analyzeBotPosition
-    // is mocked to return exactly this one line.
-    const { session, game } = await setupBotGame('black', backRankMatePgnBeforeStudentMove());
+    // c2-c4 by the (irrelevant) student (white), then the bot (black) delivers
+    // a back-rank mate with Ra1# — bot.multiPv/depth are irrelevant since
+    // analyzeBotPosition is mocked to return exactly this one line. Student is
+    // white here (not the more natural-reading black) so the position's first
+    // move is white's, matching commitMove's ply-parity mover assumption
+    // (odd ply = white) — every real game satisfies this since it always
+    // starts from the standard position, but a custom black-to-move [FEN]
+    // with a black student would violate it and misclassify both movers.
+    const { session, game } = await setupBotGame('white', backRankMatePgnBeforeStudentMove());
     const d = deps({
-      analyzeBotPosition: vi.fn().mockResolvedValue(botLines({ moveUci: 'a1a8', moveSan: 'Ra8#', pvSan: ['Ra8#'], cp: null, mateIn: 1 }))
+      analyzeBotPosition: vi.fn().mockResolvedValue(botLines({ moveUci: 'a8a1', moveSan: 'Ra1#', pvSan: ['Ra1#'], cp: null, mateIn: 1 }))
     });
 
-    const result = await commitBotTurn(d, session, baseBot(), 'Nc6');
+    const result = await commitBotTurn(d, session, baseBot(), 'c4');
 
     expect('error' in result).toBe(false);
     if ('error' in result) return;
-    expect(result.player.san).toBe('Nc6');
-    expect(result.bot?.san).toBe('Ra8#');
-    expect(result.gameOver).toEqual({ result: '1-0', reason: 'checkmate' });
+    expect(result.player.san).toBe('c4');
+    expect(result.bot?.san).toBe('Ra1#');
+    expect(result.gameOver).toEqual({ result: '0-1', reason: 'checkmate' });
 
     const updatedGame = await gamesRepo.findById(db, game.id);
-    expect(updatedGame?.result).toBe('1-0');
+    expect(updatedGame?.result).toBe('0-1');
     const updatedSession = await sessionsRepo.findById(db, session.id);
     expect(updatedSession?.status).toBe('completed');
     expect(updatedSession?.currentPly).toBe(result.bot?.ply);
@@ -177,6 +182,59 @@ describe('commitBotTurn', () => {
 
     expect(d.callTiebreak).not.toHaveBeenCalled();
   });
+
+  // The engine-outage / failover path: see bot-move-commit.ts's doc comments
+  // on commitBotTurn and requestBotMove for why the ply pointer has to move
+  // before the bot's reply is even attempted.
+  test('when the engine fails on every retry, the player\'s move still commits and the session is left correctly waiting on the bot', async () => {
+    const { session, game } = await setupBotGame();
+    const d = deps({ analyzeBotPosition: vi.fn().mockRejectedValue(new Error('engine down')) });
+
+    const result = await commitBotTurn(d, session, baseBot(), 'e4');
+
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.player.san).toBe('e4');
+    expect(result.bot).toBeNull();
+    expect(result.botPending).toBe(true);
+
+    const updatedGame = await gamesRepo.findById(db, game.id);
+    expect(updatedGame?.pgn).toContain('e4');
+    const updatedSession = await sessionsRepo.findById(db, session.id);
+    expect(updatedSession?.currentPly).toBe(1);
+    expect(updatedSession?.status).toBe('active');
+  }, 10000);
+
+  test('requestBotMove recovers a bot reply once the engine works again, without a new student move', async () => {
+    const { session } = await setupBotGame();
+    const failingDeps = deps({ analyzeBotPosition: vi.fn().mockRejectedValue(new Error('engine down')) });
+    const pending = await commitBotTurn(failingDeps, session, baseBot(), 'e4');
+    if ('error' in pending) throw new Error('unexpected error result');
+    expect(pending.botPending).toBe(true);
+
+    const recoveredDeps = deps({
+      analyzeBotPosition: vi.fn().mockResolvedValue(botLines({ moveUci: 'e7e5', moveSan: 'e5', pvSan: ['e5'], cp: -10, mateIn: null }))
+    });
+    const result = await requestBotMove(recoveredDeps, session, baseBot());
+
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.player).toBeNull();
+    expect(result.bot?.san).toBe('e5');
+
+    const updatedSession = await sessionsRepo.findById(db, session.id);
+    expect(updatedSession?.currentPly).toBe(2);
+  }, 10000);
+
+  test('requestBotMove is a no-op error when it is actually the student\'s turn', async () => {
+    const { session } = await setupBotGame();
+    const d = deps();
+
+    const result = await requestBotMove(d, session, baseBot());
+
+    expect('error' in result).toBe(true);
+    expect(d.analyzeBotPosition).not.toHaveBeenCalled();
+  });
 });
 
 /** 1.f3 e5 2.g4 — Black (the student) to move, one move (Qh4#) from Fool's Mate. */
@@ -185,8 +243,14 @@ function buildPgnThroughFoolsMateSetup(): string {
 }
 
 /** A back-rank-mate setup one ply before the student's irrelevant move: White
- * king e1, rook a1; Black king g8 boxed in by f7/g7/h7 pawns, extra knight on
- * b8 for the student to shuffle without disturbing the mating pattern. */
+ * king g1 boxed in by f2/g2/h2 pawns, plus a spare c2 pawn for the (white)
+ * student to push; Black rook a8, king e8, ready to deliver Ra1#. A spare
+ * knight can't be used for the "irrelevant" move (any square it could
+ * shuffle to and still clear the back rank in one move is also a square it
+ * could jump back from to interpose on the check) — a pawn push can never
+ * block a same-rank check, so it's the only irrelevant move that actually
+ * leaves Ra1# as mate. White moves first here (not black) so ply 1 is white's
+ * move, matching commitMove's ply-parity mover assumption — see the test. */
 function backRankMatePgnBeforeStudentMove(): string {
-  return '[FEN "1n4k1/5ppp/8/8/8/8/8/R3K3 b - - 0 1"]\n[SetUp "1"]\n\n*';
+  return '[FEN "r3k3/8/8/8/8/8/2P2PPP/6K1 w - - 0 1"]\n[SetUp "1"]\n\n*';
 }

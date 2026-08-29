@@ -1,0 +1,90 @@
+/* Small, always-mounted (AppShell topbar) status pill — a permanent fixture
+   next to the account menu (design 2026-08-28), not just a transient
+   busy-indicator: it always names the configured engine (Browser / Internal
+   / External) and links to Settings' engine picker, layering on activity
+   detail (analysis progress, speed, queue depth) only when there's some. */
+
+.engine-activity-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex: none;
+  text-decoration: none;
+}
+
+.engine-activity-indicator:hover {
+  background: var(--color-surface-strong);
+}
+
+.engine-activity-indicator__label {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.engine-activity-indicator__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.engine-activity-indicator__dot--idle {
+  background: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .engine-activity-indicator__dot:not(.engine-activity-indicator__dot--idle) {
+    animation: engine-activity-pulse 1400ms ease-in-out infinite;
+  }
+}
+
+@keyframes engine-activity-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Queue-depth meter: a short bar next to the label, filled proportionally to
+   how many more analyses (or, for the local browser engine, positions) are
+   waiting behind the one currently running. Absent (not just empty) when
+   nothing is queued — see QueueBar's `depth <= 0` guard. */
+.engine-activity-indicator__queue {
+  display: inline-block;
+  width: 20px;
+  height: 4px;
+  margin-left: 6px;
+  border-radius: 2px;
+  background: var(--color-border);
+  overflow: hidden;
+  flex: none;
+}
+
+.engine-activity-indicator__queue-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 2px;
+}
+
+@media (max-width: 640px) {
+  .engine-activity-indicator__label {
+    max-width: 120px;
+  }
+}

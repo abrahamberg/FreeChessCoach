@@ -12,3 +12,7 @@ coverage/
 
 # Helm subcharts vendored by `helm dependency build`; Chart.lock pins them.
 deploy/helm/*/charts/
+
+# Staged by apps/web/scripts/copy-stockfish-assets.mjs (predev/prebuild) from
+# the `stockfish` npm package — not committed, the .wasm alone is ~108MB.
+apps/web/src/engine/stockfish/

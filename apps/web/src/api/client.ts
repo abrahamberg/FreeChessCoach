@@ -1,4 +1,4 @@
-import type { ZodType } from 'zod';
+import { ZodError, type ZodType } from 'zod';
 
 export class ApiError extends Error {
   constructor(
@@ -9,6 +9,20 @@ export class ApiError extends Error {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+/** React Query's default retry (up to 3x, growing delay) assumes a thrown
+ * queryFn error is transient — true for a dropped connection or a 5xx, but
+ * not for a ZodError (the response parsed fine, its *shape* is wrong — the
+ * refetch will get byte-for-byte the same body and fail identically) or a
+ * 4xx ApiError (also deterministic: the request itself is wrong). Retrying
+ * either just multiplies a permanent failure into several seconds of visible
+ * "Loading…" for nothing. Pass as `retry` in a query's (or the QueryClient's
+ * defaultOptions) options. */
+export function shouldRetryQuery(failureCount: number, error: unknown): boolean {
+  if (error instanceof ZodError) return false;
+  if (error instanceof ApiError && error.status < 500) return false;
+  return failureCount < 3;
 }
 
 /** Fetches `path`, parsing the JSON body against `schema`. Extra/unknown

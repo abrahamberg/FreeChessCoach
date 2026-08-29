@@ -8,6 +8,7 @@ import {
 } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import { apiDelete, apiGet, apiPatch, apiPut } from '../../api/client.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
 import { BandSelect } from './BandSelect.js';
@@ -35,6 +36,7 @@ export function SettingsPage(): ReactNode {
   const queryClient = useQueryClient();
   const [theme, setTheme] = useState<Theme | null>(() => readStoredTheme());
   const [showLegalMoveDots, setShowLegalMoveDots] = useShowLegalMoveDots();
+  const { hash } = useLocation();
 
   useEffect(() => {
     if (theme) {
@@ -53,6 +55,16 @@ export function SettingsPage(): ReactNode {
     queryKey: ['llm-keys'],
     queryFn: ({ signal }) => apiGet('/api/users/me/llm-keys', SavedLlmProvidersResponseSchema, signal)
   });
+
+  // Client-side route changes (e.g. the topbar engine indicator linking to
+  // /settings#settings-engine) don't get the browser's native scroll-to-
+  // fragment behavior the way a full page load would, so it's done by hand
+  // here — gated on isSuccess since the target section only exists in the
+  // DOM once the "Loading…" early-return below has passed.
+  useEffect(() => {
+    if (!hash || !profileQuery.isSuccess) return;
+    document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [hash, profileQuery.isSuccess]);
 
   const displayNameMutation = useMutation({
     mutationFn: (displayName: string) => apiPatch('/api/users/me', { displayName }, UserProfileSchema),
@@ -181,7 +193,7 @@ export function SettingsPage(): ReactNode {
         </button>
       </section>
 
-      <section aria-label="Engine" className="card">
+      <section id="settings-engine" aria-label="Engine" className="card">
         <h2>Engine</h2>
         <EngineModeSelect value={profile.engineMode} onChange={(mode) => engineModeMutation.mutate(mode)} />
       </section>

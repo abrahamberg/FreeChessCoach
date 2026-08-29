@@ -106,6 +106,22 @@ export function markCompleted(db: Kysely<Database>, id: string): Promise<void> {
     .then(() => undefined);
 }
 
+/** Same as markCompleted, but conditioned on the row still being 'active' —
+ * the atomic guard finalizeBotGame uses so two independent finish triggers
+ * racing for the same play_bot game (a clock-timeout claim and a recovered
+ * bot reply both call finalizeBotGame) can't both proceed to write a result
+ * and queue a duplicate analysis job. Returns whether this call is the one
+ * that actually completed it. */
+export async function completeIfActive(db: Kysely<Database>, id: string): Promise<boolean> {
+  const result = await db
+    .updateTable('sessions')
+    .set({ status: 'completed', endedAt: new Date() })
+    .where('id', '=', id)
+    .where('status', '=', 'active')
+    .executeTakeFirst();
+  return result.numUpdatedRows > 0n;
+}
+
 /** Student-initiated reset (as opposed to the coach's own end_session) — see
  * migration 0004_session_abandoned_status. */
 export function markAbandoned(db: Kysely<Database>, id: string): Promise<void> {

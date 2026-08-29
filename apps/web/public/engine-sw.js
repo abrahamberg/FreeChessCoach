@@ -13,7 +13,14 @@
 // /assets/stockfish-18-single-<hash>.wasm) — the hashed prod filename
 // busts this cache automatically on a dependency bump, so only the dev
 // path needs the manual CACHE_NAME bump below.
-const CACHE_NAME = 'stockfish-engine-v1'; // bump when the `stockfish` npm package version changes
+// v2: an earlier CACHE_NAME=v1 rollout landed before the dev server actually
+// had the engine files staged (see copy-stockfish-assets.mjs) — Vite's
+// SPA-fallback HTML (still a 200, so it passed the old `response.ok` check
+// below) got cached as if it were the real engine file, permanently breaking
+// the engine for anyone who loaded the app in that window, immune to any
+// later server-side fix since this cache never expires or revalidates on its
+// own. Bump this whenever that class of bad response might have been cached.
+const CACHE_NAME = 'stockfish-engine-v2'; // bump when the `stockfish` npm package version changes
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -36,6 +43,15 @@ function isEngineAsset(url) {
   return url.includes('stockfish-18-single') && (url.endsWith('.wasm') || url.endsWith('.js'));
 }
 
+// Guards against repeating the v1 incident: a dev-only misconfiguration
+// (Vite serving its SPA-fallback HTML for a not-yet-staged asset path) is
+// still `response.ok` — a content-type check is the only thing that actually
+// distinguishes a real engine file from that fallback.
+function looksLikeEngineAsset(url, response) {
+  const contentType = response.headers.get('content-type') ?? '';
+  return url.endsWith('.wasm') ? contentType.includes('wasm') : contentType.includes('javascript');
+}
+
 self.addEventListener('fetch', (event) => {
   if (!isEngineAsset(event.request.url)) return;
   event.respondWith(
@@ -43,7 +59,7 @@ self.addEventListener('fetch', (event) => {
       const cached = await cache.match(event.request);
       if (cached) return cached;
       const response = await fetch(event.request);
-      if (response.ok) cache.put(event.request, response.clone());
+      if (response.ok && looksLikeEngineAsset(event.request.url, response)) cache.put(event.request, response.clone());
       return response;
     })
   );

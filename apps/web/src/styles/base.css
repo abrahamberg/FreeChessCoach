@@ -269,6 +269,24 @@ code.san {
   }
 }
 
+/* Briefly calls out a card deep-linked to via URL fragment (e.g. the topbar
+ * engine indicator jumping to /settings#settings-engine) — `:target` applies
+ * natively for as long as the hash matches, no JS state needed. */
+.card:target {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  animation: card-target-flash 1.6s ease-out;
+}
+
+@keyframes card-target-flash {
+  from {
+    box-shadow: 0 0 0 4px var(--color-primary-soft);
+  }
+  to {
+    box-shadow: var(--shadow-sm);
+  }
+}
+
 /* --- Badges / status pills --- */
 .badge {
   display: inline-flex;

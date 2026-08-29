@@ -12,6 +12,7 @@ import {
   SessionDetailSchema,
   UndoBotMoveResponseSchema
 } from './sessionPageSchemas.js';
+import { useBotTurnFailover } from './useBotTurnFailover.js';
 import { useDivergedLine } from './useDivergedLine.js';
 import { useLivePositions } from './useLivePositions.js';
 import { useSessionBoardState } from './useSessionBoardState.js';
@@ -71,8 +72,12 @@ export function useBotSessionPageData(sessionId: string) {
   const boardState = useSessionBoardState(positions, initialPly, true);
   const divergedLine = useDivergedLine();
   const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(DEFAULT_AUTOPLAY_INTERVAL_MS);
+  // boardState.coachPly, not boardState.ply: peekAt (move-list/Explore
+  // navigation) reassigns `ply` for local-only display, but the failover
+  // poll below needs to know where the game *actually* is regardless of
+  // what the student is currently looking at.
   const currentRealPosition =
-    positions.find((position) => position.ply === boardState.ply) ?? positions[0] ?? FALLBACK_POSITION;
+    positions.find((position) => position.ply === boardState.coachPly) ?? positions[0] ?? FALLBACK_POSITION;
   const engine = useWasmEngine();
 
   // Seeded once the game loads (a timed game's initial remaining time), then
@@ -121,6 +126,21 @@ export function useBotSessionPageData(sessionId: string) {
   function handleGameOver(): void {
     void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
   }
+
+  // "Whose turn is it really" — currentRealPosition, not boardState.ply,
+  // since the student can be peeking at history while still waiting on the
+  // bot (same distinction BotSessionPage's own `activeColor` draws).
+  const studentColor = gameQuery.data?.userColor;
+  const isBotTurn = studentColor !== undefined && moverForPly(currentRealPosition.ply + 1) !== studentColor;
+  useBotTurnFailover({
+    sessionId,
+    isActive: sessionQuery.data?.status === 'active',
+    isBotTurn,
+    currentFen: currentRealPosition.fen,
+    onBotMoveCommitted: handleBotMoveCommitted,
+    onClockUpdate: handleClockUpdate,
+    onGameOver: handleGameOver
+  });
 
   function peekAt(ply: number): void {
     divergedLine.exit();

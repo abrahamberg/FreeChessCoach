@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useEngineActivityIndicator } from '../hooks/useEngineActivityIndicator.js';
 import { useIsDesktop } from '../hooks/useIsDesktop.js';
+import { EngineActivityIndicator } from './EngineActivityIndicator.js';
 import { BoardIcon, TrendingUpIcon } from './Icon.js';
 import { UserMenu } from './UserMenu.js';
 import './AppShell.css';
@@ -48,6 +50,11 @@ function Brand(): ReactNode {
 }
 
 function TopBar({ isDesktop }: { isDesktop: boolean }): ReactNode {
+  // Computed once here (not inside EngineActivityIndicator/UserMenu
+  // individually) so desktop and mobile share a single useActiveAnalyses
+  // SSE subscription instead of opening one each.
+  const engineActivity = useEngineActivityIndicator();
+
   return (
     <header className="app-shell__topbar">
       <div className="app-shell__topbar-inner">
@@ -63,7 +70,8 @@ function TopBar({ isDesktop }: { isDesktop: boolean }): ReactNode {
           </nav>
         )}
         <div className="app-shell__topbar-end">
-          <UserMenu />
+          {isDesktop && <EngineActivityIndicator state={engineActivity} />}
+          <UserMenu engineActivity={isDesktop ? undefined : engineActivity} />
         </div>
       </div>
     </header>

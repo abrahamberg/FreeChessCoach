@@ -74,10 +74,13 @@ const CommittedBotMoveSchema = z.object({
 /** POST /api/sessions/:id/play-move response for a play_bot-mode session —
  * distinct from the plain `{fen,san,ply,quality}` a play-mode move returns,
  * since one request here commits both the student's move AND (unless it
- * already ended the game) the bot's synchronous reply. `bot` is null only
- * when the student's own move ended the game first. */
+ * already ended the game) the bot's synchronous reply. `bot` is null when
+ * the student's own move ended the game first, OR when the engine failed
+ * even after its own retries (see `botPending`). Also reused as-is for POST
+ * /api/sessions/:id/request-bot-move's response (the failover retry), where
+ * there's no new student move to report — `player` is null there. */
 export const CommitBotMoveResponseSchema = z.object({
-  player: CommittedBotMoveSchema,
+  player: CommittedBotMoveSchema.nullable(),
   bot: CommittedBotMoveSchema.nullable(),
   gameOver: z
     .object({
@@ -96,7 +99,12 @@ export const CommitBotMoveResponseSchema = z.object({
    * local ticking clock display against the server's authoritative value
    * instead of drifting across moves. Null/null for an untimed game. */
   whiteRemainingMs: z.number().int().nullable(),
-  blackRemainingMs: z.number().int().nullable()
+  blackRemainingMs: z.number().int().nullable(),
+  /** True iff the bot's reply is still outstanding after every engine retry
+   * failed — the student's move (if any) already stands. The client should
+   * retry via request-bot-move rather than treat this as an error; see
+   * useBotTurnFailover. */
+  botPending: z.boolean().optional()
 });
 export type CommitBotMoveResponse = z.infer<typeof CommitBotMoveResponseSchema>;
 

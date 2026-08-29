@@ -45,3 +45,45 @@ describe('EnginePool', () => {
     expect(pool.busy).toBe(0);
   }, 20000);
 });
+
+/** A live bot move (priority 'interactive') must never queue FIFO behind a
+ * background batch job (import analysis, deepen-analysis) that got to the
+ * pool first — see EnginePrioritySchema's doc comment. No real Stockfish
+ * process needed here: this is purely about acquire/release queue ordering,
+ * so a stub stands in for the engine value withEngine hands to its callback. */
+describe('EnginePool priority', () => {
+  function deferred<T = void>(): { promise: Promise<T>; resolve: (value: T) => void } {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>((r) => {
+      resolve = r;
+    });
+    return { promise, resolve };
+  }
+
+  test('serves a freed engine to a waiting interactive call before an earlier-queued background one', async () => {
+    const pool = new EnginePool(1, () => ({}) as UciEngine);
+    const order: string[] = [];
+    const gate = deferred();
+
+    // Occupies the pool's only engine synchronously (idle.pop() runs before
+    // the first await), so both calls below are guaranteed to queue as
+    // waiters rather than race for an idle engine.
+    const holder = pool.withEngine(async () => {
+      order.push('holder:start');
+      await gate.promise;
+      order.push('holder:end');
+    }, 'background');
+
+    const backgroundWaiter = pool.withEngine(async () => {
+      order.push('background');
+    }, 'background');
+    const interactiveWaiter = pool.withEngine(async () => {
+      order.push('interactive');
+    }, 'interactive');
+
+    gate.resolve();
+    await Promise.all([holder, backgroundWaiter, interactiveWaiter]);
+
+    expect(order).toEqual(['holder:start', 'holder:end', 'interactive', 'background']);
+  });
+});

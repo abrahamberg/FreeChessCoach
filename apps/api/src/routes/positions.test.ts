@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vite
 import type { PositionAnalysis } from '@freechesscoach/shared';
 import { buildApp } from '../app.js';
 import { buildResolveEngineBackendOptions, type CoachAgentBaseDependencies } from '../bootstrap.js';
+import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 
@@ -59,6 +60,15 @@ describe('POST /api/positions/analyze', () => {
     return { 'x-auth-request-email': email, 'x-auth-request-user': displayName };
   }
 
+  /** New signups default to 'chess_api' (userProfileService.getOrCreate) —
+   * these tests are specifically about the native engine HTTP path, so they
+   * force the user back to 'native' after the login-triggered getOrCreate. */
+  async function useNativeEngineMode(email: string): Promise<void> {
+    const user = await usersRepo.findByEmail(db, email);
+    if (!user) throw new Error(`test setup: expected user ${email} to already exist`);
+    await usersRepo.update(db, user.id, { engineMode: 'native' });
+  }
+
   /** The route only ever touches `db` and the resolved engine backend — the
    * rest of CoachAgentBaseDependencies is required by app.ts's shared
    * registration gate (both sessions and positions routes register
@@ -97,6 +107,7 @@ describe('POST /api/positions/analyze', () => {
     const headers = headersFor('on@example.com', 'On');
     const { app, fetchMock } = buildTestApp();
     await app.inject({ method: 'GET', url: '/api/users/me', headers });
+    await useNativeEngineMode('on@example.com');
 
     const response = await app.inject({
       method: 'POST',
@@ -147,6 +158,7 @@ describe('POST /api/positions/analyze', () => {
       const headers = headersFor('hint@example.com', 'Hint');
       const { app, fetchMock } = buildTestApp();
       await app.inject({ method: 'GET', url: '/api/users/me', headers });
+      await useNativeEngineMode('hint@example.com');
 
       const response = await app.inject({
         method: 'POST',

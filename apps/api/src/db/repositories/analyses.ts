@@ -14,6 +14,10 @@ export interface AnalysisRow {
 
 const BASE_COLUMNS = ['id', 'gameId', 'status', 'error', 'createdAt', 'completedAt'] as const;
 
+/** Shared with the active-analyses SSE route (registerAnalysesRoutes) so both
+ * ends of "is this analysis still running" agree on the same two statuses. */
+export const TERMINAL_ANALYSIS_STATUSES = new Set<AnalysisStatus>(['ready', 'failed']);
+
 export function insertQueued(db: Kysely<Database>, gameId: string): Promise<AnalysisRow> {
   return db
     .insertInto('analyses')
@@ -199,6 +203,34 @@ export function findCoachingPlanByGameId(
     .where('gameId', '=', gameId)
     .executeTakeFirst()
     .then((row) => row?.coachingPlan as CoachingPlan | undefined);
+}
+
+export interface ActiveAnalysisRow {
+  id: string;
+  gameId: string;
+  status: AnalysisStatus;
+  /** Engine evals persisted so far — same definition as AnalysisProgressRow. */
+  progress: number;
+  pgn: string;
+}
+
+/** Every non-terminal analysis belonging to `userId`, oldest first — for the
+ * global "engine is working" indicator (GET /api/analyses/active), which has
+ * no analysisId to key off yet and needs to discover one on its own. Carries
+ * `pgn` so the route can derive each game's total ply count (positionCountOf)
+ * without a second round trip. */
+export async function findActiveForUser(db: Kysely<Database>, userId: string): Promise<ActiveAnalysisRow[]> {
+  const result = await sql<ActiveAnalysisRow>`
+    select analyses.id, analyses.game_id as "gameId", analyses.status,
+           coalesce(jsonb_array_length(analyses.engine_evals), 0)::int as progress,
+           games.pgn
+    from analyses
+    join games on games.id = analyses.game_id
+    where games.user_id = ${userId}
+      and analyses.status not in ('ready', 'failed')
+    order by analyses.created_at asc
+  `.execute(db);
+  return result.rows;
 }
 
 export function deleteByGameId(db: Kysely<Database>, gameId: string): Promise<void> {

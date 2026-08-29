@@ -102,4 +102,44 @@ describe('selectBotMove', () => {
     expect(result.san).toBe('Ke2');
     expect(result.usedAi).toBe(false);
   });
+
+  // A live bot move sits behind the player's "your move" round trip
+  // (commitBotTurn) — a single dropped/timed-out engine call must not
+  // strand the game. See withEngineRetry's doc comment.
+  describe('engine retry', () => {
+    test('recovers from a transient engine failure without surfacing an error', async () => {
+      const analyzeBotPosition = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('engine timeout'))
+        .mockResolvedValueOnce(analysis([{ moveUci: 'e1e2', moveSan: 'Ke2', pvSan: ['Ke2'], cp: 5, mateIn: null }]));
+      const deps = baseDeps({ analyzeBotPosition });
+
+      vi.useFakeTimers();
+      try {
+        const resultPromise = selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot());
+        await vi.runAllTimersAsync();
+        const result = await resultPromise;
+        expect(result.san).toBe('Ke2');
+        expect(analyzeBotPosition).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    test('gives up and rejects once every retry attempt fails', async () => {
+      const analyzeBotPosition = vi.fn().mockRejectedValue(new Error('engine down'));
+      const deps = baseDeps({ analyzeBotPosition });
+
+      vi.useFakeTimers();
+      try {
+        const resultPromise = selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot());
+        const assertion = expect(resultPromise).rejects.toThrow('engine down');
+        await vi.runAllTimersAsync();
+        await assertion;
+        expect(analyzeBotPosition).toHaveBeenCalledTimes(3);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
 });

@@ -54,15 +54,20 @@ export function usePlayBotMoveSubmit(
     setError(null);
     try {
       const result = await apiPost(`/api/sessions/${sessionId}/play-move`, { san }, CommitBotMoveResponseSchema);
-      onPlayMoveCommitted?.(result.player, uci);
-      if (result.bot) {
-        // The bot's move has no moveUci of its own (same situation the
-        // coach's tool-played moves already have — see
-        // useSessionPageData.ts's applyPlayCoachMove) — derive it from the
-        // position right before the bot's move.
-        const resolved = resolveSanMove(result.player.fen, result.bot.san);
-        const botUci = resolved ? `${resolved.from}${resolved.to}` : '';
-        onPlayMoveCommitted?.(result.bot, botUci);
+      // `player` is only ever null on the sibling request-bot-move response
+      // (useBotTurnFailover) — this endpoint always commits a student move,
+      // so the guard below is for the type checker, not a real runtime case.
+      if (result.player) {
+        onPlayMoveCommitted?.(result.player, uci);
+        if (result.bot) {
+          // The bot's move has no moveUci of its own (same situation the
+          // coach's tool-played moves already have — see
+          // useSessionPageData.ts's applyPlayCoachMove) — derive it from the
+          // position right before the bot's move.
+          const resolved = resolveSanMove(result.player.fen, result.bot.san);
+          const botUci = resolved ? `${resolved.from}${resolved.to}` : '';
+          onPlayMoveCommitted?.(result.bot, botUci);
+        }
       }
       onClockUpdate?.(result.whiteRemainingMs, result.blackRemainingMs);
       if (result.gameOver) onGameOver?.();

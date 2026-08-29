@@ -132,7 +132,7 @@ export async function undoLastMove(
   return { fen: removed.fen, removedPly };
 }
 
-function currentFen(pgn: string): string {
+export function currentFen(pgn: string): string {
   const positions = parsePgn(pgn).positions;
   const last = positions.at(-1);
   if (!last) throw new Error('parsePgn always returns at least the starting position');

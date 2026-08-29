@@ -93,7 +93,7 @@ export const ResignBotGameResponseSchema = z.object({
 });
 
 export const CommitBotMoveResponseSchema = z.object({
-  player: CommittedBotMoveSchema,
+  player: CommittedBotMoveSchema.nullable(),
   bot: CommittedBotMoveSchema.nullable(),
   gameOver: z
     .object({
@@ -102,7 +102,10 @@ export const CommitBotMoveResponseSchema = z.object({
     })
     .nullable(),
   whiteRemainingMs: z.number().int().nullable(),
-  blackRemainingMs: z.number().int().nullable()
+  blackRemainingMs: z.number().int().nullable(),
+  /** True iff the bot's reply is still outstanding after every engine retry
+   * failed. See useBotTurnFailover, which retries via request-bot-move. */
+  botPending: z.boolean().optional()
 });
 
 /** POST /api/sessions/:id/claim-timeout's response — see the shared

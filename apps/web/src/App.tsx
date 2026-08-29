@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { shouldRetryQuery } from './api/client.js';
 import { AppShell } from './components/AppShell.js';
 import { DashboardPage } from './features/dashboard/DashboardPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
@@ -12,7 +13,7 @@ import { SessionPage } from './features/session/SessionPage.js';
 import { SettingsPage } from './features/settings/SettingsPage.js';
 import { useEngineTunnelActivation } from './hooks/useEngineTunnelActivation.js';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: shouldRetryQuery } } });
 
 /** Resetting a session (see SessionHeader) navigates from /session/:oldId to
  * /session/:newId without a route change, so React Router reuses the same

@@ -1,4 +1,4 @@
-import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
+import type { EngineEval, EnginePriority, PositionAnalysis } from '@freechesscoach/shared';
 
 /**
  * Options for engine backend analysis methods.
@@ -6,6 +6,11 @@ import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
 export interface EngineBackendAnalyzeOptions {
   depth?: number;
   multiPv?: number;
+  /** 'interactive' for a live, user-waiting call (bot move selection) so it
+   * jumps ahead of queued background work on the native engine pool — see
+   * EnginePrioritySchema's doc comment. Defaults to 'background'; only
+   * NativeEngineBackend acts on it today. */
+  priority?: EnginePriority;
 }
 
 /**

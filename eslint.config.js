@@ -2,7 +2,19 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/dist-bundle/**', '**/coverage/**', 'eslint.config.js', '.claude/worktrees/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/dist-bundle/**',
+      '**/coverage/**',
+      'eslint.config.js',
+      '.claude/worktrees/**',
+      // Staged by apps/web/scripts/copy-stockfish-assets.mjs from the
+      // `stockfish` npm package — vendored, unminified-unfriendly build
+      // output, not code this repo owns or should lint.
+      'apps/web/src/engine/stockfish/**'
+    ]
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -12,6 +24,15 @@ export default tseslint.config(
     files: ['apps/web/public/*-sw.js'],
     languageOptions: {
       globals: { self: 'readonly', caches: 'readonly', fetch: 'readonly' }
+    }
+  },
+  {
+    // Plain Node scripts run directly with `node` (not compiled through
+    // tsc), so they get none of the ambient Node types the rest of the repo
+    // relies on to satisfy no-undef.
+    files: ['apps/web/scripts/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly' }
     }
   },
   {

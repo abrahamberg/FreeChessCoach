@@ -17,7 +17,7 @@ export interface ClaimBotTimeoutResult {
 /** Odd plies are White's — the side to move next is the opposite of
  * whoever just played session.currentPly (matches play-moves.ts's own
  * ply-parity convention). */
-function moverToMoveNext(currentPly: number): 'white' | 'black' {
+export function moverToMoveNext(currentPly: number): 'white' | 'black' {
   return currentPly % 2 === 0 ? 'white' : 'black';
 }
 

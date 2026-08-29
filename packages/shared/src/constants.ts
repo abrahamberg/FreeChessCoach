@@ -18,7 +18,17 @@ export type MistakeCategory = (typeof MISTAKE_CATEGORIES)[number];
 export const RATING_BANDS = ['novice', 'improving', 'club', 'advanced'] as const;
 export type RatingBand = (typeof RATING_BANDS)[number];
 
-export const ENGINE_MODES = ['native', 'browser'] as const;
+/**
+ * 'chess_api' calls the free https://chess-api.com/v1 HTTP API from the
+ * server — never exposed to the browser, so it's trusted the same as
+ * 'native' for position_evaluations cache purposes (see
+ * resolve-engine-backend.ts's isExternalSource). It's the default for new
+ * users: it needs no shared local engine pool, so it sidesteps the
+ * bot-vs-background-analysis contention 'native' can hit under load.
+ * 'native' (the server's own Stockfish pool) and 'browser' (client-side WASM,
+ * tunneled) remain available as alternatives.
+ */
+export const ENGINE_MODES = ['chess_api', 'native', 'browser'] as const;
 export type EngineMode = (typeof ENGINE_MODES)[number];
 
 /**

@@ -171,7 +171,19 @@ export function buildTtsConfigFromEnv(): TtsConfig | undefined {
 
 /** Reads ENGINE_TUNNEL_TIMEOUT_MS (design spec §2 self-review fix — every
  * other numeric config value here is env-configurable, this one was missing
- * one). Default matches native's rough per-position ceiling. */
+ * one). Default matches native's rough per-position ceiling.
+ *
+ * CHESS_API_TIMEOUT_MS bounds a single call to the third-party
+ * https://chess-api.com/v1 API (chess-api-engine-backend.ts) — no API key or
+ * other config needed, it's a free, keyless endpoint, so unlike Stripe/TTS
+ * below there's no "feature absent when unconfigured" case to handle.
+ *
+ * CHESS_API_REQUEST_DELAY_MS paces analyzeGame's sequential per-position
+ * calls to chess-api.com — an undocumented free API with no published rate
+ * limit, where a malformed-but-200 response has so far only been observed
+ * mid-way through an unpaced back-to-back run (chess-api-engine-backend.ts's
+ * MALFORMED_RESPONSE_RETRY_DELAYS_MS handles the case where pacing alone
+ * isn't enough). */
 export function buildResolveEngineBackendOptions(
   db: Kysely<Database>,
   engineUrl: string,
@@ -181,7 +193,9 @@ export function buildResolveEngineBackendOptions(
     db,
     engineUrl,
     tunnelTransport,
-    tunnelTimeoutMs: parsePositiveInt('ENGINE_TUNNEL_TIMEOUT_MS', 10000)
+    tunnelTimeoutMs: parsePositiveInt('ENGINE_TUNNEL_TIMEOUT_MS', 10000),
+    chessApiTimeoutMs: parsePositiveInt('CHESS_API_TIMEOUT_MS', 15000),
+    chessApiRequestDelayMs: parsePositiveInt('CHESS_API_REQUEST_DELAY_MS', 100)
   };
 }
 

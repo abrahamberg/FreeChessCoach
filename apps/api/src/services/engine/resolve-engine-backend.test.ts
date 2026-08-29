@@ -23,7 +23,14 @@ describe('resolveEngineBackend', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   function options(tunnelTransport: EngineTunnelTransport): ResolveEngineBackendOptions {
-    return { db, engineUrl: 'http://engine:4001', tunnelTransport, tunnelTimeoutMs: 8000 };
+    return {
+      db,
+      engineUrl: 'http://engine:4001',
+      tunnelTransport,
+      tunnelTimeoutMs: 8000,
+      chessApiTimeoutMs: 5000,
+      chessApiRequestDelayMs: 0
+    };
   }
 
   // Each test analyzes its own unique FEN: position_evaluations is keyed by fen
@@ -33,6 +40,7 @@ describe('resolveEngineBackend', () => {
   // be called at all.
   const NATIVE_FEN = `native-${crypto.randomUUID()}`;
   const BROWSER_FEN = `browser-${crypto.randomUUID()}`;
+  const CHESS_API_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
   test('engineMode "native" resolves to a backend that calls the engine HTTP API, not the tunnel', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
@@ -49,6 +57,25 @@ describe('resolveEngineBackend', () => {
     await backend.analyzePosition(NATIVE_FEN);
 
     expect(fetchMock).toHaveBeenCalled();
+    expect(tunnelTransport.request).not.toHaveBeenCalled();
+  });
+
+  test('engineMode "chess_api" resolves to a backend that calls chess-api.com, not the engine HTTP API or the tunnel', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cara' });
+    await usersRepo.update(db, user.id, { engineMode: 'chess_api' });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ move: 'e2e4', san: 'e4', eval: 0.3, mate: null }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const tunnelTransport: EngineTunnelTransport = { request: vi.fn() };
+
+    const backend = await resolveEngineBackend(options(tunnelTransport), user.id);
+    await backend.analyzePosition(CHESS_API_FEN);
+
+    expect(fetchMock).toHaveBeenCalledWith('https://chess-api.com/v1', expect.objectContaining({ method: 'POST' }));
     expect(tunnelTransport.request).not.toHaveBeenCalled();
   });
 
@@ -102,11 +129,16 @@ describe('resolveEngineBackend', () => {
   test('resolveRawEngineBackend bypasses CachingEngineBackend — repeated calls for the same fen hit the raw backend every time', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cam' });
     const fen = `raw-${crypto.randomUUID()}`;
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ analysis: { fen, depth: 1, multiPv: 1, bestMove: null, eval: { cp: null, mateIn: null }, lines: [], features: {} } }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' }
-      })
+    // A fresh Response per call — this test calls analyzePosition twice, and
+    // a Response's body can only be read once (mockResolvedValue would reuse
+    // the same instance and throw "Body has already been read" on the second
+    // call's `.json()`).
+    const fetchMock = vi.fn().mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ analysis: { fen, depth: 1, multiPv: 1, bestMove: null, eval: { cp: null, mateIn: null }, lines: [], features: {} } }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' }
+        })
     );
     vi.stubGlobal('fetch', fetchMock);
     const tunnelTransport: EngineTunnelTransport = { request: vi.fn() };

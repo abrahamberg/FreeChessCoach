@@ -24,6 +24,43 @@ export interface SelectedBotMove {
   usedAi: boolean;
 }
 
+/** A selection-logic bug — the engine call itself succeeded, but what came
+ * back or what was chosen from it can't be used. Distinct from a transient
+ * engine failure (a network blip, a timeout — see withEngineRetry) so that
+ * commitBotTurn/requestBotMove can tell them apart: a real bug here will
+ * fail the exact same way on every retry, so silently reporting it as
+ * `botPending` (as if the engine were merely down) would leave the game
+ * stuck forever behind an indefinite client-side poll instead of surfacing
+ * as the visible failure it should be. */
+export class BotSelectionError extends Error {}
+
+/** A bot move sits behind the live "your move" round trip (commitBotTurn):
+ * a single dropped or timed-out engine call — contention with a background
+ * analysis job, a transient network blip — must not strand the game with
+ * the player's move committed but no bot reply. Retries the engine call a
+ * few times with a short, increasing backoff before giving up; the caller
+ * (commitBotTurn) still has its own botPending fallback for when every
+ * attempt here fails. */
+const ENGINE_RETRY_ATTEMPTS = 3;
+const ENGINE_RETRY_DELAY_MS = 500;
+
+async function withEngineRetry<T>(fn: () => Promise<T>): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < ENGINE_RETRY_ATTEMPTS; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt < ENGINE_RETRY_ATTEMPTS - 1) await sleep(ENGINE_RETRY_DELAY_MS * (attempt + 1));
+    }
+  }
+  throw lastError;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Picks one move for a bot at `fen`: book first, then engine+personality
  * scoring, with an optional AI tiebreak among close-scoring candidates for
@@ -38,9 +75,9 @@ export async function selectBotMove(
   const book = selectBookMove(fen, plyCount, bot, deps.random);
   if (book) return { san: book.san, usedBook: true, usedAi: false };
 
-  const candidates = await buildBotCandidates(deps, fen, bot);
+  const candidates = await withEngineRetry(() => buildBotCandidates(deps, fen, bot));
   if (candidates.length === 0) {
-    throw new Error(`selectBotMove: engine returned no candidates for a non-terminal position (fen "${fen}")`);
+    throw new BotSelectionError(`selectBotMove: engine returned no candidates for a non-terminal position (fen "${fen}")`);
   }
   const scored = scoreBotCandidates(candidates, bot.personality);
 

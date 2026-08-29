@@ -1,9 +1,11 @@
 import type { Kysely } from 'kysely';
+import type { EngineMode } from '@freechesscoach/shared';
 import * as usersRepo from '../../db/repositories/users.js';
 import type { Database } from '../../db/schema.js';
 import { EngineUnavailableError } from '../../lib/errors.js';
 import { BrowserTunnelEngineBackend } from './browser-tunnel-engine-backend.js';
 import { CachingEngineBackend } from './caching-engine-backend.js';
+import { ChessApiEngineBackend } from './chess-api-engine-backend.js';
 import type { EngineBackend } from './engine-backend.js';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
 import { NativeEngineBackend } from './native-engine-backend.js';
@@ -13,6 +15,8 @@ export interface ResolveEngineBackendOptions {
   engineUrl: string;
   tunnelTransport: EngineTunnelTransport;
   tunnelTimeoutMs: number;
+  chessApiTimeoutMs: number;
+  chessApiRequestDelayMs: number;
 }
 
 /**
@@ -23,6 +27,8 @@ export interface ResolveEngineBackendOptions {
  */
 export async function resolveEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
   const { raw, mode } = await resolveRawBackendForUser(options, userId);
+  // 'chess_api' is called from this server, never the browser, so it's
+  // trusted the same as 'native' here — only 'browser' evals are external.
   return new CachingEngineBackend(options.db, raw, { isExternalSource: mode === 'browser' });
 }
 
@@ -44,7 +50,7 @@ export async function resolveRawEngineBackend(options: ResolveEngineBackendOptio
 async function resolveRawBackendForUser(
   options: ResolveEngineBackendOptions,
   userId: string
-): Promise<{ raw: EngineBackend; mode: 'native' | 'browser' }> {
+): Promise<{ raw: EngineBackend; mode: EngineMode }> {
   const user = await usersRepo.findById(options.db, userId);
   if (!user) throw new EngineUnavailableError(`Unknown user ${userId}`);
 
@@ -52,7 +58,14 @@ async function resolveRawBackendForUser(
   const raw: EngineBackend =
     mode === 'browser'
       ? new BrowserTunnelEngineBackend(options.tunnelTransport, userId, options.tunnelTimeoutMs)
-      : new NativeEngineBackend(options.engineUrl);
+      : mode === 'chess_api'
+        ? new ChessApiEngineBackend(
+            options.chessApiTimeoutMs,
+            fetch,
+            options.chessApiRequestDelayMs,
+            new NativeEngineBackend(options.engineUrl)
+          )
+        : new NativeEngineBackend(options.engineUrl);
 
   return { raw, mode };
 }

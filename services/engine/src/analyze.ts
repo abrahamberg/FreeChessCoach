@@ -1,6 +1,6 @@
 import { validateFen } from 'chess.js';
 import { computePositionFeatures } from '@freechesscoach/chess-analysis';
-import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
+import type { EngineEval, EnginePriority, PositionAnalysis } from '@freechesscoach/shared';
 import type { EnginePool } from './engine-pool.js';
 import { DEFAULT_DEPTH, pvUciToSan, type AnalyzeOptions } from './uci.js';
 
@@ -14,10 +14,11 @@ export async function analyzePosition(
   pool: EnginePool,
   fen: string,
   ply: number,
-  options: AnalyzeOptions = {}
+  options: AnalyzeOptions = {},
+  priority: EnginePriority = 'background'
 ): Promise<EngineEval> {
   assertValidFen(fen);
-  const lines = await pool.withEngine((engine) => engine.analyze(fen, options));
+  const lines = await pool.withEngine((engine) => engine.analyze(fen, options), priority);
   return { ply, fen, depth: options.depth ?? DEFAULT_DEPTH, lines };
 }
 
@@ -32,11 +33,12 @@ export async function analyzePosition(
 export async function analyzePositionDetailed(
   pool: EnginePool,
   fen: string,
-  options: AnalyzeOptions = {}
+  options: AnalyzeOptions = {},
+  priority: EnginePriority = 'background'
 ): Promise<PositionAnalysis> {
   assertValidFen(fen);
   const depth = options.depth ?? DEFAULT_DEPTH;
-  const detailedLines = await pool.withEngine((engine) => engine.analyzeDetailed(fen, options));
+  const detailedLines = await pool.withEngine((engine) => engine.analyzeDetailed(fen, options), priority);
   const lines = detailedLines.map((line) => ({
     moveUci: line.moveUci,
     moveSan: line.moveSan,
@@ -61,11 +63,12 @@ export async function analyzePositionDetailed(
 export async function analyzeGame(
   pool: EnginePool,
   fens: string[],
-  options: AnalyzeOptions = {}
+  options: AnalyzeOptions = {},
+  priority: EnginePriority = 'background'
 ): Promise<EngineEval[]> {
   const evals: EngineEval[] = [];
   for (const [ply, fen] of fens.entries()) {
-    evals.push(await analyzePosition(pool, fen, ply, options));
+    evals.push(await analyzePosition(pool, fen, ply, options, priority));
   }
   return evals;
 }

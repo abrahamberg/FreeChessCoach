@@ -3,7 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { apiGet } from '../api/client.js';
+import { describeEngineActivity } from './EngineActivityIndicator.js';
 import { ChevronDownIcon, LogOutIcon, SettingsIcon } from './Icon.js';
+import type { EngineActivityIndicatorState } from '../hooks/useEngineActivityIndicator.js';
 import './UserMenu.css';
 
 function initialsFor(displayName: string | undefined): string {
@@ -16,7 +18,14 @@ function initialsFor(displayName: string | undefined): string {
  * item — matching the shape of every mainstream SaaS product. Fetches the
  * same ['profile'] query SettingsPage uses, so opening the menu never costs
  * a second network round trip once Settings has been visited. */
-export function UserMenu(): ReactNode {
+export interface UserMenuProps {
+  /** Set only on mobile (AppShell's TopBar) — the same state the desktop
+   * pill would otherwise show, embedded as a menu row instead since there's
+   * no room for a permanent topbar pill at that width. */
+  engineActivity?: EngineActivityIndicatorState;
+}
+
+export function UserMenu({ engineActivity }: UserMenuProps): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -70,6 +79,12 @@ export function UserMenu(): ReactNode {
               <span className="user-menu__email">{profileQuery.data?.email ?? ''}</span>
             </span>
           </div>
+          {engineActivity && (
+            <>
+              <div className="user-menu__divider" />
+              <EngineActivityMenuRow state={engineActivity} onNavigate={() => setIsOpen(false)} />
+            </>
+          )}
           <div className="user-menu__divider" />
           <NavLink to="/settings" role="menuitem" className="user-menu__item" onClick={() => setIsOpen(false)}>
             <SettingsIcon width={17} height={17} />
@@ -85,5 +100,18 @@ export function UserMenu(): ReactNode {
         </div>
       )}
     </div>
+  );
+}
+
+/** Mobile-only stand-in for the desktop topbar's EngineActivityIndicator
+ * pill — same describeEngineActivity() output (badge, activity detail,
+ * queue bar), rendered as a menu row and linking to the same place. */
+function EngineActivityMenuRow({ state, onNavigate }: { state: EngineActivityIndicatorState; onNavigate: () => void }): ReactNode {
+  const info = describeEngineActivity(state);
+  return (
+    <NavLink to="/settings#settings-engine" role="menuitem" className="user-menu__item" title={info.title} onClick={onNavigate}>
+      <span className={`engine-activity-indicator__dot${state.kind === 'idle' ? ' engine-activity-indicator__dot--idle' : ''}`} aria-hidden="true" />
+      {info.label}
+    </NavLink>
   );
 }

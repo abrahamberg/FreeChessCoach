@@ -9,6 +9,18 @@ export const AnalysisStatusSchema = z.enum([
 ]);
 export type AnalysisStatus = z.infer<typeof AnalysisStatusSchema>;
 
+/** Queueing priority for the engine service's shared EnginePool (services/
+ * engine/src/engine-pool.ts): 'interactive' jumps a freed engine ahead of any
+ * already-waiting 'background' request. Exists because a bot's live move
+ * selection and a background batch job (import analysis, deepen-analysis)
+ * can land on the pool at the same time — without this, a bot move queues
+ * FIFO behind whatever background work got there first and can time out,
+ * stranding the game (see commitBotTurn's botPending path). Defaults to
+ * 'background' when omitted, so every existing caller keeps its old FIFO
+ * behavior unless it deliberately opts in. */
+export const EnginePrioritySchema = z.enum(['interactive', 'background']);
+export type EnginePriority = z.infer<typeof EnginePrioritySchema>;
+
 export const EngineLineSchema = z.object({
   moveUci: z.string(),
   moveSan: z.string(),
@@ -72,14 +84,16 @@ export const ClassificationSchema = MoveQualitySchema;
 export const AnalyzeGameRequestSchema = z.object({
   fens: z.array(z.string()).min(1),
   depth: z.number().int().positive().optional(),
-  multiPv: z.number().int().positive().optional()
+  multiPv: z.number().int().positive().optional(),
+  priority: EnginePrioritySchema.optional()
 });
 export type AnalyzeGameRequest = z.infer<typeof AnalyzeGameRequestSchema>;
 
 export const AnalyzePositionRequestSchema = z.object({
   fen: z.string(),
   depth: z.number().int().positive().optional(),
-  multiPv: z.number().int().positive().optional()
+  multiPv: z.number().int().positive().optional(),
+  priority: EnginePrioritySchema.optional()
 });
 export type AnalyzePositionRequest = z.infer<typeof AnalyzePositionRequestSchema>;
 

@@ -152,6 +152,17 @@ const SEARCH_TIMEOUT_MS = 45_000;
  * dispatch below run synchronously — inside the Promise executor in
  * analyze() and inside the onmessage handlers — so sent commands are
  * observable immediately after the event that triggers them. */
+/** Whether the shared worker is currently crunching a position and how many
+ * more analyze() calls (Explore panel, or — in browser engine mode — tunnel
+ * fulfillment) are waiting behind it. Exists for the global engine-activity
+ * indicator (useEngineActivityIndicator.ts), which has no other way to know
+ * this engine is doing anything: install status alone reads 'ready' whether
+ * it's idle or mid-search. */
+export interface EngineActivity {
+  searching: boolean;
+  queueLength: number;
+}
+
 export class SharedEngineWorker {
   private worker: EngineWorkerLike | null = null;
   private readonly createWorker: () => EngineWorkerLike;
@@ -162,6 +173,7 @@ export class SharedEngineWorker {
   private readonly listeners = new Set<(status: EngineInstallStatus) => void>();
   private installProgress: EngineDownloadProgress | null = null;
   private readonly progressListeners = new Set<(progress: EngineDownloadProgress | null) => void>();
+  private readonly activityListeners = new Set<(activity: EngineActivity) => void>();
 
   constructor(options: SharedEngineWorkerOptions = {}) {
     this.createWorker = options.createWorker ?? defaultCreateWorker;
@@ -173,6 +185,10 @@ export class SharedEngineWorker {
 
   get progress(): EngineDownloadProgress | null {
     return this.installProgress;
+  }
+
+  get activity(): EngineActivity {
+    return { searching: this.active, queueLength: this.pending.length };
   }
 
   /** Notifies on every status change and immediately with the current value,
@@ -193,6 +209,20 @@ export class SharedEngineWorker {
     return () => this.progressListeners.delete(listener);
   }
 
+  /** Notifies on every change to `activity` (a search starting/finishing, or
+   * the queue length changing) and immediately with the current value.
+   * Returns an unsubscribe. */
+  subscribeActivity(listener: (activity: EngineActivity) => void): () => void {
+    this.activityListeners.add(listener);
+    listener(this.activity);
+    return () => this.activityListeners.delete(listener);
+  }
+
+  private notifyActivity(): void {
+    const activity = this.activity;
+    for (const listener of this.activityListeners) listener(activity);
+  }
+
   /** Starts the engine without queueing work, so the UI can report on (and
    * begin) the download before the first analysis actually needs it. */
   preload(): void {
@@ -204,6 +234,7 @@ export class SharedEngineWorker {
   private rejectPending(error: unknown): void {
     const reason = error instanceof Error ? error : new Error(String(error));
     while (this.pending.length > 0) this.pending.shift()?.reject(reason);
+    this.notifyActivity();
   }
 
   /** Recovers from a `go` that never answered (see SEARCH_TIMEOUT_MS) or a
@@ -240,6 +271,7 @@ export class SharedEngineWorker {
   analyze(request: AnalyzeRequest): Promise<RawEngineLine[]> {
     return new Promise((resolve, reject) => {
       this.pending.push({ request, resolve, reject });
+      this.notifyActivity();
       this.ensureWorker();
       this.pump();
     });
@@ -316,6 +348,7 @@ export class SharedEngineWorker {
     if (!next) return;
     const { request, resolve, reject } = next;
     this.active = true;
+    this.notifyActivity();
 
     const lines = new Map<number, RawEngineLine>();
     const timeoutId = setTimeout(() => {
@@ -327,6 +360,7 @@ export class SharedEngineWorker {
       if (line.startsWith('bestmove')) {
         clearTimeout(timeoutId);
         this.active = false;
+        this.notifyActivity();
         resolve([...lines.values()].sort((a, b) => a.multiPv - b.multiPv));
         this.pump();
         return;

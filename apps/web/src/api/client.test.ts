@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { z } from 'zod';
 import { UserProfileSchema } from '@freechesscoach/shared';
-import { apiDelete, apiGet, apiPatch, apiPut, ApiError } from './client.js';
+import { apiDelete, apiGet, apiPatch, apiPut, ApiError, shouldRetryQuery } from './client.js';
 
 const VALID_PROFILE = {
   id: '7d9f2a44-9a5f-4f6e-b1a1-0a4c1e2d3f4b',
@@ -85,6 +86,33 @@ describe('apiGet', () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect((error as ApiError).body).toMatchObject({ missing: 'userColor' });
+  });
+});
+
+describe('shouldRetryQuery', () => {
+  test('never retries a ZodError — the same body will fail the same parse every time', () => {
+    const zodError = z.object({ x: z.string() }).safeParse({}).error;
+    expect(zodError).toBeDefined();
+
+    expect(shouldRetryQuery(0, zodError)).toBe(false);
+  });
+
+  test('never retries a 4xx ApiError — the request itself is wrong, not the connection', () => {
+    expect(shouldRetryQuery(0, new ApiError(404, 'not found'))).toBe(false);
+    expect(shouldRetryQuery(0, new ApiError(422, 'invalid'))).toBe(false);
+  });
+
+  test('retries a 5xx ApiError up to 3 times, same as React Query\'s default', () => {
+    const serverError = new ApiError(503, 'unavailable');
+
+    expect(shouldRetryQuery(0, serverError)).toBe(true);
+    expect(shouldRetryQuery(2, serverError)).toBe(true);
+    expect(shouldRetryQuery(3, serverError)).toBe(false);
+  });
+
+  test('retries a generic/network error up to 3 times', () => {
+    expect(shouldRetryQuery(0, new TypeError('Failed to fetch'))).toBe(true);
+    expect(shouldRetryQuery(3, new TypeError('Failed to fetch'))).toBe(false);
   });
 });
 

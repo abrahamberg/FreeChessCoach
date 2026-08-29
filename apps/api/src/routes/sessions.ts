@@ -22,7 +22,7 @@ import * as coachAgent from '../services/coach-agent.js';
 import { commitPlayerMoveAndAdvance } from '../services/play-move-commit.js';
 import { createPlaySession } from '../services/play-session.js';
 import { createBotSession } from '../services/bot/bot-session.js';
-import { commitBotTurn, type BotMoveCommitDependencies } from '../services/bot/bot-move-commit.js';
+import { commitBotTurn, requestBotMove, type BotMoveCommitDependencies } from '../services/bot/bot-move-commit.js';
 import { claimBotGameTimeout } from '../services/bot/bot-claim-timeout.js';
 import { resignBotGame } from '../services/bot/bot-resign.js';
 import { undoLastBotTurn } from '../services/bot/bot-undo.js';
@@ -154,6 +154,36 @@ export function registerSessionsRoutes(
     return result;
   });
 
+  // Failover for a bot reply that never landed (commitBotTurn's botPending,
+  // or a dropped connection that ate a response that did succeed server-
+  // side) — see useBotTurnFailover, which polls this while it's the bot's
+  // turn and no move has shown up. No request body: there is nothing new to
+  // submit, only the existing position to react to.
+  app.post<{ Params: { id: string } }>('/api/sessions/:id/request-bot-move', async (request, reply) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    const session = await sessionsRepo.findByIdForUser(db, request.params.id, user.id);
+    if (!session) throw new NotFoundError('Session not found');
+    if (session.mode !== 'play_bot') throw new ConflictError('Session is not a play_bot session');
+    // Deliberately no `session.status !== 'active'` check here (unlike the
+    // other play_bot routes below): this endpoint exists specifically to be
+    // polled by a client racing the game's own end (useBotTurnFailover keeps
+    // polling until it observes the game is over). requestBotMove re-reads
+    // the session itself and reports "not active" as the same 422 no-op
+    // every other already-resolved race gets — throwing a 409 here instead,
+    // whenever this route's own read happens to land after the game ended,
+    // would make an expected race look like two different errors depending
+    // on timing.
+
+    const game = await gamesRepo.findById(db, session.gameId);
+    const bot = game?.botConfigSnapshot;
+    if (!bot) throw new NotFoundError('Bot game is missing its bot configuration');
+
+    const botDeps = await buildBotMoveCommitDeps(baseDeps, engineBackendOptions, user.id);
+    const result = await requestBotMove(botDeps, session, bot);
+    if ('error' in result) return sendIllegalMoveError(reply, result.error);
+    return CommitBotMoveResponseSchema.parse(result);
+  });
+
   // play_bot's "Undo" button — no equivalent for 'play' mode, where undo is
   // only ever reached via the coach's own undo_last_move tool. See
   // bot-undo.ts's doc comment for why this removes two plies, not one.
@@ -239,7 +269,11 @@ async function buildBotMoveCommitDeps(
     db: base.db,
     jobQueue: base.jobQueue,
     analyzePosition: (fen) => cachedBackend.analyzePosition(fen),
-    analyzeBotPosition: (fen, opts) => rawBackend.analyzePosition(fen, opts),
+    // 'interactive': a bot move is a live "your move" round trip the student
+    // is watching, not background batch work — it must jump ahead of a
+    // same-game deepen-analysis pass (or another user's import) queued on
+    // the shared native engine pool. See EnginePrioritySchema's doc comment.
+    analyzeBotPosition: (fen, opts) => rawBackend.analyzePosition(fen, { ...opts, priority: 'interactive' }),
     callTiebreak: (input: BotMoveChoiceInput) =>
       callBotTiebreak(base.db, base.gatewayConfig, userId, buildBotMoveChoiceMessages(input)),
     random: Math.random

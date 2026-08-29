@@ -1,4 +1,4 @@
-import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
+import type { EngineEval, EnginePriority, PositionAnalysis } from '@freechesscoach/shared';
 
 /**
  * Requests 3 principal variations (the engine's own default is 2) so callers
@@ -11,11 +11,15 @@ export const ENGINE_MULTI_PV = 3;
 
 /** Wraps `POST engine/analyze-game` (architecture §4) — the lean, whole-game
  * batch path used by the fast classify/plan pipeline. */
-export async function analyzeGameViaEngine(engineUrl: string, fens: string[]): Promise<EngineEval[]> {
+export async function analyzeGameViaEngine(
+  engineUrl: string,
+  fens: string[],
+  priority?: EnginePriority
+): Promise<EngineEval[]> {
   const response = await fetch(`${engineUrl}/analyze-game`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ fens })
+    body: JSON.stringify({ fens, priority })
   });
   if (!response.ok) throw new Error(`engine analyze-game failed: HTTP ${response.status}`);
   const body = (await response.json()) as { evals: EngineEval[] };
@@ -36,12 +40,13 @@ export async function analyzePositionViaEngine(
   engineUrl: string,
   fen: string,
   multiPv: number = ENGINE_MULTI_PV,
-  depth?: number
+  depth?: number,
+  priority?: EnginePriority
 ): Promise<PositionAnalysis> {
   const response = await fetch(`${engineUrl}/analyze-position`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ fen, multiPv, depth })
+    body: JSON.stringify({ fen, multiPv, depth, priority })
   });
   if (!response.ok) throw new Error(`engine analyze-position failed: HTTP ${response.status}`);
   const body = (await response.json()) as { analysis: PositionAnalysis };

@@ -14,14 +14,15 @@ export class NativeEngineBackend implements EngineBackend {
     opts?: EngineBackendAnalyzeOptions
   ): Promise<PositionAnalysis> {
     const multiPv = opts?.multiPv ?? ENGINE_MULTI_PV;
-    return analyzePositionViaEngine(this.engineUrl, fen, multiPv, opts?.depth);
+    return analyzePositionViaEngine(this.engineUrl, fen, multiPv, opts?.depth, opts?.priority);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
     // Note: analyzeGameViaEngine doesn't currently support depth/multiPv overrides,
     // but we accept opts for API consistency with future backends.
-    // The underlying function uses the engine's defaults.
-    return analyzeGameViaEngine(this.engineUrl, fens);
+    // The underlying function uses the engine's defaults for those two —
+    // priority is supported, though, and forwarded the same way
+    // analyzePosition above already does.
+    return analyzeGameViaEngine(this.engineUrl, fens, opts?.priority);
   }
 }

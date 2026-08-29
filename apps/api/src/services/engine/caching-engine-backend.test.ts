@@ -33,6 +33,42 @@ function makeEngineEval(fen: string, ply: number, cp: number): EngineEval {
   };
 }
 
+/** A two-line analysis with `cp` ordered backwards for the side to move
+ * (both test FENs have White to move, so a correct pair has firstLine.cp >=
+ * secondLine.cp) — used to simulate a stale/corrupted cache row that
+ * violates `assertEvalSignConvention`. */
+function makeSignViolatingAnalysis(fen: string): PositionAnalysis {
+  return {
+    fen,
+    depth: 16,
+    multiPv: 2,
+    bestMove: 'Ke2',
+    eval: { cp: 5, mateIn: null },
+    lines: [
+      { moveUci: 'e2e3', moveSan: 'Ke2', pvSan: ['Ke2'], cp: 5, mateIn: null },
+      { moveUci: 'e2d3', moveSan: 'Kd2', pvSan: ['Kd2'], cp: 20, mateIn: null }
+    ],
+    features: computePositionFeatures(fen)
+  };
+}
+
+/** A single-line analysis whose only line has neither `cp` nor `mateIn` —
+ * simulates chess-api.com returning an incomplete/malformed response for a
+ * non-terminal position (observed in production: a `multiPv: 1` row with
+ * `lines: [{cp: null, mateIn: null, ...}]`, which `assertEvalSignConvention`
+ * can't catch on its own since it needs a second line to compare against). */
+function makeEmptyScoreAnalysis(fen: string): PositionAnalysis {
+  return {
+    fen,
+    depth: 16,
+    multiPv: 1,
+    bestMove: null,
+    eval: { cp: null, mateIn: null },
+    lines: [{ moveUci: 'e2e3', moveSan: 'Ke2', pvSan: ['Ke2'], cp: null, mateIn: null }],
+    features: computePositionFeatures(fen)
+  };
+}
+
 /** Partial mock satisfying EngineBackend — both methods are vi.fn(), so
  * tests can assert exactly when/how often the raw backend was called. */
 function fakeRawBackend() {
@@ -116,6 +152,66 @@ describe('CachingEngineBackend', () => {
       .executeTakeFirstOrThrow();
     expect(row.isExternalEval).toBe(false);
     expect((row.analysis as PositionAnalysis).eval.cp).toBe(42);
+  });
+
+  test('analyzePosition cache hit violating sign convention: treated as a miss and self-heals', async () => {
+    await positionEvaluationsRepo.upsertMany(
+      db,
+      [{ fen: FEN_A, depth: 16, multiPv: 2, analysis: makeSignViolatingAnalysis(FEN_A) }],
+      { isExternalEval: false }
+    );
+
+    const raw = fakeRawBackend();
+    const healedAnalysis = makePositionAnalysis(FEN_A, 42);
+    raw.analyzePosition.mockResolvedValue(healedAnalysis);
+
+    const backend = new CachingEngineBackend(db, raw, { isExternalSource: false });
+    const result = await backend.analyzePosition(FEN_A);
+
+    expect(result).toEqual(healedAnalysis);
+    expect(raw.analyzePosition).toHaveBeenCalledTimes(1);
+
+    const cached = await positionEvaluationsRepo.findByFen(db, FEN_A, { allowExternal: false });
+    expect(cached).toEqual(healedAnalysis);
+  });
+
+  test('analyzePosition cache hit with an empty score (no cp, no mateIn): treated as a miss and self-heals', async () => {
+    await positionEvaluationsRepo.upsertMany(
+      db,
+      [{ fen: FEN_A, depth: 16, multiPv: 1, analysis: makeEmptyScoreAnalysis(FEN_A) }],
+      { isExternalEval: false }
+    );
+
+    const raw = fakeRawBackend();
+    const healedAnalysis = makePositionAnalysis(FEN_A, 42);
+    raw.analyzePosition.mockResolvedValue(healedAnalysis);
+
+    const backend = new CachingEngineBackend(db, raw, { isExternalSource: false });
+    const result = await backend.analyzePosition(FEN_A);
+
+    expect(result).toEqual(healedAnalysis);
+    expect(raw.analyzePosition).toHaveBeenCalledTimes(1);
+  });
+
+  test('analyzeGame cache hit violating sign convention: treated as a miss and self-heals', async () => {
+    await positionEvaluationsRepo.upsertMany(
+      db,
+      [{ fen: FEN_B, depth: 16, multiPv: 2, analysis: makeSignViolatingAnalysis(FEN_B) }],
+      { isExternalEval: false }
+    );
+
+    const raw = fakeRawBackend();
+    raw.analyzeGame.mockResolvedValue([makeEngineEval(FEN_B, 0, 7)]);
+
+    const backend = new CachingEngineBackend(db, raw, { isExternalSource: false });
+    const results = await backend.analyzeGame([FEN_B]);
+
+    expect(raw.analyzeGame).toHaveBeenCalledTimes(1);
+    expect(raw.analyzeGame).toHaveBeenCalledWith([FEN_B], undefined);
+    expect(results[0]!.lines[0]!.cp).toBe(7);
+
+    const cached = await positionEvaluationsRepo.findByFen(db, FEN_B, { allowExternal: false });
+    expect(cached?.lines[0]!.cp).toBe(7);
   });
 
   test('analyzeGame partial cache: only misses are sent to the backend, results merge back in original order', async () => {
