@@ -1911,25 +1911,25 @@ field). `chess-api-engine-backend.ts` currently discards it entirely
 **Files:** `apps/api/src/services/engine/chess-api-response.ts`,
 `chess-api-engine-backend.ts`, their tests.
 
-- [ ] `ChessApiLine` gains `continuationArr?: string[]` (optional — some
+- [x] `ChessApiLine` gains `continuationArr?: string[]` (optional — some
       lines, e.g. near-terminal positions, may have none).
-- [ ] `analyzeViaChessApi`: build `pvSan` via `pvUciToSan(fen, [raw.move,
+- [x] `analyzeViaChessApi`: build `pvSan` via `pvUciToSan(fen, [raw.move,
       ...(raw.continuationArr ?? [])])` (Phase 42) instead of `[raw.san]`.
       Falls back to a single-move `pvSan` automatically when
       `continuationArr` is absent/empty.
-- [ ] Request shape (`{fen, depth, variants}`) stays **unchanged** — this
+- [x] Request shape (`{fen, depth, variants}`) stays **unchanged** — this
       phase only changes how a returned line is parsed, not what's
       requested (see "Context for the next agent" above for why).
-- [ ] Add one low-frequency log (e.g. an "already logged once per process"
+- [x] Add one low-frequency log (e.g. an "already logged once per process"
       flag) noting when a response comes back with fewer lines than
       `variants` requested — cheap, real production evidence for whether
       `variants` does anything at all, without spamming logs.
-- [ ] Tests: the exact sample above produces a multi-move `pvSan`; a
+- [x] Tests: the exact sample above produces a multi-move `pvSan`; a
       response with no `continuationArr` still produces today's `pvSan:
       [san]` shape (regression pin); the existing multi-variant test
       extended so each mocked line carries its own `continuationArr` and
       gets its own independent `pvSan`.
-- [ ] Commit: `feat: chess-api backend captures each line's real continuation instead of discarding it (Phase 43)`.
+- [x] Commit: `feat: chess-api backend captures each line's real continuation instead of discarding it (Phase 43)`.
 
 ## Phase 44 — Preserve `pvSan` through the batch cache round-trip (native mode)
 

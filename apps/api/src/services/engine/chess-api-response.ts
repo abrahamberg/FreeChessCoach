@@ -5,6 +5,7 @@ export interface ChessApiLine {
   san: string;
   eval: number;
   mate: number | null;
+  continuationArr?: string[];
 }
 
 /** Thrown when chess-api.com itself responds with a non-2xx status — the

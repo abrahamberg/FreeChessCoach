@@ -6,6 +6,7 @@ import { ChessApiError, ChessApiMalformedResponseError } from './chess-api-respo
 import type { EngineBackend } from './engine-backend.js';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const AFTER_D4_E5_FEN = 'rnbqkbnr/ppp2ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2';
 // 1. f3 e5 2. g4 Qh4# — a real checkmate, white to move but no legal moves.
 const CHECKMATE_FEN = 'rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3';
 
@@ -58,8 +59,8 @@ describe('ChessApiEngineBackend', () => {
 
   test('analyzePosition maps an array response (multiple variants) into multiple lines', async () => {
     const fetchMock = fakeFetch([
-      { move: 'e2e4', san: 'e4', eval: 0.3, mate: null },
-      { move: 'd2d4', san: 'd4', eval: 0.25, mate: null }
+      { move: 'e2e4', san: 'e4', eval: 0.3, mate: null, continuationArr: ['e7e5'] },
+      { move: 'd2d4', san: 'd4', eval: 0.25, mate: null, continuationArr: ['d7d5'] }
     ]);
     const backend = new ChessApiEngineBackend(5000, fetchMock as unknown as typeof fetch);
 
@@ -68,6 +69,56 @@ describe('ChessApiEngineBackend', () => {
     expect(result.lines).toHaveLength(2);
     expect(result.multiPv).toBe(2);
     expect(result.bestMove).toBe('e4');
+    expect(result.lines[0]!.pvSan).toEqual(['e4', 'e5']);
+    expect(result.lines[1]!.pvSan).toEqual(['d4', 'd5']);
+  });
+
+  test('analyzePosition converts the real continuationArr sample into a multi-move PV', async () => {
+    const fetchMock = fakeFetch({
+      move: 'g1f3',
+      san: 'Nf3',
+      eval: 0.62,
+      mate: null,
+      continuationArr: [
+        'e5d4',
+        'f3d4',
+        'g8f6',
+        'b1c3',
+        'f8e7',
+        'g2g3',
+        'b8c6',
+        'f1g2',
+        'e8g8',
+        'e1g1',
+        'c6d4',
+        'd1d4',
+        'c7c6',
+        'f1e1',
+        'c8e6'
+      ]
+    });
+    const backend = new ChessApiEngineBackend(5000, fetchMock as unknown as typeof fetch);
+
+    const result = await backend.analyzePosition(AFTER_D4_E5_FEN, { multiPv: 1 });
+
+    expect(result.lines[0]!.pvSan).toEqual([
+      'Nf3',
+      'exd4',
+      'Nxd4',
+      'Nf6',
+      'Nc3',
+      'Be7',
+      'g3',
+      'Nc6',
+      'Bg2',
+      'O-O',
+      'O-O',
+      'Nxd4',
+      'Qxd4',
+      'c6',
+      'Re1',
+      'Be6'
+    ]);
   });
 
   test('a mate score is reported as mateIn with a null cp', async () => {

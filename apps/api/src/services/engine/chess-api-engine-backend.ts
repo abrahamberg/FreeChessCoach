@@ -1,4 +1,4 @@
-import { computePositionFeatures } from '@freechesscoach/chess-analysis';
+import { computePositionFeatures, pvUciToSan } from '@freechesscoach/chess-analysis';
 import { ENGINE_DEFAULT_DEPTH, type EngineEval, type PositionAnalysis } from '@freechesscoach/shared';
 import { ENGINE_MULTI_PV } from '../engine-client.js';
 import { EngineUnavailableError } from '../../lib/errors.js';
@@ -21,6 +21,7 @@ const CHESS_API_URL = 'https://chess-api.com/v1';
 // exactly at the cap rather than under it.
 const CHESS_API_MAX_DEPTH = 18;
 const CHESS_API_MAX_VARIANTS = 5;
+let hasLoggedVariantShortfall = false;
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -43,11 +44,10 @@ const CIRCUIT_BREAKER_CONSECUTIVE_FAILURES = 3;
  *
  * chess-api.com's `eval`/`mate` fields are already reported from White's
  * perspective, matching this codebase's own cp/mateIn convention (see
- * services/engine/src/uci.ts's `sign` flip) — no conversion needed. Its
- * multi-variant response shape isn't documented, so each line's PV is kept
- * to just the move itself (`pvSan: [san]`), the same degraded-PV shape
- * CachingEngineBackend's own analyzeGame write-back already uses
- * (toDetailedAnalysis) for exactly this "no full PV available" reason.
+ * services/engine/src/uci.ts's `sign` flip) — no conversion needed. Each
+ * returned line's continuation is walked from the requested position, so
+ * the real PV is retained; responses without a continuation naturally
+ * produce a single-move PV.
  *
  * There's no batch endpoint, so analyzeGame issues one HTTP call per
  * position, sequentially, pausing `requestDelayMs` between each one — the
@@ -122,6 +122,7 @@ export class ChessApiEngineBackend implements EngineBackend {
   ): Promise<PositionAnalysis> {
     const variants = Math.min(opts?.multiPv ?? ENGINE_MULTI_PV, CHESS_API_MAX_VARIANTS);
     const raws = await this.request(fen, depth, variants);
+    logVariantShortfall(raws.length, variants);
 
     // request() has already rejected (and retried past) any line missing the
     // fields read here — see isUsableLine — so raw.eval/raw.mate are trusted
@@ -129,7 +130,7 @@ export class ChessApiEngineBackend implements EngineBackend {
     const lines = raws.map((raw) => ({
       moveUci: raw.move,
       moveSan: raw.san,
-      pvSan: [raw.san],
+      pvSan: pvUciToSan(fen, [raw.move, ...(raw.continuationArr ?? [])]),
       cp: raw.mate !== null ? null : Math.round(raw.eval * 100),
       mateIn: raw.mate
     }));
@@ -225,4 +226,14 @@ export class ChessApiEngineBackend implements EngineBackend {
       clearTimeout(timeout);
     }
   }
+}
+
+function logVariantShortfall(receivedLines: number, requestedVariants: number): void {
+  if (hasLoggedVariantShortfall || receivedLines >= requestedVariants) return;
+
+  hasLoggedVariantShortfall = true;
+  console.info(
+    `ChessApiEngineBackend: chess-api.com returned ${receivedLines} line${receivedLines === 1 ? '' : 's'} ` +
+      `for ${requestedVariants} requested variant${requestedVariants === 1 ? '' : 's'}`
+  );
 }
