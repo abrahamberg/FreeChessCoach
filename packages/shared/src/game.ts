@@ -17,13 +17,20 @@ export type PlayerColor = z.infer<typeof PlayerColorSchema>;
 export const ImportGameRequestSchema = z.object({
   pgn: z.string().min(1),
   source: ImportableGameSourceSchema,
-  userColor: PlayerColorSchema.optional()
+  userColor: PlayerColorSchema.optional(),
+  /** Stat-bank import (Phase 31): skip queuing the standard-depth analysis
+   * job at import time, so bulk-importing games for the stats dashboard
+   * doesn't force a full coaching session's worth of engine work per game.
+   * Defaults to `false` — every existing call site is unaffected. */
+  deferAnalysis: z.boolean().optional()
 });
 export type ImportGameRequest = z.infer<typeof ImportGameRequestSchema>;
 
 export const ImportGameResponseSchema = z.object({
   gameId: z.string().min(1),
-  analysisId: z.string().min(1)
+  /** Null iff the request set `deferAnalysis: true` — no `analyses` row
+   * exists yet for the game. */
+  analysisId: z.string().min(1).nullable()
 });
 export type ImportGameResponse = z.infer<typeof ImportGameResponseSchema>;
 

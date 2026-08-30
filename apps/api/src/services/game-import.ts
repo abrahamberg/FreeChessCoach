@@ -20,7 +20,21 @@ const DAILY_IMPORT_LIMIT = 10;
 
 export interface ImportGameResult {
   gameId: string;
-  analysisId: string;
+  analysisId: string | null;
+}
+
+/** Queues the standard-depth analysis job for a just-imported game — split
+ * out of `importGame` so the on-demand analyze route (Task 31.2) can call
+ * the exact same queued-analysis + enqueue pair for a game that was
+ * imported with `deferAnalysis: true`. */
+export async function startAnalysis(
+  db: Kysely<Database>,
+  jobQueue: JobQueue,
+  gameId: string
+): Promise<{ analysisId: string }> {
+  const analysis = await analysesRepo.insertQueued(db, gameId);
+  await jobQueue.enqueueAnalyzeGame(gameId);
+  return { analysisId: analysis.id };
 }
 
 export async function importGame(
@@ -51,10 +65,12 @@ export async function importGame(
     playedAt: parsePlayedAt(parsed.headers)
   });
 
-  const analysis = await analysesRepo.insertQueued(db, game.id);
-  await jobQueue.enqueueAnalyzeGame(game.id);
+  if (request.deferAnalysis) {
+    return { gameId: game.id, analysisId: null };
+  }
 
-  return { gameId: game.id, analysisId: analysis.id };
+  const { analysisId } = await startAnalysis(db, jobQueue, game.id);
+  return { gameId: game.id, analysisId };
 }
 
 /** Once a game's side is known, remembers the student's username on whichever

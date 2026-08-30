@@ -171,6 +171,27 @@ describe('POST/GET /api/games', () => {
     expect(jobQueue.enqueueAnalyzeGame).toHaveBeenCalledWith(body.gameId);
   });
 
+  test('deferAnalysis: true (stat-bank import) inserts the game without queuing analysis', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('defer-import@example.com', 'Defer');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white', deferAnalysis: true }
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(typeof body.gameId).toBe('string');
+    expect(body.analysisId).toBeNull();
+
+    const analysis = await db.selectFrom('analyses').selectAll().where('gameId', '=', body.gameId).executeTakeFirst();
+    expect(analysis).toBeUndefined();
+    expect(jobQueue.enqueueAnalyzeGame).not.toHaveBeenCalled();
+  });
+
   test('detects userColor from PGN headers when omitted from the request', async () => {
     const app = buildTestApp();
     const headers = headersFor('ann-detect@example.com', 'Ann');

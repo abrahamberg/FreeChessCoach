@@ -1347,14 +1347,19 @@ hook (TanStack Query, mirrors `DashboardPage`'s `apiGet` pattern); route in
 
 **Files:** `packages/shared/src/game.ts`; `apps/api/src/services/game-import.ts`.
 
-- [ ] `ImportGameRequestSchema` gets optional `deferAnalysis` (default
-      `false` — existing flow unaffected). Extract `insertQueued`+
+- [x] `ImportGameRequestSchema` gets optional `deferAnalysis` (default
+      `false` — existing flow unaffected). Extracted `insertQueued`+
       `enqueueAnalyzeGame` into an exported `startAnalysis(db, jobQueue,
-      gameId)`, called only when `!deferAnalysis`.
-      `ImportGameResponseSchema.analysisId` becomes nullable.
-- [ ] Tests: `deferAnalysis: true` inserts no `analyses` row and never
-      enqueues; default behavior unchanged (regression).
-- [ ] Commit: `feat: optional deferred analysis on game import`.
+      gameId)` (also reused by Task 31.2's on-demand route), called from
+      `importGame` only when `!deferAnalysis`.
+      `ImportGameResponseSchema.analysisId` is now nullable — the existing
+      `ImportPage.tsx` single-game flow already stored it in
+      `useState<string | null>`, so no frontend change was needed there.
+- [x] Tests (`apps/api/src/routes/games.test.ts`): `deferAnalysis: true`
+      inserts the game with no `analyses` row and never calls
+      `enqueueAnalyzeGame`; every pre-existing import test (default
+      behavior) still passes unchanged.
+- [x] Commit: `feat: optional deferred analysis on game import`.
 
 ### Task 31.2: On-demand analyze route
 
