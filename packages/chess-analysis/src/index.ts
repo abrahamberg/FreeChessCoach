@@ -16,6 +16,7 @@ export * from './config.js';
 export * from './critical-moments.js';
 export * from './diff-features.js';
 export * from './endgame-score.js';
+export * from './endgame-theme.js';
 export * from './game-accuracy.js';
 export * from './game-outcome.js';
 export * from './game-tactic-motifs.js';
