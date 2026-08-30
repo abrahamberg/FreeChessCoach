@@ -8,7 +8,7 @@ import * as gamesRepo from '../db/repositories/games.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
-import { importGame, MissingUserColorError } from '../services/game-import.js';
+import { importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
 import { deleteGameForUser, listGamesForUser } from '../services/games.js';
 import * as userProfileService from '../services/user-profile.js';
 
@@ -81,6 +81,22 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
       liveMoveQualities: null,
       gameReport: gameReport ?? null
     };
+  });
+
+  // Stat-bank import (Phase 31): starts analysis for a game that was
+  // imported with deferAnalysis — idempotent (a double-click or a race with
+  // another tab just returns the existing analysisId rather than queuing a
+  // second one) since insertQueued has no unique constraint of its own to
+  // lean on here.
+  app.post<{ Params: { id: string } }>('/api/games/:id/analyze', async (request) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    const game = await gamesRepo.findByIdForUser(db, request.params.id, user.id);
+    if (!game) throw new NotFoundError('Game not found');
+
+    const existing = await analysesRepo.findByGameId(db, game.id);
+    if (existing) return { analysisId: existing.id };
+
+    return startAnalysis(db, jobQueue, game.id);
   });
 
   app.delete<{ Params: { id: string } }>('/api/games/:id', async (request, reply) => {

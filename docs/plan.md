@@ -1365,9 +1365,12 @@ hook (TanStack Query, mirrors `DashboardPage`'s `apiGet` pattern); route in
 
 **Files:** `apps/api/src/routes/games.ts` + test.
 
-- [ ] `POST /api/games/:id/analyze` — ownership check (404), idempotent
+- [x] `POST /api/games/:id/analyze` — ownership check (404), idempotent
       no-op if an `analyses` row already exists, otherwise `startAnalysis`.
-- [ ] Commit: `feat: on-demand game analysis endpoint`.
+- [x] Tests: starts analysis for a deferred import (queued row, job
+      enqueued); a second call is idempotent (same `analysisId`, job
+      enqueued only once); 404s for another user's game.
+- [x] Commit: `feat: on-demand game analysis endpoint`.
 
 ### Task 31.3: "Not analyzed" state in the Games list
 

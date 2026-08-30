@@ -560,6 +560,62 @@ describe('POST/GET /api/games', () => {
     expect(messages).toHaveLength(0);
   });
 
+  test('POST /api/games/:id/analyze starts analysis for a deferred (stat-bank) import', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('analyze-defer@example.com', 'AnalyzeDefer');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white', deferAnalysis: true }
+    });
+    const { gameId } = imported.json();
+
+    const response = await app.inject({ method: 'POST', url: `/api/games/${gameId}/analyze`, headers });
+
+    expect(response.statusCode).toBe(200);
+    expect(typeof response.json().analysisId).toBe('string');
+    expect(jobQueue.enqueueAnalyzeGame).toHaveBeenCalledWith(gameId);
+
+    const analysis = await db.selectFrom('analyses').selectAll().where('gameId', '=', gameId).executeTakeFirstOrThrow();
+    expect(analysis.status).toBe('queued');
+  });
+
+  test('POST /api/games/:id/analyze is idempotent — a second call returns the same analysisId without re-enqueuing', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('analyze-idempotent@example.com', 'AnalyzeIdempotent');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white', deferAnalysis: true }
+    });
+    const { gameId } = imported.json();
+
+    const first = await app.inject({ method: 'POST', url: `/api/games/${gameId}/analyze`, headers });
+    const second = await app.inject({ method: 'POST', url: `/api/games/${gameId}/analyze`, headers });
+
+    expect(second.statusCode).toBe(200);
+    expect(second.json().analysisId).toBe(first.json().analysisId);
+    expect(jobQueue.enqueueAnalyzeGame).toHaveBeenCalledTimes(1);
+  });
+
+  test('POST /api/games/:id/analyze 404s for another user\'s game', async () => {
+    const app = buildTestApp();
+    const owner = headersFor('analyze-owner@example.com', 'AnalyzeOwner');
+    const intruder = headersFor('analyze-intruder@example.com', 'AnalyzeIntruder');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers: owner,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white', deferAnalysis: true }
+    });
+    const { gameId } = imported.json();
+
+    const response = await app.inject({ method: 'POST', url: `/api/games/${gameId}/analyze`, headers: intruder });
+    expect(response.statusCode).toBe(404);
+  });
+
   test('DELETE /api/games/:id 404s for another user\'s game and leaves it intact', async () => {
     const app = buildTestApp();
     const owner = headersFor('delowner@example.com', 'DelOwner');
