@@ -42,8 +42,10 @@ export * from './rating-estimate.js';
 // imports node:crypto, and this barrel is imported by the browser (web)
 // bundle too. Node-only callers import it via the package's dedicated
 // subpath export instead (see package.json's "exports").
+export * from './available-motifs-scan.js';
 export * from './pgn.js';
 export * from './position-features.js';
+export * from './prevention-scan-schedule.js';
 export * from './position-enrichment.js';
 export * from './phase-signals.js';
 export * from './pv-tactics.js';

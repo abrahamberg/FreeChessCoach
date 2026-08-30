@@ -278,14 +278,14 @@ phase — see Phase 48 for the one place it optionally gets an opt-in.
 
 **Files:** `packages/chess-analysis/src/{prevention-scan-schedule,available-motifs-scan}.ts` (new) + tests, `src/index.ts`.
 
-- [ ] Schedule shape correct for `multiPv=5` and `multiPv=3`; never returns
+- [x] Schedule shape correct for `multiPv=5` and `multiPv=3`; never returns
       `<1` or `>PV_SCAN_MAX_DEPTH`.
-- [ ] `scanAvailableMotifs` parity with today's ply-1-only output when every
+- [x] `scanAvailableMotifs` parity with today's ply-1-only output when every
       line's `pvSan` is single-element; a synthetic fork-at-ply-3 fixture is
       picked up for a rank whose schedule depth ≥3 and missed for a
       lower-ranked line capped at depth 1; an even-ply-only motif is never
       included; empty `lines`/`pvSan` doesn't throw.
-- [ ] Commit: `feat: graduated per-line-rank ply schedule and scanAvailableMotifs primitive (Phase 45)`.
+- [x] Commit: `feat: graduated per-line-rank ply schedule and scanAvailableMotifs primitive (Phase 45)`.
 
 ## Phase 46 — Redesign `findDefusedThreat` → `findDefusedThreats` (sound multi-ply comparison)
 
