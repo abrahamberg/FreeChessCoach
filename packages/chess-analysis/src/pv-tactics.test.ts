@@ -55,4 +55,10 @@ describe('annotatePvTactics', () => {
     expect(annotation.steps).toHaveLength(0);
     expect(annotation.forkInPlies).toBeNull();
   });
+
+  test('tags each step with its full tactic motif', () => {
+    const annotation = annotatePvTactics(FORK_SETUP_FEN, ['Nd5']);
+
+    expect(annotation.steps[0]?.motif).toBe('fork');
+  });
 });

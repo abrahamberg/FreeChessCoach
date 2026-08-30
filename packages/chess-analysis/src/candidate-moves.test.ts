@@ -57,4 +57,10 @@ describe('annotateCandidateMoves', () => {
     expect(annotation?.createsUnderDefendedPiece).toBe(true);
     expect(annotation?.createsHangingPiece).toBe(false);
   });
+
+  test('tags a fork-creating candidate with motif: fork', () => {
+    const [annotation] = annotateCandidateMoves(FORK_SETUP_FEN, ['Nd5']);
+
+    expect(annotation?.motif).toBe('fork');
+  });
 });

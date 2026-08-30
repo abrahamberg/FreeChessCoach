@@ -3,9 +3,12 @@ import {
   type ClassifiedMoveDto,
   type EngineEval,
   type MoveQuality,
-  type TacticMotifCounts
+  type TacticMotifCounts,
+  type TacticMotifType
 } from '@freechesscoach/shared';
+import { classifyCandidateMove } from './classify-candidate-move.js';
 import { classifyTacticMotif } from './classify-tactic-motif.js';
+import { CONFIG } from './config.js';
 import { moveFlags } from './move-flags.js';
 
 const BEST_OR_BETTER: ReadonlySet<MoveQuality> = new Set(['brilliant', 'great', 'best']);
@@ -56,10 +59,95 @@ export function computeTacticMotifCounts(colourMoves: ClassifiedMoveDto[], evals
   return counts;
 }
 
+/**
+ * A plain tally of the tactics a colour actually executed during the game —
+ * independent of `computeTacticMotifCounts`'s opportunities/found pair,
+ * which only ever credits a move that matched the engine's #1 line at that
+ * ply. A fork played as the engine's 2nd-best move counts here but not
+ * there: this answers "what tactics did you pull off," not "did you find
+ * the single best one."
+ */
+export function computeTacticMotifPlayed(
+  colourMoves: ClassifiedMoveDto[],
+  evals: EngineEval[]
+): Partial<Record<TacticMotifType, number>> {
+  const counts: Partial<Record<TacticMotifType, number>> = {};
+
+  for (const move of colourMoves) {
+    if (!move.fenBefore) continue;
+
+    const motif = classifyCandidateMove(move.fenBefore, move.moveSan, move.mover, {
+      quality: move.quality,
+      linesAtFenBefore: evals[move.ply - 1]?.lines
+    });
+    if (!motif) continue;
+
+    counts[motif] = (counts[motif] ?? 0) + 1;
+  }
+  return counts;
+}
+
 function checkmateFlag(fenBefore: string, moveSan: string): boolean | null {
   try {
     return moveFlags(fenBefore, moveSan).isCheckmate;
   } catch {
     return null;
   }
+}
+
+export interface TacticMotifRankHit {
+  ply: number;
+  motif: TacticMotifType;
+  /** 0-indexed position within that ply's `evals[...].lines`. */
+  rank: number;
+  /** This same line's rank when it's also the move the player actually
+   * played at this ply; `null` otherwise. */
+  playedRank: number | null;
+}
+
+/**
+ * The richer, per-rank generalization of `computeTacticMotifCounts` above:
+ * classifies every one of the top-`topN` engine lines at each ply (not just
+ * `lines[0]`), reusing the exact same played-move quality/checkmate lookup
+ * so that aggregating this function's `rank === 0` hits into
+ * opportunities/found counts reproduces `computeTacticMotifCounts`'s output
+ * exactly (see this file's test suite's superset-regression case).
+ *
+ * Deliberately NOT called from `build-game-report.ts` in this phase —
+ * `PlayerReportSchema`/`TacticMotifCountsSchema` stay unchanged, so this is
+ * additive and unwired pending a product decision on whether "found it on
+ * your 2nd-best-move rank" is worth a new UI surface.
+ */
+export function computeTacticMotifRankHits(
+  colourMoves: ClassifiedMoveDto[],
+  evals: EngineEval[],
+  topN: number = CONFIG.tacticScan.defaultTopN
+): TacticMotifRankHit[] {
+  const hits: TacticMotifRankHit[] = [];
+
+  for (const move of colourMoves) {
+    const evalAtPly = evals[move.ply - 1];
+    if (!move.fenBefore || !evalAtPly) continue;
+    const fenBefore = move.fenBefore;
+
+    evalAtPly.lines.slice(0, topN).forEach((line, rank) => {
+      const playedThisLine = line.moveSan === move.moveSan;
+      const quality: MoveQuality = playedThisLine ? move.quality : 'best';
+      const isCheckmate = playedThisLine ? (move.moveFlags?.isCheckmate ?? false) : checkmateFlag(fenBefore, line.moveSan);
+      if (isCheckmate === null) return;
+
+      const motif = classifyTacticMotif({
+        fenBefore,
+        moveSan: line.moveSan,
+        mover: move.mover,
+        quality,
+        isCheckmate,
+        isTacticalPosition: move.isTacticalPosition === true
+      });
+      if (!motif) return;
+
+      hits.push({ ply: move.ply, motif, rank, playedRank: playedThisLine ? rank : null });
+    });
+  }
+  return hits;
 }

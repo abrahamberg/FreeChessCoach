@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vitest';
-import type { EngineLine } from '@freechesscoach/shared';
 import { analyzeGame, analyzePosition, analyzePositionDetailed, InvalidFenError } from './analyze.js';
 import { EnginePool } from './engine-pool.js';
 import { UciEngine, type AnalyzeOptions, type DetailedEngineLine } from './uci.js';
@@ -7,21 +6,7 @@ import { UciEngine, type AnalyzeOptions, type DetailedEngineLine } from './uci.j
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const AFTER_E4_FEN = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
 
-class FakeUciEngine extends UciEngine {
-  constructor(private readonly impl: (fen: string, options: AnalyzeOptions) => Promise<EngineLine[]>) {
-    super();
-  }
-
-  override analyze(fen: string, options: AnalyzeOptions = {}): Promise<EngineLine[]> {
-    return this.impl(fen, options);
-  }
-}
-
-function poolReturning(line: EngineLine): EnginePool {
-  return new EnginePool(1, () => new FakeUciEngine(() => Promise.resolve([line])));
-}
-
-const bestLine: EngineLine = { moveUci: 'e2e4', moveSan: 'e4', cp: 30, mateIn: null };
+const bestLine: DetailedEngineLine = { moveUci: 'e2e4', moveSan: 'e4', cp: 30, mateIn: null, pvUci: ['e2e4', 'e7e5'] };
 
 class FakeDetailedUciEngine extends UciEngine {
   constructor(private readonly impl: (fen: string, options: AnalyzeOptions) => Promise<DetailedEngineLine[]>) {
@@ -38,17 +23,22 @@ function poolReturningDetailed(lines: DetailedEngineLine[]): EnginePool {
 }
 
 describe('analyzePosition', () => {
-  test('returns an EngineEval with the given ply, fen, and depth', async () => {
-    const pool = poolReturning(bestLine);
+  test('returns an EngineEval with the given ply, fen, depth, and each line\'s pvSan (same search analyzeDetailed already ran)', async () => {
+    const pool = poolReturningDetailed([bestLine]);
 
     const result = await analyzePosition(pool, START_FEN, 3, { depth: 14 });
 
-    expect(result).toEqual({ ply: 3, fen: START_FEN, depth: 14, lines: [bestLine] });
+    expect(result).toEqual({
+      ply: 3,
+      fen: START_FEN,
+      depth: 14,
+      lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 30, mateIn: null, pvSan: ['e4', 'e5'] }]
+    });
   });
 
   test('throws InvalidFenError for a malformed fen without calling the engine', async () => {
     let called = false;
-    const pool = new EnginePool(1, () => new FakeUciEngine(() => {
+    const pool = new EnginePool(1, () => new FakeDetailedUciEngine(() => {
       called = true;
       return Promise.resolve([bestLine]);
     }));
@@ -59,7 +49,7 @@ describe('analyzePosition', () => {
 
   test('forwards depth, multiPv, and timeoutMs to the engine', async () => {
     const seen: AnalyzeOptions[] = [];
-    const pool = new EnginePool(1, () => new FakeUciEngine((_fen, options) => {
+    const pool = new EnginePool(1, () => new FakeDetailedUciEngine((_fen, options) => {
       seen.push(options);
       return Promise.resolve([bestLine]);
     }));
@@ -74,7 +64,7 @@ describe('analyzeGame', () => {
   test('analyzes each fen sequentially, assigning ply by array index', async () => {
     const fens = [START_FEN, AFTER_E4_FEN];
     const seenFens: string[] = [];
-    const pool = new EnginePool(1, () => new FakeUciEngine((fen) => {
+    const pool = new EnginePool(1, () => new FakeDetailedUciEngine((fen) => {
       seenFens.push(fen);
       return Promise.resolve([bestLine]);
     }));
@@ -87,7 +77,7 @@ describe('analyzeGame', () => {
   });
 
   test('rejects with InvalidFenError if any fen is malformed', async () => {
-    const pool = poolReturning(bestLine);
+    const pool = poolReturningDetailed([bestLine]);
 
     await expect(analyzeGame(pool, [START_FEN, 'garbage'], { depth: 8 })).rejects.toThrow(
       InvalidFenError

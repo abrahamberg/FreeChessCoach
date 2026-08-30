@@ -23,20 +23,27 @@ function playerReportOf(entry: StatsEntry) {
   return entry.gameReport.players[entry.userColor];
 }
 
+/** `played`/`prevented` stay `undefined` (never assigned a running total)
+ * unless at least one entry actually reports them — same null-not-zero
+ * convention as `mean([])` above, so a dashboard with only pre-Phase-39
+ * games shows "not yet computed" for these two, not a misleading 0. */
 function aggregateTacticMotifs(entries: StatsEntry[]): TacticMotifCounts {
   const totals = Object.fromEntries(
-    TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }])
-  ) as Record<TacticMotifType, { opportunities: number; found: number }>;
+    TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }] as const)
+  ) as Record<TacticMotifType, { opportunities: number; found: number; played?: number; prevented?: number }>;
 
   for (const entry of entries) {
     const motifs = playerReportOf(entry).tacticMotifs;
     for (const type of TACTIC_MOTIF_TYPES) {
-      totals[type].opportunities += motifs[type].opportunities;
-      totals[type].found += motifs[type].found;
+      const row = totals[type];
+      row.opportunities += motifs[type].opportunities;
+      row.found += motifs[type].found;
+      if (motifs[type].played !== undefined) row.played = (row.played ?? 0) + motifs[type].played;
+      if (motifs[type].prevented !== undefined) row.prevented = (row.prevented ?? 0) + motifs[type].prevented;
     }
   }
 
-  return totals;
+  return totals as TacticMotifCounts;
 }
 
 function aggregateStrategyStats(entries: StatsEntry[]): StrategyStats {

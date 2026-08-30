@@ -1,4 +1,4 @@
-import type { BotPersonality } from '@freechesscoach/shared';
+import type { BotPersonality, TacticMotifType } from '@freechesscoach/shared';
 import { toCpWhite, winPctWhite } from './win-probability.js';
 
 export interface BotCandidate {
@@ -20,6 +20,12 @@ export interface BotCandidate {
   /** From pv-tactics.ts's annotatePvTactics — first ply (within the
    * candidate's own PV) at which this line creates a fork of its own. */
   forkInPlies: number | null;
+  /** Full tactic motif of playing this candidate right now — carried for
+   * callers that want it (e.g. a richer coach digest); NOT read by
+   * scoreBotCandidates below, which still scores purely off the booleans
+   * above. Reacting to specific motifs (pins, discovered attacks, ...) in
+   * bot personality scoring is a deliberately separate future decision. */
+  motif: TacticMotifType | null;
 }
 
 export interface ScoredBotCandidate extends BotCandidate {

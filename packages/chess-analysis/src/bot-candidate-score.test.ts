@@ -14,6 +14,7 @@ function candidate(overrides: Partial<BotCandidate> = {}): BotCandidate {
     createsUnderDefendedPiece: false,
     mobilityDelta: 0,
     forkInPlies: null,
+    motif: null,
     ...overrides
   };
 }

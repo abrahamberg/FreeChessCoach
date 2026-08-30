@@ -1,11 +1,6 @@
 import type { MoveQuality, TacticMotifType } from '@freechesscoach/shared';
-import { Chess, type Color, type Square } from 'chess.js';
-import { buildAttackMap } from './attack-map.js';
-import { discoveredAttack } from './tactic-discovered.js';
-import { pins } from './tactic-pins.js';
-import { removesDefender } from './tactic-removes-defender.js';
-import { trappedPieces } from './tactic-trapped.js';
-import { captureOpportunities, forks } from './tactics.js';
+import { buildTacticDetectionContext } from './tactic-detectors/context.js';
+import { TACTIC_DETECTORS } from './tactic-detectors/registry.js';
 
 export type { TacticMotifType } from '@freechesscoach/shared';
 
@@ -24,45 +19,25 @@ export interface TacticMotifContext {
   isTacticalPosition: boolean;
 }
 
-function toColor(mover: 'white' | 'black'): Color {
-  return mover === 'white' ? 'w' : 'b';
-}
-
 /**
  * Tags a single move with the most-specific tactical motif it embodies, in
  * priority order (checkmate first, a catch-all `'other'` last) — a move can
  * only ever carry one tag, mirroring `classify-move.ts`'s decision order.
+ *
+ * `checkmate`/`brilliantSacrifice` are answered directly from `context` —
+ * they need no replay/AttackMap. Everything else runs through
+ * `tactic-detectors/registry.ts`'s priority-ordered `TACTIC_DETECTORS`; to
+ * add a new tactic, see `tactic-detectors/README.md` rather than editing
+ * this function.
  */
 export function classifyTacticMotif(context: TacticMotifContext): TacticMotifType | null {
   if (context.isCheckmate) return 'checkmate';
   if (context.quality === 'brilliant') return 'brilliantSacrifice';
 
-  const before = new Chess(context.fenBefore);
-  const beforeAttackMap = buildAttackMap(before);
-  const after = new Chess(context.fenBefore);
-
-  let destination: Square | null = null;
-  try {
-    const move = after.move(context.moveSan);
-    destination = move ? (move.to as Square) : null;
-  } catch {
-    destination = null;
+  const detectionContext = buildTacticDetectionContext(context.fenBefore, context.moveSan, context.mover);
+  for (const detector of TACTIC_DETECTORS) {
+    if (detector.detect(detectionContext)) return detector.type;
   }
-  if (!destination) return context.isTacticalPosition ? 'other' : null;
-
-  const afterAttackMap = buildAttackMap(after);
-  if (forks(after, afterAttackMap).some((hit) => hit.square === destination)) return 'fork';
-  if (pins(after).some((hit) => hit.by === destination)) return 'pin';
-
-  const mover = toColor(context.mover);
-  if (discoveredAttack(context.fenBefore, context.moveSan, mover)) return 'discoveredAttack';
-  if (removesDefender(context.fenBefore, context.moveSan, mover)) return 'removesDefender';
-
-  const opponent: Color = mover === 'w' ? 'b' : 'w';
-  if (trappedPieces(after, opponent).length > 0) return 'trappedPiece';
-
-  const capture = captureOpportunities(before, beforeAttackMap).find((entry) => entry.moveSan === context.moveSan);
-  if (capture?.favorable) return 'freePiece';
 
   return context.isTacticalPosition ? 'other' : null;
 }

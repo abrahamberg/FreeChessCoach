@@ -41,6 +41,12 @@ export function toColorName(color: Color): ColorName {
   return color === 'w' ? 'white' : 'black';
 }
 
+/** The side to move per a FEN's own active-color field, without needing to
+ * load a full `Chess` instance just to ask. */
+export function fenActiveColor(fen: string): ColorName {
+  return fen.trim().split(/\s+/)[1] === 'b' ? 'black' : 'white';
+}
+
 export function opponentOf(color: Color): Color {
   return color === 'w' ? 'b' : 'w';
 }

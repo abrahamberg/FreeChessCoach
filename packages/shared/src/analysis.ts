@@ -25,7 +25,13 @@ export const EngineLineSchema = z.object({
   moveUci: z.string(),
   moveSan: z.string(),
   cp: z.number().int().nullable(),
-  mateIn: z.number().int().nullable()
+  mateIn: z.number().int().nullable(),
+  /** The line's full principal variation, when the caller captured it — the
+   * batch engine call computes this in the same search as everything else on
+   * this line (see services/engine/src/analyze.ts's analyzePosition), so
+   * it's free to keep. Optional and additive: pre-existing stored evals
+   * simply lack it. */
+  pvSan: z.array(z.string()).optional()
 });
 export type EngineLine = z.infer<typeof EngineLineSchema>;
 

@@ -10,6 +10,13 @@ export class InvalidFenError extends Error {
   }
 }
 
+/**
+ * Same UCI search analyze() would run — analyzeDetailed() is the one that
+ * keeps each line's full pvUci internally, and analyze() just strips it
+ * before returning (see uci.ts). Converting pvUci to pvSan here and keeping
+ * it costs zero extra engine work; it's the same data analyze() already
+ * discarded, now retained on EngineLine.pvSan.
+ */
 export async function analyzePosition(
   pool: EnginePool,
   fen: string,
@@ -18,7 +25,14 @@ export async function analyzePosition(
   priority: EnginePriority = 'background'
 ): Promise<EngineEval> {
   assertValidFen(fen);
-  const lines = await pool.withEngine((engine) => engine.analyze(fen, options), priority);
+  const detailedLines = await pool.withEngine((engine) => engine.analyzeDetailed(fen, options), priority);
+  const lines = detailedLines.map((line) => ({
+    moveUci: line.moveUci,
+    moveSan: line.moveSan,
+    cp: line.cp,
+    mateIn: line.mateIn,
+    pvSan: pvUciToSan(fen, line.pvUci)
+  }));
   return { ply, fen, depth: options.depth ?? DEFAULT_DEPTH, lines };
 }
 

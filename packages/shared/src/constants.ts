@@ -150,3 +150,16 @@ export const ENGINE_DEFAULT_DEPTH = 16;
  * depth-16 parity with the native engine matter more than latency here.
  */
 export const ENGINE_TUNNEL_PER_POSITION_MS = 30_000;
+
+/**
+ * The one place to change how many principal variations every engine
+ * backend requests. Lives here (not apps/api's engine-client.ts, though
+ * that module re-exports it for existing call sites) because
+ * `packages/chess-analysis` also needs it (tactic-scanning's topN default)
+ * and depends on this package already — previously duplicated as a
+ * hand-synced literal in chess-analysis/src/config.ts, which this replaces.
+ * chess-api.com's free tier supports up to 5 variants (see
+ * CHESS_API_MAX_VARIANTS in chess-api-engine-backend.ts); the Lichess eval
+ * index also stores up to 5 per position (lichess-eval-index-format.ts).
+ */
+export const ENGINE_MULTI_PV = 5;

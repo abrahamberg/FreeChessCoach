@@ -1,3 +1,4 @@
+import { ENGINE_MULTI_PV } from '@freechesscoach/shared';
 import type { PieceSymbol } from 'chess.js';
 
 /**
@@ -206,5 +207,12 @@ export const CONFIG = {
     maxReasons: 2,
     centerSwingThreshold: 3,
     mobilityDropThreshold: -8
+  },
+
+  /** Both-sides tactic scanning (scan-tactics-for-lines.ts / position-tactics.ts).
+   * `defaultTopN` is `ENGINE_MULTI_PV` itself (from @freechesscoach/shared,
+   * the canonical single source) — no more hand-synced duplicate literal. */
+  tacticScan: {
+    defaultTopN: ENGINE_MULTI_PV
   }
 } as const;

@@ -1,4 +1,7 @@
+import type { TacticMotifType } from '@freechesscoach/shared';
 import { applySanSequence } from './apply-san-sequence.js';
+import { fenActiveColor } from './attack-map.js';
+import { classifyCandidateMove } from './classify-candidate-move.js';
 import { diffPositionFeatures } from './diff-features.js';
 import { computePositionFeatures } from './position-features.js';
 
@@ -8,6 +11,9 @@ export interface PvTacticStep {
   createsFork: boolean;
   createsHangingPiece: boolean;
   mobilityDelta: number;
+  /** This step's full tactic motif, classified from the position right
+   * before it was played — same registry (Phase 32) as everywhere else. */
+  motif: TacticMotifType | null;
 }
 
 export interface PvTacticAnnotation {
@@ -36,18 +42,23 @@ export function annotatePvTactics(fenBefore: string, pvSan: string[], maxPlies =
   const applied = applySanSequence(fenBefore, walked);
 
   const steps: PvTacticStep[] = [];
+  const initialMover = fenActiveColor(fenBefore);
+  let previousFen = fenBefore;
   let previousFeatures = computePositionFeatures(fenBefore);
 
   applied.moves.forEach((move, index) => {
     const features = computePositionFeatures(move.fen);
     const delta = diffPositionFeatures(previousFeatures, features);
+    const stepMover = index % 2 === 0 ? initialMover : initialMover === 'white' ? 'black' : 'white';
     steps.push({
       ply: index + 1,
       moveSan: move.san,
       createsFork: delta.newForks.length > 0,
       createsHangingPiece: delta.newHangingPieces.length > 0,
-      mobilityDelta: delta.mobilityDelta
+      mobilityDelta: delta.mobilityDelta,
+      motif: classifyCandidateMove(previousFen, move.san, stepMover)
     });
+    previousFen = move.fen;
     previousFeatures = features;
   });
 
