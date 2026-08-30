@@ -1475,3 +1475,750 @@ hook (TanStack Query, mirrors `DashboardPage`'s `apiGet` pattern); route in
       This pass is what surfaced the pre-Phase-24 `gameReport` shape bug
       fixed just above — the very first real request against the user's
       existing data 500ed before that fix.
+
+## Phase 32 — Modular tactic-detector registry (pure refactor)
+
+`classifyTacticMotif` was a hardcoded if/else chain over the six detector
+functions. Extracted into a priority-ordered registry, one file per motif,
+so a new tactic is "one new file + one array entry," never an edit to the
+orchestrator. Zero behavior change — confirmed by the existing detector/
+orchestrator test suites passing unmodified.
+
+**Files:** `packages/chess-analysis/src/tactic-detectors/{context,types,
+registry,fork,pin,discovered-attack,removes-defender,trapped-piece,
+free-piece}.ts` (+ one test per file), `tactic-detectors/README.md` (the
+"how to add a tactic" cookbook), `classify-tactic-motif.ts` (rewritten as a
+thin loop), `index.ts` (barrel exports).
+
+- [x] `TacticDetectionContext`/`buildTacticDetectionContext` — the single
+      replay + `AttackMap` build every detector shares (discoveredAttack/
+      removesDefender opt out, doing their own internal replay instead —
+      documented, not an oversight).
+- [x] `TacticDetector` interface + `TACTIC_DETECTORS` priority registry
+      (fork=10, pin=20, discoveredAttack=30, removesDefender=40,
+      trappedPiece=50, freePiece=60 — gaps left for future insertion).
+      `checkmate`/`brilliantSacrifice` stay as pre-checks (answerable from
+      the raw context, no replay needed); `'other'` stays the catch-all.
+- [x] One adapter file per detector, each a thin wrapper over the existing,
+      unmodified detection function.
+- [x] `classifyTacticMotif` reduced to two pre-checks + a loop over the
+      registry; `README.md` documents the 5-step "add a tactic" cookbook.
+- [x] Regression: `classify-tactic-motif.test.ts` and all four pre-existing
+      `tactic-*.test.ts` files pass **unmodified**; `game-tactic-motifs.test.ts`/
+      `build-game-report.test.ts` also pass unmodified.
+- [x] Commit: `refactor: modular tactic-detector registry (Phase 32)`.
+
+## Phase 33 — One shared candidate-move classifier for batch + live coach
+
+Before this phase, the live coach's candidate-move tools
+(`candidate-moves.ts`/`pv-tactics.ts`) computed a separate, shallower signal
+set (fork/hangingPiece/mobility only) than the batch pipeline's
+`classifyTacticMotif` — no pins, discovered attacks, trapped pieces, or
+removes-defender. `classifyCandidateMove` gives every caller access to the
+same registry.
+
+**Files:** `packages/chess-analysis/src/classify-candidate-move.ts` (+test),
+`candidate-moves.ts`, `pv-tactics.ts`, `attack-map.ts` (`fenActiveColor`,
+extracted once it was needed by a third call site),
+`apps/api/src/services/{bot/bot-candidates,play-candidates,
+investigator-tools}.ts`, `bot-candidate-score.ts`.
+
+- [x] `classifyCandidateMove(fenBefore, moveSan, mover, options?)` —
+      computes `isCheckmate`/`isTacticalPosition` itself (via `moveFlags` +
+      `computePositionFeatures`/`isTacticalPosition`) for callers without
+      precomputed batch inputs, then delegates straight to
+      `classifyTacticMotif`. `quality` defaults to `'best'`, matching
+      `game-tactic-motifs.ts`'s existing documented undercount for unplayed
+      candidates.
+- [x] `CandidateMoveAnnotation`/`PvTacticStep` gain an additive
+      `motif: TacticMotifType | null` field; the four pre-existing booleans
+      are unchanged (regression-pinned by the existing test assertions
+      still passing).
+- [x] Wired through `bot-candidates.ts`'s `buildBotCandidates` (→
+      `BotCandidate.motif`, **not** read by `scoreBotCandidates` — bot
+      scoring behavior is unchanged, confirmed by its test suite's
+      score-value assertions passing unmodified) and `play-candidates.ts`'s
+      `getCandidateMoveBriefing` (`motif` flows into the LLM digest via
+      `CandidateForDigest`). `investigator-tools.ts`'s `list_candidate_moves`
+      needed no code change — the new field just appears in its output.
+- [x] Commit: `feat: shared classifyCandidateMove + motif field on candidate/PV annotations (Phase 33)`.
+
+## Phase 34 — Available vs. allowed (threat) tactics via null-move FEN
+
+"Available" = the side to move's tactics among their own engine top-N lines
+(no extra engine call). "Allowed" = the opponent's tactics if the side to
+move does nothing, via a flipped-active-color ("null move") FEN and one
+extra engine call — mirrors `brilliant-soundness.ts`'s pure-classification-
+vs-impure-engine-call split. Deliberately **not** wired into the batch
+game-report pipeline (would double engine calls per ply across every
+analyzed game); live-coach only.
+
+**Files:** `packages/chess-analysis/src/null-move-fen.ts`,
+`scan-tactics-for-lines.ts`, `config.ts` (`tacticScan.defaultTopN = 3`) (all
++tests); `apps/api/src/services/position-tactics.ts` (+test),
+`investigator-tools.ts`, `play-candidates.ts` (+tests).
+
+- [x] `flipActiveColorFen(fen): string | null` — flips the active-color
+      field, clears en-passant; returns `null` when the side to move is in
+      check (a load-bearing guard: chess.js does **not** throw on a FEN
+      whose side-not-to-move is in check, and will even report a legal
+      capture of that king — verified directly, not assumed).
+- [x] `scanTacticsForLines(fenBefore, lines, mover, topN)` — classifies each
+      of the top-`topN` engine lines via `classifyCandidateMove`, keeping
+      motif hits tagged with their line rank.
+- [x] `scanPositionTactics(engine, fen, primaryAnalysis, {topN})` —
+      `available` from the caller-supplied analysis (no extra call);
+      `allowed` via one extra `analyzePosition` call at the flipped FEN, or
+      `null` when the flip guard fails. Tested with a mocked engine: exactly
+      one extra call on a normal position, zero extra calls (and no throw)
+      on a mover-in-check fixture.
+- [x] New `scan_tactics` investigator tool (budget 2, tighter than
+      `list_candidate_moves`'s 4, since it can spend a real engine call);
+      `get_candidate_moves`'s digest gains an additive "OPPONENT THREATS IF
+      YOU PASS" section built from `allowed`, existing `candidates` output
+      untouched.
+- [x] Commit: `feat: available/allowed tactic scanning via null-move FEN (Phase 34)`.
+
+## Phase 35 — Top-N marking (which engine rank a tactic appears at)
+
+**Files:** `packages/chess-analysis/src/game-tactic-motifs.ts` (new
+`computeTacticMotifRankHits`, existing `computeTacticMotifCounts`
+untouched) (+test); `apps/api/src/services/investigator-tools.ts` (+test).
+
+- [x] `computeTacticMotifRankHits(colourMoves, evals, topN)` — the per-rank
+      generalization of `computeTacticMotifCounts`: classifies every one of
+      the top-`topN` lines at each ply (not just `lines[0]`), returning
+      `{ply, motif, rank, playedRank}`. Proven a strict superset by a
+      dedicated regression test: aggregating its `rank === 0` hits
+      reproduces `computeTacticMotifCounts`'s output exactly on the same
+      kind of fixtures. **Not** called from `build-game-report.ts` —
+      `PlayerReportSchema`/`TacticMotifCountsSchema` are unchanged, zero
+      `/stats` dashboard impact. Wiring this into the stored `GameReport` is
+      left as a 🔴 follow-up pending a product decision on whether it's
+      worth a new UI surface.
+- [x] `scan_tactics`'s `topN` (added in Phase 34, hard-capped at 3 to match
+      the engine's `multiPv`) is the live-coach-facing configurability this
+      phase called for — verified with a dedicated test (`topN: 1` excludes
+      a rank-1 motif; `topN: 2` includes it).
+- [x] Commit: `feat: per-rank tactic-motif hits + configurable topN (Phase 35)`.
+
+## Verification (end of Phase 35)
+
+- [x] `npx tsc -b` across `packages/chess-analysis`, `packages/shared`,
+      `apps/api`, `apps/web` — clean.
+- [x] `npx eslint` on every touched file — clean.
+- [x] Zero diffs required in `classify-tactic-motif.test.ts`, all four
+      pre-existing `tactic-*.test.ts` files, `game-tactic-motifs.test.ts`
+      (the two pre-existing `computeTacticMotifCounts` tests), or
+      `bot-candidate-score.test.ts`'s score-value assertions — the
+      no-behavior-change contract for Phases 32–33 held.
+- [x] Full-repo `npx vitest run` (all workspaces) — green, no regressions.
+
+## Phase 36 — Engine multiPv consistency (5, not 3)
+
+One canonical constant instead of two hand-synced copies: `ENGINE_MULTI_PV =
+5` now lives in `packages/shared/src/constants.ts` (both `apps/api` and
+`chess-analysis` already depend on `@freechesscoach/shared`, so there is no
+longer a reason to keep two literals in sync by hand). `apps/api/src/
+services/engine-client.ts` re-exports it, so every existing `import {
+ENGINE_MULTI_PV } from '../engine-client.js'` call site is untouched.
+`chess-analysis/src/config.ts`'s `tacticScan.defaultTopN` now imports it
+directly instead of a second hardcoded `3`. chess-api.com's own
+`CHESS_API_MAX_VARIANTS` cap stays 5, so this is the first time that backend
+is actually asked for its real cap instead of being clamped below it.
+
+**Files:** `packages/shared/src/constants.ts`, `apps/api/src/services/
+engine-client.ts`, `packages/chess-analysis/src/config.ts`, `apps/api/src/
+services/investigator-tools.ts` (+tests).
+
+- [x] `ENGINE_MULTI_PV = 5`, single source of truth, re-exported (not
+      duplicated) everywhere it's used.
+- [x] `scan_tactics`'s `topN` schema bound raised `3` → `5`.
+- [x] Commit: `feat: bump engine multiPv default from 3 to 5, one canonical constant in packages/shared (Phase 36)`.
+
+## Phase 37 — Lichess eval index v2: keep up to 5 lines per position
+
+Format, build script, and reader all rewritten to keep the dataset's up-to-5
+parallel PVs per position instead of only `pvs[0]` — previously
+`build-lichess-eval-index.mjs` discarded every line but the first. New
+fixed-width record: `key(16) + depth(1) + lineCount(1) + 5×slot(9B)` = 63
+bytes (up from 26). A file-level `LCEVAL02` magic header was added so a
+reader shipped ahead of a rebuilt file soft-skips a stale v1 file (warn +
+behave as absent) instead of crash-looping — mirrors `bootstrap.ts`'s
+existing missing-file soft-skip. Each stored line still only keeps its own
+**first move**, not a continuation — that gap is closed by Phase 49 below.
+
+**Files:** `packages/chess-analysis/src/lichess-eval-index-format.ts`,
+`apps/api/scripts/build-lichess-eval-index.mjs`, `apps/api/src/services/
+engine/{lichess-eval-index,lichess-eval-engine-backend}.ts`, `deploy/helm/
+freechesscoach/values.yaml` (`lichessEvalIndex.size` 12Gi → 30Gi),
+`apps/api/data/README.md` (all +tests).
+
+- [x] v2 record layout + magic-header version guard; pack/unpack
+      round-trips 1-5 lines; a v1-shaped buffer is detected and soft-skipped.
+- [x] Build script harvests all of `best.pvs.slice(0, 5)` instead of just
+      `pvs[0]`.
+- [x] `LichessEvalLookupResult` → `{depth, lines: [...]}`;
+      `LichessEvalEngineBackend.toPositionAnalysis` maps every returned
+      line, not a hardcoded `multiPv: 1`.
+- [x] PVC resized to 30Gi (~25GB full-dataset estimate + headroom). The
+      actual production rebuild (`fetch-and-build-lichess-eval-index.sh`)
+      and redeploy (`deploy-lichess-eval-index.sh`) remain the existing
+      manual, by-hand operation — not run as part of this phase.
+- [x] Commit: `feat: lichess eval index v2 format — up to 5 lines per position, versioned header (Phase 37)`.
+
+## Phase 38 — Zero-cost PV capture for the batch pipeline
+
+Batch `analyzePosition`/`analyzeGame` (`services/engine/src/analyze.ts`)
+switched from `engine.analyze()` (which internally called
+`analyzeDetailed()` then stripped `pvUci`) to keeping the already-computed
+`pvUci` and converting it via the existing `pvUciToSan` — same UCI search,
+zero extra engine calls, just stop discarding data that was already there.
+`EngineLineSchema` gained an additive, optional `pvSan?: string[]`.
+
+**Files:** `services/engine/src/analyze.ts`, `packages/shared/src/analysis.ts` (+test).
+
+- [x] Batch `EngineEval.lines[].pvSan` now carries the real PV on a fresh
+      compute. (Found later, this session, to still be silently discarded on
+      the `apps/api` cache round-trip and by the chess-api backend — see
+      Phases 43-44 below.)
+- [x] Commit: `feat: batch engine evals retain each line's full PV (same search, no extra cost) (Phase 38)`.
+
+## Phase 39 — Tactics Played
+
+`computeTacticMotifPlayed(colourMoves, evals)` — tallies every move the
+player actually made that itself classifies as a tactic via
+`classifyCandidateMove`, independent of engine rank (unlike "Found", which
+requires matching the engine's literal #1 line). `TacticMotifCountSchema`
+gained two **optional, no-default** fields (`played`, `prevented`) —
+load-bearing for backward compatibility: a required/defaulted field would
+make every pre-existing stored `GameReport` re-validate with a false "0
+ever" instead of an honest "not computed". `mergeMotifCounts(counts, field,
+values)` generalizes the prior single-purpose merge helper.
+
+**Files:** `packages/chess-analysis/src/game-tactic-motifs.ts`,
+`packages/shared/src/game-report.ts`, `packages/chess-analysis/src/
+build-game-report.ts`, `packages/chess-analysis/src/build-stats-dashboard.ts` (+tests).
+
+- [x] `computeTacticMotifPlayed` + additive schema fields;
+      `GameReportSchema.safeParse` on a fixture predating this phase (no
+      `played`/`prevented` anywhere) still succeeds.
+- [x] Dashboard aggregation sums `played`/`prevented` per motif (`?? 0` per
+      entry), reporting `null` — not `0` — at the dashboard level when no
+      analyzed game has the field at all.
+- [x] Commit: `feat: thread tacticMotifs.played through the batch game report (additive schema) (Phase 39)`.
+
+## Phase 40 — Tactics Prevented (cost-gated)
+
+An opponent tactical opportunity that existed and is gone after the
+player's move. Cost-gated by direct user instruction: cheap/free reuse of
+already-computed data first, one extra engine call only as a fallback on
+genuinely sharp positions ("we already analyse the opponent's tactics from
+their top X moves, we already know what they had").
+
+`findDefusedThreat(beforeFen, afterFen, opponent, candidateLines)`
+(`packages/chess-analysis/src/tactic-prevention-check.ts`) — pure,
+engine-free. Deliberately checks only each candidate line's **immediate**
+move, not a multi-ply PV walk: a ply-3 combination's intermediate move is
+the engine's own hypothetical choice, not what was actually played, so
+there was no sound way (at the time) to verify a specific multi-move
+combination "survived". **The user pushed back on this exact limitation
+after Phase 41 shipped — Phase 46 below redesigns this soundly.**
+
+`computeTacticMotifPrevented(engine, allMoves, evals)` (`apps/api/src/
+services/tactic-prevention.ts`) — Step A (free): reuses the opponent's own
+last-turn analysis (`evals[prior.ply-1].lines`) against a null-move-flipped
+`prior.fenAfter`. Step B (gated fallback): only when Step A finds nothing
+**and** `move.isTacticalPosition` — one
+`engine.analyzePosition(flipActiveColorFen(move.fenBefore))` call.
+`AnalysisJobDependencies` gained a required `analyzePosition: (fen) =>
+Promise<PositionAnalysis>` alongside the existing batch
+`analyzeGamePositions`.
+
+**Files:** `packages/chess-analysis/src/tactic-prevention-check.ts`,
+`apps/api/src/services/tactic-prevention.ts`, `apps/api/src/services/
+analysis.ts`, `apps/api/src/jobs/analyze-game.ts`, `packages/chess-analysis/
+src/build-game-report.ts`, `apps/api/src/services/build-game-report.ts` (+tests).
+
+- [x] 4 unit tests on `computeTacticMotifPrevented`: free-path hit (zero
+      engine calls), free-path miss + non-tactical (zero calls, no
+      prevention), free-path miss + tactical (exactly one call, hit
+      recorded), ply-1 move (no prior opponent turn) skipped cleanly.
+- [x] Integration test: a real "knight fork defused by moving the rook
+      away" fixture game credits `tacticMotifs.fork.prevented === 1` via the
+      free path alone, with `analyzePosition` never called.
+- [x] Commit: `feat: computeTacticMotifPrevented — free-path-first, engine-call-gated threat-defused detection (Phase 40)`.
+
+## Phase 41 — Frontend: Played / Found / Prevented tabs
+
+`TacticsTabs.tsx` (new) — a 3-tab `role="tablist"`/`role="tab"` switcher
+with roving tabindex + arrow-key nav, generalized from `SessionViewTabs.tsx`'s
+2-tab pattern (sliding-indicator CSS dropped for a plain `aria-selected`
+background swap, since a single 3-tab caller doesn't earn a `--tab-count`
+abstraction).
+
+`TacticsStatsSection.tsx` rewritten: Found keeps its exact original
+`found/opportunities` fraction and `opportunities > 0` filter
+(regression-pinned, byte-identical to before). Played/Prevented show raw
+counts, filtered by `opportunities > 0 || (row[tab] ?? 0) > 0` (their whole
+point is surfacing motifs the engine never ranked #1), render `—` (not `0`)
+when the field is `undefined`, and scale their progress bar relative to the
+max value among currently-visible rows (no natural "of N" denominator for a
+raw count).
+
+**Files:** `apps/web/src/features/stats/{TacticsTabs,TacticsStatsSection}.tsx`, `StatsPage.css` (+tests).
+
+- [x] 8/8 tests pass (4 pre-existing Found-tab tests preserved verbatim + 4
+      new: Played shows raw counts not fractions, `—` for an undefined
+      count, Prevented surfaces a motif with zero `opportunities`, Found
+      selected by default).
+- [x] Commit: `feat: split TacticsStatsSection into Played/Found/Prevented tabs (Phase 41)`.
+
+## Verification (end of Phase 41)
+
+- [x] `npx tsc -b && npx eslint . && npx vitest run` across all
+      workspaces — 273 files / 2041 tests green.
+- [x] Two genuine regressions caught and fixed during this pass:
+      `resolve-engine-backend.test.ts` had two `LichessEvalReader.lookup`
+      mocks still in the pre-Phase-37 v1 shape — fixed to the v2
+      `{depth, lines}` shape.
+- [x] Two flakes confirmed pre-existing/unrelated (pass cleanly in
+      isolation; confirmed via `git log`/`git status` that the files were
+      never touched this session): `apps/api/src/routes/sessions.test.ts`'s
+      timed-game test; `apps/api/src/services/game-positions.test.ts`'s
+      `afterAll`/`testDb.cleanup()` teardown race under full parallel suite
+      load — **a known intermittent teardown race under DB load, not a
+      regression; don't spend time chasing it if it reappears.**
+
+---
+
+## Context for the next agent (read before starting Phase 42)
+
+Phases 42-49 below are **planned, not yet implemented**. Everything above
+this line (through Phase 41) is implemented, tested, and about to be
+committed as a clean baseline — `git log` from here on is real history you
+can trust; anything before this commit that touched Phases 32-41 was
+squashed into a small number of coarse-grained commits during handoff
+(package-boundary grouped: chess-analysis/shared/engine, apps/api, apps/web,
+docs), not the fine per-phase-per-commit history the "Commit:" lines above
+describe — don't go looking for those individual commits in `git log`, they
+don't exist as such.
+
+**Why Phases 42-49 exist:** after Phase 41 shipped, the user pointed out a
+real gap in "Prevented" (missed a rook-sac → check → fork combo landing 3+
+plies out, because the ply-1-only check in Phase 40 can't see it) and
+proposed a graduated per-engine-line-rank ply schedule as the fix. While
+scoping that, two more real findings came up from actual captured API
+responses (not test mocks) that reshaped the plan:
+
+1. **chess-api.com almost certainly never returns more than 1 line in
+   practice**, despite our code asking for up to `ENGINE_MULTI_PV` (5).
+   There is zero real evidence anywhere in this repo's history of it ever
+   returning >1 — every multi-line example is a hand-written test fixture.
+   But that one line carries a genuine, deep `continuationArr` (a real
+   sample had 15 plies) that `chess-api-engine-backend.ts` currently throws
+   away (`pvSan: [raw.san]`). Decision: **don't change the request** (it's
+   already tolerant of however many lines come back — changing it risks
+   regressing Found/opportunities' "top-N candidate moves" logic for no
+   confirmed benefit) — just stop discarding the continuation on whatever
+   comes back. See Phase 43.
+2. **The Lichess bulk dump (the actual source our `.bin` index is built
+   from) genuinely does have multi-pv breadth**, confirmed with a real
+   20,000-position statistical sample this session (streamed via
+   `zstdcat apps/api/data/lichess_db_eval.jsonl.zst | head -n 20000`, not a
+   single anecdote): 54% single-pv, but 46% have 2+, 16.6% have the full 5,
+   and pv depth is consistently ~10 plies whenever present. This is a
+   *different* data source than `lichess.org`'s live `/api/cloud-eval`
+   endpoint (which the user separately found only returns 1 pv per query —
+   that endpoint isn't used anywhere in this codebase, it's not what feeds
+   our index, don't confuse the two if this comes up again).
+3. **Deliberate design philosophy, confirmed with the user**: don't force
+   any uniform "N lines" assumption across backends. `ENGINE_MULTI_PV=5` is
+   only ever a *request ceiling* — every downstream consumer
+   (`scanAvailableMotifs`, `annotatePvTactics`) already degrades gracefully
+   to however many lines and however deep a PV a given backend actually
+   returns, with no per-backend branching. If a stronger backend shows up
+   later, this same code gets proportionally better for free. Don't add
+   special-casing per backend beyond what Phases 43/49 already do to
+   *capture* real data that's currently being thrown away — the *scanning*
+   logic itself should stay backend-agnostic.
+
+**Explicitly deferred, not part of this plan, don't pick it up
+unprompted:** the user raised replacing `position_evaluations`' batch-side
+cross-game cache with per-game annotated-PGN persistence (reasoning:
+positions worth cross-game deduping are mostly already covered by the
+Lichess index, so a generic FEN cache buys little for the tail while its
+lossy write path actively hurts this feature). Real idea, deliberately
+punted — verbatim: *"about database I agree lets go the minimal that keep
+the current solution working and then comeback to it when needed."* Phase
+44 below is the minimal fix; the bigger redesign is a separate future plan,
+only if/when the user asks for it again.
+
+**Played and Found must stay untouched** by Phases 42-49 — both are
+single-move literal classifications where depth doesn't apply. Nothing here
+should touch `game-tactic-motifs.ts`'s `computeTacticMotifCounts`/
+`computeTacticMotifPlayed`, their schema fields, or dashboard aggregation.
+
+**Ordering matters less than it looks**: Phase 42 (shared `pvUciToSan`) is a
+real prerequisite for both 43 and 49. Phases 45-47 (schedule, scan
+primitive, `findDefusedThreats` redesign, service rewire) are a tight
+sequential chain. Phase 48 (live-coach) and Phase 49 (Lichess v3) are each
+independent of one another and could be done in either order, or in
+parallel by different people, once 42/45 land.
+
+## Phase 42 — Shared multi-move `pvUciToSan` in `chess-analysis`
+
+No multi-move UCI→SAN ("PV walking") utility exists today in a package
+`apps/api` depends on. `services/engine/src/uci.ts`'s `pvUciToSan(fen,
+pvUci): string[]` is the right model but lives in `@freechesscoach/engine`
+(the Stockfish subprocess service — `apps/api` doesn't depend on it, and
+adding that dependency for a pure string-conversion utility would be
+architecturally odd). `packages/chess-analysis/src/uci-move.ts`'s
+`uciToSan(fen, moveUci): string` (already used by `lichess-eval-engine-
+backend.ts`) is single-move only.
+
+**Files:** `packages/chess-analysis/src/uci-move.ts` (extend), its test, `src/index.ts`.
+
+- [ ] Add `pvUciToSan(fen, pvUci: string[]): string[]` alongside the
+      existing single-move `uciToSan` — fold it over the sequence, applying
+      each converted move to advance the position for the next conversion,
+      stopping (returning the valid prefix, not throwing) at the first
+      illegal/malformed UCI token. Same graceful-degradation contract as
+      `services/engine/src/uci.ts:38-54`'s version.
+- [ ] Export from the package barrel.
+- [ ] Tests: a clean multi-move list converts fully; an illegal move
+      partway through returns only the valid prefix; empty input returns
+      `[]`; parity against a hand-computed SAN sequence for the
+      `continuationArr` sample in Phase 43 below.
+- [ ] Commit: `feat: pvUciToSan — shared multi-move UCI-to-SAN conversion in chess-analysis (Phase 42)`.
+
+## Phase 43 — chess-api.com: capture the real continuation it already sends
+
+A real captured response (verbatim, from the user):
+
+```json
+{ "move": "g1f3", "san": "Nf3", "eval": 0.62, "mate": null,
+  "continuationArr": ["e5d4", "f3d4", "g8f6", "b1c3", "f8e7", "g2g3",
+    "b8c6", "f1g2", "e8g8", "e1g1", "c6d4", "d1d4", "c7c6", "f1e1", "c8e6"],
+  "debug": "info depth 12 seldepth 17 multipv 1 score cp 62 ... pv g1f3 e5d4 f3d4 g8f6 ..." }
+```
+
+`continuationArr` is the PV *after* `move` — the full PV is `[move,
+...continuationArr]` (confirmed against the same response's own `debug`
+field). `chess-api-engine-backend.ts` currently discards it entirely
+(`pvSan: [raw.san]`, line ~132).
+
+**Files:** `apps/api/src/services/engine/chess-api-response.ts`,
+`chess-api-engine-backend.ts`, their tests.
+
+- [ ] `ChessApiLine` gains `continuationArr?: string[]` (optional — some
+      lines, e.g. near-terminal positions, may have none).
+- [ ] `analyzeViaChessApi`: build `pvSan` via `pvUciToSan(fen, [raw.move,
+      ...(raw.continuationArr ?? [])])` (Phase 42) instead of `[raw.san]`.
+      Falls back to a single-move `pvSan` automatically when
+      `continuationArr` is absent/empty.
+- [ ] Request shape (`{fen, depth, variants}`) stays **unchanged** — this
+      phase only changes how a returned line is parsed, not what's
+      requested (see "Context for the next agent" above for why).
+- [ ] Add one low-frequency log (e.g. an "already logged once per process"
+      flag) noting when a response comes back with fewer lines than
+      `variants` requested — cheap, real production evidence for whether
+      `variants` does anything at all, without spamming logs.
+- [ ] Tests: the exact sample above produces a multi-move `pvSan`; a
+      response with no `continuationArr` still produces today's `pvSan:
+      [san]` shape (regression pin); the existing multi-variant test
+      extended so each mocked line carries its own `continuationArr` and
+      gets its own independent `pvSan`.
+- [ ] Commit: `feat: chess-api backend captures each line's real continuation instead of discarding it (Phase 43)`.
+
+## Phase 44 — Preserve `pvSan` through the batch cache round-trip (native mode)
+
+`caching-engine-backend.ts`'s `toLeanEval` (every `position_evaluations`
+cache **hit** inside batch `analyzeGame`) omits `pvSan` entirely. Its
+counterpart `toDetailedAnalysis` (the write-back on a batch cache **miss**)
+degrades to `pvSan: [line.moveSan]` before persisting — even though
+Phase 38 means the raw backend's result passed in may already carry a real
+multi-move PV. Net effect: only a genuine first-time native-mode compute in
+the *same job run* currently keeps a real multi-ply `pvSan`; anything served
+from cache has none. This is the minimal fix — see "Context for the next
+agent" above for the bigger caching-architecture idea the user deliberately
+deferred.
+
+**Files:** `apps/api/src/services/engine/caching-engine-backend.ts` + test.
+
+- [ ] `toLeanEval`: include `pvSan: line.pvSan` untouched (whatever length
+      it already is) instead of omitting the field.
+- [ ] `toDetailedAnalysis`: preserve an already-present multi-move `pvSan`
+      (`line.pvSan ?? [line.moveSan]`) instead of unconditionally forcing a
+      single-element array. No schema change (`EngineLineSchema.pvSan` is
+      already optional).
+- [ ] Tests: a cache-populate-then-hit round trip preserves a multi-move
+      `pvSan`; a line with no `pvSan` still round-trips as `undefined`, not
+      a crash or a fabricated array.
+- [ ] Commit: `fix: stop discarding a fresh multi-ply PV when it passes through the batch eval cache (Phase 44)`.
+
+## Phase 45 — Graduated schedule + scan primitive
+
+One canonical, tunable schedule, formula-derived from `ENGINE_MULTI_PV` (not
+a hand-sized literal array that could silently mismatch if that constant
+moves between 3 and 5):
+
+```ts
+// packages/chess-analysis/src/prevention-scan-schedule.ts
+import { ENGINE_MULTI_PV } from '@freechesscoach/shared';
+
+export const PV_SCAN_MAX_DEPTH = 11; // absolute ceiling regardless of ENGINE_MULTI_PV
+
+// rank 0 (engine's best line) gets the deepest walk, tapering 2 plies per
+// rank, floor of 1. multiPv=5 -> [7,5,3,1,1] (the user's proposed
+// schedule exactly). multiPv=3 -> [3,1,1].
+export function scanDepthForRank(rank: number, multiPv: number = ENGINE_MULTI_PV): number {
+  return Math.max(1, Math.min(PV_SCAN_MAX_DEPTH, 2 * (multiPv - rank) - 3));
+}
+```
+
+The scan primitive, built strictly on top of the existing `annotatePvTactics`
+(no changes to `pv-tactics.ts` itself — it already computes a general
+per-ply `motif` at every step, not just fork):
+
+```ts
+// packages/chess-analysis/src/available-motifs-scan.ts
+export interface PvMotifSighting { rank: number; ply: number; moveSan: string; motif: TacticMotifType; }
+export interface AvailableMotifScan { motifs: ReadonlySet<TacticMotifType>; sightings: PvMotifSighting[]; }
+
+export function scanAvailableMotifs(
+  fenBefore: string,
+  lines: readonly EngineLine[],
+  topN: number = ENGINE_MULTI_PV
+): AvailableMotifScan {
+  const sightings: PvMotifSighting[] = [];
+  lines.slice(0, topN).forEach((line, rank) => {
+    const pv = line.pvSan && line.pvSan.length > 0 ? line.pvSan : [line.moveSan];
+    const { steps } = annotatePvTactics(fenBefore, pv, scanDepthForRank(rank));
+    for (const step of steps) {
+      if (step.ply % 2 === 1 && step.motif) sightings.push({ rank, ply: step.ply, moveSan: step.moveSan, motif: step.motif });
+    }
+  });
+  return { motifs: new Set(sightings.map((s) => s.motif)), sightings };
+}
+```
+
+Only odd plies are collected (the side-to-move's own moves) — even plies
+are the engine's intervening hypothetical reply, walked through only to
+reach the next real position, never credited. Graceful degradation is
+automatic: a missing/single-element `pvSan` produces exactly one step and
+stops, identical to today's ply-1-only behavior. `scanTacticsForLines`
+(Found/opportunities' underlying primitive) is **not** touched by this
+phase — see Phase 48 for the one place it optionally gets an opt-in.
+
+**Files:** `packages/chess-analysis/src/{prevention-scan-schedule,available-motifs-scan}.ts` (new) + tests, `src/index.ts`.
+
+- [ ] Schedule shape correct for `multiPv=5` and `multiPv=3`; never returns
+      `<1` or `>PV_SCAN_MAX_DEPTH`.
+- [ ] `scanAvailableMotifs` parity with today's ply-1-only output when every
+      line's `pvSan` is single-element; a synthetic fork-at-ply-3 fixture is
+      picked up for a rank whose schedule depth ≥3 and missed for a
+      lower-ranked line capped at depth 1; an even-ply-only motif is never
+      included; empty `lines`/`pvSan` doesn't throw.
+- [ ] Commit: `feat: graduated per-line-rank ply schedule and scanAvailableMotifs primitive (Phase 45)`.
+
+## Phase 46 — Redesign `findDefusedThreat` → `findDefusedThreats` (sound multi-ply comparison)
+
+**Why the old ply-1 trick can't generalize:** it worked by re-classifying
+the *identical* `line.moveSan` at both `beforeFen` and `afterFen` — valid
+for one move, since a single SAN token can be meaningfully re-evaluated
+against a shifted board. It cannot generalize to ply 3+: the PV's ply-2
+move is the engine's own hypothetical reply to itself, not what actually
+happened, so there is no real board that is simultaneously "the PV's own
+continuation" and "the game's real continuation" to check a ply-3 move
+against.
+
+**New semantics — motif-type reachability sets, not move-identity replay:**
+compute `scanAvailableMotifs` once at `beforeFen` with its own
+genuinely-associated candidate lines, once at `afterFen` with an
+independent, freshly-anchored candidate-line set. **A motif type present in
+the before-set but absent from the after-set is "prevented."** Sound in the
+same sense the ply-1 comparison was: never asserts a specific multi-move
+combination "still works," only that a motif *type* is reachable or not,
+independently recomputed at two real positions — matching
+`TacticMotifCounts`' existing per-type-only granularity. Known, accepted
+trade-offs to document in the code comment: (1) type-level comparison means
+an unrelated new same-type motif appearing elsewhere reads as "not
+prevented" — acceptable for a coarse dashboard tally; (2) even-ply moves are
+the engine's guess, so a credited ply-3+ sighting is inherently less certain
+than ply-1 — which is exactly why the schedule concentrates depth on the
+top-ranked line, so cost control and confidence point the same direction.
+
+```ts
+export function findDefusedThreats(
+  beforeFen: string,
+  afterFen: string,
+  opponent: 'white' | 'black',
+  candidateLinesBefore: readonly EngineLine[],
+  candidateLinesAfter: readonly EngineLine[]
+): TacticMotifType[] {
+  const before = scanAvailableMotifs(beforeFen, candidateLinesBefore);
+  const after = scanAvailableMotifs(afterFen, candidateLinesAfter);
+  return [...before.motifs].filter((motif) => !after.motifs.has(motif));
+}
+```
+
+**Files:** `packages/chess-analysis/src/tactic-prevention-check.ts`, its test.
+
+- [ ] Rewrite fixtures for the new two-line-set signature; add a genuine
+      multi-ply case (rook sac ply 1 → forced check ply-3-equivalent →
+      fork at ply 3) proving a defused *deeper* tactic is now detected —
+      impossible before this phase; keep a ply-1-parity case; a case where
+      the after-set is a superset returns `[]`; a move defusing two
+      distinct motif types returns both.
+- [ ] Commit: `feat: findDefusedThreats — sound motif-type-set comparison, multi-ply via the graduated schedule (Phase 46)`.
+
+## Phase 47 — Rewire `apps/api`'s prevention service
+
+**Free path — anchor "before" at `prior.fenBefore` (not flipped), not
+`prior.fenAfter`-flipped as today.** Walking a PV against the exact FEN the
+engine actually computed it for is strictly more sound than replaying it
+against a one-ply-shifted position. Needs **no null-move flip on the free
+path at all** — one fewer fragile operation than today. **Both branches —
+anchor "after" at `move.fenAfter` using `evals[move.ply].lines`** (verified
+this session: `evals[move.ply]` is always in-bounds and is exactly the eval
+at `move.fenAfter`, opponent genuinely to move, no flip needed — free in
+both branches). The gated branch's cost stays exactly one extra engine call
+(only for its "before" probe).
+
+```ts
+function findFreelyDefusedThreats(prior: ClassifiedMoveDto, move: ClassifiedMoveDto, opponent: Colour, evals: EngineEval[]): TacticMotifType[] {
+  const priorEval = evals[prior.ply - 1];
+  const afterEval = evals[move.ply];
+  if (!priorEval || !afterEval || !prior.fenBefore || !move.fenAfter) return [];
+  return findDefusedThreats(prior.fenBefore, move.fenAfter, opponent, priorEval.lines, afterEval.lines);
+}
+
+async function findGatedDefusedThreats(engine: PositionAnalyzer, move: ClassifiedMoveDto, opponent: Colour, evals: EngineEval[]): Promise<TacticMotifType[]> {
+  if (!move.isTacticalPosition) return [];
+  const flipped = move.fenBefore && flipActiveColorFen(move.fenBefore);
+  const afterEval = evals[move.ply];
+  if (!flipped || !afterEval || !move.fenAfter) return [];
+  const threatAnalysis = await engine.analyzePosition(flipped);
+  return findDefusedThreats(flipped, move.fenAfter, opponent, threatAnalysis.lines as EngineLine[], afterEval.lines);
+}
+```
+
+`computeTacticMotifPrevented`: increment counters for **every** motif in
+the returned array (not just the first), preserving the existing cost gate
+(`freely.length > 0 ? freely : await findGatedDefusedThreats(...)`).
+
+**Files:** `apps/api/src/services/tactic-prevention.ts`, its test.
+
+- [ ] Update fixtures to set `prior.fenBefore` explicitly (now
+      load-bearing) and add `evals[move.ply]` fixtures for the free
+      after-eval.
+- [ ] Regression test: the gated branch still makes **exactly one**
+      `analyzePosition` call, never more.
+- [ ] A case where one move defuses two distinct motif types increments
+      both counters; ply-1-only fixtures (today's shape) still produce the
+      same counts as before this phase.
+- [ ] Commit: `feat: wire graduated multi-ply prevention detection into the batch analysis job (Phase 47)`.
+
+## Phase 48 — Live-coach opt-in graduated depth
+
+`scan_tactics`/`position-tactics.ts`'s "available"/"allowed" checks use the
+same ply-1-only `scanTacticsForLines` Found/opportunities do. Add an opt-in
+mode, defaulting to today's exact behavior for every existing caller.
+
+**Files:** `apps/api/src/services/position-tactics.ts`, its test,
+`investigator-tools.ts` (switch the `scan_tactics` handler's internal call
+once verified — no new tool parameter, the model doesn't need to choose
+depth itself).
+
+- [ ] `scanPositionTactics` gains `options.mode?: 'shallow' | 'graduated'`,
+      default `'shallow'` (today's `scanTacticsForLines` call, byte-for-byte
+      unchanged). `'graduated'` calls `scanAvailableMotifs` for both
+      `available` and `allowed`, adapting `sightings` into the existing
+      `TacticSighting[]` shape.
+- [ ] `game-tactic-motifs.ts` (Played/Found) stays on `scanTacticsForLines`
+      regardless of this phase.
+- [ ] Tests: `'shallow'` mode is byte-identical to pre-Phase-48 behavior
+      (regression pin); `'graduated'` mode surfaces a ply-3+ sighting
+      `'shallow'` misses on the same fixture; default (no `options.mode`)
+      behaves as `'shallow'`.
+- [ ] Commit: `feat: scanPositionTactics graduated-depth opt-in; wire scan_tactics onto it (Phase 48)`.
+
+## Phase 49 — Lichess eval index v3 (per-line multi-ply continuations)
+
+Justified by the real 20,000-position sample above (46% multi-pv, 16.6%
+full 5, ~10-ply depth whenever present) — comfortably enough to harvest the
+schedule's 7-ply top-rank target. Sizing, from the real v2 format constants:
+v2 slot = 9B/line, value = `2+5×9=47B`, record = `16+47=63B` (matches the
+shipped file). v3 slot per rank = `4B header + scanDepthForRank(rank)×5B moveUci`:
+
+| rank | schedule depth | v2 slot | v3 slot |
+|---|---|---|---|
+| 0 | 7 | 9B | 4+35=39B |
+| 1 | 5 | 9B | 4+25=29B |
+| 2 | 3 | 9B | 4+15=19B |
+| 3 | 1 | 9B | 4+5=9B |
+| 4 | 1 | 9B | 4+5=9B |
+
+v3 value = `2+(39+29+19+9+9)=107B`, record = `16+107=123B` — ≈1.95x v2. At
+the ~401M full-dataset target: v2 ≈25GB → **v3 ≈49GB**. User confirmed this
+size is acceptable ("about the dataset size I am ok with dataset size").
+
+**Files:** `packages/chess-analysis/src/lichess-eval-index-format.ts`,
+`apps/api/scripts/build-lichess-eval-index.mjs`, `apps/api/src/services/
+engine/{lichess-eval-index,lichess-eval-engine-backend}.ts`, `deploy/helm/
+freechesscoach/values.yaml`, `apps/api/data/README.md` (all +tests).
+
+- [ ] Bump magic header to `LCEVAL03`; per-rank slot width driven by
+      `scanDepthForRank(rank)` (still fixed-stride per file — binary search
+      unaffected, just wider constants). Rewrite `packEntry`/`unpackRecord`.
+      Version-detect so a stale v2 file degrades gracefully (mirroring the
+      v1→v2 magic-header pattern) rather than crash-looping if code ships
+      before the rebuilt file does.
+- [ ] `build-lichess-eval-index.mjs`'s `parseLichessEvalLine`: harvest up to
+      `scanDepthForRank(rank)` UCI tokens from `pv.line` per line instead of
+      always just the first; a short `pv.line` just yields fewer plies
+      (rare per the sample — most present pvs are the full 10 plies).
+- [ ] `lichess-eval-index.ts` reader: unpack the variable-width per-rank
+      slots.
+- [ ] `lichess-eval-engine-backend.ts`'s `toPositionAnalysis`: convert each
+      harvested UCI continuation to a real multi-element `pvSan` via
+      **Phase 42's `pvUciToSan`** (shared, not a bespoke conversion here).
+- [ ] `values.yaml`: `lichessEvalIndex.size` `30Gi` → `~64Gi`, size comment
+      updated with this phase's math. `apps/api/data/README.md`: document
+      the v3 bump, expected size, and rollout order (code-first is safe —
+      the v3 reader soft-skips a still-present v2 file).
+- [ ] **Explicitly out of scope, same as v1→v2:** actually running
+      `fetch-and-build-lichess-eval-index.sh` + `deploy-lichess-eval-index.sh`
+      against the live cluster remains a manual, by-hand operation for later.
+- [ ] Tests: per-rank harvest depth + short-`pv.line` clamping;
+      variable-slot pack/unpack round trip for 1/3/5/7-ply slots; a
+      v2-shaped buffer is soft-skipped, not thrown; a v3 hit yields a
+      genuine multi-move `pvSan`, a short-PV hit still behaves as a
+      single-move line.
+- [ ] Commit: `feat: Lichess eval index v3 — per-line multi-ply continuations, graduated depth-matched (Phase 49)`.
+
+## Verification (end of Phase 49, planned)
+
+- [ ] `npx tsc -b && npx eslint . && npx vitest run` across all workspaces,
+      green — including the full pre-existing Phase 32-41 suite (regression
+      pin for Played/Found, which Phases 42-49 must not change).
+- [ ] Phase 47's fixture set specifically re-proves: a ply-1-only defused
+      tactic still counts identically; a genuinely deeper (ply 3+) defused
+      tactic — impossible before this work — now counts; the gated branch
+      still spends exactly one extra engine call per move, never more.
+- [ ] Phase 43: the real `continuationArr` sample produces a multi-move
+      `pvSan`, verified end-to-end into `scanAvailableMotifs` picking up a
+      deeper sighting.
+- [ ] Phase 49: a fixture-scale end-to-end build round-trips through
+      `buildLichessEvalIndex` → `LichessEvalIndex.open` → `lookup`,
+      returning every harvested ply per line; a v2-shaped fixture file is
+      soft-skipped, not thrown.
+- [ ] Manual, via `npm run dev`: analyze a game containing a real
+      rook-sac-then-fork-style deferred tactic (3+ plies to land); confirm
+      the Prevented tab now credits it; open a live-coach session on a
+      position with the same shape and confirm `scan_tactics` flags it too.
+- [ ] Separately, when ready to refresh production data: run
+      `fetch-and-build-lichess-eval-index.sh`, confirm the built file starts
+      with the `LCEVAL03` magic header and is roughly the ~49GB estimate,
+      resize the PVC, then `deploy-lichess-eval-index.sh`.
