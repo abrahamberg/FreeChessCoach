@@ -23,9 +23,11 @@ export interface CachingEngineBackendOptions {
  * The two operations use different cache shapes on purpose (design §6):
  * `analyzePosition` caches the rich `PositionAnalysis` (full PVs, features)
  * as-is, while `analyzeGame` works with lean `EngineEval[]` and, on a miss,
- * writes a *degraded* `PositionAnalysis` back (single-move "PV" per line —
- * see `toDetailedAnalysis`). A later native `analyzePosition` call for that
- * same fen heals the row with a real multi-move PV.
+ * writes a `PositionAnalysis` back whose per-line PV is whatever the raw
+ * backend's `EngineEval` already carried — a real multi-move PV when the raw
+ * backend computed one (Phase 44), degraded to single-move only when it
+ * didn't (see `toDetailedAnalysis`). A later native `analyzePosition` call
+ * for that same fen heals the row with a real multi-move PV either way.
  */
 export class CachingEngineBackend implements EngineBackend {
   constructor(
@@ -142,23 +144,25 @@ export function toLeanEval(analysis: PositionAnalysis): EngineEval {
       moveUci: line.moveUci,
       moveSan: line.moveSan,
       cp: line.cp,
-      mateIn: line.mateIn
+      mateIn: line.mateIn,
+      pvSan: line.pvSan
     }))
   };
 }
 
 /** Lean → rich: rebuilds a full `PositionAnalysis` for a cache write from a
- * batch-computed `EngineEval`. The PV is intentionally degraded to a
- * single-move array — the batch path never computes full principal
- * variations (mirrors `services/engine`'s own `analyzeGame`) — healed later
- * by a native `analyzePosition` call for this fen. `bestMove`/`eval` mirror
- * `services/engine/src/analyze.ts`'s `analyzePositionDetailed`: derived from
- * the first (best) line, SAN not UCI. */
+ * batch-computed `EngineEval`. Preserves an already-present multi-move
+ * `pvSan` (e.g. chess-api.com's captured continuation, Phase 43) untouched;
+ * only degrades to a single-move array when the raw backend didn't supply
+ * one — healed later by a native `analyzePosition` call for this fen either
+ * way. `bestMove`/`eval` mirror `services/engine/src/analyze.ts`'s
+ * `analyzePositionDetailed`: derived from the first (best) line, SAN not
+ * UCI. */
 export function toDetailedAnalysis(fen: string, evalResult: EngineEval): PositionAnalysis {
   const lines: PositionAnalysisLine[] = evalResult.lines.map((line) => ({
     moveUci: line.moveUci,
     moveSan: line.moveSan,
-    pvSan: [line.moveSan],
+    pvSan: line.pvSan ?? [line.moveSan],
     cp: line.cp,
     mateIn: line.mateIn
   }));

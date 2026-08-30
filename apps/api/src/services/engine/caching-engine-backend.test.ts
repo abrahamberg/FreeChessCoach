@@ -6,7 +6,7 @@ import * as positionEvaluationsRepo from '../../db/repositories/position-evaluat
 import type { Database } from '../../db/schema.js';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import type { EngineBackend } from './engine-backend.js';
-import { CachingEngineBackend } from './caching-engine-backend.js';
+import { CachingEngineBackend, toDetailedAnalysis, toLeanEval } from './caching-engine-backend.js';
 
 const FEN_A = '8/8/8/8/8/8/4K3/4k3 w - - 0 1';
 const FEN_B = '8/8/8/8/8/8/3K4/3k4 w - - 0 1';
@@ -30,6 +30,15 @@ function makeEngineEval(fen: string, ply: number, cp: number): EngineEval {
     fen,
     depth: 18,
     lines: [{ moveUci: 'e2e3', moveSan: 'Ke2', cp, mateIn: null }]
+  };
+}
+
+function makeEngineEvalWithPv(fen: string, ply: number, cp: number, pvSan: string[]): EngineEval {
+  return {
+    ply,
+    fen,
+    depth: 18,
+    lines: [{ moveUci: 'e2e3', moveSan: 'Ke2', cp, mateIn: null, pvSan }]
   };
 }
 
@@ -257,6 +266,50 @@ describe('CachingEngineBackend', () => {
     expect(first.map((entry) => entry.lines[0]!.cp)).toEqual([11, 22]);
     expect(second.map((entry) => entry.lines[0]!.cp)).toEqual([11, 22]);
     expect(second.map((entry) => entry.ply)).toEqual([0, 1]);
+  });
+
+  test('analyzeGame write to cache then hit: a fresh multi-move pvSan survives the cache round trip (Phase 44)', async () => {
+    const raw = fakeRawBackend();
+    raw.analyzeGame.mockResolvedValue([makeEngineEvalWithPv(FEN_A, 0, 15, ['Ke2', 'Ke7', 'Kd2'])]);
+
+    const backend = new CachingEngineBackend(db, raw, { isExternalSource: false });
+    const first = await backend.analyzeGame([FEN_A]);
+    const second = await backend.analyzeGame([FEN_A]);
+
+    expect(raw.analyzeGame).toHaveBeenCalledTimes(1);
+    expect(first[0]!.lines[0]!.pvSan).toEqual(['Ke2', 'Ke7', 'Kd2']);
+    expect(second[0]!.lines[0]!.pvSan).toEqual(['Ke2', 'Ke7', 'Kd2']);
+
+    const cached = await positionEvaluationsRepo.findByFen(db, FEN_A, { allowExternal: false });
+    expect(cached?.lines[0]!.pvSan).toEqual(['Ke2', 'Ke7', 'Kd2']);
+  });
+
+  test('toLeanEval: a legacy analysis line lacking pvSan round-trips as undefined, not a fabricated array (Phase 44)', () => {
+    const analysis = makePositionAnalysis(FEN_A, 15);
+    // Simulate a pre-pvSan-field DB row cast to PositionAnalysis at read time.
+    const legacyLine = { ...analysis.lines[0]! } as { pvSan?: string[] };
+    delete legacyLine.pvSan;
+    const legacyAnalysis = { ...analysis, lines: [legacyLine] } as PositionAnalysis;
+
+    const lean = toLeanEval(legacyAnalysis);
+
+    expect(lean.lines[0]!.pvSan).toBeUndefined();
+  });
+
+  test('toDetailedAnalysis: preserves an already-present multi-move pvSan untouched (Phase 44)', () => {
+    const evalResult = makeEngineEvalWithPv(FEN_A, 0, 15, ['Ke2', 'Ke7', 'Kd2']);
+
+    const analysis = toDetailedAnalysis(FEN_A, evalResult);
+
+    expect(analysis.lines[0]!.pvSan).toEqual(['Ke2', 'Ke7', 'Kd2']);
+  });
+
+  test('toDetailedAnalysis: degrades to a single-move pvSan when the line has none (Phase 44)', () => {
+    const evalResult = makeEngineEval(FEN_A, 0, 15);
+
+    const analysis = toDetailedAnalysis(FEN_A, evalResult);
+
+    expect(analysis.lines[0]!.pvSan).toEqual(['Ke2']);
   });
 
   test('analyzeGame empty input: returns [] without touching the backend', async () => {
