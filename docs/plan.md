@@ -1445,6 +1445,33 @@ hook (TanStack Query, mirrors `DashboardPage`'s `apiGet` pattern); route in
       a regression test (`stats-dashboard.test.ts`) using a `gameReport`
       built with those three fields deleted. Commit:
       `fix: skip stats dashboard entries with a pre-Phase-24 gameReport shape`.
-- [ ] Manual browser pass (`/games`, `/stats`, stat-bank bulk import →
-      "Get coach analysis" → `/stats` populating, range/speed filters)
-      against the live dev stack — in progress.
+- [x] Manual pass against the live `npm run dev` stack (dev-stub auth, the
+      user's own already-seeded local data — Chrome browser automation
+      wasn't available in this environment, so this was driven via `curl`
+      against the running API rather than clicked through in a browser;
+      noted explicitly per the "say so if you can't test the UI" rule
+      rather than claimed as a full visual check):
+      1. `POST /api/games` with `deferAnalysis: true` (a rapid, `600+0`,
+         PGN) → `analysisId: null`; `GET /api/games/:id` confirmed
+         `analysisStatus: null` — the exact state `GameRow`'s new "Not
+         analyzed"/"Get coach analysis" branch renders.
+      2. `POST /api/games/:id/analyze` → real analysis ran end-to-end
+         against the live engine + OpenAI-backed planning step, reaching
+         `ready`.
+      3. `GET /api/users/me/stats` picked it up: opening correctly
+         identified as "Italian Game: Classical Variation, Giuoco
+         Pianissimo" with 100% win rate and 98.5% accuracy for that one
+         game — confirms the full aggregation pipeline (repository → service
+         → `buildStatsDashboard`) against a real, freshly-computed
+         `GameReport`, not just fixtures.
+      4. Imported a second, bullet-timed (`60+0`) game the normal
+         (non-deferred) way: `speed=rapid` stayed at `gamesAnalyzed: 1`
+         (excluded the bullet game) while `speed=all` showed `2` — confirms
+         the speed filter. `range=last7` included both (both `playedAt`
+         within 7 days) and an invalid `range=last90` correctly 400ed.
+      5. Both test games were deleted afterward via `DELETE /api/games/:id`,
+         confirmed `gamesAnalyzed` back to `0` — the user's pre-existing
+         local data was left untouched throughout.
+      This pass is what surfaced the pre-Phase-24 `gameReport` shape bug
+      fixed just above — the very first real request against the user's
+      existing data 500ed before that fix.
