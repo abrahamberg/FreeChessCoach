@@ -50,8 +50,10 @@ export function buildGameReportForAnalysis(input: BuildGameReportForAnalysisInpu
 
 /** An unfinished or unrecognised result (`'*'`, `null`) has no winner to
  * report — 'draw' is the neutral entry in §7.4's conversion table, so it
- * neither rewards nor penalizes either colour's endgame conversion. */
-function resultForColour(pgnResult: string | null, colour: 'white' | 'black'): GameResultForColour {
+ * neither rewards nor penalizes either colour's endgame conversion. Exported
+ * for reuse by the stats dashboard service (Task 29.2), which needs the
+ * same PGN-result-to-outcome mapping for `StatsEntry.result`. */
+export function resultForColour(pgnResult: string | null, colour: 'white' | 'black'): GameResultForColour {
   if (pgnResult === '1-0') return colour === 'white' ? 'win' : 'loss';
   if (pgnResult === '0-1') return colour === 'black' ? 'win' : 'loss';
   return 'draw';

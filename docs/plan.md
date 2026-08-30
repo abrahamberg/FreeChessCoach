@@ -1272,12 +1272,18 @@ isolation before Phase 24 wires them into the batch pipeline.
 
 **Files:** `apps/api/src/services/stats-dashboard.ts`.
 
-- [ ] `getStatsDashboard(db, userId, range, speedFilter)` — resolves
-      `range` → `since`, queries, maps rows through `classifyTimeControl`,
-      filters to `'rapid'` when requested, builds `StatsEntry[]`, calls
-      `buildStatsDashboard`.
-- [ ] Test: mocked repository rows; speed filter excludes a non-rapid row.
-- [ ] Commit: `feat: stats dashboard service`.
+- [x] `getStatsDashboard(db, userId, range, speedFilter)` — resolves
+      `range` → `since`, queries `listReadyReportsForUser`, maps each row
+      through `resultForColour` (exported from `build-game-report.ts`,
+      reused rather than re-derived) and `classifyTimeControl`, filters to
+      the requested speed, builds `StatsEntry[]`, calls `buildStatsDashboard`.
+- [x] Test: real Postgres (matches this codebase's existing service-test
+      convention — `analysis.test.ts` uses a real test DB rather than
+      mocking the repository layer, so this follows suit instead of
+      introducing a new mocking pattern): the `'rapid'` speed filter
+      excludes a bullet-timed game; a user with no analyzed games gets an
+      all-null empty dashboard.
+- [x] Commit: `feat: stats dashboard service`.
 
 ### Task 29.3: Route
 
