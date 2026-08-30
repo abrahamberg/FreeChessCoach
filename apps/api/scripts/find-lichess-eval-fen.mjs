@@ -36,7 +36,7 @@ async function run() {
     console.log(`FOUND: depth ${result.depth}, ${result.lines.length} line(s):`);
     for (const line of result.lines) {
       const evaluation = line.mate !== null ? `mate in ${line.mate}` : `${line.cp} cp`;
-      console.log(`  ${line.moveUci}: ${evaluation}`);
+      console.log(`  ${line.pvUci.join(' ')}: ${evaluation}`);
     }
   } finally {
     await index.close();

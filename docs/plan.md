@@ -434,48 +434,48 @@ size is acceptable ("about the dataset size I am ok with dataset size").
 engine/{lichess-eval-index,lichess-eval-engine-backend}.ts`, `deploy/helm/
 freechesscoach/values.yaml`, `apps/api/data/README.md` (all +tests).
 
-- [ ] Bump magic header to `LCEVAL03`; per-rank slot width driven by
+- [x] Bump magic header to `LCEVAL03`; per-rank slot width driven by
       `scanDepthForRank(rank)` (still fixed-stride per file — binary search
       unaffected, just wider constants). Rewrite `packEntry`/`unpackRecord`.
       Version-detect so a stale v2 file degrades gracefully (mirroring the
       v1→v2 magic-header pattern) rather than crash-looping if code ships
       before the rebuilt file does.
-- [ ] `build-lichess-eval-index.mjs`'s `parseLichessEvalLine`: harvest up to
+- [x] `build-lichess-eval-index.mjs`'s `parseLichessEvalLine`: harvest up to
       `scanDepthForRank(rank)` UCI tokens from `pv.line` per line instead of
       always just the first; a short `pv.line` just yields fewer plies
       (rare per the sample — most present pvs are the full 10 plies).
-- [ ] `lichess-eval-index.ts` reader: unpack the variable-width per-rank
+- [x] `lichess-eval-index.ts` reader: unpack the variable-width per-rank
       slots.
-- [ ] `lichess-eval-engine-backend.ts`'s `toPositionAnalysis`: convert each
+- [x] `lichess-eval-engine-backend.ts`'s `toPositionAnalysis`: convert each
       harvested UCI continuation to a real multi-element `pvSan` via
       **Phase 42's `pvUciToSan`** (shared, not a bespoke conversion here).
-- [ ] `values.yaml`: `lichessEvalIndex.size` `30Gi` → `~64Gi`, size comment
+- [x] `values.yaml`: `lichessEvalIndex.size` `30Gi` → `~64Gi`, size comment
       updated with this phase's math. `apps/api/data/README.md`: document
       the v3 bump, expected size, and rollout order (code-first is safe —
       the v3 reader soft-skips a still-present v2 file).
-- [ ] **Explicitly out of scope, same as v1→v2:** actually running
+- [x] **Explicitly out of scope, same as v1→v2:** actually running
       `fetch-and-build-lichess-eval-index.sh` + `deploy-lichess-eval-index.sh`
       against the live cluster remains a manual, by-hand operation for later.
-- [ ] Tests: per-rank harvest depth + short-`pv.line` clamping;
+- [x] Tests: per-rank harvest depth + short-`pv.line` clamping;
       variable-slot pack/unpack round trip for 1/3/5/7-ply slots; a
       v2-shaped buffer is soft-skipped, not thrown; a v3 hit yields a
       genuine multi-move `pvSan`, a short-PV hit still behaves as a
       single-move line.
-- [ ] Commit: `feat: Lichess eval index v3 — per-line multi-ply continuations, graduated depth-matched (Phase 49)`.
+- [x] Commit: `feat: Lichess eval index v3 — per-line multi-ply continuations, graduated depth-matched (Phase 49)`.
 
 ## Verification (end of Phase 49, planned)
 
-- [ ] `npx tsc -b && npx eslint . && npx vitest run` across all workspaces,
+- [x] `npx tsc -b && npx eslint . && npx vitest run` across all workspaces,
       green — including the full pre-existing Phase 32-41 suite (regression
       pin for Played/Found, which Phases 42-49 must not change).
-- [ ] Phase 47's fixture set specifically re-proves: a ply-1-only defused
+- [x] Phase 47's fixture set specifically re-proves: a ply-1-only defused
       tactic still counts identically; a genuinely deeper (ply 3+) defused
       tactic — impossible before this work — now counts; the gated branch
       still spends exactly one extra engine call per move, never more.
-- [ ] Phase 43: the real `continuationArr` sample produces a multi-move
+- [x] Phase 43: the real `continuationArr` sample produces a multi-move
       `pvSan`, verified end-to-end into `scanAvailableMotifs` picking up a
       deeper sighting.
-- [ ] Phase 49: a fixture-scale end-to-end build round-trips through
+- [x] Phase 49: a fixture-scale end-to-end build round-trips through
       `buildLichessEvalIndex` → `LichessEvalIndex.open` → `lookup`,
       returning every harvested ply per line; a v2-shaped fixture file is
       soft-skipped, not thrown.

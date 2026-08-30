@@ -189,10 +189,12 @@ lichessEvalIndex:
   existingClaim: ""
   storageClassName: shared-nas
   accessMode: ReadWriteOnce
-  # v2 index format (up to 5 lines/position, 63-byte records vs v1's 26)
-  # grows the file ~2.4x, roughly 10.4GB -> ~25GB — sized here with headroom
-  # for dataset growth between rebuilds. See apps/api/data/README.md.
-  size: 30Gi
+  # v3 index format (Phase 49): per-line-rank multi-ply continuations sized
+  # to the graduated scan schedule (scanDepthForRank) — 123-byte records vs
+  # v2's 63, roughly 1.95x v2's size. v2 was ~25GB at the ~401M-position
+  # full-dataset target, so v3 is ~49GB — sized here with headroom for
+  # dataset growth between rebuilds. See apps/api/data/README.md.
+  size: 64Gi
   # Mounted into api and worker at this path; becomes LICHESS_EVAL_INDEX_PATH.
   mountPath: /var/run/lichess-eval-index/lichess-eval-index.bin
   # LICHESS_EVAL_MIN_DEPTH — a hit shallower than this is treated as a miss

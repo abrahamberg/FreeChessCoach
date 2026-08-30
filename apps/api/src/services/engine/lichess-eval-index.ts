@@ -17,7 +17,7 @@ export interface LichessEvalLookupResult {
 }
 
 /** Thrown by `LichessEvalIndex.open` when the file doesn't start with the
- * expected v2 magic header — most likely a stale v1-format file still on
+ * expected v3 magic header — most likely a stale v1/v2-format file still on
  * disk after a code deploy. Distinguished from a generic corrupt-file error
  * so `bootstrap.ts` can treat it the same as a missing file (soft-skip the
  * Lichess tier with a warning) rather than crash-looping the process. */
@@ -59,7 +59,7 @@ export class LichessEvalIndex implements LichessEvalReader {
       }
       if (!hasValidMagic(header)) {
         throw new LichessEvalIndexFormatError(
-          `Lichess eval index "${filePath}" does not start with the expected v2 magic header — likely a stale v1-format file (or an unrelated/corrupt file) still on disk.`
+          `Lichess eval index "${filePath}" does not start with the expected v3 magic header — likely a stale v1/v2-format file (or an unrelated/corrupt file) still on disk.`
         );
       }
 

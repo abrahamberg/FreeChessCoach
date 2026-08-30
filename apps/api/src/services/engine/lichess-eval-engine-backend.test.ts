@@ -31,7 +31,7 @@ function fakeFallbackResult(fen: string, cp: number): PositionAnalysis {
 describe('LichessEvalEngineBackend', () => {
   describe('analyzePosition', () => {
     test('returns a single-line hit directly, without calling the fallback', async () => {
-      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, moveUci: 'e2e4' }] } });
+      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, pvUci: ['e2e4'] }] } });
       const fallback = fakeFallback();
       const backend = new LichessEvalEngineBackend(reader, fallback);
 
@@ -49,9 +49,9 @@ describe('LichessEvalEngineBackend', () => {
         [START_FEN]: {
           depth: 40,
           lines: [
-            { cp: 35, mate: null, moveUci: 'e2e4' },
-            { cp: 30, mate: null, moveUci: 'd2d4' },
-            { cp: 20, mate: null, moveUci: 'g1f3' }
+            { cp: 35, mate: null, pvUci: ['e2e4'] },
+            { cp: 30, mate: null, pvUci: ['d2d4'] },
+            { cp: 20, mate: null, pvUci: ['g1f3'] }
           ]
         }
       });
@@ -68,8 +68,26 @@ describe('LichessEvalEngineBackend', () => {
       ]);
     });
 
+    test('converts a hit\'s full harvested pvUci continuation into a real multi-move pvSan (Phase 49)', async () => {
+      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, pvUci: ['e2e4', 'e7e5', 'g1f3'] }] } });
+      const backend = new LichessEvalEngineBackend(reader, fakeFallback());
+
+      const result = await backend.analyzePosition(START_FEN);
+
+      expect(result.lines).toEqual([{ moveUci: 'e2e4', moveSan: 'e4', pvSan: ['e4', 'e5', 'Nf3'], cp: 35, mateIn: null }]);
+    });
+
+    test('a short/single-move pvUci still degrades gracefully to a single-move pvSan', async () => {
+      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, pvUci: ['e2e4'] }] } });
+      const backend = new LichessEvalEngineBackend(reader, fakeFallback());
+
+      const result = await backend.analyzePosition(START_FEN);
+
+      expect(result.lines[0]?.pvSan).toEqual(['e4']);
+    });
+
     test('maps a mate hit correctly', async () => {
-      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: null, mate: -3, moveUci: 'e2e4' }] } });
+      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: null, mate: -3, pvUci: ['e2e4'] }] } });
       const backend = new LichessEvalEngineBackend(reader, fakeFallback());
 
       const result = await backend.analyzePosition(START_FEN);
@@ -91,7 +109,7 @@ describe('LichessEvalEngineBackend', () => {
     });
 
     test('treats a hit shallower than minDepth as a miss', async () => {
-      const reader = fakeReader({ [START_FEN]: { depth: 10, lines: [{ cp: 35, mate: null, moveUci: 'e2e4' }] } });
+      const reader = fakeReader({ [START_FEN]: { depth: 10, lines: [{ cp: 35, mate: null, pvUci: ['e2e4'] }] } });
       const fallback = fakeFallback();
       const fallbackResult = fakeFallbackResult(START_FEN, 12);
       vi.mocked(fallback.analyzePosition).mockResolvedValue(fallbackResult);
@@ -103,7 +121,7 @@ describe('LichessEvalEngineBackend', () => {
     });
 
     test('treats a hit shallower than a caller-requested depth as a miss', async () => {
-      const reader = fakeReader({ [START_FEN]: { depth: 20, lines: [{ cp: 35, mate: null, moveUci: 'e2e4' }] } });
+      const reader = fakeReader({ [START_FEN]: { depth: 20, lines: [{ cp: 35, mate: null, pvUci: ['e2e4'] }] } });
       const fallback = fakeFallback();
       const fallbackResult = fakeFallbackResult(START_FEN, 12);
       vi.mocked(fallback.analyzePosition).mockResolvedValue(fallbackResult);
@@ -116,7 +134,7 @@ describe('LichessEvalEngineBackend', () => {
     });
 
     test('accepts a hit whose depth meets a caller-requested depth', async () => {
-      const reader = fakeReader({ [START_FEN]: { depth: 24, lines: [{ cp: 35, mate: null, moveUci: 'e2e4' }] } });
+      const reader = fakeReader({ [START_FEN]: { depth: 24, lines: [{ cp: 35, mate: null, pvUci: ['e2e4'] }] } });
       const fallback = fakeFallback();
       const backend = new LichessEvalEngineBackend(reader, fallback);
 
@@ -126,7 +144,7 @@ describe('LichessEvalEngineBackend', () => {
     });
 
     test('reports a hit via onLookup without calling it for a miss', async () => {
-      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, moveUci: 'e2e4' }] } });
+      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, pvUci: ['e2e4'] }] } });
       const onLookup = vi.fn();
       const backend = new LichessEvalEngineBackend(reader, fakeFallback(), { onLookup });
 
@@ -165,7 +183,7 @@ describe('LichessEvalEngineBackend', () => {
 
   describe('analyzeGame', () => {
     test('serves hits from the index and only sends misses to the fallback, preserving ply order', async () => {
-      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, moveUci: 'e2e4' }] } });
+      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, pvUci: ['e2e4'] }] } });
       const fallback = fakeFallback();
       const fallbackEval: EngineEval = {
         ply: 0,
@@ -180,15 +198,15 @@ describe('LichessEvalEngineBackend', () => {
 
       expect(fallback.analyzeGame).toHaveBeenCalledWith([SECOND_FEN], undefined);
       expect(result).toEqual([
-        { ply: 0, fen: START_FEN, depth: 40, lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 35, mateIn: null }] },
+        { ply: 0, fen: START_FEN, depth: 40, lines: [{ moveUci: 'e2e4', moveSan: 'e4', pvSan: ['e4'], cp: 35, mateIn: null }] },
         { ply: 1, fen: SECOND_FEN, depth: 16, lines: [{ moveUci: 'e7e5', moveSan: 'e5', cp: -10, mateIn: null }] }
       ]);
     });
 
     test('never calls the fallback when every position is a hit', async () => {
       const reader = fakeReader({
-        [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, moveUci: 'e2e4' }] },
-        [SECOND_FEN]: { depth: 38, lines: [{ cp: -20, mate: null, moveUci: 'c7c5' }] }
+        [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, pvUci: ['e2e4'] }] },
+        [SECOND_FEN]: { depth: 38, lines: [{ cp: -20, mate: null, pvUci: ['c7c5'] }] }
       });
       const fallback = fakeFallback();
       const backend = new LichessEvalEngineBackend(reader, fallback);
@@ -213,7 +231,7 @@ describe('LichessEvalEngineBackend', () => {
     });
 
     test('reports the hit/miss split for a mixed batch via onLookup, once fallback resolves', async () => {
-      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, moveUci: 'e2e4' }] } });
+      const reader = fakeReader({ [START_FEN]: { depth: 40, lines: [{ cp: 35, mate: null, pvUci: ['e2e4'] }] } });
       const fallback = fakeFallback();
       vi.mocked(fallback.analyzeGame).mockResolvedValue([{ ply: 0, fen: SECOND_FEN, depth: 16, lines: [] }]);
       const onLookup = vi.fn();

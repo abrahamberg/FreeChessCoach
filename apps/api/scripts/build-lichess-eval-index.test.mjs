@@ -10,6 +10,8 @@ import {
   LICHESS_EVAL_RECORD_SIZE,
   unpackRecord
 } from '@freechesscoach/chess-analysis/lichess-eval-index-format';
+import { scanDepthForRank } from '@freechesscoach/chess-analysis';
+import { LichessEvalIndex, LichessEvalIndexFormatError } from '../src/services/engine/lichess-eval-index.ts';
 import { buildLichessEvalIndex, parseLichessEvalLine, readLines } from './build-lichess-eval-index.mjs';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -36,11 +38,36 @@ describe('parseLichessEvalLine', () => {
       fen: START_FEN,
       depth: 40,
       lines: [
-        { cp: 30, mate: null, moveUci: 'e2e4' },
-        { cp: 25, mate: null, moveUci: 'd2d4' },
-        { cp: 20, mate: null, moveUci: 'g1f3' }
+        { cp: 30, mate: null, pvUci: ['e2e4', 'e7e5', 'g1f3'] },
+        { cp: 25, mate: null, pvUci: ['d2d4', 'd7d5'] },
+        { cp: 20, mate: null, pvUci: ['g1f3', 'g8f6'] }
       ]
     });
+  });
+
+  test('harvests up to scanDepthForRank(rank) UCI moves per line, clamping a longer pv.line (Phase 49)', () => {
+    const rank0Depth = scanDepthForRank(0);
+    const longPv = Array.from({ length: rank0Depth + 5 }, (_, i) => `move${i}`).join(' ');
+    const line = JSON.stringify({ fen: START_FEN, evals: [{ depth: 20, pvs: [{ cp: 10, line: longPv }] }] });
+
+    expect(parseLichessEvalLine(line)?.lines[0]?.pvUci).toHaveLength(rank0Depth);
+  });
+
+  test('a lower-ranked pv is clamped to its own (shallower) schedule depth (Phase 49)', () => {
+    const lastRank = LICHESS_EVAL_MAX_LINES - 1;
+    const lastRankDepth = scanDepthForRank(lastRank);
+    const longPv = Array.from({ length: lastRankDepth + 5 }, (_, i) => `move${i}`).join(' ');
+    const pvs = Array.from({ length: lastRank }, () => ({ cp: 1, line: 'e2e4' }));
+    pvs.push({ cp: 1, line: longPv });
+    const line = JSON.stringify({ fen: START_FEN, evals: [{ depth: 20, pvs }] });
+
+    expect(parseLichessEvalLine(line)?.lines[lastRank]?.pvUci).toHaveLength(lastRankDepth);
+  });
+
+  test('a pv.line shorter than the schedule ceiling yields exactly that many plies, not padded (Phase 49)', () => {
+    const line = JSON.stringify({ fen: START_FEN, evals: [{ depth: 20, pvs: [{ cp: 10, line: 'e2e4 e7e5' }] }] });
+
+    expect(parseLichessEvalLine(line)?.lines[0]?.pvUci).toEqual(['e2e4', 'e7e5']);
   });
 
   test('caps the kept pvs at LICHESS_EVAL_MAX_LINES', () => {
@@ -53,7 +80,7 @@ describe('parseLichessEvalLine', () => {
   test('parses a mate score', () => {
     const line = JSON.stringify({ fen: START_FEN, evals: [{ knodes: 1, depth: 30, pvs: [{ mate: -3, line: 'a7a8q' }] }] });
 
-    expect(parseLichessEvalLine(line)).toEqual({ fen: START_FEN, depth: 30, lines: [{ cp: null, mate: -3, moveUci: 'a7a8q' }] });
+    expect(parseLichessEvalLine(line)).toEqual({ fen: START_FEN, depth: 30, lines: [{ cp: null, mate: -3, pvUci: ['a7a8q'] }] });
   });
 
   test('clamps an out-of-range cp value into int16 bounds', () => {
@@ -94,7 +121,7 @@ describe('parseLichessEvalLine', () => {
         }
       ]
     });
-    expect(parseLichessEvalLine(line)).toEqual({ fen: START_FEN, depth: 10, lines: [{ cp: 5, mate: null, moveUci: 'd2d4' }] });
+    expect(parseLichessEvalLine(line)).toEqual({ fen: START_FEN, depth: 10, lines: [{ cp: 5, mate: null, pvUci: ['d2d4'] }] });
   });
 });
 
@@ -215,5 +242,34 @@ describe('buildLichessEvalIndex', () => {
     expect(recordCount).toBe(0);
     const buffer = await readFile(outputPath);
     expect(buffer).toEqual(LICHESS_EVAL_MAGIC);
+  });
+
+  test('fixture-scale end-to-end: build -> LichessEvalIndex.open -> lookup returns every harvested ply per line (Phase 49)', async () => {
+    const rank0Pv = 'e2e4 e7e5 g1f3 b8c6 f1b5 a7a6 b5a4'; // 7 plies, matches scanDepthForRank(0)
+    const rank1Pv = 'd2d4 d7d5 c2c4 e7e6 b1c3'; // 5 plies, matches scanDepthForRank(1)
+    const line = JSON.stringify({
+      fen: START_FEN,
+      evals: [{ knodes: 1, depth: 45, pvs: [{ cp: 30, line: rank0Pv }, { cp: 25, line: rank1Pv }] }]
+    });
+    const outputPath = join(dir, 'index.bin');
+
+    await buildLichessEvalIndex({ lines: asyncLines([line]), outputPath, tmpDir: join(dir, 'tmp') });
+
+    const index = await LichessEvalIndex.open(outputPath);
+    try {
+      const result = await index.lookup(START_FEN);
+      expect(result?.depth).toBe(45);
+      expect(result?.lines[0]).toEqual({ cp: 30, mate: null, pvUci: rank0Pv.split(' ') });
+      expect(result?.lines[1]).toEqual({ cp: 25, mate: null, pvUci: rank1Pv.split(' ') });
+    } finally {
+      await index.close();
+    }
+  });
+
+  test('a v2-shaped fixture file is soft-skipped (a distinguishable LichessEvalIndexFormatError), not a generic crash (Phase 49)', async () => {
+    const outputPath = join(dir, 'v2-stale.bin');
+    await writeFile(outputPath, Buffer.concat([Buffer.from('LCEVAL02', 'ascii'), Buffer.alloc(63)]));
+
+    await expect(LichessEvalIndex.open(outputPath)).rejects.toThrow(LichessEvalIndexFormatError);
   });
 });

@@ -17,22 +17,30 @@ not a second database).
 
 ## Format version
 
-**v2** (current): keeps up to `ENGINE_MULTI_PV` (5) lines per position,
-matching every other engine backend's multiPv — see
-`packages/chess-analysis/src/lichess-eval-index-format.ts`. Records are
-63 bytes (was 26 in v1, which kept only the single best line), so a full
-rebuild is roughly 2.4x v1's size — expect ~25GB where v1 was ~10.4GB. v2
-files start with an 8-byte magic header (`LICHESS_EVAL_MAGIC`) that v1 files
-never had, so the reader can tell the two apart.
+**v3** (current, Phase 49): widens each of the up-to-`ENGINE_MULTI_PV` (5)
+lines per position from a single move to a real multi-ply continuation —
+`scanDepthForRank(rank)` UCI moves per line, tapering from 7 plies at rank 0
+down to 1 at the bottom ranks (`packages/chess-analysis/src/prevention-
+scan-schedule.ts`), so `scanAvailableMotifs`' graduated tactic scan can walk
+a genuine deep PV for a position served from this index, not just ply 1. See
+`packages/chess-analysis/src/lichess-eval-index-format.ts` for the record
+layout. Records are 123 bytes (was 63 in v2, which kept only each line's
+first move), so a full rebuild is roughly 1.95x v2's size — expect ~49GB
+where v2 was ~25GB. v3 files start with the same style of 8-byte magic
+header (`LICHESS_EVAL_MAGIC`, now `LCEVAL03`) v2 introduced, bumped so the
+reader can tell the two apart.
 
-**Rollout order matters**: `LichessEvalIndex.open` treats a stale v1 file
-(no v2 magic header) the same as a missing file — it logs a warning and
-`openLichessEvalIndexFromEnv` returns `null`, skipping the tier rather than
-crash-looping. That means it's safe to deploy this code *before* rebuilding
-and redeploying the index onto the PVC (the tier is just unavailable in the
-meantime); deploying an old v1-reading version of this code against a v2
-file is untested and not a supported direction. When in doubt: ship code
-first, rebuild+redeploy the `.bin` file second.
+**Rollout order matters**: `LichessEvalIndex.open` treats a stale v1/v2 file
+(not starting with the current magic header) the same as a missing file —
+it logs a warning and `openLichessEvalIndexFromEnv` returns `null`, skipping
+the tier rather than crash-looping. That means it's safe to deploy this
+code *before* rebuilding and redeploying the index onto the PVC (the tier
+is just unavailable in the meantime); deploying an old v1/v2-reading
+version of this code against a v3 file is untested and not a supported
+direction. When in doubt: ship code first, rebuild+redeploy the `.bin` file
+second, and resize the PVC (`lichessEvalIndex.size` in
+`deploy/helm/freechesscoach/values.yaml`, now `64Gi`) before that rebuild
+lands.
 
 ## Building it
 

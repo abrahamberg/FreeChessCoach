@@ -1,4 +1,4 @@
-import { computePositionFeatures, uciToSan } from '@freechesscoach/chess-analysis';
+import { computePositionFeatures, pvUciToSan } from '@freechesscoach/chess-analysis';
 import { ENGINE_DEFAULT_DEPTH, type EngineEval, type PositionAnalysis, type PositionAnalysisLine } from '@freechesscoach/shared';
 import { toLeanEval } from './caching-engine-backend.js';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';
@@ -80,11 +80,17 @@ export class LichessEvalEngineBackend implements EngineBackend {
 /** Maps every stored line (up to LICHESS_EVAL_MAX_LINES, not just the best
  * one) into a real multiPv `PositionAnalysis` — this is what actually lets
  * positions served from this index participate in "available"/"prevented"
- * tactic scanning with real alternate lines, not just a single move. */
+ * tactic scanning with real alternate lines, not just a single move.
+ * `pvUciToSan` (Phase 42/49) converts each line's whole harvested UCI
+ * continuation, not just its first move, so a v3 index hit carries the same
+ * real multi-ply PV a native engine call would — a short/single-move
+ * `pvUci` (a v2-era or short-source-pv line) still degrades gracefully to a
+ * single-move `pvSan`. */
 function toPositionAnalysis(fen: string, result: LichessEvalLookupResult): PositionAnalysis {
   const lines: PositionAnalysisLine[] = result.lines.map((line) => {
-    const moveSan = uciToSan(fen, line.moveUci);
-    return { moveUci: line.moveUci, moveSan, pvSan: [moveSan], cp: line.cp, mateIn: line.mate };
+    const pvSan = pvUciToSan(fen, line.pvUci);
+    const moveSan = pvSan[0] ?? '';
+    return { moveUci: line.pvUci[0] ?? '', moveSan, pvSan, cp: line.cp, mateIn: line.mate };
   });
   const best = lines[0];
 

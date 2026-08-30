@@ -31,6 +31,7 @@ import {
   compareKeys,
   packEntry
 } from '@freechesscoach/chess-analysis/lichess-eval-index-format';
+import { scanDepthForRank } from '@freechesscoach/chess-analysis';
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_OUTPUT_PATH = path.join(scriptDirectory, '../data/lichess-eval-index.bin');
@@ -42,7 +43,7 @@ const DEFAULT_OUTPUT_PATH = path.join(scriptDirectory, '../data/lichess-eval-ind
 // internally sorted, yields one globally sorted file.
 const BUCKET_COUNT = 256;
 
-/** @typedef {{ cp: number|null, mate: number|null, moveUci: string }} ParsedLine */
+/** @typedef {{ cp: number|null, mate: number|null, pvUci: string[] }} ParsedLine */
 /** @typedef {{ fen: string, depth: number, lines: ParsedLine[] }} ParsedEntry */
 
 const CP_INT16_MIN = -32768;
@@ -56,8 +57,10 @@ const MATE_INT8_MAX = 127;
  * (see https://database.lichess.org/#evals for the schema). Picks the
  * deepest `evals` entry and keeps every one of its pvs (up to
  * LICHESS_EVAL_MAX_LINES — the dataset can carry more per entry, but every
- * consumer of this index only ever wants that many). Returns null for a line
- * this build has no usable evaluation for — malformed JSON, no evals, no
+ * consumer of this index only ever wants that many), harvesting up to
+ * `scanDepthForRank(rank)` UCI moves from each pv's `line` (Phase 49) — a
+ * short `pv.line` just yields fewer plies than that rank's ceiling. Returns
+ * null for a line this build has no usable evaluation for — malformed JSON, no evals, no
  * pvs, or every pv missing cp/mate — rather than throwing: a
  * multi-hundred-million-line dataset having the occasional bad row is
  * expected, and one bad line shouldn't abort the whole build.
@@ -87,10 +90,10 @@ export function parseLichessEvalLine(line) {
   );
   if (!Array.isArray(best?.pvs)) return null;
 
-  const lines = best.pvs.slice(0, LICHESS_EVAL_MAX_LINES).flatMap((pv) => {
+  const lines = best.pvs.slice(0, LICHESS_EVAL_MAX_LINES).flatMap((pv, rank) => {
     if (typeof pv?.line !== 'string') return [];
-    const moveUci = pv.line.split(' ')[0];
-    if (!moveUci) return [];
+    const pvUci = pv.line.split(' ').filter(Boolean).slice(0, scanDepthForRank(rank));
+    if (pvUci.length === 0) return [];
 
     const hasCp = typeof pv.cp === 'number';
     const hasMate = typeof pv.mate === 'number';
@@ -100,7 +103,7 @@ export function parseLichessEvalLine(line) {
       {
         cp: hasCp ? clamp(pv.cp, CP_INT16_MIN, CP_INT16_MAX) : null,
         mate: hasMate ? clamp(pv.mate, MATE_INT8_MIN, MATE_INT8_MAX) : null,
-        moveUci
+        pvUci
       }
     ];
   });
