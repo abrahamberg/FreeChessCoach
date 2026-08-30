@@ -920,3 +920,371 @@ Follow §10 verbatim once real analyzed games exist in numbers:
 All fitted constants land in `packages/chess-analysis/src/config.ts` (Task
 19.2) — this phase should produce no code changes outside that one file
 (plus the depth constant, if changed).
+
+---
+
+# Historical Stats Dashboard + Stat-Bank Import
+
+**Why this section exists:** Phases 10–21 above produce a full `GameReport`
+per game (accuracy, phase accuracy, opening/tactics/strategy/endgame scores,
+classification counts, rating) but nothing aggregates that **across** games.
+This section adds a chess.com-style Insights dashboard (time-range + rapid
+filter), a tactical-motif breakdown (forks/pins/discoveries/etc. as "found N
+of M"), and a stat-bank import path that lets a user bulk-import games
+without forcing a full coaching session on each one. No peer-comparison
+section — no peer data exists in this single-user app.
+
+Tags: 🟢 exact/derived from existing code, 🟡 a concrete formula defined here
+(reasonable, not yet validated against real data), 🔴 heuristic, flagged for
+later calibration alongside Phase 21's.
+
+Existing building blocks this reuses (verified in code): `tactics.ts`'s
+`forks()`/`captureOpportunities()` (built on `attack-map.ts`); `see.ts`
+(brilliant-sacrifice counting is just `quality === 'brilliant'`, no new
+detector); `strategy-score.ts`'s `positionalTrend()` (5 named weighted
+deltas, not yet exported individually); `endgame-score.ts`'s
+`standingBucket()` (winning/equal/worse, not yet exported); `gameReport` is
+jsonb — new fields need no migration, but every aggregator must treat an
+absent field on an old report as *absent*, not zero; `game-import.ts`'s
+`importGame()` always calls `insertQueued`+`enqueueAnalyzeGame` synchronously
+— this needs to become optional; `GamesPage`/`GameRow`'s existing
+Analyzing…/Ready/Failed status+action model just needs a fourth
+("not analyzed yet") state.
+
+## Phase 22 — Foundations: time-control classification
+
+### Task 22.1: `classifyTimeControl`
+
+**Files:** `packages/chess-analysis/src/time-control.ts` + test.
+
+- [ ] 🟡 `classifyTimeControl(raw: string | null): 'bullet' | 'blitz' |
+      'rapid' | 'classical' | 'correspondence' | 'unknown'` — Lichess's own
+      formula, estimated seconds = `base + 40 * increment` for
+      `"base+increment"`; `<180` bullet, `180–479` blitz, `480–1499` rapid,
+      `≥1500` classical; a `days`-style value (contains `/`) →
+      correspondence; unparseable/null → unknown.
+- [ ] Tests: Lichess-style and plain-seconds rapid, bullet/blitz/classical
+      boundaries, correspondence, garbage/missing → unknown.
+- [ ] Commit: `feat: classify game speed from PGN TimeControl header`.
+
+## Phase 23 — Tactical motif detection (pure, per-position)
+
+Each detector mirrors `tactics.ts`'s `forks()` shape. Built and tested in
+isolation before Phase 24 wires them into the batch pipeline.
+
+### Task 23.1: Pins
+
+**Files:** `packages/chess-analysis/src/tactic-pins.ts` + test.
+
+- [ ] 🟡 `pins(chess, attackMap): PinHit[]` — for each sliding piece (B/R/Q),
+      walk each ray; first occupied square an enemy piece, next occupied
+      square on the same ray the enemy king (absolute) or a higher-value
+      piece (relative) → pin.
+- [ ] Tests: absolute pin to king; relative pin to higher-value piece; no
+      pin when blocked by an own piece first; no false positive with nothing
+      behind the first enemy piece.
+- [ ] Commit: `feat: pin detection`.
+
+### Task 23.2: Discovered attacks
+
+**Files:** `packages/chess-analysis/src/tactic-discovered.ts` + test.
+
+- [ ] 🟡 `discoveredAttack(fenBefore, moveSan, mover): boolean` — after the
+      move, some piece **other than the moved piece** newly attacks an enemy
+      piece/king it didn't attack before (compare `attackersOf`/
+      `controlledBy` pre/post via `attack-map.ts`).
+- [ ] Tests: discovered check; discovered attack on a piece (not check); no
+      false positive on an ordinary developing move.
+- [ ] Commit: `feat: discovered-attack detection`.
+
+### Task 23.3: Removes-the-defender (deflection)
+
+**Files:** `packages/chess-analysis/src/tactic-removes-defender.ts` + test.
+
+- [ ] 🟡 `removesDefender(fenBefore, moveSan, mover): RemovesDefenderHit |
+      null` — before the move, find an enemy piece defended by exactly the
+      piece the move captures/forces away; after, if the formerly-defended
+      piece is now undefended and attacked, it qualifies.
+- [ ] Tests: capturing the sole defender of a hanging piece qualifies;
+      capturing a piece with a second defender doesn't; no false positive
+      when nothing is defended.
+- [ ] Commit: `feat: removes-the-defender (deflection) detection`.
+
+### Task 23.4: Trapped pieces
+
+**Files:** `packages/chess-analysis/src/tactic-trapped.ts` + test.
+
+- [ ] 🟡 `trappedPieces(chess, attackMap, color): TrappedHit[]` — a piece
+      with zero legal destinations that aren't attacked by the opponent,
+      itself currently attacked/attackable. Reuse
+      `computePositionFeatures`'s mobility/`controlledSquares` fields.
+- [ ] Tests: cornered piece with all flight squares covered qualifies; one
+      safe flight square doesn't; unattacked immobile piece doesn't.
+- [ ] Commit: `feat: trapped-piece detection`.
+
+### Task 23.5: Checkmate flag
+
+**Files:** the existing `moveFlags` helper (Phase 14.1) + test.
+
+- [ ] 🟢 Add `isCheckmate: boolean` alongside `isCheck` —
+      `chess.isCheckmate()` after the move, or SAN ends in `#`.
+- [ ] Commit: `feat: flag checkmating moves`.
+
+### Task 23.6: Motif orchestrator
+
+**Files:** `packages/chess-analysis/src/classify-tactic-motif.ts` + test.
+
+- [ ] `classifyTacticMotif(context): TacticMotifType | null`,
+      `TacticMotifType = 'checkmate' | 'brilliantSacrifice' | 'fork' |
+      'pin' | 'discoveredAttack' | 'removesDefender' | 'trappedPiece' |
+      'freePiece' | 'other'` — priority order (most-specific first,
+      mirroring `classify-move.ts`): checkmate → brilliant sacrifice → fork
+      → pin → discoveredAttack → removesDefender → trappedPiece → freePiece
+      (reuse `captureOpportunities` favorable+undefended) → `other`
+      (`isTacticalPosition`, Phase 17.2, matching nothing above) → `null`.
+- [ ] Tests: one fixture per priority tier confirming precedence.
+- [ ] Commit: `feat: tactic-motif classification orchestrator`.
+
+## Phase 24 — Per-game tactic-motif report
+
+### Task 24.1: Wire motif classification into the batch pipeline
+
+**Files:** `build-game-report.ts`; `packages/shared/src/game-report.ts`.
+
+- [ ] For every ply, classify the motif of the **best** engine move (the
+      "opportunity"); if the mover's played move achieves the same motif
+      *and* its own quality is `best` or better, count it as "found."
+- [ ] Add `TacticMotifCountsSchema` (`{opportunities, found}` per motif
+      type) to `game-report.ts`; add `tacticMotifs` to `PlayerReportSchema`.
+      No migration (jsonb) — pre-existing reports won't have this field;
+      treat absent as absent, not zero.
+- [ ] Test: fixture game with a known mate finish and a known free-piece
+      blunder produces expected motif counts for both colours.
+- [ ] Commit: `feat: per-game tactic-motif counts (opportunities vs. found)`.
+
+## Phase 25 — Strategy sub-metric breakdown
+
+### Task 25.1: Export and re-express the five strategy components as accuracies
+
+**Files:** `packages/chess-analysis/src/strategy-score.ts`.
+
+- [ ] Export `pawnStructureTrend`/`spaceTrend`/`filesTrend`/`centreTrend`/
+      `kingSafetyTrend` individually.
+- [ ] 🔴 Map to labels, each a 0–100 accuracy via
+      `clamp(quietAccuracy + component, 0, 100)` (same formula the existing
+      `strategyScore` already uses): Pawn Structure ← `pawnStructureTrend`;
+      Space Advantage ← `spaceTrend`; Active Piece ← `filesTrend`; Attacking
+      ← new `attackingTrend` (`kingSafetyTrend` machinery vs. the
+      **opponent's** king); Defending ← existing `kingSafetyTrend` (mover's
+      own king); Overall Strategic ← existing `strategyScore`, unchanged.
+- [ ] Add `strategySubScores` to `PlayerReportSchema` (5 nullable
+      percentages, same `< 4` quiet-position null guard).
+- [ ] Tests: each component fixture-tested independently; existing
+      `strategyScore` tests still pass unchanged.
+- [ ] Commit: `feat: strategy sub-metric accuracies (defending/attacking/space/pawn structure/active pieces)`.
+
+## Phase 26 — Endgame breakdown (by starting standing, by theme)
+
+### Task 26.1: Export the equal/worse/better bucket
+
+**Files:** `packages/chess-analysis/src/endgame-score.ts`.
+
+- [ ] Export `standingBucket` (as `endgameStandingBucket` if that reads
+      clearer outside this file) — no behavior change.
+- [ ] Commit: `refactor: export endgame standing-bucket classifier`.
+
+### Task 26.2: Endgame theme classification
+
+**Files:** `packages/chess-analysis/src/endgame-theme.ts` + test.
+
+- [ ] 🟢 `classifyEndgameType(fen): 'kingAndPawn' | 'queen' | 'rookAndPawn' |
+      'other'` from material at `endgameStartPly`, reusing Task 14.1's
+      material-counting helper.
+- [ ] Tests: one fixture per bucket, plus mixed-material → `other`.
+- [ ] Commit: `feat: endgame theme classification (K+P/queen/rook+pawn/other)`.
+
+### Task 26.3: Wire theme + standing into the game report
+
+**Files:** `build-game-report.ts`, `game-report.ts`.
+
+- [ ] Add `endgame: { standing: 'winning'|'equal'|'worse'|null, theme:
+      ReturnType<typeof classifyEndgameType> | null }` to
+      `PlayerReportSchema` (both null when the game never reached endgame).
+- [ ] Commit: `feat: persist per-game endgame standing and theme`.
+
+## Phase 27 — Opening breakdown (aggregation-only, no new chess logic)
+
+### Task 27.1: Per-phase mistake count
+
+**Files:** `packages/chess-analysis/src/opening-mistakes.ts` + test.
+
+- [ ] 🟢 `openingMistakeCount(moves: MoveReport[], colour): number` — count
+      of that colour's `phase === 'opening'` moves with quality in
+      `inaccuracy`/`mistake`/`miss`/`blunder`.
+- [ ] Commit: `feat: per-game opening mistake count`.
+
+### Task 27.2: Cross-game opening aggregator
+
+**Files:** `packages/chess-analysis/src/aggregate-opening-stats.ts` + test.
+
+- [ ] `aggregateOpeningStats(entries: StatsEntry[]): OpeningStats` (see
+      Phase 28 for `StatsEntry`) — average book moves (mean
+      `book.players[colour].lastBookPly`), opening accuracy (mean
+      `phaseAccuracy.opening`), average opening mistakes (Task 27.1), and
+      performance by opening (group by `book.name` → `book.eco` → "Unknown
+      opening"; games played/win%/mean accuracy per group, sorted by games
+      played descending).
+- [ ] Tests: two games sharing an opening aggregate into one row; a
+      null-name game lands in "Unknown opening", not dropped.
+- [ ] Commit: `feat: cross-game opening-performance aggregation`.
+
+## Phase 28 — The dashboard aggregator (pure) and shared schemas
+
+### Task 28.1: `StatsEntry` and the master aggregator
+
+**Files:** `packages/chess-analysis/src/build-stats-dashboard.ts` + test.
+
+- [ ] `StatsEntry = { gameReport: GameReport, result: GameResultForColour,
+      userColor: PlayerColor, playedAt: Date | null, speed:
+      ReturnType<typeof classifyTimeControl> }` — pre-resolved by the caller
+      (API layer does the DB read + speed classification; this stays pure).
+- [ ] `buildStatsDashboard(entries: StatsEntry[]): StatsDashboard` —
+      opening (Phase 27), tactics (sum `tacticMotifs` per motif across
+      games, Phase 24), strategy (mean each of the 6 sub-scores, skip
+      nulls, Phase 25), endgame (win% per standing bucket = wins /
+      (wins+losses+draws*0.5); accuracy-by-theme = mean phase accuracy per
+      theme bucket; overall = mean `phaseAccuracy.endgame`, Phase 26).
+- [ ] Every section `null`/omitted with a reason when `entries` is empty or
+      the needed signal is missing everywhere (same convention as the
+      `< 4`/`movesPlayed < 12` guards elsewhere) — never a misleading `0`.
+- [ ] Determinism test: same entries twice → byte-identical output.
+- [ ] Commit: `feat: cross-game stats dashboard aggregator`.
+
+### Task 28.2: `StatsDashboardSchema`
+
+**Files:** `packages/shared/src/stats-dashboard.ts` (new file).
+
+- [ ] Zod schemas for every Task 28.1 shape, plus `StatsRangeSchema =
+      z.enum(['last7', 'last30', 'last365', 'all'])` and
+      `GameSpeedFilterSchema = z.enum(['rapid', 'all'])`.
+- [ ] Commit: `feat: stats dashboard schema`.
+
+## Phase 29 — API: repository query, service, route
+
+### Task 29.1: Repository query for analyzed games in range
+
+**Files:** `apps/api/src/db/repositories/analyses.ts`.
+
+- [ ] `listReadyReportsForUser(db, userId, since: Date | null)` — joins
+      `analyses` (`status = 'ready'`) to `games`, scoped by `games.user_id`,
+      optional `games.played_at >= since` (fallback to `created_at`).
+- [ ] Test: out-of-range game excluded; non-ready analysis excluded;
+      `coach_play`/`vs_bot` games excluded by default (decide + comment the
+      reasoning at implementation time).
+- [ ] Commit: `feat: repository query for ready game reports in a date range`.
+
+### Task 29.2: Service — resolve range/speed, call the aggregator
+
+**Files:** `apps/api/src/services/stats-dashboard.ts`.
+
+- [ ] `getStatsDashboard(db, userId, range, speedFilter)` — resolves
+      `range` → `since`, queries, maps rows through `classifyTimeControl`,
+      filters to `'rapid'` when requested, builds `StatsEntry[]`, calls
+      `buildStatsDashboard`.
+- [ ] Test: mocked repository rows; speed filter excludes a non-rapid row.
+- [ ] Commit: `feat: stats dashboard service`.
+
+### Task 29.3: Route
+
+**Files:** `apps/api/src/routes/stats.ts` (new) + test.
+
+- [ ] `GET /api/users/me/stats?range=&speed=` (defaults `range=all`,
+      `speed=rapid`), thin adapter → `getStatsDashboard`.
+- [ ] Commit: `feat: stats dashboard route`.
+
+## Phase 30 — Frontend: Insights page
+
+### Task 30.1: Feature folder + data fetching hook
+
+**Files:** `apps/web/src/features/stats/StatsPage.tsx` + `useStatsDashboard`
+hook (TanStack Query, mirrors `DashboardPage`'s `apiGet` pattern); route in
+`App.tsx`; nav link.
+
+- [ ] Range tabs (Last 7 days/Last 30 days/Last year/All time) + rapid/all
+      toggle, same controlled-tab pattern as `GamesPage`'s `FILTERS`.
+- [ ] Empty state when the range/filter combination returns zero entries.
+- [ ] Commit: `feat: stats dashboard page shell with range/speed filters`.
+
+### Task 30.2: Section components
+
+**Files:** `OpeningStatsSection.tsx`, `TacticsStatsSection.tsx`,
+`StrategyStatsSection.tsx`, `EndgameStatsSection.tsx` under
+`features/stats/`, presentational (no fetching), each a `.card`.
+
+- [ ] Tactics section renders each motif as "found / opportunities" (e.g.
+      "Forks 2/5").
+- [ ] Strategy/Endgame sections reuse `GameReportSummary`'s null → "—"
+      convention.
+- [ ] Component tests per section with a fixture `StatsDashboard`.
+- [ ] Commit: `feat: opening/tactics/strategy/endgame stats sections`.
+
+## Phase 31 — Stat-bank import (decoupled analysis)
+
+### Task 31.1: Make analysis-on-import optional
+
+**Files:** `packages/shared/src/game.ts`; `apps/api/src/services/game-import.ts`.
+
+- [ ] `ImportGameRequestSchema` gets optional `deferAnalysis` (default
+      `false` — existing flow unaffected). Extract `insertQueued`+
+      `enqueueAnalyzeGame` into an exported `startAnalysis(db, jobQueue,
+      gameId)`, called only when `!deferAnalysis`.
+      `ImportGameResponseSchema.analysisId` becomes nullable.
+- [ ] Tests: `deferAnalysis: true` inserts no `analyses` row and never
+      enqueues; default behavior unchanged (regression).
+- [ ] Commit: `feat: optional deferred analysis on game import`.
+
+### Task 31.2: On-demand analyze route
+
+**Files:** `apps/api/src/routes/games.ts` + test.
+
+- [ ] `POST /api/games/:id/analyze` — ownership check (404), idempotent
+      no-op if an `analyses` row already exists, otherwise `startAnalysis`.
+- [ ] Commit: `feat: on-demand game analysis endpoint`.
+
+### Task 31.3: "Not analyzed" state in the Games list
+
+**Files:** `apps/web/src/features/games/GameRow.tsx`, `GamesPage.tsx`.
+
+- [ ] `statusAndActionFor`: new branch for `analysisStatus === null` (and
+      not `coach_play`/`vs_bot`) → "Not analyzed" / "Get coach analysis",
+      before the existing "assume analyzing" fallback.
+- [ ] New `analyzeMutation` (mirrors `deleteMutation`) → Task 31.2's route,
+      invalidates `['games']` on success.
+- [ ] Add `'Not analyzed'` to `GamesPage`'s `FILTERS`.
+- [ ] Component tests for the new branch + click wiring.
+- [ ] Commit: `feat: "not analyzed" status and on-demand analyze action in games list`.
+
+### Task 31.4: Bulk import UI ("stat bank")
+
+**Files:** `LichessGamePicker.tsx`, `ImportPage.tsx`.
+
+- [ ] `LichessGamePicker` multi-select mode (checkbox per row, additive to
+      its existing single-`onSelect` contract) + "Import N for stat bank".
+- [ ] `ImportPage` bulk mode: `POST /api/games` per selection with
+      `deferAnalysis: true, source: 'lichess'`; surface the 10/day limit's
+      remaining count on partial failure; routes back to the Games list
+      (not into `AnalysisProgress`/a session).
+- [ ] Out of scope: multi-game PGN paste/upload — bulk import is
+      Lichess-only for now.
+- [ ] Component test: selecting 3 games calls the import mutation 3 times
+      with `deferAnalysis: true`.
+- [ ] Commit: `feat: bulk "stat bank" import from Lichess`.
+
+## Verification (end of Phase 31)
+
+- `npm run lint && npm run typecheck && npm test`, green.
+- Manual (`npm run dev`): bulk-import 3–5 rapid games via stat-bank mode,
+  confirm "Not analyzed" → click "Get coach analysis" per game → Ready;
+  open `/stats`, confirm all four sections populate and the range/rapid
+  filters change the numbers; confirm a blitz game imported normally is
+  excluded when the rapid filter is on.
