@@ -33,6 +33,37 @@ export const ClassificationCountsSchema = z.object(
 ) as z.ZodObject<Record<(typeof MOVE_QUALITIES)[number], z.ZodNumber>>;
 export type ClassificationCounts = z.infer<typeof ClassificationCountsSchema>;
 
+/**
+ * The tactic-motif catalogue (Phase 23-24 of the stats-dashboard plan):
+ * chess.com-style "found N of M" counters per motif. `opportunities` counts
+ * plies where the engine's best move exhibited that motif; `found` counts
+ * the subset where the player played that exact move with a best-or-better
+ * classification. Pre-existing stored `PlayerReport`s won't have this field
+ * (jsonb, no migration) — callers must treat it as absent, not zero.
+ */
+export const TACTIC_MOTIF_TYPES = [
+  'checkmate',
+  'brilliantSacrifice',
+  'fork',
+  'pin',
+  'discoveredAttack',
+  'removesDefender',
+  'trappedPiece',
+  'freePiece',
+  'other'
+] as const;
+export const TacticMotifTypeSchema = z.enum(TACTIC_MOTIF_TYPES);
+export type TacticMotifType = z.infer<typeof TacticMotifTypeSchema>;
+
+const TacticMotifCountSchema = z.object({
+  opportunities: z.number().int().nonnegative(),
+  found: z.number().int().nonnegative()
+});
+export const TacticMotifCountsSchema = z.object(
+  Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, TacticMotifCountSchema]))
+) as z.ZodObject<Record<(typeof TACTIC_MOTIF_TYPES)[number], typeof TacticMotifCountSchema>>;
+export type TacticMotifCounts = z.infer<typeof TacticMotifCountsSchema>;
+
 export const EstimatedRatingReportSchema = z.object({
   value: z.number().int().nullable(),
   range: z.tuple([z.number().int(), z.number().int()]).nullable(),
@@ -67,7 +98,8 @@ export const PlayerReportSchema = z.object({
   }),
   counts: ClassificationCountsSchema,
   acpl: z.number().nonnegative(),
-  estimatedRating: EstimatedRatingReportSchema
+  estimatedRating: EstimatedRatingReportSchema,
+  tacticMotifs: TacticMotifCountsSchema
 });
 export type PlayerReport = z.infer<typeof PlayerReportSchema>;
 

@@ -3,13 +3,21 @@ import { MOVE_QUALITIES } from './analysis.js';
 import {
   ClassificationCountsSchema,
   GameReportSchema,
+  TACTIC_MOTIF_TYPES,
+  TacticMotifCountsSchema,
   type ClassificationCounts,
-  type GameReport
+  type GameReport,
+  type TacticMotifCounts
 } from './game-report.js';
 
 function zeroCounts(): ClassificationCounts {
   const entries = MOVE_QUALITIES.map((quality) => [quality, 0] as const);
   return Object.fromEntries(entries) as ClassificationCounts;
+}
+
+function zeroTacticMotifCounts(): TacticMotifCounts {
+  const entries = TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }] as const);
+  return Object.fromEntries(entries) as TacticMotifCounts;
 }
 
 describe('ClassificationCountsSchema', () => {
@@ -27,6 +35,21 @@ describe('ClassificationCountsSchema', () => {
   });
 });
 
+describe('TacticMotifCountsSchema', () => {
+  test('has exactly one field per TacticMotifType', () => {
+    expect(Object.keys(TacticMotifCountsSchema.shape).sort()).toEqual([...TACTIC_MOTIF_TYPES].sort());
+  });
+
+  test('accepts an all-zero count object', () => {
+    expect(TacticMotifCountsSchema.safeParse(zeroTacticMotifCounts()).success).toBe(true);
+  });
+
+  test('rejects a negative count', () => {
+    const invalid = { ...zeroTacticMotifCounts(), fork: { opportunities: -1, found: 0 } };
+    expect(TacticMotifCountsSchema.safeParse(invalid).success).toBe(false);
+  });
+});
+
 describe('GameReportSchema', () => {
   function buildPlayerReport() {
     return {
@@ -36,7 +59,8 @@ describe('GameReportSchema', () => {
       scores: { opening: 90, tactics: 75, strategy: 82, endgame: null },
       counts: { ...zeroCounts(), best: 10, good: 15, inaccuracy: 2 },
       acpl: 24.6,
-      estimatedRating: { value: 1550, range: [1400, 1700], confidence: 'medium' }
+      estimatedRating: { value: 1550, range: [1400, 1700], confidence: 'medium' },
+      tacticMotifs: zeroTacticMotifCounts()
     };
   }
 

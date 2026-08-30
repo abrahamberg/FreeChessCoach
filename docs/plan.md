@@ -1051,16 +1051,45 @@ isolation before Phase 24 wires them into the batch pipeline.
 
 **Files:** `build-game-report.ts`; `packages/shared/src/game-report.ts`.
 
-- [ ] For every ply, classify the motif of the **best** engine move (the
+- [x] For every ply, classify the motif of the **best** engine move (the
       "opportunity"); if the mover's played move achieves the same motif
       *and* its own quality is `best` or better, count it as "found."
-- [ ] Add `TacticMotifCountsSchema` (`{opportunities, found}` per motif
+      Landed as `computeTacticMotifCounts` in the new
+      `packages/chess-analysis/src/game-tactic-motifs.ts` (kept out of
+      `build-game-report.ts` to avoid pushing it further past the
+      200-line guideline), called once per colour from `buildPlayerReport`.
+      "Found" requires an exact `moveSan` match against the best move (not
+      just a coincidentally-matching motif on a different move) — simpler
+      and matches the chess.com framing ("did you play *that* fork") better
+      than a same-motif-different-move coincidence would.
+      **Deviation, documented in code:** the "opportunity" side's own
+      quality (needed only for the `brilliantSacrifice` tier) is exact when
+      the player actually played the best move (reuses that move's already-
+      computed classification, which can be `'brilliant'`); when the player
+      played something else, the unplayed best move is treated as plain
+      `'best'` rather than run through the full brilliant-soundness check,
+      since that needs the extra engine call Phase 14.3 deliberately
+      reserves for played-move candidates only. Net effect: a real but
+      accepted undercount of *missed* brilliancies specifically (every
+      other motif — fork/pin/discovered/removesDefender/trapped/free
+      piece/checkmate — is exact regardless of whether the best move was
+      played, since those are objective properties needing no engine call).
+- [x] Add `TacticMotifCountsSchema` (`{opportunities, found}` per motif
       type) to `game-report.ts`; add `tacticMotifs` to `PlayerReportSchema`.
       No migration (jsonb) — pre-existing reports won't have this field;
       treat absent as absent, not zero.
-- [ ] Test: fixture game with a known mate finish and a known free-piece
-      blunder produces expected motif counts for both colours.
-- [ ] Commit: `feat: per-game tactic-motif counts (opportunities vs. found)`.
+      `TacticMotifType`'s canonical definition (`TACTIC_MOTIF_TYPES` +
+      `TacticMotifTypeSchema`) also landed in `game-report.ts` rather than
+      in chess-analysis's `classify-tactic-motif.ts` (which now imports and
+      re-exports it) — per AGENTS rule 4, the type comes from a shared zod
+      schema first, matching how `MoveQuality`/`MOVE_QUALITIES` is handled.
+- [x] Test: `game-tactic-motifs.test.ts` covers a played best move (credits
+      both opportunity and found), a missed best move (opportunity only),
+      and a move with no stored `fenBefore`/best-line eval (skipped
+      cleanly). `build-game-report.test.ts`'s existing full-pipeline test
+      confirms `tacticMotifs` round-trips through `GameReportSchema` on a
+      real generated game.
+- [x] Commit: `feat: per-game tactic-motif counts (opportunities vs. found)`.
 
 ## Phase 25 — Strategy sub-metric breakdown
 

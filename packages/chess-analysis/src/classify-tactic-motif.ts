@@ -1,4 +1,4 @@
-import type { MoveQuality } from '@freechesscoach/shared';
+import type { MoveQuality, TacticMotifType } from '@freechesscoach/shared';
 import { Chess, type Color, type Square } from 'chess.js';
 import { buildAttackMap } from './attack-map.js';
 import { discoveredAttack } from './tactic-discovered.js';
@@ -7,16 +7,7 @@ import { removesDefender } from './tactic-removes-defender.js';
 import { trappedPieces } from './tactic-trapped.js';
 import { captureOpportunities, forks } from './tactics.js';
 
-export type TacticMotifType =
-  | 'checkmate'
-  | 'brilliantSacrifice'
-  | 'fork'
-  | 'pin'
-  | 'discoveredAttack'
-  | 'removesDefender'
-  | 'trappedPiece'
-  | 'freePiece'
-  | 'other';
+export type { TacticMotifType } from '@freechesscoach/shared';
 
 export interface TacticMotifContext {
   fenBefore: string;

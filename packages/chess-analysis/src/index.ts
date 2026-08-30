@@ -18,6 +18,7 @@ export * from './diff-features.js';
 export * from './endgame-score.js';
 export * from './game-accuracy.js';
 export * from './game-outcome.js';
+export * from './game-tactic-motifs.js';
 export * from './move-ref.js';
 export * from './move-metrics.js';
 export * from './move-flags.js';

@@ -35,6 +35,7 @@ import {
 } from './rating-estimate.js';
 import { computePositionFeatures } from './position-features.js';
 import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
+import { computeTacticMotifCounts } from './game-tactic-motifs.js';
 import { CONFIG } from './config.js';
 
 type Colour = 'white' | 'black';
@@ -157,7 +158,8 @@ function buildPlayerReport(
     },
     counts,
     acpl: round1(mean(colourMoves.map((move) => move.cpLoss))),
-    estimatedRating: buildEstimatedRating(colourMoves, weights, accuracy, counts, prior)
+    estimatedRating: buildEstimatedRating(colourMoves, weights, accuracy, counts, prior),
+    tacticMotifs: computeTacticMotifCounts(colourMoves, context.evals)
   };
 }
 
