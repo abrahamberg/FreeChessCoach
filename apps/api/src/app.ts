@@ -13,6 +13,7 @@ import { registerLichessRoutes } from './routes/lichess.js';
 import { registerLlmKeysRoutes } from './routes/llm-keys.js';
 import { registerPositionAnalysisRoutes } from './routes/positions.js';
 import { registerSessionsRoutes } from './routes/sessions.js';
+import { registerStatsRoutes } from './routes/stats.js';
 import { registerStripeWebhookRoutes } from './routes/stripe-webhook.js';
 import { registerTtsRoutes } from './routes/tts.js';
 import { authHeadersPlugin, type AuthHeadersOptions } from './plugins/auth-headers.js';
@@ -81,6 +82,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (options.db) {
     registerUsersRoutes(app, options.db);
     registerDashboardRoutes(app, options.db);
+    registerStatsRoutes(app, options.db);
     registerGamesRoutes(app, options.db, options.jobQueue ?? noopJobQueue);
     registerLichessRoutes(app, options.db, options.lichessClient ?? createLichessClient());
     registerAnalysesRoutes(

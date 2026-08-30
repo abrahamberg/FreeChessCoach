@@ -1289,9 +1289,14 @@ isolation before Phase 24 wires them into the batch pipeline.
 
 **Files:** `apps/api/src/routes/stats.ts` (new) + test.
 
-- [ ] `GET /api/users/me/stats?range=&speed=` (defaults `range=all`,
-      `speed=rapid`), thin adapter → `getStatsDashboard`.
-- [ ] Commit: `feat: stats dashboard route`.
+- [x] `GET /api/users/me/stats?range=&speed=` (defaults `range=all`,
+      `speed=rapid`), thin adapter → `getStatsDashboard`. Registered in
+      `app.ts` alongside `registerDashboardRoutes`, unconditionally under
+      the existing `if (options.db)` block.
+- [x] Tests (real Postgres): empty-state user gets the all-null dashboard
+      shape; an unrecognised `range` value is a 400; no auth headers is a
+      401; the `speed=rapid` default excludes a bullet-timed game.
+- [x] Commit: `feat: stats dashboard route`.
 
 ## Phase 30 — Frontend: Insights page
 
