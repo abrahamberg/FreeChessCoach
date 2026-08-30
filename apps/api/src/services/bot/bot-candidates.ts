@@ -26,7 +26,8 @@ export async function buildBotCandidates(
 
   const annotations = annotateCandidateMoves(
     fen,
-    analysis.lines.map((line) => line.moveSan)
+    analysis.lines.map((line) => line.moveSan),
+    { mover, linesAtFenBefore: analysis.lines }
   );
   const annotationBySan = new Map(annotations.map((annotation) => [annotation.moveSan, annotation]));
 
@@ -47,7 +48,8 @@ export async function buildBotCandidates(
       createsHangingPiece: annotation?.createsHangingPiece ?? false,
       createsUnderDefendedPiece: annotation?.createsUnderDefendedPiece ?? false,
       mobilityDelta: annotation?.mobilityDelta ?? 0,
-      forkInPlies: pvTactics.forkInPlies
+      forkInPlies: pvTactics.forkInPlies,
+      motif: annotation?.motif ?? null
     };
   });
 }

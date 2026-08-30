@@ -33,8 +33,11 @@ async function run() {
       console.log(`NOT FOUND: "${fen}"`);
       return;
     }
-    const evaluation = result.mate !== null ? `mate in ${result.mate}` : `${result.cp} cp`;
-    console.log(`FOUND: ${evaluation}, depth ${result.depth}, best move ${result.moveUci}`);
+    console.log(`FOUND: depth ${result.depth}, ${result.lines.length} line(s):`);
+    for (const line of result.lines) {
+      const evaluation = line.mate !== null ? `mate in ${line.mate}` : `${line.cp} cp`;
+      console.log(`  ${line.moveUci}: ${evaluation}`);
+    }
   } finally {
     await index.close();
   }

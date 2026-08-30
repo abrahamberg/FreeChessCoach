@@ -4,7 +4,7 @@ import {
   type ParsedGame
 } from '@freechesscoach/chess-analysis';
 import { ENGINE_DEFAULT_DEPTH } from '@freechesscoach/shared';
-import type { BookReport, ClassifiedMoveDto, EngineEval, GameReport } from '@freechesscoach/shared';
+import type { BookReport, ClassifiedMoveDto, EngineEval, GameReport, TacticMotifType } from '@freechesscoach/shared';
 import { ENGINE_MULTI_PV } from './engine-client.js';
 
 const ENGINE_NAME = 'stockfish';
@@ -17,6 +17,10 @@ export interface BuildGameReportForAnalysisInput {
   /** The PGN `Result` header — `'1-0'`, `'0-1'`, `'1/2-1/2'`, or an
    * unfinished-game marker like `'*'`. */
   pgnResult: string | null;
+  /** From `computeTacticMotifPrevented` — optional since it's an
+   * engine-gated step the caller may skip or that may fail independently of
+   * the rest of this report (see tactic-prevention.ts). */
+  preventedCounts?: Record<'white' | 'black', Partial<Record<TacticMotifType, number>>>;
 }
 
 /**
@@ -44,7 +48,8 @@ export function buildGameReportForAnalysis(input: BuildGameReportForAnalysisInpu
     result: {
       white: resultForColour(input.pgnResult, 'white'),
       black: resultForColour(input.pgnResult, 'black')
-    }
+    },
+    preventedCounts: input.preventedCounts
   });
 }
 

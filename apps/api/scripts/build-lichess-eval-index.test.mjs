@@ -4,34 +4,62 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
-import { LICHESS_EVAL_RECORD_SIZE, unpackRecord } from '@freechesscoach/chess-analysis/lichess-eval-index-format';
+import {
+  LICHESS_EVAL_MAGIC,
+  LICHESS_EVAL_MAX_LINES,
+  LICHESS_EVAL_RECORD_SIZE,
+  unpackRecord
+} from '@freechesscoach/chess-analysis/lichess-eval-index-format';
 import { buildLichessEvalIndex, parseLichessEvalLine, readLines } from './build-lichess-eval-index.mjs';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 describe('parseLichessEvalLine', () => {
-  test('picks the deepest evals entry and its first pv', () => {
+  test('picks the deepest evals entry and keeps all of its pvs', () => {
     const line = JSON.stringify({
       fen: START_FEN,
       evals: [
         { knodes: 100, depth: 20, pvs: [{ cp: 10, line: 'd2d4 d7d5' }] },
-        { knodes: 500, depth: 40, pvs: [{ cp: 30, line: 'e2e4 e7e5 g1f3' }] }
+        {
+          knodes: 500,
+          depth: 40,
+          pvs: [
+            { cp: 30, line: 'e2e4 e7e5 g1f3' },
+            { cp: 25, line: 'd2d4 d7d5' },
+            { cp: 20, line: 'g1f3 g8f6' }
+          ]
+        }
       ]
     });
 
-    expect(parseLichessEvalLine(line)).toEqual({ fen: START_FEN, cp: 30, mate: null, depth: 40, moveUci: 'e2e4' });
+    expect(parseLichessEvalLine(line)).toEqual({
+      fen: START_FEN,
+      depth: 40,
+      lines: [
+        { cp: 30, mate: null, moveUci: 'e2e4' },
+        { cp: 25, mate: null, moveUci: 'd2d4' },
+        { cp: 20, mate: null, moveUci: 'g1f3' }
+      ]
+    });
+  });
+
+  test('caps the kept pvs at LICHESS_EVAL_MAX_LINES', () => {
+    const pvs = Array.from({ length: LICHESS_EVAL_MAX_LINES + 3 }, (_, i) => ({ cp: i, line: 'e2e4 e7e5' }));
+    const line = JSON.stringify({ fen: START_FEN, evals: [{ depth: 10, pvs }] });
+
+    expect(parseLichessEvalLine(line)?.lines).toHaveLength(LICHESS_EVAL_MAX_LINES);
   });
 
   test('parses a mate score', () => {
     const line = JSON.stringify({ fen: START_FEN, evals: [{ knodes: 1, depth: 30, pvs: [{ mate: -3, line: 'a7a8q' }] }] });
 
-    expect(parseLichessEvalLine(line)).toEqual({ fen: START_FEN, cp: null, mate: -3, depth: 30, moveUci: 'a7a8q' });
+    expect(parseLichessEvalLine(line)).toEqual({ fen: START_FEN, depth: 30, lines: [{ cp: null, mate: -3, moveUci: 'a7a8q' }] });
   });
 
   test('clamps an out-of-range cp value into int16 bounds', () => {
     const line = JSON.stringify({ fen: START_FEN, evals: [{ knodes: 1, depth: 10, pvs: [{ cp: 999999, line: 'e2e4' }] }] });
 
-    expect(parseLichessEvalLine(line)?.cp).toBe(32767);
+    expect(parseLichessEvalLine(line)?.lines[0]?.cp).toBe(32767);
   });
 
   test('returns null for a blank line', () => {
@@ -48,14 +76,25 @@ describe('parseLichessEvalLine', () => {
     expect(parseLichessEvalLine(JSON.stringify({ fen: START_FEN, evals: [] }))).toBeNull();
   });
 
-  test('returns null when a pv has neither cp nor mate', () => {
+  test('returns null when every pv has neither cp nor mate', () => {
     const line = JSON.stringify({ fen: START_FEN, evals: [{ depth: 10, pvs: [{ line: 'e2e4' }] }] });
     expect(parseLichessEvalLine(line)).toBeNull();
   });
 
-  test('returns null when a pv has both cp and mate (malformed upstream row)', () => {
-    const line = JSON.stringify({ fen: START_FEN, evals: [{ depth: 10, pvs: [{ cp: 10, mate: 3, line: 'e2e4' }] }] });
-    expect(parseLichessEvalLine(line)).toBeNull();
+  test('drops a pv with both cp and mate (malformed upstream row) but keeps the other usable pvs', () => {
+    const line = JSON.stringify({
+      fen: START_FEN,
+      evals: [
+        {
+          depth: 10,
+          pvs: [
+            { cp: 10, mate: 3, line: 'e2e4' },
+            { cp: 5, line: 'd2d4' }
+          ]
+        }
+      ]
+    });
+    expect(parseLichessEvalLine(line)).toEqual({ fen: START_FEN, depth: 10, lines: [{ cp: 5, mate: null, moveUci: 'd2d4' }] });
   });
 });
 
@@ -149,19 +188,22 @@ describe('buildLichessEvalIndex', () => {
     expect(skippedLines).toBe(2);
 
     const buffer = await readFile(outputPath);
-    expect(buffer.length).toBe(3 * LICHESS_EVAL_RECORD_SIZE);
+    expect(buffer.subarray(0, LICHESS_EVAL_MAGIC.length)).toEqual(LICHESS_EVAL_MAGIC);
+    expect(buffer.length).toBe(LICHESS_EVAL_MAGIC.length + 3 * LICHESS_EVAL_RECORD_SIZE);
 
-    const records = Array.from({ length: 3 }, (_, i) => unpackRecord(buffer, i * LICHESS_EVAL_RECORD_SIZE));
+    const records = Array.from({ length: 3 }, (_, i) =>
+      unpackRecord(buffer, LICHESS_EVAL_MAGIC.length + i * LICHESS_EVAL_RECORD_SIZE)
+    );
     // Sorted by key, not input order — assert every input cp made it in,
     // rather than asserting a specific order this test doesn't control.
-    expect(records.map((r) => r.cp).sort((a, b) => a - b)).toEqual([-5, 10, 40]);
+    expect(records.map((r) => r.lines[0].cp).sort((a, b) => a - b)).toEqual([-5, 10, 40]);
 
     for (let i = 1; i < records.length; i++) {
       expect(Buffer.compare(records[i - 1].key, records[i].key)).toBeLessThanOrEqual(0);
     }
   });
 
-  test('produces an empty file for input with no usable lines', async () => {
+  test('produces a header-only file (no records) for input with no usable lines', async () => {
     const outputPath = join(dir, 'index.bin');
 
     const { recordCount } = await buildLichessEvalIndex({
@@ -172,6 +214,6 @@ describe('buildLichessEvalIndex', () => {
 
     expect(recordCount).toBe(0);
     const buffer = await readFile(outputPath);
-    expect(buffer.length).toBe(0);
+    expect(buffer).toEqual(LICHESS_EVAL_MAGIC);
   });
 });

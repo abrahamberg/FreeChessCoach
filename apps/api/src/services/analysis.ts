@@ -10,7 +10,7 @@ import {
   resolveOpening,
   type ParsedPosition
 } from '@freechesscoach/chess-analysis';
-import type { BookReport, CoachingPlan, EngineEval, PlayerBookReport } from '@freechesscoach/shared';
+import type { BookReport, CoachingPlan, EngineEval, PlayerBookReport, PositionAnalysis } from '@freechesscoach/shared';
 import { buildPlannerMessages, type PlannerPromptInput } from '@freechesscoach/prompts';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
@@ -18,6 +18,7 @@ import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { buildGameReportForAnalysis } from './build-game-report.js';
+import { computeTacticMotifPrevented } from './tactic-prevention.js';
 
 /** Positions per engine call. Small enough that the progress percentage moves
  * often, large enough not to pay per-request overhead on every ply — and it
@@ -32,6 +33,11 @@ export interface PlannerMessages {
 export interface AnalysisJobDependencies {
   /** Wraps `POST engine/analyze-game` (architecture §4). */
   analyzeGamePositions: (fens: string[]) => Promise<EngineEval[]>;
+  /** Wraps a single-position analyze call — the same engine backend
+   * `analyzeGamePositions` is built from. Used only by the tactics-prevented
+   * gated fallback (`computeTacticMotifPrevented`'s Step B): one extra call
+   * per game at most on a normal position, never per-ply. */
+  analyzePosition: (fen: string) => Promise<PositionAnalysis>;
   /** Wraps the gateway's light-tier model call. The model is constrained to
    * CoachingPlanSchema by the provider, so this yields an already-valid plan
    * or throws — LLM output never reaches the DB unvalidated. */
@@ -74,12 +80,18 @@ export async function runAnalyzeGameJob(
     await analysesRepo.storeClassifiedMoves(db, analysis.id, classifiedMoves);
     const bookReport = buildBookReport(parsedGame.positions);
     await analysesRepo.storeBookReport(db, analysis.id, bookReport);
+    const preventedCounts = await computeTacticMotifPrevented(
+      { analyzePosition: deps.analyzePosition },
+      classifiedMoves,
+      evals
+    );
     const gameReport = buildGameReportForAnalysis({
       game: parsedGame,
       evals,
       moves: classifiedMoves,
       book: bookReport,
-      pgnResult: game.result
+      pgnResult: game.result,
+      preventedCounts
     });
     await analysesRepo.storeGameReport(db, analysis.id, gameReport);
     const candidateMoments = findCandidateMoments(classifiedMoves, evals);

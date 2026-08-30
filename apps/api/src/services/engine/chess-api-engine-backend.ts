@@ -17,8 +17,8 @@ const CHESS_API_URL = 'https://chess-api.com/v1';
 // equivalent) at 5 — "Greater depth and more thinking time available for
 // project supporters" (their docs). Requests above these are clamped rather
 // than rejected, so a caller using the same depth/multiPv constants every
-// other backend uses (ENGINE_DEFAULT_DEPTH=16, ENGINE_MULTI_PV=3) never
-// notices the cap.
+// other backend uses (ENGINE_DEFAULT_DEPTH=16, ENGINE_MULTI_PV=5) sits
+// exactly at the cap rather than under it.
 const CHESS_API_MAX_DEPTH = 18;
 const CHESS_API_MAX_VARIANTS = 5;
 

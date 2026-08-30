@@ -25,6 +25,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   LICHESS_EVAL_KEY_SIZE,
+  LICHESS_EVAL_MAGIC,
+  LICHESS_EVAL_MAX_LINES,
   LICHESS_EVAL_RECORD_SIZE,
   compareKeys,
   packEntry
@@ -40,7 +42,8 @@ const DEFAULT_OUTPUT_PATH = path.join(scriptDirectory, '../data/lichess-eval-ind
 // internally sorted, yields one globally sorted file.
 const BUCKET_COUNT = 256;
 
-/** @typedef {{ fen: string, cp: number|null, mate: number|null, depth: number, moveUci: string }} ParsedEntry */
+/** @typedef {{ cp: number|null, mate: number|null, moveUci: string }} ParsedLine */
+/** @typedef {{ fen: string, depth: number, lines: ParsedLine[] }} ParsedEntry */
 
 const CP_INT16_MIN = -32768;
 const CP_INT16_MAX = 32767;
@@ -51,9 +54,11 @@ const MATE_INT8_MAX = 127;
  * Parses one line of the official lichess_db_eval.jsonl format:
  * `{"fen": "...", "evals": [{"pvs": [{"cp"|"mate": n, "line": "e2e4 e7e5 ..."}], "knodes": n, "depth": n}, ...]}`
  * (see https://database.lichess.org/#evals for the schema). Picks the
- * deepest `evals` entry and its first (best) pv. Returns null for a line
+ * deepest `evals` entry and keeps every one of its pvs (up to
+ * LICHESS_EVAL_MAX_LINES — the dataset can carry more per entry, but every
+ * consumer of this index only ever wants that many). Returns null for a line
  * this build has no usable evaluation for — malformed JSON, no evals, no
- * pvs, or a pv with neither cp nor mate — rather than throwing: a
+ * pvs, or every pv missing cp/mate — rather than throwing: a
  * multi-hundred-million-line dataset having the occasional bad row is
  * expected, and one bad line shouldn't abort the whole build.
  *
@@ -80,23 +85,28 @@ export function parseLichessEvalLine(line) {
       typeof candidate?.depth === 'number' && (!deepest || candidate.depth > deepest.depth) ? candidate : deepest,
     /** @type {any} */ (null)
   );
-  const pv = best?.pvs?.[0];
-  if (!pv || typeof pv.line !== 'string') return null;
+  if (!Array.isArray(best?.pvs)) return null;
 
-  const moveUci = pv.line.split(' ')[0];
-  if (!moveUci) return null;
+  const lines = best.pvs.slice(0, LICHESS_EVAL_MAX_LINES).flatMap((pv) => {
+    if (typeof pv?.line !== 'string') return [];
+    const moveUci = pv.line.split(' ')[0];
+    if (!moveUci) return [];
 
-  const hasCp = typeof pv.cp === 'number';
-  const hasMate = typeof pv.mate === 'number';
-  if (hasCp === hasMate) return null; // exactly one of cp/mate must be present
+    const hasCp = typeof pv.cp === 'number';
+    const hasMate = typeof pv.mate === 'number';
+    if (hasCp === hasMate) return []; // exactly one of cp/mate must be present
 
-  return {
-    fen,
-    cp: hasCp ? clamp(pv.cp, CP_INT16_MIN, CP_INT16_MAX) : null,
-    mate: hasMate ? clamp(pv.mate, MATE_INT8_MIN, MATE_INT8_MAX) : null,
-    depth: best.depth,
-    moveUci
-  };
+    return [
+      {
+        cp: hasCp ? clamp(pv.cp, CP_INT16_MIN, CP_INT16_MAX) : null,
+        mate: hasMate ? clamp(pv.mate, MATE_INT8_MIN, MATE_INT8_MAX) : null,
+        moveUci
+      }
+    ];
+  });
+  if (lines.length === 0) return null;
+
+  return { fen, depth: best.depth, lines };
 }
 
 function clamp(value, min, max) {
@@ -149,6 +159,7 @@ function closeWriteStream(stream) {
 async function concatenateSortedBuckets(tmpDir, outputPath) {
   const output = await open(outputPath, 'w');
   try {
+    await output.write(LICHESS_EVAL_MAGIC);
     for (let index = 0; index < BUCKET_COUNT; index++) {
       const filePath = bucketPath(tmpDir, index);
       const sorted = sortRecords(await readFile(filePath));

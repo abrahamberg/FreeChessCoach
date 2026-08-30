@@ -37,6 +37,7 @@ export function createAnalyzeGameTask(options: AnalyzeGameTaskOptions): Task {
     const backend = await resolveEngineBackend(options.engineBackendOptions, game.userId);
     const deps: AnalysisJobDependencies = {
       analyzeGamePositions: (fens) => backend.analyzeGame(fens),
+      analyzePosition: (fen) => backend.analyzePosition(fen),
       callPlanner: (messages) => callPlannerModel(options.db, options.gatewayConfig, game.userId, messages)
     };
 

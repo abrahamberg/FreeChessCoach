@@ -113,4 +113,22 @@ describe('buildBotCandidates', () => {
     expect(candidates[0]?.moveSan).toBe('Ng5');
     expect(typeof candidates[0]?.forkInPlies === 'number' || candidates[0]?.forkInPlies === null).toBe(true);
   });
+
+  test('motif is populated from the 1-ply annotation without affecting scoring-relevant fields', async () => {
+    const forkFen = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
+    const analysis: PositionAnalysis = {
+      fen: forkFen,
+      depth: 6,
+      multiPv: 1,
+      bestMove: 'Nd6+',
+      eval: { cp: 300, mateIn: null },
+      lines: [{ moveUci: 'c4d6', moveSan: 'Nd6+', pvSan: ['Nd6+'], cp: 300, mateIn: null }],
+      features: {} as PositionAnalysis['features']
+    };
+    const analyzeBotPosition = vi.fn().mockResolvedValue(analysis);
+
+    const candidates = await buildBotCandidates({ analyzeBotPosition }, forkFen, baseBot());
+
+    expect(candidates[0]).toMatchObject({ moveSan: 'Nd6+', motif: 'fork' });
+  });
 });

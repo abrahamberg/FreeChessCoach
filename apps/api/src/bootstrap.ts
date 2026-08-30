@@ -11,7 +11,7 @@ import type { CoachAgentDependencies } from './services/coach-agent.js';
 import { createStripeClient, type StripeClient } from './services/stripe.js';
 import type { TtsConfig } from './services/tts.js';
 import type { EngineTunnelTransport } from './services/engine/engine-tunnel-transport.js';
-import { LichessEvalIndex } from './services/engine/lichess-eval-index.js';
+import { LichessEvalIndex, LichessEvalIndexFormatError } from './services/engine/lichess-eval-index.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
 
 export function requireEnv(name: string): string {
@@ -228,8 +228,14 @@ export function buildResolveEngineBackendOptions(
  * than throwing: the index lives on a PersistentVolumeClaim that's populated
  * out-of-band (apps/api/data/README.md), so `enabled: true` can legitimately
  * be applied before the file has actually been copied in — that shouldn't
- * crash-loop the api/worker pods. Any other error (e.g. a corrupt/wrong-size
- * file) still throws, since that indicates a real problem worth surfacing loudly. */
+ * crash-loop the api/worker pods. A `LichessEvalIndexFormatError` (the file's
+ * v2 magic header doesn't match — most likely a stale v1-format file still on
+ * disk after this code deployed ahead of a rebuilt index) is treated the same
+ * way: skip the tier with a warning rather than crash-loop, since the safe
+ * rollout order for a format change is "code first" (see
+ * apps/api/data/README.md). Any other error (e.g. a corrupt/wrong-size file
+ * that does have a valid header) still throws, since that indicates a real
+ * problem worth surfacing loudly. */
 export async function openLichessEvalIndexFromEnv(): Promise<LichessEvalIndex | null> {
   const filePath = process.env.LICHESS_EVAL_INDEX_PATH;
   if (!filePath) return null;
@@ -239,6 +245,12 @@ export async function openLichessEvalIndexFromEnv(): Promise<LichessEvalIndex | 
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       console.warn(
         `LICHESS_EVAL_INDEX_PATH is set to "${filePath}" but no file exists there yet — skipping the Lichess eval tier until it's populated.`
+      );
+      return null;
+    }
+    if (error instanceof LichessEvalIndexFormatError) {
+      console.warn(
+        `LICHESS_EVAL_INDEX_PATH is set to "${filePath}" but it isn't a v2-format index yet (${error.message}) — skipping the Lichess eval tier until it's rebuilt.`
       );
       return null;
     }

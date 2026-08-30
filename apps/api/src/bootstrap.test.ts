@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { LICHESS_EVAL_MAGIC } from '@freechesscoach/chess-analysis/lichess-eval-index-format';
 import { noopJobQueue } from './jobs/queue.js';
 import {
   buildCoachAgentBaseDependencies,
@@ -332,10 +333,25 @@ describe('openLichessEvalIndexFromEnv', () => {
     warn.mockRestore();
   });
 
-  test('throws when LICHESS_EVAL_INDEX_PATH points at a corrupt (wrong-size) file', async () => {
+  test('returns null and warns when LICHESS_EVAL_INDEX_PATH points at a stale v1-format file (no v2 magic header)', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'bootstrap-lichess-eval-index-test-'));
     const filePath = join(dir, 'lichess-eval-index.bin');
-    await writeFile(filePath, Buffer.alloc(10));
+    // A v1 record's first bytes are a sha256-derived key, not the v2 magic —
+    // an all-zero buffer of any length demonstrates the same "no valid
+    // header" detection without needing a real v1 record.
+    await writeFile(filePath, Buffer.alloc(26));
+    process.env.LICHESS_EVAL_INDEX_PATH = filePath;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(openLichessEvalIndexFromEnv()).resolves.toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining(filePath));
+    warn.mockRestore();
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  test('throws when LICHESS_EVAL_INDEX_PATH points at a file with a valid header but a corrupt (wrong-size) body', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'bootstrap-lichess-eval-index-test-'));
+    const filePath = join(dir, 'lichess-eval-index.bin');
+    await writeFile(filePath, Buffer.concat([LICHESS_EVAL_MAGIC, Buffer.alloc(10)]));
     process.env.LICHESS_EVAL_INDEX_PATH = filePath;
     await expect(openLichessEvalIndexFromEnv()).rejects.toThrow();
     await rm(dir, { recursive: true, force: true });

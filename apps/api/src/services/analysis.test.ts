@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import { BookReportSchema, CoachingPlanSchema, GameReportSchema, type EngineEval } from '@freechesscoach/shared';
+import { BookReportSchema, CoachingPlanSchema, GameReportSchema, type EngineEval, type PositionAnalysis } from '@freechesscoach/shared';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
@@ -31,6 +31,21 @@ const FORK_PGN = `[Event "Test"]
 [Result "*"]
 
 1. Nd5 *`;
+
+// White's knight on c4 threatens Nd6+, forking the black king (e8) and rook
+// (b7). White plays a quiet king move that doesn't cash in the fork (can't
+// stay on the b-file — the rook already pins it); black then moves the rook
+// off the b-file, defusing the fork (Nd6+ still checks, but no longer also
+// hits the rook) — the "tactics prevented" free-path fixture.
+const FORK_PREVENTED_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
+const FORK_PREVENTED_PGN = `[Event "Test"]
+[SetUp "1"]
+[FEN "${FORK_PREVENTED_FEN}"]
+[White "Ann"]
+[Black "Bob"]
+[Result "*"]
+
+1. Ka2 Rb8 *`;
 
 const VALID_PLAN = CoachingPlanSchema.parse({
   gameSummary: 'A sharp Scholar\'s-mate-adjacent game.',
@@ -89,10 +104,25 @@ describe('runAnalyzeGameJob', () => {
     return vi.fn(async (fens: string[]) => Promise.all(fens.map((fen) => makeEval(fen))));
   }
 
+  // Tactics-prevented's gated fallback (Step B) is exercised directly in
+  // tactic-prevention.test.ts — none of these job-level fixtures are sharp
+  // enough to trigger it, so a plain unused stub is all this level needs.
+  function fakeAnalyzePosition(): AnalysisJobDependencies['analyzePosition'] {
+    return vi.fn().mockResolvedValue({
+      fen: '',
+      depth: 10,
+      multiPv: 0,
+      bestMove: '',
+      eval: { cp: 0, mateIn: null },
+      lines: [],
+      features: {} as PositionAnalysis['features']
+    });
+  }
+
   test('valid plan on the first try -> analysis ready with stored evals and plan', async () => {
     const { gameId, analysisId } = await setupGame();
     const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
-    const deps: AnalysisJobDependencies = { analyzeGamePositions: fakeEngine(), callPlanner };
+    const deps: AnalysisJobDependencies = { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner };
 
     await runAnalyzeGameJob(db, deps, gameId);
 
@@ -117,7 +147,7 @@ describe('runAnalyzeGameJob', () => {
     const { gameId, analysisId } = await setupGame(NAJDORF_PGN);
     const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
 
     const row = await db
       .selectFrom('analyses')
@@ -145,7 +175,7 @@ describe('runAnalyzeGameJob', () => {
     const { gameId, analysisId } = await setupGame(NAJDORF_PGN);
     const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
 
     const row = await db
       .selectFrom('analyses')
@@ -170,7 +200,7 @@ describe('runAnalyzeGameJob', () => {
     const { gameId, analysisId } = await setupGame(FORK_PGN);
     const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
 
     const row = await db
       .selectFrom('analyses')
@@ -189,6 +219,36 @@ describe('runAnalyzeGameJob', () => {
     expect(move.featureDelta.newForks.some((fork) => fork.square === 'd5')).toBe(true);
   });
 
+  // Task 40.3: the whole point of the free path is that this never needs the
+  // gated engine fallback — white's own pre-move analysis (evals[0], the
+  // starting FEN's eval) already lists the fork among its lines, so
+  // computeTacticMotifPrevented's Step A catches it without ever calling
+  // deps.analyzePosition.
+  test('tactics prevented: a defused opponent fork is credited via the free path, no gated engine call', async () => {
+    const { gameId, analysisId } = await setupGame(FORK_PREVENTED_PGN);
+    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
+    const analyzePosition = fakeAnalyzePosition();
+    const analyzeGamePositions = vi.fn(async (fens: string[]) =>
+      fens.map((fen): EngineEval =>
+        fen === FORK_PREVENTED_FEN
+          ? { ply: 0, fen, depth: 10, lines: [{ moveUci: 'c4d6', moveSan: 'Nd6+', cp: 500, mateIn: null }] }
+          : { ply: 0, fen, depth: 10, lines: [{ moveUci: 'a1a2', moveSan: 'Ka2', cp: 0, mateIn: null }] }
+      )
+    );
+
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition, callPlanner }, gameId);
+
+    const row = await db
+      .selectFrom('analyses')
+      .select('gameReport')
+      .where('id', '=', analysisId)
+      .executeTakeFirstOrThrow();
+    const report = GameReportSchema.parse(row.gameReport);
+
+    expect(report.players.black.tacticMotifs.fork.prevented).toBe(1);
+    expect(analyzePosition).not.toHaveBeenCalled();
+  });
+
   // The planner is now constrained to CoachingPlanSchema by the provider, so
   // there is no local parse-and-retry loop left to exercise: the call either
   // yields a valid plan or throws. What still has to hold is that a throw
@@ -197,7 +257,7 @@ describe('runAnalyzeGameJob', () => {
   test('a planner that cannot produce a valid plan -> failed with an error message', async () => {
     const { gameId, analysisId } = await setupGame();
     const callPlanner = vi.fn().mockRejectedValue(new Error('could not generate a valid object'));
-    const deps: AnalysisJobDependencies = { analyzeGamePositions: fakeEngine(), callPlanner };
+    const deps: AnalysisJobDependencies = { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner };
 
     await runAnalyzeGameJob(db, deps, gameId);
 
@@ -231,7 +291,7 @@ describe('runAnalyzeGameJob', () => {
       return Promise.all(fens.map((fen) => makeEval(fen)));
     });
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
 
     // This PGN is 8 positions against a chunk size of 6.
     expect(chunkSizes.length).toBeGreaterThan(1);
@@ -268,7 +328,7 @@ describe('runAnalyzeGameJob', () => {
       }))
     );
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
 
     const row = await db
       .selectFrom('analyses')
@@ -300,7 +360,7 @@ describe('runAnalyzeGameJob', () => {
       }))
     );
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
 
     const row = await db
       .selectFrom('analyses')
@@ -320,6 +380,7 @@ describe('runAnalyzeGameJob', () => {
     const callPlanner = vi.fn();
     const deps: AnalysisJobDependencies = {
       analyzeGamePositions: vi.fn().mockRejectedValue(new Error('engine 500')),
+      analyzePosition: fakeAnalyzePosition(),
       callPlanner
     };
 

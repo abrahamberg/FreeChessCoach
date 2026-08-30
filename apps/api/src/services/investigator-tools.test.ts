@@ -87,8 +87,8 @@ describe('buildInvestigatorTools', () => {
       const result = await tools.list_candidate_moves?.execute?.({ fen: START_FEN, moves: ['e4', 'd4'] }, TOOL_OPTIONS);
 
       expect(result).toEqual([
-        { moveSan: 'e4', createsFork: false, createsHangingPiece: false, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number) },
-        { moveSan: 'd4', createsFork: false, createsHangingPiece: false, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number) }
+        { moveSan: 'e4', createsFork: false, createsHangingPiece: false, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number), motif: null },
+        { moveSan: 'd4', createsFork: false, createsHangingPiece: false, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number), motif: null }
       ]);
       expect(deps.analyzePosition).not.toHaveBeenCalled();
     });
@@ -128,6 +128,69 @@ describe('buildInvestigatorTools', () => {
       const second = await tools.analyze_fen?.execute?.(args, TOOL_OPTIONS);
 
       expect(second).toEqual(first);
+      expect(deps.analyzePosition).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('scan_tactics', () => {
+    const FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
+    const FLIPPED_FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 b - - 0 1';
+    const MOVER_IN_CHECK_FEN = 'rnb1k1nr/pppp1ppp/8/2b5/4P3/8/PPPP1qPP/RNBQKBNR w KQkq - 0 3';
+
+    test('returns available and allowed tactics, each ranked by engine line', async () => {
+      const analyzePosition = vi.fn().mockImplementation((fen: string) => {
+        if (fen === FORK_FEN) {
+          return Promise.resolve({
+            ...positionAnalysisFixture(fen),
+            lines: [
+              { moveUci: 'a1b2', moveSan: 'Kb2', pvSan: ['Kb2'], cp: 400, mateIn: null },
+              { moveUci: 'c4d6', moveSan: 'Nd6+', pvSan: ['Nd6+'], cp: 500, mateIn: null }
+            ]
+          });
+        }
+        return Promise.resolve({
+          ...positionAnalysisFixture(fen),
+          lines: [{ moveUci: 'e8d8', moveSan: 'Kd8', pvSan: ['Kd8'], cp: -400, mateIn: null }]
+        });
+      });
+      const tools = buildInvestigatorTools(makeDeps({ analyzePosition }));
+
+      const result = await tools.scan_tactics?.execute?.({ fen: FORK_FEN }, TOOL_OPTIONS);
+
+      expect(result).toEqual({ available: [{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }], allowed: [] });
+      expect(analyzePosition).toHaveBeenCalledWith(FORK_FEN);
+      expect(analyzePosition).toHaveBeenCalledWith(FLIPPED_FORK_FEN);
+    });
+
+    test('topN excludes a motif line beyond it, and includes it once topN reaches its rank', async () => {
+      const analyzePosition = vi.fn().mockImplementation((fen: string) => {
+        if (fen === FORK_FEN) {
+          return Promise.resolve({
+            ...positionAnalysisFixture(fen),
+            lines: [
+              { moveUci: 'a1b2', moveSan: 'Kb2', pvSan: ['Kb2'], cp: 400, mateIn: null },
+              { moveUci: 'c4d6', moveSan: 'Nd6+', pvSan: ['Nd6+'], cp: 500, mateIn: null }
+            ]
+          });
+        }
+        return Promise.resolve({ ...positionAnalysisFixture(fen), lines: [] });
+      });
+      const tools = buildInvestigatorTools(makeDeps({ analyzePosition }));
+
+      const withoutRank1 = await tools.scan_tactics?.execute?.({ fen: FORK_FEN, topN: 1 }, TOOL_OPTIONS);
+      const withRank1 = await tools.scan_tactics?.execute?.({ fen: FORK_FEN, topN: 2 }, TOOL_OPTIONS);
+
+      expect(withoutRank1).toMatchObject({ available: [] });
+      expect(withRank1).toMatchObject({ available: [{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }] });
+    });
+
+    test('returns allowed: null cleanly, without throwing, when the side to move is in check', async () => {
+      const deps = makeDeps({ analyzePosition: vi.fn().mockResolvedValue(positionAnalysisFixture(MOVER_IN_CHECK_FEN)) });
+      const tools = buildInvestigatorTools(deps);
+
+      const result = await tools.scan_tactics?.execute?.({ fen: MOVER_IN_CHECK_FEN }, TOOL_OPTIONS);
+
+      expect(result).toEqual({ available: [], allowed: null });
       expect(deps.analyzePosition).toHaveBeenCalledTimes(1);
     });
   });

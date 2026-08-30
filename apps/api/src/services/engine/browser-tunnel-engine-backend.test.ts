@@ -1,12 +1,12 @@
 import { describe, expect, test, vi } from 'vitest';
-import { ENGINE_DEFAULT_DEPTH, ENGINE_TUNNEL_PER_POSITION_MS } from '@freechesscoach/shared';
+import { ENGINE_DEFAULT_DEPTH, ENGINE_MULTI_PV, ENGINE_TUNNEL_PER_POSITION_MS } from '@freechesscoach/shared';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
 import { BrowserTunnelEngineBackend } from './browser-tunnel-engine-backend.js';
 
 const VALID_ANALYSIS = {
   fen: 'f',
   depth: 15,
-  multiPv: 3,
+  multiPv: ENGINE_MULTI_PV,
   bestMove: 'e4',
   eval: { cp: 20, mateIn: null },
   lines: [{ moveUci: 'e2e4', moveSan: 'e4', pvSan: ['e4'], cp: 20, mateIn: null }],
@@ -48,7 +48,7 @@ describe('BrowserTunnelEngineBackend', () => {
       // Explicit depth, not undefined: left blank, the browser client falls
       // back to its own constant and can search shallower than the native
       // backend, mixing depths in the fen-keyed eval cache.
-      { kind: 'analyze-position', fen: 'f', depth: ENGINE_DEFAULT_DEPTH, multiPv: 3 },
+      { kind: 'analyze-position', fen: 'f', depth: ENGINE_DEFAULT_DEPTH, multiPv: ENGINE_MULTI_PV },
       // A single position can still be one of the slow ones — same
       // per-position allowance analyzeGame gets, just for one position.
       8000 + ENGINE_TUNNEL_PER_POSITION_MS
@@ -67,7 +67,7 @@ describe('BrowserTunnelEngineBackend', () => {
     // held to the single-position budget.
     expect(transport.request).toHaveBeenCalledWith(
       'user-1',
-      { kind: 'analyze-game', fens: ['f'], depth: ENGINE_DEFAULT_DEPTH, multiPv: 3 },
+      { kind: 'analyze-game', fens: ['f'], depth: ENGINE_DEFAULT_DEPTH, multiPv: ENGINE_MULTI_PV },
       8000 + ENGINE_TUNNEL_PER_POSITION_MS
     );
     expect(result).toEqual(evals);

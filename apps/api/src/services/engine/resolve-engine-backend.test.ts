@@ -143,7 +143,7 @@ describe('resolveEngineBackend', () => {
     vi.stubGlobal('fetch', fetchMock);
     const tunnelTransport: EngineTunnelTransport = { request: vi.fn() };
     const lichessEvalIndex: LichessEvalReader = {
-      lookup: vi.fn().mockResolvedValue({ cp: 20, mate: null, depth: 40, moveUci: 'e7e5' })
+      lookup: vi.fn().mockResolvedValue({ depth: 40, lines: [{ cp: 20, mate: null, moveUci: 'e7e5' }] })
     };
 
     const backend = await resolveEngineBackend(options(tunnelTransport, { lichessEvalIndex }), user.id);
@@ -227,7 +227,7 @@ describe('resolveEngineBackend', () => {
       const fen = 'rnbqkbnr/pppppppp/8/8/8/6N1/PPPPPPPP/RNBQKB1R b KQkq - 1 1';
       vi.stubGlobal('fetch', vi.fn());
       const lichessEvalIndex: LichessEvalReader = {
-        lookup: vi.fn().mockResolvedValue({ cp: 5, mate: null, depth: 40, moveUci: 'e7e5' })
+        lookup: vi.fn().mockResolvedValue({ depth: 40, lines: [{ cp: 5, mate: null, moveUci: 'e7e5' }] })
       };
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 

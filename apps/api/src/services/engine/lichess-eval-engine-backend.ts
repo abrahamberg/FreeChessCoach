@@ -77,23 +77,24 @@ export class LichessEvalEngineBackend implements EngineBackend {
   }
 }
 
+/** Maps every stored line (up to LICHESS_EVAL_MAX_LINES, not just the best
+ * one) into a real multiPv `PositionAnalysis` — this is what actually lets
+ * positions served from this index participate in "available"/"prevented"
+ * tactic scanning with real alternate lines, not just a single move. */
 function toPositionAnalysis(fen: string, result: LichessEvalLookupResult): PositionAnalysis {
-  const moveSan = uciToSan(fen, result.moveUci);
-  const line: PositionAnalysisLine = {
-    moveUci: result.moveUci,
-    moveSan,
-    pvSan: [moveSan],
-    cp: result.cp,
-    mateIn: result.mate
-  };
+  const lines: PositionAnalysisLine[] = result.lines.map((line) => {
+    const moveSan = uciToSan(fen, line.moveUci);
+    return { moveUci: line.moveUci, moveSan, pvSan: [moveSan], cp: line.cp, mateIn: line.mate };
+  });
+  const best = lines[0];
 
   return {
     fen,
     depth: result.depth,
-    multiPv: 1,
-    bestMove: moveSan,
-    eval: { cp: result.cp, mateIn: result.mate },
-    lines: [line],
+    multiPv: lines.length,
+    bestMove: best?.moveSan ?? null,
+    eval: { cp: best?.cp ?? null, mateIn: best?.mateIn ?? null },
+    lines,
     features: computePositionFeatures(fen)
   };
 }

@@ -4,6 +4,7 @@ import type { PositionAnalysis } from '@freechesscoach/shared';
 import { z } from 'zod';
 import { tool, type ToolSet } from '../llm/tools.js';
 import { createTurnGuardState, withTurnGuards, type TurnGuardState } from './coach-tool-guards.js';
+import { scanPositionTactics, type PositionTacticsScan } from './position-tactics.js';
 
 /** The investigation sub-agent's own budget — separate from, and never
  * shared with, the outer coach turn's TOOL_BUDGETS (a fresh TurnGuardState
@@ -11,11 +12,14 @@ import { createTurnGuardState, withTurnGuards, type TurnGuardState } from './coa
  * step cap (position-investigator.ts's MAX_INVESTIGATOR_STEPS) since a
  * single step can contain multiple parallel tool calls — the per-tool
  * budget, not the step count, is the real backstop against an engine-call
- * fan-out. */
+ * fan-out. scan_tactics is capped tighter than list_candidate_moves since,
+ * unlike it, scan_tactics can spend a real engine call (the null-move
+ * "allowed" side). */
 export const INVESTIGATOR_TOOL_BUDGETS: Partial<Record<string, number>> = {
   analyze_fen: 3,
   apply_moves: 4,
-  list_candidate_moves: 4
+  list_candidate_moves: 4,
+  scan_tactics: 2
 };
 
 export interface InvestigatorToolsDependencies {
@@ -46,6 +50,17 @@ export function buildInvestigatorTools(deps: InvestigatorToolsDependencies, stat
         'Run the engine on a FEN and get back a curated summary: the best move with eval and line, other options, and any hanging pieces, forks, or favorable captures. This is your only source of ground-truth engine numbers — never guess an eval or a line.',
       inputSchema: z.object({ fen: z.string() }),
       execute: withTurnGuards(state, 'analyze_fen', (args: { fen: string }) => analyzeFen(deps, args), INVESTIGATOR_TOOL_BUDGETS)
+    }),
+    scan_tactics: tool({
+      description:
+        'For a FEN, list the tactics the side to move can play right now (available) and, separately, the tactics the opponent would get if the side to move does nothing about it (allowed/threats) — both ranked by engine line. Costs one extra engine call for the threat side; use it when you specifically need to reason about "what am I ignoring."',
+      inputSchema: z.object({ fen: z.string(), topN: z.number().int().min(1).max(5).optional() }),
+      execute: withTurnGuards(
+        state,
+        'scan_tactics',
+        (args: { fen: string; topN?: number }) => scanTacticsTool(deps, args),
+        INVESTIGATOR_TOOL_BUDGETS
+      )
     })
   };
 }
@@ -59,4 +74,12 @@ async function applyMoves(args: { fen: string; moves: string[] }): Promise<{ fen
 async function analyzeFen(deps: InvestigatorToolsDependencies, args: { fen: string }): Promise<string> {
   const analysis = await deps.analyzePosition(args.fen);
   return renderEngineAnalysisSummary(analysis);
+}
+
+async function scanTacticsTool(
+  deps: InvestigatorToolsDependencies,
+  args: { fen: string; topN?: number }
+): Promise<PositionTacticsScan> {
+  const analysis = await deps.analyzePosition(args.fen);
+  return scanPositionTactics(deps, args.fen, analysis, { topN: args.topN });
 }

@@ -1,13 +1,17 @@
-import type { EngineEval, EnginePriority, PositionAnalysis } from '@freechesscoach/shared';
+import { ENGINE_MULTI_PV, type EngineEval, type EnginePriority, type PositionAnalysis } from '@freechesscoach/shared';
 
 /**
- * Requests 3 principal variations (the engine's own default is 2) so callers
- * get real candidate moves, not just a single judged line. Fixed across every
- * caller (coach, deepen-analysis job) on purpose: position_evaluations caches
- * by `fen` alone, so a caller requesting a different multiPv would otherwise
- * silently get back whatever multiPv the first writer happened to use.
+ * Requests ENGINE_MULTI_PV principal variations (the engine's own default is
+ * 2) so callers get real candidate moves, not just a single judged line.
+ * Fixed across every caller (coach, deepen-analysis job) on purpose:
+ * position_evaluations caches by `fen` alone, so a caller requesting a
+ * different multiPv would otherwise silently get back whatever multiPv the
+ * first writer happened to use. Re-exported from @freechesscoach/shared,
+ * which is the canonical source (packages/chess-analysis needs the same
+ * value and already depends on that package) — this re-export just keeps
+ * every existing `from '../engine-client.js'` import working.
  */
-export const ENGINE_MULTI_PV = 3;
+export { ENGINE_MULTI_PV };
 
 /** Wraps `POST engine/analyze-game` (architecture §4) — the lean, whole-game
  * batch path used by the fast classify/plan pipeline. */

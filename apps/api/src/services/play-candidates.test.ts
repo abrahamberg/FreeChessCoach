@@ -64,4 +64,35 @@ describe('getCandidateMoveBriefing', () => {
     const call = callLightModel.mock.calls[0]?.[0] as { system: string; user: string };
     expect(call.user).toContain('FOCUS AREAS: none');
   });
+
+  test('folds opponent threats-if-you-pass into the digest without touching the candidates section', async () => {
+    const blackToMoveFen = '4k3/1r6/8/8/2N5/8/8/K7 b - - 0 1';
+    const whiteForkFen = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
+    const analyzePosition = vi.fn().mockImplementation((fen: string) => {
+      if (fen === blackToMoveFen) {
+        return Promise.resolve({
+          ...positionAnalysisFixture(),
+          fen,
+          lines: [{ moveUci: 'e8d8', moveSan: 'Kd8', pvSan: ['Kd8'], cp: -400, mateIn: null }]
+        });
+      }
+      return Promise.resolve({
+        ...positionAnalysisFixture(),
+        fen,
+        lines: [
+          { moveUci: 'a1b2', moveSan: 'Kb2', pvSan: ['Kb2'], cp: 400, mateIn: null },
+          { moveUci: 'c4d6', moveSan: 'Nd6+', pvSan: ['Nd6+'], cp: 500, mateIn: null }
+        ]
+      });
+    });
+    const callLightModel = vi.fn().mockResolvedValue('brief');
+
+    await getCandidateMoveBriefing({ analyzePosition, callLightModel }, blackToMoveFen, []);
+
+    expect(analyzePosition).toHaveBeenCalledWith(whiteForkFen);
+    const call = callLightModel.mock.calls[0]?.[0] as { system: string; user: string };
+    expect(call.user).toContain('OPPONENT THREATS IF YOU PASS');
+    expect(call.user).toContain('Nd6+');
+    expect(call.user).toContain('Kd8');
+  });
 });

@@ -189,7 +189,10 @@ lichessEvalIndex:
   existingClaim: ""
   storageClassName: shared-nas
   accessMode: ReadWriteOnce
-  size: 12Gi
+  # v2 index format (up to 5 lines/position, 63-byte records vs v1's 26)
+  # grows the file ~2.4x, roughly 10.4GB -> ~25GB — sized here with headroom
+  # for dataset growth between rebuilds. See apps/api/data/README.md.
+  size: 30Gi
   # Mounted into api and worker at this path; becomes LICHESS_EVAL_INDEX_PATH.
   mountPath: /var/run/lichess-eval-index/lichess-eval-index.bin
   # LICHESS_EVAL_MIN_DEPTH — a hit shallower than this is treated as a miss
