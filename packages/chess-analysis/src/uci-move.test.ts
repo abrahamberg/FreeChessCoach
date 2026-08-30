@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { uciToSan } from './uci-move.js';
+import { pvUciToSan, uciToSan } from './uci-move.js';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -45,5 +45,68 @@ describe('uciToSan', () => {
       const fen = 'r3kb1r/ppp1pppp/2nq1n2/3p1b2/3P1B2/2N2N2/PPPQPPPP/2KR1B1R b kq - 9 6';
       expect(uciToSan(fen, 'e8a8')).toBe('O-O-O');
     });
+  });
+});
+
+describe('pvUciToSan', () => {
+  test('converts a clean multi-move sequence in order', () => {
+    expect(pvUciToSan(START_FEN, ['e2e4', 'e7e5', 'g1f3'])).toEqual([
+      'e4',
+      'e5',
+      'Nf3'
+    ]);
+  });
+
+  test('returns only the valid prefix when a move is illegal', () => {
+    expect(pvUciToSan(START_FEN, ['e2e4', 'e7e5', 'e2e4', 'g1f3'])).toEqual(['e4', 'e5']);
+  });
+
+  test('returns only the valid prefix when a token is malformed', () => {
+    expect(pvUciToSan(START_FEN, ['e2e4', 'not-a-uci-move', 'e7e5'])).toEqual(['e4']);
+  });
+
+  test('returns an empty array for empty input', () => {
+    expect(pvUciToSan(START_FEN, [])).toEqual([]);
+  });
+
+  test('matches the SAN sequence for the chess-api.com continuation sample', () => {
+    const fenAfterD4E5 = 'rnbqkbnr/ppp2ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2';
+    const continuation = [
+      'g1f3',
+      'e5d4',
+      'f3d4',
+      'g8f6',
+      'b1c3',
+      'f8e7',
+      'g2g3',
+      'b8c6',
+      'f1g2',
+      'e8g8',
+      'e1g1',
+      'c6d4',
+      'd1d4',
+      'c7c6',
+      'f1e1',
+      'c8e6'
+    ];
+
+    expect(pvUciToSan(fenAfterD4E5, continuation)).toEqual([
+      'Nf3',
+      'exd4',
+      'Nxd4',
+      'Nf6',
+      'Nc3',
+      'Be7',
+      'g3',
+      'Nc6',
+      'Bg2',
+      'O-O',
+      'O-O',
+      'Nxd4',
+      'Qxd4',
+      'c6',
+      'Re1',
+      'Be6'
+    ]);
   });
 });

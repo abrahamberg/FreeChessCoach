@@ -23,10 +23,29 @@ const CASTLING_UCI_REMAP: Record<string, string> = {
  */
 export function uciToSan(fen: string, moveUci: string): string {
   const chess = new Chess(fen);
+  return applyUciMove(chess, moveUci).san;
+}
+
+/** Replays a UCI sequence and returns the SAN for its valid prefix. */
+export function pvUciToSan(fen: string, pvUci: string[]): string[] {
+  const chess = new Chess(fen);
+  const sans: string[] = [];
+
+  for (const moveUci of pvUci) {
+    try {
+      sans.push(applyUciMove(chess, moveUci).san);
+    } catch {
+      break;
+    }
+  }
+
+  return sans;
+}
+
+function applyUciMove(chess: Chess, moveUci: string) {
   const normalized = CASTLING_UCI_REMAP[moveUci.slice(0, 4)] ?? moveUci;
   const from = normalized.slice(0, 2);
   const to = normalized.slice(2, 4);
   const promotion = normalized.length > 4 ? normalized.slice(4) : undefined;
-  const move = chess.move({ from, to, promotion });
-  return move.san;
+  return chess.move({ from, to, promotion });
 }
