@@ -42,6 +42,7 @@ export * from './resolve-san-move.js';
 export * from './see.js';
 export * from './strategy-score.js';
 export * from './tactics-score.js';
+export * from './tactic-discovered.js';
 export * from './tactic-pins.js';
 export * from './time-control.js';
 export * from './uci-move.js';
