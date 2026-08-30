@@ -21,6 +21,9 @@ export interface BuildGameReportForAnalysisInput {
    * engine-gated step the caller may skip or that may fail independently of
    * the rest of this report (see tactic-prevention.ts). */
   preventedCounts?: Record<'white' | 'black', Partial<Record<TacticMotifType, number>>>;
+  /** From the same `computeTacticMotifPrevented` call — the denominator
+   * `preventedCounts` is a subset of. */
+  preventableCounts?: Record<'white' | 'black', Partial<Record<TacticMotifType, number>>>;
 }
 
 /**
@@ -49,7 +52,8 @@ export function buildGameReportForAnalysis(input: BuildGameReportForAnalysisInpu
       white: resultForColour(input.pgnResult, 'white'),
       black: resultForColour(input.pgnResult, 'black')
     },
-    preventedCounts: input.preventedCounts
+    preventedCounts: input.preventedCounts,
+    preventableCounts: input.preventableCounts
   });
 }
 

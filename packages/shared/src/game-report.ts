@@ -58,16 +58,16 @@ export type TacticMotifType = z.infer<typeof TacticMotifTypeSchema>;
 const TacticMotifCountSchema = z.object({
   opportunities: z.number().int().nonnegative(),
   found: z.number().int().nonnegative(),
-  /** Tactics of this motif the player actually executed, regardless of
-   * whether it matched the engine's #1 line (see computeTacticMotifPlayed).
-   * Optional with no default — pre-existing stored GameReports won't have
-   * this field (jsonb, no migration); callers must treat it as absent, not
-   * zero, so a historical game's dashboard shows "not yet computed" rather
-   * than a misleading "0 tactics played ever". */
-  played: z.number().int().nonnegative().optional(),
-  /** Opponent tactics of this motif the player defused (see
+  /** Times the opponent had a reachable tactic of this motif right before
+   * the player's move (see computeTacticMotifPrevented). Optional with no
+   * default — pre-existing stored GameReports won't have this field (jsonb,
+   * no migration); callers must treat it as absent, not zero, so a
+   * historical game's dashboard shows "not yet computed" rather than a
+   * misleading "0 tactics faced ever". */
+  preventable: z.number().int().nonnegative().optional(),
+  /** The subset of `preventable` the player actually defused (see
    * computeTacticMotifPrevented). Same optional/no-default/no-migration
-   * convention as `played` above. */
+   * convention as `preventable` above. */
   prevented: z.number().int().nonnegative().optional()
 });
 export const TacticMotifCountsSchema = z.object(

@@ -80,7 +80,7 @@ export async function runAnalyzeGameJob(
     await analysesRepo.storeClassifiedMoves(db, analysis.id, classifiedMoves);
     const bookReport = buildBookReport(parsedGame.positions);
     await analysesRepo.storeBookReport(db, analysis.id, bookReport);
-    const preventedCounts = await computeTacticMotifPrevented(
+    const preventionCounts = await computeTacticMotifPrevented(
       { analyzePosition: deps.analyzePosition },
       classifiedMoves,
       evals
@@ -91,7 +91,8 @@ export async function runAnalyzeGameJob(
       moves: classifiedMoves,
       book: bookReport,
       pgnResult: game.result,
-      preventedCounts
+      preventedCounts: { white: preventionCounts.white.prevented, black: preventionCounts.black.prevented },
+      preventableCounts: { white: preventionCounts.white.preventable, black: preventionCounts.black.preventable }
     });
     await analysesRepo.storeGameReport(db, analysis.id, gameReport);
     const candidateMoments = findCandidateMoments(classifiedMoves, evals);

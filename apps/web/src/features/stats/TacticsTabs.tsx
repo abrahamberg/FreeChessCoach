@@ -1,17 +1,15 @@
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 
-export type TacticsTab = 'played' | 'found' | 'prevented';
+export type TacticsTab = 'found' | 'prevented';
 
-const TAB_ORDER: TacticsTab[] = ['played', 'found', 'prevented'];
-const TAB_LABELS: Record<TacticsTab, string> = { played: 'Played', found: 'Found', prevented: 'Prevented' };
+const TAB_ORDER: TacticsTab[] = ['found', 'prevented'];
+const TAB_LABELS: Record<TacticsTab, string> = { found: 'Should Play', prevented: 'Prevented' };
 
 export const TACTICS_TAB_IDS: Record<TacticsTab, string> = {
-  played: 'tactics-tab-played',
   found: 'tactics-tab-found',
   prevented: 'tactics-tab-prevented'
 };
 export const TACTICS_PANEL_IDS: Record<TacticsTab, string> = {
-  played: 'tactics-panel-played',
   found: 'tactics-panel-found',
   prevented: 'tactics-panel-prevented'
 };
@@ -22,19 +20,19 @@ export interface TacticsTabsProps {
 }
 
 /**
- * Played / Found / Prevented switcher for the stats dashboard's Tactics
+ * "Should Play" / "Prevented" switcher for the stats dashboard's Tactics
  * card — same role="tablist"/role="tab" + roving-tabindex + arrow-key
- * pattern as SessionViewTabs (apps/web/src/features/session/), generalized
- * from 2 tabs to 3. Skips that component's sliding indicator: a single
- * 3-tab caller doesn't earn a --tab-count CSS abstraction, so this uses a
- * plain aria-selected background swap instead.
+ * pattern as SessionViewTabs (apps/web/src/features/session/). Down from a
+ * 3rd "Played" tab (removed): that tab tallied tactics executed regardless
+ * of engine-line match, which duplicated "Should Play"'s own opportunities/
+ * found pair in the user's mental model without a distinct percentage of
+ * its own — see the removed computeTacticMotifPlayed for the prior
+ * semantics.
  */
 export function TacticsTabs({ tab, onSelect }: TacticsTabsProps): ReactNode {
-  const playedRef = useRef<HTMLButtonElement>(null);
   const foundRef = useRef<HTMLButtonElement>(null);
   const preventedRef = useRef<HTMLButtonElement>(null);
   const tabRefs: Record<TacticsTab, React.RefObject<HTMLButtonElement | null>> = {
-    played: playedRef,
     found: foundRef,
     prevented: preventedRef
   };

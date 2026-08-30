@@ -71,7 +71,8 @@ describe('computeTacticMotifPrevented', () => {
     const result = await computeTacticMotifPrevented({ analyzePosition }, allMoves, evals);
 
     expect(analyzePosition).not.toHaveBeenCalled();
-    expect(result.black.fork).toBe(1);
+    expect(result.black.preventable.fork).toBe(1);
+    expect(result.black.prevented.fork).toBe(1);
   });
 
   test('Free path miss + non-tactical position: no engine call, no prevention claimed', async () => {
@@ -92,7 +93,7 @@ describe('computeTacticMotifPrevented', () => {
     const result = await computeTacticMotifPrevented({ analyzePosition }, allMoves, evals);
 
     expect(analyzePosition).not.toHaveBeenCalled();
-    expect(result.black).toEqual({});
+    expect(result.black).toEqual({ preventable: {}, prevented: {} });
   });
 
   test('Free path miss + tactical position: exactly one extra engine call, hit recorded', async () => {
@@ -116,7 +117,8 @@ describe('computeTacticMotifPrevented', () => {
 
     expect(analyzePosition).toHaveBeenCalledTimes(1);
     expect(analyzePosition).toHaveBeenCalledWith(FORK_FEN);
-    expect(result.black.fork).toBe(1);
+    expect(result.black.preventable.fork).toBe(1);
+    expect(result.black.prevented.fork).toBe(1);
   });
 
   test('a move defusing two distinct motif types increments both counters (free path)', async () => {
@@ -141,8 +143,10 @@ describe('computeTacticMotifPrevented', () => {
     const result = await computeTacticMotifPrevented({ analyzePosition }, allMoves, evals);
 
     expect(analyzePosition).not.toHaveBeenCalled();
-    expect(result.black.fork).toBe(1);
-    expect(result.black.freePiece).toBe(1);
+    expect(result.black.preventable.fork).toBe(1);
+    expect(result.black.preventable.freePiece).toBe(1);
+    expect(result.black.prevented.fork).toBe(1);
+    expect(result.black.prevented.freePiece).toBe(1);
   });
 
   test('ply-1 move (no prior opponent turn) is skipped cleanly, no throw', async () => {
@@ -154,6 +158,30 @@ describe('computeTacticMotifPrevented', () => {
     const result = await computeTacticMotifPrevented({ analyzePosition }, allMoves, []);
 
     expect(analyzePosition).not.toHaveBeenCalled();
-    expect(result).toEqual({ white: {}, black: {} });
+    expect(result).toEqual({
+      white: { preventable: {}, prevented: {} },
+      black: { preventable: {}, prevented: {} }
+    });
+  });
+
+  test('a threat that is faced but not defused counts toward preventable without incrementing prevented', async () => {
+    const allMoves = [
+      move({ ply: 1, mover: 'white', moveSan: 'Nc4', fenBefore: FORK_FEN, fenAfter: FORK_FEN_BLACK_TO_MOVE }),
+      move({
+        ply: 2,
+        mover: 'black',
+        moveSan: 'Kd7',
+        fenBefore: FORK_FEN_BLACK_TO_MOVE,
+        fenAfter: FORK_FEN,
+        isTacticalPosition: false
+      })
+    ];
+    const evals: EngineEval[] = [evalAt(FORK_FEN, 0, [FORK_LINE]), evalAt(FORK_FEN_BLACK_TO_MOVE, 1, []), evalAt(FORK_FEN, 2, [FORK_LINE])];
+    const analyzePosition = vi.fn();
+
+    const result = await computeTacticMotifPrevented({ analyzePosition }, allMoves, evals);
+
+    expect(result.black.preventable.fork).toBe(1);
+    expect(result.black.prevented.fork).toBeUndefined();
   });
 });

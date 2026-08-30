@@ -6,7 +6,6 @@ import {
   type TacticMotifCounts,
   type TacticMotifType
 } from '@freechesscoach/shared';
-import { classifyCandidateMove } from './classify-candidate-move.js';
 import { classifyTacticMotif } from './classify-tactic-motif.js';
 import { CONFIG } from './config.js';
 import { moveFlags } from './move-flags.js';
@@ -55,34 +54,6 @@ export function computeTacticMotifCounts(colourMoves: ClassifiedMoveDto[], evals
 
     counts[motif].opportunities += 1;
     if (playedBest && BEST_OR_BETTER.has(move.quality)) counts[motif].found += 1;
-  }
-  return counts;
-}
-
-/**
- * A plain tally of the tactics a colour actually executed during the game —
- * independent of `computeTacticMotifCounts`'s opportunities/found pair,
- * which only ever credits a move that matched the engine's #1 line at that
- * ply. A fork played as the engine's 2nd-best move counts here but not
- * there: this answers "what tactics did you pull off," not "did you find
- * the single best one."
- */
-export function computeTacticMotifPlayed(
-  colourMoves: ClassifiedMoveDto[],
-  evals: EngineEval[]
-): Partial<Record<TacticMotifType, number>> {
-  const counts: Partial<Record<TacticMotifType, number>> = {};
-
-  for (const move of colourMoves) {
-    if (!move.fenBefore) continue;
-
-    const motif = classifyCandidateMove(move.fenBefore, move.moveSan, move.mover, {
-      quality: move.quality,
-      linesAtFenBefore: evals[move.ply - 1]?.lines
-    });
-    if (!motif) continue;
-
-    counts[motif] = (counts[motif] ?? 0) + 1;
   }
   return counts;
 }

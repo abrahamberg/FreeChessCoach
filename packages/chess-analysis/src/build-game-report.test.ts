@@ -120,42 +120,4 @@ describe('buildGameReport', () => {
     expect(first).toBe(second);
   });
 
-  test('tacticMotifs.fork.played credits a fork the player executed even though it was not the engine\'s #1 line', () => {
-    // 6.Nxf7 forks the queen (d8) and rook (h8) — the classic Fried Liver
-    // idea — but the eval below deliberately ranks 6.Bxd5 (a quiet
-    // recapture) as the engine's best move at that ply, so
-    // computeTacticMotifCounts's opportunities/found never credit the fork:
-    // this move is only detectable via the actual move played.
-    const forkPgn = `[White "Alice"]
-[Black "Bob"]
-[Result "1-0"]
-
-1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. Ng5 d5 5. exd5 Nxd5 6. Nxf7 Kxf7 1-0`;
-    const game = parsePgn(forkPgn);
-    // positions[i].ply === i by construction (see pgn.ts) and
-    // ClassifiedMoveDto.ply mirrors positions[i].ply for the move that
-    // produced position i — so evals[forkIndex - 1] is the eval of the
-    // position right before Nxf7 was played (evals[move.ply - 1]).
-    const forkIndex = game.positions.findIndex((position) => position.moveSan === 'Nxf7');
-    expect(forkIndex).toBeGreaterThan(0);
-
-    const evals = buildEvals(game.positions).map((evalResult, index) =>
-      index === forkIndex - 1 ? { ...evalResult, lines: [{ moveUci: 'c4d5', moveSan: 'Bxd5', cp: 20, mateIn: null }] } : evalResult
-    );
-    const moves = classifyMoves(game, evals, 'white');
-
-    const report = buildGameReport({
-      game,
-      evals,
-      moves,
-      book: buildFixtureBook(),
-      engine: { name: 'stockfish', depth: 16, multiPv: 1 },
-      priorRating: { white: null, black: null },
-      result: { white: 'win', black: 'loss' }
-    });
-
-    expect(report.players.white.tacticMotifs.fork.played).toBe(1);
-    expect(report.players.white.tacticMotifs.fork.opportunities).toBe(0);
-    expect(report.players.white.tacticMotifs.fork.found).toBe(0);
-  });
 });

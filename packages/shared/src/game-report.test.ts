@@ -49,20 +49,20 @@ describe('TacticMotifCountsSchema', () => {
     expect(TacticMotifCountsSchema.safeParse(invalid).success).toBe(false);
   });
 
-  test('accepts a pre-existing stored report lacking played/prevented — no migration for jsonb rows', () => {
-    // zeroTacticMotifCounts() deliberately never sets played/prevented,
+  test('accepts a pre-existing stored report lacking preventable/prevented — no migration for jsonb rows', () => {
+    // zeroTacticMotifCounts() deliberately never sets preventable/prevented,
     // simulating a GameReport stored before those fields existed.
     const result = TacticMotifCountsSchema.safeParse(zeroTacticMotifCounts());
     expect(result.success).toBe(true);
-    expect(result.success && result.data.fork.played).toBeUndefined();
+    expect(result.success && result.data.fork.preventable).toBeUndefined();
     expect(result.success && result.data.fork.prevented).toBeUndefined();
   });
 
-  test('accepts played/prevented when present', () => {
-    const withNewFields = { ...zeroTacticMotifCounts(), fork: { opportunities: 3, found: 2, played: 2, prevented: 1 } };
+  test('accepts preventable/prevented when present', () => {
+    const withNewFields = { ...zeroTacticMotifCounts(), fork: { opportunities: 3, found: 2, preventable: 2, prevented: 1 } };
     const result = TacticMotifCountsSchema.safeParse(withNewFields);
     expect(result.success).toBe(true);
-    expect(result.success && result.data.fork.played).toBe(2);
+    expect(result.success && result.data.fork.preventable).toBe(2);
     expect(result.success && result.data.fork.prevented).toBe(1);
   });
 });

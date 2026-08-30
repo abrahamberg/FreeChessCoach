@@ -16,7 +16,7 @@ const TACTIC_MOTIF_TYPES: TacticMotifType[] = [
 ];
 
 function zeroTacticMotifs(
-  overrides: Partial<Record<TacticMotifType, { opportunities: number; found: number; played?: number; prevented?: number }>> = {}
+  overrides: Partial<Record<TacticMotifType, { opportunities: number; found: number; preventable?: number; prevented?: number }>> = {}
 ) {
   const base = Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }]));
   return { ...base, ...overrides } as PlayerReport['tacticMotifs'];
@@ -95,24 +95,24 @@ describe('buildStatsDashboard', () => {
     expect(dashboard.tactics.pin).toEqual({ opportunities: 0, found: 0 });
   });
 
-  test('sums played/prevented only across entries that report them, leaving them undefined otherwise', () => {
+  test('sums preventable/prevented only across entries that report them, leaving them undefined otherwise', () => {
     const entries: StatsEntry[] = [
       entry({
         gameReport: buildGameReport({
-          white: { tacticMotifs: zeroTacticMotifs({ fork: { opportunities: 3, found: 2, played: 2, prevented: 1 } }) }
+          white: { tacticMotifs: zeroTacticMotifs({ fork: { opportunities: 3, found: 2, preventable: 2, prevented: 1 } }) }
         })
       }),
       entry({
-        // Pre-Phase-39 game: no played/prevented recorded at all.
+        // Pre-Phase-39 game: no preventable/prevented recorded at all.
         gameReport: buildGameReport({ white: { tacticMotifs: zeroTacticMotifs({ fork: { opportunities: 2, found: 1 } }) } })
       })
     ];
 
     const dashboard = buildStatsDashboard(entries);
 
-    expect(dashboard.tactics.fork).toEqual({ opportunities: 5, found: 3, played: 2, prevented: 1 });
-    // No entry ever reported pin's played/prevented — stays undefined, not 0.
-    expect(dashboard.tactics.pin.played).toBeUndefined();
+    expect(dashboard.tactics.fork).toEqual({ opportunities: 5, found: 3, preventable: 2, prevented: 1 });
+    // No entry ever reported pin's preventable/prevented — stays undefined, not 0.
+    expect(dashboard.tactics.pin.preventable).toBeUndefined();
     expect(dashboard.tactics.pin.prevented).toBeUndefined();
   });
 

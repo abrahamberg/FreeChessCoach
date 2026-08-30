@@ -48,7 +48,7 @@ import {
 } from './rating-estimate.js';
 import { computePositionFeatures } from './position-features.js';
 import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
-import { computeTacticMotifCounts, computeTacticMotifPlayed } from './game-tactic-motifs.js';
+import { computeTacticMotifCounts } from './game-tactic-motifs.js';
 import { CONFIG } from './config.js';
 
 type Colour = 'white' | 'black';
@@ -68,8 +68,12 @@ export interface BuildGameReportInput {
   /** Per-colour tally from `computeTacticMotifPrevented` (apps/api's
    * tactic-prevention.ts) — optional since that step is engine-gated and
    * lives outside this pure package; omitted entirely leaves every motif's
-   * `prevented` field `undefined`, not 0 (see TacticMotifCountSchema). */
+   * `prevented`/`preventable` fields `undefined`, not 0 (see
+   * TacticMotifCountSchema). */
   preventedCounts?: Record<Colour, Partial<Record<TacticMotifType, number>>>;
+  /** The denominator `preventedCounts` is a subset of — see
+   * TacticPreventionCounts.preventable in apps/api's tactic-prevention.ts. */
+  preventableCounts?: Record<Colour, Partial<Record<TacticMotifType, number>>>;
 }
 
 interface GameContext {
@@ -107,8 +111,24 @@ export function buildGameReport(input: BuildGameReportInput): GameReport {
     // (§6.1), which never happens here, so this is never the fallback branch.
     phases: { ...boundaries, openingSource: 'book' },
     players: {
-      white: buildPlayerReport('white', moves, context, input.priorRating.white, input.result.white, input.preventedCounts?.white),
-      black: buildPlayerReport('black', moves, context, input.priorRating.black, input.result.black, input.preventedCounts?.black)
+      white: buildPlayerReport(
+        'white',
+        moves,
+        context,
+        input.priorRating.white,
+        input.result.white,
+        input.preventedCounts?.white,
+        input.preventableCounts?.white
+      ),
+      black: buildPlayerReport(
+        'black',
+        moves,
+        context,
+        input.priorRating.black,
+        input.result.black,
+        input.preventedCounts?.black,
+        input.preventableCounts?.black
+      )
     },
     moves
   };
@@ -146,7 +166,8 @@ function buildPlayerReport(
   context: GameContext,
   prior: number | null,
   result: GameResultForColour,
-  preventedCounts?: Partial<Record<TacticMotifType, number>>
+  preventedCounts?: Partial<Record<TacticMotifType, number>>,
+  preventableCounts?: Partial<Record<TacticMotifType, number>>
 ): PlayerReport {
   const colourMoves = moves.filter((move) => move.mover === colour);
   const weights = volatilityWeights(context.winPctSeriesWhite, colourMoves.map((move) => move.ply));
@@ -182,24 +203,20 @@ function buildPlayerReport(
     acpl: round1(mean(colourMoves.map((move) => move.cpLoss))),
     estimatedRating: buildEstimatedRating(colourMoves, weights, accuracy, counts, prior),
     tacticMotifs: mergeMotifCounts(
-      mergeMotifCounts(
-        computeTacticMotifCounts(colourMoves, context.evals),
-        'played',
-        computeTacticMotifPlayed(colourMoves, context.evals)
-      ),
+      mergeMotifCounts(computeTacticMotifCounts(colourMoves, context.evals), 'preventable', preventableCounts ?? {}),
       'prevented',
       preventedCounts ?? {}
     )
   };
 }
 
-/** Folds a `played`/`prevented` tally into `computeTacticMotifCounts`'s
+/** Folds a `preventable`/`prevented` tally into `computeTacticMotifCounts`'s
  * opportunities/found shape, additively — a motif with no count for `field`
  * keeps that field `undefined` (not 0), matching its no-migration,
  * absent-not-zero contract (see TacticMotifCountSchema). */
 function mergeMotifCounts(
   counts: TacticMotifCounts,
-  field: 'played' | 'prevented',
+  field: 'preventable' | 'prevented',
   values: Partial<Record<TacticMotifType, number>>
 ): TacticMotifCounts {
   const merged = { ...counts };

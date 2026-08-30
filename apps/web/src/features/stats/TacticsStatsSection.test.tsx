@@ -50,32 +50,9 @@ describe('TacticsStatsSection', () => {
     expect(screen.getByRole('button', { name: 'Show fewer' })).toBeInTheDocument();
   });
 
-  test('switching to the Played tab shows raw played counts, not fractions', async () => {
+  test('the Prevented tab shows a percent + prevented/preventable pair', async () => {
     const user = userEvent.setup();
-    const motifs = { ...zeroMotifs(), fork: { opportunities: 5, found: 2, played: 3 } };
-
-    render(<TacticsStatsSection motifs={motifs} />);
-    await user.click(screen.getByRole('tab', { name: 'Played' }));
-
-    expect(screen.getByText('Forks')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.queryByText('40% (2/5)')).not.toBeInTheDocument();
-  });
-
-  test('a motif with no recorded played count on the Played tab shows "—", not "0"', async () => {
-    const user = userEvent.setup();
-    const motifs = { ...zeroMotifs(), fork: { opportunities: 5, found: 2 } };
-
-    render(<TacticsStatsSection motifs={motifs} />);
-    await user.click(screen.getByRole('tab', { name: 'Played' }));
-
-    expect(screen.getByText('Forks')).toBeInTheDocument();
-    expect(screen.getByText('—')).toBeInTheDocument();
-  });
-
-  test('the Prevented tab surfaces a motif never flagged as an opportunity, when it has a prevented count', async () => {
-    const user = userEvent.setup();
-    const motifs = { ...zeroMotifs(), pin: { opportunities: 0, found: 0, prevented: 1 } };
+    const motifs = { ...zeroMotifs(), pin: { opportunities: 0, found: 0, preventable: 4, prevented: 1 } };
 
     render(<TacticsStatsSection motifs={motifs} />);
     expect(screen.queryByText('Pins')).not.toBeInTheDocument();
@@ -83,12 +60,22 @@ describe('TacticsStatsSection', () => {
     await user.click(screen.getByRole('tab', { name: 'Prevented' }));
 
     expect(screen.getByText('Pins')).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('25% (1/4)')).toBeInTheDocument();
   });
 
-  test('shows the Found tab by default', () => {
+  test('the Prevented tab omits a motif with no preventable count', async () => {
+    const user = userEvent.setup();
+    const motifs = { ...zeroMotifs(), fork: { opportunities: 5, found: 2 } };
+
+    render(<TacticsStatsSection motifs={motifs} />);
+    await user.click(screen.getByRole('tab', { name: 'Prevented' }));
+
+    expect(screen.queryByText('Forks')).not.toBeInTheDocument();
+  });
+
+  test('shows the Should Play tab by default', () => {
     const motifs = { ...zeroMotifs(), fork: { opportunities: 5, found: 2 } };
     render(<TacticsStatsSection motifs={motifs} />);
-    expect(screen.getByRole('tab', { name: 'Found' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Should Play' })).toHaveAttribute('aria-selected', 'true');
   });
 });

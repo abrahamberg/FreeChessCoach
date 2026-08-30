@@ -1,6 +1,6 @@
 import type { EngineLine } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { findDefusedThreats } from './tactic-prevention-check.js';
+import { findDefusedThreats, scanThreatOutcome } from './tactic-prevention-check.js';
 
 const FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
 const ROOK_MOVED_AWAY_FEN = '4k3/8/8/8/2N5/8/8/K7 w - - 0 1';
@@ -60,5 +60,17 @@ describe('findDefusedThreats', () => {
 
   test('handles empty candidate lines on both sides without throwing', () => {
     expect(findDefusedThreats(FORK_FEN, ROOK_MOVED_AWAY_FEN, 'white', [], [])).toEqual([]);
+  });
+});
+
+describe('scanThreatOutcome', () => {
+  test('preventable is the before-set regardless of whether the after-set still has it', () => {
+    const stillThere = scanThreatOutcome(FORK_FEN, FORK_FEN, 'white', [FORK_LINE], [FORK_LINE]);
+    expect(stillThere.preventable).toEqual(['fork']);
+    expect(stillThere.defused).toEqual([]);
+
+    const gone = scanThreatOutcome(FORK_FEN, ROOK_MOVED_AWAY_FEN, 'white', [FORK_LINE], [FORK_LINE]);
+    expect(gone.preventable).toEqual(['fork']);
+    expect(gone.defused).toEqual(['fork']);
   });
 });

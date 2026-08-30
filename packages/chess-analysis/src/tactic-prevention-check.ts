@@ -40,7 +40,35 @@ export function findDefusedThreats(
   candidateLinesBefore: readonly EngineLine[],
   candidateLinesAfter: readonly EngineLine[]
 ): TacticMotifType[] {
+  return scanThreatOutcome(beforeFen, afterFen, opponent, candidateLinesBefore, candidateLinesAfter).defused;
+}
+
+export interface ThreatOutcome {
+  /** Every motif type reachable by `opponent` at `beforeFen` — the
+   * denominator for "tactics prevented" (see computeTacticMotifPrevented):
+   * a motif the opponent could have executed, whether or not the mover's
+   * reply actually defused it. */
+  preventable: TacticMotifType[];
+  /** The subset of `preventable` no longer reachable at `afterFen` —
+   * identical to `findDefusedThreats`'s return value. */
+  defused: TacticMotifType[];
+}
+
+/**
+ * The combined before/after motif scan `findDefusedThreats` is built on,
+ * with the "before" set (discarded there) surfaced too — both are derived
+ * from the same two `scanAvailableMotifs` calls, so exposing `preventable`
+ * costs nothing extra.
+ */
+export function scanThreatOutcome(
+  beforeFen: string,
+  afterFen: string,
+  opponent: 'white' | 'black',
+  candidateLinesBefore: readonly EngineLine[],
+  candidateLinesAfter: readonly EngineLine[]
+): ThreatOutcome {
   const before = scanAvailableMotifs(beforeFen, candidateLinesBefore);
   const after = scanAvailableMotifs(afterFen, candidateLinesAfter);
-  return [...before.motifs].filter((motif) => !after.motifs.has(motif));
+  const preventable = [...before.motifs];
+  return { preventable, defused: preventable.filter((motif) => !after.motifs.has(motif)) };
 }

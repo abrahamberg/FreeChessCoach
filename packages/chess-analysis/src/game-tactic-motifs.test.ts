@@ -1,6 +1,6 @@
 import { TACTIC_MOTIF_TYPES, type ClassifiedMoveDto, type EngineEval, type TacticMotifCounts } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { computeTacticMotifCounts, computeTacticMotifPlayed, computeTacticMotifRankHits } from './game-tactic-motifs.js';
+import { computeTacticMotifCounts, computeTacticMotifRankHits } from './game-tactic-motifs.js';
 
 const FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
 /** White to move; the fork/pin fixtures used elsewhere (classify-tactic-motif.test.ts's
@@ -68,70 +68,6 @@ describe('computeTacticMotifCounts', () => {
     );
 
     expect(counts.fork).toEqual({ opportunities: 0, found: 0 });
-  });
-});
-
-describe('computeTacticMotifPlayed', () => {
-  test('counts a played tactic even when it was not the engine\'s #1 line', () => {
-    const move = baseMove({
-      ply: 1,
-      moveSan: 'Nd6+',
-      quality: 'good',
-      moveFlags: {
-        isCapture: false,
-        isCheck: true,
-        isCheckmate: false,
-        isPromotion: false,
-        isCastle: false,
-        movedPieceType: 'n',
-        capturedPieceType: null,
-        legalMoveCount: 10
-      }
-    });
-    const evalWithDifferentBest: EngineEval = {
-      ply: 1,
-      fen: FORK_FEN,
-      depth: 16,
-      lines: [{ moveUci: 'a1b1', moveSan: 'Kb1', cp: 0, mateIn: null }]
-    };
-
-    const played = computeTacticMotifPlayed([move], [evalWithDifferentBest]);
-
-    expect(played.fork).toBe(1);
-  });
-
-  test('a quiet, non-tactical move contributes nothing', () => {
-    const quietFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-    const move = baseMove({ ply: 1, moveSan: 'e4', quality: 'good', fenBefore: quietFen, isTacticalPosition: false });
-    const quietEval: EngineEval = {
-      ply: 1,
-      fen: quietFen,
-      depth: 16,
-      lines: [
-        { moveUci: 'e2e4', moveSan: 'e4', cp: 25, mateIn: null },
-        { moveUci: 'd2d4', moveSan: 'd4', cp: 22, mateIn: null }
-      ]
-    };
-
-    const played = computeTacticMotifPlayed([move], [quietEval]);
-
-    expect(played).toEqual({});
-  });
-
-  test('skips a move with no stored fenBefore, without throwing', () => {
-    const move = baseMove({ ply: 1, moveSan: 'Nd6+', quality: 'good', fenBefore: undefined });
-
-    expect(() => computeTacticMotifPlayed([move], [evalAt(1, 'c4d6', 'Nd6+')])).not.toThrow();
-    expect(computeTacticMotifPlayed([move], [evalAt(1, 'c4d6', 'Nd6+')])).toEqual({});
-  });
-
-  test('tallies multiple occurrences of the same motif across the game', () => {
-    const first = baseMove({ ply: 1, moveSan: 'Nd6+', quality: 'good' });
-    const second = baseMove({ ply: 3, moveSan: 'Nd6+', quality: 'good' });
-
-    const played = computeTacticMotifPlayed([first, second], [evalAt(1, 'c4d6', 'Nd6+'), evalAt(3, 'c4d6', 'Nd6+')]);
-
-    expect(played.fork).toBe(2);
   });
 });
 
