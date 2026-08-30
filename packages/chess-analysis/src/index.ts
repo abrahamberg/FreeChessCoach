@@ -7,6 +7,7 @@ export * from './build-game-report.js';
 export * from './candidate-moves.js';
 export * from './classify.js';
 export * from './classify-brilliant.js';
+export * from './classify-tactic-motif.js';
 export * from './classify-great.js';
 export * from './classify-miss.js';
 export * from './classify-move.js';
