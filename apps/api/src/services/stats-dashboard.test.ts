@@ -109,4 +109,39 @@ describe('getStatsDashboard', () => {
     expect(dashboard.gamesAnalyzed).toBe(0);
     expect(dashboard.opening.averageBookMoves).toBeNull();
   });
+
+  // Regression: a `gameReport` stored before tacticMotifs/strategySubScores/
+  // endgame existed on PlayerReportSchema (jsonb, no migration) used to throw
+  // a TypeError deep in buildStatsDashboard's aggregators, 500ing the whole
+  // dashboard instead of just excluding that one game.
+  test('skips a ready analysis whose stored gameReport predates the current schema, instead of 500ing', async () => {
+    const user = await makeUser();
+    const game = await gamesRepo.insert(db, {
+      userId: user.id,
+      pgn: '1. e4 e5',
+      source: 'lichess',
+      userColor: 'white',
+      whiteName: 'Ann',
+      blackName: 'Bob',
+      result: '1-0',
+      timeControl: '600+0',
+      eco: 'C50',
+      playedAt: null
+    });
+    const analysis = await analysesRepo.insertQueued(db, game.id);
+    const oldShapePlayerReport = { ...buildPlayerReport() } as Partial<PlayerReport>;
+    delete oldShapePlayerReport.tacticMotifs;
+    delete oldShapePlayerReport.strategySubScores;
+    delete oldShapePlayerReport.endgame;
+    const oldShapeReport = {
+      ...FIXTURE_GAME_REPORT,
+      players: { white: oldShapePlayerReport, black: oldShapePlayerReport }
+    } as unknown as GameReport;
+    await analysesRepo.storeGameReport(db, analysis.id, oldShapeReport);
+    await analysesRepo.updateStatus(db, analysis.id, 'ready');
+
+    const dashboard = await getStatsDashboard(db, user.id, 'all', 'rapid');
+
+    expect(dashboard.gamesAnalyzed).toBe(0);
+  });
 });

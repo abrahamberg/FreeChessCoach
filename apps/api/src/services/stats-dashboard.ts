@@ -1,5 +1,5 @@
 import { buildStatsDashboard, classifyTimeControl, type StatsEntry } from '@freechesscoach/chess-analysis';
-import type { GameSpeedFilter, StatsDashboard, StatsRange } from '@freechesscoach/shared';
+import { GameReportSchema, type GameSpeedFilter, type StatsDashboard, type StatsRange } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import type { Database } from '../db/schema.js';
@@ -35,14 +35,28 @@ export async function getStatsDashboard(
   const rows = await analysesRepo.listReadyReportsForUser(db, userId, since);
 
   const entries: StatsEntry[] = rows
-    .map((row) => ({
-      gameReport: row.gameReport,
-      result: resultForColour(row.pgnResult, row.userColor),
-      userColor: row.userColor,
-      playedAt: row.playedAt,
-      speed: classifyTimeControl(row.timeControl)
-    }))
+    .map((row) => toStatsEntry(row))
+    .filter((entry): entry is StatsEntry => entry !== null)
     .filter((entry) => speedFilter === 'all' || entry.speed === speedFilter);
 
   return buildStatsDashboard(entries);
+}
+
+/**
+ * `gameReport` is jsonb with no migration (see `game-report.ts`'s own
+ * comments on `tacticMotifs`/`strategySubScores`/`endgame`) — a report
+ * stored before those fields existed fails `GameReportSchema` and is
+ * skipped here rather than crashing the whole dashboard. The user can pick
+ * these back up by re-analyzing the game.
+ */
+function toStatsEntry(row: analysesRepo.StatsSourceRow): StatsEntry | null {
+  const parsed = GameReportSchema.safeParse(row.gameReport);
+  if (!parsed.success) return null;
+  return {
+    gameReport: parsed.data,
+    result: resultForColour(row.pgnResult, row.userColor),
+    userColor: row.userColor,
+    playedAt: row.playedAt,
+    speed: classifyTimeControl(row.timeControl)
+  };
 }

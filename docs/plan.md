@@ -1420,9 +1420,31 @@ hook (TanStack Query, mirrors `DashboardPage`'s `apiGet` pattern); route in
 
 ## Verification (end of Phase 31)
 
-- `npm run lint && npm run typecheck && npm test`, green.
-- Manual (`npm run dev`): bulk-import 3–5 rapid games via stat-bank mode,
-  confirm "Not analyzed" → click "Get coach analysis" per game → Ready;
-  open `/stats`, confirm all four sections populate and the range/rapid
-  filters change the numbers; confirm a blitz game imported normally is
-  excluded when the rapid filter is on.
+- [x] `npm run lint && npm run typecheck && npm test`, green (two `lichess.test.ts`/
+      `credits.test.ts` testcontainers-startup timeouts on one run were a
+      resource-contention flake from running the full suite alongside the
+      already-live `npm run dev` stack used for manual testing below — both
+      pass cleanly in isolation, confirmed by re-running `npx vitest run` on
+      each file directly).
+- [x] Manual pass against the running `npm run dev` stack (dev-stub auth,
+      already-seeded real user data — not a fresh DB): hit
+      `GET /api/users/me/stats` directly and **found a real bug**: every
+      existing `ready` analysis in the dev DB predates this session's
+      `tacticMotifs`/`strategySubScores`/`endgame` `PlayerReportSchema`
+      fields (confirmed via `jsonb_exists(... , 'tacticMotifs') = false` for
+      every row), and `buildStatsDashboard` had no guard for that — it threw
+      deep inside an aggregator, 500ing the whole endpoint instead of just
+      excluding that one game, exactly the failure mode this doc's own
+      Phase 22 context section warned about ("old rows simply won't have
+      the new fields — every aggregator must treat them as absent... and
+      either skip the game... or note it") but that Phase 29 didn't actually
+      implement. **Fix:** `getStatsDashboard` now runs each row's
+      `gameReport` through `GameReportSchema.safeParse` and skips (does not
+      count towards `gamesAnalyzed`) any row that fails — an old-shape
+      report is silently excluded rather than crashing the dashboard, with
+      a regression test (`stats-dashboard.test.ts`) using a `gameReport`
+      built with those three fields deleted. Commit:
+      `fix: skip stats dashboard entries with a pre-Phase-24 gameReport shape`.
+- [ ] Manual browser pass (`/games`, `/stats`, stat-bank bulk import →
+      "Get coach analysis" → `/stats` populating, range/speed filters)
+      against the live dev stack — in progress.
