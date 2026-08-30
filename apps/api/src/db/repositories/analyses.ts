@@ -1,6 +1,14 @@
 import type { ClassifiedMove } from '@freechesscoach/chess-analysis';
 import { sql, type Kysely } from 'kysely';
-import type { AnalysisStatus, BookReport, CoachingPlan, EngineEval, GameReport } from '@freechesscoach/shared';
+import {
+  ImportableGameSourceSchema,
+  type AnalysisStatus,
+  type BookReport,
+  type CoachingPlan,
+  type EngineEval,
+  type GameReport,
+  type PlayerColor
+} from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export interface AnalysisRow {
@@ -244,4 +252,51 @@ export function markFailed(db: Kysely<Database>, id: string, error: string): Pro
     .where('id', '=', id)
     .execute()
     .then(() => undefined);
+}
+
+export interface StatsSourceRow {
+  gameReport: GameReport;
+  /** The PGN `Result` header — resolved to a per-colour outcome at the
+   * service layer, same as `buildGameReportForAnalysis`'s own resultForColour. */
+  pgnResult: string | null;
+  userColor: PlayerColor;
+  playedAt: Date | null;
+  timeControl: string | null;
+}
+
+/** Feeds the stats dashboard (Phase 29): every ready analysis for one of
+ * `userId`'s own imported games, optionally restricted to games played on or
+ * after `since` (falls back to `createdAt` when `playedAt` is null, matching
+ * `GameRow`'s own `date = game.playedAt ?? game.createdAt` display
+ * convention). `coach_play`/`vs_bot` games are excluded — the dashboard is
+ * about performance against real opponents, not practice sessions against
+ * the coach or a bot — by scoping to `ImportableGameSourceSchema`'s three
+ * values rather than hand-duplicating that list here. */
+export async function listReadyReportsForUser(
+  db: Kysely<Database>,
+  userId: string,
+  since: Date | null
+): Promise<StatsSourceRow[]> {
+  let query = db
+    .selectFrom('analyses')
+    .innerJoin('games', 'games.id', 'analyses.gameId')
+    .select([
+      'analyses.gameReport as gameReport',
+      'games.result as pgnResult',
+      'games.userColor as userColor',
+      'games.playedAt as playedAt',
+      'games.timeControl as timeControl'
+    ])
+    .where('analyses.status', '=', 'ready')
+    .where('games.userId', '=', userId)
+    .where('games.source', 'in', ImportableGameSourceSchema.options);
+
+  if (since) {
+    query = query.where((eb) =>
+      eb.or([eb('games.playedAt', '>=', since), eb.and([eb('games.playedAt', 'is', null), eb('games.createdAt', '>=', since)])])
+    );
+  }
+
+  const rows = await query.execute();
+  return rows.map((row) => ({ ...row, gameReport: row.gameReport as GameReport }));
 }

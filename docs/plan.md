@@ -1252,13 +1252,21 @@ isolation before Phase 24 wires them into the batch pipeline.
 
 **Files:** `apps/api/src/db/repositories/analyses.ts`.
 
-- [ ] `listReadyReportsForUser(db, userId, since: Date | null)` — joins
-      `analyses` (`status = 'ready'`) to `games`, scoped by `games.user_id`,
-      optional `games.played_at >= since` (fallback to `created_at`).
-- [ ] Test: out-of-range game excluded; non-ready analysis excluded;
-      `coach_play`/`vs_bot` games excluded by default (decide + comment the
-      reasoning at implementation time).
-- [ ] Commit: `feat: repository query for ready game reports in a date range`.
+- [x] `listReadyReportsForUser(db, userId, since: Date | null):
+      Promise<StatsSourceRow[]>` — joins `analyses` (`status = 'ready'`) to
+      `games`, scoped by `games.userId`, optional
+      `games.playedAt >= since OR (playedAt IS NULL AND createdAt >= since)`.
+      Decided to exclude `coach_play`/`vs_bot` games by scoping
+      `games.source IN` `ImportableGameSourceSchema.options` (`'paste' |
+      'upload' | 'lichess'`) rather than hand-duplicating that list — the
+      dashboard is about performance against real opponents, not practice
+      sessions.
+- [x] Tests (real Postgres via testcontainers, new
+      `apps/api/src/db/repositories/analyses.test.ts`): a ready imported
+      game is returned; a non-ready analysis is excluded; `coach_play` is
+      excluded; another user's game never leaks in; `since` filters on
+      `playedAt`, falling back to `createdAt` for a null-`playedAt` row.
+- [x] Commit: `feat: repository query for ready game reports in a date range`.
 
 ### Task 29.2: Service — resolve range/speed, call the aggregator
 
