@@ -3,10 +3,19 @@ import { describe, expect, test, vi } from 'vitest';
 import { computeTacticMotifPrevented } from './tactic-prevention.js';
 
 const FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
-// Same placement, black to move — the real board immediately after white's
-// ply-1 move (before black replies), i.e. `prior.fenAfter` / `move.fenBefore`.
 const FORK_FEN_BLACK_TO_MOVE = '4k3/1r6/8/8/2N5/8/8/K7 b - - 0 1';
 const ROOK_MOVED_AWAY_FEN = '4k3/8/8/8/2N5/8/8/K7 w - - 0 1';
+
+// Two-motif fixtures (mirrors packages/chess-analysis's
+// tactic-prevention-check.test.ts): white has both a fork (Nd5, forking the
+// b6 rook and f6 knight) and a free undefended pawn (Qxd3) available; both
+// are gone once the rook has moved away and the pawn is defended.
+const TWO_MOTIF_FEN = '4k3/8/1r3n2/8/5N2/3p4/8/3Q3K w - - 0 1';
+const TWO_MOTIF_DEFUSED_FEN = '3rk3/8/5n2/8/5N2/3p4/8/3Q3K w - - 0 1';
+const TWO_MOTIF_LINES: PositionAnalysisLine[] = [
+  { moveUci: 'f4d5', moveSan: 'Nd5', pvSan: ['Nd5'], cp: 500, mateIn: null },
+  { moveUci: 'd1d3', moveSan: 'Qxd3', pvSan: ['Qxd3'], cp: 300, mateIn: null }
+];
 
 // Typed as the richer PositionAnalysisLine (always-present pvSan) so the
 // same fixtures work both as EngineEval.lines (EngineLine's pvSan is
@@ -27,6 +36,10 @@ function move(overrides: Partial<ClassifiedMoveDto> & { ply: number; mover: 'whi
   } as ClassifiedMoveDto;
 }
 
+function evalAt(fen: string, ply: number, lines: PositionAnalysisLine[]): EngineEval {
+  return { ply, fen, depth: 12, lines };
+}
+
 function analysisFixture(fen: string, lines: PositionAnalysis['lines']): PositionAnalysis {
   return {
     fen,
@@ -40,11 +53,9 @@ function analysisFixture(fen: string, lines: PositionAnalysis['lines']): Positio
 }
 
 describe('computeTacticMotifPrevented', () => {
-  test('Step A hit: reuses the opponent\'s own last-turn eval, zero engine calls', async () => {
-    // White (ply 1) leaves a fork lurking (their own analysis, evals[0]).
-    // Black (ply 2) plays the move that moves the rook away, defusing it.
+  test('Free path hit: reuses prior.fenBefore and move.fenAfter\'s own evals, zero engine calls', async () => {
     const allMoves = [
-      move({ ply: 1, mover: 'white', moveSan: 'Nc4', fenAfter: FORK_FEN_BLACK_TO_MOVE }),
+      move({ ply: 1, mover: 'white', moveSan: 'Nc4', fenBefore: FORK_FEN, fenAfter: FORK_FEN_BLACK_TO_MOVE }),
       move({
         ply: 2,
         mover: 'black',
@@ -54,7 +65,7 @@ describe('computeTacticMotifPrevented', () => {
         isTacticalPosition: false
       })
     ];
-    const evals: EngineEval[] = [{ ply: 0, fen: '', depth: 12, lines: [FORK_LINE] }];
+    const evals: EngineEval[] = [evalAt(FORK_FEN, 0, [FORK_LINE]), evalAt(FORK_FEN_BLACK_TO_MOVE, 1, []), evalAt(ROOK_MOVED_AWAY_FEN, 2, [FORK_LINE])];
     const analyzePosition = vi.fn();
 
     const result = await computeTacticMotifPrevented({ analyzePosition }, allMoves, evals);
@@ -63,9 +74,9 @@ describe('computeTacticMotifPrevented', () => {
     expect(result.black.fork).toBe(1);
   });
 
-  test('Step A miss + non-tactical position: no engine call, no prevention claimed', async () => {
+  test('Free path miss + non-tactical position: no engine call, no prevention claimed', async () => {
     const allMoves = [
-      move({ ply: 1, mover: 'white', moveSan: 'Nc4', fenAfter: FORK_FEN_BLACK_TO_MOVE }),
+      move({ ply: 1, mover: 'white', moveSan: 'Nc4', fenBefore: FORK_FEN, fenAfter: FORK_FEN_BLACK_TO_MOVE }),
       move({
         ply: 2,
         mover: 'black',
@@ -75,7 +86,7 @@ describe('computeTacticMotifPrevented', () => {
         isTacticalPosition: false
       })
     ];
-    const evals: EngineEval[] = [{ ply: 0, fen: '', depth: 12, lines: [QUIET_LINE] }];
+    const evals: EngineEval[] = [evalAt(FORK_FEN, 0, [QUIET_LINE])];
     const analyzePosition = vi.fn();
 
     const result = await computeTacticMotifPrevented({ analyzePosition }, allMoves, evals);
@@ -84,9 +95,9 @@ describe('computeTacticMotifPrevented', () => {
     expect(result.black).toEqual({});
   });
 
-  test('Step A miss + tactical position: exactly one extra engine call, hit recorded', async () => {
+  test('Free path miss + tactical position: exactly one extra engine call, hit recorded', async () => {
     const allMoves = [
-      move({ ply: 1, mover: 'white', moveSan: 'Nc4', fenAfter: FORK_FEN_BLACK_TO_MOVE }),
+      move({ ply: 1, mover: 'white', moveSan: 'Nc4', fenBefore: FORK_FEN, fenAfter: FORK_FEN_BLACK_TO_MOVE }),
       move({
         ply: 2,
         mover: 'black',
@@ -96,8 +107,8 @@ describe('computeTacticMotifPrevented', () => {
         isTacticalPosition: true
       })
     ];
-    // Opponent's own last-turn eval has nothing (Step A miss).
-    const evals: EngineEval[] = [{ ply: 0, fen: '', depth: 12, lines: [QUIET_LINE] }];
+    // The free path misses: prior's own last-turn eval has nothing.
+    const evals: EngineEval[] = [evalAt(FORK_FEN, 0, [QUIET_LINE]), evalAt(FORK_FEN_BLACK_TO_MOVE, 1, []), evalAt(ROOK_MOVED_AWAY_FEN, 2, [FORK_LINE])];
     const threatAnalysis = analysisFixture(FORK_FEN, [FORK_LINE]);
     const analyzePosition = vi.fn().mockResolvedValue(threatAnalysis);
 
@@ -106,6 +117,32 @@ describe('computeTacticMotifPrevented', () => {
     expect(analyzePosition).toHaveBeenCalledTimes(1);
     expect(analyzePosition).toHaveBeenCalledWith(FORK_FEN);
     expect(result.black.fork).toBe(1);
+  });
+
+  test('a move defusing two distinct motif types increments both counters (free path)', async () => {
+    const allMoves = [
+      move({ ply: 1, mover: 'white', moveSan: 'Kh1', fenBefore: TWO_MOTIF_FEN, fenAfter: TWO_MOTIF_FEN }),
+      move({
+        ply: 2,
+        mover: 'black',
+        moveSan: 'Rd8',
+        fenBefore: TWO_MOTIF_FEN,
+        fenAfter: TWO_MOTIF_DEFUSED_FEN,
+        isTacticalPosition: false
+      })
+    ];
+    const evals: EngineEval[] = [
+      evalAt(TWO_MOTIF_FEN, 0, TWO_MOTIF_LINES),
+      evalAt(TWO_MOTIF_FEN, 1, []),
+      evalAt(TWO_MOTIF_DEFUSED_FEN, 2, TWO_MOTIF_LINES)
+    ];
+    const analyzePosition = vi.fn();
+
+    const result = await computeTacticMotifPrevented({ analyzePosition }, allMoves, evals);
+
+    expect(analyzePosition).not.toHaveBeenCalled();
+    expect(result.black.fork).toBe(1);
+    expect(result.black.freePiece).toBe(1);
   });
 
   test('ply-1 move (no prior opponent turn) is skipped cleanly, no throw', async () => {

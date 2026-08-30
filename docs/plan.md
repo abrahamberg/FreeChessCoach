@@ -330,13 +330,13 @@ export function findDefusedThreats(
 
 **Files:** `packages/chess-analysis/src/tactic-prevention-check.ts`, its test.
 
-- [ ] Rewrite fixtures for the new two-line-set signature; add a genuine
+- [x] Rewrite fixtures for the new two-line-set signature; add a genuine
       multi-ply case (rook sac ply 1 → forced check ply-3-equivalent →
       fork at ply 3) proving a defused *deeper* tactic is now detected —
       impossible before this phase; keep a ply-1-parity case; a case where
       the after-set is a superset returns `[]`; a move defusing two
       distinct motif types returns both.
-- [ ] Commit: `feat: findDefusedThreats — sound motif-type-set comparison, multi-ply via the graduated schedule (Phase 46)`.
+- [x] Commit: `feat: findDefusedThreats — sound motif-type-set comparison, multi-ply via the graduated schedule (Phase 46)`.
 
 ## Phase 47 — Rewire `apps/api`'s prevention service
 
@@ -375,15 +375,15 @@ the returned array (not just the first), preserving the existing cost gate
 
 **Files:** `apps/api/src/services/tactic-prevention.ts`, its test.
 
-- [ ] Update fixtures to set `prior.fenBefore` explicitly (now
+- [x] Update fixtures to set `prior.fenBefore` explicitly (now
       load-bearing) and add `evals[move.ply]` fixtures for the free
       after-eval.
-- [ ] Regression test: the gated branch still makes **exactly one**
+- [x] Regression test: the gated branch still makes **exactly one**
       `analyzePosition` call, never more.
-- [ ] A case where one move defuses two distinct motif types increments
+- [x] A case where one move defuses two distinct motif types increments
       both counters; ply-1-only fixtures (today's shape) still produce the
       same counts as before this phase.
-- [ ] Commit: `feat: wire graduated multi-ply prevention detection into the batch analysis job (Phase 47)`.
+- [x] Commit: `feat: wire graduated multi-ply prevention detection into the batch analysis job (Phase 47)`.
 
 ## Phase 48 — Live-coach opt-in graduated depth
 

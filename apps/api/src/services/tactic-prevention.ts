@@ -1,4 +1,4 @@
-import { findDefusedThreat, flipActiveColorFen } from '@freechesscoach/chess-analysis';
+import { findDefusedThreats, flipActiveColorFen } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto, EngineEval, EngineLine, TacticMotifType } from '@freechesscoach/shared';
 import type { EngineBackend } from './engine/engine-backend.js';
 
@@ -6,26 +6,26 @@ type PositionAnalyzer = Pick<EngineBackend, 'analyzePosition'>;
 type Colour = 'white' | 'black';
 
 /**
- * Per-game "tactics prevented" tally: for each move, checks whether it
- * defused a tactical opportunity the opponent had lurking from their own
- * last turn. Cost-gated by design (direct user instruction — see the plan):
+ * Per-game "tactics prevented" tally: for each move, checks which of the
+ * opponent's tactic motif types were reachable right before their own last
+ * turn and are no longer reachable right after the mover's reply — see
+ * `findDefusedThreats`' doc comment (Phase 46) for the type-level
+ * reachability semantics this now rests on. Cost-gated by design (direct
+ * user instruction — see the plan):
  *
- * - **Free path (always tried first)**: reuses the opponent's own already-
- *   computed analysis from their last actual turn (`evals[prior.ply - 1]`,
- *   the same top-N lines `computeTacticMotifCounts` already reads) — "we
- *   already analysed the opponent's tactics from their top X moves, we
- *   already know what they had." Zero extra engine calls.
+ * - **Free path (always tried first)**: reuses each side's own
+ *   already-computed batch eval — `evals[prior.ply - 1]` (exactly the eval
+ *   at `prior.fenBefore`, genuinely opponent's turn there, no flip needed)
+ *   and `evals[move.ply]` (exactly the eval at `move.fenAfter`, genuinely
+ *   opponent's turn there too) — both real positions the engine actually
+ *   analyzed, not one-ply-shifted/flipped stand-ins (Phase 47). Zero extra
+ *   engine calls.
  * - **Gated fallback (only when the free path finds nothing AND the
  *   position is already flagged tactically sharp)**: one extra null-move
- *   engine call, mirroring `position-tactics.ts`'s `scanPositionTactics`
- *   "allowed" half — reused here from a different call site (batch, not
- *   live coach).
- *
- * `findDefusedThreat`'s `beforeFen` always needs `opponent` to be the real
- * side to move — the actual board at that point has the mover to move, so
- * it's null-move-flipped; `afterFen` is always the real position after the
- * mover's move, where it genuinely is the opponent's turn, so it's used
- * as-is, no flip.
+ *   engine call for the "before" probe only, mirroring
+ *   `position-tactics.ts`'s `scanPositionTactics` "allowed" half — reused
+ *   here from a different call site (batch, not live coach). The "after"
+ *   side of the gated branch is free either way (`evals[move.ply]`).
  */
 export async function computeTacticMotifPrevented(
   engine: PositionAnalyzer,
@@ -38,38 +38,44 @@ export async function computeTacticMotifPrevented(
   for (const move of allMoves) {
     const prior = movesByPly.get(move.ply - 1);
     if (!prior || prior.mover === move.mover) continue;
-    if (!prior.fenAfter || !move.fenAfter || !move.fenBefore) continue;
 
     const opponent = prior.mover;
-    const motif = findFreelyDefusedThreat(prior, move, opponent, evals) ?? (await findGatedDefusedThreat(engine, move, opponent));
+    const freely = findFreelyDefusedThreats(prior, move, opponent, evals);
+    const motifs = freely.length > 0 ? freely : await findGatedDefusedThreats(engine, move, opponent, evals);
 
-    if (motif) counts[move.mover][motif] = (counts[move.mover][motif] ?? 0) + 1;
+    for (const motif of motifs) {
+      counts[move.mover][motif] = (counts[move.mover][motif] ?? 0) + 1;
+    }
   }
 
   return counts;
 }
 
-function findFreelyDefusedThreat(
+function findFreelyDefusedThreats(
   prior: ClassifiedMoveDto,
   move: ClassifiedMoveDto,
   opponent: Colour,
   evals: EngineEval[]
-): TacticMotifType | null {
+): TacticMotifType[] {
   const priorEval = evals[prior.ply - 1];
-  if (!priorEval) return null;
+  const afterEval = evals[move.ply];
+  if (!priorEval || !afterEval || !prior.fenBefore || !move.fenAfter) return [];
 
-  const beforeFlipped = flipActiveColorFen(prior.fenAfter!);
-  if (!beforeFlipped) return null;
-
-  return findDefusedThreat(beforeFlipped, move.fenAfter!, opponent, priorEval.lines);
+  return findDefusedThreats(prior.fenBefore, move.fenAfter, opponent, priorEval.lines, afterEval.lines);
 }
 
-async function findGatedDefusedThreat(engine: PositionAnalyzer, move: ClassifiedMoveDto, opponent: Colour): Promise<TacticMotifType | null> {
-  if (!move.isTacticalPosition) return null;
+async function findGatedDefusedThreats(
+  engine: PositionAnalyzer,
+  move: ClassifiedMoveDto,
+  opponent: Colour,
+  evals: EngineEval[]
+): Promise<TacticMotifType[]> {
+  if (!move.isTacticalPosition) return [];
 
-  const flipped = flipActiveColorFen(move.fenBefore!);
-  if (!flipped) return null;
+  const flipped = move.fenBefore && flipActiveColorFen(move.fenBefore);
+  const afterEval = evals[move.ply];
+  if (!flipped || !afterEval || !move.fenAfter) return [];
 
   const threatAnalysis = await engine.analyzePosition(flipped);
-  return findDefusedThreat(flipped, move.fenAfter!, opponent, threatAnalysis.lines as EngineLine[]);
+  return findDefusedThreats(flipped, move.fenAfter, opponent, threatAnalysis.lines as EngineLine[], afterEval.lines);
 }
