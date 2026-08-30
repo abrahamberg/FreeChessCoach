@@ -1,7 +1,7 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import {
   ImportGameRequestSchema,
@@ -46,6 +46,31 @@ function fensOf(pgn: string): string[] {
 const SessionSummarySchema = z.object({ id: z.string() });
 type ImportTab = 'paste' | 'upload' | 'lichess';
 
+interface BulkImportResult {
+  succeeded: number;
+  total: number;
+  rateLimited: boolean;
+}
+
+/** Stat-bank bulk import (Task 31.4): imports each selected Lichess game
+ * with `deferAnalysis: true`, one request per game (the API has no batch
+ * import endpoint), tolerating individual failures so one rate-limited or
+ * malformed game doesn't lose the rest of the batch. */
+async function importForStatBank(pgns: string[]): Promise<BulkImportResult> {
+  let succeeded = 0;
+  let rateLimited = false;
+  for (const pgn of pgns) {
+    try {
+      const body = ImportGameRequestSchema.parse({ pgn, source: 'lichess', deferAnalysis: true });
+      await apiPost('/api/games', body, ImportGameResponseSchema);
+      succeeded += 1;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 429) rateLimited = true;
+    }
+  }
+  return { succeeded, total: pgns.length, rateLimited };
+}
+
 /** Import a game, watch its analysis (SSE), and hand off into a coaching
  * session once it's ready. Composes PgnPasteForm + ColorConfirm; no fetching
  * lives in either presentational child (AGENTS.md rule 7). */
@@ -55,6 +80,8 @@ export function ImportPage(): ReactNode {
   const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [gameId, setGameId] = useState<string | null>(null);
   const [tab, setTab] = useState<ImportTab>('paste');
+  const [statBankMode, setStatBankMode] = useState(false);
+  const [selectedLichessIds, setSelectedLichessIds] = useState<ReadonlySet<string>>(new Set());
 
   const importMutation = useMutation({
     mutationFn: (body: ImportGameRequest) => apiPost('/api/games', body, ImportGameResponseSchema),
@@ -68,6 +95,34 @@ export function ImportPage(): ReactNode {
     mutationFn: (forGameId: string) => apiPost('/api/sessions', { gameId: forGameId }, SessionSummarySchema),
     onSuccess: (session) => navigate(`/session/${session.id}`)
   });
+
+  // No AnalysisProgress/coaching-session hand-off here — that's specific to
+  // the single-game "Analyze game" flow above. A fully-successful batch goes
+  // straight back to the Games list, where the new rows show "Not
+  // analyzed"; a partial failure stays on this page so the remaining-count
+  // message (10 games/day limit) isn't shown and immediately lost.
+  const bulkImportMutation = useMutation({
+    mutationFn: importForStatBank,
+    onSuccess: (result) => {
+      if (result.succeeded === result.total) void navigate('/games');
+    }
+  });
+
+  function toggleLichessSelection(lichessGameId: string): void {
+    setSelectedLichessIds((current) => {
+      const next = new Set(current);
+      if (next.has(lichessGameId)) next.delete(lichessGameId);
+      else next.add(lichessGameId);
+      return next;
+    });
+  }
+
+  function importSelectedForStatBank(): void {
+    const pgns = (lichessQuery.data ?? [])
+      .filter((game) => selectedLichessIds.has(game.id))
+      .map((game) => game.pgn);
+    bulkImportMutation.mutate(pgns);
+  }
 
   const { status, analyzedPositions } = useAnalysisStatus(analysisId);
 
@@ -146,12 +201,35 @@ export function ImportPage(): ReactNode {
           {tab === 'paste' && <PgnPasteForm onSubmit={(body) => importPgn(body.pgn, body.source, body.userColor)} />}
           {tab === 'upload' && <PgnUploadForm onSubmit={(body) => importPgn(body.pgn, body.source)} />}
           {tab === 'lichess' && (
-            <LichessGamePicker
-              games={lichessQuery.data ?? []}
-              isLoading={lichessQuery.isLoading}
-              isLinked={!lichessNotLinked}
-              onSelect={(pgn) => importPgn(pgn, 'lichess')}
-            />
+            <>
+              <label className="import-page__stat-bank-toggle">
+                <input type="checkbox" checked={statBankMode} onChange={(event) => setStatBankMode(event.target.checked)} />
+                Bulk import for stat bank
+              </label>
+              <LichessGamePicker
+                games={lichessQuery.data ?? []}
+                isLoading={lichessQuery.isLoading}
+                isLinked={!lichessNotLinked}
+                onSelect={(pgn) => importPgn(pgn, 'lichess')}
+                bulkSelection={
+                  statBankMode
+                    ? {
+                        selectedIds: selectedLichessIds,
+                        onToggle: toggleLichessSelection,
+                        onImportSelected: importSelectedForStatBank,
+                        isImporting: bulkImportMutation.isPending
+                      }
+                    : undefined
+                }
+              />
+              {bulkImportMutation.isSuccess && bulkImportMutation.data.succeeded < bulkImportMutation.data.total && (
+                <p className="import-page__bulk-result">
+                  Imported {bulkImportMutation.data.succeeded} of {bulkImportMutation.data.total} games for your stat
+                  bank.{bulkImportMutation.data.rateLimited && ' Daily import limit reached (10 games/day).'}{' '}
+                  <Link to="/games">Go to Games</Link>
+                </p>
+              )}
+            </>
           )}
         </>
       )}

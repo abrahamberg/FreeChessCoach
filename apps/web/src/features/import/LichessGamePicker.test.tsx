@@ -42,4 +42,87 @@ describe('LichessGamePicker', () => {
     render(<LichessGamePicker games={[]} isLoading={false} isLinked={true} onSelect={vi.fn()} />);
     expect(screen.getByText(/no recent games/i)).toBeInTheDocument();
   });
+
+  describe('bulk selection (Task 31.4 stat-bank import)', () => {
+    test('renders a checkbox per row and an "Import N for stat bank" button reflecting the selection count', () => {
+      const onToggle = vi.fn();
+      render(
+        <LichessGamePicker
+          games={GAMES}
+          isLoading={false}
+          isLinked={true}
+          onSelect={vi.fn()}
+          bulkSelection={{ selectedIds: new Set(['abcd1234']), onToggle, onImportSelected: vi.fn(), isImporting: false }}
+        />
+      );
+
+      expect(screen.getByRole('checkbox', { name: /select daniel.*marta/is })).toBeChecked();
+      expect(screen.getByRole('button', { name: 'Import 1 for stat bank' })).toBeInTheDocument();
+    });
+
+    test('checking a row calls onToggle with its id, without calling onSelect', async () => {
+      const onSelect = vi.fn();
+      const onToggle = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <LichessGamePicker
+          games={GAMES}
+          isLoading={false}
+          isLinked={true}
+          onSelect={onSelect}
+          bulkSelection={{ selectedIds: new Set(), onToggle, onImportSelected: vi.fn(), isImporting: false }}
+        />
+      );
+
+      await user.click(screen.getByRole('checkbox'));
+
+      expect(onToggle).toHaveBeenCalledWith('abcd1234');
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    test('clicking a row\'s button still calls onSelect immediately, even in bulk mode', async () => {
+      const onSelect = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <LichessGamePicker
+          games={GAMES}
+          isLoading={false}
+          isLinked={true}
+          onSelect={onSelect}
+          bulkSelection={{ selectedIds: new Set(), onToggle: vi.fn(), onImportSelected: vi.fn(), isImporting: false }}
+        />
+      );
+
+      await user.click(screen.getByRole('button', { name: /daniel.*marta/is }));
+      expect(onSelect).toHaveBeenCalledWith(GAMES[0]!.pgn);
+    });
+
+    test('the "Import N for stat bank" button is disabled with no selection and calls onImportSelected when clicked', async () => {
+      const onImportSelected = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <LichessGamePicker
+          games={GAMES}
+          isLoading={false}
+          isLinked={true}
+          onSelect={vi.fn()}
+          bulkSelection={{ selectedIds: new Set(), onToggle: vi.fn(), onImportSelected, isImporting: false }}
+        />
+      );
+
+      expect(screen.getByRole('button', { name: 'Import 0 for stat bank' })).toBeDisabled();
+
+      render(
+        <LichessGamePicker
+          games={GAMES}
+          isLoading={false}
+          isLinked={true}
+          onSelect={vi.fn()}
+          bulkSelection={{ selectedIds: new Set(['abcd1234']), onToggle: vi.fn(), onImportSelected, isImporting: false }}
+        />
+      );
+      await user.click(screen.getByRole('button', { name: 'Import 1 for stat bank' }));
+      expect(onImportSelected).toHaveBeenCalled();
+    });
+  });
 });

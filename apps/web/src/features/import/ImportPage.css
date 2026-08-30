@@ -60,6 +60,12 @@
   font-size: 14px;
 }
 
+.lichess-game-picker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .lichess-game-picker {
   list-style: none;
   margin: 0;
@@ -69,12 +75,24 @@
   border: 1px solid var(--color-border);
 }
 
+.lichess-game-picker li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-surface);
+}
+
 .lichess-game-picker li + li {
   border-top: 1px solid var(--color-border);
 }
 
+.lichess-game-picker li input[type='checkbox'] {
+  margin-left: 16px;
+}
+
 .lichess-game-picker button {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -83,6 +101,24 @@
   background: var(--color-surface);
   border: none;
   text-align: left;
+}
+
+.lichess-game-picker li input[type='checkbox'] + button {
+  padding-left: 0;
+}
+
+.import-page__stat-bank-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+}
+
+.import-page__bulk-result {
+  margin-top: 12px;
+  font-size: 14px;
 }
 
 .color-confirm {

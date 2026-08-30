@@ -1396,17 +1396,27 @@ hook (TanStack Query, mirrors `DashboardPage`'s `apiGet` pattern); route in
 
 **Files:** `LichessGamePicker.tsx`, `ImportPage.tsx`.
 
-- [ ] `LichessGamePicker` multi-select mode (checkbox per row, additive to
-      its existing single-`onSelect` contract) + "Import N for stat bank".
-- [ ] `ImportPage` bulk mode: `POST /api/games` per selection with
-      `deferAnalysis: true, source: 'lichess'`; surface the 10/day limit's
-      remaining count on partial failure; routes back to the Games list
-      (not into `AnalysisProgress`/a session).
-- [ ] Out of scope: multi-game PGN paste/upload — bulk import is
-      Lichess-only for now.
-- [ ] Component test: selecting 3 games calls the import mutation 3 times
-      with `deferAnalysis: true`.
-- [ ] Commit: `feat: bulk "stat bank" import from Lichess`.
+- [x] `LichessGamePicker` gets an additive `bulkSelection?` prop (checkbox
+      per row + "Import N for stat bank" button) — the existing single-click
+      `onSelect` row button is completely unchanged and still fires even in
+      bulk mode, exactly as the plan specified.
+- [x] `ImportPage`: a "Bulk import for stat bank" checkbox (Lichess tab
+      only) switches the picker into bulk mode; `importForStatBank` posts
+      `POST /api/games` once per selected game with `deferAnalysis: true,
+      source: 'lichess'` sequentially, tolerating individual failures. A
+      fully-successful batch navigates straight to `/games`; a partial
+      failure (e.g. hitting the 10/day limit) stays on the page and shows
+      "Imported N of M games… Daily import limit reached (10 games/day)."
+      with a "Go to Games" link, rather than silently losing the count.
+- [x] Out of scope (unchanged from the plan): multi-game PGN paste/upload —
+      bulk import is Lichess-only for now.
+- [x] Component tests: `LichessGamePicker.test.tsx` covers checkbox
+      toggling, the row button still firing `onSelect` in bulk mode, and the
+      import-button's disabled/label state; `ImportPage.test.tsx` covers a
+      2-game fully-successful batch (both POSTs include `deferAnalysis:
+      true`, navigates to Games) and a partial-failure batch (summary
+      message + link, no navigation).
+- [x] Commit: `feat: bulk "stat bank" import from Lichess`.
 
 ## Verification (end of Phase 31)
 

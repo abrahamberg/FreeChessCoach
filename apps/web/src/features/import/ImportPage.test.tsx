@@ -38,6 +38,7 @@ function renderImportPage() {
         <Routes>
           <Route path="/import" element={<ImportPage />} />
           <Route path="/session/:id" element={<div>session-page-marker</div>} />
+          <Route path="/games" element={<h1>Games</h1>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -241,5 +242,111 @@ describe('ImportPage', () => {
         expect.objectContaining({ body: JSON.stringify({ pgn: '1. e4 e5 1-0', source: 'lichess' }) })
       )
     );
+  });
+
+  describe('stat-bank bulk import (Task 31.4)', () => {
+    const LICHESS_GAMES = [
+      {
+        id: 'g1',
+        pgn: 'pgn-1',
+        whiteName: 'daniel',
+        blackName: 'Marta',
+        result: '1-0',
+        timeControl: '600+0',
+        playedAt: '2026-07-20T10:00:00.000Z'
+      },
+      {
+        id: 'g2',
+        pgn: 'pgn-2',
+        whiteName: 'daniel',
+        blackName: 'Bob',
+        result: '0-1',
+        timeControl: '600+0',
+        playedAt: '2026-07-21T10:00:00.000Z'
+      }
+    ];
+
+    async function enterBulkModeWithBothSelected(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole('button', { name: /from lichess/i }));
+      await screen.findByRole('button', { name: /daniel.*marta/is });
+      await user.click(screen.getByRole('checkbox', { name: /bulk import for stat bank/i }));
+      const checkboxes = screen.getAllByRole('checkbox').filter((box) => box.getAttribute('aria-label')?.includes('Select'));
+      for (const checkbox of checkboxes) await user.click(checkbox);
+    }
+
+    test('a fully-successful batch posts deferAnalysis:true per game and navigates to Games', async () => {
+      const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
+        if (path === '/api/lichess/recent-games') {
+          return Promise.resolve(
+            new Response(JSON.stringify(LICHESS_GAMES), { status: 200, headers: { 'content-type': 'application/json' } })
+          );
+        }
+        if (path === '/api/games' && init?.method === 'POST') {
+          return Promise.resolve(
+            new Response(JSON.stringify({ gameId: 'game-x', analysisId: null }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' }
+            })
+          );
+        }
+        throw new Error(`unexpected fetch: ${path}`);
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      const user = userEvent.setup();
+
+      renderImportPage();
+      await enterBulkModeWithBothSelected(user);
+
+      await user.click(screen.getByRole('button', { name: 'Import 2 for stat bank' }));
+
+      expect(await screen.findByText('Games')).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/games',
+        expect.objectContaining({ body: JSON.stringify({ pgn: 'pgn-1', source: 'lichess', deferAnalysis: true }) })
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/games',
+        expect.objectContaining({ body: JSON.stringify({ pgn: 'pgn-2', source: 'lichess', deferAnalysis: true }) })
+      );
+    });
+
+    test('a partial failure (rate limit) stays on the page and surfaces the remaining-count message', async () => {
+      const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
+        if (path === '/api/lichess/recent-games') {
+          return Promise.resolve(
+            new Response(JSON.stringify(LICHESS_GAMES), { status: 200, headers: { 'content-type': 'application/json' } })
+          );
+        }
+        if (path === '/api/games' && init?.method === 'POST') {
+          const body = JSON.parse(init.body as string) as { pgn: string };
+          if (body.pgn === 'pgn-1') {
+            return Promise.resolve(
+              new Response(JSON.stringify({ gameId: 'game-x', analysisId: null }), {
+                status: 200,
+                headers: { 'content-type': 'application/json' }
+              })
+            );
+          }
+          return Promise.resolve(
+            new Response(JSON.stringify({ type: 'about:blank', title: 'Import limit reached (10 games/day)', status: 429 }), {
+              status: 429,
+              headers: { 'content-type': 'application/problem+json' }
+            })
+          );
+        }
+        throw new Error(`unexpected fetch: ${path}`);
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      const user = userEvent.setup();
+
+      renderImportPage();
+      await enterBulkModeWithBothSelected(user);
+
+      await user.click(screen.getByRole('button', { name: 'Import 2 for stat bank' }));
+
+      expect(await screen.findByText(/imported 1 of 2 games/i)).toBeInTheDocument();
+      expect(screen.getByText(/daily import limit reached/i)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /go to games/i })).toBeInTheDocument();
+    });
   });
 });
