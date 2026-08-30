@@ -1,21 +1,10 @@
+import type { OpeningPerformanceRow, OpeningStats } from '@freechesscoach/shared';
 import { openingMistakeCount } from './opening-mistakes.js';
 import type { StatsEntry } from './stats-entry.js';
 
+export type { OpeningPerformanceRow, OpeningStats } from '@freechesscoach/shared';
+
 const UNKNOWN_OPENING = 'Unknown opening';
-
-export interface OpeningPerformanceRow {
-  opening: string;
-  gamesPlayed: number;
-  winPct: number;
-  accuracy: number;
-}
-
-export interface OpeningStats {
-  averageBookMoves: number | null;
-  openingAccuracy: number | null;
-  averageOpeningMistakes: number | null;
-  performanceByOpening: OpeningPerformanceRow[];
-}
 
 function mean(values: number[]): number | null {
   return values.length === 0 ? null : values.reduce((total, value) => total + value, 0) / values.length;

@@ -1213,30 +1213,38 @@ isolation before Phase 24 wires them into the batch pipeline.
 
 **Files:** `packages/chess-analysis/src/build-stats-dashboard.ts` + test.
 
-- [ ] `StatsEntry = { gameReport: GameReport, result: GameResultForColour,
-      userColor: PlayerColor, playedAt: Date | null, speed:
-      ReturnType<typeof classifyTimeControl> }` — pre-resolved by the caller
-      (API layer does the DB read + speed classification; this stays pure).
-- [ ] `buildStatsDashboard(entries: StatsEntry[]): StatsDashboard` —
-      opening (Phase 27), tactics (sum `tacticMotifs` per motif across
-      games, Phase 24), strategy (mean each of the 6 sub-scores, skip
-      nulls, Phase 25), endgame (win% per standing bucket = wins /
-      (wins+losses+draws*0.5); accuracy-by-theme = mean phase accuracy per
-      theme bucket; overall = mean `phaseAccuracy.endgame`, Phase 26).
-- [ ] Every section `null`/omitted with a reason when `entries` is empty or
-      the needed signal is missing everywhere (same convention as the
-      `< 4`/`movesPlayed < 12` guards elsewhere) — never a misleading `0`.
-- [ ] Determinism test: same entries twice → byte-identical output.
-- [ ] Commit: `feat: cross-game stats dashboard aggregator`.
+- [x] `StatsEntry` (already added alongside Task 27.1, since 27.2 needed it
+      immediately): `{ gameReport: GameReport, result: GameResultForColour,
+      userColor: PlayerColor, playedAt: Date | null, speed: GameSpeed }`.
+- [x] `buildStatsDashboard(entries: StatsEntry[]): StatsDashboard` —
+      opening (Phase 27's `aggregateOpeningStats`), tactics (sum
+      `tacticMotifs` per motif across games, Phase 24), strategy (mean each
+      of the 6 sub-scores — the 5 `strategySubScores` plus overall
+      `scores.strategy` — skip nulls, Phase 25), endgame (win% per standing
+      bucket = wins / (wins+losses+draws*0.5), buckets with 0 games omitted;
+      accuracy-by-theme = mean phase accuracy per theme bucket, themes with
+      0 games omitted; overall = mean `phaseAccuracy.endgame`, Phase 26).
+- [x] Every section `null`/empty-array when `entries` is empty or the
+      needed signal is missing everywhere — never a misleading `0`.
+- [x] Determinism test: same entries twice → byte-identical (`JSON.stringify`
+      equal) output.
+- [x] Commit: `feat: cross-game stats dashboard aggregator`.
 
 ### Task 28.2: `StatsDashboardSchema`
 
 **Files:** `packages/shared/src/stats-dashboard.ts` (new file).
 
-- [ ] Zod schemas for every Task 28.1 shape, plus `StatsRangeSchema =
+- [x] Zod schemas for every Task 28.1 shape, plus `StatsRangeSchema =
       z.enum(['last7', 'last30', 'last365', 'all'])` and
-      `GameSpeedFilterSchema = z.enum(['rapid', 'all'])`.
-- [ ] Commit: `feat: stats dashboard schema`.
+      `GameSpeedFilterSchema = z.enum(['rapid', 'all'])`. Per AGENTS rule 4
+      (types come from `packages/shared` first), `aggregate-opening-stats.ts`
+      and `build-stats-dashboard.ts` were refactored to import+re-export
+      these shared types (`OpeningStats`, `StrategyStats`, `EndgameStats`,
+      etc.) instead of keeping their own duplicate local interfaces — same
+      pattern as `TacticMotifType`/`EndgameStanding`/`EndgameTheme` in
+      Phase 24/26. `tactics: TacticMotifCountsSchema` is reused directly
+      from `game-report.ts` rather than redefined.
+- [x] Commit: `feat: stats dashboard schema`.
 
 ## Phase 29 — API: repository query, service, route
 

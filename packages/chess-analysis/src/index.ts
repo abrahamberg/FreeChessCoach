@@ -5,6 +5,7 @@ export * from './assert-eval-sign.js';
 export * from './bot-candidate-score.js';
 export * from './bot-opening.js';
 export * from './build-game-report.js';
+export * from './build-stats-dashboard.js';
 export * from './candidate-moves.js';
 export * from './classify.js';
 export * from './classify-brilliant.js';
