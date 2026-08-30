@@ -23,7 +23,16 @@ import { accuracyForAggregate, aggregateAccuracy, volatilityWeights } from './ga
 import { phaseAccuracy, type PhaseAccuracyMove } from './phase-accuracy.js';
 import { bookDepthScore, developmentScore, openingScore, positionAtOrBefore } from './opening-score.js';
 import { isTacticalPosition, tacticsScore, type TacticsEvidenceMove } from './tactics-score.js';
-import { positionalTrend, strategyScore } from './strategy-score.js';
+import {
+  attackingTrend,
+  filesTrend,
+  kingSafetyTrend,
+  pawnStructureTrend,
+  positionalTrend,
+  spaceTrend,
+  strategyScore,
+  type PositionalTrendInput
+} from './strategy-score.js';
 import { endgameScore, type GameResultForColour } from './endgame-score.js';
 import {
   accuracyToElo,
@@ -141,6 +150,7 @@ function buildPlayerReport(
     endgame: phaseAccuracy(colour, 'endgame', phaseAccuracyMoves, fullGameWeights)
   };
   const counts = classificationCounts(colourMoves);
+  const strategyScores = buildStrategyScores(colour, colourMoves, context, fullGameWeights);
 
   return {
     accuracy: round1(accuracy),
@@ -153,9 +163,10 @@ function buildPlayerReport(
     scores: {
       opening: buildOpeningScore(colour, phaseAccuracyByPhase.opening, context),
       tactics: tacticsScore(toTacticsMoves(colourMoves), tacticalAccuracy(colourMoves, fullGameWeights)).score,
-      strategy: buildStrategyScore(colour, colourMoves, context, fullGameWeights),
+      strategy: strategyScores.overall,
       endgame: endgameScore(phaseAccuracyByPhase.endgame, winPctAtEndgameStart(colour, context), result)
     },
+    strategySubScores: strategyScores.subScores,
     counts,
     acpl: round1(mean(colourMoves.map((move) => move.cpLoss))),
     estimatedRating: buildEstimatedRating(colourMoves, weights, accuracy, counts, prior),
@@ -212,27 +223,59 @@ function buildOpeningScore(colour: Colour, openingAccuracy: number | null, conte
   });
 }
 
-function buildStrategyScore(
+interface StrategyScores {
+  overall: number | null;
+  subScores: PlayerReport['strategySubScores'];
+}
+
+const NULL_STRATEGY_SUB_SCORES: PlayerReport['strategySubScores'] = {
+  pawnStructure: null,
+  spaceAdvantage: null,
+  activePiece: null,
+  attacking: null,
+  defending: null
+};
+
+/**
+ * §7.3's overall score plus, individually, the five named components it
+ * sums internally (Phase 25) — surfaced for the stats dashboard's Strategy
+ * breakdown. Every sub-score reuses `strategyScore`'s own
+ * `clamp(quietAccuracy + component, 0, 100)` formula and null guard, just
+ * fed one component at a time instead of their sum.
+ */
+function buildStrategyScores(
   colour: Colour,
   colourMoves: ClassifiedMoveDto[],
   context: GameContext,
   fullGameWeights: ReadonlyMap<number, number>
-): number | null {
+): StrategyScores {
   const quietMoves = colourMoves.filter((move) => move.isTacticalPosition !== true);
   const finalPosition = context.game.positions[context.game.positions.length - 1];
-  if (!finalPosition) return null;
+  if (!finalPosition) return { overall: null, subScores: NULL_STRATEGY_SUB_SCORES };
   const openingEndPosition = positionAtOrBefore(context.game.positions, context.boundaries.openingEndPly);
 
-  const trend = positionalTrend({
+  const trendInput: PositionalTrendInput = {
     color: colour,
     fenAtOpeningEnd: openingEndPosition.fen,
     featuresAtOpeningEnd: computePositionFeatures(openingEndPosition.fen),
     fenAtFinal: finalPosition.fen,
     featuresAtFinal: computePositionFeatures(finalPosition.fen),
     quietMoveMobilityDeltas: quietMoves.map((move) => move.featureDelta?.mobilityDelta ?? 0)
-  });
+  };
+  const trend = positionalTrend(trendInput);
+  const quietAcc = quietAccuracy(colourMoves, fullGameWeights);
+  const scoreFor = (component: number): number | null => strategyScore(quietMoves.length, quietAcc, component).score;
 
-  return strategyScore(quietMoves.length, quietAccuracy(colourMoves, fullGameWeights), trend).score;
+  return {
+    overall: strategyScore(quietMoves.length, quietAcc, trend).score,
+    subScores: {
+      pawnStructure: scoreFor(pawnStructureTrend(trendInput)),
+      spaceAdvantage: scoreFor(spaceTrend(trendInput.quietMoveMobilityDeltas)),
+      activePiece: scoreFor(filesTrend(trendInput)),
+      attacking: scoreFor(attackingTrend(trendInput)),
+      defending: scoreFor(kingSafetyTrend(trendInput))
+    }
+  };
 }
 
 function winPctAtEndgameStart(colour: Colour, context: GameContext): number | null {

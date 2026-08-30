@@ -1,6 +1,16 @@
 import type { PositionFeatures } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { positionalTrend, strategyScore, type PositionalTrendInput } from './strategy-score.js';
+import {
+  attackingTrend,
+  centreTrend,
+  filesTrend,
+  kingSafetyTrend,
+  pawnStructureTrend,
+  positionalTrend,
+  spaceTrend,
+  strategyScore,
+  type PositionalTrendInput
+} from './strategy-score.js';
 
 const NEUTRAL_FEN = '4k3/8/8/8/8/8/8/4K3 w - - 0 1';
 
@@ -144,6 +154,56 @@ describe('positionalTrend', () => {
       })
     );
     expect(trend).toBe(15);
+  });
+});
+
+describe('individual trend components (Phase 25 sub-scores)', () => {
+  test('pawnStructureTrend matches its contribution to the overall trend', () => {
+    const input = baseInput({
+      featuresAtFinal: emptyFeatures({
+        doubledPawns: [{ file: 'a', color: 'white', count: 2 }],
+        isolatedPawns: [{ square: 'h2', color: 'white' }],
+        passedPawns: [{ square: 'd6', color: 'white' }]
+      })
+    });
+    expect(pawnStructureTrend(input)).toBeCloseTo(-6, 5);
+  });
+
+  test('spaceTrend matches its contribution to the overall trend', () => {
+    expect(spaceTrend([4, -2, 10])).toBeCloseTo(1.6, 5);
+  });
+
+  test('filesTrend matches its contribution to the overall trend', () => {
+    const input = baseInput({
+      featuresAtFinal: emptyFeatures({
+        controlledSquares: [{ square: 'd1', piece: 'r', color: 'white', squares: [] }],
+        openFiles: ['d']
+      })
+    });
+    expect(filesTrend(input)).toBeCloseTo(6, 5);
+  });
+
+  test('centreTrend matches its contribution to the overall trend', () => {
+    const input = baseInput({
+      featuresAtOpeningEnd: emptyFeatures({ centerControlScore: { white: 2, black: 4 } }),
+      featuresAtFinal: emptyFeatures({ centerControlScore: { white: 5, black: 1 } })
+    });
+    expect(centreTrend(input)).toBeCloseTo(30, 5);
+  });
+
+  test('kingSafetyTrend penalizes the mover\'s own king losing escape squares to real pressure', () => {
+    const input = baseInput({ fenAtFinal: '3rkr2/8/8/8/8/8/8/4K3 w - - 0 1' });
+    expect(kingSafetyTrend(input)).toBe(-10);
+  });
+
+  test('attackingTrend rewards the mover creating real pressure on the opponent\'s king', () => {
+    const input = baseInput({ fenAtFinal: '4k3/8/8/8/8/8/8/3RKR2 w - - 0 1' });
+    expect(attackingTrend(input)).toBe(10);
+  });
+
+  test('attackingTrend does not reward the opponent merely blocking its own escape squares', () => {
+    const input = baseInput({ fenAtFinal: '3rkr2/8/8/8/8/8/8/4K3 w - - 0 1' });
+    expect(attackingTrend(input)).toBe(0);
   });
 });
 

@@ -138,7 +138,12 @@ export const CONFIG = {
     openFileWeight: 6,
     centerWeight: 5,
     kingSafetyPenalty: -10,
-    kingSafetyAttackerThreshold: 2
+    kingSafetyAttackerThreshold: 2,
+    /** Mirrors kingSafetyPenalty's magnitude for the "Attacking Accuracy"
+     * sub-score (Phase 25) — the same escape-square/attacker-pressure
+     * signal evaluated against the opponent's king instead of the mover's
+     * own, rewarded rather than penalized. */
+    attackingBonus: 10
   },
 
   /** §7.4 — endgame score. */

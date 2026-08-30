@@ -96,6 +96,16 @@ export const PlayerReportSchema = z.object({
     strategy: NullableScoreSchema,
     endgame: NullableScoreSchema
   }),
+  /** Phase 25: the five named components `scores.strategy` already sums
+   * internally, surfaced individually for the stats dashboard's "Strategy"
+   * breakdown. Same `< 4` quiet-position null guard as `scores.strategy`. */
+  strategySubScores: z.object({
+    pawnStructure: NullableScoreSchema,
+    spaceAdvantage: NullableScoreSchema,
+    activePiece: NullableScoreSchema,
+    attacking: NullableScoreSchema,
+    defending: NullableScoreSchema
+  }),
   counts: ClassificationCountsSchema,
   acpl: z.number().nonnegative(),
   estimatedRating: EstimatedRatingReportSchema,

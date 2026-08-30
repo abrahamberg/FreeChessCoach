@@ -13,7 +13,8 @@ const {
   openFileWeight: OPEN_FILE_WEIGHT,
   centerWeight: CENTER_WEIGHT,
   kingSafetyPenalty: KING_SAFETY_PENALTY,
-  kingSafetyAttackerThreshold: KING_SAFETY_ATTACKER_THRESHOLD
+  kingSafetyAttackerThreshold: KING_SAFETY_ATTACKER_THRESHOLD,
+  attackingBonus: ATTACKING_BONUS
 } = CONFIG.strategyScore;
 
 export interface PositionalTrendInput {
@@ -43,7 +44,7 @@ export function positionalTrend(input: PositionalTrendInput): number {
   return clamp(sum, -TREND_CLAMP, TREND_CLAMP);
 }
 
-function pawnStructureTrend(input: PositionalTrendInput): number {
+export function pawnStructureTrend(input: PositionalTrendInput): number {
   const before = pawnStructureCounts(input.featuresAtOpeningEnd, input.color);
   const after = pawnStructureCounts(input.featuresAtFinal, input.color);
   return (
@@ -64,13 +65,13 @@ function pawnStructureCounts(
   };
 }
 
-function spaceTrend(quietMoveMobilityDeltas: number[]): number {
+export function spaceTrend(quietMoveMobilityDeltas: number[]): number {
   if (quietMoveMobilityDeltas.length === 0) return 0;
   const mean = quietMoveMobilityDeltas.reduce((total, delta) => total + delta, 0) / quietMoveMobilityDeltas.length;
   return SPACE_WEIGHT * mean;
 }
 
-function filesTrend(input: PositionalTrendInput): number {
+export function filesTrend(input: PositionalTrendInput): number {
   const before = majorPiecesOnOpenFiles(input.featuresAtOpeningEnd, input.color);
   const after = majorPiecesOnOpenFiles(input.featuresAtFinal, input.color);
   return OPEN_FILE_WEIGHT * (after - before);
@@ -89,7 +90,7 @@ function majorPiecesOnOpenFiles(features: PositionFeatures, color: ColorName): n
   }).length;
 }
 
-function centreTrend(input: PositionalTrendInput): number {
+export function centreTrend(input: PositionalTrendInput): number {
   const opponent = opponentOf(input.color);
   const before = input.featuresAtOpeningEnd.centerControlScore;
   const after = input.featuresAtFinal.centerControlScore;
@@ -98,12 +99,28 @@ function centreTrend(input: PositionalTrendInput): number {
   return CENTER_WEIGHT * (afterAdvantage - beforeAdvantage);
 }
 
-function kingSafetyTrend(input: PositionalTrendInput): number {
+/** "Defending Accuracy" (Phase 25): did the mover's own king safety hold up. */
+export function kingSafetyTrend(input: PositionalTrendInput): number {
   const before = kingSafetySignals(input.fenAtOpeningEnd, input.color);
   const after = kingSafetySignals(input.fenAtFinal, input.color);
   const escapeSquaresTrendingDown = after.escapeSquareCount < before.escapeSquareCount;
   return escapeSquaresTrendingDown && after.opponentAttackerCount >= KING_SAFETY_ATTACKER_THRESHOLD
     ? KING_SAFETY_PENALTY
+    : 0;
+}
+
+/**
+ * "Attacking Accuracy" (Phase 25): the same escape-square/attacker-pressure
+ * signal `kingSafetyTrend` uses, mirrored onto the opponent's king — did the
+ * mover create real threats against it, rewarded rather than penalized.
+ */
+export function attackingTrend(input: PositionalTrendInput): number {
+  const opponent = opponentOf(input.color);
+  const before = kingSafetySignals(input.fenAtOpeningEnd, opponent);
+  const after = kingSafetySignals(input.fenAtFinal, opponent);
+  const escapeSquaresTrendingDown = after.escapeSquareCount < before.escapeSquareCount;
+  return escapeSquaresTrendingDown && after.opponentAttackerCount >= KING_SAFETY_ATTACKER_THRESHOLD
+    ? ATTACKING_BONUS
     : 0;
 }
 

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
-import type { GameReport, PlayerReport } from '@freechesscoach/shared';
+import { TACTIC_MOTIF_TYPES, type GameReport, type PlayerReport } from '@freechesscoach/shared';
 import { GameReportSummary } from './GameReportSummary.js';
 
 /** The report renders collapsed by default (a slim preview bar) — tests
@@ -15,6 +15,7 @@ function buildPlayerReport(overrides: Partial<PlayerReport> = {}): PlayerReport 
     phaseAccuracy: { opening: 92.1, middlegame: 80.5, endgame: null },
     phaseConfidence: { opening: 'ok', middlegame: 'ok', endgame: 'none' },
     scores: { opening: 90, tactics: 75, strategy: 82, endgame: null },
+    strategySubScores: { pawnStructure: 80, spaceAdvantage: 78, activePiece: 85, attacking: 70, defending: 88 },
     counts: {
       brilliant: 0,
       great: 1,
@@ -30,6 +31,9 @@ function buildPlayerReport(overrides: Partial<PlayerReport> = {}): PlayerReport 
     },
     acpl: 24.6,
     estimatedRating: { value: 1550, range: [1400, 1700], confidence: 'medium' },
+    tacticMotifs: Object.fromEntries(
+      TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }])
+    ) as PlayerReport['tacticMotifs'],
     ...overrides
   };
 }

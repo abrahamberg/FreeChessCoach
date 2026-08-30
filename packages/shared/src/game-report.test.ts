@@ -57,6 +57,7 @@ describe('GameReportSchema', () => {
       phaseAccuracy: { opening: 92.1, middlegame: 80.5, endgame: null },
       phaseConfidence: { opening: 'ok', middlegame: 'ok', endgame: 'none' },
       scores: { opening: 90, tactics: 75, strategy: 82, endgame: null },
+      strategySubScores: { pawnStructure: 80, spaceAdvantage: 78, activePiece: 85, attacking: 70, defending: 88 },
       counts: { ...zeroCounts(), best: 10, good: 15, inaccuracy: 2 },
       acpl: 24.6,
       estimatedRating: { value: 1550, range: [1400, 1700], confidence: 'medium' },

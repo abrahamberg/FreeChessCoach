@@ -1097,20 +1097,40 @@ isolation before Phase 24 wires them into the batch pipeline.
 
 **Files:** `packages/chess-analysis/src/strategy-score.ts`.
 
-- [ ] Export `pawnStructureTrend`/`spaceTrend`/`filesTrend`/`centreTrend`/
+- [x] Export `pawnStructureTrend`/`spaceTrend`/`filesTrend`/`centreTrend`/
       `kingSafetyTrend` individually.
-- [ ] 🔴 Map to labels, each a 0–100 accuracy via
+- [x] 🔴 Map to labels, each a 0–100 accuracy via
       `clamp(quietAccuracy + component, 0, 100)` (same formula the existing
       `strategyScore` already uses): Pawn Structure ← `pawnStructureTrend`;
       Space Advantage ← `spaceTrend`; Active Piece ← `filesTrend`; Attacking
       ← new `attackingTrend` (`kingSafetyTrend` machinery vs. the
       **opponent's** king); Defending ← existing `kingSafetyTrend` (mover's
       own king); Overall Strategic ← existing `strategyScore`, unchanged.
-- [ ] Add `strategySubScores` to `PlayerReportSchema` (5 nullable
+      Landed as `buildStrategyScores` in `build-game-report.ts` (renamed
+      from the old `buildStrategyScore`), reusing the existing
+      `strategyScore(quietPositionCount, quietAccuracy, component)` function
+      unchanged for every sub-score — no new "sub-score" formula needed
+      since it was already generic over its `trend` argument. `ATTACKING_BONUS`
+      (10, mirroring `KING_SAFETY_PENALTY`'s magnitude) added to
+      `CONFIG.strategyScore`.
+- [x] Add `strategySubScores` to `PlayerReportSchema` (5 nullable
       percentages, same `< 4` quiet-position null guard).
-- [ ] Tests: each component fixture-tested independently; existing
-      `strategyScore` tests still pass unchanged.
-- [ ] Commit: `feat: strategy sub-metric accuracies (defending/attacking/space/pawn structure/active pieces)`.
+- [x] Tests: each component fixture-tested independently (including two new
+      `attackingTrend` fixtures — one with genuine attacking pressure via an
+      open-file rook, one confirming the opponent merely blocking its own
+      escape squares does *not* count); existing `strategyScore` tests still
+      pass unchanged.
+      Caught mid-task: `npx tsc -b` without `--force` was silently reusing
+      stale incremental build info and reporting clean when two pre-existing
+      fixture files (`apps/api/src/routes/games.test.ts`,
+      `apps/web/src/features/board/GameReportSummary.test.tsx`) were
+      actually missing the new required `strategySubScores`/`tacticMotifs`
+      fields from Phase 24 and this task — only `--force` surfaced the real
+      errors. Both fixtures fixed. **Takeaway for future sessions:** after
+      adding a required field to a widely-fixture'd shared schema, run
+      `tsc -b --force` (or clean the build cache) before trusting a clean
+      typecheck.
+- [x] Commit: `feat: strategy sub-metric accuracies (defending/attacking/space/pawn structure/active pieces)`.
 
 ## Phase 26 — Endgame breakdown (by starting standing, by theme)
 

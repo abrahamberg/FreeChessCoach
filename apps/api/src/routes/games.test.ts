@@ -1,4 +1,4 @@
-import type { CoachingPlan, GameReport } from '@freechesscoach/shared';
+import { TACTIC_MOTIF_TYPES, type CoachingPlan, type GameReport } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildApp } from '../app.js';
@@ -47,6 +47,7 @@ function buildGameReportFixture(): GameReport {
     phaseAccuracy: { opening: 92.1, middlegame: 80.5, endgame: null },
     phaseConfidence: { opening: 'ok' as const, middlegame: 'ok' as const, endgame: 'none' as const },
     scores: { opening: 90, tactics: 75, strategy: 82, endgame: null },
+    strategySubScores: { pawnStructure: 80, spaceAdvantage: 78, activePiece: 85, attacking: 70, defending: 88 },
     counts: {
       brilliant: 0,
       great: 0,
@@ -61,7 +62,8 @@ function buildGameReportFixture(): GameReport {
       forced: 0
     },
     acpl: 24.6,
-    estimatedRating: { value: 1550, range: [1400, 1700] as [number, number], confidence: 'medium' as const }
+    estimatedRating: { value: 1550, range: [1400, 1700] as [number, number], confidence: 'medium' as const },
+    tacticMotifs: Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }])) as GameReport['players']['white']['tacticMotifs']
   };
 
   return {
