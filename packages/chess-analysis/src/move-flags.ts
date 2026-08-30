@@ -12,6 +12,7 @@ export function moveFlags(fenBefore: string, moveSan: string): MoveFlags {
   return {
     isCapture: move.captured !== undefined,
     isCheck: move.san.endsWith('+') || move.san.endsWith('#'),
+    isCheckmate: move.san.endsWith('#'),
     isPromotion: move.isPromotion(),
     isCastle: move.isKingsideCastle() || move.isQueensideCastle(),
     movedPieceType: move.piece,

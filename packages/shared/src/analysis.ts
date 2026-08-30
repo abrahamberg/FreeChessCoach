@@ -125,6 +125,7 @@ export type PieceSymbolDto = z.infer<typeof PieceSymbolSchema>;
 export const MoveFlagsSchema = z.object({
   isCapture: z.boolean(),
   isCheck: z.boolean(),
+  isCheckmate: z.boolean(),
   isPromotion: z.boolean(),
   isCastle: z.boolean(),
   movedPieceType: PieceSymbolSchema,

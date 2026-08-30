@@ -24,6 +24,7 @@ function input(overrides: Partial<MoveClassificationInput> = {}): MoveClassifica
     moveFlags: {
       isCapture: false,
       isCheck: false,
+      isCheckmate: false,
       isPromotion: false,
       isCastle: false,
       movedPieceType: 'p',

@@ -139,6 +139,7 @@ describe('ClassifiedMoveSchema', () => {
       moveFlags: {
         isCapture: false,
         isCheck: false,
+        isCheckmate: false,
         isPromotion: false,
         isCastle: false,
         movedPieceType: 'n',
