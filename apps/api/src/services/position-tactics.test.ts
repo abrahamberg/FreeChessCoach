@@ -5,6 +5,12 @@ import { scanPositionTactics } from './position-tactics.js';
 const FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
 const MOVER_IN_CHECK_FEN = 'rnb1k1nr/pppp1ppp/8/2b5/4P3/8/PPPP1qPP/RNBQKBNR w KQkq - 0 3';
 
+// Same ply-3-only fork fixture as pv-tactics.test.ts/available-motifs-scan.test.ts:
+// Kh2 (ply1, quiet)/Ke7 (ply2, opponent reply)/Nd5+ (ply3, the fork) — the
+// shallow (ply-1-only) scan can never see this; the graduated scan can.
+const FORK_IN_3_FEN = '4k3/8/1r3n2/8/5N2/8/8/7K w - - 0 1';
+const FORK_IN_3_PV = ['Kh2', 'Ke7', 'Nd5+'];
+
 function analysisFixture(fen: string, lines: PositionAnalysis['lines']): PositionAnalysis {
   return {
     fen,
@@ -44,5 +50,39 @@ describe('scanPositionTactics', () => {
 
     expect(analyzePosition).not.toHaveBeenCalled();
     expect(result.allowed).toBeNull();
+  });
+
+  test('default (no options.mode) behaves as \'shallow\' — a ply-3+ fork is missed (Phase 48)', async () => {
+    const primaryAnalysis = analysisFixture(FORK_IN_3_FEN, [
+      { moveUci: 'h1h2', moveSan: 'Kh2', pvSan: FORK_IN_3_PV, cp: 0, mateIn: null }
+    ]);
+    const analyzePosition = vi.fn().mockResolvedValue(analysisFixture(FORK_IN_3_FEN, []));
+
+    const result = await scanPositionTactics({ analyzePosition }, FORK_IN_3_FEN, primaryAnalysis);
+
+    expect(result.available).toEqual([]);
+  });
+
+  test('\'shallow\' mode is byte-identical to pre-Phase-48 behavior (regression pin)', async () => {
+    const primaryAnalysis = analysisFixture(FORK_FEN, [
+      { moveUci: 'a1b2', moveSan: 'Kb2', pvSan: ['Kb2'], cp: 400, mateIn: null },
+      { moveUci: 'c4d6', moveSan: 'Nd6+', pvSan: ['Nd6+'], cp: 500, mateIn: null }
+    ]);
+    const analyzePosition = vi.fn().mockResolvedValue(analysisFixture('4k3/1r6/8/8/2N5/8/8/K7 b - - 0 1', []));
+
+    const result = await scanPositionTactics({ analyzePosition }, FORK_FEN, primaryAnalysis, { mode: 'shallow' });
+
+    expect(result.available).toEqual([{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }]);
+  });
+
+  test('\'graduated\' mode surfaces a ply-3+ sighting \'shallow\' misses on the same fixture (Phase 48)', async () => {
+    const primaryAnalysis = analysisFixture(FORK_IN_3_FEN, [
+      { moveUci: 'h1h2', moveSan: 'Kh2', pvSan: FORK_IN_3_PV, cp: 0, mateIn: null }
+    ]);
+    const analyzePosition = vi.fn().mockResolvedValue(analysisFixture(FORK_IN_3_FEN, []));
+
+    const result = await scanPositionTactics({ analyzePosition }, FORK_IN_3_FEN, primaryAnalysis, { mode: 'graduated' });
+
+    expect(result.available).toEqual([{ rank: 0, moveSan: 'Nd5+', motif: 'fork' }]);
   });
 });

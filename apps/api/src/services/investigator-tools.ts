@@ -81,5 +81,5 @@ async function scanTacticsTool(
   args: { fen: string; topN?: number }
 ): Promise<PositionTacticsScan> {
   const analysis = await deps.analyzePosition(args.fen);
-  return scanPositionTactics(deps, args.fen, analysis, { topN: args.topN });
+  return scanPositionTactics(deps, args.fen, analysis, { topN: args.topN, mode: 'graduated' });
 }

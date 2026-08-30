@@ -396,18 +396,18 @@ mode, defaulting to today's exact behavior for every existing caller.
 once verified — no new tool parameter, the model doesn't need to choose
 depth itself).
 
-- [ ] `scanPositionTactics` gains `options.mode?: 'shallow' | 'graduated'`,
+- [x] `scanPositionTactics` gains `options.mode?: 'shallow' | 'graduated'`,
       default `'shallow'` (today's `scanTacticsForLines` call, byte-for-byte
       unchanged). `'graduated'` calls `scanAvailableMotifs` for both
       `available` and `allowed`, adapting `sightings` into the existing
       `TacticSighting[]` shape.
-- [ ] `game-tactic-motifs.ts` (Played/Found) stays on `scanTacticsForLines`
+- [x] `game-tactic-motifs.ts` (Played/Found) stays on `scanTacticsForLines`
       regardless of this phase.
-- [ ] Tests: `'shallow'` mode is byte-identical to pre-Phase-48 behavior
+- [x] Tests: `'shallow'` mode is byte-identical to pre-Phase-48 behavior
       (regression pin); `'graduated'` mode surfaces a ply-3+ sighting
       `'shallow'` misses on the same fixture; default (no `options.mode`)
       behaves as `'shallow'`.
-- [ ] Commit: `feat: scanPositionTactics graduated-depth opt-in; wire scan_tactics onto it (Phase 48)`.
+- [x] Commit: `feat: scanPositionTactics graduated-depth opt-in; wire scan_tactics onto it (Phase 48)`.
 
 ## Phase 49 — Lichess eval index v3 (per-line multi-ply continuations)
 

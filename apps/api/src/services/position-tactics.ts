@@ -1,7 +1,9 @@
 import {
   fenActiveColor,
   flipActiveColorFen,
+  scanAvailableMotifs,
   scanTacticsForLines,
+  type PvMotifSighting,
   type TacticSighting
 } from '@freechesscoach/chess-analysis';
 import type { EngineLine, PositionAnalysis } from '@freechesscoach/shared';
@@ -20,6 +22,16 @@ export interface PositionTacticsScan {
   allowed: TacticSighting[] | null;
 }
 
+export interface ScanPositionTacticsOptions {
+  topN?: number;
+  /** `'shallow'` (default): today's ply-1-only `scanTacticsForLines`,
+   * byte-for-byte unchanged — every existing caller keeps this behavior
+   * unless it opts in. `'graduated'`: the Phase 45 multi-ply schedule via
+   * `scanAvailableMotifs`, catching a tactic that only appears a few plies
+   * deep (e.g. a rook sac → fork combo) that the shallow scan can't see. */
+  mode?: 'shallow' | 'graduated';
+}
+
 /**
  * Available + allowed (threat) tactics for a position, both classified
  * through the same registry (Phase 32) every other caller uses. Deliberately
@@ -32,15 +44,30 @@ export async function scanPositionTactics(
   engine: PositionAnalyzer,
   fen: string,
   primaryAnalysis: PositionAnalysis,
-  options: { topN?: number } = {}
+  options: ScanPositionTacticsOptions = {}
 ): Promise<PositionTacticsScan> {
   const mover = fenActiveColor(fen);
-  const available = scanTacticsForLines(fen, primaryAnalysis.lines as EngineLine[], mover, options.topN);
+  const available = scanTactics(options.mode, fen, primaryAnalysis.lines as EngineLine[], mover, options.topN);
 
   const flipped = flipActiveColorFen(fen);
   if (!flipped) return { available, allowed: null };
 
   const threatAnalysis = await engine.analyzePosition(flipped);
   const opponent = mover === 'white' ? 'black' : 'white';
-  return { available, allowed: scanTacticsForLines(flipped, threatAnalysis.lines as EngineLine[], opponent, options.topN) };
+  return { available, allowed: scanTactics(options.mode, flipped, threatAnalysis.lines as EngineLine[], opponent, options.topN) };
+}
+
+function scanTactics(
+  mode: ScanPositionTacticsOptions['mode'],
+  fen: string,
+  lines: readonly EngineLine[],
+  mover: 'white' | 'black',
+  topN: number | undefined
+): TacticSighting[] {
+  if (mode !== 'graduated') return scanTacticsForLines(fen, lines, mover, topN);
+  return scanAvailableMotifs(fen, lines, topN).sightings.map(toTacticSighting);
+}
+
+function toTacticSighting({ rank, moveSan, motif }: PvMotifSighting): TacticSighting {
+  return { rank, moveSan, motif };
 }
