@@ -50,3 +50,107 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.stats-section h3 {
+  margin-top: var(--space-4);
+}
+
+.stats-section__headline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.stats-section__headline-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stats-section__headline-value {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+}
+
+.stats-section__headline-caption {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.stats-section__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.stats-section__table th,
+.stats-section__table td {
+  text-align: left;
+  padding: var(--space-2) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.stats-section__stat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.stats-section__stat-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.stats-section__stat-list li:last-child {
+  border-bottom: none;
+}
+
+.stats-section__motif-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.stats-section__motif-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 30%) 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.stats-section__motif-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.stats-section__motif-track {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  overflow: hidden;
+}
+
+.stats-section__motif-bar {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  background: linear-gradient(90deg, #3c7a50, var(--color-primary));
+  border-radius: var(--radius-pill);
+}
+
+.stats-section__motif-value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-align: right;
+}

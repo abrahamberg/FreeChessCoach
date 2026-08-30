@@ -43,10 +43,13 @@ describe('StatsPage', () => {
     vi.unstubAllGlobals();
   });
 
-  test('fetches the dashboard with the default range=all&speed=rapid and shows the games-analyzed summary', async () => {
+  test('fetches the dashboard with the default range=all&speed=rapid and renders every section', async () => {
     const fetchMock = renderStatsPage(buildDashboard(12));
 
-    await screen.findByText(/analyzed 12 games/i);
+    await screen.findByRole('heading', { level: 2, name: /opening/i });
+    expect(screen.getByRole('heading', { level: 2, name: /tactics/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /strategy/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /endgame/i })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith('/api/users/me/stats?range=all&speed=rapid', expect.anything());
   });
 
@@ -58,7 +61,7 @@ describe('StatsPage', () => {
   test('clicking a range tab re-fetches with the new range', async () => {
     const user = userEvent.setup();
     const fetchMock = renderStatsPage(buildDashboard(3));
-    await screen.findByText(/analyzed 3 games/i);
+    await screen.findByRole('heading', { level: 2, name: /opening/i });
 
     await user.click(screen.getByRole('button', { name: /last 7 days/i }));
 
@@ -70,7 +73,7 @@ describe('StatsPage', () => {
   test('clicking the "All formats" toggle re-fetches with speed=all', async () => {
     const user = userEvent.setup();
     const fetchMock = renderStatsPage(buildDashboard(3));
-    await screen.findByText(/analyzed 3 games/i);
+    await screen.findByRole('heading', { level: 2, name: /opening/i });
 
     await user.click(screen.getByRole('button', { name: /all formats/i }));
 

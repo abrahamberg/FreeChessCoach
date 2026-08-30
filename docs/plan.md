@@ -1327,12 +1327,19 @@ hook (TanStack Query, mirrors `DashboardPage`'s `apiGet` pattern); route in
 `StrategyStatsSection.tsx`, `EndgameStatsSection.tsx` under
 `features/stats/`, presentational (no fetching), each a `.card`.
 
-- [ ] Tactics section renders each motif as "found / opportunities" (e.g.
-      "Forks 2/5").
-- [ ] Strategy/Endgame sections reuse `GameReportSummary`'s null → "—"
-      convention.
-- [ ] Component tests per section with a fixture `StatsDashboard`.
-- [ ] Commit: `feat: opening/tactics/strategy/endgame stats sections`.
+- [x] Tactics section renders each motif as "found / opportunities" (e.g.
+      "Forks 2/5"), using chess.com's own category labels; motifs with zero
+      opportunities in the filtered range are omitted rather than shown as
+      "0 of 0".
+- [x] Strategy/Endgame/Opening sections reuse `GameReportSummary`'s null →
+      "—" convention, via a small shared `formatStat.ts`
+      (`formatPercent`/`formatCount`) and a shared `HeadlineStat.tsx`
+      headline-number component — both new, factored out once duplicated
+      across 3+ of these sibling section files rather than upfront.
+- [x] Component tests per section with a fixture (not the full
+      `StatsDashboard`, just each section's own prop slice — simpler and
+      each section only ever receives its own slice from `StatsPage`).
+- [x] Commit: `feat: opening/tactics/strategy/endgame stats sections`.
 
 ## Phase 31 — Stat-bank import (decoupled analysis)
 
