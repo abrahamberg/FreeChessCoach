@@ -303,8 +303,11 @@ describe('ChessApiEngineBackend', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result).toEqual([
-      { ply: 0, fen: START_FEN, depth: 16, lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 30, mateIn: null }] },
-      { ply: 1, fen: START_FEN, depth: 16, lines: [{ moveUci: 'e7e5', moveSan: 'e5', cp: 20, mateIn: null }] }
+      { ply: 0, fen: START_FEN, depth: 16, lines: [{ moveUci: 'e2e4', moveSan: 'e4', pvSan: ['e4'], cp: 30, mateIn: null }] },
+      // 'e7e5' is illegal from START_FEN (this fixture reuses the same fen
+      // for both plies) — pvUciToSan degrades to the empty valid-prefix per
+      // its graceful-degradation contract, same as Phase 43/44 elsewhere.
+      { ply: 1, fen: START_FEN, depth: 16, lines: [{ moveUci: 'e7e5', moveSan: 'e5', pvSan: [], cp: 20, mateIn: null }] }
     ]);
   });
 
