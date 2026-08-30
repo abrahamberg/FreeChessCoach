@@ -3,8 +3,10 @@ import type { PositionFeatures } from '@freechesscoach/shared';
 import { occupiedSquares, opponentOf, toColorName, type AttackMap } from './attack-map.js';
 
 /** Same static piece-value table classify.ts uses for its sacrifice/hangs
- * heuristics — not engine-precise, just enough for "worth more than" checks. */
-const PIECE_VALUES: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+ * heuristics — not engine-precise, just enough for "worth more than" checks.
+ * Exported so the tactic-motif detectors (pins, trapped pieces,
+ * removes-the-defender) compare on the same scale as forks/captures here. */
+export const PIECE_VALUES: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
 export function targetsAttacked(chess: Chess, attackMap: AttackMap): PositionFeatures['targetsAttacked'] {
   const mover = chess.turn();
