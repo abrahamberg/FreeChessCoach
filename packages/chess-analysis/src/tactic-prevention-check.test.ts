@@ -1,41 +1,64 @@
 import type { EngineLine } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { findDefusedThreat } from './tactic-prevention-check.js';
+import { findDefusedThreats } from './tactic-prevention-check.js';
 
 const FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
 const ROOK_MOVED_AWAY_FEN = '4k3/8/8/8/2N5/8/8/K7 w - - 0 1';
-const KNIGHT_MOVED_AWAY_FEN = '4k3/1r6/8/8/8/2N5/8/K7 w - - 0 1';
 
 const FORK_LINE: EngineLine = { moveUci: 'c4d6', moveSan: 'Nd6+', cp: 500, mateIn: null };
 const QUIET_LINE: EngineLine = { moveUci: 'a1b1', moveSan: 'Kb1', cp: 0, mateIn: null };
 
-describe('findDefusedThreat', () => {
-  test('returns the motif when a line\'s tactic is gone by the after position (target moved away)', () => {
-    const result = findDefusedThreat(FORK_FEN, ROOK_MOVED_AWAY_FEN, 'white', [FORK_LINE]);
-    expect(result).toBe('fork');
+// Same fork setup as pv-tactics.test.ts/available-motifs-scan.test.ts: white
+// knight f4-d5 forks the black rook on b6 and knight on f6, but only once
+// the black king has stepped to e7 (ply 2) — the fork itself only appears at
+// ply 3. Impossible for the old ply-1-only findDefusedThreat to ever detect.
+const FORK_SETUP_FEN = '4k3/8/1r3n2/8/5N2/8/8/7K w - - 0 1';
+const FORK_IN_3_PV = ['Kh2', 'Ke7', 'Nd5+'];
+const FORK_IN_3_LINE: EngineLine = { moveUci: 'h1h2', moveSan: 'Kh2', cp: 0, mateIn: null, pvSan: FORK_IN_3_PV };
+// Same setup with both non-king fork targets removed: after Ke7 (ply 2) the
+// ply-3 knight check only attacks the king itself (a knight "fork" needs 2+
+// targets), no longer qualifying as a fork.
+const FORK_IN_3_DEFUSED_FEN = '4k3/8/8/8/5N2/8/8/7K w - - 0 1';
+
+// A second, independent board with two simultaneously-available tactic
+// motifs (fork + a free undefended pawn, isolated from each other so
+// capturing the pawn doesn't also trigger removesDefender on the rook) —
+// used to prove a single "after" scan can defuse more than one motif type
+// at once.
+const TWO_MOTIF_FEN = '4k3/8/1r3n2/8/5N2/3p4/8/3Q3K w - - 0 1';
+const TWO_MOTIF_DEFUSED_FEN = '3rk3/8/5n2/8/5N2/3p4/8/3Q3K w - - 0 1';
+const TWO_MOTIF_LINES: EngineLine[] = [
+  { moveUci: 'f4d5', moveSan: 'Nd5', cp: 500, mateIn: null },
+  { moveUci: 'd1d3', moveSan: 'Qxd3', cp: 300, mateIn: null }
+];
+
+describe('findDefusedThreats', () => {
+  test('ply-1 parity: a motif present before and gone after (target moved away) is reported', () => {
+    const result = findDefusedThreats(FORK_FEN, ROOK_MOVED_AWAY_FEN, 'white', [FORK_LINE], [FORK_LINE]);
+    expect(result).toEqual(['fork']);
   });
 
-  test('returns the motif when the line is no longer even legal at the after position', () => {
-    const result = findDefusedThreat(FORK_FEN, KNIGHT_MOVED_AWAY_FEN, 'white', [FORK_LINE]);
-    expect(result).toBe('fork');
+  test('ply-1 parity: nothing to report when no candidate line has a motif to begin with', () => {
+    const result = findDefusedThreats(FORK_FEN, FORK_FEN, 'white', [QUIET_LINE], [QUIET_LINE]);
+    expect(result).toEqual([]);
   });
 
-  test('returns null when the tactic is still present after (nothing changed)', () => {
-    const result = findDefusedThreat(FORK_FEN, FORK_FEN, 'white', [FORK_LINE]);
-    expect(result).toBeNull();
+  test('a genuinely deeper (ply 3) fork is detected as defused — impossible before Phase 46', () => {
+    const result = findDefusedThreats(FORK_SETUP_FEN, FORK_IN_3_DEFUSED_FEN, 'white', [FORK_IN_3_LINE], [FORK_IN_3_LINE]);
+    expect(result).toContain('fork');
   });
 
-  test('returns null when no candidate line has a motif to begin with', () => {
-    const result = findDefusedThreat(FORK_FEN, FORK_FEN, 'white', [QUIET_LINE]);
-    expect(result).toBeNull();
+  test('a move defusing two distinct motif types returns both', () => {
+    const result = findDefusedThreats(TWO_MOTIF_FEN, TWO_MOTIF_DEFUSED_FEN, 'white', TWO_MOTIF_LINES, TWO_MOTIF_LINES);
+    expect([...result].sort()).toEqual(['fork', 'freePiece']);
   });
 
-  test('handles an empty candidate list without throwing', () => {
-    expect(findDefusedThreat(FORK_FEN, ROOK_MOVED_AWAY_FEN, 'white', [])).toBeNull();
+  test('the after-set being a superset of the before-set returns []', () => {
+    const result = findDefusedThreats(FORK_SETUP_FEN, TWO_MOTIF_FEN, 'white', [{ moveUci: 'f4d5', moveSan: 'Nd5', cp: 500, mateIn: null }], TWO_MOTIF_LINES);
+    expect(result).toEqual([]);
   });
 
-  test('checks lines in order and returns on the first defused one', () => {
-    const result = findDefusedThreat(FORK_FEN, ROOK_MOVED_AWAY_FEN, 'white', [QUIET_LINE, FORK_LINE]);
-    expect(result).toBe('fork');
+  test('handles empty candidate lines on both sides without throwing', () => {
+    expect(findDefusedThreats(FORK_FEN, ROOK_MOVED_AWAY_FEN, 'white', [], [])).toEqual([]);
   });
 });
