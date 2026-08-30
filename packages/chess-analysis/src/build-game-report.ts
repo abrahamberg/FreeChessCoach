@@ -33,7 +33,8 @@ import {
   strategyScore,
   type PositionalTrendInput
 } from './strategy-score.js';
-import { endgameScore, type GameResultForColour } from './endgame-score.js';
+import { endgameScore, endgameStandingBucket, type GameResultForColour } from './endgame-score.js';
+import { classifyEndgameType } from './endgame-theme.js';
 import {
   accuracyToElo,
   combinedRawRating,
@@ -167,6 +168,7 @@ function buildPlayerReport(
       endgame: endgameScore(phaseAccuracyByPhase.endgame, winPctAtEndgameStart(colour, context), result)
     },
     strategySubScores: strategyScores.subScores,
+    endgame: buildEndgameContext(colour, context),
     counts,
     acpl: round1(mean(colourMoves.map((move) => move.cpLoss))),
     estimatedRating: buildEstimatedRating(colourMoves, weights, accuracy, counts, prior),
@@ -283,6 +285,17 @@ function winPctAtEndgameStart(colour: Colour, context: GameContext): number | nu
   const evalAtStart = context.evals[context.boundaries.endgameStartPly];
   if (!evalAtStart) return null;
   return winPctFor(colour, toCpWhite(evalAtStart.lines[0] ?? EMPTY_SCORE));
+}
+
+/** Phase 26: the standing/theme buckets the stats dashboard groups games by
+ * — null/null whenever the game never reached the endgame for this colour
+ * (the same `endgameStartPly === null` signal `scores.endgame` already uses). */
+function buildEndgameContext(colour: Colour, context: GameContext): PlayerReport['endgame'] {
+  const ply = context.boundaries.endgameStartPly;
+  const position = ply === null ? undefined : context.game.positions[ply];
+  const winPct = winPctAtEndgameStart(colour, context);
+  if (!position || winPct === null) return { standing: null, theme: null };
+  return { standing: endgameStandingBucket(winPct), theme: classifyEndgameType(position.fen) };
 }
 
 function classificationCounts(colourMoves: ClassifiedMoveDto[]): ClassificationCounts {

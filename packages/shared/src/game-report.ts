@@ -64,6 +64,16 @@ export const TacticMotifCountsSchema = z.object(
 ) as z.ZodObject<Record<(typeof TACTIC_MOTIF_TYPES)[number], typeof TacticMotifCountSchema>>;
 export type TacticMotifCounts = z.infer<typeof TacticMotifCountsSchema>;
 
+/** Phase 26: the "from equal/worse/better positions" and "by theme" buckets
+ * the stats dashboard groups endgame games into. */
+export const ENDGAME_STANDINGS = ['winning', 'equal', 'worse'] as const;
+export const EndgameStandingSchema = z.enum(ENDGAME_STANDINGS);
+export type EndgameStanding = z.infer<typeof EndgameStandingSchema>;
+
+export const ENDGAME_THEMES = ['kingAndPawn', 'queen', 'rookAndPawn', 'other'] as const;
+export const EndgameThemeSchema = z.enum(ENDGAME_THEMES);
+export type EndgameTheme = z.infer<typeof EndgameThemeSchema>;
+
 export const EstimatedRatingReportSchema = z.object({
   value: z.number().int().nullable(),
   range: z.tuple([z.number().int(), z.number().int()]).nullable(),
@@ -105,6 +115,12 @@ export const PlayerReportSchema = z.object({
     activePiece: NullableScoreSchema,
     attacking: NullableScoreSchema,
     defending: NullableScoreSchema
+  }),
+  /** Phase 26: null/null when the game never reached the endgame phase for
+   * this colour — the same signal as `scores.endgame` being null. */
+  endgame: z.object({
+    standing: EndgameStandingSchema.nullable(),
+    theme: EndgameThemeSchema.nullable()
   }),
   counts: ClassificationCountsSchema,
   acpl: z.number().nonnegative(),

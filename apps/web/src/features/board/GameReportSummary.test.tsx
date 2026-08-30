@@ -16,6 +16,7 @@ function buildPlayerReport(overrides: Partial<PlayerReport> = {}): PlayerReport 
     phaseConfidence: { opening: 'ok', middlegame: 'ok', endgame: 'none' },
     scores: { opening: 90, tactics: 75, strategy: 82, endgame: null },
     strategySubScores: { pawnStructure: 80, spaceAdvantage: 78, activePiece: 85, attacking: 70, defending: 88 },
+    endgame: { standing: null, theme: null },
     counts: {
       brilliant: 0,
       great: 1,

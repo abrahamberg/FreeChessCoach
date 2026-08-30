@@ -1,6 +1,7 @@
+import type { EndgameTheme } from '@freechesscoach/shared';
 import { Chess } from 'chess.js';
 
-export type EndgameTheme = 'kingAndPawn' | 'queen' | 'rookAndPawn' | 'other';
+export type { EndgameTheme } from '@freechesscoach/shared';
 
 /**
  * Classifies the material on the board (either side, pawns/kings ignored)

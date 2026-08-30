@@ -1,5 +1,7 @@
+import type { EndgameStanding } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 
+export type { EndgameStanding } from '@freechesscoach/shared';
 export type GameResultForColour = 'win' | 'draw' | 'loss';
 
 const {
@@ -19,8 +21,6 @@ export function conversionScore(winPctAtEndgameStart: number, result: GameResult
   const bucket = endgameStandingBucket(winPctAtEndgameStart);
   return CONVERSION_TABLE[bucket][result];
 }
-
-export type EndgameStanding = 'winning' | 'equal' | 'worse';
 
 /** Which of the three §7.4 buckets a colour's win% at `endgameStartPly`
  * falls into — exported for the stats dashboard's "from equal/worse/better

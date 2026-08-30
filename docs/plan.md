@@ -1138,28 +1138,39 @@ isolation before Phase 24 wires them into the batch pipeline.
 
 **Files:** `packages/chess-analysis/src/endgame-score.ts`.
 
-- [ ] Export `standingBucket` (as `endgameStandingBucket` if that reads
+- [x] Export `standingBucket` (as `endgameStandingBucket` if that reads
       clearer outside this file) — no behavior change.
-- [ ] Commit: `refactor: export endgame standing-bucket classifier`.
+- [x] Commit: `refactor: export endgame standing-bucket classifier`.
 
 ### Task 26.2: Endgame theme classification
 
 **Files:** `packages/chess-analysis/src/endgame-theme.ts` + test.
 
-- [ ] 🟢 `classifyEndgameType(fen): 'kingAndPawn' | 'queen' | 'rookAndPawn' |
+- [x] 🟢 `classifyEndgameType(fen): 'kingAndPawn' | 'queen' | 'rookAndPawn' |
       'other'` from material at `endgameStartPly`, reusing Task 14.1's
       material-counting helper.
-- [ ] Tests: one fixture per bucket, plus mixed-material → `other`.
-- [ ] Commit: `feat: endgame theme classification (K+P/queen/rook+pawn/other)`.
+      Landed as a direct board scan for queen/rook/minor *presence* rather
+      than routing through `nonPawnMaterial`'s point totals — points alone
+      can't distinguish "one knight" from "one bishop" worth of material
+      from "queens on the board," which the theme buckets need to tell apart.
+- [x] Tests: one fixture per bucket, plus mixed-material → `other`.
+- [x] Commit: `feat: endgame theme classification (K+P/queen/rook+pawn/other)`.
 
 ### Task 26.3: Wire theme + standing into the game report
 
 **Files:** `build-game-report.ts`, `game-report.ts`.
 
-- [ ] Add `endgame: { standing: 'winning'|'equal'|'worse'|null, theme:
+- [x] Add `endgame: { standing: 'winning'|'equal'|'worse'|null, theme:
       ReturnType<typeof classifyEndgameType> | null }` to
       `PlayerReportSchema` (both null when the game never reached endgame).
-- [ ] Commit: `feat: persist per-game endgame standing and theme`.
+      `EndgameStanding`/`EndgameTheme` canonically live in
+      `packages/shared/src/game-report.ts` (per AGENTS rule 4, matching the
+      `TacticMotifType` precedent from Phase 24) — `endgame-score.ts`/
+      `endgame-theme.ts` import and re-export them rather than declaring
+      local unions. New `buildEndgameContext` in `build-game-report.ts`
+      reads the position at `endgameStartPly` and reuses the already-
+      computed `winPctAtEndgameStart` — no new engine/FEN work.
+- [x] Commit: `feat: persist per-game endgame standing and theme`.
 
 ## Phase 27 — Opening breakdown (aggregation-only, no new chess logic)
 

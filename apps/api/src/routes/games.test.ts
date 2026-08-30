@@ -48,6 +48,7 @@ function buildGameReportFixture(): GameReport {
     phaseConfidence: { opening: 'ok' as const, middlegame: 'ok' as const, endgame: 'none' as const },
     scores: { opening: 90, tactics: 75, strategy: 82, endgame: null },
     strategySubScores: { pawnStructure: 80, spaceAdvantage: 78, activePiece: 85, attacking: 70, defending: 88 },
+    endgame: { standing: null, theme: null },
     counts: {
       brilliant: 0,
       great: 0,
