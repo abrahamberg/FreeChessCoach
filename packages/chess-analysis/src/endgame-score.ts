@@ -16,11 +16,17 @@ const {
  * win% at `endgameStartPly`.
  */
 export function conversionScore(winPctAtEndgameStart: number, result: GameResultForColour): number {
-  const bucket = standingBucket(winPctAtEndgameStart);
+  const bucket = endgameStandingBucket(winPctAtEndgameStart);
   return CONVERSION_TABLE[bucket][result];
 }
 
-function standingBucket(winPct: number): 'winning' | 'equal' | 'worse' {
+export type EndgameStanding = 'winning' | 'equal' | 'worse';
+
+/** Which of the three §7.4 buckets a colour's win% at `endgameStartPly`
+ * falls into — exported for the stats dashboard's "from equal/worse/better
+ * positions" endgame breakdown (Phase 26), which groups games by this same
+ * bucket rather than recomputing the thresholds itself. */
+export function endgameStandingBucket(winPct: number): EndgameStanding {
   if (winPct >= WINNING_THRESHOLD) return 'winning';
   if (winPct >= EQUAL_THRESHOLD) return 'equal';
   return 'worse';
