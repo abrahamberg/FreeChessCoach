@@ -1178,25 +1178,34 @@ isolation before Phase 24 wires them into the batch pipeline.
 
 **Files:** `packages/chess-analysis/src/opening-mistakes.ts` + test.
 
-- [ ] 🟢 `openingMistakeCount(moves: MoveReport[], colour): number` — count
+- [x] 🟢 `openingMistakeCount(moves: MoveReport[], colour): number` — count
       of that colour's `phase === 'opening'` moves with quality in
       `inaccuracy`/`mistake`/`miss`/`blunder`.
-- [ ] Commit: `feat: per-game opening mistake count`.
+- [x] Commit: `feat: per-game opening mistake count`. Also added the shared
+      `StatsEntry` interface (`stats-entry.ts`) here rather than deferring it
+      to Task 28.1 — Task 27.2 needs it immediately and it has no
+      dependencies of its own (`GameReport`/`PlayerColor` from shared,
+      `GameResultForColour` from `endgame-score.ts`, `GameSpeed` from
+      `time-control.ts`).
 
 ### Task 27.2: Cross-game opening aggregator
 
 **Files:** `packages/chess-analysis/src/aggregate-opening-stats.ts` + test.
 
-- [ ] `aggregateOpeningStats(entries: StatsEntry[]): OpeningStats` (see
-      Phase 28 for `StatsEntry`) — average book moves (mean
-      `book.players[colour].lastBookPly`), opening accuracy (mean
-      `phaseAccuracy.opening`), average opening mistakes (Task 27.1), and
-      performance by opening (group by `book.name` → `book.eco` → "Unknown
-      opening"; games played/win%/mean accuracy per group, sorted by games
-      played descending).
-- [ ] Tests: two games sharing an opening aggregate into one row; a
-      null-name game lands in "Unknown opening", not dropped.
-- [ ] Commit: `feat: cross-game opening-performance aggregation`.
+- [x] `aggregateOpeningStats(entries: StatsEntry[]): OpeningStats` — average
+      book moves (mean `book.players[colour].lastBookPly`), opening accuracy
+      (mean `phaseAccuracy.opening`, nulls excluded), average opening
+      mistakes (Task 27.1), and performance by opening (group by
+      `book.name` → `book.eco` → "Unknown opening"; games played/win%/mean
+      *overall game* accuracy per group — not opening-phase accuracy, to
+      match chess.com's "Performance by Opening" table being a distinct
+      metric from "Opening Accuracy" above it — sorted by games played
+      descending). All three scalar stats are `null`, not `0`, when
+      `entries` is empty.
+- [x] Tests: two games sharing an opening aggregate into one row; a
+      null-name game falls back to eco then to "Unknown opening", never
+      dropped; sort order by games played; empty-input nulls.
+- [x] Commit: `feat: cross-game opening-performance aggregation`.
 
 ## Phase 28 — The dashboard aggregator (pure) and shared schemas
 

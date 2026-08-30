@@ -1,5 +1,6 @@
 export * from './apply-san-sequence.js';
 export * from './accuracy-curve.js';
+export * from './aggregate-opening-stats.js';
 export * from './assert-eval-sign.js';
 export * from './bot-candidate-score.js';
 export * from './bot-opening.js';
