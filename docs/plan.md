@@ -1306,10 +1306,20 @@ isolation before Phase 24 wires them into the batch pipeline.
 hook (TanStack Query, mirrors `DashboardPage`'s `apiGet` pattern); route in
 `App.tsx`; nav link.
 
-- [ ] Range tabs (Last 7 days/Last 30 days/Last year/All time) + rapid/all
-      toggle, same controlled-tab pattern as `GamesPage`'s `FILTERS`.
-- [ ] Empty state when the range/filter combination returns zero entries.
-- [ ] Commit: `feat: stats dashboard page shell with range/speed filters`.
+- [x] Range tabs (Last 7 days/Last 30 days/Last year/All time, default
+      `all`) + rapid/all-formats toggle (default `rapid`, matching the
+      route's own defaults) — pill-toggle buttons in the same
+      `aria-pressed`/CSS-variable style as `TrendChart`'s range toggle, not
+      literally `GamesPage`'s `FILTERS` (that's a status filter over a list,
+      not a query-param-driving tab group — this needed its own small
+      `useStatsDashboard` query hook instead). `/stats` route added to
+      `App.tsx`; nav link (`BarChartIcon`, new in `Icon.tsx` — no existing
+      icon fit) added to `AppShell`'s shared `NAV_DESTINATIONS`, so it shows
+      in both the desktop pill nav and the mobile bottom tab bar.
+- [x] Empty state ("Analyze some games to see your stats.") when
+      `gamesAnalyzed === 0`; a bare "Analyzed N games." placeholder
+      otherwise, standing in for Task 30.2's real sections.
+- [x] Commit: `feat: stats dashboard page shell with range/speed filters`.
 
 ### Task 30.2: Section components
 

@@ -11,6 +11,7 @@ import { PlayBotStartPage } from './features/play-bot/PlayBotStartPage.js';
 import { BotSessionPage } from './features/session/BotSessionPage.js';
 import { SessionPage } from './features/session/SessionPage.js';
 import { SettingsPage } from './features/settings/SettingsPage.js';
+import { StatsPage } from './features/stats/StatsPage.js';
 import { useEngineTunnelActivation } from './hooks/useEngineTunnelActivation.js';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: shouldRetryQuery } } });
@@ -59,6 +60,7 @@ export function AppRoutes(): ReactNode {
         <Route path="/session/:id" element={<SessionRoute />} />
         <Route path="/bot-session/:id" element={<BotSessionRoute />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/stats" element={<StatsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </AppShell>

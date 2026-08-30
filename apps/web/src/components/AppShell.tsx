@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useEngineActivityIndicator } from '../hooks/useEngineActivityIndicator.js';
 import { useIsDesktop } from '../hooks/useIsDesktop.js';
 import { EngineActivityIndicator } from './EngineActivityIndicator.js';
-import { BoardIcon, TrendingUpIcon } from './Icon.js';
+import { BarChartIcon, BoardIcon, TrendingUpIcon } from './Icon.js';
 import { UserMenu } from './UserMenu.js';
 import './AppShell.css';
 
@@ -13,7 +13,8 @@ export interface AppShellProps {
 
 const NAV_DESTINATIONS = [
   { to: '/games', label: 'Games', Icon: BoardIcon },
-  { to: '/dashboard', label: 'Progress', Icon: TrendingUpIcon }
+  { to: '/dashboard', label: 'Progress', Icon: TrendingUpIcon },
+  { to: '/stats', label: 'Stats', Icon: BarChartIcon }
 ];
 
 /** design-improvements.md (redesign, 2026-08-24): a sticky top bar — logo,

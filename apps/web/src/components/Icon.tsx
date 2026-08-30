@@ -44,6 +44,16 @@ export function TrendingUpIcon(props: IconProps): ReactNode {
   );
 }
 
+export function BarChartIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <line x1="5" y1="20" x2="5" y2="12" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="19" y1="20" x2="19" y2="15" />
+    </svg>
+  );
+}
+
 export function SettingsIcon(props: IconProps): ReactNode {
   return (
     <svg {...iconProps(props)}>
