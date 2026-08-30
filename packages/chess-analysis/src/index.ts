@@ -44,6 +44,7 @@ export * from './strategy-score.js';
 export * from './tactics-score.js';
 export * from './tactic-discovered.js';
 export * from './tactic-pins.js';
+export * from './tactic-removes-defender.js';
 export * from './time-control.js';
 export * from './uci-move.js';
 export * from './win-probability.js';
