@@ -8,6 +8,7 @@ import './GameRow.css';
 export interface GameRowProps {
   game: GameListItem;
   onSelect: (gameId: string) => void;
+  onAnalyze: (gameId: string) => void;
   onDelete: (gameId: string) => void;
 }
 
@@ -22,6 +23,11 @@ export interface StatusAndAction {
   statusVariant: 'primary' | 'warning' | 'danger' | 'neutral';
   animateStatus?: boolean;
   actionLabel?: string;
+  /** Which callback the action button invokes — defaults to 'select'
+   * (existing "Start session"/"Continue" behavior). 'analyze' is Phase 31's
+   * stat-bank addition: a deferred-analysis import's action starts analysis
+   * instead of jumping into a coaching session. */
+  actionKind?: 'select' | 'analyze';
 }
 
 /** design-improvements.md §3.3: status (what state the game is in) and
@@ -30,7 +36,8 @@ export interface StatusAndAction {
  * GamesPage can filter rows by the same categories it renders.
  * architecture §14: a coach_play game never gets an `analyses` row, so its
  * analysisStatus is always null — it needs its own branch rather than
- * falling into analyze mode's "analyzing…" default. */
+ * falling into the stat-bank "not analyzed" branch below, which is only for
+ * a real analyze-mode game that was imported with `deferAnalysis`. */
 export function statusAndActionFor(game: GameListItem): StatusAndAction {
   if (game.source === 'coach_play' || game.source === 'vs_bot') {
     if (game.sessionId) return { statusLabel: 'In progress', statusVariant: 'primary', actionLabel: 'Continue' };
@@ -38,6 +45,12 @@ export function statusAndActionFor(game: GameListItem): StatusAndAction {
   }
   if (game.analysisStatus === 'ready') return { statusLabel: 'Ready', statusVariant: 'primary', actionLabel: 'Start session' };
   if (game.analysisStatus === 'failed') return { statusLabel: 'Failed', statusVariant: 'danger' };
+  // Phase 31 stat-bank import: no `analyses` row yet at all (deferAnalysis)
+  // — distinct from every in-progress `analysisStatus` value below, which
+  // falls through to the "Analyzing…" default.
+  if (game.analysisStatus === null) {
+    return { statusLabel: 'Not analyzed', statusVariant: 'neutral', actionLabel: 'Get coach analysis', actionKind: 'analyze' };
+  }
   return { statusLabel: 'Analyzing…', statusVariant: 'neutral', animateStatus: true };
 }
 
@@ -55,7 +68,7 @@ function userSideResult(game: GameListItem): { symbol: string; label: string } |
  * (user's side bold, W/L/D dot), date, time control, a status badge separate
  * from its contextual action button, and delete moved into an overflow menu
  * behind a confirmation dialog naming the game (§6, P0). */
-export function GameRow({ game, onSelect, onDelete }: GameRowProps): ReactNode {
+export function GameRow({ game, onSelect, onAnalyze, onDelete }: GameRowProps): ReactNode {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const status = statusAndActionFor(game);
   const dot = userSideResult(game);
@@ -97,7 +110,11 @@ export function GameRow({ game, onSelect, onDelete }: GameRowProps): ReactNode {
       </span>
 
       {status.actionLabel && (
-        <button type="button" className="btn-primary game-row__action" onClick={() => onSelect(game.id)}>
+        <button
+          type="button"
+          className="btn-primary game-row__action"
+          onClick={() => (status.actionKind === 'analyze' ? onAnalyze(game.id) : onSelect(game.id))}
+        >
           {status.actionLabel}
         </button>
       )}

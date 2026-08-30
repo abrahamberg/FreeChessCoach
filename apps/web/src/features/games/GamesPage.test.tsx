@@ -60,6 +60,18 @@ function renderGamesPage(games: unknown[] = GAMES_RESPONSE, { deleteStatus = 204
       }
       return Promise.resolve(new Response(null, { status: deleteStatus }));
     }
+    if (typeof path === 'string' && path.endsWith('/analyze') && init?.method === 'POST') {
+      const gameId = path.split('/')[3];
+      currentGames = currentGames.map((game) =>
+        (game as { id: string }).id === gameId ? { ...(game as object), analysisStatus: 'queued' } : game
+      );
+      return Promise.resolve(
+        new Response(JSON.stringify({ analysisId: 'analysis-1' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' }
+        })
+      );
+    }
     throw new Error(`unexpected fetch: ${path}`);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -183,6 +195,21 @@ describe('GamesPage (design-improvements.md §3.3)', () => {
 
     expect(await screen.findByText(/could not delete/i)).toBeInTheDocument();
     expect(screen.getByText('daniel')).toBeInTheDocument();
+  });
+
+  // Phase 31 stat-bank import: a deferAnalysis-imported game with no
+  // `analyses` row yet gets a "Not analyzed" status and a "Get coach
+  // analysis" action that starts analysis without leaving the Games list.
+  test('clicking "Get coach analysis" on a not-analyzed game starts analysis and flips its status', async () => {
+    const user = userEvent.setup();
+    const fetchMock = renderGamesPage([{ ...GAMES_RESPONSE[0], analysisStatus: null }]);
+    await screen.findByText('daniel');
+
+    expect(screen.getByText('Not analyzed', { selector: 'span' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Get coach analysis' }));
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/games/g1/analyze', expect.objectContaining({ method: 'POST' }));
+    expect(await screen.findByText('Analyzing…')).toBeInTheDocument();
   });
 
   test('a failed-to-analyse game has no action button, and can still be deleted from the overflow menu', async () => {

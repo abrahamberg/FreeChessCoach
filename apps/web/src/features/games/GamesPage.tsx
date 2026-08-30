@@ -9,9 +9,11 @@ import { GameRow, statusAndActionFor } from './GameRow.js';
 import './GamesPage.css';
 
 const SessionSummarySchema = z.object({ id: z.string() });
+const AnalyzeResponseSchema = z.object({ analysisId: z.string() });
 
 const FILTERS = [
   { key: 'all', label: 'All' },
+  { key: 'Not analyzed', label: 'Not analyzed' },
   { key: 'Ready', label: 'Ready' },
   { key: 'In progress', label: 'In progress' },
   { key: 'Completed', label: 'Completed' }
@@ -44,6 +46,15 @@ export function GamesPage(): ReactNode {
 
   const deleteMutation = useMutation({
     mutationFn: (gameId: string) => apiDelete(`/api/games/${gameId}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['games'] })
+  });
+
+  // Phase 31 stat-bank import: starts analysis for a game that was imported
+  // with deferAnalysis. Invalidating ['games'] flips the row from "Not
+  // analyzed" to "Analyzing…" via the existing polling/status mechanism —
+  // no separate progress UI needed here.
+  const analyzeMutation = useMutation({
+    mutationFn: (gameId: string) => apiPost(`/api/games/${gameId}/analyze`, {}, AnalyzeResponseSchema),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['games'] })
   });
 
@@ -100,6 +111,7 @@ export function GamesPage(): ReactNode {
       )}
 
       {deleteMutation.isError && <p>Could not delete that game — try again.</p>}
+      {analyzeMutation.isError && <p>Could not start analysis — try again.</p>}
 
       {gamesQuery.data && gamesQuery.data.length > 0 && (
         <>
@@ -120,7 +132,13 @@ export function GamesPage(): ReactNode {
             {gamesQuery.data
               .filter((game) => filter === 'all' || statusAndActionFor(game).statusLabel === filter)
               .map((game) => (
-                <GameRow key={game.id} game={game} onSelect={() => handleSelect(game)} onDelete={(gameId) => deleteMutation.mutate(gameId)} />
+                <GameRow
+                  key={game.id}
+                  game={game}
+                  onSelect={() => handleSelect(game)}
+                  onAnalyze={(gameId) => analyzeMutation.mutate(gameId)}
+                  onDelete={(gameId) => deleteMutation.mutate(gameId)}
+                />
               ))}
           </ul>
         </>

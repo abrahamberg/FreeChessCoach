@@ -1376,14 +1376,21 @@ hook (TanStack Query, mirrors `DashboardPage`'s `apiGet` pattern); route in
 
 **Files:** `apps/web/src/features/games/GameRow.tsx`, `GamesPage.tsx`.
 
-- [ ] `statusAndActionFor`: new branch for `analysisStatus === null` (and
+- [x] `statusAndActionFor`: new branch for `analysisStatus === null` (and
       not `coach_play`/`vs_bot`) → "Not analyzed" / "Get coach analysis",
-      before the existing "assume analyzing" fallback.
-- [ ] New `analyzeMutation` (mirrors `deleteMutation`) → Task 31.2's route,
-      invalidates `['games']` on success.
-- [ ] Add `'Not analyzed'` to `GamesPage`'s `FILTERS`.
-- [ ] Component tests for the new branch + click wiring.
-- [ ] Commit: `feat: "not analyzed" status and on-demand analyze action in games list`.
+      before the existing "assume analyzing" fallback. Added a new
+      `actionKind?: 'select' | 'analyze'` field to `StatusAndAction` so
+      `GameRow`'s single action button can route to either `onSelect`
+      (existing "Start session"/"Continue") or the new `onAnalyze` callback
+      without two separate button elements.
+- [x] New `analyzeMutation` (mirrors `deleteMutation`) → Task 31.2's route,
+      invalidates `['games']` on success (flips the row to "Analyzing…" via
+      the existing polling, no separate progress UI needed).
+- [x] Added `'Not analyzed'` to `GamesPage`'s `FILTERS`.
+- [x] Component tests for the new branch (`GameRow.test.tsx`) + the
+      click-through-to-refetch flow (`GamesPage.test.tsx`, mocked
+      `POST /api/games/:id/analyze`).
+- [x] Commit: `feat: "not analyzed" status and on-demand analyze action in games list`.
 
 ### Task 31.4: Bulk import UI ("stat bank")
 
