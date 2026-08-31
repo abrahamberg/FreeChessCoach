@@ -1,5 +1,6 @@
 import {
   MOVE_QUALITIES,
+  TACTIC_MOTIF_LABELS,
   TACTIC_MOTIF_TYPES,
   type BookReport,
   type ClassificationCounts,
@@ -48,7 +49,7 @@ import {
 } from './rating-estimate.js';
 import { computePositionFeatures } from './position-features.js';
 import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
-import { computeTacticMotifCounts } from './game-tactic-motifs.js';
+import { classifyTacticMotifOpportunity, computeTacticMotifCounts, type TacticMotifOpportunity } from './game-tactic-motifs.js';
 import { CONFIG } from './config.js';
 
 type Colour = 'white' | 'black';
@@ -146,7 +147,31 @@ function enrichWithPhaseAndTactics(
   evals: EngineEval[]
 ): ClassifiedMoveDto {
   const phase: MovePhase = phaseForPly(move.ply, boundaries);
-  return { ...move, phase, isTacticalPosition: computeIsTacticalPosition(move, evals) };
+  const withPhase = { ...move, phase, isTacticalPosition: computeIsTacticalPosition(move, evals) };
+  // classifyTacticMotifOpportunity needs isTacticalPosition already set (it
+  // reads move.isTacticalPosition), so this runs against withPhase, not the
+  // raw input move — the move-list UI's per-ply tactic indicator.
+  const opportunity = classifyTacticMotifOpportunity(withPhase, evals);
+  if (!opportunity) return withPhase;
+  return {
+    ...withPhase,
+    tacticOpportunity: opportunity,
+    // Diagnostic-first (see the tactic-prevention over-firing investigation):
+    // spelling out which motif + whether it was played, right in the same
+    // per-move notes the UI already shows, so a reviewer can eyeball
+    // false-positive detector hits without a DB query. Appended after
+    // buildReasons' own MAX_REASONS truncation, so it's never crowded out.
+    reasons: [...(withPhase.reasons ?? []), tacticOpportunityReason(opportunity, withPhase.bestMoveSan)]
+  };
+}
+
+function tacticOpportunityReason(opportunity: TacticMotifOpportunity, bestMoveSan: string | undefined): string {
+  const label = TACTIC_MOTIF_LABELS[opportunity.type];
+  const moveClause = bestMoveSan ? ` (${bestMoveSan})` : '';
+  const detailClause = opportunity.detail ? ` — ${opportunity.detail}` : '';
+  return opportunity.found
+    ? `Tactic available — ${label}${moveClause}: found${detailClause}`
+    : `Tactic available — ${label}${moveClause}: not played${detailClause}`;
 }
 
 function computeIsTacticalPosition(move: ClassifiedMoveDto, evals: EngineEval[]): boolean {

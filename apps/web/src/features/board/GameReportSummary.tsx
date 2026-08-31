@@ -1,10 +1,22 @@
 import { useState, type ReactNode } from 'react';
-import { MOVE_QUALITIES, type ClassificationCounts, type EstimatedRatingReport, type GameReport, type MoveQuality } from '@freechesscoach/shared';
+import {
+  MOVE_QUALITIES,
+  type ClassificationCounts,
+  type EstimatedRatingReport,
+  type GameReport,
+  type MoveQuality,
+  type PlayerColor
+} from '@freechesscoach/shared';
+import { TacticsStatsSection } from '../stats/TacticsStatsSection.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import './GameReportSummary.css';
+import '../stats/StatsPage.css';
 
 export interface GameReportSummaryProps {
   report: GameReport;
+  /** Whose tactic-motif breakdown to show — same dashboard component as the
+   * stats page's "Should Play"/"Prevented" tabs, scoped to this one game. */
+  userColor: PlayerColor;
 }
 
 const COUNT_LABELS: Record<MoveQuality, string> = {
@@ -45,7 +57,7 @@ function formatRating(rating: EstimatedRatingReport): string {
  * bottom of the sidebar column, above the move list — expanding overlays it
  * rather than pushing it down, per SessionPage.css's `--expanded` rule, so
  * opening the report never disturbs the move list's scroll position. */
-export function GameReportSummary({ report }: GameReportSummaryProps): ReactNode {
+export function GameReportSummary({ report, userColor }: GameReportSummaryProps): ReactNode {
   const [expanded, setExpanded] = useState(false);
   const { white, black } = report.players;
 
@@ -77,6 +89,7 @@ export function GameReportSummary({ report }: GameReportSummaryProps): ReactNode
             <CountsColumn label="White" counts={white.counts} />
             <CountsColumn label="Black" counts={black.counts} />
           </div>
+          <TacticsStatsSection motifs={report.players[userColor].tacticMotifs} />
         </div>
       )}
     </section>

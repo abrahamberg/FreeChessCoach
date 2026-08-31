@@ -11,6 +11,7 @@ import {
   renderCurrentMoveBlock,
   renderGameSoFarInline,
   renderOtherMovesSummary,
+  renderTacticMotifsSummary,
   renderThreadsBlock,
   type AnnotatedMoveLike
 } from '@freechesscoach/prompts';
@@ -152,20 +153,27 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
   const orphanExtendedMessages = includeOrphanedToolCall(input.historyAfterTurn, episode.messages);
   const isPlayMode = input.session.mode === 'play';
 
-  const [position, previousMovePosition, moveQualities, otherNotes, threads] = await Promise.all([
+  const [position, previousMovePosition, moveQualities, otherNotes, threads, gameReport] = await Promise.all([
     getPositionAtPly(input.db, input.session.gameId, input.currentPly),
     input.currentPly > 0 ? getPositionAtPly(input.db, input.session.gameId, input.currentPly - 1) : undefined,
     fetchMoveQualities(input.db, input.session.gameId, isPlayMode),
     sessionMoveNotesRepo.listOtherPlies(input.db, input.session.id, [input.currentPly, input.subjectPly]),
-    sessionsRepo.getThreads(input.db, input.session.id)
+    sessionsRepo.getThreads(input.db, input.session.id),
+    isPlayMode ? undefined : analysesRepo.findGameReportByGameId(input.db, input.session.gameId)
   ]);
   if (!position) throw new NotFoundError('Current position not found for this session');
 
   // Play mode (architecture §14): layer 3 is skipped entirely (annotatedPgn:
   // null) rather than caching a placeholder — a live game's move-quality
   // annotations aren't known upfront, so they're folded into the uncached
-  // currentMoveBlock instead (gameSoFar, below).
-  const annotatedPgn = isPlayMode ? null : renderAnnotatedPgn(moveQualities);
+  // currentMoveBlock instead (gameSoFar, below). The tactics-this-game digest
+  // (renderTacticMotifsSummary) rides the same layer-3 breakpoint rather than
+  // claiming a 5th one — buildEpisodeMessages is already at Anthropic's
+  // per-request cache-breakpoint cap. Absent (a game not yet analyzed, or a
+  // report stored before tacticMotifs existed) renders as '' and adds
+  // nothing to the block.
+  const tacticMotifsSummary = gameReport ? renderTacticMotifsSummary(gameReport.players[input.studentColor].tacticMotifs) : '';
+  const annotatedPgn = isPlayMode ? null : [renderAnnotatedPgn(moveQualities), tacticMotifsSummary].filter(Boolean).join('\n\n');
   const gameSoFar = isPlayMode ? renderGameSoFarInline(moveQualities) : undefined;
   const otherMovesSummary = renderOtherMovesSummary(otherNotes, moveQualities);
   // The engine's "top choice here" / "best line" analysis is always about

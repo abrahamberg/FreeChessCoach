@@ -1,4 +1,4 @@
-import { TACTIC_MOTIF_TYPES, type TacticMotifCounts, type TacticMotifType } from '@freechesscoach/shared';
+import { TACTIC_MOTIF_LABELS, TACTIC_MOTIF_TYPES, type TacticMotifCounts, type TacticMotifType } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { formatFraction } from './formatStat.js';
 import { TACTICS_PANEL_IDS, TACTICS_TAB_IDS, TacticsTabs, type TacticsTab } from './TacticsTabs.js';
@@ -6,24 +6,6 @@ import { TACTICS_PANEL_IDS, TACTICS_TAB_IDS, TacticsTabs, type TacticsTab } from
 export interface TacticsStatsSectionProps {
   motifs: TacticMotifCounts;
 }
-
-/** chess.com's own category names for these motifs, per the user's original
- * request framing ("3 of them was best move forks... user found 2"). */
-const MOTIF_LABELS: Record<TacticMotifType, string> = {
-  checkmate: 'Checkmates',
-  brilliantSacrifice: 'Brilliant Sacrifices',
-  doubleCheck: 'Double Checks',
-  fork: 'Forks',
-  skewer: 'Skewers',
-  pin: 'Pins',
-  discoveredAttack: 'Discoveries',
-  overloadedDefender: 'Overloaded Defenders',
-  removesDefender: 'Removes Defender',
-  weakBackRank: 'Weak Back-Rank',
-  trappedPiece: 'Trapped Pieces',
-  freePiece: 'Free Pieces',
-  other: 'Other Tactics'
-};
 
 const EMPTY_STATE_LABELS: Record<TacticsTab, string> = {
   found: 'No tactical opportunities recorded yet.',
@@ -97,7 +79,7 @@ export function TacticsStatsSection({ motifs }: TacticsStatsSectionProps): React
             <ul className="stats-section__motif-list">
               {visibleRows.map((row) => (
                 <li key={row.type} className="stats-section__motif-row">
-                  <span className="stats-section__motif-label">{MOTIF_LABELS[row.type]}</span>
+                  <span className="stats-section__motif-label">{TACTIC_MOTIF_LABELS[row.type]}</span>
                   <span className="stats-section__motif-track">
                     <span className="stats-section__motif-bar" style={{ width: `${pctFor(row, tab)}%` }} />
                   </span>

@@ -55,6 +55,7 @@ export * from './see.js';
 export * from './stats-entry.js';
 export * from './strategy-score.js';
 export * from './tactics-score.js';
+export * from './describe-tactic-hit.js';
 export * from './tactic-back-rank.js';
 export * from './tactic-detectors/context.js';
 export * from './tactic-detectors/registry.js';

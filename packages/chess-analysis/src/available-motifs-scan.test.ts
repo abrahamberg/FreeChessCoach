@@ -27,7 +27,7 @@ describe('scanAvailableMotifs', () => {
     const scan = scanAvailableMotifs(FORK_SETUP_FEN, lines);
     const legacy = scanTacticsForLines(FORK_SETUP_FEN, lines, 'white');
 
-    expect(scan.sightings).toEqual(legacy.map((sighting) => ({ ...sighting, ply: 1 })));
+    expect(scan.sightings).toEqual(legacy.map((sighting) => ({ ...sighting, ply: 1, fenBefore: FORK_SETUP_FEN })));
     expect([...scan.motifs]).toEqual(['fork']);
   });
 
@@ -37,7 +37,9 @@ describe('scanAvailableMotifs', () => {
     // rank 0 (multiPv default 5) -> schedule depth 7, comfortably reaches ply 3.
     const scan = scanAvailableMotifs(FORK_SETUP_FEN, lines);
 
-    expect(scan.sightings).toEqual([{ rank: 0, ply: 3, moveSan: 'Nd5+', motif: 'fork' }]);
+    expect(scan.sightings).toEqual([
+      { rank: 0, ply: 3, moveSan: 'Nd5+', motif: 'fork', fenBefore: '8/4k3/1r3n2/8/5N2/8/7K/8 w - - 2 2' }
+    ]);
     expect([...scan.motifs]).toEqual(['fork']);
   });
 

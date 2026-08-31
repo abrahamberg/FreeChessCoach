@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import { ClassifiedMoveSchema, MOVE_QUALITIES } from './analysis.js';
+import { TACTIC_MOTIF_TYPES } from './tactic-motif.js';
+
+export * from './tactic-motif.js';
 
 export const PlayerBookReportSchema = z.object({
   lastBookPly: z.number().int().nonnegative(),
@@ -32,32 +35,6 @@ export const ClassificationCountsSchema = z.object(
   Object.fromEntries(MOVE_QUALITIES.map((quality) => [quality, z.number().int().nonnegative()]))
 ) as z.ZodObject<Record<(typeof MOVE_QUALITIES)[number], z.ZodNumber>>;
 export type ClassificationCounts = z.infer<typeof ClassificationCountsSchema>;
-
-/**
- * The tactic-motif catalogue (Phase 23-24 of the stats-dashboard plan):
- * chess.com-style "found N of M" counters per motif. `opportunities` counts
- * plies where the engine's best move exhibited that motif; `found` counts
- * the subset where the player played that exact move with a best-or-better
- * classification. Pre-existing stored `PlayerReport`s won't have this field
- * (jsonb, no migration) — callers must treat it as absent, not zero.
- */
-export const TACTIC_MOTIF_TYPES = [
-  'checkmate',
-  'brilliantSacrifice',
-  'doubleCheck',
-  'fork',
-  'skewer',
-  'pin',
-  'discoveredAttack',
-  'overloadedDefender',
-  'removesDefender',
-  'weakBackRank',
-  'trappedPiece',
-  'freePiece',
-  'other'
-] as const;
-export const TacticMotifTypeSchema = z.enum(TACTIC_MOTIF_TYPES);
-export type TacticMotifType = z.infer<typeof TacticMotifTypeSchema>;
 
 const TacticMotifCountSchema = z.object({
   opportunities: z.number().int().nonnegative(),

@@ -1,5 +1,5 @@
 import type { EngineLine, TacticMotifType } from '@freechesscoach/shared';
-import { scanAvailableMotifs } from './available-motifs-scan.js';
+import { scanAvailableMotifs, type PvMotifSighting } from './available-motifs-scan.js';
 
 /**
  * Pure, engine-free check: which of `opponent`'s tactic motif *types*
@@ -52,6 +52,11 @@ export interface ThreatOutcome {
   /** The subset of `preventable` no longer reachable at `afterFen` —
    * identical to `findDefusedThreats`'s return value. */
   defused: TacticMotifType[];
+  /** `beforeFen`'s own raw sightings (unfiltered by `afterFen`) — lets a
+   * caller find, for any type in `preventable`, a concrete `{fenBefore,
+   * moveSan}` to replay and describe with `describeTacticHit` (which piece,
+   * which square) rather than showing the bare type name alone. */
+  sightings: PvMotifSighting[];
 }
 
 /**
@@ -70,5 +75,9 @@ export function scanThreatOutcome(
   const before = scanAvailableMotifs(beforeFen, candidateLinesBefore);
   const after = scanAvailableMotifs(afterFen, candidateLinesAfter);
   const preventable = [...before.motifs];
-  return { preventable, defused: preventable.filter((motif) => !after.motifs.has(motif)) };
+  return {
+    preventable,
+    defused: preventable.filter((motif) => !after.motifs.has(motif)),
+    sightings: before.sightings
+  };
 }

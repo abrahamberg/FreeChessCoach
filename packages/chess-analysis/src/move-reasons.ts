@@ -29,7 +29,7 @@ const {
   centerSwingThreshold: CENTER_SWING_THRESHOLD,
   mobilityDropThreshold: MOBILITY_DROP_THRESHOLD
 } = CONFIG.moveReasons;
-const PIECE_NAMES: Record<PieceSymbol, string> = {
+export const PIECE_NAMES: Record<PieceSymbol, string> = {
   p: 'pawn',
   n: 'knight',
   b: 'bishop',

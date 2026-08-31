@@ -1,6 +1,14 @@
 import type { ClassifiedMove, FeatureDelta } from '@freechesscoach/chess-analysis';
 import { isSoundQuality } from '@freechesscoach/chess-analysis';
-import { MOVE_QUALITY_SYMBOLS, type MoveQuality, type PositionAnalysis, type PositionAnalysisLine } from '@freechesscoach/shared';
+import {
+  MOVE_QUALITY_SYMBOLS,
+  TACTIC_MOTIF_LABELS,
+  TACTIC_MOTIF_TYPES,
+  type MoveQuality,
+  type PositionAnalysis,
+  type PositionAnalysisLine,
+  type TacticMotifCounts
+} from '@freechesscoach/shared';
 import { describeMoveRef } from './render.js';
 import { formatEval } from './format-eval.js';
 
@@ -34,6 +42,44 @@ export function renderAnnotatedMove(move: AnnotatedMoveLike): string {
   const bestLine = move.bestLineSan[0] ? `, best ${move.bestLineSan[0]}` : '';
   const reasons = move.reasons && move.reasons.length > 0 ? `; ${move.reasons.join('; ')}` : '';
   return `${base} (lost ~${move.cpLoss}cp${bestLine}${reasons})`;
+}
+
+/**
+ * Static per-game tactic-motif digest (the same "found N of M"/"prevented
+ * N of M" data the stats dashboard's TacticsStatsSection shows), folded into
+ * the same cached breakpoint as renderAnnotatedPgn by the caller — analyze
+ * mode already spends its full 4-breakpoint budget (coach-context.ts's
+ * buildEpisodeMessages), so this rides layer 3 rather than claiming a new
+ * one. Only motifs with a non-zero denominator are listed (same convention
+ * as the dashboard's own row filter), and a motif key entirely absent from
+ * `motifs` (a report stored before that motif type existed) is skipped
+ * rather than crashing — the jsonb-no-migration convention documented on
+ * `TacticMotifCountsSchema` itself. Returns '' when there is nothing to
+ * report, so the caller can omit the section entirely for a quiet game.
+ */
+export function renderTacticMotifsSummary(motifs: TacticMotifCounts): string {
+  const found = tacticMotifLines(motifs, (entry) => entry.opportunities, (entry) => entry.found);
+  const prevented = tacticMotifLines(motifs, (entry) => entry.preventable ?? 0, (entry) => entry.prevented ?? 0);
+  if (found.length === 0 && prevented.length === 0) return '';
+
+  const sections: string[] = [];
+  if (found.length > 0) {
+    sections.push(`Should play (the engine's top move here was one of these — did the student find it):\n${found.join('\n')}`);
+  }
+  if (prevented.length > 0) {
+    sections.push(`Prevented (the opponent had one of these available — did the student defuse it):\n${prevented.join('\n')}`);
+  }
+  return `## Tactics this game\n\n${sections.join('\n\n')}`;
+}
+
+function tacticMotifLines(
+  motifs: TacticMotifCounts,
+  denominatorOf: (entry: TacticMotifCounts[keyof TacticMotifCounts]) => number,
+  numeratorOf: (entry: TacticMotifCounts[keyof TacticMotifCounts]) => number
+): string[] {
+  return TACTIC_MOTIF_TYPES.filter((type) => motifs[type] !== undefined && denominatorOf(motifs[type]) > 0).map(
+    (type) => `- ${TACTIC_MOTIF_LABELS[type]}: ${numeratorOf(motifs[type])}/${denominatorOf(motifs[type])}`
+  );
 }
 
 /**

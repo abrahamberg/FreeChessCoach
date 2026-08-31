@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TacticMotifTypeSchema } from './tactic-motif.js';
 
 export const AnalysisStatusSchema = z.enum([
   'queued',
@@ -288,7 +289,29 @@ export const ClassifiedMoveSchema = z.object({
   reasons: z.array(z.string()).optional(),
   features: PositionFeaturesSchema.optional(),
   moveFlags: MoveFlagsSchema.optional(),
-  featureDelta: FeatureDeltaSchema.optional()
+  featureDelta: FeatureDeltaSchema.optional(),
+  /** The engine's top move at this position embodied this tactic — did the
+   * player play it (see computeTacticMotifCounts). Undefined when the
+   * position wasn't a named-motif opportunity at all, not just a 0/1.
+   * `detail` (describeTacticHit) names the concrete piece/square involved —
+   * `.optional()` (not required alongside `type`/`found`) so a report stored
+   * before `detail` existed still parses; absent, not null, is "not
+   * computed" there, same jsonb-no-migration convention as everywhere else
+   * on this schema. `.nullable()` covers describeTacticHit's own "no
+   * detector-specific shape for this type" case. */
+  tacticOpportunity: z
+    .object({ type: TacticMotifTypeSchema, found: z.boolean(), detail: z.string().nullable().optional() })
+    .optional(),
+  /** The opponent had this tactic reachable right before this move — did the
+   * player's move defuse it (see computeTacticMotifPrevented). When the scan
+   * finds more than one reachable motif type, this names only the
+   * highest-priority one (registry.ts's precedence order) — the per-game
+   * `tacticMotifs.preventable`/`.prevented` counts remain the source of
+   * truth for "how many", this is only "what to show on this one move".
+   * `detail` follows the same convention as `tacticOpportunity.detail`. */
+  tacticPrevention: z
+    .object({ type: TacticMotifTypeSchema, prevented: z.boolean(), detail: z.string().nullable().optional() })
+    .optional()
 });
 export type ClassifiedMoveDto = z.infer<typeof ClassifiedMoveSchema>;
 export type MoveReport = ClassifiedMoveDto;

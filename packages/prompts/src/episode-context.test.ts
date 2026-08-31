@@ -1,13 +1,19 @@
 import { describe, expect, test } from 'vitest';
 import type { ClassifiedMove, FeatureDelta } from '@freechesscoach/chess-analysis';
-import type { PositionAnalysis, PositionAnalysisLine } from '@freechesscoach/shared';
+import { TACTIC_MOTIF_TYPES, type PositionAnalysis, type PositionAnalysisLine, type TacticMotifCounts } from '@freechesscoach/shared';
 import {
   renderAnnotatedPgn,
   renderCurrentMoveBlock,
   renderGameSoFarInline,
   renderOtherMovesSummary,
+  renderTacticMotifsSummary,
   type CurrentMoveAnalysisContext
 } from './episode-context.js';
+
+function zeroTacticMotifs(overrides: Partial<TacticMotifCounts> = {}): TacticMotifCounts {
+  const base = Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }])) as TacticMotifCounts;
+  return { ...base, ...overrides };
+}
 
 function move(overrides: Partial<ClassifiedMove> & Pick<ClassifiedMove, 'ply' | 'moveSan' | 'quality'>): ClassifiedMove {
   return {
@@ -95,6 +101,33 @@ describe('renderOtherMovesSummary', () => {
     expect(renderOtherMovesSummary(notes, [])).toBe(
       "## Other moves discussed\n\n- Black's move 2: student asked about the opening name"
     );
+  });
+});
+
+describe('renderTacticMotifsSummary', () => {
+  test('nothing tactical yet returns an empty string, so the caller adds no section at all', () => {
+    expect(renderTacticMotifsSummary(zeroTacticMotifs())).toBe('');
+  });
+
+  test('lists only motifs with a non-zero opportunities/preventable denominator, under separate found/prevented headings', () => {
+    const motifs = zeroTacticMotifs({
+      fork: { opportunities: 3, found: 2 },
+      pin: { opportunities: 1, found: 1, preventable: 2, prevented: 1 }
+    });
+    expect(renderTacticMotifsSummary(motifs)).toBe(
+      "## Tactics this game\n\n" +
+        "Should play (the engine's top move here was one of these — did the student find it):\n" +
+        '- Forks: 2/3\n' +
+        '- Pins: 1/1\n\n' +
+        'Prevented (the opponent had one of these available — did the student defuse it):\n' +
+        '- Pins: 1/2'
+    );
+  });
+
+  test('a motif type entirely absent from the stored report (a report predating that motif) is skipped, not crashed on', () => {
+    const motifs = zeroTacticMotifs({ fork: { opportunities: 2, found: 1 } });
+    delete (motifs as Partial<TacticMotifCounts>).skewer;
+    expect(renderTacticMotifsSummary(motifs)).toContain('- Forks: 1/2');
   });
 });
 

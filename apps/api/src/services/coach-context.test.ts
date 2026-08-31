@@ -1,5 +1,6 @@
 import { describe, expect, test, vi, beforeAll, afterAll } from 'vitest';
 import type { Kysely } from 'kysely';
+import { TACTIC_MOTIF_TYPES, type GameReport, type PlayerReport } from '@freechesscoach/shared';
 import type { ChatMessage } from '../llm/messages.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import * as usersRepo from '../db/repositories/users.js';
@@ -18,6 +19,50 @@ import {
 } from './coach-context.js';
 
 const PGN = '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6';
+
+/** Minimal-but-schema-valid GameReport, with the white player's tacticMotifs
+ * overridable — everything else is filler no test here reads. */
+function fakeGameReport(whiteTacticMotifs: Partial<PlayerReport['tacticMotifs']> = {}): GameReport {
+  const zeroTacticMotifs = Object.fromEntries(
+    TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }])
+  ) as PlayerReport['tacticMotifs'];
+  const player: PlayerReport = {
+    accuracy: 80,
+    phaseAccuracy: { opening: 90, middlegame: 75, endgame: null },
+    phaseConfidence: { opening: 'ok', middlegame: 'ok', endgame: 'none' },
+    scores: { opening: 85, tactics: 70, strategy: 78, endgame: null },
+    strategySubScores: { pawnStructure: 80, spaceAdvantage: 78, activePiece: 85, attacking: 70, defending: 88 },
+    endgame: { standing: null, theme: null },
+    counts: Object.fromEntries(
+      ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder', 'forced'].map(
+        (quality) => [quality, 0]
+      )
+    ) as PlayerReport['counts'],
+    acpl: 20,
+    estimatedRating: { value: 1500, range: [1400, 1600], confidence: 'medium' },
+    tacticMotifs: { ...zeroTacticMotifs, ...whiteTacticMotifs }
+  };
+  return {
+    engine: { name: 'stockfish', depth: 18, multiPv: 3 },
+    book: {
+      source: 'test-fixture@1',
+      eco: null,
+      ecoVolume: null,
+      name: null,
+      family: null,
+      variation: null,
+      namedAtPly: null,
+      lastBookPly: 0,
+      players: {
+        white: { lastBookPly: 0, leftBookPly: null, leftBookMove: null, bookAlternatives: [] },
+        black: { lastBookPly: 0, leftBookPly: null, leftBookMove: null, bookAlternatives: [] }
+      }
+    },
+    phases: { openingEndPly: 0, endgameStartPly: null, openingSource: 'heuristic' },
+    players: { white: player, black: { ...player, tacticMotifs: zeroTacticMotifs } },
+    moves: []
+  };
+}
 
 /** Minimal-but-valid stand-in for a real analyzePosition() response — engine
  * visibility is a universal default now (no opt-in gate), so analyzePosition
@@ -328,6 +373,58 @@ describe('coach-context', () => {
       expect(currentMoveBlock?.content).toContain('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2');
       expect(currentMoveBlock?.content).toContain('The move actually played here was e5');
       expect(currentMoveBlock?.content).not.toContain('Full engine analysis');
+    });
+
+    test('folds the game\'s tactic-motif summary into the annotated-PGN layer, scoped to studentColor, rather than claiming a 5th cache breakpoint', async () => {
+      const { session, gameId } = await seedSession();
+      const analysis = await analysesRepo.insertQueued(db, gameId);
+      await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
+      await analysesRepo.storeGameReport(db, analysis.id, fakeGameReport({ fork: { opportunities: 3, found: 2 } }));
+      await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
+      const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
+
+      const context = await buildEpisodeContext({
+        db,
+        callLightModel: vi.fn(),
+        session,
+        currentPly: 2,
+        subjectPly: 2,
+        historyAfterTurn,
+        staticPart: 'STATIC',
+        dynamicPart: 'DYNAMIC',
+        studentColor: 'white',
+        analyzePosition: vi.fn().mockResolvedValue(fakeAnalysis()),
+      });
+
+      expect(context.instructions).toHaveLength(4);
+      const annotatedLayer = context.instructions.find(
+        (message) => typeof message.content === 'string' && message.content.includes('## This game (annotated)')
+      );
+      expect(annotatedLayer?.content).toContain('## Tactics this game');
+      expect(annotatedLayer?.content).toContain('Forks: 2/3');
+    });
+
+    test('renders no tactics section when the game has no stored report yet', async () => {
+      const { session, gameId } = await seedSession();
+      await analysesRepo.insertQueued(db, gameId).then((a) => analysesRepo.storeClassifiedMoves(db, a.id, []));
+      await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
+      const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
+
+      const context = await buildEpisodeContext({
+        db,
+        callLightModel: vi.fn(),
+        session,
+        currentPly: 2,
+        subjectPly: 2,
+        historyAfterTurn,
+        staticPart: 'STATIC',
+        dynamicPart: 'DYNAMIC',
+        studentColor: 'white',
+        analyzePosition: vi.fn().mockResolvedValue(fakeAnalysis()),
+      });
+
+      const serialized = JSON.stringify(context.instructions);
+      expect(serialized).not.toContain('## Tactics this game');
     });
 
     test('calls analyzePosition on the pre-move fen, and again on the post-move fen for the played line\'s continuation, embedding a curated summary instead of the old raw JSON dump', async () => {

@@ -179,6 +179,39 @@ describe('MoveExplorer', () => {
     expect(screen.getByRole('button', { name: '✕Qh5' })).toHaveClass('move-quality-miss');
   });
 
+  test('renders a tactic-opportunity marker on a ply that found one, and none on a plain move', () => {
+    const classifiedMoves = [
+      classifiedMove({ ply: 1, moveSan: 'e4', quality: 'good' }),
+      classifiedMove({
+        ply: 3,
+        moveSan: 'Qh5',
+        mover: 'white',
+        quality: 'best',
+        tacticOpportunity: { type: 'fork', found: true }
+      })
+    ];
+    render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={0} onSelect={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: 'e4' })).not.toHaveTextContent('⚡');
+    expect(screen.getByTitle('Forks: found')).toBeInTheDocument();
+  });
+
+  test('renders a distinct marker for a missed opportunity vs. an unprevented opponent tactic', () => {
+    const classifiedMoves = [
+      classifiedMove({ ply: 1, moveSan: 'e4', mover: 'white', tacticOpportunity: { type: 'pin', found: false } }),
+      classifiedMove({
+        ply: 3,
+        moveSan: 'Qh5',
+        mover: 'white',
+        tacticPrevention: { type: 'skewer', prevented: false }
+      })
+    ];
+    render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={0} onSelect={vi.fn()} />);
+
+    expect(screen.getByTitle('Pins: available, not played')).toBeInTheDocument();
+    expect(screen.getByTitle("Opponent's Skewers: not defused")).toBeInTheDocument();
+  });
+
   test('the notes panel renders the backend-supplied reasons list when present', () => {
     const classifiedMoves = [
       classifiedMove({

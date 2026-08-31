@@ -138,18 +138,30 @@ function zeroTacticMotifs(): PlayerReport['tacticMotifs'] {
   return Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }])) as PlayerReport['tacticMotifs'];
 }
 
-/** Scatters a handful of non-zero opportunity/found pairs so the tactics
- * dashboard section has something to show, rather than every motif reading 0/0. */
+/** Scatters a handful of non-zero opportunity/found pairs — and, separately,
+ * preventable/prevented pairs — so both the "Should Play" and "Prevented"
+ * tactics dashboard tabs have something to show, rather than every motif
+ * reading 0/0 or the Prevented tab reading empty. */
 function tacticMotifs(rng: () => number): PlayerReport['tacticMotifs'] {
   const motifs = zeroTacticMotifs();
-  const hitCount = 1 + Math.floor(rng() * 3);
   const types = [...TACTIC_MOTIF_TYPES].filter((t) => t !== 'other');
+
+  const hitCount = 1 + Math.floor(rng() * 3);
   for (let i = 0; i < hitCount; i++) {
     const type = types[Math.floor(rng() * types.length)] as TacticMotifType;
     const opportunities = motifs[type].opportunities + 1 + Math.floor(rng() * 2);
     const found = Math.min(opportunities, Math.floor(rng() * (opportunities + 1)));
-    motifs[type] = { opportunities, found };
+    motifs[type] = { ...motifs[type], opportunities, found };
   }
+
+  const preventedHitCount = 1 + Math.floor(rng() * 3);
+  for (let i = 0; i < preventedHitCount; i++) {
+    const type = types[Math.floor(rng() * types.length)] as TacticMotifType;
+    const preventable = (motifs[type].preventable ?? 0) + 1 + Math.floor(rng() * 2);
+    const prevented = Math.min(preventable, Math.floor(rng() * (preventable + 1)));
+    motifs[type] = { ...motifs[type], preventable, prevented };
+  }
+
   return motifs;
 }
 

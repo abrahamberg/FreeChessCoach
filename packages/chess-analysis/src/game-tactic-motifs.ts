@@ -8,19 +8,36 @@ import {
 } from '@freechesscoach/shared';
 import { classifyTacticMotif } from './classify-tactic-motif.js';
 import { CONFIG } from './config.js';
+import { describeTacticHit } from './describe-tactic-hit.js';
 import { moveFlags } from './move-flags.js';
 
-const BEST_OR_BETTER: ReadonlySet<MoveQuality> = new Set(['brilliant', 'great', 'best']);
+/** Also reused by apps/api's tactic-prevention.ts: a still-reachable threat
+ * after a best-or-better reply isn't something the player should have
+ * prevented — there was no better move, so it's never counted as
+ * preventable there either. */
+export const BEST_OR_BETTER: ReadonlySet<MoveQuality> = new Set(['brilliant', 'great', 'best']);
 
 function emptyCounts(): TacticMotifCounts {
   const entries = TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }] as const);
   return Object.fromEntries(entries) as TacticMotifCounts;
 }
 
+export interface TacticMotifOpportunity {
+  type: TacticMotifType;
+  found: boolean;
+  /** The concrete piece/square this hit involves (describeTacticHit) —
+   * `null` for a type with no detector-specific shape to describe
+   * (checkmate/brilliantSacrifice/other), not "not computed". */
+  detail: string | null;
+}
+
 /**
- * For each of the colour's moves, tags the motif of the engine's best move
- * at that position (the "opportunity") and credits "found" only when the
- * player played that exact move with a best-or-better classification.
+ * The engine's best move at this single ply, classified — the "opportunity"
+ * both `computeTacticMotifCounts` (aggregated below) and
+ * `build-game-report.ts` (attached to the move itself, for the move-list
+ * UI's per-ply tactic indicator) are built from. `null` when this ply isn't
+ * a named-motif opportunity at all (no matching detector, or missing
+ * fenBefore/eval data).
  *
  * The opportunity's own quality is only known precisely when the player
  * actually played it (reusing that move's already-computed classification,
@@ -30,30 +47,47 @@ function emptyCounts(): TacticMotifCounts {
  * (Phase 14.3) this pipeline deliberately reserves for played-move
  * candidates only — a real but accepted undercount of missed brilliancies.
  */
+export function classifyTacticMotifOpportunity(move: ClassifiedMoveDto, evals: EngineEval[]): TacticMotifOpportunity | null {
+  const bestMoveSan = evals[move.ply - 1]?.lines[0]?.moveSan;
+  if (!move.fenBefore || !bestMoveSan) return null;
+
+  const playedBest = bestMoveSan === move.moveSan;
+  const bestQuality: MoveQuality = playedBest ? move.quality : 'best';
+  const bestIsCheckmate = playedBest ? (move.moveFlags?.isCheckmate ?? false) : checkmateFlag(move.fenBefore, bestMoveSan);
+  if (bestIsCheckmate === null) return null;
+
+  const motif = classifyTacticMotif({
+    fenBefore: move.fenBefore,
+    moveSan: bestMoveSan,
+    mover: move.mover,
+    quality: bestQuality,
+    isCheckmate: bestIsCheckmate,
+    isTacticalPosition: move.isTacticalPosition === true
+  });
+  if (!motif) return null;
+
+  return {
+    type: motif,
+    found: playedBest && BEST_OR_BETTER.has(move.quality),
+    detail: describeTacticHit(motif, move.fenBefore, bestMoveSan, move.mover)
+  };
+}
+
+/**
+ * For each of the colour's moves, tags the motif of the engine's best move
+ * at that position (the "opportunity") and credits "found" only when the
+ * player played that exact move with a best-or-better classification — see
+ * `classifyTacticMotifOpportunity` above for the per-move logic this sums.
+ */
 export function computeTacticMotifCounts(colourMoves: ClassifiedMoveDto[], evals: EngineEval[]): TacticMotifCounts {
   const counts = emptyCounts();
 
   for (const move of colourMoves) {
-    const bestMoveSan = evals[move.ply - 1]?.lines[0]?.moveSan;
-    if (!move.fenBefore || !bestMoveSan) continue;
+    const opportunity = classifyTacticMotifOpportunity(move, evals);
+    if (!opportunity) continue;
 
-    const playedBest = bestMoveSan === move.moveSan;
-    const bestQuality: MoveQuality = playedBest ? move.quality : 'best';
-    const bestIsCheckmate = playedBest ? (move.moveFlags?.isCheckmate ?? false) : checkmateFlag(move.fenBefore, bestMoveSan);
-    if (bestIsCheckmate === null) continue;
-
-    const motif = classifyTacticMotif({
-      fenBefore: move.fenBefore,
-      moveSan: bestMoveSan,
-      mover: move.mover,
-      quality: bestQuality,
-      isCheckmate: bestIsCheckmate,
-      isTacticalPosition: move.isTacticalPosition === true
-    });
-    if (!motif) continue;
-
-    counts[motif].opportunities += 1;
-    if (playedBest && BEST_OR_BETTER.has(move.quality)) counts[motif].found += 1;
+    counts[opportunity.type].opportunities += 1;
+    if (opportunity.found) counts[opportunity.type].found += 1;
   }
   return counts;
 }

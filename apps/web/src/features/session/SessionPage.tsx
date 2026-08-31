@@ -199,7 +199,7 @@ export function SessionPage(): ReactNode {
                   currentPly={boardState.ply}
                   onSelect={peekAt}
                 />
-                {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} />}
+                {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} userColor={orientation} />}
               </div>
             ))}
           {board}

@@ -14,6 +14,11 @@ export interface PvTacticStep {
   /** This step's full tactic motif, classified from the position right
    * before it was played — same registry (Phase 32) as everywhere else. */
   motif: TacticMotifType | null;
+  /** The position `moveSan` was played from — lets a caller replay this one
+   * step in isolation (e.g. to describe exactly which piece a `motif` hit
+   * involves) without re-walking the whole PV from `annotatePvTactics`'
+   * own `fenBefore` argument. */
+  fenBefore: string;
 }
 
 export interface PvTacticAnnotation {
@@ -56,7 +61,8 @@ export function annotatePvTactics(fenBefore: string, pvSan: string[], maxPlies =
       createsFork: delta.newForks.length > 0,
       createsHangingPiece: delta.newHangingPieces.length > 0,
       mobilityDelta: delta.mobilityDelta,
-      motif: classifyCandidateMove(previousFen, move.san, stepMover)
+      motif: classifyCandidateMove(previousFen, move.san, stepMover),
+      fenBefore: previousFen
     });
     previousFen = move.fen;
     previousFeatures = features;

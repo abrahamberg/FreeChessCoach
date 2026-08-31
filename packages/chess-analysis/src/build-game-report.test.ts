@@ -120,4 +120,33 @@ describe('buildGameReport', () => {
     expect(first).toBe(second);
   });
 
+  test('a move that plays the engine\'s best line into a real fork carries tacticOpportunity, found: true', () => {
+    // Same fork fixture as classify-tactic-motif.test.ts's FORK_FEN, reached
+    // via a [FEN]/[SetUp] PGN header (chess.js honors either) instead of the
+    // standard start position.
+    const forkPgn = `[White "Alice"]
+[Black "Bob"]
+[SetUp "1"]
+[FEN "4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1"]
+[Result "*"]
+
+1. Nd6+ Kd8`;
+    const game = parsePgn(forkPgn);
+    const evals = buildEvals(game.positions);
+    const moves = classifyMoves(game, evals, 'white');
+    const report = buildGameReport({
+      game,
+      evals,
+      moves,
+      book: buildFixtureBook(),
+      engine: { name: 'stockfish', depth: 16, multiPv: 1 },
+      priorRating: { white: null, black: null },
+      result: { white: 'win', black: 'loss' }
+    });
+
+    const forkMove = report.moves.find((move) => move.moveSan === 'Nd6+');
+    expect(forkMove?.tacticOpportunity).toEqual({ type: 'fork', found: true, detail: 'knight on d6 forks e8 and b7' });
+    expect(forkMove?.reasons).toContain('Tactic available — Forks (Nd6+): found — knight on d6 forks e8 and b7');
+  });
+
 });

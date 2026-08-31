@@ -3,6 +3,7 @@ import type { ClassifiedMoveDto, MoveQuality } from '@freechesscoach/shared';
 import { ChevronLeftIcon, ChevronRightIcon, SkipBackIcon, SkipForwardIcon } from '../../components/Icon.js';
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
+import { TacticMotifBadge } from './TacticMotifBadge.js';
 import './MoveExplorer.css';
 
 export interface MoveExplorerProps {
@@ -151,7 +152,7 @@ export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly,
               <MoveCell
                 ply={white.ply}
                 san={white.san}
-                quality={qualityByPly.get(white.ply)?.quality}
+                move={qualityByPly.get(white.ply)}
                 isCurrent={currentPly === white.ply}
                 onSelect={onSelect}
                 onInspect={whiteFen ? () => setInspecting({ fen: whiteFen, label: `${moveNumber}. ${white.san}` }) : undefined}
@@ -160,7 +161,7 @@ export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly,
                 <MoveCell
                   ply={black.ply}
                   san={black.san}
-                  quality={qualityByPly.get(black.ply)?.quality}
+                  move={qualityByPly.get(black.ply)}
                   isCurrent={currentPly === black.ply}
                   onSelect={onSelect}
                   onInspect={blackFen ? () => setInspecting({ fen: blackFen, label: `${moveNumber}... ${black.san}` }) : undefined}
@@ -192,7 +193,7 @@ export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly,
 interface MoveCellProps {
   ply: number;
   san: string;
-  quality: ClassifiedMoveDto['quality'] | undefined;
+  move: ClassifiedMoveDto | undefined;
   isCurrent: boolean;
   onSelect: (ply: number) => void;
   /** Opens the move-analysis inspector for this move's position; undefined
@@ -201,7 +202,8 @@ interface MoveCellProps {
   onInspect: (() => void) | undefined;
 }
 
-function MoveCell({ ply, san, quality, isCurrent, onSelect, onInspect }: MoveCellProps): ReactNode {
+function MoveCell({ ply, san, move, isCurrent, onSelect, onInspect }: MoveCellProps): ReactNode {
+  const quality = move?.quality;
   return (
     <button
       type="button"
@@ -216,6 +218,7 @@ function MoveCell({ ply, san, quality, isCurrent, onSelect, onInspect }: MoveCel
     >
       <MoveQualityBadge quality={quality} size="md" />
       {san}
+      {move && <TacticMotifBadge move={move} />}
     </button>
   );
 }

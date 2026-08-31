@@ -7,6 +7,10 @@ export interface PvMotifSighting {
   ply: number;
   moveSan: string;
   motif: TacticMotifType;
+  /** The position `moveSan` was played from — lets a caller replay this
+   * exact sighting to describe the concrete piece/square a `motif` hit
+   * involves (see `describeTacticHit`). */
+  fenBefore: string;
 }
 
 export interface AvailableMotifScan {
@@ -37,7 +41,9 @@ export function scanAvailableMotifs(
     const pv = line.pvSan && line.pvSan.length > 0 ? line.pvSan : [line.moveSan];
     const { steps } = annotatePvTactics(fenBefore, pv, scanDepthForRank(rank));
     for (const step of steps) {
-      if (step.ply % 2 === 1 && step.motif) sightings.push({ rank, ply: step.ply, moveSan: step.moveSan, motif: step.motif });
+      if (step.ply % 2 === 1 && step.motif) {
+        sightings.push({ rank, ply: step.ply, moveSan: step.moveSan, motif: step.motif, fenBefore: step.fenBefore });
+      }
     }
   });
   return { motifs: new Set(sightings.map((s) => s.motif)), sightings };

@@ -153,7 +153,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
           {isDesktop && (
             <div className="session-move-explorer-column">
               <MoveExplorer sanMoves={sanMoves} classifiedMoves={classifiedMoves ?? []} positions={positions} currentPly={boardState.ply} onSelect={peekAt} />
-              {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} />}
+              {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} userColor={orientation} />}
             </div>
           )}
           {board}

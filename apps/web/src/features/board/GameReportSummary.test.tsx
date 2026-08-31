@@ -67,21 +67,21 @@ function buildReport(overrides: { white?: Partial<PlayerReport>; black?: Partial
 
 describe('GameReportSummary', () => {
   test('renders both colours\' accuracy headline', () => {
-    render(<GameReportSummary report={buildReport({ black: { accuracy: 65.2 } })} />);
+    render(<GameReportSummary report={buildReport({ black: { accuracy: 65.2 } })} userColor="white" />);
     expandReport();
     expect(screen.getByText('87.4%')).toBeInTheDocument();
     expect(screen.getByText('65.2%')).toBeInTheDocument();
   });
 
   test('renders a dash for a null phase accuracy or score', () => {
-    render(<GameReportSummary report={buildReport()} />);
+    render(<GameReportSummary report={buildReport()} userColor="white" />);
     expandReport();
     // Both colours' endgame phase accuracy and endgame score are null in the fixture.
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4);
   });
 
   test('renders the estimated rating as a bare number, no parenthetical range', () => {
-    render(<GameReportSummary report={buildReport()} />);
+    render(<GameReportSummary report={buildReport()} userColor="white" />);
     expandReport();
     expect(screen.getAllByText('1550').length).toBe(2);
     expect(screen.queryByText(/1400.*1700/)).not.toBeInTheDocument();
@@ -93,6 +93,7 @@ describe('GameReportSummary', () => {
         report={buildReport({
           white: { estimatedRating: { value: null, range: null, confidence: 'low', reason: 'insufficient moves' } }
         })}
+        userColor="white"
       />
     );
     expandReport();
@@ -100,11 +101,25 @@ describe('GameReportSummary', () => {
   });
 
   test('renders classification counts for both colours, including inaccuracies/mistakes/blunders', () => {
-    render(<GameReportSummary report={buildReport()} />);
+    render(<GameReportSummary report={buildReport()} userColor="white" />);
     expandReport();
     expect(screen.getAllByText('Inaccuracies').length).toBe(2);
     expect(screen.getAllByText('Mistakes').length).toBe(2);
     expect(screen.getAllByText('Blunders').length).toBe(2);
     expect(screen.getAllByText('2').length).toBeGreaterThan(0);
+  });
+
+  test('renders the tactics breakdown for the given user colour, not the other side', () => {
+    render(
+      <GameReportSummary
+        report={buildReport({
+          white: { tacticMotifs: { ...buildPlayerReport().tacticMotifs, fork: { opportunities: 3, found: 2 } } }
+        })}
+        userColor="white"
+      />
+    );
+    expandReport();
+    expect(screen.getByText('Forks')).toBeInTheDocument();
+    expect(screen.getByText('67% (2/3)')).toBeInTheDocument();
   });
 });

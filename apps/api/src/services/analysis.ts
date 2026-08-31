@@ -10,7 +10,16 @@ import {
   resolveOpening,
   type ParsedPosition
 } from '@freechesscoach/chess-analysis';
-import type { BookReport, CoachingPlan, EngineEval, PlayerBookReport, PositionAnalysis } from '@freechesscoach/shared';
+import { TACTIC_MOTIF_LABELS } from '@freechesscoach/shared';
+import type {
+  BookReport,
+  ClassifiedMoveDto,
+  CoachingPlan,
+  EngineEval,
+  PlayerBookReport,
+  PositionAnalysis,
+  TacticMotifType
+} from '@freechesscoach/shared';
 import { buildPlannerMessages, type PlannerPromptInput } from '@freechesscoach/prompts';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
@@ -73,26 +82,31 @@ export async function runAnalyzeGameJob(
     const fens = parsedGame.positions.map((position) => position.fen);
     const evals = await analyzeInChunks(db, deps, analysis.id, fens);
 
-    const classifiedMoves = attachEnrichment(
+    const unannotatedMoves = attachEnrichment(
       classifyMoves(parsedGame, evals, game.userColor),
       enrichPositions(parsedGame.positions)
     );
+    // Computed before storeClassifiedMoves (not after, as before) so its
+    // per-ply byPly map can be attached onto the stored moves themselves —
+    // the move-list UI's per-ply "prevented" indicator reads it straight off
+    // ClassifiedMoveDto, the same way tacticOpportunity already does.
+    const prevention = await computeTacticMotifPrevented(
+      { analyzePosition: deps.analyzePosition },
+      unannotatedMoves,
+      evals
+    );
+    const classifiedMoves = attachTacticPrevention(unannotatedMoves, prevention.byPly);
     await analysesRepo.storeClassifiedMoves(db, analysis.id, classifiedMoves);
     const bookReport = buildBookReport(parsedGame.positions);
     await analysesRepo.storeBookReport(db, analysis.id, bookReport);
-    const preventionCounts = await computeTacticMotifPrevented(
-      { analyzePosition: deps.analyzePosition },
-      classifiedMoves,
-      evals
-    );
     const gameReport = buildGameReportForAnalysis({
       game: parsedGame,
       evals,
       moves: classifiedMoves,
       book: bookReport,
       pgnResult: game.result,
-      preventedCounts: { white: preventionCounts.white.prevented, black: preventionCounts.black.prevented },
-      preventableCounts: { white: preventionCounts.white.preventable, black: preventionCounts.black.preventable }
+      preventedCounts: { white: prevention.counts.white.prevented, black: prevention.counts.black.prevented },
+      preventableCounts: { white: prevention.counts.white.preventable, black: prevention.counts.black.preventable }
     });
     await analysesRepo.storeGameReport(db, analysis.id, gameReport);
     const candidateMoments = findCandidateMoments(classifiedMoves, evals);
@@ -136,6 +150,37 @@ function attachEnrichment(
       featureDelta: position.featureDelta
     };
   });
+}
+
+/** Attaches each ply's `computeTacticMotifPrevented`-derived byPly entry
+ * (if any) onto its move — a ply with nothing reachable simply has no entry
+ * and keeps `tacticPrevention` undefined, same as a quiet position never
+ * gaining a `tacticOpportunity`. */
+function attachTacticPrevention(
+  moves: ClassifiedMoveDto[],
+  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null }>
+): ClassifiedMoveDto[] {
+  return moves.map((move) => {
+    const prevention = byPly.get(move.ply);
+    if (!prevention) return move;
+    return {
+      ...move,
+      tacticPrevention: prevention,
+      // Diagnostic-first (see the tactic-prevention over-firing investigation):
+      // spelling out which motif + whether it was defused, right in the same
+      // per-move notes the UI already shows, so a reviewer can eyeball
+      // false-positive detector hits without a DB query.
+      reasons: [...(move.reasons ?? []), tacticPreventionReason(prevention)]
+    };
+  });
+}
+
+function tacticPreventionReason(prevention: { type: TacticMotifType; prevented: boolean; detail: string | null }): string {
+  const label = TACTIC_MOTIF_LABELS[prevention.type];
+  const detailClause = prevention.detail ? ` — ${prevention.detail}` : '';
+  return prevention.prevented
+    ? `Opponent's ${label} threat: defused${detailClause}`
+    : `Opponent's ${label} threat: not defused${detailClause}`;
 }
 
 function buildBookReport(positions: ParsedPosition[]): BookReport {
