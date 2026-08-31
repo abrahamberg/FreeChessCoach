@@ -17,6 +17,7 @@ import { moveFlags } from './move-flags.js';
 import { computePositionFeatures } from './position-features.js';
 import { moveAccuracy as calculateMoveAccuracy } from './accuracy-curve.js';
 import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
+import { analyzeChecksCapturesThreats } from './checks-captures-threats.js';
 import type { ParsedGame } from './pgn.js';
 
 export type ClassifiedMove = ClassifiedMoveDto;
@@ -174,6 +175,7 @@ function buildClassifiedMove(input: {
     featuresBefore: input.featuresBefore,
     featuresAfter: input.features
   });
+  const checksCapturesThreats = analyzeChecksCapturesThreats(input.beforeFen, { featuresBefore: input.featuresBefore });
 
   return {
     ply: input.position.ply,
@@ -206,6 +208,7 @@ function buildClassifiedMove(input: {
     features: input.features,
     moveFlags: input.moveFlags,
     featureDelta: input.featureDelta,
+    checksCapturesThreats,
     reasons
   };
 }

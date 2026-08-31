@@ -4,6 +4,7 @@ import {
   AnalyzePositionRequestSchema,
   ClassifiedMoveSchema,
   EngineEvalSchema,
+  ChecksCapturesThreatsSchema,
   PositionAnalysisSchema
 } from './analysis.js';
 import { CoachingPlanSchema, type CoachingPlan } from './coaching-plan.js';
@@ -149,6 +150,22 @@ describe('ClassifiedMoveSchema', () => {
       featureDelta: { newForks: [], newHangingPieces: [], mobilityDelta: -2 }
     };
     expect(ClassifiedMoveSchema.safeParse(enriched).success).toBe(true);
+  });
+
+  test('accepts the calculated CCT analysis attached to a move', () => {
+    const checksCapturesThreats = {
+      checks: { available: true, moves: [{ moveSan: 'Qe8+', from: 'e2', to: 'e8', isCheckmate: false }] },
+      captures: { available: false, moves: [] },
+      threats: { available: true, moves: [{
+        moveSan: 'Nd5',
+        from: 'f4',
+        to: 'd5',
+        targetedPieces: [{ square: 'b6', piece: 'r', color: 'black', attackers: 1, defenders: 0 }]
+      }] }
+    };
+
+    expect(ChecksCapturesThreatsSchema.safeParse(checksCapturesThreats).success).toBe(true);
+    expect(ClassifiedMoveSchema.safeParse({ ...validMove, checksCapturesThreats }).success).toBe(true);
   });
 });
 

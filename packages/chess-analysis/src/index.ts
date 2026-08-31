@@ -26,6 +26,7 @@ export * from './game-outcome.js';
 export * from './game-tactic-motifs.js';
 export * from './move-ref.js';
 export * from './move-metrics.js';
+export * from './checks-captures-threats.js';
 export * from './move-flags.js';
 export * from './move-reasons.js';
 export * from './null-move-fen.js';

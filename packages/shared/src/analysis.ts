@@ -213,6 +213,33 @@ export const CaptureOpportunitySchema = z.object({
   favorable: z.boolean()
 });
 
+export const CheckOpportunitySchema = z.object({
+  moveSan: z.string(),
+  from: z.string(),
+  to: z.string(),
+  isCheckmate: z.boolean()
+});
+export type CheckOpportunityDto = z.infer<typeof CheckOpportunitySchema>;
+
+export const ThreatOpportunitySchema = z.object({
+  moveSan: z.string(),
+  from: z.string(),
+  to: z.string(),
+  targetedPieces: z.array(AttackedPieceSchema)
+});
+export type ThreatOpportunityDto = z.infer<typeof ThreatOpportunitySchema>;
+
+/** The engine-independent CCT (checks, captures, threats) options available
+ * before a move. Each group keeps an explicit `available` flag so consumers
+ * do not need to infer semantics from an array. Threats are raw newly-attacked
+ * opponent pieces, deliberately independent from named motif classification. */
+export const ChecksCapturesThreatsSchema = z.object({
+  checks: z.object({ available: z.boolean(), moves: z.array(CheckOpportunitySchema) }),
+  captures: z.object({ available: z.boolean(), moves: z.array(CaptureOpportunitySchema) }),
+  threats: z.object({ available: z.boolean(), moves: z.array(ThreatOpportunitySchema) })
+});
+export type ChecksCapturesThreats = z.infer<typeof ChecksCapturesThreatsSchema>;
+
 /** Static, engine-independent board features — pure function of a FEN (see
  * packages/chess-analysis's computePositionFeatures). */
 export const PositionFeaturesSchema = z.object({
@@ -290,6 +317,10 @@ export const ClassifiedMoveSchema = z.object({
   features: PositionFeaturesSchema.optional(),
   moveFlags: MoveFlagsSchema.optional(),
   featureDelta: FeatureDeltaSchema.optional(),
+  /** Engine-independent CCT options available before this move. Optional for
+   * compatibility with classified moves persisted before this calculation
+   * was introduced. */
+  checksCapturesThreats: ChecksCapturesThreatsSchema.optional(),
   /** The engine's top move at this position embodied this tactic — did the
    * player play it (see computeTacticMotifCounts). Undefined when the
    * position wasn't a named-motif opportunity at all, not just a 0/1.
