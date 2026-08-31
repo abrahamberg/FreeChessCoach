@@ -1,4 +1,4 @@
-/* global Buffer, console, process */
+/* global Buffer, URL, console, process */
 // Builds the pre-built, read-only Lichess evaluation index that
 // LichessEvalIndex (src/services/engine/lichess-eval-index.ts) serves at
 // runtime — see docs/architecture.md's "Lichess evaluation index" section
@@ -19,19 +19,29 @@
 // docker/Dockerfile.api's "no native binaries" comment, which applies to
 // the *running* API service, not this one-off build tool).
 import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdir, open, readFile, rm, stat } from 'node:fs/promises';
+import { mkdir, open, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
+import { availableParallelism } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  LICHESS_EVAL_KEY_SIZE,
-  LICHESS_EVAL_MAGIC,
-  LICHESS_EVAL_MAX_LINES,
-  LICHESS_EVAL_RECORD_SIZE,
-  compareKeys,
-  packEntry
-} from '@freechesscoach/chess-analysis/lichess-eval-index-format';
-import { scanDepthForRank } from '@freechesscoach/chess-analysis';
+import { isMainThread, parentPort, Worker, workerData } from 'node:worker_threads';
+
+let LICHESS_EVAL_KEY_SIZE;
+let LICHESS_EVAL_MAGIC;
+let LICHESS_EVAL_MAX_LINES;
+let LICHESS_EVAL_RECORD_SIZE;
+let packEntry;
+let scanDepthForRank;
+if (isMainThread) {
+  ({
+    LICHESS_EVAL_KEY_SIZE,
+    LICHESS_EVAL_MAGIC,
+    LICHESS_EVAL_MAX_LINES,
+    LICHESS_EVAL_RECORD_SIZE,
+    packEntry
+  } = await import('@freechesscoach/chess-analysis/lichess-eval-index-format'));
+  ({ scanDepthForRank } = await import('@freechesscoach/chess-analysis'));
+}
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_OUTPUT_PATH = path.join(scriptDirectory, '../data/lichess-eval-index.bin');
@@ -42,6 +52,7 @@ const DEFAULT_OUTPUT_PATH = path.join(scriptDirectory, '../data/lichess-eval-ind
 // once. Concatenating the buckets in ascending order (0x00..0xFF), each
 // internally sorted, yields one globally sorted file.
 const BUCKET_COUNT = 256;
+const DEFAULT_WORKER_COUNT = Math.max(1, availableParallelism() - 1);
 
 /** @typedef {{ cp: number|null, mate: number|null, pvUci: string[] }} ParsedLine */
 /** @typedef {{ fen: string, depth: number, lines: ParsedLine[] }} ParsedEntry */
@@ -119,17 +130,17 @@ function clamp(value, min, max) {
 /**
  * Streams `lines` (already-decompressed JSONL), packs each parsed entry into
  * a fixed-width record, and bucket-sorts them into `outputPath` — see the
- * BUCKET_COUNT comment above for why a full in-memory sort isn't needed.
+ * BUCKET_COUNT comment above for why a full in-memory sort isn't needed. The
+ * independent bucket sorts run in parallel across a bounded worker pool.
  *
- * @param {{ lines: AsyncIterable<string>, outputPath: string, tmpDir: string }} options
+ * @param {{ lines: AsyncIterable<string>, outputPath: string, tmpDir: string, workerCount?: number }} options
  * @returns {Promise<{ recordCount: number, skippedLines: number }>}
  */
-export async function buildLichessEvalIndex({ lines, outputPath, tmpDir }) {
+export async function buildLichessEvalIndex({ lines, outputPath, tmpDir, workerCount = getWorkerCount() }) {
   await mkdir(tmpDir, { recursive: true });
   await mkdir(path.dirname(outputPath), { recursive: true });
 
   const bucketStreams = Array.from({ length: BUCKET_COUNT }, (_, index) => createWriteStream(bucketPath(tmpDir, index)));
-
   let recordCount = 0;
   let skippedLines = 0;
   try {
@@ -147,7 +158,7 @@ export async function buildLichessEvalIndex({ lines, outputPath, tmpDir }) {
     await Promise.all(bucketStreams.map(closeWriteStream));
   }
 
-  await concatenateSortedBuckets(tmpDir, outputPath);
+  await concatenateSortedBuckets(tmpDir, outputPath, getWorkerCount(workerCount));
   return { recordCount, skippedLines };
 }
 
@@ -155,38 +166,108 @@ function bucketPath(tmpDir, index) {
   return path.join(tmpDir, `bucket-${String(index).padStart(3, '0')}.bin`);
 }
 
+function sortedBucketPath(tmpDir, index) {
+  return path.join(tmpDir, `sorted-${String(index).padStart(3, '0')}.bin`);
+}
+
 function closeWriteStream(stream) {
   return new Promise((resolve, reject) => stream.end((error) => (error ? reject(error) : resolve())));
 }
 
-async function concatenateSortedBuckets(tmpDir, outputPath) {
+function getWorkerCount(requested = Number(process.env.LICHESS_EVAL_BUILD_WORKERS ?? DEFAULT_WORKER_COUNT)) {
+  if (!Number.isInteger(requested) || requested < 1) return DEFAULT_WORKER_COUNT;
+  return Math.min(requested, BUCKET_COUNT);
+}
+
+function partition(items, partitionCount) {
+  const partitions = Array.from({ length: partitionCount }, () => []);
+  items.forEach((item, index) => partitions[index % partitionCount].push(item));
+  return partitions;
+}
+
+async function concatenateSortedBuckets(tmpDir, outputPath, workerCount) {
+  await sortBucketsInParallel(tmpDir, workerCount);
   const output = await open(outputPath, 'w');
   try {
     await output.write(LICHESS_EVAL_MAGIC);
     for (let index = 0; index < BUCKET_COUNT; index++) {
-      const filePath = bucketPath(tmpDir, index);
-      const sorted = sortRecords(await readFile(filePath));
+      const filePath = sortedBucketPath(tmpDir, index);
+      const sorted = await readFile(filePath);
       await output.write(sorted);
       await rm(filePath);
+      await rm(bucketPath(tmpDir, index));
     }
   } finally {
     await output.close();
   }
 }
 
-function sortRecords(buffer) {
-  const count = buffer.length / LICHESS_EVAL_RECORD_SIZE;
-  const offsets = Array.from({ length: count }, (_, i) => i * LICHESS_EVAL_RECORD_SIZE);
-  offsets.sort((a, b) =>
-    compareKeys(buffer.subarray(a, a + LICHESS_EVAL_KEY_SIZE), buffer.subarray(b, b + LICHESS_EVAL_KEY_SIZE))
+async function sortBucketsInParallel(tmpDir, workerCount) {
+  const bucketIndexes = Array.from({ length: BUCKET_COUNT }, (_, index) => index);
+  const workers = await createWorkers(tmpDir, workerCount, 'sort');
+  try {
+    const assignments = partition(bucketIndexes, workers.length);
+    await Promise.all(assignments.map((indexes, index) => sendWorkerMessage(workers[index], { indexes })));
+  } finally {
+    await terminateWorkers(workers);
+  }
+}
+
+async function createWorkers(tmpDir, workerCount, mode) {
+  return Array.from({ length: workerCount }, (_, workerIndex) =>
+    new Worker(new URL(import.meta.url), {
+      workerData: { mode, tmpDir, workerIndex, recordSize: LICHESS_EVAL_RECORD_SIZE, keySize: LICHESS_EVAL_KEY_SIZE }
+    })
   );
-  return Buffer.concat(offsets.map((offset) => buffer.subarray(offset, offset + LICHESS_EVAL_RECORD_SIZE)));
+}
+
+function sendWorkerMessage(worker, message) {
+  return new Promise((resolve, reject) => {
+    const onMessage = (result) => {
+      worker.off('error', onError);
+      resolve(result);
+    };
+    const onError = (error) => {
+      worker.off('message', onMessage);
+      reject(error);
+    };
+    worker.once('message', onMessage);
+    worker.once('error', onError);
+    worker.postMessage(message);
+  });
+}
+
+async function terminateWorkers(workers) {
+  await Promise.all(workers.map((worker) => worker.terminate()));
+}
+
+function sortRecords(buffer, recordSize = LICHESS_EVAL_RECORD_SIZE, keySize = LICHESS_EVAL_KEY_SIZE) {
+  const count = buffer.length / recordSize;
+  const offsets = Array.from({ length: count }, (_, i) => i * recordSize);
+  offsets.sort((a, b) =>
+    Buffer.compare(buffer.subarray(a, a + keySize), buffer.subarray(b, b + keySize))
+  );
+  return Buffer.concat(offsets.map((offset) => buffer.subarray(offset, offset + recordSize)));
+}
+
+async function runWorker() {
+  parentPort?.on('message', async ({ indexes }) => {
+    for (const bucketIndex of indexes) {
+      const sorted = sortRecords(
+        await readFile(bucketPath(workerData.tmpDir, bucketIndex)),
+        workerData.recordSize,
+        workerData.keySize
+      );
+      await writeFile(sortedBucketPath(workerData.tmpDir, bucketIndex), sorted);
+    }
+    parentPort?.postMessage({ done: true });
+  });
 }
 
 function openInputStream(inputPath) {
   if (!inputPath.endsWith('.zst')) return createReadStream(inputPath);
 
-  const zstd = spawn('zstd', ['-dc', inputPath], { stdio: ['ignore', 'pipe', 'inherit'] });
+  const zstd = spawn('zstd', ['-T0', '-dc', inputPath], { stdio: ['ignore', 'pipe', 'inherit'] });
   zstd.on('error', (error) => {
     throw new Error(`Failed to spawn "zstd" — is it installed on this machine? (${error.message})`);
   });
@@ -231,15 +312,15 @@ async function run() {
 
   const tmpDir = path.join(path.dirname(outputPath), '.lichess-eval-index-tmp');
   const lines = readLines(openInputStream(inputPath));
+  const workerCount = getWorkerCount();
+  console.log(`Building with ${workerCount} workers (override with LICHESS_EVAL_BUILD_WORKERS).`);
 
-  const { recordCount, skippedLines } = await buildLichessEvalIndex({ lines, outputPath, tmpDir });
+  const { recordCount, skippedLines } = await buildLichessEvalIndex({ lines, outputPath, tmpDir, workerCount });
   await rm(tmpDir, { recursive: true, force: true });
 
   if (recordCount === 0) {
-    // A silent zero-record "success" is worse than a crash here: the caller
-    // (fetch-and-build-lichess-eval-index.sh) deletes the downloaded dataset
-    // once this process exits 0, so a swallowed failure (e.g. a bad input
-    // path) would destroy the only copy of a tens-of-GB download for nothing.
+    // A silent zero-record "success" is worse than a crash here: a swallowed
+    // failure (e.g. a bad input path) would produce an unusable index.
     throw new Error(
       `Built index with 0 positions from "${inputPath}" (${skippedLines} lines skipped) — refusing to treat this as success. Check that the input path is correct and non-empty.`
     );
@@ -252,7 +333,12 @@ async function run() {
   );
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (!isMainThread) {
+  runWorker().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+} else if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   run().catch((error) => {
     console.error(error);
     process.exitCode = 1;

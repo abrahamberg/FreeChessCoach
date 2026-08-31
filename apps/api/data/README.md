@@ -55,8 +55,7 @@ npm run fetch-and-build-eval
 
 (`apps/api/scripts/fetch-and-build-lichess-eval-index.sh` — requires `curl`,
 `zstd`, and `npm`/Node on your machine; the download is resumable if
-interrupted, and the raw `.jsonl.zst` is deleted after a successful build
-unless you pass `-- --keep-download`.) Writes to
+interrupted, and the raw `.jsonl.zst` is retained for subsequent rebuilds.) Writes to
 `apps/api/data/lichess-eval-index.bin`; pass `-- --output <path>` to write
 somewhere else.
 
@@ -67,6 +66,10 @@ to JSONL first)? Skip straight to the build step:
 ```sh
 npm run build-eval -- /path/to/lichess_db_eval.jsonl.zst
 ```
+
+The build uses all but one available CPU core by default for bucket sorting.
+Set `LICHESS_EVAL_BUILD_WORKERS` to tune the worker count when sharing
+the machine with other work.
 
 Run this by hand, roughly matching the upstream dataset's own monthly
 refresh cadence — there is deliberately no automation for it: no GitHub

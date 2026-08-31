@@ -8,9 +8,9 @@
 #
 #   --output <path>   where to write the built index.
 #                      Default: apps/api/data/lichess-eval-index.bin
-#   --keep-download    don't delete the downloaded .jsonl.zst afterward.
-#                      Default: deleted once the build succeeds — it's only
-#                      useful for re-running the build, and it's tens of GB.
+# The downloaded `.jsonl.zst` is retained after the build so it can be reused
+# without another multi-hour download. Remove it manually when it is no longer
+# needed.
 #
 # Run this by hand, roughly monthly (matching Lichess's own refresh cadence)
 # — never wired into CI or app deploys (apps/api/data/README.md). Once it's
@@ -23,7 +23,6 @@ cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 DOWNLOAD_URL="https://database.lichess.org/lichess_db_eval.jsonl.zst"
 DOWNLOAD_PATH="apps/api/data/lichess_db_eval.jsonl.zst"
 OUTPUT_PATH="apps/api/data/lichess-eval-index.bin"
-KEEP_DOWNLOAD=0
 REPO_ROOT="$(pwd)"
 
 log() { echo "[fetch-and-build-lichess-eval-index] $*"; }
@@ -34,10 +33,6 @@ while [[ $# -gt 0 ]]; do
     --output)
       OUTPUT_PATH="$2"
       shift 2
-      ;;
-    --keep-download)
-      KEEP_DOWNLOAD=1
-      shift
       ;;
     *)
       die "Unknown option: $1"
@@ -65,11 +60,6 @@ log "Building index..."
 # relative path here would resolve against the wrong directory and silently
 # match nothing.
 npm run build-eval -- "$REPO_ROOT/$DOWNLOAD_PATH" "$REPO_ROOT/$OUTPUT_PATH"
-
-if [[ "$KEEP_DOWNLOAD" -eq 0 ]]; then
-  log "Removing downloaded dataset ($DOWNLOAD_PATH) — pass --keep-download to keep it."
-  rm -f "$DOWNLOAD_PATH"
-fi
 
 log "Done: $OUTPUT_PATH"
 log "Next: apps/api/scripts/deploy-lichess-eval-index.sh <namespace>"

@@ -1,8 +1,11 @@
-/* global Buffer */
+/* global Buffer, URL, process */
+import { execFile } from 'node:child_process';
 import { createReadStream } from 'node:fs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import {
   LICHESS_EVAL_MAGIC,
@@ -15,6 +18,7 @@ import { LichessEvalIndex, LichessEvalIndexFormatError } from '../src/services/e
 import { buildLichessEvalIndex, parseLichessEvalLine, readLines } from './build-lichess-eval-index.mjs';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const execFileAsync = promisify(execFile);
 
 describe('parseLichessEvalLine', () => {
   test('picks the deepest evals entry and keeps all of its pvs', () => {
@@ -242,6 +246,26 @@ describe('buildLichessEvalIndex', () => {
     expect(recordCount).toBe(0);
     const buffer = await readFile(outputPath);
     expect(buffer).toEqual(LICHESS_EVAL_MAGIC);
+  });
+
+  test('CLI keeps its input dataset on disk after a successful build', async () => {
+    const inputPath = join(dir, 'lichess_db_eval.jsonl');
+    const outputPath = join(dir, 'index.bin');
+    const input = JSON.stringify({
+      fen: START_FEN,
+      evals: [{ depth: 20, pvs: [{ cp: 10, line: 'e2e4 e7e5' }] }]
+    });
+    await writeFile(inputPath, `${input}\n`);
+
+    await execFileAsync(process.execPath, [
+      '--import',
+      'tsx',
+      fileURLToPath(new URL('./build-lichess-eval-index.mjs', import.meta.url)),
+      inputPath,
+      outputPath
+    ]);
+
+    await expect(readFile(inputPath, 'utf8')).resolves.toBe(`${input}\n`);
   });
 
   test('fixture-scale end-to-end: build -> LichessEvalIndex.open -> lookup returns every harvested ply per line (Phase 49)', async () => {
