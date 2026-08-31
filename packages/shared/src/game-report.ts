@@ -44,10 +44,14 @@ export type ClassificationCounts = z.infer<typeof ClassificationCountsSchema>;
 export const TACTIC_MOTIF_TYPES = [
   'checkmate',
   'brilliantSacrifice',
+  'doubleCheck',
   'fork',
+  'skewer',
   'pin',
   'discoveredAttack',
+  'overloadedDefender',
   'removesDefender',
+  'weakBackRank',
   'trappedPiece',
   'freePiece',
   'other'

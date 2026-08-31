@@ -1,4 +1,4 @@
-import type { GameReport, MoveReport, PlayerReport } from '@freechesscoach/shared';
+import { TACTIC_MOTIF_TYPES, type GameReport, type MoveReport, type PlayerReport } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { aggregateOpeningStats } from './aggregate-opening-stats.js';
 import type { StatsEntry } from './stats-entry.js';
@@ -21,9 +21,7 @@ function buildPlayerReport(overrides: Partial<PlayerReport> = {}): PlayerReport 
     )
   ) as PlayerReport['counts'];
   const zeroTacticMotifs = Object.fromEntries(
-    ['checkmate', 'brilliantSacrifice', 'fork', 'pin', 'discoveredAttack', 'removesDefender', 'trappedPiece', 'freePiece', 'other'].map(
-      (type) => [type, { opportunities: 0, found: 0 }]
-    )
+    TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }])
   ) as PlayerReport['tacticMotifs'];
 
   return {

@@ -7,10 +7,21 @@ describe('TACTIC_DETECTORS', () => {
     expect(priorities).toEqual([...priorities].sort((a, b) => a - b));
   });
 
-  test('contains exactly the six registry-backed motif types, once each', () => {
+  test('contains exactly the ten registry-backed motif types, once each', () => {
     const types = TACTIC_DETECTORS.map((detector) => detector.type).sort();
     expect(types).toEqual(
-      ['discoveredAttack', 'fork', 'freePiece', 'pin', 'removesDefender', 'trappedPiece'].sort()
+      [
+        'discoveredAttack',
+        'doubleCheck',
+        'fork',
+        'freePiece',
+        'overloadedDefender',
+        'pin',
+        'removesDefender',
+        'skewer',
+        'trappedPiece',
+        'weakBackRank'
+      ].sort()
     );
   });
 });

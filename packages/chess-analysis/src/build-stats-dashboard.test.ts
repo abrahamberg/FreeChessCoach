@@ -1,19 +1,14 @@
-import type { EndgameStanding, EndgameTheme, GameReport, PlayerReport, TacticMotifType } from '@freechesscoach/shared';
+import {
+  TACTIC_MOTIF_TYPES,
+  type EndgameStanding,
+  type EndgameTheme,
+  type GameReport,
+  type PlayerReport,
+  type TacticMotifType
+} from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { buildStatsDashboard } from './build-stats-dashboard.js';
 import type { StatsEntry } from './stats-entry.js';
-
-const TACTIC_MOTIF_TYPES: TacticMotifType[] = [
-  'checkmate',
-  'brilliantSacrifice',
-  'fork',
-  'pin',
-  'discoveredAttack',
-  'removesDefender',
-  'trappedPiece',
-  'freePiece',
-  'other'
-];
 
 function zeroTacticMotifs(
   overrides: Partial<Record<TacticMotifType, { opportunities: number; found: number; preventable?: number; prevented?: number }>> = {}

@@ -12,10 +12,14 @@ export interface TacticsStatsSectionProps {
 const MOTIF_LABELS: Record<TacticMotifType, string> = {
   checkmate: 'Checkmates',
   brilliantSacrifice: 'Brilliant Sacrifices',
+  doubleCheck: 'Double Checks',
   fork: 'Forks',
+  skewer: 'Skewers',
   pin: 'Pins',
   discoveredAttack: 'Discoveries',
+  overloadedDefender: 'Overloaded Defenders',
   removesDefender: 'Removes Defender',
+  weakBackRank: 'Weak Back-Rank',
   trappedPiece: 'Trapped Pieces',
   freePiece: 'Free Pieces',
   other: 'Other Tactics'
