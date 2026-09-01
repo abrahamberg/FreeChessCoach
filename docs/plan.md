@@ -143,15 +143,15 @@ request `ENGINE_MULTI_PV = 5`. `NativeEngineBackend.analyzeGame:21-25`
 acknowledges this in a comment. Every reachability-rank, alternatives-based
 and candidate-generation diagnostic in this plan needs 5 lines.
 
-- [ ] Failing test: `analyzeGameViaEngine` sends `multiPv: ENGINE_MULTI_PV`
+- [x] Failing test: `analyzeGameViaEngine` sends `multiPv: ENGINE_MULTI_PV`
       in its request body (assert against a mocked `fetch`).
-- [ ] Add `multiPv` (default `ENGINE_MULTI_PV`) and `depth` parameters to
+- [x] Add `multiPv` (default `ENGINE_MULTI_PV`) and `depth` parameters to
       `analyzeGameViaEngine`, matching `analyzePositionViaEngine`'s signature.
-- [ ] Forward `opts?.multiPv`/`opts?.depth` from
+- [x] Forward `opts?.multiPv`/`opts?.depth` from
       `NativeEngineBackend.analyzeGame`; delete the stale comment.
-- [ ] Note in the commit body that this only affected `engineMode: 'native'`
+- [x] Note in the commit body that this only affected `engineMode: 'native'`
       — `chess_api` already requests 5 variants and the Lichess index stores 5.
-- [ ] Commit: `fix: request ENGINE_MULTI_PV on the whole-game batch path`.
+- [x] Commit: `fix: request ENGINE_MULTI_PV on the whole-game batch path`.
 
 ### Task 50.2: Keep the engine's real PV on the classified move
 
@@ -168,17 +168,17 @@ This also un-breaks `classify-brilliant.ts`'s `restoresSacrificedMaterial`,
 which reads `bestLinePvSan.slice(1, 3)` and therefore always sees an empty
 slice today.
 
-- [ ] Failing test: given an `EngineEval` whose top line has
+- [x] Failing test: given an `EngineEval` whose top line has
       `pvSan: ['Nxe5', 'Nxe5', 'd4']`, the classified move's `bestLinePvSan`
       is that full array, not `['Nxe5']`.
-- [ ] Failing test: a stored eval with no `pvSan` (the optional field is
+- [x] Failing test: a stored eval with no `pvSan` (the optional field is
       absent on pre-Phase-43 rows) still yields `[bestMoveSan]` — graceful
       degradation, no throw.
-- [ ] Implement; keep `bestLineSan` as-is (it is the existing API name and
+- [x] Implement; keep `bestLineSan` as-is (it is the existing API name and
       the UI reads it) and change only `bestLinePvSan`.
-- [ ] Add a regression test asserting `restoresSacrificedMaterial` now sees a
+- [x] Add a regression test asserting `restoresSacrificedMaterial` now sees a
       non-empty slice for a fixture where material is restored on ply 2.
-- [ ] Commit: `fix: carry the engine's real PV onto classified moves`.
+- [x] Commit: `fix: carry the engine's real PV onto classified moves`.
 
 ### Task 50.3: Wire brilliant-soundness into the batch pipeline
 
@@ -195,17 +195,17 @@ batch analysis**, which skews `tacticsScore` (+6 per brilliant),
 `ClassificationCounts`, and every "instructive moment" the planner sees.
 `checkBrilliantSoundness` exists and is tested but has no callers.
 
-- [ ] Failing integration test: a fixture game containing a known sound
+- [x] Failing integration test: a fixture game containing a known sound
       sacrifice produces a `'brilliant'` move in the stored report.
-- [ ] Add a pre-pass in `runAnalyzeGameJob` that collects candidate plies —
+- [x] Add a pre-pass in `runAnalyzeGameJob` that collects candidate plies —
       only those already passing the cheap B-gates (not book, `legalMoveCount
       > 1`, `drop <= CONFIG.brilliant.maxDrop`, a real SEE sacrifice) — and
       calls `checkBrilliantSoundness` for each, building the
       `ReadonlyMap<number, boolean>`. Typically 0–2 positions per game.
-- [ ] Pass the map into `classifyMoves`.
-- [ ] Assert in the test that a game with no sacrifices makes **zero** extra
+- [x] Pass the map into `classifyMoves`.
+- [x] Assert in the test that a game with no sacrifices makes **zero** extra
       engine calls, so the gate ordering is verified, not just the outcome.
-- [ ] Commit: `fix: compute brilliant soundness in the batch analysis job`.
+- [x] Commit: `fix: compute brilliant soundness in the batch analysis job`.
 
 ### Task 50.4: A separate diagnostic denominator for prevented tactics
 
@@ -221,22 +221,22 @@ must **not** be changed. But as an `E/O` denominator it is biased: every case
 where the player *did* prevent the threat by finding the best move is
 excluded, so the failure rate is systematically inflated.
 
-- [ ] Failing test: for a ply where a motif was reachable and the player
+- [x] Failing test: for a ply where a motif was reachable and the player
       played the best move which defused it, the new diagnostic counter
       records an opportunity with `failed: false`, while the existing
       `counts.preventable` stays unchanged.
-- [ ] Add an **additive** second output — `diagnosticByPly` — populated for
+- [x] Add an **additive** second output — `diagnosticByPly` — populated for
       every ply with a reachable opponent motif regardless of move quality.
       Leave `counts` and `byPly` byte-identical so nothing shipped regresses.
-- [ ] Document in the function's doc comment why two counters exist, so the
+- [x] Document in the function's doc comment why two counters exist, so the
       next reader does not "unify" them.
-- [ ] Commit: `feat: unbiased prevented-tactic denominator for diagnostics`.
+- [x] Commit: `feat: unbiased prevented-tactic denominator for diagnostics`.
 
 ### Task 50.5: Track the source spec
 
-- [ ] `git add docs/diagnose.md` — it is currently untracked (`git status`),
+- [x] `git add docs/diagnose.md` — it is currently untracked (`git status`),
       so every reference in this plan points at a file not in the repo.
-- [ ] Commit: `docs: track the operational diagnostic glossary`.
+- [x] Commit: `docs: track the operational diagnostic glossary`.
 
 ---
 
