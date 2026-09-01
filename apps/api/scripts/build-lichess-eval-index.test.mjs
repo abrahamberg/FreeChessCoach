@@ -15,7 +15,7 @@ import {
 } from '@freechesscoach/chess-analysis/lichess-eval-index-format';
 import { scanDepthForRank } from '@freechesscoach/chess-analysis';
 import { LichessEvalIndex, LichessEvalIndexFormatError } from '../src/services/engine/lichess-eval-index.ts';
-import { buildLichessEvalIndex, parseLichessEvalLine, readLines } from './build-lichess-eval-index.mjs';
+import { buildLichessEvalIndex, parseLichessEvalLine, readLines, resolveInputPath } from './build-lichess-eval-index.mjs';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const execFileAsync = promisify(execFile);
@@ -194,6 +194,11 @@ describe('buildLichessEvalIndex', () => {
 
   afterEach(async () => {
     await rm(dir, { recursive: true, force: true });
+  });
+
+  test('uses the repository dataset when no input path is provided', () => {
+    expect(resolveInputPath(undefined)).toBe(fileURLToPath(new URL('../data/lichess_db_eval.jsonl.zst', import.meta.url)));
+    expect(resolveInputPath('/tmp/custom-eval.jsonl')).toBe('/tmp/custom-eval.jsonl');
   });
 
   test('builds a sorted, fixed-width index file from JSONL input, skipping unusable lines', async () => {

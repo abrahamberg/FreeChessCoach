@@ -12,7 +12,7 @@
 // upstream, the app does not need to redeploy to pick up a new build.
 //
 // Usage:
-//   npx tsx scripts/build-lichess-eval-index.mjs <lichess_db_eval.jsonl[.zst]> [outputPath]
+//   npx tsx scripts/build-lichess-eval-index.mjs [lichess_db_eval.jsonl[.zst]] [outputPath]
 //
 // A `.zst` input is decompressed by shelling out to the system `zstd`
 // binary (this script's own machine, not the API image — see
@@ -44,6 +44,7 @@ if (isMainThread) {
 }
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+const DEFAULT_INPUT_PATH = path.join(scriptDirectory, '../data/lichess_db_eval.jsonl.zst');
 const DEFAULT_OUTPUT_PATH = path.join(scriptDirectory, '../data/lichess-eval-index.bin');
 
 // Bucketing by the key's first byte bounds each bucket to roughly 1/256th of
@@ -53,6 +54,10 @@ const DEFAULT_OUTPUT_PATH = path.join(scriptDirectory, '../data/lichess-eval-ind
 // internally sorted, yields one globally sorted file.
 const BUCKET_COUNT = 256;
 const DEFAULT_WORKER_COUNT = Math.max(1, availableParallelism() - 1);
+
+export function resolveInputPath(inputPath) {
+  return inputPath ?? DEFAULT_INPUT_PATH;
+}
 
 /** @typedef {{ cp: number|null, mate: number|null, pvUci: string[] }} ParsedLine */
 /** @typedef {{ fen: string, depth: number, lines: ParsedLine[] }} ParsedEntry */
@@ -179,6 +184,15 @@ function getWorkerCount(requested = Number(process.env.LICHESS_EVAL_BUILD_WORKER
   return Math.min(requested, BUCKET_COUNT);
 }
 
+async function fileExists(filePath) {
+  try {
+    await stat(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function partition(items, partitionCount) {
   const partitions = Array.from({ length: partitionCount }, () => []);
   items.forEach((item, index) => partitions[index % partitionCount].push(item));
@@ -302,10 +316,11 @@ export async function* readLines(stream) {
 }
 
 async function run() {
-  const inputPath = process.argv[2];
+  const inputPath = resolveInputPath(process.argv[2]);
   const outputPath = process.argv[3] ?? DEFAULT_OUTPUT_PATH;
-  if (!inputPath) {
-    console.error('Usage: build-lichess-eval-index.mjs <lichess_db_eval.jsonl[.zst]> [outputPath]');
+  if (!(await fileExists(inputPath))) {
+    console.error(`No input dataset found at "${inputPath}".`);
+    console.error('Usage: build-lichess-eval-index.mjs [lichess_db_eval.jsonl[.zst]] [outputPath]');
     process.exitCode = 1;
     return;
   }

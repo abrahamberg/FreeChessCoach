@@ -61,9 +61,12 @@ somewhere else.
 
 Already have a dataset file downloaded (or the Parquet mirror at
 https://huggingface.co/datasets/Lichess/chess-position-evaluations, converted
-to JSONL first)? Skip straight to the build step:
+to JSONL first)? Skip straight to the build step. If the standard source file
+is already present in `apps/api/data/`, the path can be omitted:
 
 ```sh
+npm run build-eval
+# or, for a file elsewhere:
 npm run build-eval -- /path/to/lichess_db_eval.jsonl.zst
 ```
 
