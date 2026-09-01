@@ -113,7 +113,9 @@ export async function runAnalyzeGameJob(
       book: bookReport,
       pgnResult: game.result,
       preventedCounts: { white: prevention.counts.white.prevented, black: prevention.counts.black.prevented },
-      preventableCounts: { white: prevention.counts.white.preventable, black: prevention.counts.black.preventable }
+      preventableCounts: { white: prevention.counts.white.preventable, black: prevention.counts.black.preventable },
+      userColor: game.userColor,
+      userRating: user.rating
     });
     await analysesRepo.storeGameReport(db, analysis.id, gameReport);
     const candidateMoments = findCandidateMoments(classifiedMoves, evals);

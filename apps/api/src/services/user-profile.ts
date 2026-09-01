@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { UpdateUserProfileRequest, UserProfile } from '@freechesscoach/shared';
+import { deriveRatingBand, type UpdateUserProfileRequest, type UserProfile } from '@freechesscoach/shared';
 import * as creditsRepo from '../db/repositories/credits.js';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
@@ -53,12 +53,23 @@ function healDisplayNameIfNeeded(
   return usersRepo.update(db, existing.id, { displayName: freshDisplayName });
 }
 
+/** A numeric `rating` in the request is always self-reported (this is the
+ * user's own profile edit — nothing else calls this with a rating): it's
+ * stamped `ratingSource: 'self'` here rather than trusting a client-supplied
+ * source, and re-derives `ratingBand` from it, taking priority over a
+ * `ratingBand` also present in the same request (see deriveRatingBand). */
 export function updateProfile(
   db: Kysely<Database>,
   userId: string,
   patch: UpdateUserProfileRequest
 ): Promise<usersRepo.UserRow> {
-  return usersRepo.update(db, userId, patch);
+  if (patch.rating === undefined) return usersRepo.update(db, userId, patch);
+  return usersRepo.update(db, userId, {
+    ...patch,
+    rating: patch.rating,
+    ratingSource: 'self',
+    ratingBand: deriveRatingBand(patch.rating)
+  });
 }
 
 export interface ProfileSummary {
@@ -90,6 +101,8 @@ export async function toUserProfile(
     email: user.email,
     displayName: user.displayName,
     ratingBand: user.ratingBand,
+    rating: user.rating,
+    ratingSource: user.ratingSource,
     engineMode: user.engineMode,
     coachPersona: user.coachPersona,
     lichessUsername: user.lichessUsername,

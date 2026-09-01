@@ -5,7 +5,7 @@ import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { applyFocusAreaUpdate, recordFinding } from './progress.js';
-import { getOrCreate, getProfileSummary } from './user-profile.js';
+import { getOrCreate, getProfileSummary, updateProfile } from './user-profile.js';
 
 describe('getProfileSummary', () => {
   let testDb: TestDb;
@@ -101,5 +101,47 @@ describe('getOrCreate', () => {
     const result = await getOrCreate(db, { email: 'stable@example.com', displayName: 'ann' });
 
     expect(result.displayName).toBe('Ann');
+  });
+});
+
+describe('updateProfile', () => {
+  let testDb: TestDb;
+  let db: Kysely<Database>;
+
+  beforeAll(async () => {
+    testDb = await createTestDb();
+    db = testDb.db;
+  }, 60000);
+
+  afterAll(async () => {
+    await testDb.cleanup();
+  });
+
+  test('a numeric rating derives ratingBand and is stamped ratingSource: self', async () => {
+    const user = await usersRepo.insert(db, { email: 'rated@example.com', displayName: 'Rated' });
+
+    const updated = await updateProfile(db, user.id, { rating: 1550 });
+
+    expect(updated.rating).toBe(1550);
+    expect(updated.ratingSource).toBe('self');
+    expect(updated.ratingBand).toBe('club');
+  });
+
+  test('a rating in the same request overrides an explicitly-passed ratingBand', async () => {
+    const user = await usersRepo.insert(db, { email: 'override@example.com', displayName: 'Override' });
+
+    const updated = await updateProfile(db, user.id, { ratingBand: 'novice', rating: 1800 });
+
+    expect(updated.ratingBand).toBe('advanced');
+  });
+
+  test('a request with no rating leaves ratingSource untouched and still applies ratingBand', async () => {
+    const user = await usersRepo.insert(db, { email: 'bandonly@example.com', displayName: 'BandOnly' });
+
+    const updated = await updateProfile(db, user.id, { ratingBand: 'advanced' });
+
+    expect(updated.ratingBand).toBe('advanced');
+    expect(updated.rating).toBeNull();
+    expect(updated.ratingSource).toBeNull();
   });
 });

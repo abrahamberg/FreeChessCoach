@@ -22,6 +22,7 @@ import * as playBotMode from './migrations/0020_play_bot_mode.js';
 import * as botGameClock from './migrations/0021_bot_game_clock.js';
 import * as chessApiEngineMode from './migrations/0022_chess_api_engine_mode.js';
 import * as gameMetadata from './migrations/0023_game_metadata.js';
+import * as userRating from './migrations/0024_user_rating.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -48,7 +49,8 @@ const provider: MigrationProvider = {
       '0020_play_bot_mode': playBotMode,
       '0021_bot_game_clock': botGameClock,
       '0022_chess_api_engine_mode': chessApiEngineMode,
-      '0023_game_metadata': gameMetadata
+      '0023_game_metadata': gameMetadata,
+      '0024_user_rating': userRating
     })
 };
 

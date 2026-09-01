@@ -24,6 +24,12 @@ export interface BuildGameReportForAnalysisInput {
   /** From the same `computeTacticMotifPrevented` call — the denominator
    * `preventedCounts` is a subset of. */
   preventableCounts?: Record<'white' | 'black', Partial<Record<TacticMotifType, number>>>;
+  /** The game's own player (Task 5's userColor) and their numeric profile
+   * rating (Task 51.5's users.rating), if known. Only the student's own
+   * colour ever gets a real prior here — we don't have a stored profile
+   * rating for the opponent, who usually isn't even a user of this app. */
+  userColor: 'white' | 'black';
+  userRating: number | null;
 }
 
 /**
@@ -31,10 +37,9 @@ export interface BuildGameReportForAnalysisInput {
  * API layer: the engine's identity, the depth actually achieved by this
  * analysis, and each colour's game outcome (from the PGN Result tag).
  *
- * `priorRating` is always `null` for both colours — no numeric player rating
- * exists yet (users only have a coarse `ratingBand` enum; see docs/plan.md's
- * Phase 19 notes), so §8.5's shrink always falls back to the default prior
- * until a numeric rating is available to plug in here.
+ * `priorRating` feeds the student's own numeric rating (when known) into
+ * §8.5's shrink; the opponent's side is always `null` — see this input's own
+ * doc comment.
  */
 export function buildGameReportForAnalysis(input: BuildGameReportForAnalysisInput): GameReport {
   return assembleGameReport({
@@ -47,7 +52,10 @@ export function buildGameReportForAnalysis(input: BuildGameReportForAnalysisInpu
       depth: input.evals[0]?.depth ?? ENGINE_DEFAULT_DEPTH,
       multiPv: ENGINE_MULTI_PV
     },
-    priorRating: { white: null, black: null },
+    priorRating: {
+      white: input.userColor === 'white' ? input.userRating : null,
+      black: input.userColor === 'black' ? input.userRating : null
+    },
     result: {
       white: resultForColour(input.pgnResult, 'white'),
       black: resultForColour(input.pgnResult, 'black')

@@ -96,6 +96,8 @@ function mockFetch(session: SessionFixture = {}, extra: (path: string) => Respon
             email: 'daniel@example.com',
             displayName: 'daniel',
             ratingBand: 'club',
+            rating: null,
+            ratingSource: null,
             engineMode: 'native',
             coachPersona: session.coachPersona ?? 'general',
             lichessUsername: null,

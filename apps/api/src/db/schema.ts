@@ -1,6 +1,6 @@
 import type { ColumnType, Generated } from 'kysely';
 import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { BotConfig, CoachPersona, EngineMode, MistakeCategory, MoveQuality, RatingBand, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { BotConfig, CoachPersona, EngineMode, MistakeCategory, MoveQuality, RatingBand, RatingSource, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -10,6 +10,9 @@ export interface UsersTable {
   email: string;
   displayName: string;
   ratingBand: Generated<RatingBand>;
+  /** 0024_user_rating.ts — see packages/shared/src/user.ts's deriveRatingBand. */
+  rating: number | null;
+  ratingSource: RatingSource | null;
   engineMode: Generated<EngineMode>;
   coachPersona: Generated<CoachPersona>;
   lichessUsername: string | null;

@@ -18,6 +18,12 @@ export type MistakeCategory = (typeof MISTAKE_CATEGORIES)[number];
 export const RATING_BANDS = ['novice', 'improving', 'club', 'advanced'] as const;
 export type RatingBand = (typeof RATING_BANDS)[number];
 
+/** Where `users.rating` came from — 'self' (self-reported), 'pgn' (read off
+ * an imported game's WhiteElo/BlackElo header), 'estimated' (§8.5's
+ * estimateRating, never a genuine outside source). */
+export const RATING_SOURCES = ['self', 'pgn', 'estimated'] as const;
+export type RatingSource = (typeof RATING_SOURCES)[number];
+
 /**
  * 'chess_api' calls the free https://chess-api.com/v1 HTTP API from the
  * server — never exposed to the browser, so it's trusted the same as

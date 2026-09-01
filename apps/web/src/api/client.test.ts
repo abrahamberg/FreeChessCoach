@@ -8,6 +8,8 @@ const VALID_PROFILE = {
   email: 'student@example.com',
   displayName: 'daniel',
   ratingBand: 'club',
+  rating: null,
+  ratingSource: null,
   lichessUsername: null,
   chesscomUsername: null,
   selfAssessment: null,
