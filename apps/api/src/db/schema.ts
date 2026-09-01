@@ -1,4 +1,5 @@
 import type { ColumnType, Generated } from 'kysely';
+import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
 import type { BotConfig, CoachPersona, EngineMode, MistakeCategory, MoveQuality, RatingBand, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
@@ -54,6 +55,21 @@ export interface GamesTable {
    * (bot-move-commit.ts) and read by the claim-timeout endpoint. */
   whiteRemainingMs: number | null;
   blackRemainingMs: number | null;
+  /** All below: 0023_game_metadata.ts, populated at import time from
+   * parseGameHeaders/extractPgnMoveComments — see game-import.ts. */
+  whiteElo: number | null;
+  blackElo: number | null;
+  ratingsProvisional: Generated<boolean>;
+  rated: boolean | null;
+  termination: string | null;
+  variant: string | null;
+  /** Persisted `classifyTimeControl(timeControl)`, so pooling by speed
+   * (docs/diagnose.md §4.2) pushes into SQL instead of being recomputed on
+   * every stats read. */
+  speed: GameSpeed | null;
+  /** `time` column — node-postgres returns/accepts "HH:MM:SS". */
+  playedAtTime: string | null;
+  moveTimes: Jsonb<PgnMoveComment[]> | null;
 }
 
 export interface AnalysesTable {

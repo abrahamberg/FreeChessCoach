@@ -1,4 +1,11 @@
-import { detectUserColor, parsePgn, type Usernames } from '@freechesscoach/chess-analysis';
+import {
+  classifyTimeControl,
+  detectUserColor,
+  extractPgnMoveComments,
+  parseGameHeaders,
+  parsePgn,
+  type Usernames
+} from '@freechesscoach/chess-analysis';
 import type { ImportGameRequest, PlayerColor } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
@@ -52,6 +59,9 @@ export async function importGame(
 
   await learnPlatformUsername(db, userId, request.source, parsed.headers, usernames, userColor);
 
+  const timeControl = parsed.headers['TimeControl'] ?? null;
+  const headerMetadata = parseGameHeaders(parsed.headers);
+  const moveTimes = extractPgnMoveComments(request.pgn);
   const game = await gamesRepo.insert(db, {
     userId,
     pgn: request.pgn,
@@ -60,9 +70,18 @@ export async function importGame(
     whiteName: parsed.headers['White'] ?? null,
     blackName: parsed.headers['Black'] ?? null,
     result: parsed.headers['Result'] ?? null,
-    timeControl: parsed.headers['TimeControl'] ?? null,
+    timeControl,
     eco: parsed.headers['ECO'] ?? null,
-    playedAt: parsePlayedAt(parsed.headers)
+    playedAt: parsePlayedAt(parsed.headers),
+    whiteElo: headerMetadata.whiteElo,
+    blackElo: headerMetadata.blackElo,
+    ratingsProvisional: headerMetadata.ratingsProvisional,
+    rated: headerMetadata.rated,
+    termination: headerMetadata.termination,
+    variant: headerMetadata.variant,
+    speed: classifyTimeControl(timeControl),
+    playedAtTime: headerMetadata.utcTime,
+    moveTimes: moveTimes.length > 0 ? moveTimes : null
   });
 
   if (request.deferAnalysis) {

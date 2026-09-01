@@ -23,6 +23,28 @@ const ILLEGAL_PGN = `[Event "Test"]
 
 1. e4 e5 2. Zz9 garbage`;
 
+// A real Lichess export (Task 51.1/51.2/51.3): rating/rated/termination/
+// variant/UTCTime headers plus per-move [%clk]/[%eval] comments.
+const LICHESS_ANNOTATED_PGN = `[Event "Rated Blitz game"]
+[Site "https://lichess.org/zFCbLgLe"]
+[Date "2026.08.12"]
+[White "Ann"]
+[Black "Bob"]
+[Result "1-0"]
+[UTCDate "2026.08.12"]
+[UTCTime "12:34:56"]
+[WhiteElo "1500"]
+[BlackElo "1520"]
+[Variant "Standard"]
+[TimeControl "300+0"]
+[ECO "C50"]
+[Termination "Normal"]
+
+1. e4 { [%eval 0.2] [%clk 0:05:00] } 1... e5 { [%eval 0.1] [%clk 0:05:00] }
+2. Qh5 { [%eval 0.3] [%clk 0:04:58] } 2... Nc6 { [%eval 0.2] [%clk 0:04:55] }
+3. Bc4 { [%eval 0.4] [%clk 0:04:57] } 3... Nf6 { [%eval -2.0] [%clk 0:04:40] }
+4. Qxf7# { [%clk 0:04:56] } 1-0`;
+
 const PLAN: CoachingPlan = {
   gameSummary: 'A sharp game.',
   openingNote: 'Fine.',
@@ -210,6 +232,39 @@ describe('POST/GET /api/games', () => {
       .where('id', '=', response.json().gameId)
       .executeTakeFirstOrThrow();
     expect(game.userColor).toBe('white');
+  });
+
+  // Task 51.3: everything Tasks 51.1/51.2 can extract from the raw PGN
+  // actually lands on the stored row.
+  test('importing a Lichess PGN with clocks stores rating/rated/termination/variant/speed and non-null move_times', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('ann-metadata@example.com', 'Ann');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: LICHESS_ANNOTATED_PGN, source: 'paste', userColor: 'white' }
+    });
+
+    expect(response.statusCode).toBe(200);
+    const game = await db
+      .selectFrom('games')
+      .selectAll()
+      .where('id', '=', response.json().gameId)
+      .executeTakeFirstOrThrow();
+
+    expect(game.whiteElo).toBe(1500);
+    expect(game.blackElo).toBe(1520);
+    expect(game.ratingsProvisional).toBe(false);
+    expect(game.rated).toBe(true);
+    expect(game.termination).toBe('Normal');
+    expect(game.variant).toBe('Standard');
+    expect(game.speed).toBe('blitz');
+    expect(game.playedAtTime).toBe('12:34:56');
+    expect(game.moveTimes).not.toBeNull();
+    expect(Array.isArray(game.moveTimes)).toBe(true);
+    expect((game.moveTimes as unknown[]).length).toBeGreaterThan(0);
   });
 
   test('rejects an illegal PGN as 400 problem+json', async () => {

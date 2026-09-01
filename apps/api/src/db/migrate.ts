@@ -21,6 +21,7 @@ import * as generalFemaleCoach from './migrations/0019_general_female_coach.js';
 import * as playBotMode from './migrations/0020_play_bot_mode.js';
 import * as botGameClock from './migrations/0021_bot_game_clock.js';
 import * as chessApiEngineMode from './migrations/0022_chess_api_engine_mode.js';
+import * as gameMetadata from './migrations/0023_game_metadata.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -46,7 +47,8 @@ const provider: MigrationProvider = {
       '0019_general_female_coach': generalFemaleCoach,
       '0020_play_bot_mode': playBotMode,
       '0021_bot_game_clock': botGameClock,
-      '0022_chess_api_engine_mode': chessApiEngineMode
+      '0022_chess_api_engine_mode': chessApiEngineMode,
+      '0023_game_metadata': gameMetadata
     })
 };
 

@@ -1,4 +1,5 @@
 import type { Kysely } from 'kysely';
+import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
 import type { AnalysisStatus, BotConfig, GameSource, PlayerColor } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
@@ -21,6 +22,15 @@ export interface GameRow {
   clockIncrementMs: number | null;
   whiteRemainingMs: number | null;
   blackRemainingMs: number | null;
+  whiteElo: number | null;
+  blackElo: number | null;
+  ratingsProvisional: boolean;
+  rated: boolean | null;
+  termination: string | null;
+  variant: string | null;
+  speed: GameSpeed | null;
+  playedAtTime: string | null;
+  moveTimes: PgnMoveComment[] | null;
 }
 
 export interface NewGame {
@@ -50,10 +60,23 @@ export interface NewGame {
   clockIncrementMs?: number | null;
   whiteRemainingMs?: number | null;
   blackRemainingMs?: number | null;
+  /** 0023_game_metadata.ts — all optional (→ null/false/null) so the many
+   * existing non-import call sites (play/bot games) don't need updating for
+   * facts only an imported PGN ever carries. */
+  whiteElo?: number | null;
+  blackElo?: number | null;
+  ratingsProvisional?: boolean;
+  rated?: boolean | null;
+  termination?: string | null;
+  variant?: string | null;
+  speed?: GameSpeed | null;
+  playedAtTime?: string | null;
+  moveTimes?: PgnMoveComment[] | null;
 }
 
 export function insert(db: Kysely<Database>, values: NewGame): Promise<GameRow> {
   const botConfigSnapshot = values.botConfigSnapshot ?? null;
+  const moveTimes = values.moveTimes ?? null;
   return db
     .insertInto('games')
     .values({
@@ -63,7 +86,16 @@ export function insert(db: Kysely<Database>, values: NewGame): Promise<GameRow> 
       clockInitialMs: values.clockInitialMs ?? null,
       clockIncrementMs: values.clockIncrementMs ?? null,
       whiteRemainingMs: values.whiteRemainingMs ?? null,
-      blackRemainingMs: values.blackRemainingMs ?? null
+      blackRemainingMs: values.blackRemainingMs ?? null,
+      whiteElo: values.whiteElo ?? null,
+      blackElo: values.blackElo ?? null,
+      ratingsProvisional: values.ratingsProvisional ?? false,
+      rated: values.rated ?? null,
+      termination: values.termination ?? null,
+      variant: values.variant ?? null,
+      speed: values.speed ?? null,
+      playedAtTime: values.playedAtTime ?? null,
+      moveTimes: moveTimes === null ? null : JSON.stringify(moveTimes)
     })
     .returningAll()
     .executeTakeFirstOrThrow();
