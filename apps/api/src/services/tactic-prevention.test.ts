@@ -74,9 +74,12 @@ describe('computeTacticMotifPrevented', () => {
     expect(result.counts.black.preventable.fork).toBe(1);
     expect(result.counts.black.prevented.fork).toBe(1);
     expect(result.byPly.get(2)).toEqual({ type: 'fork', prevented: true, detail: 'knight on d6 forks e8 and b7' });
+    expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: false, detail: 'knight on d6 forks e8 and b7' });
   });
 
-  test('a best-or-better reply credits nothing, even when the same threat would otherwise count — no better move existed, so it was never truly preventable', async () => {
+  // Task 50.4: byPly/counts stay biased on purpose (see the function's doc
+  // comment) — this is the diagnostic denominator's whole reason to exist.
+  test('a best-or-better reply that defused the threat still records an unbiased diagnostic opportunity, even though counts.preventable stays untouched', async () => {
     const allMoves = [
       move({ ply: 1, mover: 'white', moveSan: 'Nc4', fenBefore: FORK_FEN, fenAfter: FORK_FEN_BLACK_TO_MOVE }),
       move({
@@ -97,6 +100,33 @@ describe('computeTacticMotifPrevented', () => {
     expect(analyzePosition).not.toHaveBeenCalled();
     expect(result.counts.black).toEqual({ preventable: {}, prevented: {} });
     expect(result.byPly.size).toBe(0);
+    expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: false, detail: 'knight on d6 forks e8 and b7' });
+  });
+
+  // Task 50.4: a BEST_OR_BETTER ply never pays for the gated engine
+  // fallback, so a tactically-sharp one whose free path misses simply gets
+  // no diagnostic opportunity recorded — see the function's doc comment.
+  test('a best-or-better reply never triggers the gated fallback, even for diagnostics', async () => {
+    const allMoves = [
+      move({ ply: 1, mover: 'white', moveSan: 'Nc4', fenBefore: FORK_FEN, fenAfter: FORK_FEN_BLACK_TO_MOVE }),
+      move({
+        ply: 2,
+        mover: 'black',
+        moveSan: 'Rb7',
+        quality: 'best',
+        fenBefore: FORK_FEN_BLACK_TO_MOVE,
+        fenAfter: ROOK_MOVED_AWAY_FEN,
+        isTacticalPosition: true
+      })
+    ];
+    // The free path misses: prior's own last-turn eval has nothing.
+    const evals: EngineEval[] = [evalAt(FORK_FEN, 0, [QUIET_LINE]), evalAt(FORK_FEN_BLACK_TO_MOVE, 1, []), evalAt(ROOK_MOVED_AWAY_FEN, 2, [FORK_LINE])];
+    const analyzePosition = vi.fn();
+
+    const result = await computeTacticMotifPrevented({ analyzePosition }, allMoves, evals);
+
+    expect(analyzePosition).not.toHaveBeenCalled();
+    expect(result.diagnosticByPly.size).toBe(0);
   });
 
   test('Free path miss + non-tactical position: no engine call, no prevention claimed', async () => {
@@ -213,5 +243,6 @@ describe('computeTacticMotifPrevented', () => {
     expect(result.counts.black.preventable.fork).toBe(1);
     expect(result.counts.black.prevented.fork).toBeUndefined();
     expect(result.byPly.get(2)).toEqual({ type: 'fork', prevented: false, detail: 'knight on d6 forks e8 and b7' });
+    expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: true, detail: 'knight on d6 forks e8 and b7' });
   });
 });
