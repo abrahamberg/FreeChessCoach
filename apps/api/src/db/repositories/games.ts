@@ -190,3 +190,38 @@ export async function countImportsSince(
     .executeTakeFirstOrThrow();
   return Number(result.count);
 }
+
+/** backfill-game-metadata.ts's cursor: `move_times IS NULL` is the "never
+ * touched by 0023_game_metadata.ts's write path" marker — both `insert`
+ * above and `updateMetadata` below always write a (possibly empty) array,
+ * never null, precisely so a pre-migration row stays distinguishable from
+ * one already backfilled that simply had no PGN clock data. Ordered by `id`
+ * (keyset pagination) so a crash mid-run resumes correctly. */
+export function findBatchMissingMoveTimes(db: Kysely<Database>, afterId: string | null, limit: number): Promise<GameRow[]> {
+  let query = db.selectFrom('games').selectAll().where('moveTimes', 'is', null).orderBy('id').limit(limit);
+  if (afterId !== null) query = query.where('id', '>', afterId);
+  return query.execute();
+}
+
+export interface GameMetadataUpdate {
+  whiteElo: number | null;
+  blackElo: number | null;
+  ratingsProvisional: boolean;
+  rated: boolean | null;
+  termination: string | null;
+  variant: string | null;
+  speed: GameSpeed | null;
+  playedAtTime: string | null;
+  /** Always an array, never null — see findBatchMissingMoveTimes's doc
+   * comment for why null is reserved for "not yet processed". */
+  moveTimes: PgnMoveComment[];
+}
+
+export function updateMetadata(db: Kysely<Database>, id: string, values: GameMetadataUpdate): Promise<void> {
+  return db
+    .updateTable('games')
+    .set({ ...values, moveTimes: JSON.stringify(values.moveTimes) })
+    .where('id', '=', id)
+    .execute()
+    .then(() => undefined);
+}

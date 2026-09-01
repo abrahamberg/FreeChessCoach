@@ -68,7 +68,7 @@ describe('coach-agent startTurn concurrency', () => {
     };
     return {
       db,
-      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn() },
+      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn() },
       gatewayConfig,
       analyzePosition: vi.fn().mockResolvedValue({
         fen: 'startpos',

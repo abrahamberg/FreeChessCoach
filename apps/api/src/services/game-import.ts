@@ -81,7 +81,11 @@ export async function importGame(
     variant: headerMetadata.variant,
     speed: classifyTimeControl(timeControl),
     playedAtTime: headerMetadata.utcTime,
-    moveTimes: moveTimes.length > 0 ? moveTimes : null
+    // Always the (possibly empty) array, never null — null is reserved for
+    // "not yet processed by this metadata pipeline" (see
+    // gamesRepo.findBatchMissingMoveTimes's doc comment), and this pipeline
+    // just ran, right here.
+    moveTimes
   });
 
   if (request.deferAnalysis) {

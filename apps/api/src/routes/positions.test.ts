@@ -85,7 +85,7 @@ describe('POST /api/positions/analyze', () => {
     vi.stubGlobal('fetch', fetchMock);
     const coachAgentBaseDeps: CoachAgentBaseDependencies = {
       db,
-      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn() },
+      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn() },
       gatewayConfig: {
         keyVault: { encrypt: vi.fn(), decrypt: vi.fn() },
         platformKeys: {},

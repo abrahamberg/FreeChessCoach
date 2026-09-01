@@ -102,7 +102,7 @@ describe('undoLastBotTurn', () => {
       analyzeBotPosition: vi.fn().mockResolvedValue(botLines({ moveUci: 'e7e5', moveSan: 'e5', pvSan: ['e5'], cp: -10, mateIn: null })),
       callTiebreak: vi.fn().mockResolvedValue(null),
       random: () => 0,
-      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn() },
+      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn() },
       minThinkMs: 0,
       ...overrides
     };
