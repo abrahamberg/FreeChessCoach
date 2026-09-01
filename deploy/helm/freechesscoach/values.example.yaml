@@ -6,15 +6,9 @@
 #     --from-literal=replication-password="$(openssl rand -base64 24)"
 #   kubectl create secret generic llm-key-master-key \
 #     --from-literal=master-key="$(openssl rand -base64 32)"
-#   kubectl create secret generic platform-llm-keys \
-#     --from-literal=anthropic-api-key=... --from-literal=openai-api-key=...
 #   kubectl create secret generic oauth-clients \
 #     --from-literal=client-id=... --from-literal=client-secret=... \
 #     --from-literal=cookie-secret="$(openssl rand -base64 32 | head -c 32)"
-#   kubectl create secret generic stripe \
-#     --from-literal=secret-key=... --from-literal=webhook-secret=... \
-#     --from-literal=price-small=... --from-literal=price-medium=... \
-#     --from-literal=price-large=...
 #
 #   helm dependency build deploy/helm/freechesscoach
 #   helm upgrade --install freechesscoach deploy/helm/freechesscoach \
@@ -77,23 +71,6 @@ llm:
   masterKey:
     existingSecret: llm-key-master-key
     key: master-key
-  platformKeys:
-    enabled: true
-    existingSecret: platform-llm-keys
-    anthropicKey: anthropic-api-key
-    openaiKey: openai-api-key
-
-stripe:
-  enabled: true
-  existingSecret: stripe
-  keys:
-    secretKey: secret-key
-    webhookSecret: webhook-secret
-    priceSmall: price-small
-    priceMedium: price-medium
-    priceLarge: price-large
-  checkoutSuccessUrl: https://coach.example.com/settings?checkout=success
-  checkoutCancelUrl: https://coach.example.com/settings?checkout=cancel
 
 database:
   sslMode: disable
@@ -169,7 +146,6 @@ oauth2-proxy:
     #   --scope=email:read
     - --provider=google
     - --set-xauthrequest=true
-    - --skip-auth-route=^/api/stripe/webhook$
     - --skip-auth-route=^/healthz$
     - --skip-auth-route=^/readyz$
     # Public landing page + robots.txt (see values.yaml for the full note).

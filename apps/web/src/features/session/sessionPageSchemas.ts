@@ -12,7 +12,7 @@ export const SessionMessageSchema = z.object({
 export const SessionDetailSchema = z.object({
   id: z.string(),
   gameId: z.string(),
-  status: z.enum(['active', 'completed', 'paused_no_credits', 'abandoned']),
+  status: z.enum(['active', 'completed', 'abandoned']),
   mode: z.enum(['analyze', 'play', 'play_bot']).default('analyze'),
   /** What the conversation is actually about — used to seed initialPly on
    * reopen (useSessionPageData.ts), instead of scanning the transcript for

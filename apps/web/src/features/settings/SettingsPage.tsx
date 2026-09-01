@@ -14,7 +14,6 @@ import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
 import { BandSelect } from './BandSelect.js';
 import { ByokKeyForm } from './ByokKeyForm.js';
 import { CoachPersonaSelect } from './CoachPersonaSelect.js';
-import { CreditBalance } from './CreditBalance.js';
 import { EngineModeSelect } from './EngineModeSelect.js';
 import { NicknameForm } from './NicknameForm.js';
 import { PlatformUsernameForm } from './PlatformUsernameForm.js';
@@ -30,7 +29,7 @@ function readStoredTheme(): Theme | null {
   return stored === 'light' || stored === 'dark' ? stored : null;
 }
 
-/** design.md §4.4: Settings — Profile, API keys, Credits, Appearance, Account.
+/** design.md §4.4: Settings — Profile, API keys, Appearance, Account.
  * Owns fetching (AGENTS.md rule 7); every child below is presentational. */
 export function SettingsPage(): ReactNode {
   const queryClient = useQueryClient();
@@ -200,6 +199,7 @@ export function SettingsPage(): ReactNode {
 
       <section aria-label="API keys" className="card">
         <h2>API keys</h2>
+        <p>Bring your own key — your AI API key is encrypted and used only for your requests. Add at least one to start coaching.</p>
         {LLM_PROVIDERS.map((provider) => (
           <ByokKeyForm
             key={provider}
@@ -209,11 +209,6 @@ export function SettingsPage(): ReactNode {
             onDelete={() => deleteKeyMutation.mutate(provider)}
           />
         ))}
-      </section>
-
-      <section aria-label="Credits" className="card">
-        <h2>Credits</h2>
-        <CreditBalance balance={profile.creditBalance} />
       </section>
 
       <section aria-label="Appearance" className="card">

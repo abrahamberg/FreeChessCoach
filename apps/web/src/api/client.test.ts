@@ -13,7 +13,6 @@ const VALID_PROFILE = {
   selfAssessment: null,
   engineMode: 'native',
   coachPersona: 'general',
-  creditBalance: 100,
   ttsEnabled: false,
   ttsBackend: 'openai'
 };

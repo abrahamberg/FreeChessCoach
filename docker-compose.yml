@@ -11,8 +11,6 @@ x-node-dev: &node-dev
     LLM_STANDARD_MODEL_OPENAI: ${LLM_STANDARD_MODEL_OPENAI:-gpt-fake}
     LLM_LIGHT_MODEL_ANTHROPIC: ${LLM_LIGHT_MODEL_ANTHROPIC:-claude-fake-light}
     LLM_LIGHT_MODEL_OPENAI: ${LLM_LIGHT_MODEL_OPENAI:-gpt-fake-light}
-    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     LLM_FAKE: ${LLM_FAKE:-0}
     LLM_REASONING_STANDARD: ${LLM_REASONING_STANDARD:-medium}
     LLM_REASONING_LIGHT: ${LLM_REASONING_LIGHT:-none}
@@ -117,7 +115,6 @@ services:
       - --upstreams=http://api:3000
       - --email-domain=*
       - --set-xauthrequest=true
-      - --skip-auth-route=^/api/stripe/webhook$
       - --skip-auth-route=^/healthz$
       - --skip-auth-route=^/readyz$
     # OAUTH2_PROXY_CLIENT_ID/_SECRET/_COOKIE_SECRET must be set in a .env file

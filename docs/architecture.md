@@ -26,7 +26,7 @@
                               │(Stockfish  │   HTTP (cluster-internal)
                               │ HTTP svc)  │
                               └────────────┘
-             External: Anthropic API · OpenAI API · Stripe · Lichess API
+             External: Anthropic API · OpenAI API · Lichess API
 ```
 
 Five deployables: `web`, `api`, `worker`, `engine`, plus `oauth2-proxy` and
@@ -116,7 +116,6 @@ Responsibilities:
 - Authentication
 - Session management
 - Agent orchestration
-- Credit metering
 - LLM gateway
 - SSE streaming
 
@@ -273,7 +272,6 @@ Tools may not:
 | Analyses | Worker |
 | Sessions | Coach Agent |
 | Findings | Progress Service |
-| Credits | Billing Service |
 
 ---
 

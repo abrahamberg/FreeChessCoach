@@ -136,16 +136,8 @@ export function SessionPage(): ReactNode {
     />
   );
 
-  const chatPanel =
-    session.status === 'paused_no_credits' ? (
-      <div className="session-paused-card">
-        <p>The session is saved. Add credits or your own API key to continue.</p>
-        <button type="button" onClick={() => navigate('/settings')}>
-          Add credits
-        </button>
-      </div>
-    ) : (
-      <ChatPane
+  const chatPanel = (
+    <ChatPane
         messages={chat.messages}
         activeToolName={chat.activeToolName}
         isThinking={chat.isThinking}

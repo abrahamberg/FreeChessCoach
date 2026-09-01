@@ -70,8 +70,8 @@ Socratically while tracking their progress over time. The initial build
    ```
 
 2. **One responsibility per file.** Target < 200 lines. A file named
-   `game-import.ts` that also meters credits is wrong. When a file grows past
-   ~250 lines, split it as part of your change.
+   `game-import.ts` that also enqueues analysis jobs is wrong. When a file
+   grows past ~250 lines, split it as part of your change.
 
 3. **Layering is strict.** `route/tool → service → repository → DB`.
    - SQL (kysely) exists **only** in `apps/api/src/db/repositories/`.
@@ -89,7 +89,7 @@ Socratically while tracking their progress over time. The initial build
 
 6. **Nothing outside `apps/api/src/llm/` may import `ai` or `@ai-sdk/*`.** That
    directory owns the whole provider surface: `gateway.ts` (BYOK resolution,
-   tier→model mapping, metering, logging), `model-options.ts` (reasoning
+   tier→model mapping), `model-options.ts` (reasoning
    effort, OpenAI service tier), `chat.ts`/`text.ts` (the only `streamText`/
    `generateText`/`generateObject` calls), `messages.ts`, `tools.ts`,
    `stream-response.ts`, `usage.ts`. Services take app-owned types
@@ -153,7 +153,7 @@ Socratically while tracking their progress over time. The initial build
 - `strict: true`, no `any` (use `unknown` + narrowing), no non-null `!` except in
   tests. No `enum` — use union types / `as const` arrays (they align with zod).
 - Errors: services throw typed errors from `apps/api/src/lib/errors.ts`
-  (`NotFoundError`, `ValidationError`, `InsufficientCreditsError`, ...); the
+  (`NotFoundError`, `ValidationError`, `ForbiddenError`, ...); the
   Fastify error-mapper plugin converts them to problem+json. Never `catch` and
   swallow; never return `null` to signal an error.
 - Async: no floating promises (`@typescript-eslint/no-floating-promises` is on).

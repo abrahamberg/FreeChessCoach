@@ -13,7 +13,6 @@ const PROFILE = {
   lichessUsername: null,
   chesscomUsername: null,
   selfAssessment: null,
-  creditBalance: 42,
   engineMode: 'native',
   coachPersona: 'general',
   ttsEnabled: false,
@@ -42,7 +41,7 @@ describe('SettingsPage', () => {
     localStorage.clear();
   });
 
-  test('renders the profile band, credit balance, and which provider has a saved key', async () => {
+  test('renders the profile band and which provider has a saved key', async () => {
     const fetchMock = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/users/me') return Promise.resolve(jsonResponse(PROFILE));
       if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse(['anthropic']));
@@ -50,7 +49,7 @@ describe('SettingsPage', () => {
     });
     renderSettings(fetchMock);
 
-    expect(await screen.findByText(/42/)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Settings", level: 1 })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /club/i })).toBeChecked();
     const anthropicSection = screen.getByText('Anthropic').closest('div') as HTMLElement;
     expect(anthropicSection).toHaveTextContent(/saved/i);
@@ -70,7 +69,7 @@ describe('SettingsPage', () => {
     renderSettings(fetchMock);
     const user = userEvent.setup();
 
-    await screen.findByText(/42/);
+    await screen.findByRole("heading", { name: "Settings", level: 1 });
     await user.click(screen.getByRole('button', { name: /edit/i }));
     const nicknameInput = screen.getByRole('textbox', { name: /nickname/i });
     await user.clear(nicknameInput);
@@ -98,7 +97,7 @@ describe('SettingsPage', () => {
     renderSettings(fetchMock);
     const user = userEvent.setup();
 
-    await screen.findByText(/42/);
+    await screen.findByRole("heading", { name: "Settings", level: 1 });
     await user.click(screen.getByRole('radio', { name: /advanced/i }));
 
     await waitFor(() =>
@@ -121,7 +120,7 @@ describe('SettingsPage', () => {
     renderSettings(fetchMock);
     const user = userEvent.setup();
 
-    await screen.findByText(/42/);
+    await screen.findByRole("heading", { name: "Settings", level: 1 });
     await user.click(screen.getByRole('radio', { name: /your browser/i }));
 
     await waitFor(() =>
@@ -144,7 +143,7 @@ describe('SettingsPage', () => {
     renderSettings(fetchMock);
     const user = userEvent.setup();
 
-    await screen.findByText(/42/);
+    await screen.findByRole("heading", { name: "Settings", level: 1 });
     await user.click(screen.getByRole('radio', { name: /the gambler/i }));
     await user.click(screen.getByRole('button', { name: /continue with the gambler/i }));
 
@@ -168,7 +167,7 @@ describe('SettingsPage', () => {
     renderSettings(fetchMock);
     const user = userEvent.setup();
 
-    await screen.findByText(/42/);
+    await screen.findByRole("heading", { name: "Settings", level: 1 });
     await user.click(screen.getByRole('checkbox', { name: /enable coach voice/i }));
     await user.click(screen.getByRole('button', { name: /use openai voice/i }));
 
@@ -193,7 +192,7 @@ describe('SettingsPage', () => {
     renderSettings(fetchMock);
     const user = userEvent.setup();
 
-    await screen.findByText(/42/);
+    await screen.findByRole("heading", { name: "Settings", level: 1 });
     const lichessInput = screen.getByRole('textbox', { name: /lichess username/i });
     await user.type(lichessInput, 'my_lichess_handle');
     const lichessForm = lichessInput.closest('form') as HTMLElement;
@@ -220,7 +219,7 @@ describe('SettingsPage', () => {
     renderSettings(fetchMock);
     const user = userEvent.setup();
 
-    await screen.findByText(/42/);
+    await screen.findByRole("heading", { name: "Settings", level: 1 });
     const lichessRow = screen.getByText(/my_lichess_handle/).closest('p') as HTMLElement;
     await user.click(within(lichessRow).getByRole('button', { name: /delete/i }));
 
@@ -248,7 +247,7 @@ describe('SettingsPage', () => {
     renderSettings(fetchMock);
     const user = userEvent.setup();
 
-    await screen.findByText(/42/);
+    await screen.findByRole("heading", { name: "Settings", level: 1 });
     const openaiForm = screen.getByText('OpenAI').closest('div') as HTMLElement;
     await user.type(within(openaiForm).getByRole('textbox', { name: /api key/i }), 'sk-oai-secret');
     await user.click(within(openaiForm).getByRole('button', { name: /add key/i }));
@@ -272,7 +271,7 @@ describe('SettingsPage', () => {
     renderSettings(fetchMock);
     const user = userEvent.setup();
 
-    await screen.findByText(/42/);
+    await screen.findByRole("heading", { name: "Settings", level: 1 });
     expect(screen.getByRole('button', { name: 'Show' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Hide' })).toHaveAttribute('aria-pressed', 'false');
 
@@ -289,7 +288,7 @@ describe('SettingsPage', () => {
     });
     renderSettings(fetchMock);
 
-    await screen.findByText(/42/);
+    await screen.findByRole('link', { name: /sign out/i });
     expect(screen.getByRole('link', { name: /sign out/i })).toHaveAttribute('href', '/oauth2/sign_out?rd=/');
   });
 
@@ -302,7 +301,7 @@ describe('SettingsPage', () => {
     });
     renderSettings(fetchMock, ['/settings#settings-engine']);
 
-    await screen.findByText(/42/);
+    await screen.findByRole('heading', { name: 'API keys' });
     await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
     expect(scrollIntoView.mock.instances[0]).toBe(document.getElementById('settings-engine'));
 

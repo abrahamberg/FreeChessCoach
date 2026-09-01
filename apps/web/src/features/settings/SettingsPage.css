@@ -110,10 +110,6 @@
   flex: 1;
 }
 
-.credit-balance {
-  font-size: 20px;
-}
-
 .settings-page__legal {
   display: flex;
   gap: 16px;

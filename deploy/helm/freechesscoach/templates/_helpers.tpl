@@ -158,52 +158,6 @@ imagePullSecrets:
     secretKeyRef:
       name: {{ required "llm.masterKey.existingSecret is required" .Values.llm.masterKey.existingSecret }}
       key: {{ .Values.llm.masterKey.key }}
-{{- if .Values.llm.platformKeys.enabled }}
-- name: ANTHROPIC_API_KEY
-  valueFrom:
-    secretKeyRef:
-      name: {{ required "llm.platformKeys.existingSecret is required" .Values.llm.platformKeys.existingSecret }}
-      key: {{ .Values.llm.platformKeys.anthropicKey }}
-      optional: true
-- name: OPENAI_API_KEY
-  valueFrom:
-    secretKeyRef:
-      name: {{ .Values.llm.platformKeys.existingSecret }}
-      key: {{ .Values.llm.platformKeys.openaiKey }}
-      optional: true
-{{- end }}
-{{- if .Values.stripe.enabled }}
-{{- $secret := required "stripe.existingSecret is required when stripe.enabled" .Values.stripe.existingSecret }}
-- name: STRIPE_SECRET_KEY
-  valueFrom:
-    secretKeyRef:
-      name: {{ $secret }}
-      key: {{ .Values.stripe.keys.secretKey }}
-- name: STRIPE_WEBHOOK_SECRET
-  valueFrom:
-    secretKeyRef:
-      name: {{ $secret }}
-      key: {{ .Values.stripe.keys.webhookSecret }}
-- name: STRIPE_PRICE_SMALL
-  valueFrom:
-    secretKeyRef:
-      name: {{ $secret }}
-      key: {{ .Values.stripe.keys.priceSmall }}
-- name: STRIPE_PRICE_MEDIUM
-  valueFrom:
-    secretKeyRef:
-      name: {{ $secret }}
-      key: {{ .Values.stripe.keys.priceMedium }}
-- name: STRIPE_PRICE_LARGE
-  valueFrom:
-    secretKeyRef:
-      name: {{ $secret }}
-      key: {{ .Values.stripe.keys.priceLarge }}
-- name: STRIPE_CHECKOUT_SUCCESS_URL
-  value: {{ required "stripe.checkoutSuccessUrl is required when stripe.enabled" .Values.stripe.checkoutSuccessUrl | quote }}
-- name: STRIPE_CHECKOUT_CANCEL_URL
-  value: {{ required "stripe.checkoutCancelUrl is required when stripe.enabled" .Values.stripe.checkoutCancelUrl | quote }}
-{{- end }}
 {{- if .Values.lichessEvalIndex.enabled }}
 - name: LICHESS_EVAL_INDEX_PATH
   value: {{ .Values.lichessEvalIndex.mountPath | quote }}

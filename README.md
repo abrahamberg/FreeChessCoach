@@ -24,11 +24,9 @@ FreeChessCoach talks to it directly on your behalf, and you pay the provider
 at cost — nothing added, nothing metered, nothing throttled. Your key is
 encrypted at rest and only ever used for your own sessions.
 
-Don't have a key yet, or don't want to set one up? New accounts get free
-starter credits on the house so you can try the full experience immediately,
-with the option to top up later. But the BYOK path is the point: for anyone
-willing to paste in a key, coaching that would otherwise cost a monthly fee
-costs whatever a handful of API calls cost — usually cents.
+That's the whole point: for anyone willing to paste in a key, coaching that
+would otherwise cost a monthly fee costs whatever a handful of API calls cost
+— usually cents.
 
 That's the whole pitch: a genuinely good coach, not gated behind a business
 model that needs you to keep paying whether you use it or not.
@@ -83,8 +81,9 @@ FreeChessCoach is a TypeScript monorepo:
 | `deploy/helm`                | Kubernetes Helm chart for production deploy                          |
 
 Coaching runs on Anthropic and OpenAI models via the Vercel AI SDK, with
-Stockfish for engine truth, Postgres (Kysely) for storage, graphile-worker for
-background analysis jobs, and Stripe for optional credit top-ups.
+Stockfish for engine truth, Postgres (Kysely) for storage, and graphile-worker
+for background analysis jobs. It's bring-your-own-key only — no subscription,
+no platform-managed credits.
 
 ## Running it yourself
 
