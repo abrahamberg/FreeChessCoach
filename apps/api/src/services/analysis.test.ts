@@ -47,6 +47,35 @@ const FORK_PREVENTED_PGN = `[Event "Test"]
 
 1. Ka2 Rb8 *`;
 
+// A textbook §5.5 brilliant: White's undefended bishop sacs onto e6 (only a
+// pawn recapture undoes it, no material comes back), a real alternative
+// (Kd2) exists 150cp worse, and the position is roughly balanced either way
+// — Task 50.3's cheap pre-filter should flag ply 1 as worth the one extra
+// analyzePosition call, and a "sound" reply should then classify it brilliant.
+const BRILLIANT_SETUP_FEN = '4k3/3p1p2/8/8/2B5/8/8/4K3 w - - 0 1';
+const BRILLIANT_AFTER_FEN = '4k3/3p1p2/4B3/8/8/8/8/4K3 b - - 1 1';
+const BRILLIANT_PGN = `[Event "Test"]
+[SetUp "1"]
+[FEN "${BRILLIANT_SETUP_FEN}"]
+[White "Ann"]
+[Black "Bob"]
+[Result "*"]
+
+1. Be6 *`;
+
+// A bare king-and-king endgame: no piece on the board can ever be sacrificed,
+// so the cheap pre-filter must reject every ply without needing to know
+// anything about the (irrelevant) engine eval.
+const KINGS_ONLY_FEN = '4k3/8/8/8/8/8/8/4K3 w - - 0 1';
+const NO_SACRIFICE_PGN = `[Event "Test"]
+[SetUp "1"]
+[FEN "${KINGS_ONLY_FEN}"]
+[White "Ann"]
+[Black "Bob"]
+[Result "*"]
+
+1. Kd2 Kd8 2. Ke3 Ke7 *`;
+
 const VALID_PLAN = CoachingPlanSchema.parse({
   gameSummary: 'A sharp Scholar\'s-mate-adjacent game.',
   openingNote: 'Fine through the opening.',
@@ -246,6 +275,64 @@ describe('runAnalyzeGameJob', () => {
     const report = GameReportSchema.parse(row.gameReport);
 
     expect(report.players.black.tacticMotifs.fork.prevented).toBe(1);
+    expect(analyzePosition).not.toHaveBeenCalled();
+  });
+
+  // Task 50.3: checkBrilliantSoundness has no caller in the batch pipeline
+  // without this pre-pass, so 'brilliant' is unreachable from
+  // runAnalyzeGameJob today — isBrilliantMove always sees
+  // brilliantSoundness === undefined and fails closed at B6.
+  test('a known sound sacrifice is classified brilliant once B6 soundness is checked', async () => {
+    const { gameId, analysisId } = await setupGame(BRILLIANT_PGN);
+    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
+    const analyzeGamePositions = vi.fn(async (fens: string[]) =>
+      fens.map((fen): EngineEval =>
+        fen === BRILLIANT_SETUP_FEN
+          ? {
+              ply: 0,
+              fen,
+              depth: 16,
+              lines: [
+                { moveUci: 'c4e6', moveSan: 'Be6', cp: 0, mateIn: null, pvSan: ['Be6', 'dxe6'] },
+                { moveUci: 'e1d2', moveSan: 'Kd2', cp: -150, mateIn: null }
+              ]
+            }
+          : { ply: 0, fen, depth: 16, lines: [{ moveUci: 'd7e6', moveSan: 'dxe6', cp: 0, mateIn: null }] }
+      )
+    );
+    const analyzePosition = vi.fn().mockResolvedValue({
+      fen: BRILLIANT_AFTER_FEN,
+      depth: 16,
+      multiPv: 1,
+      bestMove: 'dxe6',
+      eval: { cp: 0, mateIn: null },
+      lines: [{ moveUci: 'd7e6', moveSan: 'dxe6', pvSan: ['dxe6'], cp: 0, mateIn: null }],
+      features: {} as PositionAnalysis['features']
+    });
+
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition, callPlanner }, gameId);
+
+    const row = await db
+      .selectFrom('analyses')
+      .select('classifiedMoves')
+      .where('id', '=', analysisId)
+      .executeTakeFirstOrThrow();
+    const moves = row.classifiedMoves as Array<{ ply: number; quality: string }>;
+
+    expect(moves.find((move) => move.ply === 1)?.quality).toBe('brilliant');
+    expect(analyzePosition).toHaveBeenCalledWith(BRILLIANT_AFTER_FEN);
+  });
+
+  // Verifies the gate ordering itself, not just the outcome: a game where no
+  // ply can possibly be a sacrifice (bare kings) must never reach the extra
+  // engine call the soundness check would otherwise cost.
+  test('a game with no possible sacrifice makes zero extra engine calls for brilliant soundness', async () => {
+    const { gameId } = await setupGame(NO_SACRIFICE_PGN);
+    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
+    const analyzePosition = fakeAnalyzePosition();
+
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition, callPlanner }, gameId);
+
     expect(analyzePosition).not.toHaveBeenCalled();
   });
 

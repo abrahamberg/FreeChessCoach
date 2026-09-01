@@ -3,6 +3,7 @@ import {
   findCandidateMoments,
   inBookWalk,
   enrichPositions,
+  isBrilliantSoundnessCandidate,
   OPENING_BOOK_SOURCE,
   parsePgn,
   positionKey,
@@ -26,6 +27,7 @@ import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
+import { checkBrilliantSoundness } from './brilliant-soundness.js';
 import { buildGameReportForAnalysis } from './build-game-report.js';
 import { computeTacticMotifPrevented } from './tactic-prevention.js';
 
@@ -82,8 +84,13 @@ export async function runAnalyzeGameJob(
     const fens = parsedGame.positions.map((position) => position.fen);
     const evals = await analyzeInChunks(db, deps, analysis.id, fens);
 
-    const unannotatedMoves = attachEnrichment(
+    const brilliantSoundnessByPly = await resolveBrilliantSoundness(
+      deps,
       classifyMoves(parsedGame, evals, game.userColor),
+      inBookWalk(parsedGame.positions)
+    );
+    const unannotatedMoves = attachEnrichment(
+      classifyMoves(parsedGame, evals, game.userColor, { brilliantSoundnessByPly }),
       enrichPositions(parsedGame.positions)
     );
     // Computed before storeClassifiedMoves (not after, as before) so its
@@ -132,6 +139,51 @@ export async function runAnalyzeGameJob(
     console.error(`runAnalyzeGameJob failed for game ${gameId} (analysis ${analysis.id}):`, error);
     await analysesRepo.markFailed(db, analysis.id, describeError(error));
   }
+}
+
+/** Task 50.3: `isBrilliantMove` sees `brilliantSoundness === undefined` (its
+ * fail-closed default) unless we run this pre-pass. Cheap-gate candidates
+ * (typically 0-2 per game) each cost one extra `analyzePosition` call to
+ * evaluate §5.5's B6 — the opponent's best reply, at the batch's normal
+ * depth, still leaves the mover close to their pre-sacrifice win%. */
+async function resolveBrilliantSoundness(
+  deps: AnalysisJobDependencies,
+  candidateMoves: ClassifiedMoveDto[],
+  bookWalk: ReturnType<typeof inBookWalk>
+): Promise<ReadonlyMap<number, boolean>> {
+  const soundnessByPly = new Map<number, boolean>();
+  for (const move of candidateMoves) {
+    const candidate = brilliantSoundnessCandidate(move, bookWalk);
+    if (!candidate) continue;
+    const sound = await checkBrilliantSoundness(
+      { analyzePosition: deps.analyzePosition },
+      candidate.fenAfter,
+      candidate.mover,
+      candidate.beforeWin
+    );
+    soundnessByPly.set(move.ply, sound);
+  }
+  return soundnessByPly;
+}
+
+function brilliantSoundnessCandidate(
+  move: ClassifiedMoveDto,
+  bookWalk: ReturnType<typeof inBookWalk>
+): { fenAfter: string; mover: 'white' | 'black'; beforeWin: number } | null {
+  const { fenBefore, fenAfter, drop, winPctBefore, moveFlags } = move;
+  if (fenBefore === undefined || fenAfter === undefined) return null;
+  if (drop === undefined || winPctBefore === undefined || !moveFlags) return null;
+  const isCandidate = isBrilliantSoundnessCandidate({
+    fenBefore,
+    fenAfter,
+    moveSan: move.moveSan,
+    mover: move.mover,
+    isBookMove: bookWalk[move.ply - 1]?.classification === 'book',
+    legalMoveCount: moveFlags.legalMoveCount,
+    isCapture: moveFlags.isCapture,
+    drop
+  });
+  return isCandidate ? { fenAfter, mover: move.mover, beforeWin: winPctBefore } : null;
 }
 
 function attachEnrichment(

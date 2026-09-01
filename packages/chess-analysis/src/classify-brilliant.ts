@@ -38,20 +38,59 @@ function passesBasicGates(input: MoveClassificationInput): boolean {
 }
 
 function playedMove(input: MoveClassificationInput): ReturnType<Chess['move']> | null {
+  return playedMoveOn(input.fenBefore, input.moveSan);
+}
+
+function playedMoveOn(fenBefore: string, moveSan: string): ReturnType<Chess['move']> | null {
   try {
-    return new Chess(input.fenBefore).move(input.moveSan);
+    return new Chess(fenBefore).move(moveSan);
   } catch {
     return null;
   }
 }
 
 function hasSacrifice(input: MoveClassificationInput, destination: string): boolean {
-  const worstReply = seeOnAllOpponentCaptures(input.fenAfter, input.mover);
-  if (worstReply <= SACRIFICE_SEE_THRESHOLD) return true;
-  if (!input.moveFlags.isCapture) return false;
+  return hasSacrificeOn(input.fenBefore, input.fenAfter, input.mover, input.moveFlags.isCapture, destination);
+}
 
-  const side = input.mover === 'white' ? 'w' : 'b';
-  return see(input.fenBefore, destination as Square, side) <= SACRIFICE_SEE_THRESHOLD;
+function hasSacrificeOn(
+  fenBefore: string,
+  fenAfter: string,
+  mover: 'white' | 'black',
+  isCapture: boolean,
+  destination: string
+): boolean {
+  const worstReply = seeOnAllOpponentCaptures(fenAfter, mover);
+  if (worstReply <= SACRIFICE_SEE_THRESHOLD) return true;
+  if (!isCapture) return false;
+
+  const side = mover === 'white' ? 'w' : 'b';
+  return see(fenBefore, destination as Square, side) <= SACRIFICE_SEE_THRESHOLD;
+}
+
+/** Task 50.3's cheap pre-filter for whether a ply is worth the one extra
+ * engine call B6 soundness needs. Deliberately loose: it only evaluates
+ * B1/B2/B5 (not book, a real move exists, drop within budget, a genuine SEE
+ * sacrifice) — B3/B4/B7/B8 are re-checked by `isBrilliantMove` once
+ * soundness is known, so duplicating them here would only risk excluding a
+ * real candidate without saving any engine calls. */
+export interface BrilliantSoundnessCandidateInput {
+  fenBefore: string;
+  fenAfter: string;
+  moveSan: string;
+  mover: 'white' | 'black';
+  isBookMove: boolean;
+  legalMoveCount: number;
+  isCapture: boolean;
+  drop: number;
+}
+
+export function isBrilliantSoundnessCandidate(input: BrilliantSoundnessCandidateInput): boolean {
+  if (input.isBookMove || input.legalMoveCount <= 1) return false;
+  if (input.drop > MAX_DROP) return false;
+  const move = playedMoveOn(input.fenBefore, input.moveSan);
+  if (!move) return false;
+  return hasSacrificeOn(input.fenBefore, input.fenAfter, input.mover, input.isCapture, move.to);
 }
 
 function hasNonObviousAlternative(input: MoveClassificationInput, destination: string): boolean {
