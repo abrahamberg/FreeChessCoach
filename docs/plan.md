@@ -257,17 +257,17 @@ precondition for all 17 `TM-*` codes, `MX-04`, `DQ-04`, `DQ-15`, and the
 `L`/`S`/`X` mechanisms. Do **not** change `parsePgn` — chess.js must keep
 receiving stripped text. Add a separate pure extractor over the raw string.
 
-- [ ] Failing test using the Lichess fixture already in `pgn.test.ts:73-78`
+- [x] Failing test using the Lichess fixture already in `pgn.test.ts:73-78`
       (it is full of `%clk`/`%eval` and currently only asserts that it
       parses): extract `[{ ply: 1, clockMs: 600000, evalCp: -4 }, ...]`.
-- [ ] Edge cases: no comments at all → empty array; comments on some moves
+- [x] Edge cases: no comments at all → empty array; comments on some moves
       only → sparse, ply-indexed, never positional guessing; `h:mm:ss` and
       `h:mm:ss.f` clock formats; `[%eval #3]` mate scores; nested/multiple
       comments after one move; a comment before the first move.
-- [ ] Derive `timeSpentMs` per ply from consecutive same-colour clock values
+- [x] Derive `timeSpentMs` per ply from consecutive same-colour clock values
       plus the increment from `TimeControl`; first move of each colour has no
       predecessor, so it is `null`, not `0`.
-- [ ] Commit: `feat: extract per-move clock and eval comments from PGN`.
+- [x] Commit: `feat: extract per-move clock and eval comments from PGN`.
 
 ### Task 51.2: PGN header metadata
 
@@ -280,12 +280,12 @@ receiving stripped text. Add a separate pure extractor over the raw string.
 captured anywhere: `WhiteElo`, `BlackElo`, `Rated`, `Termination`, `Variant`,
 `UTCTime`.
 
-- [ ] Failing tests: a full Lichess header block and a full chess.com header
+- [x] Failing tests: a full Lichess header block and a full chess.com header
       block each yield the same normalized shape; missing headers yield
       `null`, never `0` or `''`; a provisional rating (`?` suffix) is flagged.
-- [ ] Return `{ whiteElo, blackElo, ratingsProvisional, rated, termination,
+- [x] Return `{ whiteElo, blackElo, ratingsProvisional, rated, termination,
       variant, utcTime }`.
-- [ ] Commit: `feat: parse rating, rated, termination and variant headers`.
+- [x] Commit: `feat: parse rating, rated, termination and variant headers`.
 
 ### Task 51.3: Migration `0023_game_metadata`
 
@@ -295,31 +295,31 @@ captured anywhere: `WhiteElo`, `BlackElo`, `Rated`, `Termination`, `Variant`,
 `apps/api/src/db/schema.ts`, `apps/api/src/services/game-import.ts`,
 `packages/shared/src/game.ts`.
 
-- [ ] Add to `games`: `white_elo int`, `black_elo int`, `ratings_provisional
+- [x] Add to `games`: `white_elo int`, `black_elo int`, `ratings_provisional
       boolean`, `rated boolean`, `termination text`, `variant text`,
       `speed text` (the persisted `classifyTimeControl` result, so speed
       filtering pushes into SQL instead of being recomputed per read),
       `played_at_time time`, and `move_times jsonb` (a PGN fact, so it belongs
       on `games`, not `analyses`).
-- [ ] Widen the `games.source` CHECK to include `'chesscom'` (Task 51.6).
-- [ ] Populate all of it in `importGame` from Tasks 51.1/51.2.
-- [ ] Integration test on Testcontainers (`apps/api/test/helpers/db.ts`):
+- [x] Widen the `games.source` CHECK to include `'chesscom'` (Task 51.6).
+- [x] Populate all of it in `importGame` from Tasks 51.1/51.2.
+- [x] Integration test on Testcontainers (`apps/api/test/helpers/db.ts`):
       importing a Lichess PGN with clocks stores non-null `move_times`.
-- [ ] Commit: `feat: store game rating, termination, speed and move times`.
+- [x] Commit: `feat: store game rating, termination, speed and move times`.
 
 ### Task 51.4: Backfill job for existing games
 
 **Files:** `apps/api/src/jobs/backfill-game-metadata.ts`,
 `apps/api/src/jobs/index.ts`, `apps/api/src/jobs/queue.ts` + test.
 
-- [ ] Follow the `createXTask(options): Task` factory pattern exactly (see
+- [x] Follow the `createXTask(options): Task` factory pattern exactly (see
       `prune-position-evaluations.ts` for the smallest example); register in
       `createTaskList`.
-- [ ] Process in batches with a cursor — this re-parses every historical
+- [x] Process in batches with a cursor — this re-parses every historical
       `games.pgn` and must never run as a migration.
-- [ ] Idempotent: a row that already has `move_times` is skipped, so a re-run
+- [x] Idempotent: a row that already has `move_times` is skipped, so a re-run
       after a partial failure is safe.
-- [ ] Commit: `feat: backfill game metadata and move times`.
+- [x] Commit: `feat: backfill game metadata and move times`.
 
 ### Task 51.5: Numeric player rating
 
@@ -335,15 +335,15 @@ app stores only `users.rating_band` (4 coarse bands). Separately,
 `estimateRating` always shrinks toward the 1200 default (§8.5) even when the
 PGN carried the player's actual rating.
 
-- [ ] Add `users.rating int` and `users.rating_source text` (`'self'`,
+- [x] Add `users.rating int` and `users.rating_source text` (`'self'`,
       `'pgn'`, `'estimated'`).
-- [ ] Derive `rating_band` from `rating` when present rather than storing the
+- [x] Derive `rating_band` from `rating` when present rather than storing the
       two independently; keep the band as the display/prompt-calibration
       concept it already is.
-- [ ] Feed the user's rating into `buildGameReportForAnalysis`'s
+- [x] Feed the user's rating into `buildGameReportForAnalysis`'s
       `priorRating`, and add a test asserting the estimate shrinks toward the
       real prior, not 1200.
-- [ ] Commit: `feat: numeric player rating and a real estimated-rating prior`.
+- [x] Commit: `feat: numeric player rating and a real estimated-rating prior`.
 
 ### Task 51.6: Chess.com import client
 
@@ -353,15 +353,15 @@ those games only arrive by manual paste.
 **Files:** `apps/api/src/services/chesscom.ts`,
 `apps/api/src/routes/chesscom.ts`, `packages/shared/src/game.ts` + tests.
 
-- [ ] Mirror `apps/api/src/services/lichess.ts` exactly — same
+- [x] Mirror `apps/api/src/services/lichess.ts` exactly — same
       `createXClient(fetchImpl = fetch)` shape, same typed error class. Endpoint:
       `https://api.chess.com/pub/player/{username}/games/{YYYY}/{MM}`.
-- [ ] Surface `rated`, `time_class`, `time_control` and both ratings on the
+- [x] Surface `rated`, `time_class`, `time_control` and both ratings on the
       row (the existing Lichess client drops these even though the API
       returns them — do not repeat that).
-- [ ] Add `'chesscom'` to `ImportableGameSourceSchema`.
-- [ ] Tests mock `fetch`; never call the real API.
-- [ ] Commit: `feat: chess.com game import`.
+- [x] Add `'chesscom'` to `ImportableGameSourceSchema`.
+- [x] Tests mock `fetch`; never call the real API.
+- [x] Commit: `feat: chess.com game import`.
 
 ---
 
