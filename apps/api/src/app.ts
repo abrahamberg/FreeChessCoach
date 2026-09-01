@@ -9,7 +9,7 @@ import { registerEngineTunnelRoutes } from './routes/engine-tunnel.js';
 import { registerEngineTunnelInternalRoutes } from './routes/engine-tunnel-internal.js';
 import { registerGamesRoutes } from './routes/games.js';
 import { registerLichessRoutes } from './routes/lichess.js';
-import { registerLlmKeysRoutes } from './routes/llm-keys.js';
+import { registerLlmSetupRoutes } from './routes/llm-setup.js';
 import { registerPositionAnalysisRoutes } from './routes/positions.js';
 import { registerSessionsRoutes } from './routes/sessions.js';
 import { registerStatsRoutes } from './routes/stats.js';
@@ -18,7 +18,8 @@ import { authHeadersPlugin, type AuthHeadersOptions } from './plugins/auth-heade
 import { errorMapperPlugin } from './plugins/error-mapper.js';
 import { registerUsersRoutes } from './routes/users.js';
 import { noopJobQueue, type JobQueue } from './jobs/queue.js';
-import type { KeyVault } from './llm/key-vault.js';
+import type { UserSetupVault } from './llm/key-vault.js';
+import type { LlmUnlockStore } from './llm/unlock-store.js';
 import { createLichessClient, type LichessClient } from './services/lichess.js';
 import type { CoachAgentBaseDependencies } from './bootstrap.js';
 import type { EngineTunnelRegistry } from './services/engine/engine-tunnel-registry.js';
@@ -32,7 +33,8 @@ export interface BuildAppOptions {
   checkReady?: () => Promise<boolean>;
   db?: Kysely<Database>;
   jobQueue?: JobQueue;
-  keyVault?: KeyVault;
+  llmSetupVault?: UserSetupVault;
+  llmUnlockStore?: LlmUnlockStore;
   /** Poll interval for /api/analyses/:id/status SSE (architecture §9: 1s default). */
   analysesPollIntervalMs?: number;
   /** Required to register /api/sessions/* routes. */
@@ -86,15 +88,15 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       options.db,
       options.analysesPollIntervalMs ?? DEFAULT_ANALYSES_POLL_INTERVAL_MS
     );
-    if (options.keyVault) {
-      registerLlmKeysRoutes(app, options.db, options.keyVault);
+    if (options.llmSetupVault && options.llmUnlockStore) {
+      registerLlmSetupRoutes(app, options.db, options.llmSetupVault, options.llmUnlockStore);
     }
     if (options.coachAgentBaseDeps && options.engineBackendOptions) {
       registerSessionsRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions);
       registerPositionAnalysisRoutes(app, options.db, options.engineBackendOptions);
     }
-    if (options.ttsConfig && options.keyVault) {
-      registerTtsRoutes(app, options.db, options.keyVault, options.ttsConfig);
+    if (options.ttsConfig && options.llmUnlockStore) {
+      registerTtsRoutes(app, options.db, options.llmUnlockStore, options.ttsConfig);
     }
     if (options.engineTunnelRegistry) {
       const db = options.db;

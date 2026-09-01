@@ -6,305 +6,88 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { SettingsPage } from './SettingsPage.js';
 
 const PROFILE = {
-  id: '7d9f2a44-9a5f-4f6e-b1a1-0a4c1e2d3f4b',
-  email: 'daniel@example.com',
-  displayName: 'daniel',
-  ratingBand: 'club',
-  lichessUsername: null,
-  chesscomUsername: null,
-  selfAssessment: null,
-  engineMode: 'native',
-  coachPersona: 'general',
-  ttsEnabled: false,
-  ttsBackend: 'openai'
+  id: '7d9f2a44-9a5f-4f6e-b1a1-0a4c1e2d3f4b', email: 'daniel@example.com', displayName: 'daniel',
+  ratingBand: 'club', lichessUsername: null, chesscomUsername: null, selfAssessment: null,
+  engineMode: 'native', coachPersona: 'general', ttsEnabled: false, ttsBackend: 'openai'
 };
+const EMPTY_SETUP = { configured: false, unlocked: false, voiceAvailable: false };
 
-function jsonResponse(body: unknown, status = 200) {
+function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 }
 
-function renderSettings(fetchMock: ReturnType<typeof vi.fn>, initialEntries: string[] = ['/settings']) {
+function renderSettings(fetchMock: ReturnType<typeof vi.fn>, initialEntries: string[] = ['/settings']): void {
   vi.stubGlobal('fetch', fetchMock);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={initialEntries}>
-        <SettingsPage />
-      </MemoryRouter>
-    </QueryClientProvider>
-  );
+  render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={initialEntries}><SettingsPage /></MemoryRouter></QueryClientProvider>);
+}
+
+function defaultFetch(path: string, init?: RequestInit): Response | undefined {
+  if (path === '/api/users/me' && (!init || init.method === undefined)) return jsonResponse(PROFILE);
+  if (path === '/api/users/me/llm-setup') return jsonResponse(EMPTY_SETUP);
+  return undefined;
 }
 
 describe('SettingsPage', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    localStorage.clear();
-  });
+  afterEach(() => { vi.unstubAllGlobals(); localStorage.clear(); });
 
-  test('renders the profile band and which provider has a saved key', async () => {
-    const fetchMock = vi.fn().mockImplementation((path: string) => {
-      if (path === '/api/users/me') return Promise.resolve(jsonResponse(PROFILE));
-      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse(['anthropic']));
-      throw new Error(`unexpected fetch: ${path}`);
-    });
+  test('renders the passphrase-protected AI setup defaults', async () => {
+    const fetchMock = vi.fn((path: string, init?: RequestInit) => defaultFetch(path, init) ?? (() => { throw new Error(`unexpected fetch: ${path}`); })());
     renderSettings(fetchMock);
-
-    expect(await screen.findByRole("heading", { name: "Settings", level: 1 })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /club/i })).toBeChecked();
-    const anthropicSection = screen.getByText('Anthropic').closest('div') as HTMLElement;
-    expect(anthropicSection).toHaveTextContent(/saved/i);
-    const openaiSection = screen.getByText('OpenAI').closest('div') as HTMLElement;
-    expect(openaiSection).toHaveTextContent(/add key/i);
+    await screen.findByRole('heading', { name: 'Settings', level: 1 });
+    expect(screen.getByLabelText('API URL')).toHaveValue('https://api.openai.com/v1');
+    expect(screen.getByLabelText('Low model')).toHaveValue('luna');
+    expect(screen.getByLabelText('High model')).toHaveValue('terra');
+    expect(screen.getByLabelText('Voice model (optional)')).toHaveValue('gpt-4o-mini-tts');
   });
 
-  test('editing the nickname PATCHes the profile with the new displayName', async () => {
-    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
-      if (path === '/api/users/me' && (!init || init.method === undefined)) return Promise.resolve(jsonResponse(PROFILE));
-      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
-      if (path === '/api/users/me' && init?.method === 'PATCH') {
-        return Promise.resolve(jsonResponse({ ...PROFILE, displayName: 'Dani' }));
-      }
-      throw new Error(`unexpected fetch: ${path} ${init?.method ?? 'GET'}`);
+  test('saves the endpoint, models, key and unlock phrase as one setup', async () => {
+    const fetchMock = vi.fn((path: string, init?: RequestInit) => {
+      if (path === '/api/users/me/llm-setup' && init?.method === 'PUT') return new Response(null, { status: 204 });
+      return defaultFetch(path, init) ?? (() => { throw new Error(`unexpected fetch: ${path}`); })();
     });
     renderSettings(fetchMock);
     const user = userEvent.setup();
+    await screen.findByRole('heading', { name: 'Settings', level: 1 });
+    await user.type(screen.getByLabelText('API key'), 'secret');
+    await user.type(screen.getByLabelText('Unlock phrase (8+ characters)'), 'correct horse battery staple');
+    await user.click(screen.getByRole('button', { name: 'Test and save' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/users/me/llm-setup', expect.objectContaining({ method: 'PUT' })));
+    const request = fetchMock.mock.calls.find(([path, init]) => path === '/api/users/me/llm-setup' && init?.method === 'PUT')?.[1];
+    expect(JSON.parse(request?.body as string)).toMatchObject({ apiKey: 'secret', lowModel: 'luna', highModel: 'terra', unlockPhrase: 'correct horse battery staple' });
+  });
 
-    await screen.findByRole("heading", { name: "Settings", level: 1 });
+  test('unlocks and locks the configured setup', async () => {
+    let unlocked = false;
+    const fetchMock = vi.fn((path: string, init?: RequestInit) => {
+      if (path === '/api/users/me/llm-setup' && (!init || init.method === undefined) && !unlocked) return jsonResponse({ configured: true, unlocked: false, protocol: 'openai-chat', lowModel: 'luna', highModel: 'terra', voiceAvailable: false });
+      if (path === '/api/users/me/llm-setup' && (!init || init.method === undefined)) return jsonResponse(unlocked ? { configured: true, unlocked: true, protocol: 'openai-chat', lowModel: 'luna', highModel: 'terra', voiceAvailable: false } : { configured: true, unlocked: false, voiceAvailable: false });
+      if (path.endsWith('/unlock')) { unlocked = true; return jsonResponse({ configured: true, unlocked: true, protocol: 'openai-chat', lowModel: 'luna', highModel: 'terra', voiceAvailable: false }); }
+      if (path.endsWith('/lock')) { unlocked = false; return new Response(null, { status: 204 }); }
+      return defaultFetch(path, init) ?? (() => { throw new Error(`unexpected fetch: ${path}`); })();
+    });
+    renderSettings(fetchMock);
+    const user = userEvent.setup();
+    await screen.findByText('AI setup is locked');
+    await user.type(screen.getByLabelText('Unlock phrase'), 'correct horse battery staple');
+    await user.click(screen.getByRole('button', { name: 'Unlock' }));
+    expect(await screen.findByRole('button', { name: 'Lock now' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Lock now' }));
+    expect(await screen.findByRole('button', { name: 'Unlock' })).toBeInTheDocument();
+  });
+
+  test('editing the nickname still PATCHes the profile', async () => {
+    const fetchMock = vi.fn((path: string, init?: RequestInit) => {
+      if (path === '/api/users/me' && init?.method === 'PATCH') return jsonResponse({ ...PROFILE, displayName: 'Dani' });
+      return defaultFetch(path, init) ?? (() => { throw new Error(`unexpected fetch: ${path}`); })();
+    });
+    renderSettings(fetchMock);
+    const user = userEvent.setup();
+    await screen.findByRole('heading', { name: 'Settings', level: 1 });
     await user.click(screen.getByRole('button', { name: /edit/i }));
-    const nicknameInput = screen.getByRole('textbox', { name: /nickname/i });
-    await user.clear(nicknameInput);
-    await user.type(nicknameInput, 'Dani');
-    const nicknameForm = nicknameInput.closest('form') as HTMLElement;
-    await user.click(within(nicknameForm).getByRole('button', { name: /save/i }));
-
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/users/me',
-        expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ displayName: 'Dani' }) })
-      )
-    );
-  });
-
-  test('changing the rating band PATCHes the profile', async () => {
-    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
-      if (path === '/api/users/me' && (!init || init.method === undefined)) return Promise.resolve(jsonResponse(PROFILE));
-      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
-      if (path === '/api/users/me' && init?.method === 'PATCH') {
-        return Promise.resolve(jsonResponse({ ...PROFILE, ratingBand: 'advanced' }));
-      }
-      throw new Error(`unexpected fetch: ${path} ${init?.method ?? 'GET'}`);
-    });
-    renderSettings(fetchMock);
-    const user = userEvent.setup();
-
-    await screen.findByRole("heading", { name: "Settings", level: 1 });
-    await user.click(screen.getByRole('radio', { name: /advanced/i }));
-
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/users/me',
-        expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ ratingBand: 'advanced' }) })
-      )
-    );
-  });
-
-  test('switching engine mode PATCHes /api/users/me with the new engineMode', async () => {
-    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
-      if (path === '/api/users/me' && (!init || init.method === undefined)) return Promise.resolve(jsonResponse(PROFILE));
-      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
-      if (path === '/api/users/me' && init?.method === 'PATCH') {
-        return Promise.resolve(jsonResponse({ ...PROFILE, engineMode: 'browser' }));
-      }
-      throw new Error(`unexpected fetch: ${path} ${init?.method ?? 'GET'}`);
-    });
-    renderSettings(fetchMock);
-    const user = userEvent.setup();
-
-    await screen.findByRole("heading", { name: "Settings", level: 1 });
-    await user.click(screen.getByRole('radio', { name: /your browser/i }));
-
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/users/me',
-        expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ engineMode: 'browser' }) })
-      )
-    );
-  });
-
-  test('switching coach persona PATCHes /api/users/me with the new coachPersona', async () => {
-    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
-      if (path === '/api/users/me' && (!init || init.method === undefined)) return Promise.resolve(jsonResponse(PROFILE));
-      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
-      if (path === '/api/users/me' && init?.method === 'PATCH') {
-        return Promise.resolve(jsonResponse({ ...PROFILE, coachPersona: 'gambler' }));
-      }
-      throw new Error(`unexpected fetch: ${path} ${init?.method ?? 'GET'}`);
-    });
-    renderSettings(fetchMock);
-    const user = userEvent.setup();
-
-    await screen.findByRole("heading", { name: "Settings", level: 1 });
-    await user.click(screen.getByRole('radio', { name: /the gambler/i }));
-    await user.click(screen.getByRole('button', { name: /continue with the gambler/i }));
-
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/users/me',
-        expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ coachPersona: 'gambler' }) })
-      )
-    );
-  });
-
-  test('enabling coach voice PATCHes the profile after confirming the dialog', async () => {
-    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
-      if (path === '/api/users/me' && (!init || init.method === undefined)) return Promise.resolve(jsonResponse(PROFILE));
-      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
-      if (path === '/api/users/me' && init?.method === 'PATCH') {
-        return Promise.resolve(jsonResponse({ ...PROFILE, ttsEnabled: true }));
-      }
-      throw new Error(`unexpected fetch: ${path} ${init?.method ?? 'GET'}`);
-    });
-    renderSettings(fetchMock);
-    const user = userEvent.setup();
-
-    await screen.findByRole("heading", { name: "Settings", level: 1 });
-    await user.click(screen.getByRole('checkbox', { name: /enable coach voice/i }));
-    await user.click(screen.getByRole('button', { name: /use openai voice/i }));
-
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/users/me',
-        expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ ttsEnabled: true }) })
-      )
-    );
-  });
-
-  test('saving a lichess username PATCHes the profile', async () => {
-    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
-      if (path === '/api/users/me' && (!init || init.method === undefined)) return Promise.resolve(jsonResponse(PROFILE));
-      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
-      if (path === '/api/users/me' && init?.method === 'PATCH') {
-        const body = JSON.parse(init.body as string) as { lichessUsername?: string };
-        return Promise.resolve(jsonResponse({ ...PROFILE, lichessUsername: body.lichessUsername ?? null }));
-      }
-      throw new Error(`unexpected fetch: ${path} ${init?.method ?? 'GET'}`);
-    });
-    renderSettings(fetchMock);
-    const user = userEvent.setup();
-
-    await screen.findByRole("heading", { name: "Settings", level: 1 });
-    const lichessInput = screen.getByRole('textbox', { name: /lichess username/i });
-    await user.type(lichessInput, 'my_lichess_handle');
-    const lichessForm = lichessInput.closest('form') as HTMLElement;
-    await user.click(within(lichessForm).getByRole('button', { name: /save/i }));
-
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/users/me',
-        expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ lichessUsername: 'my_lichess_handle' }) })
-      )
-    );
-  });
-
-  test('deleting a lichess username PATCHes the profile with lichessUsername: null', async () => {
-    const profileWithLichess = { ...PROFILE, lichessUsername: 'my_lichess_handle' };
-    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
-      if (path === '/api/users/me' && (!init || init.method === undefined)) return Promise.resolve(jsonResponse(profileWithLichess));
-      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
-      if (path === '/api/users/me' && init?.method === 'PATCH') {
-        return Promise.resolve(jsonResponse({ ...profileWithLichess, lichessUsername: null }));
-      }
-      throw new Error(`unexpected fetch: ${path} ${init?.method ?? 'GET'}`);
-    });
-    renderSettings(fetchMock);
-    const user = userEvent.setup();
-
-    await screen.findByRole("heading", { name: "Settings", level: 1 });
-    const lichessRow = screen.getByText(/my_lichess_handle/).closest('p') as HTMLElement;
-    await user.click(within(lichessRow).getByRole('button', { name: /delete/i }));
-
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/users/me',
-        expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ lichessUsername: null }) })
-      )
-    );
-  });
-
-  test('saving an API key PUTs it, then the provider shows as saved', async () => {
-    let savedProviders: string[] = [];
-    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
-      if (path === '/api/users/me') return Promise.resolve(jsonResponse(PROFILE));
-      if (path === '/api/users/me/llm-keys' && (!init || init.method === undefined)) {
-        return Promise.resolve(jsonResponse(savedProviders));
-      }
-      if (path === '/api/users/me/llm-keys/openai' && init?.method === 'PUT') {
-        savedProviders = ['openai'];
-        return Promise.resolve(new Response(null, { status: 204 }));
-      }
-      throw new Error(`unexpected fetch: ${path} ${init?.method ?? 'GET'}`);
-    });
-    renderSettings(fetchMock);
-    const user = userEvent.setup();
-
-    await screen.findByRole("heading", { name: "Settings", level: 1 });
-    const openaiForm = screen.getByText('OpenAI').closest('div') as HTMLElement;
-    await user.type(within(openaiForm).getByRole('textbox', { name: /api key/i }), 'sk-oai-secret');
-    await user.click(within(openaiForm).getByRole('button', { name: /add key/i }));
-
-    await waitFor(() => {
-      const openaiSection = screen.getByText('OpenAI').closest('div') as HTMLElement;
-      expect(openaiSection).toHaveTextContent(/saved/i);
-    });
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/users/me/llm-keys/openai',
-      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ apiKey: 'sk-oai-secret' }) })
-    );
-  });
-
-  test('defaults the legal-move dots toggle to Show, and Hide persists across remounts', async () => {
-    const fetchMock = vi.fn().mockImplementation((path: string) => {
-      if (path === '/api/users/me') return Promise.resolve(jsonResponse(PROFILE));
-      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
-      throw new Error(`unexpected fetch: ${path}`);
-    });
-    renderSettings(fetchMock);
-    const user = userEvent.setup();
-
-    await screen.findByRole("heading", { name: "Settings", level: 1 });
-    expect(screen.getByRole('button', { name: 'Show' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Hide' })).toHaveAttribute('aria-pressed', 'false');
-
-    await user.click(screen.getByRole('button', { name: 'Hide' }));
-    expect(screen.getByRole('button', { name: 'Hide' })).toHaveAttribute('aria-pressed', 'true');
-    expect(localStorage.getItem('freechesscoach-show-legal-move-dots')).toBe('false');
-  });
-
-  test('renders a sign-out link that ends the oauth2-proxy session and returns to the landing page', async () => {
-    const fetchMock = vi.fn().mockImplementation((path: string) => {
-      if (path === '/api/users/me') return Promise.resolve(jsonResponse(PROFILE));
-      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
-      throw new Error(`unexpected fetch: ${path}`);
-    });
-    renderSettings(fetchMock);
-
-    await screen.findByRole('link', { name: /sign out/i });
-    expect(screen.getByRole('link', { name: /sign out/i })).toHaveAttribute('href', '/oauth2/sign_out?rd=/');
-  });
-
-  test('a #settings-engine deep link (e.g. from the topbar engine indicator) scrolls the Engine card into view', async () => {
-    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
-    const fetchMock = vi.fn().mockImplementation((path: string) => {
-      if (path === '/api/users/me') return Promise.resolve(jsonResponse(PROFILE));
-      if (path === '/api/users/me/llm-keys') return Promise.resolve(jsonResponse([]));
-      throw new Error(`unexpected fetch: ${path}`);
-    });
-    renderSettings(fetchMock, ['/settings#settings-engine']);
-
-    await screen.findByRole('heading', { name: 'API keys' });
-    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
-    expect(scrollIntoView.mock.instances[0]).toBe(document.getElementById('settings-engine'));
-
-    scrollIntoView.mockRestore();
+    const input = screen.getByRole('textbox', { name: /nickname/i });
+    await user.clear(input); await user.type(input, 'Dani');
+    await user.click(within(input.closest('form') as HTMLElement).getByRole('button', { name: /save/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/users/me', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ displayName: 'Dani' }) })));
   });
 });

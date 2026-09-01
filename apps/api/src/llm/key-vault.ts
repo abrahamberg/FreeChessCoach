@@ -1,40 +1,49 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
+import { StoredLlmSetupSchema, type StoredLlmSetup } from '@freechesscoach/shared';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
+const SALT_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
+const KEY_LENGTH = 32;
 
-export interface EncryptedSecret {
+export interface EncryptedLlmSetup {
   ciphertext: Buffer;
   iv: Buffer;
+  salt: Buffer;
 }
 
-export interface KeyVault {
-  encrypt(plain: string): EncryptedSecret;
-  decrypt(secret: EncryptedSecret): string;
+/** A password-based envelope. The server master key is deliberately absent:
+ * a database dump alone cannot decrypt this payload. */
+export interface UserSetupVault {
+  encrypt(setup: StoredLlmSetup, unlockPhrase: string): EncryptedLlmSetup;
+  decrypt(encrypted: EncryptedLlmSetup, unlockPhrase: string): StoredLlmSetup;
 }
 
-/** AES-256-GCM vault for BYOK provider keys. `masterKeyBase64` must decode to
- * exactly 32 bytes (architecture §8: `LLM_KEY_MASTER_KEY`). */
-export function createKeyVault(masterKeyBase64: string): KeyVault {
-  const masterKey = Buffer.from(masterKeyBase64, 'base64');
-  if (masterKey.length !== 32) {
-    throw new Error('LLM_KEY_MASTER_KEY must decode to 32 bytes');
-  }
-
+export function createUserSetupVault(): UserSetupVault {
   return {
-    encrypt(plain: string): EncryptedSecret {
+    encrypt(setup, unlockPhrase) {
+      const salt = randomBytes(SALT_LENGTH);
       const iv = randomBytes(IV_LENGTH);
-      const cipher = createCipheriv(ALGORITHM, masterKey, iv);
-      const encrypted = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
-      return { ciphertext: Buffer.concat([encrypted, cipher.getAuthTag()]), iv };
+      const key = deriveKey(unlockPhrase, salt);
+      const cipher = createCipheriv(ALGORITHM, key, iv);
+      const payload = JSON.stringify({ ...setup, randomLine: randomBytes(24).toString('hex') });
+      const ciphertext = Buffer.concat([cipher.update(payload, 'utf8'), cipher.final(), cipher.getAuthTag()]);
+      return { ciphertext, iv, salt };
     },
-    decrypt({ ciphertext, iv }: EncryptedSecret): string {
+    decrypt({ ciphertext, iv, salt }, unlockPhrase) {
+      if (ciphertext.length <= AUTH_TAG_LENGTH) throw new Error('Encrypted setup is malformed');
       const authTag = ciphertext.subarray(ciphertext.length - AUTH_TAG_LENGTH);
-      const encrypted = ciphertext.subarray(0, ciphertext.length - AUTH_TAG_LENGTH);
-      const decipher = createDecipheriv(ALGORITHM, masterKey, iv);
+      const encryptedPayload = ciphertext.subarray(0, ciphertext.length - AUTH_TAG_LENGTH);
+      const decipher = createDecipheriv(ALGORITHM, deriveKey(unlockPhrase, salt), iv);
       decipher.setAuthTag(authTag);
-      return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
+      const payload = Buffer.concat([decipher.update(encryptedPayload), decipher.final()]).toString('utf8');
+      const parsed: unknown = JSON.parse(payload);
+      return StoredLlmSetupSchema.parse(parsed);
     }
   };
+}
+
+function deriveKey(unlockPhrase: string, salt: Buffer): Buffer {
+  return scryptSync(unlockPhrase, salt, KEY_LENGTH, { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
 }

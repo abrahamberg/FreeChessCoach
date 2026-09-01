@@ -13,13 +13,7 @@ import {
   openLichessEvalIndexFromEnv,
   requireEnv
 } from './bootstrap.js';
-
-const REQUIRED_ENV = {
-  LLM_STANDARD_MODEL_ANTHROPIC: 'claude-standard',
-  LLM_STANDARD_MODEL_OPENAI: 'gpt-standard',
-  LLM_LIGHT_MODEL_ANTHROPIC: 'claude-light',
-  LLM_LIGHT_MODEL_OPENAI: 'gpt-light'
-};
+import { createMemoryLlmUnlockStore } from './llm/unlock-store.js';
 
 describe('requireEnv', () => {
   const ORIGINAL = process.env.SOME_TEST_VAR;
@@ -40,75 +34,33 @@ describe('requireEnv', () => {
 });
 
 describe('buildGatewayConfigFromEnv', () => {
-  beforeEach(() => {
-    Object.assign(process.env, REQUIRED_ENV);
-  });
-  afterEach(() => {
-    for (const key of Object.keys(REQUIRED_ENV)) delete process.env[key];
-  });
-
-  test('reads model ids from the environment', () => {
-    const keyVault = { encrypt: vi.fn(), decrypt: vi.fn() };
-
-    const config = buildGatewayConfigFromEnv(keyVault);
-
-    expect(config.keyVault).toBe(keyVault);
-    expect(config.modelIds).toEqual({
-      standard: { anthropic: 'claude-standard', openai: 'gpt-standard' },
-      light: { anthropic: 'claude-light', openai: 'gpt-light' }
-    });
-  });
-
-  test('throws when a required model id env var is missing', () => {
-    delete process.env.LLM_LIGHT_MODEL_ANTHROPIC;
-    const keyVault = { encrypt: vi.fn(), decrypt: vi.fn() };
-    expect(() => buildGatewayConfigFromEnv(keyVault)).toThrow(/LLM_LIGHT_MODEL_ANTHROPIC/);
+  test('uses the shared unlock store and no platform model ids', () => {
+    const unlockStore = createMemoryLlmUnlockStore({ pepper: 'bootstrap-test', ttlSeconds: 60 });
+    const config = buildGatewayConfigFromEnv(unlockStore);
+    expect(config.unlockStore).toBe(unlockStore);
+    expect(config.tuning).toBeDefined();
   });
 
   test('fake is false by default, true when LLM_FAKE=1', () => {
-    const keyVault = { encrypt: vi.fn(), decrypt: vi.fn() };
-    expect(buildGatewayConfigFromEnv(keyVault).fake).toBe(false);
+    const unlockStore = createMemoryLlmUnlockStore({ pepper: 'bootstrap-test', ttlSeconds: 60 });
+    expect(buildGatewayConfigFromEnv(unlockStore).fake).toBe(false);
 
     process.env.LLM_FAKE = '1';
-    expect(buildGatewayConfigFromEnv(keyVault).fake).toBe(true);
+    expect(buildGatewayConfigFromEnv(unlockStore).fake).toBe(true);
     delete process.env.LLM_FAKE;
   });
 });
 
 describe('buildTtsConfigFromEnv', () => {
-  const TTS_ENV_KEYS = ['TTS_MODEL_OPENAI'] as const;
-  const ORIGINAL = Object.fromEntries(TTS_ENV_KEYS.map((key) => [key, process.env[key]]));
-
-  afterEach(() => {
-    for (const key of TTS_ENV_KEYS) {
-      const original = ORIGINAL[key];
-      if (original === undefined) delete process.env[key];
-      else process.env[key] = original;
-    }
-  });
-
-  test('builds a TtsConfig defaulting the model id to gpt-4o-mini-tts', () => {
-    for (const key of TTS_ENV_KEYS) delete process.env[key];
-
-    expect(buildTtsConfigFromEnv()).toEqual({ modelId: 'gpt-4o-mini-tts' });
-  });
-
-  test('honors TTS_MODEL_OPENAI when set', () => {
-    for (const key of TTS_ENV_KEYS) delete process.env[key];
-    process.env.TTS_MODEL_OPENAI = 'tts-1-hd';
-
-    expect(buildTtsConfigFromEnv()).toEqual({ modelId: 'tts-1-hd' });
+  test('enables the route; the voice model now belongs to the user setup', () => {
+    expect(buildTtsConfigFromEnv()).toEqual({ enabled: true });
   });
 });
 
 describe('buildCoachAgentBaseDependencies', () => {
   function gatewayConfig() {
     return {
-      keyVault: { encrypt: vi.fn(), decrypt: vi.fn() },
-      modelIds: {
-        standard: { anthropic: 'claude-standard', openai: 'gpt-standard' },
-        light: { anthropic: 'claude-light', openai: 'gpt-light' }
-      }
+      unlockStore: createMemoryLlmUnlockStore({ pepper: 'bootstrap-test', ttlSeconds: 60 })
     };
   }
 

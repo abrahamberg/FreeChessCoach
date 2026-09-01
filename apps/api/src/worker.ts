@@ -4,11 +4,11 @@ import {
   buildResolveEngineBackendOptions,
   openLichessEvalIndexFromEnv,
   parsePositiveInt,
-  requireEnv
+  requireEnv,
+  buildLlmUnlockStoreFromEnv
 } from './bootstrap.js';
 import { createDb } from './db/index.js';
 import { createTaskList } from './jobs/index.js';
-import { createKeyVault } from './llm/key-vault.js';
 import { RelayEngineTunnelTransport } from './services/engine/relay-engine-tunnel-transport.js';
 
 /** Daily 3 AM UTC run of prune-position-evaluations (jobs/prune-position-evaluations.ts),
@@ -18,8 +18,8 @@ const CRONTAB = '0 3 * * * prune-position-evaluations';
 async function main(): Promise<void> {
   const connectionString = requireEnv('DATABASE_URL');
   const db = createDb(connectionString);
-  const keyVault = createKeyVault(requireEnv('LLM_KEY_MASTER_KEY'));
-  const gatewayConfig = buildGatewayConfigFromEnv(keyVault);
+  const llmUnlockStore = buildLlmUnlockStoreFromEnv();
+  const gatewayConfig = buildGatewayConfigFromEnv(llmUnlockStore);
   const engineUrl = requireEnv('ENGINE_URL');
 
   const tunnelTransport = new RelayEngineTunnelTransport({

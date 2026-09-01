@@ -137,14 +137,6 @@ imagePullSecrets:
   value: {{ .Values.api.authMode | quote }}
 - name: ENGINE_URL
   value: {{ include "freechesscoach.engineUrl" . | quote }}
-- name: LLM_STANDARD_MODEL_ANTHROPIC
-  value: {{ .Values.llm.standardModel.anthropic | quote }}
-- name: LLM_STANDARD_MODEL_OPENAI
-  value: {{ .Values.llm.standardModel.openai | quote }}
-- name: LLM_LIGHT_MODEL_ANTHROPIC
-  value: {{ .Values.llm.lightModel.anthropic | quote }}
-- name: LLM_LIGHT_MODEL_OPENAI
-  value: {{ .Values.llm.lightModel.openai | quote }}
 - name: LLM_FAKE
   value: {{ ternary "1" "0" .Values.llm.fake | quote }}
 - name: LLM_REASONING_STANDARD
@@ -153,11 +145,23 @@ imagePullSecrets:
   value: {{ .Values.llm.reasoning.light | quote }}
 - name: LLM_OPENAI_SERVICE_TIER
   value: {{ .Values.llm.openaiServiceTier | quote }}
-- name: LLM_KEY_MASTER_KEY
+- name: LLM_UNLOCK_PEPPER
   valueFrom:
     secretKeyRef:
-      name: {{ required "llm.masterKey.existingSecret is required" .Values.llm.masterKey.existingSecret }}
-      key: {{ .Values.llm.masterKey.key }}
+      name: {{ required "llm.unlock.existingSecret is required" .Values.llm.unlock.existingSecret }}
+      key: {{ .Values.llm.unlock.pepperKey }}
+- name: LLM_UNLOCK_CACHE_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ required "llm.unlock.existingSecret is required" .Values.llm.unlock.existingSecret }}
+      key: {{ .Values.llm.unlock.cacheKey }}
+- name: REDIS_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ required "llm.unlock.existingSecret is required" .Values.llm.unlock.existingSecret }}
+      key: {{ .Values.llm.unlock.redisUrlKey }}
+- name: LLM_UNLOCK_TTL_SECONDS
+  value: {{ .Values.llm.unlock.ttlSeconds | quote }}
 {{- if .Values.lichessEvalIndex.enabled }}
 - name: LICHESS_EVAL_INDEX_PATH
   value: {{ .Values.lichessEvalIndex.mountPath | quote }}

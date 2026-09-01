@@ -152,9 +152,9 @@ describe('apiPut / apiDelete', () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(apiPut('/api/users/me/llm-keys/anthropic', { apiKey: 'sk-1' })).resolves.toBeUndefined();
+    await expect(apiPut('/api/users/me/llm-setup', { apiKey: 'sk-1' })).resolves.toBeUndefined();
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/users/me/llm-keys/anthropic',
+      '/api/users/me/llm-setup',
       expect.objectContaining({ method: 'PUT', body: JSON.stringify({ apiKey: 'sk-1' }) })
     );
   });
@@ -163,14 +163,14 @@ describe('apiPut / apiDelete', () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(apiDelete('/api/users/me/llm-keys/anthropic')).resolves.toBeUndefined();
-    expect(fetchMock).toHaveBeenCalledWith('/api/users/me/llm-keys/anthropic', expect.objectContaining({ method: 'DELETE' }));
+    await expect(apiDelete('/api/users/me/llm-setup')).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith('/api/users/me/llm-setup', expect.objectContaining({ method: 'DELETE' }));
   });
 
   test('apiPut throws ApiError on a non-2xx response', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 400 }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(apiPut('/api/users/me/llm-keys/anthropic', { apiKey: 'x' })).rejects.toThrow(ApiError);
+    await expect(apiPut('/api/users/me/llm-setup', { apiKey: 'x' })).rejects.toThrow(ApiError);
   });
 });

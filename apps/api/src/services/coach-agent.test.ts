@@ -22,7 +22,7 @@ import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
-import { createKeyVault } from '../llm/key-vault.js';
+import { createMemoryLlmUnlockStore } from '../llm/unlock-store.js';
 import type { GatewayConfig } from '../llm/gateway.js';
 import * as coachAgent from './coach-agent.js';
 import type { CoachAgentDependencies } from './coach-agent.js';
@@ -45,7 +45,7 @@ const PGN = `[Event "Test"]
 describe('coach-agent startTurn concurrency', () => {
   let testDb: TestDb;
   let db: Kysely<Database>;
-  const keyVault = createKeyVault(Buffer.alloc(32, 7).toString('base64'));
+  const unlockStore = createMemoryLlmUnlockStore({ pepper: 'coach-agent-test', ttlSeconds: 60 });
 
   beforeAll(async () => {
     testDb = await createTestDb();
@@ -58,11 +58,7 @@ describe('coach-agent startTurn concurrency', () => {
 
   function deps(model: MockLanguageModelV4): CoachAgentDependencies {
     const gatewayConfig: GatewayConfig = {
-      keyVault,
-      modelIds: {
-        standard: { anthropic: 'claude-standard', openai: 'gpt-standard' },
-        light: { anthropic: 'claude-light', openai: 'gpt-light' }
-      }
+      unlockStore
     };
     return {
       db,

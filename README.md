@@ -19,10 +19,16 @@ free, forever.**
 
 Every LLM call costs someone money. Most "AI chess coach" products solve that
 by putting you behind a subscription and marking up the API cost. FreeChessCoach
-solves it differently: **you connect your own Anthropic or OpenAI API key**,
+solves it differently: **you connect your own API-compatible provider**,
 FreeChessCoach talks to it directly on your behalf, and you pay the provider
-at cost — nothing added, nothing metered, nothing throttled. Your key is
-encrypted at rest and only ever used for your own sessions.
+at cost — nothing added, nothing metered, nothing throttled. OpenAI Chat or
+Responses and Anthropic Messages endpoints work, including compatible gateways
+such as OpenRouter, Azure, Bedrock adapters, and self-hosted proxies.
+
+The complete endpoint/model/key setup is encrypted with an unlock phrase that
+only you know. The database never has enough information to decrypt it, and
+the decrypted setup is kept only in a short-lived, encrypted Redis cache while
+you are active. Locking or expiring the cache removes the key from the server.
 
 That's the whole point: for anyone willing to paste in a key, coaching that
 would otherwise cost a monthly fee costs whatever a handful of API calls cost
@@ -63,8 +69,8 @@ text-to-speech.
 - **Lichess import or PGN upload/paste** — bring games from wherever you play.
 - **Seven coach personas** — same method and honesty, different voice.
 - **Voice coaching** — optional spoken delivery via in-browser TTS.
-- **BYOK privacy** — your API key is encrypted, used only for your requests,
-  and never seen by anyone else.
+- **BYOK privacy** — use any compatible provider; the setup is encrypted with
+  your phrase and disappears from the server after the short unlock window.
 
 ## Tech stack
 
@@ -80,10 +86,10 @@ FreeChessCoach is a TypeScript monorepo:
 | `packages/shared`           | Zod schemas shared across API and web                                |
 | `deploy/helm`                | Kubernetes Helm chart for production deploy                          |
 
-Coaching runs on Anthropic and OpenAI models via the Vercel AI SDK, with
-Stockfish for engine truth, Postgres (Kysely) for storage, and graphile-worker
-for background analysis jobs. It's bring-your-own-key only — no subscription,
-no platform-managed credits.
+Coaching runs on the selected compatible endpoint via the Vercel AI SDK, with
+Stockfish for engine truth, Postgres (Kysely) for storage, Redis for the
+short-lived unlock cache, and graphile-worker for background analysis jobs.
+It's bring-your-own-key only — no subscription, no platform-managed credits.
 
 ## Running it yourself
 

@@ -22,6 +22,7 @@ import * as playBotMode from './migrations/0020_play_bot_mode.js';
 import * as botGameClock from './migrations/0021_bot_game_clock.js';
 import * as chessApiEngineMode from './migrations/0022_chess_api_engine_mode.js';
 import * as removeCredits from './migrations/0023_remove_credits.js';
+import * as passphraseLlmSetup from './migrations/0024_passphrase_llm_setup.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -48,7 +49,8 @@ const provider: MigrationProvider = {
       '0020_play_bot_mode': playBotMode,
       '0021_bot_game_clock': botGameClock,
       '0022_chess_api_engine_mode': chessApiEngineMode,
-      '0023_remove_credits': removeCredits
+      '0023_remove_credits': removeCredits,
+      '0024_passphrase_llm_setup': passphraseLlmSetup
     })
 };
 

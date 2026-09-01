@@ -4,7 +4,7 @@ import type { Database } from './db/schema.js';
 import type { JobQueue } from './jobs/queue.js';
 import type { GatewayConfig } from './llm/gateway.js';
 import { DEFAULT_MODEL_TUNING, type ModelTuning } from './llm/model-options.js';
-import type { KeyVault } from './llm/key-vault.js';
+import { createMemoryLlmUnlockStore, createRedisLlmUnlockStore, type LlmUnlockStore } from './llm/unlock-store.js';
 import type { CoachAgentDependencies } from './services/coach-agent.js';
 import type { TtsConfig } from './services/tts.js';
 import type { EngineTunnelTransport } from './services/engine/engine-tunnel-transport.js';
@@ -17,27 +17,26 @@ export function requireEnv(name: string): string {
   return value;
 }
 
-/** Reads the env vars the LLM gateway needs. The app is BYOK-only — users
- * supply their own Anthropic/OpenAI API key (stored encrypted in
- * user_llm_keys), so there are no platform keys here, only the per-tier model
- * ids. `LLM_FAKE=1` (Task 7.2 smoke-test mode) short-circuits every model call
- * in getModelForUser — see llm/gateway.ts. */
-export function buildGatewayConfigFromEnv(keyVault: KeyVault): GatewayConfig {
+/** Reads the deployment-only LLM knobs. User endpoint, models and API key are
+ * supplied through the encrypted setup route. `LLM_FAKE=1` short-circuits
+ * every model call in getModelForUser for smoke tests. */
+export function buildGatewayConfigFromEnv(unlockStore: LlmUnlockStore): GatewayConfig {
   return {
-    keyVault,
-    modelIds: {
-      standard: {
-        anthropic: requireEnv('LLM_STANDARD_MODEL_ANTHROPIC'),
-        openai: requireEnv('LLM_STANDARD_MODEL_OPENAI')
-      },
-      light: {
-        anthropic: requireEnv('LLM_LIGHT_MODEL_ANTHROPIC'),
-        openai: requireEnv('LLM_LIGHT_MODEL_OPENAI')
-      }
-    },
+    unlockStore,
     tuning: buildModelTuningFromEnv(),
     fake: process.env.LLM_FAKE === '1'
   };
+}
+
+export function buildLlmUnlockStoreFromEnv(): LlmUnlockStore {
+  const config = {
+    pepper: requireEnv('LLM_UNLOCK_PEPPER'),
+    cacheKeyBase64: process.env.LLM_UNLOCK_CACHE_KEY ?? '',
+    ttlSeconds: parsePositiveInt('LLM_UNLOCK_TTL_SECONDS', 900)
+  };
+  if (process.env.REDIS_URL) return createRedisLlmUnlockStore(process.env.REDIS_URL, config);
+  console.warn('REDIS_URL is unset; using a process-local LLM unlock cache');
+  return createMemoryLlmUnlockStore(config);
 }
 
 /** How each tier is called. All optional with working defaults — a deployment
@@ -108,17 +107,8 @@ export function buildCoachAgentBaseDependencies(
   };
 }
 
-const DEFAULT_TTS_MODEL_OPENAI = 'gpt-4o-mini-tts';
-
-/** The OpenAI TTS model id only — the API key itself is resolved per-request
- * from the user's BYOK OpenAI key (see routes/tts.ts), since the app is
- * bring-your-own-key only. TTS_MODEL_OPENAI defaults to 'gpt-4o-mini-tts'
- * (cheaper and more expressive than 'tts-1'); it must never be a hard
- * requirement that can crash the whole API process. */
 export function buildTtsConfigFromEnv(): TtsConfig | undefined {
-  return {
-    modelId: process.env.TTS_MODEL_OPENAI ?? DEFAULT_TTS_MODEL_OPENAI
-  };
+  return { enabled: true };
 }
 
 /** Reads ENGINE_TUNNEL_TIMEOUT_MS (design spec §2 self-review fix — every
@@ -208,4 +198,3 @@ export async function openLichessEvalIndexFromEnv(): Promise<LichessEvalIndex | 
     throw error;
   }
 }
-

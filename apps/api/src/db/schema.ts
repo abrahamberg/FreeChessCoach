@@ -19,11 +19,11 @@ export interface UsersTable {
   createdAt: Generated<Date>;
 }
 
-export interface UserLlmKeysTable {
+export interface UserLlmSetupsTable {
   userId: string;
-  provider: 'anthropic' | 'openai';
-  keyCiphertext: Buffer;
-  keyIv: Buffer;
+  setupCiphertext: Buffer;
+  setupIv: Buffer;
+  setupSalt: Buffer;
   createdAt: Generated<Date>;
 }
 
@@ -158,7 +158,7 @@ export interface PositionEvaluationsTable {
 
 export interface Database {
   users: UsersTable;
-  userLlmKeys: UserLlmKeysTable;
+  userLlmSetups: UserLlmSetupsTable;
   games: GamesTable;
   analyses: AnalysesTable;
   sessions: SessionsTable;

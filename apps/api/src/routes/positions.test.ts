@@ -86,13 +86,7 @@ describe('POST /api/positions/analyze', () => {
     const coachAgentBaseDeps: CoachAgentBaseDependencies = {
       db,
       jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn() },
-      gatewayConfig: {
-        keyVault: { encrypt: vi.fn(), decrypt: vi.fn() },
-        modelIds: {
-          standard: { anthropic: 'claude-standard', openai: 'gpt-standard' },
-          light: { anthropic: 'claude-light', openai: 'gpt-light' }
-        }
-      }
+      gatewayConfig: {}
     };
     const engineBackendOptions = buildResolveEngineBackendOptions(db, ENGINE_URL, { request: vi.fn() }, null);
     return {

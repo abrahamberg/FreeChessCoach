@@ -61,7 +61,7 @@ describe('investigatePosition', () => {
   function makeDeps(overrides: Partial<PositionInvestigatorDependencies> = {}): PositionInvestigatorDependencies {
     return {
       db,
-      gatewayConfig: { keyVault: {} as never, modelIds: { standard: {} as never, light: {} as never } },
+      gatewayConfig: {},
       resolveModel: vi.fn(),
       analyzePosition: vi.fn().mockResolvedValue(positionAnalysisFixture()),
       ...overrides

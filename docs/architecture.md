@@ -246,6 +246,22 @@ The coaching agent is the product's core capability.
 - Context compression
 - Engine interpretation
 
+### User-supplied LLM setup
+
+The app is bring-your-own-key and accepts one complete JSON setup: endpoint,
+API key, low model, high model, and optional voice model. On save, the API
+makes tiny independent probes for the OpenAI Chat/Responses and Anthropic
+Messages formats, then stores the setup as AES-256-GCM ciphertext. The key is
+derived from the user's unlock phrase with scrypt; neither the phrase nor the
+plaintext setup is stored in PostgreSQL.
+
+An unlock places the plaintext setup in a short-lived Redis cache under an
+HMAC-derived user name. The cache value is encrypted with a deployment cache
+key and expires after inactivity, so a database or Redis dump alone does not
+recover a provider key. API and worker share this cache for active background
+jobs; users can also lock it immediately from Settings. Omitting the voice
+model disables cloud voice while leaving browser voice available.
+
 ### Tool constraints
 
 Tools may:

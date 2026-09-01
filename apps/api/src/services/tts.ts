@@ -1,4 +1,4 @@
-import type { CoachPersona } from '@freechesscoach/shared';
+import type { CoachPersona, StoredLlmSetup } from '@freechesscoach/shared';
 import { synthesizeSpeech } from '../llm/openai-tts.js';
 
 /** Matched to each persona's gender/age voice profile (COACH_PERSONA_INFO —
@@ -20,12 +20,9 @@ export const PERSONA_VOICES: Record<CoachPersona, string> = {
   gambler: 'verse' // Male, 40s — dynamic, charismatic, versatile.
 };
 
-/** Server-level TTS config: just the model id. The API key is resolved
- * per-request from the user's BYOK OpenAI key (see routes/tts.ts), since the
- * app is bring-your-own-key only. */
-export interface TtsConfig {
-  modelId: string;
-}
+/** Server-level feature gate. Endpoint, API key and voice model come from the
+ * user's unlocked setup. */
+export interface TtsConfig { readonly enabled: true }
 
 export interface SpeakParams {
   persona: CoachPersona;
@@ -35,10 +32,12 @@ export interface SpeakParams {
 /** Synthesizes speech with the user's own OpenAI BYOK key. No credit
  * accounting — usage shows up on the user's own OpenAI bill, same as every
  * other BYOK call. */
-export async function speak(config: TtsConfig, apiKey: string, params: SpeakParams): Promise<Buffer> {
+export async function speak(config: TtsConfig, setup: StoredLlmSetup, params: SpeakParams): Promise<Buffer> {
+  if (!config.enabled || !setup.voiceModel) throw new Error('Voice is not configured');
   return synthesizeSpeech({
-    apiKey,
-    modelId: config.modelId,
+    apiKey: setup.apiKey,
+    endpoint: setup.endpoint,
+    modelId: setup.voiceModel,
     voice: PERSONA_VOICES[params.persona],
     text: params.text
   });

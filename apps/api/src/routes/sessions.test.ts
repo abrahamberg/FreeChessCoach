@@ -11,7 +11,7 @@ import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
-import { createKeyVault } from '../llm/key-vault.js';
+import { createMemoryLlmUnlockStore } from '../llm/unlock-store.js';
 import type { GatewayConfig } from '../llm/gateway.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { mockResolution, mockUsage, stepParts, type MockToolCall } from '../../test/helpers/mock-model.js';
@@ -66,7 +66,7 @@ function textStreamModel(text: string, toolCall?: MockToolCall) {
 describe('sessions routes', () => {
   let testDb: TestDb;
   let db: Kysely<Database>;
-  const keyVault = createKeyVault(Buffer.alloc(32, 7).toString('base64'));
+  const unlockStore = createMemoryLlmUnlockStore({ pepper: 'sessions-test', ttlSeconds: 60 });
 
   beforeAll(async () => {
     testDb = await createTestDb();
@@ -145,11 +145,7 @@ describe('sessions routes', () => {
 
   function coachAgentBaseDeps(model: MockLanguageModelV4): CoachAgentBaseDependencies {
     const gatewayConfig: GatewayConfig = {
-      keyVault,
-      modelIds: {
-        standard: { anthropic: 'claude-standard', openai: 'gpt-standard' },
-        light: { anthropic: 'claude-light', openai: 'gpt-light' }
-      }
+      unlockStore
     };
     return {
       db,

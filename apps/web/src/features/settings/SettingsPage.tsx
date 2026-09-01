@@ -1,18 +1,19 @@
 import {
-  SavedLlmProvidersResponseSchema,
+  LlmSetupStatusSchema,
+  LlmSetupTestResponseSchema,
+  type LlmSetup,
   UserProfileSchema,
   type CoachPersona,
   type EngineMode,
-  type LlmProvider,
   type RatingBand
 } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { apiDelete, apiGet, apiPatch, apiPut } from '../../api/client.js';
+import { ApiError, apiDelete, apiGet, apiPatch, apiPost, apiPostVoid, apiPut } from '../../api/client.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
 import { BandSelect } from './BandSelect.js';
-import { ByokKeyForm } from './ByokKeyForm.js';
+import { LlmSetupForm } from './LlmSetupForm.js';
 import { CoachPersonaSelect } from './CoachPersonaSelect.js';
 import { EngineModeSelect } from './EngineModeSelect.js';
 import { NicknameForm } from './NicknameForm.js';
@@ -22,8 +23,6 @@ import './SettingsPage.css';
 
 type Theme = 'light' | 'dark';
 const THEME_STORAGE_KEY = 'freechesscoach-theme';
-const LLM_PROVIDERS: LlmProvider[] = ['anthropic', 'openai'];
-
 function readStoredTheme(): Theme | null {
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
   return stored === 'light' || stored === 'dark' ? stored : null;
@@ -50,9 +49,9 @@ export function SettingsPage(): ReactNode {
     queryKey: ['profile'],
     queryFn: ({ signal }) => apiGet('/api/users/me', UserProfileSchema, signal)
   });
-  const providersQuery = useQuery({
-    queryKey: ['llm-keys'],
-    queryFn: ({ signal }) => apiGet('/api/users/me/llm-keys', SavedLlmProvidersResponseSchema, signal)
+  const llmSetupQuery = useQuery({
+    queryKey: ['llm-setup'],
+    queryFn: ({ signal }) => apiGet('/api/users/me/llm-setup', LlmSetupStatusSchema, signal)
   });
 
   // Client-side route changes (e.g. the topbar engine indicator linking to
@@ -102,24 +101,38 @@ export function SettingsPage(): ReactNode {
     onSuccess: (profile) => queryClient.setQueryData(['profile'], profile)
   });
 
-  const saveKeyMutation = useMutation({
-    mutationFn: ({ provider, apiKey }: { provider: LlmProvider; apiKey: string }) =>
-      apiPut(`/api/users/me/llm-keys/${provider}`, { apiKey }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['llm-keys'] })
+  const testLlmSetupMutation = useMutation({
+    mutationFn: (setup: LlmSetup) => apiPost('/api/users/me/llm-setup/test', setup, LlmSetupTestResponseSchema)
   });
 
-  const deleteKeyMutation = useMutation({
-    mutationFn: (provider: LlmProvider) => apiDelete(`/api/users/me/llm-keys/${provider}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['llm-keys'] })
+  const saveLlmSetupMutation = useMutation({
+    mutationFn: ({ setup, unlockPhrase }: { setup: LlmSetup; unlockPhrase: string }) =>
+      apiPut('/api/users/me/llm-setup', { ...setup, unlockPhrase }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['llm-setup'] })
   });
 
-  if (profileQuery.isLoading || providersQuery.isLoading) return <p>Loading…</p>;
-  if (profileQuery.isError || !profileQuery.data || providersQuery.isError || !providersQuery.data) {
+  const unlockLlmSetupMutation = useMutation({
+    mutationFn: (unlockPhrase: string) => apiPost('/api/users/me/llm-setup/unlock', { unlockPhrase }, LlmSetupStatusSchema),
+    onSuccess: (status) => queryClient.setQueryData(['llm-setup'], status)
+  });
+
+  const lockLlmSetupMutation = useMutation({
+    mutationFn: () => apiPostVoid('/api/users/me/llm-setup/lock'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['llm-setup'] })
+  });
+
+  const deleteLlmSetupMutation = useMutation({
+    mutationFn: () => apiDelete('/api/users/me/llm-setup'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['llm-setup'] })
+  });
+
+  if (profileQuery.isLoading || llmSetupQuery.isLoading) return <p>Loading…</p>;
+  if (profileQuery.isError || !profileQuery.data || llmSetupQuery.isError || !llmSetupQuery.data) {
     return <p>Could not load your settings.</p>;
   }
 
   const profile = profileQuery.data;
-  const savedProviders = new Set(providersQuery.data);
+  const llmSetup = llmSetupQuery.data;
 
   return (
     <div className="page settings-page">
@@ -198,17 +211,19 @@ export function SettingsPage(): ReactNode {
       </section>
 
       <section aria-label="API keys" className="card">
-        <h2>API keys</h2>
-        <p>Bring your own key — your AI API key is encrypted and used only for your requests. Add at least one to start coaching.</p>
-        {LLM_PROVIDERS.map((provider) => (
-          <ByokKeyForm
-            key={provider}
-            provider={provider}
-            isSaved={savedProviders.has(provider)}
-            onSave={(apiKey) => saveKeyMutation.mutate({ provider, apiKey })}
-            onDelete={() => deleteKeyMutation.mutate(provider)}
-          />
-        ))}
+        <h2>AI setup</h2>
+        <p>Your endpoint and API key are tested, encrypted with your unlock phrase, and kept available only while you are active. We never show the key again.</p>
+        <LlmSetupForm
+          key={`${llmSetup.configured}-${llmSetup.unlocked}-${llmSetup.protocol ?? 'none'}`}
+          status={llmSetup}
+          onTest={(setup) => testLlmSetupMutation.mutate(setup)}
+          onSave={(setup, unlockPhrase) => saveLlmSetupMutation.mutate({ setup, unlockPhrase })}
+          onUnlock={(unlockPhrase) => unlockLlmSetupMutation.mutate(unlockPhrase)}
+          onLock={() => lockLlmSetupMutation.mutate()}
+          onDelete={() => deleteLlmSetupMutation.mutate()}
+          testResult={testLlmSetupMutation.data}
+          error={setupError(saveLlmSetupMutation.error ?? unlockLlmSetupMutation.error ?? testLlmSetupMutation.error)}
+        />
       </section>
 
       <section aria-label="Appearance" className="card">
@@ -239,4 +254,11 @@ export function SettingsPage(): ReactNode {
       </footer>
     </div>
   );
+}
+
+function setupError(error: unknown): string | undefined {
+  if (!(error instanceof ApiError)) return error instanceof Error ? error.message : undefined;
+  const body = error.body;
+  if (typeof body === 'object' && body !== null && 'title' in body && typeof body.title === 'string') return body.title;
+  return error.message;
 }
