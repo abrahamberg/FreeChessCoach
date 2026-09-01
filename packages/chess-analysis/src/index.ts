@@ -37,6 +37,7 @@ export * from './opening-book.js';
 export * from './opening-book-key.js';
 export * from './phase-accuracy.js';
 export * from './phase-segmentation.js';
+export * from './parse-game-headers.js';
 export * from './pgn-move-comments.js';
 export * from './pgn-mutation.js';
 export * from './rating-estimate.js';
