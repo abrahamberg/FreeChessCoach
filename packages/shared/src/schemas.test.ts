@@ -8,7 +8,6 @@ import {
   PositionAnalysisSchema
 } from './analysis.js';
 import { CoachingPlanSchema, type CoachingPlan } from './coaching-plan.js';
-import { CreditPackSchema } from './credits.js';
 import { DashboardResponseSchema } from './dashboard.js';
 import { FindingSchema } from './finding.js';
 import { ImportGameRequestSchema, ImportGameResponseSchema } from './game.js';
@@ -400,7 +399,6 @@ describe('UserProfileSchema', () => {
       selfAssessment: null,
       engineMode: 'native',
       coachPersona: 'general',
-      creditBalance: 100,
       ttsEnabled: false,
       ttsBackend: 'openai'
     };
@@ -415,8 +413,7 @@ describe('UserProfileSchema', () => {
         ratingBand: 'grandmaster',
         lichessUsername: null,
         chesscomUsername: null,
-        selfAssessment: null,
-        creditBalance: 0
+        selfAssessment: null
       }).success
     ).toBe(false);
   });
@@ -511,14 +508,5 @@ describe('DashboardResponseSchema', () => {
   test('rejects a negative trend count', () => {
     const bad = { ...valid, mistakeTrends: [{ category: 'king_safety', last5: -1, last20: 3 }] };
     expect(DashboardResponseSchema.safeParse(bad).success).toBe(false);
-  });
-});
-
-describe('CreditPackSchema', () => {
-  test('accepts the 3 packs, rejects others', () => {
-    expect(CreditPackSchema.safeParse('small').success).toBe(true);
-    expect(CreditPackSchema.safeParse('medium').success).toBe(true);
-    expect(CreditPackSchema.safeParse('large').success).toBe(true);
-    expect(CreditPackSchema.safeParse('jumbo').success).toBe(false);
   });
 });

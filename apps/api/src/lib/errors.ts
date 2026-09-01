@@ -14,10 +14,6 @@ export class ForbiddenError extends HttpError {
   readonly status = 403;
 }
 
-export class InsufficientCreditsError extends HttpError {
-  readonly status = 402;
-}
-
 export class ConflictError extends HttpError {
   readonly status = 409;
 }

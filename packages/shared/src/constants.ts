@@ -118,10 +118,11 @@ export const COACH_PERSONA_INFO: Record<
 
 /**
  * Coach-voice (TTS) backend. 'openai' calls the cloud API (better quality
- * and latency, spends AI credits); 'browser' runs Kokoro WASM locally on the
- * user's device (free, but slow and depends on their machine). Master toggle
- * is `users.tts_enabled`, off by default; `ttsBackend` only matters once
- * that's on. SettingsPage confirms either choice with a dialog before saving.
+ * and latency, spends the user's own OpenAI BYOK key); 'browser' runs Kokoro
+ * WASM locally on the user's device (free, but slow and depends on their
+ * machine). Master toggle is `users.tts_enabled`, off by default; `ttsBackend`
+ * only matters once that's on. SettingsPage confirms either choice with a
+ * dialog before saving.
  */
 export const TTS_BACKENDS = ['openai', 'browser'] as const;
 export type TtsBackend = (typeof TTS_BACKENDS)[number];
