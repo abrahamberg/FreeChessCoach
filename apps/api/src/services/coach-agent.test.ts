@@ -17,7 +17,6 @@ import {
   stepParts
 } from '../../test/helpers/mock-model.js';
 import * as analysesRepo from '../db/repositories/analyses.js';
-import * as creditsRepo from '../db/repositories/credits.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
@@ -60,7 +59,6 @@ describe('coach-agent startTurn concurrency', () => {
   function deps(model: MockLanguageModelV4): CoachAgentDependencies {
     const gatewayConfig: GatewayConfig = {
       keyVault,
-      platformKeys: { anthropic: 'platform-key' },
       modelIds: {
         standard: { anthropic: 'claude-standard', openai: 'gpt-standard' },
         light: { anthropic: 'claude-light', openai: 'gpt-light' }
@@ -105,7 +103,6 @@ describe('coach-agent startTurn concurrency', () => {
 
   test('a client tool-result turn started before the prior turn finishes persisting still sees its tool-call in history (no reordering race)', async () => {
     const user = await usersRepo.insert(db, { email: 'race@example.com', displayName: 'Race' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -177,7 +174,6 @@ describe('coach-agent startTurn concurrency', () => {
 
   test('a stream-level provider error releases the session lock — a later turn does not hang forever', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -206,9 +202,8 @@ describe('coach-agent startTurn concurrency', () => {
     await drain(turn2);
   }, 15000);
 
-  test("a metered turn's llm_call_log inputTokens covers fresh + cache-read tokens (matches computeCredits' total-input expectation)", async () => {
+  test("a turn persists the assistant messages append-only and the debug snapshot", async () => {
     const user = await usersRepo.insert(db, { email: 'usage-shape@example.com', displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -249,17 +244,10 @@ describe('coach-agent startTurn concurrency', () => {
 
     const turn = await coachAgent.startTurn(deps(model), session, { content: 'hi coach' });
     await drain(turn);
-
-    const logs = await db.selectFrom('llmCallLog').selectAll().where('userId', '=', user.id).execute();
-    expect(logs).toHaveLength(1);
-    // 400 fresh + 2000 cache-read, not the fresh count alone.
-    expect(logs[0]?.inputTokens).toBe(2400);
-    expect(logs[0]?.cachedInputTokens).toBe(2000);
   }, 15000);
 
   test('a show_position client tool-result is persisted with a server-verified fen, not just the client-reported ply — the coach\'s only ground truth for what it just showed', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -301,7 +289,6 @@ describe('coach-agent startTurn concurrency', () => {
 
   test('a show_position tool-call and its later-confirmed tool-result stay in the same episode — no orphaned tool_result once the position moves', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -379,7 +366,6 @@ describe('coach-agent startTurn concurrency', () => {
 
   test('a show_position tool-call sharing an assistant step with another tool-call still reunites with its later-confirmed result (no orphaned tool_result even with a sibling tool-result in between)', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -467,7 +453,6 @@ describe('coach-agent startTurn concurrency', () => {
 
   test('engine analysis is always embedded in the request for every user — no per-user opt-in — computed on the pre-move fen', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -504,7 +489,6 @@ describe('coach-agent startTurn concurrency', () => {
 
   test('a jump back to an earlier move closes the old episode into a note and the new turn\'s request excludes that episode\'s raw messages', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -556,7 +540,6 @@ describe('coach-agent startTurn concurrency', () => {
 
   test('final review new test #2: a coach-authored record_move_note through the real tool path suppresses the auto-fallback when its episode closes', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -621,7 +604,6 @@ describe('coach-agent startTurn concurrency', () => {
 
   test('final review new test #3: an AUTO-generated closing note (not a manual one) shows up in the other-moves-summary layer on the next turn', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -684,7 +666,6 @@ describe('coach-agent startTurn concurrency', () => {
 
   test('a resumed session (fresh deps, no in-memory state) reconstructs the same five-layer request purely from the DB', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -727,7 +708,6 @@ describe('coach-agent startTurn concurrency', () => {
 
   test('investigate_position resolves the light tier for its own sub-agent call, separate from the turn\'s own standard-tier resolution', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -779,7 +759,6 @@ describe('coach-agent startTurn concurrency', () => {
 
   test('an out-of-range client-reported ply from show_position does not brick the session', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,

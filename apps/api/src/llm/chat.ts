@@ -45,8 +45,8 @@ export interface CoachTurnStream {
   tools: ToolSet;
 }
 
-/** Everything a completed turn produced, normalized for persistence and
- * metering. `messages` spans ALL steps of the turn, not just the last one. */
+/** Everything a completed turn produced, normalized for persistence and the
+ * debug snapshot. `messages` spans ALL steps of the turn, not just the last one. */
 export interface CoachTurnCompletion {
   messages: ResponseChatMessage[];
   finishReason: string;

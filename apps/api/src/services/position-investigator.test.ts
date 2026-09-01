@@ -61,28 +61,23 @@ describe('investigatePosition', () => {
   function makeDeps(overrides: Partial<PositionInvestigatorDependencies> = {}): PositionInvestigatorDependencies {
     return {
       db,
-      gatewayConfig: { keyVault: {} as never, platformKeys: {}, modelIds: { standard: {} as never, light: {} as never } },
+      gatewayConfig: { keyVault: {} as never, modelIds: { standard: {} as never, light: {} as never } },
       resolveModel: vi.fn(),
       analyzePosition: vi.fn().mockResolvedValue(positionAnalysisFixture()),
       ...overrides
     };
   }
 
-  test('returns the sub-agent\'s final text and records usage under the investigate_position purpose, light tier', async () => {
+  test('returns the sub-agent\'s final text under the investigate_position purpose, light tier', async () => {
     const { userId, sessionId } = await setupUser();
     const model = multiStepGenerateModel([{ text: 'Yes, Nf3 is sound — the engine keeps it at roughly +0.20.', finishReason: 'stop' }]);
-    const resolveModel = vi.fn().mockResolvedValue(mockResolution(model, { provider: 'anthropic', modelId: 'claude-light', metered: true }));
+    const resolveModel = vi.fn().mockResolvedValue(mockResolution(model, { provider: 'anthropic', modelId: 'claude-light' }));
     const deps = makeDeps({ resolveModel });
 
     const result = await investigatePosition(deps, { userId, sessionId }, { fen: START_FEN, question: 'is Nf3 sound?' });
 
     expect(result).toBe('Yes, Nf3 is sound — the engine keeps it at roughly +0.20.');
     expect(resolveModel).toHaveBeenCalledWith(deps.db, deps.gatewayConfig, userId, 'light');
-
-    const logs = await db.selectFrom('llmCallLog').selectAll().where('userId', '=', userId).execute();
-    expect(logs).toHaveLength(1);
-    expect(logs[0]?.purpose).toBe('investigate_position');
-    expect(logs[0]?.model).toBe('claude-light');
   });
 
   test('an illegal moves sequence short-circuits before ever resolving a model', async () => {
