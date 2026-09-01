@@ -182,7 +182,7 @@ describe('NativeEngineBackend', () => {
     expect(mockFetch).toHaveBeenCalledWith(`${engineUrl}/analyze-game`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ fens })
+      body: JSON.stringify({ fens, priority: undefined, multiPv: ENGINE_MULTI_PV, depth: undefined })
     });
 
     expect(result).toEqual(mockEvals);
