@@ -103,7 +103,7 @@ render "$API" --show-only templates/api-deployment.yaml
 assert_contains "api deployment runs the server bundle" '"node", "dist-bundle/server.mjs"' "$API"
 assert_contains "api deployment declares ENGINE_URL" "name: ENGINE_URL" "$API"
 assert_contains "api deployment declares DATABASE_URL" "name: DATABASE_URL" "$API"
-assert_contains "api deployment declares LLM_KEY_MASTER_KEY" "name: LLM_KEY_MASTER_KEY" "$API"
+assert_contains "api deployment declares LLM_UNLOCK_PEPPER" "name: LLM_UNLOCK_PEPPER" "$API"
 assert_contains "api ENGINE_URL points at the engine service" "http://freechesscoach-engine:8081" "$API"
 assert_contains "api readiness probe is /readyz (architecture §11)" "path: /readyz" "$API"
 
@@ -127,14 +127,10 @@ assert_contains "worker deployment runs the worker bundle" '"node", "dist-bundle
 assert_contains "worker deployment declares ENGINE_URL" "name: ENGINE_URL" "$WORKER"
 
 # ---------------------------------------------------------------------------
-# 3. The Stripe webhook path is unauthenticated at the proxy (architecture §11:
-#    "--skip-auth-route for /api/stripe/webhook and probes"). The webhook is
-#    still signature-verified in-app (§12).
+# 3. The health probes are unauthenticated at the proxy.
 # ---------------------------------------------------------------------------
 PROXY="$RENDER_DIR/proxy.yaml"
 render "$PROXY" --set oauth2-proxy.enabled=true --show-only charts/oauth2-proxy/templates/deployment.yaml
-assert_contains "oauth2-proxy skips auth for the stripe webhook" \
-  "--skip-auth-route=^/api/stripe/webhook$" "$PROXY"
 assert_contains "oauth2-proxy skips auth for /healthz" "--skip-auth-route=^/healthz$" "$PROXY"
 assert_contains "oauth2-proxy skips auth for /readyz" "--skip-auth-route=^/readyz$" "$PROXY"
 assert_contains "oauth2-proxy forwards identity headers" "--set-xauthrequest=true" "$PROXY"
@@ -159,10 +155,8 @@ assert_not_matches "no provider api-key literals in rendered output" \
 assert_not_matches "no password literal in the rendered DATABASE_URL" \
   'postgresql?://[^ "]*:[A-Za-z0-9%._~+-]+@' "$OURS"
 
-assert_contains "master key comes from a secretKeyRef" "secretKeyRef" "$OURS"
-assert_contains "master key references the llm-key-master-key secret" "name: llm-key-master-key" "$OURS"
-assert_contains "platform LLM keys reference the platform-llm-keys secret" "name: platform-llm-keys" "$OURS"
-assert_contains "stripe values reference the stripe secret" "name: stripe" "$OURS"
+assert_contains "unlock secrets come from secretKeyRef" "secretKeyRef" "$OURS"
+assert_contains "unlock secrets reference the llm-unlock-secrets secret" "name: llm-unlock-secrets" "$OURS"
 assert_contains "external database URL references the configured Secret" \
   "name: freechesscoach-database-url" "$OURS"
 
@@ -308,12 +302,11 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 7. Optional Stripe: the chart must render with Stripe disabled too
-#    (apps/api/src/bootstrap.ts treats STRIPE_* as all-or-nothing optional).
+# 7. The chart must also render with its optional integrations disabled.
 # ---------------------------------------------------------------------------
 NOSTRIPE="$RENDER_DIR/nostripe.yaml"
-if render "$NOSTRIPE" --set stripe.enabled=false --show-only templates/api-deployment.yaml; then
-  assert_not_matches "stripe env is absent when stripe.enabled=false" 'STRIPE_SECRET_KEY' "$NOSTRIPE"
+if render "$NOSTRIPE" --show-only templates/api-deployment.yaml; then
+  assert_not_matches "removed payment env is absent" 'STRIPE_SECRET_KEY' "$NOSTRIPE"
 else
   fail "renders with stripe.enabled=false" "$(head -3 "$NOSTRIPE.err" | tr '\n' ' ')"
 fi

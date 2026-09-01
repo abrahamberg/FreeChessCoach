@@ -20,6 +20,7 @@ export interface AppliedClientToolResult {
 
 export async function applyClientToolResult(
   deps: CoachAgentDependencies,
+  callLightModel: (messages: { system: string; user: string }) => Promise<string>,
   session: SessionRow,
   toolResult: NonNullable<StartTurnInput['clientToolResult']>,
   currentPly: number,
@@ -39,7 +40,7 @@ export async function applyClientToolResult(
       if ((intent ?? 'subject') === 'subject' && claimedPly !== subjectPly) {
         const historyBeforeTurn = await sessionMessagesRepo.listBySession(deps.db, session.id);
         const closedEpisode = currentEpisode(historyBeforeTurn, subjectPly);
-        await coachContext.closeEpisodeIfNeeded(deps, session.id, closedEpisode.messages, subjectPly);
+        await coachContext.closeEpisodeIfNeeded({ db: deps.db, callLightModel }, session.id, closedEpisode.messages, subjectPly);
         subject = claimedPly;
         await sessionsRepo.updateSubjectAndCurrentPly(deps.db, session.id, ply);
       } else {

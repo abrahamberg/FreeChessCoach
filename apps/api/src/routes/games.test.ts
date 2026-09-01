@@ -9,7 +9,7 @@ import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
-import { createKeyVault } from '../llm/key-vault.js';
+import { createMemoryLlmUnlockStore } from '../llm/unlock-store.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 
 const VALID_PGN = `[Event "Test"]
@@ -126,11 +126,8 @@ describe('POST/GET /api/games', () => {
       db,
       jobQueue,
       gatewayConfig: {
-        keyVault: createKeyVault(Buffer.alloc(32, 7).toString('base64')),
-        platformKeys: {},
-        modelIds: { standard: { anthropic: '', openai: '' }, light: { anthropic: '', openai: '' } }
-      },
-      callLightModel: vi.fn()
+        unlockStore: createMemoryLlmUnlockStore({ pepper: 'games-test', ttlSeconds: 60 })
+      }
     };
     const engineBackendOptions = buildResolveEngineBackendOptions(db, 'http://engine:4001', { request: vi.fn() }, null);
     return buildApp({ authMode: 'proxy', db, jobQueue, coachAgentBaseDeps, engineBackendOptions });

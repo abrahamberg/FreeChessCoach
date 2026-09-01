@@ -9,8 +9,8 @@ export interface EngineTunnelInternalOptions {
 
 /** Lets the worker process (which never holds a browser WebSocket itself)
  * reach the api process's tunnel registry — see plan header notes. Guarded
- * by a shared-secret header, the same pattern stripe-webhook.ts uses instead
- * of oauth2-proxy headers for non-browser traffic. */
+ * by a shared-secret header for non-browser traffic, bypassing the
+ * oauth2-proxy identity headers the browser-facing routes use. */
 export function registerEngineTunnelInternalRoutes(app: FastifyInstance, options: EngineTunnelInternalOptions): void {
   app.post<{ Params: { userId: string }; Body: { timeoutMs: number; [key: string]: unknown } }>(
     '/internal/engine-tunnel/:userId',

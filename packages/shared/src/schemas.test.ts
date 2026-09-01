@@ -8,11 +8,10 @@ import {
   PositionAnalysisSchema
 } from './analysis.js';
 import { CoachingPlanSchema, type CoachingPlan } from './coaching-plan.js';
-import { CreditPackSchema } from './credits.js';
 import { DashboardResponseSchema } from './dashboard.js';
 import { FindingSchema } from './finding.js';
 import { ImportGameRequestSchema, ImportGameResponseSchema } from './game.js';
-import { LlmProviderSchema, SavedLlmProvidersResponseSchema, SetLlmKeyRequestSchema } from './llm.js';
+import { LlmProviderSchema, LlmSetupSchema, SaveLlmSetupRequestSchema, LlmSetupStatusSchema } from './llm.js';
 import {
   CreateSessionRequestSchema,
   PostSessionMessageRequestSchema,
@@ -400,7 +399,6 @@ describe('UserProfileSchema', () => {
       selfAssessment: null,
       engineMode: 'native',
       coachPersona: 'general',
-      creditBalance: 100,
       ttsEnabled: false,
       ttsBackend: 'openai'
     };
@@ -415,8 +413,7 @@ describe('UserProfileSchema', () => {
         ratingBand: 'grandmaster',
         lichessUsername: null,
         chesscomUsername: null,
-        selfAssessment: null,
-        creditBalance: 0
+        selfAssessment: null
       }).success
     ).toBe(false);
   });
@@ -449,23 +446,21 @@ describe('UpdateUserProfileRequestSchema', () => {
   });
 });
 
-describe('LlmProviderSchema / SetLlmKeyRequestSchema', () => {
+describe('LLM setup schemas', () => {
   test('accepts the 2 providers, rejects others', () => {
     expect(LlmProviderSchema.safeParse('anthropic').success).toBe(true);
     expect(LlmProviderSchema.safeParse('openai').success).toBe(true);
     expect(LlmProviderSchema.safeParse('cohere').success).toBe(false);
   });
-  test('accepts a non-empty apiKey, rejects empty', () => {
-    expect(SetLlmKeyRequestSchema.safeParse({ apiKey: 'sk-ant-123' }).success).toBe(true);
-    expect(SetLlmKeyRequestSchema.safeParse({ apiKey: '' }).success).toBe(false);
+  test('accepts the complete setup and normalizes an empty voice model', () => {
+    const parsed = LlmSetupSchema.parse({ endpoint: 'https://api.example/v1', apiKey: 'secret', lowModel: 'luna', highModel: 'terra', voiceModel: '' });
+    expect(parsed.voiceModel).toBeUndefined();
   });
-});
-
-describe('SavedLlmProvidersResponseSchema', () => {
-  test('accepts a list of known providers, rejects an unknown one', () => {
-    expect(SavedLlmProvidersResponseSchema.safeParse(['anthropic']).success).toBe(true);
-    expect(SavedLlmProvidersResponseSchema.safeParse([]).success).toBe(true);
-    expect(SavedLlmProvidersResponseSchema.safeParse(['cohere']).success).toBe(false);
+  test('requires a memorable unlock phrase when saving', () => {
+    expect(SaveLlmSetupRequestSchema.safeParse({ endpoint: 'https://api.example/v1', apiKey: 'secret', lowModel: 'luna', highModel: 'terra', unlockPhrase: 'short' }).success).toBe(false);
+  });
+  test('requires a complete status shape', () => {
+    expect(LlmSetupStatusSchema.safeParse({ configured: false, unlocked: false, voiceAvailable: false }).success).toBe(true);
   });
 });
 
@@ -511,14 +506,5 @@ describe('DashboardResponseSchema', () => {
   test('rejects a negative trend count', () => {
     const bad = { ...valid, mistakeTrends: [{ category: 'king_safety', last5: -1, last20: 3 }] };
     expect(DashboardResponseSchema.safeParse(bad).success).toBe(false);
-  });
-});
-
-describe('CreditPackSchema', () => {
-  test('accepts the 3 packs, rejects others', () => {
-    expect(CreditPackSchema.safeParse('small').success).toBe(true);
-    expect(CreditPackSchema.safeParse('medium').success).toBe(true);
-    expect(CreditPackSchema.safeParse('large').success).toBe(true);
-    expect(CreditPackSchema.safeParse('jumbo').success).toBe(false);
   });
 });

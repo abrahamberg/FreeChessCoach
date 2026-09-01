@@ -11,11 +11,11 @@ describe('synthesizeSpeech', () => {
     const fetchMock = vi.fn<typeof fetch>(() => Promise.resolve(new Response(bytes, { status: 200 })));
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await synthesizeSpeech({ apiKey: 'sk-test', modelId: 'tts-1', voice: 'alloy', text: 'hi' });
+    const result = await synthesizeSpeech({ apiKey: 'sk-test', endpoint: 'https://api.openai.com/v1', modelId: 'tts-1', voice: 'alloy', text: 'hi' });
 
     expect(result).toEqual(Buffer.from(bytes));
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('https://api.openai.com/v1/audio/speech');
+    expect(String(url)).toBe('https://api.openai.com/v1/audio/speech');
     expect(init?.headers).toMatchObject({ authorization: 'Bearer sk-test' });
     expect(JSON.parse(init?.body as string)).toEqual({
       model: 'tts-1',
@@ -32,7 +32,7 @@ describe('synthesizeSpeech', () => {
     );
 
     await expect(
-      synthesizeSpeech({ apiKey: 'sk-test', modelId: 'tts-1', voice: 'nope', text: 'hi' })
+      synthesizeSpeech({ apiKey: 'sk-test', endpoint: 'https://api.openai.com/v1', modelId: 'tts-1', voice: 'nope', text: 'hi' })
     ).rejects.toThrow(/400/);
   });
 });

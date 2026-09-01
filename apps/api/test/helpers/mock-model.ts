@@ -175,7 +175,6 @@ export function mockResolution(
 ): ModelResolution {
   return {
     model,
-    metered: true,
     provider: 'anthropic' as LlmProvider,
     modelId: 'claude-standard',
     callOptions: { reasoning: 'medium' },

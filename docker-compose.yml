@@ -6,13 +6,10 @@ x-node-dev: &node-dev
   environment: &node-dev-env
     DATABASE_URL: postgresql://chess_coach:chess_coach@postgres:5432/chess_coach
     ENGINE_URL: http://engine:8081
-    LLM_KEY_MASTER_KEY: SDtgaBVHXZO3s7NF/eK8S7kF/2lJ6hPVO9NRI+XciQg=
-    LLM_STANDARD_MODEL_ANTHROPIC: ${LLM_STANDARD_MODEL_ANTHROPIC:-claude-fake}
-    LLM_STANDARD_MODEL_OPENAI: ${LLM_STANDARD_MODEL_OPENAI:-gpt-fake}
-    LLM_LIGHT_MODEL_ANTHROPIC: ${LLM_LIGHT_MODEL_ANTHROPIC:-claude-fake-light}
-    LLM_LIGHT_MODEL_OPENAI: ${LLM_LIGHT_MODEL_OPENAI:-gpt-fake-light}
-    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    LLM_UNLOCK_PEPPER: ${LLM_UNLOCK_PEPPER:-local-development-pepper}
+    LLM_UNLOCK_CACHE_KEY: ${LLM_UNLOCK_CACHE_KEY:-MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+    LLM_UNLOCK_TTL_SECONDS: ${LLM_UNLOCK_TTL_SECONDS:-900}
+    REDIS_URL: redis://redis:6379
     LLM_FAKE: ${LLM_FAKE:-0}
     LLM_REASONING_STANDARD: ${LLM_REASONING_STANDARD:-medium}
     LLM_REASONING_LIGHT: ${LLM_REASONING_LIGHT:-none}
@@ -33,6 +30,15 @@ x-node-dev: &node-dev
     API_INTERNAL_URL: http://api:3000
 
 services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save '' --appendonly no
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -81,6 +87,8 @@ services:
         condition: service_started
       migrate:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
 
   worker:
     <<: *node-dev
@@ -92,6 +100,8 @@ services:
         condition: service_started
       migrate:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
 
   web-dev:
     image: node:22-slim
@@ -117,7 +127,6 @@ services:
       - --upstreams=http://api:3000
       - --email-domain=*
       - --set-xauthrequest=true
-      - --skip-auth-route=^/api/stripe/webhook$
       - --skip-auth-route=^/healthz$
       - --skip-auth-route=^/readyz$
     # OAUTH2_PROXY_CLIENT_ID/_SECRET/_COOKIE_SECRET must be set in a .env file

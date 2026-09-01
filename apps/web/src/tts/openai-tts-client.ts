@@ -15,7 +15,8 @@ async function synthesizeSentence(text: string, persona: string): Promise<ArrayB
 }
 
 /** Calls the backend's OpenAI-TTS route (POST /api/tts/speak — server-side
- * gated on users.tts_enabled/tts_backend, spends AI credits there) once per
+ *  gated on users.tts_enabled/tts_backend, bills the user's own OpenAI key
+ *  there) once per
  * sentence rather than once for the whole message: gpt-4o-mini-tts can
  * stream, but each request through this backend still waits for its own
  * full response — splitting the message means the *first* request is short

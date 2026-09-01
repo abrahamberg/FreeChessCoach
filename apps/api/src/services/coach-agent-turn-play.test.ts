@@ -67,7 +67,7 @@ describe('coach-agent startTurn — play mode ply advance (architecture §14)', 
       gatewayConfig: {} as CoachAgentDependencies['gatewayConfig'],
       analyzePosition: vi.fn().mockResolvedValue(ENGINE_EVAL),
       callLightModel: vi.fn().mockResolvedValue('folded note'),
-      resolveModel: () => Promise.resolve(mockResolution(model, { metered: false }))
+      resolveModel: () => Promise.resolve(mockResolution(model))
     };
   }
 

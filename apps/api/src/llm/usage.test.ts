@@ -1,6 +1,6 @@
 import type { LanguageModelUsage } from 'ai';
 import { describe, expect, test } from 'vitest';
-import { toBillableTokens, toTurnUsage } from './usage.js';
+import { toTurnUsage } from './usage.js';
 
 function usage(overrides: {
   noCacheTokens?: number;
@@ -66,21 +66,5 @@ describe('toTurnUsage', () => {
       reasoningTokens: 0
     });
     expect(JSON.parse(JSON.stringify(result))).toEqual(result);
-  });
-});
-
-describe('toBillableTokens', () => {
-  test('inputTokens is the pre-discount total (fresh + cache-read), which is what computeCredits expects', () => {
-    const billable = toBillableTokens(
-      toTurnUsage(usage({ noCacheTokens: 400, cacheReadTokens: 2000, cacheWriteTokens: 0, outputTokens: 50 }))
-    );
-    expect(billable).toEqual({ inputTokens: 2400, outputTokens: 50, cachedInputTokens: 2000 });
-  });
-
-  test('cache-write tokens are excluded from the billable total (the cache-write premium is out of scope)', () => {
-    const billable = toBillableTokens(
-      toTurnUsage(usage({ noCacheTokens: 100, cacheReadTokens: 0, cacheWriteTokens: 900, outputTokens: 10 }))
-    );
-    expect(billable.inputTokens).toBe(100);
   });
 });

@@ -2,7 +2,7 @@ import type { Kysely } from 'kysely';
 import type { SessionMode, Thread } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
-export type SessionStatus = 'active' | 'completed' | 'paused_no_credits' | 'abandoned';
+export type SessionStatus = 'active' | 'completed' | 'abandoned';
 
 export interface SessionRow {
   id: string;
@@ -66,9 +66,9 @@ export function findByIdForUser(
     .executeTakeFirst();
 }
 
-/** The most recent still-resumable session for a game — 'active' or
- * 'paused_no_credits', never 'completed'/'abandoned'. Used to make the Games
- * page link back into an ongoing session instead of starting a new one. */
+/** The most recent still-resumable session for a game — 'active', never
+ * 'completed'/'abandoned'. Used to make the Games page link back into an
+ * ongoing session instead of starting a new one. */
 export function findActiveByGameIdForUser(
   db: Kysely<Database>,
   gameId: string,
@@ -79,7 +79,7 @@ export function findActiveByGameIdForUser(
     .select(BASE_COLUMNS)
     .where('gameId', '=', gameId)
     .where('userId', '=', userId)
-    .where('status', 'in', ['active', 'paused_no_credits'])
+    .where('status', '=', 'active')
     .orderBy('startedAt', 'desc')
     .limit(1)
     .executeTakeFirst();
@@ -128,15 +128,6 @@ export function markAbandoned(db: Kysely<Database>, id: string): Promise<void> {
   return db
     .updateTable('sessions')
     .set({ status: 'abandoned', endedAt: new Date() })
-    .where('id', '=', id)
-    .execute()
-    .then(() => undefined);
-}
-
-export function markPausedNoCredits(db: Kysely<Database>, id: string): Promise<void> {
-  return db
-    .updateTable('sessions')
-    .set({ status: 'paused_no_credits' })
     .where('id', '=', id)
     .execute()
     .then(() => undefined);

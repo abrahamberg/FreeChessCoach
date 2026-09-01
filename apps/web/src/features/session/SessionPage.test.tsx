@@ -41,7 +41,7 @@ function streamResponse(parts: string[]): Response {
 }
 
 interface SessionFixture {
-  status?: 'active' | 'completed' | 'paused_no_credits';
+  status?: 'active' | 'completed' | 'abandoned';
   summary?: string | null;
   homework?: string | null;
   messages?: Array<{ id: string; role: 'user' | 'assistant' | 'tool'; content: unknown }>;
@@ -101,7 +101,6 @@ function mockFetch(session: SessionFixture = {}, extra: (path: string) => Respon
             lichessUsername: null,
             chesscomUsername: null,
             selfAssessment: null,
-            creditBalance: 100,
             ttsEnabled: session.ttsEnabled ?? false,
             ttsBackend: 'openai'
           }),
@@ -579,14 +578,6 @@ describe('SessionPage', () => {
     await screen.findByTestId('mock-chessboard');
     expect(document.querySelector('.move-explorer')).not.toBeInTheDocument();
     expect(screen.getByText('e4')).toBeInTheDocument();
-  });
-
-  test('a paused_no_credits session shows the add-credits card instead of the chat input', async () => {
-    vi.stubGlobal('fetch', mockFetch({ status: 'paused_no_credits' }));
-    renderSessionPage();
-
-    expect(await screen.findByText(/session is saved/i)).toBeInTheDocument();
-    expect(screen.queryByRole('textbox', { name: /reply/i })).not.toBeInTheDocument();
   });
 
   test('resetting a session confirms, POSTs /reset, and navigates to the fresh session it returns', async () => {

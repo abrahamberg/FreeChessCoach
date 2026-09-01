@@ -107,8 +107,8 @@ export interface MessageListProps {
    * The per-message button calls this instead of onPlayMessage while that
    * message is the one playing or loading — already-synthesized audio stays
    * cached, so a later play click on the same message replays instantly
-   * rather than re-fetching (and, on the OpenAI backend, re-spending
-   * credits). */
+    * rather than re-fetching (and, on the OpenAI backend, billing more
+    * usage to the user's own OpenAI key). */
   onStopMessage?: () => void;
   /** The message id currently playing, if any. */
   playingMessageId?: string | null;

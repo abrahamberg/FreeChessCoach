@@ -17,6 +17,8 @@ import type { Database } from '../db/schema.js';
 import type { CoachAgentBaseDependencies } from '../bootstrap.js';
 import { ConflictError, NotFoundError, ValidationError } from '../lib/errors.js';
 import { callBotTiebreak } from '../llm/bot-tiebreak.js';
+import { getModelForUser } from '../llm/gateway.js';
+import { generateProse } from '../llm/text.js';
 import { pipeCoachStreamToResponse } from '../llm/stream-response.js';
 import * as coachAgent from '../services/coach-agent.js';
 import { commitPlayerMoveAndAdvance } from '../services/play-move-commit.js';
@@ -58,7 +60,7 @@ export function registerSessionsRoutes(
     return coachAgent.resumeOrCreateSession(db, user.id, game.id);
   });
 
-  // architecture §14: no credits/analysis gate — a play-mode game has no
+  // architecture §14: no analysis gate — a play-mode game has no
   // pre-session analysis pipeline to wait on.
   app.post('/api/sessions/play', async (request) => {
     const parsed = CreatePlaySessionRequestSchema.safeParse(request.body);
@@ -248,7 +250,13 @@ async function buildRequestScopedAgentDeps(
   userId: string
 ): Promise<CoachAgentDependencies> {
   const backend = await resolveEngineBackend(engineBackendOptions, userId);
-  return { ...base, analyzePosition: (fen) => backend.analyzePosition(fen) };
+  const resolveModel = base.resolveModel ?? getModelForUser;
+  const callLightModel = async (messages: { system: string; user: string }): Promise<string> => {
+    const resolution = await resolveModel(base.db, base.gatewayConfig, userId, 'light');
+    const result = await generateProse({ resolution, system: messages.system, prompt: messages.user });
+    return result.text;
+  };
+  return { ...base, analyzePosition: (fen) => backend.analyzePosition(fen), callLightModel };
 }
 
 /** "Play vs Bot" plan: analyzePosition (cached, standard depth) grades move

@@ -3,12 +3,9 @@
 # Nothing sensitive lives here. Every credential is read at runtime from a
 # Secret you create out-of-band (architecture.md §11 "templated existingSecret
 # pattern"); this file only ever names the Secret and the key inside it. The
-# five Secrets the chart expects are:
+# four Secrets the chart expects are:
 #
-#   platform-llm-keys      anthropic-api-key, openai-api-key
-#   llm-key-master-key     master-key           (BYOK envelope key, base64 32B)
-#   stripe                 secret-key, webhook-secret, price-small,
-#                          price-medium, price-large
+#   llm-unlock-secrets     pepper, cache-key, redis-url (unlock/cache secrets)
 #   oauth-clients          client-id, client-secret, cookie-secret
 #   postgres-credentials   postgres-password, password, replication-password
 #
@@ -119,15 +116,9 @@ engine:
   nodeSelector: {}
   tolerations: []
 
-## LLM gateway configuration (architecture §8). Model ids are deployment
-## config, never hardcoded — set them explicitly, there is no sane default.
+## LLM gateway configuration. Users supply endpoint, models and key in the web
+## app; the chart only wires the short-lived unlock cache.
 llm:
-  standardModel:
-    anthropic: ""
-    openai: ""
-  lightModel:
-    anthropic: ""
-    openai: ""
   # Reasoning effort per tier. One portable setting that both Anthropic and
   # OpenAI translate natively: provider-default|none|minimal|low|medium|high|xhigh.
   # The coach reasons about positions and its own Socratic strategy; light-tier
@@ -141,32 +132,12 @@ llm:
   openaiServiceTier: auto
   # LLM_FAKE=1: short-circuit every model call. Smoke tests only.
   fake: false
-  # Envelope key for user-supplied (BYOK) provider keys.
-  masterKey:
-    existingSecret: llm-key-master-key
-    key: master-key
-  # Platform-owned provider keys. Disable to run a BYOK-only deployment
-  # (apps/api/src/bootstrap.ts treats these as optional).
-  platformKeys:
-    enabled: true
-    existingSecret: platform-llm-keys
-    anthropicKey: anthropic-api-key
-    openaiKey: openai-api-key
-
-## Credit packs via Stripe Checkout (Task 8.1). All-or-nothing: with
-## stripe.enabled=false the API simply doesn't register the Stripe routes.
-stripe:
-  enabled: false
-  existingSecret: stripe
-  keys:
-    secretKey: secret-key
-    webhookSecret: webhook-secret
-    priceSmall: price-small
-    priceMedium: price-medium
-    priceLarge: price-large
-  # Where Stripe Checkout returns the user; must be absolute URLs on your host.
-  checkoutSuccessUrl: ""
-  checkoutCancelUrl: ""
+  unlock:
+    existingSecret: llm-unlock-secrets
+    pepperKey: pepper
+    cacheKey: cache-key
+    redisUrlKey: redis-url
+    ttlSeconds: 900
 
 ## Read-only Lichess evaluation index (~394M pre-analyzed positions), checked
 ## before the live engine chain — see docs/architecture.md and
@@ -333,7 +304,6 @@ oauth2-proxy:
     - --set-xauthrequest=true
     # architecture §11: the Stripe webhook and the probes bypass auth. The
     # webhook is still signature-verified in-app (§12).
-    - --skip-auth-route=^/api/stripe/webhook$
     - --skip-auth-route=^/healthz$
     - --skip-auth-route=^/readyz$
     # Public landing page (apps/web/public/landing.html, served by web's

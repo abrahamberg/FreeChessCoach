@@ -3,7 +3,7 @@ import { MoveQualitySchema } from './analysis.js';
 import { FindingSchema, FocusAreaUpdateSchema } from './finding.js';
 import { PlayerColorSchema } from './game.js';
 
-export const SessionStatusSchema = z.enum(['active', 'completed', 'paused_no_credits', 'abandoned']);
+export const SessionStatusSchema = z.enum(['active', 'completed', 'abandoned']);
 export type SessionStatus = z.infer<typeof SessionStatusSchema>;
 
 /** 'analyze': walking through an already-finished imported game (today's only

@@ -1,6 +1,5 @@
 import type { Kysely } from 'kysely';
 import type { UpdateUserProfileRequest, UserProfile } from '@freechesscoach/shared';
-import * as creditsRepo from '../db/repositories/credits.js';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
@@ -16,8 +15,7 @@ export interface Identity {
   displayName: string;
 }
 
-/** Finds the user by email, or creates them with a one-time 100-credit signup
- * grant (inserted atomically with the user row). Safe to call on every request.
+/** Finds the user by email, or creates them. Safe to call on every request.
  *
  * engineMode defaults to 'chess_api' here — not in the users table's own
  * DEFAULT — so this is the one place that speaks for "what a brand-new user
@@ -30,11 +28,7 @@ export async function getOrCreate(
   const existing = await usersRepo.findByEmail(db, identity.email);
   if (existing) return healDisplayNameIfNeeded(db, existing, identity.displayName);
 
-  return db.transaction().execute(async (trx) => {
-    const user = await usersRepo.insert(trx, { ...identity, engineMode: 'chess_api' });
-    await creditsRepo.insertSignupGrant(trx, user.id);
-    return user;
-  });
+  return usersRepo.insert(db, { ...identity, engineMode: 'chess_api' });
 }
 
 /** Repairs profiles created before the Google-login display-name fix (a raw
@@ -84,7 +78,6 @@ export async function toUserProfile(
   db: Kysely<Database>,
   user: usersRepo.UserRow
 ): Promise<UserProfile> {
-  const creditBalance = await creditsRepo.balance(db, user.id);
   return {
     id: user.id,
     email: user.email,
@@ -95,7 +88,6 @@ export async function toUserProfile(
     lichessUsername: user.lichessUsername,
     chesscomUsername: user.chesscomUsername,
     selfAssessment: user.selfAssessment,
-    creditBalance,
     ttsEnabled: user.ttsEnabled,
     ttsBackend: user.ttsBackend
   };

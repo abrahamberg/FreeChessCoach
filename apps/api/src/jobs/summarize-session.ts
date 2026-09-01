@@ -9,9 +9,8 @@ import * as sessionsRepo from '../db/repositories/sessions.js';
 import * as usersRepo from '../db/repositories/users.js';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import type { Database } from '../db/schema.js';
-import { getModelForUser, recordUsage, type GatewayConfig } from '../llm/gateway.js';
+import { getModelForUser, type GatewayConfig } from '../llm/gateway.js';
 import { generateStructured } from '../llm/text.js';
-import { toBillableTokens } from '../llm/usage.js';
 import { applySessionOutcome } from '../services/progress.js';
 import * as userProfileService from '../services/user-profile.js';
 
@@ -64,17 +63,6 @@ export function createSummarizeSessionTask(options: SummarizeSessionTaskOptions)
       system: messages.system,
       prompt: messages.user,
       schema: SessionOutcomeSchema
-    });
-
-    await recordUsage(options.db, {
-      userId: session.userId,
-      sessionId,
-      provider: resolution.provider,
-      model: resolution.modelId,
-      tier: 'light',
-      usage: toBillableTokens(result.usage),
-      purpose: 'summary',
-      metered: resolution.metered
     });
 
     await applySessionOutcome(

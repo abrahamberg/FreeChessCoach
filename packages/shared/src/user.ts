@@ -11,7 +11,6 @@ export const UserProfileSchema = z.object({
   lichessUsername: z.string().nullable(),
   chesscomUsername: z.string().nullable(),
   selfAssessment: z.string().nullable(),
-  creditBalance: z.number().int(),
   ttsEnabled: z.boolean(),
   ttsBackend: z.enum(TTS_BACKENDS)
 });

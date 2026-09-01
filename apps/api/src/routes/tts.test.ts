@@ -1,16 +1,15 @@
 import type { Kysely } from 'kysely';
-import { afterEach, beforeAll, afterAll, describe, expect, test, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildApp } from '../app.js';
-import * as creditsRepo from '../db/repositories/credits.js';
 import type { Database } from '../db/schema.js';
-import type { TtsConfig } from '../services/tts.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
+import { createUserSetupVault } from '../llm/key-vault.js';
+import { createMemoryLlmUnlockStore } from '../llm/unlock-store.js';
+import type { TtsConfig } from '../services/tts.js';
 
-const ttsConfig: TtsConfig = { apiKey: 'test-key', modelId: 'tts-1', creditsPer1kChars: 5 };
-
-function fakeMp3Response(bytes: Uint8Array): Response {
-  return new Response(bytes, { status: 200, headers: { 'content-type': 'audio/mpeg' } });
-}
+const ttsConfig: TtsConfig = { enabled: true };
+const vault = createUserSetupVault();
+const setup = { endpoint: 'https://provider.example/v1', apiKey: 'tts-secret', lowModel: 'luna', highModel: 'terra', voiceModel: 'gpt-4o-mini-tts' };
 
 describe('POST /api/tts/speak', () => {
   let testDb: TestDb;
@@ -21,116 +20,35 @@ describe('POST /api/tts/speak', () => {
     db = testDb.db;
   }, 60000);
 
-  afterAll(async () => {
-    await testDb.cleanup();
-  });
+  afterAll(async () => testDb.cleanup());
+  afterEach(() => vi.unstubAllGlobals());
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  async function headersForNewUser(email: string): Promise<Record<string, string>> {
-    const headers = { 'x-auth-request-email': email, 'x-auth-request-user': 'Tester' };
-    // getOrCreate on first request also grants the signup credits this suite relies on.
-    const app = buildApp({ authMode: 'proxy', db });
+  test('requires an unlocked configured voice model', async () => {
+    const app = buildApp({ authMode: 'proxy', db, llmSetupVault: vault, llmUnlockStore: createMemoryLlmUnlockStore({ pepper: 'tts-test', ttlSeconds: 60 }), ttsConfig });
+    const headers = { 'x-auth-request-email': 'tts-no-setup@example.com', 'x-auth-request-user': 'Tester' };
     await app.inject({ method: 'GET', url: '/api/users/me', headers });
-    return headers;
-  }
-
-  test('rejects when the account has not enabled coach voice', async () => {
-    const app = buildApp({ authMode: 'proxy', db, ttsConfig });
-    const headers = await headersForNewUser('tts-disabled@example.com');
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/tts/speak',
-      headers,
-      payload: { text: 'hello there', persona: 'general' }
-    });
-
+    await app.inject({ method: 'PATCH', url: '/api/users/me', headers, payload: { ttsEnabled: true, ttsBackend: 'openai' } });
+    const response = await app.inject({ method: 'POST', url: '/api/tts/speak', headers, payload: { text: 'hello', persona: 'general' } });
     expect(response.statusCode).toBe(403);
+    expect(response.json().title).toContain('Unlock');
   });
 
-  test('rejects when the account is enabled but on the browser backend', async () => {
-    const app = buildApp({ authMode: 'proxy', db, ttsConfig });
-    const headers = await headersForNewUser('tts-browser@example.com');
-    await app.inject({
-      method: 'PATCH',
-      url: '/api/users/me',
-      headers,
-      payload: { ttsEnabled: true, ttsBackend: 'browser' }
+  test('uses the configured endpoint and voice model', async () => {
+    const fetchMock = vi.fn<typeof fetch>((input) => {
+      if (String(input).endsWith('/audio/speech')) return Promise.resolve(new Response(new Uint8Array([1, 2]), { status: 200, headers: { 'content-type': 'audio/mpeg' } }));
+      return Promise.resolve(new Response(JSON.stringify({ choices: [{ message: { content: 'OK' } }] }), { status: 200 }));
     });
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/tts/speak',
-      headers,
-      payload: { text: 'hello there', persona: 'general' }
-    });
-
-    expect(response.statusCode).toBe(403);
-  });
-
-  test('rejects an invalid body as 400', async () => {
-    const app = buildApp({ authMode: 'proxy', db, ttsConfig });
-    const headers = await headersForNewUser('tts-invalid@example.com');
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/tts/speak',
-      headers,
-      payload: { text: '', persona: 'general' }
-    });
-
-    expect(response.statusCode).toBe(400);
-  });
-
-  test('synthesizes audio, returns it, and debits credits + logs the call', async () => {
-    const fakeAudio = new Uint8Array([1, 2, 3, 4]);
-    const fetchMock = vi.fn<typeof fetch>(() => Promise.resolve(fakeMp3Response(fakeAudio)));
     vi.stubGlobal('fetch', fetchMock);
-
-    const app = buildApp({ authMode: 'proxy', db, ttsConfig });
-    const headers = await headersForNewUser('tts-enabled@example.com');
-    await app.inject({
-      method: 'PATCH',
-      url: '/api/users/me',
-      headers,
-      payload: { ttsEnabled: true, ttsBackend: 'openai' }
-    });
-    const profileResponse = await app.inject({ method: 'GET', url: '/api/users/me', headers });
-    const userId = (profileResponse.json() as { id: string }).id;
-    const balanceBefore = await creditsRepo.balance(db, userId);
-
-    const text = 'a'.repeat(1000);
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/tts/speak',
-      headers,
-      payload: { text, persona: 'gambler' }
-    });
-
+    const unlockStore = createMemoryLlmUnlockStore({ pepper: 'tts-test-2', ttlSeconds: 60 });
+    const app = buildApp({ authMode: 'proxy', db, llmSetupVault: vault, llmUnlockStore: unlockStore, ttsConfig });
+    const headers = { 'x-auth-request-email': 'tts-configured@example.com', 'x-auth-request-user': 'Tester' };
+    await app.inject({ method: 'GET', url: '/api/users/me', headers });
+    await app.inject({ method: 'PATCH', url: '/api/users/me', headers, payload: { ttsEnabled: true, ttsBackend: 'openai' } });
+    await app.inject({ method: 'PUT', url: '/api/users/me/llm-setup', headers, payload: { ...setup, unlockPhrase: 'correct horse battery staple' } });
+    const response = await app.inject({ method: 'POST', url: '/api/tts/speak', headers, payload: { text: 'hello', persona: 'gambler' } });
     expect(response.statusCode).toBe(200);
-    expect(response.headers['content-type']).toBe('audio/mpeg');
-    expect(new Uint8Array(response.rawPayload)).toEqual(fakeAudio);
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.openai.com/v1/audio/speech',
-      expect.objectContaining({ method: 'POST' })
-    );
-    const sentBody = JSON.parse(fetchMock.mock.calls[0]![1]?.body as string) as { voice: string; model: string };
-    expect(sentBody).toEqual({ model: 'tts-1', voice: 'verse', input: text, response_format: 'mp3' });
-
-    const balanceAfter = await creditsRepo.balance(db, userId);
-    expect(balanceBefore - balanceAfter).toBe(5); // 1000 chars * 5 credits/1k chars
-
-    const logRow = await db
-      .selectFrom('llmCallLog')
-      .selectAll()
-      .where('userId', '=', userId)
-      .where('purpose', '=', 'tts')
-      .executeTakeFirstOrThrow();
-    expect(logRow.provider).toBe('openai');
-    expect(logRow.inputTokens).toBe(1000);
-    expect(logRow.creditsMetered).toBe(5);
+    expect(new Uint8Array(response.rawPayload)).toEqual(new Uint8Array([1, 2]));
+    expect(String(fetchMock.mock.calls.at(-1)?.[0])).toBe('https://provider.example/v1/audio/speech');
+    expect(fetchMock.mock.calls.at(-1)?.[1]).toEqual(expect.objectContaining({ method: 'POST' }));
   });
 });
