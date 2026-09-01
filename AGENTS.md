@@ -11,14 +11,17 @@ Socratically while tracking their progress over time. The initial build
 (Phases 0–9) is complete and merged — read before coding:
 
 - `docs/architecture.md` — how it fits together (layout, DB, agent, K8s). Always relevant.
-- `docs/plan.md` — remaining work: the Game Report feature (accuracy, phase
-  accuracy, opening/tactics/strategy/endgame scores, classification counts,
-  estimated rating, opening-book integration). Only relevant when a task
-  touches that feature — irrelevant to everything else in the repo, do not
-  read it otherwise. When it is relevant: open it, find the one Phase/Task
-  being worked on, and read only that task's `docs/algorith.md` section per
-  its own "Read:" pointer — never open `docs/algorith.md` cold or read it
-  end-to-end; it's long and most of it won't apply to any single task.
+- `docs/plan.md` — remaining work: programmatic coach diagnostics (the
+  `docs/diagnose.md` code taxonomy, opportunity/episode counting, confidence,
+  data-quality gates, focus selection). Only relevant when a task touches
+  that feature — irrelevant to everything else in the repo, do not read it
+  otherwise. When it is relevant: open it, find the one Phase/Task being
+  worked on, and read only that task's `docs/diagnose.md` section per its own
+  "Read:" pointer — never open `docs/diagnose.md` cold or read it end-to-end;
+  it's long and most of it won't apply to any single task.
+- `docs/algorith.md` — the spec behind the *shipped* Game Report (accuracy,
+  scores, classification, estimated rating, opening book). Same rule: only
+  open the one subsection a task's "Read:" line names, never cold.
 
 
 ## Commands
