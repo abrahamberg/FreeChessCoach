@@ -35,7 +35,7 @@ export interface GamesTable {
   id: Generated<string>;
   userId: string;
   pgn: string;
-  source: 'paste' | 'upload' | 'lichess' | 'coach_play' | 'vs_bot';
+  source: 'paste' | 'upload' | 'lichess' | 'coach_play' | 'vs_bot' | 'chesscom';
   userColor: 'white' | 'black';
   whiteName: string | null;
   blackName: string | null;

@@ -395,6 +395,8 @@ describe('UserProfileSchema', () => {
       email: 'student@example.com',
       displayName: 'daniel',
       ratingBand: 'club',
+      rating: null,
+      ratingSource: null,
       lichessUsername: null,
       chesscomUsername: 'daniel_c',
       selfAssessment: null,

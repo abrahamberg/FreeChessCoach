@@ -1,14 +1,14 @@
 import { z } from 'zod';
 import { AnalysisStatusSchema } from './analysis.js';
 
-export const GameSourceSchema = z.enum(['paste', 'upload', 'lichess', 'coach_play', 'vs_bot']);
+export const GameSourceSchema = z.enum(['paste', 'upload', 'lichess', 'coach_play', 'vs_bot', 'chesscom']);
 export type GameSource = z.infer<typeof GameSourceSchema>;
 
 /** architecture §14: 'coach_play' is set only by createPlaySession
  * (server-side, POST /api/sessions/play) — never a client-supplied import
  * source, so ImportGameRequestSchema below deliberately excludes it. Same
  * reasoning applies to 'vs_bot', set only by createBotSession. */
-export const ImportableGameSourceSchema = z.enum(['paste', 'upload', 'lichess']);
+export const ImportableGameSourceSchema = z.enum(['paste', 'upload', 'lichess', 'chesscom']);
 export type ImportableGameSource = z.infer<typeof ImportableGameSourceSchema>;
 
 export const PlayerColorSchema = z.enum(['white', 'black']);
@@ -49,6 +49,27 @@ export type LichessRecentGame = z.infer<typeof LichessRecentGameSchema>;
 
 export const LichessRecentGamesResponseSchema = z.array(LichessRecentGameSchema);
 export type LichessRecentGamesResponse = z.infer<typeof LichessRecentGamesResponseSchema>;
+
+/** Task 51.6: "From Chess.com" picker row — same base shape as
+ * LichessRecentGameSchema, plus rated/timeClass/both ratings, which the
+ * Chess.com API returns but the existing Lichess client doesn't surface. */
+export const ChesscomRecentGameSchema = z.object({
+  id: z.string(),
+  pgn: z.string(),
+  whiteName: z.string().nullable(),
+  blackName: z.string().nullable(),
+  result: z.string().nullable(),
+  timeControl: z.string().nullable(),
+  playedAt: z.string().nullable(),
+  rated: z.boolean(),
+  timeClass: z.string(),
+  whiteRating: z.number().int().nullable(),
+  blackRating: z.number().int().nullable()
+});
+export type ChesscomRecentGame = z.infer<typeof ChesscomRecentGameSchema>;
+
+export const ChesscomRecentGamesResponseSchema = z.array(ChesscomRecentGameSchema);
+export type ChesscomRecentGamesResponse = z.infer<typeof ChesscomRecentGamesResponseSchema>;
 
 /** design.md §4.1: Games (home) list row — enough to render players/result/status
  * chip without a follow-up request per row. */

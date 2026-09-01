@@ -4,6 +4,7 @@ import type { Kysely } from 'kysely';
 import { pingDb } from './db/index.js';
 import type { Database } from './db/schema.js';
 import { registerAnalysesRoutes } from './routes/analyses.js';
+import { registerChesscomRoutes } from './routes/chesscom.js';
 import { registerCreditsRoutes } from './routes/credits.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerEngineTunnelRoutes } from './routes/engine-tunnel.js';
@@ -21,6 +22,7 @@ import { errorMapperPlugin } from './plugins/error-mapper.js';
 import { registerUsersRoutes } from './routes/users.js';
 import { noopJobQueue, type JobQueue } from './jobs/queue.js';
 import type { KeyVault } from './llm/key-vault.js';
+import { createChesscomClient, type ChesscomClient } from './services/chesscom.js';
 import { createLichessClient, type LichessClient } from './services/lichess.js';
 import type { CoachAgentBaseDependencies } from './bootstrap.js';
 import type { EngineTunnelRegistry } from './services/engine/engine-tunnel-registry.js';
@@ -42,6 +44,7 @@ export interface BuildAppOptions {
   coachAgentBaseDeps?: CoachAgentBaseDependencies;
   engineBackendOptions?: ResolveEngineBackendOptions;
   lichessClient?: LichessClient;
+  chesscomClient?: ChesscomClient;
   /** Required to register /api/credits/checkout and /api/stripe/webhook. */
   stripeClient?: StripeClient;
   /** Required to register POST /api/tts/speak (the OpenAI coach-voice backend). */
@@ -85,6 +88,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     registerStatsRoutes(app, options.db);
     registerGamesRoutes(app, options.db, options.jobQueue ?? noopJobQueue);
     registerLichessRoutes(app, options.db, options.lichessClient ?? createLichessClient());
+    registerChesscomRoutes(app, options.db, options.chesscomClient ?? createChesscomClient());
     registerAnalysesRoutes(
       app,
       options.db,

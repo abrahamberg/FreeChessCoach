@@ -349,6 +349,31 @@ describe('POST/GET /api/games', () => {
     expect(user?.chesscomUsername).toBe('cc_learner');
   });
 
+  // Task 51.6: source: 'chesscom' (the new client's own import path) must
+  // learn the username the same way source: 'lichess' already does, even
+  // with no Site header naming chess.com to sniff.
+  test('learns the chess.com username from source: "chesscom" alone, with no Site header to sniff', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('cc-source-learner@example.com', 'CcSourceLearner');
+    const noSiteHeaderPgn = `[Event "Test"]
+[White "cc_source_learner"]
+[Black "Bob"]
+[Result "1-0"]
+
+1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0`;
+
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: noSiteHeaderPgn, source: 'chesscom', userColor: 'white' }
+    });
+    expect(imported.statusCode).toBe(200);
+
+    const user = await usersRepo.findByEmail(db, 'cc-source-learner@example.com');
+    expect(user?.chesscomUsername).toBe('cc_source_learner');
+  });
+
   test('never overwrites an already-known lichess username', async () => {
     const app = buildTestApp();
     const headers = headersFor('already-known@example.com', 'AlreadyKnown');

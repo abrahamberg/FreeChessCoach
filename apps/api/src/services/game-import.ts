@@ -132,6 +132,7 @@ function detectPlatform(
   headers: Record<string, string>
 ): 'lichess' | 'chesscom' | null {
   if (source === 'lichess') return 'lichess';
+  if (source === 'chesscom') return 'chesscom';
   const site = headers['Site']?.toLowerCase() ?? '';
   if (site.includes('lichess.org')) return 'lichess';
   if (site.includes('chess.com')) return 'chesscom';
