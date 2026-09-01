@@ -4,7 +4,6 @@ import {
   buildCoachAgentBaseDependencies,
   buildGatewayConfigFromEnv,
   buildResolveEngineBackendOptions,
-  buildStripeClientFromEnv,
   buildTtsConfigFromEnv,
   openLichessEvalIndexFromEnv,
   requireEnv
@@ -36,7 +35,6 @@ async function main(): Promise<void> {
   const lichessEvalIndex = await openLichessEvalIndexFromEnv();
   const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, engineTunnelRegistry, lichessEvalIndex);
   const coachAgentBaseDeps = buildCoachAgentBaseDependencies(db, jobQueue, gatewayConfig);
-  const stripeClient = buildStripeClientFromEnv();
   const ttsConfig = buildTtsConfigFromEnv();
 
   const app = buildApp({
@@ -47,7 +45,6 @@ async function main(): Promise<void> {
     engineBackendOptions,
     engineTunnelRegistry,
     internalToken: requireEnv('ENGINE_TUNNEL_INTERNAL_TOKEN'),
-    stripeClient,
     ttsConfig
   });
   const port = Number(process.env.PORT ?? 3000);

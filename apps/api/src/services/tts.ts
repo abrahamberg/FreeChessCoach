@@ -1,9 +1,5 @@
 import type { CoachPersona } from '@freechesscoach/shared';
-import type { Kysely } from 'kysely';
-import * as creditsRepo from '../db/repositories/credits.js';
-import type { Database } from '../db/schema.js';
 import { synthesizeSpeech } from '../llm/openai-tts.js';
-import type { CreditsService } from './credits.js';
 
 /** Matched to each persona's gender/age voice profile (COACH_PERSONA_INFO —
  * see coaches.md) using gpt-4o-mini-tts's voice roster (alloy, ash, ballad,
@@ -24,64 +20,26 @@ export const PERSONA_VOICES: Record<CoachPersona, string> = {
   gambler: 'verse' // Male, 40s — dynamic, charismatic, versatile.
 };
 
+/** Server-level TTS config: just the model id. The API key is resolved
+ * per-request from the user's BYOK OpenAI key (see routes/tts.ts), since the
+ * app is bring-your-own-key only. */
 export interface TtsConfig {
-  apiKey: string;
   modelId: string;
-  /** AI-credit cost per 1000 characters of input text — env-configurable
-   * (AGENTS.md: never hardcode prices), since OpenAI bills TTS per
-   * character, not per token, so it can't reuse llm/metering.ts's formula. */
-  creditsPer1kChars: number;
 }
 
 export interface SpeakParams {
-  userId: string;
-  sessionId: string | null;
   persona: CoachPersona;
   text: string;
 }
 
-export function computeTtsCredits(characterCount: number, creditsPer1kChars: number): number {
-  return Math.ceil((characterCount / 1000) * creditsPer1kChars);
-}
-
-/** Synthesizes speech and records the spend — debit + call-log row in one
- * transaction, the same "either both happen or neither does" shape as
- * llm/gateway.ts's recordUsage. Character count rides in llm_call_log's
- * existing inputTokens column (outputTokens/cachedInputTokens = 0) rather
- * than adding a TTS-specific column: same table, same audit trail, no schema
- * growth for one more call type. */
-export async function speak(
-  db: Kysely<Database>,
-  config: TtsConfig,
-  creditsService: CreditsService,
-  params: SpeakParams
-): Promise<Buffer> {
-  await creditsService.assertCanSpend(params.userId);
-
-  const audio = await synthesizeSpeech({
-    apiKey: config.apiKey,
+/** Synthesizes speech with the user's own OpenAI BYOK key. No credit
+ * accounting — usage shows up on the user's own OpenAI bill, same as every
+ * other BYOK call. */
+export async function speak(config: TtsConfig, apiKey: string, params: SpeakParams): Promise<Buffer> {
+  return synthesizeSpeech({
+    apiKey,
     modelId: config.modelId,
     voice: PERSONA_VOICES[params.persona],
     text: params.text
   });
-  const credits = computeTtsCredits(params.text.length, config.creditsPer1kChars);
-
-  await db.transaction().execute(async (trx) => {
-    if (credits > 0) {
-      await creditsRepo.insertUsageDebit(trx, params.userId, params.sessionId, credits);
-    }
-    await creditsRepo.insertCallLog(trx, {
-      userId: params.userId,
-      sessionId: params.sessionId,
-      provider: 'openai',
-      model: config.modelId,
-      inputTokens: params.text.length,
-      outputTokens: 0,
-      cachedInputTokens: 0,
-      creditsMetered: credits,
-      purpose: 'tts'
-    });
-  });
-
-  return audio;
 }

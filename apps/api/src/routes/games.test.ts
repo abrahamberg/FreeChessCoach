@@ -127,10 +127,8 @@ describe('POST/GET /api/games', () => {
       jobQueue,
       gatewayConfig: {
         keyVault: createKeyVault(Buffer.alloc(32, 7).toString('base64')),
-        platformKeys: {},
         modelIds: { standard: { anthropic: '', openai: '' }, light: { anthropic: '', openai: '' } }
-      },
-      callLightModel: vi.fn()
+      }
     };
     const engineBackendOptions = buildResolveEngineBackendOptions(db, 'http://engine:4001', { request: vi.fn() }, null);
     return buildApp({ authMode: 'proxy', db, jobQueue, coachAgentBaseDeps, engineBackendOptions });

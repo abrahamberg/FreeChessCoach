@@ -2,13 +2,10 @@ import { ENGINE_DEFAULT_DEPTH, OpenAiServiceTierSchema, ReasoningEffortSchema } 
 import type { Kysely } from 'kysely';
 import type { Database } from './db/schema.js';
 import type { JobQueue } from './jobs/queue.js';
-import { buildModel, resolveCallOptions, type GatewayConfig, type ModelResolution } from './llm/gateway.js';
-import { buildFakeModel } from './llm/fake.js';
+import type { GatewayConfig } from './llm/gateway.js';
 import { DEFAULT_MODEL_TUNING, type ModelTuning } from './llm/model-options.js';
-import { generateProse } from './llm/text.js';
 import type { KeyVault } from './llm/key-vault.js';
 import type { CoachAgentDependencies } from './services/coach-agent.js';
-import { createStripeClient, type StripeClient } from './services/stripe.js';
 import type { TtsConfig } from './services/tts.js';
 import type { EngineTunnelTransport } from './services/engine/engine-tunnel-transport.js';
 import { LichessEvalIndex, LichessEvalIndexFormatError } from './services/engine/lichess-eval-index.js';
@@ -20,17 +17,14 @@ export function requireEnv(name: string): string {
   return value;
 }
 
-/** Reads the env vars architecture §8 defines for the LLM gateway. Platform
- * keys are optional (a deployment can run BYOK-only), model ids are required.
- * `LLM_FAKE=1` (Task 7.2 smoke-test mode) short-circuits every model call in
- * getModelForUser — see llm/gateway.ts. */
+/** Reads the env vars the LLM gateway needs. The app is BYOK-only — users
+ * supply their own Anthropic/OpenAI API key (stored encrypted in
+ * user_llm_keys), so there are no platform keys here, only the per-tier model
+ * ids. `LLM_FAKE=1` (Task 7.2 smoke-test mode) short-circuits every model call
+ * in getModelForUser — see llm/gateway.ts. */
 export function buildGatewayConfigFromEnv(keyVault: KeyVault): GatewayConfig {
   return {
     keyVault,
-    platformKeys: {
-      anthropic: process.env.ANTHROPIC_API_KEY,
-      openai: process.env.OPENAI_API_KEY
-    },
     modelIds: {
       standard: {
         anthropic: requireEnv('LLM_STANDARD_MODEL_ANTHROPIC'),
@@ -92,81 +86,38 @@ export interface CoachAgentBaseDependencies {
   db: Kysely<Database>;
   jobQueue: JobQueue;
   gatewayConfig: GatewayConfig;
-  callLightModel: CoachAgentDependencies['callLightModel'];
   /** Optional test-only override, carried through from CoachAgentDependencies
    * so sessions.test.ts can still inject a MockLanguageModelV4 via the base
    * deps — production callers never set this. */
   resolveModel?: CoachAgentDependencies['resolveModel'];
 }
 
-/** Everything CoachAgentDependencies needs except analyzePosition, which
- * must be resolved per-request against the specific user (design spec §3) —
- * see routes/sessions.ts's buildRequestScopedAgentDeps. */
+/** Everything CoachAgentDependencies needs except analyzePosition and
+ * callLightModel, both of which are resolved per-request against the
+ * specific user (design spec §3 / BYOK) — see routes/sessions.ts's
+ * buildRequestScopedAgentDeps. */
 export function buildCoachAgentBaseDependencies(
   db: Kysely<Database>,
   jobQueue: JobQueue,
   gatewayConfig: GatewayConfig
 ): CoachAgentBaseDependencies {
-  const lightResolution = buildLightResolution(gatewayConfig);
-
   return {
     db,
     jobQueue,
-    gatewayConfig,
-    callLightModel: async (messages) => {
-      const result = await generateProse({
-        resolution: lightResolution,
-        system: messages.system,
-        prompt: messages.user
-      });
-      return result.text;
-    }
+    gatewayConfig
   };
-}
-
-/** Optional: only wired when STRIPE_SECRET_KEY is set (Task 8.1), the same way
- * platform LLM keys are optional — local/dev docker-compose runs fine with no
- * Stripe configured at all, and /api/credits/checkout + /api/stripe/webhook
- * simply don't register (see app.ts). Once secretKey is set, the rest of the
- * STRIPE_* vars are required together. */
-export function buildStripeClientFromEnv(): StripeClient | undefined {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) return undefined;
-
-  return createStripeClient({
-    secretKey,
-    webhookSecret: requireEnv('STRIPE_WEBHOOK_SECRET'),
-    priceIds: {
-      small: requireEnv('STRIPE_PRICE_SMALL'),
-      medium: requireEnv('STRIPE_PRICE_MEDIUM'),
-      large: requireEnv('STRIPE_PRICE_LARGE')
-    },
-    successUrl: requireEnv('STRIPE_CHECKOUT_SUCCESS_URL'),
-    cancelUrl: requireEnv('STRIPE_CHECKOUT_CANCEL_URL')
-  });
 }
 
 const DEFAULT_TTS_MODEL_OPENAI = 'gpt-4o-mini-tts';
 
-/** Optional: only wired when OPENAI_API_KEY is set, the same "missing key,
- * the route simply doesn't register" pattern as Stripe
- * (buildStripeClientFromEnv) — a deployment with no OpenAI key just doesn't
- * offer the OpenAI TTS backend. Unlike the LLM gateway's model ids
- * (LLM_STANDARD_MODEL_OPENAI etc., which are required with no default —
- * getting those wrong is expensive and provider-specific), TTS_MODEL_OPENAI
- * defaults to 'gpt-4o-mini-tts' (cheaper and more expressive than 'tts-1',
- * and the model this app's persona voices in services/tts.ts were chosen
- * against) and only needs overriding to pick a different voice model; it
- * must never be a hard requirement that can crash the whole API process
- * just because OPENAI_API_KEY happens to be set for the (unrelated) LLM
- * gateway. TTS_OPENAI_CREDITS_PER_1K_CHARS has a working default too. */
+/** The OpenAI TTS model id only — the API key itself is resolved per-request
+ * from the user's BYOK OpenAI key (see routes/tts.ts), since the app is
+ * bring-your-own-key only. TTS_MODEL_OPENAI defaults to 'gpt-4o-mini-tts'
+ * (cheaper and more expressive than 'tts-1'); it must never be a hard
+ * requirement that can crash the whole API process. */
 export function buildTtsConfigFromEnv(): TtsConfig | undefined {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return undefined;
   return {
-    apiKey,
-    modelId: process.env.TTS_MODEL_OPENAI ?? DEFAULT_TTS_MODEL_OPENAI,
-    creditsPer1kChars: parsePositiveInt('TTS_OPENAI_CREDITS_PER_1K_CHARS', 5)
+    modelId: process.env.TTS_MODEL_OPENAI ?? DEFAULT_TTS_MODEL_OPENAI
   };
 }
 
@@ -256,32 +207,5 @@ export async function openLichessEvalIndexFromEnv(): Promise<LichessEvalIndex | 
     }
     throw error;
   }
-}
-
-/** The light model as a ModelResolution, so it carries the same reasoning and
- * provider tuning as a gateway-resolved one. `metered: false` because these
- * digests are not attributed to a specific user's BYOK — see the doc comment
- * on buildCoachAgentDependencies. */
-function buildLightResolution(gatewayConfig: GatewayConfig): ModelResolution {
-  if (gatewayConfig.fake) {
-    return {
-      model: buildFakeModel(),
-      metered: false,
-      provider: 'anthropic',
-      modelId: 'llm-fake',
-      callOptions: resolveCallOptions(gatewayConfig, 'anthropic', 'light')
-    };
-  }
-  const provider = gatewayConfig.platformKeys.anthropic ? 'anthropic' : 'openai';
-  const apiKey = gatewayConfig.platformKeys[provider];
-  if (!apiKey) throw new Error('No platform LLM key configured (required for callLightModel)');
-  const modelId = gatewayConfig.modelIds.light[provider];
-  return {
-    model: buildModel(provider, apiKey, modelId),
-    metered: false,
-    provider,
-    modelId,
-    callOptions: resolveCallOptions(gatewayConfig, provider, 'light')
-  };
 }
 

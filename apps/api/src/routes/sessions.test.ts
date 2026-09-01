@@ -6,7 +6,6 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi 
 import type { CoachingPlan, PositionAnalysis } from '@freechesscoach/shared';
 import { buildApp } from '../app.js';
 import * as analysesRepo from '../db/repositories/analyses.js';
-import * as creditsRepo from '../db/repositories/credits.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
@@ -123,7 +122,6 @@ describe('sessions routes', () => {
 
   async function setupReadyGame(email: string) {
     const user = await usersRepo.insert(db, { email, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn: PGN,
@@ -148,7 +146,6 @@ describe('sessions routes', () => {
   function coachAgentBaseDeps(model: MockLanguageModelV4): CoachAgentBaseDependencies {
     const gatewayConfig: GatewayConfig = {
       keyVault,
-      platformKeys: { anthropic: 'platform-key' },
       modelIds: {
         standard: { anthropic: 'claude-standard', openai: 'gpt-standard' },
         light: { anthropic: 'claude-light', openai: 'gpt-light' }
@@ -158,7 +155,6 @@ describe('sessions routes', () => {
       db,
       jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn() },
       gatewayConfig,
-      callLightModel: vi.fn().mockResolvedValue('engine says the position is roughly equal.'),
       resolveModel: () => Promise.resolve(mockResolution(model))
     };
   }
@@ -458,61 +454,6 @@ describe('sessions routes', () => {
       expect(getResponse.json().currentPly).toBe(4);
     }, 15000);
 
-    test('a metered turn writes an llm_call_log row with the usage', async () => {
-      const { user, game } = await setupReadyGame('metered@example.com');
-      const { model } = textStreamModel('Hello!');
-      const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(model), engineBackendOptions: fakeEngineBackendOptions() });
-      const created = await app.inject({
-        method: 'POST',
-        url: '/api/sessions',
-        headers: headersFor(user),
-        payload: { gameId: game.id }
-      });
-      const sessionId = created.json().id;
-
-      await app.inject({
-        method: 'POST',
-        url: `/api/sessions/${sessionId}/messages`,
-        headers: headersFor(user),
-        payload: { content: 'hi coach' }
-      });
-
-      const logs = await db.selectFrom('llmCallLog').selectAll().where('userId', '=', user.id).execute();
-      expect(logs).toHaveLength(1);
-      expect(logs[0]?.purpose).toBe('coach_turn');
-      expect(logs[0]?.inputTokens).toBe(500);
-    }, 15000);
-
-    test('a metered user with 0 balance gets 402 and the session is paused_no_credits', async () => {
-      const { user, game } = await setupReadyGame('nocredits@example.com');
-      // Spend the signup grant down to 0.
-      await creditsRepo.insertUsageDebit(db, user.id, null, 100);
-      const { model } = textStreamModel('Hello!');
-      const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(model), engineBackendOptions: fakeEngineBackendOptions() });
-      const created = await app.inject({
-        method: 'POST',
-        url: '/api/sessions',
-        headers: headersFor(user),
-        payload: { gameId: game.id }
-      });
-      const sessionId = created.json().id;
-
-      const response = await app.inject({
-        method: 'POST',
-        url: `/api/sessions/${sessionId}/messages`,
-        headers: headersFor(user),
-        payload: { content: 'hi coach' }
-      });
-
-      expect(response.statusCode).toBe(402);
-      const getResponse = await app.inject({
-        method: 'GET',
-        url: `/api/sessions/${sessionId}`,
-        headers: headersFor(user)
-      });
-      expect(getResponse.json().status).toBe('paused_no_credits');
-    }, 15000);
-
     test('an empty body resumes the pending [session_start] turn — the coach opens on its own, no student input needed', async () => {
       const { user, game } = await setupReadyGame('kickoff@example.com');
       const { model, doStream } = textStreamModel('Hi! Ready to dig into your game?');
@@ -805,7 +746,7 @@ describe('sessions routes', () => {
 
     afterEach(() => vi.unstubAllGlobals());
 
-    test('POST /api/sessions/play creates a coach_play game + play-mode session, with no analysis/credits gate', async () => {
+    test('POST /api/sessions/play creates a coach_play game + play-mode session, with no analysis gate', async () => {
       const user = await usersRepo.insert(db, { email: 'playstart@example.com', displayName: 'Ann' });
       const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
 

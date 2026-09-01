@@ -31,16 +31,6 @@ describe('authHeadersPlugin', () => {
     }
   );
 
-  test('exempts /api/stripe/webhook from the proxy-header requirement, without setting request.user', async () => {
-    const app = buildApp({ authMode: 'proxy' });
-    app.post('/api/stripe/webhook', async (request) => ({ userSet: request.user !== undefined }));
-
-    const response = await app.inject({ method: 'POST', url: '/api/stripe/webhook' });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ userSet: false });
-  });
-
   test('exempts any /internal/* path from the proxy-header requirement, without requiring x-internal-token here', async () => {
     const app = buildApp({ authMode: 'proxy' });
     app.post('/internal/some-route', async (request) => ({ userSet: request.user !== undefined }));

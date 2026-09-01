@@ -88,13 +88,11 @@ describe('POST /api/positions/analyze', () => {
       jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn() },
       gatewayConfig: {
         keyVault: { encrypt: vi.fn(), decrypt: vi.fn() },
-        platformKeys: {},
         modelIds: {
           standard: { anthropic: 'claude-standard', openai: 'gpt-standard' },
           light: { anthropic: 'claude-light', openai: 'gpt-light' }
         }
-      },
-      callLightModel: vi.fn()
+      }
     };
     const engineBackendOptions = buildResolveEngineBackendOptions(db, ENGINE_URL, { request: vi.fn() }, null);
     return {

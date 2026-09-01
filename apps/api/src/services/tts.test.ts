@@ -1,18 +1,6 @@
 import { COACH_PERSONAS } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { computeTtsCredits, PERSONA_VOICES } from './tts.js';
-
-describe('computeTtsCredits', () => {
-  test('rounds up to the nearest whole credit', () => {
-    expect(computeTtsCredits(1000, 5)).toBe(5);
-    expect(computeTtsCredits(1, 5)).toBe(1);
-    expect(computeTtsCredits(1500, 5)).toBe(8);
-  });
-
-  test('zero-length text costs nothing', () => {
-    expect(computeTtsCredits(0, 5)).toBe(0);
-  });
-});
+import { PERSONA_VOICES } from './tts.js';
 
 describe('PERSONA_VOICES', () => {
   test('every coach persona has an OpenAI voice mapped', () => {

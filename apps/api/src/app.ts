@@ -4,7 +4,6 @@ import type { Kysely } from 'kysely';
 import { pingDb } from './db/index.js';
 import type { Database } from './db/schema.js';
 import { registerAnalysesRoutes } from './routes/analyses.js';
-import { registerCreditsRoutes } from './routes/credits.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerEngineTunnelRoutes } from './routes/engine-tunnel.js';
 import { registerEngineTunnelInternalRoutes } from './routes/engine-tunnel-internal.js';
@@ -14,7 +13,6 @@ import { registerLlmKeysRoutes } from './routes/llm-keys.js';
 import { registerPositionAnalysisRoutes } from './routes/positions.js';
 import { registerSessionsRoutes } from './routes/sessions.js';
 import { registerStatsRoutes } from './routes/stats.js';
-import { registerStripeWebhookRoutes } from './routes/stripe-webhook.js';
 import { registerTtsRoutes } from './routes/tts.js';
 import { authHeadersPlugin, type AuthHeadersOptions } from './plugins/auth-headers.js';
 import { errorMapperPlugin } from './plugins/error-mapper.js';
@@ -25,7 +23,6 @@ import { createLichessClient, type LichessClient } from './services/lichess.js';
 import type { CoachAgentBaseDependencies } from './bootstrap.js';
 import type { EngineTunnelRegistry } from './services/engine/engine-tunnel-registry.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
-import type { StripeClient } from './services/stripe.js';
 import type { TtsConfig } from './services/tts.js';
 
 const DEFAULT_ANALYSES_POLL_INTERVAL_MS = 1000;
@@ -42,9 +39,8 @@ export interface BuildAppOptions {
   coachAgentBaseDeps?: CoachAgentBaseDependencies;
   engineBackendOptions?: ResolveEngineBackendOptions;
   lichessClient?: LichessClient;
-  /** Required to register /api/credits/checkout and /api/stripe/webhook. */
-  stripeClient?: StripeClient;
-  /** Required to register POST /api/tts/speak (the OpenAI coach-voice backend). */
+  /** Required to register POST /api/tts/speak (the OpenAI coach-voice backend,
+   *  resolved per-request against the user's BYOK OpenAI key). */
   ttsConfig?: TtsConfig;
   /** Required to register the browser-facing GET /api/engine-tunnel WS route. */
   engineTunnelRegistry?: EngineTunnelRegistry;
@@ -97,12 +93,8 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       registerSessionsRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions);
       registerPositionAnalysisRoutes(app, options.db, options.engineBackendOptions);
     }
-    if (options.stripeClient) {
-      registerCreditsRoutes(app, options.db, options.stripeClient);
-      registerStripeWebhookRoutes(app, options.db, options.stripeClient);
-    }
-    if (options.ttsConfig) {
-      registerTtsRoutes(app, options.db, options.ttsConfig);
+    if (options.ttsConfig && options.keyVault) {
+      registerTtsRoutes(app, options.db, options.keyVault, options.ttsConfig);
     }
     if (options.engineTunnelRegistry) {
       const db = options.db;

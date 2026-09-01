@@ -4,9 +4,8 @@ import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import type { Database } from '../db/schema.js';
-import { getModelForUser, recordUsage, type GatewayConfig } from '../llm/gateway.js';
+import { getModelForUser, type GatewayConfig } from '../llm/gateway.js';
 import { generateStructured } from '../llm/text.js';
-import { toBillableTokens } from '../llm/usage.js';
 import { resolveEngineBackend, type ResolveEngineBackendOptions } from '../services/engine/resolve-engine-backend.js';
 import { runAnalyzeGameJob, type AnalysisJobDependencies, type PlannerMessages } from '../services/analysis.js';
 import type { DeepenAnalysisJobPayload } from './deepen-analysis.js';
@@ -62,16 +61,6 @@ async function callPlannerModel(
     system: messages.system,
     prompt: messages.user,
     schema: CoachingPlanSchema
-  });
-
-  await recordUsage(db, {
-    userId,
-    provider: resolution.provider,
-    model: resolution.modelId,
-    tier: 'light',
-    usage: toBillableTokens(result.usage),
-    purpose: 'analysis_plan',
-    metered: resolution.metered
   });
 
   return result.object;

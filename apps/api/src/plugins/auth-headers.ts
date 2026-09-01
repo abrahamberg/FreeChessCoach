@@ -24,17 +24,14 @@ const DEV_STUB_USER: AuthUser = { email: 'dev@local.test', displayName: 'dev@loc
 
 // architecture.md §11/§12: oauth2-proxy is configured with `--skip-auth-route` for
 // each of these paths and never sets X-Auth-Request-* headers on them.
-//   /api/stripe/webhook — Stripe calls it directly and is authenticated instead by
-//     the webhook signature (routes/stripe-webhook.ts).
 //   /healthz, /readyz — the k8s kubelet probes these directly, bypassing the proxy,
 //     with no headers of any kind; requiring auth here would keep every pod out of
 //     the Ready state (deploy/helm/freechesscoach api Deployment).
 // /internal/* (checked separately below, not added to this set since it's a prefix
 //   match rather than an exact path) — the worker process calls these directly, never
 //   through oauth2-proxy, and is authenticated instead by a shared-secret
-//   x-internal-token header (routes/engine-tunnel-internal.ts), the same pattern as
-//   the Stripe webhook's signature check above.
-const AUTH_EXEMPT_PATHS = new Set(['/api/stripe/webhook', '/healthz', '/readyz']);
+//   x-internal-token header (routes/engine-tunnel-internal.ts).
+const AUTH_EXEMPT_PATHS = new Set(['/healthz', '/readyz']);
 
 /** Decorates `request.user` from oauth2-proxy identity headers. In reverse-proxy
  * mode (the default), oauth2-proxy v7.x passes `X-Forwarded-Email` and
