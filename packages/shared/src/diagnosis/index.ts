@@ -20,6 +20,7 @@ import { TM_CODES } from './families/tm.js';
 
 export * from './axes.js';
 export * from './catalog-types.js';
+export * from './data-quality.js';
 export * from './families/at.js';
 export * from './families/bv.js';
 export * from './families/ca.js';
