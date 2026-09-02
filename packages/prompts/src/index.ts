@@ -4,6 +4,7 @@ export * from './candidate-briefing.js';
 export * from './bot-move-choice.js';
 export * from './coach-persona.js';
 export * from './coach-system.js';
+export * from './diagnostic-report.js';
 export * from './episode-context.js';
 export * from './episode-fold.js';
 export * from './investigate-position.js';

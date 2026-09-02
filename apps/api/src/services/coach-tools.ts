@@ -4,6 +4,7 @@ import {
   coachToolDescription,
   endSessionParameters,
   expectMoveParameters,
+  getDiagnosticProfileParameters,
   getEngineAnalysisParameters,
   getUserProfileParameters,
   hypotheticalLineParameters,
@@ -12,21 +13,26 @@ import {
   recallMoveParameters,
   recordFindingParameters,
   recordMoveNoteParameters,
+  renderDiagnosticProfileBlock,
   renderEngineAnalysisSummary,
   renderFocusAreasBlock,
   renderRecentFindingsBlock,
   showPositionParameters,
-  updateThreadsParameters
+  updateThreadsParameters,
+  type DiagnosticReportItem
 } from '@freechesscoach/prompts';
-import { moveRefToPly } from '@freechesscoach/chess-analysis';
-import type { Finding, FocusAreaUpdate, PositionAnalysis, SessionMode, Thread } from '@freechesscoach/shared';
+import { evaluateGates, moveRefToPly, type DiagnosticProfileEntry } from '@freechesscoach/chess-analysis';
+import type { EmittableConfidenceLevel, Finding, FocusAreaUpdate, PositionAnalysis, SessionMode, Thread } from '@freechesscoach/shared';
 import { tool, type ToolSet } from '../llm/tools.js';
 import type { Kysely } from 'kysely';
+import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
+import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
 import { buildPlayCoachTools } from './coach-tools-play.js';
 import { createTurnGuardState, withTurnGuards } from './coach-tool-guards.js';
+import { toGateWindowGame, windowByTimeControl } from './diagnostic-window.js';
 import { getPositionAtPly } from './game-positions.js';
 import { recallMove, recordMoveNote, type MoveAddress } from './move-notes.js';
 import * as progressService from './progress.js';
@@ -92,6 +98,11 @@ export function buildCoachTools(ctx: CoachToolsContext, deps: CoachToolsDependen
       description: coachToolDescription('get_user_profile'),
       inputSchema: getUserProfileParameters,
       execute: withTurnGuards(guardState, 'get_user_profile', () => getUserProfileText(deps.db, ctx.userId))
+    }),
+    get_diagnostic_profile: tool({
+      description: coachToolDescription('get_diagnostic_profile'),
+      inputSchema: getDiagnosticProfileParameters,
+      execute: withTurnGuards(guardState, 'get_diagnostic_profile', () => getDiagnosticProfileText(deps.db, ctx))
     }),
     record_finding: tool({
       description: coachToolDescription('record_finding'),
@@ -213,6 +224,67 @@ async function getUserProfileText(db: Kysely<Database>, userId: string): Promise
     `FINDING COUNTS (last 20 games)\n${findingCounts}`,
     `SESSIONS TOGETHER: ${summary.sessionCount}`
   ].join('\n\n');
+}
+
+const CONFIDENCE_RANK: Record<EmittableConfidenceLevel, number> = { probable: 2, signal: 1, insufficient: 0 };
+
+/** §IV/§VI's "top three diagnoses" for `get_diagnostic_profile`: highest
+ * confidence tier first, then most episodes — recurrence is the tie-
+ * breaker, not `select-focus.ts`'s full §IV override machinery (this tool
+ * is a status report to the coach, not the "choose the one focus" decision
+ * Task 55.4 already owns). `insufficient` entries are dropped: the plan's
+ * own standing constraint is that "no confident diagnosis" is a correct,
+ * reportable answer, not something to pad the top three with. */
+function topDiagnoses(profile: readonly DiagnosticProfileEntry[]): DiagnosticProfileEntry[] {
+  return profile
+    .filter((entry) => entry.confidence !== 'insufficient')
+    .sort((a, b) => CONFIDENCE_RANK[b.confidence] - CONFIDENCE_RANK[a.confidence] || b.episodes - a.episodes)
+    .slice(0, 3);
+}
+
+/**
+ * Task 57.2 — `evaluate-gates.ts` (Task 55.2) is never run at persistence
+ * time (`rebuild-diagnostic-profile.ts`'s own doc comment: nothing durable
+ * records `resolveEpisodes`' cascade/decided-position bookkeeping), so this
+ * is where that wiring finally happens: on demand, against the SAME window
+ * `windowByTimeControl` would build right now. `cascadeCollapsedCount` and
+ * `decidedPositionIncidentCount` stay `0` here — that per-incident
+ * bookkeeping only exists transiently inside `resolveEpisodes` at analysis
+ * time (Task 56.3) and was never persisted onto a `diagnostic_observations`
+ * row, so DQ-09/DQ-11 structurally can never fire from this reconstruction.
+ * Every other gate (DQ-01/02/03/04/05/06/08/12/13/16) evaluates against real
+ * data. If the user's games changed since the profile was last rebuilt
+ * (games deleted, more games played), this window can drift from the one
+ * the stored profile was actually computed against — a documented,
+ * accepted staleness window, same as any read against `latestProfile`
+ * that isn't itself freshly rebuilt on every call.
+ */
+async function getDiagnosticProfileText(db: Kysely<Database>, ctx: CoachToolsContext): Promise<string> {
+  const game = await gamesRepo.findById(db, ctx.gameId);
+  const timeControl = game?.timeControl ?? null;
+  if (!timeControl) return renderDiagnosticProfileBlock([]);
+
+  const profileRow = await diagnosticProfilesRepo.latestProfile(db, ctx.userId, timeControl);
+  const top = topDiagnoses(profileRow?.profile ?? []);
+  if (top.length === 0) return renderDiagnosticProfileBlock([]);
+
+  const allGames = await gamesRepo.listByUser(db, ctx.userId);
+  const windowGames = (windowByTimeControl(allGames).get(timeControl) ?? []).map((windowed) => toGateWindowGame(windowed.game));
+
+  const items: DiagnosticReportItem[] = top.map((entry) => ({
+    entry,
+    firedGates: evaluateGates({
+      games: windowGames,
+      opportunities: entry.opportunities,
+      meanReachability: entry.meanReachability,
+      cascadeCollapsedCount: 0,
+      decidedPositionIncidentCount: 0,
+      totalIncidentCount: entry.opportunities,
+      selectionBias: null
+    })
+  }));
+
+  return renderDiagnosticProfileBlock(items);
 }
 
 async function recordFindingTool(

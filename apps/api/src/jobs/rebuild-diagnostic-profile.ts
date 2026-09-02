@@ -1,7 +1,6 @@
 import type { Task } from 'graphile-worker';
 import type { Kysely } from 'kysely';
 import {
-  CONFIG,
   buildDiagnosticProfile,
   extractPgnMoveComments,
   type DiagnosticEntry,
@@ -15,6 +14,7 @@ import * as gamesRepo from '../db/repositories/games.js';
 import type { GameRow } from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
+import { gamePlayedAt, windowByTimeControl } from '../services/diagnostic-window.js';
 
 export interface RebuildDiagnosticProfileJobPayload {
   userId: string;
@@ -24,54 +24,10 @@ export interface RebuildDiagnosticProfileTaskOptions {
   db: Kysely<Database>;
 }
 
-/** §4.2's window minimum ("start with 30 recent rated games") — reused
- * directly from the data-quality gate config rather than a second constant
- * for the same number. */
-const MIN_GAMES = CONFIG.dataQualityGates.minRatedGames;
-
-/** §4.2's own upper bound ("expand to 60-100 games when relevant
- * opportunities are rare") collapsed to a fixed cap rather than the spec's
- * adaptive per-code expansion, which would need iterative re-querying per
- * code — a documented, deliberate simplification, same "known gap"
- * precedent as Task 55.4's curriculum-value exception. */
-export const MAX_WINDOW_GAMES = 100;
-
 /** No numeric rating on file yet (Task 51.5's `users.rating` is nullable) —
  * least-arbitrary neutral default until the user sets one, same practical-
  * default precedent as every other unfootnoted `CONFIG` constant. */
 const DEFAULT_STUDENT_RATING = 1200;
-
-export interface WindowedGame {
-  game: GameRow;
-  playedAt: Date;
-}
-
-function gamePlayedAt(game: GameRow): Date {
-  return game.playedAt ?? game.createdAt;
-}
-
-/** Groups a user's rated games by exact `time_control` (§4.2: never pool
- * across time controls, never collapse to the coarser `speed` band),
- * keeping only the most recent `MAX_WINDOW_GAMES` per group and dropping
- * any group that doesn't clear `MIN_GAMES` — there's nothing to diagnose
- * yet, and the system is allowed to say so by simply not writing a profile
- * for that time control. */
-export function windowByTimeControl(games: readonly GameRow[]): Map<string, WindowedGame[]> {
-  const byTimeControl = new Map<string, WindowedGame[]>();
-  for (const game of games) {
-    if (game.rated !== true || !game.timeControl) continue;
-    const bucket = byTimeControl.get(game.timeControl) ?? [];
-    bucket.push({ game, playedAt: gamePlayedAt(game) });
-    byTimeControl.set(game.timeControl, bucket);
-  }
-
-  const windows = new Map<string, WindowedGame[]>();
-  for (const [timeControl, bucket] of byTimeControl) {
-    const recent = [...bucket].sort((a, b) => b.playedAt.getTime() - a.playedAt.getTime()).slice(0, MAX_WINDOW_GAMES);
-    if (recent.length >= MIN_GAMES) windows.set(timeControl, recent);
-  }
-  return windows;
-}
 
 function opponentRatingFor(game: GameRow): number | null {
   return game.userColor === 'white' ? game.blackElo : game.whiteElo;

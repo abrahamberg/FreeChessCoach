@@ -1335,17 +1335,57 @@ find a working container runtime strategy", no Docker in this sandbox).
 `packages/prompts/src/diagnostic-report.ts`,
 `apps/api/src/services/coach-tools.ts` + tests.
 
-- [ ] Returns a **digested text block**, never raw rows — AGENTS.md rule 8:
+- [x] Returns a **digested text block**, never raw rows — AGENTS.md rule 8:
       anything over ~120 words of non-conversational data gets digested first.
       Top three diagnoses with `E/O`, confidence, severity, scope, intact
       control, and any failed gates.
-- [ ] Wrap in `withTurnGuards` with a per-turn budget like
+- [x] Wrap in `withTurnGuards` with a per-turn budget like
       `get_engine_analysis` has.
-- [ ] `diagnostic-report.ts` follows AGENTS.md rule 9: one named constant or
+- [x] `diagnostic-report.ts` follows AGENTS.md rule 9: one named constant or
       small function per section, `[...].filter(Boolean).join('\n\n')`
       assembly, data-shaped rendering in pure `render.ts`-style functions with
       empty-list tests.
-- [ ] Commit: `feat: get_diagnostic_profile coach tool`.
+- [x] Commit: `feat: get_diagnostic_profile coach tool`.
+
+**Done:** "Top three diagnoses" ranks by confidence tier (`probable` >
+`signal`) then episode count, dropping `insufficient` entries entirely — the
+plan's own standing constraint that "no confident diagnosis" is a correct,
+reportable answer, not a slot to pad. This is a deliberately narrower
+ranking than `select-focus.ts`'s (Task 55.4) full §IV override machinery: an
+eligible primary/secondary there can never carry a fired gate (override 5
+excludes it), so it could never render a "Failed gates" line — but the
+checklist explicitly asks for one per diagnosis, meaning this digest reports
+raw standing, caveats included, rather than the "what to work on next" pick
+`select_focus` already owns.
+
+Gate evaluation (Task 55.2's `evaluateGates`) was never wired anywhere
+through Phase 56 — `rebuild-diagnostic-profile.ts`'s own doc comment named
+Task 57.2 as where that decision gets made. Answer: on demand, inside the
+coach tool itself, against a freshly recomputed window (`windowByTimeControl`
++ `toGateWindowGame`, factored out of the rebuild job into
+`apps/api/src/services/diagnostic-window.ts` so both share one definition of
+"the window"). `cascadeCollapsedCount`/`decidedPositionIncidentCount` are
+always `0` here — that per-incident bookkeeping lives only transiently
+inside `resolveEpisodes` at analysis time (Task 56.3) and was never
+persisted onto a `diagnostic_observations` row, so DQ-09/DQ-11 structurally
+can never fire from this reconstruction; every other gate (DQ-01/02/03/04/
+05/06/08/12/13/16) evaluates against real, freshly-queried data. A known,
+accepted edge case: if the live window has drifted from the one the stored
+profile was actually computed against (games deleted/added since the last
+rebuild), window-level gates like DQ-01 read the CURRENT window, not the
+profile's original one — a documented staleness gap, not a bug.
+
+Per-turn budget: `1`, matching `get_user_profile`'s own "read the student's
+standing evidence once" budget rather than `get_engine_analysis`'s `2` — one
+profile read per turn is all a coaching plan needs. `diagnostic-report.ts`
+renders `{ entry, firedGates }[]` (the `DiagnosticReportItem` the caller
+assembles), never selecting on its own — six unit tests cover the empty-list
+fallback, per-field rendering, multi-item ordering/spacing, the no-control
+case, and the failed-gates line appearing only when gates actually fired.
+`coach-tools.test.ts` gained a `get_diagnostic_profile` describe block
+(Testcontainers, unrun here — no Docker, same precedent as every prior
+Phase 56/57 task) covering both graceful-degradation paths (no time control,
+no stored profile) and the DQ-05 reachability gate actually firing.
 
 ### Task 57.3: Focus areas on diagnosis codes
 

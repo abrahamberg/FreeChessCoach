@@ -1,6 +1,8 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
+import type { DiagnosticProfileEntry } from '@freechesscoach/chess-analysis';
 import type { PositionAnalysis } from '@freechesscoach/shared';
+import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
@@ -45,6 +47,27 @@ function positionAnalysisFixture(fen: string): PositionAnalysis {
 
 const ENGINE_EVAL = positionAnalysisFixture('r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3');
 
+function profileEntryFixture(overrides: Partial<DiagnosticProfileEntry> = {}): DiagnosticProfileEntry {
+  return {
+    code: 'TA-07',
+    direction: 'D',
+    opportunities: 9,
+    episodes: 6,
+    failureRate: 6 / 9,
+    posteriorMean: 0.6,
+    credibleInterval: [0.4, 0.8],
+    confidence: 'probable',
+    spread: { games: 5, sessions: 3, openings: 3, sides: 2 },
+    totalHwdl: 1.8,
+    severityMix: { minor: 0, meaningful: 2, major: 4, decisive: 0 },
+    meanReachability: 0.7,
+    scopeTags: ['general'],
+    controlSkill: { code: 'TA-07', direction: 'O', failureRate: 0.1 },
+    historyStatus: 'persistent',
+    ...overrides
+  };
+}
+
 describe('buildCoachTools', () => {
   let testDb: TestDb;
   let db: Kysely<Database>;
@@ -80,6 +103,28 @@ describe('buildCoachTools', () => {
     return { userId: user.id, gameId: game.id, sessionId: session.id };
   }
 
+  /** Clears §4.2's `minRatedGames` window minimum so `windowByTimeControl`
+   * (get_diagnostic_profile's on-demand gate evaluation) has a real window
+   * to evaluate rather than an empty one, which would make DQ-01
+   * (insufficient rated games) fire spuriously for every test. */
+  async function seedRatedGames(userId: string, timeControl: string, count: number): Promise<void> {
+    for (let i = 0; i < count; i++) {
+      await gamesRepo.insert(db, {
+        userId,
+        pgn: '1. e4 e5',
+        source: 'paste',
+        userColor: 'white',
+        whiteName: null,
+        blackName: null,
+        result: null,
+        timeControl,
+        eco: null,
+        playedAt: new Date(2026, 0, i + 1),
+        rated: true
+      });
+    }
+  }
+
   function makeDeps(overrides: Partial<CoachToolsDependencies> = {}): CoachToolsDependencies {
     return {
       db,
@@ -90,7 +135,7 @@ describe('buildCoachTools', () => {
     };
   }
 
-  test('exposes all 14 architecture §7.1 tools', async () => {
+  test('exposes all 15 architecture §7.1 tools', async () => {
     const ctx = await setupCtx();
     const tools = buildCoachTools(ctx, makeDeps());
 
@@ -100,6 +145,7 @@ describe('buildCoachTools', () => {
         'check_position',
         'end_session',
         'expect_move',
+        'get_diagnostic_profile',
         'get_engine_analysis',
         'get_user_profile',
         'hypothetical_line',
@@ -123,14 +169,14 @@ describe('buildCoachTools', () => {
     expect(tools.undo_last_move).toBeUndefined();
   });
 
-  test('mode: "play" adds get_candidate_moves, play_coach_move, and undo_last_move alongside the 14 analyze-mode tools, without removing any of them', async () => {
+  test('mode: "play" adds get_candidate_moves, play_coach_move, and undo_last_move alongside the 15 analyze-mode tools, without removing any of them', async () => {
     const ctx = await setupCtx();
     const tools = buildCoachTools(ctx, makeDeps(), 'play');
 
     expect(tools.get_candidate_moves).toBeDefined();
     expect(tools.play_coach_move).toBeDefined();
     expect(tools.undo_last_move).toBeDefined();
-    expect(Object.keys(tools)).toHaveLength(17);
+    expect(Object.keys(tools)).toHaveLength(18);
   });
 
   test('show_position, annotate_board, expect_move, and hypothetical_line have no execute (client tools)', async () => {
@@ -395,6 +441,58 @@ describe('buildCoachTools', () => {
         TOOL_OPTIONS
       );
       expect(overBudget).toEqual({ error: 'budget_exhausted — answer with what you have' });
+    });
+  });
+
+  describe('get_diagnostic_profile', () => {
+    test('no time control on the current game degrades to the no-confident-diagnoses message', async () => {
+      const { userId, gameId, sessionId } = await setupCtx();
+      const tools = buildCoachTools({ userId, sessionId, gameId }, makeDeps());
+
+      const result = await tools.get_diagnostic_profile?.execute?.({}, TOOL_OPTIONS);
+
+      expect(result).toContain('no confident diagnoses');
+    });
+
+    test('a game with a time control but no stored profile yet also degrades gracefully', async () => {
+      const { userId, gameId, sessionId } = await setupCtx();
+      await db.updateTable('games').set({ timeControl: '600+0' }).where('id', '=', gameId).execute();
+      const tools = buildCoachTools({ userId, sessionId, gameId }, makeDeps());
+
+      const result = await tools.get_diagnostic_profile?.execute?.({}, TOOL_OPTIONS);
+
+      expect(result).toContain('no confident diagnoses');
+    });
+
+    test('renders the top diagnoses, excluding insufficient confidence, with no failed gates in a healthy window', async () => {
+      const { userId, gameId, sessionId } = await setupCtx();
+      await db.updateTable('games').set({ timeControl: '600+0' }).where('id', '=', gameId).execute();
+      await seedRatedGames(userId, '600+0', 30);
+      await diagnosticProfilesRepo.upsertProfile(db, userId, '600+0', new Date(2026, 0, 1), new Date(2026, 0, 30), [
+        profileEntryFixture({ code: 'TA-07', confidence: 'probable' }),
+        profileEntryFixture({ code: 'BV-01', confidence: 'insufficient' })
+      ]);
+      const tools = buildCoachTools({ userId, sessionId, gameId }, makeDeps());
+
+      const result = await tools.get_diagnostic_profile?.execute?.({}, TOOL_OPTIONS);
+
+      expect(result).toContain('TA-07.D');
+      expect(result).not.toContain('BV-01');
+      expect(result).not.toContain('Failed gates');
+    });
+
+    test('shows a failed reachability gate for a code below the human-reachability threshold', async () => {
+      const { userId, gameId, sessionId } = await setupCtx();
+      await db.updateTable('games').set({ timeControl: '600+0' }).where('id', '=', gameId).execute();
+      await seedRatedGames(userId, '600+0', 30);
+      await diagnosticProfilesRepo.upsertProfile(db, userId, '600+0', new Date(2026, 0, 1), new Date(2026, 0, 30), [
+        profileEntryFixture({ code: 'TA-07', confidence: 'probable', meanReachability: 0.1 })
+      ]);
+      const tools = buildCoachTools({ userId, sessionId, gameId }, makeDeps());
+
+      const result = await tools.get_diagnostic_profile?.execute?.({}, TOOL_OPTIONS);
+
+      expect(result).toContain('Failed gates: DQ-05');
     });
   });
 });

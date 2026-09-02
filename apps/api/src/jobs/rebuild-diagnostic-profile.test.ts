@@ -1,7 +1,7 @@
 import { CONFIG } from '@freechesscoach/chess-analysis';
 import { describe, expect, test } from 'vitest';
 import type { GameRow } from '../db/repositories/games.js';
-import { MAX_WINDOW_GAMES, windowByTimeControl } from './rebuild-diagnostic-profile.js';
+import { MAX_WINDOW_GAMES, windowByTimeControl } from '../services/diagnostic-window.js';
 
 const MIN_GAMES = CONFIG.dataQualityGates.minRatedGames;
 

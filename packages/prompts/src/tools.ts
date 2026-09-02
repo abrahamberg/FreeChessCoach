@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { FindingSchema, FocusAreaUpdateSchema, ThreadSchema } from '@freechesscoach/shared';
 
-/** architecture §7.1 — parameter schemas for the coach agent's 13 tools. Pure
+/** architecture §7.1 — parameter schemas for the coach agent's 15 tools. Pure
  * (no execute functions here); apps/api/src/services/coach-tools.ts binds
  * these to real services to build the AI SDK ToolSet. */
 
@@ -64,6 +64,11 @@ export const getEngineAnalysisParameters = z.object({
 });
 
 export const getUserProfileParameters = z.object({});
+
+/** Task 57.2 — no arguments: always reports on the current game's own exact
+ * time control (§4.2's pooling rule), same "no address to get wrong" shape
+ * as get_user_profile. */
+export const getDiagnosticProfileParameters = z.object({});
 
 export const recordFindingParameters = FindingSchema;
 
@@ -169,6 +174,11 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
     name: 'get_user_profile',
     description:
       'Read the student\'s focus areas, recent findings, and session history — call it whenever a mistake or idea feels like ground you may have covered before, even if the student hasn\'t asked; the summary above only shows recent items, so check here before repeating an explanation or homework you might have already given.'
+  },
+  {
+    name: 'get_diagnostic_profile',
+    description:
+      'Read the student\'s programmatic diagnostic profile for THIS time control — up to three code-level diagnoses (§II\'s catalog), each with how often it failed out of its opportunities, confidence, severity, scope, and whether the matching control skill is intact. Call it early in a session, or whenever you are deciding what to focus on, to ground your plan in measured evidence instead of impression alone — this is a different, more precise signal than get_user_profile\'s free-text findings and focus areas. A diagnosis flagged with failed data-quality gates is unreliable evidence — name the caveat if you rely on it anyway, and prefer a diagnosis without one when the choice is close. Returns "no confident diagnoses yet" when there is not enough evidence, which is a normal, expected answer, not a failure.'
   },
   {
     name: 'record_finding',

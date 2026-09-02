@@ -1,10 +1,14 @@
 /** architecture §8.3: per-turn call budgets and a repeat-call cache, shared
- * by both coach-tools.ts (analyze mode's 13 tools) and coach-tools-play.ts
+ * by both coach-tools.ts (analyze mode's 15 tools) and coach-tools-play.ts
  * (play mode's 3 additional tools) — extracted here so both files can build
  * on the exact same guardrails without importing from one another. */
 export const TOOL_BUDGETS: Partial<Record<string, number>> = {
   get_engine_analysis: 2,
   get_user_profile: 1,
+  // A DB read plus a pure render, no engine cost — but still one profile
+  // per turn is all a coaching plan needs; matches get_user_profile's own
+  // "read the student's standing evidence once" budget.
+  get_diagnostic_profile: 1,
   recall_move: 3,
   get_candidate_moves: 3,
   // Categorically heavier than any other tool here — its own internal

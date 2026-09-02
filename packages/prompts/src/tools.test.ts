@@ -180,6 +180,7 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
     'hypothetical_line',
     'get_engine_analysis',
     'get_user_profile',
+    'get_diagnostic_profile',
     'record_finding',
     'propose_focus_area_update',
     'update_threads',
@@ -189,7 +190,7 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
     'end_session'
   ];
 
-  test('has exactly the coach agent\'s 14 tools, each with a unique name and a non-empty description', () => {
+  test('has exactly the coach agent\'s 15 tools, each with a unique name and a non-empty description', () => {
     expect(COACH_TOOL_SPECS.map((spec) => spec.name)).toEqual(EXPECTED_NAMES);
     for (const spec of COACH_TOOL_SPECS) {
       expect(spec.description.length).toBeGreaterThan(0);
