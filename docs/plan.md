@@ -440,10 +440,14 @@ the 13 parents while the codes carry the precision.
 
 **Files:** `packages/shared/src/diagnosis/data-quality.ts` + test.
 
-- [ ] The 20 gates as typed entries `{ id, label, blocking: boolean }`. Per
+- [x] The 20 gates as typed entries `{ id, label, blocking: boolean }`. Per
       §IV override 5, no primary diagnosis may bypass a failed gate, so
       `blocking` drives Phase 55.
-- [ ] Commit: `feat: data-quality gate catalog`.
+- [x] Commit: `feat: data-quality gate catalog`.
+- Note: all 20 gates ended up `blocking: true` — §IV override 5 is
+  unconditional and the spec gives no gate-specific exception. The field
+  stays `boolean` (not simplified to a constant) so a future gate could
+  differ.
 
 ### Task 52.4: `DiagnosisRef` — parse and render `TA-07.R.D`
 
