@@ -11,7 +11,7 @@ import { buildQualityObservation } from './shared.js';
 export const ms05OwnCaptureGenerationOmission: DiagnosticDetector = {
   code: 'MS-05',
   direction: 'O',
-  priority: 50,
+  priority: 150,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
     const { unplayedProfitableCaptures } = computeCctOpportunities(ctx);
     if (unplayedProfitableCaptures.length === 0) return null;

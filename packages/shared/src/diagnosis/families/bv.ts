@@ -6,8 +6,14 @@ import type { DiagnosisCodeEntry } from '../catalog-types.js';
  * blindness), `['B']` everywhere else (a board-vision gap impairs both
  * directions). `evidenceTrack` is `'game_leak'` throughout (no entry's
  * ratingPrior lower bound reaches the 1400 curriculum-only threshold).
- * `detectability` is `'dialogue'`; `parentCategory` is always
- * `'hanging_piece'` (the closest existing bucket to board-vision failures).
+ * `parentCategory` is always `'hanging_piece'` (the closest existing bucket
+ * to board-vision failures). `detectability` was originally `'dialogue'`
+ * throughout; Task 53.4 flips BV-01, BV-02, BV-04, BV-10, BV-12, BV-15,
+ * BV-16 and BV-22 to `'detector'` as `diagnostics/detectors/` gains a file
+ * for each — the rest (defender-count confusion subtypes, per-piece
+ * attack-map blindness, last-move purpose/vacated-square/backward-move/
+ * edge-geometry/multi-attack/cross-board/check-status) stay `'dialogue'`,
+ * no detector for them in this plan.
  */
 export const BV_CODES: readonly DiagnosisCodeEntry[] = [
   {
@@ -18,7 +24,7 @@ export const BV_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [250, 1000],
     directions: ['D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'hanging_piece'
   },
   {
@@ -29,7 +35,7 @@ export const BV_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [250, 1050],
     directions: ['O'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'hanging_piece'
   },
   {
@@ -51,7 +57,7 @@ export const BV_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [400, 1350],
     directions: ['B'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'hanging_piece'
   },
   {
@@ -117,7 +123,7 @@ export const BV_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [300, 1300],
     directions: ['B'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'hanging_piece'
   },
   {
@@ -139,7 +145,7 @@ export const BV_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [400, 1700],
     directions: ['B'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'hanging_piece'
   },
   {
@@ -172,7 +178,7 @@ export const BV_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [200, 1150],
     directions: ['B'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'hanging_piece'
   },
   {
@@ -183,7 +189,7 @@ export const BV_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [350, 1550],
     directions: ['B'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'hanging_piece'
   },
   {
@@ -249,7 +255,7 @@ export const BV_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [300, 1450],
     directions: ['B'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'hanging_piece'
   }
 ];

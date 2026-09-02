@@ -597,16 +597,32 @@ The primitive every `MS-*` detector needs, built on the already-stored
 
 **Read:** `docs/diagnose.md` §II.C only.
 
-- [ ] `BV-01` own hanging-piece blindness, `BV-02` opponent hanging-piece
+- [x] `BV-01` own hanging-piece blindness, `BV-02` opponent hanging-piece
       blindness, `BV-04` attacker–defender counting failure, `BV-10`
       last-move board-update failure, `BV-12` removed-blocker blindness,
       `BV-15` destination-square safety, `BV-16` self-exposure, `BV-22`
       loose-piece inventory failure.
-- [ ] Built from `features` (`hangingPieces`, `underDefendedPieces`,
+- [x] Built from `features` (`hangingPieces`, `underDefendedPieces`,
       `piecesUnderAttack`), `featureDelta` (`newHangingPieces`, `newForks`),
       `attack-map` ray diffs and `see`.
-- [ ] Same three-fixture rule per code as Task 53.3.
-- [ ] Commit: `feat: BV board-vision diagnostic detectors`.
+- [x] Same three-fixture rule per code as Task 53.3.
+- [x] Commit: `feat: BV board-vision diagnostic detectors`.
+
+  **Done.** `diagnostics/detectors/bv-{01,02,04,10,12,15,16,22}-*.ts` + tests.
+  BV-12/BV-16 reuse `tactic-discovered.ts`'s `discoveredAttackDetail`
+  (built for `TA-16`'s offensive discovered attack) called with the
+  *opponent's* color — the same function finds the mirror case for free:
+  "did the mover's own move vacate a square and expose one of the mover's
+  own pieces to a newly-revealed enemy attack," BV-16 narrowed to a king/
+  queen target. BV-15 duplicates `MS-08`'s SEE check verbatim (a
+  board-vision-layer name for the same fact `MS-08` names at the
+  scan/process layer — deliberate, per §I.3, not a bug). BV-02 recomputes
+  `computePositionFeatures(fenBefore)` itself since the stored move only
+  carries post-move features. Registry reordered: `BV-*` (board model) now
+  sits ahead of `MS-*` (scan/process) per §I.3's causal chain, so all 9
+  `MS-*` priorities shifted from the 10-90 block to 110-190 to make room for
+  `BV-*` at 10-80 — a one-time renumbering, not a behavior change (nothing
+  outside `registry.ts`/tests reads literal priority values yet).
 
 ### Task 53.5: `TA-*` tactical detectors, both directions
 

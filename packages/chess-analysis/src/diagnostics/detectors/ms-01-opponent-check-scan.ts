@@ -13,7 +13,7 @@ import { buildQualityObservation } from './shared.js';
 export const ms01OpponentCheckScanOmission: DiagnosticDetector = {
   code: 'MS-01',
   direction: 'D',
-  priority: 10,
+  priority: 110,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
     const { opponentChecks } = computeCctOpportunities(ctx);
     if (opponentChecks.length === 0) return null;

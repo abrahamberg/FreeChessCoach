@@ -11,7 +11,7 @@ import { buildQualityObservation } from './shared.js';
 export const ms06OwnThreatGenerationOmission: DiagnosticDetector = {
   code: 'MS-06',
   direction: 'O',
-  priority: 60,
+  priority: 160,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
     const { unplayedThreats } = computeCctOpportunities(ctx);
     if (unplayedThreats.length === 0) return null;

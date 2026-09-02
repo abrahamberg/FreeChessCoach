@@ -18,7 +18,7 @@ import { buildObservation, destinationSquare, isCaptureSan } from './shared.js';
 export const ms14LoosePieceScanOmission: DiagnosticDetector = {
   code: 'MS-14',
   direction: 'N',
-  priority: 90,
+  priority: 190,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
     const loosePieces = (ctx.features?.underDefendedPieces ?? []).filter((piece) => piece.color === ctx.mover);
     if (loosePieces.length === 0) return null;

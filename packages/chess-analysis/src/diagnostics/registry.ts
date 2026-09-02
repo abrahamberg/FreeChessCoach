@@ -1,3 +1,11 @@
+import { bv01OwnHangingPieceBlindness } from './detectors/bv-01-own-hanging-piece-blindness.js';
+import { bv02OpponentHangingPieceBlindness } from './detectors/bv-02-opponent-hanging-piece-blindness.js';
+import { bv04AttackerDefenderCountingFailure } from './detectors/bv-04-attacker-defender-counting.js';
+import { bv10LastMoveBoardUpdateFailure } from './detectors/bv-10-last-move-board-update.js';
+import { bv12RemovedBlockerBlindness } from './detectors/bv-12-removed-blocker-blindness.js';
+import { bv15DestinationSquareSafetyBlindness } from './detectors/bv-15-destination-square-safety.js';
+import { bv16SelfExposureBlindness } from './detectors/bv-16-self-exposure-blindness.js';
+import { bv22LoosePieceInventoryFailure } from './detectors/bv-22-loose-piece-inventory.js';
 import { ms01OpponentCheckScanOmission } from './detectors/ms-01-opponent-check-scan.js';
 import { ms02OpponentCaptureScanOmission } from './detectors/ms-02-opponent-capture-scan.js';
 import { ms03OpponentThreatScanOmission } from './detectors/ms-03-opponent-threat-scan.js';
@@ -17,8 +25,24 @@ import type { DiagnosticDetector } from './types.js';
  * may each report their own opportunity for the same ply (Task 53.1's
  * checklist); this array only fixes their relative precedence for when two
  * observations turn out to describe the same underlying incident.
+ *
+ * `BV-*` (board vision/model) sits ahead of `MS-*` (scan/process) in this
+ * list because §I.3's chain puts "board model" upstream of "scan/process" —
+ * a board-vision failure is tested before the move-safety-process omission
+ * it can produce (e.g. `BV-15`/`MS-08` name the same fact at each layer).
+ * Priorities are left in decade blocks per family (`BV-*` 10-80, `MS-*`
+ * 110-190) so a later family can be inserted between two existing ones
+ * without renumbering everything.
  */
 const detectors: DiagnosticDetector[] = [
+  bv01OwnHangingPieceBlindness,
+  bv02OpponentHangingPieceBlindness,
+  bv04AttackerDefenderCountingFailure,
+  bv10LastMoveBoardUpdateFailure,
+  bv12RemovedBlockerBlindness,
+  bv15DestinationSquareSafetyBlindness,
+  bv16SelfExposureBlindness,
+  bv22LoosePieceInventoryFailure,
   ms01OpponentCheckScanOmission,
   ms02OpponentCaptureScanOmission,
   ms03OpponentThreatScanOmission,

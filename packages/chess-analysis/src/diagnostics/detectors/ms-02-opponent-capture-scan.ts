@@ -13,7 +13,7 @@ import { buildQualityObservation } from './shared.js';
 export const ms02OpponentCaptureScanOmission: DiagnosticDetector = {
   code: 'MS-02',
   direction: 'D',
-  priority: 20,
+  priority: 120,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
     const { opponentCaptures } = computeCctOpportunities(ctx);
     const profitable = opponentCaptures.filter((move) => move.favorable);

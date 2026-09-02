@@ -11,7 +11,7 @@ import { buildQualityObservation } from './shared.js';
 export const ms04OwnCheckGenerationOmission: DiagnosticDetector = {
   code: 'MS-04',
   direction: 'O',
-  priority: 40,
+  priority: 140,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
     const { unplayedChecks } = computeCctOpportunities(ctx);
     if (unplayedChecks.length === 0) return null;

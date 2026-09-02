@@ -16,7 +16,7 @@ import { buildObservation, destinationSquare, isCaptureSan } from './shared.js';
 export const ms07AutomaticRecaptureReflex: DiagnosticDetector = {
   code: 'MS-07',
   direction: 'N',
-  priority: 70,
+  priority: 170,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
     const previous = ctx.previousMove;
     if (!previous?.fenBefore || !isCaptureSan(previous.moveSan)) return null;
