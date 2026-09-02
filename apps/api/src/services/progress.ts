@@ -1,5 +1,5 @@
-import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
-import type { Finding, FocusAreaUpdate, MistakeCategory, SessionOutcome } from '@freechesscoach/shared';
+import { DIAGNOSIS_CODES_BY_ID, MISTAKE_CATEGORIES } from '@freechesscoach/shared';
+import type { DiagnosisCodeId, Finding, FocusAreaUpdate, MistakeCategory, SessionOutcome } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
@@ -23,6 +23,7 @@ export async function recordFinding(
   finding: Finding
 ): Promise<findingsRepo.FindingRow> {
   assertValidCategory(finding.category);
+  assertValidDiagnosisCode(finding.diagnosisCode);
   return findingsRepo.insert(db, {
     userId,
     sessionId,
@@ -31,7 +32,10 @@ export async function recordFinding(
     severity: finding.severity,
     ply: finding.ply,
     description: finding.description,
-    isPositive: finding.isPositive
+    isPositive: finding.isPositive,
+    diagnosisCode: finding.diagnosisCode ?? null,
+    mechanism: finding.mechanism ?? null,
+    direction: finding.direction ?? null
   });
 }
 
@@ -137,5 +141,15 @@ function nextStatusFor(
 function assertValidCategory(category: string): asserts category is MistakeCategory {
   if (!(MISTAKE_CATEGORIES as readonly string[]).includes(category)) {
     throw new ValidationError(`Unknown mistake category: ${category}`);
+  }
+}
+
+/** AGENTS.md rule 8: no LLM output touches the DB without zod plus a closed-
+ * enum check. `DiagnosisCodeIdSchema` (packages/shared) only checks format
+ * (`XX-99`) — this is the actual catalog-membership gate, same treatment as
+ * `assertValidCategory` above. */
+function assertValidDiagnosisCode(code: DiagnosisCodeId | undefined): void {
+  if (code !== undefined && !DIAGNOSIS_CODES_BY_ID.has(code)) {
+    throw new ValidationError(`Unknown diagnosis code: ${code}`);
   }
 }

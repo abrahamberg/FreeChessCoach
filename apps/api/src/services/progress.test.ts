@@ -58,6 +58,40 @@ describe('progress service', () => {
 
       await expect(recordFinding(db, userId, null, null, finding)).rejects.toThrow(ValidationError);
     });
+
+    test('persists diagnosisCode/mechanism/direction when given', async () => {
+      const userId = await makeUser('finding-diagnosis@example.com');
+      const finding: Finding = {
+        category: 'missed_tactic',
+        severity: 'significant',
+        ply: 12,
+        description: 'Never considered the knight fork.',
+        isPositive: false,
+        diagnosisCode: 'TA-07',
+        mechanism: 'G',
+        direction: 'O'
+      };
+
+      const row = await recordFinding(db, userId, null, null, finding);
+
+      expect(row.diagnosisCode).toBe('TA-07');
+      expect(row.mechanism).toBe('G');
+      expect(row.direction).toBe('O');
+    });
+
+    test('rejects an out-of-catalog diagnosisCode with ValidationError, even bypassing the tool-layer zod schema', async () => {
+      const userId = await makeUser('finding-bad-diagnosis@example.com');
+      const finding = {
+        category: 'missed_tactic',
+        severity: 'significant',
+        ply: 12,
+        description: 'x',
+        isPositive: false,
+        diagnosisCode: 'ZZ-99'
+      } as unknown as Finding;
+
+      await expect(recordFinding(db, userId, null, null, finding)).rejects.toThrow(ValidationError);
+    });
   });
 
   describe('applyFocusAreaUpdate', () => {

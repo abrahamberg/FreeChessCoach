@@ -1270,19 +1270,62 @@ says 'I didn't consider that move at all' has a different problem than one who
 saw it but miscalculated" — that is §5's verbal sequence and §Targeted-test
 logic, unformalized. Give it the vocabulary.
 
-- [ ] Add `diagnosis_code`, `mechanism`, `direction` to `findings`
+- [x] Add `diagnosis_code`, `mechanism`, `direction` to `findings`
       (all nullable, so existing rows stay valid).
-- [ ] Extend `FindingSchema` with the three optional fields; derive
+- [x] Extend `FindingSchema` with the three optional fields; derive
       `category` from the code's `parentCategory` when a code is given, so
       the dashboard and trend chart keep working untouched.
-- [ ] Validate the code against the catalog in `progress.ts` alongside the
+- [x] Validate the code against the catalog in `progress.ts` alongside the
       existing `assertValidCategory` — the LLM must never write an
       out-of-catalog code (AGENTS.md: no LLM output touches the DB without
       zod plus a closed-enum check).
-- [ ] Update `record_finding`'s description in `packages/prompts/src/tools.ts`
+- [x] Update `record_finding`'s description in `packages/prompts/src/tools.ts`
       to explain the mechanism codes in terms of what the student *said*, and
       re-run `npm run docs:prompts`.
-- [ ] Commit: `feat: structured diagnosis code and mechanism on findings`.
+- [x] Commit: `feat: structured diagnosis code and mechanism on findings`.
+
+**Done:** §I.2 supplies the closed 10-value mechanism vocabulary directly
+(`K`/`M`/`V`/`R`/`G`/`C`/`J`/`X`/`L`/`S`) — already typed as `Mechanism` in
+`packages/shared/src/diagnosis/axes.ts` from Task 52.1, so this task reuses
+it rather than redefining anything; same for `Direction`
+(`O`/`D`/`B`/`N`, §I.1). Migration `0026_finding_diagnosis.ts` adds all three
+columns nullable, `mechanism`/`direction` with CHECK constraints (small
+stable vocabularies, same convention `0025_diagnostics.ts` set), and
+`diagnosis_code` left unconstrained `text` (410-entry catalog, app-validated
+— same convention as `diagnostic_observations.code`). Also fixed a bug found
+while wiring this: Task 56.1's `0025_diagnostics.ts` was never registered in
+`apps/api/src/db/migrate.ts`'s provider map (no Docker was available in that
+task's sandbox to catch it by actually running the migrator) — both
+`0025_diagnostics` and `0026_finding_diagnosis` are now registered.
+
+`FindingSchema` keeps `category` required (no schema break) and adds
+`diagnosisCode`/`mechanism`/`direction` as optional; a `.transform` derives
+`category` from `DIAGNOSIS_CODES_BY_ID.get(diagnosisCode)?.parentCategory`
+when it resolves, overriding whatever `category` was supplied so the two can
+never disagree — falling back to the given `category` when `diagnosisCode`
+doesn't resolve (malformed or out-of-catalog). `DiagnosisCodeIdSchema` is
+still only a format check (`XX-99`, Task 52.2's own precedent — never
+inlining all 410 ids into a zod enum); `progress.ts`'s new
+`assertValidDiagnosisCode` is the actual closed-enum gate, thrown as
+`ValidationError` alongside `assertValidCategory`, same treatment. Both
+`findings.ts` (repository) and `apps/api/src/db/schema.ts`'s `FindingsTable`
+carry the three new nullable columns through to persistence.
+
+`record_finding`'s description now spells out the mechanism codes in terms
+of the student's own words from §5's verbal sequence ("I didn't even look at
+that move" → G, "I saw it but thought it lost material" → C/J, "I knew that
+a week ago but blanked" → M, a clock-pressure-only pattern → S) rather than
+listing the taxonomy abstractly, per `docs/diagnose.md` §5's own framing that
+this is diagnostic material already sitting in the student's answer, not a
+separate judgment call. `npm run docs:prompts` regenerated `docs/prompts.md`
+and the 20 `coach-system.snapshot.test.ts` snapshots were updated
+(`npx vitest run -u`) — diffed to confirm the only change in every snapshot
+is the `record_finding` description line.
+
+Verification: `npm run lint && npm run typecheck` clean; full non-DB suite
+2119 passed (up from 2115), 349 skipped, zero regressions — the 57 failing
+files are the same Testcontainers-dependent set as Task 56.4 ("Could not
+find a working container runtime strategy", no Docker in this sandbox).
 
 ### Task 57.2: `get_diagnostic_profile` coach tool
 

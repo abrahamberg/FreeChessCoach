@@ -1,6 +1,6 @@
 import type { ColumnType, Generated } from 'kysely';
 import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { BotConfig, CoachPersona, DiagnosisCodeId, Direction, EngineMode, MistakeCategory, MoveQuality, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { BotConfig, CoachPersona, DiagnosisCodeId, Direction, EngineMode, Mechanism, MistakeCategory, MoveQuality, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -137,6 +137,9 @@ export interface FindingsTable {
   ply: number | null;
   description: string;
   isPositive: Generated<boolean>;
+  diagnosisCode: DiagnosisCodeId | null;
+  mechanism: Mechanism | null;
+  direction: Direction | null;
   createdAt: Generated<Date>;
 }
 
