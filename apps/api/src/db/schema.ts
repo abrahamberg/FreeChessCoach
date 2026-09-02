@@ -1,6 +1,6 @@
 import type { ColumnType, Generated } from 'kysely';
 import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { BotConfig, CoachPersona, EngineMode, MistakeCategory, MoveQuality, RatingBand, RatingSource, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { BotConfig, CoachPersona, DiagnosisCodeId, Direction, EngineMode, MistakeCategory, MoveQuality, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -185,6 +185,40 @@ export interface PositionEvaluationsTable {
   createdAt: Generated<Date>;
 }
 
+/** 0025_diagnostics.ts — one row per surviving `DiagnosticEntry`
+ * (packages/chess-analysis/src/diagnostics/diagnostic-entry.ts). `detail`
+ * carries the rest of that interface's context fields (opening, phase,
+ * clock, complexity, opponent rating) for the Task 58.1 evidence
+ * drill-down; never queried on, so it stays untyped jsonb here. */
+export interface DiagnosticObservationsTable {
+  id: Generated<string>;
+  userId: string;
+  gameId: string;
+  ply: number;
+  code: DiagnosisCodeId;
+  direction: Direction;
+  failed: boolean;
+  hwdl: number;
+  severity: Severity;
+  reachability: number;
+  detail: Jsonb<unknown> | null;
+  createdAt: Generated<Date>;
+}
+
+/** 0025_diagnostics.ts — one `buildDiagnosticProfile` result
+ * (Task 55.3) per user/time-control/window; `profile` is the whole
+ * `DiagnosticProfileEntry[]`. `timeControl` is the exact pooling key
+ * (§4.2) — never the coarser `speed` column. */
+export interface DiagnosticProfilesTable {
+  id: Generated<string>;
+  userId: string;
+  timeControl: string;
+  windowStart: Date;
+  windowEnd: Date;
+  computedAt: Generated<Date>;
+  profile: Jsonb<unknown>;
+}
+
 export interface LlmCallLogTable {
   id: Generated<string>;
   userId: string;
@@ -213,4 +247,6 @@ export interface Database {
   llmCallLog: LlmCallLogTable;
   positionEvaluations: PositionEvaluationsTable;
   gameMoveQualities: GameMoveQualitiesTable;
+  diagnosticObservations: DiagnosticObservationsTable;
+  diagnosticProfiles: DiagnosticProfilesTable;
 }

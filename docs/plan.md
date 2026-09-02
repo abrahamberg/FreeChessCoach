@@ -1058,15 +1058,35 @@ a pre-resolved window, with the DB read done by the caller.
 **Files:** `apps/api/src/db/migrations/0025_diagnostics.ts`,
 `apps/api/src/db/schema.ts`.
 
-- [ ] `diagnostic_observations`: `id`, `user_id`, `game_id`, `ply`, `code`,
+- [x] `diagnostic_observations`: `id`, `user_id`, `game_id`, `ply`, `code`,
       `direction`, `failed`, `hwdl`, `severity`, `reachability`, `detail`,
       `created_at`; index on `(user_id, code, created_at)` and on `(game_id)`
       for the evidence drill-down and for cascade deletes on game removal.
-- [ ] `diagnostic_profiles`: `id`, `user_id`, `time_control`, `window_start`,
+- [x] `diagnostic_profiles`: `id`, `user_id`, `time_control`, `window_start`,
       `window_end`, `computed_at`, `profile jsonb`; unique on
       `(user_id, time_control, window_end)` — the history status in Task 55.3
       is a row-to-row diff, so windows must be addressable.
-- [ ] Commit: `feat: diagnostic observation and profile tables`.
+- [x] Commit: `feat: diagnostic observation and profile tables`.
+
+**Done:** `code` is left as unconstrained `text` (no CHECK), matching
+`findings.category`'s existing precedent — the catalog has 410 entries
+validated at the app layer, not a DB constraint that would need editing on
+every catalog change. `direction`/`severity` are small, stable vocabularies
+(4 values each) so they got CHECK constraints, matching
+`analyses.status`/`findings.severity`. `hwdl`/`reachability` are
+`double precision` (both are `[0, 1]` probabilities, no existing float-
+column precedent to match). `detail jsonb` holds the rest of
+`DiagnosticEntry`'s context (opening, phase, clock, complexity, opponent
+rating) that has no dedicated column — read-only evidence-drilldown
+payload for Task 58.1, never queried on. No `ON DELETE CASCADE` on either
+FK: every existing user/game-scoped table (`analyses`, `findings`,
+`game_move_qualities`) relies on the app layer to cascade deletes
+explicitly, and Task 56.2's `deleteByGameId` wires into that same existing
+path rather than introducing the first DB-level cascade. No dedicated
+migration test exists (none of this task's files are a test file) —
+verified via `npm run lint && npm run typecheck`; applying it against a
+real Postgres isn't possible in this sandbox (no Docker for Testcontainers),
+so first real application happens under Task 56.2's repository tests.
 
 ### Task 56.2: Repositories
 
