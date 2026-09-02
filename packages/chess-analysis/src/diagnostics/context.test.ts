@@ -47,21 +47,37 @@ describe('buildPlyDiagnosticContext', () => {
   });
 
   test('attaches this ply\'s clock reading from moveTimes when one is present', () => {
-    const context = buildPlyDiagnosticContext(baseMove(), [
-      { ply: 1, clockMs: 598000, evalCp: 20, timeSpentMs: 2000 },
-      { ply: 2, clockMs: 597000, evalCp: 18, timeSpentMs: 3000 }
-    ]);
+    const context = buildPlyDiagnosticContext(baseMove(), {
+      moveTimes: [
+        { ply: 1, clockMs: 598000, evalCp: 20, timeSpentMs: 2000 },
+        { ply: 2, clockMs: 597000, evalCp: 18, timeSpentMs: 3000 }
+      ]
+    });
 
     expect(context!.moveTime).toEqual({ ply: 1, clockMs: 598000, evalCp: 20, timeSpentMs: 2000 });
   });
 
   test('passes optional analysis fields through unchanged', () => {
     const context = buildPlyDiagnosticContext(
-      baseMove({ isTacticalPosition: true, bestMoveSan: 'e4', bestLinePvSan: ['e4', 'e5'] })
+      baseMove({ isTacticalPosition: true, bestMoveSan: 'e4', bestLinePvSan: ['e4', 'e5'], drop: 12.5 })
     );
 
     expect(context!.isTacticalPosition).toBe(true);
     expect(context!.bestMoveSan).toBe('e4');
     expect(context!.bestLinePvSan).toEqual(['e4', 'e5']);
+    expect(context!.drop).toBe(12.5);
+  });
+
+  test('leaves previousMove/nextMoves undefined when not supplied, attaches them when supplied', () => {
+    const withoutNeighbors = buildPlyDiagnosticContext(baseMove());
+    expect(withoutNeighbors!.previousMove).toBeUndefined();
+    expect(withoutNeighbors!.nextMoves).toBeUndefined();
+
+    const previousMove = baseMove({ ply: 0, moveSan: 'd4' });
+    const nextMove = baseMove({ ply: 2, moveSan: 'e5' });
+    const withNeighbors = buildPlyDiagnosticContext(baseMove(), { previousMove, nextMoves: [nextMove] });
+
+    expect(withNeighbors!.previousMove).toBe(previousMove);
+    expect(withNeighbors!.nextMoves).toEqual([nextMove]);
   });
 });

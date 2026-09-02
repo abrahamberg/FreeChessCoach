@@ -34,6 +34,7 @@ describe('computeCctOpportunities', () => {
 
     expect(opportunities.unplayedProfitableCaptures).toEqual([]);
     expect(opportunities.unplayedChecks).toEqual([]);
+    expect(opportunities.unplayedThreats).toEqual([]);
     expect(opportunities.opponentChecks).toEqual([]);
     expect(opportunities.opponentCaptures).toEqual([]);
     expect(opportunities.opponentThreats).toEqual([]);
@@ -67,6 +68,19 @@ describe('computeCctOpportunities', () => {
 
     expect(opportunities.unplayedProfitableCaptures.map((m) => m.moveSan)).not.toContain('Rxa8+');
     expect(opportunities.unplayedChecks.map((m) => m.moveSan)).toEqual(['Rh8+']);
+  });
+
+  test('reports the mover\'s own unplayed quiet threat', () => {
+    const fenBefore = '4k3/8/1r6/8/6q1/8/8/3QK3 w - - 0 1';
+    const fenAfter = '4k3/8/1r6/8/6q1/8/8/3Q1K2 b - - 1 1';
+    const move = moveOn(fenBefore, fenAfter, 'Kf1', {
+      checksCapturesThreats: analyzeChecksCapturesThreats(fenBefore)
+    });
+    const context = buildPlyDiagnosticContext(move)!;
+
+    const opportunities = computeCctOpportunities(context);
+
+    expect(opportunities.unplayedThreats.some((t) => t.moveSan === 'Qd6')).toBe(true);
   });
 
   test('reports the opponent\'s check, capture and threat available after the move, from fenAfter', () => {

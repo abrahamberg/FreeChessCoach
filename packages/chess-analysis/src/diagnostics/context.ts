@@ -26,6 +26,9 @@ export interface PlyDiagnosticContext {
   fenAfter: string;
   quality: MoveQuality;
   cpLoss: number;
+  /** Win% drop for this move (0–100) — the hWDL proxy every failing
+   * observation's `hwdl` derives from until Phase 54 computes it properly. */
+  drop?: number;
   isTacticalPosition?: boolean;
   bestMoveSan?: string;
   bestLinePvSan?: string[];
@@ -45,6 +48,22 @@ export interface PlyDiagnosticContext {
    * (see `pgn-move-comments.ts`) — sparse, so undefined rather than guessed
    * when the game has no clock data for this ply. */
   moveTime?: PgnMoveComment;
+  /** The immediately preceding ply (the opponent's move that led into
+   * `fenBefore`), when the caller is iterating a full game — MS-07/TA-27's
+   * recapture check needs to know what square the opponent just captured
+   * on. Undefined for the game's first ply, or when the caller only has
+   * this one move in hand. */
+  previousMove?: ClassifiedMoveDto;
+  /** Up to the next two plies, when known — MS-14's "punished within 2
+   * plies" check needs to look forward from this ply. Undefined for the
+   * same reasons as `previousMove`. */
+  nextMoves?: readonly ClassifiedMoveDto[];
+}
+
+export interface BuildPlyDiagnosticContextOptions {
+  moveTimes?: readonly PgnMoveComment[];
+  previousMove?: ClassifiedMoveDto;
+  nextMoves?: readonly ClassifiedMoveDto[];
 }
 
 /**
@@ -56,7 +75,7 @@ export interface PlyDiagnosticContext {
  */
 export function buildPlyDiagnosticContext(
   move: ClassifiedMoveDto,
-  moveTimes: readonly PgnMoveComment[] = []
+  options: BuildPlyDiagnosticContextOptions = {}
 ): PlyDiagnosticContext | null {
   if (!move.fenBefore || !move.fenAfter) return null;
 
@@ -69,6 +88,7 @@ export function buildPlyDiagnosticContext(
     fenAfter: move.fenAfter,
     quality: move.quality,
     cpLoss: move.cpLoss,
+    drop: move.drop,
     isTacticalPosition: move.isTacticalPosition,
     bestMoveSan: move.bestMoveSan,
     bestLinePvSan: move.bestLinePvSan,
@@ -79,6 +99,8 @@ export function buildPlyDiagnosticContext(
     opponentChecksCapturesThreats: analyzeChecksCapturesThreats(move.fenAfter),
     tacticOpportunity: move.tacticOpportunity,
     tacticPrevention: move.tacticPrevention,
-    moveTime: moveTimes.find((entry) => entry.ply === move.ply)
+    moveTime: (options.moveTimes ?? []).find((entry) => entry.ply === move.ply),
+    previousMove: options.previousMove,
+    nextMoves: options.nextMoves
   };
 }

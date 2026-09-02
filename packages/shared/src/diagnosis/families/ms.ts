@@ -3,10 +3,14 @@ import type { DiagnosisCodeEntry } from '../catalog-types.js';
 /**
  * §II.D "One-ply move-safety process". Per the family README: `evidenceTrack`
  * follows the ratingPrior-threshold rule (none of these cross 1400, so all
- * `'game_leak'`), `detectability` is always `'dialogue'`,
- * `parentCategory` is always `'calculation_error'`. `directions` follows the
- * general own/opponent prefix rule: MS-01..03 ("Opponent-...") -> `['D']`,
- * MS-04..06 ("Own-...") -> `['O']`, the rest -> `['N']`.
+ * `'game_leak'`), `parentCategory` is always `'calculation_error'`.
+ * `directions` follows the general own/opponent prefix rule: MS-01..03
+ * ("Opponent-...") -> `['D']`, MS-04..06 ("Own-...") -> `['O']`, the rest ->
+ * `['N']`. `detectability` was originally `'dialogue'` throughout; Task 53.3
+ * flips MS-01..08 and MS-14 to `'detector'` as `diagnostics/detectors/`
+ * gains a file for each — MS-09..13 (fixation, priority, ordering, reset,
+ * candidate-delta process habits) stay `'dialogue'`, no detector for them
+ * in this plan.
  */
 export const MS_CODES: readonly DiagnosisCodeEntry[] = [
   {
@@ -17,7 +21,7 @@ export const MS_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [250, 1000],
     directions: ['D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'calculation_error'
   },
   {
@@ -28,7 +32,7 @@ export const MS_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [250, 1100],
     directions: ['D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'calculation_error'
   },
   {
@@ -39,7 +43,7 @@ export const MS_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [350, 1350],
     directions: ['D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'calculation_error'
   },
   {
@@ -50,7 +54,7 @@ export const MS_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [250, 1050],
     directions: ['O'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'calculation_error'
   },
   {
@@ -61,7 +65,7 @@ export const MS_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [250, 1050],
     directions: ['O'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'calculation_error'
   },
   {
@@ -72,7 +76,7 @@ export const MS_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [400, 1450],
     directions: ['O'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'calculation_error'
   },
   {
@@ -83,7 +87,7 @@ export const MS_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [300, 1450],
     directions: ['N'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'calculation_error'
   },
   {
@@ -94,7 +98,7 @@ export const MS_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [250, 1400],
     directions: ['N'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'calculation_error'
   },
   {
@@ -160,7 +164,7 @@ export const MS_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [350, 1600],
     directions: ['N'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'calculation_error'
   }
 ];

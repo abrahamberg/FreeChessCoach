@@ -20,6 +20,9 @@ export interface CctOpportunities {
   /** The mover's own pre-move checks not the move actually played — what
    * MS-04 asks whether the mover generated. */
   unplayedChecks: CheckOpportunity[];
+  /** The mover's own pre-move quiet threats not the move actually played —
+   * what MS-06 asks whether the mover generated. */
+  unplayedThreats: ThreatOpportunity[];
   /** Every check the opponent can play next, after the mover's move — what
    * MS-01 asks whether the mover scanned for. */
   opponentChecks: CheckOpportunity[];
@@ -56,10 +59,12 @@ export function computeCctOpportunities(context: PlyDiagnosticContext): CctOppor
     .filter((move) => move.moveSan !== context.moveSan)
     .filter((move) => isProfitableCapture(move, context.fenBefore, context.mover));
   const unplayedChecks = (ownCct?.checks.moves ?? []).filter((move) => move.moveSan !== context.moveSan);
+  const unplayedThreats = (ownCct?.threats.moves ?? []).filter((move) => move.moveSan !== context.moveSan);
 
   return {
     unplayedProfitableCaptures,
     unplayedChecks,
+    unplayedThreats,
     opponentChecks: opponentCct.checks.moves,
     opponentCaptures: opponentCct.captures.moves,
     opponentThreats: opponentCct.threats.moves

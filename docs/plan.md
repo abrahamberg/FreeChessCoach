@@ -556,22 +556,42 @@ The primitive every `MS-*` detector needs, built on the already-stored
 
 **Files:** one file per code under `diagnostics/detectors/` + tests.
 
-- [ ] `MS-01` opponent-check scan omission, `MS-02` opponent-capture scan
+- [x] `MS-01` opponent-check scan omission, `MS-02` opponent-capture scan
       omission, `MS-03` opponent-direct-threat omission (all three from the
       opponent's CCT on `fenAfter`).
-- [ ] `MS-04` own-check generation, `MS-05` own-capture generation, `MS-06`
+- [x] `MS-04` own-check generation, `MS-05` own-capture generation, `MS-06`
       own-direct-threat generation (from the mover's own stored CCT).
-- [ ] `MS-07` automatic-recapture reflex (played a recapture on the
+- [x] `MS-07` automatic-recapture reflex (played a recapture on the
       just-captured square while a stronger intermediate move existed — this
       is also `TA-27` zwischenzug; precedence handles the overlap).
-- [ ] `MS-08` final destination-safety omission (SEE < 0 on the move's own
+- [x] `MS-08` final destination-safety omission (SEE < 0 on the move's own
       destination square).
-- [ ] `MS-14` loose-piece scan omission (a loose own piece from `features`
+- [x] `MS-14` loose-piece scan omission (a loose own piece from `features`
       was punished within 2 plies).
-- [ ] Each gets a fixture proving the opportunity fires, one proving it does
+- [x] Each gets a fixture proving the opportunity fires, one proving it does
       not, and one precedence case against its causal neighbour.
-- [ ] Flip each code's catalog `detectability` to `'detector'`.
-- [ ] Commit: `feat: MS one-ply move-safety diagnostic detectors`.
+- [x] Flip each code's catalog `detectability` to `'detector'`.
+- [x] Commit: `feat: MS one-ply move-safety diagnostic detectors`.
+
+  **Done.** `diagnostics/detectors/ms-{01..08,14}-*.ts` + tests, plus a
+  shared `detectors/shared.ts` (`qualityFailed`/`severityFromQuality`/
+  `buildObservation`/`buildQualityObservation`, `destinationSquare`,
+  `isCaptureSan`, `opponentOf`). MS-01..06/08's `failed` comes straight from
+  `ctx.quality` (already the engine's full-search verdict on this exact
+  position — no re-scan needed to know whether the CCT resource actually
+  mattered); MS-07/14 have their own criteria (whether a stronger
+  intermediate went unplayed; whether a loose piece was punished within two
+  plies). `hwdl` is a provisional `ctx.drop`-derived proxy and
+  `reachability` a flat placeholder — both named as such pending Phase 54.
+  Two framework additions the detectors revealed were needed: `context.ts`
+  gained `drop`/`previousMove`/`nextMoves` (MS-07 needs the prior ply to
+  find "the just-captured square", MS-14 needs the next two plies to check
+  whether a loose piece was punished — both optional, undefined when the
+  caller only has one move in hand), and `cct-opportunities.ts` gained
+  `unplayedThreats` (MS-06's own-generation counterpart to
+  `unplayedChecks`/`unplayedProfitableCaptures`). MS-09..13 stay
+  `'dialogue'` — no detector for the search-order/fixation/process codes in
+  this plan.
 
 ### Task 53.4: `BV-*` board-vision detectors
 
