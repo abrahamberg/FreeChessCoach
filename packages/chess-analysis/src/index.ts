@@ -62,6 +62,7 @@ export * from './describe-tactic-hit.js';
 export * from './diagnostics/beta-binomial.js';
 export * from './diagnostics/cct-opportunities.js';
 export * from './diagnostics/context.js';
+export * from './diagnostics/evaluate-gates.js';
 export * from './diagnostics/hwdl.js';
 export * from './diagnostics/motif-to-code.js';
 export * from './diagnostics/reachability.js';

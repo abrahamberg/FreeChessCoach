@@ -271,5 +271,22 @@ export const CONFIG = {
     priorMeanFloor: 0.05,
     priorMeanCeil: 0.95,
     ciZ: 1.645
+  },
+
+  /** §4.2/§II.A — data-quality gate thresholds (Task 55.2). `minRatedGames`
+   * is §4.2's own "start with 30 recent rated games" floor (before the
+   * spec's own 60-100 expansion, which is the caller's job when a code's
+   * opportunities are rare, not this gate's). `dominanceShareThreshold` and
+   * `ratingSwingThreshold` have no spec-given number ("unusual session",
+   * "rapidly changing") — picked as the least-arbitrary practical defaults
+   * available until real data recalibrates them, same as
+   * `ratingEstimate.mediumConfidenceMinMoves`'s precedent. DQ-05 reuses
+   * `CONFIG.humanReachability.dq05Threshold` rather than duplicating it. */
+  dataQualityGates: {
+    minRatedGames: 30,
+    minOpportunities: 8,
+    maxClockMissingRatio: 0.2,
+    dominanceShareThreshold: 0.6,
+    ratingSwingThreshold: 200
   }
 } as const;

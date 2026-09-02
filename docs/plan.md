@@ -856,15 +856,39 @@ every opportunity as independent."
 
 **Files:** `packages/chess-analysis/src/diagnostics/evaluate-gates.ts` + test.
 
-- [ ] Implement the gates the captured data can support: `DQ-01` (window
+- [x] Implement the gates the captured data can support: `DQ-01` (window
       size), `DQ-02` (opportunity count), `DQ-03`/`DQ-15` (mixed controls —
       pool by the **exact** `time_control` string, never by speed class),
       `DQ-04` (missing clocks), `DQ-05` (reachability), `DQ-06` (sample
       dominated by one opening/opponent/side), `DQ-08` (provisional rating),
       `DQ-09`, `DQ-11`, `DQ-12` (variants/unrated), `DQ-13` (termination
       says disconnect), `DQ-16` (selection bias).
-- [ ] Return the gates that fired with their evidence, never a bare boolean.
-- [ ] Commit: `feat: data-quality gate evaluation`.
+- [x] Return the gates that fired with their evidence, never a bare boolean.
+- [x] Commit: `feat: data-quality gate evaluation`.
+
+  Done. `evaluateGates` in `evaluate-gates.ts` runs twelve independent
+  checks (`DQ-01/02/03/04/05/06/08/09/11/12/13/16`, `DQ-03` and `DQ-15`
+  sharing one mixed-time-control check since §II.A itself groups them)
+  over a `GateEvaluationInput` — a plain `GateWindowGame[]` window plus the
+  per-code aggregates (`opportunities`, `meanReachability`,
+  `cascadeCollapsedCount` from `resolveEpisodes`' collapsing,
+  `decidedPositionIncidentCount`/`totalIncidentCount` for DQ-09,
+  `selectionBias` since a pre-filtered sample is indistinguishable from an
+  unfiltered one at the schema level) — and returns every gate that fired
+  with a human-readable `evidence` string, never a boolean. `DQ-06`
+  (dominance) and `DQ-08` (rating stability) each check several conditions
+  and return on the first that trips, rather than only ever reporting one
+  cause. Thresholds with no spec-given number (`dominanceShareThreshold`,
+  `ratingSwingThreshold`, `maxClockMissingRatio`) live in
+  `CONFIG.dataQualityGates`, documented as practical defaults pending
+  recalibration, same precedent as `ratingEstimate`'s own arbitrary
+  constants; `DQ-05` reuses `CONFIG.humanReachability.dq05Threshold`
+  directly. `DataQualityGateId`/`DATA_QUALITY_GATES` already existed in
+  `packages/shared/src/diagnosis/data-quality.ts` (Task 52.1) — reused for
+  the `code` type rather than re-declaring the twenty-gate ID union. Free-
+  standing primitive over plain inputs, same pattern as every other Phase
+  54/55 module — wiring real per-game/per-code queries into
+  `GateEvaluationInput` is Task 55.3's job.
 
 ### Task 55.3: The diagnostic profile
 
