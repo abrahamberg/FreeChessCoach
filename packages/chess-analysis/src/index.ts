@@ -61,6 +61,7 @@ export * from './tactics-score.js';
 export * from './describe-tactic-hit.js';
 export * from './diagnostics/cct-opportunities.js';
 export * from './diagnostics/context.js';
+export * from './diagnostics/motif-to-code.js';
 export * from './diagnostics/registry.js';
 export * from './diagnostics/types.js';
 export * from './tactic-back-rank.js';

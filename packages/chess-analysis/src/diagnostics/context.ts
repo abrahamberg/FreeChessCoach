@@ -4,10 +4,27 @@ import type {
   ClassifiedMoveDto,
   FeatureDeltaDto,
   MoveQuality,
-  PositionFeatures
+  PositionFeatures,
+  TacticMotifType
 } from '@freechesscoach/shared';
 import { analyzeChecksCapturesThreats } from '../checks-captures-threats.js';
+import type { TacticMotifRankHit } from '../game-tactic-motifs.js';
 import type { PgnMoveComment } from '../pgn-move-comments.js';
+
+/**
+ * Mirrors `apps/api/src/services/tactic-prevention.ts`'s
+ * `TacticMotifPreventionResult['diagnosticByPly']` entry shape. Redeclared
+ * here rather than imported — that module is a service (engine access,
+ * batch/game-scoped), and `packages/chess-analysis` cannot depend on
+ * `apps/api` (AGENTS.md layering). The service computes it once per game and
+ * the caller resolves this ply's entry before calling
+ * `buildPlyDiagnosticContext`, same pattern as `previousMove`/`nextMoves`.
+ */
+export interface TacticDiagnosticEntry {
+  type: TacticMotifType;
+  failed: boolean;
+  detail: string | null;
+}
 
 /**
  * Everything a registry detector (Task 53.3+) might need, built once per ply
@@ -58,12 +75,27 @@ export interface PlyDiagnosticContext {
    * plies" check needs to look forward from this ply. Undefined for the
    * same reasons as `previousMove`. */
   nextMoves?: readonly ClassifiedMoveDto[];
+  /** §4.4's unbiased defensive-direction source (Task 50.4's
+   * `diagnosticByPly`, resolved to this ply by the caller) — the opponent
+   * motif reachable before this move, and whether the mover's move defused
+   * it, independent of `ClassifiedMoveDto.tacticPrevention`'s
+   * BEST_OR_BETTER skip (see that field's and `diagnosticByPly`'s doc
+   * comments for why the two must stay separate). `TA-*` direction-`D`
+   * detectors read this, not `tacticPrevention`. */
+  tacticDiagnostic?: TacticDiagnosticEntry;
+  /** This ply's `computeTacticMotifRankHits` entries (Task 53.5), resolved
+   * by the caller from the whole-game call — the direction-`O` `TA-*`
+   * detectors' §4.5 "found it at rank N" signal. Undefined when the caller
+   * didn't run that scan. */
+  tacticRankHits?: readonly TacticMotifRankHit[];
 }
 
 export interface BuildPlyDiagnosticContextOptions {
   moveTimes?: readonly PgnMoveComment[];
   previousMove?: ClassifiedMoveDto;
   nextMoves?: readonly ClassifiedMoveDto[];
+  tacticDiagnostic?: TacticDiagnosticEntry;
+  tacticRankHits?: readonly TacticMotifRankHit[];
 }
 
 /**
@@ -101,6 +133,8 @@ export function buildPlyDiagnosticContext(
     tacticPrevention: move.tacticPrevention,
     moveTime: (options.moveTimes ?? []).find((entry) => entry.ply === move.ply),
     previousMove: options.previousMove,
-    nextMoves: options.nextMoves
+    nextMoves: options.nextMoves,
+    tacticDiagnostic: options.tacticDiagnostic,
+    tacticRankHits: options.tacticRankHits
   };
 }

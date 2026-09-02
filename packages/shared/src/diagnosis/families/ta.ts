@@ -4,9 +4,16 @@ import type { DiagnosisCodeEntry } from '../catalog-types.js';
  * §II.E "Tactical motif diagnostics". Per the family README: every entry
  * gets `directions: ['O', 'D']` (the section's own intro: "Test offensive
  * and defensive directions separately"), `parentCategory` is always
- * `'missed_tactic'`, `detectability` is always `'dialogue'`. No entry's
- * rating-prior lower bound reaches the 1400 curriculum-only threshold, so
- * `evidenceTrack` is `'game_leak'` throughout.
+ * `'missed_tactic'`. No entry's rating-prior lower bound reaches the 1400
+ * curriculum-only threshold, so `evidenceTrack` is `'game_leak'` throughout.
+ * `detectability` was originally `'dialogue'` throughout; Task 53.5 flips
+ * TA-01, TA-04, TA-07..TA-12, TA-14, TA-16..TA-19, TA-26 and TA-43 to
+ * `'detector'` (`diagnostics/detectors/ta-offensive.ts`/`ta-defensive.ts` —
+ * TA-07..TA-12's fork/pin split only has offensive-direction coverage, see
+ * `ta-defensive.ts`'s doc comment for why). The rest (mate patterns beyond
+ * TA-01, escape-square control, most named-mechanism recognition beyond
+ * this vertical slice's nine direct-mapped motifs, move-order/combination/
+ * sacrifice-pattern/domination codes) stay `'dialogue'`.
  */
 export const TA_CODES: readonly DiagnosisCodeEntry[] = [
   {
@@ -17,7 +24,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [100, 650],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -50,7 +57,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [350, 1250],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -83,7 +90,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [300, 1200],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -94,7 +101,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [300, 1200],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -105,7 +112,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [450, 1450],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -116,7 +123,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [450, 1550],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -127,7 +134,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [300, 1050],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -138,7 +145,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [450, 1350],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -160,7 +167,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [450, 1400],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -182,7 +189,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [450, 1500],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -193,7 +200,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [500, 1650],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -204,7 +211,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [550, 1700],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -215,7 +222,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [700, 1900],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -292,7 +299,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [450, 1600],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {
@@ -479,7 +486,7 @@ export const TA_CODES: readonly DiagnosisCodeEntry[] = [
     ratingPrior: [300, 1350],
     directions: ['O', 'D'],
     evidenceTrack: 'game_leak',
-    detectability: 'dialogue',
+    detectability: 'detector',
     parentCategory: 'missed_tactic'
   },
   {

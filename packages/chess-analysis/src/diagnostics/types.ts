@@ -43,4 +43,12 @@ export interface DiagnosticObservation {
   reachability: number;
   /** Human-readable, e.g. "missed Nd6+ forking king and rook". */
   detail: string;
+  /** §4.5's "found it at rank N" reachability signal (Task 53.5) — the
+   * 0-indexed position among the engine's top-N lines at which the
+   * player's actual move sat, when that move itself embodies this
+   * observation's motif (`computeTacticMotifRankHits`, wired via
+   * `ctx.tacticRankHits`). `undefined` when no rank data was supplied to
+   * the context, or the player's move didn't embody the motif at any
+   * scanned rank. */
+  rank?: number;
 }

@@ -630,7 +630,7 @@ The primitive every `MS-*` detector needs, built on the already-stored
 
 **Files:** `diagnostics/motif-to-code.ts` + detectors + tests.
 
-- [ ] `motif-to-code.ts`: map a `TacticMotifType` plus its detector detail
+- [x] `motif-to-code.ts`: map a `TacticMotifType` plus its detector detail
       onto the precise code — `fork` splits by forking piece into `TA-07`
       (knight) / `TA-08` (pawn) / `TA-09` (king) / `TA-10` (slider); `pin`
       splits on `PinHit.kind` into `TA-11` / `TA-12`; `skewer`→`TA-14`,
@@ -638,14 +638,42 @@ The primitive every `MS-*` detector needs, built on the already-stored
       `removesDefender`→`TA-18`, `overloadedDefender`→`TA-19`,
       `trappedPiece`→`TA-26`, `weakBackRank`→`TA-04`, `freePiece`→`TA-43`,
       `checkmate`→`TA-01`.
-- [ ] Offensive direction (`O`) from `tacticOpportunity`; defensive (`D`)
+- [x] Offensive direction (`O`) from `tacticOpportunity`; defensive (`D`)
       from Task 50.4's unbiased `diagnosticByPly`. One detector pair per code.
-- [ ] Wire `computeTacticMotifRankHits` (currently uncalled) so each
+- [x] Wire `computeTacticMotifRankHits` (currently uncalled) so each
       observation carries the rank at which the required move sat — Phase 54
       consumes it.
-- [ ] Test that the same ply can yield both an `O` and a `D` observation for
+- [x] Test that the same ply can yield both an `O` and a `D` observation for
       different codes without either suppressing the other.
-- [ ] Commit: `feat: TA tactical diagnostic detectors in both directions`.
+- [x] Commit: `feat: TA tactical diagnostic detectors in both directions`.
+
+  **Done.** `motif-to-code.ts` resolves the 9 direct-mapped motif types with
+  no replay, and replays the embodying move (`forks()`/`pins()`, a pure
+  board computation, not an engine call) for `fork`/`pin`'s piece/kind
+  split. `detectors/ta-offensive.ts`/`ta-defensive.ts` are factory-built
+  (one shared `detect` per direction, differing only in which code
+  `motifToCode` must resolve to) rather than 24 near-identical files — the
+  15 codes are a declarative table, not a case for hand-written detectors
+  per file. `ctx.tacticOpportunity`/`ctx.tacticDiagnostic`/
+  `ctx.tacticRankHits` are all caller-resolved-per-ply inputs (same pattern
+  as `previousMove`/`nextMoves`): `tacticDiagnostic` mirrors
+  `apps/api`'s `diagnosticByPly` entry shape locally (chess-analysis can't
+  depend on apps/api), since that computation needs engine access and the
+  full move list. Defensive-direction fork/pin sub-codes (`TA-07..12`) have
+  no detector — `diagnosticByPly`'s `{type, failed, detail}` shape carries
+  no replay data to sub-type them, and under-counting beats guessing.
+  `DiagnosticObservation` gained an optional `rank` field for the wired
+  `computeTacticMotifRankHits` signal. Registry priority blocks: `BV-*`
+  10-80, `MS-*` 110-190, `TA-*` offensive 210-350, `TA-*` defensive
+  410-490.
+
+  **Phase 53 complete.** The detector framework, CCT-opportunity
+  primitive, and all three vertical-slice families (`MS-*`, `BV-*`,
+  `TA-*`) exist as pure, tested detectors in
+  `packages/chess-analysis/src/diagnostics/`, wired into one priority-
+  ordered registry — none of it called from anywhere yet (Phase 54 wires
+  reachability/hWDL/episodes and Phase 55 wires the registry into an
+  actual per-game pass).
 
 ---
 

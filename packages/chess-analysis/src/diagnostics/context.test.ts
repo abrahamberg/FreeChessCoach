@@ -80,4 +80,17 @@ describe('buildPlyDiagnosticContext', () => {
     expect(withNeighbors!.previousMove).toBe(previousMove);
     expect(withNeighbors!.nextMoves).toEqual([nextMove]);
   });
+
+  test('leaves tacticDiagnostic/tacticRankHits undefined when not supplied, attaches them when supplied', () => {
+    const withoutTactics = buildPlyDiagnosticContext(baseMove());
+    expect(withoutTactics!.tacticDiagnostic).toBeUndefined();
+    expect(withoutTactics!.tacticRankHits).toBeUndefined();
+
+    const tacticDiagnostic = { type: 'fork' as const, failed: true, detail: 'missed Nd6+' };
+    const tacticRankHits = [{ ply: 1, motif: 'fork' as const, rank: 1, playedRank: 1 }];
+    const withTactics = buildPlyDiagnosticContext(baseMove(), { tacticDiagnostic, tacticRankHits });
+
+    expect(withTactics!.tacticDiagnostic).toBe(tacticDiagnostic);
+    expect(withTactics!.tacticRankHits).toBe(tacticRankHits);
+  });
 });

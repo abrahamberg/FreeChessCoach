@@ -15,6 +15,8 @@ import { ms06OwnThreatGenerationOmission } from './detectors/ms-06-own-threat-ge
 import { ms07AutomaticRecaptureReflex } from './detectors/ms-07-automatic-recapture-reflex.js';
 import { ms08DestinationSafetyOmission } from './detectors/ms-08-destination-safety.js';
 import { ms14LoosePieceScanOmission } from './detectors/ms-14-loose-piece-scan.js';
+import { TA_DEFENSIVE_DETECTORS } from './detectors/ta-defensive.js';
+import { TA_OFFENSIVE_DETECTORS } from './detectors/ta-offensive.js';
 import type { DiagnosticDetector } from './types.js';
 
 /**
@@ -31,8 +33,10 @@ import type { DiagnosticDetector } from './types.js';
  * a board-vision failure is tested before the move-safety-process omission
  * it can produce (e.g. `BV-15`/`MS-08` name the same fact at each layer).
  * Priorities are left in decade blocks per family (`BV-*` 10-80, `MS-*`
- * 110-190) so a later family can be inserted between two existing ones
- * without renumbering everything.
+ * 110-190, `TA-*` offensive 210-350, `TA-*` defensive 410-490) so a later
+ * family can be inserted between two existing ones without renumbering
+ * everything. `TA-*` (recognition) sits after `MS-*` (scan/process) for the
+ * same §I.3 reason `MS-*` sits after `BV-*` (board model).
  */
 const detectors: DiagnosticDetector[] = [
   bv01OwnHangingPieceBlindness,
@@ -51,7 +55,9 @@ const detectors: DiagnosticDetector[] = [
   ms06OwnThreatGenerationOmission,
   ms07AutomaticRecaptureReflex,
   ms08DestinationSafetyOmission,
-  ms14LoosePieceScanOmission
+  ms14LoosePieceScanOmission,
+  ...TA_OFFENSIVE_DETECTORS,
+  ...TA_DEFENSIVE_DETECTORS
 ];
 export const DIAGNOSTIC_DETECTORS: DiagnosticDetector[] = detectors.sort(
   (a, b) => a.priority - b.priority
