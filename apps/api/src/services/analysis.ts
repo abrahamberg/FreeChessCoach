@@ -27,9 +27,11 @@ import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
+import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
 import { checkBrilliantSoundness } from './brilliant-soundness.js';
+import { buildDiagnosticObservations } from './build-diagnostics.js';
 import { buildGameReportForAnalysis } from './build-game-report.js';
-import { computeTacticMotifPrevented } from './tactic-prevention.js';
+import { computeTacticMotifPrevented, type TacticMotifPreventionResult } from './tactic-prevention.js';
 
 /** Positions per engine call. Small enough that the progress percentage moves
  * often, large enough not to pay per-request overhead on every ply — and it
@@ -118,6 +120,7 @@ export async function runAnalyzeGameJob(
       userRating: user.rating
     });
     await analysesRepo.storeGameReport(db, analysis.id, gameReport);
+    await recordDiagnosticObservations(db, gameId, game.userId, game.userColor, game.pgn, classifiedMoves, evals, prevention.diagnosticByPly);
     const candidateMoments = findCandidateMoments(classifiedMoves, evals);
 
     await analysesRepo.updateStatus(db, analysis.id, 'planning');
@@ -140,6 +143,33 @@ export async function runAnalyzeGameJob(
     // error), so a failure is otherwise invisible to log-based ops tooling.
     console.error(`runAnalyzeGameJob failed for game ${gameId} (analysis ${analysis.id}):`, error);
     await analysesRepo.markFailed(db, analysis.id, describeError(error));
+  }
+}
+
+/** Task 56.3: runs the diagnostic detector registry + episode resolution and
+ * persists the result. Isolated the same way `deepen-analysis` is isolated
+ * from the fast pipeline — as a wholly separate concern that must never turn
+ * a successful analysis into a failed one — except here the isolation is a
+ * try/catch rather than a separate job, since the plan places this step
+ * inline right after `buildGameReportForAnalysis`, not behind its own queue
+ * entry. `buildDiagnosticObservations` also isolates each individual
+ * detector, so one bad detector only loses its own finding, not the whole
+ * game's diagnostics. */
+async function recordDiagnosticObservations(
+  db: Kysely<Database>,
+  gameId: string,
+  userId: string,
+  userColor: 'white' | 'black',
+  pgn: string,
+  moves: ClassifiedMoveDto[],
+  evals: EngineEval[],
+  diagnosticByPly: TacticMotifPreventionResult['diagnosticByPly']
+): Promise<void> {
+  try {
+    const observations = buildDiagnosticObservations({ gameId, userId, userColor, pgn, moves, evals, diagnosticByPly });
+    await diagnosticObservationsRepo.insertMany(db, observations);
+  } catch (error) {
+    console.error(`diagnostic observation build/persist failed for game ${gameId}:`, error);
   }
 }
 

@@ -1121,13 +1121,58 @@ build.
 **Files:** `apps/api/src/services/analysis.ts`,
 `apps/api/src/services/build-diagnostics.ts` + tests.
 
-- [ ] Run the detector registry right after `buildGameReportForAnalysis` —
+- [x] Run the detector registry right after `buildGameReportForAnalysis` —
       that is already the point in `runAnalyzeGameJob` where everything is
       computed — then Task 54.3's episode resolution, then persist.
-- [ ] Only the user's own colour produces observations.
-- [ ] A detector throwing must not fail the analysis job; log and continue,
+- [x] Only the user's own colour produces observations.
+- [x] A detector throwing must not fail the analysis job; log and continue,
       the same way the job already isolates `deepen-analysis`.
-- [ ] Commit: `feat: record diagnostic observations during game analysis`.
+- [x] Commit: `feat: record diagnostic observations during game analysis`.
+
+**Done:** `build-diagnostics.ts`'s `buildDiagnosticObservations` is the
+orchestration layer this task called for: it filters to `userColor`'s own
+plies (only these ever produce rows), builds each ply's
+`PlyDiagnosticContext` (wiring in `previousMove`/`nextMoves` from a
+ply-keyed lookup over the whole game, `extractPgnMoveComments` for
+`moveTimes`, `computeTacticMotifRankHits` for `TA-*` direction-`O`'s "found
+it at rank N" signal, and `prevention.diagnosticByPly` — already computed
+earlier in the job — for direction-`D`'s unbiased source), runs the
+registry, then `resolveEpisodes`. Only each episode's `primary` becomes a
+row (secondaries are folded into the same incident, never persisted
+separately, per §I.3) plus one row per non-failed observation (§4.4's O
+denominator) — this mirrors `diagnostic-entry.ts`'s own doc comment on what
+a "surviving" entry is. `detail` currently holds only the detector's
+human-readable text; the richer per-opportunity context
+(opening/phase/clock/complexity/opponent rating) is game/session-level, so
+it's deferred to Task 56.4 joining `games`/`analyses` at read time rather
+than duplicating it onto every row here — noted as a deliberate scope
+decision, not an oversight.
+
+Two isolation layers exist, not one: `buildDiagnosticObservations` itself
+catches each individual detector's exception (a `detectors` DI parameter,
+defaulting to the real registry, exists solely so a test can inject a
+throwing fake without needing a live registry entry that misbehaves) so one
+bad detector never blanks out the rest of that ply or the rest of the game;
+`services/analysis.ts`'s new `recordDiagnosticObservations` then wraps the
+whole build-and-persist step in its own try/catch, logging and continuing
+exactly like the task's checklist asks, since this step runs inline inside
+`runAnalyzeGameJob` rather than as its own queued job the way
+`deepen-analysis` is isolated.
+
+Tests: `build-diagnostics.test.ts` (6 tests, all passing) unit-tests the
+orchestration with injected fake detectors — user-colour filtering, a
+throwing detector not stopping its ply-mates or the rest of the game,
+episode collapse to one primary row, non-failed rows surviving
+independently, and the DB-row field mapping. `analysis-diagnostics.test.ts`
+and `analysis-diagnostics-failure.test.ts` (real-DB, Testcontainers, same
+convention as Task 56.2) prove observations land in the table only for the
+user's plies, and that a persist-step failure (mocked at the module
+boundary in its own file, via `vi.mock`, so it can't affect the
+happy-path file's real-persistence assertion) still leaves the analysis
+`ready` with no `error` set. Unrun here — no Docker in this sandbox, same
+limitation as Tasks 56.1/56.2 — but `npm run lint && npm run typecheck` are
+clean, and the full non-DB suite (2108 tests) still passes with zero
+regressions.
 
 ### Task 56.4: Profile rebuild job
 
