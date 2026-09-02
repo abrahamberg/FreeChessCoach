@@ -214,5 +214,25 @@ export const CONFIG = {
    * the canonical single source) — no more hand-synced duplicate literal. */
   tacticScan: {
     defaultTopN: ENGINE_MULTI_PV
+  },
+
+  /** §4.5/DQ-05 — human-reachability scoring (Task 54.1). Four independent
+   * [0,1] sub-scores blended by weight (summing to 1, so a move maxing out
+   * every input scores exactly 1): the required move's multiPv rank, its
+   * forcing-ness, the PV length the student must see through, and how
+   * obvious its material gain is by SEE. `dq05Threshold` is where §II.A's
+   * DQ-05 gate ("suggested improvement is not human-reachable") fires —
+   * below it, an opportunity is engine-only and must not be reported as a
+   * student failure (§4.4). */
+  humanReachability: {
+    rankWeight: 0.3,
+    forcingWeight: 0.3,
+    lengthWeight: 0.25,
+    seeWeight: 0.15,
+    /** SEE centipawn gain treated as maximally "obvious" — roughly a minor
+     * piece, since winning that much material or more is easy to spot
+     * regardless of the position's subtlety. */
+    seeGainScale: 300,
+    dq05Threshold: 0.35
   }
 } as const;

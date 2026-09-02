@@ -690,18 +690,34 @@ Without this the system reports engine-only tactics as student failures, which
 §4.4 explicitly forbids ("do not count an obscure engine tactic as an
 opportunity simply because it appears in a best line").
 
-- [ ] Pure score in `[0, 1]` from four free inputs: the required move's
+- [x] Pure score in `[0, 1]` from four free inputs: the required move's
       multiPv rank, forcing-ness (check / capture / mate), solution length
       from `bestLinePvSan` (now real, per Task 50.2), and SEE-obviousness.
-- [ ] Optional service-side refinement: re-search the position at the depth
+- [x] Optional service-side refinement: re-search the position at the depth
       the `BOT_ROSTER` Elo ladder maps the student's rating to, and check
       whether the required move is the top choice. Run this **only** for
       plies that already produced an episode, so it is a handful of positions
       per game, and put the depth ladder lookup in one named function.
-- [ ] Threshold for `DQ-05` into `CONFIG`.
-- [ ] Tests: a mate-in-one scores near 1; a rank-5 quiet move at 7 plies
+- [x] Threshold for `DQ-05` into `CONFIG`.
+- [x] Tests: a mate-in-one scores near 1; a rank-5 quiet move at 7 plies
       scores near 0; the score is monotonic in rank.
-- [ ] Commit: `feat: human-reachability scoring for diagnostic opportunities`.
+- [x] Commit: `feat: human-reachability scoring for diagnostic opportunities`.
+
+  Done. `computeHumanReachability` in `reachability.ts` blends four
+  weighted [0,1] sub-scores (rank, forcing-ness, solution length, SEE
+  gain), each saturating independently so under-counting stays the safe
+  failure mode per §4.4; weights and the `dq05Threshold` gate constant live
+  in `CONFIG.humanReachability`, with `isHumanReachable` as the one place
+  that threshold is read. The pure function takes plain numbers/booleans,
+  not a `PlyDiagnosticContext` — deriving those four inputs from a real ply
+  is deferred to whichever Phase 54.3/55.2 caller first needs it, so this
+  stays a free-standing primitive rather than guessing at a shape.
+  `apps/api/src/services/diagnostic-reachability.ts` adds the optional
+  engine-backed refinement: `depthForRating` (a `BOT_ROSTER.reduce` by
+  nearest elo, mirroring `bot-candidates.ts`'s uncached-backend DI pattern)
+  and `isReachableAtStudentDepth`, which re-searches one position at that
+  depth via an injected `analyzeAtDepth` — callers are responsible for only
+  invoking it per-episode, not per-ply, since it's a real engine call.
 
 ### Task 54.2: hWDL and severity
 
