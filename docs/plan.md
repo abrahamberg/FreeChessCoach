@@ -373,15 +373,15 @@ those games only arrive by manual paste.
 
 **Files:** `packages/shared/src/diagnosis/axes.ts` + test.
 
-- [ ] `MECHANISMS` (`K M V R G J C X L S`), `DIRECTIONS` (`O D B N`),
+- [x] `MECHANISMS` (`K M V R G J C X L S`), `DIRECTIONS` (`O D B N`),
       `HISTORY_STATUSES`, `SCOPE_TAGS`, `SEVERITIES`, `EVIDENCE_TRACKS`, and
       `CONFIDENCE_LEVELS` as `as const` arrays plus zod enums (no `enum`, per
       AGENTS.md), each with a human label map for rendering.
-- [ ] `CONFIDENCE_LEVELS` includes `'confirmed'` for completeness, but export
+- [x] `CONFIDENCE_LEVELS` includes `'confirmed'` for completeness, but export
       an `EMITTABLE_CONFIDENCE_LEVELS` that excludes it, and add a test
       asserting nothing in this build can produce `'confirmed'` (see the
       scope decision above).
-- [ ] Commit: `feat: diagnostic axis vocabularies`.
+- [x] Commit: `feat: diagnostic axis vocabularies`.
 
 ### Task 52.2: The 410-code catalog
 
