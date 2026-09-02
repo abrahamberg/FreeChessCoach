@@ -500,16 +500,27 @@ export interface DiagnosticObservation {
 }
 ```
 
-- [ ] `PlyDiagnosticContext` is built **once per ply** from the stored
+- [x] `PlyDiagnosticContext` is built **once per ply** from the stored
       `ClassifiedMove` (features, CCT, motifs, alternatives, PV, clock) plus
       the opponent's CCT on `fenAfter`. No new engine calls on this path.
-- [ ] Unlike `classifyTacticMotif`, the registry does **not** stop at the
+- [x] Unlike `classifyTacticMotif`, the registry does **not** stop at the
       first match — a ply can present several independent opportunities.
       Precedence is applied later, in Task 54.3.
-- [ ] Write `README.md` documenting the "add a detector" flow (new file →
+- [x] Write `README.md` documenting the "add a detector" flow (new file →
       registry entry → catalog `detectability: 'detector'` → fixture test),
       mirroring the tactic-detectors one.
-- [ ] Commit: `feat: diagnostic detector framework`.
+- [x] Commit: `feat: diagnostic detector framework`.
+
+  **Done.** `packages/chess-analysis/src/diagnostics/{types,context,registry,
+  README}.ts` + tests. `buildPlyDiagnosticContext` returns `null` when
+  `fenBefore`/`fenAfter` are missing (legacy stored analyses only — every
+  move from the current `classify.ts` pipeline has both); it computes
+  `opponentChecksCapturesThreats` fresh via `analyzeChecksCapturesThreats
+  (fenAfter)` since no field stores the opponent's post-move scan, and
+  attaches an optional per-ply `moveTime` from a caller-supplied
+  `PgnMoveComment[]` (Phase 51's clock data, not itself part of
+  `ClassifiedMoveDto`). `DIAGNOSTIC_DETECTORS` starts empty — Task 53.3 adds
+  the first entries.
 
 ### Task 53.2: CCT opportunity aggregation
 
