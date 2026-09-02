@@ -531,12 +531,24 @@ export interface DiagnosticObservation {
 The primitive every `MS-*` detector needs, built on the already-stored
 `checksCapturesThreats` (nothing reads it today — see the reuse notes above).
 
-- [ ] For a ply: which profitable captures (`favorable`, or SEE > 0) were
+- [x] For a ply: which profitable captures (`favorable`, or SEE > 0) were
       available and not played; which checks were available and not played;
       which opponent checks/captures/threats existed **after** the move.
-- [ ] Tests with hand-built FENs, including the empty case (no checks, no
+- [x] Tests with hand-built FENs, including the empty case (no checks, no
       captures) which must produce no opportunities rather than a zero-count.
-- [ ] Commit: `feat: CCT opportunity aggregation primitive`.
+- [x] Commit: `feat: CCT opportunity aggregation primitive`.
+
+  **Done.** `computeCctOpportunities` returns `unplayedProfitableCaptures`/
+  `unplayedChecks` (the mover's own pre-move `checksCapturesThreats`, minus
+  whatever `moveSan` was actually played) and `opponentChecks`/
+  `opponentCaptures`/`opponentThreats` (straight from `context.ts`'s
+  `opponentChecksCapturesThreats`, unfiltered — profitability of an opponent
+  capture is the opponent's decision, not a precondition for the mover
+  having had to notice it). "Profitable" is `favorable` (the one-ply
+  heuristic already on `CaptureOpportunityDto`) OR a full `see()` > 0, since
+  `favorable` alone misses exchanges a second defender changes the sign of.
+  A hand-built bare-king FEN proves the empty case returns `[]` everywhere,
+  not a sentinel.
 
 ### Task 53.3: `MS-*` one-ply move-safety detectors
 
