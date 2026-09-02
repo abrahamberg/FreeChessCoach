@@ -2,8 +2,10 @@ import type { Task } from 'graphile-worker';
 import type { Kysely } from 'kysely';
 import {
   buildDiagnosticProfile,
+  evaluateGates,
   extractPgnMoveComments,
   type DiagnosticEntry,
+  type FocusCandidate,
   type PreviousProfileEntry
 } from '@freechesscoach/chess-analysis';
 import type { MovePhase } from '@freechesscoach/shared';
@@ -14,7 +16,8 @@ import * as gamesRepo from '../db/repositories/games.js';
 import type { GameRow } from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
-import { gamePlayedAt, windowByTimeControl } from '../services/diagnostic-window.js';
+import { gamePlayedAt, toGateWindowGame, windowByTimeControl } from '../services/diagnostic-window.js';
+import { syncProgrammaticFocusAreas } from '../services/progress.js';
 
 export interface RebuildDiagnosticProfileJobPayload {
   userId: string;
@@ -106,13 +109,15 @@ function toPreviousProfile(row: diagnosticProfilesRepo.DiagnosticProfileRow | un
  * `DiagnosticEntry` context, and persist one profile per time control that
  * clears the window minimum.
  *
- * Gate evaluation (Task 55.2) is deliberately NOT run here: `evaluateGates`
- * needs `resolveEpisodes`' own cascade/decided-position bookkeeping (Task
- * 54.3), which is never persisted onto a `diagnostic_observations` row (see
- * `build-diagnostics.ts`'s own doc comment on what `detail` holds) — there
- * is nothing here to evaluate gates against without re-running detection.
- * Task 57.2's coach tool is the documented next place that wiring decision
- * gets made.
+ * Task 57.3 adds the second chained step: `evaluateGates` per code (joined
+ * with its own profile entry into a `FocusCandidate`, same shape Task 57.2's
+ * coach tool builds on demand) feeds `syncProgrammaticFocusAreas`, which
+ * runs Task 55.4's `selectFocus` and turns the result into real focus-area
+ * rows. `cascadeCollapsedCount`/`decidedPositionIncidentCount` stay `0` here
+ * too, same documented gap as Task 57.2: that per-incident bookkeeping from
+ * `resolveEpisodes` (Task 54.3) is never persisted onto a
+ * `diagnostic_observations` row, so DQ-09/DQ-11 structurally can't fire from
+ * this reconstruction — every other gate evaluates against real data.
  *
  * An empty `entries` list for a time control that still clears the window
  * minimum is a correct output, not a bug (`buildDiagnosticProfile` returns
@@ -144,6 +149,21 @@ export async function runRebuildDiagnosticProfileJob(db: Kysely<Database>, userI
     const windowEnd = byPlayedAt[byPlayedAt.length - 1]!.playedAt;
 
     await diagnosticProfilesRepo.upsertProfile(db, userId, timeControl, windowStart, windowEnd, profile);
+
+    const windowGames = bucket.map((w) => toGateWindowGame(w.game));
+    const candidates: FocusCandidate[] = profile.map((entry) => ({
+      profile: entry,
+      firedGates: evaluateGates({
+        games: windowGames,
+        opportunities: entry.opportunities,
+        meanReachability: entry.meanReachability,
+        cascadeCollapsedCount: 0,
+        decidedPositionIncidentCount: 0,
+        totalIncidentCount: entry.opportunities,
+        selectionBias: null
+      })
+    }));
+    await syncProgrammaticFocusAreas(db, userId, candidates);
   }
 }
 

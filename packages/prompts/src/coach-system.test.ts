@@ -14,6 +14,7 @@ describe('buildCoachSystemPrompt', () => {
         focusAreas: [
           {
             category: 'hanging_piece',
+            diagnosisCode: null,
             status: 'active',
             note: 'note',
             evidenceCount: 1,
@@ -122,6 +123,7 @@ describe('buildCoachSystemPrompt', () => {
         focusAreas: [
           {
             category: 'hanging_piece',
+            diagnosisCode: null,
             status: 'active',
             note: 'checks captures too slowly',
             evidenceCount: 2,

@@ -1,6 +1,7 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import type { Finding, FocusAreaUpdate, SessionOutcome } from '@freechesscoach/shared';
+import type { DiagnosticProfileEntry, FocusCandidate } from '@freechesscoach/chess-analysis';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
 import * as gamesRepo from '../db/repositories/games.js';
@@ -9,7 +10,36 @@ import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { ValidationError } from '../lib/errors.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
-import { applyFocusAreaUpdate, applySessionOutcome, recordFinding } from './progress.js';
+import { applyFocusAreaUpdate, applySessionOutcome, recordFinding, syncProgrammaticFocusAreas } from './progress.js';
+
+/** Minimal `DiagnosticProfileEntry` fixture — mirrors
+ * `select-focus.test.ts`'s own `profile()` helper (same defaults produce a
+ * candidate `selectFocus` accepts: probable confidence, human-reachable,
+ * general scope, no data-quality gates fired). */
+function profileFixture(overrides: Partial<DiagnosticProfileEntry> = {}): DiagnosticProfileEntry {
+  return {
+    code: 'MS-01',
+    direction: 'D',
+    opportunities: 10,
+    episodes: 5,
+    failureRate: 0.5,
+    posteriorMean: 0.5,
+    credibleInterval: [0.3, 0.7],
+    confidence: 'probable',
+    spread: { games: 4, sessions: 3, openings: 3, sides: 2 },
+    totalHwdl: 1.5,
+    severityMix: { minor: 1, meaningful: 2, major: 2, decisive: 0 },
+    meanReachability: 0.7,
+    scopeTags: ['general'],
+    controlSkill: null,
+    historyStatus: 'newly_observed',
+    ...overrides
+  };
+}
+
+function candidateFixture(overrides: Partial<DiagnosticProfileEntry> = {}): FocusCandidate {
+  return { profile: profileFixture(overrides), firedGates: [] };
+}
 
 describe('progress service', () => {
   let testDb: TestDb;
@@ -95,44 +125,40 @@ describe('progress service', () => {
   });
 
   describe('applyFocusAreaUpdate', () => {
-    test('rejects an unknown category with ValidationError', async () => {
-      const userId = await makeUser('focus-bad-category@example.com');
-      const update = { category: 'laziness', action: 'create', note: 'x' } as unknown as FocusAreaUpdate;
+    async function seedFocusArea(
+      userId: string,
+      diagnosisCode: focusAreasRepo.FocusAreaRow['diagnosisCode'],
+      category: focusAreasRepo.FocusAreaRow['category'] = 'king_safety'
+    ): Promise<focusAreasRepo.FocusAreaRow> {
+      return focusAreasRepo.insert(db, { userId, category, diagnosisCode, status: 'active', note: 'note' });
+    }
+
+    test('rejects an out-of-catalog diagnosisCode with ValidationError', async () => {
+      const userId = await makeUser('focus-bad-code@example.com');
+      const update = { diagnosisCode: 'ZZ-99', action: 'progress', note: 'x' } as unknown as FocusAreaUpdate;
 
       await expect(applyFocusAreaUpdate(db, userId, update)).rejects.toThrow(ValidationError);
     });
 
-    test('creates a focus area when under the 3-active cap', async () => {
-      const userId = await makeUser('focus-create@example.com');
-      const update: FocusAreaUpdate = { category: 'hanging_piece', action: 'create', note: 'checks captures too slowly' };
+    test('progress/regress/resolve on a diagnosis code with no existing focus area is a no-op — the LLM cannot create one', async () => {
+      const userId = await makeUser('focus-no-create@example.com');
 
-      const result = await applyFocusAreaUpdate(db, userId, update);
+      const result = await applyFocusAreaUpdate(db, userId, {
+        diagnosisCode: 'MS-01',
+        action: 'progress',
+        note: 'note'
+      });
 
-      expect(result.applied).toBe(true);
-      expect(result.focusArea?.status).toBe('active');
-      expect(await focusAreasRepo.countActiveByUser(db, userId)).toBe(1);
-    });
-
-    test('a 4th active-focus-area create is queued, not inserted', async () => {
-      const userId = await makeUser('focus-cap@example.com');
-      const categories = ['hanging_piece', 'missed_tactic', 'allowed_tactic', 'calculation_error'] as const;
-
-      const results = [];
-      for (const category of categories) {
-        results.push(await applyFocusAreaUpdate(db, userId, { category, action: 'create', note: 'note' }));
-      }
-
-      expect(results.slice(0, 3).every((r) => r.applied)).toBe(true);
-      expect(results[3]?.applied).toBe(false);
-      expect(await focusAreasRepo.countActiveByUser(db, userId)).toBe(3);
+      expect(result.applied).toBe(false);
+      expect(await focusAreasRepo.countActiveByUser(db, userId)).toBe(0);
     });
 
     test('progress moves an active area to improving', async () => {
       const userId = await makeUser('focus-progress@example.com');
-      await applyFocusAreaUpdate(db, userId, { category: 'king_safety', action: 'create', note: 'note' });
+      await seedFocusArea(userId, 'MS-01');
 
       const result = await applyFocusAreaUpdate(db, userId, {
-        category: 'king_safety',
+        diagnosisCode: 'MS-01',
         action: 'progress',
         note: 'castled on time this game'
       });
@@ -143,11 +169,11 @@ describe('progress service', () => {
 
     test('regress moves an improving area back to active, freeing no cap slot (still counts as active)', async () => {
       const userId = await makeUser('focus-regress@example.com');
-      await applyFocusAreaUpdate(db, userId, { category: 'king_safety', action: 'create', note: 'note' });
-      await applyFocusAreaUpdate(db, userId, { category: 'king_safety', action: 'progress', note: 'note' });
+      await seedFocusArea(userId, 'MS-01');
+      await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-01', action: 'progress', note: 'note' });
 
       const result = await applyFocusAreaUpdate(db, userId, {
-        category: 'king_safety',
+        diagnosisCode: 'MS-01',
         action: 'regress',
         note: 'left king in center again'
       });
@@ -157,11 +183,11 @@ describe('progress service', () => {
 
     test('resolve moves an improving area to resolved', async () => {
       const userId = await makeUser('focus-resolve@example.com');
-      await applyFocusAreaUpdate(db, userId, { category: 'king_safety', action: 'create', note: 'note' });
-      await applyFocusAreaUpdate(db, userId, { category: 'king_safety', action: 'progress', note: 'note' });
+      await seedFocusArea(userId, 'MS-01');
+      await applyFocusAreaUpdate(db, userId, { diagnosisCode: 'MS-01', action: 'progress', note: 'note' });
 
       const result = await applyFocusAreaUpdate(db, userId, {
-        category: 'king_safety',
+        diagnosisCode: 'MS-01',
         action: 'resolve',
         note: 'consistently castling now'
       });
@@ -173,12 +199,72 @@ describe('progress service', () => {
       const userId = await makeUser('focus-noop@example.com');
 
       const result = await applyFocusAreaUpdate(db, userId, {
-        category: 'no_plan',
+        diagnosisCode: 'MS-01',
         action: 'resolve',
         note: 'note'
       });
 
       expect(result.applied).toBe(false);
+    });
+  });
+
+  describe('syncProgrammaticFocusAreas', () => {
+    test('creates focus areas for the primary and secondary picks, up to the 3-active cap', async () => {
+      const userId = await makeUser('sync-basic@example.com');
+      // Three unrelated content-domain families (none in select-focus.ts's
+      // MECHANISM_CHAIN_FAMILIES) so the root-cause override doesn't collapse
+      // them against each other — each is independently eligible.
+      const candidates: FocusCandidate[] = [
+        candidateFixture({ code: 'EG-01', direction: 'N', totalHwdl: 5, episodes: 8 }),
+        candidateFixture({ code: 'PW-01', direction: 'N', totalHwdl: 3, episodes: 7 }),
+        candidateFixture({ code: 'PS-01', direction: 'N', totalHwdl: 1, episodes: 5 })
+      ];
+
+      const created = await syncProgrammaticFocusAreas(db, userId, candidates);
+
+      expect(created.length).toBeLessThanOrEqual(3);
+      expect(created.length).toBeGreaterThan(0);
+      expect(await focusAreasRepo.countActiveByUser(db, userId)).toBe(created.length);
+      for (const area of created) {
+        expect(area.status).toBe('active');
+        expect(area.diagnosisCode).not.toBeNull();
+      }
+    });
+
+    test('does not create a second focus area for a code that already has one', async () => {
+      const userId = await makeUser('sync-existing@example.com');
+      await focusAreasRepo.insert(db, {
+        userId,
+        category: 'missed_tactic',
+        diagnosisCode: 'MS-01',
+        status: 'active',
+        note: 'existing'
+      });
+
+      const created = await syncProgrammaticFocusAreas(db, userId, [candidateFixture({ code: 'MS-01' })]);
+
+      expect(created).toEqual([]);
+      expect(await focusAreasRepo.countActiveByUser(db, userId)).toBe(1);
+    });
+
+    test('stops creating once the 3-active cap is already full from other codes', async () => {
+      const userId = await makeUser('sync-cap-full@example.com');
+      for (const code of ['MS-01', 'BV-01', 'TA-07'] as const) {
+        await focusAreasRepo.insert(db, { userId, category: 'missed_tactic', diagnosisCode: code, status: 'active', note: 'n' });
+      }
+
+      const created = await syncProgrammaticFocusAreas(db, userId, [candidateFixture({ code: 'CA-01', direction: 'N' })]);
+
+      expect(created).toEqual([]);
+      expect(await focusAreasRepo.countActiveByUser(db, userId)).toBe(3);
+    });
+
+    test('an empty candidate list creates nothing', async () => {
+      const userId = await makeUser('sync-empty@example.com');
+
+      const created = await syncProgrammaticFocusAreas(db, userId, []);
+
+      expect(created).toEqual([]);
     });
   });
 
@@ -267,36 +353,48 @@ describe('progress service', () => {
 
     test('applies a resolve focus-area update, moving state to resolved', async () => {
       const ctx = await makeSession('outcome-resolve@example.com');
-      await applyFocusAreaUpdate(db, ctx.userId, { category: 'king_safety', action: 'create', note: 'n' });
-      await applyFocusAreaUpdate(db, ctx.userId, { category: 'king_safety', action: 'progress', note: 'n' });
+      await focusAreasRepo.insert(db, {
+        userId: ctx.userId,
+        category: 'king_safety',
+        diagnosisCode: 'MS-01',
+        status: 'active',
+        note: 'n'
+      });
+      await applyFocusAreaUpdate(db, ctx.userId, { diagnosisCode: 'MS-01', action: 'progress', note: 'n' });
 
       await applySessionOutcome(
         db,
         ctx,
         outcome({
-          focusAreaUpdates: [{ category: 'king_safety', action: 'resolve', note: 'consistently castling now' }]
+          focusAreaUpdates: [{ diagnosisCode: 'MS-01', action: 'resolve', note: 'consistently castling now' }]
         })
       );
 
-      const area = await focusAreasRepo.findByUserAndCategory(db, ctx.userId, 'king_safety');
+      const area = await focusAreasRepo.findByUserAndDiagnosisCode(db, ctx.userId, 'MS-01');
       expect(area?.status).toBe('resolved');
     });
 
     test('applies a regress focus-area update on a resolved area, moving it back to active', async () => {
       const ctx = await makeSession('outcome-regress@example.com');
-      await applyFocusAreaUpdate(db, ctx.userId, { category: 'king_safety', action: 'create', note: 'n' });
-      await applyFocusAreaUpdate(db, ctx.userId, { category: 'king_safety', action: 'progress', note: 'n' });
-      await applyFocusAreaUpdate(db, ctx.userId, { category: 'king_safety', action: 'resolve', note: 'n' });
+      await focusAreasRepo.insert(db, {
+        userId: ctx.userId,
+        category: 'king_safety',
+        diagnosisCode: 'MS-01',
+        status: 'active',
+        note: 'n'
+      });
+      await applyFocusAreaUpdate(db, ctx.userId, { diagnosisCode: 'MS-01', action: 'progress', note: 'n' });
+      await applyFocusAreaUpdate(db, ctx.userId, { diagnosisCode: 'MS-01', action: 'resolve', note: 'n' });
 
       await applySessionOutcome(
         db,
         ctx,
         outcome({
-          focusAreaUpdates: [{ category: 'king_safety', action: 'regress', note: 'left king in center again' }]
+          focusAreaUpdates: [{ diagnosisCode: 'MS-01', action: 'regress', note: 'left king in center again' }]
         })
       );
 
-      const area = await focusAreasRepo.findByUserAndCategory(db, ctx.userId, 'king_safety');
+      const area = await focusAreasRepo.findByUserAndDiagnosisCode(db, ctx.userId, 'MS-01');
       expect(area?.status).toBe('active');
     });
 

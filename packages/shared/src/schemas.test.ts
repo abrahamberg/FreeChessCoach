@@ -334,7 +334,7 @@ describe('SessionOutcomeSchema', () => {
       homework: 'Blunder-check every move in your next two games.',
       findings: [],
       focusAreaUpdates: [
-        { category: 'calculation_error', action: 'progress', note: 'Found the refutation unprompted.' }
+        { diagnosisCode: 'TA-07', action: 'progress', note: 'Found the refutation unprompted.' }
       ]
     };
     expect(SessionOutcomeSchema.safeParse(outcome).success).toBe(true);
@@ -492,6 +492,7 @@ describe('DashboardResponseSchema', () => {
       active: [
         {
           category: 'king_safety',
+          diagnosisCode: 'BV-01',
           status: 'active',
           note: 'Delays castling under pressure.',
           evidenceCount: 3,

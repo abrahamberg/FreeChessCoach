@@ -36,9 +36,19 @@ export const FindingSchema = z
   });
 export type Finding = z.infer<typeof FindingSchema>;
 
+/**
+ * Task 57.3 — selection of WHICH diagnosis code becomes a focus area is now
+ * programmatic (`progress.ts`'s `syncProgrammaticFocusAreas`, driven by
+ * `select-focus.ts`'s §IV objective+overrides), so the LLM-facing action set
+ * drops `'create'`: this tool now only records a state transition and a note
+ * on a focus area the system already selected. Addressed by `diagnosisCode`
+ * rather than `category` — several active focus areas can now share one
+ * broad category (the old `UNIQUE (user_id, category)` constraint is gone),
+ * so category alone is no longer a unique enough address.
+ */
 export const FocusAreaUpdateSchema = z.object({
-  category: z.enum(MISTAKE_CATEGORIES),
-  action: z.enum(['create', 'progress', 'regress', 'resolve']),
+  diagnosisCode: DiagnosisCodeIdSchema,
+  action: z.enum(['progress', 'regress', 'resolve']),
   note: z.string()
 });
 export type FocusAreaUpdate = z.infer<typeof FocusAreaUpdateSchema>;

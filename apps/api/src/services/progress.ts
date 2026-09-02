@@ -1,5 +1,6 @@
 import { DIAGNOSIS_CODES_BY_ID, MISTAKE_CATEGORIES } from '@freechesscoach/shared';
 import type { DiagnosisCodeId, Finding, FocusAreaUpdate, MistakeCategory, SessionOutcome } from '@freechesscoach/shared';
+import { selectFocus, type DiagnosticProfileEntry, type FocusCandidate } from '@freechesscoach/chess-analysis';
 import type { Kysely } from 'kysely';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
@@ -81,23 +82,21 @@ export interface FocusAreaUpdateResult {
 }
 
 /**
- * The max-3-active cap and category validation live here (architecture §7.1):
- * a 'create' beyond the cap is silently not inserted ("queued" per
- * packages/prompts/src/progress-summarizer.ts's system prompt — the LLM
- * ranked it, but the system enforces the limit, not an error).
+ * Task 57.3 — selection of WHICH diagnosis code becomes a focus area is no
+ * longer an LLM decision (see `syncProgrammaticFocusAreas` below); this tool
+ * only records a note and a state transition (progress/regress/resolve) on
+ * a focus area the system already created. A code with no existing focus
+ * area is a no-op, not an error — the LLM cannot conjure one into existence
+ * by naming it.
  */
 export async function applyFocusAreaUpdate(
   db: Kysely<Database>,
   userId: string,
   update: FocusAreaUpdate
 ): Promise<FocusAreaUpdateResult> {
-  assertValidCategory(update.category);
+  assertValidDiagnosisCode(update.diagnosisCode);
 
-  const existing = await focusAreasRepo.findByUserAndCategory(db, userId, update.category);
-
-  if (update.action === 'create') {
-    return applyCreate(db, userId, update, existing);
-  }
+  const existing = await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, update.diagnosisCode);
   if (!existing) return { applied: false };
 
   const focusArea = await focusAreasRepo.updateStatusAndNote(
@@ -109,24 +108,64 @@ export async function applyFocusAreaUpdate(
   return { applied: true, focusArea };
 }
 
-async function applyCreate(
+function defaultProgrammaticNote(entry: DiagnosticProfileEntry): string {
+  const failurePercent = Math.round(entry.failureRate * 100);
+  return `Selected automatically from measured play: ${entry.episodes} episode(s), ${failurePercent}% failure rate, ${entry.confidence} confidence.`;
+}
+
+/**
+ * Task 57.3 — the programmatic replacement for the old LLM-driven 'create'
+ * action: runs Task 55.4's `selectFocus` §IV objective+overrides over
+ * `candidates` (one time control's `FocusCandidate`s — a `DiagnosticProfileEntry`
+ * joined with its own fired data-quality gates, the same join Task 57.2's
+ * `get_diagnostic_profile` coach tool already builds via `evaluateGates`)
+ * and creates a focus area for the resulting primary + secondary codes that
+ * don't already have one. The max-3-active cap is enforced with a fresh
+ * `countActiveByUser` read before each insert, so calling this once per time
+ * control (its intended call site: `rebuild-diagnostic-profile.ts`, right
+ * after each `upsertProfile`) still enforces one cap globally across a
+ * user's time controls — `MAX_ACTIVE_FOCUS_AREAS` was always a per-user, not
+ * per-category-or-time-control, limit.
+ *
+ * This resolves the previous "queued" mismatch (`progress-summarizer.ts`'s
+ * old system-prompt text claimed an over-cap create was queued, while
+ * `applyCreate` silently discarded it): creates are no longer LLM-proposed
+ * at all, so there is nothing left for the prompt to describe — the
+ * summarizer's `focusAreaUpdates` output is now progress/regress/resolve
+ * only, same as the live `propose_focus_area_update` tool.
+ */
+export async function syncProgrammaticFocusAreas(
   db: Kysely<Database>,
   userId: string,
-  update: FocusAreaUpdate,
-  existing: focusAreasRepo.FocusAreaRow | undefined
-): Promise<FocusAreaUpdateResult> {
-  if (existing) return { applied: false };
+  candidates: readonly FocusCandidate[]
+): Promise<focusAreasRepo.FocusAreaRow[]> {
+  const selection = selectFocus({ candidates });
+  const picks = [selection.primary, ...selection.secondary].filter(
+    (entry): entry is DiagnosticProfileEntry => entry !== null
+  );
 
-  const activeCount = await focusAreasRepo.countActiveByUser(db, userId);
-  if (activeCount >= MAX_ACTIVE_FOCUS_AREAS) return { applied: false };
+  const created: focusAreasRepo.FocusAreaRow[] = [];
+  for (const entry of picks) {
+    const existing = await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, entry.code);
+    if (existing) continue;
 
-  const focusArea = await focusAreasRepo.insert(db, {
-    userId,
-    category: update.category,
-    status: 'active',
-    note: update.note
-  });
-  return { applied: true, focusArea };
+    const activeCount = await focusAreasRepo.countActiveByUser(db, userId);
+    if (activeCount >= MAX_ACTIVE_FOCUS_AREAS) break;
+
+    const category = DIAGNOSIS_CODES_BY_ID.get(entry.code)?.parentCategory;
+    if (!category) continue;
+
+    created.push(
+      await focusAreasRepo.insert(db, {
+        userId,
+        category,
+        diagnosisCode: entry.code,
+        status: 'active',
+        note: defaultProgrammaticNote(entry)
+      })
+    );
+  }
+  return created;
 }
 
 function nextStatusFor(

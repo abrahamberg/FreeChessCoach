@@ -188,7 +188,7 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'propose_focus_area_update',
     description:
-      'Create, progress, regress, or resolve a focus area based on evidence this session — when this session gives real evidence that a focus area improved/regressed, or a new recurring pattern (2+ occurrences across sessions) deserves focus.'
+      "Record progress, a regression, or resolution on one of the student's CURRENT focus areas (shown above with their diagnosis code, e.g. \"TA-07\"), based on real evidence from this session. Address it by diagnosisCode. You do not create focus areas yourself — the system selects them automatically from measured diagnostic evidence (get_diagnostic_profile), not from a session impression. If you see a pattern that isn't yet a focus area, record it with record_finding instead and let the measurement catch up."
   },
   {
     name: 'update_threads',

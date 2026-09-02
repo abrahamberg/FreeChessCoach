@@ -147,6 +147,7 @@ export interface FocusAreasTable {
   id: Generated<string>;
   userId: string;
   category: MistakeCategory;
+  diagnosisCode: DiagnosisCodeId | null;
   status: 'active' | 'improving' | 'resolved';
   note: string;
   evidenceCount: Generated<number>;

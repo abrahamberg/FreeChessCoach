@@ -8,6 +8,7 @@ describe('FocusAreaCard', () => {
       <FocusAreaCard
         area={{
           category: 'king_safety',
+          diagnosisCode: 'MS-01',
           status: 'improving',
           note: 'Delays castling under pressure.',
           evidenceCount: 3,
@@ -27,6 +28,7 @@ describe('FocusAreaCard', () => {
       <FocusAreaCard
         area={{
           category: 'passive_play',
+          diagnosisCode: 'CA-01',
           status: 'active',
           note: 'Avoids active plans.',
           evidenceCount: 1,
@@ -42,6 +44,7 @@ describe('FocusAreaCard', () => {
       <FocusAreaCard
         area={{
           category: 'passive_play',
+          diagnosisCode: 'CA-01',
           status: 'resolved',
           note: 'Fixed it.',
           evidenceCount: 4,

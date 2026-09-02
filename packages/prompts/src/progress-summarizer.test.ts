@@ -12,9 +12,10 @@ describe('buildSummarizerMessages', () => {
     expect(system).toContain('ONLY these');
   });
 
-  test('system prompt explains the focus-area state machine and the 3-active cap', () => {
+  test('system prompt explains the focus-area state machine and that selection is programmatic', () => {
     const { system } = buildSummarizerMessages(baseInput());
-    expect(system).toContain('3-active cap');
+    expect(system).toContain('diagnosis code');
+    expect(system).toContain('system selects them automatically');
   });
 
   test('user message includes the transcript and already-recorded findings', () => {

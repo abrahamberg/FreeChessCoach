@@ -10,6 +10,7 @@ const DASHBOARD_RESPONSE = {
     active: [
       {
         category: 'king_safety',
+        diagnosisCode: 'MS-01',
         status: 'improving',
         note: 'Delays castling under pressure.',
         evidenceCount: 3,
@@ -19,6 +20,7 @@ const DASHBOARD_RESPONSE = {
     resolved: [
       {
         category: 'passive_play',
+        diagnosisCode: 'CA-01',
         status: 'resolved',
         note: 'Fixed it.',
         evidenceCount: 4,

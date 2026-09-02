@@ -33,12 +33,11 @@ You will receive: the student's profile, the coaching plan the coach prepared, t
 
 Extract:
 1. findings: durable observations about the student NOT already recorded by the coach. A finding is about the student's thinking or habits, evidenced in the transcript ("said he never considered his opponent's reply" — not "played a bad move on ply 23"). Mark improvements with isPositive: true. It is fine to return an empty list if the coach recorded everything.
-2. focusAreaUpdates: based on ALL evidence (recorded + new):
-   - create: a pattern seen in this session AND in recent findings from earlier sessions (2+ total occurrences), not already a focus area.
+2. focusAreaUpdates: based on ALL evidence (recorded + new), for the student's CURRENT focus areas only (shown above with their diagnosis code) — you do not create focus areas; the system selects them automatically from measured diagnostic evidence, not from session impressions:
    - progress: an active focus area with clear positive evidence this session.
    - regress: an improving/resolved area that reappeared.
    - resolve: an improving area with positive evidence across 3+ recent sessions.
-   Propose at most 2 creates. The system enforces a 3-active cap; if your creates would exceed it they are queued, so rank by importance.
+   Address each update by diagnosisCode.
 3. sessionSummary: 2–3 sentences addressed TO the student ("You...") for their dashboard. Encouraging, specific, honest.
 4. homework: copy the coach's assigned homework from the transcript; null if none.
 

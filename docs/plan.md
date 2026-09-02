@@ -1394,18 +1394,40 @@ no stored profile) and the DQ-05 reachability gate actually firing.
 **Files:** migration `0027_focus_area_diagnosis.ts`,
 `apps/api/src/services/progress.ts`, `packages/shared/src/dashboard.ts` + tests.
 
-- [ ] Add `focus_areas.diagnosis_code`; relax `UNIQUE (user_id, category)` to
+- [x] Add `focus_areas.diagnosis_code`; relax `UNIQUE (user_id, category)` to
       `UNIQUE (user_id, diagnosis_code)` — today a student can only ever have
       one focus area per broad category, which the code-level taxonomy makes
       far too coarse.
-- [ ] Selection becomes programmatic (Task 55.4); the LLM's
+- [x] Selection becomes programmatic (Task 55.4); the LLM's
       `propose_focus_area_update` writes only the note and the state
       transition. Keep the max-3-active cap.
-- [ ] Note in the service doc comment that the summarizer prompt claims
+- [x] Note in the service doc comment that the summarizer prompt claims
       over-cap creates are "queued" while `applyCreate` silently discards
       them — either implement queueing or correct the prompt text; do not
       leave the two disagreeing.
-- [ ] Commit: `feat: focus areas keyed on diagnosis codes`.
+- [x] Commit: `feat: focus areas keyed on diagnosis codes`.
+
+**Done:** `focus_areas.diagnosis_code` is nullable (legacy category-only rows
+stay valid; Postgres treats multiple `NULL`s as distinct, so they coexist
+under the new `UNIQUE (user_id, diagnosis_code)`). Selection is now
+`progress.ts`'s `syncProgrammaticFocusAreas`, called from
+`rebuild-diagnostic-profile.ts` right after each time control's
+`upsertProfile`: it builds one `FocusCandidate` per code by running
+`evaluateGates` (Task 55.2, `cascadeCollapsedCount`/
+`decidedPositionIncidentCount` fixed at 0 — same documented gap as Task
+57.2, since that per-incident bookkeeping is never persisted), feeds them to
+`selectFocus` (Task 55.4), and inserts a focus area for the primary +
+secondary picks that don't already have one, re-checking the max-3-active
+cap before each insert (a per-user cap, so it holds across time controls
+even though this runs once per time control). `applyFocusAreaUpdate` (the
+LLM-facing `propose_focus_area_update` handler) lost its `'create'` action
+entirely — it now only applies `progress`/`regress`/`resolve` to a focus
+area addressed by `diagnosisCode`; naming a code with no existing focus area
+is a no-op, not an error. This resolves the "queued" mismatch by deletion
+rather than implementation: since the LLM no longer proposes creates at
+all, there is nothing left for the summarizer prompt to describe as queued
+or discarded — `progress-summarizer.ts`'s system prompt was rewritten to
+say the system selects focus areas automatically from measured evidence.
 
 ### Task 57.4: Scoped code vocabulary in the prompts
 

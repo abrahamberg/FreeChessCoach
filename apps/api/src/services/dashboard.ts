@@ -49,6 +49,7 @@ export async function getDashboard(db: Kysely<Database>, userId: string): Promis
 function toFocusAreaSummary(row: focusAreasRepo.FocusAreaRow): DashboardResponse['focusAreas']['active'][number] {
   return {
     category: row.category,
+    diagnosisCode: row.diagnosisCode,
     status: row.status,
     note: row.note,
     evidenceCount: row.evidenceCount,

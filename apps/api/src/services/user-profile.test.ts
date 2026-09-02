@@ -1,10 +1,11 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import * as focusAreasRepo from '../db/repositories/focus-areas.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
-import { applyFocusAreaUpdate, recordFinding } from './progress.js';
+import { recordFinding } from './progress.js';
 import { getOrCreate, getProfileSummary, updateProfile } from './user-profile.js';
 
 describe('getProfileSummary', () => {
@@ -33,9 +34,11 @@ describe('getProfileSummary', () => {
 
   test('aggregates active focus areas, recent findings, and session count', async () => {
     const user = await usersRepo.insert(db, { email: 'busy@example.com', displayName: 'Busy' });
-    await applyFocusAreaUpdate(db, user.id, {
+    await focusAreasRepo.insert(db, {
+      userId: user.id,
       category: 'hanging_piece',
-      action: 'create',
+      diagnosisCode: 'BV-01',
+      status: 'active',
       note: 'checks captures too slowly'
     });
     const game = await gamesRepo.insert(db, {

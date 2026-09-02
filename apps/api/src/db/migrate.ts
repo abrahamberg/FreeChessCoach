@@ -25,6 +25,7 @@ import * as gameMetadata from './migrations/0023_game_metadata.js';
 import * as userRating from './migrations/0024_user_rating.js';
 import * as diagnostics from './migrations/0025_diagnostics.js';
 import * as findingDiagnosis from './migrations/0026_finding_diagnosis.js';
+import * as focusAreaDiagnosis from './migrations/0027_focus_area_diagnosis.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -54,7 +55,8 @@ const provider: MigrationProvider = {
       '0023_game_metadata': gameMetadata,
       '0024_user_rating': userRating,
       '0025_diagnostics': diagnostics,
-      '0026_finding_diagnosis': findingDiagnosis
+      '0026_finding_diagnosis': findingDiagnosis,
+      '0027_focus_area_diagnosis': focusAreaDiagnosis
     })
 };
 

@@ -1,6 +1,6 @@
 import { plyToMoveRef } from '@freechesscoach/chess-analysis';
 import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
-import type { CoachingPlan, MistakeCategory, Thread } from '@freechesscoach/shared';
+import type { CoachingPlan, DiagnosisCodeId, MistakeCategory, Thread } from '@freechesscoach/shared';
 
 export const MISTAKE_CATEGORIES_BLOCK = MISTAKE_CATEGORIES.join(', ');
 
@@ -23,23 +23,30 @@ function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+/** `diagnosisCode` is Task 57.3's code-level target — nullable for legacy
+ * category-only rows. Rendered so `propose_focus_area_update` has something
+ * to address: since selection is now programmatic, the code is the only
+ * stable handle the LLM can reference in a later progress/regress/resolve
+ * call. */
 export interface FocusAreaSummary {
   category: MistakeCategory;
+  diagnosisCode: DiagnosisCodeId | null;
   status: 'active' | 'improving' | 'resolved';
   note: string;
   evidenceCount: number;
   lastSeenAt: Date;
 }
 
-/** Format: `- [status] category: note (seen Nx, last {date})`. Injected into
+/** Format: `- [status] category (CODE): note (seen Nx, last {date})`, or
+ * without the code for a legacy category-only row. Injected into
  * coach-system.ts's yourStudent and analysis-planner.ts's user message. */
 export function renderFocusAreasBlock(focusAreas: FocusAreaSummary[], now: Date): string {
   if (focusAreas.length === 0) return FOCUS_AREAS_EMPTY_FALLBACK;
   return focusAreas
-    .map(
-      (area) =>
-        `- [${area.status}] ${area.category}: ${area.note} (seen ${area.evidenceCount}x, last ${relativeDate(area.lastSeenAt, now)})`
-    )
+    .map((area) => {
+      const label = area.diagnosisCode ? `${area.category} (${area.diagnosisCode})` : area.category;
+      return `- [${area.status}] ${label}: ${area.note} (seen ${area.evidenceCount}x, last ${relativeDate(area.lastSeenAt, now)})`;
+    })
     .join('\n');
 }
 

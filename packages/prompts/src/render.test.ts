@@ -54,6 +54,7 @@ describe('renderFocusAreasBlock', () => {
       [
         {
           category: 'king_safety',
+          diagnosisCode: null,
           status: 'active',
           note: 'stops calculating after first capture',
           evidenceCount: 3,
@@ -64,6 +65,25 @@ describe('renderFocusAreasBlock', () => {
     );
     expect(block).toBe(
       '- [active] king_safety: stops calculating after first capture (seen 3x, last yesterday)'
+    );
+  });
+
+  test('includes the diagnosis code in parentheses when present', () => {
+    const block = renderFocusAreasBlock(
+      [
+        {
+          category: 'missed_tactic',
+          diagnosisCode: 'TA-07',
+          status: 'active',
+          note: 'misses knight forks',
+          evidenceCount: 2,
+          lastSeenAt: new Date('2026-07-27T01:00:00Z')
+        }
+      ],
+      now
+    );
+    expect(block).toBe(
+      '- [active] missed_tactic (TA-07): misses knight forks (seen 2x, last yesterday)'
     );
   });
 });
