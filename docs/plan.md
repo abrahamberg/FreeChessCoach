@@ -455,13 +455,23 @@ the 13 parents while the codes carry the precision.
 
 **Files:** `packages/shared/src/diagnosis/ref.ts` + test.
 
-- [ ] `DiagnosisRefSchema = { code, mechanism, direction, context?: string }`
+- [x] `DiagnosisRefSchema = { code, mechanism, direction, context?: string }`
       with `renderDiagnosisRef` / `parseDiagnosisRef` round-tripping.
-- [ ] Tests: `TA-07.R.D` round-trips; a code with `direction: 'N'` renders
+- [x] Tests: `TA-07.R.D` round-trips; a code with `direction: 'N'` renders
       without a dangling separator; an unknown code fails validation; the
       parameterized form (`OP-14.M [Sicilian Najdorf, ...]`) preserves its
       context string.
-- [ ] Commit: `feat: diagnosis reference parsing and rendering`.
+- [x] Commit: `feat: diagnosis reference parsing and rendering`.
+- Note: "unknown code" validation is structural (regex, matching how
+  `DiagnosisCodeEntrySchema` itself validates `id`), not catalog-membership
+  — `TA07` (malformed) fails, `TA-07` never checked against whether it's one
+  of the real 410 rows. Keeps `ref.ts` free of a circular import back to
+  `index.ts`'s aggregation.
+
+**Phase 52 complete.** The 410-code catalog, 20 data-quality gates, axis
+vocabularies and `DiagnosisRef` parsing all ship as typed, zod-validated
+data in `packages/shared/src/diagnosis/`, none of it wired to anything yet
+(that starts at Phase 53).
 
 ---
 
