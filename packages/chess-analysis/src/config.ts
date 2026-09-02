@@ -250,5 +250,26 @@ export const CONFIG = {
     minorMaxHwdl: 0.05,
     meaningfulMaxHwdl: 0.1,
     majorMaxHwdl: 0.2
+  },
+
+  /** §4.6 — game-clustered beta-binomial failure-rate estimation (Task
+   * 55.1). `priorStrength` is the rating-derived Beta prior's pseudo-count
+   * of opportunities — weak enough that four or five real games of data
+   * dominate it, but present so a code with zero observed opportunities
+   * still returns a sane (rating-shaped) estimate instead of `NaN`.
+   * `priorMeanSlope` controls how far the prior mean swings away from 0.5
+   * per half-width of the code's `ratingPrior` band the student's own
+   * rating sits outside it (§0.1: below the band the issue is typically
+   * still live; above it, typically resolved). `ciZ` is the normal-
+   * approximation z-score for the reported credible interval (1.645 ≈ 90%,
+   * chosen over 95% because §4.6 explicitly calls these "practical
+   * defaults, not immutable statistical laws" and a narrower band is more
+   * useful for focus selection). */
+  betaBinomial: {
+    priorStrength: 4,
+    priorMeanSlope: 0.3,
+    priorMeanFloor: 0.05,
+    priorMeanCeil: 0.95,
+    ciZ: 1.645
   }
 } as const;

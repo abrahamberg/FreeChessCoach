@@ -818,14 +818,37 @@ This is what stops one blunder from being reported as five weaknesses.
 use a game-clustered beta-binomial or comparable model rather than treating
 every opportunity as independent."
 
-- [ ] Aggregate per game, estimate overdispersion by method of moments, and
+- [x] Aggregate per game, estimate overdispersion by method of moments, and
       compute a posterior mean plus credible interval with the code's rating
       prior as the Beta prior. Pure TypeScript — do not add a stats
       dependency without checking an existing one covers it.
-- [ ] Tests: 4-of-8 spread over one game gives a materially wider interval
+- [x] Tests: 4-of-8 spread over one game gives a materially wider interval
       than the same 4-of-8 spread over four games (this is the whole point of
       clustering); zero opportunities returns the prior, not `NaN`.
-- [ ] Commit: `feat: game-clustered beta-binomial failure-rate estimation`.
+- [x] Commit: `feat: game-clustered beta-binomial failure-rate estimation`.
+
+  Done. `computeBetaBinomial` in `beta-binomial.ts` pools each code's
+  per-game `{opportunities, failures}` and deflates the pooled count by a
+  Kleinman/ANOVA method-of-moments intraclass-correlation estimate
+  (`estimateOverdispersion`) before the conjugate Beta update — a single
+  game is conservatively treated as fully correlated (`rho = 1`, since one
+  cluster gives no evidence a repeat would differ), which alone is enough
+  to make 4-of-8 confined to one game report a materially wider credible
+  interval than the same 4-of-8 spread over four games. The Beta prior's
+  mean comes from `ratingPriorMean`: the code's `ratingPrior` band read as
+  §0.1 describes it (a "primary diagnosis" window, not a population base
+  rate) — 0.5 at the band's midpoint, pulled up below the band and down
+  above it, clamped to `[0.05, 0.95]`; its pseudo-count
+  (`CONFIG.betaBinomial.priorStrength`) is weak enough that a few real
+  games dominate it but present so zero opportunities still returns a
+  sane rating-shaped estimate, never `NaN`. The credible interval uses a
+  normal approximation to the posterior Beta rather than an exact
+  incomplete-beta inverse — no stats dependency exists in this package and
+  §4.6 itself calls these "practical defaults, not immutable statistical
+  laws". Free-standing primitive over plain `GameOpportunities[]`, same
+  reasoning as `reachability.ts`/`hwdl.ts`/`resolve-episodes.ts` — wiring
+  to real per-game aggregates is for whichever caller needs it (likely
+  Task 55.3).
 
 ### Task 55.2: Data-quality gate evaluation
 

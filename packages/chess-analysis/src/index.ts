@@ -59,6 +59,7 @@ export * from './stats-entry.js';
 export * from './strategy-score.js';
 export * from './tactics-score.js';
 export * from './describe-tactic-hit.js';
+export * from './diagnostics/beta-binomial.js';
 export * from './diagnostics/cct-opportunities.js';
 export * from './diagnostics/context.js';
 export * from './diagnostics/hwdl.js';
