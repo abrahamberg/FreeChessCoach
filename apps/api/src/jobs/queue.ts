@@ -10,12 +10,19 @@ export interface JobQueue {
    * a future admin route), through the same queue every other job uses
    * rather than reaching for graphile-worker directly. */
   enqueueBackfillGameMetadata(): Promise<void>;
+  /** Task 56.4's profile rebuild — normally chained automatically by
+   * `jobs/analyze-game.ts` once an analysis reaches `'ready'`, exposed here
+   * too so an operator can trigger a rebuild on demand (e.g. after backfilling
+   * historical games), through the same queue every other job uses, same
+   * precedent as `enqueueBackfillGameMetadata`. */
+  enqueueRebuildDiagnosticProfile(userId: string): Promise<void>;
 }
 
 export const noopJobQueue: JobQueue = {
   enqueueAnalyzeGame: () => Promise.resolve(),
   enqueueSummarizeSession: () => Promise.resolve(),
-  enqueueBackfillGameMetadata: () => Promise.resolve()
+  enqueueBackfillGameMetadata: () => Promise.resolve(),
+  enqueueRebuildDiagnosticProfile: () => Promise.resolve()
 };
 
 export interface GraphileJobQueueHandle {
@@ -39,6 +46,9 @@ export async function createGraphileJobQueue(connectionString: string): Promise<
       },
       enqueueBackfillGameMetadata: async () => {
         await workerUtils.addJob('backfill-game-metadata', {});
+      },
+      enqueueRebuildDiagnosticProfile: async (userId: string) => {
+        await workerUtils.addJob('rebuild-diagnostic-profile', { userId });
       }
     },
     close: async () => {

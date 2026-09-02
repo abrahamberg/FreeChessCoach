@@ -156,7 +156,7 @@ describe('sessions routes', () => {
     };
     return {
       db,
-      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn() },
+      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn() },
       gatewayConfig,
       callLightModel: vi.fn().mockResolvedValue('engine says the position is roughly equal.'),
       resolveModel: () => Promise.resolve(mockResolution(model))

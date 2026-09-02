@@ -100,7 +100,7 @@ describe('commitBotTurn', () => {
       analyzeBotPosition: vi.fn().mockResolvedValue(botLines()),
       callTiebreak: vi.fn().mockResolvedValue(null),
       random: () => 0,
-      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn() },
+      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn() },
       minThinkMs: 0,
       ...overrides
     };

@@ -63,7 +63,7 @@ describe('coach-agent startTurn — play mode ply advance (architecture §14)', 
   function deps(model: Parameters<typeof mockResolution>[0]): CoachAgentDependencies {
     return {
       db,
-      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn() },
+      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn() },
       gatewayConfig: {} as CoachAgentDependencies['gatewayConfig'],
       analyzePosition: vi.fn().mockResolvedValue(ENGINE_EVAL),
       callLightModel: vi.fn().mockResolvedValue('folded note'),

@@ -1179,12 +1179,78 @@ regressions.
 **Files:** `apps/api/src/jobs/rebuild-diagnostic-profile.ts`,
 `apps/api/src/jobs/index.ts`, `apps/api/src/jobs/queue.ts` + test.
 
-- [ ] Enqueue via `helpers.addJob` when an analysis reaches `'ready'`, the
+- [x] Enqueue via `helpers.addJob` when an analysis reaches `'ready'`, the
       same chaining idiom `analyze-game.ts` already uses for
       `deepen-analysis`.
-- [ ] Reads observations + games, builds one profile per exact time control
+- [x] Reads observations + games, builds one profile per exact time control
       with enough games, writes them.
-- [ ] Commit: `feat: diagnostic profile rebuild job`.
+- [x] Commit: `feat: diagnostic profile rebuild job`.
+
+**Done:** This is the first place Phase 54/55's independent pure primitives
+actually run end-to-end: `buildDiagnosticProfile` (Task 55.3) already calls
+`computeBetaBinomial` (Task 55.1) internally per code, so `rebuild-
+diagnostic-profile.ts` itself is pure assembly — group a user's rated games
+by exact `time_control` (§4.2), rebuild each surviving observation's
+`DiagnosticEntry` context, run `buildDiagnosticProfile`, upsert. "Enough
+games" reuses `CONFIG.dataQualityGates.minRatedGames` (30) directly — it's
+the same number §4.2's own text gives ("start with 30 recent rated games").
+The window's upper bound (§4.2: "expand to 60–100 when opportunities are
+rare") is collapsed to a fixed 100-game cap rather than the spec's adaptive
+per-code expansion, which would need iterative re-querying per code — a
+documented, deliberate simplification, same "known gap" precedent as Task
+55.4's curriculum-value exception. `window_start`/`window_end` are the
+earliest/latest `playedAt` (falling back to `createdAt`) among the included
+games, not a calendar window — this is also what makes `upsertProfile`'s
+`(user_id, time_control, window_end)` unique constraint idempotent: re-
+running against an unchanged game set upserts the same row.
+
+The richer per-opportunity context `build-diagnostics.ts` (Task 56.3)
+deliberately deferred — opening, phase, clock, opponent rating — gets
+joined here: `opening` from `games.eco`, `opponentRating` from
+`whiteElo`/`blackElo` by `userColor`, `phase` from
+`analysesRepo.findClassifiedMovesByGameId` keyed by ply, `clockRemainingMs`
+from `extractPgnMoveComments` over the game's own PGN. `complexity` stays
+`null` — `rating-estimate.ts`'s `complexity` is a whole-game scalar, not a
+per-ply one, and inventing a new per-ply primitive is out of scope for a
+persistence/wiring task. `studentRating` falls back to a neutral `1200`
+when `users.rating` (Task 51.5) is unset. Gate evaluation (Task 55.2) is
+deliberately NOT run here: `evaluateGates` needs `resolveEpisodes`'s own
+cascade/decided-position counts (Task 54.3), which are never persisted onto
+a `diagnostic_observations` row, so there's nothing to evaluate gates
+against without re-running detection — Task 57.2's coach tool is the
+documented next place that decision gets made.
+
+`queue.ts` gained `enqueueRebuildDiagnosticProfile`, matching
+`enqueueBackfillGameMetadata`'s precedent (a job normally auto-chained, but
+also operator-triggerable through the same queue). The auto-chain itself
+lives in `analyze-game.ts` right next to the existing `deepen-analysis`
+enqueue, both firing once `runAnalyzeGameJob` reaches `'ready'`. Every
+existing test that constructs a `JobQueue` object literal needed the new
+required method added — mechanical, no behavior change.
+
+Tests: `rebuild-diagnostic-profile.test.ts` (7 tests, pure, no DB — ran and
+passed) covers `windowByTimeControl`'s grouping/threshold/cap logic
+directly, since that's the actually-risky new composition logic here.
+`rebuild-diagnostic-profile-integration.test.ts` (Testcontainers, real DB,
+same convention as Tasks 56.1-56.3) proves the full pipeline end-to-end:
+below-minimum time controls get no profile, a cleared minimum builds and
+persists one with correctly joined fields, unrelated time controls stay
+pooled separately, re-running upserts rather than duplicates, and unrated
+games are excluded from both the window and the built profile. Unrun here —
+no Docker in this sandbox, same limitation as every prior Phase 56 task —
+but `npm run lint && npm run typecheck` are clean, and the full non-DB
+suite (2115 tests, up from 2108) passes with zero regressions; the 57
+Docker-dependent failures (56 pre-existing + this task's own new
+integration file) all fail identically with "Could not find a working
+container runtime strategy", not a code error.
+
+**Phase 56 — Persistence and jobs is now complete.** All four tasks
+(migration, repositories, write-path, rebuild job) are implemented, tested,
+linted, and typechecked. The diagnostics pipeline built across Phases
+52-56 — catalog, detectors, episode resolution, statistics, focus
+selection, and now persistence — is wired end-to-end from game analysis to
+a stored per-user profile, though nothing outside this pipeline reads it
+yet. Phase 57 (coach integration) is next.
 
 ---
 

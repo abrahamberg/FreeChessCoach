@@ -61,7 +61,7 @@ describe('resignBotGame', () => {
   }
 
   function deps(): FinalizeBotGameDependencies {
-    return { db, jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn() } };
+    return { db, jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn() } };
   }
 
   test('resigning as White records a Black win and completes the session', async () => {

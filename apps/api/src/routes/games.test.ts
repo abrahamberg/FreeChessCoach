@@ -140,7 +140,8 @@ describe('POST/GET /api/games', () => {
     jobQueue = {
       enqueueAnalyzeGame: vi.fn().mockResolvedValue(undefined),
       enqueueSummarizeSession: vi.fn().mockResolvedValue(undefined),
-      enqueueBackfillGameMetadata: vi.fn().mockResolvedValue(undefined)
+      enqueueBackfillGameMetadata: vi.fn().mockResolvedValue(undefined),
+      enqueueRebuildDiagnosticProfile: vi.fn().mockResolvedValue(undefined)
     };
     // Required to register /api/sessions/* (POST /api/sessions/play, used by
     // the coach_play listing test below) — the LLM-facing fields are never
