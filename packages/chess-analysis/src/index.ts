@@ -71,6 +71,7 @@ export * from './diagnostics/reachability.js';
 export * from './diagnostics/registry.js';
 export * from './diagnostics/resolve-episodes.js';
 export * from './diagnostics/scope-tags.js';
+export * from './diagnostics/select-focus.js';
 export * from './diagnostics/types.js';
 export * from './tactic-back-rank.js';
 export * from './tactic-detectors/context.js';

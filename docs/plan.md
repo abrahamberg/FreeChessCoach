@@ -963,16 +963,91 @@ a pre-resolved window, with the DB read done by the caller.
 
 **Files:** `packages/chess-analysis/src/diagnostics/select-focus.ts` + test.
 
-- [ ] Score by §IV's objective — confidence × preventable impact × recurrence
+- [x] Score by §IV's objective — confidence × preventable impact × recurrence
       × transfer breadth × trainability × measurement feasibility — with the
       seven overrides as **hard filters**, not weights.
-- [ ] Return one primary, at most two secondary findings, the intact control,
+- [x] Return one primary, at most two secondary findings, the intact control,
       and the differentials ruled out (§IV's "normally return" list).
-- [ ] Tests: a high-rate but engine-only code is filtered by the
+- [x] Tests: a high-rate but engine-only code is filtered by the
       human-reachability override; a downstream symptom loses to its upstream
       cause via the root-cause override; a code behind a failed blocking gate
       can never be primary.
-- [ ] Commit: `feat: 1-2 week focus selection from the diagnostic profile`.
+- [x] Commit: `feat: 1-2 week focus selection from the diagnostic profile`.
+
+  **Done:** `selectFocus(input)` takes `FocusCandidate[]` — each a
+  `DiagnosticProfileEntry` (Task 55.3) joined with that same code's own
+  `FiredGate[]` (Task 55.2's `evaluateGates`, which is called per-code, not
+  once per window — its `opportunities`/`meanReachability`/etc. inputs are
+  the code's own), since the two modules stay independent pure primitives
+  per 55.3's done note; `select-focus.ts` is the caller that finally joins
+  them. Applies all seven §IV overrides as hard filters (`applyOverrides`,
+  run before any scoring) plus an eighth precondition (insufficient
+  confidence can never be primary/secondary — not one of the seven named
+  overrides, but required by §4.6's "the system must be allowed to return
+  Insufficient evidence"):
+
+  - Overrides 1 (prerequisite) + 2 (root-cause) merged into one pass, same
+    reasoning `evaluate-gates.ts` used to merge DQ-03/DQ-15: both reduce to
+    "test the more upstream cause first" per §I.3's chain (rules → board
+    model → board update → scan/process → recognition → candidate
+    generation → calculation → judgment → state). Deliberately narrower
+    than `resolve-episodes.ts`'s `familyRank` (all 18 families, used to
+    break ties *within one already-linked incident*): here only `RB`/`BV`/
+    `MS`/`TA`/`CA` — the five families §I.3's own text and examples
+    actually name — participate, so two unrelated content domains (e.g.
+    `EG` vs `PW`) are never filtered against each other on an arbitrary
+    tie-break order. Covered by a dedicated test asserting exactly that.
+  - Override 3 (human-reachability) reuses `isHumanReachable` from
+    `reachability.ts` (Task 54.1) directly rather than re-checking the
+    threshold.
+  - Override 4 (scope: "must fit a focused cycle") has no code to write —
+    every `FocusCandidate` is already one atomic code+direction skill from
+    the §II catalog, which is this codebase's own operational definition of
+    "fits a focused cycle." Documented as a deliberate no-op in
+    `select-focus.ts`'s own doc comment rather than silently skipped.
+  - Override 5 (data-quality) disqualifies a candidate outright whenever its
+    `firedGates` is non-empty — every §II.A gate is `blocking: true` with no
+    exception (`data-quality.ts`'s own doc comment), so this is unconditional.
+  - Override 6 (state) suppresses a `clock_bound`/`stress_sensitive`-tagged
+    chess-concept candidate whenever an eligible `PS-*` (§I.2's "S"
+    mechanism) candidate is also present, on the reading that the same
+    incidents are more likely one state-conditioned pattern than an
+    independent concept gap.
+  - Override 7 (curriculum-value) reuses `evidenceTrack` (Task 52.2) rather
+    than a new heuristic: a `'curriculum_only_gap'` candidate loses to any
+    `'game_leak'` candidate with more episodes. The spec's own "...unless
+    strategically important" exception is not implemented — no signal in
+    this codebase currently distinguishes "strategically important"
+    curriculum content from any other, so implementing it would mean
+    guessing; documented as a known gap rather than a silent omission.
+
+  §IV's scoring objective is computed from fields Task 55.3 already
+  produces: preventable impact is mean hWDL per failed episode (hWDL is
+  already "preventable expected-score loss") times `meanReachability`, so
+  impact that wasn't actually preventable scores low without inventing a
+  second weight; recurrence and measurement feasibility both saturate at 8
+  opportunities/episodes, reusing `diagnosticProfile.confidenceProbableMinOpportunities`'s
+  own scale rather than a new number; transfer breadth reads
+  `detectScopeTags`'s own `'general'` vs bound output; trainability reads
+  whether `controlSkill` is present (§VI's own reasoning for requiring one).
+  Most of §IV's "reduce priority when" list turned out to already be
+  structurally satisfied by the hard filters and the confidence gate
+  (documented in `scoreOf`'s doc comment) rather than needing separate soft
+  penalties — only "already improving" needed one
+  (`improvingPriorityMultiplier`).
+
+  `differentials` records *why* every non-selected candidate was ruled out
+  (the override/gate/score reason), not just which codes were — every
+  exclusion path in `applyOverrides` writes a reason string before dropping
+  a candidate. `controlSkill` is mirrored at the top level from
+  `primary.controlSkill` since §IV's "normally return" list names it as its
+  own item.
+
+  This is Phase 55's last task — all four of `beta-binomial.ts`,
+  `evaluate-gates.ts`, `build-profile.ts`/`scope-tags.ts`, and
+  `select-focus.ts` remain independent pure primitives; wiring them into one
+  real pipeline against DB-backed game data is Phase 56's job, starting with
+  Task 56.1's migration.
 
 ---
 

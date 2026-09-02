@@ -323,5 +323,26 @@ export const CONFIG = {
      * comes from the 410-code catalog, but keeps the posterior finite
      * rather than throwing. */
     ratingPriorFallback: [100, 2500] as [number, number]
+  },
+
+  /** §IV — 1-2 week focus selection (Task 55.4). `confidenceWeight` reads
+   * §4.6's tier straight into the objective's first factor (`insufficient`
+   * scores 0 as a belt-and-suspenders alongside the hard confidence
+   * filter). `recurrenceSaturation`/`measurementFeasibilitySaturation`
+   * reuse `diagnosticProfile.confidenceProbableMinOpportunities`'s own
+   * scale (8) rather than inventing a new number — both are "how much
+   * evidence is enough to stop caring about more of it," same question
+   * §4.6's own Probable threshold already answered. `transferBreadthBoundWeight`
+   * and `trainabilityWithoutControlWeight` have no spec-given number —
+   * least-arbitrary practical defaults, same precedent as
+   * `dataQualityGates`. `improvingPriorityMultiplier` implements §IV's
+   * "reduce priority when... already improving" bullet. */
+  selectFocus: {
+    confidenceWeight: { insufficient: 0, signal: 0.6, probable: 1 },
+    recurrenceSaturation: 8,
+    transferBreadthBoundWeight: 0.5,
+    trainabilityWithoutControlWeight: 0.6,
+    measurementFeasibilitySaturation: 8,
+    improvingPriorityMultiplier: 0.5
   }
 } as const;
