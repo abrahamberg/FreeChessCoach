@@ -725,15 +725,34 @@ opportunity simply because it appears in a best line").
 
 **Files:** `packages/chess-analysis/src/diagnostics/hwdl.ts` + test.
 
-- [ ] hWDL = preventable expected-score loss, from the existing win% series
+- [x] hWDL = preventable expected-score loss, from the existing win% series
       (`winPctBefore`/`winPctAfter` are already on every move); reuse
       `expectedPoints` from `classify.ts` rather than re-deriving it.
-- [ ] Map to the four severity bands (`minor` / `meaningful` / `major` /
+- [x] Map to the four severity bands (`minor` / `meaningful` / `major` /
       `decisive`), thresholds in `CONFIG`.
-- [ ] Tests including a move in an already-decided position, which must be
+- [x] Tests including a move in an already-decided position, which must be
       `minor` regardless of raw cp swing (the same principle
       `classify-severity.ts`'s damping already encodes).
-- [ ] Commit: `feat: hWDL and severity for diagnostic observations`.
+- [x] Commit: `feat: hWDL and severity for diagnostic observations`.
+
+  Done. `computeHwdl` divides the mover-perspective `winPctBefore`/
+  `winPctAfter` gap by 100 — those fields are already win probabilities
+  from the identical sigmoid `expectedPoints` wraps (`winPctFor` in
+  `win-probability.ts`), so this reuses that existing computation rather
+  than calling `expectedPoints` a second time on a re-derived cp value.
+  `hwdlSeverity` bands the result via `CONFIG.hwdl`'s thresholds (a direct
+  relabeling of `CONFIG.severity`'s existing move-quality drop cutoffs onto
+  §III.3's four-tier scale), then caps to `minor` for an already-decided
+  position using the exact same three conditions (both-sides-winning,
+  both-sides-losing, dead-draw-technical) `classify-severity.ts`'s
+  `classifySeverity` damping applies — reusing `CONFIG.severity`'s
+  threshold constants directly rather than duplicating magic numbers, but
+  implemented independently of that function since its two-tier cap
+  ('inaccuracy' vs 'good') doesn't carry over to a 4-band scale and that
+  function is load-bearing/tested elsewhere. Like `reachability.ts`, this
+  stays a free-standing primitive over plain numbers, not
+  `PlyDiagnosticContext`-shaped — wiring into an actual detector/observation
+  is for whichever later task first needs it.
 
 ### Task 54.3: Episode resolution — causal precedence and cascades
 

@@ -234,5 +234,21 @@ export const CONFIG = {
      * regardless of the position's subtlety. */
     seeGainScale: 300,
     dq05Threshold: 0.35
+  },
+
+  /** §4.3/§III.3 — hWDL severity banding (Task 54.2). `hwdl` is a [0,1]
+   * fraction (preventable expected-score loss), so these bands are the same
+   * calibration `CONFIG.severity`'s drop thresholds already encode
+   * (goodMaxDrop/inaccuracyMaxDrop/mistakeMaxDrop are 0-100 win% points; /100
+   * here), just re-labeled onto §III.3's four-band scale instead of the
+   * five-tier move-quality ladder: excellent+good -> minor, inaccuracy ->
+   * meaningful, mistake -> major, blunder -> decisive. Reuses
+   * `CONFIG.severity`'s own damping thresholds (dampingHighWin/LowWin,
+   * deadDrawWinLow/High/CpAbs) for the already-decided-position cap rather
+   * than duplicating them. */
+  hwdl: {
+    minorMaxHwdl: 0.05,
+    meaningfulMaxHwdl: 0.1,
+    majorMaxHwdl: 0.2
   }
 } as const;
