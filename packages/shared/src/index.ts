@@ -6,6 +6,7 @@ export * from './bot-roster.js';
 export * from './coaching-plan.js';
 export * from './credits.js';
 export * from './dashboard.js';
+export * from './diagnosis/axes.js';
 export * from './finding.js';
 export * from './game.js';
 export * from './game-report.js';
