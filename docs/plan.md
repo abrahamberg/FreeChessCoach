@@ -762,20 +762,47 @@ opportunity simply because it appears in a best line").
 
 This is what stops one blunder from being reported as five weaknesses.
 
-- [ ] Apply §I.3's ordering — rules → board model → board update → scan →
+- [x] Apply §I.3's ordering — rules → board model → board update → scan →
       recognition → candidate generation → calculation → judgment → state —
       so that when several observations describe one incident, the upstream
       code wins and the others become secondary manifestations, not
       independent episodes.
-- [ ] `DQ-11` cascade collapsing: consecutive plies after a first error where
+- [x] `DQ-11` cascade collapsing: consecutive plies after a first error where
       the win% never recovers collapse into one episode.
-- [ ] `DQ-09`: drop observations in completely lost or trivially won
+- [x] `DQ-09`: drop observations in completely lost or trivially won
       positions.
-- [ ] Tests: a five-ply collapse after one hang yields exactly one episode; a
+- [x] Tests: a five-ply collapse after one hang yields exactly one episode; a
       knight-geometry failure and a knight-fork miss on the same ply yield
       `BV-06` primary with `TA-07` secondary, per the spec's own worked
       example in §I.3.
-- [ ] Commit: `feat: causal precedence and cascade collapsing for episodes`.
+- [x] Commit: `feat: causal precedence and cascade collapsing for episodes`.
+
+  Done. `resolveEpisodes` walks an already-ply-ordered `EpisodePly[]`
+  (win% context + that ply's registry observations — a free-standing input
+  shape, like `reachability.ts`/`hwdl.ts`, not `PlyDiagnosticContext`
+  itself, since nothing assembles a whole-game batch of those yet).
+  `DQ-09` (`isCompletelyDecidedPosition`, reusing `CONFIG.severity`'s
+  damping thresholds) filters each ply's observations before anything else
+  runs. Cascade collapsing keeps one episode open from a ply's first
+  `failed` observation until a later ply's win% climbs back above the
+  win% the position stood at right before that first error — every ply in
+  between, whether or not it has its own observation, stays part of the
+  same incident's span. Precedence among an episode's pooled observations
+  is two-tiered: first each code's family rank in `DIAGNOSIS_FAMILIES`
+  (already ordered per this same §I.3 chain — settles `BV-*` vs `TA-*`
+  even for a catalog code with no live detector yet, e.g. `BV-06`), then
+  `DIAGNOSTIC_DETECTORS`' own priority order within a family, per that
+  registry's own doc comment ("Task 54.3's precedence pass resolves ties
+  by walking this order"). Wiring a real game's registry output into this
+  shape is for whichever caller (Phase 55, most likely) first needs it.
+
+  **Phase 54 complete.** Reachability (54.1), hWDL/severity (54.2), and
+  episode resolution (54.3) all exist as pure, tested primitives in
+  `packages/chess-analysis/src/diagnostics/` — none wired into
+  `PlyDiagnosticContext`, the registry, or any caller yet, same "framework
+  before wiring" shape Phase 53 closed with. Phase 55 (Statistics) is next:
+  O/E/E-over-O aggregation, data-quality gate evaluation, and the
+  diagnostic profile these three phases feed.
 
 ---
 
