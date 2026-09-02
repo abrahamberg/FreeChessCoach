@@ -900,22 +900,62 @@ every opportunity as independent."
 Follow the `StatsEntry` + `buildStatsDashboard` shape — a pure aggregator over
 a pre-resolved window, with the DB read done by the caller.
 
-- [ ] Per code: `O`, `E`, `E/O`, posterior + interval, confidence tier
+- [x] Per code: `O`, `E`, `E/O`, posterior + interval, confidence tier
       (§4.6's table; **never `Confirmed`**), spread (games / sessions /
       openings / sides), total hWDL, severity mix, mean reachability.
-- [ ] Scope tags (§III.2) by comparing subgroup rates against the overall
+- [x] Scope tags (§III.2) by comparing subgroup rates against the overall
       rate — opening-, colour-, phase-, clock-, complexity-,
       opponent-strength- and session-bound. Sessions are derived from
       `played_at` + `played_at_time` gaps.
-- [ ] Intact control skill: the paired code with a healthy rate (e.g.
+- [x] Intact control skill: the paired code with a healthy rate (e.g.
       offensive `TA-07` as the control for defensive `TA-07`) — §VI requires
       one in every finding.
-- [ ] History status (§III.1) by diffing against the previous stored profile
+- [x] History status (§III.1) by diffing against the previous stored profile
       window for the same time control.
-- [ ] Tests: an empty window yields `Insufficient` everywhere and no
+- [x] Tests: an empty window yields `Insufficient` everywhere and no
       diagnoses; a code above threshold in two consecutive windows reads
       `Persistent`; a resolved code that reappears reads `Regressed`.
-- [ ] Commit: `feat: build the per-user diagnostic profile`.
+- [x] Commit: `feat: build the per-user diagnostic profile`.
+
+  Done. Three files. `diagnostic-entry.ts` defines `DiagnosticEntry`, the
+  `StatsEntry`-shaped input — one already-resolved opportunity (`failed`
+  episodes are expected to already be one post-`resolveEpisodes` primary,
+  same "caller does the DB read and the collapsing" contract as every
+  other Phase 54/55 module). `scope-tags.ts`'s `detectScopeTags` covers the
+  seven data-supportable §III.2 dimensions by comparing each bucket's rate
+  against the *rest* of the sample (not the raw overall rate, which the
+  bucket itself would dilute), gated on a minimum bucket size so small
+  samples can't trip a tag; clock/complexity/opponent-strength split on
+  their own median rather than a hardcoded threshold, since "low clock" has
+  no fixed meaning across time controls; `'general'` when nothing clears
+  the bar. `deriveSessions` walks games sorted by `playedAt` and starts a
+  new session whenever the gap exceeds `CONFIG.diagnosticProfile.sessionGapMs`
+  (`playedAt` is expected to already combine the DB's separate
+  `played_at`/`played_at_time` columns — the caller's job). `build-profile.ts`'s
+  `buildDiagnosticProfile` groups entries by `code:direction`, computes
+  O/E/E/O and severity mix/total hWDL/mean reachability over the group, the
+  posterior via Task 55.1's `computeBetaBinomial` (one `GameOpportunities`
+  per distinct `gameId`, `ratingPrior` from `DIAGNOSIS_CODES_BY_ID`), and
+  confidence via §4.6's table read literally into
+  `CONFIG.diagnosticProfile`'s thresholds. Control skill looks up the same
+  code's opposite direction group and reports it only when that group's own
+  failure rate clears `controlHealthyMaxFailureRate`. History status
+  (`nextHistoryStatus`) diffs against a caller-supplied
+  `PreviousProfileEntry[]`: no prior record is always `'newly_observed'`;
+  above threshold with a `'resolved'` prior is `'regressed'`; above
+  threshold with any other `aboveThreshold: true` prior is `'persistent'`;
+  dropping below threshold after being above it is `'monitoring'` (§III.1:
+  "durable transfer is unproven") and only becomes `'resolved'` after a
+  *second* consecutive clean window — a narrower reading than the task
+  bullet asked for tests on, but directly required by §III.1's own
+  definitions, so it's tested too. Note on Task 55.2's own done-note: it
+  speculated wiring `evaluate-gates.ts` into this task; that didn't happen
+  — `evaluateGates` and `buildDiagnosticProfile` stay independent pure
+  modules for now (same "framework before wiring" precedent as reachability/
+  hWDL/episodes), since neither this task's checklist nor §4.3/§III.1/§III.2
+  called for gate-driven filtering here. Actually wiring a fired gate into
+  suppressing a profile entry is Task 55.4 (focus selection)'s
+  data-quality override, or a later persistence-layer caller.
 
 ### Task 55.4: Focus selection
 

@@ -288,5 +288,40 @@ export const CONFIG = {
     maxClockMissingRatio: 0.2,
     dominanceShareThreshold: 0.6,
     ratingSwingThreshold: 200
+  },
+
+  /** §4.3/§4.6/§III.1/§III.2 — the per-user diagnostic profile (Task 55.3).
+   * Confidence thresholds are §4.6's own table read literally ("at least
+   * two independent related incidents across more than one game" for
+   * Signal; "normally at least four failures from eight opportunities,
+   * spread across at least three games and two sessions" for Probable).
+   * The scope-tag and session-gap numbers have no spec-given value — least-
+   * arbitrary practical defaults, same precedent as `dataQualityGates`. */
+  diagnosticProfile: {
+    confidenceSignalMinEpisodes: 2,
+    confidenceSignalMinGames: 2,
+    confidenceProbableMinEpisodes: 4,
+    confidenceProbableMinOpportunities: 8,
+    confidenceProbableMinGames: 3,
+    confidenceProbableMinSessions: 2,
+    /** A bucket (opening, session, clock half, ...) needs at least this
+     * many opportunities before its rate is trusted enough to tag. */
+    scopeMinBucketOpportunities: 3,
+    /** A bucket's failure rate must be at least this many times the rest
+     * of the sample's rate, *and* clear `scopeMinAbsoluteRateGap`, to be
+     * tagged bound to that dimension. */
+    scopeRateRatioThreshold: 1.5,
+    scopeMinAbsoluteRateGap: 0.15,
+    /** Gap between consecutive games' `playedAt` past which a new session
+     * is assumed to have started. */
+    sessionGapMs: 60 * 60 * 1000,
+    /** A same-code opposite-direction rate at or below this counts as an
+     * "intact" control skill (§VI requires one in every finding). */
+    controlHealthyMaxFailureRate: 0.2,
+    /** Beta-prior rating band for a code the catalog somehow doesn't cover
+     * — should be unreachable in practice since every `DiagnosisCodeId`
+     * comes from the 410-code catalog, but keeps the posterior finite
+     * rather than throwing. */
+    ratingPriorFallback: [100, 2500] as [number, number]
   }
 } as const;
