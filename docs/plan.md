@@ -412,19 +412,27 @@ export interface DiagnosisCodeEntry {
 `categoryLabels.ts`, `findings.category` and the coach prompt keep working on
 the 13 parents while the codes carry the precision.
 
-- [ ] Transcribe each family's table verbatim — `id`, `label`, `diagnosis`
+- [x] Transcribe each family's table verbatim — `id`, `label`, `diagnosis`
       and `ratingPrior` come straight from the spec's columns. This is
       mechanical; do not paraphrase the `diagnosis` text.
-- [ ] Set `detectability: 'probe'` for all of `RB-*` (per `DQ-17`) and
+- [x] Set `detectability: 'probe'` for all of `RB-*` (per `DQ-17`) and
       `'unsupported'` for `MX-01..MX-03`; leave the rest `'dialogue'` until a
       detector lands, at which point that task flips the field.
-- [ ] Tests: every id is unique and matches `/^[A-Z]{2}-\d{2}$/`; every
+- [x] Tests: every id is unique and matches `/^[A-Z]{2}-\d{2}$/`; every
       `ratingPrior` is ascending and within `[100, 2500]` (§0.1 says use 100,
       not zero, as the floor); every `parentCategory` is a real
       `MistakeCategory`; the catalog has exactly the family counts the spec
       does (RB 15, BV 22, MS 14, TA 45, CA 30, TM 17, MX 4, OP 21, EV 24,
       ST 35, PW 33, AT 20, DF 18, CV 17, EG 54, PS 17, LR 18, PD 6 = 410).
-- [ ] Commit one per family: `feat: <family> diagnosis code catalog`.
+- [x] Commit one per family: `feat: <family> diagnosis code catalog`.
+- Note: `directions`/`evidenceTrack`/`detectability`/`parentCategory` have no
+  source column in the spec's tables (only `id`/`label`/`diagnosis`/
+  `ratingPrior` do) — `packages/shared/src/diagnosis/families/README.md`
+  documents the mechanical assignment policy used instead, so 410 rows don't
+  become 410 ad-hoc judgment calls. `DiagnosisCodeEntry` lives in a new
+  `catalog-types.ts` (not named in this task's Files line, but necessary —
+  families import it, and it can't live in `index.ts` without a circular
+  import since `index.ts` aggregates the families).
 
 ### Task 52.3: Data-quality gates
 
