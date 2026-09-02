@@ -39,6 +39,7 @@ export * from './families/rb.js';
 export * from './families/st.js';
 export * from './families/ta.js';
 export * from './families/tm.js';
+export * from './ref.js';
 
 /** The full 410-code catalog, docs/diagnose.md §II.A–R in full — Task 52.2. */
 export const ALL_DIAGNOSIS_CODES: readonly DiagnosisCodeEntry[] = [
