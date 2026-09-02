@@ -1093,10 +1093,28 @@ so first real application happens under Task 56.2's repository tests.
 **Files:** `apps/api/src/db/repositories/diagnostic-observations.ts`,
 `diagnostic-profiles.ts` + Testcontainers tests.
 
-- [ ] `insertMany`, `listForUserSince`, `listForGame`, `deleteByGameId`
+- [x] `insertMany`, `listForUserSince`, `listForGame`, `deleteByGameId`
       (wire into the existing game-delete path alongside
       `analysesRepo.deleteByGameId`), `latestProfile`, `upsertProfile`.
-- [ ] Commit: `feat: diagnostic repositories`.
+- [x] Commit: `feat: diagnostic repositories`.
+
+**Done:** `insertMany` batches via Kysely's array-values insert (this repo
+had no prior bulk-insert precedent) and no-ops on an empty array so a game
+with zero surviving episodes never issues a round trip. `diagnostic_profiles.
+profile` round-trips as the literal `DiagnosticProfileEntry[]` Task 55.3's
+`buildDiagnosticProfile` returns — `upsertProfile` JSON-stringifies it once
+and `onConflict` targets the `(userId, timeControl, windowEnd)` unique
+constraint from 0025_diagnostics.ts, replacing `windowStart`/`profile`/
+`computedAt` on a repeat rebuild of the same window rather than duplicating
+rows. `deleteByGameId` (diagnostic-observations.ts) is wired into
+`services/games.ts`'s existing `deleteGameForUser` transaction, right after
+`analysesRepo.deleteByGameId`, matching that function's own dependency-order
+convention. Testcontainers tests are written for every function (round-trip,
+empty-array no-op, since-cutoff filtering, per-game deletion scoping,
+per-time-control pooling, repeat-upsert replacement) but unrun — no Docker
+in this sandbox, same limitation as Task 56.1; `npm run lint && npm run
+typecheck` are clean, and `tsc -b` type-checks the test files as part of the
+build.
 
 ### Task 56.3: Write observations during analysis
 

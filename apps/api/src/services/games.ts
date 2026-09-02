@@ -1,6 +1,7 @@
 import type { GameListResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
+import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
 import * as gamesRepo from '../db/repositories/games.js';
@@ -23,11 +24,11 @@ export async function listGamesForUser(db: Kysely<Database>, userId: string): Pr
 }
 
 /** Deletes a game and everything that hangs off it — none of the foreign
- * keys involved are ON DELETE CASCADE (see migrations 0001/0006/0010), so
- * dependents must go first: session_messages/session_move_notes for each of
- * the game's sessions, then sessions, then findings/game_move_qualities/
- * analyses, then the game itself. Wrapped in a transaction so a mid-cascade
- * failure can't leave orphaned rows. */
+ * keys involved are ON DELETE CASCADE (see migrations 0001/0006/0010/0025),
+ * so dependents must go first: session_messages/session_move_notes for each
+ * of the game's sessions, then sessions, then findings/game_move_qualities/
+ * analyses/diagnostic_observations, then the game itself. Wrapped in a
+ * transaction so a mid-cascade failure can't leave orphaned rows. */
 export async function deleteGameForUser(db: Kysely<Database>, gameId: string, userId: string): Promise<void> {
   const game = await gamesRepo.findByIdForUser(db, gameId, userId);
   if (!game) throw new NotFoundError('Game not found');
@@ -42,6 +43,7 @@ export async function deleteGameForUser(db: Kysely<Database>, gameId: string, us
     await findingsRepo.deleteByGameId(trx, gameId);
     await gameMoveQualitiesRepo.deleteByGameId(trx, gameId);
     await analysesRepo.deleteByGameId(trx, gameId);
+    await diagnosticObservationsRepo.deleteByGameId(trx, gameId);
     await gamesRepo.remove(trx, gameId);
   });
 }
