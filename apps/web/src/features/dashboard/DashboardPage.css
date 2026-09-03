@@ -240,6 +240,28 @@
   border: 1.5px solid var(--color-border-strong);
 }
 
+.evidence-modal__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.evidence-modal__list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.evidence-modal__list li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
 @media (min-width: 1080px) {
   .dashboard-page {
     grid-template-columns: 1fr 1fr;
@@ -250,6 +272,7 @@
     grid-row: span 2;
   }
 
+  .dashboard-page section[aria-label='Diagnoses'],
   .dashboard-page section[aria-label='Mistake trends'],
   .dashboard-page section[aria-label='Session history'] {
     grid-column: 2;

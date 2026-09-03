@@ -1,36 +1,54 @@
-import { DashboardResponseSchema } from '@freechesscoach/shared';
+import { DashboardResponseSchema, DIAGNOSIS_CODES_BY_ID, type DiagnosisCodeId, type MistakeCategory } from '@freechesscoach/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiGet } from '../../api/client.js';
 import { TrendingUpIcon } from '../../components/Icon.js';
 import { CATEGORY_LABELS } from './categoryLabels.js';
+import { DiagnosisCard } from './DiagnosisCard.js';
+import { EvidenceModal } from './EvidenceModal.js';
 import { FocusAreaCard } from './FocusAreaCard.js';
 import { SessionHistory } from './SessionHistory.js';
 import { TrendChart, type TrendRange } from './TrendChart.js';
+import { useDiagnostics } from './useDiagnostics.js';
 import './DashboardPage.css';
 
-/** design.md §4.3: Progress dashboard — focus areas, mistake trends, session
- * history. Owns fetching (AGENTS.md rule 7); every child is presentational. */
+interface EvidenceTarget {
+  code: DiagnosisCodeId;
+  label: string;
+}
+
+/** design.md §4.3: Progress dashboard — focus areas, code-level diagnoses,
+ * mistake trends, session history. Owns fetching (AGENTS.md rule 7); every
+ * child is presentational. */
 export function DashboardPage(): ReactNode {
   const navigate = useNavigate();
   const [range, setRange] = useState<TrendRange>('last20');
   const [resolvedOpen, setResolvedOpen] = useState(false);
+  const [evidenceTarget, setEvidenceTarget] = useState<EvidenceTarget | null>(null);
 
   const dashboardQuery = useQuery({
     queryKey: ['dashboard'],
     queryFn: ({ signal }) => apiGet('/api/users/me/dashboard', DashboardResponseSchema, signal)
   });
+  const diagnosticsQuery = useDiagnostics();
 
   if (dashboardQuery.isLoading) return <p>Loading…</p>;
   if (dashboardQuery.isError || !dashboardQuery.data) return <p>Could not load your progress.</p>;
 
   const { focusAreas, mistakeTrends, sessionHistory } = dashboardQuery.data;
   const weeklyFocus = focusAreas.active[0] ?? null;
+  const diagnosisEntries = diagnosticsQuery.data?.entries ?? [];
 
-  // design.md §4.3: tapping a bar lists its contributing findings — no
-  // findings-detail view exists yet, so this is a no-op for now.
-  function handleBarClick(): void {}
+  /** design.md §4.3: tapping a bar drills into that category's diagnoses —
+   * `entries` is already ranked confidence-then-episodes (Task 58.1), so the
+   * first entry whose catalog `parentCategory` matches is the most relevant
+   * one; a category with no code-level data yet (still `dialogue`-only, or
+   * simply unmeasured) has nothing to drill into. */
+  function handleBarClick(category: MistakeCategory): void {
+    const entry = diagnosisEntries.find((e) => DIAGNOSIS_CODES_BY_ID.get(e.code)?.parentCategory === category);
+    if (entry) setEvidenceTarget({ code: entry.code, label: entry.label });
+  }
 
   return (
     <div className="page dashboard-page">
@@ -72,7 +90,13 @@ export function DashboardPage(): ReactNode {
         {focusAreas.active.length === 0 ? (
           <p>No focus areas yet — they'll appear as the coach spots patterns.</p>
         ) : (
-          focusAreas.active.map((area) => <FocusAreaCard key={area.category} area={area} />)
+          focusAreas.active.map((area) => (
+            <FocusAreaCard
+              key={area.diagnosisCode ?? area.category}
+              area={area}
+              onViewEvidence={(code, label) => setEvidenceTarget({ code, label })}
+            />
+          ))
         )}
         {focusAreas.resolved.length > 0 && (
           <div className="dashboard-page__resolved">
@@ -80,10 +104,29 @@ export function DashboardPage(): ReactNode {
               Resolved ✓ ({focusAreas.resolved.length})
             </button>
             {resolvedOpen &&
-              focusAreas.resolved.map((area) => <FocusAreaCard key={area.category} area={area} />)}
+              focusAreas.resolved.map((area) => (
+                <FocusAreaCard
+                  key={area.diagnosisCode ?? area.category}
+                  area={area}
+                  onViewEvidence={(code, label) => setEvidenceTarget({ code, label })}
+                />
+              ))}
           </div>
         )}
       </section>
+
+      {diagnosisEntries.length > 0 && (
+        <section aria-label="Diagnoses" className="card">
+          <h2>Measured diagnoses</h2>
+          {diagnosisEntries.map((entry) => (
+            <DiagnosisCard
+              key={entry.code}
+              entry={entry}
+              onViewEvidence={(code, label) => setEvidenceTarget({ code, label })}
+            />
+          ))}
+        </section>
+      )}
 
       <section aria-label="Mistake trends" className="card">
         <h2>Trend</h2>
@@ -94,6 +137,14 @@ export function DashboardPage(): ReactNode {
         <h2>Recent lessons</h2>
         <SessionHistory sessions={sessionHistory} onSelect={(sessionId) => navigate(`/session/${sessionId}`)} />
       </section>
+
+      {evidenceTarget && (
+        <EvidenceModal
+          code={evidenceTarget.code}
+          label={evidenceTarget.label}
+          onClose={() => setEvidenceTarget(null)}
+        />
+      )}
     </div>
   );
 }

@@ -44,10 +44,40 @@ const DASHBOARD_RESPONSE = {
   ]
 };
 
+const DIAGNOSTICS_RESPONSE = {
+  timeControl: '600+0',
+  windowStart: '2026-06-01T00:00:00.000Z',
+  windowEnd: '2026-07-20T00:00:00.000Z',
+  computedAt: '2026-07-20T10:00:00.000Z',
+  entries: [
+    {
+      code: 'DF-01',
+      label: 'Actual-threat identification failure',
+      direction: 'D',
+      opportunities: 9,
+      episodes: 6,
+      failureRate: 6 / 9,
+      confidence: 'probable',
+      spread: { games: 5, sessions: 3, openings: 3, sides: 2 },
+      severityMix: { minor: 0, meaningful: 2, major: 4, decisive: 0 },
+      scopeTags: ['general'],
+      controlSkill: null,
+      historyStatus: 'persistent',
+      firedGates: []
+    }
+  ]
+};
+
+function jsonResponse(body: unknown): Response {
+  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+}
+
 function renderDashboard() {
-  const fetchMock = vi.fn().mockResolvedValue(
-    new Response(JSON.stringify(DASHBOARD_RESPONSE), { status: 200, headers: { 'content-type': 'application/json' } })
-  );
+  const fetchMock = vi.fn((input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : input.toString();
+    if (url.startsWith('/api/users/me/diagnostics')) return Promise.resolve(jsonResponse(DIAGNOSTICS_RESPONSE));
+    return Promise.resolve(jsonResponse(DASHBOARD_RESPONSE));
+  });
   vi.stubGlobal('fetch', fetchMock);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -100,5 +130,48 @@ describe('DashboardPage', () => {
 
     await user.click(screen.getByText(/worked on king safety today/i));
     expect(await screen.findByText('session-page-marker')).toBeInTheDocument();
+  });
+
+  test('renders a "Measured diagnoses" section from the diagnostics endpoint, alongside focus areas', async () => {
+    renderDashboard();
+
+    expect(await screen.findByRole('heading', { name: /measured diagnoses/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Actual-threat identification failure' })).toBeInTheDocument();
+  });
+
+  test('a focus area\'s "View evidence" opens the evidence modal for its diagnosisCode', async () => {
+    const user = userEvent.setup();
+    const fetchMock = renderDashboard();
+    await screen.findByRole('heading', { level: 3, name: /king safety/i });
+
+    await user.click(screen.getAllByRole('button', { name: /view evidence/i })[0]!);
+
+    expect(await screen.findByRole('heading', { name: /evidence — king safety/i })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/users/me/diagnostics/MS-01/evidence', expect.anything());
+  });
+
+  test('a diagnosis card\'s "View evidence" opens the evidence modal for its own code', async () => {
+    const user = userEvent.setup();
+    const fetchMock = renderDashboard();
+    await screen.findByRole('heading', { name: 'Actual-threat identification failure' });
+
+    // Focus areas render first (DOM order), so the diagnosis card's own
+    // "View evidence" is the second one on the page.
+    const evidenceButtons = screen.getAllByRole('button', { name: /view evidence/i });
+    await user.click(evidenceButtons[evidenceButtons.length - 1]!);
+
+    expect(await screen.findByRole('heading', { name: /evidence — actual-threat identification failure/i })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/users/me/diagnostics/DF-01/evidence', expect.anything());
+  });
+
+  test('clicking a trend bar opens evidence for the highest-ranked diagnosis in that category', async () => {
+    const user = userEvent.setup();
+    const fetchMock = renderDashboard();
+    await screen.findByRole('heading', { name: /measured diagnoses/i });
+
+    await user.click(screen.getByRole('button', { name: /king safety: 4/i }));
+
+    expect(await screen.findByRole('heading', { name: /evidence — actual-threat identification failure/i })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/users/me/diagnostics/DF-01/evidence', expect.anything());
   });
 });

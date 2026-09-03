@@ -1556,14 +1556,51 @@ export).
 **Files:** `apps/web/src/features/dashboard/*`,
 `apps/web/src/features/dashboard/DiagnosisCard.tsx` + tests.
 
-- [ ] Show code-level diagnoses with `E/O`, confidence and scope alongside
+- [x] Show code-level diagnoses with `E/O`, confidence and scope alongside
       the existing focus areas.
-- [ ] `FocusAreaCard`'s "View evidence" button and `TrendChart`'s
+- [x] `FocusAreaCard`'s "View evidence" button and `TrendChart`'s
       `onBarClick` are both **no-ops today** — wire them to the evidence
       endpoint so a diagnosis drills down to the actual plies behind it.
-- [ ] Components stay presentational and under ~120 lines; fetching lives in
+- [x] Components stay presentational and under ~120 lines; fetching lives in
       a TanStack Query hook.
-- [ ] Commit: `feat: code-level diagnoses and evidence drill-down`.
+- [x] Commit: `feat: code-level diagnoses and evidence drill-down`.
+
+**Done:** `DashboardPage` gained a third query (`useDiagnostics`, its own
+TanStack Query hook) alongside the existing dashboard one — a separate
+fetch, not merged server-side, so a fresh user with no stored profile yet
+still gets a fully working dashboard (the new "Measured diagnoses" section
+just doesn't render when `entries` is empty, same pattern as the other
+sections' empty states). `DiagnosisCard` reuses `FocusAreaCard`'s
+`.focus-area-card` CSS class wholesale (same card-in-a-list shape, a
+different data axis) rather than a parallel stylesheet.
+
+`FocusAreaCard.onViewEvidence` is optional and gated on
+`area.diagnosisCode !== null` — a legacy pre-Task-57.3 row with no code has
+nothing to open, so the button doesn't render rather than wiring a dead
+click. Also fixed, in passing: `DashboardPage`'s focus-area `key` was
+`area.category`, which can now collide (Task 57.3 dropped the
+one-focus-area-per-category constraint) — changed to
+`area.diagnosisCode ?? area.category`.
+
+`TrendChart.onBarClick` receives a `MistakeCategory`, but the evidence
+endpoint is keyed by `DiagnosisCodeId` — no 1:1 mapping exists (one category
+can have many codes). Resolved by matching the clicked category against the
+already-loaded `diagnostics` query's `entries` via
+`DIAGNOSIS_CODES_BY_ID.get(code)?.parentCategory` (client-side; the catalog
+is small and already a `@freechesscoach/shared` dependency) and opening the
+first match — `entries` is already confidence-then-episodes ranked (Task
+58.1), so the first match is the most relevant one. A category with no
+code-level data yet (still `dialogue`-only, or simply unmeasured) has
+nothing to drill into and the click is a no-op, same as before this task.
+
+`EvidenceModal` (opened from all three: `DiagnosisCard`, `FocusAreaCard`,
+and a matching trend bar) lists each observation's move reference
+(`plyToMoveRef`, the same ply→move-pair convention `describeMoveRef` uses
+server-side, reimplemented locally rather than importing the `prompts`
+package into the frontend), severity, and date — informational only, no
+navigation to the game/session it's from: no route in this app addresses a
+specific ply today, and inventing that deep-link wasn't in scope for this
+task.
 
 ---
 

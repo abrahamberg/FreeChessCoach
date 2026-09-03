@@ -1,10 +1,13 @@
-import type { FocusAreaSummary } from '@freechesscoach/shared';
+import type { DiagnosisCodeId, FocusAreaSummary } from '@freechesscoach/shared';
 import type { ComponentType, ReactNode } from 'react';
 import { ArrowRightIcon, CheckIcon, type IconProps, TrendingUpIcon } from '../../components/Icon.js';
 import { CATEGORY_LABELS } from './categoryLabels.js';
 
 export interface FocusAreaCardProps {
   area: FocusAreaSummary;
+  /** Omitted (or `area.diagnosisCode` null — a legacy, pre-Task-57.3 row)
+   * hides the "View evidence" link rather than wiring a dead button. */
+  onViewEvidence?: (code: DiagnosisCodeId, label: string) => void;
 }
 
 const TREND_ICON: Record<FocusAreaSummary['status'], ComponentType<IconProps>> = {
@@ -29,8 +32,9 @@ const TREND_BADGE_VARIANT: Record<FocusAreaSummary['status'], string> = {
  * coach note, a trend badge (word + icon, never a glyph alone —
  * accessibility §8: never communicate status by color/glyph alone), evidence
  * count. */
-export function FocusAreaCard({ area }: FocusAreaCardProps): ReactNode {
+export function FocusAreaCard({ area, onViewEvidence }: FocusAreaCardProps): ReactNode {
   const TrendIcon = TREND_ICON[area.status];
+  const diagnosisCode = area.diagnosisCode;
   return (
     <div className="focus-area-card">
       <span className={`badge ${TREND_BADGE_VARIANT[area.status]} focus-area-card__trend`}>
@@ -40,11 +44,20 @@ export function FocusAreaCard({ area }: FocusAreaCardProps): ReactNode {
       <h3>{CATEGORY_LABELS[area.category]}</h3>
       <p>{area.note}</p>
       <p className="focus-area-card__meta">
-        {area.evidenceCount} pieces of evidence &middot;{' '}
-        {/* No findings-detail view exists yet (see DashboardPage's handleBarClick) — a no-op for now. */}
-        <button type="button" className="focus-area-card__evidence-link">
-          View evidence
-        </button>
+        {area.evidenceCount} pieces of evidence
+        {onViewEvidence && diagnosisCode && (
+          <>
+            {' '}
+            &middot;{' '}
+            <button
+              type="button"
+              className="focus-area-card__evidence-link"
+              onClick={() => onViewEvidence(diagnosisCode, CATEGORY_LABELS[area.category])}
+            >
+              View evidence
+            </button>
+          </>
+        )}
       </p>
     </div>
   );
