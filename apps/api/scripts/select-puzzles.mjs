@@ -2,19 +2,19 @@
 //
 // Prints puzzle recommendations for a diagnosis code, e.g. to hand a
 // student real practice material for a weak spot the coach found. Reads
-// apps/api/data/puzzle-index.csv (build it first with
-// `npm run build-puzzle-index -- <path-to-lichess_db_puzzle.csv>`).
+// apps/api/data/puzzle-pool.bin (build it first with
+// `npm run build-puzzle-pool -- <path-to-lichess_db_puzzle.csv>`).
 //
 // Usage:
 //   npm run select-puzzles -- MS-01 950 5
 //   npm run select-puzzles -- TA-07 1500 3 --max-plies 2
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DIAGNOSIS_CODE_PUZZLE_THEMES, selectPuzzles } from '@freechesscoach/chess-analysis';
+import { PuzzlePool } from '../src/services/puzzle-pool.ts';
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
-const indexPath = path.join(scriptDirectory, '../data/puzzle-index.csv');
+const poolPath = path.join(scriptDirectory, '../data/puzzle-pool.bin');
 
 const [code, ratingArg, countArg, ...rest] = process.argv.slice(2);
 if (!code || !ratingArg) {
@@ -25,17 +25,16 @@ if (!code || !ratingArg) {
 const maxPliesFlagIndex = rest.indexOf('--max-plies');
 const maxSolverPlies = maxPliesFlagIndex >= 0 ? Number(rest[maxPliesFlagIndex + 1]) : undefined;
 
-const csv = await readFile(indexPath, 'utf8').catch(() => {
-  console.error(`${indexPath} not found — build it first: npm run build-puzzle-index -- <path-to-lichess_db_puzzle.csv>`);
+const pool = await PuzzlePool.open(poolPath).catch((error) => {
+  if (error?.code === 'ENOENT') {
+    console.error(`${poolPath} not found — build it first: npm run build-puzzle-pool -- <path-to-lichess_db_puzzle.csv>`);
+  } else {
+    console.error(String(error));
+  }
   process.exit(1);
 });
-const lines = csv.trim().split('\n');
-const pool = lines.slice(1).map((line) => {
-  const [puzzleId, fen, moves, rating, themes] = line.split(',');
-  return { puzzleId, fen, moves: moves.split(' '), rating: Number(rating), themes: themes.split(' ') };
-});
 
-const results = selectPuzzles(pool, {
+const results = selectPuzzles(pool.all(), {
   code,
   rating: Number(ratingArg),
   count: countArg ? Number(countArg) : 5,

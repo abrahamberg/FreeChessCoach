@@ -14,7 +14,7 @@
     "bundle": "node scripts/bundle.mjs",
     "build-lichess-eval-index": "tsx scripts/build-lichess-eval-index.mjs",
     "find-lichess-eval-fen": "tsx scripts/find-lichess-eval-fen.mjs",
-    "build-puzzle-index": "node scripts/build-puzzle-index.mjs",
+    "build-puzzle-pool": "tsx scripts/build-puzzle-pool.mjs",
     "select-puzzles": "tsx scripts/select-puzzles.mjs",
     "test": "vitest run"
   },

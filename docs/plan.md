@@ -1604,6 +1604,207 @@ task.
 
 ---
 
+## Phase 59 — Coach-assigned puzzle training
+
+Not sourced from `docs/diagnose.md` — a new feature, not a diagnostics-plan
+task. Puzzle *solving* already exists on Lichess; the point here isn't to
+duplicate that. It's the same thing Phase 56-58 built for games: the coach
+picks material based on what it has actually measured about a specific
+student, and walks through it with them — except the material is a batch
+of real Lichess puzzles instead of the student's own game, chosen from
+`packages/chess-analysis/src/puzzle-selection.ts`'s `selectPuzzles` against
+their diagnostic profile.
+
+**Entry point (decided):** assignment happens in the background — the
+coach doesn't hand-pick puzzles live inside a game-review chat. A job
+(piggybacking `rebuild-diagnostic-profile`, Task 56.4) creates a
+`puzzle_assignments` row when a student's profile has a `probable`-or-
+better diagnosis with no open assignment already covering it. The
+dashboard shows a "Practice ready" card; opening it starts a dedicated
+puzzle session — its own chat + board, structurally parallel to
+`SessionPage`/`sessions`/`session_messages`, not a mode grafted onto them.
+
+**Why a parallel session table, not a nullable `sessions.gameId`:**
+`sessions.gameId` is `NOT NULL` and `currentPly`/`subjectPly`/episodes/
+findings/focus-area recording/homework all key off a real game's plies —
+making it nullable would mean every one of those code paths gaining a
+"what if there's no game" branch for a feature that structurally never has
+one. A puzzle session's shape is much simpler (a short, linear list of
+puzzles, no episodes/subjects/flashbacks), so a parallel
+`puzzle_sessions`/`puzzle_session_messages` pair reusing the *streaming*
+coach-agent machinery (not the game-review-specific tooling) is the
+smaller change, even though it duplicates two small tables.
+
+**Why an in-memory pool, not a disk-backed binary-search index like
+`lichess-eval-index.ts`:** that index is disk-backed because its access
+pattern (point lookup by exact position hash across ~394M positions, tens
+of GB) doesn't fit in memory. Puzzle selection's access pattern is
+"filter a few hundred thousand rows by theme + rating band," and even the
+full set of puzzles tagged with a theme this plan ever selects on is a low-
+hundred-thousands-row pool — comfortably loaded once into memory at
+process start, no on-disk binary search needed. It still lands on the same
+PVC as the eval index (`lichessEvalIndex`'s mount, not a new volume — see
+Task 59.1) and still ships as a prebuilt binary `.bin` file, matching the
+"offline batch job, deployed by hand, never rebuilt on a normal app
+deploy" shape `apps/api/data/README.md` already documents — it just gets
+read whole into memory, not `open()`-and-seek'd.
+
+### Task 59.1: Puzzle pool format, builder, and loader
+
+**Files:** `packages/chess-analysis/src/puzzle-pool-format.ts` (+ test),
+`apps/api/scripts/build-puzzle-pool.mjs` (replaces `build-puzzle-index.mjs`
+and its `.csv` output), `apps/api/src/services/puzzle-pool.ts` (+ test),
+`apps/api/data/README.md`.
+
+- [x] A fixed-per-record-header binary format: magic header (own constant,
+      matching `LICHESS_EVAL_MAGIC`'s convention of a versioned 8-byte tag,
+      not reusing that one), record count, then each record as
+      `puzzleId` (5 fixed ASCII bytes — every Lichess puzzle ID is exactly
+      5 base62 characters), `rating` (uint16), `themes` (uint32 bitmask
+      over a fixed, versioned theme list — the 23 themes
+      `puzzle-selection.ts`'s `DIAGNOSIS_CODE_PUZZLE_THEMES` references),
+      then length-prefixed `fen` and `moves` (UTF-8). Encode/decode both
+      live in `chess-analysis` (pure, unit-testable) — same package/test
+      split `lichess-eval-index-format.ts` already established for the
+      eval index.
+- [x] `build-puzzle-pool.mjs`: same source (`lichess_db_puzzle.csv`, not
+      committed) and same filters as today's `build-puzzle-index.mjs`
+      (rating/popularity/plays thresholds, the 23-theme allowlist), but a
+      substantially larger per-theme-per-rating-band cap than the current
+      demo's 15 — repeat assignments for the same code need fresh puzzles,
+      not the same 40-150.
+- [x] `apps/api/src/services/puzzle-pool.ts`: reads the `.bin` file whole
+      at boot (env var, same "missing file logs a warning and the tier is
+      skipped" shape `openLichessEvalIndexFromEnv` uses — a student simply
+      can't be assigned puzzles yet, not a crash), decodes every record
+      once, holds the resulting `PuzzleRecord[]` in memory for the process
+      lifetime.
+- [x] Reuses `deploy-lichess-eval-index.sh`'s `kubectl cp`-onto-the-PVC
+      approach (parameterized on file name, or a near-identical sibling
+      script) rather than inventing a second deploy mechanism — same PVC,
+      second file alongside `lichess-eval-index.bin`.
+- [x] Commit: `feat: binary puzzle pool format and loader`.
+
+**Done:** `build-puzzle-index.mjs`/`puzzle-index.csv` (the earlier demo
+from before this task existed) are gone, replaced outright rather than
+kept alongside — `select-puzzles.mjs` now reads the `.bin` pool via
+`PuzzlePool.open`. `PUZZLE_POOL_THEMES` (the format's own fixed theme
+list) is imported by `build-puzzle-pool.mjs` rather than the builder
+keeping a second copy, so the two can't drift out of sync the way the
+doc comment above worried about. `puzzle-pool.ts`'s
+`openPuzzlePoolFromEnv` exists and is tested but isn't wired into
+`bootstrap.ts` yet — nothing calls it until Task 59.3 exists to consume
+it, and threading an unused dependency through the app's DI chain isn't
+worth doing ahead of that. Built and deployed-tested for real against the
+actual ~6.1M-row Lichess dataset (not just a synthetic fixture): 22,441
+unique puzzles, 2.0MB, `npm run select-puzzles -- MS-01 700 3` and `--
+TA-07 1500 3` both returned sensible, rating-close results, and the
+missing-pool-file path was verified to fail with the documented "build it
+first" message rather than a stack trace. `deploy-puzzle-pool.sh` exists
+but its `kubectl cp` path is unverified against a real cluster (no cluster
+access in this environment) — same untested-until-first-real-deploy status
+the eval index's own deploy script's "Version pin: not yet built from a
+real snapshot" note already carries.
+
+### Task 59.2: `puzzle_assignments` schema and repository
+
+**Files:** `apps/api/src/db/migrations/00NN_puzzle_assignments.ts`,
+`apps/api/src/db/schema.ts`, `apps/api/src/db/repositories/puzzle-
+assignments.ts` (+ test).
+
+- [ ] `puzzle_assignments`: `id`, `user_id`, `diagnosis_code`, `reason`
+      (rendered label text, shown on the dashboard card — not
+      recomputed from the code at read time, so it stays stable even if
+      the catalog label changes later), `items jsonb` (array of
+      `{puzzleId, fen, moves, rating, themes, result: 'pending' |
+      'solved' | 'failed' | 'skipped'}` — puzzles are *snapshotted* into
+      the assignment at creation time, not referenced by ID against the
+      pool, so an assignment stays stable across a later pool rebuild),
+      `status` (`'pending' | 'in_progress' | 'completed'`), `created_at`,
+      `started_at`, `completed_at`.
+- [ ] One open (`pending`/`in_progress`) assignment per `(user_id,
+      diagnosis_code)` at a time — the creating job checks this before
+      inserting, no DB constraint (matches `diagnostic_observations`'
+      app-layer-only discipline, Task 56.1).
+- [ ] Commit: `feat: puzzle assignment table`.
+
+### Task 59.3: Background assignment creation
+
+**Files:** `apps/api/src/jobs/rebuild-diagnostic-profile.ts`,
+`apps/api/src/services/puzzle-assignment.ts` (+ test).
+
+- [ ] After a profile rebuild, for each `probable`-or-better entry with no
+      open assignment for that code: `selectPuzzles` against the
+      in-memory pool (Task 59.1) and the student's current rating, and
+      insert an assignment (Task 59.2) if it returned any puzzles — a
+      genuinely empty pool for that code/rating is a skip, not a partial
+      assignment.
+- [ ] Cap on assignments created per rebuild run (avoid flooding a
+      student who has several `probable` diagnoses at once from one
+      rebuild) — a small fixed number, revisit once this ships and there's
+      real usage to look at.
+- [ ] Commit: `feat: background puzzle assignment on profile rebuild`.
+
+### Task 59.4: Puzzle session backend
+
+**Files:** `apps/api/src/db/migrations/00NN_puzzle_sessions.ts`,
+`apps/api/src/db/schema.ts`, `apps/api/src/db/repositories/puzzle-
+sessions.ts` (+ test), `apps/api/src/routes/puzzle-sessions.ts` (+ test),
+`apps/api/src/services/puzzle-session-tools.ts` (+ test).
+
+- [ ] `puzzle_sessions` (`id`, `assignment_id`, `user_id`, `status`,
+      `current_item_index`, `started_at`, `ended_at`) and
+      `puzzle_session_messages` (mirrors `session_messages`, `item_index`
+      instead of `ply`).
+- [ ] `POST /api/puzzle-sessions` (from an assignment id) and `POST
+      /api/puzzle-sessions/:id/messages`, reusing the streaming
+      infrastructure `routes/sessions.ts`/`llm/stream-response.ts` already
+      provide rather than a parallel implementation.
+- [ ] Tool set for this session kind: reuse `show_position`,
+      `annotate_board`, `expect_move`, `hypothetical_line` as-is (already
+      generic over any FEN, not game-ply-addressed); drop
+      `check_position`/`recall_move`/`record_move_note` (address a game's
+      plies, meaningless here); add `advance_puzzle` (records the current
+      item's `result` on the assignment, moves `current_item_index`
+      forward, ends the session on the last item).
+- [ ] Commit: `feat: puzzle session backend`.
+
+### Task 59.5: Puzzle session prompt
+
+**Files:** `packages/prompts/src/puzzle-coach-system.ts` (+ test),
+`docs/prompts.md`.
+
+- [ ] A dedicated system prompt (not `coach-system.ts`'s reused verbatim —
+      the "reacting to the student's own game" framing throughout that
+      prompt doesn't fit "walking through a puzzle set"), built the same
+      static/dynamic-part way (§8.1 cache-shape discipline) as the
+      existing coach prompts.
+- [ ] States the assignment's `reason` up front (why these puzzles, in the
+      student's own diagnosed terms) and the current item's known solution
+      (`items[i].moves`) so the coach can judge the student's attempt
+      without a second engine call.
+- [ ] Commit: `feat: puzzle-session coach prompt`.
+
+### Task 59.6: Dashboard and puzzle session page
+
+**Files:** `apps/web/src/features/dashboard/PracticeCard.tsx` (+ test),
+`apps/web/src/features/dashboard/DashboardPage.tsx`, `apps/web/src/
+features/puzzle-session/PuzzleSessionPage.tsx` (+ test) and its supporting
+hooks, `apps/web/src/app/routes` (new `/practice/:assignmentId` route).
+
+- [ ] `PracticeCard` lists open assignments (`reason`, puzzle count,
+      progress) with a "Start"/"Continue" action; empty state renders
+      nothing (matches every other dashboard section's empty-state
+      precedent, Task 58.2).
+- [ ] `PuzzleSessionPage` mirrors `SessionPage`'s board + chat layout,
+      swapped onto the puzzle-session endpoints (Task 59.4) — reuse
+      `CoachBoard`/`MoveExplorer`-equivalent pieces where they're already
+      generic over a FEN, don't reuse the parts that assume a game (move
+      list, `SessionPeekBar`, etc.).
+- [ ] Commit: `feat: practice dashboard card and puzzle session page`.
+
+---
+
 ## Calibration and standing constraints
 
 - **§0.3 and §V require recalibration** of every rating prior and threshold

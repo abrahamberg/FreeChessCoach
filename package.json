@@ -17,11 +17,12 @@
     "build-eval": "npm run build-lichess-eval-index -w @freechesscoach/api --",
     "find-eval": "npm run find-lichess-eval-fen -w @freechesscoach/api --",
     "build-puzzle-fixture": "npm run build-puzzle-fixture -w @freechesscoach/chess-analysis --",
-    "build-puzzle-index": "npm run build-puzzle-index -w @freechesscoach/api --",
+    "build-puzzle-pool": "npm run build-puzzle-pool -w @freechesscoach/api --",
     "select-puzzles": "npm run select-puzzles -w @freechesscoach/api --",
     "docs:prompts": "npm run docs:prompts -w @freechesscoach/prompts",
     "fetch-and-build-eval": "apps/api/scripts/fetch-and-build-lichess-eval-index.sh",
     "deploy-eval": "apps/api/scripts/deploy-lichess-eval-index.sh",
+    "deploy-puzzle-pool": "apps/api/scripts/deploy-puzzle-pool.sh",
     "test": "vitest run",
     "typecheck": "tsc -b",
     "lint": "eslint ."

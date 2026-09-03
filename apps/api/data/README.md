@@ -131,3 +131,78 @@ LICHESS_EVAL_INDEX_PATH=/app/apps/api/data/lichess-eval-index.bin
 
 and restart `api`/`worker`. Unset (the default), the feature is skipped and
 behavior is unchanged.
+
+# Puzzle pool
+
+`scripts/build-puzzle-pool.mjs` writes its output (`puzzle-pool.bin`) here
+by default. Not committed to git (see `.gitignore`), same as the eval index
+above, though for a different reason: this one is small (megabytes, not
+GB), but it's a downstream data snapshot of an external dataset, not source
+code, and refreshing it shouldn't need a code change.
+
+## What it is
+
+A rating-spread sample of real Lichess puzzles (see
+[`database.lichess.org/#puzzles`](https://database.lichess.org/#puzzles))
+across the themes `packages/chess-analysis/src/puzzle-selection.ts`'s
+`DIAGNOSIS_CODE_PUZZLE_THEMES` maps our diagnosis codes to — this is the
+pool `selectPuzzles()` picks a student's homework puzzles from (`docs/
+plan.md` Task 59.1). See `packages/chess-analysis/src/puzzle-pool-
+format.ts` for the record layout and `src/services/puzzle-pool.ts` for the
+reader.
+
+Unlike the eval index above, this is a **whole-file, in-memory** format,
+not disk-backed binary search: at a few tens of thousands of puzzles
+(megabytes, not tens of GB), there's no memory pressure to page it in a
+piece at a time, so the reader just decodes the whole file once at process
+start and holds a plain array. It still lives on the *same* PVC the eval
+index uses (see "Getting it onto the cluster" below) — a second small file
+alongside a much bigger one, not a second volume.
+
+## Building it
+
+```sh
+curl -o /tmp/lichess_db_puzzle.csv.zst https://database.lichess.org/lichess_db_puzzle.csv.zst
+unzstd /tmp/lichess_db_puzzle.csv.zst
+npm run build-puzzle-pool -- /tmp/lichess_db_puzzle.csv
+```
+
+(`apps/api/scripts/build-puzzle-pool.mjs` — requires `curl`, `zstd`, and
+`npm`/Node; the full source CSV is ~290MB compressed / ~1.1GB decompressed,
+not committed, download it fresh.) Writes to `apps/api/data/puzzle-
+pool.bin`.
+
+Run this by hand, no fixed cadence — there's a second, much smaller sample
+of the same source dataset (`packages/chess-analysis/data/lichess-puzzle-
+motifs.csv`), committed to git, that exists only to validate
+`classifyTacticMotif` and is unrelated to this one; don't confuse the two.
+
+Version pin: not yet built from a real snapshot. When you do the first real
+build, record the source dataset's stated last-updated date here.
+
+## Getting it onto the cluster
+
+Same PVC the eval index uses (`lichessEvalIndex.enabled: true` in the Helm
+chart — no separate volume to provision for this), a second file copied on
+alongside `lichess-eval-index.bin`:
+
+```sh
+npm run deploy-puzzle-pool -- freechesscoach
+```
+
+(`apps/api/scripts/deploy-puzzle-pool.sh <namespace> [file] [pvc-name]` —
+same throwaway-pod `kubectl cp` approach as `deploy-lichess-eval-index.sh`.)
+`api`/`worker` pick it up on their next restart, same as the eval index.
+
+## Exercising it locally
+
+Same bind-mount story as the eval index: build a `puzzle-pool.bin` (a
+smaller CSV sample is fine for local testing) into `apps/api/data/`, then
+set in a `.env` file:
+
+```
+PUZZLE_POOL_PATH=/app/apps/api/data/puzzle-pool.bin
+```
+
+and restart `api`/`worker`. Unset (the default), puzzle assignment is
+skipped and behavior is unchanged.

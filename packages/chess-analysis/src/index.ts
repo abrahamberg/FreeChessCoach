@@ -83,6 +83,7 @@ export * from './tactic-pins.js';
 export * from './tactic-removes-defender.js';
 export * from './tactic-skewers.js';
 export * from './tactic-trapped.js';
+export * from './puzzle-pool-format.js';
 export * from './puzzle-selection.js';
 export * from './time-control.js';
 export * from './uci-move.js';
