@@ -7,7 +7,6 @@ import {
   findBotConfig,
   PostSessionMessageRequestSchema
 } from '@freechesscoach/shared';
-import { buildBotMoveChoiceMessages, type BotMoveChoiceInput } from '@freechesscoach/prompts';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
@@ -16,7 +15,6 @@ import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
 import type { CoachAgentBaseDependencies } from '../bootstrap.js';
 import { ConflictError, NotFoundError, ValidationError } from '../lib/errors.js';
-import { callBotTiebreak } from '../llm/bot-tiebreak.js';
 import { pipeCoachStreamToResponse } from '../llm/stream-response.js';
 import * as coachAgent from '../services/coach-agent.js';
 import { commitPlayerMoveAndAdvance } from '../services/play-move-commit.js';
@@ -253,10 +251,10 @@ async function buildRequestScopedAgentDeps(
 
 /** "Play vs Bot" plan: analyzePosition (cached, standard depth) grades move
  * quality exactly like play mode; analyzeBotPosition (uncached — see
- * resolveRawEngineBackend) is the bot's own shallow, level-dependent search
- * used to pick its move; callTiebreak wraps the light-tier LLM call, never
- * thrown, only ever invoked by the selector when aiEnabled and a candidate
- * cluster is genuinely close. */
+ * resolveRawEngineBackend) is the bot's own phase-resolved, level-dependent
+ * search used to pick its move (see bot-move-selector.ts's selectBotMove and
+ * docs/plan.md's Phase 60 for the probability-roll model built on top of
+ * this search). */
 async function buildBotMoveCommitDeps(
   base: CoachAgentBaseDependencies,
   engineBackendOptions: ResolveEngineBackendOptions,
@@ -274,8 +272,6 @@ async function buildBotMoveCommitDeps(
     // same-game deepen-analysis pass (or another user's import) queued on
     // the shared native engine pool. See EnginePrioritySchema's doc comment.
     analyzeBotPosition: (fen, opts) => rawBackend.analyzePosition(fen, { ...opts, priority: 'interactive' }),
-    callTiebreak: (input: BotMoveChoiceInput) =>
-      callBotTiebreak(base.db, base.gatewayConfig, userId, buildBotMoveChoiceMessages(input)),
     random: Math.random
   };
 }

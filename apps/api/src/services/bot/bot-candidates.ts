@@ -1,27 +1,35 @@
 import { annotateCandidateMoves, annotatePvTactics, type BotCandidate } from '@freechesscoach/chess-analysis';
-import type { BotConfig, PositionAnalysis } from '@freechesscoach/shared';
+import type { PositionAnalysis } from '@freechesscoach/shared';
+
+/** Requested from the engine on every bot search, regardless of phase depth
+ * — deliberately wide (rather than a narrow per-bot multiPv) so a genuinely
+ * bad move (e.g. hanging a queen) can appear in the candidate pool at all.
+ * Stockfish clips MultiPV to however many legal root moves actually exist,
+ * so requesting more than a position has is harmless. Without this breadth,
+ * "short board sight" could only ever reorder engine-approved lines, never
+ * produce a real blunder — see docs/plan.md's Phase 60. */
+export const BOT_CANDIDATE_BREADTH = 40;
 
 export interface BotCandidatesDependencies {
   /** Uncached, bot-specific engine search (see resolveRawEngineBackend) —
-   * runs at this bot's own depth/multiPv, deliberately never the shared
+   * runs at the caller's phase-resolved depth, deliberately never the shared
    * position_evaluations cache. */
   analyzeBotPosition: (fen: string, opts: { depth: number; multiPv: number }) => Promise<PositionAnalysis>;
 }
 
 /**
  * Builds one bot's full candidate-move list for a position: the engine's own
- * lines at this bot's depth/multiPv, each annotated with its immediate (1-ply)
- * tactical consequences (annotateCandidateMoves) and its multi-ply
- * lookahead (annotatePvTactics) — everything scoreBotCandidates needs,
- * available to every bot regardless of the AI toggle (the PV lookahead is
- * math, not an AI feature).
+ * lines at `depth` (the caller's phase-resolved search depth) and a fixed
+ * wide breadth (BOT_CANDIDATE_BREADTH), each annotated with its immediate
+ * (1-ply) tactical consequences (annotateCandidateMoves) and its multi-ply
+ * lookahead (annotatePvTactics) — everything pickBotMove needs.
  */
 export async function buildBotCandidates(
   deps: BotCandidatesDependencies,
   fen: string,
-  bot: BotConfig
+  depth: number
 ): Promise<BotCandidate[]> {
-  const analysis = await deps.analyzeBotPosition(fen, { depth: bot.depth, multiPv: bot.multiPv });
+  const analysis = await deps.analyzeBotPosition(fen, { depth, multiPv: BOT_CANDIDATE_BREADTH });
   const mover = fenMoverColor(fen);
 
   const annotations = annotateCandidateMoves(
@@ -39,9 +47,9 @@ export async function buildBotCandidates(
       moveSan: line.moveSan,
       // PositionAnalysisLine.cp/mateIn are White-perspective (see
       // packages/chess-analysis/src/assert-eval-sign.ts) — flip to
-      // mover-relative, which is what bot-candidate-score.ts's baseScore
-      // (reusing win-probability.ts's White-perspective helpers "as if
-      // White") requires.
+      // mover-relative, which is what bot-move-pick.ts's mate-conversion
+      // check on the top candidate's mateIn requires ("positive mateIn"
+      // must mean "good for whoever is about to move").
       cp: mover === 'white' ? line.cp : negate(line.cp),
       mateIn: mover === 'white' ? line.mateIn : negate(line.mateIn),
       createsFork: annotation?.createsFork ?? false,

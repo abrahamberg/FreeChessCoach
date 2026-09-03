@@ -1,7 +1,6 @@
 export * from './analysis-planner.js';
 export * from './calibration.js';
 export * from './candidate-briefing.js';
-export * from './bot-move-choice.js';
 export * from './coach-persona.js';
 export * from './coach-system.js';
 export * from './diagnostic-report.js';

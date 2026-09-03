@@ -1971,6 +1971,227 @@ This closes out Phase 59 — all six tasks (59.1-59.6) are now checked off.
 
 ---
 
+## Phase 60 — Probability-driven bot move selection
+
+Replaces `selectBotMove`'s current score-then-softmax model
+(`packages/chess-analysis/src/bot-candidate-score.ts`'s `scoreBotCandidates`
++ `sampleBotMove`, plus the AI-tiebreak path in `bot-move-selector.ts`) with
+a literal dice-roll model, per user decision (not a tuning pass on the
+existing system): each move, roll against a directly-configured
+"play the engine's actual best move" probability for the bot's current game
+phase; on a miss, pick from the full legal-move field weighted by the bot's
+personality traits, not the engine's own evaluation. The engine is still
+consulted every move (it defines the candidate pool and which one is
+"best") — what changes is that *whether* the bot uses that verdict is now an
+explicit per-phase percentage instead of a temperature-scaled blend of
+engine score and personality bonus.
+
+**Decided (from the design conversation):** full replacement, not an
+additive layer — `bot.temperature`, `bot.aiEnabled`, and the LLM tiebreak
+call (`apps/api/src/llm/bot-tiebreak.ts`, `packages/prompts/src/bot-move-choice.ts`)
+are removed, not kept alongside the new model. The user's own worked
+examples ("level 200 → 95% obvious/short-sighted move, 5% good move";
+"level 500 → 50% good moves") are honored as a *validation check* on the
+roster-regeneration formula (Task 60.5), not as literal per-bot constants —
+this roster's elo floor is 300, not 200, and hand-typing 30 bots × 3 phases
+would fight the roster's existing "curated, hand-tuned personality" design
+instead of preserving it.
+
+**Game phase, not hand-rolled:** reuses `phaseUnits`/`ENDGAME_PHASE_UNIT_THRESHOLD`
+(`packages/chess-analysis/src/phase-signals.ts`, `CONFIG.phaseSegmentation`)
+— the same material-based endgame boundary the coach's own phase-accuracy
+dashboards already use — so a bot's "which phase am I in" reasoning agrees
+with the rest of the app's definition of phases instead of inventing a
+second one. `phaseForPly`/`endgameStartPly` in `phase-segmentation.ts` are
+NOT reused directly — those resolve boundaries retrospectively from a
+finished game's full position list, and a bot needs a live, incremental
+classification as the game is being played.
+
+**"Short board sight" comes from search breadth, not a hand-authored
+blunder table:** today's `bot.multiPv` (1-8) only lets the selector choose
+among the engine's own top few lines — a real blunder (hanging a queen) is
+rarely one of Stockfish's top-8 lines even at low depth, so the *old* model
+could bias toward personality-flavored suboptimal moves but couldn't
+produce a genuine "didn't see the tactic" mistake. The new model requests a
+much wider `multiPv` (effectively the full legal-move list) at the bot's
+phase-appropriate depth, so a truly bad move can appear in the pool the
+"miss" branch samples from — shallow depth and narrow personal calculation
+account for weak play, not a second layer of fabricated mistakes.
+
+**Checkmate-completion guarantee:** when the engine's own top candidate
+carries `mateIn`, the roll uses `max(phaseProfile.bestMoveChance,
+bot.mateConversionChance)` instead of the phase's own (possibly very low)
+chance — so even the weakest bot usually takes a forced mate it can
+actually see, while `mateConversionChance` staying below 1.0 for the
+lowest tiers keeps "some challenge" (per the user's own phrasing) rather
+than a flawless finish. This is scoped to mates the bot's own
+phase-appropriate depth search actually finds — it is not a claim that a
+depth-3 search sees an arbitrarily long technical mate. The endgame phase
+profile's depth boost (Task 60.5) is what extends how far even a weak bot
+can see once material simplifies, which is exactly when most real mating
+technique is needed.
+
+### Task 60.1: Live game-phase classification for bot play
+
+**Files:** `packages/chess-analysis/src/bot-game-phase.ts` (+ test).
+
+- [x] `classifyBotGamePhase(fen: string, plyCount: number, bookPlies: number): MovePhase`
+      — `endgame` once `phaseUnits(fen) <= CONFIG.phaseSegmentation.endgamePhaseUnitThreshold`;
+      else `opening` while `plyCount < Math.min(CONFIG.phaseSegmentation.openingMaxPly, bookPlies * 2 + 4)`;
+      else `middlegame`. Pure, no engine call.
+- [x] Commit: `feat: live game-phase classification for bot move selection`.
+
+### Task 60.2: New phase-keyed BotConfig schema
+
+**Files:** `packages/shared/src/bot.ts` (+ any test), `packages/shared/src/constants.ts`
+(if the depth ceiling needs raising for endgame — see below).
+
+- [x] `BotPhaseProfileSchema = z.object({ depth: z.number().int().min(1).max(24),
+      bestMoveChance: z.number().min(0).max(1) })` — 24, not
+      `ENGINE_DEFAULT_DEPTH` (16), because endgame search over a handful of
+      pieces is cheap enough to justify searching deeper than the
+      shared default; keep `ENGINE_DEFAULT_DEPTH` itself unchanged (it's
+      used elsewhere for unrelated defaults).
+- [x] `BotConfigSchema` gains `phases: z.object({ opening: BotPhaseProfileSchema,
+      middlegame: BotPhaseProfileSchema, endgame: BotPhaseProfileSchema })`
+      and `mateConversionChance: z.number().min(0).max(1)`. Keeps `personality`
+      (`BotPersonalitySchema`, unchanged — a bot's character is global, only
+      how often it's overridden by the engine's verdict is phase-scoped),
+      `bookPlies`, `bookMistakeChance`. Drops the top-level `depth`, `multiPv`,
+      `aiEnabled`, `temperature`.
+- [x] Update the doc comment above `BotConfigSchema` (currently references a
+      `docs/architecture.md` "Play vs Bot" plan section that no longer exists
+      — don't perpetuate that stale pointer).
+- [x] Commit: `feat: phase-keyed bot config schema`.
+
+### Task 60.3: Broaden candidate generation, drop personality scoring/softmax
+
+**Files:** `apps/api/src/services/bot/bot-candidates.ts` (+ test),
+`packages/chess-analysis/src/bot-candidate-score.ts` → deleted, replaced by
+`packages/chess-analysis/src/bot-move-pick.ts` (+ test),
+`packages/chess-analysis/src/index.ts` (export swap).
+
+- [x] `bot-candidates.ts`: `buildBotCandidates` calls `analyzeBotPosition`
+      with a fixed wide `multiPv` constant (e.g. `BOT_CANDIDATE_BREADTH = 40`)
+      instead of `bot.multiPv`, at `depth` from the caller's resolved phase
+      profile (now passed in directly rather than read off `bot.depth`).
+      Verify the engine backend clips gracefully when `multiPv` exceeds the
+      position's actual legal-move count (check `services/engine/src/uci.ts`'s
+      `setoption name MultiPV` handling / add a defensive `Math.min` against
+      a computed legal-move count if it doesn't).
+- [x] `bot-move-pick.ts` (new): `pickBotMove({ candidates, personality,
+      bestMoveChance, mateConversionChance, random }): BotCandidate` —
+      `candidates[0]` is the engine's top-ranked line (already sorted by the
+      engine's own eval). If `candidates[0].mateIn` is a positive number, roll
+      against `max(bestMoveChance, mateConversionChance)`; otherwise roll
+      against `bestMoveChance`. On a hit, return `candidates[0]`. On a miss,
+      call `pickPersonalityWeightedMove` — reuses the *existing* per-candidate
+      signal flags (`createsHangingPiece`, `createsFork`, `forkInPlies`,
+      `createsUnderDefendedPiece`, `mobilityDelta`, already computed by
+      `annotateCandidateMoves`/`annotatePvTactics` and untouched by this task)
+      as literal weighted-random sampling weights keyed off
+      `personality.aggression`/`trapSeeking`/`defensiveness` — no engine score
+      blended in this branch at all, per the "replace, don't blend" decision.
+      Keep a small floor weight (e.g. 0.05) per candidate so no legal move is
+      literally unreachable.
+- [x] Delete `bot-candidate-score.ts` and its test; port over
+      `BOT_SCORE_WEIGHTS`-equivalent tunable constants into `bot-move-pick.ts`
+      under a new name reflecting their new role (selection weights, not score
+      bonuses).
+- [x] Commit: `feat: replace bot score-softmax with weighted personality sampling`.
+
+### Task 60.4: Rewrite selectBotMove around the dice-roll model
+
+**Files:** `apps/api/src/services/bot/bot-move-selector.ts` (+ test),
+`apps/api/src/routes/sessions.ts` (drop `callTiebreak` wiring),
+`apps/api/src/llm/bot-tiebreak.ts` → deleted (+ test),
+`packages/prompts/src/bot-move-choice.ts` → deleted (+ test),
+`packages/prompts/src/index.ts` (export removal), `docs/prompts.md`
+(regenerate via `npm run docs:prompts`).
+
+- [x] `selectBotMove`: book check unchanged (`selectBookMove`, still
+      opening-only via `bookPlies`/`bookMistakeChance` — those two fields are
+      untouched by this phase). Otherwise: `phase = classifyBotGamePhase(fen,
+      plyCount, bot.bookPlies)`, `profile = bot.phases[phase]`, candidates via
+      `buildBotCandidates(deps, fen, profile.depth)` (Task 60.3's signature),
+      `pickBotMove({ candidates, personality: bot.personality,
+      bestMoveChance: profile.bestMoveChance, bot.mateConversionChance,
+      random: deps.random })`.
+- [x] Remove `TIEBREAK_SCORE_MARGIN`, `closeScoringCluster`, the
+      `deps.callTiebreak` dependency, and `SelectedBotMove.usedAi` (or keep the
+      field but it's now always `false` — prefer removing it and updating
+      every caller that reads it, since a dead-always-false field is worse
+      than no field).
+- [x] Delete `apps/api/src/llm/bot-tiebreak.ts` and
+      `packages/prompts/src/bot-move-choice.ts` plus their tests, and every
+      import of them (`apps/api/src/routes/sessions.ts`'s dependency wiring
+      for `POST /api/sessions/play-bot` and the move/request-bot-move routes).
+- [x] Commit: `feat: rewrite bot move selection around explicit probability rolls`.
+
+### Task 60.5: Regenerate the 30-bot roster's phase profiles
+
+**Files:** `packages/shared/src/bot-roster.ts`.
+
+- [x] For each of the 30 existing bots, derive the new fields from its
+      *current* `depth`/`temperature` (preserving each bot's already-hand-tuned
+      character instead of retyping 90 numbers from scratch):
+      `middlegame.bestMoveChance = clamp(1 - temperature * 1.4, 0.05, 0.95)`,
+      `opening.bestMoveChance = clamp(middlegame.bestMoveChance + 0.15, 0, 0.97)`,
+      `endgame.bestMoveChance = clamp(middlegame.bestMoveChance + 0.25, 0, 0.98)`,
+      `opening.depth = middlegame.depth = <bot's current depth>`,
+      `endgame.depth = min(<bot's current depth> + 6, 24)`,
+      `mateConversionChance = clamp(endgame.bestMoveChance + 0.15, 0.55, 0.99)`.
+      Validation check: `nate-brooks` (elo 300, temperature 0.7) should land
+      near 5% middlegame best-move chance and `sophie-chen` (elo 500,
+      temperature 0.3) near 50-60% — both matching the user's own worked
+      examples from the design conversation.
+- [x] Drop `multiPv`, `aiEnabled`, `temperature` from every entry (schema no
+      longer has them — Task 60.2).
+- [x] Spot-check a handful of bots across all five tiers by eye (not just the
+      two validation-check bots) for reasonable monotonic progression —
+      `bestMoveChance` and `depth` should both trend upward with `elo` within
+      each phase, with no inversions.
+- [x] Commit: `feat: regenerate bot roster for phase-keyed probability model`.
+
+### Task 60.6: Test sweep and integration check
+
+**Files:** every `apps/api/src/services/bot/*.test.ts`, `apps/web` tests
+that construct a `BotConfig` fixture (search for `personality:`/`temperature:`
+literals in `apps/web/src/**/*.test.ts`), `apps/api/src/routes/sessions.test.ts`.
+
+- [x] Update every test fixture that builds a `BotConfig` object with the old
+      flat shape to the new phase-keyed shape.
+- [x] Full-repo `npm run typecheck`, `npx eslint .`, `npx vitest run` (no
+      workspace scoping) — confirm clean before closing out the phase.
+- [x] Commit: `test: update bot config fixtures for phase-keyed model` (or
+      fold into 60.5/60.4's commits if the diffs end up small enough to not
+      warrant a separate commit — call this at commit time, not up front).
+
+**Done:** All six tasks landed as planned, split across two parallel forks
+(60.3: candidate breadth + `bot-move-pick.ts`; 60.5: roster regeneration —
+disjoint file sets, no shared-file conflict) plus 60.1/60.2/60.4/60.6 done
+directly, mirroring Phase 59's split. One dependency neither task list nor
+the original grep sweep caught: `apps/api/src/services/diagnostic-reachability.ts`'s
+`depthForRating` (Task 54.1's human-reachability proxy) read `nearest.depth`
+off a `BOT_ROSTER` entry — fixed to `nearest.phases.middlegame.depth`
+(documented in that file: middlegame specifically, not the endgame phase's
+deliberately-boosted depth, since middlegame depth is what actually
+represents "how deep would a player at this rating calculate"). Full-repo
+verification after all six tasks: `npm run typecheck` clean, `npx eslint .`
+clean, `npx vitest run` (unscoped) — 371/371 test files, 2604/2604 tests
+passing (down from 2607 at the end of Phase 59, net of deleting
+`bot-candidate-score.test.ts` and `bot-move-choice.test.ts` wholesale and
+adding `bot-game-phase.test.ts`/`bot-move-pick.test.ts` and a rewritten
+`bot-move-selector.test.ts`). The one "Unhandled Error" in that run — a
+Postgres connection dropped during test-DB teardown — is the same
+pre-existing, unrelated teardown flake noted at the end of Phase 59 (same
+symptom, different attributed test file this time, consistent with it being
+a random teardown race rather than anything this phase touched).
+
+This closes out Phase 60 — all six tasks are now checked off.
+
+---
+
 ## Calibration and standing constraints
 
 - **§0.3 and §V require recalibration** of every rating prior and threshold

@@ -16,11 +16,13 @@ function baseBot(): BotConfig {
     avatarIndex: 0,
     description: 'A bot for tests.',
     elo: 800,
-    depth: 6,
-    multiPv: 2,
+    phases: {
+      opening: { depth: 6, bestMoveChance: 0.5 },
+      middlegame: { depth: 6, bestMoveChance: 0.5 },
+      endgame: { depth: 6, bestMoveChance: 0.5 }
+    },
     personality: { aggression: 50, trapSeeking: 50, defensiveness: 50 },
-    aiEnabled: false,
-    temperature: 0.3,
+    mateConversionChance: 0.9,
     bookPlies: 0,
     bookMistakeChance: 0
   };

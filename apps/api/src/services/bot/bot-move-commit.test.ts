@@ -45,11 +45,13 @@ function baseBot(overrides: Partial<BotConfig> = {}): BotConfig {
     avatarIndex: 0,
     description: 'A bot for tests.',
     elo: 800,
-    depth: 6,
-    multiPv: 2,
+    phases: {
+      opening: { depth: 6, bestMoveChance: 0.5 },
+      middlegame: { depth: 6, bestMoveChance: 0.5 },
+      endgame: { depth: 6, bestMoveChance: 0.5 }
+    },
     personality: { aggression: 50, trapSeeking: 50, defensiveness: 50 },
-    aiEnabled: false,
-    temperature: 0.3,
+    mateConversionChance: 0.9,
     bookPlies: 0,
     bookMistakeChance: 0,
     ...overrides
@@ -98,7 +100,6 @@ describe('commitBotTurn', () => {
       db,
       analyzePosition: vi.fn().mockResolvedValue(GENERIC_ANALYSIS),
       analyzeBotPosition: vi.fn().mockResolvedValue(botLines()),
-      callTiebreak: vi.fn().mockResolvedValue(null),
       random: () => 0,
       jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn() },
       minThinkMs: 0,
@@ -146,7 +147,7 @@ describe('commitBotTurn', () => {
 
   test('when the bot\'s reply ends the game, both moves are recorded and the game is finalized', async () => {
     // c2-c4 by the (irrelevant) student (white), then the bot (black) delivers
-    // a back-rank mate with Ra1# — bot.multiPv/depth are irrelevant since
+    // a back-rank mate with Ra1# — the bot's phase depth is irrelevant since
     // analyzeBotPosition is mocked to return exactly this one line. Student is
     // white here (not the more natural-reading black) so the position's first
     // move is white's, matching commitMove's ply-parity mover assumption
@@ -172,15 +173,6 @@ describe('commitBotTurn', () => {
     expect(updatedSession?.status).toBe('completed');
     expect(updatedSession?.currentPly).toBe(result.bot?.ply);
     expect(d.jobQueue.enqueueAnalyzeGame).toHaveBeenCalledTimes(1);
-  });
-
-  test('AI-off never calls the tiebreak dependency during a bot turn', async () => {
-    const { session } = await setupBotGame();
-    const d = deps({ analyzeBotPosition: vi.fn().mockResolvedValue(botLines({ moveUci: 'e7e5', moveSan: 'e5', pvSan: ['e5'], cp: -10, mateIn: null })) });
-
-    await commitBotTurn(d, session, baseBot({ aiEnabled: false }), 'e4');
-
-    expect(d.callTiebreak).not.toHaveBeenCalled();
   });
 
   // The engine-outage / failover path: see bot-move-commit.ts's doc comments

@@ -11,7 +11,9 @@ import type { BotConfig } from './bot.js';
  * at public/brand/bots.png (row = tier, column = position within the tier —
  * `avatarIndex` is `row * 6 + column`). `elo` (300-2300) is the display
  * rating; the knobs that actually make a bot play weaker/stronger/differently
- * are `depth`, `personality`, `temperature`, and the opening-book pair.
+ * are `phases` (per game-phase search depth and literal best-move
+ * probability — see bot.ts's `BotPhaseProfileSchema`), `personality`, and
+ * the opening-book pair.
  */
 export const BOT_ROSTER: readonly BotConfig[] = [
   // --- Beginner ---
@@ -21,11 +23,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 0,
     description: '"The Newcomer." Moves fast, attacks early, and often forgets what you\'re threatening.',
     elo: 300,
-    depth: 3,
-    multiPv: 4,
+    phases: {
+      opening: { depth: 3, bestMoveChance: 0.2 },
+      middlegame: { depth: 3, bestMoveChance: 0.05 },
+      endgame: { depth: 9, bestMoveChance: 0.3 }
+    },
     personality: { aggression: 70, trapSeeking: 20, defensiveness: 10 },
-    aiEnabled: false,
-    temperature: 0.7,
+    mateConversionChance: 0.55,
     bookPlies: 2,
     bookMistakeChance: 0.5
   },
@@ -35,11 +39,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 1,
     description: '"The Curious." Plays carefully and experiments with new ideas instead of the safe move.',
     elo: 350,
-    depth: 4,
-    multiPv: 4,
+    phases: {
+      opening: { depth: 4, bestMoveChance: 0.31 },
+      middlegame: { depth: 4, bestMoveChance: 0.16 },
+      endgame: { depth: 10, bestMoveChance: 0.41 }
+    },
     personality: { aggression: 35, trapSeeking: 45, defensiveness: 40 },
-    aiEnabled: false,
-    temperature: 0.6,
+    mateConversionChance: 0.56,
     bookPlies: 3,
     bookMistakeChance: 0.4
   },
@@ -49,11 +55,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 2,
     description: '"The Club Regular." Sticks to familiar openings and solid development, avoids unnecessary risk.',
     elo: 420,
-    depth: 5,
-    multiPv: 3,
+    phases: {
+      opening: { depth: 5, bestMoveChance: 0.59 },
+      middlegame: { depth: 5, bestMoveChance: 0.44 },
+      endgame: { depth: 11, bestMoveChance: 0.69 }
+    },
     personality: { aggression: 20, trapSeeking: 15, defensiveness: 65 },
-    aiEnabled: false,
-    temperature: 0.4,
+    mateConversionChance: 0.84,
     bookPlies: 6,
     bookMistakeChance: 0.25
   },
@@ -63,11 +71,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 3,
     description: '"The Puzzle Hunter." Constantly searches for forks, pins, and discoveries — sound or not.',
     elo: 380,
-    depth: 4,
-    multiPv: 6,
+    phases: {
+      opening: { depth: 4, bestMoveChance: 0.38 },
+      middlegame: { depth: 4, bestMoveChance: 0.23 },
+      endgame: { depth: 10, bestMoveChance: 0.48 }
+    },
     personality: { aggression: 45, trapSeeking: 80, defensiveness: 15 },
-    aiEnabled: false,
-    temperature: 0.55,
+    mateConversionChance: 0.63,
     bookPlies: 2,
     bookMistakeChance: 0.45
   },
@@ -77,11 +87,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 4,
     description: '"The Planner." Builds a clear plan but sometimes misses a tactic sitting right in front of it.',
     elo: 400,
-    depth: 5,
-    multiPv: 3,
+    phases: {
+      opening: { depth: 5, bestMoveChance: 0.52 },
+      middlegame: { depth: 5, bestMoveChance: 0.37 },
+      endgame: { depth: 11, bestMoveChance: 0.62 }
+    },
     personality: { aggression: 30, trapSeeking: 10, defensiveness: 45 },
-    aiEnabled: false,
-    temperature: 0.45,
+    mateConversionChance: 0.77,
     bookPlies: 4,
     bookMistakeChance: 0.35
   },
@@ -91,11 +103,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 5,
     description: '"The Prodigy." Balanced, accurate, adaptable, and surprisingly hard to rattle for her level.',
     elo: 500,
-    depth: 7,
-    multiPv: 5,
+    phases: {
+      opening: { depth: 7, bestMoveChance: 0.73 },
+      middlegame: { depth: 7, bestMoveChance: 0.58 },
+      endgame: { depth: 13, bestMoveChance: 0.83 }
+    },
     personality: { aggression: 40, trapSeeking: 40, defensiveness: 40 },
-    aiEnabled: true,
-    temperature: 0.3,
+    mateConversionChance: 0.98,
     bookPlies: 8,
     bookMistakeChance: 0.15
   },
@@ -107,11 +121,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 6,
     description: '"The Storm." Attacks aggressively, sacrifices material freely, and hates quiet positions.',
     elo: 600,
-    depth: 7,
-    multiPv: 5,
+    phases: {
+      opening: { depth: 7, bestMoveChance: 0.45 },
+      middlegame: { depth: 7, bestMoveChance: 0.3 },
+      endgame: { depth: 13, bestMoveChance: 0.55 }
+    },
     personality: { aggression: 85, trapSeeking: 35, defensiveness: 10 },
-    aiEnabled: false,
-    temperature: 0.5,
+    mateConversionChance: 0.7,
     bookPlies: 5,
     bookMistakeChance: 0.25
   },
@@ -121,11 +137,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 7,
     description: '"The Anchor." Develops safely, protects every weakness, and rarely makes a reckless move.',
     elo: 650,
-    depth: 8,
-    multiPv: 3,
+    phases: {
+      opening: { depth: 8, bestMoveChance: 0.87 },
+      middlegame: { depth: 8, bestMoveChance: 0.72 },
+      endgame: { depth: 14, bestMoveChance: 0.97 }
+    },
     personality: { aggression: 10, trapSeeking: 15, defensiveness: 85 },
-    aiEnabled: false,
-    temperature: 0.2,
+    mateConversionChance: 0.99,
     bookPlies: 8,
     bookMistakeChance: 0.15
   },
@@ -135,11 +153,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 8,
     description: '"The Inventor." Finds unusual plans and surprising sacrifices instead of the obvious move.',
     elo: 620,
-    depth: 7,
-    multiPv: 5,
+    phases: {
+      opening: { depth: 7, bestMoveChance: 0.38 },
+      middlegame: { depth: 7, bestMoveChance: 0.23 },
+      endgame: { depth: 13, bestMoveChance: 0.48 }
+    },
     personality: { aggression: 55, trapSeeking: 50, defensiveness: 20 },
-    aiEnabled: true,
-    temperature: 0.55,
+    mateConversionChance: 0.63,
     bookPlies: 3,
     bookMistakeChance: 0.3
   },
@@ -149,11 +169,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 9,
     description: '"The Calculator." Calculates deeply and precisely, one line at a time.',
     elo: 700,
-    depth: 9,
-    multiPv: 6,
+    phases: {
+      opening: { depth: 9, bestMoveChance: 0.94 },
+      middlegame: { depth: 9, bestMoveChance: 0.79 },
+      endgame: { depth: 15, bestMoveChance: 0.98 }
+    },
     personality: { aggression: 35, trapSeeking: 45, defensiveness: 40 },
-    aiEnabled: false,
-    temperature: 0.15,
+    mateConversionChance: 0.99,
     bookPlies: 6,
     bookMistakeChance: 0.15
   },
@@ -163,11 +185,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 10,
     description: '"The Chameleon." Switches easily between aggressive and positional play mid-game.',
     elo: 680,
-    depth: 8,
-    multiPv: 5,
+    phases: {
+      opening: { depth: 8, bestMoveChance: 0.45 },
+      middlegame: { depth: 8, bestMoveChance: 0.3 },
+      endgame: { depth: 14, bestMoveChance: 0.55 }
+    },
     personality: { aggression: 50, trapSeeking: 35, defensiveness: 35 },
-    aiEnabled: false,
-    temperature: 0.5,
+    mateConversionChance: 0.7,
     bookPlies: 5,
     bookMistakeChance: 0.2
   },
@@ -177,11 +201,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 11,
     description: '"The Architect." Improves his position slowly and values structure over tactics.',
     elo: 750,
-    depth: 8,
-    multiPv: 3,
+    phases: {
+      opening: { depth: 8, bestMoveChance: 0.87 },
+      middlegame: { depth: 8, bestMoveChance: 0.72 },
+      endgame: { depth: 14, bestMoveChance: 0.97 }
+    },
     personality: { aggression: 15, trapSeeking: 10, defensiveness: 75 },
-    aiEnabled: false,
-    temperature: 0.2,
+    mateConversionChance: 0.99,
     bookPlies: 10,
     bookMistakeChance: 0.1
   },
@@ -193,11 +219,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 12,
     description: '"The Tactician." Creates complications and searches relentlessly for forcing moves.',
     elo: 1150,
-    depth: 10,
-    multiPv: 8,
+    phases: {
+      opening: { depth: 10, bestMoveChance: 0.73 },
+      middlegame: { depth: 10, bestMoveChance: 0.58 },
+      endgame: { depth: 16, bestMoveChance: 0.83 }
+    },
     personality: { aggression: 65, trapSeeking: 90, defensiveness: 20 },
-    aiEnabled: true,
-    temperature: 0.3,
+    mateConversionChance: 0.98,
     bookPlies: 8,
     bookMistakeChance: 0.12
   },
@@ -207,11 +235,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 13,
     description: '"The Finisher." Trades patiently, neutralizes danger, and converts small edges accurately.',
     elo: 1100,
-    depth: 11,
-    multiPv: 4,
+    phases: {
+      opening: { depth: 11, bestMoveChance: 0.94 },
+      middlegame: { depth: 11, bestMoveChance: 0.79 },
+      endgame: { depth: 17, bestMoveChance: 0.98 }
+    },
     personality: { aggression: 20, trapSeeking: 25, defensiveness: 70 },
-    aiEnabled: false,
-    temperature: 0.15,
+    mateConversionChance: 0.99,
     bookPlies: 10,
     bookMistakeChance: 0.08
   },
@@ -221,11 +251,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 14,
     description: '"The Survivor." Defends resourcefully, sets practical problems, and refuses to resign early.',
     elo: 1000,
-    depth: 10,
-    multiPv: 5,
+    phases: {
+      opening: { depth: 10, bestMoveChance: 0.66 },
+      middlegame: { depth: 10, bestMoveChance: 0.51 },
+      endgame: { depth: 16, bestMoveChance: 0.76 }
+    },
     personality: { aggression: 25, trapSeeking: 45, defensiveness: 75 },
-    aiEnabled: false,
-    temperature: 0.35,
+    mateConversionChance: 0.91,
     bookPlies: 6,
     bookMistakeChance: 0.15
   },
@@ -235,11 +267,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 15,
     description: '"The Fearless." Welcomes complications and accepts sacrifices with total confidence.',
     elo: 1150,
-    depth: 10,
-    multiPv: 6,
+    phases: {
+      opening: { depth: 10, bestMoveChance: 0.59 },
+      middlegame: { depth: 10, bestMoveChance: 0.44 },
+      endgame: { depth: 16, bestMoveChance: 0.69 }
+    },
     personality: { aggression: 75, trapSeeking: 60, defensiveness: 15 },
-    aiEnabled: true,
-    temperature: 0.4,
+    mateConversionChance: 0.84,
     bookPlies: 7,
     bookMistakeChance: 0.15
   },
@@ -249,11 +283,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 16,
     description: '"The Veteran." Leans on decades of experience, avoiding unnecessary calculation.',
     elo: 1250,
-    depth: 11,
-    multiPv: 4,
+    phases: {
+      opening: { depth: 11, bestMoveChance: 0.87 },
+      middlegame: { depth: 11, bestMoveChance: 0.72 },
+      endgame: { depth: 17, bestMoveChance: 0.97 }
+    },
     personality: { aggression: 35, trapSeeking: 30, defensiveness: 55 },
-    aiEnabled: false,
-    temperature: 0.2,
+    mateConversionChance: 0.99,
     bookPlies: 14,
     bookMistakeChance: 0.06
   },
@@ -263,11 +299,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 17,
     description: '"The Rising Star." Plays ambitious, energetic chess backed by strong preparation.',
     elo: 1300,
-    depth: 11,
-    multiPv: 5,
+    phases: {
+      opening: { depth: 11, bestMoveChance: 0.73 },
+      middlegame: { depth: 11, bestMoveChance: 0.58 },
+      endgame: { depth: 17, bestMoveChance: 0.83 }
+    },
     personality: { aggression: 60, trapSeeking: 50, defensiveness: 30 },
-    aiEnabled: true,
-    temperature: 0.3,
+    mateConversionChance: 0.98,
     bookPlies: 12,
     bookMistakeChance: 0.08
   },
@@ -279,11 +317,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 18,
     description: '"The Grinder." Extends games, keeps up the pressure, and waits for you to collapse.',
     elo: 1550,
-    depth: 12,
-    multiPv: 4,
+    phases: {
+      opening: { depth: 12, bestMoveChance: 0.94 },
+      middlegame: { depth: 12, bestMoveChance: 0.79 },
+      endgame: { depth: 18, bestMoveChance: 0.98 }
+    },
     personality: { aggression: 30, trapSeeking: 30, defensiveness: 70 },
-    aiEnabled: false,
-    temperature: 0.15,
+    mateConversionChance: 0.99,
     bookPlies: 12,
     bookMistakeChance: 0.06
   },
@@ -293,11 +333,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 19,
     description: '"The Queen Hunter." Gains tempo through threats and hunts your loose or exposed pieces.',
     elo: 1600,
-    depth: 12,
-    multiPv: 8,
+    phases: {
+      opening: { depth: 12, bestMoveChance: 0.8 },
+      middlegame: { depth: 12, bestMoveChance: 0.65 },
+      endgame: { depth: 18, bestMoveChance: 0.9 }
+    },
     personality: { aggression: 70, trapSeeking: 75, defensiveness: 20 },
-    aiEnabled: true,
-    temperature: 0.25,
+    mateConversionChance: 0.99,
     bookPlies: 10,
     bookMistakeChance: 0.08
   },
@@ -307,11 +349,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 20,
     description: '"The Marathoner." Calculates steadily and stays accurate deep into long games.',
     elo: 1700,
-    depth: 13,
-    multiPv: 4,
+    phases: {
+      opening: { depth: 13, bestMoveChance: 0.97 },
+      middlegame: { depth: 13, bestMoveChance: 0.83 },
+      endgame: { depth: 19, bestMoveChance: 0.98 }
+    },
     personality: { aggression: 35, trapSeeking: 35, defensiveness: 55 },
-    aiEnabled: false,
-    temperature: 0.12,
+    mateConversionChance: 0.99,
     bookPlies: 12,
     bookMistakeChance: 0.05
   },
@@ -321,11 +365,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 21,
     description: '"The Improviser." Steps off known theory early, trusting intuition over preparation.',
     elo: 1500,
-    depth: 11,
-    multiPv: 5,
+    phases: {
+      opening: { depth: 11, bestMoveChance: 0.45 },
+      middlegame: { depth: 11, bestMoveChance: 0.3 },
+      endgame: { depth: 17, bestMoveChance: 0.55 }
+    },
     personality: { aggression: 55, trapSeeking: 55, defensiveness: 25 },
-    aiEnabled: true,
-    temperature: 0.5,
+    mateConversionChance: 0.7,
     bookPlies: 3,
     bookMistakeChance: 0.4
   },
@@ -335,11 +381,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 22,
     description: '"The Iron Wall." Eliminates weaknesses, absorbs attacks, and frustrates aggressive opponents.',
     elo: 1750,
-    depth: 13,
-    multiPv: 3,
+    phases: {
+      opening: { depth: 13, bestMoveChance: 0.97 },
+      middlegame: { depth: 13, bestMoveChance: 0.83 },
+      endgame: { depth: 19, bestMoveChance: 0.98 }
+    },
     personality: { aggression: 10, trapSeeking: 20, defensiveness: 90 },
-    aiEnabled: false,
-    temperature: 0.12,
+    mateConversionChance: 0.99,
     bookPlies: 14,
     bookMistakeChance: 0.04
   },
@@ -349,11 +397,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 23,
     description: '"The Sniper." Waits quietly for one weakness, then finishes with a short forcing sequence.',
     elo: 1650,
-    depth: 12,
-    multiPv: 6,
+    phases: {
+      opening: { depth: 12, bestMoveChance: 0.94 },
+      middlegame: { depth: 12, bestMoveChance: 0.79 },
+      endgame: { depth: 18, bestMoveChance: 0.98 }
+    },
     personality: { aggression: 45, trapSeeking: 80, defensiveness: 45 },
-    aiEnabled: true,
-    temperature: 0.15,
+    mateConversionChance: 0.99,
     bookPlies: 10,
     bookMistakeChance: 0.06
   },
@@ -365,11 +415,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 24,
     description: '"The Hustler." Reads opponents quickly and sets practical traps that pay off under pressure.',
     elo: 2000,
-    depth: 14,
-    multiPv: 6,
+    phases: {
+      opening: { depth: 14, bestMoveChance: 0.8 },
+      middlegame: { depth: 14, bestMoveChance: 0.65 },
+      endgame: { depth: 20, bestMoveChance: 0.9 }
+    },
     personality: { aggression: 55, trapSeeking: 80, defensiveness: 30 },
-    aiEnabled: true,
-    temperature: 0.25,
+    mateConversionChance: 0.99,
     bookPlies: 12,
     bookMistakeChance: 0.05
   },
@@ -379,11 +431,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 25,
     description: '"The Theorist." Deep opening knowledge and classical principles, applied with total discipline.',
     elo: 2200,
-    depth: 14,
-    multiPv: 4,
+    phases: {
+      opening: { depth: 14, bestMoveChance: 0.97 },
+      middlegame: { depth: 14, bestMoveChance: 0.86 },
+      endgame: { depth: 20, bestMoveChance: 0.98 }
+    },
     personality: { aggression: 30, trapSeeking: 30, defensiveness: 55 },
-    aiEnabled: false,
-    temperature: 0.1,
+    mateConversionChance: 0.99,
     bookPlies: 20,
     bookMistakeChance: 0.02
   },
@@ -393,11 +447,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 26,
     description: '"The Wildcard." Chooses sharp sidelines that force you to think for yourself early.',
     elo: 2050,
-    depth: 14,
-    multiPv: 5,
+    phases: {
+      opening: { depth: 14, bestMoveChance: 0.66 },
+      middlegame: { depth: 14, bestMoveChance: 0.51 },
+      endgame: { depth: 20, bestMoveChance: 0.76 }
+    },
     personality: { aggression: 60, trapSeeking: 55, defensiveness: 25 },
-    aiEnabled: true,
-    temperature: 0.35,
+    mateConversionChance: 0.91,
     bookPlies: 10,
     bookMistakeChance: 0.08
   },
@@ -407,11 +463,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 27,
     description: '"The Ice Queen." Controlled, clinical chess that snuffs out counterplay before converting.',
     elo: 2300,
-    depth: 15,
-    multiPv: 4,
+    phases: {
+      opening: { depth: 15, bestMoveChance: 0.97 },
+      middlegame: { depth: 15, bestMoveChance: 0.89 },
+      endgame: { depth: 21, bestMoveChance: 0.98 }
+    },
     personality: { aggression: 25, trapSeeking: 35, defensiveness: 75 },
-    aiEnabled: true,
-    temperature: 0.08,
+    mateConversionChance: 0.99,
     bookPlies: 16,
     bookMistakeChance: 0.02
   },
@@ -421,11 +479,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 28,
     description: '"The Comeback Kid." Builds resilient defenses and turns dangerous the moment you relax.',
     elo: 1950,
-    depth: 13,
-    multiPv: 5,
+    phases: {
+      opening: { depth: 13, bestMoveChance: 0.73 },
+      middlegame: { depth: 13, bestMoveChance: 0.58 },
+      endgame: { depth: 19, bestMoveChance: 0.83 }
+    },
     personality: { aggression: 45, trapSeeking: 55, defensiveness: 60 },
-    aiEnabled: false,
-    temperature: 0.3,
+    mateConversionChance: 0.98,
     bookPlies: 10,
     bookMistakeChance: 0.1
   },
@@ -435,11 +495,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     avatarIndex: 29,
     description: '"The Artist." Favors harmonious attacks and elegant sacrifices over the merely correct move.',
     elo: 2150,
-    depth: 14,
-    multiPv: 6,
+    phases: {
+      opening: { depth: 14, bestMoveChance: 0.73 },
+      middlegame: { depth: 14, bestMoveChance: 0.58 },
+      endgame: { depth: 20, bestMoveChance: 0.83 }
+    },
     personality: { aggression: 70, trapSeeking: 70, defensiveness: 20 },
-    aiEnabled: true,
-    temperature: 0.3,
+    mateConversionChance: 0.98,
     bookPlies: 10,
     bookMistakeChance: 0.06
   }

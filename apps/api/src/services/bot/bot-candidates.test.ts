@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
-import type { BotConfig, PositionAnalysis } from '@freechesscoach/shared';
-import { buildBotCandidates } from './bot-candidates.js';
+import type { PositionAnalysis } from '@freechesscoach/shared';
+import { buildBotCandidates, BOT_CANDIDATE_BREADTH } from './bot-candidates.js';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 // Black to move, after 1.e4 e5 2.Qh5 (threatens Qxe5+ forking king/pieces is
@@ -8,24 +8,6 @@ const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 // bot's own moves out via a knight landing on a forking square) — kept
 // simple: white to move, one quiet line, one line whose PV creates a fork.
 const FORK_PV_FEN = 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3';
-
-function baseBot(overrides: Partial<BotConfig> = {}): BotConfig {
-  return {
-    id: 'test-bot',
-    name: 'Test Bot',
-    avatarIndex: 0,
-    description: 'A bot for tests.',
-    elo: 800,
-    depth: 6,
-    multiPv: 2,
-    personality: { aggression: 50, trapSeeking: 50, defensiveness: 50 },
-    aiEnabled: false,
-    temperature: 0.3,
-    bookPlies: 0,
-    bookMistakeChance: 0,
-    ...overrides
-  };
-}
 
 describe('buildBotCandidates', () => {
   test('white to move: cp/mateIn pass through unchanged (already White-perspective)', async () => {
@@ -43,9 +25,9 @@ describe('buildBotCandidates', () => {
     };
     const analyzeBotPosition = vi.fn().mockResolvedValue(analysis);
 
-    const candidates = await buildBotCandidates({ analyzeBotPosition }, START_FEN, baseBot());
+    const candidates = await buildBotCandidates({ analyzeBotPosition }, START_FEN, 6);
 
-    expect(analyzeBotPosition).toHaveBeenCalledWith(START_FEN, { depth: 6, multiPv: 2 });
+    expect(analyzeBotPosition).toHaveBeenCalledWith(START_FEN, { depth: 6, multiPv: BOT_CANDIDATE_BREADTH });
     expect(candidates).toHaveLength(2);
     expect(candidates[0]).toMatchObject({ moveSan: 'e4', cp: 20, mateIn: null });
     expect(candidates[1]).toMatchObject({ moveSan: 'd4', cp: 15, mateIn: null });
@@ -64,7 +46,7 @@ describe('buildBotCandidates', () => {
     };
     const analyzeBotPosition = vi.fn().mockResolvedValue(analysis);
 
-    const candidates = await buildBotCandidates({ analyzeBotPosition }, blackToMoveFen, baseBot());
+    const candidates = await buildBotCandidates({ analyzeBotPosition }, blackToMoveFen, 6);
 
     // White-perspective cp -10 (slightly good for black) becomes mover-relative +10;
     // mateIn 3 (white-perspective, three moves to a WHITE mate) becomes -3 for black.
@@ -83,7 +65,7 @@ describe('buildBotCandidates', () => {
     };
     const analyzeBotPosition = vi.fn().mockResolvedValue(analysis);
 
-    const candidates = await buildBotCandidates({ analyzeBotPosition }, START_FEN, baseBot());
+    const candidates = await buildBotCandidates({ analyzeBotPosition }, START_FEN, 6);
 
     expect(candidates[0]).toMatchObject({
       createsFork: false,
@@ -108,7 +90,7 @@ describe('buildBotCandidates', () => {
     };
     const analyzeBotPosition = vi.fn().mockResolvedValue(analysis);
 
-    const candidates = await buildBotCandidates({ analyzeBotPosition }, FORK_PV_FEN, baseBot());
+    const candidates = await buildBotCandidates({ analyzeBotPosition }, FORK_PV_FEN, 6);
 
     expect(candidates[0]?.moveSan).toBe('Ng5');
     expect(typeof candidates[0]?.forkInPlies === 'number' || candidates[0]?.forkInPlies === null).toBe(true);
@@ -127,7 +109,7 @@ describe('buildBotCandidates', () => {
     };
     const analyzeBotPosition = vi.fn().mockResolvedValue(analysis);
 
-    const candidates = await buildBotCandidates({ analyzeBotPosition }, forkFen, baseBot());
+    const candidates = await buildBotCandidates({ analyzeBotPosition }, forkFen, 6);
 
     expect(candidates[0]).toMatchObject({ moveSan: 'Nd6+', motif: 'fork' });
   });

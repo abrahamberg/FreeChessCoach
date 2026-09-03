@@ -9,7 +9,7 @@ export interface SelectedBookMove {
  * A bot's opening-book decision for one position: follow known theory,
  * "slip" out of book early, or defer to the normal engine+scoring path.
  * Pure (no I/O beyond the bundled book data) with an injected `random`
- * source, same convention as bot-candidate-score.ts's sampleBotMove.
+ * source, same convention as bot-move-pick.ts's pickBotMove.
  *
  * `plyCount` is halfmoves played so far (i.e. the ply the position is AT,
  * before this bot's move) — compared against `bot.bookPlies * 2` since
