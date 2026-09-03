@@ -5,8 +5,10 @@ import {
   evaluateGates,
   extractPgnMoveComments,
   type DiagnosticEntry,
+  type DiagnosticProfileEntry,
   type FocusCandidate,
-  type PreviousProfileEntry
+  type PreviousProfileEntry,
+  type PuzzleRecord
 } from '@freechesscoach/chess-analysis';
 import type { MovePhase } from '@freechesscoach/shared';
 import * as analysesRepo from '../db/repositories/analyses.js';
@@ -17,6 +19,7 @@ import type { GameRow } from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { gamePlayedAt, toGateWindowGame, windowByTimeControl } from '../services/diagnostic-window.js';
+import { createPuzzleAssignmentsForProfile } from '../services/puzzle-assignment.js';
 import { syncProgrammaticFocusAreas } from '../services/progress.js';
 
 export interface RebuildDiagnosticProfileJobPayload {
@@ -25,6 +28,11 @@ export interface RebuildDiagnosticProfileJobPayload {
 
 export interface RebuildDiagnosticProfileTaskOptions {
   db: Kysely<Database>;
+  /** Task 59.1's in-memory pool, opened once at process start
+   * (`openPuzzlePoolFromEnv` in bootstrap.ts) — `null` when
+   * `PUZZLE_POOL_PATH` isn't configured, in which case Task 59.3's
+   * assignment step is simply skipped for every user. */
+  puzzlePool?: readonly PuzzleRecord[] | null;
 }
 
 /** No numeric rating on file yet (Task 51.5's `users.rating` is nullable) —
@@ -124,8 +132,19 @@ function toPreviousProfile(row: diagnosticProfilesRepo.DiagnosticProfileRow | un
  * `[]`, and this plan's own standing constraint requires the system be
  * allowed to say "no confident diagnosis") — most often this just means the
  * included games predate Task 56.3 shipping detectors.
+ *
+ * Task 59.3's puzzle-assignment step runs once at the end, across every
+ * time control's profile entries together (not once per window) — a
+ * student can have `probable` diagnoses surface in more than one time
+ * control from the same rebuild, and `createPuzzleAssignmentsForProfile`'s
+ * per-run cap is only meaningful if it sees the whole rebuild's worth of
+ * candidates at once.
  */
-export async function runRebuildDiagnosticProfileJob(db: Kysely<Database>, userId: string): Promise<void> {
+export async function runRebuildDiagnosticProfileJob(
+  db: Kysely<Database>,
+  userId: string,
+  puzzlePool: readonly PuzzleRecord[] | null = null
+): Promise<void> {
   const games = await gamesRepo.listByUser(db, userId);
   const windows = windowByTimeControl(games);
   if (windows.size === 0) return;
@@ -136,6 +155,8 @@ export async function runRebuildDiagnosticProfileJob(db: Kysely<Database>, userI
   const allPlayedAt = [...windows.values()].flatMap((bucket) => bucket.map((w) => w.playedAt));
   const earliestSince = allPlayedAt.reduce((min, playedAt) => (playedAt < min ? playedAt : min), allPlayedAt[0]!);
   const observations = await diagnosticObservationsRepo.listForUserSince(db, userId, earliestSince);
+
+  const allProfileEntries: DiagnosticProfileEntry[] = [];
 
   for (const [timeControl, bucket] of windows) {
     const windowedGames = new Map(bucket.map((w) => [w.game.id, w.game]));
@@ -149,6 +170,7 @@ export async function runRebuildDiagnosticProfileJob(db: Kysely<Database>, userI
     const windowEnd = byPlayedAt[byPlayedAt.length - 1]!.playedAt;
 
     await diagnosticProfilesRepo.upsertProfile(db, userId, timeControl, windowStart, windowEnd, profile);
+    allProfileEntries.push(...profile);
 
     const windowGames = bucket.map((w) => toGateWindowGame(w.game));
     const candidates: FocusCandidate[] = profile.map((entry) => ({
@@ -165,6 +187,8 @@ export async function runRebuildDiagnosticProfileJob(db: Kysely<Database>, userI
     }));
     await syncProgrammaticFocusAreas(db, userId, candidates);
   }
+
+  await createPuzzleAssignmentsForProfile(db, userId, allProfileEntries, puzzlePool, studentRating);
 }
 
 /** graphile-worker Task wrapper — enqueued by `jobs/analyze-game.ts` once an
@@ -175,6 +199,6 @@ export async function runRebuildDiagnosticProfileJob(db: Kysely<Database>, userI
 export function createRebuildDiagnosticProfileTask(options: RebuildDiagnosticProfileTaskOptions): Task {
   return async (payload) => {
     const { userId } = payload as RebuildDiagnosticProfileJobPayload;
-    await runRebuildDiagnosticProfileJob(options.db, userId);
+    await runRebuildDiagnosticProfileJob(options.db, userId, options.puzzlePool ?? null);
   };
 }

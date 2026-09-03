@@ -10,6 +10,7 @@ import { createDb } from './db/index.js';
 import { createTaskList } from './jobs/index.js';
 import { createKeyVault } from './llm/key-vault.js';
 import { RelayEngineTunnelTransport } from './services/engine/relay-engine-tunnel-transport.js';
+import { openPuzzlePoolFromEnv } from './services/puzzle-pool.js';
 
 /** Daily 3 AM UTC run of prune-position-evaluations (jobs/prune-position-evaluations.ts),
  * via graphile-worker's own crontab scheduler — no external cron needed. */
@@ -28,13 +29,15 @@ async function main(): Promise<void> {
   });
   const lichessEvalIndex = await openLichessEvalIndexFromEnv();
   const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, tunnelTransport, lichessEvalIndex);
+  const puzzlePool = await openPuzzlePoolFromEnv();
 
   const taskList = createTaskList({
     db,
     engineBackendOptions,
     gatewayConfig,
     maxRows: parsePositiveInt('POSITION_EVAL_CACHE_MAX_ROWS', 200_000),
-    minAgeDays: parsePositiveInt('POSITION_EVAL_CACHE_MIN_AGE_DAYS', 3)
+    minAgeDays: parsePositiveInt('POSITION_EVAL_CACHE_MIN_AGE_DAYS', 3),
+    puzzlePool: puzzlePool?.all() ?? null
   });
 
   const runner = await run({ connectionString, taskList, crontab: CRONTAB });

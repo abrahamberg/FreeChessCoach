@@ -1733,17 +1733,34 @@ assignments.ts` (+ test).
 **Files:** `apps/api/src/jobs/rebuild-diagnostic-profile.ts`,
 `apps/api/src/services/puzzle-assignment.ts` (+ test).
 
-- [ ] After a profile rebuild, for each `probable`-or-better entry with no
+- [x] After a profile rebuild, for each `probable`-or-better entry with no
       open assignment for that code: `selectPuzzles` against the
       in-memory pool (Task 59.1) and the student's current rating, and
       insert an assignment (Task 59.2) if it returned any puzzles — a
       genuinely empty pool for that code/rating is a skip, not a partial
       assignment.
-- [ ] Cap on assignments created per rebuild run (avoid flooding a
+- [x] Cap on assignments created per rebuild run (avoid flooding a
       student who has several `probable` diagnoses at once from one
       rebuild) — a small fixed number, revisit once this ships and there's
       real usage to look at.
-- [ ] Commit: `feat: background puzzle assignment on profile rebuild`.
+- [x] Commit: `feat: background puzzle assignment on profile rebuild`.
+
+**Done:** `services/puzzle-assignment.ts`'s `createPuzzleAssignmentsForProfile`
+caps new assignments at `MAX_NEW_ASSIGNMENTS_PER_RUN = 3` per call — a
+first-pass number, not measured. `runRebuildDiagnosticProfileJob` now
+accumulates every time control's `DiagnosticProfileEntry[]` across the
+whole rebuild (not per-window) and calls this once at the end, so the cap
+is meaningful across a student's whole rebuild rather than resetting per
+time control. `reason` text is built from the diagnosis catalog's own
+`label`/`diagnosis` fields ("Practice puzzles for <label>: <diagnosis
+sentence>"), frozen onto the row at creation. The puzzle pool reaches this
+job the same way the Lichess eval index reaches `resolveEngineBackend`:
+`openPuzzlePoolFromEnv()` (Task 59.1) is called once in `worker.ts`'s
+`main()` and threaded through `createTaskList`'s options
+(`RebuildDiagnosticProfileTaskOptions.puzzlePool`) — `server.ts` doesn't
+need it since it never constructs a task list. `pool === null` (unset
+`PUZZLE_POOL_PATH`, or a missing/stale file) is a clean skip, matching
+every other optional-data-tier convention in this repo.
 
 ### Task 59.4: Puzzle session backend
 

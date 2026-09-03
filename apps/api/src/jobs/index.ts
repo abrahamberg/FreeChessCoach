@@ -3,10 +3,13 @@ import { createAnalyzeGameTask, type AnalyzeGameTaskOptions } from './analyze-ga
 import { createBackfillGameMetadataTask, type BackfillGameMetadataTaskOptions } from './backfill-game-metadata.js';
 import { createDeepenAnalysisTask } from './deepen-analysis.js';
 import { createPrunePositionEvaluationsTask, type PrunePositionEvaluationsTaskOptions } from './prune-position-evaluations.js';
-import { createRebuildDiagnosticProfileTask } from './rebuild-diagnostic-profile.js';
+import { createRebuildDiagnosticProfileTask, type RebuildDiagnosticProfileTaskOptions } from './rebuild-diagnostic-profile.js';
 import { createSummarizeSessionTask } from './summarize-session.js';
 
-export type TaskListOptions = AnalyzeGameTaskOptions & PrunePositionEvaluationsTaskOptions & BackfillGameMetadataTaskOptions;
+export type TaskListOptions = AnalyzeGameTaskOptions &
+  PrunePositionEvaluationsTaskOptions &
+  BackfillGameMetadataTaskOptions &
+  RebuildDiagnosticProfileTaskOptions;
 
 export function createTaskList(options: TaskListOptions): TaskList {
   return {
