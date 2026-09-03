@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
-import { hasValidPuzzlePoolMagic, unpackPuzzlePool, type PuzzleRecord } from '@freechesscoach/chess-analysis';
+import type { PuzzleRecord } from '@freechesscoach/chess-analysis';
+import { hasValidPuzzlePoolMagic, unpackPuzzlePool } from '@freechesscoach/chess-analysis/puzzle-pool-format';
 
 /** Thrown when a file exists at `PUZZLE_POOL_PATH` but doesn't start with
  * the expected magic header — most likely a stale/differently-versioned

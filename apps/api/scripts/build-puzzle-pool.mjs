@@ -32,7 +32,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import readline from 'node:readline';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { packPuzzlePool, PUZZLE_POOL_THEMES } from '@freechesscoach/chess-analysis';
+import { packPuzzlePool, PUZZLE_POOL_THEMES } from '@freechesscoach/chess-analysis/puzzle-pool-format';
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const outputPath = path.join(scriptDirectory, '../data/puzzle-pool.bin');

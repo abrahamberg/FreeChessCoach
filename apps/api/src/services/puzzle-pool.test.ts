@@ -2,7 +2,8 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
-import { packPuzzlePool, type PuzzleRecord } from '@freechesscoach/chess-analysis';
+import type { PuzzleRecord } from '@freechesscoach/chess-analysis';
+import { packPuzzlePool } from '@freechesscoach/chess-analysis/puzzle-pool-format';
 import { openPuzzlePoolFromEnv, PuzzlePool, PuzzlePoolFormatError } from './puzzle-pool.js';
 
 const RECORDS: PuzzleRecord[] = [
