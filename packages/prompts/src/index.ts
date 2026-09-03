@@ -11,6 +11,7 @@ export * from './investigate-position.js';
 export * from './onboarding-profiler.js';
 export * from './position-analysis-summary.js';
 export * from './progress-summarizer.js';
+export * from './puzzle-coach-system.js';
 export * from './render.js';
 export * from './tools.js';
 export * from './tools-play.js';

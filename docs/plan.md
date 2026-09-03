@@ -1791,16 +1791,46 @@ sessions.ts` (+ test), `apps/api/src/routes/puzzle-sessions.ts` (+ test),
 **Files:** `packages/prompts/src/puzzle-coach-system.ts` (+ test),
 `docs/prompts.md`.
 
-- [ ] A dedicated system prompt (not `coach-system.ts`'s reused verbatim —
+- [x] A dedicated system prompt (not `coach-system.ts`'s reused verbatim —
       the "reacting to the student's own game" framing throughout that
       prompt doesn't fit "walking through a puzzle set"), built the same
       static/dynamic-part way (§8.1 cache-shape discipline) as the
       existing coach prompts.
-- [ ] States the assignment's `reason` up front (why these puzzles, in the
+- [x] States the assignment's `reason` up front (why these puzzles, in the
       student's own diagnosed terms) and the current item's known solution
       (`items[i].moves`) so the coach can judge the student's attempt
       without a second engine call.
-- [ ] Commit: `feat: puzzle-session coach prompt`.
+- [x] Commit: `feat: puzzle-session coach prompt`.
+
+**Done:** `buildPuzzleCoachSystemPrompt({ reason, totalCount, currentItem: {
+fen, moves, index } })` in `packages/prompts/src/puzzle-coach-system.ts`,
+mirroring `buildCoachSystemPrompt`'s name/shape. Unlike the game-review
+prompt, `staticPart` here is a plain fixed constant, not a function of
+band/mode/persona — there's no such axis for a puzzle session, so every
+session in the product shares one cached copy (tested: identical across
+two different `reason`s). `dynamicPart` replays `moves` with `chess-
+analysis`'s `pvUciToSan`/`applySanSequence` to (a) resolve the real
+puzzle-start position — Lichess's own puzzle format stores `fen` as the
+position BEFORE the opponent's forced setup move, `moves[0]` — so the
+dynamic part shows the coach the position AFTER that move, matching what
+the student actually sees, and (b) render the rest of the line labeled
+"Student plays" / "Opponent's expected reply" in SAN, explicitly marked
+"for YOUR reference only — never show this line to the student directly."
+Tool-use guidance for `show_position`/`annotate_board`/`expect_move`/
+`hypothetical_line` is hand-written fresh for this prompt rather than
+imported from `tools.ts`'s `COACH_TOOL_SPECS` — those canonical
+descriptions are written in terms of game-review's `{moveNumber, color}`
+addressing scheme, which doesn't describe a single-FEN puzzle position;
+Task 59.4 should double-check the tool-call framing here still matches
+whatever wire schema it lands on for reusing these tools in a puzzle
+session, since this task deliberately didn't need or commit to that
+schema. `advance_puzzle`'s three `result` values (`solved`/`failed`/
+`skipped`) are described in prose only, same reason. `docs/prompts.md` is
+generated (`npm run docs:prompts`), not hand-edited — added a new "## 6.
+Puzzle-session coach system prompt" section (renumbering the old "## 6.
+Rating-band calibration" to "## 7") and a `basePuzzleCoachInput` fixture
+in `fixtures.ts`, both consumed by `generate-doc.ts` the same way every
+other prompt already is; `generate-doc.test.ts`'s drift check passes.
 
 ### Task 59.6: Dashboard and puzzle session page
 

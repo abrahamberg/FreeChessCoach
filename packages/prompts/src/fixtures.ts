@@ -4,6 +4,7 @@ import type { CoachPromptInput } from './coach-system.js';
 import type { PlannerPromptInput } from './analysis-planner.js';
 import type { SummarizerPromptInput } from './progress-summarizer.js';
 import type { ProfilerPromptInput } from './onboarding-profiler.js';
+import type { PuzzleCoachPromptInput } from './puzzle-coach-system.js';
 
 /**
  * Shared fixtures for this package's own tests and scripts/generate-doc.ts.
@@ -136,3 +137,16 @@ export const investigatePositionFixture = {
   fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3',
   question: 'Does Nc3 hang the e4 pawn?'
 };
+
+export function basePuzzleCoachInput(overrides: Partial<PuzzleCoachPromptInput> = {}): PuzzleCoachPromptInput {
+  return {
+    reason: 'You missed several knight forks in your last few games.',
+    totalCount: 5,
+    currentItem: {
+      fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      moves: ['e2e4', 'e7e5', 'g1f3', 'b8c6'],
+      index: 2
+    },
+    ...overrides
+  };
+}
