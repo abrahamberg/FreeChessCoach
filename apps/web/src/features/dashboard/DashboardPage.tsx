@@ -8,6 +8,7 @@ import { CATEGORY_LABELS } from './categoryLabels.js';
 import { DiagnosisCard } from './DiagnosisCard.js';
 import { EvidenceModal } from './EvidenceModal.js';
 import { FocusAreaCard } from './FocusAreaCard.js';
+import { PracticeCard } from './PracticeCard.js';
 import { SessionHistory } from './SessionHistory.js';
 import { TrendChart, type TrendRange } from './TrendChart.js';
 import { useDiagnostics } from './useDiagnostics.js';
@@ -84,6 +85,8 @@ export function DashboardPage(): ReactNode {
           </div>
         </section>
       )}
+
+      <PracticeCard />
 
       <section aria-label="Focus areas" className="card">
         <h2>Focus areas</h2>

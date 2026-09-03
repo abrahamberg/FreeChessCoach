@@ -1712,7 +1712,7 @@ real snapshot" note already carries.
 `apps/api/src/db/schema.ts`, `apps/api/src/db/repositories/puzzle-
 assignments.ts` (+ test).
 
-- [ ] `puzzle_assignments`: `id`, `user_id`, `diagnosis_code`, `reason`
+- [x] `puzzle_assignments`: `id`, `user_id`, `diagnosis_code`, `reason`
       (rendered label text, shown on the dashboard card — not
       recomputed from the code at read time, so it stays stable even if
       the catalog label changes later), `items jsonb` (array of
@@ -1722,11 +1722,18 @@ assignments.ts` (+ test).
       pool, so an assignment stays stable across a later pool rebuild),
       `status` (`'pending' | 'in_progress' | 'completed'`), `created_at`,
       `started_at`, `completed_at`.
-- [ ] One open (`pending`/`in_progress`) assignment per `(user_id,
+- [x] One open (`pending`/`in_progress`) assignment per `(user_id,
       diagnosis_code)` at a time — the creating job checks this before
       inserting, no DB constraint (matches `diagnostic_observations`'
       app-layer-only discipline, Task 56.1).
-- [ ] Commit: `feat: puzzle assignment table`.
+- [x] Commit: `feat: puzzle assignment table`.
+
+**Done:** Implemented and committed as `a15c05f` — checkboxes above were
+left unchecked at the time by an oversight, corrected here (by the Task
+59.6 fork, while touching this same file) rather than left stale for a
+Phase 59 that is otherwise fully checked off. Migration
+`0028_puzzle_assignments.ts`, repository at `apps/api/src/db/repositories/
+puzzle-assignments.ts` with 7 passing tests against a real test DB.
 
 ### Task 59.3: Background assignment creation
 
@@ -1881,16 +1888,86 @@ other prompt already is; `generate-doc.test.ts`'s drift check passes.
 features/puzzle-session/PuzzleSessionPage.tsx` (+ test) and its supporting
 hooks, `apps/web/src/app/routes` (new `/practice/:assignmentId` route).
 
-- [ ] `PracticeCard` lists open assignments (`reason`, puzzle count,
+- [x] `PracticeCard` lists open assignments (`reason`, puzzle count,
       progress) with a "Start"/"Continue" action; empty state renders
       nothing (matches every other dashboard section's empty-state
       precedent, Task 58.2).
-- [ ] `PuzzleSessionPage` mirrors `SessionPage`'s board + chat layout,
+- [x] `PuzzleSessionPage` mirrors `SessionPage`'s board + chat layout,
       swapped onto the puzzle-session endpoints (Task 59.4) — reuse
       `CoachBoard`/`MoveExplorer`-equivalent pieces where they're already
       generic over a FEN, don't reuse the parts that assume a game (move
       list, `SessionPeekBar`, etc.).
-- [ ] Commit: `feat: practice dashboard card and puzzle session page`.
+- [x] Commit: `feat: practice dashboard card and puzzle session page`.
+
+**Done:** No `apps/web/src/app/routes` directory exists in this repo —
+routes live in `App.tsx` (a flat `<Routes>` block), so the new
+`/practice/:assignmentId` route was added there instead, matching
+`/session/:id`'s own `key={id}`-wrapped-route pattern (`PracticeRoute`).
+
+`PracticeCard` is self-contained (owns its own `usePracticeAssignments`
+query, `GET /api/puzzle-assignments` — a route this task added beyond
+59.4's original file list, since nothing else exposed it) rather than
+receiving server data as props the way `FocusAreaCard`/`DiagnosisCard` do:
+it's an independent, optional data source, same "distinct section, works
+fine with none of it yet" reasoning as `useDiagnostics.ts`. Renders `null`
+on loading and on a failed fetch too, not just an empty list — a missing
+"you should practice" nudge is a much smaller problem than an error box on
+an otherwise-working dashboard.
+
+`show_position` genuinely has no equivalent in `PuzzleSessionPage` (Task
+59.4 already dropped it server-side): the board's FEN comes directly from
+`assignment.items[currentItemIndex].fen` on load and after every
+`advance_puzzle`-triggered refetch, never from a tool call. The coach's
+"open every puzzle it hasn't spoken about yet" behavior (a fresh session's
+first item, or a freshly-advanced one) is detected from persisted
+`itemIndex` tags on stored messages (`hasMessageForCurrentItem`), not from
+"history is empty" — the latter would incorrectly skip re-opening on a
+resumed session's second-or-later puzzle, since the session's message
+history is never actually empty past the first item.
+
+Reused directly, unmodified: `CoachBoard`, `ChatPane`/`MessageList` (with
+`positions`/`onSelectPly` simply omitted — both optional, and a puzzle
+session has no move list to resolve mentions against), `useDivergedLine`,
+`useAnnotationLayer`, `DivergedLinePanel`, `readCoachStream`, and
+`SessionPage.css`'s layout classes (`.session-page`, `.session-body[.
+desktop]`, `.session-board-column`) — genuinely structural, not
+game-specific. NOT reused: `useCoachChat` (new sibling
+`usePuzzleCoachChat` instead — different endpoint, no `show_position`
+branch, a different single server-tool name); `useSessionBoardState`/
+`SessionBoardColumn`/`MoveExplorer`/`SessionPeekBar`/`MobileSessionBody`
+(all game-ply-shaped). The student's own board move while
+`hypothetical_line`/`expect_move` is armed skips `SessionBoardColumn`'s
+2-second "undo pill" affordance (sends immediately instead) — a deliberate
+scope trim, not an oversight. `hypothetical_line`'s announcement text
+(`encodeDivergedLine`/`DivergedLineStart`) still renders a "move N (white/
+black)" phrase derived from the item index treated as an opaque ply —
+cosmetically odd for a puzzle set (there's no real move-numbering
+concept), but harmless: the model and the UI both still get the right SAN
+moves and resulting FEN, only that one framing sentence reads oddly. Left
+as a known rough edge rather than building a parallel encoding scheme for
+one cosmetic string.
+
+Verification: `npm run typecheck` (repo-wide) clean; `eslint` on
+`apps/web/**` and `packages/shared/**` clean; full `apps/web` suite green
+(101 files / 692 tests, including the two new test files and the
+`DashboardPage.test.tsx`/existing-suite update to stub `GET /api/puzzle-
+assignments`). Also exercised for real, not just under vitest: ran this
+branch's `0028`/`0029` migrations against the actual running dev Postgres
+(`docker compose run --rm migrate`, previously stale since the dev stack
+predated these files), confirmed the three new tables exist, then drove
+the full HTTP flow with `curl` against the live dev `api` container —
+`POST /api/puzzle-sessions`, `GET /api/puzzle-sessions/:id`, and a real
+SSE turn against `LLM_FAKE=1`'s canned model — for a manually-seeded
+`puzzle_assignments` row, confirming the assistant's reply persisted with
+the correct `itemIndex` and that `GET /api/puzzle-assignments` reflected
+it; test data was deleted afterward. The dev `web-dev` Vite container also
+hot-reloaded every changed file with zero build errors. What this does
+**NOT** cover: no actual pixels were seen — the Claude-in-Chrome browser
+extension wasn't connected in this environment, so the click-through
+(dashboard → card → board renders → send a message → see a reply) was
+never visually confirmed, only its HTTP/data layer.
+
+This closes out Phase 59 — all six tasks (59.1-59.6) are now checked off.
 
 ---
 

@@ -11,6 +11,7 @@ export * from './finding.js';
 export * from './game.js';
 export * from './game-report.js';
 export * from './llm.js';
+export * from './puzzle-session.js';
 export * from './session.js';
 export * from './stats-dashboard.js';
 export * from './tts.js';

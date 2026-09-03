@@ -76,6 +76,9 @@ function renderDashboard() {
   const fetchMock = vi.fn((input: RequestInfo | URL) => {
     const url = typeof input === 'string' ? input : input.toString();
     if (url.startsWith('/api/users/me/diagnostics')) return Promise.resolve(jsonResponse(DIAGNOSTICS_RESPONSE));
+    // PracticeCard (Task 59.6) fetches this on its own — no open assignments
+    // in this suite's fixtures, so the card renders nothing.
+    if (url.startsWith('/api/puzzle-assignments')) return Promise.resolve(jsonResponse([]));
     return Promise.resolve(jsonResponse(DASHBOARD_RESPONSE));
   });
   vi.stubGlobal('fetch', fetchMock);
