@@ -58,6 +58,13 @@ export function GamesPage(): ReactNode {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['games'] })
   });
 
+  // Same-origin GET with Content-Disposition: attachment — a plain
+  // navigation carries the oauth2-proxy session cookie and the browser
+  // handles the save-file flow natively, no fetch+blob dance needed.
+  function handleExportPgn(gameId: string): void {
+    window.location.href = `/api/games/${gameId}/pgn`;
+  }
+
   // architecture §14: a coach_play game already has its session (created by
   // POST /api/sessions/play) — link straight back into it rather than
   // routing through analyze mode's POST /api/sessions, which gates on an
@@ -137,6 +144,7 @@ export function GamesPage(): ReactNode {
                   game={game}
                   onSelect={() => handleSelect(game)}
                   onAnalyze={(gameId) => analyzeMutation.mutate(gameId)}
+                  onExportPgn={handleExportPgn}
                   onDelete={(gameId) => deleteMutation.mutate(gameId)}
                 />
               ))}

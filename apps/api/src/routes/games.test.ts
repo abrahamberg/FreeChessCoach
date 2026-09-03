@@ -594,6 +594,42 @@ describe('POST/GET /api/games', () => {
     expect(response.statusCode).toBe(404);
   });
 
+  test('GET /api/games/:id/pgn downloads the game\'s stored PGN as an attachment', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('pgn-export@example.com', 'PgnExport');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId } = imported.json();
+
+    const response = await app.inject({ method: 'GET', url: `/api/games/${gameId}/pgn`, headers });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('application/x-chess-pgn; charset=utf-8');
+    expect(response.headers['content-disposition']).toBe('attachment; filename="ann-vs-bob-' + new Date().toISOString().slice(0, 10) + '.pgn"');
+    expect(response.body).toContain('Qxf7#');
+  });
+
+  test('GET /api/games/:id/pgn 404s for another user\'s game', async () => {
+    const app = buildTestApp();
+    const owner = headersFor('pgn-owner@example.com', 'PgnOwner');
+    const intruder = headersFor('pgn-intruder@example.com', 'PgnIntruder');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers: owner,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId } = imported.json();
+
+    const response = await app.inject({ method: 'GET', url: `/api/games/${gameId}/pgn`, headers: intruder });
+
+    expect(response.statusCode).toBe(404);
+  });
+
   test('DELETE /api/games/:id removes the game (and its analysis), 204, then 404s on re-fetch', async () => {
     const app = buildTestApp();
     const headers = headersFor('deleter@example.com', 'Deleter');

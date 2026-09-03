@@ -8,6 +8,7 @@ import * as gamesRepo from '../db/repositories/games.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
+import { pgnFilename } from '../lib/pgn-filename.js';
 import { importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
 import { deleteGameForUser, listGamesForUser } from '../services/games.js';
 import * as userProfileService from '../services/user-profile.js';
@@ -81,6 +82,22 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
       liveMoveQualities: null,
       gameReport: gameReport ?? null
     };
+  });
+
+  // Plain-text download, not JSON — a same-origin browser navigation (an
+  // <a href> or window.location assignment, both already carry the
+  // session's oauth2-proxy cookie) triggers the browser's native save-file
+  // flow via Content-Disposition rather than needing a fetch+blob dance.
+  app.get<{ Params: { id: string } }>('/api/games/:id/pgn', async (request, reply) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    const game = await gamesRepo.findByIdForUser(db, request.params.id, user.id);
+    if (!game) throw new NotFoundError('Game not found');
+
+    return reply
+      .code(200)
+      .type('application/x-chess-pgn; charset=utf-8')
+      .header('Content-Disposition', `attachment; filename="${pgnFilename(game)}"`)
+      .send(game.pgn);
   });
 
   // Stat-bank import (Phase 31): starts analysis for a game that was

@@ -9,6 +9,7 @@ export interface GameRowProps {
   game: GameListItem;
   onSelect: (gameId: string) => void;
   onAnalyze: (gameId: string) => void;
+  onExportPgn: (gameId: string) => void;
   onDelete: (gameId: string) => void;
 }
 
@@ -39,9 +40,26 @@ export interface StatusAndAction {
  * falling into the stat-bank "not analyzed" branch below, which is only for
  * a real analyze-mode game that was imported with `deferAnalysis`. */
 export function statusAndActionFor(game: GameListItem): StatusAndAction {
-  if (game.source === 'coach_play' || game.source === 'vs_bot') {
+  if (game.source === 'coach_play') {
     if (game.sessionId) return { statusLabel: 'In progress', statusVariant: 'primary', actionLabel: 'Continue' };
     return { statusLabel: 'Completed', statusVariant: 'neutral' };
+  }
+  if (game.source === 'vs_bot') {
+    if (game.sessionId) return { statusLabel: 'In progress', statusVariant: 'primary', actionLabel: 'Continue' };
+    // Unlike coach_play, a finished vs_bot game DOES get the standard-depth
+    // post-game analysis job (bot-finalize.ts's finalizeBotGame queues it the
+    // instant the game ends) — so a completed row still falls through to the
+    // same ready/not-analyzed/analyzing handling below as a stat-bank import,
+    // just skipping the "Completed" -> in-progress row above. A `null`
+    // analysisStatus here is the rare case that queuing itself never ran
+    // (e.g. a game finished before this pipeline existed) — the fallback
+    // "Get coach analysis" reuses the exact same POST /api/games/:id/analyze
+    // stat-bank path below, no bot-specific endpoint needed.
+    if (game.analysisStatus === null) {
+      return { statusLabel: 'Completed', statusVariant: 'neutral', actionLabel: 'Get coach analysis', actionKind: 'analyze' };
+    }
+    if (game.analysisStatus === 'ready' || game.analysisStatus === 'failed') return { statusLabel: 'Completed', statusVariant: 'neutral' };
+    return { statusLabel: 'Analyzing…', statusVariant: 'neutral', animateStatus: true };
   }
   if (game.analysisStatus === 'ready') return { statusLabel: 'Ready', statusVariant: 'primary', actionLabel: 'Start session' };
   if (game.analysisStatus === 'failed') return { statusLabel: 'Failed', statusVariant: 'danger' };
@@ -68,7 +86,7 @@ function userSideResult(game: GameListItem): { symbol: string; label: string } |
  * (user's side bold, W/L/D dot), date, time control, a status badge separate
  * from its contextual action button, and delete moved into an overflow menu
  * behind a confirmation dialog naming the game (§6, P0). */
-export function GameRow({ game, onSelect, onAnalyze, onDelete }: GameRowProps): ReactNode {
+export function GameRow({ game, onSelect, onAnalyze, onExportPgn, onDelete }: GameRowProps): ReactNode {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const status = statusAndActionFor(game);
   const dot = userSideResult(game);
@@ -121,7 +139,10 @@ export function GameRow({ game, onSelect, onAnalyze, onDelete }: GameRowProps): 
 
       <OverflowMenu
         label={`More actions for ${whiteName} vs. ${blackName}`}
-        items={[{ label: 'Delete', destructive: true, onSelect: () => setConfirmingDelete(true) }]}
+        items={[
+          { label: 'Export PGN', onSelect: () => onExportPgn(game.id) },
+          { label: 'Delete', destructive: true, onSelect: () => setConfirmingDelete(true) }
+        ]}
       />
 
       {confirmingDelete && (
