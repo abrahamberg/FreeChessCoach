@@ -541,7 +541,8 @@ describe('POST/GET /api/games', () => {
       cpLoss: 0,
       bestLineSan: ['e4'],
       evalAfterCp: 20,
-      reasons: []
+      reasons: [],
+      diagnosisCodes: []
     });
 
     const detail = await app.inject({ method: 'GET', url: `/api/games/${game.id}`, headers });

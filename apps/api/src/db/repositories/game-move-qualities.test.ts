@@ -46,7 +46,8 @@ describe('game-move-qualities repository', () => {
       cpLoss: 0,
       bestLineSan: ['e5'],
       evalAfterCp: 20,
-      reasons: []
+      reasons: [],
+      diagnosisCodes: []
     });
     await gameMoveQualitiesRepo.insert(db, {
       gameId: game.id,
@@ -57,7 +58,8 @@ describe('game-move-qualities repository', () => {
       cpLoss: 5,
       bestLineSan: ['d4'],
       evalAfterCp: 15,
-      reasons: ['Leaves the knight on d5 undefended']
+      reasons: ['Leaves the knight on d5 undefended'],
+      diagnosisCodes: []
     });
 
     const rows = await gameMoveQualitiesRepo.listByGameId(db, game.id);
@@ -80,7 +82,8 @@ describe('game-move-qualities repository', () => {
       cpLoss: 5,
       bestLineSan: ['d4'],
       evalAfterCp: 15,
-      reasons: []
+      reasons: [],
+      diagnosisCodes: []
     });
     await gameMoveQualitiesRepo.insert(db, {
       gameId: game.id,
@@ -91,7 +94,8 @@ describe('game-move-qualities repository', () => {
       cpLoss: 0,
       bestLineSan: ['e5'],
       evalAfterCp: 20,
-      reasons: []
+      reasons: [],
+      diagnosisCodes: []
     });
 
     await gameMoveQualitiesRepo.deleteByPly(db, game.id, 2);

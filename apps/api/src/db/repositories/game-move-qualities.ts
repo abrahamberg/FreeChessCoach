@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { MoveQuality } from '@freechesscoach/shared';
+import type { DiagnosisCodeId, MoveQuality } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export interface GameMoveQualityRow {
@@ -13,6 +13,7 @@ export interface GameMoveQualityRow {
   bestLineSan: string[];
   evalAfterCp: number;
   reasons: string[];
+  diagnosisCodes: DiagnosisCodeId[];
   createdAt: Date;
 }
 
@@ -26,6 +27,7 @@ export interface NewGameMoveQuality {
   bestLineSan: string[];
   evalAfterCp: number;
   reasons: string[];
+  diagnosisCodes: DiagnosisCodeId[];
 }
 
 /** Play mode's live equivalent of the batch pipeline's analyses.classified_moves
@@ -34,7 +36,12 @@ export interface NewGameMoveQuality {
 export function insert(db: Kysely<Database>, values: NewGameMoveQuality): Promise<GameMoveQualityRow> {
   return db
     .insertInto('gameMoveQualities')
-    .values({ ...values, bestLineSan: JSON.stringify(values.bestLineSan), reasons: JSON.stringify(values.reasons) })
+    .values({
+      ...values,
+      bestLineSan: JSON.stringify(values.bestLineSan),
+      reasons: JSON.stringify(values.reasons),
+      diagnosisCodes: JSON.stringify(values.diagnosisCodes)
+    })
     .returningAll()
     .executeTakeFirstOrThrow();
 }

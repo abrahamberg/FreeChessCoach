@@ -28,6 +28,7 @@ import * as findingDiagnosis from './migrations/0026_finding_diagnosis.js';
 import * as focusAreaDiagnosis from './migrations/0027_focus_area_diagnosis.js';
 import * as puzzleAssignments from './migrations/0028_puzzle_assignments.js';
 import * as puzzleSessions from './migrations/0029_puzzle_sessions.js';
+import * as botMoveDiagnosisCodes from './migrations/0030_bot_move_diagnosis_codes.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -60,7 +61,8 @@ const provider: MigrationProvider = {
       '0026_finding_diagnosis': findingDiagnosis,
       '0027_focus_area_diagnosis': focusAreaDiagnosis,
       '0028_puzzle_assignments': puzzleAssignments,
-      '0029_puzzle_sessions': puzzleSessions
+      '0029_puzzle_sessions': puzzleSessions,
+      '0030_bot_move_diagnosis_codes': botMoveDiagnosisCodes
     })
 };
 

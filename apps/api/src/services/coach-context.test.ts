@@ -654,7 +654,8 @@ describe('coach-context', () => {
           cpLoss: 0,
           bestLineSan: ['e4'],
           evalAfterCp: 20,
-          reasons: []
+          reasons: [],
+          diagnosisCodes: []
         });
         await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
         const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
@@ -689,7 +690,8 @@ describe('coach-context', () => {
           cpLoss: 0,
           bestLineSan: ['e4'],
           evalAfterCp: 20,
-          reasons: []
+          reasons: [],
+          diagnosisCodes: []
         });
         await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
         const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);

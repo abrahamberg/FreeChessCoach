@@ -57,21 +57,25 @@ export async function commitCoachMove(
 
 /** A play-vs-bot bot's own move. Same mechanics as commitCoachMove — a
  * distinct name so each mode's call site reads clearly — but threads
- * `options.elapsedMs` through, since bot games are timed. */
+ * `options.elapsedMs` through (bot games are timed) and opts into
+ * classifyAndRecordMove's real diagnosis-code detection (docs/plan.md
+ * Phase 62 Task 62.4's canonical tag for the bot's own move), which
+ * player/coach moves don't. */
 export async function commitBotMove(
   deps: PlayMovesDependencies,
   gameId: string,
   san: string,
   options?: CommitMoveOptions
 ): Promise<CommittedMove | { error: string }> {
-  return commitMove(deps, gameId, san, options);
+  return commitMove(deps, gameId, san, options, { computeDiagnosisCodes: true });
 }
 
 async function commitMove(
   deps: PlayMovesDependencies,
   gameId: string,
   san: string,
-  options?: CommitMoveOptions
+  options?: CommitMoveOptions,
+  classifyOptions?: { computeDiagnosisCodes?: boolean }
 ): Promise<CommittedMove | { error: string }> {
   const game = await gamesRepo.findById(deps.db, gameId);
   if (!game) throw new NotFoundError('Game not found');
@@ -90,7 +94,8 @@ async function commitMove(
     mover,
     fenBefore,
     fenAfter: applied.fen,
-    userColor: game.userColor
+    userColor: game.userColor,
+    computeDiagnosisCodes: classifyOptions?.computeDiagnosisCodes ?? false
   });
 
   return { fen: applied.fen, san: applied.san, ply: applied.ply, quality: classified.quality };

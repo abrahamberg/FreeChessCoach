@@ -176,6 +176,11 @@ export interface GameMoveQualitiesTable {
   bestLineSan: Jsonb<string[]>;
   evalAfterCp: number;
   reasons: Jsonb<string[]>;
+  /** Real per-move diagnosis codes (docs/plan.md Phase 62 Task 62.4) —
+   * always `[]` except for a bot's own move, where it's the diagnostics
+   * registry's canonical read of what the move actually exhibited. See
+   * 0030_bot_move_diagnosis_codes.ts. */
+  diagnosisCodes: Jsonb<DiagnosisCodeId[]>;
   createdAt: Generated<Date>;
 }
 

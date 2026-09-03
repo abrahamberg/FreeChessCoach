@@ -110,7 +110,8 @@ describe('coach-agent startTurn — play mode ply advance (architecture §14)', 
       cpLoss: 0,
       bestLineSan: ['e4'],
       evalAfterCp: 20,
-      reasons: []
+      reasons: [],
+      diagnosisCodes: []
     });
     await sessionsRepo.updateCurrentPly(db, session.id, 1);
     await sessionMessagesRepo.insert(db, session.id, 'user', '[player_move] I played e4.', 1);

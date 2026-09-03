@@ -2511,24 +2511,41 @@ logic, per AGENTS.md's layering rule, not `packages/shared`.
 
 ### Task 62.4: Real detector pass on the chosen move (tagging only)
 
-**Files:** new `apps/api/src/services/bot/classify-bot-move.ts` (+ test),
-`apps/api/src/services/bot/bot-move-selector.ts`.
+**Files:** `apps/api/src/services/play-move-quality.ts`,
+`apps/api/src/services/play-moves.ts`,
+`apps/api/src/db/repositories/game-move-qualities.ts`,
+`apps/api/src/db/schema.ts`, new
+`apps/api/src/db/migrations/0030_bot_move_diagnosis_codes.ts` (+ tests).
 
-- [ ] After `pickBotMove` returns, classify the chosen move for real:
-      mirror `apps/api/src/services/play-move-quality.ts`'s existing
-      pattern (`classifyLiveMove` + one fresh `analyzePosition(fenAfter)`
-      search — confirm whether the before-side eval can reuse the
-      multiPv-40 search `buildBotCandidates` already ran instead of a
-      second before-search), then `buildPlyDiagnosticContext` + run the
-      subset of `DIAGNOSTIC_DETECTORS` that don't require
-      `previousMove`/`nextMoves` (read each detector in
-      `packages/chess-analysis/src/diagnostics/detectors/` to confirm
-      exactly which qualify — expected: all 8 `BV-*`, `MS-*` except
-      `MS-07`/`MS-14`, `TA` offensive already covered by `motifToCode`).
-- [ ] Attach the resulting real `diagnosisCodes` to the bot's move record
-      as the canonical tag (future surfacing/analytics) — never re-runs or
-      overrides the selection Task 62.3 already made.
-- [ ] Commit: `feat: tag bot moves with real diagnosis-code detectors`.
+- [x] **Scope correction from the plan draft**: no new `classify-bot-move.ts`
+      was needed. `apps/api/src/services/play-moves.ts`'s shared `commitMove`
+      helper — used by `commitPlayerMove`, `commitCoachMove`, *and*
+      `commitBotMove` alike — already calls `classifyAndRecordMove`
+      (`play-move-quality.ts`) for every mover, including the bot, doing its
+      own before/after `analyzePosition` pair unconditionally. Building a
+      second, bot-specific classification path would have duplicated engine
+      calls already happening; the real gap was that nothing turned the
+      already-computed `ClassifiedMove` into diagnosis codes.
+- [x] `classifyAndRecordMove` gained an opt-in `computeDiagnosisCodes`
+      argument: when true, `buildPlyDiagnosticContext` + all of
+      `DIAGNOSTIC_DETECTORS` (`BV`/`MS`/`TA`) run against the classified
+      move, keeping only `failed: true` observations (a detector reporting
+      an opportunity the move *handled* is the opposite of a weakness
+      manifesting). `BV-10`/`MS-07`/`MS-14` need `ctx.previousMove`/
+      `ctx.nextMoves`, always undefined in this single-live-move call —
+      all three already treat that as "can't determine, don't fire" rather
+      than throwing, so no explicit filtering was needed after all.
+      Defaults to `false` — real players already have a fuller,
+      cross-ply-aware diagnosis pipeline (the batch job, Phase 53+), and
+      this live path would only ever see a strictly weaker single-ply
+      signal for them, so only `commitBotMove` opts in.
+- [x] New `diagnosisCodes jsonb NOT NULL DEFAULT '[]'` column on
+      `game_move_qualities` (migration `0030`, mirroring `0017_move_reasons.ts`'s
+      pattern exactly), persisted on every row — `[]` for player/coach
+      moves, the real registry's output for a bot's move. This is "the
+      bot's move record" the plan draft referred to: an existing table
+      already keyed by `(gameId, ply)`, not a new one.
+- [x] Commit: `feat: tag bot moves with real diagnosis-code detectors`.
 
 ### Task 62.5: Widen and re-tier the roster
 
