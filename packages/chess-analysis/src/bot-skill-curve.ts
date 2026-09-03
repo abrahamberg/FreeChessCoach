@@ -1,4 +1,4 @@
-import type { MovePhase } from '@freechesscoach/shared';
+import { interpolateAnchors, type MovePhase } from '@freechesscoach/shared';
 
 /**
  * Elo -> probability anchors, interpolated in logit space (see
@@ -52,9 +52,6 @@ const PHASE_OFFSET: Record<MovePhase, number> = {
   endgame: 0.25
 };
 
-const MIN_ELO = 300;
-const MAX_ELO = 2300;
-
 function logit(p: number): number {
   const clamped = Math.min(Math.max(p, 1e-4), 1 - 1e-4);
   return Math.log(clamped / (1 - clamped));
@@ -65,32 +62,16 @@ function invLogit(x: number): number {
 }
 
 /**
- * Piecewise interpolation of `elo -> probability` through `anchors`, done
- * in logit space so the result is monotonic between consecutive anchors
- * (logit is monotonic in `p`, and a linear interpolant between two logit
- * values is monotonic) rather than the visibly-kinked result plain linear
- * interpolation in probability space would give near 0/1. Elo outside
- * `[MIN_ELO, MAX_ELO]` clamps to the nearest anchor rather than
- * extrapolating further.
+ * `elo -> probability` through `anchors`, via `interpolateAnchors`
+ * (packages/shared) blending in logit space so the result is monotonic
+ * between consecutive anchors (logit is monotonic in `p`, and a linear
+ * interpolant between two logit values is monotonic) rather than the
+ * visibly-kinked result plain linear interpolation in probability space
+ * would give near 0/1. Elo outside the anchors' own range clamps to the
+ * nearest anchor rather than extrapolating further.
  */
 function interpolateChance(anchors: ReadonlyArray<readonly [number, number]>, elo: number): number {
-  const clampedElo = Math.min(Math.max(elo, MIN_ELO), MAX_ELO);
-
-  for (let i = 0; i < anchors.length - 1; i++) {
-    const lower = anchors[i];
-    const upper = anchors[i + 1];
-    if (!lower || !upper) continue;
-    const [eloA, pA] = lower;
-    const [eloB, pB] = upper;
-    if (clampedElo < eloA || clampedElo > eloB) continue;
-    const t = eloB === eloA ? 0 : (clampedElo - eloA) / (eloB - eloA);
-    return invLogit(logit(pA) + t * (logit(pB) - logit(pA)));
-  }
-
-  const first = anchors[0];
-  const last = anchors.at(-1);
-  if (!first || !last) throw new Error('interpolateChance: anchors must be non-empty');
-  return clampedElo <= first[0] ? first[1] : last[1];
+  return interpolateAnchors(anchors, elo, (pLower, pUpper, t) => invLogit(logit(pLower) + t * (logit(pUpper) - logit(pLower))));
 }
 
 /**

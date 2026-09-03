@@ -50,11 +50,11 @@ export interface AnnotateCandidateMovesOptions {
   linesAtFenBefore?: EngineLine[];
 }
 
-function underDefendedPieceKey(piece: AttackedPieceDto): string {
-  return `${piece.square}:${piece.piece}:${piece.color}`;
-}
-
-function hangingPieceKey(piece: AttackedPieceDto): string {
+/** Identity key for a piece-on-square reference — used to tell whether the
+ * same piece is still present across a before/after diff (both
+ * under-defended and hanging-piece tracking need this, hence the shared
+ * helper). */
+function pieceKey(piece: AttackedPieceDto): string {
   return `${piece.square}:${piece.piece}:${piece.color}`;
 }
 
@@ -74,12 +74,12 @@ export function annotateCandidateMoves(
 ): CandidateMoveAnnotation[] {
   const mover = options.mover ?? fenActiveColor(fenBefore);
   const featuresBefore = computePositionFeatures(fenBefore);
-  const underDefendedBeforeKeys = new Set(featuresBefore.underDefendedPieces.map(underDefendedPieceKey));
+  const underDefendedBeforeKeys = new Set(featuresBefore.underDefendedPieces.map(pieceKey));
   const ownHangingBeforeKeys = new Set(
-    featuresBefore.hangingPieces.filter((piece) => piece.color === mover).map(hangingPieceKey)
+    featuresBefore.hangingPieces.filter((piece) => piece.color === mover).map(pieceKey)
   );
   const opponentHangingBeforeKeys = new Set(
-    featuresBefore.hangingPieces.filter((piece) => piece.color !== mover).map(hangingPieceKey)
+    featuresBefore.hangingPieces.filter((piece) => piece.color !== mover).map(pieceKey)
   );
 
   const annotations: CandidateMoveAnnotation[] = [];
@@ -93,7 +93,7 @@ export function annotateCandidateMoves(
     const featuresAfter = computePositionFeatures(fenAfter);
     const delta = diffPositionFeatures(featuresBefore, featuresAfter);
     const createsUnderDefendedPiece = featuresAfter.underDefendedPieces.some(
-      (piece) => !underDefendedBeforeKeys.has(underDefendedPieceKey(piece))
+      (piece) => !underDefendedBeforeKeys.has(pieceKey(piece))
     );
 
     annotations.push({
@@ -104,10 +104,10 @@ export function annotateCandidateMoves(
       createsOpponentHangingPiece: delta.newHangingPieces.some((piece) => piece.color !== mover),
       createsUnderDefendedPiece,
       ignoresOwnHangingPiece: featuresAfter.hangingPieces.some(
-        (piece) => piece.color === mover && ownHangingBeforeKeys.has(hangingPieceKey(piece))
+        (piece) => piece.color === mover && ownHangingBeforeKeys.has(pieceKey(piece))
       ),
       ignoresOpponentHangingPiece: featuresAfter.hangingPieces.some(
-        (piece) => piece.color !== mover && opponentHangingBeforeKeys.has(hangingPieceKey(piece))
+        (piece) => piece.color !== mover && opponentHangingBeforeKeys.has(pieceKey(piece))
       ),
       mobilityDelta: delta.mobilityDelta,
       motif: classifyCandidateMove(fenBefore, moveSan, mover, { linesAtFenBefore: options.linesAtFenBefore })

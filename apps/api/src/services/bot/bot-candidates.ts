@@ -2,6 +2,7 @@ import {
   annotateCandidateMoves,
   annotatePvTactics,
   candidateDiagnosisCodes,
+  fenActiveColor,
   motifToCode,
   type BotCandidate
 } from '@freechesscoach/chess-analysis';
@@ -36,7 +37,7 @@ export async function buildBotCandidates(
   depth: number
 ): Promise<BotCandidate[]> {
   const analysis = await deps.analyzeBotPosition(fen, { depth, multiPv: BOT_CANDIDATE_BREADTH });
-  const mover = fenMoverColor(fen);
+  const mover = fenActiveColor(fen);
 
   const annotations = annotateCandidateMoves(
     fen,
@@ -83,8 +84,4 @@ export async function buildBotCandidates(
 
 function negate(value: number | null): number | null {
   return value === null ? null : -value;
-}
-
-function fenMoverColor(fen: string): 'white' | 'black' {
-  return fen.trim().split(/\s+/)[1] === 'b' ? 'black' : 'white';
 }
