@@ -223,6 +223,23 @@ export interface DiagnosticProfilesTable {
   profile: Jsonb<unknown>;
 }
 
+/** 0028_puzzle_assignments.ts — one batch of Lichess puzzles handed to a
+ * student for one diagnosed weakness (Task 59.2). `items` is a snapshot of
+ * `PuzzleRecord[]` from `selectPuzzles` at assignment time, each widened
+ * with a per-item `result`; see `PuzzleAssignmentItem` in
+ * repositories/puzzle-assignments.ts. */
+export interface PuzzleAssignmentsTable {
+  id: Generated<string>;
+  userId: string;
+  diagnosisCode: DiagnosisCodeId;
+  reason: string;
+  items: Jsonb<unknown>;
+  status: Generated<'pending' | 'in_progress' | 'completed'>;
+  createdAt: Generated<Date>;
+  startedAt: Date | null;
+  completedAt: Date | null;
+}
+
 export interface LlmCallLogTable {
   id: Generated<string>;
   userId: string;
@@ -253,4 +270,5 @@ export interface Database {
   gameMoveQualities: GameMoveQualitiesTable;
   diagnosticObservations: DiagnosticObservationsTable;
   diagnosticProfiles: DiagnosticProfilesTable;
+  puzzleAssignments: PuzzleAssignmentsTable;
 }
