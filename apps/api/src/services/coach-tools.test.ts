@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import type { DiagnosticProfileEntry } from '@freechesscoach/chess-analysis';
 import type { PositionAnalysis } from '@freechesscoach/shared';
 import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
+import * as focusAreasRepo from '../db/repositories/focus-areas.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
@@ -106,21 +107,26 @@ describe('buildCoachTools', () => {
   /** Clears §4.2's `minRatedGames` window minimum so `windowByTimeControl`
    * (get_diagnostic_profile's on-demand gate evaluation) has a real window
    * to evaluate rather than an empty one, which would make DQ-01
-   * (insufficient rated games) fire spuriously for every test. */
+   * (insufficient rated games) fire spuriously for every test. Alternates
+   * `userColor` and gives every game reliable clock data so a "healthy
+   * window" test doesn't spuriously also trip DQ-04 (missing clock data) and
+   * DQ-06 (one side dominates the window) — both real bugs this helper had
+   * until Docker was available to actually run `evaluateGates` against it. */
   async function seedRatedGames(userId: string, timeControl: string, count: number): Promise<void> {
     for (let i = 0; i < count; i++) {
       await gamesRepo.insert(db, {
         userId,
         pgn: '1. e4 e5',
         source: 'paste',
-        userColor: 'white',
+        userColor: i % 2 === 0 ? 'white' : 'black',
         whiteName: null,
         blackName: null,
         result: null,
         timeControl,
         eco: null,
         playedAt: new Date(2026, 0, i + 1),
-        rated: true
+        rated: true,
+        moveTimes: [{ ply: 1, clockMs: 300000, evalCp: null, timeSpentMs: null }]
       });
     }
   }
@@ -335,23 +341,35 @@ describe('buildCoachTools', () => {
   });
 
   describe('propose_focus_area_update', () => {
-    test('a 4th active-focus-area create is queued (applied: false), not inserted', async () => {
+    test('progress on an existing focus area, addressed by diagnosisCode, applies it', async () => {
+      const ctx = await setupCtx();
+      await focusAreasRepo.insert(db, {
+        userId: ctx.userId,
+        category: 'missed_tactic',
+        diagnosisCode: 'TA-07',
+        status: 'active',
+        note: 'n'
+      });
+      const tools = buildCoachTools(ctx, makeDeps());
+
+      const result = await tools.propose_focus_area_update?.execute?.(
+        { diagnosisCode: 'TA-07', action: 'resolve', note: 'consistently spotting the fork now' },
+        TOOL_OPTIONS
+      );
+
+      expect(result).toMatchObject({ applied: true, focusArea: { status: 'resolved' } });
+    });
+
+    test('a diagnosisCode with no existing focus area is a no-op (applied: false) — the LLM cannot create one', async () => {
       const ctx = await setupCtx();
       const tools = buildCoachTools(ctx, makeDeps());
-      const categories = ['hanging_piece', 'missed_tactic', 'allowed_tactic', 'calculation_error'] as const;
 
-      const results = [];
-      for (const category of categories) {
-        results.push(
-          await tools.propose_focus_area_update?.execute?.(
-            { category, action: 'create', note: 'note' },
-            TOOL_OPTIONS
-          )
-        );
-      }
+      const result = await tools.propose_focus_area_update?.execute?.(
+        { diagnosisCode: 'TA-07', action: 'progress', note: 'note' },
+        TOOL_OPTIONS
+      );
 
-      expect(results.slice(0, 3).every((r) => (r as { applied: boolean }).applied)).toBe(true);
-      expect((results[3] as { applied: boolean }).applied).toBe(false);
+      expect(result).toEqual({ applied: false });
     });
   });
 

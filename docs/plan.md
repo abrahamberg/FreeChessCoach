@@ -1387,6 +1387,19 @@ case, and the failed-gates line appearing only when gates actually fired.
 Phase 56/57 task) covering both graceful-degradation paths (no time control,
 no stored profile) and the DQ-05 reachability gate actually firing.
 
+**Verified once Docker became available (post Task 57.4):** running the full
+suite for real (2494 tests) surfaced two real bugs in this task's own
+Testcontainers-only fixtures, invisible until `evaluateGates` actually ran
+against them for the first time — `seedRatedGames` in `coach-tools.test.ts`
+seeded every game with the same `userColor: 'white'` and no `moveTimes`, so
+DQ-04 (missing clock data) and DQ-06 (one side is 100% of the window) fired
+spuriously on every "healthy window" fixture, on top of whatever gate the
+test actually meant to exercise. Fixed by alternating `userColor` and giving
+every seeded game real clock data. `propose_focus_area_update`'s one test
+was also still testing the pre-Task-57.3 `'create'` action (removed by that
+task) — rewritten to progress/resolve an existing focus area by
+`diagnosisCode`, and to assert the no-existing-focus-area no-op.
+
 ### Task 57.3: Focus areas on diagnosis codes
 
 **Read:** `docs/diagnose.md` §IV, §V only.
