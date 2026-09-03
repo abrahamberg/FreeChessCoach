@@ -86,9 +86,16 @@ describe('buildInvestigatorTools', () => {
 
       const result = await tools.list_candidate_moves?.execute?.({ fen: START_FEN, moves: ['e4', 'd4'] }, TOOL_OPTIONS);
 
+      const noHangingPieceSignals = {
+        createsHangingPiece: false,
+        createsOwnHangingPiece: false,
+        createsOpponentHangingPiece: false,
+        ignoresOwnHangingPiece: false,
+        ignoresOpponentHangingPiece: false
+      };
       expect(result).toEqual([
-        { moveSan: 'e4', createsFork: false, createsHangingPiece: false, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number), motif: null },
-        { moveSan: 'd4', createsFork: false, createsHangingPiece: false, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number), motif: null }
+        { moveSan: 'e4', createsFork: false, ...noHangingPieceSignals, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number), motif: null },
+        { moveSan: 'd4', createsFork: false, ...noHangingPieceSignals, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number), motif: null }
       ]);
       expect(deps.analyzePosition).not.toHaveBeenCalled();
     });

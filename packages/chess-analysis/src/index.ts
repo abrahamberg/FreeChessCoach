@@ -63,6 +63,7 @@ export * from './tactics-score.js';
 export * from './describe-tactic-hit.js';
 export * from './diagnostics/beta-binomial.js';
 export * from './diagnostics/build-profile.js';
+export * from './diagnostics/candidate-diagnosis-proxy.js';
 export * from './diagnostics/cct-opportunities.js';
 export * from './diagnostics/context.js';
 export * from './diagnostics/diagnostic-entry.js';

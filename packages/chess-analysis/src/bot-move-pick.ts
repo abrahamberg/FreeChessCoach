@@ -1,4 +1,5 @@
-import type { BotPersonality, DiagnosisCodeId, TacticMotifType } from '@freechesscoach/shared';
+import type { BotPersonality, DiagnosisCodeId, MovePhase, TacticMotifType } from '@freechesscoach/shared';
+import { analyzeChecksCapturesThreats } from './checks-captures-threats.js';
 
 export interface BotCandidate {
   moveSan: string;
@@ -9,7 +10,13 @@ export interface BotCandidate {
   cp: number | null;
   mateIn: number | null;
   createsFork: boolean;
-  createsHangingPiece: boolean;
+  /** Whether this candidate creates a new hanging piece for the
+   * *opponent* specifically — a genuine attacking threat, not the mover's
+   * own blunder (see candidate-moves.ts's `createsOwnHangingPiece` /
+   * `createsOpponentHangingPiece` split, docs/plan.md Phase 62). Personality
+   * weighting below (`aggression`) rewards this; a self-blunder is instead
+   * steered by `diagnosisCodes`/`pickBotMove`'s manifest roll. */
+  createsOpponentHangingPiece: boolean;
   createsUnderDefendedPiece: boolean;
   mobilityDelta: number;
   /** From pv-tactics.ts's annotatePvTactics — first ply (within the
@@ -17,14 +24,16 @@ export interface BotCandidate {
   forkInPlies: number | null;
   /** Full tactic motif of playing this candidate right now — carried for
    * callers that want it (e.g. a richer coach digest); read by pickBotMove
-   * only indirectly, via diagnosisCode below. */
+   * only indirectly, via diagnosisCodes below. */
   motif: TacticMotifType | null;
-  /** `motif` resolved to a real diagnosis code (diagnostics/motif-to-code.ts's
-   * motifToCode) — null when motif is null/unresolvable (brilliantSacrifice,
-   * other) or when a fork/pin's replay didn't confirm the motif. See
-   * docs/plan.md's Phase 61: pickBotMove dampens the roll when this matches
-   * one of the bot's own documented diagnosisCodes. */
-  diagnosisCode: DiagnosisCodeId | null;
+  /** Every diagnosis code this candidate exhibits — `motif` resolved via
+   * `diagnostics/motif-to-code.ts`'s `motifToCode` (`TA-*`) plus
+   * `diagnostics/candidate-diagnosis-proxy.ts`'s `candidateDiagnosisCodes`
+   * (`BV-*`/`MS-*`), see docs/plan.md's Phase 62. Empty, not null, when the
+   * candidate exhibits none. pickBotMove (Phase 61/62) steers sampling
+   * toward whichever candidates intersect the bot's own documented
+   * `diagnosisCodes`. */
+  diagnosisCodes: readonly DiagnosisCodeId[];
 }
 
 /** Named, tunable weights for each personality term in
@@ -44,15 +53,14 @@ export const BOT_PICK_WEIGHTS = {
   defensivenessQuietMoveBonus: 0.2
 } as const;
 
-/** Floor probability (0-1) used instead of bestMoveChance — even overriding
- * the mate-conversion boost — specifically when candidates[0] embodies a
- * diagnosis code this bot is documented with (see docs/plan.md's Phase 61):
- * a bot documented with TA-01 mate-in-one blindness should specifically be
- * the one that sometimes still fumbles a mate-in-one, not just a generically
- * weaker player. A single shared constant, not a per-bot number — the
- * roster's character comes from *which* codes a bot has, not from tuning
- * how badly it misses them. */
-export const DIAGNOSED_BLIND_SPOT_CHANCE = 0.25;
+/** Minimum number of checks/captures/threat-replies required before the
+ * middlegame plausible-move shortlist (see `buildPlausibleMoveShortlist`)
+ * is trusted — below this, forcing-move coverage is too sparse to mean
+ * anything and the full candidate field is used instead. */
+const MIN_SHORTLIST_SIZE = 2;
+
+/** Cap on the middlegame plausible-move shortlist size. */
+const MAX_SHORTLIST_SIZE = 5;
 
 export interface PickBotMoveInput {
   /** Engine-ranked candidates for the position — candidates[0] is the
@@ -61,45 +69,107 @@ export interface PickBotMoveInput {
   candidates: BotCandidate[];
   personality: BotPersonality;
   /** This phase's literal probability (0-1) of playing candidates[0]
-   * outright, rolled once per move. */
+   * outright, rolled once per move — see bot-skill-curve.ts's
+   * `bestMoveChanceForElo`. */
   bestMoveChance: number;
   /** Floor probability (0-1) used instead of bestMoveChance specifically
    * when candidates[0] delivers/continues a forced mate — see
    * docs/plan.md's Phase 60 "checkmate-completion guarantee". */
   mateConversionChance: number;
-  /** This bot's documented diagnosis codes (Phase 61) — when
-   * candidates[0].diagnosisCode is one of these, the roll uses
-   * DIAGNOSED_BLIND_SPOT_CHANCE instead of (and capping) bestMoveChance. */
+  /** Probability, conditional on NOT playing candidates[0] (the roll
+   * above missed), that the bot's pick is steered toward a candidate whose
+   * `diagnosisCodes` intersect `diagnosisCodes` below, rather than a
+   * generic personality-weighted miss — see bot-skill-curve.ts's
+   * `diagnosisManifestChanceForElo` and docs/plan.md's Phase 62. */
+  diagnosisManifestChance: number;
+  /** This bot's documented diagnosis codes (Phase 61/62). */
   diagnosisCodes: readonly DiagnosisCodeId[];
+  /** The position being played from — needed for the middlegame plausible-
+   * move shortlist (checks/captures/threat-replies), see
+   * `buildPlausibleMoveShortlist`. */
+  fenBefore: string;
+  /** The current game phase — the plausible-move shortlist only applies in
+   * the middlegame (docs/plan.md Phase 62); opening is book-driven and
+   * endgame's much smaller legal-move count makes "humans only consider
+   * forcing moves" less meaningful. */
+  phase: MovePhase;
   /** Injected randomness (real Math.random at the real call site) — kept
    * injectable so tests are deterministic. */
   random: () => number;
 }
 
 /**
- * Picks one candidate for a bot to play: a single dice roll decides whether
- * the bot plays the engine's own top-ranked candidate outright, or defers to
- * a personality-weighted pick from the *full* candidate field (see
- * bot-candidates.ts's BOT_CANDIDATE_BREADTH — the pool this samples from is
- * wide enough to contain genuinely bad moves, not just engine-approved
- * lines). This is a full replacement of the old score-then-softmax model,
- * not a blend with it — the "miss" branch never reads cp/mateIn.
+ * Picks one candidate for a bot to play. Three rolls, in order:
+ *
+ * 1. `bestMoveChance` (boosted to `mateConversionChance` for a live mate) —
+ *    hit plays the engine's own top-ranked candidate outright.
+ * 2. On a miss, `diagnosisManifestChance` — hit samples (personality-
+ *    weighted) only among candidates whose `diagnosisCodes` intersect this
+ *    bot's own documented `diagnosisCodes`, i.e. a move that actually
+ *    manifests one of its real weaknesses. Falls through to the generic
+ *    pool when no candidate matches, so this roll can never dead-end.
+ * 3. Otherwise, a generic personality-weighted sample.
+ *
+ * Rolls 2 and 3 both sample from a middlegame plausible-move shortlist
+ * (`buildPlausibleMoveShortlist`) rather than the full candidate field —
+ * humans don't weigh all ~40 legal moves, they narrow to what looks
+ * forcing. See docs/plan.md's Phase 60 (original dice-roll model) and
+ * Phase 62 (this steering/shortlist extension, which supersedes Phase 61's
+ * `DIAGNOSED_BLIND_SPOT_CHANCE` dampening of roll 1 — that only ever
+ * affected whether the best move got played, never which candidate a miss
+ * actually chose).
  */
 export function pickBotMove(input: PickBotMoveInput): BotCandidate {
-  const { candidates, personality, bestMoveChance, mateConversionChance, diagnosisCodes, random } = input;
+  const { candidates, personality, bestMoveChance, mateConversionChance, diagnosisManifestChance, diagnosisCodes, fenBefore, phase, random } =
+    input;
   if (candidates.length === 0) throw new Error('pickBotMove: no candidates to pick from');
 
   const best = candidates[0];
   if (!best) throw new Error('unreachable: candidates is non-empty');
 
-  let chance = bestMoveChance;
-  if (best.mateIn !== null && best.mateIn > 0) chance = Math.max(chance, mateConversionChance);
-  if (best.diagnosisCode !== null && diagnosisCodes.includes(best.diagnosisCode)) {
-    chance = Math.min(chance, DIAGNOSED_BLIND_SPOT_CHANCE);
-  }
-  if (random() < chance) return best;
+  let bestChance = bestMoveChance;
+  if (best.mateIn !== null && best.mateIn > 0) bestChance = Math.max(bestChance, mateConversionChance);
+  if (random() < bestChance) return best;
 
-  return pickPersonalityWeightedMove(candidates, personality, random);
+  const pool = phase === 'middlegame' ? buildPlausibleMoveShortlist(candidates, fenBefore) : candidates;
+
+  if (random() < diagnosisManifestChance) {
+    const matching = pool.filter((candidate) => candidate.diagnosisCodes.some((code) => diagnosisCodes.includes(code)));
+    if (matching.length > 0) return pickPersonalityWeightedMove(matching, personality, random);
+  }
+
+  return pickPersonalityWeightedMove(pool, personality, random);
+}
+
+/**
+ * Narrows `candidates` to the ones a human would actually weigh — checks,
+ * captures, and replies to one of the position's own threats (reusing
+ * `analyzeChecksCapturesThreats`, a cheap pure-position function, no engine
+ * call) — capped to `MAX_SHORTLIST_SIZE`. Below `MIN_SHORTLIST_SIZE`
+ * qualifying candidates, the shortlist would be too sparse to mean
+ * anything, so the full field is returned unchanged instead.
+ *
+ * When more than `MAX_SHORTLIST_SIZE` qualify, spreads the cap evenly
+ * across the qualifying pool's index range rather than truncating to the
+ * first N — `candidates` arrives pre-sorted by engine eval, so truncating
+ * would just mean "the best forcing moves," which defeats the point: a
+ * weak bot's shortlist isn't supposed to skew toward quality, only toward
+ * plausibility of consideration.
+ */
+function buildPlausibleMoveShortlist(candidates: BotCandidate[], fenBefore: string): BotCandidate[] {
+  const cct = analyzeChecksCapturesThreats(fenBefore);
+  const plausibleSans = new Set([
+    ...cct.checks.moves.map((move) => move.moveSan),
+    ...cct.captures.moves.map((move) => move.moveSan),
+    ...cct.threats.moves.map((move) => move.moveSan)
+  ]);
+  const qualifying = candidates.filter((candidate) => plausibleSans.has(candidate.moveSan));
+  if (qualifying.length < MIN_SHORTLIST_SIZE) return candidates;
+  if (qualifying.length <= MAX_SHORTLIST_SIZE) return qualifying;
+
+  const step = (qualifying.length - 1) / (MAX_SHORTLIST_SIZE - 1);
+  const picks = new Set(Array.from({ length: MAX_SHORTLIST_SIZE }, (_, i) => Math.round(i * step)));
+  return qualifying.filter((_, index) => picks.has(index));
 }
 
 function pickPersonalityWeightedMove(
@@ -127,7 +197,7 @@ function personalityWeight(candidate: BotCandidate, personality: BotPersonality)
 
   const aggression =
     (personality.aggression / 100) *
-    ((candidate.createsHangingPiece ? w.aggressionHangingPiece : 0) +
+    ((candidate.createsOpponentHangingPiece ? w.aggressionHangingPiece : 0) +
       (candidate.mobilityDelta > 0
         ? w.aggressionMobilityPerMove * Math.min(candidate.mobilityDelta, w.aggressionMobilityCap)
         : 0));

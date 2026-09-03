@@ -1,4 +1,10 @@
-import { classifyBotGamePhase, pickBotMove, selectBookMove } from '@freechesscoach/chess-analysis';
+import {
+  bestMoveChanceForElo,
+  classifyBotGamePhase,
+  diagnosisManifestChanceForElo,
+  pickBotMove,
+  selectBookMove
+} from '@freechesscoach/chess-analysis';
 import type { BotConfig } from '@freechesscoach/shared';
 import { buildBotCandidates, type BotCandidatesDependencies } from './bot-candidates.js';
 
@@ -53,10 +59,12 @@ function sleep(ms: number): Promise<void> {
 /**
  * Picks one move for a bot at `fen`: book first (opening-only, via
  * `bookPlies`/`bookMistakeChance`), then a phase-resolved engine search
- * (`classifyBotGamePhase` -> `bot.phases[phase]`) feeding a literal
- * probability roll (`pickBotMove`) between the engine's own top-ranked
- * candidate and a personality-weighted pick from the full candidate field.
- * `plyCount` is halfmoves played so far, before this move.
+ * (`classifyBotGamePhase` -> `bot.phases[phase].depth`) feeding `pickBotMove`
+ * — an elo-calibrated roll (`bestMoveChanceForElo`/`diagnosisManifestChanceForElo`,
+ * docs/plan.md Phase 62) between the engine's own top-ranked candidate, a
+ * candidate that manifests one of `bot.diagnosisCodes`, and a generic
+ * personality-weighted pick. `plyCount` is halfmoves played so far, before
+ * this move.
  */
 export async function selectBotMove(
   deps: BotMoveSelectorDependencies,
@@ -78,9 +86,12 @@ export async function selectBotMove(
   const picked = pickBotMove({
     candidates,
     personality: bot.personality,
-    bestMoveChance: profile.bestMoveChance,
+    bestMoveChance: bestMoveChanceForElo(bot.elo, phase),
     mateConversionChance: bot.mateConversionChance,
+    diagnosisManifestChance: diagnosisManifestChanceForElo(bot.elo),
     diagnosisCodes: bot.diagnosisCodes,
+    fenBefore: fen,
+    phase,
     random: deps.random
   });
   return { san: picked.moveSan, usedBook: false };

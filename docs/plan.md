@@ -2448,52 +2448,66 @@ logic, per AGENTS.md's layering rule, not `packages/shared`.
 `packages/chess-analysis/src/bot-move-pick.ts`,
 `apps/api/src/services/bot/bot-candidates.ts` (+ tests).
 
-- [ ] `BotCandidate.diagnosisCode: DiagnosisCodeId | null` →
+- [x] `BotCandidate.diagnosisCode: DiagnosisCodeId | null` →
       `diagnosisCodes: readonly DiagnosisCodeId[]`, still computed with no
       extra engine calls (same single multiPv-40 search
       `buildBotCandidates` already runs).
-- [ ] Fix the existing ownership blur: `candidate-moves.ts`'s
+- [x] Fix the existing ownership blur: `candidate-moves.ts`'s
       `createsHangingPiece` (`delta.newHangingPieces.length > 0`) doesn't
       distinguish the mover's own piece from the opponent's — split into
       own/opponent variants (`PositionFeatures.hangingPieces` already
       carries per-piece `color`) so an "aggressive" personality rewarding a
       genuine attacking threat is never confused with a genuine
-      self-blunder.
-- [ ] Add cheap positional proxies for at least `BV-01`/`BV-02`
+      self-blunder. Also added `ignoresOwnHangingPiece`/
+      `ignoresOpponentHangingPiece` (an existing, pre-move threat left
+      unaddressed — a different signal than "newly created").
+- [x] Add cheap positional proxies for `BV-01`/`BV-02`
       (own/opponent hanging-piece blindness, from the split above) and
       `MS-02`/`MS-03` (opponent capture/threat already present in
-      `fenBefore` and still unaddressed in `fenAfter` — computable from the
-      same `computePositionFeatures`/`diffPositionFeatures` primitives
-      already in use). Approximate more of the eligible `BV`/`MS` set where
-      cheaply reasonable; full coverage isn't required — Task 62.4's real
-      detector pass is the accuracy backstop.
-- [ ] `TA` stays exactly as-is (`motifToCode`, already cheap, unchanged).
-- [ ] Commit: `feat: cheap per-candidate diagnosis-code proxy for bots`.
+      `fenBefore` and still unaddressed in `fenAfter`, plus the "creates"
+      signal for the direct-threat-omission reading) — new
+      `diagnostics/candidate-diagnosis-proxy.ts`'s `candidateDiagnosisCodes`,
+      with `CANDIDATE_PROXY_RESOLVABLE_DIAGNOSIS_CODES` mirroring
+      `motif-to-code.ts`'s `MOTIF_RESOLVABLE_DIAGNOSIS_CODES`.
+- [x] `TA` stays exactly as-is (`motifToCode`, already cheap, unchanged).
+- [x] Commit: `feat: cheap per-candidate diagnosis-code proxy for bots`
+      (combined with Task 62.3 below — they turned out inseparable in
+      `bot-move-pick.ts`; see that commit).
 
 ### Task 62.3: Steer the miss-branch toward a documented weakness
 
 **Files:** `packages/chess-analysis/src/bot-move-pick.ts`,
-`apps/api/src/services/bot/bot-candidates.ts` (+ tests).
+`apps/api/src/services/bot/bot-candidates.ts`,
+`apps/api/src/services/bot/bot-move-selector.ts` (+ tests).
 
-- [ ] Middlegame plausible-move shortlist: `analyzeChecksCapturesThreats(fenBefore)`
+- [x] Middlegame plausible-move shortlist: `analyzeChecksCapturesThreats(fenBefore)`
       (already a cheap pure-position function, no engine call) — keep only
       candidates that are a check, a capture, or a reply to one of the
-      position's threats, cap to 3-5 (widest-first if more qualify), sample
-      from that shortlist instead of the full 40-candidate field. Fewer
-      than 2 qualifying candidates → fall back to the full field unchanged.
-- [ ] Restructure `pickBotMove`: roll `bestMoveChance` (Task 62.1) → hit →
-      `candidates[0]` (mate-conversion floor unchanged). Miss → roll
-      `diagnosisManifestChance` (Task 62.1) → hit → sample only among
+      position's threats, cap to 5 (spread evenly across the qualifying
+      pool when more qualify, not truncated to the top-N by eval — see
+      `buildPlausibleMoveShortlist`'s doc comment for why). Fewer than 2
+      qualifying candidates → fall back to the full field unchanged.
+- [x] Restructured `pickBotMove`: roll `bestMoveChance` (Task 62.1,
+      `bestMoveChanceForElo`) → hit → `candidates[0]` (mate-conversion
+      floor unchanged). Miss → roll `diagnosisManifestChance` (Task 62.1,
+      `diagnosisManifestChanceForElo`) → hit → sample only among
       shortlisted candidates whose `diagnosisCodes` (Task 62.2) intersect
-      `bot.diagnosisCodes`, falling back to the full shortlist (or full
-      field) if none match (the roll must never dead-end) → miss →
-      existing personality-weighted sample over the shortlist.
-- [ ] Reconcile with Phase 61's `DIAGNOSED_BLIND_SPOT_CHANCE` dampening on
-      `candidates[0]` — this steering step supersedes it (dampening only
-      ever affected whether the best move was played at all; it never
-      chose a matching candidate), so fold or remove the old check rather
-      than stacking both.
-- [ ] Commit: `feat: steer bot move selection toward documented weaknesses`.
+      `bot.diagnosisCodes`, falling back to the full shortlist if none
+      match (the roll must never dead-end) → miss → existing
+      personality-weighted sample over the shortlist.
+- [x] Removed Phase 61's `DIAGNOSED_BLIND_SPOT_CHANCE` dampening on
+      `candidates[0]` entirely — this steering step supersedes it
+      (dampening only ever affected whether the best move was played at
+      all; it never chose a matching candidate).
+- [x] `bot-move-selector.ts` now calls `bestMoveChanceForElo(bot.elo, phase)`/
+      `diagnosisManifestChanceForElo(bot.elo)` instead of reading
+      `profile.bestMoveChance` — that roster field is now dead and gets
+      removed from the schema/roster in Task 62.5.
+- [x] Also fixed `personalityWeight`'s "aggression" term to read the new
+      `createsOpponentHangingPiece` (a real threat) instead of the old
+      unsplit `createsHangingPiece`, which it had been using as if it only
+      ever meant "attacks the opponent" — see Task 62.2's split.
+- [x] Commit: `feat: steer bot move selection toward documented weaknesses`.
 
 ### Task 62.4: Real detector pass on the chosen move (tagging only)
 

@@ -69,7 +69,7 @@ describe('buildBotCandidates', () => {
 
     expect(candidates[0]).toMatchObject({
       createsFork: false,
-      createsHangingPiece: false,
+      createsOpponentHangingPiece: false,
       createsUnderDefendedPiece: false,
       mobilityDelta: 0
     });
@@ -129,10 +129,11 @@ describe('buildBotCandidates', () => {
 
     const candidates = await buildBotCandidates({ analyzeBotPosition }, knightForkFen, 6);
 
-    expect(candidates[0]).toMatchObject({ moveSan: 'Nd6+', motif: 'fork', diagnosisCode: 'TA-07' });
+    expect(candidates[0]).toMatchObject({ moveSan: 'Nd6+', motif: 'fork' });
+    expect(candidates[0]?.diagnosisCodes).toContain('TA-07');
   });
 
-  test('diagnosisCode is null when there is no motif', async () => {
+  test('diagnosisCodes is empty when there is no motif and no BV/MS proxy signal', async () => {
     const analysis: PositionAnalysis = {
       fen: START_FEN,
       depth: 6,
@@ -146,6 +147,6 @@ describe('buildBotCandidates', () => {
 
     const candidates = await buildBotCandidates({ analyzeBotPosition }, START_FEN, 6);
 
-    expect(candidates[0]).toMatchObject({ motif: null, diagnosisCode: null });
+    expect(candidates[0]).toMatchObject({ motif: null, diagnosisCodes: [] });
   });
 });
