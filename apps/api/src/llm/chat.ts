@@ -34,7 +34,12 @@ const TOOL_ORDER = [
   // session's cached tool-definition prefix never shifts.
   'get_candidate_moves',
   'play_coach_move',
-  'undo_last_move'
+  'undo_last_move',
+  // Puzzle sessions' own tool set (docs/plan.md Phase 59, Task 59.4) never
+  // shares a request with the two groups above — annotate_board/
+  // expect_move/hypothetical_line are already listed and reused as-is;
+  // advance_puzzle is the one addition.
+  'advance_puzzle'
 ];
 
 /** What the caller gets back: the raw part stream plus the tool set it was

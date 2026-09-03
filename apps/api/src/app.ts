@@ -14,6 +14,8 @@ import { registerGamesRoutes } from './routes/games.js';
 import { registerLichessRoutes } from './routes/lichess.js';
 import { registerLlmKeysRoutes } from './routes/llm-keys.js';
 import { registerPositionAnalysisRoutes } from './routes/positions.js';
+import { registerPuzzleAssignmentsRoutes } from './routes/puzzle-assignments.js';
+import { registerPuzzleSessionsRoutes } from './routes/puzzle-sessions.js';
 import { registerSessionsRoutes } from './routes/sessions.js';
 import { registerStatsRoutes } from './routes/stats.js';
 import { registerStripeWebhookRoutes } from './routes/stripe-webhook.js';
@@ -87,6 +89,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     registerUsersRoutes(app, options.db);
     registerDashboardRoutes(app, options.db);
     registerDiagnosticsRoutes(app, options.db);
+    registerPuzzleAssignmentsRoutes(app, options.db);
     registerStatsRoutes(app, options.db);
     registerGamesRoutes(app, options.db, options.jobQueue ?? noopJobQueue);
     registerLichessRoutes(app, options.db, options.lichessClient ?? createLichessClient());
@@ -102,6 +105,12 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     if (options.coachAgentBaseDeps && options.engineBackendOptions) {
       registerSessionsRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions);
       registerPositionAnalysisRoutes(app, options.db, options.engineBackendOptions);
+    }
+    // No engine backend needed — a puzzle session's tool set has no
+    // get_engine_analysis-equivalent (the coach reasons from the puzzle's
+    // own known solution, not a live engine call).
+    if (options.coachAgentBaseDeps) {
+      registerPuzzleSessionsRoutes(app, options.db, options.coachAgentBaseDeps);
     }
     if (options.stripeClient) {
       registerCreditsRoutes(app, options.db, options.stripeClient);

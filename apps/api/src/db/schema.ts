@@ -240,6 +240,29 @@ export interface PuzzleAssignmentsTable {
   completedAt: Date | null;
 }
 
+/** 0029_puzzle_sessions.ts — one coach-guided walkthrough of a
+ * `puzzle_assignments` batch (Task 59.4). Parallel to SessionsTable, not a
+ * mode grafted onto it — see that migration's doc comment. */
+export interface PuzzleSessionsTable {
+  id: Generated<string>;
+  assignmentId: string;
+  userId: string;
+  status: Generated<'active' | 'completed' | 'paused_no_credits' | 'abandoned'>;
+  currentItemIndex: Generated<number>;
+  startedAt: Generated<Date>;
+  endedAt: Date | null;
+}
+
+/** Mirrors SessionMessagesTable; `itemIndex` stands in for `ply`. */
+export interface PuzzleSessionMessagesTable {
+  id: Generated<string>;
+  puzzleSessionId: string;
+  role: 'user' | 'assistant' | 'tool';
+  content: Jsonb<unknown>;
+  itemIndex: number | null;
+  createdAt: Generated<Date>;
+}
+
 export interface LlmCallLogTable {
   id: Generated<string>;
   userId: string;
@@ -271,4 +294,6 @@ export interface Database {
   diagnosticObservations: DiagnosticObservationsTable;
   diagnosticProfiles: DiagnosticProfilesTable;
   puzzleAssignments: PuzzleAssignmentsTable;
+  puzzleSessions: PuzzleSessionsTable;
+  puzzleSessionMessages: PuzzleSessionMessagesTable;
 }

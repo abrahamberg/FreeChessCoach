@@ -1764,27 +1764,69 @@ every other optional-data-tier convention in this repo.
 
 ### Task 59.4: Puzzle session backend
 
-**Files:** `apps/api/src/db/migrations/00NN_puzzle_sessions.ts`,
+**Files:** `apps/api/src/db/migrations/0029_puzzle_sessions.ts`,
 `apps/api/src/db/schema.ts`, `apps/api/src/db/repositories/puzzle-
 sessions.ts` (+ test), `apps/api/src/routes/puzzle-sessions.ts` (+ test),
-`apps/api/src/services/puzzle-session-tools.ts` (+ test).
+`apps/api/src/services/puzzle-session-tools.ts` (+ test),
+`apps/api/src/services/puzzle-session.ts` (+ test),
+`apps/api/src/services/puzzle-session-turn.ts` (+ test).
 
-- [ ] `puzzle_sessions` (`id`, `assignment_id`, `user_id`, `status`,
+- [x] `puzzle_sessions` (`id`, `assignment_id`, `user_id`, `status`,
       `current_item_index`, `started_at`, `ended_at`) and
       `puzzle_session_messages` (mirrors `session_messages`, `item_index`
       instead of `ply`).
-- [ ] `POST /api/puzzle-sessions` (from an assignment id) and `POST
+- [x] `POST /api/puzzle-sessions` (from an assignment id) and `POST
       /api/puzzle-sessions/:id/messages`, reusing the streaming
       infrastructure `routes/sessions.ts`/`llm/stream-response.ts` already
       provide rather than a parallel implementation.
-- [ ] Tool set for this session kind: reuse `show_position`,
-      `annotate_board`, `expect_move`, `hypothetical_line` as-is (already
-      generic over any FEN, not game-ply-addressed); drop
-      `check_position`/`recall_move`/`record_move_note` (address a game's
-      plies, meaningless here); add `advance_puzzle` (records the current
-      item's `result` on the assignment, moves `current_item_index`
-      forward, ends the session on the last item).
-- [ ] Commit: `feat: puzzle session backend`.
+- [x] Tool set for this session kind: reuse `annotate_board`, `expect_move`,
+      `hypothetical_line` as-is; drop `check_position`/`recall_move`/
+      `record_move_note` (address a game's plies, meaningless here); add
+      `advance_puzzle` (records the current item's `result` on the
+      assignment, moves `current_item_index` forward, ends the session on
+      the last item).
+- [x] Commit: `feat: puzzle session backend`.
+
+**Done:** One real correction to this task's own premise, caught while
+actually reading `packages/prompts/src/tools.ts`'s parameter schemas rather
+than trusting the earlier summary: `show_position` is addressed by
+`{ moveNumber, color }` — real-game move-pair numbering — not a FEN, so it
+is NOT "already generic over any FEN" as this task originally assumed. A
+puzzle set has no move-pair numbering (one puzzle = one starting position,
+walked forward only via `hypothetical_line`), so `show_position` is
+**dropped entirely**, not reused — the client renders the current item's
+own `fen` directly whenever a session opens or `advance_puzzle` moves it
+forward, no tool round-trip needed. `packages/prompts/src/puzzle-coach-
+system.ts` (Task 59.5) still referenced `show_position` in its tool
+guidance when this task started (that fork ran concurrently and flagged
+the mismatch itself, correctly, rather than guessing) — fixed here as part
+of this task's own commit, along with its test and `docs/prompts.md`.
+
+Architecture notes not spelled out above: `puzzle_sessions.status` reuses
+`sessions.status`'s exact four values including `paused_no_credits` —
+puzzle-session turns go through the same credits-metered
+`getModelForUser`/`assertCanSpend`/`recordUsage` path as every other coach
+turn (`services/puzzle-session-turn.ts`'s `startPuzzleTurn`, a deliberately
+much simpler sibling of `coach-agent-turn.ts`'s `startTurn`: no episodes,
+no `subjectPly`, no position-jump resolution — `messages` is just the
+session's whole history replayed as-is, since a puzzle session is linear).
+A brand-new session's opening turn (empty history, empty request body)
+synthesizes an unpersisted `"Begin the puzzle session."` user message
+rather than seeding a stored `[session_start]`-style marker row — nothing
+to strip on read, unlike `getSessionDetail`'s `filterBackstageMessages`.
+`advance_puzzle`'s `execute` does the DB write immediately (same
+"server tool commits inside its own execute" shape as `play_coach_move`);
+`onFinish` reads the result back via `findSuccessfulToolResult` to decide
+whether to advance `current_item_index` or complete the session +
+assignment together, mirroring `advancePlyForPlayMove`.
+
+Added one route beyond this task's original file list, since nothing else
+in Phase 59 exposes it and Task 59.6 needs it: `GET /api/puzzle-
+assignments` (`apps/api/src/routes/puzzle-assignments.ts` + test) lists the
+caller's own open assignments, for the dashboard's "Practice ready" card.
+Also added `CreatePuzzleSessionRequestSchema` to `packages/shared/src/
+session.ts` (this task's own request-validation need, same file the
+existing session request schemas already live in).
 
 ### Task 59.5: Puzzle session prompt
 

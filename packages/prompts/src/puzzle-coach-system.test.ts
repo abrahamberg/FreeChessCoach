@@ -11,9 +11,13 @@ describe('buildPuzzleCoachSystemPrompt', () => {
     expect(a.staticPart).toBe(b.staticPart);
   });
 
-  test('staticPart tells the coach about every reused tool and advance_puzzle', () => {
+  test('staticPart tells the coach about every reused tool and advance_puzzle, but not show_position', () => {
     const { staticPart } = buildPuzzleCoachSystemPrompt(baseInput());
-    expect(staticPart).toContain('show_position');
+    // show_position addresses a real game's move-pairs ({ moveNumber, color }
+    // — packages/prompts/src/tools.ts) which a puzzle session has no
+    // equivalent of; Task 59.4 drops it from the tool set entirely, so it
+    // must not appear here as guidance for a tool the coach doesn't have.
+    expect(staticPart).not.toContain('show_position');
     expect(staticPart).toContain('annotate_board');
     expect(staticPart).toContain('expect_move');
     expect(staticPart).toContain('hypothetical_line');
