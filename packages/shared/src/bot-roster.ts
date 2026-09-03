@@ -14,6 +14,25 @@ import type { BotConfig } from './bot.js';
  * are `phases` (per game-phase search depth and literal best-move
  * probability — see bot.ts's `BotPhaseProfileSchema`), `personality`, and
  * the opening-book pair.
+ *
+ * `diagnosisCodes` (docs/plan.md's Phase 61) documents each bot's tactical
+ * blind spots against the same diagnosis-code taxonomy the coach uses on
+ * real students (`packages/shared/src/diagnosis/`) — but ONLY drawn from
+ * `MOTIF_RESOLVABLE_DIAGNOSIS_CODES` (packages/chess-analysis/src/diagnostics/motif-to-code.ts),
+ * the 15 `TA-*` tactic-recognition codes a candidate move's own motif can
+ * resolve to. Every other family in the 410-code catalog (scanning habits,
+ * calculation depth, time management, psychology, opening prep, endgame
+ * technique, learning habits) describes a mechanism this bot's single-move,
+ * dice-roll-based selection has no way to distinguishably manifest — tagging
+ * a bot with one of those would be a claim the code can't back up. When a
+ * documented code matches the engine's own top candidate, `pickBotMove`
+ * dampens the roll (`DIAGNOSED_BLIND_SPOT_CHANCE`) even below what the
+ * bot's phase/tier would otherwise predict — so this is a real behavioral
+ * property, not flavor text. An empty list is a legitimate, honest value
+ * for a well-rounded or highly disciplined bot, not a gap to fill; a code
+ * is assigned only where it's a defensible read of that bot's own
+ * `description`/`personality`, not decoration. Trailing comments below
+ * explain the less-obvious picks.
  */
 export const BOT_ROSTER: readonly BotConfig[] = [
   // --- Beginner ---
@@ -30,6 +49,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 70, trapSeeking: 20, defensiveness: 10 },
     mateConversionChance: 0.55,
+    diagnosisCodes: ['TA-43', 'TA-01'],
     bookPlies: 2,
     bookMistakeChance: 0.5
   },
@@ -46,6 +66,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 35, trapSeeking: 45, defensiveness: 40 },
     mateConversionChance: 0.56,
+    diagnosisCodes: ['TA-19', 'TA-08'],
     bookPlies: 3,
     bookMistakeChance: 0.4
   },
@@ -62,6 +83,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 20, trapSeeking: 15, defensiveness: 65 },
     mateConversionChance: 0.84,
+    diagnosisCodes: ['TA-19'],
     bookPlies: 6,
     bookMistakeChance: 0.25
   },
@@ -78,6 +100,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 45, trapSeeking: 80, defensiveness: 15 },
     mateConversionChance: 0.63,
+    diagnosisCodes: ['TA-12', 'TA-19'], // tactics-obsessed but reckless ("sound or not"); already handles forks via high trapSeeking, so her documented gap is the subtler patterns she rushes past
     bookPlies: 2,
     bookMistakeChance: 0.45
   },
@@ -94,6 +117,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 30, trapSeeking: 10, defensiveness: 45 },
     mateConversionChance: 0.77,
+    diagnosisCodes: ['TA-43', 'TA-07'],
     bookPlies: 4,
     bookMistakeChance: 0.35
   },
@@ -110,6 +134,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 40, trapSeeking: 40, defensiveness: 40 },
     mateConversionChance: 0.98,
+    diagnosisCodes: [],
     bookPlies: 8,
     bookMistakeChance: 0.15
   },
@@ -128,6 +153,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 85, trapSeeking: 35, defensiveness: 10 },
     mateConversionChance: 0.7,
+    diagnosisCodes: ['TA-43', 'TA-04'],
     bookPlies: 5,
     bookMistakeChance: 0.25
   },
@@ -144,6 +170,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 10, trapSeeking: 15, defensiveness: 85 },
     mateConversionChance: 0.99,
+    diagnosisCodes: [],
     bookPlies: 8,
     bookMistakeChance: 0.15
   },
@@ -160,6 +187,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 55, trapSeeking: 50, defensiveness: 20 },
     mateConversionChance: 0.63,
+    diagnosisCodes: ['TA-07', 'TA-18'], // seeks the unusual plan over the obvious one — sometimes that obvious move was the correct tactic
     bookPlies: 3,
     bookMistakeChance: 0.3
   },
@@ -176,6 +204,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 35, trapSeeking: 45, defensiveness: 40 },
     mateConversionChance: 0.99,
+    diagnosisCodes: ['TA-19'], // "one line at a time" — deep in a single calculated line, occasionally misses a tactical resource elsewhere on the board
     bookPlies: 6,
     bookMistakeChance: 0.15
   },
@@ -192,6 +221,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 50, trapSeeking: 35, defensiveness: 35 },
     mateConversionChance: 0.7,
+    diagnosisCodes: ['TA-16'], // switches styles mid-game; a discovered attack (noticing a move unlocks another piece) is easy to miss between modes
     bookPlies: 5,
     bookMistakeChance: 0.2
   },
@@ -208,6 +238,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 15, trapSeeking: 10, defensiveness: 75 },
     mateConversionChance: 0.99,
+    diagnosisCodes: ['TA-07', 'TA-18', 'TA-43'],
     bookPlies: 10,
     bookMistakeChance: 0.1
   },
@@ -226,6 +257,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 65, trapSeeking: 90, defensiveness: 20 },
     mateConversionChance: 0.98,
+    diagnosisCodes: ['TA-12'], // highest trapSeeking in the roster — already excellent at forks; the one gap left is the subtler pin variant
     bookPlies: 8,
     bookMistakeChance: 0.12
   },
@@ -242,6 +274,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 20, trapSeeking: 25, defensiveness: 70 },
     mateConversionChance: 0.99,
+    diagnosisCodes: [],
     bookPlies: 10,
     bookMistakeChance: 0.08
   },
@@ -258,6 +291,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 25, trapSeeking: 45, defensiveness: 75 },
     mateConversionChance: 0.91,
+    diagnosisCodes: ['TA-18'],
     bookPlies: 6,
     bookMistakeChance: 0.15
   },
@@ -274,6 +308,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 75, trapSeeking: 60, defensiveness: 15 },
     mateConversionChance: 0.84,
+    diagnosisCodes: ['TA-04', 'TA-17'], // welcomes chaos she doesn't fully control — neglects her own back rank and the double-check that complications can produce
     bookPlies: 7,
     bookMistakeChance: 0.15
   },
@@ -290,6 +325,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 35, trapSeeking: 30, defensiveness: 55 },
     mateConversionChance: 0.99,
+    diagnosisCodes: ['TA-19', 'TA-14'], // "avoiding unnecessary calculation" — skips the precise reading these two patterns require
     bookPlies: 14,
     bookMistakeChance: 0.06
   },
@@ -306,6 +342,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 60, trapSeeking: 50, defensiveness: 30 },
     mateConversionChance: 0.98,
+    diagnosisCodes: ['TA-11'], // energetic and well-prepared, but a static absolute pin isn't the kind of pattern preparation catches
     bookPlies: 12,
     bookMistakeChance: 0.08
   },
@@ -324,6 +361,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 30, trapSeeking: 30, defensiveness: 70 },
     mateConversionChance: 0.99,
+    diagnosisCodes: ['TA-19'], // grinds for the long game — a sudden overload tactic isn't what patient pressure is tuned to notice
     bookPlies: 12,
     bookMistakeChance: 0.06
   },
@@ -340,6 +378,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 70, trapSeeking: 75, defensiveness: 20 },
     mateConversionChance: 0.99,
+    diagnosisCodes: ['TA-26'], // hunts loose pieces generally, but a fully trapped piece (the more advanced version of that pattern) is a specific gap
     bookPlies: 10,
     bookMistakeChance: 0.08
   },
@@ -356,6 +395,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 35, trapSeeking: 35, defensiveness: 55 },
     mateConversionChance: 0.99,
+    diagnosisCodes: [],
     bookPlies: 12,
     bookMistakeChance: 0.05
   },
@@ -372,6 +412,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 55, trapSeeking: 55, defensiveness: 25 },
     mateConversionChance: 0.7,
+    diagnosisCodes: ['TA-18'],
     bookPlies: 3,
     bookMistakeChance: 0.4
   },
@@ -388,6 +429,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 10, trapSeeking: 20, defensiveness: 90 },
     mateConversionChance: 0.99,
+    diagnosisCodes: [],
     bookPlies: 14,
     bookMistakeChance: 0.04
   },
@@ -404,6 +446,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 45, trapSeeking: 80, defensiveness: 45 },
     mateConversionChance: 0.99,
+    diagnosisCodes: ['TA-12'], // precise and tactically sharp; the one gap is the subtler pin variant, distinct from his signature forcing finishes
     bookPlies: 10,
     bookMistakeChance: 0.06
   },
@@ -422,6 +465,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 55, trapSeeking: 80, defensiveness: 30 },
     mateConversionChance: 0.99,
+    diagnosisCodes: ['TA-09'], // sets practical traps under pressure, but the king fork specifically escapes the pattern she leans on
     bookPlies: 12,
     bookMistakeChance: 0.05
   },
@@ -438,6 +482,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 30, trapSeeking: 30, defensiveness: 55 },
     mateConversionChance: 0.99,
+    diagnosisCodes: [],
     bookPlies: 20,
     bookMistakeChance: 0.02
   },
@@ -454,6 +499,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 60, trapSeeking: 55, defensiveness: 25 },
     mateConversionChance: 0.91,
+    diagnosisCodes: ['TA-16'], // sharp, chaotic sidelines create the kind of position where a quieter discovered attack goes unnoticed
     bookPlies: 10,
     bookMistakeChance: 0.08
   },
@@ -470,6 +516,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 25, trapSeeking: 35, defensiveness: 75 },
     mateConversionChance: 0.99,
+    diagnosisCodes: [],
     bookPlies: 16,
     bookMistakeChance: 0.02
   },
@@ -486,6 +533,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 45, trapSeeking: 55, defensiveness: 60 },
     mateConversionChance: 0.98,
+    diagnosisCodes: ['TA-19'], // resilient and balanced, but the sudden-overload pattern isn't what a defense-to-offense mindset is tuned to catch
     bookPlies: 10,
     bookMistakeChance: 0.1
   },
@@ -502,6 +550,7 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     },
     personality: { aggression: 70, trapSeeking: 70, defensiveness: 20 },
     mateConversionChance: 0.98,
+    diagnosisCodes: ['TA-10', 'TA-18'], // prefers the elegant move to the merely correct one — the plain sliding-piece fork and defender-removal shot are exactly the "merely correct" moves he'd rather not play
     bookPlies: 10,
     bookMistakeChance: 0.06
   }

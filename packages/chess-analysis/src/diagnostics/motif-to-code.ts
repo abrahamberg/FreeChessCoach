@@ -43,6 +43,20 @@ const PIN_CODE_BY_KIND: Record<'absolute' | 'relative', DiagnosisCodeId> = {
   relative: 'TA-12'
 };
 
+/** Every code `motifToCode` can actually produce, derived from the same
+ * tables the function itself reads — never a hand-typed second list, so it
+ * can't drift out of sync with what resolution actually does. Used by
+ * Phase 60/61's bot roster to enforce that a bot is only ever "documented"
+ * with a diagnosis code its move selection can genuinely exhibit — see
+ * docs/plan.md's Phase 61. */
+export const MOTIF_RESOLVABLE_DIAGNOSIS_CODES: readonly DiagnosisCodeId[] = Array.from(
+  new Set([
+    ...Object.values(DIRECT_CODE_BY_MOTIF),
+    ...Object.values(FORK_CODE_BY_PIECE).filter((code): code is DiagnosisCodeId => code !== null),
+    ...Object.values(PIN_CODE_BY_KIND)
+  ])
+).sort();
+
 /**
  * `fork` and `pin` split into several codes by the specific piece/kind
  * involved, which the raw `{type, found, detail}` shape on

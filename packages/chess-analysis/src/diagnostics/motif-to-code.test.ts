@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { motifToCode } from './motif-to-code.js';
+import { MOTIF_RESOLVABLE_DIAGNOSIS_CODES, motifToCode } from './motif-to-code.js';
 
 const KNIGHT_FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
 const ABSOLUTE_PIN_FEN = '4k3/8/2n5/8/8/3B4/8/4K3 w - - 0 1';
@@ -47,5 +47,27 @@ describe('motifToCode', () => {
 
   test('returns null when the replay move is illegal', () => {
     expect(motifToCode('fork', { fenBefore: KNIGHT_FORK_FEN, moveSan: 'Qz9' })).toBeNull();
+  });
+});
+
+describe('MOTIF_RESOLVABLE_DIAGNOSIS_CODES', () => {
+  test('contains exactly the 15 TA codes motifToCode can produce, deduplicated and sorted', () => {
+    expect(MOTIF_RESOLVABLE_DIAGNOSIS_CODES).toEqual([
+      'TA-01',
+      'TA-04',
+      'TA-07',
+      'TA-08',
+      'TA-09',
+      'TA-10',
+      'TA-11',
+      'TA-12',
+      'TA-14',
+      'TA-16',
+      'TA-17',
+      'TA-18',
+      'TA-19',
+      'TA-26',
+      'TA-43'
+    ]);
   });
 });

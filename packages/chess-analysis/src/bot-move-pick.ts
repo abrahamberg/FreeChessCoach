@@ -1,4 +1,4 @@
-import type { BotPersonality, TacticMotifType } from '@freechesscoach/shared';
+import type { BotPersonality, DiagnosisCodeId, TacticMotifType } from '@freechesscoach/shared';
 
 export interface BotCandidate {
   moveSan: string;
@@ -16,9 +16,15 @@ export interface BotCandidate {
    * candidate's own PV) at which this line creates a fork of its own. */
   forkInPlies: number | null;
   /** Full tactic motif of playing this candidate right now — carried for
-   * callers that want it (e.g. a richer coach digest); NOT read by
-   * pickBotMove below, which reacts only to the booleans above. */
+   * callers that want it (e.g. a richer coach digest); read by pickBotMove
+   * only indirectly, via diagnosisCode below. */
   motif: TacticMotifType | null;
+  /** `motif` resolved to a real diagnosis code (diagnostics/motif-to-code.ts's
+   * motifToCode) — null when motif is null/unresolvable (brilliantSacrifice,
+   * other) or when a fork/pin's replay didn't confirm the motif. See
+   * docs/plan.md's Phase 61: pickBotMove dampens the roll when this matches
+   * one of the bot's own documented diagnosisCodes. */
+  diagnosisCode: DiagnosisCodeId | null;
 }
 
 /** Named, tunable weights for each personality term in
@@ -38,6 +44,16 @@ export const BOT_PICK_WEIGHTS = {
   defensivenessQuietMoveBonus: 0.2
 } as const;
 
+/** Floor probability (0-1) used instead of bestMoveChance — even overriding
+ * the mate-conversion boost — specifically when candidates[0] embodies a
+ * diagnosis code this bot is documented with (see docs/plan.md's Phase 61):
+ * a bot documented with TA-01 mate-in-one blindness should specifically be
+ * the one that sometimes still fumbles a mate-in-one, not just a generically
+ * weaker player. A single shared constant, not a per-bot number — the
+ * roster's character comes from *which* codes a bot has, not from tuning
+ * how badly it misses them. */
+export const DIAGNOSED_BLIND_SPOT_CHANCE = 0.25;
+
 export interface PickBotMoveInput {
   /** Engine-ranked candidates for the position — candidates[0] is the
    * engine's own top-scored line at whatever depth the caller searched.
@@ -51,6 +67,10 @@ export interface PickBotMoveInput {
    * when candidates[0] delivers/continues a forced mate — see
    * docs/plan.md's Phase 60 "checkmate-completion guarantee". */
   mateConversionChance: number;
+  /** This bot's documented diagnosis codes (Phase 61) — when
+   * candidates[0].diagnosisCode is one of these, the roll uses
+   * DIAGNOSED_BLIND_SPOT_CHANCE instead of (and capping) bestMoveChance. */
+  diagnosisCodes: readonly DiagnosisCodeId[];
   /** Injected randomness (real Math.random at the real call site) — kept
    * injectable so tests are deterministic. */
   random: () => number;
@@ -66,13 +86,17 @@ export interface PickBotMoveInput {
  * not a blend with it — the "miss" branch never reads cp/mateIn.
  */
 export function pickBotMove(input: PickBotMoveInput): BotCandidate {
-  const { candidates, personality, bestMoveChance, mateConversionChance, random } = input;
+  const { candidates, personality, bestMoveChance, mateConversionChance, diagnosisCodes, random } = input;
   if (candidates.length === 0) throw new Error('pickBotMove: no candidates to pick from');
 
   const best = candidates[0];
   if (!best) throw new Error('unreachable: candidates is non-empty');
 
-  const chance = best.mateIn !== null && best.mateIn > 0 ? Math.max(bestMoveChance, mateConversionChance) : bestMoveChance;
+  let chance = bestMoveChance;
+  if (best.mateIn !== null && best.mateIn > 0) chance = Math.max(chance, mateConversionChance);
+  if (best.diagnosisCode !== null && diagnosisCodes.includes(best.diagnosisCode)) {
+    chance = Math.min(chance, DIAGNOSED_BLIND_SPOT_CHANCE);
+  }
   if (random() < chance) return best;
 
   return pickPersonalityWeightedMove(candidates, personality, random);

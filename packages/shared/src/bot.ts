@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DiagnosisCodeIdSchema } from './diagnosis/catalog-types.js';
 
 /** Knobs a bot's personality is built from — see bot-move-pick.ts
  * (packages/chess-analysis) for how these weight move selection. */
@@ -67,6 +68,17 @@ export const BotConfigSchema = z.object({
    * tiers so "the bot can always checkmate" still reads as "usually
    * finishes what it can see," not a flawless finish. */
   mateConversionChance: z.number().min(0).max(1),
+  /** This bot's documented weaknesses, from the same 410-code taxonomy the
+   * coach diagnoses real students against — restricted to codes
+   * `motifToCode` (packages/chess-analysis/src/diagnostics/motif-to-code.ts)
+   * can actually resolve from a candidate move's tactic motif (see that
+   * module's `MOTIF_RESOLVABLE_DIAGNOSIS_CODES`), not the full catalog — a
+   * bot's move selection has no way to distinguishably manifest, say, a
+   * time-management or psychology code. Empty is a legitimate value, not a
+   * gap: a well-rounded bot may have no documented tactical blind spot at
+   * all. See docs/plan.md's Phase 61 for the full rationale and
+   * `bot-move-pick.ts`'s `pickBotMove` for how this actually changes play. */
+  diagnosisCodes: z.array(DiagnosisCodeIdSchema),
   bookPlies: z.number().int().min(0).max(30),
   bookMistakeChance: z.number().min(0).max(1)
 });

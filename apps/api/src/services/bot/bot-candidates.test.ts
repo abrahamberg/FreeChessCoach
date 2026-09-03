@@ -113,4 +113,39 @@ describe('buildBotCandidates', () => {
 
     expect(candidates[0]).toMatchObject({ moveSan: 'Nd6+', motif: 'fork' });
   });
+
+  test('diagnosisCode resolves a fork motif to its piece-specific TA code (Phase 61)', async () => {
+    const knightForkFen = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
+    const analysis: PositionAnalysis = {
+      fen: knightForkFen,
+      depth: 6,
+      multiPv: 1,
+      bestMove: 'Nd6+',
+      eval: { cp: 300, mateIn: null },
+      lines: [{ moveUci: 'c4d6', moveSan: 'Nd6+', pvSan: ['Nd6+'], cp: 300, mateIn: null }],
+      features: {} as PositionAnalysis['features']
+    };
+    const analyzeBotPosition = vi.fn().mockResolvedValue(analysis);
+
+    const candidates = await buildBotCandidates({ analyzeBotPosition }, knightForkFen, 6);
+
+    expect(candidates[0]).toMatchObject({ moveSan: 'Nd6+', motif: 'fork', diagnosisCode: 'TA-07' });
+  });
+
+  test('diagnosisCode is null when there is no motif', async () => {
+    const analysis: PositionAnalysis = {
+      fen: START_FEN,
+      depth: 6,
+      multiPv: 1,
+      bestMove: 'e4',
+      eval: { cp: 20, mateIn: null },
+      lines: [{ moveUci: 'e2e4', moveSan: 'e4', pvSan: ['e4'], cp: 20, mateIn: null }],
+      features: {} as PositionAnalysis['features']
+    };
+    const analyzeBotPosition = vi.fn().mockResolvedValue(analysis);
+
+    const candidates = await buildBotCandidates({ analyzeBotPosition }, START_FEN, 6);
+
+    expect(candidates[0]).toMatchObject({ motif: null, diagnosisCode: null });
+  });
 });

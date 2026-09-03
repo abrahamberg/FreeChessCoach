@@ -23,6 +23,7 @@ function baseBot(): BotConfig {
     },
     personality: { aggression: 50, trapSeeking: 50, defensiveness: 50 },
     mateConversionChance: 0.9,
+    diagnosisCodes: [],
     bookPlies: 0,
     bookMistakeChance: 0
   };

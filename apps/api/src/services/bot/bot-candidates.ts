@@ -1,4 +1,4 @@
-import { annotateCandidateMoves, annotatePvTactics, type BotCandidate } from '@freechesscoach/chess-analysis';
+import { annotateCandidateMoves, annotatePvTactics, motifToCode, type BotCandidate } from '@freechesscoach/chess-analysis';
 import type { PositionAnalysis } from '@freechesscoach/shared';
 
 /** Requested from the engine on every bot search, regardless of phase depth
@@ -57,7 +57,13 @@ export async function buildBotCandidates(
       createsUnderDefendedPiece: annotation?.createsUnderDefendedPiece ?? false,
       mobilityDelta: annotation?.mobilityDelta ?? 0,
       forkInPlies: pvTactics.forkInPlies,
-      motif: annotation?.motif ?? null
+      motif: annotation?.motif ?? null,
+      // Same replay shape motif-to-code.ts's real per-ply diagnostic
+      // detectors use (MotifReplay: {fenBefore, moveSan}) — `fen` here is
+      // this candidate's own before-position, `line.moveSan` the move being
+      // considered, so fork/pin resolve to the exact piece/kind that embodies
+      // them. See docs/plan.md's Phase 61.
+      diagnosisCode: annotation?.motif != null ? motifToCode(annotation.motif, { fenBefore: fen, moveSan: line.moveSan }) : null
     };
   });
 }

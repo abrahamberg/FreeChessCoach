@@ -2192,6 +2192,188 @@ This closes out Phase 60 — all six tasks are now checked off.
 
 ---
 
+## Phase 61 — Bots documented with real diagnosis codes
+
+Per user decision: a bot's "character" (Phase 60's personality/phase
+profiles) should also be documented against the same diagnosis-code
+taxonomy the coach uses to diagnose real students (`packages/shared/src/diagnosis/`,
+410 codes across 18 families — `docs/diagnose.md`), not just free-text
+personality traits. "Documented" is taken literally: a code a bot is
+tagged with must be something its actual move-selection logic can be shown,
+in a test, to exhibit — not flavor text layered on top.
+
+**Scope decision (deliberately narrow):** a bot may only be tagged with a
+code `packages/chess-analysis/src/diagnostics/motif-to-code.ts`'s
+`motifToCode` can actually resolve from a candidate move's tactic motif —
+15 `TA-*` codes: `TA-01` (mate-in-one), `TA-04` (back-rank), `TA-07`/`08`/
+`09`/`10` (knight/pawn/king/sliding-piece fork), `TA-11`/`12` (absolute/
+relative pin), `TA-14` (skewer), `TA-16` (discovered attack), `TA-17`
+(double check), `TA-18` (removes defender), `TA-19` (overloaded defender),
+`TA-26` (trapped piece), `TA-43` (free/hanging piece). Every other family
+(BV/MS/CA/TM/MX/OP/EV/ST/PW/AT/DF/CV/EG/PS/LR/PD/RB — 395 of the 410 codes)
+describes a mechanism — scanning failures, calculation depth, time
+management, psychology, opening prep, endgame technique knowledge,
+learning habits — a single-position, dice-roll-based move selector has no
+way to distinguishably manifest. Tagging a bot with e.g. `PS-09
+Lower-rated-opponent overconfidence` or `TM-05 Opening-time sink` would be
+documentation that overclaims what the code does. `motifToCode` is the
+exact function the real per-ply diagnostic detectors
+(`diagnostics/ta-offensive.ts`/`ta-defensive.ts`) use to resolve a
+position's tactic motif to a code — reusing it means a bot's documented
+weakness is checked through the identical code path a real student's is,
+not a parallel one that could quietly drift out of sync.
+
+**Mechanism:** `BotCandidate` gains `diagnosisCode: DiagnosisCodeId | null`,
+resolved once per candidate in `bot-candidates.ts` via `motifToCode(motif,
+{ fenBefore: fen, moveSan: line.moveSan })` (the `MotifReplay` shape
+`motif-to-code.ts` already defines — fork/pin need the replay to recover
+which piece/kind embodies them; every other motif resolves directly,
+replay unused). `BotConfig` gains `diagnosisCodes: DiagnosisCodeId[]`. In
+`pickBotMove`, when `candidates[0].diagnosisCode` is non-null and appears
+in `bot.diagnosisCodes`, the roll uses a dampened `DIAGNOSED_BLIND_SPOT_CHANCE`
+instead of (and capping, via `Math.min`, even over the existing
+mate-conversion boost) the phase's own `bestMoveChance` — a bot documented
+with `TA-01` mate-in-one blindness should specifically be the one that
+sometimes still fumbles a mate-in-one, even though the general
+mate-completion guarantee (Phase 60) would otherwise favor taking it. This
+mirrors the existing mate-conversion override's shape exactly (a candidate
+property triggers a different chance), it just caps downward instead of
+boosting upward.
+
+**Why `Math.min` against the mate-boosted chance rather than a separate
+branch:** keeps exactly one dice roll per move (no double-rolling), and
+makes the interaction legible as a single sentence — "a documented blind
+spot always wins the tug-of-war, even against the mate-completion
+guarantee" — rather than a priority list of special cases.
+
+**Guardrail, not just prose:** `motif-to-code.ts` exports a new
+`MOTIF_RESOLVABLE_DIAGNOSIS_CODES: readonly DiagnosisCodeId[]` (every code
+`DIRECT_CODE_BY_MOTIF`/`FORK_CODE_BY_PIECE`/`PIN_CODE_BY_KIND` can produce,
+deduplicated) — computed from the same private tables `motifToCode` itself
+reads, so it can't drift out of sync with what the function actually
+resolves. A roster test asserts every `BOT_ROSTER` entry's `diagnosisCodes`
+is a subset of it, enforcing the scope decision above in code, not only in
+this prose.
+
+**Out of scope for this phase:** no UI surfacing (a bot's page/card doesn't
+yet show "known weaknesses" to the student) — the user asked for the
+diagnostics to be brought into the picture and documented, not for a new
+UI element; add that separately if wanted. No dampening of the
+personality-weighted "miss" branch's own candidate weights (only
+`candidates[0]` is checked against `bot.diagnosisCodes`) — a documented
+bot still *can* stumble into playing its own weak tactic via the miss
+branch's ordinary weighting, just not specifically biased toward or away
+from it there. Revisit both if the simpler version doesn't feel like
+enough once it's live.
+
+### Task 61.1: Resolve a candidate's motif to a diagnosis code
+
+**Files:** `packages/chess-analysis/src/diagnostics/motif-to-code.ts` (+ test),
+`packages/chess-analysis/src/bot-move-pick.ts` (+ test),
+`apps/api/src/services/bot/bot-candidates.ts` (+ test).
+
+- [x] `motif-to-code.ts`: export `MOTIF_RESOLVABLE_DIAGNOSIS_CODES`, derived
+      from `DIRECT_CODE_BY_MOTIF`/`FORK_CODE_BY_PIECE`/`PIN_CODE_BY_KIND`'s
+      own values (`Object.values`, deduplicated, `null` filtered out, sorted
+      for a stable snapshot) — never hand-typed as a separate literal list.
+- [x] `BotCandidate` gains `diagnosisCode: DiagnosisCodeId | null`.
+- [x] `bot-candidates.ts`: for each line, `diagnosisCode: annotation?.motif
+      != null ? motifToCode(annotation.motif, { fenBefore: fen, moveSan:
+      line.moveSan }) : null`.
+- [x] Commit: `feat: resolve bot candidate moves to diagnosis codes`.
+
+### Task 61.2: Diagnosed-blind-spot dampening in pickBotMove
+
+**Files:** `packages/chess-analysis/src/bot-move-pick.ts` (+ test),
+`packages/shared/src/bot.ts`.
+
+- [x] `BotConfig` gains `diagnosisCodes: z.array(DiagnosisCodeIdSchema)`
+      (import from `../diagnosis/catalog-types.js` — reuse the existing
+      schema, don't redeclare the `[A-Z]{2}-\d{2}` pattern).
+- [x] `PickBotMoveInput` gains `diagnosisCodes: readonly DiagnosisCodeId[]`.
+      `DIAGNOSED_BLIND_SPOT_CHANCE` — a single module-level tunable
+      constant (not yet another per-bot number), e.g. `0.25`, named next to
+      `BOT_PICK_WEIGHTS`.
+- [x] `pickBotMove`: `let chance = bestMoveChance; if (best.mateIn !== null
+      && best.mateIn > 0) chance = Math.max(chance, mateConversionChance);
+      if (best.diagnosisCode !== null && diagnosisCodes.includes(best.diagnosisCode))
+      chance = Math.min(chance, DIAGNOSED_BLIND_SPOT_CHANCE);` — one roll
+      against the final `chance`, same as today.
+- [x] Tests: a documented code on `candidates[0]` dampens the roll even when
+      `bestMoveChance` is 1; an undocumented code on `candidates[0]` leaves
+      `bestMoveChance` untouched; a mate-in-1 that's ALSO the bot's
+      documented `TA-01` caps down to `DIAGNOSED_BLIND_SPOT_CHANCE` even
+      though the mate-conversion boost alone would have pushed it up.
+- [x] Commit: `feat: dampen bot's documented diagnosis-code blind spots`.
+
+### Task 61.3: Wire selectBotMove and document the roster
+
+**Files:** `apps/api/src/services/bot/bot-move-selector.ts` (+ test),
+`packages/shared/src/bot-roster.ts`.
+
+- [x] `selectBotMove` passes `diagnosisCodes: bot.diagnosisCodes` into
+      `pickBotMove`'s input.
+- [x] For each of the 30 `BOT_ROSTER` entries, assign 2-4 codes from
+      `MOTIF_RESOLVABLE_DIAGNOSIS_CODES` that cohere with the bot's existing
+      `description`/`personality` (e.g. a high-`trapSeeking`,
+      low-`defensiveness` beginner reads naturally as fork-blind —
+      `TA-07`/`TA-08`; a bot whose description calls out forgetting threats
+      fits `TA-43`; a solid, low-aggression/high-defensiveness bot may
+      warrant none at all — an empty list is a legitimate, honest answer,
+      not a gap to fill). Update the file's top doc comment to explain what
+      `diagnosisCodes` means and point at Phase 61 for the full rationale,
+      so a reader doesn't have to reconstruct the scope decision from the
+      data alone.
+- [x] Test: every `BOT_ROSTER` entry's `diagnosisCodes` is a subset of
+      `MOTIF_RESOLVABLE_DIAGNOSIS_CODES` and every id exists in
+      `DIAGNOSIS_CODES_BY_ID` (belt-and-suspenders — the first check is the
+      real guardrail per the scope decision above, the second catches a
+      typo'd code id that happens to still match the `[A-Z]{2}-\d{2}` shape).
+- [x] Commit: `feat: document bot roster with real diagnosis codes`.
+
+### Task 61.4: Test sweep and integration check
+
+**Files:** every `apps/api/src/services/bot/*.test.ts` fixture that builds a
+`BotConfig` (needs a `diagnosisCodes: []` default), plus whatever else the
+schema change touches.
+
+- [x] Update every `BotConfig` test fixture across `apps/api`/`packages/*`
+      with the new required field.
+- [x] Full-repo `npm run typecheck`, `npx eslint .`, `npx vitest run` (no
+      workspace scoping) — confirm clean before closing out the phase.
+- [x] Commit: fold into the task above's commit if the diffs are small
+      enough, otherwise a standalone `test: update bot config fixtures for
+      diagnosisCodes`.
+
+**Done:** All four tasks landed — 61.1/61.2 (core mechanism: `BotCandidate.diagnosisCode`,
+`MOTIF_RESOLVABLE_DIAGNOSIS_CODES`, `pickBotMove`'s dampening) done directly
+given they touch shared/critical files; 61.3's roster half (assigning 0-4
+codes per bot across all 30, with rationale) forked out as an isolated,
+single-file, judgment-heavy task once the schema shape was fixed. One
+placement deviation from the original task text: the roster-validation
+guardrail test (`every BOT_ROSTER entry's diagnosisCodes is a subset of
+MOTIF_RESOLVABLE_DIAGNOSIS_CODES`) couldn't live in `packages/shared` as
+originally written — `packages/shared` cannot depend on
+`packages/chess-analysis` (dependency direction is the reverse), so it
+lives in `packages/chess-analysis/src/bot-roster-diagnosis-codes.test.ts`
+instead, importing `BOT_ROSTER` from `@freechesscoach/shared`. 7 of 30
+bots ended up with an empty `diagnosisCodes` (Sophie Chen, Steven Anders,
+Ella Fischer, Marco Silva, Viktor Hahn, Elias Grant, Yuna Seo) — each
+explicitly described as accurate/disciplined/clinical, an honest "no
+documented blind spot" rather than a gap. Full-repo verification:
+`npm run typecheck` clean, `npx eslint .` clean, `npx vitest run`
+(unscoped) — 371/372 test files passed outright, one
+(`apps/api/src/routes/stats.test.ts`) failed on a `beforeAll` DB-setup
+hook timeout under full-suite resource contention; re-run in isolation it
+passed cleanly in 5.4s, confirming this is the same class of pre-existing
+full-suite test-DB flakiness noted at the end of Phases 59 and 60, not a
+regression from this phase (stats.test.ts has no relation to bots).
+2608/2612 tests passed (4 skipped, unrelated to this phase).
+
+This closes out Phase 61 — all four tasks are now checked off.
+
+---
+
 ## Calibration and standing constraints
 
 - **§0.3 and §V require recalibration** of every rating prior and threshold

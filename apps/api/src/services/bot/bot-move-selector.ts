@@ -80,6 +80,7 @@ export async function selectBotMove(
     personality: bot.personality,
     bestMoveChance: profile.bestMoveChance,
     mateConversionChance: bot.mateConversionChance,
+    diagnosisCodes: bot.diagnosisCodes,
     random: deps.random
   });
   return { san: picked.moveSan, usedBook: false };
