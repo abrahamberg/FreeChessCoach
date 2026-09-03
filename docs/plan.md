@@ -2549,24 +2549,63 @@ logic, per AGENTS.md's layering rule, not `packages/shared`.
 
 ### Task 62.5: Widen and re-tier the roster
 
-**Files:** `packages/shared/src/bot-roster.ts` (+ roster validation test).
+**Files:** `packages/shared/src/bot-roster.ts`, `packages/shared/src/bot.ts`
+(dropped `BotPhaseProfileSchema.bestMoveChance`, now dead — derived live by
+Task 62.3), `packages/chess-analysis/src/bot-roster-diagnosis-codes.test.ts`
+(extended, pre-existing from Phase 61).
 
-- [ ] Rewrite the doc comment (`bot-roster.ts:18-35`): replace the
-      "every other family has no way to distinguishably manifest" claim
-      with the real `TA∪BV∪MS` scope, and name exactly what's still
-      excluded and why (the other 15 families: no detector yet;
-      `TA`-defensive/`MS-07`/`MS-14`: need cross-ply context a single live
-      move doesn't have).
-- [ ] Beginner tier (~elo 300-420): `diagnosisCodes` = the full `TA∪BV∪MS`
-      eligible pool (or very close to it). Taper breadth down through
-      Developing/Intermediate, reaching 0-1 by Advanced/Expert (several
-      already are empty; keep those). Keep existing flavor-appropriate
-      hand-picked codes as a called-out "signature" on top of the tier
-      baseline where they still fit a bot's bio.
-- [ ] New test: every bot's `diagnosisCodes` ⊆ the `TA∪BV∪MS` eligible
-      pool, and breadth is non-increasing as elo increases across the
-      sorted roster.
-- [ ] Commit: `feat: widen and re-tier bot roster diagnosis codes`.
+- [x] New `ELIGIBLE_DIAGNOSIS_CODES` (19 codes: 15 `TA-*` +
+      `BV-01`/`BV-02`/`MS-02`/`MS-03`) in `bot-roster.ts` — a hand-maintained
+      literal, not an import, since `packages/shared` cannot depend on
+      `packages/chess-analysis` (AGENTS.md layering); a new roster test
+      asserts it stays in sync with the union of
+      `MOTIF_RESOLVABLE_DIAGNOSIS_CODES`/`CANDIDATE_PROXY_RESOLVABLE_DIAGNOSIS_CODES`.
+      Rewrote the doc comment to name this scope and what's still excluded
+      (the other 15 families: no detector; `TA`-defensive/`MS-07`/`MS-14`:
+      need cross-ply context a single live move doesn't have).
+- [x] `diagnosisCodeBreadthForElo(elo)`: piecewise-linear anchors
+      (300→19 "all", 400→14, 600→9, 800→6, 1200→3, 1500→2, 2300→0).
+      `documentedDiagnosisCodes(signature, elo)` fills a bot's existing
+      hand-picked "signature" codes up to that target from
+      `ELIGIBLE_DIAGNOSIS_CODES`'s fixed order, never dropping a signature
+      code even when the curve alone would call for fewer. Every one of
+      the 30 roster entries now calls this instead of a literal array.
+- [x] One deliberate content fix during verification: `adrian-laurent`
+      (elo 2150)'s 2-code signature exceeded `william-hart` (elo 2050)'s
+      1, breaking strict monotonicity — trimmed to his single
+      strongest-fitting code (`TA-10`) rather than weakening the
+      never-drop-signature guarantee for every bot.
+- [x] Extended the pre-existing Phase 61 roster test
+      (`bot-roster-diagnosis-codes.test.ts`) rather than writing a new one:
+      subset check now against `ELIGIBLE_DIAGNOSIS_CODES`, plus new checks
+      for the sync-with-chess-analysis invariant, non-increasing breadth by
+      elo, and the lowest-elo bot documenting the full pool.
+- [x] Swept every `bot-*.test.ts` fixture that still built a `BotPhaseProfile`
+      literal with the now-dropped `bestMoveChance` field — most were inert
+      noise (mechanically stripped), but `bot-move-selector.test.ts`'s core
+      scenarios ("a roll under bestMoveChance...", "forced mate uses
+      mateConversionChance even when bestMoveChance would otherwise
+      miss") had gone quietly vacuous: they set the now-ignored fixture
+      field and were passing only because `baseBot()`'s fixed `elo: 800`
+      happened to produce a real chance that still satisfied each
+      assertion by coincidence. Rewrote them to control the elo-derived
+      chance directly via `elo` and assert against `bestMoveChanceForElo`'s
+      real output, so they test what they claim again.
+- [x] Commit: `feat: widen and re-tier bot roster diagnosis codes`.
+
+**Done:** All five tasks landed. One task-boundary correction happened
+mid-flight (noted in Task 62.4): the plan draft's `classify-bot-move.ts`
+was never built — `play-moves.ts`'s shared `commitMove` already ran
+`classifyAndRecordMove` for every mover including the bot, so the real gap
+was turning that already-computed classification into diagnosis codes, not
+a second classification path. Full-repo verification after all five tasks:
+`npm run typecheck` clean, `npx eslint .` clean, `npx vitest run`
+(unscoped) — 374/374 test files, 2641/2641 tests passing. One CLI script
+test (`build-lichess-eval-index.test.mjs`) timed out once under full-suite
+load and passed cleanly in isolation — a pre-existing subprocess-timing
+flake unrelated to this phase, not investigated further.
+
+This closes out Phase 62 — all five tasks are now checked off.
 
 ---
 

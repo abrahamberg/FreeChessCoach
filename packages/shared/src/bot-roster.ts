@@ -1,4 +1,108 @@
+import type { DiagnosisCodeId } from './diagnosis/catalog-types.js';
 import type { BotConfig } from './bot.js';
+
+/**
+ * Every diagnosis code a bot's own move selection can actually be steered
+ * toward manifesting — the union of `MOTIF_RESOLVABLE_DIAGNOSIS_CODES`
+ * (`packages/chess-analysis/src/diagnostics/motif-to-code.ts`, `TA-*`) and
+ * `CANDIDATE_PROXY_RESOLVABLE_DIAGNOSIS_CODES`
+ * (`packages/chess-analysis/src/diagnostics/candidate-diagnosis-proxy.ts`,
+ * `BV-01`/`BV-02`/`MS-02`/`MS-03`) — the only two sources `bot-candidates.ts`
+ * populates a `BotCandidate.diagnosisCodes` from, which is in turn the only
+ * thing `pickBotMove`'s steering roll (docs/plan.md Phase 62) ever checks a
+ * bot's own `diagnosisCodes` against. This literal list, not an import,
+ * because `packages/shared` cannot depend on `packages/chess-analysis`
+ * (AGENTS.md's layering — chess-analysis depends on shared, not the other
+ * way around); `apps/api/src/services/bot/bot-roster.test.ts` asserts this
+ * stays in sync with both source lists so it can't silently drift. A code
+ * outside this set would be inert flavor text: real (Task 62.4's detector
+ * pass) but never something the bot's own selection can be nudged toward,
+ * exactly the claim Phase 61 refused to make for the other 391 codes in the
+ * 410-code catalog — see `documentedDiagnosisCodes` below for why that
+ * boundary hasn't otherwise moved.
+ */
+export const ELIGIBLE_DIAGNOSIS_CODES: readonly DiagnosisCodeId[] = [
+  'TA-01',
+  'TA-04',
+  'TA-07',
+  'TA-08',
+  'TA-09',
+  'TA-10',
+  'TA-11',
+  'TA-12',
+  'TA-14',
+  'TA-16',
+  'TA-17',
+  'TA-18',
+  'TA-19',
+  'TA-26',
+  'TA-43',
+  'BV-01',
+  'BV-02',
+  'MS-02',
+  'MS-03'
+];
+
+/**
+ * Elo -> target `diagnosisCodes` breadth, per the user's own worked
+ * examples (docs/plan.md Phase 62): 300 documents the full eligible pool
+ * ("all diagnose"), tapering to 0 by the roster's elo ceiling. Piecewise
+ * linear between anchors (a plain count, not a probability, so there's no
+ * 0/1-asymptote reason to interpolate in logit space the way
+ * bot-skill-curve.ts's chance curves do), rounded to the nearest whole
+ * code and clamped to `[0, ELIGIBLE_DIAGNOSIS_CODES.length]`.
+ */
+const DIAGNOSIS_BREADTH_ANCHORS: ReadonlyArray<readonly [elo: number, breadth: number]> = [
+  [300, 19],
+  [400, 14],
+  [600, 9],
+  [800, 6],
+  [1200, 3],
+  [1500, 2],
+  [2300, 0]
+];
+
+function diagnosisCodeBreadthForElo(elo: number): number {
+  const clampedElo = Math.min(Math.max(elo, 300), 2300);
+
+  for (let i = 0; i < DIAGNOSIS_BREADTH_ANCHORS.length - 1; i++) {
+    const lower = DIAGNOSIS_BREADTH_ANCHORS[i];
+    const upper = DIAGNOSIS_BREADTH_ANCHORS[i + 1];
+    if (!lower || !upper) continue;
+    const [eloA, breadthA] = lower;
+    const [eloB, breadthB] = upper;
+    if (clampedElo < eloA || clampedElo > eloB) continue;
+    const t = eloB === eloA ? 0 : (clampedElo - eloA) / (eloB - eloA);
+    return Math.round(breadthA + t * (breadthB - breadthA));
+  }
+
+  return clampedElo <= (DIAGNOSIS_BREADTH_ANCHORS[0]?.[0] ?? 0) ? 19 : 0;
+}
+
+/**
+ * `signature` is this bot's own hand-picked, narratively-justified codes
+ * (a defensible read of its `description`/`personality`, per Phase 61's
+ * original convention — trailing comments on the roster entries below
+ * explain the less-obvious ones). The elo-scaled breadth
+ * (`diagnosisCodeBreadthForElo`) is filled in *on top of* those, in
+ * `ELIGIBLE_DIAGNOSIS_CODES`'s fixed order, when the tier calls for more
+ * than the signature alone provides — deliberately not individually
+ * narrated: a beginner-tier bot documented with close to all 19 eligible
+ * codes is a statement about how indiscriminately a real beginner exhibits
+ * these problems, not 19 separate claims each needing its own bio-derived
+ * justification. Never drops a signature code even when the elo-scaled
+ * breadth alone would call for fewer — a bot's own defensible weaknesses
+ * are never diluted by leveling up faster than they'd suggest.
+ */
+function documentedDiagnosisCodes(signature: readonly DiagnosisCodeId[], elo: number): DiagnosisCodeId[] {
+  const breadth = Math.max(diagnosisCodeBreadthForElo(elo), signature.length);
+  const codes = [...signature];
+  for (const code of ELIGIBLE_DIAGNOSIS_CODES) {
+    if (codes.length >= breadth) break;
+    if (!codes.includes(code)) codes.push(code);
+  }
+  return codes;
+}
 
 /**
  * Curated roster of preset bots (chess.com-style) — the whole roster for v1,
@@ -11,28 +115,27 @@ import type { BotConfig } from './bot.js';
  * at public/brand/bots.png (row = tier, column = position within the tier —
  * `avatarIndex` is `row * 6 + column`). `elo` (300-2300) is the display
  * rating; the knobs that actually make a bot play weaker/stronger/differently
- * are `phases` (per game-phase search depth and literal best-move
- * probability — see bot.ts's `BotPhaseProfileSchema`), `personality`, and
- * the opening-book pair.
+ * are `phases` (per game-phase search depth — `bestMoveChance` is now
+ * derived live from `elo` by `bot-skill-curve.ts`'s `bestMoveChanceForElo`,
+ * docs/plan.md Phase 62, not a per-bot field), `personality`, and the
+ * opening-book pair.
  *
- * `diagnosisCodes` (docs/plan.md's Phase 61) documents each bot's tactical
- * blind spots against the same diagnosis-code taxonomy the coach uses on
- * real students (`packages/shared/src/diagnosis/`) — but ONLY drawn from
- * `MOTIF_RESOLVABLE_DIAGNOSIS_CODES` (packages/chess-analysis/src/diagnostics/motif-to-code.ts),
- * the 15 `TA-*` tactic-recognition codes a candidate move's own motif can
- * resolve to. Every other family in the 410-code catalog (scanning habits,
- * calculation depth, time management, psychology, opening prep, endgame
- * technique, learning habits) describes a mechanism this bot's single-move,
- * dice-roll-based selection has no way to distinguishably manifest — tagging
- * a bot with one of those would be a claim the code can't back up. When a
- * documented code matches the engine's own top candidate, `pickBotMove`
- * dampens the roll (`DIAGNOSED_BLIND_SPOT_CHANCE`) even below what the
- * bot's phase/tier would otherwise predict — so this is a real behavioral
- * property, not flavor text. An empty list is a legitimate, honest value
- * for a well-rounded or highly disciplined bot, not a gap to fill; a code
- * is assigned only where it's a defensible read of that bot's own
- * `description`/`personality`, not decoration. Trailing comments below
- * explain the less-obvious picks.
+ * `diagnosisCodes` (Phase 61, widened by Phase 62) documents each bot's
+ * real blind spots against the same diagnosis-code taxonomy the coach uses
+ * on real students (`packages/shared/src/diagnosis/`), restricted to
+ * `ELIGIBLE_DIAGNOSIS_CODES` above — the 19 `TA-*`/`BV-*`/`MS-*` codes a
+ * bot's own move selection can actually be steered toward (`pickBotMove`,
+ * docs/plan.md Phase 62), scaled by elo via `documentedDiagnosisCodes`.
+ * Every other family in the 410-code catalog (calculation depth beyond a
+ * single ply, time management, psychology, opening prep beyond the book
+ * mechanism already covered by `bookMistakeChance`, endgame technique,
+ * learning habits, strategic planning) describes a mechanism this bot's
+ * single-move selection has no way to distinguishably manifest — tagging a
+ * bot with one of those would be a claim the code can't back up. An empty
+ * list is a legitimate, honest value for a well-rounded or highly
+ * disciplined bot, not a gap to fill. Trailing comments below explain the
+ * less-obvious signature picks; the elo-scaled bulk fill is explained once,
+ * above, rather than per bot.
  */
 export const BOT_ROSTER: readonly BotConfig[] = [
   // --- Beginner ---
@@ -43,13 +146,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Newcomer." Moves fast, attacks early, and often forgets what you\'re threatening.',
     elo: 300,
     phases: {
-      opening: { depth: 3, bestMoveChance: 0.2 },
-      middlegame: { depth: 3, bestMoveChance: 0.05 },
-      endgame: { depth: 9, bestMoveChance: 0.3 }
+      opening: { depth: 3 },
+      middlegame: { depth: 3 },
+      endgame: { depth: 9 }
     },
     personality: { aggression: 70, trapSeeking: 20, defensiveness: 10 },
     mateConversionChance: 0.55,
-    diagnosisCodes: ['TA-43', 'TA-01'],
+    diagnosisCodes: documentedDiagnosisCodes(['TA-43', 'TA-01'], 300),
     bookPlies: 2,
     bookMistakeChance: 0.5
   },
@@ -60,13 +163,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Curious." Plays carefully and experiments with new ideas instead of the safe move.',
     elo: 350,
     phases: {
-      opening: { depth: 4, bestMoveChance: 0.31 },
-      middlegame: { depth: 4, bestMoveChance: 0.16 },
-      endgame: { depth: 10, bestMoveChance: 0.41 }
+      opening: { depth: 4 },
+      middlegame: { depth: 4 },
+      endgame: { depth: 10 }
     },
     personality: { aggression: 35, trapSeeking: 45, defensiveness: 40 },
     mateConversionChance: 0.56,
-    diagnosisCodes: ['TA-19', 'TA-08'],
+    diagnosisCodes: documentedDiagnosisCodes(['TA-19', 'TA-08'], 350),
     bookPlies: 3,
     bookMistakeChance: 0.4
   },
@@ -77,13 +180,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Club Regular." Sticks to familiar openings and solid development, avoids unnecessary risk.',
     elo: 420,
     phases: {
-      opening: { depth: 5, bestMoveChance: 0.59 },
-      middlegame: { depth: 5, bestMoveChance: 0.44 },
-      endgame: { depth: 11, bestMoveChance: 0.69 }
+      opening: { depth: 5 },
+      middlegame: { depth: 5 },
+      endgame: { depth: 11 }
     },
     personality: { aggression: 20, trapSeeking: 15, defensiveness: 65 },
     mateConversionChance: 0.84,
-    diagnosisCodes: ['TA-19'],
+    diagnosisCodes: documentedDiagnosisCodes(['TA-19'], 420),
     bookPlies: 6,
     bookMistakeChance: 0.25
   },
@@ -94,13 +197,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Puzzle Hunter." Constantly searches for forks, pins, and discoveries — sound or not.',
     elo: 380,
     phases: {
-      opening: { depth: 4, bestMoveChance: 0.38 },
-      middlegame: { depth: 4, bestMoveChance: 0.23 },
-      endgame: { depth: 10, bestMoveChance: 0.48 }
+      opening: { depth: 4 },
+      middlegame: { depth: 4 },
+      endgame: { depth: 10 }
     },
     personality: { aggression: 45, trapSeeking: 80, defensiveness: 15 },
     mateConversionChance: 0.63,
-    diagnosisCodes: ['TA-12', 'TA-19'], // tactics-obsessed but reckless ("sound or not"); already handles forks via high trapSeeking, so her documented gap is the subtler patterns she rushes past
+    diagnosisCodes: documentedDiagnosisCodes(['TA-12', 'TA-19'], 380), // tactics-obsessed but reckless ("sound or not"); already handles forks via high trapSeeking, so her documented gap is the subtler patterns she rushes past
     bookPlies: 2,
     bookMistakeChance: 0.45
   },
@@ -111,13 +214,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Planner." Builds a clear plan but sometimes misses a tactic sitting right in front of it.',
     elo: 400,
     phases: {
-      opening: { depth: 5, bestMoveChance: 0.52 },
-      middlegame: { depth: 5, bestMoveChance: 0.37 },
-      endgame: { depth: 11, bestMoveChance: 0.62 }
+      opening: { depth: 5 },
+      middlegame: { depth: 5 },
+      endgame: { depth: 11 }
     },
     personality: { aggression: 30, trapSeeking: 10, defensiveness: 45 },
     mateConversionChance: 0.77,
-    diagnosisCodes: ['TA-43', 'TA-07'],
+    diagnosisCodes: documentedDiagnosisCodes(['TA-43', 'TA-07'], 400),
     bookPlies: 4,
     bookMistakeChance: 0.35
   },
@@ -128,13 +231,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Prodigy." Balanced, accurate, adaptable, and surprisingly hard to rattle for her level.',
     elo: 500,
     phases: {
-      opening: { depth: 7, bestMoveChance: 0.73 },
-      middlegame: { depth: 7, bestMoveChance: 0.58 },
-      endgame: { depth: 13, bestMoveChance: 0.83 }
+      opening: { depth: 7 },
+      middlegame: { depth: 7 },
+      endgame: { depth: 13 }
     },
     personality: { aggression: 40, trapSeeking: 40, defensiveness: 40 },
     mateConversionChance: 0.98,
-    diagnosisCodes: [],
+    diagnosisCodes: documentedDiagnosisCodes([], 500),
     bookPlies: 8,
     bookMistakeChance: 0.15
   },
@@ -147,13 +250,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Storm." Attacks aggressively, sacrifices material freely, and hates quiet positions.',
     elo: 600,
     phases: {
-      opening: { depth: 7, bestMoveChance: 0.45 },
-      middlegame: { depth: 7, bestMoveChance: 0.3 },
-      endgame: { depth: 13, bestMoveChance: 0.55 }
+      opening: { depth: 7 },
+      middlegame: { depth: 7 },
+      endgame: { depth: 13 }
     },
     personality: { aggression: 85, trapSeeking: 35, defensiveness: 10 },
     mateConversionChance: 0.7,
-    diagnosisCodes: ['TA-43', 'TA-04'],
+    diagnosisCodes: documentedDiagnosisCodes(['TA-43', 'TA-04'], 600),
     bookPlies: 5,
     bookMistakeChance: 0.25
   },
@@ -164,13 +267,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Anchor." Develops safely, protects every weakness, and rarely makes a reckless move.',
     elo: 650,
     phases: {
-      opening: { depth: 8, bestMoveChance: 0.87 },
-      middlegame: { depth: 8, bestMoveChance: 0.72 },
-      endgame: { depth: 14, bestMoveChance: 0.97 }
+      opening: { depth: 8 },
+      middlegame: { depth: 8 },
+      endgame: { depth: 14 }
     },
     personality: { aggression: 10, trapSeeking: 15, defensiveness: 85 },
     mateConversionChance: 0.99,
-    diagnosisCodes: [],
+    diagnosisCodes: documentedDiagnosisCodes([], 650),
     bookPlies: 8,
     bookMistakeChance: 0.15
   },
@@ -181,13 +284,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Inventor." Finds unusual plans and surprising sacrifices instead of the obvious move.',
     elo: 620,
     phases: {
-      opening: { depth: 7, bestMoveChance: 0.38 },
-      middlegame: { depth: 7, bestMoveChance: 0.23 },
-      endgame: { depth: 13, bestMoveChance: 0.48 }
+      opening: { depth: 7 },
+      middlegame: { depth: 7 },
+      endgame: { depth: 13 }
     },
     personality: { aggression: 55, trapSeeking: 50, defensiveness: 20 },
     mateConversionChance: 0.63,
-    diagnosisCodes: ['TA-07', 'TA-18'], // seeks the unusual plan over the obvious one — sometimes that obvious move was the correct tactic
+    diagnosisCodes: documentedDiagnosisCodes(['TA-07', 'TA-18'], 620), // seeks the unusual plan over the obvious one — sometimes that obvious move was the correct tactic
     bookPlies: 3,
     bookMistakeChance: 0.3
   },
@@ -198,13 +301,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Calculator." Calculates deeply and precisely, one line at a time.',
     elo: 700,
     phases: {
-      opening: { depth: 9, bestMoveChance: 0.94 },
-      middlegame: { depth: 9, bestMoveChance: 0.79 },
-      endgame: { depth: 15, bestMoveChance: 0.98 }
+      opening: { depth: 9 },
+      middlegame: { depth: 9 },
+      endgame: { depth: 15 }
     },
     personality: { aggression: 35, trapSeeking: 45, defensiveness: 40 },
     mateConversionChance: 0.99,
-    diagnosisCodes: ['TA-19'], // "one line at a time" — deep in a single calculated line, occasionally misses a tactical resource elsewhere on the board
+    diagnosisCodes: documentedDiagnosisCodes(['TA-19'], 700), // "one line at a time" — deep in a single calculated line, occasionally misses a tactical resource elsewhere on the board
     bookPlies: 6,
     bookMistakeChance: 0.15
   },
@@ -215,13 +318,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Chameleon." Switches easily between aggressive and positional play mid-game.',
     elo: 680,
     phases: {
-      opening: { depth: 8, bestMoveChance: 0.45 },
-      middlegame: { depth: 8, bestMoveChance: 0.3 },
-      endgame: { depth: 14, bestMoveChance: 0.55 }
+      opening: { depth: 8 },
+      middlegame: { depth: 8 },
+      endgame: { depth: 14 }
     },
     personality: { aggression: 50, trapSeeking: 35, defensiveness: 35 },
     mateConversionChance: 0.7,
-    diagnosisCodes: ['TA-16'], // switches styles mid-game; a discovered attack (noticing a move unlocks another piece) is easy to miss between modes
+    diagnosisCodes: documentedDiagnosisCodes(['TA-16'], 680), // switches styles mid-game; a discovered attack (noticing a move unlocks another piece) is easy to miss between modes
     bookPlies: 5,
     bookMistakeChance: 0.2
   },
@@ -232,13 +335,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Architect." Improves his position slowly and values structure over tactics.',
     elo: 750,
     phases: {
-      opening: { depth: 8, bestMoveChance: 0.87 },
-      middlegame: { depth: 8, bestMoveChance: 0.72 },
-      endgame: { depth: 14, bestMoveChance: 0.97 }
+      opening: { depth: 8 },
+      middlegame: { depth: 8 },
+      endgame: { depth: 14 }
     },
     personality: { aggression: 15, trapSeeking: 10, defensiveness: 75 },
     mateConversionChance: 0.99,
-    diagnosisCodes: ['TA-07', 'TA-18', 'TA-43'],
+    diagnosisCodes: documentedDiagnosisCodes(['TA-07', 'TA-18', 'TA-43'], 750),
     bookPlies: 10,
     bookMistakeChance: 0.1
   },
@@ -251,13 +354,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Tactician." Creates complications and searches relentlessly for forcing moves.',
     elo: 1150,
     phases: {
-      opening: { depth: 10, bestMoveChance: 0.73 },
-      middlegame: { depth: 10, bestMoveChance: 0.58 },
-      endgame: { depth: 16, bestMoveChance: 0.83 }
+      opening: { depth: 10 },
+      middlegame: { depth: 10 },
+      endgame: { depth: 16 }
     },
     personality: { aggression: 65, trapSeeking: 90, defensiveness: 20 },
     mateConversionChance: 0.98,
-    diagnosisCodes: ['TA-12'], // highest trapSeeking in the roster — already excellent at forks; the one gap left is the subtler pin variant
+    diagnosisCodes: documentedDiagnosisCodes(['TA-12'], 1150), // highest trapSeeking in the roster — already excellent at forks; the one gap left is the subtler pin variant
     bookPlies: 8,
     bookMistakeChance: 0.12
   },
@@ -268,13 +371,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Finisher." Trades patiently, neutralizes danger, and converts small edges accurately.',
     elo: 1100,
     phases: {
-      opening: { depth: 11, bestMoveChance: 0.94 },
-      middlegame: { depth: 11, bestMoveChance: 0.79 },
-      endgame: { depth: 17, bestMoveChance: 0.98 }
+      opening: { depth: 11 },
+      middlegame: { depth: 11 },
+      endgame: { depth: 17 }
     },
     personality: { aggression: 20, trapSeeking: 25, defensiveness: 70 },
     mateConversionChance: 0.99,
-    diagnosisCodes: [],
+    diagnosisCodes: documentedDiagnosisCodes([], 1100),
     bookPlies: 10,
     bookMistakeChance: 0.08
   },
@@ -285,13 +388,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Survivor." Defends resourcefully, sets practical problems, and refuses to resign early.',
     elo: 1000,
     phases: {
-      opening: { depth: 10, bestMoveChance: 0.66 },
-      middlegame: { depth: 10, bestMoveChance: 0.51 },
-      endgame: { depth: 16, bestMoveChance: 0.76 }
+      opening: { depth: 10 },
+      middlegame: { depth: 10 },
+      endgame: { depth: 16 }
     },
     personality: { aggression: 25, trapSeeking: 45, defensiveness: 75 },
     mateConversionChance: 0.91,
-    diagnosisCodes: ['TA-18'],
+    diagnosisCodes: documentedDiagnosisCodes(['TA-18'], 1000),
     bookPlies: 6,
     bookMistakeChance: 0.15
   },
@@ -302,13 +405,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Fearless." Welcomes complications and accepts sacrifices with total confidence.',
     elo: 1150,
     phases: {
-      opening: { depth: 10, bestMoveChance: 0.59 },
-      middlegame: { depth: 10, bestMoveChance: 0.44 },
-      endgame: { depth: 16, bestMoveChance: 0.69 }
+      opening: { depth: 10 },
+      middlegame: { depth: 10 },
+      endgame: { depth: 16 }
     },
     personality: { aggression: 75, trapSeeking: 60, defensiveness: 15 },
     mateConversionChance: 0.84,
-    diagnosisCodes: ['TA-04', 'TA-17'], // welcomes chaos she doesn't fully control — neglects her own back rank and the double-check that complications can produce
+    diagnosisCodes: documentedDiagnosisCodes(['TA-04', 'TA-17'], 1150), // welcomes chaos she doesn't fully control — neglects her own back rank and the double-check that complications can produce
     bookPlies: 7,
     bookMistakeChance: 0.15
   },
@@ -319,13 +422,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Veteran." Leans on decades of experience, avoiding unnecessary calculation.',
     elo: 1250,
     phases: {
-      opening: { depth: 11, bestMoveChance: 0.87 },
-      middlegame: { depth: 11, bestMoveChance: 0.72 },
-      endgame: { depth: 17, bestMoveChance: 0.97 }
+      opening: { depth: 11 },
+      middlegame: { depth: 11 },
+      endgame: { depth: 17 }
     },
     personality: { aggression: 35, trapSeeking: 30, defensiveness: 55 },
     mateConversionChance: 0.99,
-    diagnosisCodes: ['TA-19', 'TA-14'], // "avoiding unnecessary calculation" — skips the precise reading these two patterns require
+    diagnosisCodes: documentedDiagnosisCodes(['TA-19', 'TA-14'], 1250), // "avoiding unnecessary calculation" — skips the precise reading these two patterns require
     bookPlies: 14,
     bookMistakeChance: 0.06
   },
@@ -336,13 +439,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Rising Star." Plays ambitious, energetic chess backed by strong preparation.',
     elo: 1300,
     phases: {
-      opening: { depth: 11, bestMoveChance: 0.73 },
-      middlegame: { depth: 11, bestMoveChance: 0.58 },
-      endgame: { depth: 17, bestMoveChance: 0.83 }
+      opening: { depth: 11 },
+      middlegame: { depth: 11 },
+      endgame: { depth: 17 }
     },
     personality: { aggression: 60, trapSeeking: 50, defensiveness: 30 },
     mateConversionChance: 0.98,
-    diagnosisCodes: ['TA-11'], // energetic and well-prepared, but a static absolute pin isn't the kind of pattern preparation catches
+    diagnosisCodes: documentedDiagnosisCodes(['TA-11'], 1300), // energetic and well-prepared, but a static absolute pin isn't the kind of pattern preparation catches
     bookPlies: 12,
     bookMistakeChance: 0.08
   },
@@ -355,13 +458,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Grinder." Extends games, keeps up the pressure, and waits for you to collapse.',
     elo: 1550,
     phases: {
-      opening: { depth: 12, bestMoveChance: 0.94 },
-      middlegame: { depth: 12, bestMoveChance: 0.79 },
-      endgame: { depth: 18, bestMoveChance: 0.98 }
+      opening: { depth: 12 },
+      middlegame: { depth: 12 },
+      endgame: { depth: 18 }
     },
     personality: { aggression: 30, trapSeeking: 30, defensiveness: 70 },
     mateConversionChance: 0.99,
-    diagnosisCodes: ['TA-19'], // grinds for the long game — a sudden overload tactic isn't what patient pressure is tuned to notice
+    diagnosisCodes: documentedDiagnosisCodes(['TA-19'], 1550), // grinds for the long game — a sudden overload tactic isn't what patient pressure is tuned to notice
     bookPlies: 12,
     bookMistakeChance: 0.06
   },
@@ -372,13 +475,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Queen Hunter." Gains tempo through threats and hunts your loose or exposed pieces.',
     elo: 1600,
     phases: {
-      opening: { depth: 12, bestMoveChance: 0.8 },
-      middlegame: { depth: 12, bestMoveChance: 0.65 },
-      endgame: { depth: 18, bestMoveChance: 0.9 }
+      opening: { depth: 12 },
+      middlegame: { depth: 12 },
+      endgame: { depth: 18 }
     },
     personality: { aggression: 70, trapSeeking: 75, defensiveness: 20 },
     mateConversionChance: 0.99,
-    diagnosisCodes: ['TA-26'], // hunts loose pieces generally, but a fully trapped piece (the more advanced version of that pattern) is a specific gap
+    diagnosisCodes: documentedDiagnosisCodes(['TA-26'], 1600), // hunts loose pieces generally, but a fully trapped piece (the more advanced version of that pattern) is a specific gap
     bookPlies: 10,
     bookMistakeChance: 0.08
   },
@@ -389,13 +492,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Marathoner." Calculates steadily and stays accurate deep into long games.',
     elo: 1700,
     phases: {
-      opening: { depth: 13, bestMoveChance: 0.97 },
-      middlegame: { depth: 13, bestMoveChance: 0.83 },
-      endgame: { depth: 19, bestMoveChance: 0.98 }
+      opening: { depth: 13 },
+      middlegame: { depth: 13 },
+      endgame: { depth: 19 }
     },
     personality: { aggression: 35, trapSeeking: 35, defensiveness: 55 },
     mateConversionChance: 0.99,
-    diagnosisCodes: [],
+    diagnosisCodes: documentedDiagnosisCodes([], 1700),
     bookPlies: 12,
     bookMistakeChance: 0.05
   },
@@ -406,13 +509,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Improviser." Steps off known theory early, trusting intuition over preparation.',
     elo: 1500,
     phases: {
-      opening: { depth: 11, bestMoveChance: 0.45 },
-      middlegame: { depth: 11, bestMoveChance: 0.3 },
-      endgame: { depth: 17, bestMoveChance: 0.55 }
+      opening: { depth: 11 },
+      middlegame: { depth: 11 },
+      endgame: { depth: 17 }
     },
     personality: { aggression: 55, trapSeeking: 55, defensiveness: 25 },
     mateConversionChance: 0.7,
-    diagnosisCodes: ['TA-18'],
+    diagnosisCodes: documentedDiagnosisCodes(['TA-18'], 1500),
     bookPlies: 3,
     bookMistakeChance: 0.4
   },
@@ -423,13 +526,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Iron Wall." Eliminates weaknesses, absorbs attacks, and frustrates aggressive opponents.',
     elo: 1750,
     phases: {
-      opening: { depth: 13, bestMoveChance: 0.97 },
-      middlegame: { depth: 13, bestMoveChance: 0.83 },
-      endgame: { depth: 19, bestMoveChance: 0.98 }
+      opening: { depth: 13 },
+      middlegame: { depth: 13 },
+      endgame: { depth: 19 }
     },
     personality: { aggression: 10, trapSeeking: 20, defensiveness: 90 },
     mateConversionChance: 0.99,
-    diagnosisCodes: [],
+    diagnosisCodes: documentedDiagnosisCodes([], 1750),
     bookPlies: 14,
     bookMistakeChance: 0.04
   },
@@ -440,13 +543,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Sniper." Waits quietly for one weakness, then finishes with a short forcing sequence.',
     elo: 1650,
     phases: {
-      opening: { depth: 12, bestMoveChance: 0.94 },
-      middlegame: { depth: 12, bestMoveChance: 0.79 },
-      endgame: { depth: 18, bestMoveChance: 0.98 }
+      opening: { depth: 12 },
+      middlegame: { depth: 12 },
+      endgame: { depth: 18 }
     },
     personality: { aggression: 45, trapSeeking: 80, defensiveness: 45 },
     mateConversionChance: 0.99,
-    diagnosisCodes: ['TA-12'], // precise and tactically sharp; the one gap is the subtler pin variant, distinct from his signature forcing finishes
+    diagnosisCodes: documentedDiagnosisCodes(['TA-12'], 1650), // precise and tactically sharp; the one gap is the subtler pin variant, distinct from his signature forcing finishes
     bookPlies: 10,
     bookMistakeChance: 0.06
   },
@@ -459,13 +562,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Hustler." Reads opponents quickly and sets practical traps that pay off under pressure.',
     elo: 2000,
     phases: {
-      opening: { depth: 14, bestMoveChance: 0.8 },
-      middlegame: { depth: 14, bestMoveChance: 0.65 },
-      endgame: { depth: 20, bestMoveChance: 0.9 }
+      opening: { depth: 14 },
+      middlegame: { depth: 14 },
+      endgame: { depth: 20 }
     },
     personality: { aggression: 55, trapSeeking: 80, defensiveness: 30 },
     mateConversionChance: 0.99,
-    diagnosisCodes: ['TA-09'], // sets practical traps under pressure, but the king fork specifically escapes the pattern she leans on
+    diagnosisCodes: documentedDiagnosisCodes(['TA-09'], 2000), // sets practical traps under pressure, but the king fork specifically escapes the pattern she leans on
     bookPlies: 12,
     bookMistakeChance: 0.05
   },
@@ -476,13 +579,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Theorist." Deep opening knowledge and classical principles, applied with total discipline.',
     elo: 2200,
     phases: {
-      opening: { depth: 14, bestMoveChance: 0.97 },
-      middlegame: { depth: 14, bestMoveChance: 0.86 },
-      endgame: { depth: 20, bestMoveChance: 0.98 }
+      opening: { depth: 14 },
+      middlegame: { depth: 14 },
+      endgame: { depth: 20 }
     },
     personality: { aggression: 30, trapSeeking: 30, defensiveness: 55 },
     mateConversionChance: 0.99,
-    diagnosisCodes: [],
+    diagnosisCodes: documentedDiagnosisCodes([], 2200),
     bookPlies: 20,
     bookMistakeChance: 0.02
   },
@@ -493,13 +596,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Wildcard." Chooses sharp sidelines that force you to think for yourself early.',
     elo: 2050,
     phases: {
-      opening: { depth: 14, bestMoveChance: 0.66 },
-      middlegame: { depth: 14, bestMoveChance: 0.51 },
-      endgame: { depth: 20, bestMoveChance: 0.76 }
+      opening: { depth: 14 },
+      middlegame: { depth: 14 },
+      endgame: { depth: 20 }
     },
     personality: { aggression: 60, trapSeeking: 55, defensiveness: 25 },
     mateConversionChance: 0.91,
-    diagnosisCodes: ['TA-16'], // sharp, chaotic sidelines create the kind of position where a quieter discovered attack goes unnoticed
+    diagnosisCodes: documentedDiagnosisCodes(['TA-16'], 2050), // sharp, chaotic sidelines create the kind of position where a quieter discovered attack goes unnoticed
     bookPlies: 10,
     bookMistakeChance: 0.08
   },
@@ -510,13 +613,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Ice Queen." Controlled, clinical chess that snuffs out counterplay before converting.',
     elo: 2300,
     phases: {
-      opening: { depth: 15, bestMoveChance: 0.97 },
-      middlegame: { depth: 15, bestMoveChance: 0.89 },
-      endgame: { depth: 21, bestMoveChance: 0.98 }
+      opening: { depth: 15 },
+      middlegame: { depth: 15 },
+      endgame: { depth: 21 }
     },
     personality: { aggression: 25, trapSeeking: 35, defensiveness: 75 },
     mateConversionChance: 0.99,
-    diagnosisCodes: [],
+    diagnosisCodes: documentedDiagnosisCodes([], 2300),
     bookPlies: 16,
     bookMistakeChance: 0.02
   },
@@ -527,13 +630,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Comeback Kid." Builds resilient defenses and turns dangerous the moment you relax.',
     elo: 1950,
     phases: {
-      opening: { depth: 13, bestMoveChance: 0.73 },
-      middlegame: { depth: 13, bestMoveChance: 0.58 },
-      endgame: { depth: 19, bestMoveChance: 0.83 }
+      opening: { depth: 13 },
+      middlegame: { depth: 13 },
+      endgame: { depth: 19 }
     },
     personality: { aggression: 45, trapSeeking: 55, defensiveness: 60 },
     mateConversionChance: 0.98,
-    diagnosisCodes: ['TA-19'], // resilient and balanced, but the sudden-overload pattern isn't what a defense-to-offense mindset is tuned to catch
+    diagnosisCodes: documentedDiagnosisCodes(['TA-19'], 1950), // resilient and balanced, but the sudden-overload pattern isn't what a defense-to-offense mindset is tuned to catch
     bookPlies: 10,
     bookMistakeChance: 0.1
   },
@@ -544,13 +647,13 @@ export const BOT_ROSTER: readonly BotConfig[] = [
     description: '"The Artist." Favors harmonious attacks and elegant sacrifices over the merely correct move.',
     elo: 2150,
     phases: {
-      opening: { depth: 14, bestMoveChance: 0.73 },
-      middlegame: { depth: 14, bestMoveChance: 0.58 },
-      endgame: { depth: 20, bestMoveChance: 0.83 }
+      opening: { depth: 14 },
+      middlegame: { depth: 14 },
+      endgame: { depth: 20 }
     },
     personality: { aggression: 70, trapSeeking: 70, defensiveness: 20 },
     mateConversionChance: 0.98,
-    diagnosisCodes: ['TA-10', 'TA-18'], // prefers the elegant move to the merely correct one — the plain sliding-piece fork and defender-removal shot are exactly the "merely correct" moves he'd rather not play
+    diagnosisCodes: documentedDiagnosisCodes(['TA-10'], 2150), // prefers the elegant move to the merely correct one — the plain sliding-piece fork is exactly the "merely correct" move he'd rather not play
     bookPlies: 10,
     bookMistakeChance: 0.06
   }

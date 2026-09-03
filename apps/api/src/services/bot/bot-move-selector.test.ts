@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
+import { bestMoveChanceForElo } from '@freechesscoach/chess-analysis';
 import type { BotConfig, PositionAnalysis } from '@freechesscoach/shared';
 import { selectBotMove, type BotMoveSelectorDependencies } from './bot-move-selector.js';
 
@@ -15,9 +16,9 @@ function baseBot(overrides: Partial<BotConfig> = {}): BotConfig {
     description: 'A bot for tests.',
     elo: 800,
     phases: {
-      opening: { depth: 6, bestMoveChance: 0.5 },
-      middlegame: { depth: 6, bestMoveChance: 0.5 },
-      endgame: { depth: 6, bestMoveChance: 0.5 }
+      opening: { depth: 6 },
+      middlegame: { depth: 6 },
+      endgame: { depth: 6 }
     },
     personality: { aggression: 50, trapSeeking: 50, defensiveness: 50 },
     mateConversionChance: 0.9,
@@ -61,27 +62,19 @@ describe('selectBotMove', () => {
     expect(deps.analyzeBotPosition).not.toHaveBeenCalled();
   });
 
-  test('a roll under bestMoveChance plays the engine\'s top-ranked candidate', async () => {
+  test('bestMoveChance is now derived live from elo, not a per-bot field: random() 0 always plays the top candidate', async () => {
     const deps = baseDeps({ random: () => 0 });
-    const result = await selectBotMove(
-      deps,
-      OFF_BOOK_FEN,
-      0,
-      baseBot({ phases: { opening: p(1), middlegame: p(1), endgame: p(1) } })
-    );
+    const result = await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot({ elo: 300 }));
+    // random() 0 is below any positive chance regardless of elo.
     expect(result.san).toBe('Ke2');
   });
 
-  test('a roll over bestMoveChance falls through to a personality-weighted pick', async () => {
-    // bestMoveChance is 0 for every phase below, so random() < chance is
-    // always false — the roll always misses and defers to the weighted pick.
-    const deps = baseDeps({ random: () => 0.999 });
-    const result = await selectBotMove(
-      deps,
-      OFF_BOOK_FEN,
-      0,
-      baseBot({ phases: { opening: p(0), middlegame: p(0), endgame: p(0) } })
-    );
+  test('a roll over the elo-derived bestMoveChance falls through to a weighted pick', async () => {
+    // elo 300's endgame bestMoveChanceForElo is well under 1 (see
+    // bot-skill-curve.test.ts's own anchor checks) — random() just under 1
+    // is guaranteed to miss it and every subsequent roll (diagnosisManifestChance).
+    const deps = baseDeps({ random: () => 0.999999 });
+    const result = await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot({ elo: 300, diagnosisCodes: [] }));
     expect(['Ke2', 'Kd2']).toContain(result.san);
   });
 
@@ -96,16 +89,23 @@ describe('selectBotMove', () => {
       0,
       baseBot({
         phases: {
-          opening: { depth: 3, bestMoveChance: 1 },
-          middlegame: { depth: 3, bestMoveChance: 1 },
-          endgame: { depth: 12, bestMoveChance: 1 }
+          opening: { depth: 3 },
+          middlegame: { depth: 3 },
+          endgame: { depth: 12 }
         }
       })
     );
     expect(analyzeBotPosition).toHaveBeenCalledWith(OFF_BOOK_FEN, expect.objectContaining({ depth: 12 }));
   });
 
-  test('a forced mate uses mateConversionChance even when bestMoveChance would otherwise miss', async () => {
+  test('a forced mate uses mateConversionChance even when the elo-derived bestMoveChance would otherwise miss', async () => {
+    // A low elo keeps the real endgame bestMoveChanceForElo comfortably
+    // below the roll below, so this only passes via the mate-conversion
+    // floor's max(), not because bestMoveChance itself was already high.
+    const elo = 300;
+    const realBestMoveChance = bestMoveChanceForElo(elo, 'endgame');
+    expect(realBestMoveChance).toBeLessThan(0.6);
+
     const deps = baseDeps({
       analyzeBotPosition: vi.fn().mockResolvedValue(
         analysis([
@@ -113,15 +113,10 @@ describe('selectBotMove', () => {
           { moveUci: 'e1d2', moveSan: 'Kd2', pvSan: ['Kd2'], cp: 4, mateIn: null }
         ])
       ),
-      // Just over 0 (bestMoveChance) but well under 0.9 (mateConversionChance).
-      random: () => 0.5
+      // Above the real bestMoveChance but below mateConversionChance (0.9).
+      random: () => 0.7
     });
-    const result = await selectBotMove(
-      deps,
-      OFF_BOOK_FEN,
-      0,
-      baseBot({ phases: { opening: p(0), middlegame: p(0), endgame: p(0) }, mateConversionChance: 0.9 })
-    );
+    const result = await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot({ elo, mateConversionChance: 0.9 }));
     expect(result.san).toBe('Ke2#');
   });
 
@@ -165,7 +160,3 @@ describe('selectBotMove', () => {
     });
   });
 });
-
-function p(bestMoveChance: number): { depth: number; bestMoveChance: number } {
-  return { depth: 6, bestMoveChance };
-}

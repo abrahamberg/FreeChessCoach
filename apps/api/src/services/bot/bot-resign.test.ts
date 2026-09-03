@@ -18,9 +18,9 @@ function baseBot(): BotConfig {
     description: 'A bot for tests.',
     elo: 800,
     phases: {
-      opening: { depth: 6, bestMoveChance: 0.5 },
-      middlegame: { depth: 6, bestMoveChance: 0.5 },
-      endgame: { depth: 6, bestMoveChance: 0.5 }
+      opening: { depth: 6 },
+      middlegame: { depth: 6 },
+      endgame: { depth: 6 }
     },
     personality: { aggression: 50, trapSeeking: 50, defensiveness: 50 },
     mateConversionChance: 0.9,

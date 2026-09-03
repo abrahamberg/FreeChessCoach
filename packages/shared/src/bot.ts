@@ -21,17 +21,17 @@ export type BotPersonality = z.infer<typeof BotPersonalitySchema>;
  * technique (see bot-game-phase.ts / Phase 60 of docs/plan.md). */
 export const BOT_PHASE_DEPTH_MAX = 24;
 
-/** One game phase's move-selection knobs — see bot-game-phase.ts's
+/** One game phase's move-selection knob — see bot-game-phase.ts's
  * classifyBotGamePhase for how a live position resolves to
  * opening/middlegame/endgame. `depth` is "board sight" (shallower search
- * plays weaker/more short-sighted); `bestMoveChance` is a literal
- * probability, rolled once per move in this phase, of playing the engine's
- * actual top-ranked candidate outright rather than a personality-weighted
- * pick from the full legal-move field (see bot-move-pick.ts's
- * pickBotMove) — not a score blend or a temperature-scaled sample. */
+ * plays weaker/more short-sighted). The probability of playing the
+ * engine's actual top-ranked candidate outright, rolled once per move in
+ * this phase, used to be a hand-picked field here too
+ * (`bestMoveChance`) — it's now derived live from `BotConfig.elo` and the
+ * phase by `packages/chess-analysis/src/bot-skill-curve.ts`'s
+ * `bestMoveChanceForElo` (docs/plan.md Phase 62), not stored per bot. */
 export const BotPhaseProfileSchema = z.object({
-  depth: z.number().int().min(1).max(BOT_PHASE_DEPTH_MAX),
-  bestMoveChance: z.number().min(0).max(1)
+  depth: z.number().int().min(1).max(BOT_PHASE_DEPTH_MAX)
 });
 export type BotPhaseProfile = z.infer<typeof BotPhaseProfileSchema>;
 
@@ -69,15 +69,16 @@ export const BotConfigSchema = z.object({
    * finishes what it can see," not a flawless finish. */
   mateConversionChance: z.number().min(0).max(1),
   /** This bot's documented weaknesses, from the same 410-code taxonomy the
-   * coach diagnoses real students against — restricted to codes
-   * `motifToCode` (packages/chess-analysis/src/diagnostics/motif-to-code.ts)
-   * can actually resolve from a candidate move's tactic motif (see that
-   * module's `MOTIF_RESOLVABLE_DIAGNOSIS_CODES`), not the full catalog — a
-   * bot's move selection has no way to distinguishably manifest, say, a
-   * time-management or psychology code. Empty is a legitimate value, not a
-   * gap: a well-rounded bot may have no documented tactical blind spot at
-   * all. See docs/plan.md's Phase 61 for the full rationale and
-   * `bot-move-pick.ts`'s `pickBotMove` for how this actually changes play. */
+   * coach diagnoses real students against — restricted to
+   * `bot-roster.ts`'s `ELIGIBLE_DIAGNOSIS_CODES` (the `TA-*`/`BV-*`/`MS-*`
+   * codes a candidate move's own motif or cheap diagnosis-code proxy can
+   * actually resolve to), not the full catalog — a bot's move selection
+   * has no way to distinguishably manifest, say, a time-management or
+   * psychology code. Empty is a legitimate value, not a gap: a well-rounded
+   * bot may have no documented weakness at all. See docs/plan.md's Phase 61
+   * (original TA-only version) and Phase 62 (widened to BV/MS, elo-scaled
+   * breadth) for the full rationale, and `bot-move-pick.ts`'s `pickBotMove`
+   * for how this actually changes play. */
   diagnosisCodes: z.array(DiagnosisCodeIdSchema),
   bookPlies: z.number().int().min(0).max(30),
   bookMistakeChance: z.number().min(0).max(1)
