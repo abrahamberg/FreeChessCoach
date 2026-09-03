@@ -49,6 +49,37 @@ describe('usePlayMoveSubmit (architecture §14)', () => {
     expect(onPlayMoveCommitted).not.toHaveBeenCalled();
   });
 
+  // The board's own optimistic preview makes a move look fully applied
+  // well before the server round trip returns — SessionBoardColumn uses
+  // this flag to block a second drop/click while the first is still in
+  // flight (a real engine search can take several seconds), so it must
+  // flip true immediately and back false once the request resolves either
+  // way.
+  test('isSubmitting is true while the request is in flight, false once it resolves', async () => {
+    let resolveFetch: (response: Response) => void = () => undefined;
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => usePlayMoveSubmit('session-1', vi.fn()));
+    expect(result.current.isSubmitting).toBe(false);
+
+    let submitPromise!: Promise<void>;
+    act(() => {
+      submitPromise = result.current.submit('e4', 'e2e4');
+    });
+    await waitFor(() => expect(result.current.isSubmitting).toBe(true));
+
+    await act(async () => {
+      resolveFetch(jsonResponse({ fen: 'fen-after', san: 'e4', ply: 1, quality: 'best' }));
+      await submitPromise;
+    });
+    expect(result.current.isSubmitting).toBe(false);
+  });
+
   test('a subsequent successful submit clears a prior error', async () => {
     const fetchMock = vi
       .fn()

@@ -292,6 +292,7 @@ export function SessionBoardColumn({
           onLocalMove={boardState.previewMove}
           onArrowsChange={onArrowsChange}
           showLegalMoveDots={showLegalMoveDots}
+          disabled={playMove.isSubmitting || playBotMove.isSubmitting}
         />
       </div>
       {(playMove.error || playBotMove.error) && (

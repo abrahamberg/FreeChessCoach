@@ -95,6 +95,42 @@ describe('usePlayBotMoveSubmit ("Play vs Bot" plan)', () => {
     expect(onClockUpdate).toHaveBeenCalledWith(298800, 299100);
   });
 
+  // Same reasoning as usePlayMoveSubmit's identical test: the board's own
+  // optimistic preview makes a move look fully applied well before a real
+  // engine search (which can take several seconds) actually returns.
+  test('isSubmitting is true while the request is in flight, false once it resolves', async () => {
+    let resolveFetch: (response: Response) => void = () => undefined;
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => usePlayBotMoveSubmit('session-1'));
+    expect(result.current.isSubmitting).toBe(false);
+
+    let submitPromise!: Promise<void>;
+    act(() => {
+      submitPromise = result.current.submit('e4', 'e2e4');
+    });
+    await waitFor(() => expect(result.current.isSubmitting).toBe(true));
+
+    await act(async () => {
+      resolveFetch(
+        jsonResponse({
+          player: { fen: AFTER_E4_FEN, san: 'e4', ply: 1, quality: 'best', elapsedMs: 1200 },
+          bot: { fen: START_FEN, san: 'e5', ply: 2, quality: 'best', elapsedMs: 900 },
+          gameOver: null,
+          whiteRemainingMs: null,
+          blackRemainingMs: null
+        })
+      );
+      await submitPromise;
+    });
+    expect(result.current.isSubmitting).toBe(false);
+  });
+
   test('a 422 response sets error using the problem+json title, and never calls onPlayMoveCommitted/onGameOver', async () => {
     const fetchMock = vi
       .fn()

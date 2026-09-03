@@ -14,6 +14,17 @@ export interface UsePlayMoveSubmitResult {
   /** Belt-and-suspenders 422 message (see submit's doc comment), or null
    * once a submission succeeds/hasn't been tried yet. */
   error: string | null;
+  /** True from the moment `submit` is called until its request resolves —
+   * SessionBoardColumn uses this to reject a second drop/click while the
+   * first is still in flight. Without it, a slow request (a real engine
+   * search can take several seconds) leaves the board's own optimistic
+   * preview looking fully "done" with no visual sign anything is still
+   * pending, inviting an impatient second move that either races the first
+   * or lands as a spurious "Illegal move" once the first has already
+   * advanced the position past it — the first move still went through
+   * either way, which is exactly the confusing "it said illegal but it
+   * worked" report this guards against. */
+  isSubmitting: boolean;
   submit: (san: string, uci: string) => Promise<void>;
 }
 
@@ -41,17 +52,21 @@ export function usePlayMoveSubmit(
   onPlayMoveCommitted?: (result: CommittedPlayMove, uci: string) => void
 ): UsePlayMoveSubmitResult {
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function submit(san: string, uci: string): Promise<void> {
     setError(null);
+    setIsSubmitting(true);
     try {
       const result = await apiPost(`/api/sessions/${sessionId}/play-move`, { san }, CommitPlayMoveResponseSchema);
       onPlayMoveCommitted?.(result, uci);
       sendMessage(`[player_move] I played ${san}.`);
     } catch (submitError) {
       setError(describePlayMoveError(submitError));
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
-  return { error, submit };
+  return { error, isSubmitting, submit };
 }

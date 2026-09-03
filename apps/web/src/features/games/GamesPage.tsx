@@ -65,6 +65,18 @@ export function GamesPage(): ReactNode {
     window.location.href = `/api/games/${gameId}/pgn`;
   }
 
+  // Unlike the download above, clipboard needs the PGN as a string — a
+  // plain `fetch` (not a navigation) reads GET /api/games/:id/pgn's raw
+  // text body untouched by its own Content-Disposition header, which only
+  // browser-native navigation acts on.
+  const copyPgnMutation = useMutation({
+    mutationFn: async (gameId: string) => {
+      const response = await fetch(`/api/games/${gameId}/pgn`, { credentials: 'include' });
+      if (!response.ok) throw new Error(`GET pgn failed with ${response.status}`);
+      await navigator.clipboard.writeText(await response.text());
+    }
+  });
+
   // architecture §14: a coach_play game already has its session (created by
   // POST /api/sessions/play) — link straight back into it rather than
   // routing through analyze mode's POST /api/sessions, which gates on an
@@ -119,6 +131,7 @@ export function GamesPage(): ReactNode {
 
       {deleteMutation.isError && <p>Could not delete that game — try again.</p>}
       {analyzeMutation.isError && <p>Could not start analysis — try again.</p>}
+      {copyPgnMutation.isError && <p>Could not copy the PGN — try again.</p>}
 
       {gamesQuery.data && gamesQuery.data.length > 0 && (
         <>
@@ -145,6 +158,7 @@ export function GamesPage(): ReactNode {
                   onSelect={() => handleSelect(game)}
                   onAnalyze={(gameId) => analyzeMutation.mutate(gameId)}
                   onExportPgn={handleExportPgn}
+                  onCopyPgn={(gameId) => copyPgnMutation.mutate(gameId)}
                   onDelete={(gameId) => deleteMutation.mutate(gameId)}
                 />
               ))}

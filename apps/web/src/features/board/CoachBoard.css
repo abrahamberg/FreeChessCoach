@@ -14,3 +14,13 @@
 .coach-board-frame--peek {
   border-color: var(--annotate-2);
 }
+
+/* A move submission is in flight (see CoachBoard's `disabled` prop) — the
+ * optimistic local preview already shows the move as played, so without
+ * some visible "still working" signal here a slow request (a real engine
+ * search can take several seconds) looks indistinguishable from a finished
+ * one, inviting a confusing second attempt. */
+.coach-board-frame--pending {
+  opacity: 0.75;
+  cursor: wait;
+}

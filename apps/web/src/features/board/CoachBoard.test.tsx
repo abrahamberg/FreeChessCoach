@@ -294,4 +294,62 @@ describe('CoachBoard', () => {
     render(<CoachBoard fen={START_FEN} orientation="white" mode="answer" />);
     expect(capturedOptions.at(-1)?.clearArrowsOnPositionChange).toBe(true);
   });
+
+  // A move submission already in flight (usePlayMoveSubmit/
+  // usePlayBotMoveSubmit's isSubmitting) — without this, the board's own
+  // optimistic onLocalMove preview makes a move look fully applied well
+  // before a slow server round trip actually returns, inviting a second
+  // drop that either races the first request or lands as a spurious
+  // "Illegal move" once the first has already advanced the position.
+  test('disabled: a drag no longer fires onUserMove or onLocalMove', () => {
+    capturedOptions.length = 0;
+    const onUserMove = vi.fn();
+    const onLocalMove = vi.fn();
+    render(
+      <CoachBoard fen={START_FEN} orientation="white" mode="answer" onUserMove={onUserMove} onLocalMove={onLocalMove} disabled />
+    );
+
+    const options = capturedOptions.at(-1);
+    const accepted = options?.onPieceDrop?.({
+      piece: { pieceType: 'wP' } as never,
+      sourceSquare: 'e2',
+      targetSquare: 'e4'
+    });
+
+    expect(accepted).toBe(false);
+    expect(onUserMove).not.toHaveBeenCalled();
+    expect(onLocalMove).not.toHaveBeenCalled();
+  });
+
+  test('disabled: click-to-move no longer plays a move', () => {
+    capturedOptions.length = 0;
+    const onUserMove = vi.fn();
+    render(<CoachBoard fen={START_FEN} orientation="white" mode="answer" onUserMove={onUserMove} disabled />);
+
+    clickSquare('e2');
+    clickSquare('e4');
+
+    expect(onUserMove).not.toHaveBeenCalled();
+  });
+
+  test('disabled: tints the board frame so a pending submission is visible', () => {
+    render(<CoachBoard fen={START_FEN} orientation="white" mode="answer" disabled />);
+    expect(screen.getByTestId('mock-chessboard').parentElement).toHaveClass('coach-board-frame--pending');
+  });
+
+  test('not disabled by default: a drag still plays normally', () => {
+    capturedOptions.length = 0;
+    const onUserMove = vi.fn();
+    render(<CoachBoard fen={START_FEN} orientation="white" mode="answer" onUserMove={onUserMove} />);
+
+    const options = capturedOptions.at(-1);
+    const accepted = options?.onPieceDrop?.({
+      piece: { pieceType: 'wP' } as never,
+      sourceSquare: 'e2',
+      targetSquare: 'e4'
+    });
+
+    expect(accepted).toBe(true);
+    expect(onUserMove).toHaveBeenCalled();
+  });
 });

@@ -153,6 +153,81 @@ describe('SessionBoardColumn — play mode (architecture §14)', () => {
   });
 });
 
+// A slow /play-move (a real engine search can take several seconds) leaves
+// the board's own optimistic onLocalMove preview looking fully "done" with
+// no visual sign a request is still pending — without a guard, an
+// impatient second drop either double-submits (racing the first request)
+// or lands as a spurious "Illegal move" once the first has already
+// advanced the position past it.
+describe('SessionBoardColumn — blocks a second drop while a move is still in flight', () => {
+  beforeEach(() => {
+    capturedOptions.length = 0;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test('play mode: the board frame tints pending, and a second drop is ignored, until the request resolves', async () => {
+    let resolveFetch: (response: Response) => void = () => undefined;
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<Harness sessionMode="play" />);
+    await screen.findByTestId('mock-chessboard');
+
+    dropE2E4();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('mock-chessboard').parentElement).toHaveClass('coach-board-frame--pending');
+
+    // A second drop attempt while the first is still pending must not fire
+    // a second request.
+    dropE2E4();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFetch(jsonResponse({ fen: 'fen-after-e4', san: 'e4', ply: 1, quality: 'best' }));
+    });
+    await waitFor(() => expect(screen.getByTestId('mock-chessboard').parentElement).not.toHaveClass('coach-board-frame--pending'));
+  });
+
+  test('play_bot mode: a second drop is ignored while the first is still in flight', async () => {
+    let resolveFetch: (response: Response) => void = () => undefined;
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<Harness sessionMode="play_bot" />);
+    await screen.findByTestId('mock-chessboard');
+
+    dropE2E4();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    dropE2E4();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFetch(
+        jsonResponse({
+          player: { fen: 'fen-after-e4', san: 'e4', ply: 1, quality: 'best', elapsedMs: 1000 },
+          bot: { fen: 'fen-after-e5', san: 'e5', ply: 2, quality: 'best', elapsedMs: 900 },
+          gameOver: null,
+          whiteRemainingMs: null,
+          blackRemainingMs: null
+        })
+      );
+    });
+    await waitFor(() => expect(screen.getByTestId('mock-chessboard').parentElement).not.toHaveClass('coach-board-frame--pending'));
+  });
+});
+
 describe('SessionBoardColumn — "Explore on your own" (live play modes)', () => {
   beforeEach(() => {
     capturedOptions.length = 0;

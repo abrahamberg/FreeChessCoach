@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -59,6 +59,9 @@ function renderGamesPage(games: unknown[] = GAMES_RESPONSE, { deleteStatus = 204
         return Promise.resolve(new Response(null, { status: 204 }));
       }
       return Promise.resolve(new Response(null, { status: deleteStatus }));
+    }
+    if (typeof path === 'string' && path.endsWith('/pgn') && (init === undefined || init.method === undefined)) {
+      return Promise.resolve(new Response('1. e4 e5 *', { status: 200, headers: { 'content-type': 'application/x-chess-pgn' } }));
     }
     if (typeof path === 'string' && path.endsWith('/analyze') && init?.method === 'POST') {
       const gameId = path.split('/')[3];
@@ -185,6 +188,20 @@ describe('GamesPage (design-improvements.md §3.3)', () => {
 
     expect(fetchMock).not.toHaveBeenCalledWith('/api/games/g1', expect.objectContaining({ method: 'DELETE' }));
     expect(screen.getByText('daniel')).toBeInTheDocument();
+  });
+
+  test('"Copy PGN" fetches the game\'s PGN and writes it to the clipboard', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const fetchMock = renderGamesPage();
+    await screen.findByText('daniel');
+
+    await user.click(screen.getByRole('button', { name: /more actions/i }));
+    await user.click(screen.getByRole('menuitem', { name: 'Copy PGN' }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('1. e4 e5 *'));
+    expect(fetchMock).toHaveBeenCalledWith('/api/games/g1/pgn', expect.objectContaining({ credentials: 'include' }));
   });
 
   test('shows an error message if deleting a game fails', async () => {

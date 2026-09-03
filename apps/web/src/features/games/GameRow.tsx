@@ -10,6 +10,7 @@ export interface GameRowProps {
   onSelect: (gameId: string) => void;
   onAnalyze: (gameId: string) => void;
   onExportPgn: (gameId: string) => void;
+  onCopyPgn: (gameId: string) => void;
   onDelete: (gameId: string) => void;
 }
 
@@ -86,7 +87,7 @@ function userSideResult(game: GameListItem): { symbol: string; label: string } |
  * (user's side bold, W/L/D dot), date, time control, a status badge separate
  * from its contextual action button, and delete moved into an overflow menu
  * behind a confirmation dialog naming the game (§6, P0). */
-export function GameRow({ game, onSelect, onAnalyze, onExportPgn, onDelete }: GameRowProps): ReactNode {
+export function GameRow({ game, onSelect, onAnalyze, onExportPgn, onCopyPgn, onDelete }: GameRowProps): ReactNode {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const status = statusAndActionFor(game);
   const dot = userSideResult(game);
@@ -140,7 +141,8 @@ export function GameRow({ game, onSelect, onAnalyze, onExportPgn, onDelete }: Ga
       <OverflowMenu
         label={`More actions for ${whiteName} vs. ${blackName}`}
         items={[
-          { label: 'Export PGN', onSelect: () => onExportPgn(game.id) },
+          { label: 'Download PGN', onSelect: () => onExportPgn(game.id) },
+          { label: 'Copy PGN', onSelect: () => onCopyPgn(game.id) },
           { label: 'Delete', destructive: true, onSelect: () => setConfirmingDelete(true) }
         ]}
       />

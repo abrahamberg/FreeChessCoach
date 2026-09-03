@@ -67,6 +67,17 @@ export interface CoachBoardProps {
    * move regardless of this flag; the flag only controls whether the
    * chess.com/lichess-style dot/ring indicators are drawn. Defaults on. */
   showLegalMoveDots?: boolean;
+  /** True while a move submission this board already triggered
+   * (usePlayMoveSubmit/usePlayBotMoveSubmit's isSubmitting) is still in
+   * flight — blocks every new drag/click move attempt until it resolves.
+   * Without this, `onLocalMove`'s optimistic preview makes a move look
+   * fully applied well before the server round trip returns (a real engine
+   * search can take several seconds), inviting a second drop that either
+   * races the first request or lands as a spurious "Illegal move" once the
+   * first has already advanced the position past it. Defaults false so
+   * analyze/peek-mode boards, which never submit anything server-side, are
+   * unaffected. */
+  disabled?: boolean;
 }
 
 /** Presentational react-chessboard wrapper (AGENTS.md rule 7) — no fetching,
@@ -81,7 +92,8 @@ export function CoachBoard({
   onUserMove,
   onLocalMove,
   onArrowsChange,
-  showLegalMoveDots = true
+  showLegalMoveDots = true,
+  disabled = false
 }: CoachBoardProps): ReactNode {
   const justDroppedRef = useRef(false);
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
@@ -92,6 +104,7 @@ export function CoachBoard({
   useEffect(() => setSelectedSquare(null), [fen]);
 
   function applyMove(from: string, to: string): boolean {
+    if (disabled) return false;
     const chess = new Chess(fen);
     let move;
     try {
@@ -195,8 +208,16 @@ export function CoachBoard({
     }
   };
 
+  const frameClassName = [
+    'coach-board-frame',
+    mode === 'peek' && 'coach-board-frame--peek',
+    disabled && 'coach-board-frame--pending'
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className={mode === 'peek' ? 'coach-board-frame coach-board-frame--peek' : 'coach-board-frame'}>
+    <div className={frameClassName}>
       <Chessboard options={options} />
     </div>
   );
