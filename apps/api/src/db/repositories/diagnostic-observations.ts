@@ -59,6 +59,26 @@ export function listForGame(db: Kysely<Database>, gameId: string): Promise<Diagn
   return db.selectFrom('diagnosticObservations').selectAll().where('gameId', '=', gameId).orderBy('ply', 'asc').execute();
 }
 
+/** One code's observations for one user, newest first — Task 58.1's
+ * `GET /api/users/me/diagnostics/:code/evidence` drill-down from a
+ * diagnosis down to the actual plies behind it. Scoped by `userId` so the
+ * route can never leak another user's observations by guessing a code. */
+export function listForUserAndCode(
+  db: Kysely<Database>,
+  userId: string,
+  code: DiagnosisCodeId,
+  limit: number
+): Promise<DiagnosticObservationRow[]> {
+  return db
+    .selectFrom('diagnosticObservations')
+    .selectAll()
+    .where('userId', '=', userId)
+    .where('code', '=', code)
+    .orderBy('createdAt', 'desc')
+    .limit(limit)
+    .execute();
+}
+
 /** Wired into services/games.ts's deleteGameForUser cascade alongside
  * analysesRepo.deleteByGameId — no DB-level ON DELETE CASCADE (see
  * 0025_diagnostics.ts), so this must run inside that same transaction. */

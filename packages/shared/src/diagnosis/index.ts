@@ -18,6 +18,7 @@ import { ST_CODES } from './families/st.js';
 import { TA_CODES } from './families/ta.js';
 import { TM_CODES } from './families/tm.js';
 
+export * from './api.js';
 export * from './axes.js';
 export * from './catalog-types.js';
 export * from './data-quality.js';

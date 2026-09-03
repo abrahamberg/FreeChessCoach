@@ -7,6 +7,7 @@ import { registerAnalysesRoutes } from './routes/analyses.js';
 import { registerChesscomRoutes } from './routes/chesscom.js';
 import { registerCreditsRoutes } from './routes/credits.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
+import { registerDiagnosticsRoutes } from './routes/diagnostics.js';
 import { registerEngineTunnelRoutes } from './routes/engine-tunnel.js';
 import { registerEngineTunnelInternalRoutes } from './routes/engine-tunnel-internal.js';
 import { registerGamesRoutes } from './routes/games.js';
@@ -85,6 +86,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (options.db) {
     registerUsersRoutes(app, options.db);
     registerDashboardRoutes(app, options.db);
+    registerDiagnosticsRoutes(app, options.db);
     registerStatsRoutes(app, options.db);
     registerGamesRoutes(app, options.db, options.jobQueue ?? noopJobQueue);
     registerLichessRoutes(app, options.db, options.lichessClient ?? createLichessClient());

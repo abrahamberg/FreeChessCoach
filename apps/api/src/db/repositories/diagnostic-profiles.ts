@@ -32,6 +32,44 @@ export async function latestProfile(
   return row && { ...row, profile: row.profile as DiagnosticProfileEntry[] };
 }
 
+/** Task 58.1's default when the caller doesn't name a `timeControl` — the
+ * most recently computed profile across every time control this user has
+ * one for, so the route has something sensible to show without the
+ * frontend needing to already know which time controls exist. */
+export async function latestProfileAnyTimeControl(
+  db: Kysely<Database>,
+  userId: string
+): Promise<DiagnosticProfileRow | undefined> {
+  const row = await db
+    .selectFrom('diagnosticProfiles')
+    .selectAll()
+    .where('userId', '=', userId)
+    .orderBy('computedAt', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  return row && { ...row, profile: row.profile as DiagnosticProfileEntry[] };
+}
+
+/** Task 58.1's `?window=` — a specific past snapshot by its exact
+ * `windowEnd`, rather than always the latest (`latestProfile`). Each rebuild
+ * run upserts a distinct row per `(userId, timeControl, windowEnd)`
+ * (0025_diagnostics.ts), so history genuinely accumulates here. */
+export async function profileAt(
+  db: Kysely<Database>,
+  userId: string,
+  timeControl: string,
+  windowEnd: Date
+): Promise<DiagnosticProfileRow | undefined> {
+  const row = await db
+    .selectFrom('diagnosticProfiles')
+    .selectAll()
+    .where('userId', '=', userId)
+    .where('timeControl', '=', timeControl)
+    .where('windowEnd', '=', windowEnd)
+    .executeTakeFirst();
+  return row && { ...row, profile: row.profile as DiagnosticProfileEntry[] };
+}
+
 /** Upserts on the `UNIQUE (user_id, time_control, window_end)` constraint
  * (0025_diagnostics.ts) — a rebuild for a window that was already computed
  * replaces it rather than accumulating duplicate rows. */

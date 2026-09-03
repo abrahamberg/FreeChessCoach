@@ -1514,10 +1514,42 @@ confirming that, not by adding a pair.
 **Files:** `apps/api/src/routes/diagnostics.ts`,
 `apps/api/src/services/diagnostics.ts`, `packages/shared/src/diagnosis/api.ts`.
 
-- [ ] `GET /api/users/me/diagnostics?timeControl=&window=` returning the
+- [x] `GET /api/users/me/diagnostics?timeControl=&window=` returning the
       stored profile, and `GET /api/users/me/diagnostics/:code/evidence`
       returning the observations behind one code.
-- [ ] Commit: `feat: diagnostics API`.
+- [x] Commit: `feat: diagnostics API`.
+
+**Done:** `timeControl` is optional — omitted, the route auto-picks the
+user's most recently computed profile across every time control
+(`latestProfileAnyTimeControl`), so the frontend never needs to already know
+which time controls exist before it can show anything. `window` is the
+stored profile's own `windowEnd` (ISO date) — each rebuild run upserts a
+distinct `(userId, timeControl, windowEnd)` row (0025_diagnostics.ts), so
+history genuinely accumulates and `window` picks a specific past snapshot
+(`profileAt`) instead of always the latest; omitted, it's ignored. No stored
+profile for the resolved pool is a normal "empty" 200 (entries: []), the
+same "no confident diagnoses yet" precedent as the coach tool, not a 404.
+
+Reuses Task 57.2's on-demand gate-evaluation pattern (`toGateWindowGame` +
+`windowByTimeControl` against a freshly queried window, same documented
+`cascadeCollapsedCount`/`decidedPositionIncidentCount: 0` simplification)
+but over every stored entry, not just the coach tool's top three — this is
+the student's own full-detail view, so `insufficient`-confidence entries
+stay in the list (sorted after `probable`/`signal`) rather than being
+dropped. `code`/`controlSkill.code` and each fired gate's `code` all get a
+resolved `label` server-side (`DIAGNOSIS_CODES_BY_ID`, `DATA_QUALITY_GATES`)
+so the frontend never needs the 410-code catalog just to render a heading —
+same choice `diagnostic-report.ts` already made for the coach-tool digest.
+`packages/shared/src/diagnosis/api.ts` is the wire-shape counterpart of the
+internal `DiagnosticProfileEntry`/`FiredGate` types (`chess-analysis` stays
+a backend-only dependency).
+
+The evidence route validates `:code` in two steps before touching the DB:
+format (`DiagnosisCodeIdSchema`) → 400, then catalog membership
+(`DIAGNOSIS_CODES_BY_ID`) → 404 — `diagnosticObservationsRepo.listForUserAndCode`
+is scoped by `userId` so a guessed code can never surface another user's
+observations, capped at 50 (newest first; a drill-down list, not an
+export).
 
 ### Task 58.2: Progress page
 
