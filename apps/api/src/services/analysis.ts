@@ -11,7 +11,7 @@ import {
   resolveOpening,
   type ParsedPosition
 } from '@freechesscoach/chess-analysis';
-import { TACTIC_MOTIF_LABELS } from '@freechesscoach/shared';
+import { ratingForPromptScoping, TACTIC_MOTIF_LABELS } from '@freechesscoach/shared';
 import type {
   BookReport,
   ClassifiedMoveDto,
@@ -127,6 +127,7 @@ export async function runAnalyzeGameJob(
 
     const plannerInput: PlannerPromptInput = {
       band: user.ratingBand,
+      rating: ratingForPromptScoping(user.rating, user.ratingBand),
       focusAreas: [],
       recentFindings: [],
       selfAssessment: user.selfAssessment,

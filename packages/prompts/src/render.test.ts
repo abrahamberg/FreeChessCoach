@@ -1,15 +1,16 @@
 import { describe, expect, test } from 'vitest';
-import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
+import { DIAGNOSIS_CODES_BY_ID, MISTAKE_CATEGORIES } from '@freechesscoach/shared';
 import {
   MISTAKE_CATEGORIES_BLOCK,
   relativeDate,
   renderCoachingPlanBlock,
   renderFocusAreasBlock,
   renderRecentFindingsBlock,
+  renderScopedDiagnosisCodes,
   describeMoveRef,
   renderThreadsBlock
 } from './render.js';
-import type { Thread } from '@freechesscoach/shared';
+import type { DiagnosisCodeId, Thread } from '@freechesscoach/shared';
 
 describe('MISTAKE_CATEGORIES_BLOCK', () => {
   test('contains all 13 categories, comma-separated', () => {
@@ -202,5 +203,68 @@ describe('renderThreadsBlock', () => {
     expect(renderThreadsBlock(threads)).toBe(
       '- [parked] the h3 line\n- [active] king safety pattern (hypothesis: stops calculating after the first capture)'
     );
+  });
+});
+
+describe('renderScopedDiagnosisCodes', () => {
+  const noDetectors: ReadonlySet<DiagnosisCodeId> = new Set();
+  const bv01 = DIAGNOSIS_CODES_BY_ID.get('BV-01' as DiagnosisCodeId)!;
+  const bv03 = DIAGNOSIS_CODES_BY_ID.get('BV-03' as DiagnosisCodeId)!;
+  const rb00 = DIAGNOSIS_CODES_BY_ID.get('RB-00' as DiagnosisCodeId)!;
+
+  test('BV-01 (detector, ratingPrior [250,1000]) is included at its lower boundary when its detector is active', () => {
+    expect(bv01.ratingPrior).toEqual([250, 1000]);
+    expect(bv01.detectability).toBe('detector');
+    const result = renderScopedDiagnosisCodes(250, new Set(['BV-01' as DiagnosisCodeId]));
+    expect(result).toContain('BV-01');
+  });
+
+  test('BV-01 is excluded just below its lower boundary, even with its detector active', () => {
+    const result = renderScopedDiagnosisCodes(249, new Set(['BV-01' as DiagnosisCodeId]));
+    expect(result).not.toContain('BV-01');
+  });
+
+  test('BV-01 is included at its upper boundary and excluded just above it', () => {
+    expect(renderScopedDiagnosisCodes(1000, new Set(['BV-01' as DiagnosisCodeId]))).toContain('BV-01');
+    expect(renderScopedDiagnosisCodes(1001, new Set(['BV-01' as DiagnosisCodeId]))).not.toContain('BV-01');
+  });
+
+  test('a detector-only code is dropped when its detector is not in the active set', () => {
+    const result = renderScopedDiagnosisCodes(500, noDetectors);
+    expect(result).not.toContain('BV-01');
+  });
+
+  test('a dialogue-detectable code (BV-03) is never included, even squarely inside its own ratingPrior with no detectors active', () => {
+    expect(bv03.detectability).toBe('dialogue');
+    expect(bv03.ratingPrior).toEqual([400, 1200]);
+    const result = renderScopedDiagnosisCodes(800, noDetectors);
+    expect(result).not.toContain('BV-03');
+  });
+
+  test('a dialogue-detectable code stays excluded even if its id is (incorrectly) passed as active — the catalog\'s own detectability is the actual gate, not caller discipline', () => {
+    const result = renderScopedDiagnosisCodes(800, new Set(['BV-03' as DiagnosisCodeId]));
+    expect(result).not.toContain('BV-03');
+  });
+
+  test('with no active detectors at all, every rating renders the empty fallback', () => {
+    const result = renderScopedDiagnosisCodes(800, noDetectors);
+    expect(result).toBe('(no catalog codes are scoped to this student yet — leave diagnosisCode unset and use the category list above instead)');
+  });
+
+  test('a probe-only code (RB-00) is never included, even squarely inside its own ratingPrior', () => {
+    expect(rb00.detectability).toBe('probe');
+    expect(rb00.ratingPrior).toEqual([100, 250]);
+    const result = renderScopedDiagnosisCodes(150, noDetectors);
+    expect(result).not.toContain('RB-00');
+  });
+
+  test('a rating above the whole catalog (ratingPrior maxes out at 2500) renders the empty fallback, not an empty string', () => {
+    const result = renderScopedDiagnosisCodes(3000, noDetectors);
+    expect(result).toBe('(no catalog codes are scoped to this student yet — leave diagnosisCode unset and use the category list above instead)');
+  });
+
+  test('each rendered line names the code id and its label', () => {
+    const result = renderScopedDiagnosisCodes(250, new Set(['BV-01' as DiagnosisCodeId]));
+    expect(result).toContain(`BV-01 — ${bv01.label}`);
   });
 });

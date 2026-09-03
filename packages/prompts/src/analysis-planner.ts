@@ -2,15 +2,21 @@ import { MOVE_QUALITY_SYMBOLS, type RatingBand } from '@freechesscoach/shared';
 import type { CandidateMoment, ClassifiedMove } from '@freechesscoach/chess-analysis';
 import { CALIBRATION } from './calibration.js';
 import {
+  ACTIVE_DETECTOR_CODES,
   MISTAKE_CATEGORIES_BLOCK,
   renderFocusAreasBlock,
   renderRecentFindingsBlock,
+  renderScopedDiagnosisCodes,
   type FocusAreaSummary,
   type RecentFinding
 } from './render.js';
 
 export interface PlannerPromptInput {
   band: RatingBand;
+  /** docs/diagnose.md §0.1 — scopes the diagnosis-code vocabulary below to
+   * this student; see `ratingForPromptScoping` for the band-midpoint
+   * fallback when a user's numeric rating is unknown. */
+  rating: number;
   focusAreas: FocusAreaSummary[];
   recentFindings: RecentFinding[];
   selfAssessment: string | null;
@@ -66,6 +72,9 @@ Level: ${calibration.label} — ${calibration.description}
 Focus areas: ${renderFocusAreasBlock(input.focusAreas, now)}
 Recent findings: ${renderRecentFindingsBlock(input.recentFindings, now)}
 Self-assessment: "${input.selfAssessment ?? ''}"
+
+Catalog diagnosis codes relevant to this student's level (for grounding whatHappened in the same vocabulary the coach and progress summary use — not a field in your output schema):
+${renderScopedDiagnosisCodes(input.rating, ACTIVE_DETECTOR_CODES)}
 
 GAME (${input.userColor} = student)
 ${renderMovesTable(input.moves)}

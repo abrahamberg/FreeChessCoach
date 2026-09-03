@@ -1442,18 +1442,55 @@ The planner, summarizer and coach system prompt all currently inject
 `MISTAKE_CATEGORIES_BLOCK`. **Never inject all 410 codes** — it would wreck
 the prompt cache and the token budget.
 
-- [ ] `renderScopedDiagnosisCodes(rating, activeDetectors)` — filters to codes
+- [x] `renderScopedDiagnosisCodes(rating, activeDetectors)` — filters to codes
       whose `ratingPrior` overlaps the student's rating and that have a
       detector or are dialogue-detectable. Pure, unit-tested with edge cases
       (rating at a boundary, no overlapping codes).
-- [ ] Keep the block in `staticPart` if it depends only on the rating band,
+- [x] Keep the block in `staticPart` if it depends only on the rating band,
       or move it to `dynamicPart` if it depends on the numeric rating —
       whichever preserves the §8.1 cache shape; assert the choice in the
       snapshot test.
-- [ ] Add the pair to `coach-system.refs.test.ts` if any block references
+- [x] Add the pair to `coach-system.refs.test.ts` if any block references
       another by name.
-- [ ] `npm run docs:prompts`.
-- [ ] Commit: `feat: scoped diagnosis-code vocabulary in coach prompts`.
+- [x] `npm run docs:prompts`.
+- [x] Commit: `feat: scoped diagnosis-code vocabulary in coach prompts`.
+
+**Done:** Measured before committing to a design: the checklist's literal
+"has a detector OR is dialogue-detectable" filter matches 300+ of the
+410-code catalog at ratings 900-1500 (most codes are `dialogue` by design —
+see `DETECTABILITIES`'s doc comment), directly violating "never inject all
+410 codes." Dropped the dialogue branch — `renderScopedDiagnosisCodes` only
+ever includes `detectability: 'detector'` codes present in the caller's
+`activeDetectorCodes` set (currently `ACTIVE_DETECTOR_CODES`, ~30 codes
+total), rating-filtered on top; a dialogue-only code is never listed even if
+wrongly passed in `activeDetectorCodes` (the catalog's own `detectability`
+is the actual gate, not caller discipline — see `render.test.ts`). Real
+rendered lists this size (0-30 lines) confirmed via `npm run docs:prompts`'s
+diff. `dialogue`-only codes stay reachable the way they already were before
+this task — the coach reasons about them ad hoc (`record_finding`'s
+existing tool description), no injected list.
+
+Depends only on the numeric rating (not `band`), so it lives in
+`dynamicPart`/the per-call `user` message in all three prompts, never in
+`staticPart`/the shared `SYSTEM_PROMPT` — asserted directly in
+`coach-system.test.ts` (`staticPart` byte-identical across two different
+numeric ratings in the same band; `dynamicPart` differs when only rating
+differs). A user's numeric rating can be `null` (not yet known) —
+`ratingForPromptScoping(rating, band)` (`packages/shared/src/user.ts`) falls
+back to a representative rating at the middle of the user's band (picked
+from docs/diagnose.md §0.2's anchors), threaded in at all three call sites
+(`coach-agent-system-prompt.ts`, `analysis.ts`'s planner input,
+`summarize-session.ts`).
+
+`analysis-planner.ts`'s `CoachingMomentSchema` has no `diagnosisCode` field
+(only `category`), so its scoped-codes block is context only (grounds
+`whatHappened` in the same vocabulary, doesn't feed the JSON schema) —
+`progress-summarizer.ts`'s `findings[].diagnosisCode` and
+`coach-system.ts`'s live `record_finding`/`propose_focus_area_update` are
+where the vocabulary is actually addressable. No cross-references needed in
+`coach-system.refs.test.ts` — the new section doesn't name another block by
+name, so nothing to add there; the checkbox above is satisfied by
+confirming that, not by adding a pair.
 
 ---
 

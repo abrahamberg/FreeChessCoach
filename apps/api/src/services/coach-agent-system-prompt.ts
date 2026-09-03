@@ -1,4 +1,5 @@
 import { buildCoachSystemPrompt } from '@freechesscoach/prompts';
+import { ratingForPromptScoping } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
@@ -31,6 +32,7 @@ export async function buildSystemPromptForSession(
   const prompt = buildCoachSystemPrompt({
     user: { displayName: user.displayName, selfAssessment: user.selfAssessment, sessionCount },
     band: user.ratingBand,
+    rating: ratingForPromptScoping(user.rating, user.ratingBand),
     persona: user.coachPersona,
     mode: 'analyze',
     game: {
@@ -64,6 +66,7 @@ async function buildPlayModeSystemPrompt(db: Kysely<Database>, session: SessionR
   const prompt = buildCoachSystemPrompt({
     user: { displayName: user.displayName, selfAssessment: user.selfAssessment, sessionCount },
     band: user.ratingBand,
+    rating: ratingForPromptScoping(user.rating, user.ratingBand),
     persona: user.coachPersona,
     mode: 'play',
     game: {

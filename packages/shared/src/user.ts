@@ -54,3 +54,20 @@ export function deriveRatingBand(rating: number): RatingBand {
   }
   return 'advanced';
 }
+
+/** Representative numeric rating per band — used only as a fallback when a
+ * user's real numeric rating is unknown (`UserProfile.rating: null`, e.g.
+ * before Chess.com import or self-report), for anything that needs a point
+ * value rather than a band (docs/diagnose.md §0.1's rating-scoped prompt
+ * vocabulary). Picked from the middle of docs/diagnose.md §0.2's band
+ * anchors — not a claim about any real player at that band. */
+const RATING_BAND_MIDPOINTS: Record<RatingBand, number> = {
+  novice: 500,
+  improving: 1100,
+  club: 1500,
+  advanced: 1900
+};
+
+export function ratingForPromptScoping(rating: number | null, band: RatingBand): number {
+  return rating ?? RATING_BAND_MIDPOINTS[band];
+}

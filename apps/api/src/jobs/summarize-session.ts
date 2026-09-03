@@ -1,5 +1,5 @@
 import { buildSummarizerMessages } from '@freechesscoach/prompts';
-import { SessionOutcomeSchema } from '@freechesscoach/shared';
+import { ratingForPromptScoping, SessionOutcomeSchema } from '@freechesscoach/shared';
 import type { Task } from 'graphile-worker';
 import type { Kysely } from 'kysely';
 import * as findingsRepo from '../db/repositories/findings.js';
@@ -48,6 +48,7 @@ export function createSummarizeSessionTask(options: SummarizeSessionTaskOptions)
 
     const messages = buildSummarizerMessages({
       band: user.ratingBand,
+      rating: ratingForPromptScoping(user.rating, user.ratingBand),
       focusAreas: profileSummary.focusAreas,
       recentFindings: profileSummary.recentFindings,
       selfAssessment: user.selfAssessment,

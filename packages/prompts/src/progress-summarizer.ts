@@ -1,16 +1,22 @@
 import type { CoachingPlan, RatingBand } from '@freechesscoach/shared';
 import { CALIBRATION } from './calibration.js';
 import {
+  ACTIVE_DETECTOR_CODES,
   MISTAKE_CATEGORIES_BLOCK,
   renderCoachingPlanBlock,
   renderFocusAreasBlock,
   renderRecentFindingsBlock,
+  renderScopedDiagnosisCodes,
   type FocusAreaSummary,
   type RecentFinding
 } from './render.js';
 
 export interface SummarizerPromptInput {
   band: RatingBand;
+  /** docs/diagnose.md §0.1 — scopes the diagnosis-code vocabulary below to
+   * this student; see `ratingForPromptScoping` for the band-midpoint
+   * fallback when a user's numeric rating is unknown. */
+  rating: number;
   focusAreas: FocusAreaSummary[];
   recentFindings: RecentFinding[];
   selfAssessment: string | null;
@@ -32,7 +38,7 @@ const SYSTEM_PROMPT = `You review the transcript of a completed chess-coaching s
 You will receive: the student's profile, the coaching plan the coach prepared, the full session transcript (including tool calls), and the findings the coach already recorded during the session.
 
 Extract:
-1. findings: durable observations about the student NOT already recorded by the coach. A finding is about the student's thinking or habits, evidenced in the transcript ("said he never considered his opponent's reply" — not "played a bad move on ply 23"). Mark improvements with isPositive: true. It is fine to return an empty list if the coach recorded everything.
+1. findings: durable observations about the student NOT already recorded by the coach. A finding is about the student's thinking or habits, evidenced in the transcript ("said he never considered his opponent's reply" — not "played a bad move on ply 23"). Mark improvements with isPositive: true. It is fine to return an empty list if the coach recorded everything. When the transcript clearly points at one of the catalog codes below, set diagnosisCode; otherwise leave it unset rather than guess.
 2. focusAreaUpdates: based on ALL evidence (recorded + new), for the student's CURRENT focus areas only (shown above with their diagnosis code) — you do not create focus areas; the system selects them automatically from measured diagnostic evidence, not from session impressions:
    - progress: an active focus area with clear positive evidence this session.
    - regress: an improving/resolved area that reappeared.
@@ -59,6 +65,9 @@ Level: ${calibration.label} — ${calibration.description}
 Focus areas: ${renderFocusAreasBlock(input.focusAreas, now)}
 Recent findings: ${renderRecentFindingsBlock(input.recentFindings, now)}
 Self-assessment: "${input.selfAssessment ?? ''}"
+
+Catalog diagnosis codes you may use for a finding's diagnosisCode (use ONLY these; leave it unset if none fit):
+${renderScopedDiagnosisCodes(input.rating, ACTIVE_DETECTOR_CODES)}
 
 COACHING PLAN
 ${renderCoachingPlanBlock(input.plan)}

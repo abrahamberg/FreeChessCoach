@@ -36,6 +36,7 @@ export function baseCoachInput(overrides: Partial<CoachPromptInput> = {}): Coach
   return {
     user: { displayName: 'Ann', selfAssessment: 'I blunder pieces', sessionCount: 3 },
     band: 'club',
+    rating: 1500,
     persona: 'general',
     mode: 'analyze',
     game: {
@@ -95,6 +96,7 @@ const plannerCandidateMoments: CandidateMoment[] = [{ ply: 3, kind: 'user_mistak
 export function basePlannerInput(overrides: Partial<PlannerPromptInput> = {}): PlannerPromptInput {
   return {
     band: 'club',
+    rating: 1500,
     focusAreas: [],
     recentFindings: [],
     selfAssessment: 'I blunder pieces',
@@ -109,6 +111,7 @@ export function basePlannerInput(overrides: Partial<PlannerPromptInput> = {}): P
 export function baseSummarizerInput(overrides: Partial<SummarizerPromptInput> = {}): SummarizerPromptInput {
   return {
     band: 'club',
+    rating: 1500,
     focusAreas: [],
     recentFindings: [],
     selfAssessment: 'I blunder pieces',

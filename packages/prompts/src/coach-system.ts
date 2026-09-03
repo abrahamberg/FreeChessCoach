@@ -2,10 +2,12 @@ import type { CoachingPlan, CoachPersona, RatingBand, SessionMode } from '@freec
 import { CALIBRATION } from './calibration.js';
 import { PERSONA_VOICE } from './coach-persona.js';
 import {
+  ACTIVE_DETECTOR_CODES,
   MISTAKE_CATEGORIES_BLOCK,
   renderCoachingPlanBlock,
   renderFocusAreasBlock,
   renderRecentFindingsBlock,
+  renderScopedDiagnosisCodes,
   type FocusAreaSummary,
   type RecentFinding
 } from './render.js';
@@ -29,6 +31,10 @@ export interface GameMeta {
 export interface CoachPromptInput {
   user: CoachPromptUser;
   band: RatingBand;
+  /** Numeric Chess.com Rapid rating (`ratingForPromptScoping`'s band-midpoint
+   * fallback when unknown) — scopes the diagnosis-code vocabulary below to
+   * this student (docs/diagnose.md §0.1), finer than `band` alone. */
+  rating: number;
   /** coaches.md: cosmetic voice/tone only — see coach-persona.ts. `general`
    * reproduces today's prompt byte-for-byte. */
   persona: CoachPersona;
@@ -98,8 +104,22 @@ function buildDynamicPart(input: CoachPromptInput): string {
   return [
     greeting(input.user.displayName),
     yourStudent(input.user, calibration, input.focusAreas, input.recentFindings, now),
+    diagnosisCodesForThisStudent(input.rating),
     gameSection
   ].join('\n\n');
+}
+
+/** Depends on the numeric rating (unlike the band-keyed rest of the prompt),
+ * so this section lives in `dynamicPart`, not `staticPart` — moving it there
+ * would either lose §0.1's per-student precision (if downgraded to `band`)
+ * or bust the shared per-band cache (if the numeric rating leaked into the
+ * part meant to be byte-identical across a whole band). `dynamicPart`
+ * already varies per user, so this adds no new cache cost. */
+function diagnosisCodesForThisStudent(rating: number): string {
+  return `## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+${renderScopedDiagnosisCodes(rating, ACTIVE_DETECTOR_CODES)}`;
 }
 
 function requirePlan(plan: CoachingPlan | null): CoachingPlan {

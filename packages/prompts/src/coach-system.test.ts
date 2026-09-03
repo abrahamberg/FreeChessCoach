@@ -27,6 +27,21 @@ describe('buildCoachSystemPrompt', () => {
     expect(a.staticPart).toBe(b.staticPart);
   });
 
+  test('staticPart is byte-identical for two users in the same band with different numeric ratings (§8.1 cache shape — the scoped diagnosis-code vocabulary is numeric-rating-keyed, so it lives in dynamicPart, never staticPart)', () => {
+    const a = buildCoachSystemPrompt(baseInput({ rating: 900 }));
+    const b = buildCoachSystemPrompt(baseInput({ rating: 1690 }));
+
+    expect(a.staticPart).toBe(b.staticPart);
+  });
+
+  test('dynamicPart differs when only the numeric rating differs, scoping the diagnosis-code vocabulary to the student', () => {
+    const low = buildCoachSystemPrompt(baseInput({ rating: 250 }));
+    const high = buildCoachSystemPrompt(baseInput({ rating: 2400 }));
+
+    expect(low.dynamicPart).not.toBe(high.dynamicPart);
+    expect(low.dynamicPart).toContain('Diagnosis codes for this student');
+  });
+
   test('staticPart differs across bands (revealDepthPlies is band-calibrated)', () => {
     const novice = buildCoachSystemPrompt(baseInput({ band: 'novice' }));
     const advanced = buildCoachSystemPrompt(baseInput({ band: 'advanced' }));

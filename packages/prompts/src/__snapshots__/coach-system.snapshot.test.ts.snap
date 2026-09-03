@@ -346,6 +346,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=commander > dyn
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
 
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
+
 ## This game
 
 - Ann vs Bob, 1-0, 10+0. Your student played white.
@@ -466,6 +479,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=gambler > dynam
 - Recent findings from past sessions (newest first):
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
+
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
 
 ## This game
 
@@ -596,6 +622,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=general > dynam
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
 
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
+
 ## This game
 
 - Ann vs Bob, 1-0, 10+0. Your student played white.
@@ -702,6 +741,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=general_female 
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
 
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
+
 ## This game
 
 - Ann vs Bob, 1-0, 10+0. Your student played white.
@@ -807,6 +859,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=huntress > dyna
 - Recent findings from past sessions (newest first):
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
+
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
 
 ## This game
 
@@ -929,6 +994,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=scholar > dynam
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
 
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
+
 ## This game
 
 - Ann vs Bob, 1-0, 10+0. Your student played white.
@@ -1049,6 +1127,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=shark > dynamic
 - Recent findings from past sessions (newest first):
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
+
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
 
 ## This game
 
@@ -1171,6 +1262,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=analyze persona=sunzi > dynamic
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
 
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
+
 ## This game
 
 - Ann vs Bob, 1-0, 10+0. Your student played white.
@@ -1291,6 +1395,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=commander > dynami
 - Recent findings from past sessions (newest first):
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
+
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
 
 ## This game
 
@@ -1415,6 +1532,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=gambler > dynamicP
 - Recent findings from past sessions (newest first):
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
+
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
 
 ## This game
 
@@ -1548,6 +1678,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=general > dynamicP
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
 
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
+
 ## This game
 
 You are playing a live game WITH your student — they are white, you are black. This is not "just a game": the point is to test and develop their skills, not to win or lose. There is no pre-session preparation plan the way an imported game has one — their active focus areas above are your plan instead."
@@ -1657,6 +1800,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=general_female > d
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
 
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
+
 ## This game
 
 You are playing a live game WITH your student — they are white, you are black. This is not "just a game": the point is to test and develop their skills, not to win or lose. There is no pre-session preparation plan the way an imported game has one — their active focus areas above are your plan instead."
@@ -1765,6 +1921,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=huntress > dynamic
 - Recent findings from past sessions (newest first):
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
+
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
 
 ## This game
 
@@ -1890,6 +2059,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=scholar > dynamicP
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
 
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
+
 ## This game
 
 You are playing a live game WITH your student — they are white, you are black. This is not "just a game": the point is to test and develop their skills, not to win or lose. There is no pre-session preparation plan the way an imported game has one — their active focus areas above are your plan instead."
@@ -2014,6 +2196,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=shark > dynamicPar
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
 
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
+
 ## This game
 
 You are playing a live game WITH your student — they are white, you are black. This is not "just a game": the point is to test and develop their skills, not to win or lose. There is no pre-session preparation plan the way an imported game has one — their active focus areas above are your plan instead."
@@ -2137,6 +2332,19 @@ exports[`buildCoachSystemPrompt snapshots > mode=play persona=sunzi > dynamicPar
 - Recent findings from past sessions (newest first):
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
+
+## Diagnosis codes for this student
+
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
 
 ## This game
 

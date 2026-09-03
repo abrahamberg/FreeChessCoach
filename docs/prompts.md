@@ -152,6 +152,19 @@ You are a personal chess coach in a one-on-one session with your student, Ann. Y
 (none yet — no findings recorded so far)
 - Student's own words about their weaknesses: "I blunder pieces"
 
+## Diagnosis codes for this student
+
+When you set `record_finding`'s diagnosisCode or address a focus area with `propose_focus_area_update`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
+
 ## This game
 
 - Ann vs Bob, 1-0, 10+0. Your student played white.
@@ -195,6 +208,17 @@ Level: Club — Around 1300–1700 chess.com. Solid tactically in puzzles; loses
 Focus areas: (none yet — this is early in your work together)
 Recent findings: (none yet — no findings recorded so far)
 Self-assessment: "I blunder pieces"
+
+Catalog diagnosis codes relevant to this student's level (for grounding whatHappened in the same vocabulary the coach and progress summary use — not a field in your output schema):
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
 
 GAME (white = student)
 1. e4 | best line: e4 e5
@@ -240,7 +264,7 @@ You review the transcript of a completed chess-coaching session and extract the 
 You will receive: the student's profile, the coaching plan the coach prepared, the full session transcript (including tool calls), and the findings the coach already recorded during the session.
 
 Extract:
-1. findings: durable observations about the student NOT already recorded by the coach. A finding is about the student's thinking or habits, evidenced in the transcript ("said he never considered his opponent's reply" — not "played a bad move on ply 23"). Mark improvements with isPositive: true. It is fine to return an empty list if the coach recorded everything.
+1. findings: durable observations about the student NOT already recorded by the coach. A finding is about the student's thinking or habits, evidenced in the transcript ("said he never considered his opponent's reply" — not "played a bad move on ply 23"). Mark improvements with isPositive: true. It is fine to return an empty list if the coach recorded everything. When the transcript clearly points at one of the catalog codes below, set diagnosisCode; otherwise leave it unset rather than guess.
 2. focusAreaUpdates: based on ALL evidence (recorded + new), for the student's CURRENT focus areas only (shown above with their diagnosis code) — you do not create focus areas; the system selects them automatically from measured diagnostic evidence, not from session impressions:
    - progress: an active focus area with clear positive evidence this session.
    - regress: an improving/resolved area that reappeared.
@@ -261,6 +285,17 @@ Level: Club — Around 1300–1700 chess.com. Solid tactically in puzzles; loses
 Focus areas: (none yet — this is early in your work together)
 Recent findings: (none yet — no findings recorded so far)
 Self-assessment: "I blunder pieces"
+
+Catalog diagnosis codes you may use for a finding's diagnosisCode (use ONLY these; leave it unset if none fit):
+BV-12 — Removed-blocker blindness
+BV-16 — Self-exposure blindness
+MS-14 — Loose-piece scan omission
+TA-10 — Sliding-piece double attack
+TA-16 — Discovered-attack recognition
+TA-17 — Discovered-check/double-check recognition
+TA-18 — Removal-of-defender recognition
+TA-19 — Overload recognition
+TA-26 — Trapped-piece recognition
 
 COACHING PLAN
 1. White's move 12 (user_mistake): Pushed g4 in front of the uncastled king. "Before pushing this pawn, where is your king going to live?" Key line: O-O Re8 d3 h6
