@@ -5,6 +5,7 @@ export * from './aggregate-opening-stats.js';
 export * from './assert-eval-sign.js';
 export * from './bot-game-phase.js';
 export * from './bot-move-pick.js';
+export * from './bot-skill-curve.js';
 export * from './bot-opening.js';
 export * from './build-game-report.js';
 export * from './build-stats-dashboard.js';

@@ -2374,6 +2374,171 @@ This closes out Phase 61 — all four tasks are now checked off.
 
 ---
 
+## Phase 62 — Elo-calibrated diagnosis-driven bot weaknesses
+
+Per user decision: two gaps remain after Phase 60/61. First,
+`bestMoveChance` (Phase 60) is 30 hand-picked numbers derived once from the
+now-deleted `temperature` field (Task 60.5) — not calibrated to how often a
+player of a given rating actually finds the engine's top move in reality.
+Second, a documented `diagnosisCode` (Phase 61) only ever dampens *whether*
+the bot plays the engine's own best move (`pickBotMove`,
+`bot-move-pick.ts:97-99`) — it never steers the bot toward actually
+*playing* a move that exhibits one of its own documented weaknesses. The
+roster's `diagnosisCodes` are also drawn only from the 15 `TA-*` codes
+`motifToCode` resolves (`bot-roster.ts:20-27`'s "every other family has no
+way to distinguishably manifest" claim), which is now false for two
+families: `packages/chess-analysis/src/diagnostics/registry.ts` already
+wires 8 real `BV-*` (board vision / hanging pieces) and 9 real `MS-*`
+(one-ply scan omission) detectors, currently used only by the whole-game
+batch pipeline (`apps/api/src/services/build-diagnostics.ts`).
+
+**Family scope (decided):** `TA` ∪ `BV` ∪ `MS` only — the only families
+with a real per-move detector. The other 15 families in `docs/diagnose.md`
+(ST, PS, EG, OP, CA, EV, DF, AT, PW, CV, LR, PD, RB, TM, MX) have no
+per-move detector; out of scope for this phase, flagged as future work.
+
+**Detector cost (decided):** real BV/MS/TA detectors only ever classify the
+move the bot actually chose (one extra engine search, mirroring the
+existing `apps/api/src/services/play-move-quality.ts` pattern), never all
+~40 candidates — detector output *tags* the chosen move for the record, it
+doesn't drive selection. Selection is driven by the elo curves (Task 62.1)
+plus a cheap per-candidate proxy (Task 62.2) that approximates the same
+code families without a second search.
+
+**Three elo-parameterized curves, not per-bot constants (decided):**
+`P(best move)`: 300→0.05, 500→0.60, 800→0.80, rising toward the existing
+top-tier ~0.97+ by 2300. `P(manifest | not best move)`: 300→0.95, 800→0.30,
+1200→0.02, falling toward ~0 by top tier — conditional on the miss branch,
+not a fraction of all moves (the only reading that keeps 800's two given
+numbers, 0.80 best + 0.30 manifest, from summing past 100%).
+`diagnosisCodes` breadth: 300→ the full `TA∪BV∪MS` eligible pool ("all
+diagnose"), 400→ noticeably fewer, 1500→ much fewer, 0 by top tier.
+
+**Plausible-move shortlist (decided):** humans don't weigh all 40 legal
+moves — they narrow to what looks forcing or relevant. The middlegame miss
+branch builds a shortlist from the position's CCT (checks/captures/
+threats) analysis before sampling, capped 3-5, falling back to the full
+field when fewer than 2 candidates qualify.
+
+### Task 62.1: Elo-calibrated probability curves
+
+**Files:** `packages/chess-analysis/src/bot-skill-curve.ts` (+ test) — pure
+logic, per AGENTS.md's layering rule, not `packages/shared`.
+
+- [x] `bestMoveChanceForElo(elo: number, phase: MovePhase): number` and
+      `diagnosisManifestChanceForElo(elo: number): number` — monotonic
+      curves fit through the anchors above (piecewise log/power
+      interpolation between anchors, clamped outside 300-2300). Test
+      asserts every given anchor within ~2 percentage points and strict
+      monotonicity (non-decreasing / non-increasing respectively) across
+      the full elo range.
+- [x] Preserve today's existing *shape* of phase differences (every bot
+      currently gets a higher `bestMoveChance` and deeper search in the
+      endgame than opening/middlegame, so weak bots don't shuffle forever
+      in king endings) as a phase multiplier applied on top of the elo
+      curve, not a second set of hand-picked absolutes — document the
+      reasoning inline the way the roster's endgame-depth comment does.
+- [x] `mateConversionChance` (Phase 60) is untouched — a separate,
+      already-tuned floor, not part of this recalibration.
+- [x] Commit: `feat: elo-calibrated bot move-accuracy curves`.
+
+### Task 62.2: Cheap per-candidate diagnosis-code proxy
+
+**Files:** `packages/chess-analysis/src/candidate-moves.ts`,
+`packages/chess-analysis/src/bot-move-pick.ts`,
+`apps/api/src/services/bot/bot-candidates.ts` (+ tests).
+
+- [ ] `BotCandidate.diagnosisCode: DiagnosisCodeId | null` →
+      `diagnosisCodes: readonly DiagnosisCodeId[]`, still computed with no
+      extra engine calls (same single multiPv-40 search
+      `buildBotCandidates` already runs).
+- [ ] Fix the existing ownership blur: `candidate-moves.ts`'s
+      `createsHangingPiece` (`delta.newHangingPieces.length > 0`) doesn't
+      distinguish the mover's own piece from the opponent's — split into
+      own/opponent variants (`PositionFeatures.hangingPieces` already
+      carries per-piece `color`) so an "aggressive" personality rewarding a
+      genuine attacking threat is never confused with a genuine
+      self-blunder.
+- [ ] Add cheap positional proxies for at least `BV-01`/`BV-02`
+      (own/opponent hanging-piece blindness, from the split above) and
+      `MS-02`/`MS-03` (opponent capture/threat already present in
+      `fenBefore` and still unaddressed in `fenAfter` — computable from the
+      same `computePositionFeatures`/`diffPositionFeatures` primitives
+      already in use). Approximate more of the eligible `BV`/`MS` set where
+      cheaply reasonable; full coverage isn't required — Task 62.4's real
+      detector pass is the accuracy backstop.
+- [ ] `TA` stays exactly as-is (`motifToCode`, already cheap, unchanged).
+- [ ] Commit: `feat: cheap per-candidate diagnosis-code proxy for bots`.
+
+### Task 62.3: Steer the miss-branch toward a documented weakness
+
+**Files:** `packages/chess-analysis/src/bot-move-pick.ts`,
+`apps/api/src/services/bot/bot-candidates.ts` (+ tests).
+
+- [ ] Middlegame plausible-move shortlist: `analyzeChecksCapturesThreats(fenBefore)`
+      (already a cheap pure-position function, no engine call) — keep only
+      candidates that are a check, a capture, or a reply to one of the
+      position's threats, cap to 3-5 (widest-first if more qualify), sample
+      from that shortlist instead of the full 40-candidate field. Fewer
+      than 2 qualifying candidates → fall back to the full field unchanged.
+- [ ] Restructure `pickBotMove`: roll `bestMoveChance` (Task 62.1) → hit →
+      `candidates[0]` (mate-conversion floor unchanged). Miss → roll
+      `diagnosisManifestChance` (Task 62.1) → hit → sample only among
+      shortlisted candidates whose `diagnosisCodes` (Task 62.2) intersect
+      `bot.diagnosisCodes`, falling back to the full shortlist (or full
+      field) if none match (the roll must never dead-end) → miss →
+      existing personality-weighted sample over the shortlist.
+- [ ] Reconcile with Phase 61's `DIAGNOSED_BLIND_SPOT_CHANCE` dampening on
+      `candidates[0]` — this steering step supersedes it (dampening only
+      ever affected whether the best move was played at all; it never
+      chose a matching candidate), so fold or remove the old check rather
+      than stacking both.
+- [ ] Commit: `feat: steer bot move selection toward documented weaknesses`.
+
+### Task 62.4: Real detector pass on the chosen move (tagging only)
+
+**Files:** new `apps/api/src/services/bot/classify-bot-move.ts` (+ test),
+`apps/api/src/services/bot/bot-move-selector.ts`.
+
+- [ ] After `pickBotMove` returns, classify the chosen move for real:
+      mirror `apps/api/src/services/play-move-quality.ts`'s existing
+      pattern (`classifyLiveMove` + one fresh `analyzePosition(fenAfter)`
+      search — confirm whether the before-side eval can reuse the
+      multiPv-40 search `buildBotCandidates` already ran instead of a
+      second before-search), then `buildPlyDiagnosticContext` + run the
+      subset of `DIAGNOSTIC_DETECTORS` that don't require
+      `previousMove`/`nextMoves` (read each detector in
+      `packages/chess-analysis/src/diagnostics/detectors/` to confirm
+      exactly which qualify — expected: all 8 `BV-*`, `MS-*` except
+      `MS-07`/`MS-14`, `TA` offensive already covered by `motifToCode`).
+- [ ] Attach the resulting real `diagnosisCodes` to the bot's move record
+      as the canonical tag (future surfacing/analytics) — never re-runs or
+      overrides the selection Task 62.3 already made.
+- [ ] Commit: `feat: tag bot moves with real diagnosis-code detectors`.
+
+### Task 62.5: Widen and re-tier the roster
+
+**Files:** `packages/shared/src/bot-roster.ts` (+ roster validation test).
+
+- [ ] Rewrite the doc comment (`bot-roster.ts:18-35`): replace the
+      "every other family has no way to distinguishably manifest" claim
+      with the real `TA∪BV∪MS` scope, and name exactly what's still
+      excluded and why (the other 15 families: no detector yet;
+      `TA`-defensive/`MS-07`/`MS-14`: need cross-ply context a single live
+      move doesn't have).
+- [ ] Beginner tier (~elo 300-420): `diagnosisCodes` = the full `TA∪BV∪MS`
+      eligible pool (or very close to it). Taper breadth down through
+      Developing/Intermediate, reaching 0-1 by Advanced/Expert (several
+      already are empty; keep those). Keep existing flavor-appropriate
+      hand-picked codes as a called-out "signature" on top of the tier
+      baseline where they still fit a bot's bio.
+- [ ] New test: every bot's `diagnosisCodes` ⊆ the `TA∪BV∪MS` eligible
+      pool, and breadth is non-increasing as elo increases across the
+      sorted roster.
+- [ ] Commit: `feat: widen and re-tier bot roster diagnosis codes`.
+
+---
+
 ## Calibration and standing constraints
 
 - **§0.3 and §V require recalibration** of every rating prior and threshold
