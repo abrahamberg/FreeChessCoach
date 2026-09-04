@@ -2,8 +2,9 @@ import { computePositionFeatures } from '@freechesscoach/chess-analysis';
 import { ENGINE_DEFAULT_DEPTH } from '@freechesscoach/shared';
 import { Chess } from 'chess.js';
 import { useEffect } from 'react';
-import { getSharedEngineWorker } from '../engine/shared-engine-worker-instance.js';
-import type { RawEngineLine } from '../engine/shared-engine-worker.js';
+import { getSharedEngineWorker, getSharedLiteEngineWorker } from '../engine/shared-engine-worker-instance.js';
+import type { RawEngineLine, SharedEngineWorker } from '../engine/shared-engine-worker.js';
+import { setTunnelConnectionStatus } from '../engine/tunnel-connection-status.js';
 
 // Defensive fallbacks only — apps/api always sends an explicit depth/multiPv
 // (services/engine/browser-tunnel-engine-backend.ts). They come from
@@ -21,6 +22,19 @@ interface TunnelRequestMessage {
   fens?: string[];
   depth?: number;
   multiPv?: number;
+  /** Passed straight through to SharedEngineWorker's AnalyzeRequest — see
+   * its own doc comment. Absent for every caller except the lite tunnel
+   * supplement. */
+  movetimeMs?: number;
+  /** Which worker fulfills this request — see shared-engine-worker-instance.ts.
+   * Absent (older in-flight requests during a deploy, or any caller that
+   * hasn't opted in) means 'main', the full-net worker every existing
+   * caller already expects. */
+  engine?: 'main' | 'lite';
+}
+
+function workerForEngine(engine: TunnelRequestMessage['engine']): SharedEngineWorker {
+  return engine === 'lite' ? getSharedLiteEngineWorker() : getSharedEngineWorker();
 }
 
 interface TunnelResponseMessage {
@@ -66,8 +80,14 @@ function toPositionAnalysisLine(fen: string, line: RawEngineLine) {
   };
 }
 
-async function analyzePositionForTunnel(fen: string, depth: number, multiPv: number) {
-  const lines = await getSharedEngineWorker().analyze({ fen, depth, multiPv });
+async function analyzePositionForTunnel(
+  fen: string,
+  depth: number,
+  multiPv: number,
+  engine: TunnelRequestMessage['engine'],
+  movetimeMs: number | undefined
+) {
+  const lines = await workerForEngine(engine).analyze({ fen, depth, multiPv, movetimeMs });
   const positionLines = lines.map((line) => toPositionAnalysisLine(fen, line));
   const best = positionLines[0];
   return {
@@ -81,10 +101,11 @@ async function analyzePositionForTunnel(fen: string, depth: number, multiPv: num
   };
 }
 
-async function analyzeGameForTunnel(fens: string[], depth: number, multiPv: number) {
+async function analyzeGameForTunnel(fens: string[], depth: number, multiPv: number, engine: TunnelRequestMessage['engine']) {
+  const worker = workerForEngine(engine);
   const results = [];
   for (const [ply, fen] of fens.entries()) {
-    const lines = await getSharedEngineWorker().analyze({ fen, depth, multiPv });
+    const lines = await worker.analyze({ fen, depth, multiPv });
     results.push({
       ply,
       fen,
@@ -108,8 +129,14 @@ async function handleTunnelRequest(socket: WebSocket, raw: string): Promise<void
   try {
     const result =
       message.kind === 'analyze-position'
-        ? await analyzePositionForTunnel(message.fen ?? '', message.depth ?? DEFAULT_DEPTH, message.multiPv ?? DEFAULT_MULTI_PV)
-        : await analyzeGameForTunnel(message.fens ?? [], message.depth ?? DEFAULT_DEPTH, message.multiPv ?? DEFAULT_MULTI_PV);
+        ? await analyzePositionForTunnel(
+            message.fen ?? '',
+            message.depth ?? DEFAULT_DEPTH,
+            message.multiPv ?? DEFAULT_MULTI_PV,
+            message.engine,
+            message.movetimeMs
+          )
+        : await analyzeGameForTunnel(message.fens ?? [], message.depth ?? DEFAULT_DEPTH, message.multiPv ?? DEFAULT_MULTI_PV, message.engine);
     send(socket, { requestId: message.requestId, ok: true, result });
   } catch (error) {
     send(socket, { requestId: message.requestId, ok: false, error: error instanceof Error ? error.message : String(error) });
@@ -171,9 +198,11 @@ export function useEngineTunnelClient(options: UseEngineTunnelClientOptions): vo
       };
       socket.onopen = () => {
         if (stopped) return;
+        setTunnelConnectionStatus('connected');
         keepaliveId = setInterval(() => sendPing(socket!), KEEPALIVE_INTERVAL_MS);
       };
       socket.onclose = () => {
+        setTunnelConnectionStatus('disconnected');
         if (keepaliveId !== undefined) clearInterval(keepaliveId);
         if (!stopped) reconnectId = setTimeout(connect, RECONNECT_DELAY_MS);
       };
@@ -182,6 +211,7 @@ export function useEngineTunnelClient(options: UseEngineTunnelClientOptions): vo
 
     return () => {
       stopped = true;
+      setTunnelConnectionStatus('disconnected');
       if (keepaliveId !== undefined) clearInterval(keepaliveId);
       if (reconnectId !== undefined) clearTimeout(reconnectId);
       socket?.close();

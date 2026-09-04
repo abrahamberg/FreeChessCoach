@@ -11,7 +11,7 @@ export interface EngineWorkerLike {
   onerror?: ((event: { message?: string }) => void) | null;
   terminate(): void;
   /** Hands the worker a MessagePort it can stream WASM download progress on
-   * (see defaultCreateWorker). Optional because test fakes have no download
+   * (see createWorkerForVariant). Optional because test fakes have no download
    * to report progress on. */
   setProgressPort?(port: MessagePort): void;
 }
@@ -41,10 +41,26 @@ export interface AnalyzeRequest {
   fen: string;
   depth: number;
   multiPv: number;
+  /** Wall-clock cap on top of `depth` — `go depth D movetime M` stops at
+   * whichever limit is hit first. `depth` alone assumes the host is fast
+   * enough to reach it quickly, which doesn't hold on every device/browser
+   * tab; this bounds the worst case regardless. Omitted by every caller
+   * except the lite tunnel supplement (see LiteSupplementedEngineBackend),
+   * which is the one caller a slow device turning into a many-second stall
+   * actually breaks a live, user-waiting bot move. */
+  movetimeMs?: number;
 }
+
+/** Which WASM build a `SharedEngineWorker` instance drives — see
+ * `createWorkerForVariant`'s doc comment for why 'full' stays the default
+ * and 'lite' is only ever chosen explicitly. */
+export type EngineWasmVariant = 'full' | 'lite';
 
 export interface SharedEngineWorkerOptions {
   createWorker?: () => EngineWorkerLike;
+  /** Defaults to 'full' — see createWorkerForVariant. Ignored when
+   * `createWorker` is given (tests supply their own fake worker directly). */
+  wasmVariant?: EngineWasmVariant;
 }
 
 /**
@@ -57,39 +73,30 @@ export interface SharedEngineWorkerOptions {
  */
 export type EngineInstallStatus = 'absent' | 'installing' | 'ready';
 
-function defaultCreateWorker(): EngineWorkerLike {
-  // The full-net build, NOT `-lite-single`. The lite net is ~7MB against this
-  // one's ~108MB, and that gap changes the engine's actual conclusions rather
-  // than just its precision: on a sharp middlegame it played Qxc6 (+597) where
-  // both this build (+695) and the native backend (+1003) play Qxf6 — at the
-  // same depth 16, so it was never a search-depth difference. Browser-mode
-  // evaluations are persisted and shown next to server-analyzed games, so they
-  // have to come from a comparable engine. `-single` (rather than the threaded
-  // `stockfish-18.js`) keeps this working without serving the app
-  // cross-origin-isolated for SharedArrayBuffer.
-  //
-  // The `new URL(..., import.meta.url)` on both lines below is load-bearing,
-  // not decoration: it's what makes Vite treat each file as a static asset it
-  // must copy into the build and content-hash, rather than something that
-  // only exists in node_modules at dev time. Without the second one, the
-  // build ships the (hashed) .js but never the .wasm it needs at runtime —
-  // that gap is exactly what was 404ing in production.
-  //
-  // The worker script has no config-object entry point in worker mode (it
-  // hardcodes its own bootstrap instead of accepting `Module.locateFile`), so
-  // the only supported way to tell it where its .wasm actually lives is the
-  // URL-fragment convention it reads out of `self.location.hash` on startup.
-  //
-  // Both `new URL(<string literal>, import.meta.url)` calls must keep a bare
-  // string literal as their first argument — that's what Vite's static
-  // analysis pattern-matches on to know to copy+hash the file. Building the
-  // path with a template literal (e.g. to splice the hash fragment in
-  // directly) makes Vite stop recognizing the call, and it silently drops
-  // the asset from the build instead of erroring. So the fragment gets
-  // spliced on by mutating the resulting URL object instead, after both
-  // literal-argument calls have already been made.
-  const wasmUrl = new URL('stockfish/bin/stockfish-18-single.wasm', import.meta.url);
-  const workerUrl = new URL('stockfish/bin/stockfish-18-single.js', import.meta.url);
+// The `new URL(..., import.meta.url)` calls in each branch below are
+// load-bearing, not decoration: it's what makes Vite treat each file as a
+// static asset it must copy into the build and content-hash, rather than
+// something that only exists in node_modules at dev time. Without the
+// second one (the .wasm), the build ships the (hashed) .js but never the
+// .wasm it needs at runtime — that gap is exactly what was 404ing in
+// production.
+//
+// The worker script has no config-object entry point in worker mode (it
+// hardcodes its own bootstrap instead of accepting `Module.locateFile`), so
+// the only supported way to tell it where its .wasm actually lives is the
+// URL-fragment convention it reads out of `self.location.hash` on startup.
+//
+// Both `new URL(<string literal>, import.meta.url)` calls in a branch must
+// keep a bare string literal as their first argument — that's what Vite's
+// static analysis pattern-matches on to know to copy+hash the file. Building
+// the path with a template literal (e.g. to splice the hash fragment in
+// directly, or to parameterize the filename by variant) makes Vite stop
+// recognizing the call, and it silently drops the asset from the build
+// instead of erroring. That's why this is two near-identical literal
+// branches rather than one function parameterized by filename — the
+// fragment itself is still spliced on by mutating the resulting URL object
+// after both literal-argument calls have already been made.
+function workerFromUrls(wasmUrl: URL, workerUrl: URL): EngineWorkerLike {
   workerUrl.hash = encodeURIComponent(wasmUrl.href);
   const worker = new Worker(workerUrl) as unknown as EngineWorkerLike & {
     postMessage(message: unknown, transfer?: Transferable[]): void;
@@ -99,6 +106,38 @@ function defaultCreateWorker(): EngineWorkerLike {
   // see EngineInstallProgress below.
   worker.setProgressPort = (port) => worker.postMessage({ progressPort: port }, [port]);
   return worker;
+}
+
+// The full-net build, NOT `-lite-single`. The lite net is ~7MB against this
+// one's ~108MB, and that gap changes the engine's actual conclusions rather
+// than just its precision: on a sharp middlegame it played Qxc6 (+597) where
+// both this build (+695) and the native backend (+1003) play Qxf6 — at the
+// same depth 16, so it was never a search-depth difference. Browser-mode
+// evaluations that get persisted and shown next to server-analyzed games
+// have to come from a comparable engine, which is why this is the default
+// variant and the only one the Explore panel / tunnel 'main' fulfillment
+// ever uses. `-single` (rather than the threaded `stockfish-18.js`) keeps
+// this working without serving the app cross-origin-isolated for
+// SharedArrayBuffer.
+function createFullWorker(): EngineWorkerLike {
+  const wasmUrl = new URL('stockfish/bin/stockfish-18-single.wasm', import.meta.url);
+  const workerUrl = new URL('stockfish/bin/stockfish-18-single.js', import.meta.url);
+  return workerFromUrls(wasmUrl, workerUrl);
+}
+
+// The lite build — deliberately weaker/faster, per the accuracy gap noted
+// above. Never used for graded/official evaluation; only for candidate-move
+// breadth supplementation (tunnel 'lite' fulfillment) and exploratory JIT
+// hints, both of which explicitly tolerate a less accurate engine in
+// exchange for speed and multiPv breadth.
+function createLiteWorker(): EngineWorkerLike {
+  const wasmUrl = new URL('stockfish/bin/stockfish-18-lite-single.wasm', import.meta.url);
+  const workerUrl = new URL('stockfish/bin/stockfish-18-lite-single.js', import.meta.url);
+  return workerFromUrls(wasmUrl, workerUrl);
+}
+
+function createWorkerForVariant(variant: EngineWasmVariant): EngineWorkerLike {
+  return variant === 'lite' ? createLiteWorker() : createFullWorker();
 }
 
 function parseInfoLine(line: string): RawEngineLine | null {
@@ -176,7 +215,7 @@ export class SharedEngineWorker {
   private readonly activityListeners = new Set<(activity: EngineActivity) => void>();
 
   constructor(options: SharedEngineWorkerOptions = {}) {
-    this.createWorker = options.createWorker ?? defaultCreateWorker;
+    this.createWorker = options.createWorker ?? (() => createWorkerForVariant(options.wasmVariant ?? 'full'));
   }
 
   get status(): EngineInstallStatus {
@@ -370,6 +409,7 @@ export class SharedEngineWorker {
     };
     worker.postMessage(`setoption name MultiPV value ${request.multiPv}`);
     worker.postMessage(`position fen ${request.fen}`);
-    worker.postMessage(`go depth ${request.depth}`);
+    const movetimeSuffix = request.movetimeMs !== undefined ? ` movetime ${request.movetimeMs}` : '';
+    worker.postMessage(`go depth ${request.depth}${movetimeSuffix}`);
   }
 }

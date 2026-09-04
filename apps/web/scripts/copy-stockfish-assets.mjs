@@ -14,6 +14,12 @@
 // every browser-engine feature (Explore panel, browser-mode tunnel
 // fulfillment, and the engine-activity indicator's 'installing'/'searching'
 // states) back to as if the engine were merely idle.
+//
+// Also stages the `-lite-single` pair (~7MB) for the second, lightweight
+// worker (shared-engine-worker-instance.ts's getSharedLiteEngineWorker()) —
+// used only to supplement candidate-move breadth and for exploratory JIT
+// hints, never for the graded/official evaluation the full-net build above
+// is reserved for.
 import { createRequire } from 'node:module';
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -25,7 +31,12 @@ const require = createRequire(import.meta.url);
 const stockfishPkgJson = require.resolve('stockfish/package.json');
 const srcDir = join(dirname(stockfishPkgJson), 'bin');
 const destDir = join(here, '..', 'src', 'engine', 'stockfish', 'bin');
-const FILES = ['stockfish-18-single.js', 'stockfish-18-single.wasm'];
+const FILES = [
+  'stockfish-18-single.js',
+  'stockfish-18-single.wasm',
+  'stockfish-18-lite-single.js',
+  'stockfish-18-lite-single.wasm'
+];
 
 mkdirSync(destDir, { recursive: true });
 

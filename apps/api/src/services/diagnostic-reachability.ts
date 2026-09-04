@@ -1,4 +1,4 @@
-import { BOT_ROSTER, type PositionAnalysis } from '@freechesscoach/shared';
+import { interpolateAnchors, type PositionAnalysis } from '@freechesscoach/shared';
 
 export interface DiagnosticReachabilityDependencies {
   /** Uncached, single-position engine search (see resolveRawEngineBackend)
@@ -9,21 +9,35 @@ export interface DiagnosticReachabilityDependencies {
 }
 
 /**
+ * Elo -> search-depth anchors used only as the human-reachability proxy
+ * below — the engine itself exposes no `Skill Level`/`UCI_Elo` knob to
+ * search "as a 900-rated player" directly. Previously borrowed
+ * `BOT_ROSTER`'s own per-bot middlegame depth (before bot move selection
+ * stopped using depth as a weakening knob at all — see
+ * docs/plan-bot-engine.md's Phase 64); these anchors are that same curve's
+ * shape, preserved here as its own literal data since a bot's search depth
+ * is no longer a roster concept to borrow from.
+ */
+const REACHABILITY_DEPTH_ANCHORS: ReadonlyArray<readonly [elo: number, depth: number]> = [
+  [300, 3],
+  [500, 7],
+  [700, 9],
+  [1000, 10],
+  [1300, 11],
+  [1600, 12],
+  [2000, 14],
+  [2300, 15]
+];
+
+/**
  * Maps a student's rating to the search depth Task 54.1 uses as the
- * human-reachability proxy: the middlegame-phase depth of the `BOT_ROSTER`
- * entry whose own `elo` is closest to the student's, since the engine
- * itself exposes no `Skill Level`/`UCI_Elo` knob to search "as a 900-rated
- * player" directly. Middlegame specifically (not opening/endgame) — it's
- * the calculation-heavy phase a bot's depth most directly represents; the
- * endgame phase is deliberately searched deeper as a mate-completion aid
- * (see docs/plan.md's Phase 60), which isn't the "how deep would this rated
- * player calculate" proxy this function needs.
+ * human-reachability proxy — see `REACHABILITY_DEPTH_ANCHORS`'s doc comment
+ * for why this needs its own elo curve rather than a bot roster's depth.
  */
 export function depthForRating(rating: number): number {
-  const nearest = BOT_ROSTER.reduce((closest, bot) =>
-    Math.abs(bot.elo - rating) < Math.abs(closest.elo - rating) ? bot : closest
+  return Math.round(
+    interpolateAnchors(REACHABILITY_DEPTH_ANCHORS, rating, (depthLower, depthUpper, t) => depthLower + t * (depthUpper - depthLower))
   );
-  return nearest.phases.middlegame.depth;
 }
 
 /**

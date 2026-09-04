@@ -13,37 +13,20 @@ export const BotPersonalitySchema = z.object({
 });
 export type BotPersonality = z.infer<typeof BotPersonalitySchema>;
 
-/** Upper bound on a phase profile's `depth` — deliberately higher than
- * `ENGINE_DEFAULT_DEPTH` (16, used elsewhere for unrelated defaults). An
- * endgame search over a handful of pieces is cheap enough to justify going
- * deeper than the shared default, and a deeper endgame search is what lets
- * even a weak bot's phase profile still find and finish real mating
- * technique (see bot-game-phase.ts / Phase 60 of docs/plan.md). */
-export const BOT_PHASE_DEPTH_MAX = 24;
-
-/** One game phase's move-selection knob — see bot-game-phase.ts's
- * classifyBotGamePhase for how a live position resolves to
- * opening/middlegame/endgame. `depth` is "board sight" (shallower search
- * plays weaker/more short-sighted). The probability of playing the
- * engine's actual top-ranked candidate outright, rolled once per move in
- * this phase, used to be a hand-picked field here too
- * (`bestMoveChance`) — it's now derived live from `BotConfig.elo` and the
- * phase by `packages/chess-analysis/src/bot-skill-curve.ts`'s
- * `bestMoveChanceForElo` (docs/plan.md Phase 62), not stored per bot. */
-export const BotPhaseProfileSchema = z.object({
-  depth: z.number().int().min(1).max(BOT_PHASE_DEPTH_MAX)
-});
-export type BotPhaseProfile = z.infer<typeof BotPhaseProfileSchema>;
-
 /**
  * A bot's full behavior, entirely data-driven: one shared move-selection
- * engine (bot-move-selector.ts) interprets this config, no per-bot code.
- * `elo` is a display rating only (300 beginner - 2300 most advanced,
- * chess.com-style) — the knobs that actually make a bot play
- * weaker/stronger/differently are `phases` (per game-phase depth and
- * best-move probability), `personality`, and the opening-book pair.
- * `bookPlies`/`bookMistakeChance` control opening-book behavior (see
- * packages/chess-analysis/src/opening-book.ts's bookMovesForFen).
+ * engine (bot-move-selector.ts / bot-move-pick.ts) interprets this config,
+ * no per-bot code. `elo` is a display rating only (300 beginner - 2300 most
+ * advanced, chess.com-style) — search depth is fixed at
+ * `BOT_SEARCH_DEPTH` (bot-candidates.ts) for every bot and every phase, not
+ * a per-bot lever (a bot can no longer be made weaker by shallowing the
+ * engine — see docs/plan-bot-engine.md's Phase 64 context). The knobs that
+ * actually make a bot play weaker/stronger/differently are `topFiveChance`
+ * / `bestMoveGivenTopFiveChance` / `blunderGivenMissChance` (the %A/%B/%C
+ * decision tree, bot-move-pick.ts's pickBotMove), `personality`, and the
+ * opening-book pair. `bookPlies`/`bookMistakeChance` control opening-book
+ * behavior (see packages/chess-analysis/src/bot-opening.ts's
+ * selectBookMove).
  */
 export const BotConfigSchema = z.object({
   id: z.string().min(1),
@@ -55,18 +38,27 @@ export const BotConfigSchema = z.object({
   avatarIndex: z.number().int().min(0).max(29),
   description: z.string().min(1),
   elo: z.number().int().min(300).max(2300),
-  phases: z.object({
-    opening: BotPhaseProfileSchema,
-    middlegame: BotPhaseProfileSchema,
-    endgame: BotPhaseProfileSchema
-  }),
+  /** %A — probability the move this bot actually plays comes from the
+   * engine's own top-5 ranked candidates at all, rather than the TTC-based
+   * tactical-mistake/blunder pool. Rolled once per move, independently of
+   * `bestMoveGivenTopFiveChance`/`blunderGivenMissChance` below — see
+   * bot-move-pick.ts's pickBotMove for the full three-roll tree. */
+  topFiveChance: z.number().min(0).max(1),
+  /** %B — conditional on `topFiveChance` hitting: probability the bot plays
+   * the engine's actual best move (candidates[0]) outright, rather than
+   * another one of its top-5 lines. */
+  bestMoveGivenTopFiveChance: z.number().min(0).max(1),
+  /** %C — conditional on `topFiveChance` missing: probability the miss is a
+   * blunder (large, TTC-plausible material loss) rather than a smaller
+   * tactical mistake. */
+  blunderGivenMissChance: z.number().min(0).max(1),
   personality: BotPersonalitySchema,
-  /** Floor probability (independent of the current phase's own
-   * `bestMoveChance`) of playing a move the engine's phase-appropriate
-   * search has flagged as delivering/continuing a forced mate — see
-   * bot-move-pick.ts's pickBotMove. Kept below 1.0 even for the strongest
-   * tiers so "the bot can always checkmate" still reads as "usually
-   * finishes what it can see," not a flawless finish. */
+  /** Floor probability (independent of `bestMoveGivenTopFiveChance`) of
+   * playing a move the engine's search has flagged as delivering/
+   * continuing a forced mate — see bot-move-pick.ts's pickBotMove. Kept
+   * below 1.0 even for the strongest tiers so "the bot can always
+   * checkmate" still reads as "usually finishes what it can see," not a
+   * flawless finish. */
   mateConversionChance: z.number().min(0).max(1),
   /** This bot's documented weaknesses, from the same 410-code taxonomy the
    * coach diagnoses real students against — restricted to

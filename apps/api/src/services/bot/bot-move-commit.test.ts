@@ -45,11 +45,9 @@ function baseBot(overrides: Partial<BotConfig> = {}): BotConfig {
     avatarIndex: 0,
     description: 'A bot for tests.',
     elo: 800,
-    phases: {
-      opening: { depth: 6 },
-      middlegame: { depth: 6 },
-      endgame: { depth: 6 }
-    },
+    topFiveChance: 0.6,
+    bestMoveGivenTopFiveChance: 0.5,
+    blunderGivenMissChance: 0.2,
     personality: { aggression: 50, trapSeeking: 50, defensiveness: 50 },
     mateConversionChance: 0.9,
     diagnosisCodes: [],

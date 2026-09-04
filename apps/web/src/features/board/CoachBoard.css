@@ -15,12 +15,13 @@
   border-color: var(--annotate-2);
 }
 
-/* A move submission is in flight (see CoachBoard's `disabled` prop) — the
- * optimistic local preview already shows the move as played, so without
- * some visible "still working" signal here a slow request (a real engine
- * search can take several seconds) looks indistinguishable from a finished
- * one, inviting a confusing second attempt. */
+/* A move submission is in flight (see CoachBoard's `disabled` prop) —
+ * dragging/clicking is already blocked in TS regardless of this class (see
+ * applyMove's `disabled` check), so this is cursor-only: a bot's reply now
+ * always runs a fixed depth-18 search (see BOT_SEARCH_DEPTH) and can take
+ * several real seconds, and dimming the whole board's opacity for that long
+ * read as broken rather than "still working" — BotStatusPanel's own "is
+ * thinking…" text already carries that signal. */
 .coach-board-frame--pending {
-  opacity: 0.75;
   cursor: wait;
 }

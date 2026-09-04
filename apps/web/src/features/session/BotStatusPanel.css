@@ -42,6 +42,23 @@
   color: var(--color-text-primary);
 }
 
+.bot-status-panel__hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.bot-status-panel__hint--loading {
+  font-style: italic;
+}
+
+.bot-status-panel__hint-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 11px;
+}
+
 .bot-status-panel__resign {
   display: inline-flex;
   align-items: center;

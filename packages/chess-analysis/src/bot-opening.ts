@@ -1,5 +1,5 @@
 import { bookMovesForFen } from './opening-book.js';
-import type { BotConfig } from '@freechesscoach/shared';
+import { bookBreadthForElo, type BotConfig } from '@freechesscoach/shared';
 
 export interface SelectedBookMove {
   san: string;
@@ -20,6 +20,12 @@ export interface SelectedBookMove {
  * mistake roll simply returns null (defer to the engine+scoring path),
  * which for a shallow/low-level bot naturally produces an imperfect
  * opening move on its own — no separate "bad move" logic needed.
+ *
+ * The candidate pool is also truncated to `bookBreadthForElo(bot.elo)`
+ * entries before the random pick — a low-rated bot only knows a couple of
+ * "correct" replies for a given position even when theory documents many
+ * more, widening toward the book's own real ceiling at the roster's top
+ * tier (see bot-roster.ts's doc comment on that curve).
  */
 export function selectBookMove(
   fen: string,
@@ -29,7 +35,7 @@ export function selectBookMove(
 ): SelectedBookMove | null {
   if (plyCount >= bot.bookPlies * 2) return null;
 
-  const entries = bookMovesForFen(fen);
+  const entries = bookMovesForFen(fen).slice(0, bookBreadthForElo(bot.elo));
   if (entries.length === 0) return null;
 
   if (random() < bot.bookMistakeChance) return null;

@@ -48,12 +48,25 @@ describe('BrowserTunnelEngineBackend', () => {
       // Explicit depth, not undefined: left blank, the browser client falls
       // back to its own constant and can search shallower than the native
       // backend, mixing depths in the fen-keyed eval cache.
-      { kind: 'analyze-position', fen: 'f', depth: ENGINE_DEFAULT_DEPTH, multiPv: ENGINE_MULTI_PV },
+      { kind: 'analyze-position', fen: 'f', depth: ENGINE_DEFAULT_DEPTH, multiPv: ENGINE_MULTI_PV, engine: 'main' },
       // A single position can still be one of the slow ones — same
       // per-position allowance analyzeGame gets, just for one position.
       8000 + ENGINE_TUNNEL_PER_POSITION_MS
     );
     expect(result).toEqual(VALID_ANALYSIS);
+  });
+
+  test('analyzePosition includes movetimeMs in the request only when the caller sets it', async () => {
+    const transport = fakeTransport(VALID_ANALYSIS);
+    const backend = new BrowserTunnelEngineBackend(transport, 'user-1', 8000);
+
+    await backend.analyzePosition('f', { depth: 8, multiPv: 6, movetimeMs: 3000 });
+
+    expect(transport.request).toHaveBeenCalledWith(
+      'user-1',
+      { kind: 'analyze-position', fen: 'f', depth: 8, multiPv: 6, engine: 'main', movetimeMs: 3000 },
+      8000 + ENGINE_TUNNEL_PER_POSITION_MS
+    );
   });
 
   test('analyzeGame sends a correlated request and returns the validated result array', async () => {
@@ -67,7 +80,7 @@ describe('BrowserTunnelEngineBackend', () => {
     // held to the single-position budget.
     expect(transport.request).toHaveBeenCalledWith(
       'user-1',
-      { kind: 'analyze-game', fens: ['f'], depth: ENGINE_DEFAULT_DEPTH, multiPv: ENGINE_MULTI_PV },
+      { kind: 'analyze-game', fens: ['f'], depth: ENGINE_DEFAULT_DEPTH, multiPv: ENGINE_MULTI_PV, engine: 'main' },
       8000 + ENGINE_TUNNEL_PER_POSITION_MS
     );
     expect(result).toEqual(evals);

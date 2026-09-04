@@ -17,8 +17,8 @@ function analysisFor(moveSan: string): PositionAnalysis {
 }
 
 describe('depthForRating', () => {
-  test('picks the depth of the BOT_ROSTER entry with the closest elo', () => {
-    // sophie-chen: elo 500, depth 7 — nearest to a 510-rated student.
+  test('interpolates depth along the elo curve, close to a nearby anchor', () => {
+    // 500 -> 7 is a literal anchor; 510 sits close enough to still round to 7.
     expect(depthForRating(510)).toBe(7);
   });
 

@@ -33,7 +33,14 @@ export class BrowserTunnelEngineBackend implements EngineBackend {
       // depth is always sent, never left undefined: the browser client has to
       // fall back to a constant of its own when it isn't, which is how it ended
       // up searching a ply shallower than the native backend.
-      { kind: 'analyze-position', fen, depth: opts?.depth ?? ENGINE_DEFAULT_DEPTH, multiPv: opts?.multiPv ?? ENGINE_MULTI_PV },
+      {
+        kind: 'analyze-position',
+        fen,
+        depth: opts?.depth ?? ENGINE_DEFAULT_DEPTH,
+        multiPv: opts?.multiPv ?? ENGINE_MULTI_PV,
+        engine: opts?.engine ?? 'main',
+        ...(opts?.movetimeMs !== undefined ? { movetimeMs: opts.movetimeMs } : {})
+      },
       // Same reasoning as analyzeGame below: a single position can be one of
       // the slow ones (see ENGINE_TUNNEL_PER_POSITION_MS's doc), so this needs
       // the same per-position allowance on top of the base, not the base alone.
@@ -45,7 +52,13 @@ export class BrowserTunnelEngineBackend implements EngineBackend {
   async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
     const raw = await this.transport.request(
       this.userId,
-      { kind: 'analyze-game', fens, depth: opts?.depth ?? ENGINE_DEFAULT_DEPTH, multiPv: opts?.multiPv ?? ENGINE_MULTI_PV },
+      {
+        kind: 'analyze-game',
+        fens,
+        depth: opts?.depth ?? ENGINE_DEFAULT_DEPTH,
+        multiPv: opts?.multiPv ?? ENGINE_MULTI_PV,
+        engine: opts?.engine ?? 'main'
+      },
       // Scaled by batch size — this one request covers every position in the
       // game, so `timeoutMs` (budgeted for a single position) would abort a
       // perfectly healthy analysis a few plies in.

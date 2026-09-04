@@ -11,6 +11,7 @@ import { EngineSourceLoggingBackend, logEngineSourceUsage, type EngineSource } f
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
 import { LichessEvalEngineBackend } from './lichess-eval-engine-backend.js';
 import type { LichessEvalReader } from './lichess-eval-index.js';
+import { LiteSupplementedEngineBackend } from './lite-supplemented-engine-backend.js';
 import { NativeEngineBackend } from './native-engine-backend.js';
 
 export interface ResolveEngineBackendOptions {
@@ -77,10 +78,29 @@ export async function resolveEngineBackend(options: ResolveEngineBackendOptions,
  * EngineSourceLoggingBackend so bot engine calls show up in the same
  * per-user analytics log as every other caller, just always attributed to
  * `internalEngine`/`externalEngine`, never `lichessIndex`.
+ *
+ * Whatever `raw` backend the user's mode resolved to is wrapped in
+ * LiteSupplementedEngineBackend, which fills a candidate-breadth shortfall
+ * from the lightweight browser worker when one's connected. Deliberately
+ * does NOT fall back to the native engine when a non-native mode is still
+ * short on breadth (no tunnel connected, and chess-api.com's own 5-line
+ * cap) — a user who picked 'chess_api' or 'browser' should never have the
+ * bot's move-selection silently reach for the server's own native engine
+ * behind their back; a narrower candidate pool in that case is the honest
+ * cost of the setting they chose, not a bug to paper over. Never touches
+ * position_evaluations; see its own doc comment.
  */
 export async function resolveRawEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
   const { raw, mode } = await resolveRawBackendForUser(options, userId);
-  return new EngineSourceLoggingBackend(raw, userId, mode === 'browser' ? 'externalEngine' : 'internalEngine');
+  // Which BotMoveDebugCollector bucket the main call's own result belongs
+  // under (see bot-move-debug.ts) — computed once here, since this is the
+  // one place that already knows the user's engineMode.
+  const mainBucket = mode === 'native' ? 'internal' : mode === 'chess_api' ? 'external' : 'browser';
+  const liteSupplemented = new LiteSupplementedEngineBackend(raw, options.tunnelTransport, userId, {
+    timeoutMs: options.tunnelTimeoutMs,
+    mainBucket
+  });
+  return new EngineSourceLoggingBackend(liteSupplemented, userId, mode === 'browser' ? 'externalEngine' : 'internalEngine');
 }
 
 async function resolveRawBackendForUser(

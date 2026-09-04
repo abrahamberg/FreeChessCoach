@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { BotAvatar } from '../../components/BotAvatar.js';
 import { FlagIcon } from '../../components/Icon.js';
+import { useLiteEngineHint } from '../../hooks/useLiteEngineHint.js';
 import { ClockDisplay } from './ClockDisplay.js';
 import './BotStatusPanel.css';
 
@@ -33,6 +34,34 @@ export interface BotStatusPanelProps {
   clock?: { whiteRemainingMs: number; blackRemainingMs: number; anchoredAt: number } | null;
   activeColor?: 'white' | 'black';
   onClockExpire?: () => void;
+  /** Current position, for the just-in-time lite-engine hint readout below —
+   * omitted (no readout at all) rather than defaulted, since a caller that
+   * doesn't track a live fen shouldn't silently get a stale/empty hint. */
+  fen?: string;
+}
+
+/** "if the light engine is not loaded the bot shows that the light engine
+ * is not loaded until it's loaded" — this panel only exists once the caller
+ * is already showing the status bar (BotSessionPage gates the whole
+ * BotStatusPanel on that), so no separate on/off toggle is needed here. */
+function LiteHintReadout({ fen }: { fen: string }): ReactNode {
+  const { status, evaluation } = useLiteEngineHint({ enabled: true, fen });
+
+  if (status === 'not-loaded' || status === 'loading') {
+    return (
+      <p className="bot-status-panel__hint bot-status-panel__hint--loading" role="status">
+        Live analysis: light engine not loaded yet…
+      </p>
+    );
+  }
+
+  if (!evaluation) return null;
+
+  return (
+    <p className="bot-status-panel__hint" role="status">
+      <span className="bot-status-panel__hint-label">Exploratory:</span> {evaluation}
+    </p>
+  );
 }
 
 const DRAW_REASON_TEXT: Record<Exclude<BotGameOverInfo['reason'], 'checkmate'>, string> = {
@@ -62,7 +91,8 @@ export function BotStatusPanel({
   onResign,
   clock,
   activeColor,
-  onClockExpire
+  onClockExpire,
+  fen
 }: BotStatusPanelProps): ReactNode {
   return (
     <div className="bot-status-panel">
@@ -95,6 +125,7 @@ export function BotStatusPanel({
           Resign
         </button>
       )}
+      {fen && !gameOver && <LiteHintReadout fen={fen} />}
     </div>
   );
 }

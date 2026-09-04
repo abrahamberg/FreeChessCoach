@@ -1,12 +1,12 @@
 /**
  * Piecewise interpolation of `x -> y` through `anchors` (ascending by `x`).
  * `lerp` decides how the two bracketing anchors combine at fraction `t` —
- * plain linear for a count, logit-space for a 0-1 probability (see
- * `bot-skill-curve.ts`'s `bestMoveChanceForElo` in `packages/chess-analysis`)
- * — that choice is the only thing that differed between the two ad hoc
- * copies of this bracket-finding loop this factors out (docs/plan.md Phase
- * 62 cleanup). `x` outside the anchor range clamps to the nearest anchor's
- * own `y` rather than extrapolating past it.
+ * plain linear for a count (e.g. this file's own callers in
+ * `bot-roster.ts`), logit-space for a 0-1 probability — that choice is the
+ * only thing that differed between the two ad hoc copies of this
+ * bracket-finding loop this factors out (docs/plan.md Phase 62 cleanup).
+ * `x` outside the anchor range clamps to the nearest anchor's own `y`
+ * rather than extrapolating past it.
  */
 export function interpolateAnchors(
   anchors: ReadonlyArray<readonly [x: number, y: number]>,

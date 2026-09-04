@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import type { BotConfig } from '@freechesscoach/shared';
+import { bookBreadthForElo, type BotConfig } from '@freechesscoach/shared';
+import { bookMovesForFen } from './opening-book.js';
 import { selectBookMove } from './bot-opening.js';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -12,11 +13,9 @@ function baseBot(overrides: Partial<BotConfig> = {}): BotConfig {
     avatarIndex: 0,
     description: 'A bot for tests.',
     elo: 800,
-    phases: {
-      opening: { depth: 6 },
-      middlegame: { depth: 6 },
-      endgame: { depth: 6 }
-    },
+    topFiveChance: 0.6,
+    bestMoveGivenTopFiveChance: 0.5,
+    blunderGivenMissChance: 0.2,
     personality: { aggression: 50, trapSeeking: 50, defensiveness: 50 },
     mateConversionChance: 0.9,
     diagnosisCodes: [],
@@ -60,5 +59,22 @@ describe('selectBookMove', () => {
     const bot = baseBot({ bookMistakeChance: 0 });
     const result = selectBookMove(START_FEN, 0, bot, () => 0);
     expect(result).not.toBeNull();
+  });
+
+  // Task 64.7: opening breadth scales with elo — a beginner only ever sees
+  // the book's first couple of entries for a position, even when theory
+  // documents many more. random() near 1 picks the last index of whatever
+  // slice is actually available, so a beginner's narrow cap (2 entries at
+  // elo 300) can only ever pick index 0 or 1, while a top-tier bot's much
+  // wider cap can reach a later entry in the same book list.
+  test('a beginner-tier bot never reaches a book entry a wider elo cap can reach', () => {
+    const beginnerEntries = bookMovesForFen(START_FEN).slice(0, bookBreadthForElo(300));
+    const topTierEntries = bookMovesForFen(START_FEN).slice(0, bookBreadthForElo(2300));
+    expect(beginnerEntries.length).toBeLessThan(topTierEntries.length);
+
+    const beginner = baseBot({ elo: 300, bookMistakeChance: 0 });
+    const result = selectBookMove(START_FEN, 0, beginner, () => 0.999999);
+    const reachedIndex = topTierEntries.findIndex((entry) => entry.san === result?.san);
+    expect(reachedIndex).toBeLessThan(beginnerEntries.length);
   });
 });

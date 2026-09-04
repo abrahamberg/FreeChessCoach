@@ -7,36 +7,50 @@ import {
   type BotCandidate
 } from '@freechesscoach/chess-analysis';
 import type { PositionAnalysis } from '@freechesscoach/shared';
+import type { BotMoveDebugCollector } from '../engine/bot-move-debug.js';
 
-/** Requested from the engine on every bot search, regardless of phase depth
- * — deliberately wide (rather than a narrow per-bot multiPv) so a genuinely
- * bad move (e.g. hanging a queen) can appear in the candidate pool at all.
- * Stockfish clips MultiPV to however many legal root moves actually exist,
- * so requesting more than a position has is harmless. Without this breadth,
- * "short board sight" could only ever reorder engine-approved lines, never
- * produce a real blunder — see docs/plan.md's Phase 60. */
+/** Requested from the engine on every bot search — deliberately wide
+ * (rather than a narrow per-bot multiPv) so a genuinely bad move (e.g.
+ * hanging a queen) can appear in the candidate pool at all. Stockfish clips
+ * MultiPV to however many legal root moves actually exist, so requesting
+ * more than a position has is harmless. Without this breadth, "short board
+ * sight" could only ever reorder engine-approved lines, never produce a
+ * real blunder — see docs/plan.md's Phase 60. */
 export const BOT_CANDIDATE_BREADTH = 40;
+
+/** Fixed search depth for every bot, every phase, every rating tier — bot
+ * weakness no longer comes from shallowing the engine (a bot config can no
+ * longer request a weaker search): it comes entirely from
+ * pickBotMove's %A/%B/%C decision tree (see
+ * docs/plan-bot-engine.md's Phase 64). This also matters structurally: once
+ * the only engine actually available to a user is a fixed-depth external
+ * one (chess-api.com caps at 18 regardless of what's requested), asking for
+ * anything shallower than that stopped being a real lever anyway. */
+export const BOT_SEARCH_DEPTH = 18;
 
 export interface BotCandidatesDependencies {
   /** Uncached, bot-specific engine search (see resolveRawEngineBackend) —
    * runs at the caller's phase-resolved depth, deliberately never the shared
    * position_evaluations cache. */
-  analyzeBotPosition: (fen: string, opts: { depth: number; multiPv: number }) => Promise<PositionAnalysis>;
+  analyzeBotPosition: (fen: string, opts: { depth: number; multiPv: number; debug?: BotMoveDebugCollector }) => Promise<PositionAnalysis>;
 }
 
 /**
  * Builds one bot's full candidate-move list for a position: the engine's own
- * lines at `depth` (the caller's phase-resolved search depth) and a fixed
- * wide breadth (BOT_CANDIDATE_BREADTH), each annotated with its immediate
- * (1-ply) tactical consequences (annotateCandidateMoves) and its multi-ply
- * lookahead (annotatePvTactics) — everything pickBotMove needs.
+ * lines at the fixed BOT_SEARCH_DEPTH and a fixed wide breadth
+ * (BOT_CANDIDATE_BREADTH), each annotated with its immediate (1-ply)
+ * tactical consequences (annotateCandidateMoves) and its multi-ply
+ * lookahead (annotatePvTactics) — everything pickBotMove needs. `debug`
+ * (bot-move-selector.ts's own per-move debug log) is forwarded straight
+ * through to the engine call, which is the only thing that can actually
+ * populate it — see bot-move-debug.ts.
  */
 export async function buildBotCandidates(
   deps: BotCandidatesDependencies,
   fen: string,
-  depth: number
+  debug?: BotMoveDebugCollector
 ): Promise<BotCandidate[]> {
-  const analysis = await deps.analyzeBotPosition(fen, { depth, multiPv: BOT_CANDIDATE_BREADTH });
+  const analysis = await deps.analyzeBotPosition(fen, { depth: BOT_SEARCH_DEPTH, multiPv: BOT_CANDIDATE_BREADTH, debug });
   const mover = fenActiveColor(fen);
 
   const annotations = annotateCandidateMoves(

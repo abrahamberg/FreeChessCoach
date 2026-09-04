@@ -176,14 +176,21 @@ describe('resolveEngineBackend', () => {
 
   test('resolveRawEngineBackend bypasses CachingEngineBackend — repeated calls for the same fen hit the raw backend every time', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cam' });
-    const fen = `raw-${crypto.randomUUID()}`;
+    // A real FEN, not just a unique token — resolveRawEngineBackend's chain
+    // now includes LiteSupplementedEngineBackend (Phase 63), whose
+    // needsSupplement check parses this with chess.js.
+    const fen = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
     // A fresh Response per call — this test calls analyzePosition twice, and
     // a Response's body can only be read once (mockResolvedValue would reuse
     // the same instance and throw "Body has already been read" on the second
     // call's `.json()`).
+    // Five lines — enough that needsSupplement (Phase 63) sees no shortfall
+    // on the very first call, so this test's own fetch-call-count assertion
+    // below isn't muddied by an unrelated lite-supplement retry.
+    const lines = ['Nf6', 'Nc6', 'd5', 'e6', 'c5'].map((moveSan) => ({ moveUci: '0000', moveSan, pvSan: [moveSan], cp: 0, mateIn: null }));
     const fetchMock = vi.fn().mockImplementation(
       async () =>
-        new Response(JSON.stringify({ analysis: { fen, depth: 1, multiPv: 1, bestMove: null, eval: { cp: null, mateIn: null }, lines: [], features: {} } }), {
+        new Response(JSON.stringify({ analysis: { fen, depth: 1, multiPv: 1, bestMove: null, eval: { cp: null, mateIn: null }, lines, features: {} } }), {
           status: 200,
           headers: { 'content-type': 'application/json' }
         })
@@ -242,7 +249,20 @@ describe('resolveEngineBackend', () => {
     test('resolveRawEngineBackend (bot path) also logs engine usage, tagged external for "browser" mode', async () => {
       const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Hana' });
       await usersRepo.update(db, user.id, { engineMode: 'browser' });
-      const fen = `log-bot-${crypto.randomUUID()}`;
+      // A real FEN, not just a unique token — see the same note above.
+      const fen = 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1';
+      // Five lines, one per ENGINE_MULTI_PV slot — enough that
+      // LiteSupplementedEngineBackend's needsSupplement check (Phase 63)
+      // sees no shortfall and never reaches for the lite tunnel, which
+      // would otherwise fire unmocked here and fail this test for a reason
+      // unrelated to what it actually checks (the externalEngine log tag).
+      const lines = ['Nf6', 'Nc6', 'd5', 'e6', 'c5'].map((moveSan) => ({
+        moveUci: '0000',
+        moveSan,
+        pvSan: [moveSan],
+        cp: 0,
+        mateIn: null
+      }));
       const tunnelTransport: EngineTunnelTransport = {
         request: vi.fn().mockResolvedValue({
           fen,
@@ -250,7 +270,7 @@ describe('resolveEngineBackend', () => {
           multiPv: 1,
           bestMove: null,
           eval: { cp: null, mateIn: null },
-          lines: [],
+          lines,
           features: {
             turn: 'white',
             boardState: 'none',

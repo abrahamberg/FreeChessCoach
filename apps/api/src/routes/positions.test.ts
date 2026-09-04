@@ -17,7 +17,16 @@ function analysisFixture(): PositionAnalysis {
     multiPv: 1,
     bestMove: 'e4',
     eval: { cp: 20, mateIn: null },
-    lines: [{ moveUci: 'e2e4', moveSan: 'e4', pvSan: ['e4'], cp: 20, mateIn: null }],
+    // Three lines — the hint-moves endpoint below requests multiPv: 3, and
+    // resolveRawEngineBackend's chain (Phase 63's LiteSupplementedEngineBackend)
+    // would otherwise see a shortfall and retry with a second fetch call,
+    // which this file's shared single-Response fetchMock (see buildTestApp)
+    // can't serve twice.
+    lines: [
+      { moveUci: 'e2e4', moveSan: 'e4', pvSan: ['e4'], cp: 20, mateIn: null },
+      { moveUci: 'd2d4', moveSan: 'd4', pvSan: ['d4'], cp: 18, mateIn: null },
+      { moveUci: 'g1f3', moveSan: 'Nf3', pvSan: ['Nf3'], cp: 15, mateIn: null }
+    ],
     features: {
       turn: 'white',
       boardState: 'none',

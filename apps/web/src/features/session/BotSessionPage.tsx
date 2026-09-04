@@ -136,6 +136,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       clock={clock}
       activeColor={activeColor}
       onClockExpire={claimTimeout}
+      fen={fen}
     />
   );
 

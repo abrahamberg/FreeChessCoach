@@ -1,0 +1,189 @@
+import { computePositionFeatures } from '@freechesscoach/chess-analysis';
+import { ENGINE_MULTI_PV } from '../engine-client.js';
+import { formatMs, type EngineLineDebugInfo } from './bot-move-debug.js';
+import { BrowserTunnelEngineBackend } from './browser-tunnel-engine-backend.js';
+import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';
+import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
+import type { EngineEval, PositionAnalysis, PositionAnalysisLine } from '@freechesscoach/shared';
+
+export interface LiteSupplementedEngineBackendOptions {
+  /** Passed straight through to the internal BrowserTunnelEngineBackend —
+   * same per-position/per-batch tunnel budget every other tunnel caller
+   * uses. */
+  timeoutMs: number;
+  /** Which BotMoveDebugCollector bucket `main`'s own call should be recorded
+   * under — resolveRawEngineBackend already knows the user's engineMode, so
+   * it picks this once at construction time rather than this class needing
+   * to know about engineMode itself. */
+  mainBucket: 'internal' | 'external' | 'browser';
+}
+
+/** The lite tunnel request always asks for this depth/multiPv, regardless
+ * of what the caller requested from `main` — deliberately NOT `opts.depth`/
+ * `opts.multiPv` (the bot asks main for depth 18 / 40 lines,
+ * BOT_SEARCH_DEPTH/BOT_CANDIDATE_BREADTH in bot-candidates.ts). A depth-18,
+ * 40-line multiPv search on a single-threaded WASM build in someone's
+ * browser tab measured 24-38s per bot move in production — right at (and
+ * often past) the tunnel's own 40s timeout budget (BrowserTunnelEngineBackend's
+ * `timeoutMs + ENGINE_TUNNEL_PER_POSITION_MS`), which is sized for the app's
+ * normal multiPv-1-to-5 traffic, not a 40-line search. Lite's own
+ * contribution is only ever used to widen the bot's TTC-based mistake/
+ * blunder pool (bot-mistake-pool.ts's cpLossFromBest, thresholded at 80cp/
+ * 250cp) — coarse enough that a shallow search's eval is just as usable as
+ * a deep one for "is this move clearly bad," and lite's own top move is
+ * never trusted as *the* best move regardless (see mergeLines below, and
+ * resolveRawEngineBackend's doc comment: main's own line 1 always wins).
+ * Confirmed with the user after production logs showed the timeouts.
+ *
+ * Depth 8 / 6 lines alone still isn't a hard bound: on a slow device it
+ * still measured ~14-15s consistently (not close to the ~24-38s depth-18/
+ * 40-line numbers above, but not fast either, and not something a lower
+ * depth number can be trusted to fix — it's evidence the browser's own host
+ * is just slow, which depth can't account for). LITE_SUPPLEMENT_MOVETIME_MS
+ * sends `go depth 8 movetime 3000` (see shared-engine-worker.ts's
+ * AnalyzeRequest.movetimeMs) — Stockfish stops at whichever limit comes
+ * first, so this is a genuine worst-case ceiling regardless of how slow that
+ * particular tab's host turns out to be, not another guess at a "safe"
+ * depth. */
+const LITE_SUPPLEMENT_DEPTH = 8;
+const LITE_SUPPLEMENT_MULTI_PV = 6;
+const LITE_SUPPLEMENT_MOVETIME_MS = 3000;
+
+/**
+ * Decorator wrapping whichever raw backend `resolveRawBackendForUser`
+ * already resolved (native / chess_api / browser-tunnel-heavy) — never a
+ * mode of its own. Calls `main` first; only when `main`'s own result came
+ * back with fewer alternatives than both requested *and* the position
+ * actually has to offer does it reach for the lightweight browser worker
+ * (`engine: 'lite'`) to fill the shortfall. This is what makes the lite
+ * engine "compulsory to consult, optional to contribute": every mode gets
+ * the same shortfall check, but a mode that already gives enough lines
+ * (native, or a position with few legal moves) never touches the tunnel at
+ * all.
+ *
+ * Never caches and must never be wrapped by (or wrap) CachingEngineBackend —
+ * the lite engine's results are explicitly not the trusted, official
+ * evaluation position_evaluations exists to serve; see this decorator's own
+ * two call sites in resolve-engine-backend.ts.
+ */
+export class LiteSupplementedEngineBackend implements EngineBackend {
+  private readonly lite: BrowserTunnelEngineBackend;
+  private readonly mainBucket: 'internal' | 'external' | 'browser';
+
+  constructor(
+    private readonly main: EngineBackend,
+    transport: EngineTunnelTransport,
+    userId: string,
+    options: LiteSupplementedEngineBackendOptions
+  ) {
+    this.lite = new BrowserTunnelEngineBackend(transport, userId, options.timeoutMs);
+    this.mainBucket = options.mainBucket;
+  }
+
+  async analyzePosition(fen: string, opts?: EngineBackendAnalyzeOptions): Promise<PositionAnalysis> {
+    // The debug collector's own `mode` field uses the same
+    // internal/external/browser vocabulary as `mainBucket` — see its doc
+    // comment in bot-move-debug.ts.
+    if (opts?.debug) opts.debug.mode = this.mainBucket;
+
+    const mainStart = Date.now();
+    const mainResult = await this.main.analyzePosition(fen, opts);
+    if (opts?.debug) {
+      opts.debug[this.mainBucket] = { moves: toLineDebug(mainResult.lines), time: formatMs(Date.now() - mainStart) };
+    }
+    if (!needsSupplement(fen, mainResult.lines.length, opts?.multiPv)) return mainResult;
+
+    const liteStart = Date.now();
+    const { lines: liteLines, error: liteError } = await this.tryLiteLines(fen, opts);
+    if (opts?.debug) {
+      opts.debug.lightBrowser = {
+        moves: toLineDebug(liteLines),
+        time: formatMs(Date.now() - liteStart),
+        ...(liteError ? { error: liteError } : {})
+      };
+    }
+    if (liteLines.length === 0) return mainResult;
+
+    const lines = mergeLines(mainResult.lines, liteLines);
+    return { ...mainResult, lines, multiPv: lines.length };
+  }
+
+  /**
+   * Delegates straight to `main` — no caller of this decorator ever
+   * requests a batch, only single positions (bot move selection, the hint-
+   * moves endpoint), so there's no real shortfall case here to supplement.
+   * A future batch caller that needs the same shortfall-filling behavior
+   * should get it added here rather than this staying silently incomplete
+   * for it.
+   */
+  async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
+    return this.main.analyzeGame(fens, opts);
+  }
+
+  private async tryLiteLines(
+    fen: string,
+    opts?: EngineBackendAnalyzeOptions
+  ): Promise<{ lines: PositionAnalysisLine[]; error?: string }> {
+    try {
+      const liteResult = await this.lite.analyzePosition(fen, {
+        ...opts,
+        depth: LITE_SUPPLEMENT_DEPTH,
+        multiPv: LITE_SUPPLEMENT_MULTI_PV,
+        movetimeMs: LITE_SUPPLEMENT_MOVETIME_MS,
+        engine: 'lite'
+      });
+      return { lines: liteResult.lines };
+    } catch (error) {
+      // No tunnel connected, or the lite request itself failed — this
+      // decorator only ever tries to do better than `main`, it never turns
+      // a working `main` result into a failure. The error message is kept
+      // only for the debug log (see bot-move-debug.ts's EngineCallDebugInfo)
+      // so a genuinely-empty lite result isn't confused with "nothing was
+      // even listening" — most commonly no browser tab has the engine
+      // tunnel connected at all.
+      return { lines: [], error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+}
+
+/** Carries each line's own eval into the dev log alongside its SAN — see
+ * EngineLineDebugInfo's doc comment (bot-move-debug.ts). */
+function toLineDebug(lines: PositionAnalysisLine[]): EngineLineDebugInfo[] {
+  return lines.map((line) => ({ move: line.moveSan, cp: line.cp, mateIn: line.mateIn }));
+}
+
+/** Whether `main`'s own line count fell short of both what was requested
+ * and what the position actually has available — a narrow position (few
+ * legal moves) naturally returning fewer lines than `multiPv` requested is
+ * not a shortfall worth a tunnel round trip for. */
+function needsSupplement(fen: string, mainLineCount: number, requestedMultiPv: number | undefined): boolean {
+  const requested = requestedMultiPv ?? ENGINE_MULTI_PV;
+  const available = computePositionFeatures(fen).availableMoves.length;
+  const target = Math.min(requested, available);
+  return mainLineCount < target;
+}
+
+/** Keeps `main`'s own line 1 always — it's the trusted judgment for "is
+ * this the best move," never second-guessed by the lite engine. If lite's
+ * own top move agrees, all of its (at most LITE_SUPPLEMENT_MULTI_PV) lines
+ * are pure filler past whatever `main` already had. If it disagrees, all of
+ * lite's *other* lines (not its own top move) are spliced in instead —
+ * lite's own #1 isn't trusted as *the* best move here, only as one more
+ * plausible alternative. Nothing here re-truncates lite's contribution —
+ * the cap already happened at the request itself (LITE_SUPPLEMENT_MULTI_PV
+ * above), so every line lite actually returned is worth keeping; there's no
+ * native fallback left to fall back on if the merged total still comes up
+ * short (see resolveRawEngineBackend's doc comment). */
+function mergeLines(mainLines: PositionAnalysisLine[], liteLines: PositionAnalysisLine[]): PositionAnalysisLine[] {
+  const seen = new Set(mainLines.map((line) => line.moveSan));
+  const liteTopDiffers = liteLines.length > 0 && liteLines[0]?.moveSan !== mainLines[0]?.moveSan;
+  const liteContribution = liteTopDiffers ? liteLines.slice(1) : liteLines;
+
+  const merged = [...mainLines];
+  for (const line of liteContribution) {
+    if (seen.has(line.moveSan)) continue;
+    seen.add(line.moveSan);
+    merged.push(line);
+  }
+  return merged;
+}

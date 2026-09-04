@@ -74,6 +74,33 @@ function diagnosisCodeBreadthForElo(elo: number): number {
 }
 
 /**
+ * Elo -> how many of a position's own known book continuations
+ * (`bookMovesForFen`, packages/chess-analysis) a bot is even allowed to
+ * consider before its random pick — narrow theory for a beginner (300-600
+ * only ever sees the book's first 2 entries for a position, however many
+ * theory actually documents), widening toward the roster's ceiling. The top
+ * anchor (20) is the bundled opening book's own real max
+ * entries-per-position (`packages/chess-analysis/src/generated/
+ * opening-book-index.json`, confirmed by inspection, not guessed) — so the
+ * top tier's cap is a no-op, it simply never has more than the book itself
+ * offers. `selectBookMove` (bot-opening.ts) truncates to this count, taking
+ * the book's own first N entries — there's no popularity/frequency data in
+ * the source to rank by instead.
+ */
+const BOOK_BREADTH_ANCHORS: ReadonlyArray<readonly [elo: number, breadth: number]> = [
+  [300, 2],
+  [800, 4],
+  [1500, 6],
+  [2300, 20]
+];
+
+export function bookBreadthForElo(elo: number): number {
+  return Math.round(
+    interpolateAnchors(BOOK_BREADTH_ANCHORS, elo, (breadthLower, breadthUpper, t) => breadthLower + t * (breadthUpper - breadthLower))
+  );
+}
+
+/**
  * `signature` is this bot's own hand-picked, narratively-justified codes
  * (a defensible read of its `description`/`personality`, per Phase 61's
  * original convention — trailing comments on the roster entries below

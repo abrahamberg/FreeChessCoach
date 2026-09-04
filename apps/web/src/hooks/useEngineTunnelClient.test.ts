@@ -28,10 +28,12 @@ function autoRespondingWorker(sentToWorker: string[] = []): EngineWorkerLike {
 }
 
 let sentToWorker: string[] = [];
+let sentToLiteWorker: string[] = [];
 let mockInfoLine = 'info depth 10 multipv 1 score cp 20 pv e2e4 e7e5';
 
 vi.mock('../engine/shared-engine-worker-instance.js', () => ({
-  getSharedEngineWorker: () => new SharedEngineWorker({ createWorker: () => autoRespondingWorker(sentToWorker) })
+  getSharedEngineWorker: () => new SharedEngineWorker({ createWorker: () => autoRespondingWorker(sentToWorker) }),
+  getSharedLiteEngineWorker: () => new SharedEngineWorker({ createWorker: () => autoRespondingWorker(sentToLiteWorker) })
 }));
 
 class FakeSocket {
@@ -76,10 +78,55 @@ describe('useEngineTunnelClient', () => {
   beforeEach(() => {
     FakeSocket.instances = [];
     sentToWorker = [];
+    sentToLiteWorker = [];
     mockInfoLine = 'info depth 10 multipv 1 score cp 20 pv e2e4 e7e5';
     vi.stubGlobal('WebSocket', FakeSocket as unknown as typeof WebSocket);
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  test('an analyze-position request with engine: "lite" is fulfilled by the lite worker, not the main one', async () => {
+    renderHook(() => useEngineTunnelClient({ enabled: true, wsUrl: 'ws://localhost/api/engine-tunnel' }));
+    const socket = FakeSocket.instances[0]!;
+
+    socket.emitMessage(
+      JSON.stringify({ requestId: 'req-lite', kind: 'analyze-position', fen: START_FEN, depth: 6, multiPv: 20, engine: 'lite' })
+    );
+    await vi.waitFor(() => expect(socket.sent.length).toBeGreaterThan(0));
+
+    expect(sentToLiteWorker).toContain('go depth 6');
+    expect(sentToWorker).toHaveLength(0);
+  });
+
+  test('an analyze-position request with movetimeMs forwards it through to the go command', async () => {
+    renderHook(() => useEngineTunnelClient({ enabled: true, wsUrl: 'ws://localhost/api/engine-tunnel' }));
+    const socket = FakeSocket.instances[0]!;
+
+    socket.emitMessage(
+      JSON.stringify({
+        requestId: 'req-movetime',
+        kind: 'analyze-position',
+        fen: START_FEN,
+        depth: 8,
+        multiPv: 6,
+        movetimeMs: 3000,
+        engine: 'lite'
+      })
+    );
+    await vi.waitFor(() => expect(socket.sent.length).toBeGreaterThan(0));
+
+    expect(sentToLiteWorker).toContain('go depth 8 movetime 3000');
+  });
+
+  test('an analyze-position request without an engine field is fulfilled by the main worker', async () => {
+    renderHook(() => useEngineTunnelClient({ enabled: true, wsUrl: 'ws://localhost/api/engine-tunnel' }));
+    const socket = FakeSocket.instances[0]!;
+
+    socket.emitMessage(JSON.stringify({ requestId: 'req-main', kind: 'analyze-position', fen: START_FEN, depth: 10, multiPv: 1 }));
+    await vi.waitFor(() => expect(socket.sent.length).toBeGreaterThan(0));
+
+    expect(sentToWorker).toContain('go depth 10');
+    expect(sentToLiteWorker).toHaveLength(0);
+  });
 
   test('does not open a socket when disabled', () => {
     renderHook(() => useEngineTunnelClient({ enabled: false }));

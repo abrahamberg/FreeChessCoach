@@ -31,6 +31,13 @@ x-node-dev: &node-dev
     LICHESS_EVAL_MIN_DEPTH: ${LICHESS_EVAL_MIN_DEPTH:-16}
     ENGINE_TUNNEL_INTERNAL_TOKEN: ${ENGINE_TUNNEL_INTERNAL_TOKEN:-dev-internal-token}
     API_INTERNAL_URL: http://api:3000
+    # Structured dev logging (see apps/api/src/lib/dev-log.ts) — comma-separated
+    # event-type allowlist, e.g. DEBUG_LOG=bot_move, or DEBUG_LOG=* for
+    # everything. Unset by default so normal logs stay quiet. Set it in your
+    # shell before `npm run dev`/`docker compose up` (compose only forwards env
+    # vars a service's `environment:` block references, so this has to be wired
+    # in here — the container never sees your host shell's env otherwise).
+    DEBUG_LOG: ${DEBUG_LOG:-}
 
 services:
   postgres:
