@@ -1,30 +1,51 @@
-import type { LichessRecentGame } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 
-export interface LichessGamePickerBulkSelection {
+export interface RemoteGamePickerBulkSelection {
   selectedIds: ReadonlySet<string>;
   onToggle: (gameId: string) => void;
   onImportSelected: () => void;
   isImporting: boolean;
 }
 
-export interface LichessGamePickerProps {
-  games: LichessRecentGame[];
+export interface RemoteGamePickerRow {
+  id: string;
+  pgn: string;
+  whiteName: string | null;
+  blackName: string | null;
+  result: string | null;
+  playedAt: string | null;
+}
+
+export interface RemoteGamePickerProps<TGame extends RemoteGamePickerRow> {
+  games: TGame[];
   isLoading: boolean;
   isLinked: boolean;
+  linkPrompt: ReactNode;
   onSelect: (pgn: string) => void;
   /** Stat-bank bulk import (Task 31.4) — additive to the single-click
    * `onSelect` contract above, which is unaffected: a row's button always
    * imports it immediately regardless of whether this is set. Omit to keep
    * today's picker exactly as it was. */
-  bulkSelection?: LichessGamePickerBulkSelection;
+  bulkSelection?: RemoteGamePickerBulkSelection;
+  /** Extra per-row detail rendered between the result and the date — e.g.
+   * Chess.com's time class, which Lichess's feed has no equivalent for. */
+  renderMeta?: (game: TGame) => ReactNode;
 }
 
-/** design.md §4.2: "From Lichess" picker — same row format as the games list,
- * tap to select. No fetching here (AGENTS.md rule 7) — ImportPage owns it. */
-export function LichessGamePicker({ games, isLoading, isLinked, onSelect, bulkSelection }: LichessGamePickerProps): ReactNode {
+/** design.md §4.2 / Task 51.6: shared "From Lichess" / "From Chess.com" picker
+ * — same row format as the games list, tap to select. No fetching here
+ * (AGENTS.md rule 7) — ImportPage owns it. */
+export function RemoteGamePicker<TGame extends RemoteGamePickerRow>({
+  games,
+  isLoading,
+  isLinked,
+  linkPrompt,
+  onSelect,
+  bulkSelection,
+  renderMeta
+}: RemoteGamePickerProps<TGame>): ReactNode {
   if (!isLinked) {
-    return <p>Link your Lichess account in Settings to import from Lichess.</p>;
+    return <p>{linkPrompt}</p>;
   }
   if (isLoading) {
     return <p>Loading your recent games…</p>;
@@ -34,7 +55,7 @@ export function LichessGamePicker({ games, isLoading, isLinked, onSelect, bulkSe
   }
 
   return (
-    <div className="lichess-game-picker-container">
+    <div className="remote-game-picker-container">
       {bulkSelection && (
         <button
           type="button"
@@ -45,7 +66,7 @@ export function LichessGamePicker({ games, isLoading, isLinked, onSelect, bulkSe
           {bulkSelection.isImporting ? 'Importing…' : `Import ${bulkSelection.selectedIds.size} for stat bank`}
         </button>
       )}
-      <ul className="lichess-game-picker">
+      <ul className="remote-game-picker">
         {games.map((game) => (
           <li key={game.id}>
             {bulkSelection && (
@@ -61,6 +82,7 @@ export function LichessGamePicker({ games, isLoading, isLinked, onSelect, bulkSe
                 {game.whiteName ?? '?'} vs. {game.blackName ?? '?'}
               </span>
               <span>{game.result ?? '*'}</span>
+              {renderMeta?.(game)}
               {game.playedAt && <time dateTime={game.playedAt}>{new Date(game.playedAt).toLocaleDateString()}</time>}
             </button>
           </li>

@@ -60,13 +60,13 @@
   font-size: 14px;
 }
 
-.lichess-game-picker-container {
+.remote-game-picker-container {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.lichess-game-picker {
+.remote-game-picker {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -75,22 +75,22 @@
   border: 1px solid var(--color-border);
 }
 
-.lichess-game-picker li {
+.remote-game-picker li {
   display: flex;
   align-items: center;
   gap: 12px;
   background: var(--color-surface);
 }
 
-.lichess-game-picker li + li {
+.remote-game-picker li + li {
   border-top: 1px solid var(--color-border);
 }
 
-.lichess-game-picker li input[type='checkbox'] {
+.remote-game-picker li input[type='checkbox'] {
   margin-left: 16px;
 }
 
-.lichess-game-picker button {
+.remote-game-picker button {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -103,7 +103,7 @@
   text-align: left;
 }
 
-.lichess-game-picker li input[type='checkbox'] + button {
+.remote-game-picker li input[type='checkbox'] + button {
   padding-left: 0;
 }
 
