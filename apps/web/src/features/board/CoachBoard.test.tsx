@@ -181,6 +181,17 @@ describe('CoachBoard', () => {
     expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument();
   });
 
+  // useSessionBoardState's `fen` defaults to '' before its positions array has
+  // seeded (a real one-render gap: useLivePositions seeds via an effect, which
+  // runs one tick after gameQuery.data first resolves) — chess.js's
+  // constructor validates and throws on that, and with no error boundary
+  // anywhere in the app, an uncaught throw here blanks the whole page. This
+  // is the play_bot "the bot starts but the board never shows" bug.
+  test('an empty/invalid fen (a transient pre-seed state) does not crash the board', () => {
+    expect(() => render(<CoachBoard fen="" orientation="white" mode="answer" />)).not.toThrow();
+    expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument();
+  });
+
   test('click-to-move: selecting a piece then clicking a legal destination plays the move', () => {
     capturedOptions.length = 0;
     const onUserMove = vi.fn();

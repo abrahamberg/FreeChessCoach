@@ -35,6 +35,22 @@ function mergeSquareStyles(...maps: Record<string, CSSProperties>[]): Record<str
   return merged;
 }
 
+/** `fen` can transiently be '' for a render or two (e.g. useSessionBoardState
+ * defaults to it before its positions array has seeded in) — chess.js's
+ * constructor validates and throws on that, and this component runs with no
+ * error boundary above it anywhere in the app, so an uncaught throw here
+ * blanks the whole page. Falls back to the starting position, which is never
+ * actually shown (`<Chessboard>` below is fed `fen` directly, not this
+ * instance) — it only backs the check-highlight/legal-move bookkeeping
+ * below, which has nothing real to compute yet during that window anyway. */
+function safeChess(fen: string): Chess {
+  try {
+    return new Chess(fen);
+  } catch {
+    return new Chess();
+  }
+}
+
 /** Cosmetic only (always previews a queen) — purely what the board shows
  * while PromotionPicker is open, so the student sees the pawn already
  * sitting on its destination. The actual promotion piece is chosen and
@@ -141,7 +157,7 @@ export function CoachBoard({
     setPendingPromotion(null);
   }, [fen]);
 
-  const chess = new Chess(fen);
+  const chess = safeChess(fen);
   // findPiece returns every match; a legal position has exactly one king per
   // color, so the first (only) result is the one that matters.
   const checkedKingSquare = chess.inCheck() ? chess.findPiece({ type: 'k', color: chess.turn() })[0] : undefined;
