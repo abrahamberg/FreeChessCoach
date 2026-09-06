@@ -4,6 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon, SkipBackIcon, SkipForwardIcon } from
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import { TacticMotifBadge } from './TacticMotifBadge.js';
+import { useMoveAlternatives } from './useMoveAlternatives.js';
 import './MoveExplorer.css';
 
 export interface MoveExplorerProps {
@@ -60,15 +61,23 @@ function OpeningLabel({ move }: { move: ClassifiedMoveDto }): ReactNode {
 
 /** §11's closing paragraph: the engine's actual best line plus its two
  * win%-ranked (not raw-cp) runners-up, so a player can see what else was
- * playable without leaving the move list. */
+ * playable without leaving the move list. The deep analysis pipeline only
+ * stores one PV per ply, so `move.alternatives` is usually empty — when it
+ * is, this lazily asks the lite engine for a couple of runner-up lines
+ * (useMoveAlternatives) instead of leaving the panel bare. */
 function AlternativesPanel({ move }: { move: ClassifiedMoveDto }): ReactNode {
+  const precomputed = (move.alternatives ?? []).slice(0, 2);
+  const shouldFetch = precomputed.length === 0 && Boolean(move.bestMoveSan) && Boolean(move.fenBefore);
+  const fetched = useMoveAlternatives(move.fenBefore, move.mover, move.bestMoveSan, shouldFetch);
   if (!move.bestMoveSan) return null;
+
   const pv = move.bestLinePvSan && move.bestLinePvSan.length > 0 ? move.bestLinePvSan.join(' ') : move.bestMoveSan;
-  const runnersUp = (move.alternatives ?? []).slice(0, 2);
+  const runnersUp = precomputed.length > 0 ? precomputed : fetched.data;
 
   return (
     <div className="move-explorer__alternatives">
       <p className="move-explorer__alternatives-best">Best: {pv}</p>
+      {shouldFetch && fetched.isLoading && <p className="move-explorer__notes-empty">Looking for other tries…</p>}
       {runnersUp.length > 0 && (
         <ul className="move-explorer__alternatives-list">
           {runnersUp.map((alternative) => (

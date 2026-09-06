@@ -1,4 +1,4 @@
-import type { GameListItem } from '@freechesscoach/shared';
+import { canPromoteGameReviewTier, type GameListItem, type GameReviewTier } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { CalendarIcon } from '../../components/Icon.js';
 import { ConfirmDialog } from '../../components/ConfirmDialog.js';
@@ -12,6 +12,23 @@ export interface GameRowProps {
   onExportPgn: (gameId: string) => void;
   onCopyPgn: (gameId: string) => void;
   onDelete: (gameId: string) => void;
+  onPromote: (gameId: string, tier: GameReviewTier) => void;
+}
+
+const PROMOTABLE_TIER_LABELS: Record<Exclude<GameReviewTier, 'imported' | 'bot'>, string> = {
+  review: 'Move to Review',
+  coach: 'Move to Coach'
+};
+
+/** "Move up the stack" (Games page design: coach/review/bot-games/imported
+ * tabs) — every rung a ready game's current tier can still reach, most of
+ * the stack first. A game whose analysis isn't ready yet, or that's already
+ * at the top (`coach`), offers nothing to promote. */
+export function promotionOptionsFor(game: GameListItem): { tier: GameReviewTier; label: string }[] {
+  if (game.analysisStatus !== 'ready') return [];
+  return (Object.keys(PROMOTABLE_TIER_LABELS) as (keyof typeof PROMOTABLE_TIER_LABELS)[])
+    .filter((tier) => canPromoteGameReviewTier(game.reviewTier, tier))
+    .map((tier) => ({ tier, label: PROMOTABLE_TIER_LABELS[tier] }));
 }
 
 const RESULT_LABEL: Record<string, { symbol: string; label: string }> = {
@@ -40,6 +57,13 @@ export interface StatusAndAction {
  * analysisStatus is always null — it needs its own branch rather than
  * falling into the stat-bank "not analyzed" branch below, which is only for
  * a real analyze-mode game that was imported with `deferAnalysis`. */
+/** A ready game's action opens the Review page unless it's already been
+ * promoted to the Coach tier, in which case it opens the coaching session
+ * chat directly (handleSelect) — see GAME_REVIEW_TIERS. */
+function readyActionLabel(game: GameListItem): string {
+  return game.reviewTier === 'coach' ? 'Continue with Coach' : 'Review';
+}
+
 export function statusAndActionFor(game: GameListItem): StatusAndAction {
   if (game.source === 'coach_play') {
     if (game.sessionId) return { statusLabel: 'In progress', statusVariant: 'primary', actionLabel: 'Continue' };
@@ -59,10 +83,11 @@ export function statusAndActionFor(game: GameListItem): StatusAndAction {
     if (game.analysisStatus === null) {
       return { statusLabel: 'Completed', statusVariant: 'neutral', actionLabel: 'Get coach analysis', actionKind: 'analyze' };
     }
-    if (game.analysisStatus === 'ready' || game.analysisStatus === 'failed') return { statusLabel: 'Completed', statusVariant: 'neutral' };
+    if (game.analysisStatus === 'ready') return { statusLabel: 'Completed', statusVariant: 'neutral', actionLabel: readyActionLabel(game) };
+    if (game.analysisStatus === 'failed') return { statusLabel: 'Completed', statusVariant: 'neutral' };
     return { statusLabel: 'Analyzing…', statusVariant: 'neutral', animateStatus: true };
   }
-  if (game.analysisStatus === 'ready') return { statusLabel: 'Ready', statusVariant: 'primary', actionLabel: 'Start session' };
+  if (game.analysisStatus === 'ready') return { statusLabel: 'Ready', statusVariant: 'primary', actionLabel: readyActionLabel(game) };
   if (game.analysisStatus === 'failed') return { statusLabel: 'Failed', statusVariant: 'danger' };
   // Phase 31 stat-bank import: no `analyses` row yet at all (deferAnalysis)
   // — distinct from every in-progress `analysisStatus` value below, which
@@ -87,9 +112,10 @@ function userSideResult(game: GameListItem): { symbol: string; label: string } |
  * (user's side bold, W/L/D dot), date, time control, a status badge separate
  * from its contextual action button, and delete moved into an overflow menu
  * behind a confirmation dialog naming the game (§6, P0). */
-export function GameRow({ game, onSelect, onAnalyze, onExportPgn, onCopyPgn, onDelete }: GameRowProps): ReactNode {
+export function GameRow({ game, onSelect, onAnalyze, onExportPgn, onCopyPgn, onDelete, onPromote }: GameRowProps): ReactNode {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const status = statusAndActionFor(game);
+  const promotions = promotionOptionsFor(game);
   const dot = userSideResult(game);
   const date = game.playedAt ?? game.createdAt;
   const [whiteName, blackName] = [game.whiteName ?? '?', game.blackName ?? '?'];
@@ -141,6 +167,7 @@ export function GameRow({ game, onSelect, onAnalyze, onExportPgn, onCopyPgn, onD
       <OverflowMenu
         label={`More actions for ${whiteName} vs. ${blackName}`}
         items={[
+          ...promotions.map(({ tier, label }) => ({ label, onSelect: () => onPromote(game.id, tier) })),
           { label: 'Download PGN', onSelect: () => onExportPgn(game.id) },
           { label: 'Copy PGN', onSelect: () => onCopyPgn(game.id) },
           { label: 'Delete', destructive: true, onSelect: () => setConfirmingDelete(true) }

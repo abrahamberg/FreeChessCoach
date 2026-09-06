@@ -14,7 +14,8 @@ const BASE_GAME = {
   playedAt: '2026-07-20T10:00:00.000Z',
   createdAt: '2026-07-20T10:05:00.000Z',
   sessionId: null,
-  botId: null
+  botId: null,
+  reviewTier: 'imported' as const
 };
 
 async function openOverflowMenu(): Promise<ReturnType<typeof userEvent.setup>> {
@@ -29,7 +30,7 @@ describe('GameRow (design-improvements.md §3.3)', () => {
   });
 
   test('shows both players with the user\'s side bold, and a win dot (not raw score)', () => {
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} />);
+    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} onPromote={vi.fn()} />);
 
     expect(screen.getByText('daniel')).toBeInTheDocument();
     expect(screen.getByText('Marta')).toBeInTheDocument();
@@ -37,22 +38,33 @@ describe('GameRow (design-improvements.md §3.3)', () => {
   });
 
   test('shows an "Analyzing…" status while queued, with no action button', () => {
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'queued' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} />);
+    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'queued' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} onPromote={vi.fn()} />);
     expect(screen.getByText(/analyzing/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /start session|continue/i })).not.toBeInTheDocument();
   });
 
-  test('shows a separate "Ready" status badge and "Start session" action when analysis is ready', () => {
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} />);
+  test('shows a separate "Ready" status badge and "Review" action for an unpromoted, ready game', () => {
+    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} onPromote={vi.fn()} />);
     expect(screen.getByText('Ready')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Start session' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Review' })).toBeInTheDocument();
+  });
+
+  test('a ready game already promoted to the coach tier shows "Continue with Coach" instead', () => {
+    render(
+      <GameRow
+        game={{ ...BASE_GAME, analysisStatus: 'ready', reviewTier: 'coach' }}
+        onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()}
+        onDelete={vi.fn()} onPromote={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Continue with Coach' })).toBeInTheDocument();
   });
 
   // Plain "Failed" status, no action button: clicking has nothing to do
   // (handleSelect gates on analysisStatus === 'ready'), so no action label
   // promising something that doesn't exist.
   test('shows a "Failed" status when analysis failed, with no action button', () => {
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'failed' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} />);
+    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'failed' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} onPromote={vi.fn()} />);
     expect(screen.getByText('Failed')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /start session|continue/i })).not.toBeInTheDocument();
   });
@@ -62,9 +74,9 @@ describe('GameRow (design-improvements.md §3.3)', () => {
   test('shows an "In progress" status and "Continue" action for an unfinished play-mode game', () => {
     render(
       <GameRow
-        game={{ ...BASE_GAME, source: 'coach_play', analysisStatus: null, sessionId: 'session-1' }}
+        game={{ ...BASE_GAME, source: 'coach_play', analysisStatus: null, sessionId: 'session-1', reviewTier: 'coach' }}
         onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()}
-        onDelete={vi.fn()}
+        onDelete={vi.fn()} onPromote={vi.fn()}
       />
     );
     expect(screen.getByText('In progress')).toBeInTheDocument();
@@ -74,9 +86,9 @@ describe('GameRow (design-improvements.md §3.3)', () => {
   test('shows a "Completed" status for a play-mode game with no resumable session', () => {
     render(
       <GameRow
-        game={{ ...BASE_GAME, source: 'coach_play', analysisStatus: null, sessionId: null }}
+        game={{ ...BASE_GAME, source: 'coach_play', analysisStatus: null, sessionId: null, reviewTier: 'coach' }}
         onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()}
-        onDelete={vi.fn()}
+        onDelete={vi.fn()} onPromote={vi.fn()}
       />
     );
     expect(screen.getByText('Completed')).toBeInTheDocument();
@@ -89,24 +101,28 @@ describe('GameRow (design-improvements.md §3.3)', () => {
   test('vs_bot: shows "In progress"/"Continue" while a session is still active', () => {
     render(
       <GameRow
-        game={{ ...BASE_GAME, source: 'vs_bot', analysisStatus: null, sessionId: 'session-1' }}
+        game={{ ...BASE_GAME, source: 'vs_bot', analysisStatus: null, sessionId: 'session-1', reviewTier: 'bot' }}
         onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()}
-        onDelete={vi.fn()}
+        onDelete={vi.fn()} onPromote={vi.fn()}
       />
     );
     expect(screen.getByText('In progress')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   });
 
-  test('vs_bot: completed with analysis already ready shows a bare "Completed" badge, no action', () => {
+  // Before Game Review tabs, a completed+ready vs_bot game had no action
+  // button at all — a dead end in the Games list. It now offers "Review",
+  // same as any other ready, unpromoted game.
+  test('vs_bot: completed with analysis already ready offers a "Review" action', () => {
     render(
       <GameRow
-        game={{ ...BASE_GAME, source: 'vs_bot', analysisStatus: 'ready', sessionId: null }}
+        game={{ ...BASE_GAME, source: 'vs_bot', analysisStatus: 'ready', sessionId: null, reviewTier: 'bot' }}
         onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()}
-        onDelete={vi.fn()}
+        onDelete={vi.fn()} onPromote={vi.fn()}
       />
     );
     expect(screen.getByText('Completed')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Review' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /get coach analysis|continue/i })).not.toBeInTheDocument();
   });
 
@@ -115,9 +131,9 @@ describe('GameRow (design-improvements.md §3.3)', () => {
     const user = userEvent.setup();
     render(
       <GameRow
-        game={{ ...BASE_GAME, source: 'vs_bot', analysisStatus: null, sessionId: null }}
+        game={{ ...BASE_GAME, source: 'vs_bot', analysisStatus: null, sessionId: null, reviewTier: 'bot' }}
         onSelect={vi.fn()} onAnalyze={onAnalyze} onExportPgn={vi.fn()} onCopyPgn={vi.fn()}
-        onDelete={vi.fn()}
+        onDelete={vi.fn()} onPromote={vi.fn()}
       />
     );
     expect(screen.getByText('Completed')).toBeInTheDocument();
@@ -128,9 +144,9 @@ describe('GameRow (design-improvements.md §3.3)', () => {
   test('vs_bot: completed while analysis is still running shows "Analyzing…"', () => {
     render(
       <GameRow
-        game={{ ...BASE_GAME, source: 'vs_bot', analysisStatus: 'engine_running', sessionId: null }}
+        game={{ ...BASE_GAME, source: 'vs_bot', analysisStatus: 'engine_running', sessionId: null, reviewTier: 'bot' }}
         onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()}
-        onDelete={vi.fn()}
+        onDelete={vi.fn()} onPromote={vi.fn()}
       />
     );
     expect(screen.getByText(/analyzing/i)).toBeInTheDocument();
@@ -138,7 +154,7 @@ describe('GameRow (design-improvements.md §3.3)', () => {
 
   test('Download PGN in the overflow menu calls onExportPgn with the game id', async () => {
     const onExportPgn = vi.fn();
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={onExportPgn} onCopyPgn={vi.fn()} onDelete={vi.fn()} />);
+    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={onExportPgn} onCopyPgn={vi.fn()} onDelete={vi.fn()} onPromote={vi.fn()} />);
     const user = await openOverflowMenu();
 
     await user.click(screen.getByRole('menuitem', { name: 'Download PGN' }));
@@ -148,7 +164,7 @@ describe('GameRow (design-improvements.md §3.3)', () => {
 
   test('Copy PGN in the overflow menu calls onCopyPgn with the game id', async () => {
     const onCopyPgn = vi.fn();
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={onCopyPgn} onDelete={vi.fn()} />);
+    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={onCopyPgn} onDelete={vi.fn()} onPromote={vi.fn()} />);
     const user = await openOverflowMenu();
 
     await user.click(screen.getByRole('menuitem', { name: 'Copy PGN' }));
@@ -159,7 +175,7 @@ describe('GameRow (design-improvements.md §3.3)', () => {
   // Phase 31 stat-bank import: a game imported with deferAnalysis has no
   // `analyses` row at all, distinct from every in-progress analysisStatus.
   test('shows a "Not analyzed" status and "Get coach analysis" action for a deferred-analysis import', () => {
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: null }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} />);
+    render(<GameRow game={{ ...BASE_GAME, analysisStatus: null }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} onPromote={vi.fn()} />);
     expect(screen.getByText('Not analyzed')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Get coach analysis' })).toBeInTheDocument();
   });
@@ -168,7 +184,7 @@ describe('GameRow (design-improvements.md §3.3)', () => {
     const onSelect = vi.fn();
     const onAnalyze = vi.fn();
     const user = userEvent.setup();
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: null }} onSelect={onSelect} onAnalyze={onAnalyze} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} />);
+    render(<GameRow game={{ ...BASE_GAME, analysisStatus: null }} onSelect={onSelect} onAnalyze={onAnalyze} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} onPromote={vi.fn()} />);
 
     await user.click(screen.getByRole('button', { name: 'Get coach analysis' }));
 
@@ -179,14 +195,72 @@ describe('GameRow (design-improvements.md §3.3)', () => {
   test('clicking the action button calls onSelect with the game id', async () => {
     const onSelect = vi.fn();
     const user = userEvent.setup();
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={onSelect} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} />);
+    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={onSelect} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} onPromote={vi.fn()} />);
 
-    await user.click(screen.getByRole('button', { name: 'Start session' }));
+    await user.click(screen.getByRole('button', { name: 'Review' }));
     expect(onSelect).toHaveBeenCalledWith('g1');
   });
 
+  // "Move up the stack" (promotionOptionsFor) — an imported/bot game offers
+  // both rungs above it; a review-tier game offers only the last one; a
+  // not-yet-analyzed game (nothing to review yet) offers neither.
+  test('a ready, unpromoted game offers "Move to Review" and "Move to Coach" in its overflow menu', async () => {
+    const onPromote = vi.fn();
+    render(
+      <GameRow
+        game={{ ...BASE_GAME, analysisStatus: 'ready' }}
+        onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()}
+        onDelete={vi.fn()} onPromote={onPromote}
+      />
+    );
+    const user = await openOverflowMenu();
+
+    expect(screen.getByRole('menuitem', { name: 'Move to Review' })).toBeInTheDocument();
+    await user.click(screen.getByRole('menuitem', { name: 'Move to Coach' }));
+
+    expect(onPromote).toHaveBeenCalledWith('g1', 'coach');
+  });
+
+  test('a ready, review-tier game only offers "Move to Coach"', async () => {
+    render(
+      <GameRow
+        game={{ ...BASE_GAME, analysisStatus: 'ready', reviewTier: 'review' }}
+        onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()}
+        onDelete={vi.fn()} onPromote={vi.fn()}
+      />
+    );
+    await openOverflowMenu();
+
+    expect(screen.getByRole('menuitem', { name: 'Move to Coach' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Move to Review' })).not.toBeInTheDocument();
+  });
+
+  test('a coach-tier game offers no promotion, and a not-yet-ready game offers none either', async () => {
+    render(
+      <GameRow
+        game={{ ...BASE_GAME, analysisStatus: 'ready', reviewTier: 'coach' }}
+        onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()}
+        onDelete={vi.fn()} onPromote={vi.fn()}
+      />
+    );
+    await openOverflowMenu();
+    expect(screen.queryByRole('menuitem', { name: /move to/i })).not.toBeInTheDocument();
+  });
+
+  test('a queued (not yet ready) game offers no promotion', async () => {
+    render(
+      <GameRow
+        game={{ ...BASE_GAME, analysisStatus: 'queued' }}
+        onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()}
+        onDelete={vi.fn()} onPromote={vi.fn()}
+      />
+    );
+    await openOverflowMenu();
+    expect(screen.queryByRole('menuitem', { name: /move to/i })).not.toBeInTheDocument();
+  });
+
   test('delete lives in the overflow menu for every row, failed or not', async () => {
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'failed' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} />);
+    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'failed' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={vi.fn()} onPromote={vi.fn()} />);
     const user = await openOverflowMenu();
     expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
     await user.keyboard('{Escape}');
@@ -196,7 +270,7 @@ describe('GameRow (design-improvements.md §3.3)', () => {
     const onSelect = vi.fn();
     const onDelete = vi.fn();
     const user = await (async () => {
-      render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={onSelect} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={onDelete} />);
+      render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={onSelect} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={onDelete} onPromote={vi.fn()} />);
       return openOverflowMenu();
     })();
 
@@ -211,7 +285,7 @@ describe('GameRow (design-improvements.md §3.3)', () => {
 
   test('canceling the confirmation dialog does not delete the game', async () => {
     const onDelete = vi.fn();
-    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={onDelete} />);
+    render(<GameRow game={{ ...BASE_GAME, analysisStatus: 'ready' }} onSelect={vi.fn()} onAnalyze={vi.fn()} onExportPgn={vi.fn()} onCopyPgn={vi.fn()} onDelete={onDelete} onPromote={vi.fn()} />);
     const user = await openOverflowMenu();
 
     await user.click(screen.getByRole('menuitem', { name: 'Delete' }));

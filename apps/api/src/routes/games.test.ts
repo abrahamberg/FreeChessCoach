@@ -753,4 +753,138 @@ describe('POST/GET /api/games', () => {
     const stillThere = await app.inject({ method: 'GET', url: `/api/games/${gameId}`, headers: owner });
     expect(stillThere.statusCode).toBe(200);
   });
+
+  test('a freshly imported game starts in the imported tier', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('tier-default@example.com', 'TierDefault');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId } = imported.json();
+
+    const list = await app.inject({ method: 'GET', url: '/api/games', headers });
+    expect(list.json()).toContainEqual(expect.objectContaining({ id: gameId, reviewTier: 'imported' }));
+  });
+
+  test('POST /api/games/:id/promote moves a ready, imported game up to review', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('promote-review@example.com', 'PromoteReview');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId, analysisId } = imported.json();
+    await analysesRepo.markReady(db, analysisId, PLAN);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/games/${gameId}/promote`,
+      headers,
+      payload: { tier: 'review' }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ reviewTier: 'review' });
+
+    const list = await app.inject({ method: 'GET', url: '/api/games', headers });
+    expect(list.json()).toContainEqual(expect.objectContaining({ id: gameId, reviewTier: 'review' }));
+  });
+
+  test('POST /api/games/:id/promote can jump straight from imported to coach', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('promote-coach@example.com', 'PromoteCoach');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId, analysisId } = imported.json();
+    await analysesRepo.markReady(db, analysisId, PLAN);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/games/${gameId}/promote`,
+      headers,
+      payload: { tier: 'coach' }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ reviewTier: 'coach' });
+  });
+
+  test('POST /api/games/:id/promote rejects a game whose analysis is not ready yet', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('promote-not-ready@example.com', 'PromoteNotReady');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId } = imported.json();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/games/${gameId}/promote`,
+      headers,
+      payload: { tier: 'review' }
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  test('POST /api/games/:id/promote rejects demoting/repeating a tier (coach -> review)', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('promote-invalid@example.com', 'PromoteInvalid');
+    const owner = await usersRepo.insert(db, { email: 'promote-invalid@example.com', displayName: 'PromoteInvalid' });
+    const game = await gamesRepo.insert(db, {
+      userId: owner.id,
+      pgn: '1. e4',
+      source: 'coach_play',
+      userColor: 'white',
+      whiteName: 'You',
+      blackName: 'Coach',
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/games/${game.id}/promote`,
+      headers,
+      payload: { tier: 'review' }
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  test('POST /api/games/:id/promote 404s for another user\'s game', async () => {
+    const app = buildTestApp();
+    const owner = headersFor('promote-owner@example.com', 'PromoteOwner');
+    const intruder = headersFor('promote-intruder@example.com', 'PromoteIntruder');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers: owner,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId, analysisId } = imported.json();
+    await analysesRepo.markReady(db, analysisId, PLAN);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/games/${gameId}/promote`,
+      headers: intruder,
+      payload: { tier: 'review' }
+    });
+    expect(response.statusCode).toBe(404);
+  });
 });

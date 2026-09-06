@@ -1,4 +1,4 @@
-import { GameListResponseSchema, type GameListItem } from '@freechesscoach/shared';
+import { GameListResponseSchema, PromoteGameResponseSchema, type GameListItem, type GameReviewTier } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,6 +10,18 @@ import './GamesPage.css';
 
 const SessionSummarySchema = z.object({ id: z.string() });
 const AnalyzeResponseSchema = z.object({ analysisId: z.string() });
+
+// GAME_REVIEW_TIERS' own stack order (imported/bot -> review -> coach), just
+// with imported/bot split into their own tabs since they're distinguished by
+// `source`, not `reviewTier` — see promotionOptionsFor/canPromoteGameReviewTier.
+const TABS = [
+  { key: 'coach', label: 'Coach' },
+  { key: 'review', label: 'Review' },
+  { key: 'bot', label: 'Bot games' },
+  { key: 'imported', label: 'Imported games' }
+] as const satisfies readonly { key: GameReviewTier; label: string }[];
+
+type TabKey = (typeof TABS)[number]['key'];
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -33,6 +45,10 @@ export function GamesPage(): ReactNode {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>('all');
+  // Most games start out imported or from a bot game (GAME_REVIEW_TIERS'
+  // default-by-source) — landing there, rather than on the likely-empty
+  // Coach/Review tabs, is the least surprising first view.
+  const [tab, setTab] = useState<TabKey>('imported');
 
   const gamesQuery = useQuery({
     queryKey: ['games'],
@@ -46,6 +62,16 @@ export function GamesPage(): ReactNode {
 
   const deleteMutation = useMutation({
     mutationFn: (gameId: string) => apiDelete(`/api/games/${gameId}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['games'] })
+  });
+
+  // "Move up the stack" (GameRow's promotionOptionsFor) — imported/bot to
+  // review or coach, review to coach. Following the row to wherever it lands
+  // would be nice but isn't necessary: the row itself picks up the new tier
+  // (and its tab) as soon as this invalidates ['games'].
+  const promoteMutation = useMutation({
+    mutationFn: ({ gameId, tier }: { gameId: string; tier: GameReviewTier }) =>
+      apiPost(`/api/games/${gameId}/promote`, { tier }, PromoteGameResponseSchema),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['games'] })
   });
 
@@ -81,20 +107,36 @@ export function GamesPage(): ReactNode {
   // POST /api/sessions/play) — link straight back into it rather than
   // routing through analyze mode's POST /api/sessions, which gates on an
   // `analyses` row a play-mode game never has. A vs_bot game (the "Play vs
-  // Bot" plan) is the same story, but links into the dedicated /bot-session
-  // route rather than /session — see App.tsx's BotSessionRoute doc comment.
+  // Bot" plan) is the same story while it's still being played, but links
+  // into the dedicated /bot-session route rather than /session — see
+  // App.tsx's BotSessionRoute doc comment. Once a game (any source) has a
+  // ready analysis, where it opens depends on its review tier: everything
+  // below `coach` opens the static Review page; `coach` opens the LLM
+  // coaching session, same find-or-create flow as before this tab existed. */
   function handleSelect(game: GameListItem): void {
     if (game.source === 'coach_play') {
       if (game.sessionId) void navigate(`/session/${game.sessionId}`);
       return;
     }
-    if (game.source === 'vs_bot') {
-      if (game.sessionId) void navigate(`/bot-session/${game.sessionId}`);
+    if (game.source === 'vs_bot' && game.sessionId) {
+      void navigate(`/bot-session/${game.sessionId}`);
       return;
     }
     if (game.analysisStatus !== 'ready') return;
-    sessionMutation.mutate(game.id);
+    if (game.reviewTier === 'coach') {
+      sessionMutation.mutate(game.id);
+      return;
+    }
+    void navigate(`/review/${game.id}`);
   }
+
+  function handlePromote(gameId: string, tier: GameReviewTier): void {
+    promoteMutation.mutate({ gameId, tier });
+  }
+
+  const visibleGames = (gamesQuery.data ?? [])
+    .filter((game) => game.reviewTier === tab)
+    .filter((game) => filter === 'all' || statusAndActionFor(game).statusLabel === filter);
 
   return (
     <div className="page games-page">
@@ -132,9 +174,25 @@ export function GamesPage(): ReactNode {
       {deleteMutation.isError && <p>Could not delete that game — try again.</p>}
       {analyzeMutation.isError && <p>Could not start analysis — try again.</p>}
       {copyPgnMutation.isError && <p>Could not copy the PGN — try again.</p>}
+      {promoteMutation.isError && <p>Could not move that game — try again.</p>}
 
       {gamesQuery.data && gamesQuery.data.length > 0 && (
         <>
+          <div className="games-page__tabs" role="tablist" aria-label="Filter by tab">
+            {TABS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                role="tab"
+                aria-selected={tab === option.key}
+                className={tab === option.key ? 'games-page__tab active' : 'games-page__tab'}
+                onClick={() => setTab(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
           <div className="games-page__filters" role="group" aria-label="Filter by status">
             {FILTERS.map((option) => (
               <button
@@ -148,10 +206,11 @@ export function GamesPage(): ReactNode {
             ))}
           </div>
 
-          <ul className="games-page__list">
-            {gamesQuery.data
-              .filter((game) => filter === 'all' || statusAndActionFor(game).statusLabel === filter)
-              .map((game) => (
+          {visibleGames.length === 0 ? (
+            <p className="games-page__empty">Nothing in {TABS.find((option) => option.key === tab)?.label} yet.</p>
+          ) : (
+            <ul className="games-page__list">
+              {visibleGames.map((game) => (
                 <GameRow
                   key={game.id}
                   game={game}
@@ -160,9 +219,11 @@ export function GamesPage(): ReactNode {
                   onExportPgn={handleExportPgn}
                   onCopyPgn={(gameId) => copyPgnMutation.mutate(gameId)}
                   onDelete={(gameId) => deleteMutation.mutate(gameId)}
+                  onPromote={handlePromote}
                 />
               ))}
-          </ul>
+            </ul>
+          )}
         </>
       )}
     </div>

@@ -1,4 +1,4 @@
-import { ClassifiedMoveSchema, GameReportSchema, MoveQualitySchema } from '@freechesscoach/shared';
+import { ClassifiedMoveSchema, GameReportSchema, GameReviewTierSchema, MoveQualitySchema } from '@freechesscoach/shared';
 import { z } from 'zod';
 
 export const SessionMessageSchema = z.object({
@@ -52,6 +52,7 @@ export const GameDetailSchema = z.object({
   liveMoveQualities: z.array(LiveMoveQualitySchema).nullable().default(null),
   gameReport: GameReportSchema.nullable().default(null),
   botId: z.string().nullable().default(null),
+  reviewTier: GameReviewTierSchema.default('imported'),
   clockInitialMs: z.number().int().nullable().default(null),
   clockIncrementMs: z.number().int().nullable().default(null),
   whiteRemainingMs: z.number().int().nullable().default(null),

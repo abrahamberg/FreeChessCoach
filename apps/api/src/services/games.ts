@@ -1,4 +1,4 @@
-import type { GameListResponse } from '@freechesscoach/shared';
+import { canPromoteGameReviewTier, type GameListResponse, type GameReviewTier } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
@@ -10,7 +10,7 @@ import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
-import { NotFoundError } from '../lib/errors.js';
+import { NotFoundError, ValidationError } from '../lib/errors.js';
 
 /** design.md §4.1 / architecture §14: Games (home) list — one row per game
  * with its analysis status for the status chip, or (for a play-mode game)
@@ -63,6 +63,33 @@ async function toListItem(db: Kysely<Database>, userId: string, row: GameListRow
     createdAt: row.createdAt.toISOString(),
     analysisStatus: row.analysisStatus,
     sessionId,
-    botId: row.botId
+    botId: row.botId,
+    reviewTier: row.reviewTier
   };
+}
+
+/** The Games page's "move up the stack" action (imported/bot -> review or
+ * coach, review -> coach). Gated on a ready analysis — every tier above a
+ * game's starting one exists to look at a Game Report that doesn't exist
+ * until analysis completes, unlike `coach_play`, which starts at `coach`
+ * without ever needing one (architecture §14). */
+export async function promoteGame(
+  db: Kysely<Database>,
+  userId: string,
+  gameId: string,
+  targetTier: GameReviewTier
+): Promise<GameReviewTier> {
+  const game = await gamesRepo.findByIdForUser(db, gameId, userId);
+  if (!game) throw new NotFoundError('Game not found');
+  if (!canPromoteGameReviewTier(game.reviewTier, targetTier)) {
+    throw new ValidationError(`Cannot promote a game from '${game.reviewTier}' to '${targetTier}'`);
+  }
+
+  const analysis = await analysesRepo.findByGameId(db, gameId);
+  if (analysis?.status !== 'ready') {
+    throw new ValidationError('This game needs a completed analysis before it can be promoted');
+  }
+
+  await gamesRepo.updateReviewTier(db, gameId, targetTier);
+  return targetTier;
 }
