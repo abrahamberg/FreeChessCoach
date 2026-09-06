@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { computePositionFeatures } from '@freechesscoach/chess-analysis';
 import { HintMovesResponseSchema, type ClassifiedMoveDto } from '@freechesscoach/shared';
 import { apiPost } from '../../api/client.js';
 import { ChevronLeftIcon, ChevronRightIcon, LightbulbIcon, UndoIcon } from '../../components/Icon.js';
@@ -24,12 +23,19 @@ import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
 const UNDO_PILL_MS = 2000;
 
 // Deliberately not the same tokens legal-move dots/selection use, so a hint
-// never gets confused with those — the hue itself carries the meaning
-// (red = defend, green = attackable) at low opacity so the piece underneath
-// stays legible.
-const HINT_DEFEND_HIGHLIGHT = 'rgba(192, 57, 43, 0.35)';
-const HINT_ATTACK_HIGHLIGHT = 'rgba(91, 156, 106, 0.35)';
-const HINT_MOVE_ARROW_COLORS = ['var(--annotate-1)', 'var(--annotate-2)', 'var(--annotate-hover)'];
+// never gets confused with those. Each of the top 3 suggested moves keeps
+// the same color across both hint stages — its piece highlight (stage 1)
+// and its arrow (stage 2) — so the two reveals read as one continuous idea
+// ("this piece — going here") rather than two unrelated overlays.
+const HINT_MOVE_COLORS = ['var(--annotate-1)', 'var(--annotate-2)', 'var(--annotate-hover)'];
+
+function hintMoveColor(index: number): string {
+  return HINT_MOVE_COLORS[index % HINT_MOVE_COLORS.length] ?? 'var(--annotate-1)';
+}
+
+function hintPieceHighlightColor(index: number): string {
+  return `color-mix(in srgb, ${hintMoveColor(index)} 40%, transparent)`;
+}
 
 interface HintTopMove {
   san: string;
@@ -48,6 +54,12 @@ export interface SessionBoardColumnProps {
   positions: { ply: number; fen: string }[];
   classifiedMoves: ClassifiedMoveDto[] | null | undefined;
   isDesktop: boolean;
+  /** useIsBoardSideBySide() (>=768px) — narrower than `isDesktop` (>=1080px).
+   * Below it (the single-column mobile layout, board and chat/status as
+   * separate full-screen panels) the eval bar renders as a horizontal strip
+   * above the board instead of a vertical one beside it, so it doesn't eat
+   * into the board's own width — the scarcer dimension there. */
+  isSideBySide: boolean;
   engine: ReturnType<typeof useWasmEngine>;
   autoplayIntervalMs: number;
   onChangeAutoplayInterval: (ms: number) => void;
@@ -118,6 +130,7 @@ export function SessionBoardColumn({
   positions,
   classifiedMoves,
   isDesktop,
+  isSideBySide,
   engine,
   autoplayIntervalMs,
   onChangeAutoplayInterval,
@@ -201,11 +214,11 @@ export function SessionBoardColumn({
     }
   }
 
-  // The bot page's two-stage hint: first click marks the tactically
-  // relevant squares of the CURRENT position (facts, not advice — computed
-  // client-side, no engine call needed); a second click escalates to the
-  // engine's actual top 3 moves. A third click, or the position changing
-  // (a move was made), collapses/resets it.
+  // The bot page's two-stage hint, both stages drawn on the board itself
+  // (design ask: no explanatory text) — first click fetches the engine's
+  // top 3 moves and highlights the pieces they'd move (WHICH piece); a
+  // second click reveals the same moves' arrows (WHERE it goes). A third
+  // click, or the position changing (a move was made), collapses/resets it.
   const [hintStage, setHintStage] = useState<0 | 1 | 2>(0);
   const [hintTopMoves, setHintTopMoves] = useState<HintTopMove[]>([]);
   const [isLoadingHintMoves, setIsLoadingHintMoves] = useState(false);
@@ -222,66 +235,68 @@ export function SessionBoardColumn({
     hintRequestRef.current += 1;
   }, [fen]);
 
+  function fetchHintMoves(): void {
+    setHintError(false);
+    setIsLoadingHintMoves(true);
+    const requestId = ++hintRequestRef.current;
+    void apiPost('/api/positions/hint-moves', { fen }, HintMovesResponseSchema)
+      .then(({ lines }) => {
+        if (hintRequestRef.current !== requestId) return;
+        setHintTopMoves(
+          lines.map((line) => ({ san: line.moveSan, from: line.moveUci.slice(0, 2), to: line.moveUci.slice(2, 4) }))
+        );
+        setIsLoadingHintMoves(false);
+      })
+      // A server-side search failure (engine unreachable, etc.) — without
+      // this a request could hang forever with no way out (the in-browser
+      // WASM engine this used to call had no error handling either, and
+      // could hang or fail outright depending on the user's own browser/
+      // environment — this endpoint sidesteps that entirely by running
+      // server-side, the same reliable engine path the bot's own moves
+      // already use).
+      .catch(() => {
+        if (hintRequestRef.current !== requestId) return;
+        setIsLoadingHintMoves(false);
+        setHintError(true);
+      });
+  }
+
   function handleHintClick(): void {
     if (hintStage === 0) {
       setHintStage(1);
-      setHintError(false);
+      fetchHintMoves();
       return;
     }
     if (hintStage === 1) {
       setHintStage(2);
-      setHintError(false);
-      setIsLoadingHintMoves(true);
-      const requestId = ++hintRequestRef.current;
-      void apiPost('/api/positions/hint-moves', { fen }, HintMovesResponseSchema)
-        .then(({ lines }) => {
-          if (hintRequestRef.current !== requestId) return;
-          setHintTopMoves(
-            lines.map((line) => ({ san: line.moveSan, from: line.moveUci.slice(0, 2), to: line.moveUci.slice(2, 4) }))
-          );
-          setIsLoadingHintMoves(false);
-        })
-        // A server-side search failure (engine unreachable, etc.) — without
-        // this the "Thinking…" bubble was stuck forever on an unhandled
-        // rejection (the in-browser WASM engine this used to call had no
-        // error handling either, and could hang or fail outright depending
-        // on the user's own browser/environment — this endpoint sidesteps
-        // that entirely by running server-side, the same reliable engine
-        // path the bot's own moves already use).
-        .catch(() => {
-          if (hintRequestRef.current !== requestId) return;
-          setIsLoadingHintMoves(false);
-          setHintError(true);
-        });
       return;
     }
     setHintStage(0);
+    setHintTopMoves([]);
+    setHintError(false);
   }
 
-  const hintFeatures = hintStage === 1 ? computePositionFeatures(fen) : null;
-  const hintHighlights: BoardHighlight[] = hintFeatures
-    ? [
-        ...hintFeatures.piecesUnderAttack
-          .filter((piece) => piece.color === orientation)
-          .map((piece) => ({ square: piece.square, color: HINT_DEFEND_HIGHLIGHT })),
-        ...hintFeatures.piecesUnderAttack
-          .filter((piece) => piece.color !== orientation)
-          .map((piece) => ({ square: piece.square, color: HINT_ATTACK_HIGHLIGHT }))
-      ]
-    : [];
-  const hintArrows: BoardArrow[] =
-    hintStage === 2
-      ? hintTopMoves.map((move, index) => ({
-          from: move.from,
-          to: move.to,
-          color: HINT_MOVE_ARROW_COLORS[index % HINT_MOVE_ARROW_COLORS.length] ?? 'var(--annotate-1)'
-        }))
+  const hintHighlights: BoardHighlight[] =
+    hintStage >= 1
+      ? hintTopMoves.map((move, index) => ({ square: move.from, color: hintPieceHighlightColor(index) }))
       : [];
+  const hintArrows: BoardArrow[] =
+    hintStage === 2 ? hintTopMoves.map((move, index) => ({ from: move.from, to: move.to, color: hintMoveColor(index) })) : [];
+
+  const evalBar = showEvalIndicators && (
+    <EvalBar
+      ply={boardState.ply}
+      classifiedMoves={classifiedMoves ?? []}
+      orientation={orientation}
+      layout={isSideBySide ? 'vertical' : 'horizontal'}
+    />
+  );
 
   return (
     <div className="session-board-column">
+      {!isSideBySide && evalBar}
       <div className="session-board-row">
-        {showEvalIndicators && <EvalBar ply={boardState.ply} classifiedMoves={classifiedMoves ?? []} orientation={orientation} />}
+        {isSideBySide && evalBar}
         <CoachBoard
           fen={fen}
           orientation={orientation}
@@ -340,23 +355,24 @@ export function SessionBoardColumn({
               Undo
             </button>
           )}
-          <button type="button" className="bot-move-toolbar__hint" onClick={handleHintClick} aria-pressed={hintStage > 0}>
+          <button
+            type="button"
+            className={`bot-move-toolbar__hint${isLoadingHintMoves ? ' bot-move-toolbar__hint--loading' : ''}`}
+            onClick={handleHintClick}
+            aria-pressed={hintStage > 0}
+          >
             <LightbulbIcon width={14} height={14} />
             Hint
           </button>
         </div>
       )}
-      {sessionMode === 'play_bot' && hintStage > 0 && (
-        <p className="hint-bubble" role="status">
-          {hintStage === 1
-            ? 'Red squares need defending — green squares are pieces you can attack.'
-            : hintError
-              ? "Couldn't get a suggestion — try again."
-              : isLoadingHintMoves
-                ? 'Thinking…'
-                : hintTopMoves.length > 0
-                  ? `Top moves: ${hintTopMoves.map((move) => move.san).join(', ')}`
-                  : 'No moves to suggest.'}
+      {/* Ditched the descriptive text bubble (design ask) — the highlighted
+          piece(s) and, on the second click, the arrow(s) to their
+          destination speak for themselves. This stays visually hidden,
+          purely so a screen reader still hears the loading/error state. */}
+      {sessionMode === 'play_bot' && hintStage > 0 && (isLoadingHintMoves || hintError) && (
+        <p className="visually-hidden" role="status">
+          {hintError ? "Couldn't get a suggestion — try again." : 'Getting a hint…'}
         </p>
       )}
       {boardState.isAnchoredPreMove && (

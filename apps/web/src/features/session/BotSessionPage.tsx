@@ -108,6 +108,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       positions={positions}
       classifiedMoves={classifiedMoves}
       isDesktop={isDesktop}
+      isSideBySide={isSideBySide}
       engine={engine}
       autoplayIntervalMs={autoplayIntervalMs}
       onChangeAutoplayInterval={setAutoplayIntervalMs}

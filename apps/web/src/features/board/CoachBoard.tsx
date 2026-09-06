@@ -1,4 +1,4 @@
-import { Chess, type Square } from 'chess.js';
+import { Chess, type PieceSymbol, type Square } from 'chess.js';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Chessboard,
@@ -8,6 +8,7 @@ import {
   type PieceHandlerArgs,
   type SquareHandlerArgs
 } from 'react-chessboard';
+import { PromotionPicker, type PromotionPiece } from './PromotionPicker.js';
 import './CoachBoard.css';
 
 const SELECTED_SQUARE_STYLE: CSSProperties = { backgroundColor: 'rgba(0, 140, 60, 0.65)' };
@@ -17,6 +18,12 @@ const MOVE_DOT_STYLE: CSSProperties = {
   backgroundRepeat: 'no-repeat'
 };
 const CAPTURE_RING_STYLE: CSSProperties = { boxShadow: 'inset 0 0 0 4px rgba(20, 20, 20, 0.28)' };
+// A glow, not a flat fill like the other square styles above — so a king in
+// check reads unmistakably as "danger", never mistaken for a selection or
+// hint highlight sharing its square.
+const KING_IN_CHECK_STYLE: CSSProperties = {
+  boxShadow: 'inset 0 0 0 3px rgba(214, 40, 40, 0.9), inset 0 0 16px 6px rgba(214, 40, 40, 0.55)'
+};
 
 function mergeSquareStyles(...maps: Record<string, CSSProperties>[]): Record<string, CSSProperties> {
   const merged: Record<string, CSSProperties> = {};
@@ -26,6 +33,23 @@ function mergeSquareStyles(...maps: Record<string, CSSProperties>[]): Record<str
     }
   }
   return merged;
+}
+
+/** Cosmetic only (always previews a queen) — purely what the board shows
+ * while PromotionPicker is open, so the student sees the pawn already
+ * sitting on its destination. The actual promotion piece is chosen and
+ * committed separately (handlePromotionSelect), never derived from this.
+ * Falls back to `fen` unchanged if `pending` no longer applies to it (the
+ * render right after an external fen change lands before the effect below
+ * has had a chance to clear a stale `pendingPromotion`). */
+function previewPromotionFen(fen: string, pending: { from: string; to: string }): string {
+  const board = new Chess(fen);
+  try {
+    board.move({ from: pending.from, to: pending.to, promotion: 'q' });
+  } catch {
+    return fen;
+  }
+  return board.fen();
 }
 
 export interface BoardArrow {
@@ -80,6 +104,12 @@ export interface CoachBoardProps {
   disabled?: boolean;
 }
 
+interface PendingPromotion {
+  from: string;
+  to: string;
+  color: 'w' | 'b';
+}
+
 /** Presentational react-chessboard wrapper (AGENTS.md rule 7) — no fetching,
  * no session/turn logic. The parent decides what "answer mode" means (send
  * [board_move], show the undo pill) from onUserMove. */
@@ -97,28 +127,73 @@ export function CoachBoard({
 }: CoachBoardProps): ReactNode {
   const justDroppedRef = useRef(false);
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
+  // Set instead of moving straight through when a drop/click would promote a
+  // pawn — PromotionPicker asks which piece, and the move only actually
+  // commits (see handlePromotionSelect) once the student picks one.
+  const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null);
 
-  // A stale selection (e.g. the bot's reply just landed, or the student
-  // navigated the move strip) would otherwise dot squares from a position
-  // that's no longer on the board.
-  useEffect(() => setSelectedSquare(null), [fen]);
+  // A stale selection or an abandoned promotion choice (e.g. the bot's reply
+  // just landed, or the student navigated the move strip) would otherwise
+  // dot squares, or ask to promote a pawn, from a position that's no longer
+  // on the board.
+  useEffect(() => {
+    setSelectedSquare(null);
+    setPendingPromotion(null);
+  }, [fen]);
 
-  function applyMove(from: string, to: string): boolean {
-    if (disabled) return false;
-    const chess = new Chess(fen);
+  const chess = new Chess(fen);
+  // findPiece returns every match; a legal position has exactly one king per
+  // color, so the first (only) result is the one that matters.
+  const checkedKingSquare = chess.inCheck() ? chess.findPiece({ type: 'k', color: chess.turn() })[0] : undefined;
+
+  /** Commits a move against `sourceFen` specifically — NOT necessarily the
+   * live `fen` prop. handlePromotionSelect needs that distinction: by the
+   * time the student picks a piece, `fen` is still the pre-promotion
+   * position (the picker is a purely local overlay, see the `position`
+   * passed to <Chessboard> below), so replaying from it is correct there;
+   * every other caller just passes `fen` itself. */
+  function commitMove(sourceFen: string, from: string, to: string, promotion?: PieceSymbol): boolean {
+    const board = new Chess(sourceFen);
+    if (!promotion) {
+      const isPromotion = board
+        .moves({ square: from as Square, verbose: true })
+        .some((candidate) => candidate.to === to && candidate.promotion);
+      if (isPromotion) {
+        const piece = board.get(from as Square);
+        if (!piece) return false;
+        setPendingPromotion({ from, to, color: piece.color });
+        return true;
+      }
+    }
+
     let move;
     try {
-      move = chess.move({ from, to, promotion: 'q' });
+      move = board.move({ from, to, promotion: promotion ?? 'q' });
     } catch {
       return false;
     }
     if (!move) return false;
 
-    onLocalMove?.(chess.fen());
+    setPendingPromotion(null);
+    onLocalMove?.(board.fen());
     if (mode === 'answer') {
-      onUserMove?.(move.san, chess.fen(), `${move.from}${move.to}${move.promotion ?? ''}`);
+      onUserMove?.(move.san, board.fen(), `${move.from}${move.to}${move.promotion ?? ''}`);
     }
     return true;
+  }
+
+  function applyMove(from: string, to: string): boolean {
+    if (disabled) return false;
+    return commitMove(fen, from, to);
+  }
+
+  function handlePromotionSelect(piece: PromotionPiece): void {
+    if (!pendingPromotion) return;
+    commitMove(fen, pendingPromotion.from, pendingPromotion.to, piece);
+  }
+
+  function handlePromotionCancel(): void {
+    setPendingPromotion(null);
   }
 
   function handlePieceDrop({ sourceSquare, targetSquare }: PieceDropHandlerArgs): boolean {
@@ -133,7 +208,7 @@ export function CoachBoard({
     return applied;
   }
 
-  const legalMovesFromSelection = selectedSquare ? new Chess(fen).moves({ square: selectedSquare, verbose: true }) : [];
+  const legalMovesFromSelection = selectedSquare ? chess.moves({ square: selectedSquare, verbose: true }) : [];
 
   function handleSquareClick(square: string): void {
     if (justDroppedRef.current) {
@@ -152,7 +227,6 @@ export function CoachBoard({
       }
     }
 
-    const chess = new Chess(fen);
     const piece = chess.get(square as Square);
     setSelectedSquare(piece && piece.color === chess.turn() ? (square as Square) : null);
   }
@@ -182,7 +256,7 @@ export function CoachBoard({
       : {};
 
   const options: ChessboardOptions = {
-    position: fen,
+    position: pendingPromotion ? previewPromotionFen(fen, pendingPromotion) : fen,
     boardOrientation: orientation,
     onPieceDrop: handlePieceDrop,
     onSquareClick: handleSquareClickOption,
@@ -190,6 +264,7 @@ export function CoachBoard({
     arrows: arrows.map((arrow) => ({ startSquare: arrow.from, endSquare: arrow.to, color: arrow.color })),
     squareStyles: mergeSquareStyles(
       Object.fromEntries(highlights.map((highlight) => [highlight.square, { backgroundColor: highlight.color }])),
+      checkedKingSquare ? { [checkedKingSquare]: KING_IN_CHECK_STYLE } : {},
       selectedSquare ? { [selectedSquare]: SELECTED_SQUARE_STYLE } : {},
       legalMoveSquareStyles
     ),
@@ -219,6 +294,15 @@ export function CoachBoard({
   return (
     <div className={frameClassName}>
       <Chessboard options={options} />
+      {pendingPromotion && (
+        <PromotionPicker
+          square={pendingPromotion.to}
+          color={pendingPromotion.color}
+          orientation={orientation}
+          onSelect={handlePromotionSelect}
+          onCancel={handlePromotionCancel}
+        />
+      )}
     </div>
   );
 }

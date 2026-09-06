@@ -43,8 +43,8 @@ export function registerPositionAnalysisRoutes(
     return backend.analyzePosition(parsed.data.fen);
   });
 
-  // The bot session's hint feature, stage 2 — see HintMovesRequestSchema's
-  // doc comment for why this is a separate, uncached endpoint rather than a
+  // The bot session's hint feature — see HintMovesRequestSchema's doc
+  // comment for why this is a separate, uncached endpoint rather than a
   // multiPv argument to /analyze above.
   app.post('/api/positions/hint-moves', async (request) => {
     const parsed = HintMovesRequestSchema.safeParse(request.body);

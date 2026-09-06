@@ -1,16 +1,23 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Chess, type Square } from 'chess.js';
 import { describe, expect, test, vi } from 'vitest';
 import type { ChessboardOptions } from 'react-chessboard';
 
 const capturedOptions: ChessboardOptions[] = [];
 
-vi.mock('react-chessboard', () => ({
-  Chessboard: (props: { options: ChessboardOptions }) => {
-    capturedOptions.push(props.options);
-    return <div data-testid="mock-chessboard" />;
-  }
-}));
+// Only Chessboard itself is stubbed — PromotionPicker imports `defaultPieces`
+// from this same module for its piece icons, so the mock must still provide
+// the real one rather than replacing the whole module.
+vi.mock('react-chessboard', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-chessboard')>();
+  return {
+    ...actual,
+    Chessboard: (props: { options: ChessboardOptions }) => {
+      capturedOptions.push(props.options);
+      return <div data-testid="mock-chessboard" />;
+    }
+  };
+});
 
 // Imported after the mock so CoachBoard picks up the mocked module.
 const { CoachBoard } = await import('./CoachBoard.js');
@@ -351,5 +358,135 @@ describe('CoachBoard', () => {
 
     expect(accepted).toBe(true);
     expect(onUserMove).toHaveBeenCalled();
+  });
+});
+
+// Black king e8, white pawn a7, white king e1 — nothing else on the board,
+// so a7-a8 is an unambiguous promotion with no incidental check either way.
+const PROMOTION_READY_FEN = '4k3/P7/8/8/8/8/8/4K3 w - - 0 1';
+const CHECK_FEN = '4k3/8/8/8/8/8/4q3/4K3 w - - 0 1';
+
+describe('CoachBoard — king in check', () => {
+  test('highlights the checked king’s square', () => {
+    capturedOptions.length = 0;
+    render(<CoachBoard fen={CHECK_FEN} orientation="white" mode="answer" />);
+
+    expect(capturedOptions.at(-1)?.squareStyles?.e1).toMatchObject({
+      boxShadow: expect.stringContaining('214, 40, 40')
+    });
+  });
+
+  test('highlights nothing when no king is in check', () => {
+    capturedOptions.length = 0;
+    render(<CoachBoard fen={START_FEN} orientation="white" mode="answer" />);
+
+    const options = capturedOptions.at(-1);
+    expect(options?.squareStyles?.e1).toBeUndefined();
+    expect(options?.squareStyles?.e8).toBeUndefined();
+  });
+});
+
+// Drops a pawn onto the promotion rank — wrapped in act() since (unlike the
+// other onPieceDrop-based tests above) the assertions here depend on the
+// resulting pendingPromotion state actually being flushed to the DOM.
+function dropPromotingPawn(): boolean | undefined {
+  let accepted: boolean | undefined;
+  act(() => {
+    accepted = capturedOptions.at(-1)?.onPieceDrop?.({
+      piece: { pieceType: 'wP' } as never,
+      sourceSquare: 'a7',
+      targetSquare: 'a8'
+    });
+  });
+  return accepted;
+}
+
+describe('CoachBoard — pawn promotion', () => {
+  test('dropping a pawn onto the last rank opens a picker instead of queening immediately', () => {
+    capturedOptions.length = 0;
+    const onUserMove = vi.fn();
+    const onLocalMove = vi.fn();
+    render(
+      <CoachBoard fen={PROMOTION_READY_FEN} orientation="white" mode="answer" onUserMove={onUserMove} onLocalMove={onLocalMove} />
+    );
+
+    const accepted = dropPromotingPawn();
+
+    expect(accepted).toBe(true);
+    expect(onUserMove).not.toHaveBeenCalled();
+    expect(onLocalMove).not.toHaveBeenCalled();
+    expect(screen.getByRole('menu', { name: /choose a piece/i })).toBeInTheDocument();
+    for (const label of ['Queen', 'Knight', 'Rook', 'Bishop']) {
+      expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument();
+    }
+  });
+
+  test('previews the pawn as a queen on the board while the picker is open, without committing', () => {
+    capturedOptions.length = 0;
+    render(<CoachBoard fen={PROMOTION_READY_FEN} orientation="white" mode="answer" />);
+
+    dropPromotingPawn();
+
+    expect(capturedOptions.at(-1)?.position).toEqual(expect.stringContaining('Q'));
+  });
+
+  test('click-to-move onto the last rank also opens the picker', () => {
+    capturedOptions.length = 0;
+    render(<CoachBoard fen={PROMOTION_READY_FEN} orientation="white" mode="answer" />);
+
+    clickSquare('a7', PROMOTION_READY_FEN);
+    clickSquare('a8', PROMOTION_READY_FEN);
+
+    expect(screen.getByRole('menu', { name: /choose a piece/i })).toBeInTheDocument();
+  });
+
+  test('picking a piece commits the move with that promotion', () => {
+    capturedOptions.length = 0;
+    const onUserMove = vi.fn();
+    render(<CoachBoard fen={PROMOTION_READY_FEN} orientation="white" mode="answer" onUserMove={onUserMove} />);
+    dropPromotingPawn();
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Knight' }));
+
+    expect(onUserMove).toHaveBeenCalledWith('a8=N', expect.any(String), 'a7a8n');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  test('clicking outside the choices cancels — nothing commits and the board reverts', () => {
+    capturedOptions.length = 0;
+    const onUserMove = vi.fn();
+    const onLocalMove = vi.fn();
+    const { container } = render(
+      <CoachBoard fen={PROMOTION_READY_FEN} orientation="white" mode="answer" onUserMove={onUserMove} onLocalMove={onLocalMove} />
+    );
+    dropPromotingPawn();
+
+    fireEvent.click(container.querySelector('.promotion-picker-backdrop')!);
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(onUserMove).not.toHaveBeenCalled();
+    expect(onLocalMove).not.toHaveBeenCalled();
+    expect(capturedOptions.at(-1)?.position).toBe(PROMOTION_READY_FEN);
+  });
+
+  test('pressing Escape cancels the picker', () => {
+    capturedOptions.length = 0;
+    render(<CoachBoard fen={PROMOTION_READY_FEN} orientation="white" mode="answer" />);
+    dropPromotingPawn();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  test('a new position while the picker is open abandons it', () => {
+    capturedOptions.length = 0;
+    const { rerender } = render(<CoachBoard fen={PROMOTION_READY_FEN} orientation="white" mode="answer" />);
+    dropPromotingPawn();
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+
+    rerender(<CoachBoard fen={START_FEN} orientation="white" mode="answer" />);
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 });

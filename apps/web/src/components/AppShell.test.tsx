@@ -60,20 +60,29 @@ describe('AppShell (design-improvements.md: top bar + account menu)', () => {
     expect(screen.getByRole('button', { name: /account menu/i })).toBeInTheDocument();
   });
 
-  test('during an active session, hides only the bottom tab bar (mobile) — the top bar and account menu stay', () => {
+  test('during an active session, hides the entire top bar and the bottom tab bar — the page owns its own back button', () => {
     mockMatchMedia(false);
     renderShell('/session/abc');
 
     expect(screen.queryByRole('navigation', { name: /tab bar/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /account menu/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /account menu/i })).not.toBeInTheDocument();
   });
 
-  test('the top bar (brand + account menu) stays visible during an active session at the desktop breakpoint too', () => {
+  test('the top bar stays hidden during an active session at the desktop breakpoint too', () => {
     mockMatchMedia(true);
     renderShell('/session/abc');
 
-    expect(screen.getByRole('navigation', { name: /primary/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /account menu/i })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: /primary/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /account menu/i })).not.toBeInTheDocument();
+  });
+
+  test('also hides the top bar for a bot-session or a practice route — both put a board on screen too', () => {
+    mockMatchMedia(true);
+    renderShell('/bot-session/abc');
+    expect(screen.queryByRole('navigation', { name: /primary/i })).not.toBeInTheDocument();
+
+    renderShell('/practice/abc');
+    expect(screen.queryByRole('navigation', { name: /primary/i })).not.toBeInTheDocument();
   });
 
   test('always renders the page content', () => {
