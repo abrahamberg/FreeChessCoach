@@ -1,6 +1,7 @@
 import { resolveSanMove } from '@freechesscoach/chess-analysis';
 import { useEffect, useRef } from 'react';
 import { apiPost, ApiError } from '../../api/client.js';
+import type { BotGameOverInfo } from './botGameOver.js';
 import { CommitBotMoveResponseSchema } from './sessionPageSchemas.js';
 
 const FAILOVER_POLL_MS = 4000;
@@ -18,7 +19,7 @@ export interface UseBotTurnFailoverOptions {
   currentFen: string;
   onBotMoveCommitted: (result: { fen: string; san: string; ply: number }, uci: string) => void;
   onClockUpdate: (whiteRemainingMs: number | null, blackRemainingMs: number | null) => void;
-  onGameOver: () => void;
+  onGameOver: (gameOver: BotGameOverInfo) => void;
 }
 
 /**
@@ -54,7 +55,7 @@ export function useBotTurnFailover(options: UseBotTurnFailoverOptions): void {
             applyMove(result.bot, resolved ? `${resolved.from}${resolved.to}` : '');
           }
           applyClock(result.whiteRemainingMs, result.blackRemainingMs);
-          if (result.gameOver) applyGameOver();
+          if (result.gameOver) applyGameOver(result.gameOver);
         })
         // A 422 here just means the reply already landed some other way (or
         // the game ended) between this tick firing and the request arriving

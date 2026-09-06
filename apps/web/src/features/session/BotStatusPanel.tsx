@@ -2,13 +2,9 @@ import type { ReactNode } from 'react';
 import { BotAvatar } from '../../components/BotAvatar.js';
 import { FlagIcon } from '../../components/Icon.js';
 import { useLiteEngineHint } from '../../hooks/useLiteEngineHint.js';
+import { describeGameOver, type BotGameOverInfo } from './botGameOver.js';
 import { ClockDisplay } from './ClockDisplay.js';
 import './BotStatusPanel.css';
-
-export interface BotGameOverInfo {
-  result: '1-0' | '0-1' | '1/2-1/2';
-  reason: 'checkmate' | 'stalemate' | 'insufficient_material' | 'threefold_repetition' | 'fifty_move_rule';
-}
 
 export interface BotStatusPanelProps {
   botName: string;
@@ -62,21 +58,6 @@ function LiteHintReadout({ fen }: { fen: string }): ReactNode {
       <span className="bot-status-panel__hint-label">Exploratory:</span> {evaluation}
     </p>
   );
-}
-
-const DRAW_REASON_TEXT: Record<Exclude<BotGameOverInfo['reason'], 'checkmate'>, string> = {
-  stalemate: 'Draw by stalemate.',
-  insufficient_material: 'Draw by insufficient material.',
-  threefold_repetition: 'Draw by threefold repetition.',
-  fifty_move_rule: 'Draw by the fifty-move rule.'
-};
-
-function describeGameOver(gameOver: BotGameOverInfo, userColor: 'white' | 'black', botName: string): string {
-  if (gameOver.reason === 'checkmate') {
-    const userWon = (userColor === 'white' && gameOver.result === '1-0') || (userColor === 'black' && gameOver.result === '0-1');
-    return userWon ? 'Checkmate — you win!' : `Checkmate — ${botName} wins.`;
-  }
-  return DRAW_REASON_TEXT[gameOver.reason];
 }
 
 /** The chat-less bot session's status panel — replaces ChatPane in the

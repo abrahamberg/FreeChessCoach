@@ -12,6 +12,7 @@ import { MoveStrip } from '../board/MoveStrip.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
 import { describePly, sanForPly } from '../chat/positionDivider.js';
+import type { BotGameOverInfo } from './botGameOver.js';
 import type { CommittedPlayMove } from './usePlayMoveSubmit.js';
 import { usePlayMoveSubmit } from './usePlayMoveSubmit.js';
 import { usePlayBotMoveSubmit } from './usePlayBotMoveSubmit.js';
@@ -82,8 +83,9 @@ export interface SessionBoardColumnProps {
    * once for the student's move and again for the bot's. */
   onPlayMoveCommitted?: (result: CommittedPlayMove, uci: string) => void;
   /** play_bot only: fires once when a play-move response reports the game
-   * ended, so the caller can refetch session status. */
-  onGameOver?: () => void;
+   * ended, with who won/drew and why, so the caller can refetch session
+   * status and show the result (GameOverDialog/BotStatusPanel). */
+  onGameOver?: (gameOver: BotGameOverInfo) => void;
   /** play_bot only: the "Undo" button's handler (useBotSessionPageData's
    * undoLastMove) — undoes the student's last move and the bot's reply to
    * it together, see bot-undo.ts. */
@@ -100,6 +102,13 @@ export interface SessionBoardColumnProps {
    * on your own" was removed for. Defaults true so analyze/play mode, which
    * never pass this prop, are unaffected. */
   showEvalIndicators?: boolean;
+  /** play_bot only: true once the game itself has ended (any reason) — ORed
+   * into the board's own in-flight-submission disabled state, since a
+   * resignation/timeout ending (unlike checkmate/stalemate) leaves ordinary
+   * legal moves still available on the board with nothing else stopping
+   * them. Defaults false so analyze/play mode, which never pass this prop,
+   * are unaffected. */
+  boardDisabled?: boolean;
 }
 
 /** Distinct from the coach's own annotate_board arrows (--annotate-1) and
@@ -144,7 +153,8 @@ export function SessionBoardColumn({
   onUndoMove,
   undoDisabled,
   onClockUpdate,
-  showEvalIndicators = true
+  showEvalIndicators = true,
+  boardDisabled = false
 }: SessionBoardColumnProps): ReactNode {
   const [showLegalMoveDots] = useShowLegalMoveDots();
   const [pendingMove, setPendingMove] = useState<{ san: string; fen: string } | null>(null);
@@ -307,7 +317,7 @@ export function SessionBoardColumn({
           onLocalMove={boardState.previewMove}
           onArrowsChange={onArrowsChange}
           showLegalMoveDots={showLegalMoveDots}
-          disabled={playMove.isSubmitting || playBotMove.isSubmitting}
+          disabled={playMove.isSubmitting || playBotMove.isSubmitting || boardDisabled}
         />
       </div>
       {(playMove.error || playBotMove.error) && (
