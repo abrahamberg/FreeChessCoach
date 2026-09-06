@@ -23,6 +23,18 @@
   padding: 12px;
 }
 
+/* Mobile: every pixel of padding here is a pixel the board itself doesn't
+ * get, and the board is the scarcest-space element on a phone screen (this,
+ * plus AppShell hiding the global top bar on board routes and the eval bar
+ * moving above the board instead of beside it, is the "make the board as
+ * big as possible" pass). */
+@media (max-width: 767px) {
+  .session-board-column {
+    padding: 8px;
+    gap: 6px;
+  }
+}
+
 /* Eval bar + board, side by side — the row (not the frame directly) is now
  * the board column's flex item, so board sizing rules below target
  * `.coach-board-frame` through this row instead of as a direct child. */
@@ -76,16 +88,24 @@
   border-color: var(--color-gold);
 }
 
-.hint-bubble {
-  align-self: center;
-  max-width: 90%;
-  text-align: center;
-  background: var(--color-gold-soft);
-  color: var(--color-text-primary);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--font-size-sm);
-  margin: 0;
+.bot-move-toolbar__hint--loading {
+  animation: hint-loading-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes hint-loading-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bot-move-toolbar__hint--loading {
+    animation: none;
+  }
 }
 
 .undo-pill {
@@ -412,7 +432,6 @@
 .session-body.desktop .played-move-pill,
 .session-body.desktop .move-strip,
 .session-body.desktop .bot-move-toolbar,
-.session-body.desktop .hint-bubble,
 .session-body.desktop .explore-panel-toggle,
 .session-body.desktop .explore-panel {
   flex-shrink: 0;

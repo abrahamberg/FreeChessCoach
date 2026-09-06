@@ -1,5 +1,5 @@
 import { findBotConfig } from '@freechesscoach/shared';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
@@ -9,6 +9,7 @@ import { MoveExplorer } from '../board/MoveExplorer.js';
 import { SessionSummaryCard } from '../chat/SessionSummaryCard.js';
 import { sanForPly } from '../chat/positionDivider.js';
 import { BotStatusPanel } from './BotStatusPanel.js';
+import { GameOverDialog } from './GameOverDialog.js';
 import { MobileSessionBody } from './MobileSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { SessionHeader } from './SessionHeader.js';
@@ -33,6 +34,10 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   const isDesktop = useIsDesktop();
   const mobileView = useMobileSessionView(0);
   const [showStatusBar, setShowStatusBar] = useShowStatusBar();
+  // Dismisses GameOverDialog while leaving gameOverInfo itself alone — the
+  // board/status panel below key off gameOverInfo (not this) to keep
+  // rendering the finished game rather than swapping to SessionSummaryCard.
+  const [dialogDismissed, setDialogDismissed] = useState(false);
 
   const {
     sessionQuery,
@@ -49,6 +54,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
     engine,
     handleBotMoveCommitted,
     handleGameOver,
+    gameOverInfo,
     undoLastMove,
     canUndo,
     resign,
@@ -63,7 +69,13 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
 
   const session = sessionQuery.data;
 
-  if (session.status === 'completed') {
+  // A cold-loaded already-finished game (no live gameOverInfo from this page
+  // visit) still gets the old summary-card treatment — there's no in-context
+  // board state to preserve there. A game that just ended THIS visit
+  // (gameOverInfo set) instead stays on the board with GameOverDialog below,
+  // which is the whole point of this component still existing: it no longer
+  // yanks the student away from the game the instant it ends.
+  if (session.status === 'completed' && !gameOverInfo) {
     return (
       <SessionSummaryCard
         summary={session.summary ?? 'Game over.'}
@@ -108,6 +120,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       positions={positions}
       classifiedMoves={classifiedMoves}
       isDesktop={isDesktop}
+      isSideBySide={isSideBySide}
       engine={engine}
       autoplayIntervalMs={autoplayIntervalMs}
       onChangeAutoplayInterval={setAutoplayIntervalMs}
@@ -118,9 +131,14 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       onPlayMoveCommitted={handleBotMoveCommitted}
       onGameOver={handleGameOver}
       onUndoMove={undoLastMove}
-      undoDisabled={!canUndo}
+      undoDisabled={!canUndo || session.status !== 'active'}
       onClockUpdate={onClockUpdate}
       showEvalIndicators={showStatusBar}
+      // The game itself has no more moves to accept once it's over — without
+      // this a resignation/timeout ending (unlike checkmate/stalemate, which
+      // already has no legal moves) would otherwise leave a fully-playable-
+      // looking board that just bounces every drop off a 422.
+      boardDisabled={session.status !== 'active'}
     />
   );
 
@@ -130,7 +148,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       botAvatarIndex={bot?.avatarIndex}
       botElo={bot?.elo}
       isPlayerTurn={isPlayerTurn}
-      gameOver={null}
+      gameOver={gameOverInfo}
       userColor={orientation}
       onResign={isResigning ? undefined : handleResign}
       clock={clock}
@@ -174,6 +192,9 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
           }}
           viewState={mobileView}
         />
+      )}
+      {gameOverInfo && !dialogDismissed && (
+        <GameOverDialog gameOver={gameOverInfo} userColor={orientation} botName={botName} onContinue={() => setDialogDismissed(true)} />
       )}
     </div>
   );

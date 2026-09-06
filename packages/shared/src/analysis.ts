@@ -104,8 +104,9 @@ export const AnalyzePositionRequestSchema = z.object({
 });
 export type AnalyzePositionRequest = z.infer<typeof AnalyzePositionRequestSchema>;
 
-/** The bot session's hint feature, stage 2 ("top 3 moves") — POST
- * /api/positions/hint-moves. Deliberately its own endpoint rather than
+/** The bot session's hint feature ("top 3 moves"), fetched once when the
+ * student first opens a hint — POST /api/positions/hint-moves. Deliberately
+ * its own endpoint rather than
  * reusing /api/positions/analyze: that one always runs through
  * CachingEngineBackend, whose position_evaluations cache is keyed by `fen`
  * alone (no depth/multiPv discrimination — see ENGINE_DEFAULT_DEPTH's doc
