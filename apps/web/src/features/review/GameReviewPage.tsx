@@ -3,25 +3,13 @@ import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
+import { MoveStrip } from '../board/MoveStrip.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
-import { describePly, sanForPly } from '../chat/positionDivider.js';
 import { SessionHeader } from '../session/SessionHeader.js';
 import { GameReviewBoardColumn } from './GameReviewBoardColumn.js';
-import { MobileReviewBody } from './MobileReviewBody.js';
+import { MoveNoteCard } from './MoveNoteCard.js';
 import { useGameReviewPageData } from './useGameReviewPageData.js';
-import { useMobileReviewView } from './useMobileReviewView.js';
 import './GameReviewPage.css';
-
-/** What the mobile notes panel's peek bar names as "currently on the board"
- * — same move-pair formatting SessionPeekBar's own boardContextLabel uses,
- * just without that helper's mode/diverged-line concerns (Review has
- * neither). */
-function positionLabel(ply: number, sanMoves: string[]): string {
-  const san = sanForPly(sanMoves, ply);
-  if (ply <= 0 || !san) return 'start position';
-  const { moveNumber, color } = describePly(ply);
-  return `${moveNumber}${color === 'white' ? '.' : '…'}${san}`;
-}
 
 /** The static, move-by-move Game Report review — chess.com-style "Review",
  * distinct from the Coach tab's live LLM conversation (architecture: Games
@@ -31,15 +19,15 @@ function positionLabel(ply: number, sanMoves: string[]): string {
  * "Continue with Coach" is the one bridge to the paid conversation, and it's
  * the only mutation this page makes.
  *
- * Below the desktop breakpoint, board and notes are two full-screen panels
- * behind a Board/Notes segmented control (MobileReviewBody) rather than one
- * long scroll — the notes are the point of Review, so they get their own
- * reachable panel instead of sitting under a possibly-tall board. */
+ * Below the desktop breakpoint, this follows chess.com's own mobile review
+ * layout (Daniel's reference): the note for the current move is a dominant
+ * card above the board, not a small aside below a move list — a compact
+ * horizontal MoveStrip (not the full paired move list) handles navigation,
+ * so the note never has to compete with a long list for vertical space. */
 export function GameReviewPage(): ReactNode {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
-  const mobileView = useMobileReviewView();
   const {
     gameQuery,
     positions,
@@ -59,6 +47,7 @@ export function GameReviewPage(): ReactNode {
 
   const game = gameQuery.data;
   const orientation = game.userColor;
+  const currentMove = classifiedMoves.find((move) => move.ply === ply);
 
   const board = (
     <GameReviewBoardColumn
@@ -70,13 +59,6 @@ export function GameReviewPage(): ReactNode {
       onSelect={setPly}
       isDesktop={isDesktop}
     />
-  );
-
-  const report = (
-    <>
-      <MoveExplorer sanMoves={sanMoves} classifiedMoves={classifiedMoves} positions={positions} currentPly={ply} onSelect={setPly} />
-      {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} />}
-    </>
   );
 
   return (
@@ -93,10 +75,30 @@ export function GameReviewPage(): ReactNode {
       {isDesktop ? (
         <div className="game-review-body desktop">
           {board}
-          <div className="game-review-explorer-column">{report}</div>
+          <div className="game-review-explorer-column">
+            <MoveExplorer sanMoves={sanMoves} classifiedMoves={classifiedMoves} positions={positions} currentPly={ply} onSelect={setPly} />
+            {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} />}
+          </div>
         </div>
       ) : (
-        <MobileReviewBody board={board} notes={report} fen={fen} positionLabel={positionLabel(ply, sanMoves)} viewState={mobileView} />
+        <div className="game-review-body mobile">
+          <MoveNoteCard ply={ply} san={sanMoves[ply - 1] ?? null} move={currentMove} />
+          {board}
+          {/* MoveStrip's own currentPly/onSelect are the sanMoves array index
+              (0-based — confirmed by its tests), not the 1-based halfmove ply
+              `ply`/`setPly` use everywhere else on this page (matching
+              `positions[].ply`, ply 0 = start position) — hence the +/-1
+              translation at this one boundary. */}
+          <MoveStrip
+            sanMoves={sanMoves}
+            classifiedMoves={classifiedMoves}
+            positions={positions}
+            currentPly={ply - 1}
+            momentPlies={[]}
+            onSelect={(index) => setPly(index + 1)}
+          />
+          {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} />}
+        </div>
       )}
     </div>
   );

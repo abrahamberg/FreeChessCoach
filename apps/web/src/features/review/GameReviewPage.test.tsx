@@ -307,42 +307,28 @@ describe('GameReviewPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not start a coaching session/i);
   });
 
-  test('on mobile, the notes panel is reachable without scrolling past the board — it is the default tab', async () => {
+  // chess.com reference (Daniel): the note for the current move is a
+  // dominant card above the board, not something behind a tab or scrolled
+  // past — see MoveNoteCard/GameReviewPage's own doc comments.
+  test('on mobile, the note card is visible immediately — no tab or scroll needed to reach it', async () => {
     mockMatchMedia(false);
     vi.stubGlobal('fetch', mockFetch());
     renderReviewPage();
 
     await screen.findByText(/daniel/);
-    expect(screen.getByRole('tab', { name: /notes/i })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: /^board$/i })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByText(/tap a move below to see the coach's note/i)).toBeInTheDocument();
   });
 
-  test('on mobile, the Board/Notes segmented control switches which panel is visible', async () => {
+  test('on mobile, selecting a move in the strip updates the note card', async () => {
     mockMatchMedia(false);
     vi.stubGlobal('fetch', mockFetch());
     const user = userEvent.setup();
-    const { container } = renderReviewPage();
+    renderReviewPage();
     await screen.findByText(/daniel/);
 
-    // Both panels stay mounted (only aria-hidden/inert toggle) — see
-    // MobileReviewBody's own doc comment — so a raw DOM query is used here
-    // rather than getByRole, which excludes inert elements entirely.
-    const boardPanel = () => container.querySelector('#review-panel-board');
-    const notesPanel = () => container.querySelector('#review-panel-notes');
+    await user.click(screen.getByText('e5'));
 
-    expect(notesPanel()).not.toHaveAttribute('aria-hidden', 'true');
-    expect(boardPanel()).toHaveAttribute('aria-hidden', 'true');
-
-    await user.click(screen.getByRole('tab', { name: /^board$/i }));
-
-    expect(screen.getByRole('tab', { name: /^board$/i })).toHaveAttribute('aria-selected', 'true');
-    expect(boardPanel()).not.toHaveAttribute('aria-hidden', 'true');
-    expect(notesPanel()).toHaveAttribute('aria-hidden', 'true');
-
-    await user.click(screen.getByRole('tab', { name: /notes/i }));
-
-    expect(notesPanel()).not.toHaveAttribute('aria-hidden', 'true');
-    expect(boardPanel()).toHaveAttribute('aria-hidden', 'true');
+    expect(await screen.findByText('1… e5')).toBeInTheDocument();
   });
 
   test('clicking a move in the move list updates the board position', async () => {
