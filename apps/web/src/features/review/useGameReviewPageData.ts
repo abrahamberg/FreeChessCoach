@@ -1,7 +1,7 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
 import { PromoteGameResponseSchema } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiGet, apiPost } from '../../api/client.js';
@@ -12,10 +12,6 @@ import { GameDetailSchema } from '../session/sessionPageSchemas.js';
 import { lastMoveHighlightsFor } from '../session/useSessionBoardState.js';
 
 const SessionSummarySchema = z.object({ id: z.string() });
-
-function splitUci(uci: string): { from: string; to: string } {
-  return { from: uci.slice(0, 2), to: uci.slice(2, 4) };
-}
 
 /** All fetching + derived state for the standalone Game Review page
  * (AGENTS.md rule 7) — GameReviewPage itself stays presentational. Unlike
@@ -53,36 +49,30 @@ export function useGameReviewPageData(gameId: string) {
 
   const currentMove = classifiedMoves.find((move) => move.ply === ply);
 
-  // Same pattern as the coaching session's own show_position preMove
-  // (useSessionBoardState's isAnchoredPreMove/revealPlayedMove): the board
-  // defaults to the position BEFORE the move under discussion — the arrows
-  // below (what was played vs. what the engine preferred) are both legal
-  // moves from THAT position, not from the position after — with an
-  // explicit reveal to see the actual result. Resets on every move change,
-  // since "revealed" is about the one comparison being looked at, not a
-  // standing preference; this also doubles as how the game's true final
-  // position (e.g. checkmate) stays reachable — reveal the last move.
-  const [revealed, setRevealed] = useState(false);
-  useEffect(() => setRevealed(false), [ply]);
-  const isAnchoredPreMove = ply > 0 && !revealed;
-  const boardPly = isAnchoredPreMove ? ply - 1 : ply;
+  // Always the real, actual position (never a "before this move" replay —
+  // Daniel's call: the board should never travel anywhere the game didn't
+  // actually go). The board itself always tells the truth about what
+  // happened; a best-move arrow is only drawn on top of it in the one case
+  // where doing so can't mislead — see `arrows` below.
+  const currentPosition = positions.find((position) => position.ply === ply) ?? positions[0];
+  const fen = currentPosition?.fen ?? '';
+  const highlights = lastMoveHighlightsFor(currentPosition?.moveUci);
 
-  const boardPosition = positions.find((position) => position.ply === boardPly) ?? positions[0];
-  const fen = boardPosition?.fen ?? '';
-  const playedMoveUci = positions.find((position) => position.ply === ply)?.moveUci;
-
+  // A suggestion arrow drawn on the CURRENT (post-move) board only makes
+  // sense when the piece it points from is the same one that actually
+  // moved — "this piece went the wrong way" reads fine even though its
+  // origin square is empty now; "a totally different piece should have
+  // moved" does not, since nothing on the board points at what that would
+  // have meant. Both bestMoveSan and the played move are resolved against
+  // the same pre-move fen (fenBefore) purely to compare their origin
+  // squares — the arrow itself is drawn on `fen` above, not fenBefore.
   const arrows: BoardArrow[] = [];
-  const highlights = isAnchoredPreMove ? [] : lastMoveHighlightsFor(boardPosition?.moveUci);
-  if (isAnchoredPreMove && playedMoveUci) {
-    arrows.push({ ...splitUci(playedMoveUci), color: 'var(--played-move)' });
-    if (currentMove?.bestMoveSan && currentMove.bestMoveSan !== currentMove.moveSan) {
-      const best = sanToSquares(fen, currentMove.bestMoveSan);
-      if (best) arrows.push({ ...best, color: 'var(--quality-best)' });
+  if (currentMove?.bestMoveSan && currentMove.bestMoveSan !== currentMove.moveSan && currentMove.fenBefore) {
+    const played = sanToSquares(currentMove.fenBefore, currentMove.moveSan);
+    const best = sanToSquares(currentMove.fenBefore, currentMove.bestMoveSan);
+    if (played && best && played.from === best.from) {
+      arrows.push({ from: best.from, to: best.to, color: 'var(--quality-best)' });
     }
-  }
-
-  function revealPlayedMove(): void {
-    setRevealed(true);
   }
 
   // "Continue with Coach" — promotes the game to the top of the stack, then
@@ -120,8 +110,6 @@ export function useGameReviewPageData(gameId: string) {
     fen,
     highlights,
     arrows,
-    isAnchoredPreMove,
-    revealPlayedMove,
     continueWithCoach,
     isContinuingWithCoach: continueWithCoachMutation.isPending,
     continueWithCoachError: continueWithCoachMutation.isError

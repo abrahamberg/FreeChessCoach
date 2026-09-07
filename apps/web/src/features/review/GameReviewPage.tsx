@@ -16,19 +16,22 @@ import './GameReviewPage.css';
  * page tabs/promotion). No chat, no coach turn, nothing that spends a
  * credit: every note here is the same pre-baked, deterministic text
  * (move-reasons.ts/describe-tactic-hit.ts) already stored on the analysis.
- * "Continue with Coach" is the one bridge to the paid conversation, and it's
+ * "Continue with Coach" is the one bridge to the paid conversation — now a
+ * small icon in MoveNoteCard's own header rather than a standalone bar, and
  * the only mutation this page makes.
  *
  * Below the desktop breakpoint, this follows chess.com's own mobile review
  * layout (Daniel's reference): the note for the current move is a dominant
- * card above the board, not a small aside below a move list — a compact
- * horizontal MoveStrip (not the full paired move list) handles navigation,
- * so the note never has to compete with a long list for vertical space.
+ * card at the top, followed immediately by the compact horizontal MoveStrip
+ * (not the full paired move list) that controls it — nav sits right below
+ * the note it drives, not below the board, so it's never a scroll away —
+ * then the board itself, then the game report.
  *
  * At the desktop breakpoint, the note card takes the same MoveNoteCard the
  * mobile layout uses, placed in the column a coaching session's chat pane
  * would occupy — explorer/game-report keep their normal session-page
- * position on the left rather than swapping sides. */
+ * position on the left rather than swapping sides, and pass
+ * showNotes={false} since the note column already shows the same text. */
 export function GameReviewPage(): ReactNode {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
@@ -44,8 +47,6 @@ export function GameReviewPage(): ReactNode {
     fen,
     highlights,
     arrows,
-    isAnchoredPreMove,
-    revealPlayedMove,
     continueWithCoach,
     isContinuingWithCoach,
     continueWithCoachError
@@ -56,6 +57,7 @@ export function GameReviewPage(): ReactNode {
 
   const game = gameQuery.data;
   const orientation = game.userColor;
+  const canContinueWithCoach = !isTopReviewTier(game.reviewTier) && game.analysisStatus === 'ready';
 
   const board = (
     <GameReviewBoardColumn
@@ -64,25 +66,29 @@ export function GameReviewPage(): ReactNode {
       highlights={highlights}
       arrows={arrows}
       classifiedMoves={classifiedMoves}
-      sanMoves={sanMoves}
       ply={ply}
       onSelect={setPly}
-      isAnchoredPreMove={isAnchoredPreMove}
-      onReveal={revealPlayedMove}
       isDesktop={isDesktop}
+    />
+  );
+
+  const noteCard = (
+    <MoveNoteCard
+      ply={ply}
+      san={sanMoves[ply - 1] ?? null}
+      move={currentMove}
+      onContinueWithCoach={canContinueWithCoach ? continueWithCoach : undefined}
+      isContinuingWithCoach={isContinuingWithCoach}
     />
   );
 
   return (
     <div className="game-review-page">
       <SessionHeader whiteName={game.whiteName} blackName={game.blackName} result={game.result} onBack={() => navigate('/games')} />
-      {!isTopReviewTier(game.reviewTier) && game.analysisStatus === 'ready' && (
-        <div className="game-review-page__actions">
-          <button type="button" className="btn-primary" onClick={continueWithCoach} disabled={isContinuingWithCoach}>
-            {isContinuingWithCoach ? 'Starting coaching session…' : 'Continue with Coach'}
-          </button>
-          {continueWithCoachError && <p role="alert">Could not start a coaching session — try again.</p>}
-        </div>
+      {continueWithCoachError && (
+        <p className="game-review-page__error" role="alert">
+          Could not start a coaching session — try again.
+        </p>
       )}
       {isDesktop ? (
         <div className="game-review-body desktop">
@@ -92,23 +98,29 @@ export function GameReviewPage(): ReactNode {
               sit; the note card takes the right column a chat pane would
               occupy in a coaching session, rather than displacing either. */}
           <div className="game-review-explorer-column">
-            <MoveExplorer sanMoves={sanMoves} classifiedMoves={classifiedMoves} positions={positions} currentPly={ply} onSelect={setPly} />
+            <MoveExplorer
+              sanMoves={sanMoves}
+              classifiedMoves={classifiedMoves}
+              positions={positions}
+              currentPly={ply}
+              onSelect={setPly}
+              showNotes={false}
+            />
             {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} />}
           </div>
           {board}
-          <div className="game-review-notes-column">
-            <MoveNoteCard ply={ply} san={sanMoves[ply - 1] ?? null} move={currentMove} />
-          </div>
+          <div className="game-review-notes-column">{noteCard}</div>
         </div>
       ) : (
         <div className="game-review-body mobile">
-          <MoveNoteCard ply={ply} san={sanMoves[ply - 1] ?? null} move={currentMove} />
-          {board}
+          {noteCard}
           {/* MoveStrip's own currentPly/onSelect are the sanMoves array index
               (0-based — confirmed by its tests), not the 1-based halfmove ply
               `ply`/`setPly` use everywhere else on this page (matching
               `positions[].ply`, ply 0 = start position) — hence the +/-1
-              translation at this one boundary. */}
+              translation at this one boundary. Sits right below the note it
+              drives, ahead of the board, so it's reachable without scrolling
+              past a full board first. */}
           <MoveStrip
             sanMoves={sanMoves}
             classifiedMoves={classifiedMoves}
@@ -117,6 +129,7 @@ export function GameReviewPage(): ReactNode {
             momentPlies={[]}
             onSelect={(index) => setPly(index + 1)}
           />
+          {board}
           {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} />}
         </div>
       )}

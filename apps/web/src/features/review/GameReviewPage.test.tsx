@@ -331,33 +331,16 @@ describe('GameReviewPage', () => {
     expect(await screen.findByText('1… e5')).toBeInTheDocument();
   });
 
-  // Anchored pre-move (useSessionBoardState's own show_position preMove
-  // device, reused here): the board shows the position BEFORE the clicked
-  // move, not after — that's the position an arrow for "what should have
-  // been played instead" is actually legal from. "reveal" swaps to the
-  // real post-move position.
-  test('clicking a move in the move list anchors the board to the position before it, not after', async () => {
+  // Daniel's call: the board never travels anywhere the game didn't
+  // actually go — always the real, current position, never a "before this
+  // move" replay.
+  test('clicking a move in the move list shows the actual position after it, never a "before" state', async () => {
     mockMatchMedia(true);
     vi.stubGlobal('fetch', mockFetch());
     const user = userEvent.setup();
     renderReviewPage();
 
     await user.click(await screen.findByText('e5'));
-
-    await waitFor(() => {
-      const latest = capturedOptions[capturedOptions.length - 1];
-      expect(latest?.position).toContain('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR');
-    });
-  });
-
-  test('"reveal" shows the actual position after the clicked move', async () => {
-    mockMatchMedia(true);
-    vi.stubGlobal('fetch', mockFetch());
-    const user = userEvent.setup();
-    renderReviewPage();
-
-    await user.click(await screen.findByText('e5'));
-    await user.click(await screen.findByRole('button', { name: /reveal/i }));
 
     await waitFor(() => {
       const latest = capturedOptions[capturedOptions.length - 1];
@@ -365,16 +348,84 @@ describe('GameReviewPage', () => {
     });
   });
 
-  test('picking a different move re-anchors pre-move instead of staying revealed', async () => {
+  // A suggestion arrow only makes sense drawn from a square that's genuinely
+  // relevant on the position actually shown — "this piece went the wrong
+  // way" (same origin square either way) reads fine even though the origin
+  // is empty now; a totally different piece should have moved instead does
+  // not, so no arrow is drawn for that case at all. moveSan matches the
+  // fixture PGN's actual move 1 (e4, from e2) so the move list's own "e4"
+  // button is what selects ply 1 here.
+  test('shows a best-move arrow when the same piece could have gone a different way', async () => {
     mockMatchMedia(true);
-    vi.stubGlobal('fetch', mockFetch());
     const user = userEvent.setup();
+    const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        classifiedMoves: [
+          {
+            ply: 1,
+            moveSan: 'e4',
+            mover: 'white',
+            isUserMove: true,
+            cpLoss: 30,
+            quality: 'inaccuracy',
+            bestLineSan: ['e3'],
+            bestMoveSan: 'e3',
+            evalAfterCp: 10,
+            hangsPiece: false,
+            fenBefore: START_FEN
+          }
+        ]
+      })
+    );
     renderReviewPage();
 
-    await user.click(await screen.findByText('e5'));
-    await user.click(await screen.findByRole('button', { name: /reveal/i }));
-    await user.click(await screen.findByText('Nf3'));
+    // Role-based, not findByText('e4') — the quality badge's symbol shares
+    // the button with the SAN text, so the button's accessible name is
+    // "⚠e4"-shaped, not the bare string.
+    await user.click(await screen.findByRole('button', { name: /e4/i }));
 
-    expect(screen.getByRole('button', { name: /reveal/i })).toBeInTheDocument();
+    await waitFor(() => {
+      const latest = capturedOptions[capturedOptions.length - 1];
+      expect(latest?.arrows).toEqual([{ startSquare: 'e2', endSquare: 'e3', color: 'var(--quality-best)' }]);
+    });
+  });
+
+  test('shows no arrow when a different piece should have moved instead', async () => {
+    mockMatchMedia(true);
+    const user = userEvent.setup();
+    const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        classifiedMoves: [
+          {
+            ply: 1,
+            moveSan: 'e4',
+            mover: 'white',
+            isUserMove: true,
+            cpLoss: 30,
+            quality: 'inaccuracy',
+            bestLineSan: ['Nf3'],
+            bestMoveSan: 'Nf3',
+            evalAfterCp: 10,
+            hangsPiece: false,
+            fenBefore: START_FEN
+          }
+        ]
+      })
+    );
+    renderReviewPage();
+
+    // Role-based, not findByText('e4') — the quality badge's symbol shares
+    // the button with the SAN text, so the button's accessible name is
+    // "⚠e4"-shaped, not the bare string.
+    await user.click(await screen.findByRole('button', { name: /e4/i }));
+
+    await waitFor(() => {
+      const latest = capturedOptions[capturedOptions.length - 1];
+      expect(latest?.arrows).toEqual([]);
+    });
   });
 });

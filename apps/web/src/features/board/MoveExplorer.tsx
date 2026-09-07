@@ -15,6 +15,12 @@ export interface MoveExplorerProps {
   positions: { ply: number; fen: string }[];
   currentPly: number;
   onSelect: (ply: number) => void;
+  /** The coaching session's desktop layout has nowhere else to show a
+   * move's note, so this stays the one place it lives there. The Game
+   * Review page's desktop layout has its own dedicated MoveNoteCard column
+   * (the same note, shown large) — repeating it here too would just be the
+   * same text twice, so that caller passes false. */
+  showNotes?: boolean;
 }
 
 interface MovePair {
@@ -45,7 +51,7 @@ function pairMoves(sanMoves: string[]): MovePair[] {
  * <details>, open by default — no separate show/hide button, just click the
  * "Notes" summary to collapse it. Sidelines/PGN comments are out of scope
  * here — parsePgn only produces a mainline. */
-export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly, onSelect }: MoveExplorerProps): ReactNode {
+export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly, onSelect, showNotes = true }: MoveExplorerProps): ReactNode {
   const [inspecting, setInspecting] = useState<{ fen: string; label: string } | null>(null);
   const qualityByPly = new Map(classifiedMoves.map((move) => [move.ply, move]));
   const fenByPly = new Map(positions.map((position) => [position.ply, position.fen]));
@@ -106,18 +112,22 @@ export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly,
           );
         })}
       </ol>
-      {currentMove && <OpeningLabel move={currentMove} />}
-      <details className="move-explorer__notes" open>
-        <summary className="move-explorer__notes-summary">Notes</summary>
-        {currentMove ? (
-          <>
-            <MoveNote move={currentMove} />
-            <AlternativesPanel move={currentMove} />
-          </>
-        ) : (
-          <p className="move-explorer__notes-empty">Select a move to see notes.</p>
-        )}
-      </details>
+      {showNotes && (
+        <>
+          {currentMove && <OpeningLabel move={currentMove} />}
+          <details className="move-explorer__notes" open>
+            <summary className="move-explorer__notes-summary">Notes</summary>
+            {currentMove ? (
+              <>
+                <MoveNote move={currentMove} />
+                <AlternativesPanel move={currentMove} />
+              </>
+            ) : (
+              <p className="move-explorer__notes-empty">Select a move to see notes.</p>
+            )}
+          </details>
+        </>
+      )}
       {inspecting && (
         <MoveAnalysisModal fen={inspecting.fen} moveLabel={inspecting.label} onClose={() => setInspecting(null)} />
       )}
