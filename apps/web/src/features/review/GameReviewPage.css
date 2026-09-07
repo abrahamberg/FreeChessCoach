@@ -94,6 +94,36 @@
   z-index: 2;
 }
 
+/* The desktop layout's right column — same width/chrome as SessionPage
+ * .css's .chat-pane, since this occupies the exact spot a coaching
+ * session's chat would. MoveNoteCard's own mobile sizing (a capped height
+ * so it doesn't grow the whole page, its own border/shadow/radius for
+ * sitting directly on the page background) doesn't apply here — the column
+ * already provides that chrome, and should fill the full column height
+ * instead of capping at a fraction of it. */
+.game-review-notes-column {
+  width: 400px;
+  flex: 0 0 400px;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.game-review-notes-column .move-note-card {
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.game-review-notes-column .move-note-card__body {
+  flex: 1;
+}
+
 /* --- mobile (below this page's own desktop breakpoint): one scrolling
  * column — note card, board, move strip, game report, in that order
  * (Daniel's chess.com reference) — rather than a second layout system. The

@@ -23,7 +23,12 @@ import './GameReviewPage.css';
  * layout (Daniel's reference): the note for the current move is a dominant
  * card above the board, not a small aside below a move list — a compact
  * horizontal MoveStrip (not the full paired move list) handles navigation,
- * so the note never has to compete with a long list for vertical space. */
+ * so the note never has to compete with a long list for vertical space.
+ *
+ * At the desktop breakpoint, the note card takes the same MoveNoteCard the
+ * mobile layout uses, placed in the column a coaching session's chat pane
+ * would occupy — explorer/game-report keep their normal session-page
+ * position on the left rather than swapping sides. */
 export function GameReviewPage(): ReactNode {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
@@ -81,10 +86,18 @@ export function GameReviewPage(): ReactNode {
       )}
       {isDesktop ? (
         <div className="game-review-body desktop">
-          {board}
+          {/* Same three-column arrangement the coaching session uses
+              (SessionPage.css's session-move-explorer-column/chat-pane) —
+              explorer + game report stay on the left where they normally
+              sit; the note card takes the right column a chat pane would
+              occupy in a coaching session, rather than displacing either. */}
           <div className="game-review-explorer-column">
             <MoveExplorer sanMoves={sanMoves} classifiedMoves={classifiedMoves} positions={positions} currentPly={ply} onSelect={setPly} />
             {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} />}
+          </div>
+          {board}
+          <div className="game-review-notes-column">
+            <MoveNoteCard ply={ply} san={sanMoves[ply - 1] ?? null} move={currentMove} />
           </div>
         </div>
       ) : (

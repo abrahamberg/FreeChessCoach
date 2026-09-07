@@ -316,7 +316,7 @@ describe('GameReviewPage', () => {
     renderReviewPage();
 
     await screen.findByText(/daniel/);
-    expect(screen.getByText(/tap a move below to see the coach's note/i)).toBeInTheDocument();
+    expect(screen.getByText(/select a move to see the coach's note/i)).toBeInTheDocument();
   });
 
   test('on mobile, selecting a move in the strip updates the note card', async () => {

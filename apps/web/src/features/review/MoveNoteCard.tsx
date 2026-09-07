@@ -26,17 +26,20 @@ const QUALITY_HEADLINES: Partial<Record<MoveQuality, string>> = {
   forced: 'Forced move'
 };
 
-/** The mobile Game Review page's dominant element (chess.com's own mobile
- * review puts its coaching note above the board, not a small aside below a
- * move list — this is that, adapted to what the static Review page actually
- * has: no LLM turn, no persona, just the same pre-baked note text
- * MoveExplorer's desktop sidebar already shows, at a size and position that
- * makes it the first thing read rather than something scrolled past). */
+/** The Game Review page's dominant note element — chess.com's own mobile
+ * review puts its coaching note above the board rather than a small aside
+ * below a move list, adapted here to what the static Review page actually
+ * has (no LLM turn, no persona, the same pre-baked note text MoveExplorer's
+ * list already shows). Used twice: as the mobile layout's top card, and as
+ * the desktop layout's right column, in the spot a coaching session's chat
+ * pane would occupy — the prompt text below is deliberately neutral about
+ * where "select a move" happens (a tap on the strip below on mobile, a
+ * click in the list on the left on desktop). */
 export function MoveNoteCard({ ply, san, move }: MoveNoteCardProps): ReactNode {
   if (ply <= 0 || !san) {
     return (
       <div className="move-note-card move-note-card--empty">
-        <p className="move-note-card__prompt">Tap a move below to see the coach's note.</p>
+        <p className="move-note-card__prompt">Select a move to see the coach's note.</p>
       </div>
     );
   }
