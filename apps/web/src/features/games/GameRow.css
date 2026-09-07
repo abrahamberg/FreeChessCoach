@@ -37,10 +37,18 @@
   display: flex;
   align-items: center;
   gap: 9px;
+  font-size: 15px;
+}
+
+/* Each name truncates on its own rather than the whole row sharing one
+ * ellipsis — design-improvements.md: never truncate both player names until
+ * the game can no longer be identified. A long opponent name used to be able
+ * to clip the "vs"/result right along with it. */
+.game-row__players > span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 15px;
 }
 
 .game-row__you {
@@ -48,12 +56,14 @@
 }
 
 .game-row__vs {
+  flex-shrink: 0;
   color: var(--color-text-muted);
   font-weight: 500;
   font-size: 13px;
 }
 
 .game-row__result {
+  flex-shrink: 0;
   padding: 2px 9px;
   font-size: 11.5px;
 }
@@ -114,6 +124,7 @@
   .game-row {
     flex-wrap: wrap;
     align-items: flex-start;
+    row-gap: var(--space-3);
   }
 
   .game-row__identity {
@@ -123,14 +134,23 @@
 
   .game-row__status {
     order: 2;
+    align-self: center;
   }
 
   .game-row__action {
     order: 3;
     margin-left: auto;
+    /* design-improvements.md: minimum 44x44px mobile touch targets — this is
+     * the row's one primary action (Review/Continue/Get coach analysis). */
+    height: 44px;
   }
 
   .overflow-menu {
     order: 4;
+  }
+
+  .game-row .overflow-menu .btn-icon {
+    width: 44px;
+    height: 44px;
   }
 }

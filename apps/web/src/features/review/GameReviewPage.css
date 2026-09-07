@@ -82,3 +82,41 @@
   max-height: 70%;
   z-index: 2;
 }
+
+/* --- mobile (below this page's own desktop breakpoint): Board and Notes as
+ * two swipeable full-height panels (MobileReviewBody), reusing SessionPage
+ * .css's .session-body/.session-view-tabs/.session-views segmented-control
+ * machinery verbatim — it's loaded in the same bundle (App.tsx statically
+ * imports every route) — so the switch looks and behaves exactly like the
+ * coaching session's Board/Coach one. */
+.game-review-page .session-body.mobile {
+  flex: 1;
+  min-height: 0;
+}
+
+.game-review-page #review-panel-board {
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+/* Same composition as the desktop explorer column above (peek bar aside) —
+ * the panel itself stays clipped and lets the move list/game report manage
+ * their own scrolling internally, rather than the whole panel scrolling. */
+.game-review-notes-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.game-review-notes-panel .move-explorer {
+  flex: 1;
+  min-height: 0;
+}
+
+.game-review-notes-panel .game-report-summary--expanded {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 70%;
+  z-index: 2;
+}

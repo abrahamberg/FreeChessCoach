@@ -130,6 +130,7 @@ describe('GameReviewPage', () => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     capturedOptions.length = 0;
+    window.localStorage.clear();
   });
 
   test('shows the players once the game loads, with no chat pane', async () => {
@@ -304,6 +305,44 @@ describe('GameReviewPage', () => {
     await user.click(screen.getByRole('button', { name: 'Continue with Coach' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not start a coaching session/i);
+  });
+
+  test('on mobile, the notes panel is reachable without scrolling past the board — it is the default tab', async () => {
+    mockMatchMedia(false);
+    vi.stubGlobal('fetch', mockFetch());
+    renderReviewPage();
+
+    await screen.findByText(/daniel/);
+    expect(screen.getByRole('tab', { name: /notes/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /^board$/i })).toHaveAttribute('aria-selected', 'false');
+  });
+
+  test('on mobile, the Board/Notes segmented control switches which panel is visible', async () => {
+    mockMatchMedia(false);
+    vi.stubGlobal('fetch', mockFetch());
+    const user = userEvent.setup();
+    const { container } = renderReviewPage();
+    await screen.findByText(/daniel/);
+
+    // Both panels stay mounted (only aria-hidden/inert toggle) — see
+    // MobileReviewBody's own doc comment — so a raw DOM query is used here
+    // rather than getByRole, which excludes inert elements entirely.
+    const boardPanel = () => container.querySelector('#review-panel-board');
+    const notesPanel = () => container.querySelector('#review-panel-notes');
+
+    expect(notesPanel()).not.toHaveAttribute('aria-hidden', 'true');
+    expect(boardPanel()).toHaveAttribute('aria-hidden', 'true');
+
+    await user.click(screen.getByRole('tab', { name: /^board$/i }));
+
+    expect(screen.getByRole('tab', { name: /^board$/i })).toHaveAttribute('aria-selected', 'true');
+    expect(boardPanel()).not.toHaveAttribute('aria-hidden', 'true');
+    expect(notesPanel()).toHaveAttribute('aria-hidden', 'true');
+
+    await user.click(screen.getByRole('tab', { name: /notes/i }));
+
+    expect(notesPanel()).not.toHaveAttribute('aria-hidden', 'true');
+    expect(boardPanel()).toHaveAttribute('aria-hidden', 'true');
   });
 
   test('clicking a move in the move list updates the board position', async () => {
