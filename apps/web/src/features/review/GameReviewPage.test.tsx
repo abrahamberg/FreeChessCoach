@@ -348,51 +348,13 @@ describe('GameReviewPage', () => {
     });
   });
 
-  // A suggestion arrow only makes sense drawn from a square that's genuinely
-  // relevant on the position actually shown — "this piece went the wrong
-  // way" (same origin square either way) reads fine even though the origin
-  // is empty now; a totally different piece should have moved instead does
-  // not, so no arrow is drawn for that case at all. moveSan matches the
-  // fixture PGN's actual move 1 (e4, from e2) so the move list's own "e4"
-  // button is what selects ply 1 here.
-  test('shows a best-move arrow when the same piece could have gone a different way', async () => {
-    mockMatchMedia(true);
-    const user = userEvent.setup();
-    const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-    vi.stubGlobal(
-      'fetch',
-      mockFetch({
-        classifiedMoves: [
-          {
-            ply: 1,
-            moveSan: 'e4',
-            mover: 'white',
-            isUserMove: true,
-            cpLoss: 30,
-            quality: 'inaccuracy',
-            bestLineSan: ['e3'],
-            bestMoveSan: 'e3',
-            evalAfterCp: 10,
-            hangsPiece: false,
-            fenBefore: START_FEN
-          }
-        ]
-      })
-    );
-    renderReviewPage();
-
-    // Role-based, not findByText('e4') — the quality badge's symbol shares
-    // the button with the SAN text, so the button's accessible name is
-    // "⚠e4"-shaped, not the bare string.
-    await user.click(await screen.findByRole('button', { name: /e4/i }));
-
-    await waitFor(() => {
-      const latest = capturedOptions[capturedOptions.length - 1];
-      expect(latest?.arrows).toEqual([{ startSquare: 'e2', endSquare: 'e3', color: 'var(--quality-best)' }]);
-    });
-  });
-
-  test('shows no arrow when a different piece should have moved instead', async () => {
+  // MoveNoteCard no longer spells out "Best: <line>" in text (Daniel's
+  // call: obvious once it's drawn) — the arrow is the one indicator now, so
+  // it draws whenever the engine's choice differs, regardless of whether
+  // it's the same piece or a completely different one. --annotate-2 (blue)
+  // rather than any --quality-* color, so it never reads as a quality
+  // judgment the way the note card's own accent border does.
+  test('shows a best-move arrow whenever the engine\'s choice differs from what was played', async () => {
     mockMatchMedia(true);
     const user = userEvent.setup();
     const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -421,6 +383,40 @@ describe('GameReviewPage', () => {
     // Role-based, not findByText('e4') — the quality badge's symbol shares
     // the button with the SAN text, so the button's accessible name is
     // "⚠e4"-shaped, not the bare string.
+    await user.click(await screen.findByRole('button', { name: /e4/i }));
+
+    await waitFor(() => {
+      const latest = capturedOptions[capturedOptions.length - 1];
+      expect(latest?.arrows).toEqual([{ startSquare: 'g1', endSquare: 'f3', color: 'var(--annotate-2)' }]);
+    });
+  });
+
+  test('shows no arrow when the played move was already the engine\'s top choice', async () => {
+    mockMatchMedia(true);
+    const user = userEvent.setup();
+    const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        classifiedMoves: [
+          {
+            ply: 1,
+            moveSan: 'e4',
+            mover: 'white',
+            isUserMove: true,
+            cpLoss: 0,
+            quality: 'best',
+            bestLineSan: ['e4'],
+            bestMoveSan: 'e4',
+            evalAfterCp: 10,
+            hangsPiece: false,
+            fenBefore: START_FEN
+          }
+        ]
+      })
+    );
+    renderReviewPage();
+
     await user.click(await screen.findByRole('button', { name: /e4/i }));
 
     await waitFor(() => {

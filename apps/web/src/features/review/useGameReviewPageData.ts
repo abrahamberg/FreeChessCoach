@@ -58,21 +58,20 @@ export function useGameReviewPageData(gameId: string) {
   const fen = currentPosition?.fen ?? '';
   const highlights = lastMoveHighlightsFor(currentPosition?.moveUci);
 
-  // A suggestion arrow drawn on the CURRENT (post-move) board only makes
-  // sense when the piece it points from is the same one that actually
-  // moved — "this piece went the wrong way" reads fine even though its
-  // origin square is empty now; "a totally different piece should have
-  // moved" does not, since nothing on the board points at what that would
-  // have meant. Both bestMoveSan and the played move are resolved against
-  // the same pre-move fen (fenBefore) purely to compare their origin
-  // squares — the arrow itself is drawn on `fen` above, not fenBefore.
+  // The one visual for "what was actually best" — MoveNoteCard no longer
+  // spells it out as a "Best: <line>" sentence (Daniel's call: obvious once
+  // it's drawn). bestMoveSan is resolved against fenBefore (the position
+  // the choice was actually made from) purely to get its from/to squares;
+  // the arrow itself is drawn on `fen` above, the real current position, so
+  // its origin square won't always still hold the piece it names — an
+  // accepted trade-off of never replaying a "before" state to show it on.
+  // --annotate-2 (blue) rather than any --quality-* color, so it never
+  // reads as a quality judgment the way the note card's own accent border
+  // does — it's a suggestion, not a verdict.
   const arrows: BoardArrow[] = [];
   if (currentMove?.bestMoveSan && currentMove.bestMoveSan !== currentMove.moveSan && currentMove.fenBefore) {
-    const played = sanToSquares(currentMove.fenBefore, currentMove.moveSan);
     const best = sanToSquares(currentMove.fenBefore, currentMove.bestMoveSan);
-    if (played && best && played.from === best.from) {
-      arrows.push({ from: best.from, to: best.to, color: 'var(--quality-best)' });
-    }
+    if (best) arrows.push({ from: best.from, to: best.to, color: 'var(--annotate-2)' });
   }
 
   // "Continue with Coach" — promotes the game to the top of the stack, then
