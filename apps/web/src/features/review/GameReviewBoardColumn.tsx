@@ -19,10 +19,14 @@ export interface GameReviewBoardColumnProps {
 }
 
 /** The board + its eval indicators for the read-only Game Review page — no
- * chat, no play-move submission, no annotations. The board is always in
- * 'peek' mode (pure navigation, nothing to send anywhere) and never wired
- * with onUserMove/onLocalMove, so a drag attempt simply snaps back; stepping
- * through the game is done via MoveExplorer's own nav pills/move list. */
+ * chat, no play-move submission, no annotations. `mode="peek"` alone only
+ * stops a completed drag from being sent anywhere (CoachBoard's onUserMove);
+ * it still lets a move be made and previewed locally, and still shows
+ * legal-move dots on selection. `disabled` (which CoachBoard's own
+ * `applyMove` checks before touching the position at all) plus
+ * `showLegalMoveDots={false}` are both needed to make the board genuinely
+ * inert — stepping through the game is done via MoveExplorer's own nav
+ * pills/move list, never by dragging pieces here. */
 export function GameReviewBoardColumn({ fen, orientation, highlights, classifiedMoves, ply, onSelect, isDesktop }: GameReviewBoardColumnProps): ReactNode {
   const evalBar = <EvalBar ply={ply} classifiedMoves={classifiedMoves} orientation={orientation} layout={isDesktop ? 'vertical' : 'horizontal'} />;
 
@@ -31,7 +35,7 @@ export function GameReviewBoardColumn({ fen, orientation, highlights, classified
       {!isDesktop && evalBar}
       <div className="session-board-row">
         {isDesktop && evalBar}
-        <CoachBoard fen={fen} orientation={orientation} mode="peek" highlights={highlights} />
+        <CoachBoard fen={fen} orientation={orientation} mode="peek" highlights={highlights} showLegalMoveDots={false} disabled />
       </div>
       {isDesktop && classifiedMoves.length > 0 && <GameEvalChart classifiedMoves={classifiedMoves} currentPly={ply} onSelect={onSelect} />}
     </div>

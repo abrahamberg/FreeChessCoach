@@ -1,4 +1,4 @@
-import { canPromoteGameReviewTier, type GameListItem, type GameReviewTier } from '@freechesscoach/shared';
+import { canPromoteGameReviewTier, isTopReviewTier, type GameListItem, type GameReviewTier } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { CalendarIcon } from '../../components/Icon.js';
 import { ConfirmDialog } from '../../components/ConfirmDialog.js';
@@ -61,7 +61,7 @@ export interface StatusAndAction {
  * promoted to the Coach tier, in which case it opens the coaching session
  * chat directly (handleSelect) — see GAME_REVIEW_TIERS. */
 function readyActionLabel(game: GameListItem): string {
-  return game.reviewTier === 'coach' ? 'Continue with Coach' : 'Review';
+  return isTopReviewTier(game.reviewTier) ? 'Continue with Coach' : 'Review';
 }
 
 export function statusAndActionFor(game: GameListItem): StatusAndAction {

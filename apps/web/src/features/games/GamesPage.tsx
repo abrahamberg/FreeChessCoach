@@ -11,17 +11,24 @@ import './GamesPage.css';
 const SessionSummarySchema = z.object({ id: z.string() });
 const AnalyzeResponseSchema = z.object({ analysisId: z.string() });
 
-// GAME_REVIEW_TIERS' own stack order (imported/bot -> review -> coach), just
-// with imported/bot split into their own tabs since they're distinguished by
-// `source`, not `reviewTier` — see promotionOptionsFor/canPromoteGameReviewTier.
-const TABS = [
-  { key: 'coach', label: 'Coach' },
-  { key: 'review', label: 'Review' },
-  { key: 'bot', label: 'Bot games' },
-  { key: 'imported', label: 'Imported games' }
-] as const satisfies readonly { key: GameReviewTier; label: string }[];
+// One label per GameReviewTier, in GAME_REVIEW_TIERS' own stack order
+// (imported/bot -> review -> coach) just with imported/bot split into their
+// own tabs since they're distinguished by `source`, not `reviewTier` — see
+// promotionOptionsFor/canPromoteGameReviewTier. A Record, not an
+// array-of-{key,label}: adding a 5th tier without a matching label here is a
+// compile error rather than a tab that silently never shows any of that
+// tier's games (visibleGames filters strictly by `game.reviewTier === tab`).
+// Object.keys preserves this literal's insertion order for string keys, so
+// the tab order below is exactly this declaration order.
+const TAB_LABELS: Record<GameReviewTier, string> = {
+  coach: 'Coach',
+  review: 'Review',
+  bot: 'Bot games',
+  imported: 'Imported games'
+};
+const TABS = (Object.keys(TAB_LABELS) as GameReviewTier[]).map((key) => ({ key, label: TAB_LABELS[key] }));
 
-type TabKey = (typeof TABS)[number]['key'];
+type TabKey = GameReviewTier;
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -45,9 +52,12 @@ export function GamesPage(): ReactNode {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>('all');
-  // Most games start out imported or from a bot game (GAME_REVIEW_TIERS'
-  // default-by-source) — landing there, rather than on the likely-empty
-  // Coach/Review tabs, is the least surprising first view.
+  // A freshly-analyzed game starts at 'imported' or 'bot' (GAME_REVIEW_TIERS'
+  // default-by-source), never at 'review'/'coach' without an explicit
+  // promotion — so defaulting here to either avoids the likely-empty
+  // Coach/Review tabs. 'imported' specifically since it's the more common
+  // entry point (import/paste a game vs. play a bot); a bot-only user just
+  // takes one extra tap to their "Bot games" tab.
   const [tab, setTab] = useState<TabKey>('imported');
 
   const gamesQuery = useQuery({

@@ -1,3 +1,4 @@
+import { isTopReviewTier } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GameReportSummary } from '../board/GameReportSummary.js';
@@ -49,9 +50,9 @@ export function GameReviewPage(): ReactNode {
   return (
     <div className="game-review-page">
       <SessionHeader whiteName={game.whiteName} blackName={game.blackName} result={game.result} onBack={() => navigate('/games')} />
-      {game.reviewTier !== 'coach' && (
+      {!isTopReviewTier(game.reviewTier) && game.analysisStatus === 'ready' && (
         <div className="game-review-page__actions">
-          <button type="button" className="btn-primary" onClick={() => void continueWithCoach()} disabled={isContinuingWithCoach}>
+          <button type="button" className="btn-primary" onClick={continueWithCoach} disabled={isContinuingWithCoach}>
             {isContinuingWithCoach ? 'Starting coaching session…' : 'Continue with Coach'}
           </button>
           {continueWithCoachError && <p role="alert">Could not start a coaching session — try again.</p>}
@@ -67,9 +68,8 @@ export function GameReviewPage(): ReactNode {
           onSelect={setPly}
           isDesktop={isDesktop}
         />
-        {isDesktop && <div className="game-review-explorer-column">{report}</div>}
+        {isDesktop ? <div className="game-review-explorer-column">{report}</div> : report}
       </div>
-      {!isDesktop && report}
     </div>
   );
 }

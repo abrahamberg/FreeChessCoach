@@ -30,9 +30,20 @@ export function useGameReviewPageData(gameId: string) {
 
   const positions = gameQuery.data ? parsePgn(gameQuery.data.pgn).positions : [];
   const sanMoves = positions.filter((position) => position.moveSan !== null).map((position) => position.moveSan as string);
-  const classifiedMoves = gameQuery.data?.liveMoveQualities
-    ? toClassifiedMoves(gameQuery.data.liveMoveQualities)
-    : (gameQuery.data?.classifiedMoves ?? []);
+  // Prefer the Game Report's own moves — enrichWithPhaseAndTactics
+  // (build-game-report.ts) enriches them with phase/tacticOpportunity/reasons
+  // on top of whatever `classifiedMoves`/`liveMoveQualities` already has, so
+  // it's a strict superset once it exists. This matters most for a `vs_bot`
+  // game: the route always returns `classifiedMoves: null` for that source
+  // (liveMoveQualities is its in-progress shape), so without this a
+  // finished, analyzed bot game would show only bare quality badges — no
+  // bestMoveSan/reasons/alternatives — despite a full report already sitting
+  // in `gameReport`.
+  const classifiedMoves = gameQuery.data?.gameReport
+    ? gameQuery.data.gameReport.moves
+    : gameQuery.data?.liveMoveQualities
+      ? toClassifiedMoves(gameQuery.data.liveMoveQualities)
+      : (gameQuery.data?.classifiedMoves ?? []);
 
   const currentPosition = positions.find((position) => position.ply === ply) ?? positions[0];
   const fen = currentPosition?.fen ?? '';
@@ -40,19 +51,26 @@ export function useGameReviewPageData(gameId: string) {
 
   // "Continue with Coach" — promotes the game to the top of the stack, then
   // reuses GamesPage's own find-or-create flow (POST /api/sessions) so an
-  // existing session for this game is resumed rather than shadowed.
-  const promoteMutation = useMutation({
-    mutationFn: () => apiPost(`/api/games/${gameId}/promote`, { tier: 'coach' }, PromoteGameResponseSchema)
-  });
-  const sessionMutation = useMutation({
-    mutationFn: () => apiPost('/api/sessions', { gameId }, SessionSummarySchema),
+  // existing session for this game is resumed rather than shadowed. One
+  // mutation, not two chained ones: `mutate()` (never `mutateAsync()` with
+  // no catch at the call site) keeps a promote/session failure from becoming
+  // an unhandled promise rejection, and skipping the promote call once the
+  // game is already at the coach tier means a session-creation failure can
+  // be retried without re-promoting into a guaranteed second 400.
+  const continueWithCoachMutation = useMutation({
+    mutationFn: async () => {
+      if (gameQuery.data?.reviewTier !== 'coach') {
+        await apiPost(`/api/games/${gameId}/promote`, { tier: 'coach' }, PromoteGameResponseSchema);
+        void queryClient.invalidateQueries({ queryKey: ['games'] });
+        void queryClient.invalidateQueries({ queryKey: ['game', gameId] });
+      }
+      return apiPost('/api/sessions', { gameId }, SessionSummarySchema);
+    },
     onSuccess: (session) => navigate(`/session/${session.id}`)
   });
 
-  async function continueWithCoach(): Promise<void> {
-    await promoteMutation.mutateAsync();
-    void queryClient.invalidateQueries({ queryKey: ['games'] });
-    sessionMutation.mutate();
+  function continueWithCoach(): void {
+    continueWithCoachMutation.mutate();
   }
 
   return {
@@ -65,7 +83,7 @@ export function useGameReviewPageData(gameId: string) {
     fen,
     highlights,
     continueWithCoach,
-    isContinuingWithCoach: promoteMutation.isPending || sessionMutation.isPending,
-    continueWithCoachError: promoteMutation.isError || sessionMutation.isError
+    isContinuingWithCoach: continueWithCoachMutation.isPending,
+    continueWithCoachError: continueWithCoachMutation.isError
   };
 }

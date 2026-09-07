@@ -23,7 +23,7 @@ const NAV_DESTINATIONS = [
 // tab bar on top of that would cost the board vertical space it needs more
 // than a second nav layer, and turns the brand/primary-nav links into an
 // easy accidental tap away from a live game.
-const BOARD_ROUTE_PREFIXES = ['/session/', '/bot-session/', '/practice/'];
+const BOARD_ROUTE_PREFIXES = ['/session/', '/bot-session/', '/practice/', '/review/'];
 
 function isBoardRoute(pathname: string): boolean {
   return BOARD_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));

@@ -1,4 +1,4 @@
-import { ClassifiedMoveSchema, GameReportSchema, GameReviewTierSchema, MoveQualitySchema } from '@freechesscoach/shared';
+import { AnalysisStatusSchema, ClassifiedMoveSchema, GameReportSchema, GameReviewTierSchema, MoveQualitySchema } from '@freechesscoach/shared';
 import { z } from 'zod';
 
 export const SessionMessageSchema = z.object({
@@ -53,6 +53,11 @@ export const GameDetailSchema = z.object({
   gameReport: GameReportSchema.nullable().default(null),
   botId: z.string().nullable().default(null),
   reviewTier: GameReviewTierSchema.default('imported'),
+  /** Null for a coach_play game (never analyzed — architecture §14). Used by
+   * GameReviewPage to gate "Continue with Coach": promoting requires a ready
+   * analysis (promoteGame), so the button would otherwise 400 for a game
+   * reached by bookmark/direct navigation before analysis finished. */
+  analysisStatus: AnalysisStatusSchema.nullable().default(null),
   clockInitialMs: z.number().int().nullable().default(null),
   clockIncrementMs: z.number().int().nullable().default(null),
   whiteRemainingMs: z.number().int().nullable().default(null),

@@ -78,6 +78,7 @@ function AlternativesPanel({ move }: { move: ClassifiedMoveDto }): ReactNode {
     <div className="move-explorer__alternatives">
       <p className="move-explorer__alternatives-best">Best: {pv}</p>
       {shouldFetch && fetched.isLoading && <p className="move-explorer__notes-empty">Looking for other tries…</p>}
+      {shouldFetch && fetched.isError && <p className="move-explorer__notes-empty">Couldn't load other tries — try again later.</p>}
       {runnersUp.length > 0 && (
         <ul className="move-explorer__alternatives-list">
           {runnersUp.map((alternative) => (

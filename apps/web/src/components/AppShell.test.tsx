@@ -76,12 +76,15 @@ describe('AppShell (design-improvements.md: top bar + account menu)', () => {
     expect(screen.queryByRole('button', { name: /account menu/i })).not.toBeInTheDocument();
   });
 
-  test('also hides the top bar for a bot-session or a practice route — both put a board on screen too', () => {
+  test('also hides the top bar for a bot-session, practice, or review route — all put a board on screen too', () => {
     mockMatchMedia(true);
     renderShell('/bot-session/abc');
     expect(screen.queryByRole('navigation', { name: /primary/i })).not.toBeInTheDocument();
 
     renderShell('/practice/abc');
+    expect(screen.queryByRole('navigation', { name: /primary/i })).not.toBeInTheDocument();
+
+    renderShell('/review/abc');
     expect(screen.queryByRole('navigation', { name: /primary/i })).not.toBeInTheDocument();
   });
 

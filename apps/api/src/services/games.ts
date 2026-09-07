@@ -48,9 +48,24 @@ export async function deleteGameForUser(db: Kysely<Database>, gameId: string, us
   });
 }
 
+/** The still-live session mode a `coach_play`/`vs_bot` game's row links back
+ * into — null for every other source, which never has a session of its own
+ * to resume. Distinct from a game's `reviewTier`: a finished `vs_bot` game
+ * promoted to the Coach tier gets a brand-new 'analyze' session, but this
+ * row should still only ever surface its 'play_bot' one (if still active),
+ * never that unrelated analyze session — see findActiveByGameIdForUser's
+ * doc comment. */
+function liveSessionModeFor(source: GameListRow['source']): 'play' | 'play_bot' | null {
+  if (source === 'coach_play') return 'play';
+  if (source === 'vs_bot') return 'play_bot';
+  return null;
+}
+
 async function toListItem(db: Kysely<Database>, userId: string, row: GameListRow) {
-  const isLiveSource = row.source === 'coach_play' || row.source === 'vs_bot';
-  const sessionId = isLiveSource ? ((await sessionsRepo.findActiveByGameIdForUser(db, row.id, userId))?.id ?? null) : null;
+  const liveSessionMode = liveSessionModeFor(row.source);
+  const sessionId = liveSessionMode
+    ? ((await sessionsRepo.findActiveByGameIdForUser(db, row.id, userId, liveSessionMode))?.id ?? null)
+    : null;
   return {
     id: row.id,
     source: row.source,

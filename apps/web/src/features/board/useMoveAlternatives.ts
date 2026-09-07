@@ -11,6 +11,11 @@ export interface FetchedAlternative {
 interface MoveAlternativesResult {
   data: FetchedAlternative[];
   isLoading: boolean;
+  /** True when the fetch itself failed (network error, non-2xx, bad
+   * response shape) — kept distinct from an empty `data`, which just means
+   * the engine found nothing better; conflating the two would show a
+   * backend failure identically to "no alternatives here". */
+  isError: boolean;
 }
 
 /**
@@ -32,12 +37,20 @@ export function useMoveAlternatives(
 ): MoveAlternativesResult {
   const [data, setData] = useState<FetchedAlternative[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
   const requestRef = useRef(0);
 
   useEffect(() => {
     const requestId = ++requestRef.current;
+    const isStale = () => requestRef.current !== requestId;
+    // Cleared unconditionally (not just on the disabled branch below) so
+    // switching directly from one move needing a fetch to another never
+    // leaves the first move's now-irrelevant runners-up on screen while the
+    // second's request is still in flight.
+    setData([]);
+    setIsError(false);
+
     if (!enabled || !fenBefore) {
-      setData([]);
       setIsLoading(false);
       return;
     }
@@ -45,7 +58,7 @@ export function useMoveAlternatives(
     setIsLoading(true);
     void apiPost('/api/positions/hint-moves', { fen: fenBefore }, HintMovesResponseSchema)
       .then(({ lines }) => {
-        if (requestRef.current !== requestId) return;
+        if (isStale()) return;
         setData(
           lines
             .filter((line) => line.moveSan !== bestMoveSan)
@@ -57,12 +70,12 @@ export function useMoveAlternatives(
         );
       })
       .catch(() => {
-        if (requestRef.current === requestId) setData([]);
+        if (!isStale()) setIsError(true);
       })
       .finally(() => {
-        if (requestRef.current === requestId) setIsLoading(false);
+        if (!isStale()) setIsLoading(false);
       });
   }, [enabled, fenBefore, mover, bestMoveSan]);
 
-  return { data, isLoading };
+  return { data, isLoading, isError };
 }

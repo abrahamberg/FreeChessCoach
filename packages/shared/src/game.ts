@@ -32,6 +32,14 @@ export function canPromoteGameReviewTier(current: GameReviewTier, target: GameRe
   return REVIEW_TIER_RANK[target] > REVIEW_TIER_RANK[current];
 }
 
+/** The top of the stack — nothing can ever promote a game further than this.
+ * A UI deciding "is there anywhere left to promote this game to" should ask
+ * this rather than comparing `tier === 'coach'` directly, so a future tier
+ * added above `coach` only needs this one definition updated. */
+export function isTopReviewTier(tier: GameReviewTier): boolean {
+  return REVIEW_TIER_RANK[tier] === Math.max(...Object.values(REVIEW_TIER_RANK));
+}
+
 /** A freshly-created game's starting tier, derived from `source` — never
  * client-supplied (see games repository's `insert`, the only place a game
  * row is created). `coach_play` already IS a coaching session by

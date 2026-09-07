@@ -1,4 +1,4 @@
-import { TACTIC_MOTIF_TYPES, type CoachingPlan, type GameReport } from '@freechesscoach/shared';
+import { BOT_ROSTER, TACTIC_MOTIF_TYPES, type CoachingPlan, type GameReport } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildApp } from '../app.js';
@@ -864,6 +864,52 @@ describe('POST/GET /api/games', () => {
     });
 
     expect(response.statusCode).toBe(400);
+  });
+
+  // Promoting a finished vs_bot game to Coach creates a brand-new 'analyze'
+  // session for it (via POST /api/sessions, same as any other ready game) —
+  // the row's sessionId must stay null (not leak that analyze session's id)
+  // since findActiveByGameIdForUser is now mode-scoped: a vs_bot row only
+  // ever surfaces a still-active 'play_bot' session, and this game has none.
+  // Before that fix, GamesPage would have shown "Continue" and routed this
+  // row into /bot-session/:id — a finished game rendered as though the bot
+  // match were still live, polling for a bot reply that never comes.
+  test('promoting a finished vs_bot game to coach does not leak its new analyze session as a live bot session', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('vsbot-promote@example.com', 'VsBotPromote');
+    const owner = await usersRepo.insert(db, { email: 'vsbot-promote@example.com', displayName: 'VsBotPromote' });
+    const game = await gamesRepo.insert(db, {
+      userId: owner.id,
+      pgn: VALID_PGN,
+      source: 'vs_bot',
+      userColor: 'white',
+      whiteName: 'You',
+      blackName: 'Bot',
+      result: '1-0',
+      timeControl: null,
+      eco: null,
+      playedAt: null,
+      botId: BOT_ROSTER[0]!.id,
+      botConfigSnapshot: BOT_ROSTER[0]!
+    });
+    const analysis = await analysesRepo.insertQueued(db, game.id);
+    await analysesRepo.markReady(db, analysis.id, PLAN);
+
+    const promote = await app.inject({
+      method: 'POST',
+      url: `/api/games/${game.id}/promote`,
+      headers,
+      payload: { tier: 'coach' }
+    });
+    expect(promote.statusCode).toBe(200);
+
+    const session = await app.inject({ method: 'POST', url: '/api/sessions', headers, payload: { gameId: game.id } });
+    expect(session.statusCode).toBe(200);
+
+    const list = await app.inject({ method: 'GET', url: '/api/games', headers });
+    expect(list.json()).toContainEqual(
+      expect.objectContaining({ id: game.id, source: 'vs_bot', reviewTier: 'coach', sessionId: null })
+    );
   });
 
   test('POST /api/games/:id/promote 404s for another user\'s game', async () => {
