@@ -93,7 +93,7 @@ export function MoveNoteCard({ ply, san, move, onContinueWithCoach, isContinuing
           <>
             {move.quality === 'book' ? <OpeningLabel move={move} /> : <MoveNote move={move} />}
             {!hasMoveNoteText(move) && <p className="move-note-card__empty-text">Nothing to flag — a solid, natural move.</p>}
-            <AlternativesPanel move={move} />
+            <AlternativesPanel move={move} hideBestLine />
           </>
         ) : (
           <p className="move-note-card__empty-text">No analysis for this move.</p>

@@ -7,6 +7,7 @@ import { MoveStrip } from '../board/MoveStrip.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { SessionHeader } from '../session/SessionHeader.js';
 import { GameReviewBoardColumn } from './GameReviewBoardColumn.js';
+import { MoveNavPills } from './MoveNavPills.js';
 import { MoveNoteCard } from './MoveNoteCard.js';
 import { useGameReviewPageData } from './useGameReviewPageData.js';
 import './GameReviewPage.css';
@@ -16,16 +17,18 @@ import './GameReviewPage.css';
  * page tabs/promotion). No chat, no coach turn, nothing that spends a
  * credit: every note here is the same pre-baked, deterministic text
  * (move-reasons.ts/describe-tactic-hit.ts) already stored on the analysis.
- * "Continue with Coach" is the one bridge to the paid conversation — now a
- * small icon in MoveNoteCard's own header rather than a standalone bar, and
- * the only mutation this page makes.
+ * "Continue with Coach" is the one bridge to the paid conversation — a
+ * small icon in MoveNoteCard's own header — and the only mutation this page
+ * makes.
  *
- * Below the desktop breakpoint, this follows chess.com's own mobile review
- * layout (Daniel's reference): the note for the current move is a dominant
- * card at the top, followed immediately by the compact horizontal MoveStrip
- * (not the full paired move list) that controls it — nav sits right below
- * the note it drives, not below the board, so it's never a scroll away —
- * then the board itself, then the game report.
+ * Below the desktop breakpoint: note card, nav pills, MoveStrip, then the
+ * board, as one fixed (non-scrolling) layout — the board's position and
+ * size stay put regardless of how long the current move's note is (the
+ * note card scrolls internally instead), rather than the whole page
+ * scrolling and the board landing wherever that leaves it. Game Report is
+ * a bottom sheet (GameReportSummary's own existing expand/collapse state,
+ * just given fixed/overlay positioning here) rather than another flex
+ * child, so opening it covers the board instead of pushing it around.
  *
  * At the desktop breakpoint, the note card takes the same MoveNoteCard the
  * mobile layout uses, placed in the column a coaching session's chat pane
@@ -112,26 +115,31 @@ export function GameReviewPage(): ReactNode {
           <div className="game-review-notes-column">{noteCard}</div>
         </div>
       ) : (
-        <div className="game-review-body mobile">
-          {noteCard}
-          {/* MoveStrip's own currentPly/onSelect are the sanMoves array index
-              (0-based — confirmed by its tests), not the 1-based halfmove ply
-              `ply`/`setPly` use everywhere else on this page (matching
-              `positions[].ply`, ply 0 = start position) — hence the +/-1
-              translation at this one boundary. Sits right below the note it
-              drives, ahead of the board, so it's reachable without scrolling
-              past a full board first. */}
-          <MoveStrip
-            sanMoves={sanMoves}
-            classifiedMoves={classifiedMoves}
-            positions={positions}
-            currentPly={ply - 1}
-            momentPlies={[]}
-            onSelect={(index) => setPly(index + 1)}
-          />
-          {board}
-          {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} />}
-        </div>
+        <>
+          <div className={game.gameReport ? 'game-review-body mobile has-report-sheet' : 'game-review-body mobile'}>
+            {noteCard}
+            <MoveNavPills ply={ply} totalPlies={sanMoves.length} onSelect={setPly} />
+            {/* MoveStrip's own currentPly/onSelect are the sanMoves array
+                index (0-based — confirmed by its tests), not the 1-based
+                halfmove ply `ply`/`setPly` use everywhere else on this page
+                (matching `positions[].ply`, ply 0 = start position) —
+                hence the +/-1 translation at this one boundary. */}
+            <MoveStrip
+              sanMoves={sanMoves}
+              classifiedMoves={classifiedMoves}
+              positions={positions}
+              currentPly={ply - 1}
+              momentPlies={[]}
+              onSelect={(index) => setPly(index + 1)}
+            />
+            {board}
+          </div>
+          {game.gameReport && (
+            <div className="game-review-report-sheet">
+              <GameReportSummary report={game.gameReport} userColor={orientation} />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

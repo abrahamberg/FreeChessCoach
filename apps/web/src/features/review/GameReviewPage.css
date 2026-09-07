@@ -114,9 +114,134 @@
   flex: 1;
 }
 
-/* --- mobile (below this page's own desktop breakpoint): one scrolling
- * column — note card, move strip, board, game report, in that order. Nav
- * sits directly under the note it drives rather than below the board, so
- * it's reachable without scrolling past a full board first. The base
- * .game-review-body rule above (flex column, gap, padding, overflow-y
- * auto) already does everything this needs. */
+/* --- mobile (below this page's own desktop breakpoint): a fixed, non-
+ * scrolling layout — note card, nav pills, move strip, then the board fills
+ * whatever's left. Daniel's call: the board's position/size should stay put
+ * regardless of how long the current move's note is, rather than the whole
+ * page scrolling and the board landing wherever that leaves it — the note
+ * card's own internal scroll (MoveNoteCard.css) absorbs a long note
+ * instead. Game Report is a fixed bottom sheet below, not a flex child
+ * here — see .game-review-report-sheet. */
+.game-review-body.mobile {
+  overflow: hidden;
+  /* Tighter than the base .game-review-body gap — every pixel here is a
+   * pixel the fixed-height board row below doesn't get (see the note-card/
+   * board comments below), and four stacked elements at the base var(--space-4)
+   * gap adds up fast on a phone. */
+  gap: var(--space-2);
+}
+
+/* Only when a Game Report sheet actually exists below (GameReviewPage.tsx
+ * only renders .game-review-report-sheet when game.gameReport is present)
+ * — reserves room at the bottom for it, since it's position: fixed and so
+ * takes no space in this flex flow on its own. Without this, the
+ * board/note/strip stack would extend the full column height and the
+ * sheet's handle would sit on top of the board's bottom ranks even when
+ * collapsed. 44px is the collapsed ribbon's own measured height (just
+ * .game-report-summary__header — the headline cards and expand-toggle are
+ * hidden while collapsed, see .game-review-report-sheet below) — fixed
+ * regardless of viewport, so a constant here tracks it fine;
+ * env(safe-area-inset-bottom) matches the same inset the sheet pads itself
+ * by. */
+.game-review-body.mobile.has-report-sheet {
+  padding-bottom: calc(44px + env(safe-area-inset-bottom));
+}
+
+/* A fixed height, not just a cap — a short note (or none selected yet)
+ * must claim exactly as much space as a long one, so the board's own
+ * available space below stays constant across moves instead of growing
+ * and shrinking as the note's content changes length. Long notes still
+ * scroll internally via .move-note-card__body's own overflow-y: auto.
+ * 22vh (rather than the 30-38vh a note card gets elsewhere) balances
+ * "notes are the dominant element" against the board needing enough of
+ * this same fixed budget to still be a usable size once the nav pills,
+ * move strip, and the Game Report sheet's reserved space below all take
+ * their own fixed shares of it too. */
+.game-review-body.mobile .move-note-card {
+  flex: 0 0 22vh;
+  height: 22vh;
+  max-height: none;
+}
+
+.game-review-body.mobile .move-explorer__nav {
+  flex: 0 0 auto;
+}
+
+.game-review-body.mobile .move-strip {
+  flex: 0 0 auto;
+  margin: 0 calc(-1 * var(--space-4));
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+.game-review-body.mobile .session-board-column {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* container-type: size, not just flex:1, so .coach-board-frame below can
+ * size itself from this row's actual computed box (cqi/cqb) rather than
+ * from viewport units — the row's own height already comes purely from the
+ * flex algorithm (flex:1 with the default flex-basis:0%, so it never
+ * depends on the frame's content size), so this introduces no circularity.
+ * On a short phone, the note+nav+strip above (plus the space reserved for
+ * the Game Report sheet) can leave less height than the frame's natural
+ * width-driven size would need, which would otherwise push its bottom edge
+ * off-screen — sizing from the row's real remaining space instead of a
+ * viewport-unit guess keeps the board the largest square that actually
+ * fits, on any phone, without a magic-number budget for its neighbors. */
+.game-review-body.mobile .session-board-row {
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+}
+
+.game-review-body.mobile .session-board-row .coach-board-frame {
+  flex: 0 0 auto;
+  width: min(100cqi, 100cqb);
+  height: auto;
+}
+
+/* Game Report as a bottom sheet: "a layer on top of the board with a
+ * button to expand from bottom to top overlaying the board while
+ * expanded" — a fixed overlay outside .game-review-body's flex flow
+ * entirely, rather than a flex sibling, so opening it never moves the
+ * board or note card above it. Collapsed, it's just GameReportSummary's
+ * own header + always-visible headline cards floating over the board's
+ * bottom edge as a handle; the max-height on its own --expanded state
+ * below caps how far it grows and gives its already-internally-scrolling
+ * __body (GameReportSummary.css) somewhere to stop, so a long report
+ * scrolls inside the sheet instead of pushing past the top of the screen. */
+.game-review-report-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background: var(--color-surface);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -2px 12px var(--color-border-strong);
+}
+
+.game-review-report-sheet .game-report-summary {
+  border-radius: 12px 12px 0 0;
+}
+
+/* Collapsed, this is supplementary, not a view in its own right — a tiny
+ * ribbon ("Game Report" + chevron, .game-report-summary__header, which
+ * already toggles on click) is all that should show, not the headline
+ * cards/expand-toggle GameReportSummary also renders while collapsed
+ * everywhere else it's used (the desktop explorer column has room to
+ * spare for those; this bottom sheet is fighting the board for space on a
+ * phone). Expanding reveals both again, along with the full body. */
+.game-review-report-sheet .game-report-summary:not(.game-report-summary--expanded) .game-report-summary__headline,
+.game-review-report-sheet .game-report-summary:not(.game-report-summary--expanded) .game-report-summary__expand-toggle {
+  display: none;
+}
+
+.game-review-report-sheet .game-report-summary--expanded {
+  max-height: 85vh;
+}

@@ -55,13 +55,24 @@ export function OpeningLabel({ move }: { move: ClassifiedMoveDto }): ReactNode {
   return <p className="move-explorer__opening-label">{theory}</p>;
 }
 
+export interface AlternativesPanelProps {
+  move: ClassifiedMoveDto;
+  /** Game Review's MoveNoteCard passes true: that page draws the best move
+   * as a board arrow instead (useGameReviewPageData), so repeating the same
+   * information as a full PV string here would be the exact "obvious text"
+   * Daniel asked to drop in favor of the arrow. MoveExplorer's own callers
+   * (the coaching session's desktop sidebar, which has no such arrow) leave
+   * this at its default false. */
+  hideBestLine?: boolean;
+}
+
 /** §11's closing paragraph: the engine's actual best line plus its two
  * win%-ranked (not raw-cp) runners-up, so a player can see what else was
  * playable without leaving the move list. The deep analysis pipeline only
  * stores one PV per ply, so `move.alternatives` is usually empty — when it
  * is, this lazily asks the lite engine for a couple of runner-up lines
  * (useMoveAlternatives) instead of leaving the panel bare. */
-export function AlternativesPanel({ move }: { move: ClassifiedMoveDto }): ReactNode {
+export function AlternativesPanel({ move, hideBestLine }: AlternativesPanelProps): ReactNode {
   const precomputed = (move.alternatives ?? []).slice(0, 2);
   const shouldFetch = precomputed.length === 0 && Boolean(move.bestMoveSan) && Boolean(move.fenBefore);
   const fetched = useMoveAlternatives(move.fenBefore, move.mover, move.bestMoveSan, shouldFetch);
@@ -75,7 +86,7 @@ export function AlternativesPanel({ move }: { move: ClassifiedMoveDto }): ReactN
 
   return (
     <div className="move-explorer__alternatives">
-      <p className="move-explorer__alternatives-best">Best: {pv}</p>
+      {!hideBestLine && <p className="move-explorer__alternatives-best">Best: {pv}</p>}
       {shouldFetch && fetched.isLoading && <p className="move-explorer__notes-empty">Looking for other tries…</p>}
       {shouldFetch && fetched.isError && <p className="move-explorer__notes-empty">Couldn't load other tries — try again later.</p>}
       {runnersUp.length > 0 && (
