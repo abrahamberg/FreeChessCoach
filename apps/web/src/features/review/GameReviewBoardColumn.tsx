@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
-import { CoachBoard, type BoardHighlight } from '../board/CoachBoard.js';
+import { CoachBoard, type BoardArrow, type BoardHighlight } from '../board/CoachBoard.js';
 import { EvalBar } from '../board/EvalBar.js';
 import { GameEvalChart } from '../board/GameEvalChart.js';
 
@@ -8,6 +8,12 @@ export interface GameReviewBoardColumnProps {
   fen: string;
   orientation: 'white' | 'black';
   highlights: BoardHighlight[];
+  /** A single suggestion arrow (--quality-best green) for the engine's
+   * preferred move, drawn only when useGameReviewPageData judges it won't
+   * mislead on this position — see that hook's own doc comment. Empty
+   * otherwise; the board never shows anything but the position the game
+   * actually reached. */
+  arrows: BoardArrow[];
   classifiedMoves: ClassifiedMoveDto[];
   ply: number;
   onSelect: (ply: number) => void;
@@ -27,7 +33,16 @@ export interface GameReviewBoardColumnProps {
  * `showLegalMoveDots={false}` are both needed to make the board genuinely
  * inert — stepping through the game is done via MoveExplorer's own nav
  * pills/move list, never by dragging pieces here. */
-export function GameReviewBoardColumn({ fen, orientation, highlights, classifiedMoves, ply, onSelect, isDesktop }: GameReviewBoardColumnProps): ReactNode {
+export function GameReviewBoardColumn({
+  fen,
+  orientation,
+  highlights,
+  arrows,
+  classifiedMoves,
+  ply,
+  onSelect,
+  isDesktop
+}: GameReviewBoardColumnProps): ReactNode {
   const evalBar = <EvalBar ply={ply} classifiedMoves={classifiedMoves} orientation={orientation} layout={isDesktop ? 'vertical' : 'horizontal'} />;
 
   return (
@@ -35,7 +50,7 @@ export function GameReviewBoardColumn({ fen, orientation, highlights, classified
       {!isDesktop && evalBar}
       <div className="session-board-row">
         {isDesktop && evalBar}
-        <CoachBoard fen={fen} orientation={orientation} mode="peek" highlights={highlights} showLegalMoveDots={false} disabled />
+        <CoachBoard fen={fen} orientation={orientation} mode="peek" arrows={arrows} highlights={highlights} showLegalMoveDots={false} disabled />
       </div>
       {isDesktop && classifiedMoves.length > 0 && <GameEvalChart classifiedMoves={classifiedMoves} currentPly={ply} onSelect={onSelect} />}
     </div>

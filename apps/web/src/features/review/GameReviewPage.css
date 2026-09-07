@@ -9,11 +9,12 @@
   height: 100%;
 }
 
-.game-review-page__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4) 0;
+/* "Continue with Coach" is a small icon inside MoveNoteCard's own header
+ * now (move-note-card__coach-button) — this only ever appears on a failure,
+ * so it costs no space the rest of the time. */
+.game-review-page__error {
+  margin: var(--space-2) var(--space-4) 0;
+  color: var(--color-danger);
 }
 
 .game-review-body {
@@ -82,3 +83,40 @@
   max-height: 70%;
   z-index: 2;
 }
+
+/* The desktop layout's right column — same width/chrome as SessionPage
+ * .css's .chat-pane, since this occupies the exact spot a coaching
+ * session's chat would. MoveNoteCard's own mobile sizing (a capped height
+ * so it doesn't grow the whole page, its own border/shadow/radius for
+ * sitting directly on the page background) doesn't apply here — the column
+ * already provides that chrome, and should fill the full column height
+ * instead of capping at a fraction of it. */
+.game-review-notes-column {
+  width: 400px;
+  flex: 0 0 400px;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.game-review-notes-column .move-note-card {
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.game-review-notes-column .move-note-card__body {
+  flex: 1;
+}
+
+/* --- mobile (below this page's own desktop breakpoint): one scrolling
+ * column — note card, move strip, board, game report, in that order. Nav
+ * sits directly under the note it drives rather than below the board, so
+ * it's reachable without scrolling past a full board first. The base
+ * .game-review-body rule above (flex column, gap, padding, overflow-y
+ * auto) already does everything this needs. */

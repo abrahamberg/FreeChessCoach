@@ -36,6 +36,45 @@ describe('games repository — play-mode additions', () => {
     expect(game.source).toBe('coach_play');
   });
 
+  test('findByUserAndPgn() finds a previously-imported game by its exact pgn text', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
+    const game = await gamesRepo.insert(db, {
+      userId: user.id,
+      pgn: '1. e4 e5 2. Nf3',
+      source: 'paste',
+      userColor: 'white',
+      whiteName: null,
+      blackName: null,
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+
+    const found = await gamesRepo.findByUserAndPgn(db, user.id, '1. e4 e5 2. Nf3');
+    expect(found?.id).toBe(game.id);
+  });
+
+  test("findByUserAndPgn() never matches another user's game with the same pgn text", async () => {
+    const owner = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
+    const other = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Bob' });
+    await gamesRepo.insert(db, {
+      userId: owner.id,
+      pgn: '1. d4 d5',
+      source: 'paste',
+      userColor: 'white',
+      whiteName: null,
+      blackName: null,
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+
+    const found = await gamesRepo.findByUserAndPgn(db, other.id, '1. d4 d5');
+    expect(found).toBeUndefined();
+  });
+
   test('updatePgn() overwrites the stored pgn and is readable via findById', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
     const game = await gamesRepo.insert(db, {

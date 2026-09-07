@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiGet, apiPost } from '../../api/client.js';
+import type { BoardArrow } from '../board/CoachBoard.js';
+import { sanToSquares } from '../board/sanToSquares.js';
 import { toClassifiedMoves } from '../session/liveMoveQualities.js';
 import { GameDetailSchema } from '../session/sessionPageSchemas.js';
 import { lastMoveHighlightsFor } from '../session/useSessionBoardState.js';
@@ -45,9 +47,33 @@ export function useGameReviewPageData(gameId: string) {
       ? toClassifiedMoves(gameQuery.data.liveMoveQualities)
       : (gameQuery.data?.classifiedMoves ?? []);
 
+  const currentMove = classifiedMoves.find((move) => move.ply === ply);
+
+  // Always the real, actual position (never a "before this move" replay —
+  // Daniel's call: the board should never travel anywhere the game didn't
+  // actually go). The board itself always tells the truth about what
+  // happened; a best-move arrow is only drawn on top of it in the one case
+  // where doing so can't mislead — see `arrows` below.
   const currentPosition = positions.find((position) => position.ply === ply) ?? positions[0];
   const fen = currentPosition?.fen ?? '';
   const highlights = lastMoveHighlightsFor(currentPosition?.moveUci);
+
+  // A suggestion arrow drawn on the CURRENT (post-move) board only makes
+  // sense when the piece it points from is the same one that actually
+  // moved — "this piece went the wrong way" reads fine even though its
+  // origin square is empty now; "a totally different piece should have
+  // moved" does not, since nothing on the board points at what that would
+  // have meant. Both bestMoveSan and the played move are resolved against
+  // the same pre-move fen (fenBefore) purely to compare their origin
+  // squares — the arrow itself is drawn on `fen` above, not fenBefore.
+  const arrows: BoardArrow[] = [];
+  if (currentMove?.bestMoveSan && currentMove.bestMoveSan !== currentMove.moveSan && currentMove.fenBefore) {
+    const played = sanToSquares(currentMove.fenBefore, currentMove.moveSan);
+    const best = sanToSquares(currentMove.fenBefore, currentMove.bestMoveSan);
+    if (played && best && played.from === best.from) {
+      arrows.push({ from: best.from, to: best.to, color: 'var(--quality-best)' });
+    }
+  }
 
   // "Continue with Coach" — promotes the game to the top of the stack, then
   // reuses GamesPage's own find-or-create flow (POST /api/sessions) so an
@@ -78,10 +104,12 @@ export function useGameReviewPageData(gameId: string) {
     positions,
     sanMoves,
     classifiedMoves,
+    currentMove,
     ply,
     setPly,
     fen,
     highlights,
+    arrows,
     continueWithCoach,
     isContinuingWithCoach: continueWithCoachMutation.isPending,
     continueWithCoachError: continueWithCoachMutation.isError
