@@ -53,15 +53,20 @@ export function MoveNoteCard({ ply, san, move }: MoveNoteCardProps): ReactNode {
         <span className="move-note-card__move">{moveLabel}</span>
         {headline && <span className="move-note-card__headline">{headline}</span>}
       </div>
-      {move ? (
-        <>
-          {move.quality === 'book' ? <OpeningLabel move={move} /> : <MoveNote move={move} />}
-          {!hasMoveNoteText(move) && <p className="move-note-card__empty-text">Nothing to flag — a solid, natural move.</p>}
-          <AlternativesPanel move={move} />
-        </>
-      ) : (
-        <p className="move-note-card__empty-text">No analysis for this move.</p>
-      )}
+      {/* Scrolls on its own (long reasons + alternatives can run past a
+          screen's worth) — the header above stays put so the move/quality is
+          never scrolled out of view while reading. */}
+      <div className="move-note-card__body">
+        {move ? (
+          <>
+            {move.quality === 'book' ? <OpeningLabel move={move} /> : <MoveNote move={move} />}
+            {!hasMoveNoteText(move) && <p className="move-note-card__empty-text">Nothing to flag — a solid, natural move.</p>}
+            <AlternativesPanel move={move} />
+          </>
+        ) : (
+          <p className="move-note-card__empty-text">No analysis for this move.</p>
+        )}
+      </div>
     </div>
   );
 }

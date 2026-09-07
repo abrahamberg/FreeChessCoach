@@ -279,6 +279,24 @@ describe('MoveExplorer', () => {
     expect(screen.queryByText(/40/)).not.toBeInTheDocument();
   });
 
+  // "Best: Nf3" under a move that already IS Nf3 repeats what the quality
+  // badge/headline already said — worth showing only when it names
+  // something the student didn't play.
+  test('hides the alternatives panel when the played move was already the engine\'s top choice', () => {
+    const classifiedMoves = [
+      classifiedMove({
+        ply: 1,
+        moveSan: 'e4',
+        quality: 'best',
+        bestMoveSan: 'e4',
+        bestLinePvSan: ['e4', 'e5', 'Nf3']
+      })
+    ];
+    render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={1} onSelect={vi.fn()} />);
+
+    expect(screen.queryByText(/^Best:/)).not.toBeInTheDocument();
+  });
+
   test('fetches alternatives from the lite engine on demand when the deep analysis has none', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(

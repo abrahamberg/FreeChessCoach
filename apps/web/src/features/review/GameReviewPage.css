@@ -13,7 +13,18 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4) 0;
+  padding: var(--space-2) var(--space-4) 0;
+}
+
+/* Smaller than the shared .btn-primary default — this sits above the note
+ * card on every visit whether or not the student wants it, so it shouldn't
+ * cost as much vertical space as a page's one primary call to action
+ * normally would. Scoped here rather than changed globally on .btn-primary,
+ * which plenty of other pages rely on at full size. */
+.game-review-page__actions .btn-primary {
+  min-height: 32px;
+  padding: 6px var(--space-3);
+  font-size: var(--font-size-sm);
 }
 
 .game-review-body {

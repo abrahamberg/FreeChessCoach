@@ -65,7 +65,10 @@ export function AlternativesPanel({ move }: { move: ClassifiedMoveDto }): ReactN
   const precomputed = (move.alternatives ?? []).slice(0, 2);
   const shouldFetch = precomputed.length === 0 && Boolean(move.bestMoveSan) && Boolean(move.fenBefore);
   const fetched = useMoveAlternatives(move.fenBefore, move.mover, move.bestMoveSan, shouldFetch);
-  if (!move.bestMoveSan) return null;
+  // The played move already WAS the engine's top choice — "Best: <the move
+  // just played>" repeats what the quality badge/headline already said.
+  // Worth showing only when it names something the student didn't play.
+  if (!move.bestMoveSan || move.bestMoveSan === move.moveSan) return null;
 
   const pv = move.bestLinePvSan && move.bestLinePvSan.length > 0 ? move.bestLinePvSan.join(' ') : move.bestMoveSan;
   const runnersUp = precomputed.length > 0 ? precomputed : fetched.data;
