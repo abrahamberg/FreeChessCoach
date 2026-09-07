@@ -378,11 +378,20 @@ export function SessionBoardColumn({
       )}
       {/* Ditched the descriptive text bubble (design ask) — the highlighted
           piece(s) and, on the second click, the arrow(s) to their
-          destination speak for themselves. This stays visually hidden,
-          purely so a screen reader still hears the loading/error state. */}
-      {sessionMode === 'play_bot' && hintStage > 0 && (isLoadingHintMoves || hintError) && (
+          destination speak for themselves for a sighted student. This stays
+          visually hidden, but must still say what the hint actually IS
+          (not just loading/error) — the color highlights/arrows above are
+          the only place that information lives otherwise, and a screen
+          reader has no way to read an arrow's color or a square's fill. */}
+      {sessionMode === 'play_bot' && hintStage > 0 && (
         <p className="visually-hidden" role="status">
-          {hintError ? "Couldn't get a suggestion — try again." : 'Getting a hint…'}
+          {hintError
+            ? "Couldn't get a suggestion — try again."
+            : isLoadingHintMoves
+              ? 'Getting a hint…'
+              : hintTopMoves.length > 0
+                ? `Top moves: ${hintTopMoves.map((move) => move.san).join(', ')}`
+                : 'No moves to suggest.'}
         </p>
       )}
       {boardState.isAnchoredPreMove && (

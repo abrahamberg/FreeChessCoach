@@ -353,6 +353,21 @@ describe('SessionBoardColumn — play_bot hint', () => {
     expect(options?.squareStyles?.e3).toBeDefined();
   });
 
+  // The color highlights/arrows carry the hint's actual content visually —
+  // a screen reader has no way to read a square's fill or an arrow's color,
+  // so the same information (which moves are suggested) must still reach it
+  // through the visually-hidden status region once loaded, not just a
+  // transient "Getting a hint…" that goes silent forever after.
+  test('once loaded, the hint result is still announced for screen readers even though the bubble is gone', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(topMovesResponse())));
+    render(<Harness sessionMode="play_bot" positions={HANGING_PIECES_POSITIONS} />);
+    await screen.findByTestId('mock-chessboard');
+
+    fireEvent.click(screen.getByText('Hint'));
+
+    expect(await screen.findByText(/top moves: rxe5\+, kd2/i)).toBeInTheDocument();
+  });
+
   test('a third click collapses the hint, and a new position resets it', async () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(topMovesResponse())));
     render(<Harness sessionMode="play_bot" positions={HANGING_PIECES_POSITIONS} />);
