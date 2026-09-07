@@ -1,6 +1,14 @@
 import type { Kysely } from 'kysely';
 import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import { defaultReviewTierForSource, type AnalysisStatus, type BotConfig, type GameReviewTier, type GameSource, type PlayerColor } from '@freechesscoach/shared';
+import {
+  defaultReviewTierForSource,
+  ImportableGameSourceSchema,
+  type AnalysisStatus,
+  type BotConfig,
+  type GameReviewTier,
+  type GameSource,
+  type PlayerColor
+} from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export interface GameRow {
@@ -192,9 +200,23 @@ export function findByIdForUser(
  * which has no memory of what's already in the library — would otherwise
  * insert a second row that starts back at the bottom of the review-tier
  * stack, making an already-promoted game look like it "reverted" to
- * Imported when really a duplicate just appeared alongside it. */
+ * Imported when really a duplicate just appeared alongside it.
+ *
+ * Scoped to `ImportableGameSourceSchema`'s sources on purpose: `coach_play`/
+ * `vs_bot` rows carry a mutable, headerless PGN that grows move by move
+ * (see games.ts's `updatePgn` doc comment), so without this filter an
+ * in-progress live game whose current PGN briefly coincides with a pasted
+ * one could get matched here and handed back as if it were an already-
+ * imported duplicate.
+ */
 export function findByUserAndPgn(db: Kysely<Database>, userId: string, pgn: string): Promise<GameRow | undefined> {
-  return db.selectFrom('games').selectAll().where('userId', '=', userId).where('pgn', '=', pgn).executeTakeFirst();
+  return db
+    .selectFrom('games')
+    .selectAll()
+    .where('userId', '=', userId)
+    .where('pgn', '=', pgn)
+    .where('source', 'in', ImportableGameSourceSchema.options)
+    .executeTakeFirst();
 }
 
 /** No user scoping — callers must confirm ownership (e.g. via findByIdForUser)
