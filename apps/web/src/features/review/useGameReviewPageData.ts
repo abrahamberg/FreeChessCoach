@@ -1,15 +1,21 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
 import { PromoteGameResponseSchema } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiGet, apiPost } from '../../api/client.js';
+import type { BoardArrow } from '../board/CoachBoard.js';
+import { sanToSquares } from '../board/sanToSquares.js';
 import { toClassifiedMoves } from '../session/liveMoveQualities.js';
 import { GameDetailSchema } from '../session/sessionPageSchemas.js';
 import { lastMoveHighlightsFor } from '../session/useSessionBoardState.js';
 
 const SessionSummarySchema = z.object({ id: z.string() });
+
+function splitUci(uci: string): { from: string; to: string } {
+  return { from: uci.slice(0, 2), to: uci.slice(2, 4) };
+}
 
 /** All fetching + derived state for the standalone Game Review page
  * (AGENTS.md rule 7) — GameReviewPage itself stays presentational. Unlike
@@ -45,9 +51,39 @@ export function useGameReviewPageData(gameId: string) {
       ? toClassifiedMoves(gameQuery.data.liveMoveQualities)
       : (gameQuery.data?.classifiedMoves ?? []);
 
-  const currentPosition = positions.find((position) => position.ply === ply) ?? positions[0];
-  const fen = currentPosition?.fen ?? '';
-  const highlights = lastMoveHighlightsFor(currentPosition?.moveUci);
+  const currentMove = classifiedMoves.find((move) => move.ply === ply);
+
+  // Same pattern as the coaching session's own show_position preMove
+  // (useSessionBoardState's isAnchoredPreMove/revealPlayedMove): the board
+  // defaults to the position BEFORE the move under discussion — the arrows
+  // below (what was played vs. what the engine preferred) are both legal
+  // moves from THAT position, not from the position after — with an
+  // explicit reveal to see the actual result. Resets on every move change,
+  // since "revealed" is about the one comparison being looked at, not a
+  // standing preference; this also doubles as how the game's true final
+  // position (e.g. checkmate) stays reachable — reveal the last move.
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => setRevealed(false), [ply]);
+  const isAnchoredPreMove = ply > 0 && !revealed;
+  const boardPly = isAnchoredPreMove ? ply - 1 : ply;
+
+  const boardPosition = positions.find((position) => position.ply === boardPly) ?? positions[0];
+  const fen = boardPosition?.fen ?? '';
+  const playedMoveUci = positions.find((position) => position.ply === ply)?.moveUci;
+
+  const arrows: BoardArrow[] = [];
+  const highlights = isAnchoredPreMove ? [] : lastMoveHighlightsFor(boardPosition?.moveUci);
+  if (isAnchoredPreMove && playedMoveUci) {
+    arrows.push({ ...splitUci(playedMoveUci), color: 'var(--played-move)' });
+    if (currentMove?.bestMoveSan && currentMove.bestMoveSan !== currentMove.moveSan) {
+      const best = sanToSquares(fen, currentMove.bestMoveSan);
+      if (best) arrows.push({ ...best, color: 'var(--quality-best)' });
+    }
+  }
+
+  function revealPlayedMove(): void {
+    setRevealed(true);
+  }
 
   // "Continue with Coach" — promotes the game to the top of the stack, then
   // reuses GamesPage's own find-or-create flow (POST /api/sessions) so an
@@ -78,10 +114,14 @@ export function useGameReviewPageData(gameId: string) {
     positions,
     sanMoves,
     classifiedMoves,
+    currentMove,
     ply,
     setPly,
     fen,
     highlights,
+    arrows,
+    isAnchoredPreMove,
+    revealPlayedMove,
     continueWithCoach,
     isContinuingWithCoach: continueWithCoachMutation.isPending,
     continueWithCoachError: continueWithCoachMutation.isError

@@ -33,10 +33,14 @@ export function GameReviewPage(): ReactNode {
     positions,
     sanMoves,
     classifiedMoves,
+    currentMove,
     ply,
     setPly,
     fen,
     highlights,
+    arrows,
+    isAnchoredPreMove,
+    revealPlayedMove,
     continueWithCoach,
     isContinuingWithCoach,
     continueWithCoachError
@@ -47,16 +51,19 @@ export function GameReviewPage(): ReactNode {
 
   const game = gameQuery.data;
   const orientation = game.userColor;
-  const currentMove = classifiedMoves.find((move) => move.ply === ply);
 
   const board = (
     <GameReviewBoardColumn
       fen={fen}
       orientation={orientation}
       highlights={highlights}
+      arrows={arrows}
       classifiedMoves={classifiedMoves}
+      sanMoves={sanMoves}
       ply={ply}
       onSelect={setPly}
+      isAnchoredPreMove={isAnchoredPreMove}
+      onReveal={revealPlayedMove}
       isDesktop={isDesktop}
     />
   );

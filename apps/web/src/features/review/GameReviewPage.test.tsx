@@ -331,7 +331,12 @@ describe('GameReviewPage', () => {
     expect(await screen.findByText('1… e5')).toBeInTheDocument();
   });
 
-  test('clicking a move in the move list updates the board position', async () => {
+  // Anchored pre-move (useSessionBoardState's own show_position preMove
+  // device, reused here): the board shows the position BEFORE the clicked
+  // move, not after — that's the position an arrow for "what should have
+  // been played instead" is actually legal from. "reveal" swaps to the
+  // real post-move position.
+  test('clicking a move in the move list anchors the board to the position before it, not after', async () => {
     mockMatchMedia(true);
     vi.stubGlobal('fetch', mockFetch());
     const user = userEvent.setup();
@@ -341,7 +346,35 @@ describe('GameReviewPage', () => {
 
     await waitFor(() => {
       const latest = capturedOptions[capturedOptions.length - 1];
+      expect(latest?.position).toContain('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR');
+    });
+  });
+
+  test('"reveal" shows the actual position after the clicked move', async () => {
+    mockMatchMedia(true);
+    vi.stubGlobal('fetch', mockFetch());
+    const user = userEvent.setup();
+    renderReviewPage();
+
+    await user.click(await screen.findByText('e5'));
+    await user.click(await screen.findByRole('button', { name: /reveal/i }));
+
+    await waitFor(() => {
+      const latest = capturedOptions[capturedOptions.length - 1];
       expect(latest?.position).toContain('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR');
     });
+  });
+
+  test('picking a different move re-anchors pre-move instead of staying revealed', async () => {
+    mockMatchMedia(true);
+    vi.stubGlobal('fetch', mockFetch());
+    const user = userEvent.setup();
+    renderReviewPage();
+
+    await user.click(await screen.findByText('e5'));
+    await user.click(await screen.findByRole('button', { name: /reveal/i }));
+    await user.click(await screen.findByText('Nf3'));
+
+    expect(screen.getByRole('button', { name: /reveal/i })).toBeInTheDocument();
   });
 });
