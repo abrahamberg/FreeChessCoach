@@ -21,6 +21,33 @@
   flex: 0 0 auto;
 }
 
+.games-page__tabs {
+  display: flex;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-4);
+}
+
+.games-page__tab {
+  height: 40px;
+  padding: 0 var(--space-2);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.games-page__tab:hover {
+  color: var(--color-text);
+}
+
+.games-page__tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
 .games-page__filters {
   display: flex;
   gap: var(--space-2);

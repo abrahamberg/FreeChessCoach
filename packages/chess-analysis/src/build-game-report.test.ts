@@ -146,7 +146,7 @@ describe('buildGameReport', () => {
 
     const forkMove = report.moves.find((move) => move.moveSan === 'Nd6+');
     expect(forkMove?.tacticOpportunity).toEqual({ type: 'fork', found: true, detail: 'knight on d6 forks e8 and b7' });
-    expect(forkMove?.reasons).toContain('Tactic available — Forks (Nd6+): found — knight on d6 forks e8 and b7');
+    expect(forkMove?.reasons).toContain('Found the fork — Nd6+, knight on d6 forks e8 and b7.');
   });
 
 });

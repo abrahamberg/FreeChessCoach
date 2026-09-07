@@ -1,5 +1,5 @@
 import { InvalidPgnError } from '@freechesscoach/chess-analysis';
-import { ImportGameRequestSchema } from '@freechesscoach/shared';
+import { ImportGameRequestSchema, PromoteGameRequestSchema } from '@freechesscoach/shared';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
@@ -10,7 +10,7 @@ import type { JobQueue } from '../jobs/queue.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { pgnFilename } from '../lib/pgn-filename.js';
 import { importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
-import { deleteGameForUser, listGamesForUser } from '../services/games.js';
+import { deleteGameForUser, listGamesForUser, promoteGame } from '../services/games.js';
 import * as userProfileService from '../services/user-profile.js';
 
 export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, jobQueue: JobQueue): void {
@@ -114,6 +114,19 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
     if (existing) return { analysisId: existing.id };
 
     return startAnalysis(db, jobQueue, game.id);
+  });
+
+  // Games page "move up the stack" action (design: coach/review/bot-games/
+  // imported-games tabs) — see promoteGame for the transition rules.
+  app.post<{ Params: { id: string } }>('/api/games/:id/promote', async (request) => {
+    const parsed = PromoteGameRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      throw new ValidationError(parsed.error.issues.map((issue) => issue.message).join('; '));
+    }
+
+    const user = await userProfileService.getOrCreate(db, request.user);
+    const reviewTier = await promoteGame(db, user.id, request.params.id, parsed.data.tier);
+    return { reviewTier };
   });
 
   app.delete<{ Params: { id: string } }>('/api/games/:id', async (request, reply) => {

@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { AnalysisStatus, BotConfig, GameSource, PlayerColor } from '@freechesscoach/shared';
+import { defaultReviewTierForSource, type AnalysisStatus, type BotConfig, type GameReviewTier, type GameSource, type PlayerColor } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export interface GameRow {
@@ -31,6 +31,7 @@ export interface GameRow {
   speed: GameSpeed | null;
   playedAtTime: string | null;
   moveTimes: PgnMoveComment[] | null;
+  reviewTier: GameReviewTier;
 }
 
 export interface NewGame {
@@ -72,6 +73,10 @@ export interface NewGame {
   speed?: GameSpeed | null;
   playedAtTime?: string | null;
   moveTimes?: PgnMoveComment[] | null;
+  /** Which Games page tab this game starts in — omitted for every existing
+   * call site, which lets defaultReviewTierForSource(source) below decide
+   * (vs_bot -> bot, coach_play -> coach, everything importable -> imported). */
+  reviewTier?: GameReviewTier;
 }
 
 export function insert(db: Kysely<Database>, values: NewGame): Promise<GameRow> {
@@ -81,6 +86,7 @@ export function insert(db: Kysely<Database>, values: NewGame): Promise<GameRow> 
     .insertInto('games')
     .values({
       ...values,
+      reviewTier: values.reviewTier ?? defaultReviewTierForSource(values.source),
       botId: values.botId ?? null,
       botConfigSnapshot: botConfigSnapshot === null ? null : JSON.stringify(botConfigSnapshot),
       clockInitialMs: values.clockInitialMs ?? null,
@@ -118,6 +124,13 @@ export function updateRemainingMs(
  * other source is an immutable imported PGN). */
 export function updatePgn(db: Kysely<Database>, id: string, pgn: string): Promise<void> {
   return db.updateTable('games').set({ pgn }).where('id', '=', id).execute().then(() => undefined);
+}
+
+/** POST /api/games/:id/promote — the games service validates the transition
+ * (canPromoteGameReviewTier) before calling this; this function just writes
+ * whatever tier it's given. */
+export function updateReviewTier(db: Kysely<Database>, id: string, reviewTier: GameReviewTier): Promise<void> {
+  return db.updateTable('games').set({ reviewTier }).where('id', '=', id).execute().then(() => undefined);
 }
 
 /** Written once, when a live game (coach_play/vs_bot) ends — see

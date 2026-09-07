@@ -39,7 +39,7 @@ export async function resumeOrCreateSession(
   userId: string,
   gameId: string
 ): Promise<SessionRow> {
-  const existing = await sessionsRepo.findActiveByGameIdForUser(db, gameId, userId);
+  const existing = await sessionsRepo.findActiveByGameIdForUser(db, gameId, userId, 'analyze');
   if (existing) return existing;
   return createSession(db, userId, gameId);
 }

@@ -1,0 +1,84 @@
+/* The read-only Game Review page — same board-column/eval-bar building
+ * blocks SessionPage.css lays out for the coaching session (this reuses
+ * their class names, e.g. .session-board-column, so their un-prefixed base
+ * rules apply for free), just without a chat column to share space with. */
+
+.game-review-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.game-review-page__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) 0;
+}
+
+.game-review-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+  gap: var(--space-4);
+}
+
+.game-review-body.desktop {
+  flex-direction: row;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.game-review-body.desktop .session-board-column {
+  width: min(72vh, 720px);
+  max-width: 100%;
+  min-width: 0;
+  flex: 0 1 auto;
+  height: 100%;
+  margin: 0 auto;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.game-review-body.desktop .session-board-row {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.game-review-body.desktop .session-board-column .game-eval-chart {
+  align-self: stretch;
+}
+
+.game-review-explorer-column {
+  width: 300px;
+  flex: 0 0 300px;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.game-review-explorer-column .move-explorer {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Collapsed (the default): a slim header bar at the bottom of the column.
+ * Expanded: floats over the move list instead of pushing it around. */
+.game-review-explorer-column .game-report-summary--expanded {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 70%;
+  z-index: 2;
+}

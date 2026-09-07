@@ -1,6 +1,5 @@
 import {
   MOVE_QUALITIES,
-  TACTIC_MOTIF_LABELS,
   TACTIC_MOTIF_TYPES,
   type BookReport,
   type ClassificationCounts,
@@ -165,13 +164,43 @@ function enrichWithPhaseAndTactics(
   };
 }
 
+/** Singular, lowercase noun phrases for `tacticOpportunityReason` only —
+ * deliberately separate from TACTIC_MOTIF_LABELS (plural, capitalized —
+ * the stats dashboard's column headers), which reads wrong mid-sentence. */
+const TACTIC_MOTIF_NOUN_PHRASE: Record<TacticMotifType, string> = {
+  checkmate: 'checkmate',
+  brilliantSacrifice: 'brilliant sacrifice',
+  doubleCheck: 'double check',
+  fork: 'fork',
+  skewer: 'skewer',
+  pin: 'pin',
+  discoveredAttack: 'discovered attack',
+  overloadedDefender: 'overloaded defender',
+  removesDefender: 'defender-removing tactic',
+  weakBackRank: 'back-rank tactic',
+  trappedPiece: 'trapped piece',
+  freePiece: 'free piece',
+  other: 'tactic'
+};
+
+/** Combines the tactic finder's motif classification with the engine's own
+ * best line into one plain-language sentence — the closing note in a move's
+ * `reasons` (§11), not a separate structured field, so it renders in the
+ * move list exactly like every other reason. `detail` (describeTacticHit)
+ * already reads as a factual clause about what `bestMoveSan` does to the
+ * position, true whether or not it was actually played, so it works
+ * unchanged in both the found and missed phrasing below. */
 function tacticOpportunityReason(opportunity: TacticMotifOpportunity, bestMoveSan: string | undefined): string {
-  const label = TACTIC_MOTIF_LABELS[opportunity.type];
-  const moveClause = bestMoveSan ? ` (${bestMoveSan})` : '';
-  const detailClause = opportunity.detail ? ` — ${opportunity.detail}` : '';
-  return opportunity.found
-    ? `Tactic available — ${label}${moveClause}: found${detailClause}`
-    : `Tactic available — ${label}${moveClause}: not played${detailClause}`;
+  const noun = TACTIC_MOTIF_NOUN_PHRASE[opportunity.type];
+  const article = /^[aeiou]/i.test(noun) ? 'an' : 'a';
+  const move = bestMoveSan ?? 'the best move here';
+
+  if (opportunity.found) {
+    return opportunity.detail ? `Found the ${noun} — ${move}, ${opportunity.detail}.` : `Found the ${noun} with ${move}.`;
+  }
+  return opportunity.detail
+    ? `Missed ${article} ${noun} — ${move}, ${opportunity.detail}.`
+    : `Missed ${article} ${noun}, available with ${move}.`;
 }
 
 function computeIsTacticalPosition(move: ClassifiedMoveDto, evals: EngineEval[]): boolean {

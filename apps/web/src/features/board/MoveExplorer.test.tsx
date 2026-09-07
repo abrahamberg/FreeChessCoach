@@ -278,4 +278,112 @@ describe('MoveExplorer', () => {
     expect(screen.getByText('Nc3 (52.9%)')).toBeInTheDocument();
     expect(screen.queryByText(/40/)).not.toBeInTheDocument();
   });
+
+  test('fetches alternatives from the lite engine on demand when the deep analysis has none', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          lines: [
+            { cp: 60, mateIn: null, moveSan: 'Nf3', moveUci: 'g1f3', pvSan: ['Nf3'] },
+            { cp: 40, mateIn: null, moveSan: 'Bc4', moveUci: 'f1c4', pvSan: ['Bc4'] },
+            { cp: 15, mateIn: null, moveSan: 'Nc3', moveUci: 'b1c3', pvSan: ['Nc3'] }
+          ]
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const classifiedMoves = [
+      classifiedMove({
+        ply: 3,
+        moveSan: 'Qh5',
+        mover: 'white',
+        quality: 'mistake',
+        bestMoveSan: 'Nf3',
+        bestLinePvSan: ['Nf3'],
+        fenBefore: 'fen-before-move-3'
+      })
+    ];
+    render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={3} onSelect={vi.fn()} />);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/positions/hint-moves',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ fen: 'fen-before-move-3' }) })
+    );
+    // Nf3 is the best move already shown on the "Best:" line, so it's
+    // excluded from the runners-up list fetched here.
+    expect(await screen.findByText(/Bc4 \(/)).toBeInTheDocument();
+    expect(screen.getByText(/Nc3 \(/)).toBeInTheDocument();
+    expect(screen.queryByText(/^Nf3 \(/)).not.toBeInTheDocument();
+  });
+
+  test('surfaces an error, not a silent empty list, when the alternatives fetch fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 500 })));
+    const classifiedMoves = [
+      classifiedMove({
+        ply: 3,
+        moveSan: 'Qh5',
+        quality: 'mistake',
+        bestMoveSan: 'Nf3',
+        fenBefore: 'fen-before-move-3'
+      })
+    ];
+    render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={3} onSelect={vi.fn()} />);
+
+    expect(await screen.findByText(/couldn't load other tries/i)).toBeInTheDocument();
+  });
+
+  test('clears a previous move\'s fetched alternatives immediately when navigating to another move, rather than showing them stale', async () => {
+    let resolveMoveB: ((response: Response) => void) | undefined;
+    const fetchMock = vi.fn().mockImplementation((_url: string, init: { body: string }) => {
+      const { fen } = JSON.parse(init.body) as { fen: string };
+      if (fen === 'fen-a') {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ lines: [{ cp: 40, mateIn: null, moveSan: 'Bc4', moveUci: 'f1c4', pvSan: ['Bc4'] }] }),
+            { status: 200, headers: { 'content-type': 'application/json' } }
+          )
+        );
+      }
+      // fen-b deliberately never auto-resolves — resolveMoveB below controls it.
+      return new Promise((resolve) => {
+        resolveMoveB = resolve;
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const classifiedMoves = [
+      classifiedMove({ ply: 3, moveSan: 'Qh5', quality: 'mistake', bestMoveSan: 'Nf3', fenBefore: 'fen-a' }),
+      classifiedMove({ ply: 5, moveSan: 'Nd5', quality: 'mistake', bestMoveSan: 'Qd2', fenBefore: 'fen-b' })
+    ];
+    const { rerender } = render(
+      <MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={3} onSelect={vi.fn()} />
+    );
+    expect(await screen.findByText(/Bc4 \(/)).toBeInTheDocument();
+
+    rerender(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={5} onSelect={vi.fn()} />);
+
+    // Move B's fetch is still in flight (resolveMoveB not called yet) — move
+    // A's runners-up must already be gone, not lingering under the wrong move.
+    expect(screen.queryByText(/Bc4 \(/)).not.toBeInTheDocument();
+    resolveMoveB?.(new Response(JSON.stringify({ lines: [] }), { status: 200, headers: { 'content-type': 'application/json' } }));
+  });
+
+  test('does not fetch alternatives when the deep analysis already has some', () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const classifiedMoves = [
+      classifiedMove({
+        ply: 3,
+        moveSan: 'Qh5',
+        quality: 'mistake',
+        bestMoveSan: 'Nf3',
+        fenBefore: 'fen-before-move-3',
+        alternatives: [{ san: 'Bc4', cp: 40, winPct: 58.2 }]
+      })
+    ];
+    render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={3} onSelect={vi.fn()} />);
+
+    expect(screen.getByText(/Bc4 \(/)).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
