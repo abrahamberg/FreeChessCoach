@@ -216,6 +216,95 @@ describe('POST/GET /api/games', () => {
     expect(jobQueue.enqueueAnalyzeGame).not.toHaveBeenCalled();
   });
 
+  // Bug report: re-selecting an already-imported game from the Lichess/
+  // Chess.com picker (which has no memory of what's already in the library)
+  // used to insert a second row starting back at the bottom of the
+  // review-tier stack — making a game already promoted to Review look like
+  // it "reverted" to Imported when really an indistinguishable duplicate had
+  // just appeared alongside it.
+  test('re-importing the exact same pgn returns the existing game instead of creating a duplicate', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('dedup-import@example.com', 'Dedup');
+
+    const first = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const second = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      // A re-import via a different source (e.g. re-picking a Lichess game
+      // already pasted in manually) is still the same real game.
+      payload: { pgn: VALID_PGN, source: 'lichess', userColor: 'white' }
+    });
+
+    expect(second.statusCode).toBe(200);
+    expect(second.json()).toEqual(first.json());
+
+    const user = await usersRepo.findByEmail(db, 'dedup-import@example.com');
+    const rows = await db
+      .selectFrom('games')
+      .selectAll()
+      .where('pgn', '=', VALID_PGN)
+      .where('userId', '=', user?.id ?? '')
+      .execute();
+    expect(rows).toHaveLength(1);
+    expect(jobQueue.enqueueAnalyzeGame).toHaveBeenCalledTimes(1);
+  });
+
+  test('re-importing the same pgn in stat-bank (deferAnalysis) mode returns the existing game without creating a duplicate', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('dedup-defer@example.com', 'DedupDefer');
+
+    const first = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'lichess', userColor: 'white', deferAnalysis: true }
+    });
+    const second = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'lichess', userColor: 'white', deferAnalysis: true }
+    });
+
+    expect(second.statusCode).toBe(200);
+    expect(second.json()).toEqual(first.json());
+    expect(second.json().analysisId).toBeNull();
+    expect(jobQueue.enqueueAnalyzeGame).not.toHaveBeenCalled();
+  });
+
+  test('re-importing a game already promoted to Review leaves its review tier alone', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('dedup-review@example.com', 'DedupReview');
+
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'lichess', userColor: 'white' }
+    });
+    const { gameId, analysisId } = imported.json();
+    await analysesRepo.markReady(db, analysisId, PLAN);
+    await app.inject({ method: 'POST', url: `/api/games/${gameId}/promote`, headers, payload: { tier: 'review' } });
+
+    const reimported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'lichess', userColor: 'white' }
+    });
+
+    expect(reimported.json().gameId).toBe(gameId);
+    const list = await app.inject({ method: 'GET', url: '/api/games', headers });
+    expect(list.json()).toContainEqual(expect.objectContaining({ id: gameId, reviewTier: 'review' }));
+    expect(list.json()).toHaveLength(1);
+  });
+
   test('detects userColor from PGN headers when omitted from the request', async () => {
     const app = buildTestApp();
     const headers = headersFor('ann-detect@example.com', 'Ann');
@@ -415,20 +504,25 @@ describe('POST/GET /api/games', () => {
   test('rate limits at 10 imports/day, returning 429 on the 11th', async () => {
     const app = buildTestApp();
     const headers = headersFor('prolific@example.com', 'Prolific');
-    const importOnce = () =>
+    // Distinct PGN text per call (a varying Round header) — the dedup guard
+    // (findByUserAndPgn) would otherwise resolve every repeat of the same
+    // exact PGN to the same existing game rather than counting toward the
+    // limit, which is exactly the behavior under test here: 11 genuinely
+    // different games.
+    const importOnce = (round: number) =>
       app.inject({
         method: 'POST',
         url: '/api/games',
         headers,
-        payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+        payload: { pgn: VALID_PGN.replace('[Event "Test"]', `[Event "Test"]\n[Round "${round}"]`), source: 'paste', userColor: 'white' }
       });
 
     for (let i = 0; i < 10; i++) {
-      const response = await importOnce();
+      const response = await importOnce(i);
       expect(response.statusCode).toBe(200);
     }
 
-    const eleventh = await importOnce();
+    const eleventh = await importOnce(10);
     expect(eleventh.statusCode).toBe(429);
     expect(eleventh.headers['content-type']).toContain('application/problem+json');
   });

@@ -184,6 +184,19 @@ export function findByIdForUser(
     .executeTakeFirst();
 }
 
+/** game-import.ts's dedup guard: the PGN text a user already imported (from
+ * any source — paste, upload, Lichess, or Chess.com) carries its own
+ * headers (Site/Date/Round/players), so an exact match against another
+ * import is, in practice, always the same real game, not a coincidence.
+ * Re-selecting an already-imported game from the Lichess/Chess.com picker —
+ * which has no memory of what's already in the library — would otherwise
+ * insert a second row that starts back at the bottom of the review-tier
+ * stack, making an already-promoted game look like it "reverted" to
+ * Imported when really a duplicate just appeared alongside it. */
+export function findByUserAndPgn(db: Kysely<Database>, userId: string, pgn: string): Promise<GameRow | undefined> {
+  return db.selectFrom('games').selectAll().where('userId', '=', userId).where('pgn', '=', pgn).executeTakeFirst();
+}
+
 /** No user scoping — callers must confirm ownership (e.g. via findByIdForUser)
  * before calling this. */
 export function remove(db: Kysely<Database>, id: string): Promise<void> {
