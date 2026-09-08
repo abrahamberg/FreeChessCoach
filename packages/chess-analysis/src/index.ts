@@ -82,6 +82,7 @@ export * from './tactic-detectors/registry.js';
 export * from './tactic-detectors/types.js';
 export * from './tactic-prevention-check.js';
 export * from './tactic-discovered.js';
+export * from './tactic-hit-detail.js';
 export * from './tactic-hit-visual.js';
 export * from './tactic-pins.js';
 export * from './tactic-reason-text.js';

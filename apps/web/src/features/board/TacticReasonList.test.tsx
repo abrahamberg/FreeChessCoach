@@ -72,6 +72,29 @@ describe('TacticReasonList', () => {
     expect(button).toHaveClass('tactic-reason-item--active');
   });
 
+  test('the "all" selection marks every sentence with a visual as active, since the board draws all of them', () => {
+    const move = baseMove({
+      tacticPrevention: {
+        type: 'fork',
+        prevented: false,
+        detail: 'pawn on e5 forks d6 and f6',
+        visual: { arrows: [{ from: 'e5', to: 'd6' }], highlights: [] }
+      },
+      tacticOpportunity: {
+        type: 'trappedPiece',
+        found: false,
+        // No visual — nothing drawn for this one even under 'all', so it
+        // should not read as active despite the toggle being on.
+        detail: 'pawn on e4 is trapped'
+      }
+    });
+    render(<TacticReasonList move={move} selection="all" onToggle={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: /Left the opponent's fork in play/ })).toHaveClass('tactic-reason-item--active');
+    // The opportunity sentence has no visual, so it stays a static <p>, never a button.
+    expect(screen.queryByRole('button', { name: /Missed a trapped piece/ })).not.toBeInTheDocument();
+  });
+
   test('the "show tactic arrows" toggle only appears once a visual exists, and reflects the "all" selection', () => {
     const noVisual = baseMove({ tacticOpportunity: { type: 'fork', found: true, detail: 'x' } });
     const { rerender } = render(<TacticReasonList move={noVisual} selection={null} onToggle={vi.fn()} />);

@@ -288,6 +288,7 @@ export type AlternativeMove = z.infer<typeof AlternativeMoveSchema>;
  * just a highlight). Lets the Game Review UI draw the tactic on the board
  * instead of only naming it in `detail`. */
 export const TacticArrowSchema = z.object({ from: z.string(), to: z.string() });
+export type TacticArrowDto = z.infer<typeof TacticArrowSchema>;
 export const TacticVisualSchema = z.object({
   arrows: z.array(TacticArrowSchema),
   highlights: z.array(z.string())

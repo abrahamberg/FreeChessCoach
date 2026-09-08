@@ -1,14 +1,19 @@
 import {
   BEST_OR_BETTER,
-  describeTacticHit,
   flipActiveColorFen,
   scanThreatOutcome,
-  tacticHitVisual,
+  tacticHitDetail,
   type PvMotifSighting,
-  type TacticVisual,
   type ThreatOutcome
 } from '@freechesscoach/chess-analysis';
-import { TACTIC_MOTIF_TYPES, type ClassifiedMoveDto, type EngineEval, type EngineLine, type TacticMotifType } from '@freechesscoach/shared';
+import {
+  TACTIC_MOTIF_TYPES,
+  type ClassifiedMoveDto,
+  type EngineEval,
+  type EngineLine,
+  type TacticMotifType,
+  type TacticVisualDto
+} from '@freechesscoach/shared';
 import type { EngineBackend } from './engine/engine-backend.js';
 
 type PositionAnalyzer = Pick<EngineBackend, 'analyzePosition'>;
@@ -27,11 +32,11 @@ export interface TacticMotifPreventionResult {
    * order, which mirrors tactic-detectors/registry.ts's precedence) — `counts`
    * above remains the source of truth for "how many", this is only "what to
    * show on this one move". */
-  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisual | null }>;
+  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisualDto | null }>;
   /** docs/diagnose.md §4.4's unbiased O/E denominator (Task 50.4) — see this
    * function's doc comment for why this is a second, additive map rather
    * than a change to `byPly`/`counts` above. */
-  diagnosticByPly: Map<number, { type: TacticMotifType; failed: boolean; detail: string | null; visual: TacticVisual | null }>;
+  diagnosticByPly: Map<number, { type: TacticMotifType; failed: boolean; detail: string | null; visual: TacticVisualDto | null }>;
 }
 
 /** The earliest-priority motif in `types` (TACTIC_MOTIF_TYPES order), or null
@@ -49,13 +54,11 @@ function describeMotifSighting(
   sightings: readonly PvMotifSighting[],
   type: TacticMotifType,
   opponent: Colour
-): { detail: string | null; visual: TacticVisual | null } {
+): { detail: string | null; visual: TacticVisualDto | null } {
   const sighting = sightings.find((s) => s.motif === type);
   if (!sighting) return { detail: null, visual: null };
-  return {
-    detail: describeTacticHit(type, sighting.fenBefore, sighting.moveSan, opponent),
-    visual: tacticHitVisual(type, sighting.fenBefore, sighting.moveSan, opponent)
-  };
+  const hit = tacticHitDetail(type, sighting.fenBefore, sighting.moveSan, opponent);
+  return { detail: hit?.text ?? null, visual: hit?.visual ?? null };
 }
 
 /**
@@ -111,8 +114,8 @@ export async function computeTacticMotifPrevented(
     white: { preventable: {}, prevented: {} },
     black: { preventable: {}, prevented: {} }
   };
-  const byPly = new Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisual | null }>();
-  const diagnosticByPly = new Map<number, { type: TacticMotifType; failed: boolean; detail: string | null; visual: TacticVisual | null }>();
+  const byPly = new Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisualDto | null }>();
+  const diagnosticByPly = new Map<number, { type: TacticMotifType; failed: boolean; detail: string | null; visual: TacticVisualDto | null }>();
   const movesByPly = new Map(allMoves.map((move) => [move.ply, move]));
 
   for (const move of allMoves) {

@@ -1,7 +1,7 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
 import { PromoteGameResponseSchema } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiGet, apiPost } from '../../api/client.js';
@@ -28,9 +28,18 @@ export function useGameReviewPageData(gameId: string) {
   // reset on every ply change (Daniel's call: "moving to next move resets
   // the arrows"), regardless of which nav control changed it (MoveNavPills,
   // MoveStrip, MoveExplorer, or the board's own move-list clicks all funnel
-  // through `setPly`).
+  // through `setPly`). Reset inline during render (the "adjusting state
+  // when a prop changes" pattern), not in a useEffect: an effect only runs
+  // after the ply-changed render has already committed and painted, so for
+  // one frame `tacticSelection` would still be the old ply's key applied
+  // against the new ply's tactic data — exactly the stale-arrow flash this
+  // is meant to prevent.
+  const [tacticSelectionPly, setTacticSelectionPly] = useState(ply);
   const [tacticSelection, setTacticSelection] = useState<TacticSelectionKey>(null);
-  useEffect(() => setTacticSelection(null), [ply]);
+  if (ply !== tacticSelectionPly) {
+    setTacticSelectionPly(ply);
+    setTacticSelection(null);
+  }
   function toggleTacticSelectionKey(key: Exclude<TacticSelectionKey, null>): void {
     setTacticSelection((current) => toggleTacticSelection(current, key));
   }

@@ -64,7 +64,10 @@ export function TacticReasonList({ move, selection, onToggle }: TacticReasonList
           text={preventionText}
           good={move.tacticPrevention.prevented}
           clickable={Boolean(move.tacticPrevention.visual)}
-          active={selection === 'prevention'}
+          // 'all' (the "show tactic arrows" toggle) draws this one's arrow
+          // too, so it reads as active right alongside the other sentence —
+          // unless it has nothing to draw, matching the board's own state.
+          active={selection === 'prevention' || (selection === 'all' && Boolean(move.tacticPrevention.visual))}
           onClick={() => onToggle('prevention')}
         />
       )}
@@ -73,7 +76,7 @@ export function TacticReasonList({ move, selection, onToggle }: TacticReasonList
           text={opportunityText}
           good={move.tacticOpportunity.found}
           clickable={Boolean(move.tacticOpportunity.visual)}
-          active={selection === 'opportunity'}
+          active={selection === 'opportunity' || (selection === 'all' && Boolean(move.tacticOpportunity.visual))}
           onClick={() => onToggle('opportunity')}
         />
       )}
