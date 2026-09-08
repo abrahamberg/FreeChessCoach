@@ -113,28 +113,45 @@ describe('reported Game Review cards', () => {
 
 /**
  * `trappedPieces` asks "does this piece have a legal move to a square the
- * opponent doesn't attack?", and `chess.moves({ square })` answers "no" for
- * *every* non-king piece while its own side is in check. So a check turns
- * every attacked enemy piece into a trapped one. Measured on
- * `tactic-precision.test.ts`'s opening corpus: 20.7% of checks produce a
- * trapped piece against a 1.0% baseline on quiet moves.
+ * opponent doesn't attack?" and reads a `chess.moves({ square })` of zero as
+ * "cornered". But a piece has zero legal moves for two other, much more
+ * common reasons: its own side is in check, or it is absolutely pinned.
+ * Neither makes it trapped.
  *
- * Recorded here rather than in `tactic-trapped.test.ts` because it is a
- * characterization of a known defect, not a statement of intended behaviour
- * — TR-07's white queen is attacked and short of squares, but it is not
- * trapped; White simply has to answer the check first.
+ * Attributing every `trappedPieces` report across the 400-line opening
+ * corpus: **71.7% absolutely pinned, 13.2% side in check, 15.1% genuinely
+ * cornered** — so 85% of the detector's output in ordinary play is an
+ * artefact. (In sharp puzzle positions the mix inverts to 76.8% genuinely
+ * cornered, which is the point: the bug dominates exactly where the noise
+ * hurts most.)
+ *
+ * Recorded here rather than in `tactic-trapped.test.ts` because these are
+ * characterizations of a known defect, not statements of intended behaviour.
  */
-describe('trapped-piece detection while the side to move is in check', () => {
-  const inCheck = TACTIC_REVIEW_CASES.find((c) => c.id === 'TR-07-discovered-attack-sacrifice');
+describe('trapped-piece detection on pieces that simply cannot move', () => {
+  function detailFor(id: string): string | undefined {
+    const reviewCase = TACTIC_REVIEW_CASES.find((c) => c.id === id);
+    expect(reviewCase, `${id} is missing from the fixture`).toBeDefined();
+    if (!reviewCase) return undefined;
+    return tacticHitDetail('trappedPiece', reviewCase.fenBefore, reviewCase.moveSan, reviewCase.mover)?.text;
+  }
 
-  test('today, a check is enough to report the enemy queen as trapped', () => {
-    expect(inCheck).toBeDefined();
-    if (!inCheck) return;
-    const after = new Chess(inCheck.fenBefore);
-    after.move(inCheck.moveSan);
+  test('today, a check alone reports the enemy queen as trapped', () => {
+    const reviewCase = TACTIC_REVIEW_CASES.find((c) => c.id === 'TR-07-discovered-attack-sacrifice');
+    expect(reviewCase).toBeDefined();
+    if (!reviewCase) return;
+    const after = new Chess(reviewCase.fenBefore);
+    after.move(reviewCase.moveSan);
     expect(after.isCheck(), 'the position must be a check for this case to mean anything').toBe(true);
-    expect(tacticHitDetail('trappedPiece', inCheck.fenBefore, inCheck.moveSan, inCheck.mover)?.text).toBe(
-      'queen on e4 is trapped'
-    );
+    // The queen is attacked and short of squares, but White simply has to
+    // answer the check first — it is not trapped.
+    expect(detailFor('TR-07-discovered-attack-sacrifice')).toBe('queen on e4 is trapped');
+  });
+
+  test('today, an absolute pin alone reports the pinned piece as trapped', () => {
+    // TR-10's bishop is defended twice and pinned; TR-01's knight is defended
+    // and pinned. Both are ordinary opening positions, neither piece is lost.
+    expect(detailFor('TR-10-real-pin-on-the-open-file')).toBe('bishop on e7 is trapped');
+    expect(detailFor('TR-01-real-pin-with-noise')).toBe('knight on c6 is trapped');
   });
 });

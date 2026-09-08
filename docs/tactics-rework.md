@@ -8,7 +8,7 @@ that fixes it. It is a companion to `docs/algorith.md` §7.2 (tactics score) and
 added today).
 
 Measured against `packages/chess-analysis` at commit `96dc8fc`, and read
-against eight chess.com Game Review cards (September 2026).
+against ten chess.com Game Review cards (September 2026).
 
 ---
 
@@ -24,6 +24,27 @@ Every sentence below reproduces on current `main` by running
 | 11 | `6.Bxc6` | "Found the fork — bishop on c6 forks b7 and d7." | A trade. The bishop is recaptured next move. | `tactics.ts` → `forks()` never checks that the forking piece is itself safe. |
 | 12 | `6…bxc6` | "Defused the opponent's fork — bishop on c6 forks b7 and d7." + "Missed a pin — pins the pawn on e4" | A recapture. | The phantom fork from ply 11 is re-reported by the prevention path; the "pin" is a bishop ray onto a pawn. |
 | 13 | `7.Qxd4` | "pins the pawn on g7 against h8" | Recaptures, but the queen is loose on d4. | `tactic-pins.ts` → `pins()` is pure ray geometry with no consequence check. |
+
+A fourth screenshot supplied the pin the rework must **not** break: `16.Rae1`,
+swinging the last rook to the open e-file to pin a bishop on e7 against the king
+on e8. We already label it correctly ("Found the pin — pins the bishop on e7
+against e8"), and it wins nothing — the bishop is defended twice and attacked
+once — so, like `4.Bb5`, it only survives a gain test that has a positional
+rung. chess.com makes no material claim on it either ("That pin is like a Venus
+flytrap, snapping shut on their bishop!"), which is a second real example of
+their positional tier. Two things are still wrong with our card: `trappedPiece`
+co-fires, and the sentence says "against e8" rather than "against the king" —
+the instructive half.
+
+Those three pins are the matched set the pin rework is judged on. Running the
+§4 pin gate (drop pinned pawns; a relative pin needs the pinned piece under net
+pressure) over them:
+
+| Case | Pin | Gate |
+| --- | --- | --- |
+| `16.Rae1` | absolute, bishop | **kept** |
+| `4.Bb5` | absolute, knight | **kept** |
+| `7.Qxd4` | relative, pawn | **rejected** |
 | 8 | `4…Bd7` | "Nothing to flag — a solid, natural move." | **Breaks the pin** on the c6 knight. | No defensive motif exists in the vocabulary. |
 | 14 | `7…c5` | "Nothing to flag — a solid, natural move." | Hits the queen with tempo. | No positional/tempo motif exists in the vocabulary. |
 
@@ -48,12 +69,23 @@ Two findings fall out of that position and both are load-bearing for the plan:
    point. This is the concrete counterexample to §2's safety gate, in a real
    user game: verification has to ask "did the line pay?", never "is the piece
    safe?".
-2. **A check manufactures trapped pieces.** `trappedPieces` asks whether a
+2. **`trappedPieces` reads "cannot move" as "cornered".** It asks whether a
    piece has a legal move to an unattacked square, and `chess.moves({ square })`
-   answers "no" for *every* non-king piece while its own side is in check. On
-   the 400-line opening corpus a check produces a trapped piece **20.7% of the
-   time against a 1.0% baseline on quiet moves** — a 20x inflation, and a large
-   share of `trappedPiece`'s noise.
+   answers "no" for two much more common reasons than being cornered: the
+   piece's own side is in check, or the piece is absolutely pinned. Attributing
+   every report across the 400-line opening corpus:
+
+   | Why it fired | Share |
+   | --- | --- |
+   | absolutely pinned | 71.7% |
+   | own side in check | 13.2% |
+   | genuinely cornered | 15.1% |
+
+   So **85% of the detector's output in ordinary play is an artefact.** (Across
+   quiet moves in the sharp puzzle positions the mix inverts to 76.8% genuinely
+   cornered — which is the point: the bug dominates exactly where the noise
+   hurts most.) It is also why `trappedPiece` co-fires on all three real pins
+   in the fixture.
 
 ## 2. Measurements
 
@@ -401,7 +433,7 @@ down to. Lower a ceiling in the same commit that earns it:
 | Recaptures carrying a label | 97 / 113 = 85.8% | ≤ 5% |
 | Quiet moves in 120 puzzle positions | 897 / 3,040 = 29.5% | ≤ 10% |
 
-Plus nine named cards in `tactic-review-cases.ts` — exact FENs from the game in
+Plus ten named cards in `tactic-review-cases.ts` — exact FENs from the game in
 §1, each with the sentence the pipeline prints today and the motif it must
 produce after the rework. `tactic-review-cases.test.ts` asserts *today's*
 motif, *today's* full set of firing detectors, and *today's* sentence, so any

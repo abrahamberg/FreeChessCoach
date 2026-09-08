@@ -12,8 +12,8 @@ import type { MoveQuality, TacticMotifType } from '@freechesscoach/shared';
  * (not transcribed from a screenshot), so they are exact. TR-07/TR-08 are a
  * reported position whose FEN was read off the board and then verified by
  * replay — the move is legal, gives check, and wins the queen exactly as
- * reported, which is what makes the reading trustworthy. TR-09 is
- * constructed, and says so.
+ * reported, which is what makes the reading trustworthy. TR-10 was read the
+ * same way and verified the same way. TR-09 is constructed, and says so.
  *
  * `todayMotif`/`todayDetectors`/`todaySentence` are what the pipeline
  * produces right now; `tactic-review-cases.test.ts` asserts them, so this
@@ -86,6 +86,14 @@ const AFTER_QXD4 = 'r2qkbnr/p1pb1ppp/2pp4/8/3QP3/5N2/PPP2PPP/RNB1K2R b KQkq - 0 
  * bishop — the whole reason it is worth a piece. */
 const DISCOVERED_SACRIFICE = '2kr3r/pppbqp1p/2n3p1/4b3/4Q3/1BP4P/PP1P1PP1/RNB2RK1 b - - 0 12';
 
+/** White to move. `Rae1` swings the last rook to the open e-file, where it
+ * pins the bishop on e7 against the king on e8. The bishop is defended twice
+ * (Ke8, Qc7) and attacked once, so nothing is won — this is a bind, and the
+ * positional rung of the gain test. chess.com's own card for it makes no
+ * material claim either: "That pin is like a Venus flytrap, snapping shut on
+ * their bishop!" */
+const ROOK_TO_OPEN_FILE = 'rnb1k2r/ppq1bpp1/2p4p/3p4/3P4/2NB1N2/PPPQ1PPP/R4RK1 w kq - 4 16';
+
 /** Constructed, not from a game: the minimum position that isolates a true
  * discovered check. The knight on e4 stands between `Re1` and `Ke8`; `Nc5+`
  * gives no check of its own, so the check comes from the unveiled rook. */
@@ -108,7 +116,7 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
     targetSentence: 'You pinned the knight on c6 against the king.',
     defect: 'noisy-co-fire',
     note:
-      'The headline is right — a real absolute pin, winning no material, so it exercises the positional rung of the gain test. But `trappedPiece` fires alongside it: the pinned knight has no legal move, which `trappedPieces` reads as cornered. A defended, pinned knight on its natural square is not a trapped piece.'
+      'The headline is right — a real absolute pin, winning no material, so it exercises the positional rung of the gain test. But `trappedPiece` fires alongside it: the pinned knight has no legal move, which `trappedPieces` reads as cornered. A defended, pinned knight on its natural square is not a trapped piece. Together with TR-05 and TR-10 this is the matched set the pin rework is judged on: keep the two absolute pins, drop the relative pin on a pawn.'
   },
   {
     id: 'TR-02-missing-breaks-pin',
@@ -237,6 +245,24 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
       'The same move as TR-07 once the engine has classified it brilliant. `classifyTacticMotif` answers `brilliantSacrifice` from the raw quality flag before the registry runs, so the discovered attack the detector already found is discarded and the card can no longer say what the sacrifice won. Single-label classification is at its most expensive on the best move in the game. Compare chess.com, which keeps the mechanism: "You made your bishop vulnerable, but it was a brilliant sacrifice!"'
   },
   {
+    id: 'TR-10-real-pin-on-the-open-file',
+    fenBefore: ROOK_TO_OPEN_FILE,
+    moveSan: 'Rae1',
+    mover: 'white',
+    userColor: 'white',
+    quality: 'best',
+    isTacticalPosition: true,
+    todayMotif: 'pin',
+    todayDetectors: ['pin', 'trappedPiece'],
+    todaySentence: 'Found the pin — pins the bishop on e7 against e8.',
+    targetMotif: 'pin',
+    targetDetectors: ['pin'],
+    targetSentence: "You pinned their bishop against the king — it can't move.",
+    defect: 'noisy-co-fire',
+    note:
+      'The textbook pin, and the case any tightening of `pins()` has to keep: a rook swinging to the open file to pin a bishop against the king. It wins nothing — the bishop is defended twice and attacked once — so like TR-01 it only survives a gain test that has a positional rung, and chess.com makes no material claim here either. Two things are still wrong. `trappedPiece` co-fires, because the pinned bishop has zero legal moves; and the sentence says "against e8" rather than "against the king", which is the instructive half.'
+  },
+  {
     id: 'TR-09-discovered-check-has-no-name',
     fenBefore: DISCOVERED_CHECK,
     moveSan: 'Nc5+',
@@ -268,7 +294,8 @@ export const KNOWN_TACTIC_REVIEW_DEFECTS: readonly string[] = [
   'TR-06-missing-tempo',
   'TR-07-discovered-attack-sacrifice',
   'TR-08-brilliant-shadows-the-mechanism',
-  'TR-09-discovered-check-has-no-name'
+  'TR-09-discovered-check-has-no-name',
+  'TR-10-real-pin-on-the-open-file'
 ];
 
 /** Cases that must still name a tactic after the rework — the guard against
@@ -277,5 +304,6 @@ export const TACTIC_REVIEW_TRUE_POSITIVES: readonly string[] = [
   'TR-01-real-pin-with-noise',
   'TR-07-discovered-attack-sacrifice',
   'TR-08-brilliant-shadows-the-mechanism',
-  'TR-09-discovered-check-has-no-name'
+  'TR-09-discovered-check-has-no-name',
+  'TR-10-real-pin-on-the-open-file'
 ];
