@@ -145,8 +145,19 @@ describe('buildGameReport', () => {
     });
 
     const forkMove = report.moves.find((move) => move.moveSan === 'Nd6+');
-    expect(forkMove?.tacticOpportunity).toEqual({ type: 'fork', found: true, detail: 'knight on d6 forks e8 and b7' });
-    expect(forkMove?.reasons).toContain('Found the fork — Nd6+, knight on d6 forks e8 and b7.');
+    expect(forkMove?.tacticOpportunity).toEqual({
+      type: 'fork',
+      found: true,
+      detail: 'knight on d6 forks e8 and b7',
+      visual: {
+        arrows: [
+          { from: 'd6', to: 'e8' },
+          { from: 'd6', to: 'b7' }
+        ],
+        highlights: []
+      }
+    });
+    expect(forkMove?.reasons).toContain('Found the fork — knight on d6 forks e8 and b7.');
   });
 
 });

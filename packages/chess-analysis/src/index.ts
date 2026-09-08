@@ -82,8 +82,12 @@ export * from './tactic-detectors/registry.js';
 export * from './tactic-detectors/types.js';
 export * from './tactic-prevention-check.js';
 export * from './tactic-discovered.js';
+export * from './tactic-hit-detail.js';
+export * from './tactic-hit-visual.js';
 export * from './tactic-pins.js';
+export * from './tactic-reason-text.js';
 export * from './tactic-removes-defender.js';
+export * from './tactic-replay.js';
 export * from './tactic-skewers.js';
 export * from './tactic-trapped.js';
 // puzzle-pool-format.js is deliberately NOT re-exported here, same reason as

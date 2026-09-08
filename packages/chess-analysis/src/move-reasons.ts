@@ -50,11 +50,17 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     ...newForkReasons(input),
     ...underDefendedReasons(input),
     ...centerSwingReason(input),
-    ...passedPawnReasons(input),
-    ...mobilityReason(input)
-  ].sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category));
+    ...passedPawnReasons(input)
+  ];
+  // Mobility is the weakest signal here (a bad move usually has a sharper
+  // reason than "fewer squares") — it only earns a mention when nothing
+  // better already explains the move, never alongside one.
+  if (reasons.length === 0) reasons.push(...mobilityReason(input));
 
-  return reasons.slice(0, MAX_REASONS).map((reason) => reason.text);
+  return reasons
+    .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category))
+    .slice(0, MAX_REASONS)
+    .map((reason) => reason.text);
 }
 
 function bookReason(input: MoveReasonsInput): string {

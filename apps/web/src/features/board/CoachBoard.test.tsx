@@ -370,6 +370,14 @@ describe('CoachBoard', () => {
     expect(accepted).toBe(true);
     expect(onUserMove).toHaveBeenCalled();
   });
+
+  test('moveQualityBadgeSquare draws the on-board checkmark; omitted draws nothing', () => {
+    const { rerender } = render(<CoachBoard fen={START_FEN} orientation="white" mode="peek" />);
+    expect(screen.queryByText('✓')).not.toBeInTheDocument();
+
+    rerender(<CoachBoard fen={START_FEN} orientation="white" mode="peek" moveQualityBadgeSquare="e4" />);
+    expect(screen.getByText('✓')).toBeInTheDocument();
+  });
 });
 
 // Black king e8, white pawn a7, white king e1 — nothing else on the board,

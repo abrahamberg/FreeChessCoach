@@ -8,6 +8,7 @@ import {
   type PieceHandlerArgs,
   type SquareHandlerArgs
 } from 'react-chessboard';
+import { MoveQualityBadgeOverlay } from './MoveQualityBadgeOverlay.js';
 import { PromotionPicker, type PromotionPiece } from './PromotionPicker.js';
 import './CoachBoard.css';
 
@@ -118,6 +119,12 @@ export interface CoachBoardProps {
    * analyze/peek-mode boards, which never submit anything server-side, are
    * unaffected. */
   disabled?: boolean;
+  /** The square a 'good' move (not excellent/best/brilliant — those already
+   * read fine unlabeled) landed on — Game Review's own quiet on-board nod
+   * for a tier MoveQualityBadge deliberately skips in the move list. Purely
+   * cosmetic, recomputed fresh per render from the current ply; never
+   * written back into move data. */
+  moveQualityBadgeSquare?: string;
 }
 
 interface PendingPromotion {
@@ -139,7 +146,8 @@ export function CoachBoard({
   onLocalMove,
   onArrowsChange,
   showLegalMoveDots = true,
-  disabled = false
+  disabled = false,
+  moveQualityBadgeSquare
 }: CoachBoardProps): ReactNode {
   const justDroppedRef = useRef(false);
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
@@ -310,6 +318,7 @@ export function CoachBoard({
   return (
     <div className={frameClassName}>
       <Chessboard options={options} />
+      {moveQualityBadgeSquare && <MoveQualityBadgeOverlay square={moveQualityBadgeSquare} orientation={orientation} />}
       {pendingPromotion && (
         <PromotionPicker
           square={pendingPromotion.to}

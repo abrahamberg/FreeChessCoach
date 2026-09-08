@@ -50,6 +50,9 @@ export function GameReviewPage(): ReactNode {
     fen,
     highlights,
     arrows,
+    moveQualityBadgeSquare,
+    tacticSelection,
+    onToggleTacticSelection,
     continueWithCoach,
     isContinuingWithCoach,
     continueWithCoachError
@@ -68,6 +71,7 @@ export function GameReviewPage(): ReactNode {
       orientation={orientation}
       highlights={highlights}
       arrows={arrows}
+      moveQualityBadgeSquare={moveQualityBadgeSquare}
       classifiedMoves={classifiedMoves}
       ply={ply}
       onSelect={setPly}
@@ -82,6 +86,8 @@ export function GameReviewPage(): ReactNode {
       move={currentMove}
       onContinueWithCoach={canContinueWithCoach ? continueWithCoach : undefined}
       isContinuingWithCoach={isContinuingWithCoach}
+      tacticSelection={tacticSelection}
+      onToggleTacticSelection={onToggleTacticSelection}
     />
   );
 

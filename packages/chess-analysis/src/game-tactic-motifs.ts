@@ -4,12 +4,13 @@ import {
   type EngineEval,
   type MoveQuality,
   type TacticMotifCounts,
-  type TacticMotifType
+  type TacticMotifType,
+  type TacticVisualDto
 } from '@freechesscoach/shared';
 import { classifyTacticMotif } from './classify-tactic-motif.js';
 import { CONFIG } from './config.js';
-import { describeTacticHit } from './describe-tactic-hit.js';
 import { moveFlags } from './move-flags.js';
+import { tacticHitDetail } from './tactic-hit-detail.js';
 
 /** Also reused by apps/api's tactic-prevention.ts: a still-reachable threat
  * after a best-or-better reply isn't something the player should have
@@ -29,6 +30,10 @@ export interface TacticMotifOpportunity {
    * `null` for a type with no detector-specific shape to describe
    * (checkmate/brilliantSacrifice/other), not "not computed". */
   detail: string | null;
+  /** The same hit's board geometry (tacticHitVisual) — an arrow/highlight
+   * the Game Review UI can draw for this opportunity, `null` under the same
+   * conditions `detail` is. */
+  visual: TacticVisualDto | null;
 }
 
 /**
@@ -66,10 +71,12 @@ export function classifyTacticMotifOpportunity(move: ClassifiedMoveDto, evals: E
   });
   if (!motif) return null;
 
+  const hit = tacticHitDetail(motif, move.fenBefore, bestMoveSan, move.mover);
   return {
     type: motif,
     found: playedBest && BEST_OR_BETTER.has(move.quality),
-    detail: describeTacticHit(motif, move.fenBefore, bestMoveSan, move.mover)
+    detail: hit?.text ?? null,
+    visual: hit?.visual ?? null
   };
 }
 

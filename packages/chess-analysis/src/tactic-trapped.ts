@@ -15,6 +15,10 @@ export interface TrappedHit {
  * already have `color` to move (true whenever this is called on the
  * position right after the opponent's move, which is the only time this
  * question makes sense to ask).
+ *
+ * Pawns are never candidates: a pawn backed into a corner with no square to
+ * advance to is just a normal, expected feature of closed pawn play, not a
+ * "trapped piece" tactic — only pieces (knight, bishop, rook, queen) count.
  */
 export function trappedPieces(chess: Chess, color: Color): TrappedHit[] {
   const opponent = opponentOf(color);
@@ -23,7 +27,7 @@ export function trappedPieces(chess: Chess, color: Color): TrappedHit[] {
   const hits: TrappedHit[] = [];
 
   for (const piece of occupiedSquares(chess)) {
-    if (piece.color !== color || piece.type === 'k') continue;
+    if (piece.color !== color || piece.type === 'k' || piece.type === 'p') continue;
 
     const isAttacked = (attackMap.attackersOf.get(piece.square)?.[opponentName]?.length ?? 0) > 0;
     if (!isAttacked) continue;

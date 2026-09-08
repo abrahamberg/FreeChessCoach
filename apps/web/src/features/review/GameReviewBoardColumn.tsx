@@ -14,6 +14,9 @@ export interface GameReviewBoardColumnProps {
    * otherwise; the board never shows anything but the position the game
    * actually reached. */
   arrows: BoardArrow[];
+  /** The square a 'good'-quality move landed on — see CoachBoard's own
+   * `moveQualityBadgeSquare` doc comment. Undefined draws nothing. */
+  moveQualityBadgeSquare?: string;
   classifiedMoves: ClassifiedMoveDto[];
   ply: number;
   onSelect: (ply: number) => void;
@@ -38,6 +41,7 @@ export function GameReviewBoardColumn({
   orientation,
   highlights,
   arrows,
+  moveQualityBadgeSquare,
   classifiedMoves,
   ply,
   onSelect,
@@ -50,7 +54,16 @@ export function GameReviewBoardColumn({
       {!isDesktop && evalBar}
       <div className="session-board-row">
         {isDesktop && evalBar}
-        <CoachBoard fen={fen} orientation={orientation} mode="peek" arrows={arrows} highlights={highlights} showLegalMoveDots={false} disabled />
+        <CoachBoard
+          fen={fen}
+          orientation={orientation}
+          mode="peek"
+          arrows={arrows}
+          highlights={highlights}
+          moveQualityBadgeSquare={moveQualityBadgeSquare}
+          showLegalMoveDots={false}
+          disabled
+        />
       </div>
       {isDesktop && classifiedMoves.length > 0 && <GameEvalChart classifiedMoves={classifiedMoves} currentPly={ply} onSelect={onSelect} />}
     </div>

@@ -282,6 +282,19 @@ export const AlternativeMoveSchema = z.object({
 });
 export type AlternativeMove = z.infer<typeof AlternativeMoveSchema>;
 
+/** Board geometry behind a tactic hit (tacticHitVisual in chess-analysis) —
+ * an arrow per square-to-square relationship the motif involves, plus any
+ * square worth highlighting on its own (e.g. a trapped piece has no arrow,
+ * just a highlight). Lets the Game Review UI draw the tactic on the board
+ * instead of only naming it in `detail`. */
+export const TacticArrowSchema = z.object({ from: z.string(), to: z.string() });
+export type TacticArrowDto = z.infer<typeof TacticArrowSchema>;
+export const TacticVisualSchema = z.object({
+  arrows: z.array(TacticArrowSchema),
+  highlights: z.array(z.string())
+});
+export type TacticVisualDto = z.infer<typeof TacticVisualSchema>;
+
 /** A legacy classified move extended with the report fields from algorith.md
  * §9. The report fields are optional during this migration so analyses stored
  * before the report pipeline and live-play rows remain readable. `quality` is
@@ -332,7 +345,15 @@ export const ClassifiedMoveSchema = z.object({
    * on this schema. `.nullable()` covers describeTacticHit's own "no
    * detector-specific shape for this type" case. */
   tacticOpportunity: z
-    .object({ type: TacticMotifTypeSchema, found: z.boolean(), detail: z.string().nullable().optional() })
+    .object({
+      type: TacticMotifTypeSchema,
+      found: z.boolean(),
+      detail: z.string().nullable().optional(),
+      /** Same absent-not-null convention as `detail` — undefined on a
+       * report stored before `visual` existed, `null` when the motif type
+       * has no detector-specific geometry to draw. */
+      visual: TacticVisualSchema.nullable().optional()
+    })
     .optional(),
   /** The opponent had this tactic reachable right before this move — did the
    * player's move defuse it (see computeTacticMotifPrevented). When the scan
@@ -342,7 +363,12 @@ export const ClassifiedMoveSchema = z.object({
    * truth for "how many", this is only "what to show on this one move".
    * `detail` follows the same convention as `tacticOpportunity.detail`. */
   tacticPrevention: z
-    .object({ type: TacticMotifTypeSchema, prevented: z.boolean(), detail: z.string().nullable().optional() })
+    .object({
+      type: TacticMotifTypeSchema,
+      prevented: z.boolean(),
+      detail: z.string().nullable().optional(),
+      visual: TacticVisualSchema.nullable().optional()
+    })
     .optional()
 });
 export type ClassifiedMoveDto = z.infer<typeof ClassifiedMoveSchema>;

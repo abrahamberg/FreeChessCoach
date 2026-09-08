@@ -39,7 +39,11 @@ import { classifyTacticMotif } from '../classify-tactic-motif.js';
  *    so an incidental trapped piece elsewhere on the board can steal the
  *    classification from what Lichess tagged `hangingPiece` or
  *    `capturingDefender` — the likely reason those two land far below the
- *    others.
+ *    others. `trappedPieces` (`tactic-trapped.ts`) also deliberately never
+ *    counts a pawn — a cornered pawn is just ordinary closed-position play,
+ *    not a tactic — while Lichess's own `trappedPiece` tag does credit some
+ *    puzzles for exactly that; excluding pawns is the product call that
+ *    dropped `trappedPiece`'s own measured count below its old 25/40.
  * 3. `backRankMate` is excluded entirely by the fixture builder: it's
  *    almost always itself a forced mate, and `isCheckmate` is checked
  *    before the registry runs, so a puzzle tagged `backRankMate` can only
@@ -51,7 +55,7 @@ const MIN_PASS: Partial<Record<string, number>> = {
   skewer: 33,
   discoveredAttack: 32,
   doubleCheck: 40,
-  trappedPiece: 25,
+  trappedPiece: 18,
   hangingPiece: 10,
   capturingDefender: 11,
   mateIn1: 40
