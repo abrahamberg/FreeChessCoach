@@ -1,6 +1,7 @@
 # Tactical review rework — investigation and plan
 
-Status: **design only, nothing implemented.** This document records why Game
+Status: **phase A landed (tests only, no production change); phases 0 and B–G
+still design.** This document records why Game
 Review's tactic sentences are wrong, what was measured, and the architecture
 that fixes it. It is a companion to `docs/algorith.md` §7.2 (tactics score) and
 `packages/chess-analysis/src/tactic-detectors/README.md` (how a detector is
@@ -52,6 +53,11 @@ any motif assigned   3,139 / 14,012   22.4%
 Representative generated sentences: *"Bg2 skewers the knight on c6, exposing the
 pawn on b7"* (a fianchetto), *"Bc4 pins the pawn on f7 against g8"* (the Italian
 bishop), *"cxd4 captures the undefended pawn on d4"* (a Smith-Morra recapture).
+
+Narrowing to recaptures makes the point sharper still. A recapture is the most
+ordinary move in chess and is almost never a tactic; on the 400-line corpus
+`tactic-precision.test.ts` uses, **97 of 113 recaptures (85.8%) carry a tactic
+label**. `freePiece` alone accounts for most of it.
 
 ### Recall — `data/lichess-puzzle-motifs.csv`, 360 puzzles
 
@@ -348,13 +354,34 @@ second-best at equal evaluation.
 | Phase | Work | Why here |
 | --- | --- | --- |
 | 0 | **Fix the voice.** Rewrite `tactic-reason-text.ts` to §3's template and feed it `isUserMove`: you/they instead of "the opponent", defused reframed as your lost chance, horizon from `forkInPlies`. | No detector changes, one file plus its test, data already present. Removes the grammatically wrong copy on every opponent move and establishes the template B–C must then satisfy. |
-| A | **Precision test first.** False-positive suite over `openings.tsv` + a quiet corpus asserting a label-rate ceiling; add per-theme precision alongside recall in `lichess-puzzle-validation.test.ts`. | Nothing later is measurable without it, and this is the test that would have caught all of this pre-release. TDD per AGENTS.md. |
+| A | **Precision test first.** ✅ landed — `tactic-precision.test.ts` (three corpus ceilings) and `tactic-review-cases.ts` / `tactic-review-cases.test.ts` (the six named cards from §1). | Nothing later is measurable without it, and this is the test that would have caught all of this pre-release. TDD per AGENTS.md. |
 | B | **Line verification** (claims → PV walk → material/eval attribution). Reuses `annotatePvTactics`, `applySanSequence`, `see.ts`. | The 22.4% → 2.5% change. Ship behind A's ceiling so the drop is a CI number. |
 | C | **Multi-label claims + ranked headline.** Detector signature change, `priority` demoted to tie-breaker. | Recovers the recall first-match currently discards; unifies sentence and arrow. Schema change in `packages/shared`. |
 | D | **Defensive + quiet vocabulary.** | Retires "Nothing to flag" as the default answer. Nearly free once claims are objects. |
 | E | **Browser engine breadth for review** (`analyzeGame` on the lite decorator, ply-budgeted, stored outside the trusted eval cache). | Independent of A–D, can run in parallel. |
 | F | **Rebuild the prevention path on verified claims.** | Worth little until A–C make claims trustworthy; currently the loudest amplifier of their errors. |
 | G | **Baseline-relative game report.** Per-user motif rates from the existing cross-game aggregate, a deviation test, game-level cards that say "unusual for you" with a drill attached. | Depends on A–D producing rates worth comparing; the aggregation itself is already built. |
+
+### What phase A put in place
+
+Three corpus ceilings in `packages/chess-analysis/src/tactic-precision.test.ts`,
+each pinned to the exact measured value and carrying the target it must ratchet
+down to. Lower a ceiling in the same commit that earns it:
+
+| Gate | Today | Target (after phase B) |
+| --- | --- | --- |
+| Opening-theory label rate (400 lines / 4,332 plies) | 640 = 14.8% | ≤ 5% |
+| Recaptures carrying a label | 97 / 113 = 85.8% | ≤ 5% |
+| Quiet moves in 120 puzzle positions | 897 / 3,040 = 29.5% | ≤ 10% |
+
+Plus six named cards in `tactic-review-cases.ts` — exact FENs from the game in
+§1, each with the sentence the pipeline prints today and the motif it must
+produce after the rework. `tactic-review-cases.test.ts` asserts *today's*
+output, so any detector change surfaces as a named sentence diff rather than a
+number moving; `KNOWN_TACTIC_REVIEW_DEFECTS` is the debt list, and the suite
+fails if a case is fixed without being taken off it. One case (`TR-01`, the real
+Ruy Lopez pin) is a true positive on purpose: it stops "precision" being
+achievable by silencing every detector.
 
 ### Acceptance bar, enforced in CI
 
