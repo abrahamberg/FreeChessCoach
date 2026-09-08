@@ -1,22 +1,25 @@
-import type { TacticMotifType } from '@freechesscoach/shared';
+import type { MoveQuality, TacticMotifType } from '@freechesscoach/shared';
 
 /**
- * The named, hand-checked Game Review cases behind `docs/tactics-rework.md`
+ * The named, hand-checked Game Review cards behind `docs/tactics-rework.md`
  * — every one reported from the shipped app, replayed here as a fixture so
  * the rework has a concrete definition of "fixed" instead of a prose
  * description of "better".
  *
- * All positions come from one real game,
+ * TR-01…TR-06 come from one real game,
  * `1.e4 e5 2.Nf3 Nc6 3.Bc4 d6 4.Bb5 Bd7 5.d4 exd4 6.Bxc6 bxc6 7.Qxd4 c5`,
- * with the user playing White. FENs are derived from that move list (not
- * transcribed from a screenshot), so they are exact.
+ * with the user playing White; their FENs are derived from that move list
+ * (not transcribed from a screenshot), so they are exact. TR-07/TR-08 are a
+ * reported position whose FEN was read off the board and then verified by
+ * replay — the move is legal, gives check, and wins the queen exactly as
+ * reported, which is what makes the reading trustworthy. TR-09 is
+ * constructed, and says so.
  *
- * `todayMotif`/`todaySentence` are what the pipeline produces right now;
- * `tactic-review-cases.test.ts` asserts them, so this file cannot drift from
- * the code. `targetMotif` is what each case must produce once
- * `docs/tactics-rework.md` phases 0–D land — the two disagree for every
- * defect, and that disagreement is the debt list the test enforces.
- * `targetSentence` records the intended prose for reference only; the exact
+ * `todayMotif`/`todayDetectors`/`todaySentence` are what the pipeline
+ * produces right now; `tactic-review-cases.test.ts` asserts them, so this
+ * file cannot drift from the code. The `target*` fields are what each case
+ * must produce once `docs/tactics-rework.md` phases 0–D land.
+ * `targetSentence` records the intended prose for reference only — the exact
  * wording is a product decision and is deliberately not asserted.
  */
 export interface TacticReviewCase {
@@ -28,18 +31,47 @@ export interface TacticReviewCase {
   /** Whose review this is. The card is written to this side's player, so it
    * decides "You" vs "They" — see docs/tactics-rework.md §3 rule 3. */
   userColor: 'white' | 'black';
+  /** The move's own classification, which `classifyTacticMotif` consults
+   * before it runs any detector: `'brilliant'` short-circuits to
+   * `brilliantSacrifice`. TR-07/TR-08 are the same move either side of that
+   * branch. */
+  quality: MoveQuality;
   /** `isTacticalPosition` as the shipped pipeline computed it here. It only
    * changes the outcome for a move no detector matches: `true` yields the
    * `'other'` catch-all, `false` yields no card at all. */
   isTacticalPosition: boolean;
+  /** The single motif the card shows today. */
   todayMotif: TacticMotifType | null;
+  /** Every registry detector that fires, not just the first match — the
+   * multi-label view phase C exposes. A motif in here but not in
+   * `targetDetectors` is a claim that must stop being made. */
+  todayDetectors: readonly TacticMotifType[];
   /** `null` when no card is shown — the review UI's "Nothing to flag" state. */
   todaySentence: string | null;
-  /** Motifs that do not exist yet arrive with phase D of the rework. */
-  targetMotif: TacticMotifType | 'breaksPin' | 'gainsTempo' | null;
+  targetMotif: TacticMotifType | NewMotif | null;
+  targetDetectors: readonly (TacticMotifType | NewMotif)[];
   targetSentence: string | null;
+  /** Short name for what is wrong today, or `null` when the case is already
+   * correct. The test cross-checks this against the machine-computed
+   * today-vs-target mismatch, so it cannot go stale. */
+  defect: DefectKind | null;
   note: string;
 }
+
+/** Motif names that arrive with phase D of the rework. */
+type NewMotif = 'breaksPin' | 'gainsTempo' | 'discoveredCheck';
+
+type DefectKind =
+  /** A motif is claimed where there is no tactic at all. */
+  | 'phantom'
+  /** A real idea the vocabulary has no word for, so nothing is shown. */
+  | 'missing'
+  /** A real tactic named as the wrong motif. */
+  | 'mislabelled'
+  /** The headline is right but a junk claim fires alongside it. */
+  | 'noisy-co-fire'
+  /** The headline is right and the sentence throws away what it won. */
+  | 'lost-detail';
 
 const RUY_BB5 = 'r1bqkbnr/ppp2ppp/2np4/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4';
 const AFTER_BB5 = 'r1bqkbnr/ppp2ppp/2np4/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 1 4';
@@ -48,20 +80,35 @@ const AFTER_BXC6 = 'r2qkbnr/pppb1ppp/2Bp4/8/3pP3/5N2/PPP2PPP/RNBQK2R b KQkq - 0 
 const AFTER_BXC6_RECAPTURED = 'r2qkbnr/p1pb1ppp/2pp4/8/3pP3/5N2/PPP2PPP/RNBQK2R w KQkq - 0 7';
 const AFTER_QXD4 = 'r2qkbnr/p1pb1ppp/2pp4/8/3QP3/5N2/PPP2PPP/RNB1K2R b KQkq - 0 7';
 
+/** Black to move. `Bh2+` steps the bishop off e5 onto a square the king can
+ * take, and in doing so opens the e-file so the queen on e7 hits the
+ * undefended white queen on e4. After `Kxh2 Qxe4` Black is a queen up for a
+ * bishop — the whole reason it is worth a piece. */
+const DISCOVERED_SACRIFICE = '2kr3r/pppbqp1p/2n3p1/4b3/4Q3/1BP4P/PP1P1PP1/RNB2RK1 b - - 0 12';
+
+/** Constructed, not from a game: the minimum position that isolates a true
+ * discovered check. The knight on e4 stands between `Re1` and `Ke8`; `Nc5+`
+ * gives no check of its own, so the check comes from the unveiled rook. */
+const DISCOVERED_CHECK = '4k3/8/8/8/4N3/8/8/4R1K1 w - - 0 1';
+
 export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
   {
-    id: 'TR-01-true-positive-pin',
+    id: 'TR-01-real-pin-with-noise',
     fenBefore: RUY_BB5,
     moveSan: 'Bb5',
     mover: 'white',
     userColor: 'white',
+    quality: 'best',
     isTacticalPosition: true,
     todayMotif: 'pin',
+    todayDetectors: ['pin', 'trappedPiece'],
     todaySentence: 'Found the pin — pins the knight on c6 against e8.',
     targetMotif: 'pin',
+    targetDetectors: ['pin'],
     targetSentence: 'You pinned the knight on c6 against the king.',
+    defect: 'noisy-co-fire',
     note:
-      'The one case that is already right, and the reason the rework cannot just tighten every detector until nothing fires: this is a real absolute pin. It wins no material, so it exercises the positional rung of the gain test — a claim kept for a structural reason rather than a material one.'
+      'The headline is right — a real absolute pin, winning no material, so it exercises the positional rung of the gain test. But `trappedPiece` fires alongside it: the pinned knight has no legal move, which `trappedPieces` reads as cornered. A defended, pinned knight on its natural square is not a trapped piece.'
   },
   {
     id: 'TR-02-missing-breaks-pin',
@@ -69,11 +116,15 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
     moveSan: 'Bd7',
     mover: 'black',
     userColor: 'white',
+    quality: 'best',
     isTacticalPosition: false,
     todayMotif: null,
+    todayDetectors: [],
     todaySentence: null,
     targetMotif: 'breaksPin',
+    targetDetectors: ['breaksPin'],
     targetSentence: 'They broke the pin on their knight.',
+    defect: 'missing',
     note:
       'The move that most deserves a note in this game gets the empty state. Every shipped motif describes something done TO the opponent, so there is no word for unpinning. With isTacticalPosition true the same move degrades to the vacuous "Found the tactic with Bd7." instead — both outcomes are wrong.'
   },
@@ -83,13 +134,17 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
     moveSan: 'Bxc6',
     mover: 'white',
     userColor: 'white',
+    quality: 'best',
     isTacticalPosition: true,
     todayMotif: 'fork',
+    todayDetectors: ['fork', 'pin', 'removesDefender', 'freePiece'],
     todaySentence: 'Found the fork — bishop on c6 forks b7 and d7.',
     targetMotif: null,
+    targetDetectors: [],
     targetSentence: null,
+    defect: 'phantom',
     note:
-      'A trade, not a fork: bxc6 recaptures the bishop immediately. `forks()` only asks whether a piece attacks two enemy pieces one of which is undefended — nothing checks that the forking piece is itself hanging.'
+      'A trade, not a fork: bxc6 recaptures the bishop immediately. `forks()` only asks whether a piece attacks two enemy pieces one of which is undefended — nothing checks that the forking piece is itself hanging. Four detectors fire on this one ordinary exchange, so the priority list is picking a winner among four wrong answers.'
   },
   {
     id: 'TR-04-free-piece-on-a-recapture',
@@ -97,13 +152,17 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
     moveSan: 'bxc6',
     mover: 'black',
     userColor: 'white',
+    quality: 'best',
     isTacticalPosition: true,
     todayMotif: 'freePiece',
+    todayDetectors: ['freePiece'],
     todaySentence: 'Found the free piece — captures the undefended bishop on c6.',
     targetMotif: null,
+    targetDetectors: [],
     targetSentence: null,
+    defect: 'phantom',
     note:
-      'Recapturing the piece that just captured yours is the most ordinary move in chess. `captureOpportunities` marks a capture favourable when the captured piece is worth at least the capturer, with no notion of an exchange sequence and no notion of a recapture.'
+      'Recapturing the piece that just captured yours is the most ordinary move in chess. `captureOpportunities` marks a capture favourable when the captured piece is worth at least the capturer, with no notion of an exchange sequence and no notion of a recapture. `tactic-precision.test.ts` measures the scale of this: 97 of 113 recaptures in opening theory carry a label.'
   },
   {
     id: 'TR-05-phantom-pin-on-a-pawn',
@@ -111,11 +170,15 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
     moveSan: 'Qxd4',
     mover: 'white',
     userColor: 'white',
+    quality: 'best',
     isTacticalPosition: true,
     todayMotif: 'pin',
+    todayDetectors: ['pin', 'freePiece'],
     todaySentence: 'Found the pin — pins the pawn on g7 against h8.',
     targetMotif: null,
+    targetDetectors: [],
     targetSentence: null,
+    defect: 'phantom',
     note:
       'A queen landing on the long diagonal "pins" g7 to the h8 rook. The pawn is not attacked, the pin prevents nothing, and pinning a pawn is almost never a tactic. `pins()` is pure ray geometry with no consequence check.'
   },
@@ -125,13 +188,71 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
     moveSan: 'c5',
     mover: 'black',
     userColor: 'white',
+    quality: 'best',
     isTacticalPosition: false,
     todayMotif: null,
+    todayDetectors: [],
     todaySentence: null,
     targetMotif: 'gainsTempo',
+    targetDetectors: ['gainsTempo'],
     targetSentence: 'They won a tempo by threatening the queen.',
+    defect: 'missing',
     note:
       'Hitting the queen with a pawn is the clearest tempo gain in the game and there is no motif for it — the same gap chess.com fills with "win a tempo by threatening a queen".'
+  },
+  {
+    id: 'TR-07-discovered-attack-sacrifice',
+    fenBefore: DISCOVERED_SACRIFICE,
+    moveSan: 'Bh2+',
+    mover: 'black',
+    userColor: 'black',
+    quality: 'best',
+    isTacticalPosition: true,
+    todayMotif: 'discoveredAttack',
+    todayDetectors: ['discoveredAttack', 'trappedPiece'],
+    todaySentence: 'Found the discovered attack — queen on e7 gains a discovered attack on e4.',
+    targetMotif: 'discoveredAttack',
+    targetDetectors: ['discoveredAttack'],
+    targetSentence: 'You won the queen through a discovered attack.',
+    defect: 'noisy-co-fire',
+    note:
+      'The most important case in this fixture, for two reasons. First it is a real tactic we get right, and the moving piece is deliberately en prise — `see()` on h2 is +330 for White — so the static-safety gate prototyped in docs/tactics-rework.md §2 would have thrown this whole tactic away. Verification has to be "did the line pay?", never "is the piece safe?". Second, `trappedPiece` fires here claiming "queen on e4 is trapped": White is in check, so every non-king piece has zero legal moves and `trappedPieces` reads them all as cornered. In this corpus a check manufactures a trapped piece 20.7% of the time against a 1.0% baseline on quiet moves. The sentence also names a square rather than the queen it wins.'
+  },
+  {
+    id: 'TR-08-brilliant-shadows-the-mechanism',
+    fenBefore: DISCOVERED_SACRIFICE,
+    moveSan: 'Bh2+',
+    mover: 'black',
+    userColor: 'black',
+    quality: 'brilliant',
+    isTacticalPosition: true,
+    todayMotif: 'brilliantSacrifice',
+    todayDetectors: ['discoveredAttack', 'trappedPiece'],
+    todaySentence: 'Found the brilliant sacrifice with Bh2+.',
+    targetMotif: 'brilliantSacrifice',
+    targetDetectors: ['brilliantSacrifice', 'discoveredAttack'],
+    targetSentence: 'You won the queen through a discovered attack — and gave up a bishop to do it.',
+    defect: 'lost-detail',
+    note:
+      'The same move as TR-07 once the engine has classified it brilliant. `classifyTacticMotif` answers `brilliantSacrifice` from the raw quality flag before the registry runs, so the discovered attack the detector already found is discarded and the card can no longer say what the sacrifice won. Single-label classification is at its most expensive on the best move in the game. Compare chess.com, which keeps the mechanism: "You made your bishop vulnerable, but it was a brilliant sacrifice!"'
+  },
+  {
+    id: 'TR-09-discovered-check-has-no-name',
+    fenBefore: DISCOVERED_CHECK,
+    moveSan: 'Nc5+',
+    mover: 'white',
+    userColor: 'white',
+    quality: 'best',
+    isTacticalPosition: true,
+    todayMotif: 'discoveredAttack',
+    todayDetectors: ['discoveredAttack'],
+    todaySentence: 'Found the discovered attack — rook on e1 gains a discovered attack on e8.',
+    targetMotif: 'discoveredCheck',
+    targetDetectors: ['discoveredCheck', 'discoveredAttack'],
+    targetSentence: 'You gave a discovered check.',
+    defect: 'mislabelled',
+    note:
+      'A true discovered check — the knight steps aside and the rook, not the knight, gives the check. There is no `discoveredCheck` motif, so it lands as a plain discovered attack whose detail sentence says the rook "gains a discovered attack on e8" without mentioning that e8 is the king and the move is forcing. `doubleCheck` cannot cover it either: that detector needs two checkers.'
   }
 ];
 
@@ -139,9 +260,22 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
  * measurable definition of progress on `docs/tactics-rework.md`; the test
  * fails if a case leaves or joins it without this list being updated. */
 export const KNOWN_TACTIC_REVIEW_DEFECTS: readonly string[] = [
+  'TR-01-real-pin-with-noise',
   'TR-02-missing-breaks-pin',
   'TR-03-phantom-fork-hanging-forker',
   'TR-04-free-piece-on-a-recapture',
   'TR-05-phantom-pin-on-a-pawn',
-  'TR-06-missing-tempo'
+  'TR-06-missing-tempo',
+  'TR-07-discovered-attack-sacrifice',
+  'TR-08-brilliant-shadows-the-mechanism',
+  'TR-09-discovered-check-has-no-name'
+];
+
+/** Cases that must still name a tactic after the rework — the guard against
+ * reaching "precision" by silencing every detector. */
+export const TACTIC_REVIEW_TRUE_POSITIVES: readonly string[] = [
+  'TR-01-real-pin-with-noise',
+  'TR-07-discovered-attack-sacrifice',
+  'TR-08-brilliant-shadows-the-mechanism',
+  'TR-09-discovered-check-has-no-name'
 ];

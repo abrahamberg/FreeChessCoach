@@ -31,6 +31,30 @@ One screenshot item — "pawn on e5 is trapped" — was already fixed by `96dc8f
 (`trappedPieces()` no longer counts pawns). Production is one release behind on
 that; everything else above is live on `main`.
 
+Three more cases came from a later screenshot — a genuine brilliancy, `Bh2+`,
+where the bishop steps off e5 onto a square the king can take and opens the
+e-file so the queen on e7 wins the undefended white queen on e4:
+
+| Case | Printed | Wrong how |
+| --- | --- | --- |
+| `Bh2+`, quality `best` | "Found the discovered attack — queen on e7 gains a discovered attack on e4." | Headline correct. But `trappedPiece` co-fires with "queen on e4 is trapped", and the sentence names a square instead of the queen it wins. |
+| `Bh2+`, quality `brilliant` | "Found the brilliant sacrifice with Bh2+." | `classifyTacticMotif` answers from the raw quality flag **before the registry runs**, so the discovered attack the detector already found is thrown away. Single-label classification is at its most expensive on the best move in the game. |
+| A true discovered check (`Nc5+`, constructed) | "Found the discovered attack — rook on e1 gains a discovered attack on e8." | There is no `discoveredCheck` motif. The card never says the move is forcing, or that e8 is the king. `doubleCheck` can't cover it — that detector needs two checkers. |
+
+Two findings fall out of that position and both are load-bearing for the plan:
+
+1. **The static-safety gate would have deleted this tactic.** `see()` on h2 is
+   **+330 for White** — the bishop is plainly hanging, because that is the
+   point. This is the concrete counterexample to §2's safety gate, in a real
+   user game: verification has to ask "did the line pay?", never "is the piece
+   safe?".
+2. **A check manufactures trapped pieces.** `trappedPieces` asks whether a
+   piece has a legal move to an unattacked square, and `chess.moves({ square })`
+   answers "no" for *every* non-king piece while its own side is in check. On
+   the 400-line opening corpus a check produces a trapped piece **20.7% of the
+   time against a 1.0% baseline on quiet moves** — a 20x inflation, and a large
+   share of `trappedPiece`'s noise.
+
 ## 2. Measurements
 
 Two corpora already in the repo, no new data needed.
@@ -300,10 +324,13 @@ Current `TACTIC_MOTIF_TYPES` (13): `checkmate`, `brilliantSacrifice`,
 
 Target additions:
 
-- **Offensive:** `deflection`, `decoy`, `interference`, `clearance`,
-  `xRayAttack`, `zwischenzug`, `desperado`, `windmill`, `smotheredMate`,
-  `matingNet`, `promotionTactic`, `underPromotion`, `pawnBreakthrough`,
-  `attractionSac`.
+- **Offensive:** `discoveredCheck` (today it collapses into
+  `discoveredAttack`, losing the fact that the move is forcing — the cheapest
+  addition on this list, since `discoveredAttackDetail` already computes the
+  revealed square and only needs to ask whether it holds the king),
+  `deflection`, `decoy`, `interference`, `clearance`, `xRayAttack`,
+  `zwischenzug`, `desperado`, `windmill`, `smotheredMate`, `matingNet`,
+  `promotionTactic`, `underPromotion`, `pawnBreakthrough`, `attractionSac`.
 - **Defensive / prophylactic:** `breaksPin`, `escapesFork`,
   `defendsHangingPiece`, `blocksThreat`, `counterAttack`, `removesTarget`,
   `perpetualCheck`, `stalemateResource`, `simplifiesToDraw`, `prophylaxis`.
@@ -374,14 +401,23 @@ down to. Lower a ceiling in the same commit that earns it:
 | Recaptures carrying a label | 97 / 113 = 85.8% | ≤ 5% |
 | Quiet moves in 120 puzzle positions | 897 / 3,040 = 29.5% | ≤ 10% |
 
-Plus six named cards in `tactic-review-cases.ts` — exact FENs from the game in
+Plus nine named cards in `tactic-review-cases.ts` — exact FENs from the game in
 §1, each with the sentence the pipeline prints today and the motif it must
 produce after the rework. `tactic-review-cases.test.ts` asserts *today's*
-output, so any detector change surfaces as a named sentence diff rather than a
-number moving; `KNOWN_TACTIC_REVIEW_DEFECTS` is the debt list, and the suite
-fails if a case is fixed without being taken off it. One case (`TR-01`, the real
-Ruy Lopez pin) is a true positive on purpose: it stops "precision" being
-achievable by silencing every detector.
+motif, *today's* full set of firing detectors, and *today's* sentence, so any
+detector change surfaces as a named diff rather than a number moving.
+`KNOWN_TACTIC_REVIEW_DEFECTS` is the debt list and the suite fails if a case is
+fixed without being taken off it; each case also carries a hand-written
+`defect` kind (phantom / missing / mislabelled / noisy-co-fire / lost-detail)
+that the test cross-checks against the computed today-vs-target mismatch, so the
+prose cannot go stale either. `TACTIC_REVIEW_TRUE_POSITIVES` lists the cases
+that must still name a tactic afterwards — without it, every ceiling above could
+be met by deleting the detectors.
+
+Recording the **full detector set** rather than just the winning motif is what
+makes the fixture useful for phase C: `TR-03` (`6.Bxc6`) fires four detectors —
+`fork`, `pin`, `removesDefender`, `freePiece` — on one ordinary exchange, so the
+priority list is picking a winner among four wrong answers.
 
 ### Acceptance bar, enforced in CI
 
