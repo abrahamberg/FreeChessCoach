@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { ClassifiedMoveDto, MoveQuality } from '@freechesscoach/shared';
+import { tacticReasonTexts } from './TacticReasonList.js';
 import { useMoveAlternatives } from './useMoveAlternatives.js';
 
 /** Tiers worth a "better was" coaching note — everything else (book, forced,
@@ -13,24 +14,42 @@ export function isImprovableQuality(quality: MoveQuality | undefined): boolean {
   return quality !== undefined && IMPROVABLE_QUALITIES.has(quality);
 }
 
-/** True once MoveNote/OpeningLabel below would actually render something for
- * this move — lets a caller (MoveNoteCard) show its own "nothing to flag"
+/** `move.reasons` minus whichever of the two tactic sentences are present —
+ * only when `excludeTacticText` asks for it (Game Review's MoveNoteCard,
+ * which renders those two as TacticReasonList's own clickable items right
+ * above this list, so leaving them in here too would show each one twice).
+ * Every other MoveNote caller (MoveExplorer's coaching-session sidebar, no
+ * TacticReasonList alongside it) keeps seeing the full `.reasons` text. */
+function plainTextReasons(move: ClassifiedMoveDto, excludeTacticText: boolean): string[] {
+  if (!move.reasons || move.reasons.length === 0) return [];
+  if (!excludeTacticText) return move.reasons;
+  const tacticTexts = tacticReasonTexts(move);
+  if (tacticTexts.size === 0) return move.reasons;
+  return move.reasons.filter((reason) => !tacticTexts.has(reason));
+}
+
+/** True once MoveNote/OpeningLabel below (or, with `excludeTacticText`,
+ * TacticReasonList alongside them) would actually render something for this
+ * move — lets a caller (MoveNoteCard) show its own "nothing to flag"
  * fallback instead of an empty card for a plain good/excellent move. */
-export function hasMoveNoteText(move: ClassifiedMoveDto): boolean {
+export function hasMoveNoteText(move: ClassifiedMoveDto, excludeTacticText = false): boolean {
   if (move.quality === 'book') return Boolean(move.reasons?.[0]);
-  if (move.reasons && move.reasons.length > 0) return true;
+  if (excludeTacticText && (move.tacticOpportunity || move.tacticPrevention)) return true;
+  if (plainTextReasons(move, excludeTacticText).length > 0) return true;
   return isImprovableQuality(move.quality) && move.bestLineSan.length > 0;
 }
 
 /** §11's closing paragraph: a book move's theory label is shown unconditionally
  * via `OpeningLabel` below, not gated behind the notes toggle — so `MoveNote`
- * skips it here to avoid rendering the same "Theory — …" line twice. */
-export function MoveNote({ move }: { move: ClassifiedMoveDto }): ReactNode {
+ * skips it here to avoid rendering the same "Theory — …" line twice.
+ * `excludeTacticText`: see `plainTextReasons` above. */
+export function MoveNote({ move, excludeTacticText = false }: { move: ClassifiedMoveDto; excludeTacticText?: boolean }): ReactNode {
   if (move.quality === 'book') return null;
-  if (move.reasons && move.reasons.length > 0) {
+  const reasons = plainTextReasons(move, excludeTacticText);
+  if (reasons.length > 0) {
     return (
       <ul className="move-explorer__note">
-        {move.reasons.map((reason) => (
+        {reasons.map((reason) => (
           <li key={reason}>{reason}</li>
         ))}
       </ul>

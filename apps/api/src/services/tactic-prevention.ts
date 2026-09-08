@@ -3,7 +3,9 @@ import {
   describeTacticHit,
   flipActiveColorFen,
   scanThreatOutcome,
+  tacticHitVisual,
   type PvMotifSighting,
+  type TacticVisual,
   type ThreatOutcome
 } from '@freechesscoach/chess-analysis';
 import { TACTIC_MOTIF_TYPES, type ClassifiedMoveDto, type EngineEval, type EngineLine, type TacticMotifType } from '@freechesscoach/shared';
@@ -25,11 +27,11 @@ export interface TacticMotifPreventionResult {
    * order, which mirrors tactic-detectors/registry.ts's precedence) — `counts`
    * above remains the source of truth for "how many", this is only "what to
    * show on this one move". */
-  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null }>;
+  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisual | null }>;
   /** docs/diagnose.md §4.4's unbiased O/E denominator (Task 50.4) — see this
    * function's doc comment for why this is a second, additive map rather
    * than a change to `byPly`/`counts` above. */
-  diagnosticByPly: Map<number, { type: TacticMotifType; failed: boolean; detail: string | null }>;
+  diagnosticByPly: Map<number, { type: TacticMotifType; failed: boolean; detail: string | null; visual: TacticVisual | null }>;
 }
 
 /** The earliest-priority motif in `types` (TACTIC_MOTIF_TYPES order), or null
@@ -38,14 +40,22 @@ function primaryMotif(types: readonly TacticMotifType[]): TacticMotifType | null
   return TACTIC_MOTIF_TYPES.find((type) => types.includes(type)) ?? null;
 }
 
-/** The concrete piece/square behind `type`'s reachability, from whichever
- * `sightings` entry first matches it — `sightings` carries the exact
- * `{fenBefore, moveSan}` the scan actually saw the motif in, so this can
- * replay and describe it rather than showing the bare type name alone. */
-function describeMotifSighting(sightings: readonly PvMotifSighting[], type: TacticMotifType, opponent: Colour): string | null {
+/** The concrete piece/square (plus its board geometry) behind `type`'s
+ * reachability, from whichever `sightings` entry first matches it —
+ * `sightings` carries the exact `{fenBefore, moveSan}` the scan actually saw
+ * the motif in, so this can replay and describe/draw it rather than showing
+ * the bare type name alone. */
+function describeMotifSighting(
+  sightings: readonly PvMotifSighting[],
+  type: TacticMotifType,
+  opponent: Colour
+): { detail: string | null; visual: TacticVisual | null } {
   const sighting = sightings.find((s) => s.motif === type);
-  if (!sighting) return null;
-  return describeTacticHit(type, sighting.fenBefore, sighting.moveSan, opponent);
+  if (!sighting) return { detail: null, visual: null };
+  return {
+    detail: describeTacticHit(type, sighting.fenBefore, sighting.moveSan, opponent),
+    visual: tacticHitVisual(type, sighting.fenBefore, sighting.moveSan, opponent)
+  };
 }
 
 /**
@@ -101,8 +111,8 @@ export async function computeTacticMotifPrevented(
     white: { preventable: {}, prevented: {} },
     black: { preventable: {}, prevented: {} }
   };
-  const byPly = new Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null }>();
-  const diagnosticByPly = new Map<number, { type: TacticMotifType; failed: boolean; detail: string | null }>();
+  const byPly = new Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisual | null }>();
+  const diagnosticByPly = new Map<number, { type: TacticMotifType; failed: boolean; detail: string | null; visual: TacticVisual | null }>();
   const movesByPly = new Map(allMoves.map((move) => [move.ply, move]));
 
   for (const move of allMoves) {
@@ -129,9 +139,9 @@ export async function computeTacticMotifPrevented(
 
     const primary = primaryMotif(outcome.preventable);
     if (primary) {
-      const detail = describeMotifSighting(outcome.sightings, primary, opponent);
-      if (isCountable) byPly.set(move.ply, { type: primary, prevented: outcome.defused.includes(primary), detail });
-      diagnosticByPly.set(move.ply, { type: primary, failed: !outcome.defused.includes(primary), detail });
+      const { detail, visual } = describeMotifSighting(outcome.sightings, primary, opponent);
+      if (isCountable) byPly.set(move.ply, { type: primary, prevented: outcome.defused.includes(primary), detail, visual });
+      diagnosticByPly.set(move.ply, { type: primary, failed: !outcome.defused.includes(primary), detail, visual });
     }
   }
 

@@ -4,6 +4,7 @@ import { PIECE_NAMES } from './move-reasons.js';
 import { overloadedDefenders } from './piece-safety.js';
 import { discoveredAttackDetail } from './tactic-discovered.js';
 import { pins } from './tactic-pins.js';
+import { replayTacticMove } from './tactic-replay.js';
 import { removesDefender } from './tactic-removes-defender.js';
 import { skewers } from './tactic-skewers.js';
 import { trappedPieces } from './tactic-trapped.js';
@@ -25,16 +26,9 @@ import type { TacticMotifType } from '@freechesscoach/shared';
  */
 export function describeTacticHit(type: TacticMotifType, fenBefore: string, moveSan: string, mover: 'white' | 'black'): string | null {
   const moverColor: Color = mover === 'white' ? 'w' : 'b';
-  const before = new Chess(fenBefore);
-  const after = new Chess(fenBefore);
-  let destination: Square | null = null;
-  try {
-    const move = after.move(moveSan);
-    destination = move ? (move.to as Square) : null;
-  } catch {
-    return null;
-  }
-  if (!destination) return null;
+  const replay = replayTacticMove(fenBefore, moveSan);
+  if (!replay) return null;
+  const { before, after, destination } = replay;
 
   switch (type) {
     case 'fork':

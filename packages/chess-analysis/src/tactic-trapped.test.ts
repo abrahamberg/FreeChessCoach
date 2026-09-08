@@ -20,4 +20,10 @@ describe('trappedPieces', () => {
 
     expect(trappedPieces(chess, 'b')).toEqual([]);
   });
+
+  test('does not flag a cornered pawn — a trapped pawn is not a tactic', () => {
+    const chess = new Chess('7k/8/8/8/8/8/p7/R3K3 b - - 0 1');
+
+    expect(trappedPieces(chess, 'b')).toEqual([]);
+  });
 });

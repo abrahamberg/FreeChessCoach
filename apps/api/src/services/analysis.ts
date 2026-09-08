@@ -9,9 +9,10 @@ import {
   positionKey,
   repairEvalSignConvention,
   resolveOpening,
+  tacticPreventionReason,
   type ParsedPosition
 } from '@freechesscoach/chess-analysis';
-import { ratingForPromptScoping, TACTIC_MOTIF_LABELS } from '@freechesscoach/shared';
+import { ratingForPromptScoping } from '@freechesscoach/shared';
 import type {
   BookReport,
   ClassifiedMoveDto,
@@ -19,7 +20,8 @@ import type {
   EngineEval,
   PlayerBookReport,
   PositionAnalysis,
-  TacticMotifType
+  TacticMotifType,
+  TacticVisualDto
 } from '@freechesscoach/shared';
 import { buildPlannerMessages, type PlannerPromptInput } from '@freechesscoach/prompts';
 import type { Kysely } from 'kysely';
@@ -243,7 +245,7 @@ function attachEnrichment(
  * gaining a `tacticOpportunity`. */
 function attachTacticPrevention(
   moves: ClassifiedMoveDto[],
-  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null }>
+  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisualDto | null }>
 ): ClassifiedMoveDto[] {
   return moves.map((move) => {
     const prevention = byPly.get(move.ply);
@@ -258,14 +260,6 @@ function attachTacticPrevention(
       reasons: [...(move.reasons ?? []), tacticPreventionReason(prevention)]
     };
   });
-}
-
-function tacticPreventionReason(prevention: { type: TacticMotifType; prevented: boolean; detail: string | null }): string {
-  const label = TACTIC_MOTIF_LABELS[prevention.type];
-  const detailClause = prevention.detail ? ` — ${prevention.detail}` : '';
-  return prevention.prevented
-    ? `Opponent's ${label} threat: defused${detailClause}`
-    : `Opponent's ${label} threat: not defused${detailClause}`;
 }
 
 function buildBookReport(positions: ParsedPosition[]): BookReport {

@@ -3,6 +3,8 @@ import type { ClassifiedMoveDto, MoveQuality } from '@freechesscoach/shared';
 import { MessageCircleIcon } from '../../components/Icon.js';
 import { AlternativesPanel, hasMoveNoteText, MoveNote, OpeningLabel } from '../board/MoveNoteContent.js';
 import { MoveQualityBadge } from '../board/MoveQualityBadge.js';
+import { TacticReasonList } from '../board/TacticReasonList.js';
+import type { TacticSelectionKey } from '../board/tacticSelection.js';
 import { describePly } from '../chat/positionDivider.js';
 import './MoveNoteCard.css';
 
@@ -18,6 +20,11 @@ export interface MoveNoteCardProps {
    * not. */
   onContinueWithCoach?: () => void;
   isContinuingWithCoach?: boolean;
+  /** Which tactic sentence's arrow is currently drawn on the board (or
+   * 'all'/null) — lifted to useGameReviewPageData, since the board those
+   * arrows land on is this card's sibling, not its descendant. */
+  tacticSelection: TacticSelectionKey;
+  onToggleTacticSelection: (key: Exclude<TacticSelectionKey, null>) => void;
 }
 
 /** 'good'/'excellent' get no headline, same call as MoveQualityBadge's own
@@ -60,7 +67,15 @@ function CoachButton({ onContinueWithCoach, isContinuingWithCoach }: Pick<MoveNo
  * pane would occupy — the prompt text below is deliberately neutral about
  * where "select a move" happens (a tap on the strip below on mobile, a
  * click in the list on the left on desktop). */
-export function MoveNoteCard({ ply, san, move, onContinueWithCoach, isContinuingWithCoach }: MoveNoteCardProps): ReactNode {
+export function MoveNoteCard({
+  ply,
+  san,
+  move,
+  onContinueWithCoach,
+  isContinuingWithCoach,
+  tacticSelection,
+  onToggleTacticSelection
+}: MoveNoteCardProps): ReactNode {
   if (ply <= 0 || !san) {
     return (
       <div className="move-note-card move-note-card--empty">
@@ -91,8 +106,9 @@ export function MoveNoteCard({ ply, san, move, onContinueWithCoach, isContinuing
       <div className="move-note-card__body">
         {move ? (
           <>
-            {move.quality === 'book' ? <OpeningLabel move={move} /> : <MoveNote move={move} />}
-            {!hasMoveNoteText(move) && <p className="move-note-card__empty-text">Nothing to flag — a solid, natural move.</p>}
+            <TacticReasonList move={move} selection={tacticSelection} onToggle={onToggleTacticSelection} />
+            {move.quality === 'book' ? <OpeningLabel move={move} /> : <MoveNote move={move} excludeTacticText />}
+            {!hasMoveNoteText(move, true) && <p className="move-note-card__empty-text">Nothing to flag — a solid, natural move.</p>}
             <AlternativesPanel move={move} hideBestLine />
           </>
         ) : (

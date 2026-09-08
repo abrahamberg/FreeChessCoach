@@ -205,6 +205,17 @@ describe('buildReasons', () => {
     expect(reasons).toEqual([]);
   });
 
+  test('mobility is dropped once a better reason already explains the move', () => {
+    const reasons = buildReasons(baseInput({
+      featureDelta: {
+        newForks: [],
+        newHangingPieces: [{ square: 'd4', piece: 'n', color: 'white', attackers: 1, defenders: 0 }],
+        mobilityDelta: -9
+      }
+    }));
+    expect(reasons).toEqual(['Leaves the knight on d4 undefended']);
+  });
+
   test('caps at two reasons, prioritising mate over everything else', () => {
     const reasons = buildReasons(baseInput({
       evalBefore: evalWith([

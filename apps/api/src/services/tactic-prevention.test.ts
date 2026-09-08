@@ -23,6 +23,15 @@ const TWO_MOTIF_LINES: PositionAnalysisLine[] = [
 const FORK_LINE: PositionAnalysisLine = { moveUci: 'c4d6', moveSan: 'Nd6+', pvSan: ['Nd6+'], cp: 500, mateIn: null };
 const QUIET_LINE: PositionAnalysisLine = { moveUci: 'a1b1', moveSan: 'Kb1', pvSan: ['Kb1'], cp: 0, mateIn: null };
 
+// Nd6+'s own board geometry (tacticHitVisual) — the knight on d6 forking e8 and b7.
+const FORK_VISUAL = {
+  arrows: [
+    { from: 'd6', to: 'e8' },
+    { from: 'd6', to: 'b7' }
+  ],
+  highlights: []
+};
+
 function move(overrides: Partial<ClassifiedMoveDto> & { ply: number; mover: 'white' | 'black' }): ClassifiedMoveDto {
   return {
     moveSan: 'e4',
@@ -73,8 +82,8 @@ describe('computeTacticMotifPrevented', () => {
     expect(analyzePosition).not.toHaveBeenCalled();
     expect(result.counts.black.preventable.fork).toBe(1);
     expect(result.counts.black.prevented.fork).toBe(1);
-    expect(result.byPly.get(2)).toEqual({ type: 'fork', prevented: true, detail: 'knight on d6 forks e8 and b7' });
-    expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: false, detail: 'knight on d6 forks e8 and b7' });
+    expect(result.byPly.get(2)).toEqual({ type: 'fork', prevented: true, detail: 'knight on d6 forks e8 and b7', visual: FORK_VISUAL });
+    expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: false, detail: 'knight on d6 forks e8 and b7', visual: FORK_VISUAL });
   });
 
   // Task 50.4: byPly/counts stay biased on purpose (see the function's doc
@@ -100,7 +109,7 @@ describe('computeTacticMotifPrevented', () => {
     expect(analyzePosition).not.toHaveBeenCalled();
     expect(result.counts.black).toEqual({ preventable: {}, prevented: {} });
     expect(result.byPly.size).toBe(0);
-    expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: false, detail: 'knight on d6 forks e8 and b7' });
+    expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: false, detail: 'knight on d6 forks e8 and b7', visual: FORK_VISUAL });
   });
 
   // Task 50.4: a BEST_OR_BETTER ply never pays for the gated engine
@@ -204,7 +213,18 @@ describe('computeTacticMotifPrevented', () => {
     expect(result.counts.black.prevented.freePiece).toBe(1);
     // fork outranks freePiece in TACTIC_MOTIF_TYPES order (mirrors the
     // detectors' own precedence), so it's the one named on this ply.
-    expect(result.byPly.get(2)).toEqual({ type: 'fork', prevented: true, detail: 'knight on d5 forks b6 and f6' });
+    expect(result.byPly.get(2)).toEqual({
+      type: 'fork',
+      prevented: true,
+      detail: 'knight on d5 forks b6 and f6',
+      visual: {
+        arrows: [
+          { from: 'd5', to: 'b6' },
+          { from: 'd5', to: 'f6' }
+        ],
+        highlights: []
+      }
+    });
   });
 
   test('ply-1 move (no prior opponent turn) is skipped cleanly, no throw', async () => {
@@ -242,7 +262,7 @@ describe('computeTacticMotifPrevented', () => {
 
     expect(result.counts.black.preventable.fork).toBe(1);
     expect(result.counts.black.prevented.fork).toBeUndefined();
-    expect(result.byPly.get(2)).toEqual({ type: 'fork', prevented: false, detail: 'knight on d6 forks e8 and b7' });
-    expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: true, detail: 'knight on d6 forks e8 and b7' });
+    expect(result.byPly.get(2)).toEqual({ type: 'fork', prevented: false, detail: 'knight on d6 forks e8 and b7', visual: FORK_VISUAL });
+    expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: true, detail: 'knight on d6 forks e8 and b7', visual: FORK_VISUAL });
   });
 });

@@ -1,12 +1,13 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
 import { PromoteGameResponseSchema } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiGet, apiPost } from '../../api/client.js';
 import type { BoardArrow } from '../board/CoachBoard.js';
 import { sanToSquares } from '../board/sanToSquares.js';
+import { tacticSelectionOverlay, toggleTacticSelection, type TacticSelectionKey } from '../board/tacticSelection.js';
 import { toClassifiedMoves } from '../session/liveMoveQualities.js';
 import { GameDetailSchema } from '../session/sessionPageSchemas.js';
 import { lastMoveHighlightsFor } from '../session/useSessionBoardState.js';
@@ -23,6 +24,16 @@ export function useGameReviewPageData(gameId: string) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [ply, setPly] = useState(0);
+  // Which tactic sentence's arrow (if any) MoveNoteCard has selected —
+  // reset on every ply change (Daniel's call: "moving to next move resets
+  // the arrows"), regardless of which nav control changed it (MoveNavPills,
+  // MoveStrip, MoveExplorer, or the board's own move-list clicks all funnel
+  // through `setPly`).
+  const [tacticSelection, setTacticSelection] = useState<TacticSelectionKey>(null);
+  useEffect(() => setTacticSelection(null), [ply]);
+  function toggleTacticSelectionKey(key: Exclude<TacticSelectionKey, null>): void {
+    setTacticSelection((current) => toggleTacticSelection(current, key));
+  }
 
   const gameQuery = useQuery({
     queryKey: ['game', gameId],
@@ -56,7 +67,16 @@ export function useGameReviewPageData(gameId: string) {
   // where doing so can't mislead — see `arrows` below.
   const currentPosition = positions.find((position) => position.ply === ply) ?? positions[0];
   const fen = currentPosition?.fen ?? '';
-  const highlights = lastMoveHighlightsFor(currentPosition?.moveUci);
+  // The selected tactic sentence's own geometry (tacticSelectionOverlay) on
+  // top of the last-move highlight — both are just square/color pairs the
+  // board merges the same way, so there's nothing to reconcile between them.
+  const tacticOverlay = tacticSelectionOverlay(currentMove, tacticSelection);
+  const highlights = [...lastMoveHighlightsFor(currentPosition?.moveUci), ...tacticOverlay.highlights];
+  // A 'good' move (not excellent/best/brilliant — MoveQualityBadge already
+  // leaves those unlabeled in the move list) gets a quiet checkmark on the
+  // square it landed on, board-only — see MoveQualityBadgeOverlay.
+  const moveQualityBadgeSquare =
+    currentMove?.quality === 'good' && currentPosition?.moveUci ? currentPosition.moveUci.slice(2, 4) : undefined;
 
   // The one visual for "what was actually best" — MoveNoteCard no longer
   // spells it out as a "Best: <line>" sentence (Daniel's call: obvious once
@@ -68,7 +88,7 @@ export function useGameReviewPageData(gameId: string) {
   // --annotate-2 (blue) rather than any --quality-* color, so it never
   // reads as a quality judgment the way the note card's own accent border
   // does — it's a suggestion, not a verdict.
-  const arrows: BoardArrow[] = [];
+  const arrows: BoardArrow[] = [...tacticOverlay.arrows];
   if (currentMove?.bestMoveSan && currentMove.bestMoveSan !== currentMove.moveSan && currentMove.fenBefore) {
     const best = sanToSquares(currentMove.fenBefore, currentMove.bestMoveSan);
     if (best) arrows.push({ from: best.from, to: best.to, color: 'var(--annotate-2)' });
@@ -109,6 +129,9 @@ export function useGameReviewPageData(gameId: string) {
     fen,
     highlights,
     arrows,
+    moveQualityBadgeSquare,
+    tacticSelection,
+    onToggleTacticSelection: toggleTacticSelectionKey,
     continueWithCoach,
     isContinuingWithCoach: continueWithCoachMutation.isPending,
     continueWithCoachError: continueWithCoachMutation.isError
