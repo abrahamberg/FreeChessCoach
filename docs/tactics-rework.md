@@ -6,7 +6,8 @@ that fixes it. It is a companion to `docs/algorith.md` §7.2 (tactics score) and
 `packages/chess-analysis/src/tactic-detectors/README.md` (how a detector is
 added today).
 
-Measured against `packages/chess-analysis` at commit `96dc8fc`.
+Measured against `packages/chess-analysis` at commit `96dc8fc`, and read
+against eight chess.com Game Review cards (September 2026).
 
 ---
 
@@ -102,7 +103,68 @@ The detectors mostly *do* see the motif. Single-label first-match throws it away
 question that produces coaching-grade output is "does this shape *win
 something* in the line the engine is about to play?"
 
-## 3. Root causes
+## 3. What chess.com actually does differently
+
+Eight Game Review cards, transcribed:
+
+| Their sentence | Shape | What it forced them to compute |
+| --- | --- | --- |
+| "You had an opportunity to **win a bishop** through a discovered attack." | you · missed | which piece falls, in the line |
+| "Your better option was to **win a tempo** by threatening a queen." | you · missed | the alternative's gain type |
+| "You **uncorked a fork** and it is putting heat on them." | you · found | motif + eval swing |
+| "Their move **stopped you** from being able to win a rook through a fork." | them · prevented | the threat *you* lost |
+| "They missed a chance to win a rook through an **eventual** fork." | them · missed | + how many moves away |
+| "Their best option was to **send a queen into the game**." | them · missed | non-material vocabulary |
+| "You allowed a fork this game, which is **unusual for you**." | game · baseline | this player's cross-game rate |
+| "Your strategic play was **weaker than usual**… look at your worst piece." | game · baseline | cross-game score + a drill |
+
+**The sentence template is the verification contract.** You cannot fill
+`win a <piece> through a <motif>` without having computed which piece falls.
+Ours — `Found the <motif> — <geometry>` — is fillable from board shape alone,
+which is exactly why it prints on a fianchetto. Adopt their grammar and detector
+honesty is forced: a detector that can't name what it wins can't produce a
+sentence.
+
+Six rules worth stealing:
+
+1. **The payoff is the subject; the motif is a subordinate clause.**
+   *Win a rook* **through** *a fork*. We invert it — the pattern name leads and
+   there is no payoff in the sentence at all.
+2. **Be *less* specific, not more.** They never name a square. Our "bishop on c6
+   forks b7 and d7" carries more information and far more ways to be wrong, and
+   a 1200-rated reader can't act on the squares anyway. Specificity should be
+   *earned by confidence*: full geometry when the line confirms it, the bare
+   motif at medium confidence, silence below that.
+3. **Speak to the viewer, not the mover.** "You"/"they" on both sides' moves. We
+   already carry `isUserMove` on every move (`classify.ts:187`) and
+   `game.userColor` in the review page — and `tactic-reason-text.ts` reads
+   neither. On an opponent move we print "Found the fork" as though the user
+   played it, and "Defused the **opponent's** fork" where the opponent *is* the
+   user.
+4. **A defused threat is your lost chance, not their achievement.** Same
+   computation as `findDefusedThreats`, framed as something that happened to the
+   reader.
+5. **Say when it wasn't immediate.** "an *eventual* fork". `annotatePvTactics`
+   already returns `forkInPlies`; nothing narrates it.
+6. **Game-level notes are relative to the player's own history.** "unusual *for
+   you*", "you *normally* keep your pieces safe". `build-stats-dashboard.ts`
+   already aggregates per-motif opportunities/found/preventable/prevented across
+   a user's games — the baseline exists and nothing consumes it for copy. Tone
+   tracks deviation size ("—no big deal!").
+
+Our five cases under this grammar (the user played White here, so the two good
+moves belong to the opponent — the case our current copy gets grammatically
+wrong):
+
+| Move | Today | Rewritten |
+| --- | --- | --- |
+| `6.Bxc6` | "Found the fork — bishop on c6 forks b7 and d7." | — (the fork wins nothing) |
+| `6…bxc6` | "Defused the opponent's fork — …" | — (there was no fork) |
+| `7.Qxd4` | "Found the pin — pins the pawn on g7 against h8." | — (no pin worth naming) |
+| `4…Bd7` | "Nothing to flag" | "They broke the pin on their knight." |
+| `7…c5` | "Nothing to flag" | "They won a tempo by threatening the queen." |
+
+## 4. Root causes
 
 None of these are bugs in an individual detector. Each detector does exactly
 what its doc comment says.
@@ -122,12 +184,16 @@ what its doc comment says.
    do to the opponent. No unpin, escape, defence, tempo, deflection, decoy,
    interference, clearance, X-ray, zwischenzug, desperado, mating net, or
    promotion race — so those moves fall through to "Nothing to flag."
-5. **The prevention path diffs sets of type names.**
+5. **The sentence template asks nothing of the detector.**
+   `Found the <motif> — <geometry>` is printable the instant a shape matches.
+   Nothing in the copy requires a consequence, a perspective or a horizon, so
+   nothing in the pipeline was ever obliged to compute one. See §3.
+6. **The prevention path diffs sets of type names.**
    `tactic-prevention-check.ts` compares motif *types* reachable before and
    after a move. Every layer-1 false positive is amplified into a second false
    sentence ("Defused the opponent's fork").
 
-## 4. Target architecture — four layers instead of one
+## 5. Target architecture — five layers instead of one
 
 Keep the detector-per-file structure and the registry pattern. Replace what
 sits around them. All of this stays inside `packages/chess-analysis` (pure, no
@@ -184,17 +250,42 @@ threatened piece is no longer winnable — not that a type name left a set.
 
 ### Layer 4 — narrate
 
-The claim names actor, victim and gain, so the sentence carries the
-consequence: *"Wins the rook — the knight on d6 forks e8 and b7"* rather than
-*"Found the fork."* Add the defensive family so `4…Bd7` reads "Breaks the pin",
-and an explicit quiet-move vocabulary so "Nothing to flag" is reserved for
-moves that genuinely have nothing rather than moves we have no word for.
+Adopt §3's grammar literally. One template,
+`<subject> <outcome-verb> <gain> <horizon?> through <motif>`, filled from the
+verified claim:
+
+- **Subject** — "You"/"They", from `isUserMove`, already on every move.
+- **Outcome verb** — found / missed / allowed / prevented: the 2×2 of whose move
+  it was and whether the claim was executed.
+- **Gain** — the claim's verified prize: a named piece, a tempo, mate, or a
+  measured evaluation swing. A claim with no gain gets no sentence.
+- **Horizon** — immediate / in two / eventual, from `forkInPlies`, which
+  `annotatePvTactics` already computes and nobody reads.
+- **Specificity** — squares only at high confidence, the bare motif at medium,
+  nothing at low. One template with three degradation levels rather than one
+  always-maximal sentence.
+
+Add an explicit quiet-move vocabulary so "Nothing to flag" is reserved for moves
+that genuinely have nothing rather than moves we have no word for.
+
+### Layer 5 — compare
+
+"You allowed a fork this game, *which is unusual for you*" is a different
+product from "Tactics: 1 allowed." It needs a per-user rate per motif and a
+deviation test — and `build-stats-dashboard.ts` already aggregates
+opportunities/found/preventable/prevented per motif across a user's games. The
+baseline is computed and unused for copy. Three things fall out of it: a
+**headline** naming the motif most out of line with this player's history; a
+**tone** that tracks deviation size, so a first lapse reads as a note and a
+pattern reads as a weakness; and an **actionable close** — chess.com pairs every
+game-level card with a drill, which is the natural handoff into our coach
+session and puzzle assignment.
 
 Prompt-facing text for any of this belongs in `packages/prompts` per golden
 rule 9; the deterministic reason strings stay in
 `packages/chess-analysis/src/tactic-reason-text.ts`.
 
-## 5. Vocabulary gap
+## 6. Vocabulary gap
 
 Current `TACTIC_MOTIF_TYPES` (13): `checkmate`, `brilliantSacrifice`,
 `doubleCheck`, `fork`, `skewer`, `pin`, `discoveredAttack`,
@@ -220,7 +311,7 @@ database does not. Note the defensive detectors mostly fall out for free once
 claims are objects — a move that removes a verified enemy claim is a defensive
 motif, named after what it stopped.
 
-## 6. Engine breadth
+## 7. Engine breadth
 
 Layer 2 consumes lines, not just a best move. Where lines go missing today:
 
@@ -252,16 +343,18 @@ binary against `lines[0]`. With 5–8 real lines the review can say *"the fork w
 there on your third choice too"*, and stop calling a move a miss when it was
 second-best at equal evaluation.
 
-## 7. Delivery order
+## 8. Delivery order
 
 | Phase | Work | Why here |
 | --- | --- | --- |
+| 0 | **Fix the voice.** Rewrite `tactic-reason-text.ts` to §3's template and feed it `isUserMove`: you/they instead of "the opponent", defused reframed as your lost chance, horizon from `forkInPlies`. | No detector changes, one file plus its test, data already present. Removes the grammatically wrong copy on every opponent move and establishes the template B–C must then satisfy. |
 | A | **Precision test first.** False-positive suite over `openings.tsv` + a quiet corpus asserting a label-rate ceiling; add per-theme precision alongside recall in `lichess-puzzle-validation.test.ts`. | Nothing later is measurable without it, and this is the test that would have caught all of this pre-release. TDD per AGENTS.md. |
 | B | **Line verification** (claims → PV walk → material/eval attribution). Reuses `annotatePvTactics`, `applySanSequence`, `see.ts`. | The 22.4% → 2.5% change. Ship behind A's ceiling so the drop is a CI number. |
 | C | **Multi-label claims + ranked headline.** Detector signature change, `priority` demoted to tie-breaker. | Recovers the recall first-match currently discards; unifies sentence and arrow. Schema change in `packages/shared`. |
 | D | **Defensive + quiet vocabulary.** | Retires "Nothing to flag" as the default answer. Nearly free once claims are objects. |
 | E | **Browser engine breadth for review** (`analyzeGame` on the lite decorator, ply-budgeted, stored outside the trusted eval cache). | Independent of A–D, can run in parallel. |
 | F | **Rebuild the prevention path on verified claims.** | Worth little until A–C make claims trustworthy; currently the loudest amplifier of their errors. |
+| G | **Baseline-relative game report.** Per-user motif rates from the existing cross-game aggregate, a deviation test, game-level cards that say "unusual for you" with a drill attached. | Depends on A–D producing rates worth comparing; the aggregation itself is already built. |
 
 ### Acceptance bar, enforced in CI
 
@@ -274,3 +367,6 @@ second-best at equal evaluation.
 - **Attribution:** every motif sentence names a concrete consequence — a piece
   won, a mate, or a measured evaluation swing. No sentence ships that can't say
   what the tactic gets you.
+- **Voice:** every card addresses the reader as "you" or "they" correctly for
+  the side that moved, and no card names a square it hasn't verified.
+  Snapshot-tested, the same way the coach prompts already are.
