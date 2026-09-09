@@ -2,7 +2,7 @@ import type { Color, Square } from 'chess.js';
 import type { TacticHorizon } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 import { PIECE_VALUES } from './tactics.js';
-import { attackersOf, defendersOf, pieceTypeAt, pieceValueAt } from './tactic-board-facts.js';
+import { attackersOf, defendersOf, enemyTargetsOf, pieceTypeAt, pieceValueAt } from './tactic-board-facts.js';
 import type { TacticClaim } from './tactic-claim.js';
 import { isRecapture, type TacticDetectionContext } from './tactic-detectors/context.js';
 
@@ -163,23 +163,54 @@ function verifyPin(context: TacticDetectionContext, claim: TacticClaim): Verdict
   // puzzles on exactly that.
   if (pieceTypeAt(after, against) === 'k') return { ok: true, confidence: 0.8, gain: 0 };
 
+  // A pinned pawn is a tactic only when the pin takes away something the pawn
+  // itself was doing — a capture it was eyeing, or a piece it alone guards —
+  // never merely because the pawn is outnumbered. "Outnumbered" is a hanging
+  // pawn wearing a pin's geometry, the exact shape of TR-05's phantom: a queen
+  // on the long diagonal "pins" g7 to h8 in a few hundred games out of a
+  // thousand, and the pawn is guarded as often as it is hit. A relative pin
+  // on anything else keeps asking that pressure question below.
+  if (pieceTypeAt(after, pinned) === 'p') {
+    if (pawnPinDeniesSomething(context, pinned)) return { ok: true, confidence: 0.5, gain: 0 };
+    return REJECT;
+  }
+
   // Relative: the pinned piece *may* move, it just costs material to, so
-  // the pin is only a tactic if the piece is under real pressure. This one
-  // test is what removes the whole phantom family — a queen landing on the
-  // long diagonal "pins" g7 to h8 in a few hundred games out of a thousand
-  // (TR-05) and the Italian bishop "pins" f7 to g8 in every Italian, and in
-  // both the pinned pawn is guarded as often as it is hit.
+  // the pin is only a tactic if the piece is under real pressure.
   const attackers = attackersOf(context.afterAttackMap!, pinned, context.mover).length;
   const defenders = defendersOf(context.afterAttackMap!, pinned, context.opponent).length;
   if (attackers > defenders) return { ok: true, confidence: 0.55, gain: 0 };
 
   // No extra pressure yet, but a piece pinned against something much more
-  // valuable is still a bind worth naming — you pile on next move. Never a
-  // pawn: that is the exact shape of every phantom in the corpus, and a
-  // pawn is cheap enough that the "gap" is always large.
+  // valuable is still a bind worth naming — you pile on next move.
   const gap = pieceValueAt(after, against) - pieceValueAt(after, pinned);
-  if (pieceTypeAt(after, pinned) !== 'p' && gap >= 2) return { ok: true, confidence: 0.45, gain: 0 };
+  if (gap >= 2) return { ok: true, confidence: 0.45, gain: 0 };
   return REJECT;
+}
+
+/**
+ * Whether pinning this pawn costs its owner one of the two things a pawn
+ * actually does: capture something, or guard something. Neither question is
+ * about material pressure on the pawn itself — a pawn that's simply attacked
+ * more than it's defended is answered by `freePiece`/`defendsHangingPiece`,
+ * not by naming the pin. This is what makes a pin on a pawn a bind rather
+ * than noise: the opponent wanted to play the pawn's own move and can't.
+ */
+function pawnPinDeniesSomething(context: TacticDetectionContext, pinned: Square): boolean {
+  const after = context.after!;
+  const attackMap = context.afterAttackMap!;
+
+  // The pawn had a capture of its own lined up and can no longer take it.
+  if (enemyTargetsOf(after, attackMap, pinned, context.mover).length > 0) return true;
+
+  // The pawn is the (or a load-bearing) guard of a friendly piece — pin it
+  // and that piece is a capture closer to falling than it looks.
+  const guarded = (attackMap.controlledBy.get(pinned) ?? []).filter((square) => after.get(square)?.color === context.opponent);
+  return guarded.some((square) => {
+    const guardedAttackers = attackersOf(attackMap, square, context.mover).length;
+    const guardedDefenders = defendersOf(attackMap, square, context.opponent).length;
+    return guardedAttackers >= guardedDefenders;
+  });
 }
 
 /** The skewered pair only pays if the piece in front actually has to move —

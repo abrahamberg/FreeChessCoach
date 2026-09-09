@@ -122,11 +122,11 @@ export interface CoachBoardProps {
    * analyze/peek-mode boards, which never submit anything server-side, are
    * unaffected. */
   disabled?: boolean;
-  /** The square a 'good' move (not excellent/best/brilliant — those already
-   * read fine unlabeled) landed on — Game Review's own quiet on-board nod
-   * for a tier MoveQualityBadge deliberately skips in the move list. Purely
-   * cosmetic, recomputed fresh per render from the current ply; never
-   * written back into move data. */
+  /** The square a 'good' or 'excellent' move landed on — Game Review's own
+   * quiet on-board nod for the two tiers MoveQualityBadge deliberately
+   * skips in the move list (best/brilliant/etc. already get their own pill
+   * icon there). Purely cosmetic, recomputed fresh per render from the
+   * current ply; never written back into move data. */
   moveQualityBadgeSquare?: string;
 }
 
