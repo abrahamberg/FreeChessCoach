@@ -38,7 +38,7 @@ export function TacticMotifBadge({ move }: TacticMotifBadgeProps): ReactNode {
   );
 }
 
-/** `null`/absent (a report predating describeTacticHit, or a type with no
+/** `null`/absent (a report predating per-claim detail, or a type with no
  * detector-specific shape) shows no extra clause — the type/found label
  * above still reads fine on its own. */
 function detailSuffix(detail: string | null | undefined): string {

@@ -20,7 +20,7 @@ interface ReasonItemProps {
 }
 
 /** One tactic sentence — plain text when it has no board geometry to show
- * (an older stored report, or a motif type describeTacticHit/tacticHitVisual
+ * (an older stored report, or a motif whose claim carries no geometry
  * has nothing detector-specific to draw for), otherwise a toggle button:
  * click to show its arrow on the board in green (good outcome — found it,
  * defused it) or red (missed it, left it in play), click again (or the ×

@@ -31,8 +31,8 @@ const EMPTY_OVERLAY: TacticOverlay = { arrows: [], highlights: [] };
  * selected — green for the good outcome (found the tactic / defused the
  * threat), red for the bad one (missed it / left it in play). Resolves to
  * nothing when `key` is null, the move has no tactic data, or that motif
- * type has no detector-specific geometry to draw (tacticHitVisual's own
- * null case). */
+ * claim has no geometry to draw — a claim carries its own arrows, so an
+ * empty overlay means the motif genuinely has none. */
 export function tacticSelectionOverlay(move: ClassifiedMoveDto | undefined, key: TacticSelectionKey): TacticOverlay {
   if (!move || !key) return EMPTY_OVERLAY;
 

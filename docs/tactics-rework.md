@@ -1,14 +1,17 @@
 # Tactical review rework — investigation and plan
 
-Status: **phase A landed (tests only, no production change); phases 0 and B–G
-still design.** This document records why Game
-Review's tactic sentences are wrong, what was measured, and the architecture
-that fixes it. It is a companion to `docs/algorith.md` §7.2 (tactics score) and
+Status: **all phases landed.** This document records why Game Review's tactic
+sentences were wrong, what was measured, and the architecture that fixed it.
+It is a companion to `docs/algorith.md` §7.2 (tactics score) and
 `packages/chess-analysis/src/tactic-detectors/README.md` (how a detector is
-added today).
+added).
 
-Measured against `packages/chess-analysis` at commit `96dc8fc`, and read
-against ten chess.com Game Review cards (September 2026).
+The §1 and §2 numbers are the **before** measurements, taken against
+`packages/chess-analysis` at commit `96dc8fc` and read against ten chess.com
+Game Review cards (September 2026). They are kept in the past tense
+deliberately: they are what the tests in §8 exist to stop coming back. Where
+a section describes the fix, §8's table says what shipped and what it
+measured afterwards.
 
 ---
 
@@ -412,14 +415,14 @@ second-best at equal evaluation.
 
 | Phase | Work | Why here |
 | --- | --- | --- |
-| 0 | **Fix the voice.** Rewrite `tactic-reason-text.ts` to §3's template and feed it `isUserMove`: you/they instead of "the opponent", defused reframed as your lost chance, horizon from `forkInPlies`. | No detector changes, one file plus its test, data already present. Removes the grammatically wrong copy on every opponent move and establishes the template B–C must then satisfy. |
-| A | **Precision test first.** ✅ landed — `tactic-precision.test.ts` (three corpus ceilings) and `tactic-review-cases.ts` / `tactic-review-cases.test.ts` (the six named cards from §1). | Nothing later is measurable without it, and this is the test that would have caught all of this pre-release. TDD per AGENTS.md. |
-| B | **Line verification** (claims → PV walk → material/eval attribution). Reuses `annotatePvTactics`, `applySanSequence`, `see.ts`. | The 22.4% → 2.5% change. Ship behind A's ceiling so the drop is a CI number. |
-| C | **Multi-label claims + ranked headline.** Detector signature change, `priority` demoted to tie-breaker. | Recovers the recall first-match currently discards; unifies sentence and arrow. Schema change in `packages/shared`. |
-| D | **Defensive + quiet vocabulary.** | Retires "Nothing to flag" as the default answer. Nearly free once claims are objects. |
-| E | **Browser engine breadth for review** (`analyzeGame` on the lite decorator, ply-budgeted, stored outside the trusted eval cache). | Independent of A–D, can run in parallel. |
-| F | **Rebuild the prevention path on verified claims.** | Worth little until A–C make claims trustworthy; currently the loudest amplifier of their errors. |
-| G | **Baseline-relative game report.** Per-user motif rates from the existing cross-game aggregate, a deviation test, game-level cards that say "unusual for you" with a drill attached. | Depends on A–D producing rates worth comparing; the aggregation itself is already built. |
+| 0 ✅ | **Fix the voice.** Rewrite `tactic-reason-text.ts` to §3's template and feed it `isUserMove`: you/they instead of "the opponent", defused reframed as your lost chance, horizon from `forkInPlies`. | No detector changes, one file plus its test, data already present. Removes the grammatically wrong copy on every opponent move and establishes the template B–C must then satisfy. |
+| A ✅ | **Precision test first.** `tactic-precision.test.ts` (three corpus ceilings) and `tactic-review-cases.ts` / `tactic-review-cases.test.ts` (the six named cards from §1). | Nothing later is measurable without it, and this is the test that would have caught all of this pre-release. TDD per AGENTS.md. |
+| B ✅ | **Line verification** (claims → PV walk → material attribution), plus the static gates that carry every engine-free caller. Reuses `applySanSequence` and `see.ts`. | The noise change. Shipped behind A's ceilings so the drop is a CI number, not a claim. |
+| C ✅ | **Multi-label claims + ranked headline.** Detector signature change, `priority` demoted to tie-breaker. | Recovers the recall first-match was discarding; unifies sentence and arrow. Schema change in `packages/shared`. |
+| D ✅ | **Defensive + quiet vocabulary.** Thirty new detectors. | Retires "Nothing to flag" as the default answer. Nearly free once claims are objects — a defensive motif is an enemy claim that is gone. |
+| E ✅ | **Browser engine breadth for review**: `analyzeGame` on the lite decorator, budgeted to the plies `isTacticalPosition` already flags and capped at 24 of them, with the decorator outside the cache so `position_evaluations` still only ever sees `main`'s lines. | Independent of A–D. Feeds B: verification asks about the engine's *lines*, and review had none to ask about. |
+| F ✅ | **Rebuild the prevention path on verified claims.** | Worth little until A–C made claims trustworthy; it was the loudest amplifier of their errors. |
+| G ✅ | **Baseline-relative game report.** Per-user motif rates from the existing cross-game aggregate, a deviation test, game-level cards that say "unusual for you" with a drill attached. Derived at read time on `GET /api/games/:id`, never stored — what counts as unusual changes with every game played after this one. | Depends on A–D producing rates worth comparing; the aggregation itself was already built. |
 
 ### What phase A put in place
 
@@ -451,6 +454,55 @@ Recording the **full detector set** rather than just the winning motif is what
 makes the fixture useful for phase C: `TR-03` (`6.Bxc6`) fires four detectors —
 `fork`, `pin`, `removesDefender`, `freePiece` — on one ordinary exchange, so the
 priority list is picking a winner among four wrong answers.
+
+### What actually landed
+
+Every phase shipped. The measurements below are from the same two corpora §2
+used, re-run after the rework:
+
+| Gate | Before | After | Target |
+| --- | --- | --- | --- |
+| Opening-theory label rate (400 lines / 4,332 plies) | 640 = 14.8% | 135 = 3.1% | ≤ 5% ✅ |
+| Recaptures carrying a label | 97 / 113 = 85.8% | 2 / 113 = 1.8% | ≤ 5% ✅ |
+| Quiet moves in 120 puzzle positions | 897 / 3,040 = 29.5% | 230 = 7.6% | ≤ 10% ✅ |
+
+Recall rose on every Lichess theme at the same time, because §5 layer 3's
+multi-label view stopped throwing away motifs the detectors had already found:
+
+| Theme | Before (first match) | After (multi-label) |
+| --- | --- | --- |
+| skewer | 33/40 | 40/40 |
+| trappedPiece | 18/40 | 29/40 |
+| hangingPiece | 10/40 | 29/40 |
+| capturingDefender | 11/40 | 15/40 |
+| discoveredAttack | 32/40 | 37/40 |
+| pin | 24/40 | 27/40 |
+| fork · doubleCheck · mateIn1 | 40/40 | 40/40 |
+
+Coverage moved the other way on purpose: 52% of opening-theory plies and 59%
+of quiet moves now carry *some* label, against 4% and 7% before, because the
+defensive and positional families finally have words for what those moves are
+doing. The precision ceilings measure only the **offensive** family — a
+phantom *tactic* is what they were always about, and every motif that existed
+when they were first measured was offensive — so the two numbers do not fight.
+
+All ten cards in §1 reach their target and `KNOWN_TACTIC_REVIEW_DEFECTS` is
+empty. Three notes on how, since none was a detector fix:
+
+- **TR-04 and TR-05** are only distinguishable from a windfall capture if the
+  detectors know the opponent's previous move. A FEN cannot carry it and the
+  report pipeline has it, so `TacticDetectionContext` takes it.
+- **TR-03** needed the `'other'` catch-all retired. A card that says a tactic
+  happened without naming it is exactly what the acceptance bar rules out.
+- **TR-02 and TR-10** legitimately carry more claims than the fixture
+  originally sketched (`develops`; `seizesOpenFile` + `improvesWorstPiece`).
+  Those are true, and being able to say them is the point of phase D — the
+  co-fire §1 called a defect was a *false* claim, not a second true one.
+
+Two `see.ts` bugs surfaced the moment the detectors started calling it, which
+no detector had ever done: flipping the side to move left an illegal
+en-passant square behind, and an exchange could "capture" a king and produce a
+FEN chess.js refuses to load.
 
 ### Acceptance bar, enforced in CI
 

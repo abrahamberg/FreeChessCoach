@@ -282,7 +282,7 @@ export const AlternativeMoveSchema = z.object({
 });
 export type AlternativeMove = z.infer<typeof AlternativeMoveSchema>;
 
-/** Board geometry behind a tactic hit (tacticHitVisual in chess-analysis) —
+/** Board geometry behind a tactic claim (its `evidence`, in chess-analysis) —
  * an arrow per square-to-square relationship the motif involves, plus any
  * square worth highlighting on its own (e.g. a trapped piece has no arrow,
  * just a highlight). Lets the Game Review UI draw the tactic on the board
@@ -338,11 +338,11 @@ export const ClassifiedMoveSchema = z.object({
   /** The engine's top move at this position embodied this tactic — did the
    * player play it (see computeTacticMotifCounts). Undefined when the
    * position wasn't a named-motif opportunity at all, not just a 0/1.
-   * `detail` (describeTacticHit) names the concrete piece/square involved —
+   * `detail` (the claim's own) names the concrete piece/square involved —
    * `.optional()` (not required alongside `type`/`found`) so a report stored
    * before `detail` existed still parses; absent, not null, is "not
    * computed" there, same jsonb-no-migration convention as everywhere else
-   * on this schema. `.nullable()` covers describeTacticHit's own "no
+   * on this schema. `.nullable()` covers a claim's own "no
    * detector-specific shape for this type" case. */
   tacticOpportunity: z
     .object({
