@@ -11,6 +11,7 @@ import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { pgnFilename } from '../lib/pgn-filename.js';
 import { importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
 import { deleteGameForUser, listGamesForUser, promoteGame } from '../services/games.js';
+import { getGameTacticBaselineNote } from '../services/stats-dashboard.js';
 import * as userProfileService from '../services/user-profile.js';
 
 export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, jobQueue: JobQueue): void {
@@ -80,7 +81,11 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
       analysisStatus: analysis?.status ?? null,
       classifiedMoves: classifiedMoves ?? null,
       liveMoveQualities: null,
-      gameReport: gameReport ?? null
+      gameReport: gameReport ?? null,
+      // Derived at read time, not stored: what counts as "unusual for you"
+      // depends on the games played since, so a note frozen into the report
+      // would go stale the moment the next game is analysed.
+      tacticBaseline: gameReport ? await getGameTacticBaselineNote(db, user.id, game.id, gameReport, game.userColor) : null
     };
   });
 

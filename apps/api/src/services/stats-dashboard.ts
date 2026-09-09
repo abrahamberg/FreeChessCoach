@@ -1,5 +1,15 @@
-import { buildStatsDashboard, classifyTimeControl, type StatsEntry } from '@freechesscoach/chess-analysis';
-import { GameReportSchema, type GameSpeedFilter, type StatsDashboard, type StatsRange } from '@freechesscoach/shared';
+import { buildStatsDashboard, classifyTimeControl, headlineTacticBaselineNote, type StatsEntry } from '@freechesscoach/chess-analysis';
+import {
+  GameReportSchema,
+  TACTIC_MOTIF_TYPES,
+  type GameSpeedFilter,
+  type PlayerColor,
+  type StatsDashboard,
+  type StatsRange,
+  type TacticBaselineNoteDto,
+  type TacticMotifCounts,
+  type TacticMotifType
+} from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import type { Database } from '../db/schema.js';
@@ -59,4 +69,61 @@ function toStatsEntry(row: analysesRepo.StatsSourceRow): StatsEntry | null {
     playedAt: row.playedAt,
     speed: classifyTimeControl(row.timeControl)
   };
+}
+
+/**
+ * The one game-level tactic note worth showing on a game's review: what this
+ * game did that is out of line with the player's own record.
+ *
+ * `docs/tactics-rework.md` §5 layer 5. The comparison is deliberately against
+ * the player's *other* games — this game is filtered out of the aggregate
+ * before it is summed — so a lopsided game can't flatter itself by helping
+ * define the baseline it is measured against.
+ *
+ * `null` whenever there is nothing to say: too little history, or a game that
+ * simply matches the player's usual rates. That is the common case and is not
+ * an error.
+ */
+export async function getGameTacticBaselineNote(
+  db: Kysely<Database>,
+  userId: string,
+  gameId: string,
+  gameReport: unknown,
+  userColor: PlayerColor
+): Promise<TacticBaselineNoteDto | null> {
+  const parsed = GameReportSchema.safeParse(gameReport);
+  if (!parsed.success) return null;
+
+  const rows = await analysesRepo.listReadyReportsForUser(db, userId, null);
+  const others = rows
+    .filter((row) => row.gameId !== gameId)
+    .map((row) => toStatsEntry(row))
+    .filter((entry): entry is StatsEntry => entry !== null);
+
+  return headlineTacticBaselineNote({
+    game: parsed.data.players[userColor].tacticMotifs,
+    history: sumTacticMotifs(others),
+    historyGames: others.length
+  });
+}
+
+/** The same fold `buildStatsDashboard` does for the dashboard's own tactics
+ * section, kept separate here because the baseline needs the sum over a
+ * *filtered* set of games rather than the whole dashboard. */
+function sumTacticMotifs(entries: StatsEntry[]): TacticMotifCounts {
+  const totals = Object.fromEntries(
+    TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }] as const)
+  ) as Record<TacticMotifType, { opportunities: number; found: number; preventable?: number; prevented?: number }>;
+
+  for (const entry of entries) {
+    const motifs = entry.gameReport.players[entry.userColor].tacticMotifs;
+    for (const type of TACTIC_MOTIF_TYPES) {
+      const row = totals[type];
+      row.opportunities += motifs[type].opportunities;
+      row.found += motifs[type].found;
+      if (motifs[type].preventable !== undefined) row.preventable = (row.preventable ?? 0) + motifs[type].preventable;
+      if (motifs[type].prevented !== undefined) row.prevented = (row.prevented ?? 0) + motifs[type].prevented;
+    }
+  }
+  return totals as TacticMotifCounts;
 }

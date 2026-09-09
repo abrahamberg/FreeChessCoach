@@ -115,7 +115,7 @@ export function GameReviewPage(): ReactNode {
               onSelect={setPly}
               showNotes={false}
             />
-            {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} />}
+            {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} tacticBaseline={game.tacticBaseline} />}
           </div>
           {board}
           <div className="game-review-notes-column">{noteCard}</div>
@@ -142,7 +142,7 @@ export function GameReviewPage(): ReactNode {
           </div>
           {game.gameReport && (
             <div className="game-review-report-sheet">
-              <GameReportSummary report={game.gameReport} userColor={orientation} />
+              <GameReportSummary report={game.gameReport} userColor={orientation} tacticBaseline={game.tacticBaseline} />
             </div>
           )}
         </>

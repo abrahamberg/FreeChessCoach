@@ -248,3 +248,37 @@
   color: var(--quality-inaccuracy);
   font-weight: 600;
 }
+
+/* The baseline note (docs/tactics-rework.md §5 layer 5) sits above the fold,
+   between the two headline cards and the expand toggle — it is the one line
+   on the card that is about the player rather than about the game, so it
+   should not be behind "Show full report". Tone-coloured: a first lapse
+   reads as a note, a pattern as something to work on, the good direction as
+   a compliment. */
+.game-report-summary__baseline {
+  margin: 10px 12px 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent, #7a6cff);
+  border-radius: 4px;
+  background: rgba(127, 127, 127, 0.08);
+}
+
+.game-report-summary__baseline--habit {
+  border-left-color: #c0562f;
+}
+
+.game-report-summary__baseline--strength {
+  border-left-color: #3f8f5a;
+}
+
+.game-report-summary__baseline-headline {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.game-report-summary__baseline-drill {
+  margin: 6px 0 0;
+  font-size: 12px;
+  opacity: 0.75;
+}

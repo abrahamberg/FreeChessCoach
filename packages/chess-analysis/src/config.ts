@@ -229,6 +229,21 @@ export const CONFIG = {
     mediumConfidence: 0.4
   },
 
+  /** §5 layer 5 of docs/tactics-rework.md — the game-level note measured
+   * against this player's own history. `minBaselineGames`/`minBaselineChances`
+   * are the floor below which there is no history worth comparing to, so no
+   * note is made rather than a note made out of two games. `noteworthyGap` is
+   * how far this game's rate has to sit from the player's usual one before it
+   * is worth a sentence, and `habitBaselineRate` is where the tone stops
+   * being "unusual for you" and starts being the thing to train. All rates,
+   * not counts. */
+  tacticBaseline: {
+    minBaselineGames: 4,
+    minBaselineChances: 6,
+    noteworthyGap: 0.25,
+    habitBaselineRate: 0.5
+  },
+
   /** Both-sides tactic scanning (scan-tactics-for-lines.ts / position-tactics.ts).
    * `defaultTopN` is `ENGINE_MULTI_PV` itself (from @freechesscoach/shared,
    * the canonical single source) — no more hand-synced duplicate literal. */
