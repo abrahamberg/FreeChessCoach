@@ -162,8 +162,7 @@ describe('buildGameReport', () => {
       confidence: 0.85,
       // Multi-label: the knight check also hits the rook with tempo. The
       // card leads with the fork because that is what wins the material.
-      motifs: ['fork', 'gainsTempo'],
-      isUserMove: true
+      motifs: ['fork', 'gainsTempo']
     });
     expect(forkMove?.reasons).toContain('You won a rook through a fork — knight on d6 forks e8 and b7.');
   });

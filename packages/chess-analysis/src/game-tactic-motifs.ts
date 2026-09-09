@@ -47,8 +47,6 @@ export interface TacticMotifOpportunity {
    * view (§5 layer 3). `type` is its first entry whenever a claim produced
    * the headline. */
   motifs?: TacticMotifType[];
-  /** Whose review this card is written to — the narrator's "You"/"They". */
-  isUserMove?: boolean;
 }
 
 /**
@@ -109,8 +107,7 @@ export function classifyTacticMotifOpportunity(
     visual: headline?.evidence ?? null,
     ...(headline ? { gain: gainOf(headline), confidence: headline.confidence } : {}),
     ...(headline?.horizon ? { horizon: headline.horizon } : {}),
-    ...(classification.claims.length > 0 ? { motifs: classification.claims.map((claim) => claim.type) } : {}),
-    isUserMove: move.isUserMove
+    ...(classification.claims.length > 0 ? { motifs: classification.claims.map((claim) => claim.type) } : {})
   };
 }
 

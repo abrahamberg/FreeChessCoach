@@ -57,7 +57,7 @@ describe('tacticOpportunityReason', () => {
       { type: 'fork', found: false, isUserMove: true, gain: WON_A_ROOK, confidence: 0.85 },
       'Nd5'
     );
-    expect(text).toBe('You missed a chance to win a rook through a fork — Nd5 was there.');
+    expect(text).toBe('You missed a chance to win a rook through a fork with Nd5.');
   });
 
   test('a report stored before the voice rewrite keeps its own mover-neutral wording', () => {
@@ -65,6 +65,14 @@ describe('tacticOpportunityReason', () => {
     // produced the wrong copy in the first place.
     const text = tacticOpportunityReason({ type: 'fork', found: true, detail: 'knight on d5 forks c7 and e7' }, 'Nd5');
     expect(text).toBe('Found the fork — knight on d5 forks c7 and e7.');
+  });
+
+  test('a missed card names the geometry too, when the claim earned it', () => {
+    const text = tacticOpportunityReason(
+      { type: 'fork', found: false, isUserMove: true, gain: WON_A_ROOK, confidence: 0.85, detail: 'knight on d5 forks c7 and e7' },
+      'Nd5'
+    );
+    expect(text).toBe('You missed a chance to win a rook through a fork with Nd5 — knight on d5 forks c7 and e7.');
   });
 
   test('a stored report with no detail still names the move', () => {

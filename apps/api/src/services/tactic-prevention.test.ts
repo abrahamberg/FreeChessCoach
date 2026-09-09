@@ -7,15 +7,21 @@ const FORK_FEN_BLACK_TO_MOVE = '4k3/1r6/8/8/2N5/8/8/K7 b - - 0 1';
 const ROOK_MOVED_AWAY_FEN = '4k3/8/8/8/2N5/8/8/K7 w - - 0 1';
 
 // Two-motif fixtures (mirrors packages/chess-analysis's
-// tactic-prevention-check.test.ts): white has both a fork (Nd5, forking the
-// b6 rook and f6 knight) and a free undefended pawn (Qxd3) available; both
-// are gone once the rook has moved away and the pawn is defended.
-const TWO_MOTIF_FEN = '4k3/8/1r3n2/8/5N2/3p4/8/3Q3K w - - 0 1';
-const TWO_MOTIF_DEFUSED_FEN = '3rk3/8/5n2/8/5N2/3p4/8/3Q3K w - - 0 1';
+// tactic-prevention-check.test.ts): white has both a fork (Nd6+, forking the
+// king on e8 and the rook on b7) and a free undefended pawn (Qxd3)
+// available. Moving the rook to d8 answers both at once — the knight check
+// then has only the king to hit, and the rook guards d3 down the open file.
+const TWO_MOTIF_FEN = '4k3/1r6/8/8/2N5/3p4/8/3Q3K w - - 0 1';
+const TWO_MOTIF_DEFUSED_FEN = '3rk3/8/8/8/2N5/3p4/8/3Q3K w - - 0 1';
 const TWO_MOTIF_LINES: PositionAnalysisLine[] = [
-  { moveUci: 'f4d5', moveSan: 'Nd5', pvSan: ['Nd5'], cp: 500, mateIn: null },
+  { moveUci: 'c4d6', moveSan: 'Nd6+', pvSan: ['Nd6+'], cp: 500, mateIn: null },
   { moveUci: 'd1d3', moveSan: 'Qxd3', pvSan: ['Qxd3'], cp: 300, mateIn: null }
 ];
+
+/** The verified payoff behind a Nd6+ fork card: the rook on b7. Cards carry
+ * it so the sentence can say what the threat would have won rather than
+ * naming the motif alone. */
+const FORK_GAIN = { kind: 'material', pawns: 5, prize: 'rook' } as const;
 
 // Typed as the richer PositionAnalysisLine (always-present pvSan) so the
 // same fixtures work both as EngineEval.lines (EngineLine's pvSan is
@@ -82,7 +88,14 @@ describe('computeTacticMotifPrevented', () => {
     expect(analyzePosition).not.toHaveBeenCalled();
     expect(result.counts.black.preventable.fork).toBe(1);
     expect(result.counts.black.prevented.fork).toBe(1);
-    expect(result.byPly.get(2)).toEqual({ type: 'fork', prevented: true, detail: 'knight on d6 forks e8 and b7', visual: FORK_VISUAL });
+    expect(result.byPly.get(2)).toEqual({
+      type: 'fork',
+      prevented: true,
+      detail: 'knight on d6 forks e8 and b7',
+      visual: FORK_VISUAL,
+      gain: FORK_GAIN,
+      isUserMove: true
+    });
     expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: false, detail: 'knight on d6 forks e8 and b7', visual: FORK_VISUAL });
   });
 
@@ -216,14 +229,10 @@ describe('computeTacticMotifPrevented', () => {
     expect(result.byPly.get(2)).toEqual({
       type: 'fork',
       prevented: true,
-      detail: 'knight on d5 forks b6 and f6',
-      visual: {
-        arrows: [
-          { from: 'd5', to: 'b6' },
-          { from: 'd5', to: 'f6' }
-        ],
-        highlights: []
-      }
+      detail: 'knight on d6 forks e8 and b7',
+      visual: FORK_VISUAL,
+      gain: FORK_GAIN,
+      isUserMove: true
     });
   });
 
@@ -262,7 +271,14 @@ describe('computeTacticMotifPrevented', () => {
 
     expect(result.counts.black.preventable.fork).toBe(1);
     expect(result.counts.black.prevented.fork).toBeUndefined();
-    expect(result.byPly.get(2)).toEqual({ type: 'fork', prevented: false, detail: 'knight on d6 forks e8 and b7', visual: FORK_VISUAL });
+    expect(result.byPly.get(2)).toEqual({
+      type: 'fork',
+      prevented: false,
+      detail: 'knight on d6 forks e8 and b7',
+      visual: FORK_VISUAL,
+      gain: FORK_GAIN,
+      isUserMove: true
+    });
     expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: true, detail: 'knight on d6 forks e8 and b7', visual: FORK_VISUAL });
   });
 });

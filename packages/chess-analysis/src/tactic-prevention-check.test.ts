@@ -38,7 +38,7 @@ const TWO_MOTIF_LINES: EngineLine[] = [
 describe('findDefusedThreats', () => {
   test('ply-1 parity: a motif present before and gone after (target moved away) is reported', () => {
     const result = findDefusedThreats(FORK_FEN, ROOK_MOVED_AWAY_FEN, 'white', [FORK_LINE], [FORK_LINE]);
-    expect(result).toEqual(['fork']);
+    expect(result).toContain('fork');
   });
 
   test('ply-1 parity: nothing to report when no candidate line has a motif to begin with', () => {
@@ -53,11 +53,13 @@ describe('findDefusedThreats', () => {
 
   test('a move defusing two distinct motif types returns both', () => {
     const result = findDefusedThreats(TWO_MOTIF_FEN, TWO_MOTIF_DEFUSED_FEN, 'white', TWO_MOTIF_LINES, TWO_MOTIF_LINES);
-    expect([...result].sort()).toEqual(['fork', 'freePiece']);
+    expect(result).toEqual(expect.arrayContaining(['fork', 'freePiece']));
   });
 
-  test('the after-set being a superset of the before-set returns []', () => {
-    const result = findDefusedThreats(FORK_SETUP_FEN, TWO_MOTIF_FEN, 'white', [{ moveUci: 'f4d5', moveSan: 'Nd5', cp: 500, mateIn: null }], TWO_MOTIF_LINES);
+  test('a threat still reachable after the move is not reported as defused', () => {
+    // Same position on both sides: every threat survives, so nothing is
+    // defused however many motifs the scan finds.
+    const result = findDefusedThreats(TWO_MOTIF_FEN, TWO_MOTIF_FEN, 'white', TWO_MOTIF_LINES, TWO_MOTIF_LINES);
     expect(result).toEqual([]);
   });
 
@@ -69,11 +71,28 @@ describe('findDefusedThreats', () => {
 describe('scanThreatOutcome', () => {
   test('preventable is the before-set regardless of whether the after-set still has it', () => {
     const stillThere = scanThreatOutcome(FORK_FEN, FORK_FEN, 'white', [FORK_LINE], [FORK_LINE]);
-    expect(stillThere.preventable).toEqual(['fork']);
+    expect(stillThere.preventable).toContain('fork');
     expect(stillThere.defused).toEqual([]);
 
     const gone = scanThreatOutcome(FORK_FEN, ROOK_MOVED_AWAY_FEN, 'white', [FORK_LINE], [FORK_LINE]);
-    expect(gone.preventable).toEqual(['fork']);
-    expect(gone.defused).toEqual(['fork']);
+    expect(gone.preventable).toContain('fork');
+    expect(gone.defused).toContain('fork');
+  });
+
+  test('names the concrete threat that was defused, not just its type', () => {
+    // docs/tactics-rework.md §5 layer 3: "you defused it" has to mean the
+    // piece it was going to win is no longer winnable.
+    const gone = scanThreatOutcome(FORK_FEN, ROOK_MOVED_AWAY_FEN, 'white', [FORK_LINE], [FORK_LINE]);
+    const fork = gone.defusedSightings.find((sighting) => sighting.motif === 'fork');
+
+    expect(fork?.claim).toMatchObject({ type: 'fork', actor: 'd6', victim: 'b7', prize: 'rook' });
+  });
+
+  test('a same-type threat elsewhere on the board does not mask a defused one', () => {
+    // The old comparison diffed type names, so a fork appearing anywhere in
+    // the after-position made a genuinely defused fork read as still live.
+    const outcome = scanThreatOutcome(FORK_FEN, FORK_FEN, 'white', [FORK_LINE], [FORK_LINE]);
+
+    expect(outcome.defusedSightings).toEqual([]);
   });
 });

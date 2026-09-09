@@ -53,17 +53,11 @@ export function tacticOpportunityReason(opportunity: TacticOpportunityLike, best
   const clause = gainClause(opportunity, specificity);
   const detail = specificity === 'high' && opportunity.detail ? ` — ${opportunity.detail}` : '';
 
-  // A stored report carries its detail and printed it unconditionally, so
-  // the legacy path is given the detail directly rather than the
-  // confidence-gated one — an old card's specificity was never earned, but
-  // rewriting what it already showed would be a worse answer than keeping it.
-  if (opportunity.isUserMove === undefined) {
-    return legacyOpportunityReason(opportunity, bestMoveSan, opportunity.detail ? ` — ${opportunity.detail}` : '');
-  }
+  if (opportunity.isUserMove === undefined) return legacyOpportunityReason(opportunity, bestMoveSan, detail);
   const subject = opportunity.isUserMove ? 'You' : 'They';
   if (opportunity.found) return `${subject} ${clause.did}${detail}.`;
-  const move = bestMoveSan ? ` — ${bestMoveSan} was there` : '';
-  return `${subject} missed a chance to ${clause.toDo}${move}.`;
+  const move = bestMoveSan ? ` with ${bestMoveSan}` : '';
+  return `${subject} missed a chance to ${clause.toDo}${move}${detail}.`;
 }
 
 /** A report stored before the voice rewrite has no `isUserMove` on its
@@ -118,8 +112,14 @@ function legacyPreventionReason(prevention: TacticPreventionLike, detail: string
 
 type Specificity = 'high' | 'medium' | 'low';
 
+/**
+ * Absent confidence means the card predates verification, and those cards
+ * always printed their geometry — degrading them to the bare motif now would
+ * quietly rewrite what a stored report says. Only a claim that was actually
+ * scored can be scored low.
+ */
 function specificityOf(confidence: number | undefined): Specificity {
-  if (confidence === undefined) return 'medium';
+  if (confidence === undefined) return 'high';
   if (confidence >= CONFIG.tacticVerification.highConfidence) return 'high';
   if (confidence >= CONFIG.tacticVerification.mediumConfidence) return 'medium';
   return 'low';

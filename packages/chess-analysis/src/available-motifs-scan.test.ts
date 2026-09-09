@@ -30,8 +30,14 @@ describe('scanAvailableMotifs', () => {
     const scan = scanAvailableMotifs(FORK_SETUP_FEN, lines);
     const legacy = scanTacticsForLines(FORK_SETUP_FEN, lines, 'white');
 
-    expect(scan.sightings).toEqual(legacy.map((sighting) => ({ ...sighting, ply: 1, fenBefore: FORK_SETUP_FEN })));
-    expect([...scan.motifs]).toEqual(['fork']);
+    // Multi-label: the scan reports every verified claim on the step, so the
+    // legacy single-motif result is a subset of it rather than an equal.
+    // Each sighting also carries the claim it was found as, which is what the
+    // prevention path compares and what the card is written from.
+    expect(scan.sightings.map((sighting) => sighting.motif)).toEqual(expect.arrayContaining(legacy.map((s) => s.motif)));
+    expect(scan.sightings.every((sighting) => sighting.ply === 1 && sighting.fenBefore === FORK_SETUP_FEN)).toBe(true);
+    expect(scan.sightings[0]?.claim).toMatchObject({ type: 'fork', actor: 'd5' });
+    expect([...scan.motifs]).toContain('fork');
   });
 
   test('a synthetic fork-at-ply-3 fixture is picked up for a rank whose schedule depth is >=3', () => {
@@ -40,10 +46,15 @@ describe('scanAvailableMotifs', () => {
     // rank 0 (multiPv default 5) -> schedule depth 7, comfortably reaches ply 3.
     const scan = scanAvailableMotifs(FORK_SETUP_FEN, lines);
 
-    expect(scan.sightings).toEqual([
-      { rank: 0, ply: 3, moveSan: 'Nd5+', motif: 'fork', fenBefore: '8/4k3/1r1p1n2/8/2P2N2/8/7K/8 w - - 2 2' }
-    ]);
-    expect([...scan.motifs]).toEqual(['fork']);
+    expect(scan.sightings.map(({ rank, ply, moveSan, motif, fenBefore }) => ({ rank, ply, moveSan, motif, fenBefore }))).toContainEqual({
+      rank: 0,
+      ply: 3,
+      moveSan: 'Nd5+',
+      motif: 'fork',
+      fenBefore: '8/4k3/1r1p1n2/8/2P2N2/8/7K/8 w - - 2 2'
+    });
+    expect(scan.sightings.every((sighting) => sighting.ply === 3)).toBe(true);
+    expect([...scan.motifs]).toContain('fork');
   });
 
   test('the same fork-at-ply-3 fixture is missed when it sits at a lower rank capped at depth 1', () => {
@@ -58,8 +69,8 @@ describe('scanAvailableMotifs', () => {
     // rank 4 (multiPv default 5) -> schedule depth 1, only ply 1 (Kh2) is walked.
     const scan = scanAvailableMotifs(FORK_SETUP_FEN, lines);
 
-    expect(scan.sightings).toEqual([]);
-    expect(scan.motifs.size).toBe(0);
+    expect(scan.motifs.has('fork')).toBe(false);
+    expect(scan.sightings.every((sighting) => sighting.ply === 1)).toBe(true);
   });
 
   test('an even-ply motif (the opponent\'s own hypothetical reply) is never included', () => {
@@ -83,6 +94,6 @@ describe('scanAvailableMotifs', () => {
 
     const scan = scanAvailableMotifs(FORK_SETUP_FEN, lines);
 
-    expect([...scan.motifs]).toEqual(['fork']);
+    expect([...scan.motifs]).toContain('fork');
   });
 });

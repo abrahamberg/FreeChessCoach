@@ -163,7 +163,11 @@ function enrichWithPhaseAndTactics(
     // per-move notes the UI already shows, so a reviewer can eyeball
     // false-positive detector hits without a DB query. Appended after
     // buildReasons' own MAX_REASONS truncation, so it's never crowded out.
-    reasons: [...(withPhase.reasons ?? []), tacticOpportunityReason(opportunity, withPhase.bestMoveSan)]
+    // The card is written to the person whose review this is, so the
+    // narrator needs to know whose move it was. `isUserMove` has been on
+    // every move all along; it is passed rather than stored on the
+    // opportunity so an older report renders in the right voice too.
+    reasons: [...(withPhase.reasons ?? []), tacticOpportunityReason({ ...opportunity, isUserMove: withPhase.isUserMove }, withPhase.bestMoveSan)]
   };
 }
 
