@@ -1,5 +1,5 @@
 import type { Square } from 'chess.js';
-import { pins, type PinHit } from '../tactic-pins.js';
+import type { PinHit } from '../tactic-pins.js';
 import { pieceNameAt, pieceTypeAt } from '../tactic-board-facts.js';
 import type { TacticClaim } from '../tactic-claim.js';
 import type { TacticDetector } from './types.js';
@@ -24,9 +24,9 @@ export const pinDetector: TacticDetector = {
   detect: (ctx) => {
     if (!ctx.after || !ctx.destination) return [];
     const after = ctx.after;
-    const existing = new Set(pins(ctx.before).map(pinKey));
+    const existing = new Set(ctx.facts.pinsBefore().map(pinKey));
 
-    return pins(after)
+    return ctx.facts.pinsAfter()
       .filter((hit) => after.get(hit.by)?.color === ctx.mover && !existing.has(pinKey(hit)))
       .map((hit): TacticClaim => {
         const absolute = pieceTypeAt(after, hit.against) === 'k';
@@ -40,8 +40,8 @@ export const pinDetector: TacticDetector = {
           prize: null,
           evidence: { arrows: [{ from: hit.by, to: hit.against }], highlights: [hit.pinned] },
           detail: absolute
-            ? `pins the ${pieceNameAt(after, hit.pinned)} on ${hit.pinned} against the king`
-            : `pins the ${pieceNameAt(after, hit.pinned)} on ${hit.pinned} against the ${pieceNameAt(after, hit.against)} on ${hit.against}`
+            ? `their ${pieceNameAt(after, hit.pinned)} on ${hit.pinned} is stuck in front of the king`
+            : `their ${pieceNameAt(after, hit.pinned)} on ${hit.pinned} can't move without losing the ${pieceNameAt(after, hit.against)} behind it`
         };
       });
   }

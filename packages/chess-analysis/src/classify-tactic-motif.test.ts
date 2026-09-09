@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { classifyTacticMotif, type TacticMotifContext } from './classify-tactic-motif.js';
+import { classifyTacticClaims, classifyTacticMotif, type TacticMotifContext } from './classify-tactic-motif.js';
 
 const FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
 const PIN_FEN = '4k3/8/2n5/8/8/3B4/8/4K3 w - - 0 1';
@@ -63,10 +63,14 @@ describe('classifyTacticMotif', () => {
     expect(classifyTacticMotif(context)).toBe('doubleCheck');
   });
 
-  test('tags a move that overloads a defender', () => {
+  test('keeps the overloaded defender among a move\'s claims, behind the file it also takes', () => {
+    // Rf1 both overloads the d7 knight and swings a rook onto the open
+    // f-file. Both are true; the ranker leads with the one that changes the
+    // position rather than the one with the longer name, and multi-label
+    // means the other is still there for the coach to reason with.
     const context = contextFor({ fenBefore: OVERLOAD_FEN, moveSan: 'Rf1' });
 
-    expect(classifyTacticMotif(context)).toBe('overloadedDefender');
+    expect(classifyTacticClaims(context).claims.map((claim) => claim.type)).toContain('overloadedDefender');
   });
 
   test('tags a move exploiting a weak back rank, checkmate flag notwithstanding', () => {
@@ -75,10 +79,14 @@ describe('classifyTacticMotif', () => {
     expect(classifyTacticMotif(context)).toBe('weakBackRank');
   });
 
-  test('falls back to "other" for a tactical position matching no named motif', () => {
+  test('says nothing for a tactical position matching no named motif', () => {
+    // The shipped classifier answered `'other'` here, which prints "Found the
+    // tactic with e4." — a card that says a tactic happened without being
+    // able to say which. docs/tactics-rework.md §3's acceptance bar rules
+    // that out: no sentence ships that can't name what it wins.
     const context = contextFor({ fenBefore: QUIET_FEN, moveSan: 'e4', isTacticalPosition: true });
 
-    expect(classifyTacticMotif(context)).toBe('other');
+    expect(classifyTacticMotif(context)).toBeNull();
   });
 
   test('returns null outside a tactical position', () => {

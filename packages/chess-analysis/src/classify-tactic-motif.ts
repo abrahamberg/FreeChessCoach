@@ -16,8 +16,16 @@ export interface TacticMotifContext {
    * hypothetical classification. */
   quality: MoveQuality;
   isCheckmate: boolean;
-  /** §7.2's existing "is this a tactical position" signal — gates the
-   * `'other'` catch-all and the `null` ("not tactical at all") result. */
+  /** §7.2's existing "is this a tactical position" signal.
+   *
+   * No longer gates a catch-all: the shipped classifier answered `'other'`
+   * for a sharp position it couldn't name, which is a card that says "a
+   * tactic happened, we don't know which" — exactly the sentence
+   * `docs/tactics-rework.md` §3's acceptance bar rules out ("no sentence
+   * ships that can't say what the tactic gets you"). With the phase-D
+   * vocabulary a move that still matches nothing genuinely has nothing to
+   * say. Kept on the input because callers pass it and because it stays part
+   * of the move's own report data. */
   isTacticalPosition: boolean;
   /** The opponent's previous move, when the caller knows it. Only a
    * recapture gate reads it, but that gate is the single biggest source of
@@ -60,7 +68,10 @@ export function classifyTacticClaims(context: TacticMotifContext): TacticClassif
     context.mover,
     context.previous ?? null
   );
-  const claims = rankTacticClaims(verifyTacticClaims(detectionContext, proposeTacticClaims(detectionContext)));
+  const claims = rankTacticClaims(
+    verifyTacticClaims(detectionContext, proposeTacticClaims(detectionContext)),
+    detectionContext.destination
+  );
 
   return { headline: headlineFor(context, claims), claims };
 }
@@ -69,9 +80,7 @@ function headlineFor(context: TacticMotifContext, claims: readonly VerifiedTacti
   if (context.isCheckmate) return 'checkmate';
   if (context.quality === 'brilliant') return 'brilliantSacrifice';
 
-  const best = headlineTacticClaim(claims);
-  if (best) return best.type;
-  return context.isTacticalPosition ? 'other' : null;
+  return headlineTacticClaim(claims)?.type ?? null;
 }
 
 /**

@@ -1,6 +1,7 @@
 import { Chess, type Color, type Move, type Square } from 'chess.js';
 import { buildAttackMap, opponentOf, type AttackMap } from '../attack-map.js';
 import { flipActiveColorFen } from '../null-move-fen.js';
+import { buildTacticFacts, type TacticFacts } from './facts.js';
 
 function toColor(mover: 'white' | 'black'): Color {
   return mover === 'white' ? 'w' : 'b';
@@ -56,6 +57,11 @@ export interface TacticDetectionContext {
    * before it. `null` when the mover is in check, where passing is illegal
    * and the question has no sound answer (see `flipActiveColorFen`). */
   beforeNullMove: Chess | null;
+  /** Board computations more than one detector wants, memoised per move —
+   * see `facts.ts`. Detectors must go through this rather than calling
+   * `pins()`/`see()`/`forcedReplies()` directly, or the same walk is paid for
+   * once per detector that asks. */
+  facts: TacticFacts;
 }
 
 export function buildTacticDetectionContext(
@@ -78,7 +84,7 @@ export function buildTacticDetectionContext(
 
   const nullMoveFen = flipActiveColorFen(fenBefore);
 
-  return {
+  const resolved = {
     fenBefore,
     moveSan,
     mover: moverColor,
@@ -92,6 +98,8 @@ export function buildTacticDetectionContext(
     previous,
     beforeNullMove: nullMoveFen ? new Chess(nullMoveFen) : null
   };
+
+  return { ...resolved, facts: buildTacticFacts(resolved) };
 }
 
 /** True when this move recaptures on the square the opponent just captured

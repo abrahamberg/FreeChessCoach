@@ -53,7 +53,13 @@ export function tacticOpportunityReason(opportunity: TacticOpportunityLike, best
   const clause = gainClause(opportunity, specificity);
   const detail = specificity === 'high' && opportunity.detail ? ` — ${opportunity.detail}` : '';
 
-  if (opportunity.isUserMove === undefined) return legacyOpportunityReason(opportunity, bestMoveSan, detail);
+  // A stored report carries its detail and printed it unconditionally, so
+  // the legacy path is given the detail directly rather than the
+  // confidence-gated one — an old card's specificity was never earned, but
+  // rewriting what it already showed would be a worse answer than keeping it.
+  if (opportunity.isUserMove === undefined) {
+    return legacyOpportunityReason(opportunity, bestMoveSan, opportunity.detail ? ` — ${opportunity.detail}` : '');
+  }
   const subject = opportunity.isUserMove ? 'You' : 'They';
   if (opportunity.found) return `${subject} ${clause.did}${detail}.`;
   const move = bestMoveSan ? ` — ${bestMoveSan} was there` : '';

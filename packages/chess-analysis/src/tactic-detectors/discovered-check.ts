@@ -1,6 +1,5 @@
 import { PIECE_NAMES } from '../move-reasons.js';
 import { attackersOf, kingSquareOf } from '../tactic-board-facts.js';
-import { discoveredAttackDetail } from '../tactic-discovered.js';
 import type { TacticClaim } from '../tactic-claim.js';
 import type { TacticDetector } from './types.js';
 
@@ -30,7 +29,7 @@ export const discoveredCheckDetector: TacticDetector = {
     const checkers = attackersOf(ctx.afterAttackMap, king, ctx.mover);
     if (!checkers.some((square) => square !== ctx.destination)) return [];
 
-    const hit = discoveredAttackDetail(ctx.fenBefore, ctx.moveSan, ctx.mover);
+    const hit = ctx.facts.discovered();
     if (!hit || hit.revealed !== king) return [];
 
     const claim: TacticClaim = {

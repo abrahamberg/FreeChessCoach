@@ -1,6 +1,5 @@
 import type { Square } from 'chess.js';
 import { attackersOf, formatSquareList, pieceNameAt } from '../tactic-board-facts.js';
-import { overloadedDefenders } from '../piece-safety.js';
 import type { TacticClaim } from '../tactic-claim.js';
 import type { TacticDetector } from './types.js';
 
@@ -19,7 +18,7 @@ export const overloadedDefenderDetector: TacticDetector = {
     const attackMap = ctx.afterAttackMap;
     const destination = ctx.destination;
 
-    return overloadedDefenders(after, attackMap)
+    return ctx.facts.overloadedAfter()
       .filter((hit) => after.get(hit.square as Square)?.color === ctx.opponent)
       .filter((hit) => hit.defending.some((duty) => attackersOf(attackMap, duty as Square, ctx.mover).includes(destination)))
       .map((hit): TacticClaim => {

@@ -1,6 +1,5 @@
 import type { Square } from 'chess.js';
 import { attackersOf, pieceNameAt } from '../tactic-board-facts.js';
-import { trappedPieces } from '../tactic-trapped.js';
 import { PIECE_VALUES } from '../tactics.js';
 import type { TacticClaim } from '../tactic-claim.js';
 import type { TacticDetector } from './types.js';
@@ -25,11 +24,9 @@ export const trappedPieceDetector: TacticDetector = {
     // `trappedPieces` needs the trapped side to move, so "was it already
     // trapped?" is asked at the null-move position, not at `before` (where
     // it is the mover's turn and the answer would always be empty).
-    const alreadyTrapped = new Set(
-      ctx.beforeNullMove ? trappedPieces(ctx.beforeNullMove, ctx.opponent).map((hit) => hit.square) : []
-    );
+    const alreadyTrapped = new Set(ctx.facts.trappedBefore().map((hit) => hit.square));
 
-    return trappedPieces(after, ctx.opponent)
+    return ctx.facts.trappedAfter()
       .filter((hit) => !alreadyTrapped.has(hit.square) || attackersOf(ctx.afterAttackMap!, hit.square, ctx.mover).includes(destination))
       .map((hit): TacticClaim => ({
         type: 'trappedPiece',

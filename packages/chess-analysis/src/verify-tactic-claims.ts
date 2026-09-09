@@ -1,7 +1,6 @@
-import type { Square } from 'chess.js';
+import type { Color, Square } from 'chess.js';
 import type { TacticHorizon } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
-import { see } from './see.js';
 import { PIECE_VALUES } from './tactics.js';
 import { attackersOf, defendersOf, pieceTypeAt, pieceValueAt } from './tactic-board-facts.js';
 import type { TacticClaim } from './tactic-claim.js';
@@ -84,6 +83,11 @@ function verdictFor(context: TacticDetectionContext, claim: TacticClaim): Verdic
       return verifyWinnableVictim(context, claim, 0.7);
     case 'removesDefender':
       return verifyRemovesDefender(context, claim);
+    case 'deflection':
+    case 'interference':
+      // Both promise a specific enemy piece, so both answer to the same
+      // question the discovered attack does: is that piece actually takeable?
+      return verifyWinnableVictim(context, claim, 0.6);
     case 'overloadedDefender':
       // Sole defender of two attacked pieces, by construction in
       // `piece-safety.ts` — the shape *is* the evidence, and the claim makes
@@ -99,14 +103,24 @@ function verdictFor(context: TacticDetectionContext, claim: TacticClaim): Verdic
       // Every motif added by phase D carries its own gate inside its
       // detector — a defensive claim is verified by the enemy claim it
       // removes, a positional one by the feature it changes, and neither is
-      // an exchange question this file can answer.
-      return { ok: true, confidence: 0.6, gain: claim.expectedGain };
+      // an exchange question this file can answer. They sit at high
+      // confidence because a detector that fired has already checked the
+      // board fact it names, which is what earns the card its squares.
+      return { ok: true, confidence: CONFIG.tacticVerification.highConfidence, gain: claim.expectedGain };
   }
 }
 
-/** SEE on a square, in pawns rather than centipawns. */
-function exchangePawns(fen: string, square: Square, capturer: 'w' | 'b'): number {
-  return see(fen, square, capturer) / 100;
+/** SEE on a square after the move, in pawns rather than centipawns. Goes
+ * through the context's memo (`tactic-detectors/facts.ts`) because several
+ * gates ask about the same square and SEE builds a board per capture in the
+ * exchange. */
+function exchangeAfterPawns(context: TacticDetectionContext, square: Square, capturer: Color): number {
+  return context.facts.exchangeAfter(square, capturer) / 100;
+}
+
+/** The same on the position before the move. */
+function exchangeBeforePawns(context: TacticDetectionContext, square: Square, capturer: Color): number {
+  return context.facts.exchangeBefore(square, capturer) / 100;
 }
 
 /**
@@ -117,11 +131,10 @@ function exchangePawns(fen: string, square: Square, capturer: 'w' | 'b'): number
  * and cannot be defended.
  */
 function verifyFork(context: TacticDetectionContext, claim: TacticClaim): Verdict {
-  const fenAfter = context.after!.fen();
-  if (exchangePawns(fenAfter, claim.actor, context.opponent) > 0) return REJECT;
+  if (exchangeAfterPawns(context, claim.actor, context.opponent) > 0) return REJECT;
 
   const collectible = claim.targets.filter(
-    (square) => pieceTypeAt(context.after!, square) === 'k' || exchangePawns(fenAfter, square, context.mover) > 0
+    (square) => pieceTypeAt(context.after!, square) === 'k' || exchangeAfterPawns(context, square, context.mover) > 0
   );
   if (collectible.length < 2) return REJECT;
 
@@ -142,7 +155,7 @@ function verifyPin(context: TacticDetectionContext, claim: TacticClaim): Verdict
   const after = context.after!;
   const [pinned, against] = claim.targets;
   if (!pinned || !against) return REJECT;
-  if (exchangePawns(after.fen(), claim.actor, context.opponent) > 0) return REJECT;
+  if (exchangeAfterPawns(context, claim.actor, context.opponent) > 0) return REJECT;
 
   // Absolute: the piece behind is the king, so the pinned piece genuinely
   // cannot move. That holds for a pawn too — a pinned pawn that cannot
@@ -174,12 +187,11 @@ function verifyPin(context: TacticDetectionContext, claim: TacticClaim): Verdict
  * behind is then takeable. */
 function verifySkewer(context: TacticDetectionContext, claim: TacticClaim): Verdict {
   const after = context.after!;
-  const fenAfter = after.fen();
   const [front, behind] = claim.targets;
   if (!front || !behind) return REJECT;
-  if (exchangePawns(fenAfter, claim.actor, context.opponent) > 0) return REJECT;
+  if (exchangeAfterPawns(context, claim.actor, context.opponent) > 0) return REJECT;
 
-  const frontMustMove = pieceTypeAt(after, front) === 'k' || exchangePawns(fenAfter, front, context.mover) > 0;
+  const frontMustMove = pieceTypeAt(after, front) === 'k' || exchangeAfterPawns(context, front, context.mover) > 0;
   if (!frontMustMove) return REJECT;
 
   // The prize is priced statically rather than by SEE: the whole mechanism
@@ -213,7 +225,7 @@ function verifyFreePiece(context: TacticDetectionContext, claim: TacticClaim): V
   const previous = context.previous;
   if (previous?.wasCapture && PIECE_VALUES[captured] <= capturedValueOfPrevious(context)) return REJECT;
 
-  const gain = exchangePawns(context.fenBefore, claim.actor, context.mover);
+  const gain = exchangeBeforePawns(context, claim.actor, context.mover);
   if (gain < CONFIG.tacticVerification.minStaticGainPawns) return REJECT;
   return { ok: true, confidence: 0.8, gain };
 }
@@ -256,13 +268,12 @@ function verifyWinnableVictim(context: TacticDetectionContext, claim: TacticClai
  * can see whether the line pays.
  */
 function verifyRemovesDefender(context: TacticDetectionContext, claim: TacticClaim): Verdict {
-  if (exchangePawns(context.fenBefore, claim.actor, context.mover) < 0) return REJECT;
+  if (exchangeBeforePawns(context, claim.actor, context.mover) < 0) return REJECT;
   return verifyWinnableVictim(context, claim, 0.7);
 }
 
 /** What taking the piece on `square` is actually worth to the mover, capped
  * by the exchange that follows it. */
 function winnableValue(context: TacticDetectionContext, square: Square): number {
-  const exchange = exchangePawns(context.after!.fen(), square, context.mover);
-  return Math.max(0, exchange);
+  return Math.max(0, exchangeAfterPawns(context, square, context.mover));
 }

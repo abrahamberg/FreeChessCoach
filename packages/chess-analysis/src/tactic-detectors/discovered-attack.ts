@@ -1,4 +1,3 @@
-import { discoveredAttackDetail } from '../tactic-discovered.js';
 import { PIECE_NAMES } from '../move-reasons.js';
 import { pieceNameAt, pieceTypeAt, pieceValueAt } from '../tactic-board-facts.js';
 import type { TacticClaim } from '../tactic-claim.js';
@@ -13,7 +12,7 @@ export const discoveredAttackDetector: TacticDetector = {
   priority: 30,
   detect: (ctx) => {
     if (!ctx.after) return [];
-    const hit = discoveredAttackDetail(ctx.fenBefore, ctx.moveSan, ctx.mover);
+    const hit = ctx.facts.discovered();
     if (!hit) return [];
     const after = ctx.after;
     const revealedIsKing = pieceTypeAt(after, hit.revealed) === 'k';

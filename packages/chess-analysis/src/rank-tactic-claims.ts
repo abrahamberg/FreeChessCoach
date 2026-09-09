@@ -1,3 +1,4 @@
+import type { Square } from 'chess.js';
 import type { TacticGainKind } from './tactic-claim.js';
 import { TACTIC_DETECTOR_PRIORITY } from './tactic-detectors/registry.js';
 import type { VerifiedTacticClaim } from './verify-tactic-claims.js';
@@ -28,16 +29,36 @@ const GAIN_KIND_WEIGHT: Record<TacticGainKind, number> = {
  * puzzles per Lichess theme: `forkDetector` sat at priority 10 with a loose
  * definition and silently ate every motif below it.
  */
-export function rankTacticClaims(claims: readonly VerifiedTacticClaim[]): VerifiedTacticClaim[] {
-  return [...claims].sort((left, right) => {
+export function rankTacticClaims(claims: readonly VerifiedTacticClaim[], movedTo: Square | null = null): VerifiedTacticClaim[] {
+  const ranked = [...claims].sort((left, right) => {
     const byScore = claimScore(right) - claimScore(left);
     if (Math.abs(byScore) > 1e-9) return byScore;
     return detectorPriority(left) - detectorPriority(right);
   });
+  return dropSubsumedClaims(ranked, movedTo);
 }
 
-export function headlineTacticClaim(claims: readonly VerifiedTacticClaim[]): VerifiedTacticClaim | null {
-  return rankTacticClaims(claims)[0] ?? null;
+/**
+ * A move that wins material or forces mate does not also get a card for
+ * having stepped out of something.
+ *
+ * The claims are all true — a piece that moves to deliver a discovered
+ * attack really does leave whatever was pinning it — but they describe the
+ * same event twice, and a review that says both reads like a log rather than
+ * a coach. Only claims whose actor is the piece that just moved are dropped:
+ * a defensive claim about a *different* piece is genuinely a second thing the
+ * move did.
+ */
+function dropSubsumedClaims(ranked: readonly VerifiedTacticClaim[], movedTo: Square | null): VerifiedTacticClaim[] {
+  const headline = ranked[0];
+  if (!headline || movedTo === null) return [...ranked];
+  if (headline.gainKind !== 'material' && headline.gainKind !== 'mate') return [...ranked];
+
+  return ranked.filter((claim) => claim === headline || claim.gainKind !== 'safety' || claim.actor !== movedTo);
+}
+
+export function headlineTacticClaim(claims: readonly VerifiedTacticClaim[], movedTo: Square | null = null): VerifiedTacticClaim | null {
+  return rankTacticClaims(claims, movedTo)[0] ?? null;
 }
 
 /** Kind first, then size, then how sure we are — a confidently verified pawn
