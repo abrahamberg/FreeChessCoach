@@ -393,6 +393,18 @@
 
 .session-body.desktop .session-board-column {
   width: min(72vh, 720px);
+  /* svh (the viewport height with browser UI fully expanded — the smallest,
+   * most conservative value) overrides the vh fallback above wherever it's
+   * supported. Plain vh tracks the *current* visual viewport, which on
+   * tablet Safari/Chrome shrinks and grows as the address bar/toolbar
+   * collapses or expands — and that collapse is triggered by scrolling
+   * *any* scrollable content on the page, not just the page itself, so
+   * scrolling the move explorer's own list (session-move-explorer-column,
+   * min-height: 0; overflow-y: auto below) live-resized this whole square
+   * board column on every scroll tick, reading as "the screen split moves."
+   * svh stays constant regardless of toolbar state, so the board only ever
+   * resizes on a real viewport/orientation change. */
+  width: min(72svh, 720px);
   max-width: 100%;
   min-width: 0;
   flex: 0 1 auto;
