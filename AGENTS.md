@@ -22,6 +22,13 @@ Socratically while tracking their progress over time. The initial build
 - `docs/algorith.md` — the spec behind the *shipped* Game Report (accuracy,
   scores, classification, estimated rating, opening book). Same rule: only
   open the one subsection a task's "Read:" line names, never cold.
+- `docs/tactics-rework.md` — why Game Review's tactic sentences misfire, what
+  was measured, and the layered rebuild. Read it before touching
+  `tactic-detectors/`, `classify-tactic-motif.ts`, `tactic-reason-text.ts`, or
+  the tactic-prevention path; irrelevant to everything else. Its §1 cards are
+  pinned as fixtures in `packages/chess-analysis/src/tactic-review-cases.ts`,
+  and `tactic-precision.test.ts` holds the false-positive ceilings — a
+  detector change is expected to move both, and the ceilings only go down.
 
 
 ## Commands
