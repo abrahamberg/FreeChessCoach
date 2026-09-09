@@ -45,6 +45,12 @@ describe('BotStatusPanel', () => {
     expect(screen.getByText('Trappy Tom is thinking…')).toBeInTheDocument();
   });
 
+  test('shows the bot as thinking mid-request, even while isPlayerTurn is still true (the position hasn\'t advanced yet)', () => {
+    render(<BotStatusPanel botName="Trappy Tom" isPlayerTurn isBotThinking gameOver={null} userColor="white" />);
+    expect(screen.getByText('Trappy Tom is thinking…')).toBeInTheDocument();
+    expect(screen.queryByText('Your move')).not.toBeInTheDocument();
+  });
+
   test('a checkmate the player delivered reads as a win', () => {
     render(
       <BotStatusPanel
