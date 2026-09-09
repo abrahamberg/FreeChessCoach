@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TacticMotifTypeSchema } from './tactic-motif.js';
+import { TacticGainSchema, TacticHorizonSchema, TacticMotifTypeSchema } from './tactic-motif.js';
 
 export const AnalysisStatusSchema = z.enum([
   'queued',
@@ -352,7 +352,21 @@ export const ClassifiedMoveSchema = z.object({
       /** Same absent-not-null convention as `detail` — undefined on a
        * report stored before `visual` existed, `null` when the motif type
        * has no detector-specific geometry to draw. */
-      visual: TacticVisualSchema.nullable().optional()
+      visual: TacticVisualSchema.nullable().optional(),
+      /** What the verifier could show this claim actually wins
+       * (docs/tactics-rework.md §5 layer 2). Absent on a report stored
+       * before verification existed — those cards fall back to naming the
+       * motif alone, which is exactly what they printed at the time. */
+      gain: TacticGainSchema.optional(),
+      /** immediate / in two / eventual, from the engine's own line. */
+      horizon: TacticHorizonSchema.optional(),
+      /** 0-1. Spent on specificity: squares at high, the bare motif at
+       * medium, nothing at low (§3 rule 2). */
+      confidence: z.number().min(0).max(1).optional(),
+      /** Every verified motif this move embodies, best first, `type`
+       * included — the multi-label view §5 layer 3 keeps so the coach agent
+       * can reason over a move that is genuinely two tactics at once. */
+      motifs: z.array(TacticMotifTypeSchema).optional()
     })
     .optional(),
   /** The opponent had this tactic reachable right before this move — did the
@@ -367,7 +381,11 @@ export const ClassifiedMoveSchema = z.object({
       type: TacticMotifTypeSchema,
       prevented: z.boolean(),
       detail: z.string().nullable().optional(),
-      visual: TacticVisualSchema.nullable().optional()
+      visual: TacticVisualSchema.nullable().optional(),
+      /** What the threat would have won — the half that turns "defused the
+       * opponent's fork" into "their move stopped you winning a rook"
+       * (§3 rule 4). Same absent-not-null convention as `detail`. */
+      gain: TacticGainSchema.optional()
     })
     .optional()
 });

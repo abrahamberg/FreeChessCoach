@@ -4,8 +4,11 @@ import { scanAvailableMotifs } from './available-motifs-scan.js';
 import { scanTacticsForLines } from './scan-tactics-for-lines.js';
 
 // Same fork setup as pv-tactics.test.ts: white knight f4-d5 forks the black
-// rook on b6 and knight on f6.
-const FORK_SETUP_FEN = '4k3/8/1r3n2/8/5N2/8/8/7K w - - 0 1';
+// rook on b6 and knight on f6. The e4 pawn is what makes it a fork rather
+// than a blunder: the c4 pawn defends d5, so ...Nxd5 cxd5 is an even trade
+// and the forking knight survives, and the d6 pawn blocks the rook's own
+// sixth-rank guard of f6, so both forked pieces really are winnable.
+const FORK_SETUP_FEN = '4k3/8/1r1p1n2/8/2P2N2/8/8/7K w - - 0 1';
 // A ply-3 fork: Kh2 (ply1, quiet) / Ke7 (ply2, opponent reply) / Nd5 (ply3,
 // the fork) — neither king move disturbs the rook/knight/knight fork setup.
 const FORK_IN_3_PV = ['Kh2', 'Ke7', 'Nd5'];
@@ -38,7 +41,7 @@ describe('scanAvailableMotifs', () => {
     const scan = scanAvailableMotifs(FORK_SETUP_FEN, lines);
 
     expect(scan.sightings).toEqual([
-      { rank: 0, ply: 3, moveSan: 'Nd5+', motif: 'fork', fenBefore: '8/4k3/1r3n2/8/5N2/8/7K/8 w - - 2 2' }
+      { rank: 0, ply: 3, moveSan: 'Nd5+', motif: 'fork', fenBefore: '8/4k3/1r1p1n2/8/2P2N2/8/7K/8 w - - 2 2' }
     ]);
     expect([...scan.motifs]).toEqual(['fork']);
   });

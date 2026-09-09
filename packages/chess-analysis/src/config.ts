@@ -209,6 +209,26 @@ export const CONFIG = {
     mobilityDropThreshold: -8
   },
 
+  /** §5 layer 2 of docs/tactics-rework.md — the gate that turns "does this
+   * shape exist on the board?" into "does this shape win something?".
+   * `minStaticGainPawns` is the smallest material edge a static claim has to
+   * show before it earns a sentence (a pawn); `minLineGainPawns` is the
+   * larger bar a claim must clear inside the engine's own continuation,
+   * where an exchange that merely comes out level would otherwise register.
+   * `minWinProbabilitySwing` is the positional rung for motifs where no
+   * material changes hands (a pin that binds, an overload) — win% points, the
+   * same scale `CONFIG.severity` uses. `maxLinePlies` bounds the PV walk at
+   * §5's own 4-8. The confidence cut-offs are §3 rule 2's three specificity
+   * levels: squares at high, the bare motif at medium, silence below. */
+  tacticVerification: {
+    minStaticGainPawns: 1,
+    minLineGainPawns: 1.5,
+    minWinProbabilitySwing: 8,
+    maxLinePlies: 8,
+    highConfidence: 0.7,
+    mediumConfidence: 0.4
+  },
+
   /** Both-sides tactic scanning (scan-tactics-for-lines.ts / position-tactics.ts).
    * `defaultTopN` is `ENGINE_MULTI_PV` itself (from @freechesscoach/shared,
    * the canonical single source) — no more hand-synced duplicate literal. */

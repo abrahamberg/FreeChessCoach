@@ -201,3 +201,30 @@ export const TACTIC_MOTIF_FAMILY: Record<TacticMotifType, TacticMotifFamily> = {
 export function tacticMotifsInFamily(family: TacticMotifFamily): TacticMotifType[] {
   return TACTIC_MOTIF_TYPES.filter((type) => TACTIC_MOTIF_FAMILY[type] === family);
 }
+
+/**
+ * What a tactic claim is worth, in the currency the card's sentence has to
+ * name. `docs/tactics-rework.md` §3 rule 1: the payoff is the subject of the
+ * sentence, so a claim that cannot say what it gets you cannot produce a
+ * card — "win a rook" (material), "force mate" (mate), "win a tempo"
+ * (tempo), "bind their bishop" (positional), "save the knight" (safety).
+ */
+export const TACTIC_GAIN_KINDS = ['material', 'mate', 'tempo', 'positional', 'safety'] as const;
+export const TacticGainKindSchema = z.enum(TACTIC_GAIN_KINDS);
+export type TacticGainKind = z.infer<typeof TacticGainKindSchema>;
+
+/** How far away the payoff is — §3 rule 5's "an *eventual* fork". */
+export const TACTIC_HORIZONS = ['immediate', 'inTwo', 'eventual'] as const;
+export const TacticHorizonSchema = z.enum(TACTIC_HORIZONS);
+export type TacticHorizon = z.infer<typeof TacticHorizonSchema>;
+
+/** The verified payoff behind a card's headline claim. `pawns` is the
+ * material swing the verifier could actually show (0 for a bind or a
+ * tempo); `prize` names the piece for the "win a <piece>" slot and is null
+ * whenever the gain isn't a specific piece. */
+export const TacticGainSchema = z.object({
+  kind: TacticGainKindSchema,
+  pawns: z.number(),
+  prize: z.string().nullable()
+});
+export type TacticGainDto = z.infer<typeof TacticGainSchema>;

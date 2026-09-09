@@ -9,26 +9,29 @@ const FORK_LINE: EngineLine = { moveUci: 'c4d6', moveSan: 'Nd6+', cp: 500, mateI
 const QUIET_LINE: EngineLine = { moveUci: 'a1b1', moveSan: 'Kb1', cp: 0, mateIn: null };
 
 // Same fork setup as pv-tactics.test.ts/available-motifs-scan.test.ts: white
-// knight f4-d5 forks the black rook on b6 and knight on f6, but only once
+// knight f4-d5 forks the black rook on b6 and knight on f6 (with the c4 pawn
+// defending d5 and the d6 pawn blocking the rook's guard of f6), but only once
 // the black king has stepped to e7 (ply 2) — the fork itself only appears at
 // ply 3. Impossible for the old ply-1-only findDefusedThreat to ever detect.
-const FORK_SETUP_FEN = '4k3/8/1r3n2/8/5N2/8/8/7K w - - 0 1';
+const FORK_SETUP_FEN = '4k3/8/1r1p1n2/8/2P2N2/8/8/7K w - - 0 1';
 const FORK_IN_3_PV = ['Kh2', 'Ke7', 'Nd5+'];
 const FORK_IN_3_LINE: EngineLine = { moveUci: 'h1h2', moveSan: 'Kh2', cp: 0, mateIn: null, pvSan: FORK_IN_3_PV };
 // Same setup with both non-king fork targets removed: after Ke7 (ply 2) the
 // ply-3 knight check only attacks the king itself (a knight "fork" needs 2+
 // targets), no longer qualifying as a fork.
-const FORK_IN_3_DEFUSED_FEN = '4k3/8/8/8/5N2/8/8/7K w - - 0 1';
+const FORK_IN_3_DEFUSED_FEN = '4k3/8/3p4/8/2P2N2/8/8/7K w - - 0 1';
 
 // A second, independent board with two simultaneously-available tactic
-// motifs (fork + a free undefended pawn, isolated from each other so
-// capturing the pawn doesn't also trigger removesDefender on the rook) —
-// used to prove a single "after" scan can defuse more than one motif type
-// at once.
-const TWO_MOTIF_FEN = '4k3/8/1r3n2/8/5N2/3p4/8/3Q3K w - - 0 1';
-const TWO_MOTIF_DEFUSED_FEN = '3rk3/8/5n2/8/5N2/3p4/8/3Q3K w - - 0 1';
+// motifs (Nd6+ forking the king and the b7 rook, plus a free undefended pawn
+// on d3, isolated from each other so capturing the pawn doesn't also trigger
+// removesDefender on the rook) — used to prove a single "after" scan can
+// defuse more than one motif type at once. Moving the rook to d8 defuses
+// both at once: the knight check then has only the king to hit, and the rook
+// guards d3 down the open file.
+const TWO_MOTIF_FEN = '4k3/1r6/8/8/2N5/3p4/8/3Q3K w - - 0 1';
+const TWO_MOTIF_DEFUSED_FEN = '3rk3/8/8/8/2N5/3p4/8/3Q3K w - - 0 1';
 const TWO_MOTIF_LINES: EngineLine[] = [
-  { moveUci: 'f4d5', moveSan: 'Nd5', cp: 500, mateIn: null },
+  { moveUci: 'c4d6', moveSan: 'Nd6+', cp: 500, mateIn: null },
   { moveUci: 'd1d3', moveSan: 'Qxd3', cp: 300, mateIn: null }
 ];
 

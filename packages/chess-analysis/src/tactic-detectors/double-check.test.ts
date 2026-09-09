@@ -8,14 +8,14 @@ const QUIET_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 describe('doubleCheckDetector', () => {
   test('detects a knight move that both checks and unmasks the queen', () => {
-    expect(doubleCheckDetector.detect(buildTacticDetectionContext(DOUBLE_CHECK_FEN, 'Nf7+', 'white'))).toBe(true);
+    expect(doubleCheckDetector.detect(buildTacticDetectionContext(DOUBLE_CHECK_FEN, 'Nf7+', 'white'))).not.toHaveLength(0);
   });
 
   test('does not flag an ordinary single check', () => {
-    expect(doubleCheckDetector.detect(buildTacticDetectionContext(SINGLE_CHECK_FEN, 'Qa8+', 'white'))).toBe(false);
+    expect(doubleCheckDetector.detect(buildTacticDetectionContext(SINGLE_CHECK_FEN, 'Qa8+', 'white'))).toEqual([]);
   });
 
   test('does not flag a quiet developing move', () => {
-    expect(doubleCheckDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toBe(false);
+    expect(doubleCheckDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toEqual([]);
   });
 });
