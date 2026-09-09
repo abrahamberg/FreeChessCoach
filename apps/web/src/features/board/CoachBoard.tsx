@@ -60,13 +60,16 @@ function safeChess(fen: string): Chess {
  * render right after an external fen change lands before the effect below
  * has had a chance to clear a stale `pendingPromotion`). */
 function previewPromotionFen(fen: string, pending: { from: string; to: string }): string {
-  const board = new Chess(fen);
   try {
+    const board = new Chess(fen);
     board.move({ from: pending.from, to: pending.to, promotion: 'q' });
+    return board.fen();
   } catch {
+    // Covers an unparseable `fen` (the same transient '' safeChess above
+    // exists for) as well as a stale `pending` — either way the caller wants
+    // the position it already has, never a throw out of render.
     return fen;
   }
-  return board.fen();
 }
 
 export interface BoardArrow {

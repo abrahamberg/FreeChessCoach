@@ -1,4 +1,4 @@
-import type { Chess, Color, PieceSymbol, Square } from 'chess.js';
+import { Chess, type Color, type PieceSymbol, type Square } from 'chess.js';
 import { buildAttackMap, occupiedSquares, opponentOf, toColorName } from './attack-map.js';
 
 export interface TrappedHit {
@@ -51,7 +51,7 @@ export function trappedPieces(chess: Chess, color: Color): TrappedHit[] {
 
     const isAttacked = (attackMap.attackersOf.get(piece.square)?.[opponentName]?.length ?? 0) > 0;
     if (!isAttacked) continue;
-    if (chess.isAttacked(piece.square, opponent) && isAbsolutelyPinned(chess, piece.square, color)) continue;
+    if (isAbsolutelyPinned(chess, piece.square, color)) continue;
 
     const destinations = chess.moves({ square: piece.square, verbose: true }).map((move) => move.to as Square);
     const hasSafeSquare = destinations.some(
@@ -62,11 +62,22 @@ export function trappedPieces(chess: Chess, color: Color): TrappedHit[] {
   return hits;
 }
 
-/** A piece with no legal moves at all whose side is not in check is pinned
- * against its own king — chess.js won't generate a move that exposes it, so
- * an empty move list on a non-check position is exactly that. Cheaper and
- * more reliable than re-walking the rays `tactic-pins.ts` already walks. */
+/**
+ * Is this piece pinned against its own king?
+ *
+ * Having no legal moves is necessary but not sufficient: a piece can also be
+ * boxed in because its own men occupy every square it reaches, and such a
+ * piece under attack is the most cornered a piece gets — exactly what this
+ * function must not swallow. So the empty move list is confirmed by lifting
+ * the piece off a copy of the board and asking whether the king is then
+ * attacked, which is the definition of an absolute pin and nothing else.
+ */
 function isAbsolutelyPinned(chess: Chess, square: Square, color: Color): boolean {
   if (chess.turn() !== color) return false;
-  return chess.moves({ square }).length === 0;
+  if (chess.moves({ square }).length > 0) return false;
+
+  const withoutPiece = new Chess(chess.fen());
+  withoutPiece.remove(square);
+  const king = occupiedSquares(withoutPiece).find((piece) => piece.type === 'k' && piece.color === color);
+  return king !== undefined && withoutPiece.isAttacked(king.square, opponentOf(color));
 }

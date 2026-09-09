@@ -186,6 +186,28 @@ describe('LiteSupplementedEngineBackend', () => {
       expect(transport.request).toHaveBeenCalledTimes(24);
     });
 
+    test('shares one budget with the single-position calls the same job makes', async () => {
+      // A review job also probes single positions (the gated
+      // tactic-prevention fallback), and those go through the same tunnel.
+      // Counting only the batch would leave the documented ceiling to be
+      // overrun one probe at a time.
+      const evals = Array.from({ length: 40 }, (unused, ply) => evalAt(SHARP_FEN, ply + 1, ['Nd6+']));
+      const main: EngineBackend = {
+        analyzePosition: vi.fn().mockResolvedValue({ ...analysisWithLines([line('Nd6+', 30)]), fen: SHARP_FEN }),
+        analyzeGame: vi.fn().mockResolvedValue(evals)
+      };
+      const transport = fakeTransport(liteAnalysisFor(SHARP_FEN, ['Nd6+', 'Ne5']));
+      const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
+
+      await backend.analyzeGame(evals.map((e) => e.fen), { multiPv: 5 });
+      await backend.analyzePosition(SHARP_FEN, { multiPv: 5 });
+
+      // analyzeGame runs first and so has first call on the budget, which is
+      // the right order — the plies the whole report is built from matter
+      // more than a fallback probe.
+      expect(transport.request).toHaveBeenCalledTimes(24);
+    });
+
     test('leaves the whole game exactly as main returned it when no tunnel answers', async () => {
       const main = fakeBatchMain([evalAt(SHARP_FEN, 1, ['Nd6+'])]);
       const transport: EngineTunnelTransport = { request: vi.fn().mockRejectedValue(new Error('no tunnel')) };

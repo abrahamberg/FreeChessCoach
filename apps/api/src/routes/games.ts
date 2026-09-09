@@ -69,7 +69,14 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
         analysisStatus: botAnalysis?.status ?? null,
         classifiedMoves: null,
         liveMoveQualities,
-        gameReport: botGameReport ?? null
+        gameReport: botGameReport ?? null,
+        // Same read-time derivation as the analyze branch below: a finished
+        // bot game with a Game Report is reviewed through exactly the same
+        // page, so leaving this out here would silently hide the baseline
+        // note for every bot game.
+        tacticBaseline: botGameReport
+          ? await getGameTacticBaselineNote(db, user.id, game.id, botGameReport, game.userColor)
+          : null
       };
     }
 

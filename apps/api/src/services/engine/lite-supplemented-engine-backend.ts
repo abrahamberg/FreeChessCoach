@@ -50,16 +50,28 @@ const LITE_SUPPLEMENT_MULTI_PV = 6;
 const LITE_SUPPLEMENT_MOVETIME_MS = 3000;
 
 /**
- * How many positions of one game the lite worker is asked to widen.
+ * How many lite requests one instance of this decorator will ever make.
  *
  * `docs/tactics-rework.md` §7 asks for breadth to be budgeted by ply rather
  * than spent uniformly: only positions the classifier already calls sharp
  * need more lines, which is typically 15-25% of a game. This is the hard cap
  * on top of that filter — at `LITE_SUPPLEMENT_MOVETIME_MS` apiece it bounds
- * the whole pass at about a minute of someone's browser tab, which is
- * affordable for a background review job and would not be for a request.
+ * a review at about a minute of someone's browser tab, which is affordable
+ * for a background job and would not be for a request.
+ *
+ * The budget belongs to the *instance*, not to `analyzeGame`: a review job
+ * also makes single-position calls (the gated tactic-prevention probes in
+ * `tactic-prevention.ts`), and those go through the same tunnel. Counting
+ * only the batch would leave the documented ceiling to be quietly overrun
+ * one probe at a time. `analyzeGame` runs first and so has first call on it,
+ * which is the right order — widening the plies the whole report is built
+ * from matters more than widening a fallback probe.
+ *
+ * Every other caller resolves its own backend per request (see
+ * `resolveRawEngineBackend`), so a live bot move or hint always starts with
+ * the full budget and never notices this.
  */
-const LITE_GAME_SUPPLEMENT_MAX_POSITIONS = 24;
+const LITE_SUPPLEMENT_MAX_REQUESTS = 24;
 
 /**
  * Decorator wrapping whichever raw backend `resolveRawBackendForUser`
@@ -83,6 +95,9 @@ const LITE_GAME_SUPPLEMENT_MAX_POSITIONS = 24;
 export class LiteSupplementedEngineBackend implements EngineBackend {
   private readonly lite: BrowserTunnelEngineBackend;
   private readonly mainBucket: 'internal' | 'external' | 'browser';
+  /** Counts down across every call this instance serves — see
+   * `LITE_SUPPLEMENT_MAX_REQUESTS`. */
+  private remainingLiteRequests = LITE_SUPPLEMENT_MAX_REQUESTS;
 
   constructor(
     private readonly main: EngineBackend,
@@ -133,11 +148,11 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
    *
    * Two things keep it affordable. Positions are filtered to the ones the
    * classifier already calls sharp — a quiet position with three lines is
-   * not short of anything worth having — and the survivors are capped at
-   * `LITE_GAME_SUPPLEMENT_MAX_POSITIONS`. Requests go one at a time because
-   * there is one browser tab on the other end of the tunnel, and a failure
-   * anywhere leaves `main`'s own result exactly as it was: this decorator
-   * only ever tries to do better.
+   * not short of anything worth having — and the survivors draw on the
+   * instance's shared `LITE_SUPPLEMENT_MAX_REQUESTS` budget. Requests go one
+   * at a time because there is one browser tab on the other end of the
+   * tunnel, and a failure anywhere leaves `main`'s own result exactly as it
+   * was: this decorator only ever tries to do better.
    */
   async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
     const mainResults = await this.main.analyzeGame(fens, opts);
@@ -155,6 +170,9 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
     fen: string,
     opts?: EngineBackendAnalyzeOptions
   ): Promise<{ lines: PositionAnalysisLine[]; error?: string }> {
+    if (this.remainingLiteRequests <= 0) return { lines: [], error: 'lite supplement budget spent' };
+    this.remainingLiteRequests -= 1;
+
     try {
       const liteResult = await this.lite.analyzePosition(fen, {
         ...opts,
@@ -194,7 +212,7 @@ function positionsWorthWidening(evals: EngineEval[], opts?: EngineBackendAnalyze
     .filter(({ evaluation }) => needsSupplement(evaluation.fen, evaluation.lines.length, opts?.multiPv))
     .filter(({ evaluation }) => isSharp(evaluation))
     .sort((left, right) => left.evaluation.lines.length - right.evaluation.lines.length)
-    .slice(0, LITE_GAME_SUPPLEMENT_MAX_POSITIONS)
+    .slice(0, LITE_SUPPLEMENT_MAX_REQUESTS)
     .map(({ index }) => index)
     .sort((left, right) => left - right);
 }

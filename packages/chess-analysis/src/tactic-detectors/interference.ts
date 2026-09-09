@@ -24,8 +24,12 @@ export const interferenceDetector: TacticDetector = {
     return attackedSquaresOf(after, attackMap, ctx.opponent, ctx.mover)
       .filter((piece) => piece.square !== destination)
       .filter((piece) => defendersOf(attackMap, piece.square, ctx.opponent).length === 0)
-      .filter((piece) => cutOffDefenders(ctx, piece.square).length > 0)
-      .map((piece): TacticClaim => ({
+      // Resolved once per candidate and carried through: the arrows below are
+      // the same defenders the filter asks about, and re-deriving them there
+      // walks both attack maps a second time for every claim.
+      .map((piece) => ({ piece, cutOff: cutOffDefenders(ctx, piece.square) }))
+      .filter(({ cutOff }) => cutOff.length > 0)
+      .map(({ piece, cutOff }): TacticClaim => ({
         type: 'interference',
         actor: destination,
         targets: [piece.square],
@@ -33,7 +37,7 @@ export const interferenceDetector: TacticDetector = {
         gainKind: 'material',
         expectedGain: pieceValueAt(after, piece.square),
         prize: pieceNameAt(after, piece.square),
-        evidence: { arrows: cutOffDefenders(ctx, piece.square).map((from) => ({ from, to: piece.square })), highlights: [destination] },
+        evidence: { arrows: cutOff.map((from) => ({ from, to: piece.square })), highlights: [destination] },
         detail: `cuts the guard off from the ${pieceNameAt(after, piece.square)} on ${piece.square}`
       }));
   }

@@ -92,25 +92,35 @@ export async function resolveEngineBackend(options: ResolveEngineBackendOptions,
  */
 export async function resolveRawEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
   const { raw, mode } = await resolveRawBackendForUser(options, userId);
-  // Which BotMoveDebugCollector bucket the main call's own result belongs
-  // under (see bot-move-debug.ts) — computed once here, since this is the
-  // one place that already knows the user's engineMode.
-  const mainBucket = mode === 'native' ? 'internal' : mode === 'chess_api' ? 'external' : 'browser';
   const liteSupplemented = new LiteSupplementedEngineBackend(raw, options.tunnelTransport, userId, {
     timeoutMs: options.tunnelTimeoutMs,
-    mainBucket
+    mainBucket: mainBucketFor(mode)
   });
   return new EngineSourceLoggingBackend(liteSupplemented, userId, mode === 'browser' ? 'externalEngine' : 'internalEngine');
+}
+
+/** The user's own engineMode — the one thing the lite decorator's debug
+ * bucket needs when the backend itself has already been built (see
+ * `resolveReviewEngineBackend`), so asking for it never has to construct a
+ * second, unused raw backend. */
+async function engineModeForUser(options: ResolveEngineBackendOptions, userId: string): Promise<EngineMode> {
+  const user = await usersRepo.findById(options.db, userId);
+  if (!user) throw new EngineUnavailableError(`Unknown user ${userId}`);
+  return user.engineMode;
+}
+
+/** Which BotMoveDebugCollector bucket a main call's own result belongs under
+ * (see bot-move-debug.ts) — derived from the user's engineMode, and shared
+ * by every caller that wraps a backend in LiteSupplementedEngineBackend. */
+function mainBucketFor(mode: EngineMode): 'internal' | 'external' | 'browser' {
+  return mode === 'native' ? 'internal' : mode === 'chess_api' ? 'external' : 'browser';
 }
 
 async function resolveRawBackendForUser(
   options: ResolveEngineBackendOptions,
   userId: string
 ): Promise<{ raw: EngineBackend; mode: EngineMode }> {
-  const user = await usersRepo.findById(options.db, userId);
-  if (!user) throw new EngineUnavailableError(`Unknown user ${userId}`);
-
-  const mode = user.engineMode;
+  const mode = await engineModeForUser(options, userId);
   const raw: EngineBackend =
     mode === 'browser'
       ? new BrowserTunnelEngineBackend(options.tunnelTransport, userId, options.tunnelTimeoutMs)
@@ -152,11 +162,13 @@ async function resolveRawBackendForUser(
  */
 export async function resolveReviewEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
   const cached = await resolveEngineBackend(options, userId);
-  const { mode } = await resolveRawBackendForUser(options, userId);
-  const mainBucket = mode === 'native' ? 'internal' : mode === 'chess_api' ? 'external' : 'browser';
+  // The mode alone, not a second raw backend: resolveRawBackendForUser would
+  // build (and immediately discard) another NativeEngineBackend /
+  // ChessApiEngineBackend / BrowserTunnelEngineBackend just to read it.
+  const mode = await engineModeForUser(options, userId);
 
   return new LiteSupplementedEngineBackend(cached, options.tunnelTransport, userId, {
     timeoutMs: options.tunnelTimeoutMs,
-    mainBucket
+    mainBucket: mainBucketFor(mode)
   });
 }
