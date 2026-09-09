@@ -125,3 +125,38 @@ async function resolveRawBackendForUser(
 
   return { raw, mode };
 }
+
+/**
+ * The backend game review analyses with: everything `resolveEngineBackend`
+ * gives (cache, Lichess index, the user's own mode) plus the lite browser
+ * worker filling in breadth on the plies that are actually sharp.
+ *
+ * Review goes through `analyzeGame`, which the lite decorator used to
+ * delegate straight through — so review never touched the browser worker at
+ * all, and `docs/tactics-rework.md` §5 layer 2 verifies claims against the
+ * engine's *lines*, not just its best move. chess-api.com caps free-tier
+ * variants at five and often returns fewer, and the Lichess index serves
+ * whatever line count the community stored, so on many positions there was
+ * nothing to verify against.
+ *
+ * The decorator sits **outside** the cache on purpose. Everything inside it
+ * still reads and writes `position_evaluations` exactly as before, and the
+ * widened lines never get written back — they are not the trusted official
+ * evaluation, they live for the length of the job that asked for them, and
+ * that job stores what it concluded from them (the verified claims) rather
+ * than the lines themselves.
+ *
+ * Only worth calling from the background analysis worker: the lite pass
+ * spends up to about a minute of a connected browser tab, and a user with no
+ * tab connected simply gets today's narrower analysis.
+ */
+export async function resolveReviewEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
+  const cached = await resolveEngineBackend(options, userId);
+  const { mode } = await resolveRawBackendForUser(options, userId);
+  const mainBucket = mode === 'native' ? 'internal' : mode === 'chess_api' ? 'external' : 'browser';
+
+  return new LiteSupplementedEngineBackend(cached, options.tunnelTransport, userId, {
+    timeoutMs: options.tunnelTimeoutMs,
+    mainBucket
+  });
+}

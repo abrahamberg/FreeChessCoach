@@ -50,7 +50,7 @@ export interface TacticOpportunityLike {
  */
 export function tacticOpportunityReason(opportunity: TacticOpportunityLike, bestMoveSan: string | undefined): string {
   const specificity = specificityOf(opportunity.confidence);
-  const clause = gainClause(opportunity, specificity);
+  const clause = gainClause(opportunity, specificity, opportunity.horizon);
   const detail = specificity === 'high' && opportunity.detail ? ` — ${opportunity.detail}` : '';
 
   if (opportunity.isUserMove === undefined) return legacyOpportunityReason(opportunity, bestMoveSan, detail);
@@ -90,7 +90,7 @@ export interface TacticPreventionLike {
  * *not* make this move, which is what makes the two voices mirror images.
  */
 export function tacticPreventionReason(prevention: TacticPreventionLike): string {
-  const clause = gainClause(prevention, 'medium');
+  const clause = gainClause(prevention, 'medium', undefined);
   const detail = prevention.detail ? ` — ${prevention.detail}` : '';
 
   if (prevention.isUserMove === undefined) return legacyPreventionReason(prevention, detail);
@@ -141,21 +141,40 @@ interface GainClause {
  * a pin that binds and a move that breaks a pin both still get a sentence
  * without either of them inventing a prize.
  */
-function gainClause(claim: { type: TacticMotifType; gain?: TacticGainDto }, specificity: Specificity): GainClause {
+function gainClause(
+  claim: { type: TacticMotifType; gain?: TacticGainDto },
+  specificity: Specificity,
+  horizon: TacticHorizon | undefined
+): GainClause {
   const phrases = TACTIC_MOTIF_PHRASES[claim.type];
   const prize = materialPrize(claim.gain, specificity);
+  const motif = motifWithHorizon(claim.type, horizon);
 
   if (claim.gain?.kind === 'mate') {
-    return { did: `forced mate through ${motifWithArticle(claim.type)}`, toDo: `force mate through ${motifWithArticle(claim.type)}`, gerundish: `forcing mate through ${motifWithArticle(claim.type)}` };
+    return { did: `forced mate through ${motif}`, toDo: `force mate through ${motif}`, gerundish: `forcing mate through ${motif}` };
   }
   if (prize) {
     return {
-      did: `won ${prize} through ${motifWithArticle(claim.type)}`,
-      toDo: `win ${prize} through ${motifWithArticle(claim.type)}`,
-      gerundish: `winning ${prize} through ${motifWithArticle(claim.type)}`
+      did: `won ${prize} through ${motif}`,
+      toDo: `win ${prize} through ${motif}`,
+      gerundish: `winning ${prize} through ${motif}`
     };
   }
   return { did: phrases.did, toDo: phrases.toDo, gerundish: gerundOf(phrases.toDo) };
+}
+
+/**
+ * "a fork" / "a fork two moves away" / "an eventual fork".
+ *
+ * §3 rule 5: a horizon qualifier is what makes a deep tactic honest instead
+ * of confusing. `annotatePvTactics` has computed how far off the payoff is
+ * since long before this, and nothing narrated it.
+ */
+function motifWithHorizon(type: TacticMotifType, horizon: TacticHorizon | undefined): string {
+  const noun = TACTIC_MOTIF_PHRASES[type].noun;
+  if (horizon === 'inTwo') return `${motifWithArticle(type)} two moves away`;
+  if (horizon === 'eventual') return `an eventual ${noun}`;
+  return motifWithArticle(type);
 }
 
 /** "a rook" at high confidence, "material" when the verifier proved a swing

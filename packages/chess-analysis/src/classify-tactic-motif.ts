@@ -2,6 +2,7 @@ import type { MoveQuality, TacticMotifType } from '@freechesscoach/shared';
 import { headlineTacticClaim, rankTacticClaims } from './rank-tactic-claims.js';
 import { buildTacticDetectionContext, type PreviousMove } from './tactic-detectors/context.js';
 import { proposeTacticClaims } from './tactic-detectors/registry.js';
+import { verifyTacticClaimsAgainstLine } from './verify-tactic-line.js';
 import { verifyTacticClaims, type VerifiedTacticClaim } from './verify-tactic-claims.js';
 
 export type { TacticMotifType } from '@freechesscoach/shared';
@@ -31,6 +32,12 @@ export interface TacticMotifContext {
    * recapture gate reads it, but that gate is the single biggest source of
    * false tactics: see `verify-tactic-claims.ts`. */
   previous?: PreviousMove | null;
+  /** The engine's own continuation from this position, starting with
+   * `moveSan` itself. When the caller has it, a claim that promises material
+   * has to be paid inside it — see `verify-tactic-line.ts`. Absent (or
+   * shorter than three plies) leaves the static verdict standing, which is
+   * what every engine-free caller gets. */
+  pvSan?: readonly string[];
 }
 
 /**
@@ -68,10 +75,11 @@ export function classifyTacticClaims(context: TacticMotifContext): TacticClassif
     context.mover,
     context.previous ?? null
   );
-  const claims = rankTacticClaims(
-    verifyTacticClaims(detectionContext, proposeTacticClaims(detectionContext)),
-    detectionContext.destination
-  );
+  const statically = verifyTacticClaims(detectionContext, proposeTacticClaims(detectionContext));
+  const verified = context.pvSan
+    ? verifyTacticClaimsAgainstLine(detectionContext, statically, context.pvSan)
+    : statically;
+  const claims = rankTacticClaims(verified, detectionContext.destination);
 
   return { headline: headlineFor(context, claims), claims };
 }

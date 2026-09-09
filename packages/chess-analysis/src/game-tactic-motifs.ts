@@ -70,7 +70,8 @@ export function classifyTacticMotifOpportunity(
   evals: EngineEval[],
   previous: PreviousMove | null = null
 ): TacticMotifOpportunity | null {
-  const bestMoveSan = evals[move.ply - 1]?.lines[0]?.moveSan;
+  const bestLine = evals[move.ply - 1]?.lines[0];
+  const bestMoveSan = bestLine?.moveSan;
   if (!move.fenBefore || !bestMoveSan) return null;
 
   const playedBest = bestMoveSan === move.moveSan;
@@ -88,7 +89,12 @@ export function classifyTacticMotifOpportunity(
     // The recapture gate only makes sense against the move actually played
     // before this position, which is the same for the engine's best move as
     // for the player's.
-    previous
+    previous,
+    // The engine's own continuation from this move, when the batch stored
+    // one: a claim that promises material has to be paid inside it. This is
+    // the line half of §5 layer 2, and the reason game review widens its
+    // lines from the browser at all (resolveReviewEngineBackend).
+    pvSan: bestLine?.pvSan
   });
   const motif = classification.headline;
   if (!motif) return null;

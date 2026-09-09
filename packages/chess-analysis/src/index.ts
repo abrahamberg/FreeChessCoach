@@ -77,6 +77,8 @@ export * from './diagnostics/scope-tags.js';
 export * from './diagnostics/select-focus.js';
 export * from './diagnostics/types.js';
 export * from './tactic-back-rank.js';
+export * from './verify-tactic-claims.js';
+export * from './verify-tactic-line.js';
 export * from './tactic-baseline.js';
 export * from './tactic-baseline-text.js';
 export * from './tactic-detectors/context.js';

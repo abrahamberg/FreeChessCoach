@@ -7,7 +7,7 @@ import type { Database } from '../db/schema.js';
 import { getModelForUser, recordUsage, type GatewayConfig } from '../llm/gateway.js';
 import { generateStructured } from '../llm/text.js';
 import { toBillableTokens } from '../llm/usage.js';
-import { resolveEngineBackend, type ResolveEngineBackendOptions } from '../services/engine/resolve-engine-backend.js';
+import { resolveReviewEngineBackend, type ResolveEngineBackendOptions } from '../services/engine/resolve-engine-backend.js';
 import { runAnalyzeGameJob, type AnalysisJobDependencies, type PlannerMessages } from '../services/analysis.js';
 import type { DeepenAnalysisJobPayload } from './deepen-analysis.js';
 import type { RebuildDiagnosticProfileJobPayload } from './rebuild-diagnostic-profile.js';
@@ -37,7 +37,11 @@ export function createAnalyzeGameTask(options: AnalyzeGameTaskOptions): Task {
     const game = await gamesRepo.findById(options.db, gameId);
     if (!game) throw new Error(`Game ${gameId} not found`);
 
-    const backend = await resolveEngineBackend(options.engineBackendOptions, game.userId);
+    // The review backend, not the plain one: game review verifies its tactic
+    // claims against the engine's *lines*, and this is the only caller that
+    // can afford to widen them from the user's browser (background job, no
+    // request waiting on it). See resolveReviewEngineBackend.
+    const backend = await resolveReviewEngineBackend(options.engineBackendOptions, game.userId);
     const deps: AnalysisJobDependencies = {
       analyzeGamePositions: (fens) => backend.analyzeGame(fens),
       analyzePosition: (fen) => backend.analyzePosition(fen),

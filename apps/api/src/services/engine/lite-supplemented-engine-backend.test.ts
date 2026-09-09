@@ -127,4 +127,73 @@ describe('LiteSupplementedEngineBackend', () => {
 
     expect(transport.request).not.toHaveBeenCalled();
   });
+
+  describe('analyzeGame — breadth for game review (docs/tactics-rework.md §7)', () => {
+    // A sharp position: White's knight on c4 goes to d6 forking the king on
+    // e8 and the rook on b7, so `isTacticalPosition` says yes.
+    const SHARP_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
+    // A dead-quiet king-and-pawn ending: nothing hangs, nothing forks.
+    const QUIET_FEN = '4k3/8/8/8/8/8/4P3/4K3 w - - 0 1';
+
+    function evalAt(fen: string, ply: number, moveSans: string[]) {
+      return { ply, fen, depth: 18, lines: moveSans.map((san, index) => line(san, 30 - index)) };
+    }
+
+    function fakeBatchMain(evals: ReturnType<typeof evalAt>[]): EngineBackend {
+      return {
+        analyzePosition: vi.fn(),
+        analyzeGame: vi.fn().mockResolvedValue(evals)
+      };
+    }
+
+    function liteAnalysisFor(fen: string, moveSans: string[]): PositionAnalysis {
+      return { ...analysisWithLines(moveSans.map((san, index) => line(san, 20 - index))), fen };
+    }
+
+    test('widens a sharp position that came back short of lines', async () => {
+      const main = fakeBatchMain([evalAt(SHARP_FEN, 1, ['Nd6+'])]);
+      const transport = fakeTransport(liteAnalysisFor(SHARP_FEN, ['Nd6+', 'Ne5', 'Nb6']));
+      const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
+
+      const result = await backend.analyzeGame([SHARP_FEN], { multiPv: 5 });
+
+      expect(transport.request).toHaveBeenCalledTimes(1);
+      expect(result[0]?.lines.map((l) => l.moveSan)).toEqual(['Nd6+', 'Ne5', 'Nb6']);
+    });
+
+    test('spends nothing on a quiet position, however short of lines it is', async () => {
+      // §7: breadth is budgeted by ply. A quiet position with one line is
+      // not short of anything worth having, and there are far more of them
+      // in a game than there are sharp ones.
+      const main = fakeBatchMain([evalAt(QUIET_FEN, 1, ['Kd2'])]);
+      const transport = fakeTransport(liteAnalysisFor(QUIET_FEN, ['Kd2', 'e4', 'Kf2']));
+      const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
+
+      const result = await backend.analyzeGame([QUIET_FEN], { multiPv: 5 });
+
+      expect(transport.request).not.toHaveBeenCalled();
+      expect(result[0]?.lines.map((l) => l.moveSan)).toEqual(['Kd2']);
+    });
+
+    test('caps how much of one game the browser tab is asked for', async () => {
+      const evals = Array.from({ length: 40 }, (unused, ply) => evalAt(SHARP_FEN, ply + 1, ['Nd6+']));
+      const main = fakeBatchMain(evals);
+      const transport = fakeTransport(liteAnalysisFor(SHARP_FEN, ['Nd6+', 'Ne5']));
+      const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
+
+      await backend.analyzeGame(evals.map((e) => e.fen), { multiPv: 5 });
+
+      expect(transport.request).toHaveBeenCalledTimes(24);
+    });
+
+    test('leaves the whole game exactly as main returned it when no tunnel answers', async () => {
+      const main = fakeBatchMain([evalAt(SHARP_FEN, 1, ['Nd6+'])]);
+      const transport: EngineTunnelTransport = { request: vi.fn().mockRejectedValue(new Error('no tunnel')) };
+      const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
+
+      const result = await backend.analyzeGame([SHARP_FEN], { multiPv: 5 });
+
+      expect(result[0]?.lines.map((l) => l.moveSan)).toEqual(['Nd6+']);
+    });
+  });
 });

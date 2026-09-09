@@ -52,6 +52,22 @@ describe('tacticOpportunityReason', () => {
     expect(text).toBe('You forced mate through a back-rank tactic.');
   });
 
+  test('says how far off the payoff was, when the line said', () => {
+    // docs/tactics-rework.md §3 rule 5: "an *eventual* fork" is what makes a
+    // deep tactic honest instead of confusing.
+    const soon = tacticOpportunityReason(
+      { type: 'fork', found: true, isUserMove: true, gain: WON_A_ROOK, confidence: 0.9, horizon: 'inTwo' },
+      'Nd5'
+    );
+    const far = tacticOpportunityReason(
+      { type: 'fork', found: true, isUserMove: true, gain: WON_A_ROOK, confidence: 0.9, horizon: 'eventual' },
+      'Nd5'
+    );
+
+    expect(soon).toBe('You won a rook through a fork two moves away.');
+    expect(far).toBe('You won a rook through an eventual fork.');
+  });
+
   test('missed: the same payoff in the infinitive, with the move that was there', () => {
     const text = tacticOpportunityReason(
       { type: 'fork', found: false, isUserMove: true, gain: WON_A_ROOK, confidence: 0.85 },
