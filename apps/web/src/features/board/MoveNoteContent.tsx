@@ -93,12 +93,16 @@ export interface AlternativesPanelProps {
  * (useMoveAlternatives) instead of leaving the panel bare. */
 export function AlternativesPanel({ move, hideBestLine }: AlternativesPanelProps): ReactNode {
   const precomputed = (move.alternatives ?? []).slice(0, 2);
-  const shouldFetch = precomputed.length === 0 && Boolean(move.bestMoveSan) && Boolean(move.fenBefore);
-  const fetched = useMoveAlternatives(move.fenBefore, move.mover, move.bestMoveSan, shouldFetch);
   // The played move already WAS the engine's top choice — "Best: <the move
   // just played>" repeats what the quality badge/headline already said.
-  // Worth showing only when it names something the student didn't play.
-  if (!move.bestMoveSan || move.bestMoveSan === move.moveSan) return null;
+  // Worth showing only when it names something the student didn't play, and
+  // this panel then renders nothing at all — so it has to gate the fetch
+  // below too, or every best-move ply the student steps past would spend an
+  // uncached engine search on runners-up nobody ever sees.
+  const hasSomethingToShow = Boolean(move.bestMoveSan) && move.bestMoveSan !== move.moveSan;
+  const shouldFetch = hasSomethingToShow && precomputed.length === 0 && Boolean(move.fenBefore);
+  const fetched = useMoveAlternatives(move.fenBefore, move.mover, move.bestMoveSan, shouldFetch);
+  if (!hasSomethingToShow) return null;
 
   const pv = move.bestLinePvSan && move.bestLinePvSan.length > 0 ? move.bestLinePvSan.join(' ') : move.bestMoveSan;
   const runnersUp = precomputed.length > 0 ? precomputed : fetched.data;

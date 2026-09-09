@@ -7,8 +7,10 @@ const FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
  * FORK_FEN/PIN_FEN) share the e8 king as their common anchor, so both
  * patterns coexist here: Ne4-d6+ forks king e8 + rook b7 (fork's knight
  * moved to e4 instead of c4 so it doesn't block the bishop's own diagonal);
- * Bd3-b5 pins knight c6 to king e8; Ka1-b1 is a quiet third option. */
-const MULTI_MOTIF_FEN = '4k3/1r6/2n5/8/4N3/3B4/8/K7 w - - 0 1';
+ * Bd3-b5 pins knight c6 to king e8, with the a4 pawn covering b5 so the
+ * pinning bishop isn't just taken by the b7 rook; Ka1-b1 is a quiet third
+ * option. */
+const MULTI_MOTIF_FEN = '4k3/1r6/2n5/8/P3N3/3B4/8/K7 w - - 0 1';
 
 function evalAt(ply: number, bestMoveUci: string, bestMoveSan: string): EngineEval {
   return { ply, fen: FORK_FEN, depth: 16, lines: [{ moveUci: bestMoveUci, moveSan: bestMoveSan, cp: 500, mateIn: null }] };

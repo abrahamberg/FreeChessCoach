@@ -20,7 +20,7 @@ interface ReasonItemProps {
 }
 
 /** One tactic sentence — plain text when it has no board geometry to show
- * (an older stored report, or a motif type describeTacticHit/tacticHitVisual
+ * (an older stored report, or a motif whose claim carries no geometry
  * has nothing detector-specific to draw for), otherwise a toggle button:
  * click to show its arrow on the board in green (good outcome — found it,
  * defused it) or red (missed it, left it in play), click again (or the ×
@@ -53,8 +53,15 @@ function TacticReasonItem({ text, good, clickable, active, onClick }: ReasonItem
  * more than one to show. Renders nothing for a move with neither field
  * set (most plies aren't tactical). */
 export function TacticReasonList({ move, selection, onToggle }: TacticReasonListProps): ReactNode {
-  const preventionText = move.tacticPrevention ? tacticPreventionReason(move.tacticPrevention) : null;
-  const opportunityText = move.tacticOpportunity ? tacticOpportunityReason(move.tacticOpportunity, move.bestMoveSan) : null;
+  // `isUserMove` decides "You" vs "They" and lives on the move rather than
+  // on either card, so a report stored before the voice rewrite renders in
+  // the right voice too.
+  const preventionText = move.tacticPrevention
+    ? tacticPreventionReason({ ...move.tacticPrevention, isUserMove: move.isUserMove })
+    : null;
+  const opportunityText = move.tacticOpportunity
+    ? tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove: move.isUserMove }, move.bestMoveSan)
+    : null;
   if (!preventionText && !opportunityText) return null;
 
   return (
@@ -100,7 +107,9 @@ export function TacticReasonList({ move, selection, onToggle }: TacticReasonList
  * items above are the only place they're shown, not duplicated below them. */
 export function tacticReasonTexts(move: ClassifiedMoveDto): Set<string> {
   const texts = new Set<string>();
-  if (move.tacticPrevention) texts.add(tacticPreventionReason(move.tacticPrevention));
-  if (move.tacticOpportunity) texts.add(tacticOpportunityReason(move.tacticOpportunity, move.bestMoveSan));
+  if (move.tacticPrevention) texts.add(tacticPreventionReason({ ...move.tacticPrevention, isUserMove: move.isUserMove }));
+  if (move.tacticOpportunity) {
+    texts.add(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove: move.isUserMove }, move.bestMoveSan));
+  }
   return texts;
 }

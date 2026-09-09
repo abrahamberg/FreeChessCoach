@@ -51,9 +51,16 @@ const TacticMotifCountSchema = z.object({
    * convention as `preventable` above. */
   prevented: z.number().int().nonnegative().optional()
 });
+/** Every motif key is `.default()`-ed rather than required: the catalogue
+ * grew when `docs/tactics-rework.md` §6's vocabulary landed, and reports are
+ * stored as jsonb with no migration, so a report written before a motif
+ * existed simply has no key for it. Defaulting to a zero count keeps those
+ * rows parseable and reads correctly — a motif that could not be detected
+ * when the game was analysed genuinely had zero opportunities. */
+const TacticMotifCountEntrySchema = TacticMotifCountSchema.default({ opportunities: 0, found: 0 });
 export const TacticMotifCountsSchema = z.object(
-  Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, TacticMotifCountSchema]))
-) as z.ZodObject<Record<(typeof TACTIC_MOTIF_TYPES)[number], typeof TacticMotifCountSchema>>;
+  Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, TacticMotifCountEntrySchema]))
+) as z.ZodObject<Record<(typeof TACTIC_MOTIF_TYPES)[number], typeof TacticMotifCountEntrySchema>>;
 export type TacticMotifCounts = z.infer<typeof TacticMotifCountsSchema>;
 
 /** Phase 26: the "from equal/worse/better positions" and "by theme" buckets

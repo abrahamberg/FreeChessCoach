@@ -16,5 +16,6 @@ export * from './llm.js';
 export * from './puzzle-session.js';
 export * from './session.js';
 export * from './stats-dashboard.js';
+export * from './tactic-baseline.js';
 export * from './tts.js';
 export * from './user.js';

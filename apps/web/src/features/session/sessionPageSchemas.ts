@@ -1,4 +1,11 @@
-import { AnalysisStatusSchema, ClassifiedMoveSchema, GameReportSchema, GameReviewTierSchema, MoveQualitySchema } from '@freechesscoach/shared';
+import {
+  AnalysisStatusSchema,
+  ClassifiedMoveSchema,
+  GameReportSchema,
+  GameReviewTierSchema,
+  MoveQualitySchema,
+  TacticBaselineNoteSchema
+} from '@freechesscoach/shared';
 import { z } from 'zod';
 
 export const SessionMessageSchema = z.object({
@@ -51,6 +58,11 @@ export const GameDetailSchema = z.object({
   classifiedMoves: z.array(ClassifiedMoveSchema).nullable(),
   liveMoveQualities: z.array(LiveMoveQualitySchema).nullable().default(null),
   gameReport: GameReportSchema.nullable().default(null),
+  /** The one game-level tactic note worth showing: what this game did that
+   * is out of line with the player's own record. Derived at read time rather
+   * than stored — "unusual for you" depends on the games played since — and
+   * `null` whenever there is nothing to say, which is the common case. */
+  tacticBaseline: TacticBaselineNoteSchema.nullable().default(null),
   botId: z.string().nullable().default(null),
   reviewTier: GameReviewTierSchema.default('imported'),
   /** Null for a coach_play game (never analyzed — architecture §14). Used by

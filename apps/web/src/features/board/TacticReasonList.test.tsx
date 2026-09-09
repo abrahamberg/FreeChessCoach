@@ -36,9 +36,9 @@ describe('TacticReasonList', () => {
     });
     render(<TacticReasonList move={move} selection={null} onToggle={vi.fn()} />);
 
-    const preventionButton = screen.getByRole('button', { name: /Left the opponent's fork in play/ });
+    const preventionButton = screen.getByRole('button', { name: /They can still land a fork/ });
     expect(preventionButton.tagName).toBe('BUTTON');
-    expect(screen.getByText(/Missed a trapped piece/)).toBeInstanceOf(HTMLParagraphElement);
+    expect(screen.getByText(/You missed a chance to trap a piece/)).toBeInstanceOf(HTMLParagraphElement);
   });
 
   test('clicking a clickable sentence calls onToggle with its key', () => {
@@ -53,7 +53,7 @@ describe('TacticReasonList', () => {
     const onToggle = vi.fn();
     render(<TacticReasonList move={move} selection={null} onToggle={onToggle} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Found the fork/ }));
+    fireEvent.click(screen.getByRole('button', { name: /You landed a fork/ }));
     expect(onToggle).toHaveBeenCalledWith('opportunity');
   });
 
@@ -68,7 +68,7 @@ describe('TacticReasonList', () => {
     });
     render(<TacticReasonList move={move} selection="opportunity" onToggle={vi.fn()} />);
 
-    const button = screen.getByRole('button', { name: /Found the fork/ });
+    const button = screen.getByRole('button', { name: /You landed a fork/ });
     expect(button).toHaveClass('tactic-reason-item--active');
   });
 
@@ -90,9 +90,9 @@ describe('TacticReasonList', () => {
     });
     render(<TacticReasonList move={move} selection="all" onToggle={vi.fn()} />);
 
-    expect(screen.getByRole('button', { name: /Left the opponent's fork in play/ })).toHaveClass('tactic-reason-item--active');
+    expect(screen.getByRole('button', { name: /They can still land a fork/ })).toHaveClass('tactic-reason-item--active');
     // The opportunity sentence has no visual, so it stays a static <p>, never a button.
-    expect(screen.queryByRole('button', { name: /Missed a trapped piece/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /You missed a chance to trap a piece/ })).not.toBeInTheDocument();
   });
 
   test('the "show tactic arrows" toggle only appears once a visual exists, and reflects the "all" selection', () => {
@@ -115,7 +115,10 @@ describe('tacticReasonTexts', () => {
       tacticOpportunity: { type: 'trappedPiece', found: false, detail: 'pawn on e4 is trapped' }
     });
     expect(tacticReasonTexts(move)).toEqual(
-      new Set(["Left the opponent's fork in play — pawn on e5 forks d6 and f6.", 'Missed a trapped piece — pawn on e4 is trapped.'])
+      new Set([
+        'They can still land a fork — pawn on e5 forks d6 and f6.',
+        'You missed a chance to trap a piece — pawn on e4 is trapped.'
+      ])
     );
   });
 });

@@ -1,4 +1,4 @@
-import { computePositionFeatures } from '@freechesscoach/chess-analysis';
+import { computePositionFeatures, fenActiveColor, isTacticalPosition } from '@freechesscoach/chess-analysis';
 import { ENGINE_MULTI_PV } from '../engine-client.js';
 import { formatMs, type EngineLineDebugInfo } from './bot-move-debug.js';
 import { BrowserTunnelEngineBackend } from './browser-tunnel-engine-backend.js';
@@ -50,6 +50,30 @@ const LITE_SUPPLEMENT_MULTI_PV = 6;
 const LITE_SUPPLEMENT_MOVETIME_MS = 3000;
 
 /**
+ * How many lite requests one instance of this decorator will ever make.
+ *
+ * `docs/tactics-rework.md` §7 asks for breadth to be budgeted by ply rather
+ * than spent uniformly: only positions the classifier already calls sharp
+ * need more lines, which is typically 15-25% of a game. This is the hard cap
+ * on top of that filter — at `LITE_SUPPLEMENT_MOVETIME_MS` apiece it bounds
+ * a review at about a minute of someone's browser tab, which is affordable
+ * for a background job and would not be for a request.
+ *
+ * The budget belongs to the *instance*, not to `analyzeGame`: a review job
+ * also makes single-position calls (the gated tactic-prevention probes in
+ * `tactic-prevention.ts`), and those go through the same tunnel. Counting
+ * only the batch would leave the documented ceiling to be quietly overrun
+ * one probe at a time. `analyzeGame` runs first and so has first call on it,
+ * which is the right order — widening the plies the whole report is built
+ * from matters more than widening a fallback probe.
+ *
+ * Every other caller resolves its own backend per request (see
+ * `resolveRawEngineBackend`), so a live bot move or hint always starts with
+ * the full budget and never notices this.
+ */
+const LITE_SUPPLEMENT_MAX_REQUESTS = 24;
+
+/**
  * Decorator wrapping whichever raw backend `resolveRawBackendForUser`
  * already resolved (native / chess_api / browser-tunnel-heavy) — never a
  * mode of its own. Calls `main` first; only when `main`'s own result came
@@ -61,14 +85,19 @@ const LITE_SUPPLEMENT_MOVETIME_MS = 3000;
  * (native, or a position with few legal moves) never touches the tunnel at
  * all.
  *
- * Never caches and must never be wrapped by (or wrap) CachingEngineBackend —
- * the lite engine's results are explicitly not the trusted, official
- * evaluation position_evaluations exists to serve; see this decorator's own
- * two call sites in resolve-engine-backend.ts.
+ * Never caches, and must never be wrapped *by* CachingEngineBackend: the
+ * lite engine's results are explicitly not the trusted, official evaluation
+ * `position_evaluations` exists to serve. Sitting *outside* one is fine and
+ * is how game review uses it (`resolveReviewEngineBackend`) — the cache
+ * still only ever sees `main`'s own lines, and the widened ones live for the
+ * length of the job that asked for them.
  */
 export class LiteSupplementedEngineBackend implements EngineBackend {
   private readonly lite: BrowserTunnelEngineBackend;
   private readonly mainBucket: 'internal' | 'external' | 'browser';
+  /** Counts down across every call this instance serves — see
+   * `LITE_SUPPLEMENT_MAX_REQUESTS`. */
+  private remainingLiteRequests = LITE_SUPPLEMENT_MAX_REQUESTS;
 
   constructor(
     private readonly main: EngineBackend,
@@ -109,21 +138,41 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
   }
 
   /**
-   * Delegates straight to `main` — no caller of this decorator ever
-   * requests a batch, only single positions (bot move selection, the hint-
-   * moves endpoint), so there's no real shortfall case here to supplement.
-   * A future batch caller that needs the same shortfall-filling behavior
-   * should get it added here rather than this staying silently incomplete
-   * for it.
+   * The same shortfall filling, over a whole game, spent only where breadth
+   * changes an answer.
+   *
+   * Game review goes through `analyzeGame`, and this used to delegate
+   * straight to `main` — so review never touched the lite worker at all, and
+   * every claim was verified against whatever handful of lines chess-api.com
+   * or the Lichess index happened to return (`docs/tactics-rework.md` §7).
+   *
+   * Two things keep it affordable. Positions are filtered to the ones the
+   * classifier already calls sharp — a quiet position with three lines is
+   * not short of anything worth having — and the survivors draw on the
+   * instance's shared `LITE_SUPPLEMENT_MAX_REQUESTS` budget. Requests go one
+   * at a time because there is one browser tab on the other end of the
+   * tunnel, and a failure anywhere leaves `main`'s own result exactly as it
+   * was: this decorator only ever tries to do better.
    */
   async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
-    return this.main.analyzeGame(fens, opts);
+    const mainResults = await this.main.analyzeGame(fens, opts);
+    const widened = [...mainResults];
+
+    for (const index of positionsWorthWidening(mainResults, opts)) {
+      const { lines: liteLines } = await this.tryLiteLines(mainResults[index]!.fen, opts);
+      if (liteLines.length === 0) continue;
+      widened[index] = { ...mainResults[index]!, lines: mergeLines(mainResults[index]!.lines, liteLines) };
+    }
+    return widened;
   }
 
   private async tryLiteLines(
     fen: string,
     opts?: EngineBackendAnalyzeOptions
   ): Promise<{ lines: PositionAnalysisLine[]; error?: string }> {
+    if (this.remainingLiteRequests <= 0) return { lines: [], error: 'lite supplement budget spent' };
+    this.remainingLiteRequests -= 1;
+
     try {
       const liteResult = await this.lite.analyzePosition(fen, {
         ...opts,
@@ -143,6 +192,43 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
       // tunnel connected at all.
       return { lines: [], error: error instanceof Error ? error.message : String(error) };
     }
+  }
+}
+
+/**
+ * Which plies of a game are worth spending browser time on: the ones that
+ * are short of lines *and* sharp enough for the extra lines to change an
+ * answer.
+ *
+ * Sharpness is `tactics-score.ts`'s own `isTacticalPosition` — the same
+ * signal the report already computes per ply — so breadth lands exactly
+ * where the claim verifier needs it and nowhere else. Ties are broken by
+ * how short the position is, so a ply with one line is widened before a ply
+ * with four.
+ */
+function positionsWorthWidening(evals: EngineEval[], opts?: EngineBackendAnalyzeOptions): number[] {
+  return evals
+    .map((evaluation, index) => ({ index, evaluation }))
+    .filter(({ evaluation }) => needsSupplement(evaluation.fen, evaluation.lines.length, opts?.multiPv))
+    .filter(({ evaluation }) => isSharp(evaluation))
+    .sort((left, right) => left.evaluation.lines.length - right.evaluation.lines.length)
+    .slice(0, LITE_SUPPLEMENT_MAX_REQUESTS)
+    .map(({ index }) => index)
+    .sort((left, right) => left - right);
+}
+
+function isSharp(evaluation: EngineEval): boolean {
+  try {
+    return isTacticalPosition({
+      mover: fenActiveColor(evaluation.fen),
+      fenBefore: evaluation.fen,
+      evalBefore: evaluation,
+      features: computePositionFeatures(evaluation.fen)
+    });
+  } catch {
+    // An unreadable FEN is not a reason to fail a whole game's analysis —
+    // it just isn't a position worth spending the tunnel on.
+    return false;
   }
 }
 
@@ -174,12 +260,12 @@ function needsSupplement(fen: string, mainLineCount: number, requestedMultiPv: n
  * above), so every line lite actually returned is worth keeping; there's no
  * native fallback left to fall back on if the merged total still comes up
  * short (see resolveRawEngineBackend's doc comment). */
-function mergeLines(mainLines: PositionAnalysisLine[], liteLines: PositionAnalysisLine[]): PositionAnalysisLine[] {
+function mergeLines<Main extends { moveSan: string }, Lite extends Main>(mainLines: Main[], liteLines: Lite[]): Main[] {
   const seen = new Set(mainLines.map((line) => line.moveSan));
   const liteTopDiffers = liteLines.length > 0 && liteLines[0]?.moveSan !== mainLines[0]?.moveSan;
   const liteContribution = liteTopDiffers ? liteLines.slice(1) : liteLines;
 
-  const merged = [...mainLines];
+  const merged: Main[] = [...mainLines];
   for (const line of liteContribution) {
     if (seen.has(line.moveSan)) continue;
     seen.add(line.moveSan);

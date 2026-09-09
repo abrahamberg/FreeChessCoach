@@ -3,7 +3,7 @@ import { annotatePvTactics } from './pv-tactics.js';
 
 // Same fork setup as candidate-moves.test.ts: white knight f4-d5 forks the
 // black rook on b6 and knight on f6.
-const FORK_SETUP_FEN = '4k3/8/1r3n2/8/5N2/8/8/7K w - - 0 1';
+const FORK_SETUP_FEN = '4k3/8/1r1p1n2/8/2P2N2/8/8/7K w - - 0 1';
 
 describe('annotatePvTactics', () => {
   test('reports forkInPlies: 1 when the candidate\'s own first move creates the fork', () => {

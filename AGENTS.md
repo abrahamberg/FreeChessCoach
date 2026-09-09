@@ -22,13 +22,17 @@ Socratically while tracking their progress over time. The initial build
 - `docs/algorith.md` — the spec behind the *shipped* Game Report (accuracy,
   scores, classification, estimated rating, opening book). Same rule: only
   open the one subsection a task's "Read:" line names, never cold.
-- `docs/tactics-rework.md` — why Game Review's tactic sentences misfire, what
-  was measured, and the layered rebuild. Read it before touching
-  `tactic-detectors/`, `classify-tactic-motif.ts`, `tactic-reason-text.ts`, or
-  the tactic-prevention path; irrelevant to everything else. Its §1 cards are
-  pinned as fixtures in `packages/chess-analysis/src/tactic-review-cases.ts`,
-  and `tactic-precision.test.ts` holds the false-positive ceilings — a
-  detector change is expected to move both, and the ceilings only go down.
+- `docs/tactics-rework.md` — why Game Review's tactic sentences misfired, what
+  was measured, and the layered rebuild that shipped. Read it before touching
+  `tactic-detectors/`, `classify-tactic-motif.ts`, the `verify-tactic-*`
+  files, `tactic-reason-text.ts`, or the tactic-prevention path; irrelevant to
+  everything else. Its §1 cards are pinned as fixtures in
+  `packages/chess-analysis/src/tactic-review-cases.ts`,
+  `tactic-precision.test.ts` holds the false-positive ceilings and
+  `tactic-detectors/lichess-puzzle-validation.test.ts` the recall floors — a
+  detector change is expected to move all three, the ceilings only go down and
+  the floors only go up. `tactic-detectors/README.md` is the how-to for adding
+  a motif and is the shorter read when that is all you need.
 
 
 ## Commands

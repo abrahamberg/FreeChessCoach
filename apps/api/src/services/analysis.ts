@@ -257,7 +257,10 @@ function attachTacticPrevention(
       // spelling out which motif + whether it was defused, right in the same
       // per-move notes the UI already shows, so a reviewer can eyeball
       // false-positive detector hits without a DB query.
-      reasons: [...(move.reasons ?? []), tacticPreventionReason(prevention)]
+      // Whose move this was decides the voice — "you stopped them" versus
+      // "their move stopped you" — and it lives on the move, not on the
+      // card, so an older stored report reads correctly too.
+      reasons: [...(move.reasons ?? []), tacticPreventionReason({ ...prevention, isUserMove: move.isUserMove })]
     };
   });
 }

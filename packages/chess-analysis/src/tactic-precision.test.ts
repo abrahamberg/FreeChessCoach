@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { Chess } from 'chess.js';
+import { Chess, type Square } from 'chess.js';
+import { TACTIC_MOTIF_FAMILY } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { classifyTacticMotif } from './classify-tactic-motif.js';
+import type { PreviousMove } from './tactic-detectors/context.js';
 
 /**
  * The precision half of the tactic-detector test suite.
@@ -26,26 +28,31 @@ import { classifyTacticMotif } from './classify-tactic-motif.js';
  *
  * Every threshold is the exact measured value plus a hair, in the same
  * spirit as the recall suite's `MIN_PASS`: these are regression guards, not
- * claims that the current numbers are acceptable. Each one records the
- * target it must ratchet down to. Lower a ceiling in the same commit that
- * earns it.
+ * claims that the current numbers are acceptable. Each one records what it
+ * used to be and the target it was ratcheted towards. Lower a ceiling in the
+ * same commit that earns it; never raise one.
  */
 
-// 400 lines / 4,332 plies. Measured: 640 labelled = 14.77%.
-// Target after docs/tactics-rework.md phase B: <= 5%.
+// 400 lines / 4,332 plies. Was 640 labelled = 14.77%; claim verification
+// (docs/tactics-rework.md phase B) took it to 154 = 3.55%, under the 5%
+// target. Ratcheted to 4%.
 const OPENING_LINES = 400;
-const OPENING_LABEL_RATE_CEILING = 0.15;
+const OPENING_LABEL_RATE_CEILING = 0.04;
 
-// Of those plies, the recaptures. Measured: 97 of 113 = 85.8%.
-// A recapture is the most ordinary move in chess and is almost never a
-// tactic, which makes this the sharpest single signal in the file.
-// Target after phase B: <= 5%.
-const RECAPTURE_LABEL_RATE_CEILING = 0.87;
+// Of those plies, the recaptures. Was 97 of 113 = 85.8% — a recapture is the
+// most ordinary move in chess and is almost never a tactic, which makes this
+// the sharpest single signal in the file. Now 2 of 113 = 1.8%, under the 5%
+// target: the verifier is told the opponent's previous move and refuses to
+// call taking back on that square a free piece. Ratcheted to 3%.
+const RECAPTURE_LABEL_RATE_CEILING = 0.03;
 
-// 120 puzzle positions / 3,040 quiet moves. Measured: 897 labelled = 29.51%.
-// Target after phase B: <= 10%.
+// 120 puzzle positions / 3,040 quiet moves. Was 897 labelled = 29.51%; now
+// 223 = 7.34%, under the 10% target. Looser than the opening ceiling because
+// these positions really are sharp, and because a quiet move here arrives as
+// a bare FEN with no previous move, so the recapture gate cannot help.
+// Ratcheted to 8%.
 const PUZZLE_POSITIONS = 120;
-const QUIET_MOVE_LABEL_RATE_CEILING = 0.30;
+const QUIET_MOVE_LABEL_RATE_CEILING = 0.08;
 
 interface OpeningLine {
   name: string;
@@ -82,12 +89,31 @@ function moverOf(board: Chess): 'white' | 'black' {
   return board.turn() === 'w' ? 'white' : 'black';
 }
 
-/** Same call `build-game-report.ts` makes, with `isTacticalPosition` false:
+/**
+ * Same call `build-game-report.ts` makes, with `isTacticalPosition` false:
  * the `'other'` catch-all is a deliberate "this position was sharp and we
  * can't name why" label, not a false positive, so it is kept out of the
- * count either way. */
-function labelFor(fenBefore: string, moveSan: string, mover: 'white' | 'black', isCheckmate: boolean): string | null {
-  return classifyTacticMotif({ fenBefore, moveSan, mover, quality: 'best', isCheckmate, isTacticalPosition: false });
+ * count either way.
+ *
+ * Only the **offensive** family counts. What these corpora measure is
+ * phantom *tactics* — a claim that the mover did something to the opponent
+ * — and every motif that could be produced when these ceilings were first
+ * measured was offensive, so this is the same number, now stated rather
+ * than implied. The defensive and positional motifs added by
+ * `docs/tactics-rework.md` §6 are supposed to fire on quiet moves; that is
+ * what retires "Nothing to flag", and it is measured as coverage below
+ * instead of as noise here.
+ */
+function labelFor(
+  fenBefore: string,
+  moveSan: string,
+  mover: 'white' | 'black',
+  isCheckmate: boolean,
+  previous: PreviousMove | null = null
+): string | null {
+  const label = classifyTacticMotif({ fenBefore, moveSan, mover, quality: 'best', isCheckmate, isTacticalPosition: false, previous });
+  if (!label || TACTIC_MOTIF_FAMILY[label] !== 'offensive') return null;
+  return label;
 }
 
 interface OpeningTally {
@@ -105,6 +131,7 @@ function scanOpeningTheory(): OpeningTally {
   for (const line of loadOpeningLines()) {
     const board = new Chess();
     let lastCaptureSquare: string | null = null;
+    let previous: PreviousMove | null = null;
 
     for (const uci of line.uci) {
       const fenBefore = board.fen();
@@ -116,7 +143,8 @@ function scanOpeningTheory(): OpeningTally {
       const isRecapture = move.captured !== undefined && move.to === lastCaptureSquare;
       if (isRecapture) tally.recaptures += 1;
 
-      const label = labelFor(fenBefore, move.san, mover, board.isCheckmate());
+      const label = labelFor(fenBefore, move.san, mover, board.isCheckmate(), previous);
+      previous = { from: move.from as Square, to: move.to as Square, wasCapture: move.captured !== undefined };
       if (label) {
         tally.labelled += 1;
         tally.byType.set(label, (tally.byType.get(label) ?? 0) + 1);
@@ -132,7 +160,7 @@ function scanOpeningTheory(): OpeningTally {
   return tally;
 }
 
-function playUci(board: Chess, uci: string): { san: string; to: string; captured?: string } | null {
+function playUci(board: Chess, uci: string): { san: string; from: string; to: string; captured?: string } | null {
   try {
     return board.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci.slice(4) || undefined });
   } catch {

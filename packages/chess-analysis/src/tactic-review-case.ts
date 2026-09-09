@@ -1,4 +1,5 @@
 import type { MoveQuality, TacticMotifType } from '@freechesscoach/shared';
+import type { PreviousMove } from './tactic-detectors/context.js';
 import type { TacticDetector } from './tactic-detectors/types.js';
 
 /** The motifs a registry detector can actually report. Narrower than
@@ -8,7 +9,9 @@ import type { TacticDetector } from './tactic-detectors/types.js';
  * detector sets. */
 export type DetectorMotif = TacticDetector['type'];
 
-/** Motif names that arrive with phase D of `docs/tactics-rework.md`. */
+/** Motif names that arrived with phase D of `docs/tactics-rework.md`. Kept
+ * as its own alias because these are the names the cases were written
+ * against before the detectors existed. */
 export type NewMotif = 'breaksPin' | 'gainsTempo' | 'discoveredCheck';
 
 export type DefectKind =
@@ -48,6 +51,12 @@ export interface TacticReviewCase {
    * `brilliantSacrifice`. TR-07/TR-08 are the same move either side of that
    * branch. */
   quality: MoveQuality;
+  /** The opponent's move immediately before this one, where the case comes
+   * from a real game and the move list gives it. The recapture gate reads
+   * it, and TR-04/TR-05 are only distinguishable from a windfall capture
+   * with it — see `tactic-detectors/context.ts`. `undefined` for the
+   * positions read off a board, where there is no move list to consult. */
+  previous?: PreviousMove | null;
   /** `isTacticalPosition` as the shipped pipeline computed it here. It only
    * changes the outcome for a move no detector matches: `true` yields the
    * `'other'` catch-all, `false` yields no card at all. */

@@ -2,7 +2,6 @@ import {
   BEST_OR_BETTER,
   flipActiveColorFen,
   scanThreatOutcome,
-  tacticHitDetail,
   type PvMotifSighting,
   type ThreatOutcome
 } from '@freechesscoach/chess-analysis';
@@ -11,6 +10,7 @@ import {
   type ClassifiedMoveDto,
   type EngineEval,
   type EngineLine,
+  type TacticGainDto,
   type TacticMotifType,
   type TacticVisualDto
 } from '@freechesscoach/shared';
@@ -32,11 +32,25 @@ export interface TacticMotifPreventionResult {
    * order, which mirrors tactic-detectors/registry.ts's precedence) — `counts`
    * above remains the source of truth for "how many", this is only "what to
    * show on this one move". */
-  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisualDto | null }>;
+  byPly: Map<number, PreventionCard>;
   /** docs/diagnose.md §4.4's unbiased O/E denominator (Task 50.4) — see this
    * function's doc comment for why this is a second, additive map rather
    * than a change to `byPly`/`counts` above. */
   diagnosticByPly: Map<number, { type: TacticMotifType; failed: boolean; detail: string | null; visual: TacticVisualDto | null }>;
+}
+
+/** What the review shows for one move's defused (or still-standing) threat.
+ * `gain` is what lets the card say what the threat would have won, so it can
+ * read as the reader's own lost chance rather than as a log line about a
+ * third party — docs/tactics-rework.md §3 rule 4. Whose move it was is not
+ * stored here: it is already on the move itself, and the renderer passes it
+ * so an older stored report gets the right voice too. */
+export interface PreventionCard {
+  type: TacticMotifType;
+  prevented: boolean;
+  detail: string | null;
+  visual: TacticVisualDto | null;
+  gain?: TacticGainDto;
 }
 
 /** The earliest-priority motif in `types` (TACTIC_MOTIF_TYPES order), or null
@@ -45,20 +59,24 @@ function primaryMotif(types: readonly TacticMotifType[]): TacticMotifType | null
   return TACTIC_MOTIF_TYPES.find((type) => types.includes(type)) ?? null;
 }
 
-/** The concrete piece/square (plus its board geometry) behind `type`'s
- * reachability, from whichever `sightings` entry first matches it —
- * `sightings` carries the exact `{fenBefore, moveSan}` the scan actually saw
- * the motif in, so this can replay and describe/draw it rather than showing
- * the bare type name alone. */
+/** The concrete threat behind `type`'s reachability, from whichever
+ * `sightings` entry first matches it. Every sighting carries the claim the
+ * scan found it as, so the sentence, the arrow and the "what it would have
+ * won" all come off one object — no second replay, and no chance of the card
+ * describing a different instance of the motif than the one that was
+ * actually defused. */
 function describeMotifSighting(
   sightings: readonly PvMotifSighting[],
-  type: TacticMotifType,
-  opponent: Colour
-): { detail: string | null; visual: TacticVisualDto | null } {
-  const sighting = sightings.find((s) => s.motif === type);
+  type: TacticMotifType
+): { detail: string | null; visual: TacticVisualDto | null; gain?: TacticGainDto } {
+  const sighting = sightings.find((candidate) => candidate.motif === type);
   if (!sighting) return { detail: null, visual: null };
-  const hit = tacticHitDetail(type, sighting.fenBefore, sighting.moveSan, opponent);
-  return { detail: hit?.text ?? null, visual: hit?.visual ?? null };
+  const claim = sighting.claim;
+  return {
+    detail: claim.detail,
+    visual: claim.evidence,
+    gain: { kind: claim.gainKind, pawns: claim.verifiedGain, prize: claim.prize }
+  };
 }
 
 /**
@@ -114,7 +132,7 @@ export async function computeTacticMotifPrevented(
     white: { preventable: {}, prevented: {} },
     black: { preventable: {}, prevented: {} }
   };
-  const byPly = new Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisualDto | null }>();
+  const byPly = new Map<number, PreventionCard>();
   const diagnosticByPly = new Map<number, { type: TacticMotifType; failed: boolean; detail: string | null; visual: TacticVisualDto | null }>();
   const movesByPly = new Map(allMoves.map((move) => [move.ply, move]));
 
@@ -142,16 +160,17 @@ export async function computeTacticMotifPrevented(
 
     const primary = primaryMotif(outcome.preventable);
     if (primary) {
-      const { detail, visual } = describeMotifSighting(outcome.sightings, primary, opponent);
-      if (isCountable) byPly.set(move.ply, { type: primary, prevented: outcome.defused.includes(primary), detail, visual });
-      diagnosticByPly.set(move.ply, { type: primary, failed: !outcome.defused.includes(primary), detail, visual });
+      const { detail, visual, gain } = describeMotifSighting(outcome.sightings, primary);
+      const prevented = outcome.defused.includes(primary);
+      if (isCountable) byPly.set(move.ply, { type: primary, prevented, detail, visual, gain });
+      diagnosticByPly.set(move.ply, { type: primary, failed: !prevented, detail, visual });
     }
   }
 
   return { counts, byPly, diagnosticByPly };
 }
 
-const EMPTY_OUTCOME: ThreatOutcome = { preventable: [], defused: [], sightings: [] };
+const EMPTY_OUTCOME: ThreatOutcome = { preventable: [], defused: [], sightings: [], defusedSightings: [] };
 
 function findFreelyDefusedThreats(
   prior: ClassifiedMoveDto,

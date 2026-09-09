@@ -1,0 +1,279 @@
+import type { Color, Square } from 'chess.js';
+import type { TacticHorizon } from '@freechesscoach/shared';
+import { CONFIG } from './config.js';
+import { PIECE_VALUES } from './tactics.js';
+import { attackersOf, defendersOf, pieceTypeAt, pieceValueAt } from './tactic-board-facts.js';
+import type { TacticClaim } from './tactic-claim.js';
+import { isRecapture, type TacticDetectionContext } from './tactic-detectors/context.js';
+
+/** How far away the claim's payoff is — `null` on a claim verified purely
+ * statically, where we know the shape pays but not when. */
+export type { TacticHorizon } from '@freechesscoach/shared';
+
+export interface VerifiedTacticClaim extends TacticClaim {
+  /** 0-1. `docs/tactics-rework.md` §3 rule 2 spends this on specificity:
+   * squares at high confidence, the bare motif at medium, silence below. */
+  confidence: number;
+  /** What the claim is worth once checked, in pawns — the number the
+   * sentence's "win a rook" slot is allowed to be built from. */
+  verifiedGain: number;
+  horizon: TacticHorizon | null;
+  verifiedBy: 'static' | 'line';
+}
+
+interface Verdict {
+  ok: boolean;
+  confidence: number;
+  gain: number;
+}
+
+const REJECT: Verdict = { ok: false, confidence: 0, gain: 0 };
+
+/**
+ * Layer 2, static half: which proposed claims survive without an engine
+ * line?
+ *
+ * The line-verification half (`verify-tactic-line.ts`) is stronger and is
+ * used wherever the pipeline has a PV, but it cannot be the only gate:
+ * `classifyTacticMotif` is called from places that have no engine at all
+ * (the precision corpora, the bot's candidate scan, a puzzle fixture), and a
+ * claim that shipped unverified there is exactly the phantom fork
+ * `docs/tactics-rework.md` §1 is about.
+ *
+ * What every gate here has in common is that it asks about the claim's own
+ * *payoff*, never about the mover's safety. §2 prototyped a static-safety
+ * gate ("reject if the moving piece can be profitably captured") and it cuts
+ * noise 22.4% → 8.6% while destroying sacrificial tactics — TR-07's bishop
+ * is en prise by +330 on purpose. Where a gate does ask whether a piece
+ * survives, it asks about the piece the *mechanism* depends on: a fork only
+ * forks if the forking piece is still there next move, which is the same
+ * `is_in_bad_spot` guard Lichess's own tagger applies to a forker.
+ */
+export function verifyTacticClaims(context: TacticDetectionContext, claims: readonly TacticClaim[]): VerifiedTacticClaim[] {
+  if (!context.after) return [];
+  const verified: VerifiedTacticClaim[] = [];
+
+  for (const claim of claims) {
+    const verdict = verdictFor(context, claim);
+    if (!verdict.ok) continue;
+    verified.push({
+      ...claim,
+      confidence: verdict.confidence,
+      verifiedGain: verdict.gain,
+      horizon: null,
+      verifiedBy: 'static'
+    });
+  }
+  return verified;
+}
+
+function verdictFor(context: TacticDetectionContext, claim: TacticClaim): Verdict {
+  switch (claim.type) {
+    case 'fork':
+      return verifyFork(context, claim);
+    case 'pin':
+      return verifyPin(context, claim);
+    case 'skewer':
+      return verifySkewer(context, claim);
+    case 'freePiece':
+      return verifyFreePiece(context, claim);
+    case 'trappedPiece':
+      return verifyTrappedPiece(context, claim);
+    case 'discoveredAttack':
+      return verifyWinnableVictim(context, claim, 0.7);
+    case 'removesDefender':
+      return verifyRemovesDefender(context, claim);
+    case 'deflection':
+    case 'interference':
+      // Both promise a specific enemy piece, so both answer to the same
+      // question the discovered attack does: is that piece actually takeable?
+      return verifyWinnableVictim(context, claim, 0.6);
+    case 'overloadedDefender':
+      // Sole defender of two attacked pieces, by construction in
+      // `piece-safety.ts` — the shape *is* the evidence, and the claim makes
+      // no material promise for a static gate to check.
+      return { ok: true, confidence: 0.5, gain: 0 };
+    case 'doubleCheck':
+    case 'discoveredCheck':
+    case 'weakBackRank':
+      // Forcing by construction: the opponent has no choice about answering
+      // it, so there is nothing left to verify that the board hasn't shown.
+      return { ok: true, confidence: 0.9, gain: claim.expectedGain };
+    default:
+      // Every motif added by phase D carries its own gate inside its
+      // detector — a defensive claim is verified by the enemy claim it
+      // removes, a positional one by the feature it changes, and neither is
+      // an exchange question this file can answer. They sit at high
+      // confidence because a detector that fired has already checked the
+      // board fact it names, which is what earns the card its squares.
+      return { ok: true, confidence: CONFIG.tacticVerification.highConfidence, gain: claim.expectedGain };
+  }
+}
+
+/** SEE on a square after the move, in pawns rather than centipawns. Goes
+ * through the context's memo (`tactic-detectors/facts.ts`) because several
+ * gates ask about the same square and SEE builds a board per capture in the
+ * exchange. */
+function exchangeAfterPawns(context: TacticDetectionContext, square: Square, capturer: Color): number {
+  return context.facts.exchangeAfter(square, capturer) / 100;
+}
+
+/** The same on the position before the move. */
+function exchangeBeforePawns(context: TacticDetectionContext, square: Square, capturer: Color): number {
+  return context.facts.exchangeBefore(square, capturer) / 100;
+}
+
+/**
+ * A fork is a fork only if the forking piece is still on the board to
+ * collect: TR-03's bishop "forks" b7 and d7 while standing en prise to both,
+ * so `bxc6` answers it and nothing is won. Then at least two of the targets
+ * have to be genuinely takeable — the enemy king counts, since it must move
+ * and cannot be defended.
+ */
+function verifyFork(context: TacticDetectionContext, claim: TacticClaim): Verdict {
+  if (exchangeAfterPawns(context, claim.actor, context.opponent) > 0) return REJECT;
+
+  const collectible = claim.targets.filter(
+    (square) => pieceTypeAt(context.after!, square) === 'k' || exchangeAfterPawns(context, square, context.mover) > 0
+  );
+  if (collectible.length < 2) return REJECT;
+
+  const gain = Math.max(...collectible.map((square) => winnableValue(context, square)));
+  if (gain < CONFIG.tacticVerification.minStaticGainPawns) return REJECT;
+  return { ok: true, confidence: 0.85, gain };
+}
+
+/**
+ * A pin needs its pinner to survive (an en-prise pinner is a trade), a
+ * victim worth pinning (a pinned pawn is almost never a tactic — TR-05), and
+ * either the enemy king behind it or real pressure on the pinned piece. The
+ * two absolute pins in the fixture, TR-01 and TR-10, win no material at all;
+ * they survive on the positional rung, which is why this returns a gain of
+ * zero and a `positional` claim rather than a material one.
+ */
+function verifyPin(context: TacticDetectionContext, claim: TacticClaim): Verdict {
+  const after = context.after!;
+  const [pinned, against] = claim.targets;
+  if (!pinned || !against) return REJECT;
+  if (exchangeAfterPawns(context, claim.actor, context.opponent) > 0) return REJECT;
+
+  // Absolute: the piece behind is the king, so the pinned piece genuinely
+  // cannot move. That holds for a pawn too — a pinned pawn that cannot
+  // capture or advance is a real bind, and Lichess tags 8 of its 40 pin
+  // puzzles on exactly that.
+  if (pieceTypeAt(after, against) === 'k') return { ok: true, confidence: 0.8, gain: 0 };
+
+  // Relative: the pinned piece *may* move, it just costs material to, so
+  // the pin is only a tactic if the piece is under real pressure. This one
+  // test is what removes the whole phantom family — a queen landing on the
+  // long diagonal "pins" g7 to h8 in a few hundred games out of a thousand
+  // (TR-05) and the Italian bishop "pins" f7 to g8 in every Italian, and in
+  // both the pinned pawn is guarded as often as it is hit.
+  const attackers = attackersOf(context.afterAttackMap!, pinned, context.mover).length;
+  const defenders = defendersOf(context.afterAttackMap!, pinned, context.opponent).length;
+  if (attackers > defenders) return { ok: true, confidence: 0.55, gain: 0 };
+
+  // No extra pressure yet, but a piece pinned against something much more
+  // valuable is still a bind worth naming — you pile on next move. Never a
+  // pawn: that is the exact shape of every phantom in the corpus, and a
+  // pawn is cheap enough that the "gap" is always large.
+  const gap = pieceValueAt(after, against) - pieceValueAt(after, pinned);
+  if (pieceTypeAt(after, pinned) !== 'p' && gap >= 2) return { ok: true, confidence: 0.45, gain: 0 };
+  return REJECT;
+}
+
+/** The skewered pair only pays if the piece in front actually has to move —
+ * a queen "skewering" a defended pawn skewers nothing — and if the piece
+ * behind is then takeable. */
+function verifySkewer(context: TacticDetectionContext, claim: TacticClaim): Verdict {
+  const after = context.after!;
+  const [front, behind] = claim.targets;
+  if (!front || !behind) return REJECT;
+  if (exchangeAfterPawns(context, claim.actor, context.opponent) > 0) return REJECT;
+
+  const frontMustMove = pieceTypeAt(after, front) === 'k' || exchangeAfterPawns(context, front, context.mover) > 0;
+  if (!frontMustMove) return REJECT;
+
+  // The prize is priced statically rather than by SEE: the whole mechanism
+  // is that the piece in front is still standing in the way, so an exchange
+  // evaluation on the square behind it correctly reports that nothing can
+  // be taken there *yet* — which is the one thing a skewer is not evidence
+  // against.
+  const gain = pieceValueAt(after, behind);
+  if (gain < CONFIG.tacticVerification.minStaticGainPawns) return REJECT;
+  const defended = defendersOf(context.afterAttackMap!, behind, context.opponent).length > 0;
+  return { ok: true, confidence: defended ? 0.6 : 0.75, gain };
+}
+
+/**
+ * "Free" has to mean the opponent gave something away, not that material
+ * changed hands. Three ways a capture fails that, all of them measured in
+ * `docs/tactics-rework.md` §2:
+ *
+ * 1. It takes back on the square they just took on (TR-04) — the most
+ *    ordinary move in chess, and 97 of 113 of them carried this label.
+ * 2. They captured somewhere last move and this takes no more than they did
+ *    (TR-05's `Qxd4`, restoring the pawn lost to `exd4` two plies earlier) —
+ *    an exchange sequence settling, not a windfall.
+ * 3. The exchange on the square doesn't actually win anything.
+ */
+function verifyFreePiece(context: TacticDetectionContext, claim: TacticClaim): Verdict {
+  if (isRecapture(context)) return REJECT;
+  const captured = context.move?.captured;
+  if (!captured) return REJECT;
+
+  const previous = context.previous;
+  if (previous?.wasCapture && PIECE_VALUES[captured] <= capturedValueOfPrevious(context)) return REJECT;
+
+  const gain = exchangeBeforePawns(context, claim.actor, context.mover);
+  if (gain < CONFIG.tacticVerification.minStaticGainPawns) return REJECT;
+  return { ok: true, confidence: 0.8, gain };
+}
+
+/** What the opponent's previous capture was worth, in pawns. The move list
+ * gives us the square, not the piece, so this reads the value off the piece
+ * that ended up standing there — the capturer — as the closest available
+ * proxy for the size of the exchange being settled. */
+function capturedValueOfPrevious(context: TacticDetectionContext): number {
+  const previous = context.previous;
+  if (!previous) return 0;
+  const piece = context.before.get(previous.to);
+  return piece ? PIECE_VALUES[piece.type] : 0;
+}
+
+/** A trapped piece is only worth naming if taking it is worth the trip —
+ * otherwise "trapped" describes a knight in a corner nobody wants. */
+function verifyTrappedPiece(context: TacticDetectionContext, claim: TacticClaim): Verdict {
+  if (!claim.victim) return REJECT;
+  const gain = winnableValue(context, claim.victim);
+  if (gain < CONFIG.tacticVerification.minStaticGainPawns) return REJECT;
+  return { ok: true, confidence: 0.6, gain };
+}
+
+/** The shared shape of every claim whose whole promise is one enemy piece:
+ * that piece has to be takeable at a profit. */
+function verifyWinnableVictim(context: TacticDetectionContext, claim: TacticClaim, confidence: number): Verdict {
+  if (!claim.victim) return { ok: true, confidence: confidence * 0.7, gain: 0 };
+  const gain = winnableValue(context, claim.victim);
+  if (gain < CONFIG.tacticVerification.minStaticGainPawns) return REJECT;
+  return { ok: true, confidence, gain };
+}
+
+/**
+ * Removing a defender by giving up more than the exposed piece is worth is a
+ * sacrifice, and a sacrifice is exactly the thing a static gate cannot
+ * judge — TR-03 loses a bishop to win a pawn back and reads as a deflection
+ * to this file. So the static rung asks for the removal itself to be sound
+ * and leaves genuinely sacrificial deflections to line verification, which
+ * can see whether the line pays.
+ */
+function verifyRemovesDefender(context: TacticDetectionContext, claim: TacticClaim): Verdict {
+  if (exchangeBeforePawns(context, claim.actor, context.mover) < 0) return REJECT;
+  return verifyWinnableVictim(context, claim, 0.7);
+}
+
+/** What taking the piece on `square` is actually worth to the mover, capped
+ * by the exchange that follows it. */
+function winnableValue(context: TacticDetectionContext, square: Square): number {
+  return Math.max(0, exchangeAfterPawns(context, square, context.mover));
+}

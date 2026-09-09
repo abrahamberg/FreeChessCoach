@@ -255,6 +255,10 @@ export function markFailed(db: Kysely<Database>, id: string, error: string): Pro
 }
 
 export interface StatsSourceRow {
+  /** Which game this report is for — lets a caller compare one game against
+   * the player's *other* games without re-querying (see
+   * `getGameTacticBaselineNote`). */
+  gameId: string;
   gameReport: GameReport;
   /** The PGN `Result` header — resolved to a per-colour outcome at the
    * service layer, same as `buildGameReportForAnalysis`'s own resultForColour. */
@@ -281,6 +285,7 @@ export async function listReadyReportsForUser(
     .selectFrom('analyses')
     .innerJoin('games', 'games.id', 'analyses.gameId')
     .select([
+      'analyses.gameId as gameId',
       'analyses.gameReport as gameReport',
       'games.result as pgnResult',
       'games.userColor as userColor',
