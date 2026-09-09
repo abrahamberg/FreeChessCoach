@@ -16,6 +16,20 @@ export interface LiteSupplementedEngineBackendOptions {
    * it picks this once at construction time rather than this class needing
    * to know about engineMode itself. */
   mainBucket: 'internal' | 'external' | 'browser';
+  /** When true, a shortfall on the single-position `analyzePosition` path
+   * only reaches for the lite tunnel if the position is also tactically
+   * sharp (the same `isTacticalPosition` signal `analyzeGame`'s own
+   * `positionsWorthWidening` already gates on below). Set by
+   * `resolveRawEngineBackend` for the bot-move path: the lite contribution
+   * there only ever widens pickBotMove's TTC-based mistake/blunder pool
+   * (bot-move-selector.ts), which a quiet, non-tactical position has
+   * nothing to gain from — so paying a browser round trip on every single
+   * shortfall (chess-api.com's 5-line cap makes that most bot moves) was
+   * doing a search the position didn't need. Left unset (and so `false`) for
+   * `resolveReviewEngineBackend`, whose tactic-prevention probes keep their
+   * exact existing behavior — asking for every shortfall regardless of
+   * sharpness. */
+  gateLiveSupplementBySharpness?: boolean;
 }
 
 /** The lite tunnel request always asks for this depth/multiPv, regardless
@@ -95,6 +109,7 @@ const LITE_SUPPLEMENT_MAX_REQUESTS = 24;
 export class LiteSupplementedEngineBackend implements EngineBackend {
   private readonly lite: BrowserTunnelEngineBackend;
   private readonly mainBucket: 'internal' | 'external' | 'browser';
+  private readonly gateLiveSupplementBySharpness: boolean;
   /** Counts down across every call this instance serves — see
    * `LITE_SUPPLEMENT_MAX_REQUESTS`. */
   private remainingLiteRequests = LITE_SUPPLEMENT_MAX_REQUESTS;
@@ -107,6 +122,7 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
   ) {
     this.lite = new BrowserTunnelEngineBackend(transport, userId, options.timeoutMs);
     this.mainBucket = options.mainBucket;
+    this.gateLiveSupplementBySharpness = options.gateLiveSupplementBySharpness ?? false;
   }
 
   async analyzePosition(fen: string, opts?: EngineBackendAnalyzeOptions): Promise<PositionAnalysis> {
@@ -121,6 +137,7 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
       opts.debug[this.mainBucket] = { moves: toLineDebug(mainResult.lines), time: formatMs(Date.now() - mainStart) };
     }
     if (!needsSupplement(fen, mainResult.lines.length, opts?.multiPv)) return mainResult;
+    if (this.gateLiveSupplementBySharpness && !isSharpAnalysis(mainResult)) return mainResult;
 
     const liteStart = Date.now();
     const { lines: liteLines, error: liteError } = await this.tryLiteLines(fen, opts);
@@ -215,6 +232,15 @@ function positionsWorthWidening(evals: EngineEval[], opts?: EngineBackendAnalyze
     .slice(0, LITE_SUPPLEMENT_MAX_REQUESTS)
     .map(({ index }) => index)
     .sort((left, right) => left - right);
+}
+
+/** Same sharpness check as `isSharp` below, for the single-position
+ * `analyzePosition` path's `PositionAnalysis` result — `isTacticalPosition`
+ * only ever reads `.fen`/`.lines` off `evalBefore`, never `EngineEval`'s own
+ * `ply`, so a synthetic `ply: 0` (never read) is enough to satisfy its type
+ * without this decorator needing to know its caller's ply. */
+function isSharpAnalysis(analysis: PositionAnalysis): boolean {
+  return isSharp({ ...analysis, ply: 0 });
 }
 
 function isSharp(evaluation: EngineEval): boolean {

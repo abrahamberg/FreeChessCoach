@@ -38,6 +38,10 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   // board/status panel below key off gameOverInfo (not this) to keep
   // rendering the finished game rather than swapping to SessionSummaryCard.
   const [dialogDismissed, setDialogDismissed] = useState(false);
+  // Lifted here (not local to SessionBoardColumn) because BotStatusPanel,
+  // which renders the "{bot} is thinking…" text, is that column's sibling —
+  // see SessionBoardColumn's onBotThinkingChange doc comment.
+  const [isBotThinking, setIsBotThinking] = useState(false);
 
   const {
     sessionQuery,
@@ -130,6 +134,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       sessionId={sessionId}
       onPlayMoveCommitted={handleBotMoveCommitted}
       onGameOver={handleGameOver}
+      onBotThinkingChange={setIsBotThinking}
       onUndoMove={undoLastMove}
       undoDisabled={!canUndo || session.status !== 'active'}
       onClockUpdate={onClockUpdate}
@@ -148,6 +153,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       botAvatarIndex={bot?.avatarIndex}
       botElo={bot?.elo}
       isPlayerTurn={isPlayerTurn}
+      isBotThinking={isBotThinking}
       gameOver={gameOverInfo}
       userColor={orientation}
       onResign={isResigning ? undefined : handleResign}

@@ -23,7 +23,16 @@
 .app-shell__topbar {
   position: sticky;
   top: 0;
-  z-index: 10;
+  /* Above .bottom-tab-bar (z-index: 10) on purpose: both are fixed/sticky
+   * siblings that each establish their own stacking context, so a dropdown
+   * inside the topbar (UserMenu's .user-menu__panel, z-index: 20 — but that
+   * z-index only ever competes with siblings *inside* this same stacking
+   * context) can only ever paint above the tab bar if this context itself
+   * outranks it. At a tied z-index, the tab bar wins on DOM order (it's
+   * rendered after <main> in AppShell.tsx) and paints over the whole topbar,
+   * dropdown included — this is the "account menu opens under the bottom
+   * nav" bug on mobile. */
+  z-index: 20;
   flex: none;
   background: color-mix(in srgb, var(--color-surface) 88%, transparent);
   backdrop-filter: blur(10px);
