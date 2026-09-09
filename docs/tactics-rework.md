@@ -14,55 +14,54 @@ against ten chess.com Game Review cards (September 2026).
 
 ## 1. Symptoms, and the exact code behind each
 
-All examples come from one real game:
-`1.e4 e5 2.Nf3 Nc6 3.Bc4 d6 4.Bb5 Bd7 5.d4 exd4 6.Bxc6 bxc6 7.Qxd4 c5`.
-Every sentence below reproduces on current `main` by running
-`classifyTacticMotif` + `tacticHitDetail` over those plies.
+Ten reported Game Review cards, from three games. Every sentence below
+reproduces on current `main` by running `classifyTacticMotif` +
+`tacticHitDetail` over the position, and each is pinned as a fixture in
+`packages/chess-analysis/src/tactic-review-cases.ts` under the id in the first
+column.
 
-| Ply | Move | Printed | Correct reading | Cause |
-| --- | --- | --- | --- | --- |
-| 11 | `6.Bxc6` | "Found the fork — bishop on c6 forks b7 and d7." | A trade. The bishop is recaptured next move. | `tactics.ts` → `forks()` never checks that the forking piece is itself safe. |
-| 12 | `6…bxc6` | "Defused the opponent's fork — bishop on c6 forks b7 and d7." + "Missed a pin — pins the pawn on e4" | A recapture. | The phantom fork from ply 11 is re-reported by the prevention path; the "pin" is a bishop ray onto a pawn. |
-| 13 | `7.Qxd4` | "pins the pawn on g7 against h8" | Recaptures, but the queen is loose on d4. | `tactic-pins.ts` → `pins()` is pure ray geometry with no consequence check. |
+Game A is `1.e4 e5 2.Nf3 Nc6 3.Bc4 d6 4.Bb5 Bd7 5.d4 exd4 6.Bxc6 bxc6 7.Qxd4 c5`
+with the user playing White; its FENs are derived from that move list, so they
+are exact. B and C were read off the board and then verified by replay. D is
+constructed and says so.
 
-A fourth screenshot supplied the pin the rework must **not** break: `16.Rae1`,
-swinging the last rook to the open e-file to pin a bishop on e7 against the king
-on e8. We already label it correctly ("Found the pin — pins the bishop on e7
-against e8"), and it wins nothing — the bishop is defended twice and attacked
-once — so, like `4.Bb5`, it only survives a gain test that has a positional
-rung. chess.com makes no material claim on it either ("That pin is like a Venus
-flytrap, snapping shut on their bishop!"), which is a second real example of
-their positional tier. Two things are still wrong with our card: `trappedPiece`
-co-fires, and the sentence says "against e8" rather than "against the king" —
-the instructive half.
+| Case | Move | Printed today | Wrong how |
+| --- | --- | --- | --- |
+| TR-01 | A `4.Bb5` | "Found the pin — pins the knight on c6 against e8." | Headline right — a real absolute pin. But `trappedPiece` co-fires, and the sentence names e8 rather than the king. |
+| TR-02 | A `4…Bd7` | *nothing* | **Breaks the pin** on c6. No defensive motif exists, so the card is the empty state. |
+| TR-03 | A `6.Bxc6` | "Found the fork — bishop on c6 forks b7 and d7." | A trade; the bishop is recaptured next move. `forks()` never checks that the forking piece is itself hanging. Four detectors fire on this one exchange. |
+| TR-04 | A `6…bxc6` | "Found the free piece — captures the undefended bishop on c6." | A recapture. `captureOpportunities` has no notion of an exchange sequence. |
+| TR-05 | A `7.Qxd4` | "Found the pin — pins the pawn on g7 against h8." | The pawn is not attacked and the pin prevents nothing. `pins()` is pure ray geometry. |
+| TR-06 | A `7…c5` | *nothing* | Hits the queen with tempo. No tempo/positional motif exists. |
+| TR-07 | B `Bh2+` (best) | "Found the discovered attack — queen on e7 gains a discovered attack on e4." | Headline right. `trappedPiece` co-fires ("queen on e4 is trapped"), and the sentence names a square instead of the queen it wins. |
+| TR-08 | B `Bh2+` (brilliant) | "Found the brilliant sacrifice with Bh2+." | `classifyTacticMotif` answers from the raw quality flag **before the registry runs**, discarding the discovered attack the detector already found. |
+| TR-09 | D `Nc5+` | "Found the discovered attack — rook on e1 gains a discovered attack on e8." | A true discovered check. There is no `discoveredCheck` motif, so the card never says the move is forcing or that e8 is the king. `doubleCheck` needs two checkers, so it can't cover it. |
+| TR-10 | C `16.Rae1` | "Found the pin — pins the bishop on e7 against e8." | Headline right — the textbook pin the rework must not break. Same two problems as TR-01: `trappedPiece` co-fires, and the sentence names e8 rather than the king. |
 
-Those three pins are the matched set the pin rework is judged on. Running the
-§4 pin gate (drop pinned pawns; a relative pin needs the pinned piece under net
-pressure) over them:
+One further screenshot item — "pawn on e5 is trapped" — was already fixed by
+`96dc8fc` (`trappedPieces()` no longer counts pawns). Production is one release
+behind on that; everything above is live on `main`.
+
+### The three pins are a matched set
+
+TR-01, TR-05 and TR-10 are what the pin rework is judged on: two real absolute
+pins that must survive, and one phantom relative pin on a pawn that must not.
+Running §5's proposed pin gate (drop pinned pawns; a relative pin needs its
+victim under net pressure) over them:
 
 | Case | Pin | Gate |
 | --- | --- | --- |
-| `16.Rae1` | absolute, bishop | **kept** |
-| `4.Bb5` | absolute, knight | **kept** |
-| `7.Qxd4` | relative, pawn | **rejected** |
-| 8 | `4…Bd7` | "Nothing to flag — a solid, natural move." | **Breaks the pin** on the c6 knight. | No defensive motif exists in the vocabulary. |
-| 14 | `7…c5` | "Nothing to flag — a solid, natural move." | Hits the queen with tempo. | No positional/tempo motif exists in the vocabulary. |
+| TR-10 `16.Rae1` | absolute, bishop → king | **kept** |
+| TR-01 `4.Bb5` | absolute, knight → king | **kept** |
+| TR-05 `7.Qxd4` | relative, **pawn** → rook | **rejected** |
 
-One screenshot item — "pawn on e5 is trapped" — was already fixed by `96dc8fc`
-(`trappedPieces()` no longer counts pawns). Production is one release behind on
-that; everything else above is live on `main`.
+Neither surviving pin wins material — TR-10's bishop is defended twice and
+attacked once — so both only survive a gain test that has a **positional rung**
+alongside material and tempo. chess.com makes no material claim on either
+("That pin is like a Venus flytrap, snapping shut on their bishop!"), which is
+the same design.
 
-Three more cases came from a later screenshot — a genuine brilliancy, `Bh2+`,
-where the bishop steps off e5 onto a square the king can take and opens the
-e-file so the queen on e7 wins the undefended white queen on e4:
-
-| Case | Printed | Wrong how |
-| --- | --- | --- |
-| `Bh2+`, quality `best` | "Found the discovered attack — queen on e7 gains a discovered attack on e4." | Headline correct. But `trappedPiece` co-fires with "queen on e4 is trapped", and the sentence names a square instead of the queen it wins. |
-| `Bh2+`, quality `brilliant` | "Found the brilliant sacrifice with Bh2+." | `classifyTacticMotif` answers from the raw quality flag **before the registry runs**, so the discovered attack the detector already found is thrown away. Single-label classification is at its most expensive on the best move in the game. |
-| A true discovered check (`Nc5+`, constructed) | "Found the discovered attack — rook on e1 gains a discovered attack on e8." | There is no `discoveredCheck` motif. The card never says the move is forcing, or that e8 is the king. `doubleCheck` can't cover it — that detector needs two checkers. |
-
-Two findings fall out of that position and both are load-bearing for the plan:
+### Two findings from TR-07 that are load-bearing for the plan
 
 1. **The static-safety gate would have deleted this tactic.** `see()` on h2 is
    **+330 for White** — the bishop is plainly hanging, because that is the
@@ -84,8 +83,7 @@ Two findings fall out of that position and both are load-bearing for the plan:
    So **85% of the detector's output in ordinary play is an artefact.** (Across
    quiet moves in the sharp puzzle positions the mix inverts to 76.8% genuinely
    cornered — which is the point: the bug dominates exactly where the noise
-   hurts most.) It is also why `trappedPiece` co-fires on all three real pins
-   in the fixture.
+   hurts most.) It is also why `trappedPiece` co-fires on all three real pins.
 
 ## 2. Measurements
 
@@ -167,7 +165,7 @@ something* in the line the engine is about to play?"
 
 ## 3. What chess.com actually does differently
 
-Eight Game Review cards, transcribed:
+Ten Game Review cards, transcribed:
 
 | Their sentence | Shape | What it forced them to compute |
 | --- | --- | --- |
@@ -179,6 +177,8 @@ Eight Game Review cards, transcribed:
 | "Their best option was to **send a queen into the game**." | them · missed | non-material vocabulary |
 | "You allowed a fork this game, which is **unusual for you**." | game · baseline | this player's cross-game rate |
 | "Your strategic play was **weaker than usual**… look at your worst piece." | game · baseline | cross-game score + a drill |
+| "You made your bishop **vulnerable**, but it was a brilliant sacrifice!" | you · found | that the piece is hanging *and* that it is sound |
+| "That **pin** is like a Venus flytrap, snapping shut on their bishop!" | you · found | a bind with no material — their positional tier |
 
 **The sentence template is the verification contract.** You cannot fill
 `win a <piece> through a <motif>` without having computed which piece falls.
@@ -433,7 +433,8 @@ down to. Lower a ceiling in the same commit that earns it:
 | Recaptures carrying a label | 97 / 113 = 85.8% | ≤ 5% |
 | Quiet moves in 120 puzzle positions | 897 / 3,040 = 29.5% | ≤ 10% |
 
-Plus ten named cards in `tactic-review-cases.ts` — exact FENs from the game in
+Plus ten named cards in `tactic-review-cases.ts` (the shape and the
+fixed/unfixed rule live alongside in `tactic-review-case.ts`) — exact FENs from the game in
 §1, each with the sentence the pipeline prints today and the motif it must
 produce after the rework. `tactic-review-cases.test.ts` asserts *today's*
 motif, *today's* full set of firing detectors, and *today's* sentence, so any

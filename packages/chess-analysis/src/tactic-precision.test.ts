@@ -140,10 +140,16 @@ function playUci(board: Chess, uci: string): { san: string; to: string; captured
   }
 }
 
+interface QuietTally {
+  moves: number;
+  labelled: number;
+  byType: Map<string, number>;
+}
+
 /** Non-capturing, non-checking legal moves that aren't the puzzle's own
  * solution — the closest thing to "a move nothing interesting happens on"
  * that a sharp position offers. */
-function scanQuietMoves(): { moves: number; labelled: number; byType: Map<string, number> } {
+function scanQuietMoves(): QuietTally {
   let moves = 0;
   let labelled = 0;
   const byType = new Map<string, number>();
@@ -174,11 +180,24 @@ function describeTypes(byType: Map<string, number>, total: number): string {
     .join(', ');
 }
 
-describe('classifyTacticMotif precision', () => {
-  const opening = scanOpeningTheory();
-  const quiet = scanQuietMoves();
+/** Both corpora are walked once and shared, lazily: at `describe` scope they
+ * would run during collection, so filtering down to a single test in this
+ * file would still pay for both scans. */
+let openingScan: OpeningTally | undefined;
+function openingTheory(): OpeningTally {
+  openingScan ??= scanOpeningTheory();
+  return openingScan;
+}
 
+let quietScan: QuietTally | undefined;
+function quietMoves(): QuietTally {
+  quietScan ??= scanQuietMoves();
+  return quietScan;
+}
+
+describe('classifyTacticMotif precision', () => {
   test('names a tactic on only a minority of opening theory moves', () => {
+    const opening = openingTheory();
     const rate = opening.labelled / opening.plies;
     expect(opening.plies, 'corpus shrank — the ceiling below is calibrated to its size').toBeGreaterThan(4000);
     expect(
@@ -189,6 +208,7 @@ describe('classifyTacticMotif precision', () => {
   });
 
   test('rarely calls a recapture a tactic', () => {
+    const opening = openingTheory();
     const rate = opening.labelledRecaptures / opening.recaptures;
     expect(opening.recaptures, 'too few recaptures in the corpus to measure').toBeGreaterThan(50);
     expect(
@@ -198,6 +218,7 @@ describe('classifyTacticMotif precision', () => {
   });
 
   test('names a tactic on only a minority of quiet moves in sharp positions', () => {
+    const quiet = quietMoves();
     const rate = quiet.labelled / quiet.moves;
     expect(quiet.moves, 'corpus shrank — the ceiling below is calibrated to its size').toBeGreaterThan(2500);
     expect(

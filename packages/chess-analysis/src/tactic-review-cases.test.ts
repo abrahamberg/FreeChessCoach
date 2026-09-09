@@ -5,11 +5,12 @@ import { buildTacticDetectionContext } from './tactic-detectors/context.js';
 import { TACTIC_DETECTORS } from './tactic-detectors/registry.js';
 import { tacticHitDetail } from './tactic-hit-detail.js';
 import { tacticOpportunityReason } from './tactic-reason-text.js';
+import { expectedSubject, isTacticReviewCaseUnfixed, type TacticReviewCase } from './tactic-review-case.js';
 import {
   KNOWN_TACTIC_REVIEW_DEFECTS,
   TACTIC_REVIEW_CASES,
-  TACTIC_REVIEW_TRUE_POSITIVES,
-  type TacticReviewCase
+  tacticReviewTruePositives,
+  unfixedTacticReviewCases
 } from './tactic-review-cases.js';
 
 /**
@@ -22,8 +23,8 @@ import {
  * detector, the exact sentence that changes shows up as a named diff rather
  * than as a number moving in a corpus test. When a case is fixed, move its
  * `today*` fields onto its `target*` fields, clear its `defect`, and drop it
- * from `KNOWN_TACTIC_REVIEW_DEFECTS`; the last three tests are what stop
- * that bookkeeping from being skipped.
+ * from `KNOWN_TACTIC_REVIEW_DEFECTS`; the bookkeeping tests below are what
+ * stop any of those three steps from being skipped.
  */
 function classify(reviewCase: TacticReviewCase) {
   const after = new Chess(reviewCase.fenBefore);
@@ -56,12 +57,10 @@ function sentenceFor(reviewCase: TacticReviewCase): string | null {
   return tacticOpportunityReason({ type: motif, found: true, detail: detail?.text ?? null }, reviewCase.moveSan);
 }
 
-function isStillWrong(reviewCase: TacticReviewCase): boolean {
-  const sameMotif = reviewCase.todayMotif === reviewCase.targetMotif;
-  const sameDetectors =
-    reviewCase.todayDetectors.length === reviewCase.targetDetectors.length &&
-    reviewCase.todayDetectors.every((type) => (reviewCase.targetDetectors as readonly string[]).includes(type));
-  return !sameMotif || !sameDetectors;
+function caseById(id: string): TacticReviewCase {
+  const reviewCase = TACTIC_REVIEW_CASES.find((candidate) => candidate.id === id);
+  if (!reviewCase) throw new Error(`${id} is missing from TACTIC_REVIEW_CASES`);
+  return reviewCase;
 }
 
 describe('reported Game Review cards', () => {
@@ -71,6 +70,11 @@ describe('reported Game Review cards', () => {
       expect(board.turn(), `${reviewCase.id}: mover disagrees with the FEN`).toBe(reviewCase.mover === 'white' ? 'w' : 'b');
       expect(() => board.move(reviewCase.moveSan), `${reviewCase.id}: ${reviewCase.moveSan} is not legal here`).not.toThrow();
     }
+  });
+
+  test('every case id is unique', () => {
+    const ids = TACTIC_REVIEW_CASES.map((reviewCase) => reviewCase.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   for (const reviewCase of TACTIC_REVIEW_CASES) {
@@ -88,25 +92,47 @@ describe('reported Game Review cards', () => {
   }
 
   test('the defect list matches the cases whose output differs from target', () => {
-    const stillWrong = TACTIC_REVIEW_CASES.filter(isStillWrong).map((c) => c.id);
+    const stillWrong = unfixedTacticReviewCases().map((reviewCase) => reviewCase.id);
     expect([...stillWrong].sort()).toEqual([...KNOWN_TACTIC_REVIEW_DEFECTS].sort());
   });
 
   test("each case's hand-written defect kind agrees with the computed mismatch", () => {
     for (const reviewCase of TACTIC_REVIEW_CASES) {
       expect(reviewCase.defect === null, `${reviewCase.id}: defect kind and today-vs-target mismatch disagree`).toBe(
-        !isStillWrong(reviewCase)
+        !isTacticReviewCaseUnfixed(reviewCase)
       );
     }
   });
 
-  test('the target state still names a tactic on the true positives', () => {
-    // Without this, every ceiling in tactic-precision.test.ts could be met by
-    // deleting the detectors.
-    for (const id of TACTIC_REVIEW_TRUE_POSITIVES) {
-      const reviewCase = TACTIC_REVIEW_CASES.find((c) => c.id === id);
-      expect(reviewCase, `${id} is listed as a true positive but is not in the fixture`).toBeDefined();
-      expect(reviewCase?.targetMotif, `${id} must still name a motif after the rework`).not.toBeNull();
+  test('the fixture keeps enough real tactics to be worth passing', () => {
+    // Without this floor, every ceiling in tactic-precision.test.ts could be
+    // met by deleting the detectors and nulling every target.
+    expect(tacticReviewTruePositives().length).toBeGreaterThanOrEqual(5);
+  });
+
+  test('every target sentence addresses the reader as the card would', () => {
+    // docs/tactics-rework.md §3 rule 3: the card is written to the user, so an
+    // opponent move reads "They …" even though the motif is the mover's.
+    for (const reviewCase of TACTIC_REVIEW_CASES) {
+      if (reviewCase.targetSentence === null) continue;
+      const subject = expectedSubject(reviewCase);
+      expect(
+        reviewCase.targetSentence.startsWith(subject),
+        `${reviewCase.id}: ${reviewCase.mover} move in a ${reviewCase.userColor} review must open with "${subject}"`
+      ).toBe(true);
+    }
+  });
+
+  test('no case claims a pre-check motif as a registry detector', () => {
+    // checkmate/brilliantSacrifice/other are answered by classifyTacticMotif
+    // itself, never by a detector, so they can head a card but can never
+    // appear in a detector set.
+    const detectorTypes = new Set<string>(TACTIC_DETECTORS.map((detector) => detector.type));
+    const newMotifs = new Set(['breaksPin', 'gainsTempo', 'discoveredCheck']);
+    for (const reviewCase of TACTIC_REVIEW_CASES) {
+      for (const motif of [...reviewCase.todayDetectors, ...reviewCase.targetDetectors]) {
+        expect(detectorTypes.has(motif) || newMotifs.has(motif), `${reviewCase.id}: "${motif}" is not a detector`).toBe(true);
+      }
     }
   });
 });
@@ -129,29 +155,25 @@ describe('reported Game Review cards', () => {
  * characterizations of a known defect, not statements of intended behaviour.
  */
 describe('trapped-piece detection on pieces that simply cannot move', () => {
-  function detailFor(id: string): string | undefined {
-    const reviewCase = TACTIC_REVIEW_CASES.find((c) => c.id === id);
-    expect(reviewCase, `${id} is missing from the fixture`).toBeDefined();
-    if (!reviewCase) return undefined;
+  function trappedDetailFor(id: string): string | undefined {
+    const reviewCase = caseById(id);
     return tacticHitDetail('trappedPiece', reviewCase.fenBefore, reviewCase.moveSan, reviewCase.mover)?.text;
   }
 
   test('today, a check alone reports the enemy queen as trapped', () => {
-    const reviewCase = TACTIC_REVIEW_CASES.find((c) => c.id === 'TR-07-discovered-attack-sacrifice');
-    expect(reviewCase).toBeDefined();
-    if (!reviewCase) return;
+    const reviewCase = caseById('TR-07-discovered-attack-sacrifice');
     const after = new Chess(reviewCase.fenBefore);
     after.move(reviewCase.moveSan);
     expect(after.isCheck(), 'the position must be a check for this case to mean anything').toBe(true);
     // The queen is attacked and short of squares, but White simply has to
     // answer the check first — it is not trapped.
-    expect(detailFor('TR-07-discovered-attack-sacrifice')).toBe('queen on e4 is trapped');
+    expect(trappedDetailFor('TR-07-discovered-attack-sacrifice')).toBe('queen on e4 is trapped');
   });
 
   test('today, an absolute pin alone reports the pinned piece as trapped', () => {
     // TR-10's bishop is defended twice and pinned; TR-01's knight is defended
     // and pinned. Both are ordinary opening positions, neither piece is lost.
-    expect(detailFor('TR-10-real-pin-on-the-open-file')).toBe('bishop on e7 is trapped');
-    expect(detailFor('TR-01-real-pin-with-noise')).toBe('knight on c6 is trapped');
+    expect(trappedDetailFor('TR-10-real-pin-on-the-open-file')).toBe('bishop on e7 is trapped');
+    expect(trappedDetailFor('TR-01-real-pin-with-noise')).toBe('knight on c6 is trapped');
   });
 });

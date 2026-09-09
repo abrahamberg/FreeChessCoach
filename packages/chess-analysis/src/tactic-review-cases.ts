@@ -1,78 +1,22 @@
-import type { MoveQuality, TacticMotifType } from '@freechesscoach/shared';
+import type { TacticReviewCase } from './tactic-review-case.js';
+import { isTacticReviewCaseUnfixed } from './tactic-review-case.js';
 
 /**
  * The named, hand-checked Game Review cards behind `docs/tactics-rework.md`
- * — every one reported from the shipped app, replayed here as a fixture so
- * the rework has a concrete definition of "fixed" instead of a prose
- * description of "better".
+ * §1 — every one reported from the shipped app, replayed here so the rework
+ * has a concrete definition of "fixed" instead of a prose description of
+ * "better". The shape and the fixed/unfixed rule live in
+ * `tactic-review-case.ts`; this file is the data.
  *
  * TR-01…TR-06 come from one real game,
  * `1.e4 e5 2.Nf3 Nc6 3.Bc4 d6 4.Bb5 Bd7 5.d4 exd4 6.Bxc6 bxc6 7.Qxd4 c5`,
  * with the user playing White; their FENs are derived from that move list
- * (not transcribed from a screenshot), so they are exact. TR-07/TR-08 are a
- * reported position whose FEN was read off the board and then verified by
- * replay — the move is legal, gives check, and wins the queen exactly as
- * reported, which is what makes the reading trustworthy. TR-10 was read the
- * same way and verified the same way. TR-09 is constructed, and says so.
- *
- * `todayMotif`/`todayDetectors`/`todaySentence` are what the pipeline
- * produces right now; `tactic-review-cases.test.ts` asserts them, so this
- * file cannot drift from the code. The `target*` fields are what each case
- * must produce once `docs/tactics-rework.md` phases 0–D land.
- * `targetSentence` records the intended prose for reference only — the exact
- * wording is a product decision and is deliberately not asserted.
+ * (not transcribed from a screenshot), so they are exact. TR-07/TR-08 and
+ * TR-10 are reported positions whose FENs were read off the board and then
+ * verified by replay — each move is legal and does exactly what the report
+ * says, which is what makes the reading trustworthy. TR-09 is constructed,
+ * and says so.
  */
-export interface TacticReviewCase {
-  /** Stable id — quote it in commit messages and the plan doc. */
-  id: string;
-  fenBefore: string;
-  moveSan: string;
-  mover: 'white' | 'black';
-  /** Whose review this is. The card is written to this side's player, so it
-   * decides "You" vs "They" — see docs/tactics-rework.md §3 rule 3. */
-  userColor: 'white' | 'black';
-  /** The move's own classification, which `classifyTacticMotif` consults
-   * before it runs any detector: `'brilliant'` short-circuits to
-   * `brilliantSacrifice`. TR-07/TR-08 are the same move either side of that
-   * branch. */
-  quality: MoveQuality;
-  /** `isTacticalPosition` as the shipped pipeline computed it here. It only
-   * changes the outcome for a move no detector matches: `true` yields the
-   * `'other'` catch-all, `false` yields no card at all. */
-  isTacticalPosition: boolean;
-  /** The single motif the card shows today. */
-  todayMotif: TacticMotifType | null;
-  /** Every registry detector that fires, not just the first match — the
-   * multi-label view phase C exposes. A motif in here but not in
-   * `targetDetectors` is a claim that must stop being made. */
-  todayDetectors: readonly TacticMotifType[];
-  /** `null` when no card is shown — the review UI's "Nothing to flag" state. */
-  todaySentence: string | null;
-  targetMotif: TacticMotifType | NewMotif | null;
-  targetDetectors: readonly (TacticMotifType | NewMotif)[];
-  targetSentence: string | null;
-  /** Short name for what is wrong today, or `null` when the case is already
-   * correct. The test cross-checks this against the machine-computed
-   * today-vs-target mismatch, so it cannot go stale. */
-  defect: DefectKind | null;
-  note: string;
-}
-
-/** Motif names that arrive with phase D of the rework. */
-type NewMotif = 'breaksPin' | 'gainsTempo' | 'discoveredCheck';
-
-type DefectKind =
-  /** A motif is claimed where there is no tactic at all. */
-  | 'phantom'
-  /** A real idea the vocabulary has no word for, so nothing is shown. */
-  | 'missing'
-  /** A real tactic named as the wrong motif. */
-  | 'mislabelled'
-  /** The headline is right but a junk claim fires alongside it. */
-  | 'noisy-co-fire'
-  /** The headline is right and the sentence throws away what it won. */
-  | 'lost-detail';
-
 const RUY_BB5 = 'r1bqkbnr/ppp2ppp/2np4/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4';
 const AFTER_BB5 = 'r1bqkbnr/ppp2ppp/2np4/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 1 4';
 const AFTER_EXD4 = 'r2qkbnr/pppb1ppp/2np4/1B6/3pP3/5N2/PPP2PPP/RNBQK2R w KQkq - 0 6';
@@ -238,7 +182,7 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
     todayDetectors: ['discoveredAttack', 'trappedPiece'],
     todaySentence: 'Found the brilliant sacrifice with Bh2+.',
     targetMotif: 'brilliantSacrifice',
-    targetDetectors: ['brilliantSacrifice', 'discoveredAttack'],
+    targetDetectors: ['discoveredAttack'],
     targetSentence: 'You won the queen through a discovered attack — and gave up a bishop to do it.',
     defect: 'lost-detail',
     note:
@@ -298,12 +242,19 @@ export const KNOWN_TACTIC_REVIEW_DEFECTS: readonly string[] = [
   'TR-10-real-pin-on-the-open-file'
 ];
 
-/** Cases that must still name a tactic after the rework — the guard against
- * reaching "precision" by silencing every detector. */
-export const TACTIC_REVIEW_TRUE_POSITIVES: readonly string[] = [
-  'TR-01-real-pin-with-noise',
-  'TR-07-discovered-attack-sacrifice',
-  'TR-08-brilliant-shadows-the-mechanism',
-  'TR-09-discovered-check-has-no-name',
-  'TR-10-real-pin-on-the-open-file'
-];
+/**
+ * Cases that name a tactic today and must still name one afterwards — the
+ * guard against reaching `tactic-precision.test.ts`'s ceilings by deleting
+ * detectors. Derived rather than hand-listed so a new case can't be omitted
+ * by accident; the test also asserts a floor on how many there are, which is
+ * the part that actually stops the fixture being neutered.
+ */
+export function tacticReviewTruePositives(): readonly TacticReviewCase[] {
+  return TACTIC_REVIEW_CASES.filter((reviewCase) => reviewCase.todayMotif !== null && reviewCase.targetMotif !== null);
+}
+
+/** Cases whose shipped behaviour is still wrong. Shrinking this is the
+ * measurable definition of progress on `docs/tactics-rework.md`. */
+export function unfixedTacticReviewCases(): readonly TacticReviewCase[] {
+  return TACTIC_REVIEW_CASES.filter(isTacticReviewCaseUnfixed);
+}
