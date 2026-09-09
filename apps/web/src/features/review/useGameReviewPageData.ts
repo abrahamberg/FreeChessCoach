@@ -1,5 +1,5 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
-import { PromoteGameResponseSchema } from '@freechesscoach/shared';
+import { PromoteGameResponseSchema, type MoveQuality } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,20 @@ import { GameDetailSchema } from '../session/sessionPageSchemas.js';
 import { lastMoveHighlightsFor } from '../session/useSessionBoardState.js';
 
 const SessionSummarySchema = z.object({ id: z.string() });
+
+/** Tiers MoveQualityBadge's move-list pill renders nothing for — a merely-fine
+ * move just reads as plain move text there (MoveQualityBadge.tsx). Both get a
+ * quiet on-board nod instead so neither goes unlabeled everywhere at once. */
+const QUALITIES_WITHOUT_A_PILL_ICON: ReadonlySet<MoveQuality> = new Set(['good', 'excellent']);
+
+/** The square to draw MoveQualityBadgeOverlay's on-board checkmark on for the
+ * current ply, or `undefined` to draw nothing — see MoveQualityBadgeOverlay's
+ * own doc comment. Exported for direct unit testing rather than only through
+ * the whole hook. */
+export function moveQualityBadgeSquareFor(quality: MoveQuality | undefined, moveUci: string | null | undefined): string | undefined {
+  if (!quality || !QUALITIES_WITHOUT_A_PILL_ICON.has(quality) || !moveUci) return undefined;
+  return moveUci.slice(2, 4);
+}
 
 /** All fetching + derived state for the standalone Game Review page
  * (AGENTS.md rule 7) — GameReviewPage itself stays presentational. Unlike
@@ -81,11 +95,10 @@ export function useGameReviewPageData(gameId: string) {
   // board merges the same way, so there's nothing to reconcile between them.
   const tacticOverlay = tacticSelectionOverlay(currentMove, tacticSelection);
   const highlights = [...lastMoveHighlightsFor(currentPosition?.moveUci), ...tacticOverlay.highlights];
-  // A 'good' move (not excellent/best/brilliant — MoveQualityBadge already
-  // leaves those unlabeled in the move list) gets a quiet checkmark on the
-  // square it landed on, board-only — see MoveQualityBadgeOverlay.
-  const moveQualityBadgeSquare =
-    currentMove?.quality === 'good' && currentPosition?.moveUci ? currentPosition.moveUci.slice(2, 4) : undefined;
+  // A 'good' or 'excellent' move (MoveQualityBadge leaves both unlabeled in
+  // the move list) gets a quiet checkmark on the square it landed on,
+  // board-only — see MoveQualityBadgeOverlay.
+  const moveQualityBadgeSquare = moveQualityBadgeSquareFor(currentMove?.quality, currentPosition?.moveUci);
 
   // The one visual for "what was actually best" — MoveNoteCard no longer
   // spells it out as a "Best: <line>" sentence (Daniel's call: obvious once

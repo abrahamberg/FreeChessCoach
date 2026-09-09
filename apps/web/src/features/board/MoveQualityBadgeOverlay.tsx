@@ -31,8 +31,8 @@ function rowFor(square: string, orientation: 'white' | 'black'): number {
  * recomputed from the current ply's move on every render (see
  * useGameReviewPageData), never written into `move.reasons` or shown in
  * the move list/ledger (MoveQualityBadge already covers that, and
- * deliberately skips 'good' — this fills that one gap only on the board
- * itself, for the position currently on screen). */
+ * deliberately skips 'good' and 'excellent' — this fills that one gap only
+ * on the board itself, for the position currently on screen). */
 export function MoveQualityBadgeOverlay({ square, orientation }: MoveQualityBadgeOverlayProps): ReactNode {
   const column = columnFor(square, orientation);
   const row = rowFor(square, orientation);

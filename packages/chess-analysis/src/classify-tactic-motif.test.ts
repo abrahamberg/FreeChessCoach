@@ -3,6 +3,12 @@ import { classifyTacticClaims, classifyTacticMotif, type TacticMotifContext } fr
 
 const FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
 const PIN_FEN = '4k3/8/2n5/8/8/3B4/8/4K3 w - - 0 1';
+// A pinned pawn that is simply outnumbered (1 attacker, 0 defenders) but
+// isn't itself doing anything — no capture of its own, nothing it guards.
+const PAWN_PIN_NO_FUNCTION_DENIED_FEN = '4k3/3n4/3p4/8/7Q/8/8/K7 w - - 0 1';
+// Same shape, but the pinned pawn was eyeing the knight on e5 and can no
+// longer take it — the pin costs its owner a real capture.
+const PAWN_PIN_DENIES_CAPTURE_FEN = '4k3/3n4/3p4/4N3/7Q/8/8/K7 w - - 0 1';
 const FREE_PIECE_FEN = '7k/8/8/3q4/2B5/8/8/4K3 w - - 0 1';
 const QUIET_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const SKEWER_FEN = 'r7/8/8/k7/8/8/8/1R5K w - - 0 1';
@@ -43,6 +49,25 @@ describe('classifyTacticMotif', () => {
     const context = contextFor({ fenBefore: PIN_FEN, moveSan: 'Bb5' });
 
     expect(classifyTacticMotif(context)).toBe('pin');
+  });
+
+  test('drops a pawn pin that only shows the pawn is outnumbered', () => {
+    // Qd4 pins d6 to the knight on d7, and the pawn has one attacker (the
+    // queen) and zero defenders — the old "attackers > defenders" test alone
+    // would have kept this. But the pawn isn't eyeing a capture and guards
+    // nothing: it's a hanging pawn wearing a pin's geometry (TR-05's shape),
+    // not a bind worth naming.
+    const context = contextFor({ fenBefore: PAWN_PIN_NO_FUNCTION_DENIED_FEN, moveSan: 'Qd4' });
+
+    expect(classifyTacticClaims(context).claims.map((claim) => claim.type)).not.toContain('pin');
+  });
+
+  test('keeps a pawn pin that costs the pawn a capture of its own', () => {
+    // Same shape as above, but the pawn on d6 was attacking the knight on e5
+    // and the pin takes that capture away — a real bind, not a hanging pawn.
+    const context = contextFor({ fenBefore: PAWN_PIN_DENIES_CAPTURE_FEN, moveSan: 'Qd4' });
+
+    expect(classifyTacticClaims(context).claims.map((claim) => claim.type)).toContain('pin');
   });
 
   test('tags capturing an undefended piece as a free piece', () => {
