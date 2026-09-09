@@ -25,8 +25,3 @@ export interface TacticDetector {
   priority: number;
   detect(context: TacticDetectionContext): TacticClaim[];
 }
-
-/** The single-claim shape most detectors return, or `[]`. */
-export function claimsOf(claim: TacticClaim | null): TacticClaim[] {
-  return claim ? [claim] : [];
-}

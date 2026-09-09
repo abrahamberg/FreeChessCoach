@@ -1,4 +1,3 @@
-import type { Square } from 'chess.js';
 import type { PinHit } from '../tactic-pins.js';
 import { pieceNameAt, pieceTypeAt } from '../tactic-board-facts.js';
 import type { TacticClaim } from '../tactic-claim.js';
@@ -49,10 +48,4 @@ export const pinDetector: TacticDetector = {
 
 function pinKey(hit: PinHit): string {
   return `${hit.by}:${hit.pinned}:${hit.against}`;
-}
-
-/** Re-exported so the defensive family can ask the same question of the
- * position before a move: `breaksPin` is "one of these is gone now". */
-export function pinsOnSquare(hits: readonly PinHit[], square: Square): PinHit[] {
-  return hits.filter((hit) => hit.pinned === square);
 }

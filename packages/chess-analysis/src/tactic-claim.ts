@@ -66,27 +66,3 @@ export function dedupeTacticClaims(claims: readonly TacticClaim[]): TacticClaim[
     return true;
   });
 }
-
-/** A claim with no squares to draw and nothing to say beyond its own name —
- * the shape a detector returns when the motif *is* the whole story. */
-export function bareClaim(input: {
-  type: TacticMotifType;
-  actor: Square;
-  targets?: readonly Square[];
-  gainKind: TacticGainKind;
-  expectedGain?: number;
-  detail: string;
-  evidence?: TacticVisualDto;
-}): TacticClaim {
-  return {
-    type: input.type,
-    actor: input.actor,
-    targets: input.targets ?? [],
-    victim: null,
-    gainKind: input.gainKind,
-    expectedGain: input.expectedGain ?? 0,
-    prize: null,
-    evidence: input.evidence ?? { arrows: [], highlights: [] },
-    detail: input.detail
-  };
-}

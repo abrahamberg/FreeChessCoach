@@ -1,5 +1,4 @@
 import type { TacticGainDto, TacticHorizon, TacticMotifType } from '@freechesscoach/shared';
-import { TACTIC_MOTIF_FAMILY } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 import { TACTIC_MOTIF_PHRASES, articleFor, motifWithArticle } from './tactic-motif-phrases.js';
 
@@ -193,12 +192,4 @@ function gerundOf(infinitive: string): string {
   if (!verb) return infinitive;
   const stem = verb.endsWith('e') && !verb.endsWith('ee') ? verb.slice(0, -1) : verb;
   return [`${stem}ing`, ...rest].join(' ');
-}
-
-/** Whether this motif is something done TO the opponent, which is what
- * decides if "through a <motif>" reads at all — you don't win a rook
- * "through" a developing move. Exported for the coach-facing summaries that
- * group a game's motifs the same way the card does. */
-export function isOffensiveMotif(type: TacticMotifType): boolean {
-  return TACTIC_MOTIF_FAMILY[type] === 'offensive';
 }

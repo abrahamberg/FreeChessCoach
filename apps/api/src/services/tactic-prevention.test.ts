@@ -93,8 +93,7 @@ describe('computeTacticMotifPrevented', () => {
       prevented: true,
       detail: 'knight on d6 forks e8 and b7',
       visual: FORK_VISUAL,
-      gain: FORK_GAIN,
-      isUserMove: true
+      gain: FORK_GAIN
     });
     expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: false, detail: 'knight on d6 forks e8 and b7', visual: FORK_VISUAL });
   });
@@ -231,8 +230,7 @@ describe('computeTacticMotifPrevented', () => {
       prevented: true,
       detail: 'knight on d6 forks e8 and b7',
       visual: FORK_VISUAL,
-      gain: FORK_GAIN,
-      isUserMove: true
+      gain: FORK_GAIN
     });
   });
 
@@ -276,8 +274,7 @@ describe('computeTacticMotifPrevented', () => {
       prevented: false,
       detail: 'knight on d6 forks e8 and b7',
       visual: FORK_VISUAL,
-      gain: FORK_GAIN,
-      isUserMove: true
+      gain: FORK_GAIN
     });
     expect(result.diagnosticByPly.get(2)).toEqual({ type: 'fork', failed: true, detail: 'knight on d6 forks e8 and b7', visual: FORK_VISUAL });
   });
