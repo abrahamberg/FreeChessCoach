@@ -145,6 +145,26 @@ describe('renderCurrentMoveBlock', () => {
     expect(text).toContain(': fen-after-18');
   });
 
+  // The coach's most common hallucination was about the position it was
+  // actually on, so the board's own facts ride the same uncached block as
+  // the fen — no tool call needed to know what is legal or hanging here.
+  test('states the board\'s own facts for the current position', () => {
+    const text = renderCurrentMoveBlock(
+      1,
+      'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+      'white',
+      '(empty — no parked topics right now)',
+      'e4'
+    );
+    expect(text).toContain('Board facts: black to move. 20 legal moves.');
+  });
+
+  test('a fen that cannot be read says so instead of reporting an empty board', () => {
+    const text = renderCurrentMoveBlock(0, 'startpos-fen', 'white', '(empty)', null);
+    expect(text).toContain('Board facts: unavailable');
+    expect(text).not.toContain('0 legal moves');
+  });
+
   test('folds the thread ledger in under its own heading (final review #8: heading owned by packages/prompts)', () => {
     const text = renderCurrentMoveBlock(0, 'startpos-fen', 'white', '- [active] the h3 line', null);
     expect(text).toContain('## Your thread ledger\n\n- [active] the h3 line');

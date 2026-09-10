@@ -9,6 +9,10 @@ export const TOOL_BUDGETS: Partial<Record<string, number>> = {
   // per turn is all a coaching plan needs; matches get_user_profile's own
   // "read the student's standing evidence once" budget.
   get_diagnostic_profile: 1,
+  // Same "read the standing evidence once per turn" shape as the two
+  // profile reads above: a DB read plus a pure comparison, and a session
+  // only ever needs one look at how this game sits against the baseline.
+  get_player_stats: 1,
   recall_move: 3,
   get_candidate_moves: 3,
   // Categorically heavier than any other tool here — its own internal
@@ -17,6 +21,11 @@ export const TOOL_BUDGETS: Partial<Record<string, number>> = {
   // description tells the coach to fold related sub-questions into one call.
   investigate_position: 1
 };
+/** Deliberately absent from the budget table: `check_moves` (and
+ * `check_position`). Both are pure, engine-free lookups, and their whole
+ * purpose is to be cheaper than the coach asserting a move from memory — a
+ * budget on them would recreate the incentive to guess. The repeat-call
+ * cache above still collapses identical calls within a turn. */
 export const BUDGET_EXHAUSTED = { error: 'budget_exhausted — answer with what you have' } as const;
 
 export interface TurnGuardState {

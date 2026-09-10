@@ -1,12 +1,14 @@
 import { describe, expect, test } from 'vitest';
 import {
   annotateBoardParameters,
+  checkMovesParameters,
   checkPositionParameters,
   COACH_TOOL_SPECS,
   coachToolDescription,
   endSessionParameters,
   expectMoveParameters,
   getEngineAnalysisParameters,
+  getPlayerStatsParameters,
   getUserProfileParameters,
   hypotheticalLineParameters,
   investigatePositionParameters,
@@ -175,12 +177,14 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
   const EXPECTED_NAMES = [
     'show_position',
     'check_position',
+    'check_moves',
     'annotate_board',
     'expect_move',
     'hypothetical_line',
     'get_engine_analysis',
     'get_user_profile',
     'get_diagnostic_profile',
+    'get_player_stats',
     'record_finding',
     'propose_focus_area_update',
     'update_threads',
@@ -190,7 +194,7 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
     'end_session'
   ];
 
-  test('has exactly the coach agent\'s 15 tools, each with a unique name and a non-empty description', () => {
+  test('has exactly the coach agent\'s 17 tools, each with a unique name and a non-empty description', () => {
     expect(COACH_TOOL_SPECS.map((spec) => spec.name)).toEqual(EXPECTED_NAMES);
     for (const spec of COACH_TOOL_SPECS) {
       expect(spec.description.length).toBeGreaterThan(0);
@@ -205,5 +209,32 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
 
   test('coachToolDescription throws on an unregistered tool name', () => {
     expect(() => coachToolDescription('not_a_real_tool')).toThrow(/not_a_real_tool/);
+  });
+});
+
+describe('checkMovesParameters', () => {
+  const fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+  test('accepts a fen plus the moves to check', () => {
+    expect(checkMovesParameters.safeParse({ fen, moves: ['e4', 'Nf3'] }).success).toBe(true);
+  });
+
+  test('requires at least one move — an empty check is never what the coach meant', () => {
+    expect(checkMovesParameters.safeParse({ fen, moves: [] }).success).toBe(false);
+  });
+
+  test('caps the batch so one call stays a check, not a board dump', () => {
+    expect(checkMovesParameters.safeParse({ fen, moves: ['a3', 'a4', 'b3', 'b4', 'c3', 'c4', 'd3'] }).success).toBe(false);
+  });
+
+  test('rejects a missing fen — the coach must pass one it actually received', () => {
+    expect(checkMovesParameters.safeParse({ moves: ['e4'] }).success).toBe(false);
+    expect(checkMovesParameters.safeParse({ fen: '', moves: ['e4'] }).success).toBe(false);
+  });
+});
+
+describe('getPlayerStatsParameters', () => {
+  test('takes no arguments — there is no address to get wrong', () => {
+    expect(getPlayerStatsParameters.safeParse({}).success).toBe(true);
   });
 });

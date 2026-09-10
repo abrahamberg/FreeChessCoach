@@ -78,9 +78,9 @@ describe('buildCoachSystemPrompt', () => {
   // cosmetic. Both halves of the causal link have to stay stated.
   test('staticPart ties show_position to loading the move\'s own analysis, and warns that skipping it leaves the previous move\'s analysis in view', () => {
     const { staticPart } = buildCoachSystemPrompt(baseInput());
-    expect(staticPart).toContain('wait for its result before you speak about the move');
-    expect(staticPart).toContain("loads that move's own engine analysis");
-    expect(staticPart).toContain("the analysis you can see is still the PREVIOUS move's");
+    expect(staticPart).toContain('Wait for the result before you say anything about the move');
+    expect(staticPart).toContain("this call is what refreshes \"## Current position\" with THIS move's engine analysis");
+    expect(staticPart).toContain("the analysis in front of you is still the PREVIOUS move's");
     expect(staticPart).toContain('let the result come back before you discuss it');
   });
 
@@ -89,9 +89,9 @@ describe('buildCoachSystemPrompt', () => {
   // where get_engine_analysis is the only way to see the position.
   test('staticPart tells the coach a hypothetical position is never analyzed for it, and to pass hypothetical_line\'s fen to get_engine_analysis', () => {
     const { staticPart } = buildCoachSystemPrompt(baseInput());
-    expect(staticPart).toContain('no analysis of it ever arrives on its own');
+    expect(staticPart).toContain('A HYPOTHETICAL IS NEVER ANALYZED FOR YOU');
     expect(staticPart).toContain('pass the fen hypothetical_line returned to get_engine_analysis');
-    expect(staticPart).toContain("never carry the real position's evaluation into the line");
+    expect(staticPart).toContain('never carry it in');
   });
 
   // Regression: the coach used to assert a claim like "the queen defends the
@@ -100,15 +100,16 @@ describe('buildCoachSystemPrompt', () => {
   // whether such a specific tactical/positional claim is true.
   test('staticPart tells the coach to verify a specific claim about a line (defends/wins/escapes) with get_engine_analysis or investigate_position before stating it as fact', () => {
     const { staticPart } = buildCoachSystemPrompt(baseInput());
-    expect(staticPart).toContain('VERIFY A THEORY BEFORE YOU STATE IT AS FACT');
-    expect(staticPart).toContain("hypothetical_line only validates that moves are legal");
-    expect(staticPart).toContain('does Qe7 actually defend the knight here, or is something in the way?');
+    expect(staticPart).toContain('LEGAL IS NOT THE SAME AS TRUE');
+    expect(staticPart).toContain('it needs checking the same turn you make it');
+    expect(staticPart).toContain('never hand it over as settled fact');
   });
 
   test('staticPart tells the coach show_position\'s result carries the real fen and never to invent one itself', () => {
     const { staticPart } = buildCoachSystemPrompt(baseInput());
     expect(staticPart).toContain('check_position');
-    expect(staticPart).toContain('NEVER invent or reconstruct a FEN from memory');
+    expect(staticPart).toContain('NEVER invent or reconstruct a fen');
+    expect(staticPart).toContain('never write out a fen no tool gave you');
   });
 
   test('staticPart tells the coach to write plain prose with no markdown and to use standard move-number notation, not its own separator', () => {
@@ -214,6 +215,89 @@ describe('buildCoachSystemPrompt', () => {
     });
   });
 
+  // The coach was naming moves that were not legal in the position, pieces
+  // that were not on the board, and moves never played in the game. These
+  // assert the section that exists to stop that, and that it always points
+  // at the free tool that settles the question rather than just saying
+  // "be careful".
+  describe('ground truth (what the coach may treat as known)', () => {
+    test('staticPart tells the coach it cannot see the board and only knows what a tool returned', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput());
+      expect(staticPart).toContain('## What you actually know');
+      expect(staticPart).toContain('You cannot see the board');
+      expect(staticPart).toContain('never from memory of the game');
+    });
+
+    test('staticPart routes every unverified move through check_moves before the coach names it', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput());
+      expect(staticPart).toContain('NAME ONLY MOVES YOU HAVE SEEN OR CHECKED');
+      expect(staticPart).toContain('goes through check_moves FIRST');
+    });
+
+    test('staticPart forbids inventing a move number and points at check_position to confirm one', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput());
+      expect(staticPart).toContain('Never invent a move number');
+      expect(staticPart).toContain('check_position is free');
+    });
+
+    test('staticPart tells the coach to say it is checking rather than guess', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput());
+      expect(staticPart).toContain("SAY WHEN YOU DON'T KNOW");
+    });
+
+    test('play mode gets the same ground-truth rules — a live game is exactly where a coach guesses', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput({ mode: 'play', plan: null }));
+      expect(staticPart).toContain('## What you actually know');
+      expect(staticPart).toContain('check_moves');
+    });
+  });
+
+  describe('session goals', () => {
+    test('staticPart tells the coach to hold one goal, chosen from measured evidence rather than this game alone', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput());
+      expect(staticPart).toContain('## What the session is for');
+      expect(staticPart).toContain('Every session has ONE goal');
+      expect(staticPart).toContain('get_diagnostic_profile');
+      expect(staticPart).toContain('get_player_stats');
+      expect(staticPart).toContain('What one game seems to show, on its own, is the weakest evidence you have');
+    });
+
+    test('staticPart tells the coach to park what is not the goal instead of chasing it', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput());
+      expect(staticPart).toContain('WORK IT, AND LET THE REST GO');
+      expect(staticPart).toContain('update_threads');
+    });
+
+    test('staticPart ties homework and the closing summary to the goal actually worked', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput());
+      expect(staticPart).toContain('END WHERE YOU AIMED');
+    });
+
+    test('both modes name the goal in their opening', () => {
+      for (const input of [baseInput(), baseInput({ mode: 'play', plan: null })]) {
+        expect(buildCoachSystemPrompt(input).staticPart).toContain('What the session is for');
+      }
+    });
+  });
+
+  // The coach asked a question after every single move — repetitive to the
+  // point of being tiring — instead of explaining when there was nothing to
+  // discover.
+  describe('question discipline', () => {
+    test('staticPart forbids rote and repeated questions and licenses plain explanation', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput());
+      expect(staticPart).toContain('ASK ONLY REAL QUESTIONS');
+      expect(staticPart).toContain('never ask the same shape of question twice in a row');
+      expect(staticPart).toContain('Explaining well is coaching too');
+    });
+
+    test('play mode tells the coach to vary how it responds to a move instead of interrogating', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput({ mode: 'play', plan: null }));
+      expect(staticPart).toContain('Vary how, deliberately');
+      expect(staticPart).toContain('turns a game into an interrogation');
+    });
+  });
+
   describe('play mode (architecture §14)', () => {
     function basePlayInput(overrides: Partial<CoachPromptInput> = {}): CoachPromptInput {
       return baseInput({ mode: 'play', plan: null, ...overrides });
@@ -313,7 +397,7 @@ describe('buildCoachSystemPrompt', () => {
       // Every other section (tools, session flow, boundaries, etc.) must
       // still be present verbatim — the voice block is additive, not a
       // substitute for any of the coach's substance.
-      expect(voiced.staticPart).toContain('SOCRATIC FIRST');
+      expect(voiced.staticPart).toContain('ASK ONLY REAL QUESTIONS');
       expect(voiced.staticPart).toContain('GET THE BOARD THERE FIRST');
       expect(voiced.staticPart).toContain('no markdown');
       expect(voiced.staticPart).toContain('Categories for findings and focus areas');

@@ -1,5 +1,4 @@
-import type { ClassifiedMove, FeatureDelta } from '@freechesscoach/chess-analysis';
-import { isSoundQuality } from '@freechesscoach/chess-analysis';
+import { inspectMoves, isSoundQuality, type ClassifiedMove, type FeatureDelta } from '@freechesscoach/chess-analysis';
 import {
   MOVE_QUALITY_SYMBOLS,
   TACTIC_MOTIF_LABELS,
@@ -9,6 +8,7 @@ import {
   type PositionAnalysisLine,
   type TacticMotifCounts
 } from '@freechesscoach/shared';
+import { renderPositionFacts } from './move-inspection-summary.js';
 import { describeMoveRef } from './render.js';
 import { formatEval } from './format-eval.js';
 
@@ -263,6 +263,18 @@ function renderAnalysisSection(ply: number, playedMove: string | null, ctx: Curr
 }
 
 /**
+ * The board's own facts for the position the conversation is on — side to
+ * move, check/mate, how many legal replies there are, what is hanging,
+ * what favorable captures exist. Pure chess.js (no engine call), and it
+ * costs a couple of lines a turn: cheap insurance against the coach
+ * describing a piece that isn't there or a move that isn't legal, which no
+ * amount of instruction alone reliably prevents.
+ */
+function boardFacts(fen: string): string {
+  return `Board facts: ${renderPositionFacts(inspectMoves(fen, []))}`;
+}
+
+/**
  * Design §5, layer 5: the one part of the prompt that changes every turn —
  * rides after every cache breakpoint instead of busting one. `previousPly`
  * (null for a session's very first episode) states where the coach or
@@ -301,5 +313,5 @@ export function renderCurrentMoveBlock(
   const playedMoveSentence = playedMove !== null ? ` The move actually played here was ${playedMove}.` : '';
   const analysisBlock = analysisContext ? renderAnalysisSection(ply, playedMove, analysisContext) : '';
   const gameSoFarBlock = gameSoFar !== undefined ? `## Game so far\n\n${gameSoFar}\n\n` : '';
-  return `${gameSoFarBlock}## Current position\n\nYou are now discussing ${describeMoveRef(ply)} — this is what's actively on the board. Your student is playing ${studentColor} in this game.${playedMoveSentence} FEN : ${fen}.${analysisBlock}\n\n## Your thread ledger\n\n${threadsBlock}`;
+  return `${gameSoFarBlock}## Current position\n\nYou are now discussing ${describeMoveRef(ply)} — this is what's actively on the board. Your student is playing ${studentColor} in this game.${playedMoveSentence} FEN : ${fen}.\n\n${boardFacts(fen)}${analysisBlock}\n\n## Your thread ledger\n\n${threadsBlock}`;
 }

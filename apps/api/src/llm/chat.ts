@@ -20,8 +20,11 @@ const TOOL_ORDER = [
   'expect_move',
   'hypothetical_line',
   'check_position',
+  'check_moves',
   'get_engine_analysis',
   'get_user_profile',
+  'get_diagnostic_profile',
+  'get_player_stats',
   'record_finding',
   'propose_focus_area_update',
   'update_threads',
@@ -30,7 +33,7 @@ const TOOL_ORDER = [
   'investigate_position',
   'end_session',
   // Play mode's tools (architecture §14) — fixed at the end, never
-  // interleaved with the analyze-mode 13 above, so an analyze-mode
+  // interleaved with the analyze-mode tools above, so an analyze-mode
   // session's cached tool-definition prefix never shifts.
   'get_candidate_moves',
   'play_coach_move',
