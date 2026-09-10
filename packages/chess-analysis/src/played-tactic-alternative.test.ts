@@ -49,9 +49,24 @@ describe('classifyPlayedTacticAlternative', () => {
     expect(played?.headline).toBe('fork');
   });
 
-  test('leaves a real miss alone when the move cost evaluation', () => {
+  test('a move that actually took the material is not a miss, whatever else it cost', () => {
+    // A royal fork takes the queen even on a move the engine scores worse
+    // than its own: "you missed a chance to win a queen" is simply false on
+    // the move that won it. What the move cost is the blunder badge's job,
+    // and tactic-allowed.ts's.
     const played = classifyPlayedTacticAlternative({
       move: playedMove({ moveSan: 'Nd6+', quality: 'mistake', drop: 20 }),
+      evals: [],
+      best: claimsFor('Bb5'),
+      previous: null
+    });
+
+    expect(played?.headline).toBe('fork');
+  });
+
+  test('leaves a real miss alone when the move that cost evaluation won nothing', () => {
+    const played = classifyPlayedTacticAlternative({
+      move: playedMove({ moveSan: 'Kb1', quality: 'mistake', drop: 20 }),
       evals: [],
       best: claimsFor('Bb5'),
       previous: null
@@ -71,6 +86,54 @@ describe('classifyPlayedTacticAlternative', () => {
     });
 
     expect(played).toBeNull();
+  });
+
+  test('two ways to win the same queen are not a miss of one of them', () => {
+    // A royal fork (Nxf6+, priced by SEE at 5.8) against the engine's own pin
+    // on the same queen (line-walked at 6.0). Which of the two the card names
+    // must not turn on that rounding — `equalPrizeTolerancePawns`.
+    const ROYAL_FORK = 'r1b1kbr1/pp1q1p1p/3p1p2/3N4/2B1P3/3Q4/PPP2PPP/R4RK1 w kq - 0 13';
+    const best = classifyTacticClaims({
+      fenBefore: ROYAL_FORK,
+      moveSan: 'Bb5',
+      mover: 'white',
+      quality: 'best',
+      isCheckmate: false,
+      isTacticalPosition: true,
+      pvSan: ['Bb5', 'Qxb5', 'Qxb5+']
+    });
+
+    const played = classifyPlayedTacticAlternative({
+      move: playedMove({ moveSan: 'Nxf6+', quality: 'inaccuracy', drop: 6, fenBefore: ROYAL_FORK, ply: 25 }),
+      evals: [],
+      best,
+      previous: null
+    });
+
+    expect(played?.headline).toBe('fork');
+  });
+
+  test('a missed mate stays missed, however much material the move won', () => {
+    const mate = classifyTacticClaims({
+      fenBefore: MULTI_MOTIF_FEN,
+      moveSan: 'Nd6+',
+      mover: 'white',
+      quality: 'best',
+      isCheckmate: false,
+      isTacticalPosition: true
+    });
+    // Nothing short of mate is "as much" — and the pawn-weighted comparison
+    // would happily rank a won queen above it.
+    const forcedMate = { ...mate, claims: mate.claims.map((claim) => ({ ...claim, gainKind: 'mate' as const })) };
+
+    expect(
+      classifyPlayedTacticAlternative({
+        move: playedMove({ moveSan: 'Bb5' }),
+        evals: [],
+        best: forcedMate,
+        previous: null
+      })
+    ).toBeNull();
   });
 
   test('says nothing about a move with no stored position to replay', () => {

@@ -1,6 +1,6 @@
 import type { ClassifiedMoveDto, EngineEval, MoveQuality } from '@freechesscoach/shared';
 import { classifyTacticClaims, type TacticClassification } from './classify-tactic-motif.js';
-import { claimScore } from './rank-tactic-claims.js';
+import { gainWeight } from './rank-tactic-claims.js';
 import { CONFIG } from './config.js';
 import type { PreviousMove } from './tactic-detectors/context.js';
 import type { VerifiedTacticClaim } from './verify-tactic-claims.js';
@@ -26,8 +26,8 @@ import type { VerifiedTacticClaim } from './verify-tactic-claims.js';
  * Deliberately narrow. It never invents an opportunity where the engine's
  * best move had none (the caller checks that first, so the report's
  * opportunity *counts* are untouched), and it never demotes a real miss: a
- * move that cost evaluation, or whose own best claim is worth less than the
- * one it passed up, keeps the miss it earned.
+ * move whose own best claim is worth less than the one it passed up — or
+ * that passed up mate — keeps the miss it earned.
  */
 export interface PlayedTacticAlternativeInput {
   move: ClassifiedMoveDto;
@@ -50,7 +50,7 @@ const AS_GOOD_AS_BEST: ReadonlySet<MoveQuality> = new Set(['brilliant', 'great',
 
 export function classifyPlayedTacticAlternative(input: PlayedTacticAlternativeInput): TacticClassification | null {
   const { move } = input;
-  if (!move.fenBefore || !move.moveSan || !isEqualValueAlternative(move)) return null;
+  if (!move.fenBefore || !move.moveSan) return null;
 
   const played = classifyTacticClaims({
     fenBefore: move.fenBefore,
@@ -62,14 +62,30 @@ export function classifyPlayedTacticAlternative(input: PlayedTacticAlternativeIn
     previous: input.previous,
     pvSan: continuationOf(move, input.evals)
   });
-  if (!played.headline) return null;
-  if (headlineWorth(played) < headlineWorth(input.best)) return null;
-  return played;
+  const headline = headlineOf(played);
+  if (!headline) return null;
+  // A missed mate stays missed. Nothing short of mate is "as much", and the
+  // pawn-weighted comparison below would happily rank a won queen above it.
+  if (headlineOf(input.best)?.gainKind === 'mate' && headline.gainKind !== 'mate') return null;
+  if (worthOf(headline) < worthOf(headlineOf(input.best)) - CONFIG.tacticVerification.equalPrizeTolerancePawns) return null;
+
+  // Two ways their move earns the card: it cost nothing, or it actually
+  // collected the material. The second is what a royal fork is — a knight
+  // that checks the king and takes the queen has taken the queen, whatever
+  // else the move also threw away, and "you missed a chance to win a queen"
+  // is simply false on it. The blunder badge and `tactic-allowed.ts` carry
+  // what the move cost; this card carries what it did.
+  return isEqualValueAlternative(move) || collectsMaterial(headline) ? played : null;
 }
 
 function isEqualValueAlternative(move: ClassifiedMoveDto): boolean {
   if (move.drop !== undefined) return move.drop <= EXCELLENT_MAX_DROP;
   return AS_GOOD_AS_BEST.has(move.quality);
+}
+
+function collectsMaterial(headline: VerifiedTacticClaim): boolean {
+  if (headline.gainKind === 'mate') return true;
+  return headline.gainKind === 'material' && headline.verifiedGain >= CONFIG.tacticVerification.minStaticGainPawns;
 }
 
 /** The engine's own line from *after* this move, with the move itself in
@@ -82,9 +98,14 @@ function continuationOf(move: ClassifiedMoveDto, evals: EngineEval[]): string[] 
   return [move.moveSan, ...after];
 }
 
-function headlineWorth(classification: TacticClassification): number {
-  const headline: VerifiedTacticClaim | undefined = classification.claims.find(
-    (claim) => claim.type === classification.headline
-  );
-  return headline ? claimScore(headline) : 0;
+function headlineOf(classification: TacticClassification): VerifiedTacticClaim | undefined {
+  return classification.claims.find((claim) => claim.type === classification.headline);
+}
+
+/** Kind and size, deliberately without confidence: "did their move win as
+ * much?" must not flip on the difference between a 0.85 and a 0.95
+ * verification — nor, within `equalPrizeTolerancePawns`, on two ways of
+ * pricing the same queen. */
+function worthOf(headline: VerifiedTacticClaim | undefined): number {
+  return headline ? gainWeight(headline.gainKind, headline.verifiedGain) : 0;
 }

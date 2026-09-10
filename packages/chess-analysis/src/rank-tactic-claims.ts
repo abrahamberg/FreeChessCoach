@@ -64,7 +64,20 @@ export function headlineTacticClaim(claims: readonly VerifiedTacticClaim[], move
 /** Kind first, then size, then how sure we are — a confidently verified pawn
  * beats a speculative rook. */
 export function claimScore(claim: VerifiedTacticClaim): number {
-  return (GAIN_KIND_WEIGHT[claim.gainKind] + claim.verifiedGain) * claim.confidence;
+  return gainWeight(claim.gainKind, claim.verifiedGain) * claim.confidence;
+}
+
+/**
+ * What a payoff is worth before confidence is applied: kind first, then size.
+ *
+ * Split out because two callers need the size comparison *without* the
+ * confidence factor — `tactic-card-order.ts`, which ranks two cards built
+ * from stored gains that carry no claim, and `played-tactic-alternative.ts`,
+ * where "did their move win as much as the one they passed up?" must not
+ * flip on a 0.85-versus-0.95 verification confidence.
+ */
+export function gainWeight(kind: TacticGainKind, pawns: number): number {
+  return GAIN_KIND_WEIGHT[kind] + Math.max(0, pawns);
 }
 
 function detectorPriority(claim: VerifiedTacticClaim): number {
