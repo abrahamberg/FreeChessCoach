@@ -172,11 +172,21 @@ This profile, get_diagnostic_profile and get_player_stats are what the session's
 function thisGame(game: GameMeta, plan: CoachingPlan): string {
   return `## This game
 
-- ${game.whiteName} vs ${game.blackName}, ${game.result}, ${game.timeControl}. Your student played ${game.userColor}.
+- ${game.whiteName} vs ${game.blackName}, ${game.result}, ${game.timeControl}. Your student played ${game.userColor}.${suggestedGoalLine(plan)}
 - Your pre-session preparation notes (from your private analysis — the student has NOT seen these):
 ${renderCoachingPlanBlock(plan)}
 
 The preparation notes list the moments worth stopping at, with a suggested opening question and the key line for each. Treat them as your lesson plan, not a script — spend your time on the moments that serve the session's goal, follow the conversation where it needs to go, and return to the plan when it makes sense.`;
+}
+
+/** The goal your preparation already proposed (CoachingPlanSchema's
+ * `sessionGoal`). Absent on a plan stored before that field existed
+ * (jsonb, no migration), in which case the coach picks the goal itself the
+ * way "What the session is for" describes — so the line is dropped rather
+ * than rendered empty. */
+function suggestedGoalLine(plan: CoachingPlan): string {
+  if (!plan.sessionGoal) return '';
+  return `\n- Goal your preparation proposes for this session: ${plan.sessionGoal} It came from the student's standing evidence, so start there — change it only if the session gives you a real reason (see "What the session is for").`;
 }
 
 /** architecture §14: no pre-session preparation plan exists for a live game

@@ -155,6 +155,18 @@ describe('buildCoachSystemPrompt', () => {
     expect(dynamicPart).toContain('O-O Re8 d3 h6');
   });
 
+  test('dynamicPart carries the goal the preparation proposed, framed as a starting point rather than an order', () => {
+    const { dynamicPart } = buildCoachSystemPrompt(baseInput());
+    expect(dynamicPart).toContain('Goal your preparation proposes for this session:');
+    expect(dynamicPart).toContain('change it only if the session gives you a real reason');
+  });
+
+  test('a plan stored before sessionGoal existed drops the goal line rather than rendering an empty one', () => {
+    const planWithoutGoal = { ...baseInput().plan, sessionGoal: '' } as NonNullable<CoachPromptInput['plan']>;
+    const { dynamicPart } = buildCoachSystemPrompt(baseInput({ plan: planWithoutGoal }));
+    expect(dynamicPart).not.toContain('Goal your preparation proposes');
+  });
+
   test('empty focus areas render the "(none yet…)" fallback in dynamicPart', () => {
     const { dynamicPart } = buildCoachSystemPrompt(baseInput({ focusAreas: [] }));
     expect(dynamicPart).toContain('none yet');
