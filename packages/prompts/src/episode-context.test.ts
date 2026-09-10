@@ -145,6 +145,26 @@ describe('renderCurrentMoveBlock', () => {
     expect(text).toContain(': fen-after-18');
   });
 
+  // The coach's most common hallucination was about the position it was
+  // actually on, so the board's own facts ride the same uncached block as
+  // the fen — no tool call needed to know what is legal or hanging here.
+  test('states the board\'s own facts for the current position', () => {
+    const text = renderCurrentMoveBlock(
+      1,
+      'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+      'white',
+      '(empty — no parked topics right now)',
+      'e4'
+    );
+    expect(text).toContain('Board facts: black to move. 20 legal moves.');
+  });
+
+  test('a fen that cannot be read says so instead of reporting an empty board', () => {
+    const text = renderCurrentMoveBlock(0, 'startpos-fen', 'white', '(empty)', null);
+    expect(text).toContain('Board facts: unavailable');
+    expect(text).not.toContain('0 legal moves');
+  });
+
   test('folds the thread ledger in under its own heading (final review #8: heading owned by packages/prompts)', () => {
     const text = renderCurrentMoveBlock(0, 'startpos-fen', 'white', '- [active] the h3 line', null);
     expect(text).toContain('## Your thread ledger\n\n- [active] the h3 line');
@@ -233,6 +253,30 @@ describe('renderCurrentMoveBlock', () => {
     expect(text).toContain('Other engine options:\n- Ba3 (eval +0.14): 8...Ba3 9.a6 O-O');
   });
 
+  // build-game-report.ts/analysis.ts append Game Review's own tactic
+  // sentences to `reasons`, so this one line is also how the coach sees
+  // "you missed a chance to win a rook" for the move it is on.
+  test('shows the move\'s review notes, including on a move that WAS the engine\'s best', () => {
+    const ctx: CurrentMoveAnalysisContext = {
+      analysis: analysis({ bestMove: 'h3', lines: [line({ moveSan: 'h3', pvSan: ['h3'], cp: 10 })] }),
+      classifiedMove: { cpLoss: 0, evalAfterCp: 10, reasons: ['You defused their fork.'] }
+    };
+    const text = renderCurrentMoveBlock(16, 'pre-move-fen', 'white', '(empty)', 'h3', ctx);
+
+    expect(text).toContain('This was the engine’s top choice.');
+    expect(text).toContain('Review notes for this move: You defused their fork.');
+  });
+
+  test('a move with no review notes gets no review-notes line', () => {
+    const ctx: CurrentMoveAnalysisContext = {
+      analysis: analysis({ bestMove: 'd6', lines: [line({ moveSan: 'd6', pvSan: ['d6'], cp: 17 })] }),
+      classifiedMove: { cpLoss: 12, evalAfterCp: 5 }
+    };
+    const text = renderCurrentMoveBlock(16, 'pre-move-fen', 'white', '(empty)', 'd5', ctx);
+
+    expect(text).not.toContain('Review notes');
+  });
+
   test('extends the played line with the post-move continuation when provided', () => {
     const ctx: CurrentMoveAnalysisContext = {
       analysis: analysis({ bestMove: 'd6', lines: [line({ moveSan: 'd6', pvSan: ['d6'], cp: 17 })] }),
@@ -303,24 +347,24 @@ describe('renderCurrentMoveBlock', () => {
     expect(withEmptyDelta).not.toContain('What changed vs. the best move');
   });
 
-  test('a played non-best move with pre-computed reasons gets a "Why:" line', () => {
+  test('a played non-best move with pre-computed reasons gets a review-notes line', () => {
     const ctx: CurrentMoveAnalysisContext = {
       analysis: analysis({ bestMove: 'd6', lines: [line({ moveSan: 'd6', pvSan: ['d6'], cp: 17 })] }),
       classifiedMove: { cpLoss: 163, evalAfterCp: 6, reasons: ['Leaves the knight on d5 undefended'] }
     };
     const text = renderCurrentMoveBlock(16, 'pre-move-fen', 'white', '(empty — no parked topics right now)', 'd5', ctx);
 
-    expect(text).toContain('Why: Leaves the knight on d5 undefended');
+    expect(text).toContain('Review notes for this move: Leaves the knight on d5 undefended');
   });
 
-  test('omits the "Why:" line when the classified move has no reasons', () => {
+  test('omits the review-notes line when the classified move has no reasons', () => {
     const ctx: CurrentMoveAnalysisContext = {
       analysis: analysis({ bestMove: 'd6', lines: [line({ moveSan: 'd6', pvSan: ['d6'], cp: 17 })] }),
       classifiedMove: { cpLoss: 163, evalAfterCp: 6, reasons: [] }
     };
     const text = renderCurrentMoveBlock(16, 'pre-move-fen', 'white', '(empty — no parked topics right now)', 'd5', ctx);
 
-    expect(text).not.toContain('Why:');
+    expect(text).not.toContain('Review notes');
   });
 
   test('omits classified-move-dependent cost clause when no classified move is available yet', () => {

@@ -20,6 +20,7 @@ export const basePlan: CoachingPlan = {
   openingNote: 'opening',
   themes: ['king_safety'],
   connectionToHistory: 'Second game in a row with a delayed castle.',
+  sessionGoal: 'Castle before starting play on the flank — the same king-safety habit as last session.',
   moments: [
     {
       ply: 23,

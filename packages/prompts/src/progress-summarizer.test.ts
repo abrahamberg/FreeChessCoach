@@ -30,4 +30,18 @@ describe('buildSummarizerMessages', () => {
     const { user } = buildSummarizerMessages(baseInput({ focusAreas: [] }));
     expect(user).toContain('none yet');
   });
+
+  test('the user message names the session goal, and the system prompt makes the summary lead with whether it landed', () => {
+    const { system, user } = buildSummarizerMessages(baseInput());
+
+    expect(user).toContain('Goal for this session:');
+    expect(system).toContain("Lead with the session's goal");
+  });
+
+  test('a plan stored before sessionGoal existed drops the goal line', () => {
+    const input = baseInput();
+    const { user } = buildSummarizerMessages({ ...input, plan: { ...input.plan, sessionGoal: '' } });
+
+    expect(user).not.toContain('Goal for this session:');
+  });
 });
