@@ -45,7 +45,12 @@ function buildOffensiveDetector(code: DiagnosisCodeId, priority: number): Diagno
       const opportunity = ctx.tacticOpportunity;
       if (!opportunity) return null;
 
-      const replay = ctx.bestMoveSan ? { fenBefore: ctx.fenBefore, moveSan: ctx.bestMoveSan } : undefined;
+      // The move the motif was actually read off — the player's own when
+      // they matched the engine's chance by an equally good move, so a fork
+      // resolves to the piece that really forked. Older stored reports carry
+      // no such field and can only mean the engine's top move.
+      const embodying = opportunity.embodiedBySan ?? ctx.bestMoveSan;
+      const replay = embodying ? { fenBefore: ctx.fenBefore, moveSan: embodying } : undefined;
       if (motifToCode(opportunity.type, replay) !== code) return null;
 
       const failed = !opportunity.found;

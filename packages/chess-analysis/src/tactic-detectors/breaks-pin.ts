@@ -35,7 +35,12 @@ export const breaksPinDetector: TacticDetector = {
         expectedGain: 0,
         prize: null,
         evidence: { arrows: [{ from: hit.by, to: hit.pinned }], highlights: [hit.pinned] },
-        detail: `their ${pieceNameAt(ctx.before, hit.pinned)} on ${hit.pinned} can move again`
+        // No possessive: the freed piece belongs to whoever made this move,
+        // and the sentence around it already names them ("You…" / "They…").
+        // "their pawn on f7 can move again" printed on the reader's *own*
+        // pawn, which is how a defensive card ended up describing the wrong
+        // side's piece.
+        detail: `the ${pieceNameAt(ctx.before, hit.pinned)} on ${hit.pinned} is free to move again`
       }));
   }
 };

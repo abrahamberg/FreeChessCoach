@@ -518,3 +518,40 @@ FEN chess.js refuses to load.
 - **Voice:** every card addresses the reader as "you" or "they" correctly for
   the side that moved, and no card names a square it hasn't verified.
   Snapshot-tested, the same way the coach prompts already are.
+
+---
+
+## 9. Second review pass — what the cards still got wrong
+
+Read against a second real game once A–G were live. The detectors were right
+on every card below; what was wrong was **which sentence led, whose move the
+card was about, and what the review had no word for**. Three rules shipped in
+answer, each with its own file and test.
+
+| Reported card | Why it read wrong | Rule |
+| --- | --- | --- |
+| A blunder that dropped a queen opened with "You stopped them winning a bishop through a discovered attack", with "You missed a chance to win a queen…" underneath. | The two sentences were ordered by *where they were appended* — prevention in `attachTacticPrevention`, opportunity in `build-game-report.ts` — never by what they were worth. | **`tactic-card-order.ts`.** A move that cost evaluation is read for what it missed, so on an inaccuracy/mistake/miss/blunder the missed chance opens the card; otherwise the bigger prize leads, priced the way a claim's own headline is. The Review UI and the plain-text `reasons` array both order by it. |
+| `Nxf6+` forked the queen with check and printed "You missed a chance to win a queen through a trapped piece two moves away with `Bb5`". | The opportunity is read off `lines[0]` alone, so every other move is a miss by construction — including one that wins as much. §7 named this case and nothing implemented it. | **`played-tactic-alternative.ts`.** When the played move gave up nothing (`drop ≤ CONFIG.severity.excellentMaxDrop`) and its own verified headline is worth at least the one it passed up, the card names *their* tactic and counts as found. Gated on the engine's move having a headline at all, so which plies count as opportunities is unchanged. |
+| `4…Nxd4` said only "Best move"; the natural retake `5.Nxd4` said "Costs 8 squares of piece mobility". | A recapture is the most ordinary move in chess and the reason builder had no word for one — only fault-finding vocabulary, printed on moves that were not at fault. | **`trade-description.ts`**, plus `mobilityReason` gated on `isImprovableQuality`. Even exchanges get "Recaptures the knight on d4" / "Trades knights on d4"; a won or lost one keeps the tactic/hanging-piece sentence it already had. |
+
+Two smaller fixes rode along: `breaksPin`'s detail said "**their** knight on
+c6 can move again" about the reader's *own* freed piece (the claim detail is
+voice-agnostic, so it carries no possessive now), and `tacticOpportunity`
+gained `embodiedBySan` — the move the motif was actually read off, which
+`motifToCode` has to replay now that it isn't always the engine's.
+
+One symptom in the same report is **not** a code problem: a move chess.com
+still calls book that we score as a mistake. Our book is
+`data/openings.tsv` (the Lichess chess-openings set, ~3.8k lines); theirs is
+a game database orders of magnitude larger. Widening it is a data change, not
+a detector change.
+
+### A gate that was tried and reverted
+
+Dropping `breaksPin` claims for *relative pins on pawns* — TR-05's phantom
+shape, wearing a defensive hat — is correct in isolation and makes the
+`tactic-precision.test.ts` quiet-move ceiling **worse**: 230/3040 → 258/3040
+(7.6% → 8.5%, over the 8% ceiling). The phantom defensive claim was
+outranking phantom *offensive* claims on those plies, and removing it
+promotes them to the headline. Trading one wrong sentence for another is not
+a fix; the ranking or those offensive claims have to be dealt with first.

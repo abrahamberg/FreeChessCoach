@@ -12,6 +12,7 @@ import {
 import { classifyTacticClaims, classifyTacticMotif } from './classify-tactic-motif.js';
 import { CONFIG } from './config.js';
 import { moveFlags } from './move-flags.js';
+import { classifyPlayedTacticAlternative } from './played-tactic-alternative.js';
 import { previousMoveOf } from './previous-move-of.js';
 import type { PreviousMove } from './tactic-detectors/context.js';
 import type { VerifiedTacticClaim } from './verify-tactic-claims.js';
@@ -47,6 +48,10 @@ export interface TacticMotifOpportunity {
    * view (§5 layer 3). `type` is its first entry whenever a claim produced
    * the headline. */
   motifs?: TacticMotifType[];
+  /** The move this motif was read off — the engine's top move, or the
+   * player's own when it reached as much (`played-tactic-alternative.ts`).
+   * Whatever replays the motif has to replay this one. */
+  embodiedBySan?: string;
 }
 
 /**
@@ -56,6 +61,12 @@ export interface TacticMotifOpportunity {
  * UI's per-ply tactic indicator) are built from. `null` when this ply isn't
  * a named-motif opportunity at all (no matching detector, or missing
  * fenBefore/eval data).
+ *
+ * Whether the *player* met that opportunity is not the same question as
+ * whether they played this exact move: an equally good move of their own
+ * that wins as much is not a miss, and the card then names their move's
+ * tactic instead (`played-tactic-alternative.ts`). Which ply counts as an
+ * opportunity is decided by the engine's move alone either way.
  *
  * The opportunity's own quality is only known precisely when the player
  * actually played it (reusing that move's already-computed classification,
@@ -79,7 +90,7 @@ export function classifyTacticMotifOpportunity(
   const bestIsCheckmate = playedBest ? (move.moveFlags?.isCheckmate ?? false) : checkmateFlag(move.fenBefore, bestMoveSan);
   if (bestIsCheckmate === null) return null;
 
-  const classification = classifyTacticClaims({
+  const best = classifyTacticClaims({
     fenBefore: move.fenBefore,
     moveSan: bestMoveSan,
     mover: move.mover,
@@ -96,6 +107,15 @@ export function classifyTacticMotifOpportunity(
     // lines from the browser at all (resolveReviewEngineBackend).
     pvSan: bestLine?.pvSan
   });
+  if (!best.headline) return null;
+
+  // The player may have reached the same payoff by another equally good
+  // move; that is not a miss, and the card should name what they actually
+  // played (played-tactic-alternative.ts). Gated on `best.headline` above,
+  // so this can only change *what* an opportunity says, never whether the
+  // ply counts as one.
+  const played = playedBest ? null : classifyPlayedTacticAlternative({ move, evals, best, previous });
+  const classification = played ?? best;
   const motif = classification.headline;
   if (!motif) return null;
 
@@ -108,12 +128,13 @@ export function classifyTacticMotifOpportunity(
 
   return {
     type: motif,
-    found: playedBest && BEST_OR_BETTER.has(move.quality),
+    found: played !== null || (playedBest && BEST_OR_BETTER.has(move.quality)),
     detail: headline?.detail ?? null,
     visual: headline?.evidence ?? null,
     ...(headline ? { gain: gainOf(headline), confidence: headline.confidence } : {}),
     ...(headline?.horizon ? { horizon: headline.horizon } : {}),
-    ...(classification.claims.length > 0 ? { motifs: classification.claims.map((claim) => claim.type) } : {})
+    ...(classification.claims.length > 0 ? { motifs: classification.claims.map((claim) => claim.type) } : {}),
+    embodiedBySan: played ? move.moveSan : bestMoveSan
   };
 }
 
@@ -123,8 +144,9 @@ function gainOf(claim: VerifiedTacticClaim): TacticGainDto {
 
 /**
  * For each of the colour's moves, tags the motif of the engine's best move
- * at that position (the "opportunity") and credits "found" only when the
- * player played that exact move with a best-or-better classification — see
+ * at that position (the "opportunity") and credits "found" when the player
+ * played that exact move with a best-or-better classification, or reached as
+ * much through an equally good move of their own — see
  * `classifyTacticMotifOpportunity` above for the per-move logic this sums.
  *
  * `allMoves` is both colours' moves, which is what the recapture gate needs:

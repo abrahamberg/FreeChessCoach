@@ -1,5 +1,5 @@
 import type { Square } from 'chess.js';
-import { PIECE_NAMES } from '../move-reasons.js';
+import { PIECE_NAMES } from '../piece-names.js';
 import { PIECE_VALUES } from '../tactics.js';
 import type { TacticClaim } from '../tactic-claim.js';
 import type { TacticDetector } from './types.js';

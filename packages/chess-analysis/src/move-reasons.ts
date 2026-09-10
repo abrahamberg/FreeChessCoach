@@ -1,6 +1,8 @@
-import { Chess, type PieceSymbol, type Square } from 'chess.js';
-import type { EngineEval, FeatureDeltaDto, PositionFeatures } from '@freechesscoach/shared';
+import { Chess, type Square } from 'chess.js';
+import { isImprovableQuality, type EngineEval, type FeatureDeltaDto, type MoveQuality, type PositionFeatures } from '@freechesscoach/shared';
 import { toColorName } from './attack-map.js';
+import { PIECE_NAMES } from './piece-names.js';
+import { describeTrade } from './trade-description.js';
 import { see } from './see.js';
 import { CONFIG } from './config.js';
 
@@ -10,6 +12,11 @@ export interface MoveReasonsInput {
   fenAfter: string;
   moveSan: string;
   evalBefore: EngineEval;
+  /** This move's own classification. Fault-finding reasons are for moves
+   * that actually cost something — see `mobilityReason`. */
+  quality?: MoveQuality;
+  /** The opponent's previous move captured on this square. */
+  isRecapture?: boolean;
   isBookMove: boolean;
   openingName?: string | null;
   eco?: string | null;
@@ -18,7 +25,7 @@ export interface MoveReasonsInput {
   featuresAfter?: PositionFeatures;
 }
 
-type ReasonCategory = 'mate' | 'material' | 'tactical' | 'structural' | 'mobility';
+type ReasonCategory = 'mate' | 'material' | 'tactical' | 'structural' | 'trade' | 'mobility';
 interface Reason {
   category: ReasonCategory;
   text: string;
@@ -29,15 +36,7 @@ const {
   centerSwingThreshold: CENTER_SWING_THRESHOLD,
   mobilityDropThreshold: MOBILITY_DROP_THRESHOLD
 } = CONFIG.moveReasons;
-export const PIECE_NAMES: Record<PieceSymbol, string> = {
-  p: 'pawn',
-  n: 'knight',
-  b: 'bishop',
-  r: 'rook',
-  q: 'queen',
-  k: 'king'
-};
-const CATEGORY_ORDER: ReasonCategory[] = ['mate', 'material', 'tactical', 'structural', 'mobility'];
+const CATEGORY_ORDER: ReasonCategory[] = ['mate', 'material', 'tactical', 'structural', 'trade', 'mobility'];
 
 /** §11's deterministic per-move coaching reasons — no LLM at render time. */
 export function buildReasons(input: MoveReasonsInput): string[] {
@@ -50,7 +49,11 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     ...newForkReasons(input),
     ...underDefendedReasons(input),
     ...centerSwingReason(input),
-    ...passedPawnReasons(input)
+    ...passedPawnReasons(input),
+    // Last in CATEGORY_ORDER before mobility, so naming the exchange never
+    // pushes out a fault — it fills the note on the ordinary trade that has
+    // no fault to report, which is most of them.
+    ...tradeReason(input)
   ];
   // Mobility is the weakest signal here (a bad move usually has a sharper
   // reason than "fewer squares") — it only earns a mention when nothing
@@ -148,10 +151,29 @@ function passedPawnReasons(input: MoveReasonsInput): Reason[] {
     .map((pawn) => ({ category: 'structural', text: `Creates a passed pawn on ${pawn.square[0]}` }));
 }
 
+/**
+ * Only ever a fault, so only ever on a move that was one. A natural retake
+ * gives up squares by definition — the piece is now standing where the
+ * exchange happened — and "Costs 8 squares of piece mobility" was the entire
+ * note on a best-move recapture, which reads as a criticism of the only
+ * sensible move on the board.
+ */
 function mobilityReason(input: MoveReasonsInput): Reason[] {
+  if (!isImprovableQuality(input.quality)) return [];
   const delta = input.featureDelta?.mobilityDelta;
   if (delta === undefined || delta > MOBILITY_DROP_THRESHOLD) return [];
   return [{ category: 'mobility', text: `Costs ${Math.abs(delta)} squares of piece mobility` }];
+}
+
+/** "Recaptures the knight on d4" / "Trades bishops on c6" — see
+ * `trade-description.ts` for which exchanges earn a sentence. */
+function tradeReason(input: MoveReasonsInput): Reason[] {
+  const text = describeTrade({
+    fenBefore: input.fenBefore,
+    moveSan: input.moveSan,
+    isRecapture: input.isRecapture === true
+  });
+  return text ? [{ category: 'trade', text }] : [];
 }
 
 function formatList(squares: string[]): string {

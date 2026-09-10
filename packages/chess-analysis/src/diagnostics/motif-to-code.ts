@@ -5,11 +5,12 @@ import { forks } from '../tactics.js';
 import { pins } from '../tactic-pins.js';
 
 /** The position/move whose replay determines a fork's forking piece or a
- * pin's absolute/relative kind — for `tacticOpportunity` this is
- * `{fenBefore: ctx.fenBefore, moveSan: ctx.bestMoveSan}` (the engine's top
- * move, the one the motif was classified from — see
- * `classifyTacticMotifOpportunity`'s doc comment), not `ctx.moveSan` (what
- * the player actually played, when different). */
+ * pin's absolute/relative kind — for `tacticOpportunity` this is the move
+ * the motif was classified from, which the opportunity names itself
+ * (`embodiedBySan`): the engine's top move normally, the player's own when
+ * an equally good move of theirs reached as much (see
+ * `classifyTacticMotifOpportunity`'s doc comment). Never simply
+ * `ctx.moveSan`. */
 export interface MotifReplay {
   fenBefore: string;
   moveSan: string;

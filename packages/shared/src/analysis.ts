@@ -85,6 +85,24 @@ export const MOVE_QUALITY_SYMBOLS: Record<MoveQuality, string> = {
   forced: '→'
 };
 
+/** The tiers that actually cost the player something, so a note about what
+ * was better is worth reading. Everything else (book, forced, and
+ * brilliant/great/best/excellent/good) had nothing meaningfully better to
+ * play, which is why fault-finding copy — "costs N squares of mobility",
+ * "you missed a chance to …" — has no business printing on them. One
+ * source of truth: the move list, the review card and the reason builder
+ * all ask this same question. */
+export const IMPROVABLE_MOVE_QUALITIES: ReadonlySet<MoveQuality> = new Set([
+  'inaccuracy',
+  'mistake',
+  'miss',
+  'blunder'
+] satisfies MoveQuality[]);
+
+export function isImprovableQuality(quality: MoveQuality | undefined): boolean {
+  return quality !== undefined && IMPROVABLE_MOVE_QUALITIES.has(quality);
+}
+
 export const MoveQualitySchema = z.enum(MOVE_QUALITIES);
 export const ClassificationSchema = MoveQualitySchema;
 
@@ -366,7 +384,15 @@ export const ClassifiedMoveSchema = z.object({
       /** Every verified motif this move embodies, best first, `type`
        * included — the multi-label view §5 layer 3 keeps so the coach agent
        * can reason over a move that is genuinely two tactics at once. */
-      motifs: z.array(TacticMotifTypeSchema).optional()
+      motifs: z.array(TacticMotifTypeSchema).optional(),
+      /** Which move this motif was actually read off: the engine's top move
+       * normally, the player's own when they reached as much by an equally
+       * good one (`played-tactic-alternative.ts`). Anything that replays the
+       * motif — `motifToCode`'s fork piece and pin kind — has to replay
+       * *this* move, not an assumed one. Absent on a report stored before
+       * the field existed, where the engine's top move is the only answer it
+       * could have had. */
+      embodiedBySan: z.string().optional()
     })
     .optional(),
   /** The opponent had this tactic reachable right before this move — did the

@@ -1,6 +1,6 @@
 import type { Chess, Color, PieceSymbol, Square } from 'chess.js';
 import { occupiedSquares, opponentOf, toColorName, type AttackMap } from './attack-map.js';
-import { PIECE_NAMES } from './move-reasons.js';
+import { PIECE_NAMES } from './piece-names.js';
 import { see } from './see.js';
 import { PIECE_VALUES } from './tactics.js';
 

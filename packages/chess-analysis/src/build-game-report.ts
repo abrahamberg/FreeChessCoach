@@ -50,7 +50,8 @@ import { computePositionFeatures } from './position-features.js';
 import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
 import { classifyTacticMotifOpportunity, computeTacticMotifCounts } from './game-tactic-motifs.js';
 import { previousMoveOf } from './previous-move-of.js';
-import { tacticOpportunityReason } from './tactic-reason-text.js';
+import { tacticOpportunityReason, tacticPreventionReason } from './tactic-reason-text.js';
+import { opportunityLeadsCard } from './tactic-card-order.js';
 import { CONFIG } from './config.js';
 
 type Colour = 'white' | 'black';
@@ -155,20 +156,39 @@ function enrichWithPhaseAndTactics(
   // raw input move — the move-list UI's per-ply tactic indicator.
   const opportunity = classifyTacticMotifOpportunity(withPhase, evals, previousMoveOf(allMoves, move.ply));
   if (!opportunity) return withPhase;
+  const withOpportunity = { ...withPhase, tacticOpportunity: opportunity };
   return {
-    ...withPhase,
-    tacticOpportunity: opportunity,
+    ...withOpportunity,
     // Diagnostic-first (see the tactic-prevention over-firing investigation):
     // spelling out which motif + whether it was played, right in the same
     // per-move notes the UI already shows, so a reviewer can eyeball
-    // false-positive detector hits without a DB query. Appended after
+    // false-positive detector hits without a DB query. Placed after
     // buildReasons' own MAX_REASONS truncation, so it's never crowded out.
     // The card is written to the person whose review this is, so the
     // narrator needs to know whose move it was. `isUserMove` has been on
     // every move all along; it is passed rather than stored on the
     // opportunity so an older report renders in the right voice too.
-    reasons: [...(withPhase.reasons ?? []), tacticOpportunityReason({ ...opportunity, isUserMove: withPhase.isUserMove }, withPhase.bestMoveSan)]
+    reasons: withTacticSentence(withOpportunity, tacticOpportunityReason({ ...opportunity, isUserMove: withPhase.isUserMove }, withPhase.bestMoveSan))
   };
+}
+
+/**
+ * The opportunity sentence, placed relative to the prevention sentence
+ * `attachTacticPrevention` already appended rather than simply after it —
+ * `tactic-card-order.ts` has the rule and the reason. Insertion (not a
+ * re-sort) because everything before the prevention sentence is
+ * `buildReasons`' own output and keeps its order.
+ */
+function withTacticSentence(move: ClassifiedMoveDto, sentence: string): string[] {
+  const reasons = [...(move.reasons ?? [])];
+  if (!opportunityLeadsCard(move)) return [...reasons, sentence];
+
+  const preventionAt = move.tacticPrevention
+    ? reasons.indexOf(tacticPreventionReason({ ...move.tacticPrevention, isUserMove: move.isUserMove }))
+    : -1;
+  if (preventionAt < 0) return [...reasons, sentence];
+  reasons.splice(preventionAt, 0, sentence);
+  return reasons;
 }
 
 function computeIsTacticalPosition(move: ClassifiedMoveDto, evals: EngineEval[]): boolean {

@@ -41,6 +41,31 @@ describe('TacticReasonList', () => {
     expect(screen.getByText(/You missed a chance to trap a piece/)).toBeInstanceOf(HTMLParagraphElement);
   });
 
+  test('a blunder opens with the chance it missed, not with what it happened to stop', () => {
+    // The order is orderTacticCards' call, not this component's — the same
+    // rule build-game-report.ts orders the plain-text `reasons` by.
+    const move = baseMove({
+      quality: 'blunder',
+      tacticPrevention: {
+        type: 'discoveredAttack',
+        prevented: true,
+        detail: 'unveils the bishop on e7 against the bishop on g5',
+        gain: { kind: 'material', pawns: 3, prize: 'bishop' }
+      },
+      tacticOpportunity: {
+        type: 'trappedPiece',
+        found: false,
+        detail: 'queen on d7 is trapped',
+        gain: { kind: 'material', pawns: 9, prize: 'queen' }
+      }
+    });
+    const { container } = render(<TacticReasonList move={move} selection={null} onToggle={vi.fn()} />);
+
+    const sentences = [...container.querySelectorAll('.tactic-reason-item')].map((item) => item.textContent);
+    expect(sentences[0]).toMatch(/You missed a chance to win a queen/);
+    expect(sentences[1]).toMatch(/You stopped them winning a bishop/);
+  });
+
   test('clicking a clickable sentence calls onToggle with its key', () => {
     const move = baseMove({
       tacticOpportunity: {

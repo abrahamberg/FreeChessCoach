@@ -1,18 +1,15 @@
 import type { ReactNode } from 'react';
-import type { ClassifiedMoveDto, MoveQuality } from '@freechesscoach/shared';
+import { isImprovableQuality, type ClassifiedMoveDto } from '@freechesscoach/shared';
 import { tacticReasonTexts } from './TacticReasonList.js';
 import { useMoveAlternatives } from './useMoveAlternatives.js';
 
 /** Tiers worth a "better was" coaching note — everything else (book, forced,
  * brilliant/great/best/excellent/good) had nothing meaningfully better to
- * play. Shared by MoveExplorer (desktop move list) and MoveNoteCard (mobile
- * Review's dominant note card) — one source of truth for what counts as a
- * note worth showing. */
-const IMPROVABLE_QUALITIES: ReadonlySet<MoveQuality> = new Set(['inaccuracy', 'mistake', 'miss', 'blunder']);
-
-export function isImprovableQuality(quality: MoveQuality | undefined): boolean {
-  return quality !== undefined && IMPROVABLE_QUALITIES.has(quality);
-}
+ * play. The set itself lives in `@freechesscoach/shared` now: the reason
+ * builder asks the same question when it decides whether a fault is worth
+ * printing, and two copies of it drift. Re-exported here because
+ * MoveExplorer and MoveNoteCard have always imported it from this module. */
+export { isImprovableQuality };
 
 /** `move.reasons` minus whichever of the two tactic sentences are present —
  * only when `excludeTacticText` asks for it (Game Review's MoveNoteCard,

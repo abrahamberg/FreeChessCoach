@@ -1,5 +1,5 @@
 import type { Square } from 'chess.js';
-import { PIECE_NAMES } from '../move-reasons.js';
+import { PIECE_NAMES } from '../piece-names.js';
 import { pawnStructure } from '../pawn-structure.js';
 import { toColorName } from '../attack-map.js';
 import { PIECE_VALUES } from '../tactics.js';
