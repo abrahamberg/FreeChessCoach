@@ -27,6 +27,9 @@
 #   --restore-dev-deps      re-run a full `npm ci` at the end, undoing step 3.
 #                           Off by default: pointless on a throwaway CI runner,
 #                           usually what you want on a workstation.
+#   --summary-file <path>   append a Markdown list of every image reference this
+#                           run created. CI points it at $GITHUB_STEP_SUMMARY so
+#                           the published tags show on the workflow run page.
 #
 # Examples:
 #   scripts/build-images.sh --registry ghcr.io/acme --tag latest --tag v1.2.3 --push
@@ -42,6 +45,10 @@ PUSH=0
 SKIP_ARTIFACTS=0
 ARTIFACTS_ONLY=0
 RESTORE_DEV_DEPS=0
+SUMMARY_FILE=""
+# Every image reference this run creates, in build order. Filled in by step 4
+# and reported at the end — the caller's answer to "what did this publish?".
+BUILT_REFS=()
 
 log() { echo "[build-images] $*"; }
 die() { echo "[build-images] ERROR: $*" >&2; exit 1; }
@@ -57,6 +64,7 @@ while [[ $# -gt 0 ]]; do
     --skip-artifacts) SKIP_ARTIFACTS=1; shift ;;
     --artifacts-only) ARTIFACTS_ONLY=1; shift ;;
     --restore-dev-deps) RESTORE_DEV_DEPS=1; shift ;;
+    --summary-file) SUMMARY_FILE="${2:-}"; shift 2 ;;
     -h|--help) awk 'NR==1 {next} !/^#/ {exit} {sub(/^# ?/, ""); print}' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) die "unknown option: $1 (try --help)" ;;
   esac
@@ -120,15 +128,33 @@ BUILD_ARGS=()
 # buildx discards the result unless an output is requested: --push or --load.
 if [[ "$PUSH" -eq 1 ]]; then
   BUILD_ARGS+=(--push)
+  OUTPUT_VERB="pushed"
 else
   BUILD_ARGS+=(--load)
+  OUTPUT_VERB="loaded into the local docker daemon"
 fi
+
+# The published-tag report, as Markdown. Without --summary-file the only record
+# of what a run created is a line somewhere in a twenty-minute build log; CI
+# points this at $GITHUB_STEP_SUMMARY so the tags land on the run page itself.
+write_summary() {
+  [[ -n "$SUMMARY_FILE" ]] || return 0
+  {
+    echo "### Images ${OUTPUT_VERB}${REGISTRY:+ to \`${REGISTRY%/}\`}"
+    echo
+    [[ -n "$PLATFORM" ]] && printf 'Platforms: `%s`\n\n' "$PLATFORM"
+    echo '```'
+    printf '%s\n' "${BUILT_REFS[@]}"
+    echo '```'
+  } >> "$SUMMARY_FILE" || log "NOTE: could not append the image summary to $SUMMARY_FILE"
+}
 
 for COMPONENT in api web engine; do
   # Every tag is passed to the same build, so they all name one digest — the
   # only way "latest" and the version tag cannot drift apart.
   TAG_ARGS=()
   for TAG in "${TAGS[@]}"; do
+    BUILT_REFS+=("${PREFIX}freechesscoach:${COMPONENT}-${TAG}")
     TAG_ARGS+=(-t "${PREFIX}freechesscoach:${COMPONENT}-${TAG}")
   done
   log "4/4 building ${PREFIX}freechesscoach:${COMPONENT}-{$(joined_tags)}${PLATFORM:+ ($PLATFORM)}"
@@ -138,5 +164,9 @@ for COMPONENT in api web engine; do
     .
 done
 
-log "done: ${PREFIX}freechesscoach:{api,web,engine}-{$(joined_tags)}"
+# Spelled out rather than brace-abbreviated: this is the line a human reads to
+# learn which tags now exist, and it is what they paste into docker/helm next.
+log "done — ${OUTPUT_VERB}:"
+for REF in "${BUILT_REFS[@]}"; do log "  $REF"; done
+write_summary
 restore_dev_deps

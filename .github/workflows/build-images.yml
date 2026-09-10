@@ -48,8 +48,15 @@ jobs:
 
       - name: Note that this commit is already published
         if: steps.version.outputs.skip == 'true'
+        env:
+          PUBLISHED: ${{ steps.version.outputs.published }}
         run: |
-          echo "::notice::HEAD is already published as ${{ steps.version.outputs.published }}; skipping the build."
+          echo "::notice::HEAD is already published as $PUBLISHED; skipping the build."
+          {
+            echo "### Nothing to publish"
+            echo
+            echo "HEAD is already published as \`$PUBLISHED\` — no images were rebuilt."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Log in to GitHub Container Registry
         if: steps.version.outputs.skip != 'true'
@@ -82,14 +89,21 @@ jobs:
         run: |
           if [ -n "$INPUT_TAG" ]; then
             tags=(--tag "$INPUT_TAG")
+            published="$INPUT_TAG"
           else
             tags=(--tag latest --tag "$NEXT_VERSION")
+            published="latest, $NEXT_VERSION"
           fi
+          # --summary-file writes every reference it created to the run page;
+          # the notice puts the same tags in the run's annotations, so "what
+          # does latest point at now?" is answerable without opening the log.
           scripts/build-images.sh \
             --registry "$REGISTRY" \
             "${tags[@]}" \
             --platform linux/amd64,linux/arm64 \
+            --summary-file "$GITHUB_STEP_SUMMARY" \
             --push
+          echo "::notice::Published $REGISTRY/freechesscoach api, web and engine images tagged: $published"
 
       # After the push: a build that fails must not burn a version number, and
       # the tag is what tells the next run this commit is done.
