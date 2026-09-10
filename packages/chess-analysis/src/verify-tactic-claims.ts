@@ -1,6 +1,7 @@
-import type { Color, Square } from 'chess.js';
+import { Chess, type Color, type Square } from 'chess.js';
 import type { TacticHorizon } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
+import { see } from './see.js';
 import { PIECE_VALUES } from './tactics.js';
 import { attackersOf, defendersOf, enemyTargetsOf, pieceTypeAt, pieceValueAt } from './tactic-board-facts.js';
 import type { TacticClaim } from './tactic-claim.js';
@@ -163,6 +164,20 @@ function verifyPin(context: TacticDetectionContext, claim: TacticClaim): Verdict
   // puzzles on exactly that.
   if (pieceTypeAt(after, against) === 'k') return { ok: true, confidence: 0.8, gain: 0 };
 
+  // A king in front is not pinned — it is in check, and the piece behind it
+  // is a skewer's prize. `pins()` reports the shape because the king is just
+  // the first piece it meets on the ray; naming it is the skewer detector's
+  // job, and `verifySkewer` already prices it.
+  if (pieceTypeAt(after, pinned) === 'k') return REJECT;
+
+  // Relative: nothing forbids the pinned piece from moving, so the only thing
+  // holding it is what the pinner collects if it does. If that collection
+  // loses material the piece is free to step aside and the "pin" is a
+  // coincidence of geometry — a queen lined up on a knight and the rook
+  // behind it pins nothing when the rook is defended, because Qxr Kxq is a
+  // gift, not a threat.
+  if (!winsThePieceBehind(context, pinned, against)) return REJECT;
+
   // A pinned pawn is a tactic only when the pin takes away something the pawn
   // itself was doing — a capture it was eyeing, or a piece it alone guards —
   // never merely because the pawn is outnumbered. "Outnumbered" is a hanging
@@ -186,6 +201,24 @@ function verifyPin(context: TacticDetectionContext, claim: TacticClaim): Verdict
   const gap = pieceValueAt(after, against) - pieceValueAt(after, pinned);
   if (gap >= 2) return { ok: true, confidence: 0.45, gain: 0 };
   return REJECT;
+}
+
+/**
+ * Whether the pinner actually wins the piece behind once the pinned piece
+ * steps off the line — the question that separates a pin from three pieces
+ * that happen to share a ray.
+ *
+ * Asked by lifting the pinned piece off the board and running the exchange on
+ * the square behind it, so the answer accounts for every defender of that
+ * square rather than only its bare value. That matters most when the pinner
+ * is the queen: a "pin" against anything cheaper than she is only binds while
+ * the piece behind is takeable, and the whole point of the bind is that
+ * stepping aside is what costs them.
+ */
+function winsThePieceBehind(context: TacticDetectionContext, pinned: Square, against: Square): boolean {
+  const vacated = new Chess(context.after!.fen());
+  vacated.remove(pinned);
+  return see(vacated.fen(), against, context.mover) > 0;
 }
 
 /**

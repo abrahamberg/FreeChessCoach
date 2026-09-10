@@ -5,10 +5,19 @@ const FORK_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
 const PIN_FEN = '4k3/8/2n5/8/8/3B4/8/4K3 w - - 0 1';
 // A pinned pawn that is simply outnumbered (1 attacker, 0 defenders) but
 // isn't itself doing anything — no capture of its own, nothing it guards.
-const PAWN_PIN_NO_FUNCTION_DENIED_FEN = '4k3/3n4/3p4/8/7Q/8/8/K7 w - - 0 1';
+// The knight behind it is undefended, so the pin genuinely binds and only the
+// pawn's own insignificance is left to reject it.
+const PAWN_PIN_NO_FUNCTION_DENIED_FEN = '7k/3n4/3p4/8/7Q/8/8/K7 w - - 0 1';
 // Same shape, but the pinned pawn was eyeing the knight on e5 and can no
 // longer take it — the pin costs its owner a real capture.
-const PAWN_PIN_DENIES_CAPTURE_FEN = '4k3/3n4/3p4/4N3/7Q/8/8/K7 w - - 0 1';
+const PAWN_PIN_DENIES_CAPTURE_FEN = '7k/3n4/3p4/4N3/7Q/8/8/K7 w - - 0 1';
+// A queen lined up on a knight with a rook behind it — but the rook is
+// defended by the king, so Qxd8 Kxd8 hands over nine points for five and the
+// knight can step aside whenever it likes.
+const PIN_BEHIND_DEFENDED_FEN = '3rk3/8/8/3n4/8/8/8/K3Q3 w - - 0 1';
+// The same geometry with the rook undefended: now stepping aside really does
+// cost it, which is the whole of what a relative pin is.
+const PIN_BEHIND_HANGING_FEN = '3r4/8/8/3n4/8/7k/8/K3Q3 w - - 0 1';
 const FREE_PIECE_FEN = '7k/8/8/3q4/2B5/8/8/4K3 w - - 0 1';
 const QUIET_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const SKEWER_FEN = 'r7/8/8/k7/8/8/8/1R5K w - - 0 1';
@@ -66,6 +75,22 @@ describe('classifyTacticMotif', () => {
     // Same shape as above, but the pawn on d6 was attacking the knight on e5
     // and the pin takes that capture away — a real bind, not a hanging pawn.
     const context = contextFor({ fenBefore: PAWN_PIN_DENIES_CAPTURE_FEN, moveSan: 'Qd4' });
+
+    expect(classifyTacticClaims(context).claims.map((claim) => claim.type)).toContain('pin');
+  });
+
+  test('drops a pin whose piece behind is defended well enough to survive', () => {
+    // Qd1 lines up on the knight with a rook behind it, but the rook is
+    // defended: if the knight moves, Qxd8 Kxd8 loses the queen for it. Nothing
+    // is holding the knight, so this is three pieces sharing a file rather
+    // than a pin — the geometry alone never made it one.
+    const context = contextFor({ fenBefore: PIN_BEHIND_DEFENDED_FEN, moveSan: 'Qd1' });
+
+    expect(classifyTacticClaims(context).claims.map((claim) => claim.type)).not.toContain('pin');
+  });
+
+  test('keeps a pin whose piece behind is actually winnable', () => {
+    const context = contextFor({ fenBefore: PIN_BEHIND_HANGING_FEN, moveSan: 'Qd1' });
 
     expect(classifyTacticClaims(context).claims.map((claim) => claim.type)).toContain('pin');
   });
