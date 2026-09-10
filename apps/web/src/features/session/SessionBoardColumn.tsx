@@ -95,6 +95,11 @@ export interface SessionBoardColumnProps {
    * remaining time for each side (see usePlayBotMoveSubmit's own doc
    * comment) — null/null for an untimed game. */
   onClockUpdate?: (whiteRemainingMs: number | null, blackRemainingMs: number | null) => void;
+  /** play_bot only: fires whenever usePlayBotMoveSubmit's own isSubmitting
+   * flips, so a caller that renders BotStatusPanel above this column (a
+   * sibling, not a child) can show "{bot} is thinking…" for the live
+   * duration of the round trip — see BotStatusPanel's isBotThinking prop. */
+  onBotThinkingChange?: (isThinking: boolean) => void;
   /** BotSessionPage's "hide status bar" option also hides every indicator of
    * who's better — the eval bar next to the board and the eval-over-time
    * graph below it — not just the opponent card, since seeing "how good each
@@ -153,6 +158,7 @@ export function SessionBoardColumn({
   onUndoMove,
   undoDisabled,
   onClockUpdate,
+  onBotThinkingChange,
   showEvalIndicators = true,
   boardDisabled = false
 }: SessionBoardColumnProps): ReactNode {
@@ -164,6 +170,9 @@ export function SessionBoardColumn({
   // unconditionally, rather than conditionally on sessionMode, keeps this a
   // valid, unconditional hook call regardless of which mode is active.
   const playBotMove = usePlayBotMoveSubmit(sessionId, onPlayMoveCommitted, onGameOver, onClockUpdate);
+  useEffect(() => {
+    onBotThinkingChange?.(playBotMove.isSubmitting);
+  }, [playBotMove.isSubmitting, onBotThinkingChange]);
 
   /** design.md-adjacent: expect_move (the coach's "I want exactly one move
    * as the answer" signal) preserves today's instant 2s-undo-then-send

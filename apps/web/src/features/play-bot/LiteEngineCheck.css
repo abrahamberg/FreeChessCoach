@@ -1,0 +1,30 @@
+/* Same red/yellow/green vocabulary as TunnelStatusDots.css, but with a
+ * visible text label — the topbar's version is hover-tooltip-only, which
+ * doesn't work in this dialog's touch-first context. */
+.lite-engine-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.lite-engine-check__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.lite-engine-check--green .lite-engine-check__dot {
+  background: var(--color-success);
+}
+
+.lite-engine-check--yellow .lite-engine-check__dot {
+  background: var(--color-warning);
+}
+
+.lite-engine-check--red .lite-engine-check__dot {
+  background: var(--color-danger);
+}

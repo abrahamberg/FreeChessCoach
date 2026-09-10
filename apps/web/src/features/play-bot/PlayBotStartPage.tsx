@@ -5,9 +5,11 @@ import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiPost } from '../../api/client.js';
 import { BotAvatar } from '../../components/BotAvatar.js';
+import { UserIcon } from '../../components/Icon.js';
 import { Modal } from '../../components/Modal.js';
 import '../play/PlayStartPage.css';
 import { BOT_TIERS, tierForElo, type BotTierId } from './botTiers.js';
+import { LiteEngineCheck } from './LiteEngineCheck.js';
 import './PlayBotStartPage.css';
 
 const PlaySessionSchema = z.object({ id: z.string() });
@@ -138,13 +140,30 @@ export function PlayBotStartPage(): ReactNode {
       {selectedBot && (
         <Modal title={selectedBot.name} onClose={() => setSelectedBotId(null)}>
           <div className="play-bot-start-page__summary">
+            <div className="play-bot-start-page__matchup">
+              <span className="play-bot-start-page__matchup-side">
+                <span className="play-bot-start-page__you-avatar" aria-hidden="true">
+                  <UserIcon width={28} height={28} />
+                </span>
+                <span className="play-bot-start-page__matchup-label">You</span>
+              </span>
+              <span className="play-bot-start-page__matchup-vs" aria-hidden="true">
+                vs
+              </span>
+              <span className="play-bot-start-page__matchup-side">
+                <BotAvatar avatarIndex={selectedBot.avatarIndex} size="panel" />
+                <span className="play-bot-start-page__matchup-label">{selectedBot.name}</span>
+              </span>
+            </div>
+
             <div className="play-bot-start-page__summary-bot">
-              <BotAvatar avatarIndex={selectedBot.avatarIndex} size="panel" />
               <span className="play-bot-start-page__summary-bot-info">
                 <span className="play-bot-start-page__summary-bot-elo">{selectedBot.elo}</span>
                 <span className="play-bot-start-page__summary-bot-description">{selectedBot.description}</span>
               </span>
             </div>
+
+            <LiteEngineCheck />
 
             <div className="play-bot-start-page__time-controls" role="radiogroup" aria-label="Time control">
               {TIME_CONTROLS.map((option, index) => (

@@ -94,7 +94,12 @@ export async function resolveRawEngineBackend(options: ResolveEngineBackendOptio
   const { raw, mode } = await resolveRawBackendForUser(options, userId);
   const liteSupplemented = new LiteSupplementedEngineBackend(raw, options.tunnelTransport, userId, {
     timeoutMs: options.tunnelTimeoutMs,
-    mainBucket: mainBucketFor(mode)
+    mainBucket: mainBucketFor(mode),
+    // Only do the lite round trip when the position is actually tactically
+    // sharp — see LiteSupplementedEngineBackendOptions' doc comment. Never
+    // set on resolveReviewEngineBackend below, whose probes keep asking for
+    // every shortfall regardless of sharpness.
+    gateLiveSupplementBySharpness: true
   });
   return new EngineSourceLoggingBackend(liteSupplemented, userId, mode === 'browser' ? 'externalEngine' : 'internalEngine');
 }

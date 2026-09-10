@@ -117,6 +117,52 @@ describe('LiteSupplementedEngineBackend', () => {
     expect(result.lines.map((l) => l.moveSan)).toEqual(['e4']);
   });
 
+  describe('gateLiveSupplementBySharpness (bot-move path only)', () => {
+    // Same sharp/quiet fixtures as the analyzeGame suite below.
+    const SHARP_FEN = '4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1';
+    const QUIET_FEN = '4k3/8/8/8/8/8/4P3/4K3 w - - 0 1';
+
+    test('skips the lite tunnel on a quiet position that fell short of lines', async () => {
+      const main = fakeMain({ ...analysisWithLines([line('Kd2', 0)]), fen: QUIET_FEN });
+      const transport = fakeTransport(analysisWithLines([line('Kd2', 0), line('e4', -5)]));
+      const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', {
+        timeoutMs: 8000,
+        mainBucket: 'internal',
+        gateLiveSupplementBySharpness: true
+      });
+
+      const result = await backend.analyzePosition(QUIET_FEN, { multiPv: 5 });
+
+      expect(transport.request).not.toHaveBeenCalled();
+      expect(result.lines.map((l) => l.moveSan)).toEqual(['Kd2']);
+    });
+
+    test('still calls the lite tunnel on a sharp position that fell short of lines', async () => {
+      const main = fakeMain({ ...analysisWithLines([line('Nd6+', 300)]), fen: SHARP_FEN });
+      const transport = fakeTransport(analysisWithLines([line('Nd6+', 300), line('Ne5', 10)]));
+      const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', {
+        timeoutMs: 8000,
+        mainBucket: 'internal',
+        gateLiveSupplementBySharpness: true
+      });
+
+      const result = await backend.analyzePosition(SHARP_FEN, { multiPv: 5 });
+
+      expect(transport.request).toHaveBeenCalledTimes(1);
+      expect(result.lines.map((l) => l.moveSan)).toEqual(['Nd6+', 'Ne5']);
+    });
+
+    test('still calls the lite tunnel on a quiet position when the gate is left off (review path)', async () => {
+      const main = fakeMain({ ...analysisWithLines([line('Kd2', 0)]), fen: QUIET_FEN });
+      const transport = fakeTransport(analysisWithLines([line('Kd2', 0), line('e4', -5)]));
+      const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
+
+      await backend.analyzePosition(QUIET_FEN, { multiPv: 5 });
+
+      expect(transport.request).toHaveBeenCalledTimes(1);
+    });
+  });
+
   test('does not attempt a lite request when the requested multiPv exceeds the position\'s own legal-move count and main already covers it', async () => {
     const allMoveLines = Array.from({ length: START_FEN_LEGAL_MOVE_COUNT }, (_, i) => line(`m${i}`, 0));
     const main = fakeMain(analysisWithLines(allMoveLines));
