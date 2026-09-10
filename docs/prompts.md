@@ -300,7 +300,7 @@ Extract:
    - regress: an improving/resolved area that reappeared.
    - resolve: an improving area with positive evidence across 3+ recent sessions.
    Address each update by diagnosisCode.
-3. sessionSummary: 2–3 sentences addressed TO the student ("You...") for their dashboard. Encouraging, specific, honest.
+3. sessionSummary: 2–3 sentences addressed TO the student ("You...") for their dashboard. Encouraging, specific, honest. Lead with the session's goal (shown with the coaching plan) and whether it landed — what they can now do that they could not before, or what still needs work — rather than listing everything the session touched.
 4. homework: copy the coach's assigned homework from the transcript; null if none.
 
 Categories (use ONLY these): hanging_piece, missed_tactic, allowed_tactic, calculation_error, premature_action, passive_play, pawn_structure, king_safety, piece_activity, endgame_technique, opening_knowledge, no_plan, time_management
@@ -328,6 +328,7 @@ TA-19 — Overload recognition
 TA-26 — Trapped-piece recognition
 
 COACHING PLAN
+Goal for this session: Castle before starting play on the flank — the same king-safety habit as last session.
 1. White's move 12 (user_mistake): Pushed g4 in front of the uncastled king. "Before pushing this pawn, where is your king going to live?" Key line: O-O Re8 d3 h6
 
 FINDINGS ALREADY RECORDED LIVE
