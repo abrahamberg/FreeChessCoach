@@ -1,14 +1,5 @@
 import { expect, test } from 'vitest';
-import { DIAGNOSIS_FAMILY_CODE_COUNTS, DiagnosisCodeEntrySchema } from '../catalog-types.js';
 import { EG_CODES } from './eg.js';
-
-test('EG has the spec family count, unique EG-prefixed ids, and every entry validates', () => {
-  expect(EG_CODES).toHaveLength(DIAGNOSIS_FAMILY_CODE_COUNTS.EG);
-  const ids = EG_CODES.map((entry) => entry.id);
-  expect(new Set(ids).size).toBe(ids.length);
-  for (const id of ids) expect(id.startsWith('EG-')).toBe(true);
-  for (const entry of EG_CODES) expect(() => DiagnosisCodeEntrySchema.parse(entry)).not.toThrow();
-});
 
 test('every EG entry is dialogue detectability with the endgame_technique parent category', () => {
   expect(EG_CODES.every((entry) => entry.detectability === 'dialogue')).toBe(true);

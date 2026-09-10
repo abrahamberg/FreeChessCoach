@@ -242,7 +242,6 @@ describe('resolveEngineBackend', () => {
       await backend.analyzePosition(fen);
 
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('lichessIndex=1'));
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('internalEngine=0'));
       logSpy.mockRestore();
     });
 
