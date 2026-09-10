@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import { annotateCandidateMoves } from './candidate-moves.js';
 
-// White knight f4-d5 forks the black rook on b6 and knight on f6 (same
+// White knight f4-d5 forks the black rook on b6 and knight on f6, with the
+// c4 pawn defending d5 so the forking knight isn't simply taken and the d6
+// pawn blocking the rook's guard of f6 so both targets really fall (same
 // pattern as diff-features.test.ts's FORK_FEN, reached here via an actual
 // legal move instead of being hand-placed).
-const FORK_SETUP_FEN = '4k3/8/1r3n2/8/5N2/8/8/7K w - - 0 1';
+const FORK_SETUP_FEN = '4k3/8/1r1p1n2/8/2P2N2/8/8/7K w - - 0 1';
 
 describe('annotateCandidateMoves', () => {
   test('flags a fork-creating candidate with createsFork: true', () => {

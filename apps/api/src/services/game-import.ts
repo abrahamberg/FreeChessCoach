@@ -44,6 +44,28 @@ export async function startAnalysis(
   return { analysisId: analysis.id };
 }
 
+/** importGame's dedup path (findByUserAndPgn matched an existing row) —
+ * hands back that game rather than inserting a second one, same idempotent
+ * shape as the `/api/games/:id/analyze` route already gives a double-click:
+ * no new job queued when one is already in flight or done. A deferred
+ * (stat-bank) re-import never queues analysis at all, matching a first-time
+ * deferred import. A non-deferred one queues analysis only if the earlier
+ * import happened to be deferred and nothing has started it yet. */
+async function resultForExistingGame(
+  db: Kysely<Database>,
+  jobQueue: JobQueue,
+  gameId: string,
+  deferAnalysis: boolean | undefined
+): Promise<ImportGameResult> {
+  if (deferAnalysis) return { gameId, analysisId: null };
+
+  const existingAnalysis = await analysesRepo.findByGameId(db, gameId);
+  if (existingAnalysis) return { gameId, analysisId: existingAnalysis.id };
+
+  const { analysisId } = await startAnalysis(db, jobQueue, gameId);
+  return { gameId, analysisId };
+}
+
 export async function importGame(
   db: Kysely<Database>,
   jobQueue: JobQueue,
@@ -51,6 +73,9 @@ export async function importGame(
   usernames: Usernames,
   request: ImportGameRequest
 ): Promise<ImportGameResult> {
+  const duplicate = await gamesRepo.findByUserAndPgn(db, userId, request.pgn);
+  if (duplicate) return resultForExistingGame(db, jobQueue, duplicate.id, request.deferAnalysis);
+
   await assertUnderDailyLimit(db, userId);
 
   const parsed = parsePgn(request.pgn);

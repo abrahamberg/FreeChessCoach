@@ -145,8 +145,26 @@ describe('buildGameReport', () => {
     });
 
     const forkMove = report.moves.find((move) => move.moveSan === 'Nd6+');
-    expect(forkMove?.tacticOpportunity).toEqual({ type: 'fork', found: true, detail: 'knight on d6 forks e8 and b7' });
-    expect(forkMove?.reasons).toContain('Tactic available — Forks (Nd6+): found — knight on d6 forks e8 and b7');
+    expect(forkMove?.tacticOpportunity).toEqual({
+      type: 'fork',
+      found: true,
+      detail: 'knight on d6 forks e8 and b7',
+      visual: {
+        arrows: [
+          { from: 'd6', to: 'e8' },
+          { from: 'd6', to: 'b7' }
+        ],
+        highlights: []
+      },
+      // The verified payoff, which the card's sentence is built from — a
+      // claim that can't say what it wins doesn't get one (§3 rule 1).
+      gain: { kind: 'material', pawns: 5, prize: 'rook' },
+      confidence: 0.85,
+      // Multi-label: the knight check also hits the rook with tempo. The
+      // card leads with the fork because that is what wins the material.
+      motifs: ['fork', 'gainsTempo']
+    });
+    expect(forkMove?.reasons).toContain('You won a rook through a fork — knight on d6 forks e8 and b7.');
   });
 
 });

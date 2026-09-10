@@ -10,10 +10,10 @@ const QUIET_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 describe('overloadedDefenderDetector', () => {
   test('detects a move that overloads a defender guarding two pieces', () => {
-    expect(overloadedDefenderDetector.detect(buildTacticDetectionContext(OVERLOAD_FEN, 'Rf1', 'white'))).toBe(true);
+    expect(overloadedDefenderDetector.detect(buildTacticDetectionContext(OVERLOAD_FEN, 'Rf1', 'white'))).not.toHaveLength(0);
   });
 
   test('does not flag a quiet developing move', () => {
-    expect(overloadedDefenderDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toBe(false);
+    expect(overloadedDefenderDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toEqual([]);
   });
 });

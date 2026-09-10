@@ -28,11 +28,25 @@ export const BOT_CANDIDATE_BREADTH = 40;
  * anything shallower than that stopped being a real lever anyway. */
 export const BOT_SEARCH_DEPTH = 18;
 
+/** Wall-clock cap on top of BOT_SEARCH_DEPTH/BOT_CANDIDATE_BREADTH — only
+ * BrowserTunnelEngineBackend acts on it (EngineBackendAnalyzeOptions'
+ * movetimeMs doc comment), so native/chess_api searches are unaffected.
+ * Without it, a user on 'browser' engineMode pays this depth/breadth
+ * uncapped: the same depth-18/40-line search measured 24-38s per bot move
+ * on a single-threaded WASM build in production (see
+ * lite-supplemented-engine-backend.ts's LITE_SUPPLEMENT_MOVETIME_MS doc
+ * comment, which caps the narrower lite supplement the same way) — a live
+ * "your move" round trip the student is staring at, not background work. */
+export const BOT_SEARCH_MOVETIME_MS = 8000;
+
 export interface BotCandidatesDependencies {
   /** Uncached, bot-specific engine search (see resolveRawEngineBackend) —
    * runs at the caller's phase-resolved depth, deliberately never the shared
    * position_evaluations cache. */
-  analyzeBotPosition: (fen: string, opts: { depth: number; multiPv: number; debug?: BotMoveDebugCollector }) => Promise<PositionAnalysis>;
+  analyzeBotPosition: (
+    fen: string,
+    opts: { depth: number; multiPv: number; movetimeMs: number; debug?: BotMoveDebugCollector }
+  ) => Promise<PositionAnalysis>;
 }
 
 /**
@@ -50,7 +64,12 @@ export async function buildBotCandidates(
   fen: string,
   debug?: BotMoveDebugCollector
 ): Promise<BotCandidate[]> {
-  const analysis = await deps.analyzeBotPosition(fen, { depth: BOT_SEARCH_DEPTH, multiPv: BOT_CANDIDATE_BREADTH, debug });
+  const analysis = await deps.analyzeBotPosition(fen, {
+    depth: BOT_SEARCH_DEPTH,
+    multiPv: BOT_CANDIDATE_BREADTH,
+    movetimeMs: BOT_SEARCH_MOVETIME_MS,
+    debug
+  });
   const mover = fenActiveColor(fen);
 
   const annotations = annotateCandidateMoves(

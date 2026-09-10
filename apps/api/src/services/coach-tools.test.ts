@@ -9,6 +9,7 @@ import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { buildCoachTools, type CoachToolsDependencies } from './coach-tools.js';
+import { TOOL_BUDGETS } from './coach-tool-guards.js';
 
 /** The execution options the SDK hands a tool's `execute`. None of the coach's
  * tools read them — they close over their own context from buildCoachTools —
@@ -141,18 +142,20 @@ describe('buildCoachTools', () => {
     };
   }
 
-  test('exposes all 15 architecture §7.1 tools', async () => {
+  test('exposes all 17 architecture §7.1 tools', async () => {
     const ctx = await setupCtx();
     const tools = buildCoachTools(ctx, makeDeps());
 
     expect(Object.keys(tools).sort()).toEqual(
       [
         'annotate_board',
+        'check_moves',
         'check_position',
         'end_session',
         'expect_move',
         'get_diagnostic_profile',
         'get_engine_analysis',
+        'get_player_stats',
         'get_user_profile',
         'hypothetical_line',
         'investigate_position',
@@ -175,14 +178,14 @@ describe('buildCoachTools', () => {
     expect(tools.undo_last_move).toBeUndefined();
   });
 
-  test('mode: "play" adds get_candidate_moves, play_coach_move, and undo_last_move alongside the 15 analyze-mode tools, without removing any of them', async () => {
+  test('mode: "play" adds get_candidate_moves, play_coach_move, and undo_last_move alongside the 17 analyze-mode tools, without removing any of them', async () => {
     const ctx = await setupCtx();
     const tools = buildCoachTools(ctx, makeDeps(), 'play');
 
     expect(tools.get_candidate_moves).toBeDefined();
     expect(tools.play_coach_move).toBeDefined();
     expect(tools.undo_last_move).toBeDefined();
-    expect(Object.keys(tools)).toHaveLength(18);
+    expect(Object.keys(tools)).toHaveLength(20);
   });
 
   test('show_position, annotate_board, expect_move, and hypothetical_line have no execute (client tools)', async () => {
@@ -286,6 +289,65 @@ describe('buildCoachTools', () => {
 
       expect(second).toEqual(first);
       expect(deps.investigatePosition).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('check_moves', () => {
+    test('answers what a move actually does, from the board alone — no engine call', async () => {
+      const ctx = await setupCtx();
+      const deps = makeDeps();
+      const tools = buildCoachTools(ctx, deps);
+
+      const result = await tools.check_moves?.execute?.(
+        { fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', moves: ['e4'] },
+        TOOL_OPTIONS
+      );
+
+      expect(result).toContain('e4: legal (white pawn e2-e4)');
+      expect(deps.analyzePosition).not.toHaveBeenCalled();
+    });
+
+    test('an illegal move comes back as illegal — this is the hallucination the tool exists to catch', async () => {
+      const ctx = await setupCtx();
+      const tools = buildCoachTools(ctx, makeDeps());
+
+      const result = await tools.check_moves?.execute?.(
+        { fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', moves: ['Nf6'] },
+        TOOL_OPTIONS
+      );
+
+      expect(result).toContain('NOT LEGAL in this position');
+    });
+
+    test('is unbudgeted — checking a move must never be more expensive than guessing one', async () => {
+      const ctx = await setupCtx();
+      const tools = buildCoachTools(ctx, makeDeps());
+      const fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+      const results = [];
+      for (const move of ['e4', 'd4', 'Nf3', 'c4', 'g3', 'b3', 'f4']) {
+        results.push(await tools.check_moves?.execute?.({ fen, moves: [move] }, TOOL_OPTIONS));
+      }
+
+      for (const result of results) {
+        expect(result).not.toEqual({ error: 'budget_exhausted — answer with what you have' });
+      }
+    });
+  });
+
+  describe('get_player_stats', () => {
+    test('degrades to a plain "nothing to compare" answer for a student with no analyzed games', async () => {
+      const ctx = await setupCtx();
+      const tools = buildCoachTools(ctx, makeDeps());
+
+      const result = await tools.get_player_stats?.execute?.({}, TOOL_OPTIONS);
+
+      expect(result).toContain('nothing to compare');
+    });
+
+    test('is budgeted to one read per turn, and check_moves deliberately is not budgeted at all', () => {
+      expect(TOOL_BUDGETS.get_player_stats).toBe(1);
+      expect(TOOL_BUDGETS.check_moves).toBeUndefined();
     });
   });
 

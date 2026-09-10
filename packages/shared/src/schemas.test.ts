@@ -37,6 +37,7 @@ function validPlanFixture(): CoachingPlan {
     openingNote: 'Opening was fine through move 8.',
     themes: ['calculation_error', 'king_safety'],
     connectionToHistory: 'Second game in a row with a delayed castle.',
+    sessionGoal: 'Castle before starting play on the flank.',
     moments: [
       {
         ply: 23,

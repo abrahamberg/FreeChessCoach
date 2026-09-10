@@ -71,8 +71,10 @@ export interface UseSessionBoardStateResult {
 
 /** UCI encodes a move as `<from><to>[promotion]` (chess-analysis's parsePgn),
  * so the last move's squares are derived from position data directly — no
- * coach tool call required. */
-function lastMoveHighlightsFor(moveUci: string | null | undefined): BoardHighlight[] {
+ * coach tool call required. Exported for the read-only Game Review page
+ * (useGameReviewPageData), which wants the same highlight without the rest
+ * of this hook's session/chat machinery. */
+export function lastMoveHighlightsFor(moveUci: string | null | undefined): BoardHighlight[] {
   if (!moveUci) return [];
   const from = moveUci.slice(0, 2);
   const to = moveUci.slice(2, 4);

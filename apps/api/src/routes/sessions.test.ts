@@ -23,6 +23,7 @@ const PLAN: CoachingPlan = {
   openingNote: 'Fine.',
   themes: ['king_safety'],
   connectionToHistory: 'First session together.',
+  sessionGoal: 'Check every capture before moving.',
   moments: [
     {
       ply: 4,

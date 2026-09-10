@@ -1,11 +1,13 @@
 import {
   annotateBoardParameters,
+  checkMovesParameters,
   checkPositionParameters,
   coachToolDescription,
   endSessionParameters,
   expectMoveParameters,
   getDiagnosticProfileParameters,
   getEngineAnalysisParameters,
+  getPlayerStatsParameters,
   getUserProfileParameters,
   hypotheticalLineParameters,
   investigatePositionParameters,
@@ -16,12 +18,13 @@ import {
   renderDiagnosticProfileBlock,
   renderEngineAnalysisSummary,
   renderFocusAreasBlock,
+  renderMoveInspection,
   renderRecentFindingsBlock,
   showPositionParameters,
   updateThreadsParameters,
   type DiagnosticReportItem
 } from '@freechesscoach/prompts';
-import { evaluateGates, moveRefToPly, type DiagnosticProfileEntry } from '@freechesscoach/chess-analysis';
+import { evaluateGates, inspectMoves, moveRefToPly, type DiagnosticProfileEntry } from '@freechesscoach/chess-analysis';
 import type { EmittableConfidenceLevel, Finding, FocusAreaUpdate, PositionAnalysis, SessionMode, Thread } from '@freechesscoach/shared';
 import { tool, type ToolSet } from '../llm/tools.js';
 import type { Kysely } from 'kysely';
@@ -32,6 +35,7 @@ import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
 import { buildPlayCoachTools } from './coach-tools-play.js';
 import { createTurnGuardState, withTurnGuards } from './coach-tool-guards.js';
+import { getPlayerStatsText } from './coach-player-stats.js';
 import { toGateWindowGame, windowByTimeControl } from './diagnostic-window.js';
 import { getPositionAtPly } from './game-positions.js';
 import { recallMove, recordMoveNote, type MoveAddress } from './move-notes.js';
@@ -89,6 +93,13 @@ export function buildCoachTools(ctx: CoachToolsContext, deps: CoachToolsDependen
         checkPosition(deps, ctx, args)
       )
     }),
+    check_moves: tool({
+      description: coachToolDescription('check_moves'),
+      inputSchema: checkMovesParameters,
+      execute: withTurnGuards(guardState, 'check_moves', (args: CheckMovesArgs) =>
+        Promise.resolve(renderMoveInspection(inspectMoves(args.fen, args.moves)))
+      )
+    }),
     get_engine_analysis: tool({
       description: coachToolDescription('get_engine_analysis'),
       inputSchema: getEngineAnalysisParameters,
@@ -103,6 +114,11 @@ export function buildCoachTools(ctx: CoachToolsContext, deps: CoachToolsDependen
       description: coachToolDescription('get_diagnostic_profile'),
       inputSchema: getDiagnosticProfileParameters,
       execute: withTurnGuards(guardState, 'get_diagnostic_profile', () => getDiagnosticProfileText(deps.db, ctx))
+    }),
+    get_player_stats: tool({
+      description: coachToolDescription('get_player_stats'),
+      inputSchema: getPlayerStatsParameters,
+      execute: withTurnGuards(guardState, 'get_player_stats', () => getPlayerStatsText(deps.db, ctx))
     }),
     record_finding: tool({
       description: coachToolDescription('record_finding'),
@@ -157,6 +173,11 @@ export function buildCoachTools(ctx: CoachToolsContext, deps: CoachToolsDependen
 
 interface EngineAnalysisArgs {
   fen: string;
+}
+
+interface CheckMovesArgs {
+  fen: string;
+  moves: string[];
 }
 
 interface InvestigatePositionArgs {

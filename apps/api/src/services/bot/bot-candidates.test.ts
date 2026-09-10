@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { PositionAnalysis } from '@freechesscoach/shared';
-import { buildBotCandidates, BOT_CANDIDATE_BREADTH, BOT_SEARCH_DEPTH } from './bot-candidates.js';
+import { buildBotCandidates, BOT_CANDIDATE_BREADTH, BOT_SEARCH_DEPTH, BOT_SEARCH_MOVETIME_MS } from './bot-candidates.js';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 // Black to move, after 1.e4 e5 2.Qh5 (threatens Qxe5+ forking king/pieces is
@@ -27,7 +27,11 @@ describe('buildBotCandidates', () => {
 
     const candidates = await buildBotCandidates({ analyzeBotPosition }, START_FEN);
 
-    expect(analyzeBotPosition).toHaveBeenCalledWith(START_FEN, { depth: BOT_SEARCH_DEPTH, multiPv: BOT_CANDIDATE_BREADTH });
+    expect(analyzeBotPosition).toHaveBeenCalledWith(START_FEN, {
+      depth: BOT_SEARCH_DEPTH,
+      multiPv: BOT_CANDIDATE_BREADTH,
+      movetimeMs: BOT_SEARCH_MOVETIME_MS
+    });
     expect(candidates).toHaveLength(2);
     expect(candidates[0]).toMatchObject({ moveSan: 'e4', cp: 20, mateIn: null });
     expect(candidates[1]).toMatchObject({ moveSan: 'd4', cp: 15, mateIn: null });

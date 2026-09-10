@@ -128,6 +128,7 @@ describe('renderCoachingPlanBlock', () => {
       openingNote: 'opening',
       themes: ['king_safety'],
       connectionToHistory: 'connection',
+      sessionGoal: 'goal',
       moments: [
         {
           ply: 23,
@@ -152,6 +153,7 @@ describe('renderCoachingPlanBlock', () => {
       openingNote: 'opening',
       themes: ['king_safety'],
       connectionToHistory: 'connection',
+      sessionGoal: 'goal',
       moments: [
         {
           ply: 24,

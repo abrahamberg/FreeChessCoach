@@ -45,7 +45,16 @@ describe('BotStatusPanel', () => {
     expect(screen.getByText('Trappy Tom is thinking…')).toBeInTheDocument();
   });
 
-  test('a checkmate the player delivered reads as a win', () => {
+  test('shows the bot as thinking mid-request, even while isPlayerTurn is still true (the position hasn\'t advanced yet)', () => {
+    render(<BotStatusPanel botName="Trappy Tom" isPlayerTurn isBotThinking gameOver={null} userColor="white" />);
+    expect(screen.getByText('Trappy Tom is thinking…')).toBeInTheDocument();
+    expect(screen.queryByText('Your move')).not.toBeInTheDocument();
+  });
+
+  // describeGameOver's own branches (checkmate/timeout/resignation/each draw
+  // reason) are exhaustively covered by botGameOver.test.ts; this just needs
+  // one case to prove the panel actually renders what that function returns.
+  test('renders the describeGameOver string when the game is over', () => {
     render(
       <BotStatusPanel
         botName="Trappy Tom"
@@ -55,30 +64,6 @@ describe('BotStatusPanel', () => {
       />
     );
     expect(screen.getByText('Checkmate — you win!')).toBeInTheDocument();
-  });
-
-  test('a checkmate the bot delivered names the bot', () => {
-    render(
-      <BotStatusPanel
-        botName="Trappy Tom"
-        isPlayerTurn={false}
-        gameOver={{ result: '1-0', reason: 'checkmate' }}
-        userColor="black"
-      />
-    );
-    expect(screen.getByText('Checkmate — Trappy Tom wins.')).toBeInTheDocument();
-  });
-
-  test.each([
-    ['stalemate', 'Draw by stalemate.'],
-    ['insufficient_material', 'Draw by insufficient material.'],
-    ['threefold_repetition', 'Draw by threefold repetition.'],
-    ['fifty_move_rule', 'Draw by the fifty-move rule.']
-  ] as const)('renders the draw reason for %s', (reason, expected) => {
-    render(
-      <BotStatusPanel botName="Trappy Tom" isPlayerTurn={false} gameOver={{ result: '1/2-1/2', reason }} userColor="white" />
-    );
-    expect(screen.getByText(expected)).toBeInTheDocument();
   });
 
   test('shows the bot avatar and rating', () => {

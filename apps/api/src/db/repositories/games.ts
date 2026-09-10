@@ -1,6 +1,14 @@
 import type { Kysely } from 'kysely';
 import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { AnalysisStatus, BotConfig, GameSource, PlayerColor } from '@freechesscoach/shared';
+import {
+  defaultReviewTierForSource,
+  ImportableGameSourceSchema,
+  type AnalysisStatus,
+  type BotConfig,
+  type GameReviewTier,
+  type GameSource,
+  type PlayerColor
+} from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export interface GameRow {
@@ -31,6 +39,7 @@ export interface GameRow {
   speed: GameSpeed | null;
   playedAtTime: string | null;
   moveTimes: PgnMoveComment[] | null;
+  reviewTier: GameReviewTier;
 }
 
 export interface NewGame {
@@ -72,6 +81,10 @@ export interface NewGame {
   speed?: GameSpeed | null;
   playedAtTime?: string | null;
   moveTimes?: PgnMoveComment[] | null;
+  /** Which Games page tab this game starts in — omitted for every existing
+   * call site, which lets defaultReviewTierForSource(source) below decide
+   * (vs_bot -> bot, coach_play -> coach, everything importable -> imported). */
+  reviewTier?: GameReviewTier;
 }
 
 export function insert(db: Kysely<Database>, values: NewGame): Promise<GameRow> {
@@ -81,6 +94,7 @@ export function insert(db: Kysely<Database>, values: NewGame): Promise<GameRow> 
     .insertInto('games')
     .values({
       ...values,
+      reviewTier: values.reviewTier ?? defaultReviewTierForSource(values.source),
       botId: values.botId ?? null,
       botConfigSnapshot: botConfigSnapshot === null ? null : JSON.stringify(botConfigSnapshot),
       clockInitialMs: values.clockInitialMs ?? null,
@@ -118,6 +132,13 @@ export function updateRemainingMs(
  * other source is an immutable imported PGN). */
 export function updatePgn(db: Kysely<Database>, id: string, pgn: string): Promise<void> {
   return db.updateTable('games').set({ pgn }).where('id', '=', id).execute().then(() => undefined);
+}
+
+/** POST /api/games/:id/promote — the games service validates the transition
+ * (canPromoteGameReviewTier) before calling this; this function just writes
+ * whatever tier it's given. */
+export function updateReviewTier(db: Kysely<Database>, id: string, reviewTier: GameReviewTier): Promise<void> {
+  return db.updateTable('games').set({ reviewTier }).where('id', '=', id).execute().then(() => undefined);
 }
 
 /** Written once, when a live game (coach_play/vs_bot) ends — see
@@ -168,6 +189,33 @@ export function findByIdForUser(
     .selectAll()
     .where('id', '=', id)
     .where('userId', '=', userId)
+    .executeTakeFirst();
+}
+
+/** game-import.ts's dedup guard: the PGN text a user already imported (from
+ * any source — paste, upload, Lichess, or Chess.com) carries its own
+ * headers (Site/Date/Round/players), so an exact match against another
+ * import is, in practice, always the same real game, not a coincidence.
+ * Re-selecting an already-imported game from the Lichess/Chess.com picker —
+ * which has no memory of what's already in the library — would otherwise
+ * insert a second row that starts back at the bottom of the review-tier
+ * stack, making an already-promoted game look like it "reverted" to
+ * Imported when really a duplicate just appeared alongside it.
+ *
+ * Scoped to `ImportableGameSourceSchema`'s sources on purpose: `coach_play`/
+ * `vs_bot` rows carry a mutable, headerless PGN that grows move by move
+ * (see games.ts's `updatePgn` doc comment), so without this filter an
+ * in-progress live game whose current PGN briefly coincides with a pasted
+ * one could get matched here and handed back as if it were an already-
+ * imported duplicate.
+ */
+export function findByUserAndPgn(db: Kysely<Database>, userId: string, pgn: string): Promise<GameRow | undefined> {
+  return db
+    .selectFrom('games')
+    .selectAll()
+    .where('userId', '=', userId)
+    .where('pgn', '=', pgn)
+    .where('source', 'in', ImportableGameSourceSchema.options)
     .executeTakeFirst();
 }
 

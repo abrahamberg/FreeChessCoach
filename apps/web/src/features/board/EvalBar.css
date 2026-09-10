@@ -34,3 +34,25 @@
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
+
+/* The narrow single-column mobile layout: a slim strip above the board
+ * instead of a column beside it, so the eval indicator doesn't eat into the
+ * board's own width — the scarcer dimension on a phone screen. */
+.eval-bar-wrap--horizontal {
+  flex-direction: row;
+  width: 100%;
+}
+
+.eval-bar-wrap--horizontal .eval-bar {
+  width: auto;
+  height: 14px;
+  flex: 1 1 auto;
+}
+
+.eval-bar-wrap--horizontal .eval-bar__fill {
+  left: auto;
+  right: auto;
+  top: 0;
+  bottom: 0;
+  transition: width 200ms ease-out;
+}

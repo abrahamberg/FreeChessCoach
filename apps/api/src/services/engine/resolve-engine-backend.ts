@@ -92,25 +92,40 @@ export async function resolveEngineBackend(options: ResolveEngineBackendOptions,
  */
 export async function resolveRawEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
   const { raw, mode } = await resolveRawBackendForUser(options, userId);
-  // Which BotMoveDebugCollector bucket the main call's own result belongs
-  // under (see bot-move-debug.ts) — computed once here, since this is the
-  // one place that already knows the user's engineMode.
-  const mainBucket = mode === 'native' ? 'internal' : mode === 'chess_api' ? 'external' : 'browser';
   const liteSupplemented = new LiteSupplementedEngineBackend(raw, options.tunnelTransport, userId, {
     timeoutMs: options.tunnelTimeoutMs,
-    mainBucket
+    mainBucket: mainBucketFor(mode),
+    // Only do the lite round trip when the position is actually tactically
+    // sharp — see LiteSupplementedEngineBackendOptions' doc comment. Never
+    // set on resolveReviewEngineBackend below, whose probes keep asking for
+    // every shortfall regardless of sharpness.
+    gateLiveSupplementBySharpness: true
   });
   return new EngineSourceLoggingBackend(liteSupplemented, userId, mode === 'browser' ? 'externalEngine' : 'internalEngine');
+}
+
+/** The user's own engineMode — the one thing the lite decorator's debug
+ * bucket needs when the backend itself has already been built (see
+ * `resolveReviewEngineBackend`), so asking for it never has to construct a
+ * second, unused raw backend. */
+async function engineModeForUser(options: ResolveEngineBackendOptions, userId: string): Promise<EngineMode> {
+  const user = await usersRepo.findById(options.db, userId);
+  if (!user) throw new EngineUnavailableError(`Unknown user ${userId}`);
+  return user.engineMode;
+}
+
+/** Which BotMoveDebugCollector bucket a main call's own result belongs under
+ * (see bot-move-debug.ts) — derived from the user's engineMode, and shared
+ * by every caller that wraps a backend in LiteSupplementedEngineBackend. */
+function mainBucketFor(mode: EngineMode): 'internal' | 'external' | 'browser' {
+  return mode === 'native' ? 'internal' : mode === 'chess_api' ? 'external' : 'browser';
 }
 
 async function resolveRawBackendForUser(
   options: ResolveEngineBackendOptions,
   userId: string
 ): Promise<{ raw: EngineBackend; mode: EngineMode }> {
-  const user = await usersRepo.findById(options.db, userId);
-  if (!user) throw new EngineUnavailableError(`Unknown user ${userId}`);
-
-  const mode = user.engineMode;
+  const mode = await engineModeForUser(options, userId);
   const raw: EngineBackend =
     mode === 'browser'
       ? new BrowserTunnelEngineBackend(options.tunnelTransport, userId, options.tunnelTimeoutMs)
@@ -124,4 +139,41 @@ async function resolveRawBackendForUser(
         : new NativeEngineBackend(options.engineUrl);
 
   return { raw, mode };
+}
+
+/**
+ * The backend game review analyses with: everything `resolveEngineBackend`
+ * gives (cache, Lichess index, the user's own mode) plus the lite browser
+ * worker filling in breadth on the plies that are actually sharp.
+ *
+ * Review goes through `analyzeGame`, which the lite decorator used to
+ * delegate straight through — so review never touched the browser worker at
+ * all, and `docs/tactics-rework.md` §5 layer 2 verifies claims against the
+ * engine's *lines*, not just its best move. chess-api.com caps free-tier
+ * variants at five and often returns fewer, and the Lichess index serves
+ * whatever line count the community stored, so on many positions there was
+ * nothing to verify against.
+ *
+ * The decorator sits **outside** the cache on purpose. Everything inside it
+ * still reads and writes `position_evaluations` exactly as before, and the
+ * widened lines never get written back — they are not the trusted official
+ * evaluation, they live for the length of the job that asked for them, and
+ * that job stores what it concluded from them (the verified claims) rather
+ * than the lines themselves.
+ *
+ * Only worth calling from the background analysis worker: the lite pass
+ * spends up to about a minute of a connected browser tab, and a user with no
+ * tab connected simply gets today's narrower analysis.
+ */
+export async function resolveReviewEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
+  const cached = await resolveEngineBackend(options, userId);
+  // The mode alone, not a second raw backend: resolveRawBackendForUser would
+  // build (and immediately discard) another NativeEngineBackend /
+  // ChessApiEngineBackend / BrowserTunnelEngineBackend just to read it.
+  const mode = await engineModeForUser(options, userId);
+
+  return new LiteSupplementedEngineBackend(cached, options.tunnelTransport, userId, {
+    timeoutMs: options.tunnelTimeoutMs,
+    mainBucket: mainBucketFor(mode)
+  });
 }

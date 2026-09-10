@@ -164,7 +164,12 @@ describe('buildInvestigatorTools', () => {
 
       const result = await tools.scan_tactics?.execute?.({ fen: FORK_FEN }, TOOL_OPTIONS);
 
-      expect(result).toEqual({ available: [{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }], allowed: [] });
+      // Multi-label: a move carries every motif it survives verification
+      // with, and Nd6+ hits the rook with tempo as well as forking it.
+      expect(result).toMatchObject({
+        available: expect.arrayContaining([{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }]),
+        allowed: expect.arrayContaining([{ moveSan: 'Kd8', motif: 'prophylaxis', rank: 0 }])
+      });
       expect(analyzePosition).toHaveBeenCalledWith(FORK_FEN);
       expect(analyzePosition).toHaveBeenCalledWith(FLIPPED_FORK_FEN);
     });
@@ -188,7 +193,7 @@ describe('buildInvestigatorTools', () => {
       const withRank1 = await tools.scan_tactics?.execute?.({ fen: FORK_FEN, topN: 2 }, TOOL_OPTIONS);
 
       expect(withoutRank1).toMatchObject({ available: [] });
-      expect(withRank1).toMatchObject({ available: [{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }] });
+      expect(withRank1).toMatchObject({ available: expect.arrayContaining([{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }]) });
     });
 
     test('returns allowed: null cleanly, without throwing, when the side to move is in check', async () => {

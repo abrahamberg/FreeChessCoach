@@ -1,5 +1,4 @@
-import type { ClassifiedMove, FeatureDelta } from '@freechesscoach/chess-analysis';
-import { isSoundQuality } from '@freechesscoach/chess-analysis';
+import { inspectMoves, isSoundQuality, type ClassifiedMove, type FeatureDelta } from '@freechesscoach/chess-analysis';
 import {
   MOVE_QUALITY_SYMBOLS,
   TACTIC_MOTIF_LABELS,
@@ -9,6 +8,7 @@ import {
   type PositionAnalysisLine,
   type TacticMotifCounts
 } from '@freechesscoach/shared';
+import { renderPositionFacts } from './move-inspection-summary.js';
 import { describeMoveRef } from './render.js';
 import { formatEval } from './format-eval.js';
 
@@ -142,11 +142,13 @@ export interface CurrentMoveAnalysisContext {
   /** This ply's classified-move entry, if the batch pipeline (analyze mode)
    * or the live classifier (play mode, game_move_qualities) has reached it
    * yet — supplies the cp-loss headline and the deterministic "why" text
-   * (move-reasons.ts's §11 reasons). Only the three fields actually read
-   * below are required, so a play-mode game_move_qualities row satisfies
-   * this without a fake shim for the ClassifiedMove-only fields it lacks
-   * (isUserMove, hangsPiece). Absent for a freshly-imported game the batch
-   * job hasn't classified yet. */
+   * (move-reasons.ts's §11 reasons, which also carry Game Review's own
+   * tactic sentences — build-game-report.ts and analysis.ts append
+   * tacticOpportunityReason/tacticPreventionReason to this same array).
+   * Only the three fields actually read below are required, so a play-mode
+   * game_move_qualities row satisfies this without a fake shim for the
+   * ClassifiedMove-only fields it lacks (isUserMove, hangsPiece). Absent for
+   * a freshly-imported game the batch job hasn't classified yet. */
   classifiedMove?: Pick<ClassifiedMove, 'cpLoss' | 'evalAfterCp' | 'reasons'>;
   /** Engine analysis of the position AFTER the played move — supplies the "Played line" continuation. Omitted when the student played the engine's own best move (nothing to add) or when not fetched. */
   postMoveAnalysis?: PositionAnalysis;
@@ -234,8 +236,16 @@ function renderAnalysisSection(ply: number, playedMove: string | null, ctx: Curr
     parts.push(`Best line: ${formatPvLine(linePly, bestLine.pvSan)}`);
     const continuation = postMoveAnalysis?.lines[0]?.pvSan ?? [];
     parts.push(`Played line: ${formatPvLine(linePly, [playedMove, ...continuation])}`);
-    if (classifiedMove?.reasons?.length) parts.push(`Why: ${classifiedMove.reasons.join('; ')}`);
   }
+
+  // The review notes for this move (classify.ts's deterministic "why" plus
+  // Game Review's own tactic sentences — "you missed a chance to win a
+  // rook", "they defused your fork"). Rendered on every branch, not only
+  // when the move wasn't the engine's best: a move can be sound and still
+  // be the one where the student defused — or walked into — a named
+  // tactic, and that note is the most coachable fact the pipeline has
+  // about it.
+  if (classifiedMove?.reasons?.length) parts.push(`Review notes for this move: ${classifiedMove.reasons.join('; ')}`);
 
   if (featureDelta) {
     const bullets = renderFeatureDeltaBullets(featureDelta);
@@ -260,6 +270,18 @@ function renderAnalysisSection(ply: number, playedMove: string | null, ctx: Curr
   // get_engine_analysis tool's job: one deliberate, budgeted call instead of
   // an unconditional per-turn cost nobody may ever read.
   return parts.length > 0 ? `\n\n${parts.join('\n\n')}` : '';
+}
+
+/**
+ * The board's own facts for the position the conversation is on — side to
+ * move, check/mate, how many legal replies there are, what is hanging,
+ * what favorable captures exist. Pure chess.js (no engine call), and it
+ * costs a couple of lines a turn: cheap insurance against the coach
+ * describing a piece that isn't there or a move that isn't legal, which no
+ * amount of instruction alone reliably prevents.
+ */
+function boardFacts(fen: string): string {
+  return `Board facts: ${renderPositionFacts(inspectMoves(fen, []))}`;
 }
 
 /**
@@ -301,5 +323,5 @@ export function renderCurrentMoveBlock(
   const playedMoveSentence = playedMove !== null ? ` The move actually played here was ${playedMove}.` : '';
   const analysisBlock = analysisContext ? renderAnalysisSection(ply, playedMove, analysisContext) : '';
   const gameSoFarBlock = gameSoFar !== undefined ? `## Game so far\n\n${gameSoFar}\n\n` : '';
-  return `${gameSoFarBlock}## Current position\n\nYou are now discussing ${describeMoveRef(ply)} — this is what's actively on the board. Your student is playing ${studentColor} in this game.${playedMoveSentence} FEN : ${fen}.${analysisBlock}\n\n## Your thread ledger\n\n${threadsBlock}`;
+  return `${gameSoFarBlock}## Current position\n\nYou are now discussing ${describeMoveRef(ply)} — this is what's actively on the board. Your student is playing ${studentColor} in this game.${playedMoveSentence} FEN : ${fen}.\n\n${boardFacts(fen)}${analysisBlock}\n\n## Your thread ledger\n\n${threadsBlock}`;
 }

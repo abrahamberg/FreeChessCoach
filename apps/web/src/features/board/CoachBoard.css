@@ -2,6 +2,7 @@
  * needs a definite square frame to size against, or in a flex column with
  * auto height, rows collapse to content size instead of staying square. */
 .coach-board-frame {
+  position: relative;
   width: 100%;
   aspect-ratio: 1;
   border-radius: 8px;

@@ -124,6 +124,7 @@ export function SessionPage(): ReactNode {
       positions={positions}
       classifiedMoves={gameQuery.data?.classifiedMoves}
       isDesktop={isDesktop}
+      isSideBySide={isSideBySide}
       engine={engine}
       autoplayIntervalMs={autoplayIntervalMs}
       onChangeAutoplayInterval={setAutoplayIntervalMs}

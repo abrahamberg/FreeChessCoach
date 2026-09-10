@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TacticMotifTypeSchema } from './tactic-motif.js';
+import { TacticGainSchema, TacticHorizonSchema, TacticMotifTypeSchema } from './tactic-motif.js';
 
 export const AnalysisStatusSchema = z.enum([
   'queued',
@@ -104,8 +104,9 @@ export const AnalyzePositionRequestSchema = z.object({
 });
 export type AnalyzePositionRequest = z.infer<typeof AnalyzePositionRequestSchema>;
 
-/** The bot session's hint feature, stage 2 ("top 3 moves") — POST
- * /api/positions/hint-moves. Deliberately its own endpoint rather than
+/** The bot session's hint feature ("top 3 moves"), fetched once when the
+ * student first opens a hint — POST /api/positions/hint-moves. Deliberately
+ * its own endpoint rather than
  * reusing /api/positions/analyze: that one always runs through
  * CachingEngineBackend, whose position_evaluations cache is keyed by `fen`
  * alone (no depth/multiPv discrimination — see ENGINE_DEFAULT_DEPTH's doc
@@ -281,6 +282,19 @@ export const AlternativeMoveSchema = z.object({
 });
 export type AlternativeMove = z.infer<typeof AlternativeMoveSchema>;
 
+/** Board geometry behind a tactic claim (its `evidence`, in chess-analysis) —
+ * an arrow per square-to-square relationship the motif involves, plus any
+ * square worth highlighting on its own (e.g. a trapped piece has no arrow,
+ * just a highlight). Lets the Game Review UI draw the tactic on the board
+ * instead of only naming it in `detail`. */
+export const TacticArrowSchema = z.object({ from: z.string(), to: z.string() });
+export type TacticArrowDto = z.infer<typeof TacticArrowSchema>;
+export const TacticVisualSchema = z.object({
+  arrows: z.array(TacticArrowSchema),
+  highlights: z.array(z.string())
+});
+export type TacticVisualDto = z.infer<typeof TacticVisualSchema>;
+
 /** A legacy classified move extended with the report fields from algorith.md
  * §9. The report fields are optional during this migration so analyses stored
  * before the report pipeline and live-play rows remain readable. `quality` is
@@ -324,14 +338,36 @@ export const ClassifiedMoveSchema = z.object({
   /** The engine's top move at this position embodied this tactic — did the
    * player play it (see computeTacticMotifCounts). Undefined when the
    * position wasn't a named-motif opportunity at all, not just a 0/1.
-   * `detail` (describeTacticHit) names the concrete piece/square involved —
+   * `detail` (the claim's own) names the concrete piece/square involved —
    * `.optional()` (not required alongside `type`/`found`) so a report stored
    * before `detail` existed still parses; absent, not null, is "not
    * computed" there, same jsonb-no-migration convention as everywhere else
-   * on this schema. `.nullable()` covers describeTacticHit's own "no
+   * on this schema. `.nullable()` covers a claim's own "no
    * detector-specific shape for this type" case. */
   tacticOpportunity: z
-    .object({ type: TacticMotifTypeSchema, found: z.boolean(), detail: z.string().nullable().optional() })
+    .object({
+      type: TacticMotifTypeSchema,
+      found: z.boolean(),
+      detail: z.string().nullable().optional(),
+      /** Same absent-not-null convention as `detail` — undefined on a
+       * report stored before `visual` existed, `null` when the motif type
+       * has no detector-specific geometry to draw. */
+      visual: TacticVisualSchema.nullable().optional(),
+      /** What the verifier could show this claim actually wins
+       * (docs/tactics-rework.md §5 layer 2). Absent on a report stored
+       * before verification existed — those cards fall back to naming the
+       * motif alone, which is exactly what they printed at the time. */
+      gain: TacticGainSchema.optional(),
+      /** immediate / in two / eventual, from the engine's own line. */
+      horizon: TacticHorizonSchema.optional(),
+      /** 0-1. Spent on specificity: squares at high, the bare motif at
+       * medium, nothing at low (§3 rule 2). */
+      confidence: z.number().min(0).max(1).optional(),
+      /** Every verified motif this move embodies, best first, `type`
+       * included — the multi-label view §5 layer 3 keeps so the coach agent
+       * can reason over a move that is genuinely two tactics at once. */
+      motifs: z.array(TacticMotifTypeSchema).optional()
+    })
     .optional(),
   /** The opponent had this tactic reachable right before this move — did the
    * player's move defuse it (see computeTacticMotifPrevented). When the scan
@@ -341,7 +377,16 @@ export const ClassifiedMoveSchema = z.object({
    * truth for "how many", this is only "what to show on this one move".
    * `detail` follows the same convention as `tacticOpportunity.detail`. */
   tacticPrevention: z
-    .object({ type: TacticMotifTypeSchema, prevented: z.boolean(), detail: z.string().nullable().optional() })
+    .object({
+      type: TacticMotifTypeSchema,
+      prevented: z.boolean(),
+      detail: z.string().nullable().optional(),
+      visual: TacticVisualSchema.nullable().optional(),
+      /** What the threat would have won — the half that turns "defused the
+       * opponent's fork" into "their move stopped you winning a rook"
+       * (§3 rule 4). Same absent-not-null convention as `detail`. */
+      gain: TacticGainSchema.optional()
+    })
     .optional()
 });
 export type ClassifiedMoveDto = z.infer<typeof ClassifiedMoveSchema>;

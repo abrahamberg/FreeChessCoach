@@ -1,4 +1,4 @@
-import type { Chess, Color, PieceSymbol, Square } from 'chess.js';
+import { Chess, type Color, type PieceSymbol, type Square } from 'chess.js';
 import { buildAttackMap, occupiedSquares, opponentOf, toColorName } from './attack-map.js';
 
 export interface TrappedHit {
@@ -10,23 +10,48 @@ export interface TrappedHit {
  * A piece of `color` that is currently attacked and has no legal move to a
  * square the opponent doesn't also attack — cornered, not just immobile
  * (an immobile piece that isn't under attack yet isn't a tactic). Uses
- * chess.js's own legal-move generation (accounts for pins) rather than the
- * coarser `PositionFeatures.controlledSquares` feature, so `chess` must
- * already have `color` to move (true whenever this is called on the
- * position right after the opponent's move, which is the only time this
- * question makes sense to ask).
+ * chess.js's own legal-move generation rather than the coarser
+ * `PositionFeatures.controlledSquares` feature, so `chess` must already have
+ * `color` to move (true whenever this is called on the position right after
+ * the opponent's move, which is the only time this question makes sense to
+ * ask).
+ *
+ * Pawns are never candidates: a pawn backed into a corner with no square to
+ * advance to is just a normal, expected feature of closed pawn play, not a
+ * "trapped piece" tactic — only pieces (knight, bishop, rook, queen) count.
+ *
+ * Two exclusions come from `docs/tactics-rework.md` §1: `chess.moves({
+ * square })` returns nothing for two reasons far more common than being
+ * cornered, and attributing every report across the 400-line opening corpus
+ * put **71.7% on absolute pins and 13.2% on the side simply being in check**
+ * — 85% of the output in ordinary play was an artefact of reading "cannot
+ * move" as "has nowhere to go".
+ *
+ * - **Side in check.** Every non-king piece has zero legal moves that don't
+ *   address the check. The tactic there is the check, not a trap, so the
+ *   whole position is skipped.
+ * - **Absolutely pinned.** A pinned knight on its natural square, defended,
+ *   is pinned — a motif we already have a word for. Reporting it as trapped
+ *   as well is the noisy co-fire on every real pin (TR-01, TR-10).
  */
 export function trappedPieces(chess: Chess, color: Color): TrappedHit[] {
+  if (chess.turn() !== color) return [];
+  // A piece cannot be shown to have no escape while its side owes a reply to
+  // a check — every legal move is a check answer, so the move list says
+  // nothing about that piece's own mobility.
+  if (chess.isCheck()) return [];
+
   const opponent = opponentOf(color);
   const opponentName = toColorName(opponent);
   const attackMap = buildAttackMap(chess);
   const hits: TrappedHit[] = [];
 
   for (const piece of occupiedSquares(chess)) {
-    if (piece.color !== color || piece.type === 'k') continue;
+    if (piece.color !== color || piece.type === 'k' || piece.type === 'p') continue;
 
     const isAttacked = (attackMap.attackersOf.get(piece.square)?.[opponentName]?.length ?? 0) > 0;
     if (!isAttacked) continue;
+    if (isAbsolutelyPinned(chess, piece.square, color)) continue;
 
     const destinations = chess.moves({ square: piece.square, verbose: true }).map((move) => move.to as Square);
     const hasSafeSquare = destinations.some(
@@ -35,4 +60,24 @@ export function trappedPieces(chess: Chess, color: Color): TrappedHit[] {
     if (!hasSafeSquare) hits.push({ square: piece.square, piece: piece.type });
   }
   return hits;
+}
+
+/**
+ * Is this piece pinned against its own king?
+ *
+ * Having no legal moves is necessary but not sufficient: a piece can also be
+ * boxed in because its own men occupy every square it reaches, and such a
+ * piece under attack is the most cornered a piece gets — exactly what this
+ * function must not swallow. So the empty move list is confirmed by lifting
+ * the piece off a copy of the board and asking whether the king is then
+ * attacked, which is the definition of an absolute pin and nothing else.
+ */
+function isAbsolutelyPinned(chess: Chess, square: Square, color: Color): boolean {
+  if (chess.turn() !== color) return false;
+  if (chess.moves({ square }).length > 0) return false;
+
+  const withoutPiece = new Chess(chess.fen());
+  withoutPiece.remove(square);
+  const king = occupiedSquares(withoutPiece).find((piece) => piece.type === 'k' && piece.color === color);
+  return king !== undefined && withoutPiece.isAttacked(king.square, opponentOf(color));
 }

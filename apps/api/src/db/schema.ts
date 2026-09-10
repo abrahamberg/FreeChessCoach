@@ -1,6 +1,6 @@
 import type { ColumnType, Generated } from 'kysely';
 import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { BotConfig, CoachPersona, DiagnosisCodeId, Direction, EngineMode, Mechanism, MistakeCategory, MoveQuality, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { BotConfig, CoachPersona, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, MoveQuality, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -73,6 +73,11 @@ export interface GamesTable {
   /** `time` column — node-postgres returns/accepts "HH:MM:SS". */
   playedAtTime: string | null;
   moveTimes: Jsonb<PgnMoveComment[]> | null;
+  /** 0031_game_review_tier.ts — which Games page tab this game belongs in.
+   * Always set explicitly by the repository's `insert` (defaultReviewTierForSource),
+   * same pattern as ratingsProvisional below; the column default only backfills
+   * rows that predate the migration. */
+  reviewTier: Generated<GameReviewTier>;
 }
 
 export interface AnalysesTable {

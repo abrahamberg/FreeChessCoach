@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { annotateBoardParameters, coachToolDescription, expectMoveParameters, hypotheticalLineParameters } from '@freechesscoach/prompts';
+import {
+  annotateBoardParameters,
+  checkMovesParameters,
+  coachToolDescription,
+  expectMoveParameters,
+  hypotheticalLineParameters,
+  renderMoveInspection
+} from '@freechesscoach/prompts';
+import { inspectMoves } from '@freechesscoach/chess-analysis';
 import type { Kysely } from 'kysely';
 import { tool, type ToolSet } from '../llm/tools.js';
 import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js';
@@ -54,6 +62,13 @@ export function buildPuzzleSessionTools(ctx: PuzzleSessionToolsContext, deps: Pu
       description: PUZZLE_HYPOTHETICAL_LINE_DESCRIPTION,
       inputSchema: hypotheticalLineParameters
     }),
+    check_moves: tool({
+      description: PUZZLE_CHECK_MOVES_DESCRIPTION,
+      inputSchema: checkMovesParameters,
+      execute: withTurnGuards(guardState, 'check_moves', (args: { fen: string; moves: string[] }) =>
+        Promise.resolve(renderMoveInspection(inspectMoves(args.fen, args.moves)))
+      )
+    }),
     advance_puzzle: tool({
       description: ADVANCE_PUZZLE_DESCRIPTION,
       inputSchema: advancePuzzleParameters,
@@ -61,6 +76,16 @@ export function buildPuzzleSessionTools(ctx: PuzzleSessionToolsContext, deps: Pu
     })
   };
 }
+
+/** Same tool as the game coach's `check_moves`, with its own description:
+ * a puzzle session has no show_position/check_position, so the fen the
+ * coach passes comes from "This puzzle" in its own prompt or from
+ * hypothetical_line's resultFen, not from a board-moving tool. The reason
+ * it exists is identical — judging a student's proposed move from the
+ * model's own board reading is where the coach invents pieces and
+ * illegal moves. */
+const PUZZLE_CHECK_MOVES_DESCRIPTION =
+  'Check whether specific moves are actually legal in a position, and what they actually do — pure board reading, no engine, free and unbudgeted. Pass a fen (the puzzle\'s starting position from "This puzzle", or a resultFen hypothetical_line gave you) plus up to 6 moves in SAN. For each you get back: legal or NOT legal (and, when not, what that piece can really do here); what it captures, whether it gives check or mate; the fen it reaches; which of the mover\'s own pieces it leaves hanging; and any fork it creates. Use it before you judge any move the student proposes that is not in the known solution line — telling a student their move is illegal when it is not, or that it hangs a piece it does not, is worse than saying nothing.';
 
 const PUZZLE_HYPOTHETICAL_LINE_DESCRIPTION =
   'Set up or continue a diverged line off the CURRENT puzzle position (the board already shows it — no need to call anything first) — e.g. exploring what happens if the student tries a different idea than the one you\'re walking through. Pass the SAN move(s) for the hypothetical; the client validates and applies them against real chess rules and reports back the resulting position, including its "resultFen" — never invent a resulting FEN yourself. Pass further moves to keep extending a hypothetical already in progress. This never touches the puzzle\'s own solution line.';

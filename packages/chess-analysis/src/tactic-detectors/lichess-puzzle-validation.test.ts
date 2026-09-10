@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { Chess } from 'chess.js';
+import { Chess, type Square } from 'chess.js';
 import type { TacticMotifType } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { classifyTacticMotif } from '../classify-tactic-motif.js';
+import type { PreviousMove } from './context.js';
+import { classifyTacticClaims } from '../classify-tactic-motif.js';
 
 /**
  * Ground-truth check for `classifyTacticMotif` against real Lichess
@@ -19,41 +20,38 @@ import { classifyTacticMotif } from '../classify-tactic-motif.js';
  * the solver's plies (not necessarily the first) — Lichess doesn't say
  * which move in a multi-move solution embodies the tagged theme.
  *
+ * Measured **multi-label**: the tagged theme has to appear among the move's
+ * verified claims, not to win the single headline slot. That is the whole
+ * point of `docs/tactics-rework.md` §5 layer 3 — the shipped classifier
+ * returned the first match of a fixed priority list, and §2 measured that as
+ * discarding up to 20 of 40 puzzles per theme (`forkDetector` sat at
+ * priority 10 with a loose definition and ate everything below it). Real
+ * tactics are multi-label; a knight fork that also skewers is both.
+ *
  * The pass thresholds below are the exact counts measured against this
  * fixture, not round numbers — this is a regression guard (a future change
  * that quietly makes a detector worse will fail it), not a claim that these
- * are "correct" scores. Three real, understood causes keep several of them
- * well under 40/40:
+ * are "correct" scores. Two structural reasons keep several of them under
+ * 40/40:
  *
- * 1. `classify-tactic-motif.ts` returns only the first (highest-priority)
- *    matching motif per ply, but a puzzle can genuinely embody more than
- *    one at once (e.g. a pin that's also technically a fork) — Lichess's
- *    multi-label tags don't hit this ceiling, our single-label classifier
- *    does. This mostly explains `pin`, `skewer`, and `discoveredAttack`
- *    landing below `fork`, which sits earlier in `TACTIC_DETECTORS`.
- * 2. `trappedPieceDetector` (`trapped-piece.ts`) fires on *any* opponent
- *    piece trapped anywhere on the board after the move, deliberately not
- *    scoped to whether this move caused or exploited that trap (see its
- *    own test's fixture, where an unrelated king move "detects" a
- *    pre-existing trap). At priority 50 it sits ahead of `freePiece` (60),
- *    so an incidental trapped piece elsewhere on the board can steal the
- *    classification from what Lichess tagged `hangingPiece` or
- *    `capturingDefender` — the likely reason those two land far below the
- *    others.
- * 3. `backRankMate` is excluded entirely by the fixture builder: it's
- *    almost always itself a forced mate, and `isCheckmate` is checked
- *    before the registry runs, so a puzzle tagged `backRankMate` can only
+ * 1. `trappedPieces` (`tactic-trapped.ts`) deliberately never counts a
+ *    pawn — a cornered pawn is just ordinary closed-position play, not a
+ *    tactic — while Lichess's own `trappedPiece` tag does credit some
+ *    puzzles for exactly that.
+ * 2. `backRankMate` is excluded entirely by the fixture builder: it's
+ *    almost always itself a forced mate, and `isCheckmate` is answered
+ *    before any detector runs, so a puzzle tagged `backRankMate` can only
  *    ever come back `'checkmate'` here, never `'weakBackRank'`.
  */
 const MIN_PASS: Partial<Record<string, number>> = {
   fork: 40,
-  pin: 24,
-  skewer: 33,
-  discoveredAttack: 32,
+  pin: 27,
+  skewer: 40,
+  discoveredAttack: 37,
   doubleCheck: 40,
-  trappedPiece: 25,
-  hangingPiece: 10,
-  capturingDefender: 11,
+  trappedPiece: 29,
+  hangingPiece: 29,
+  capturingDefender: 15,
   mateIn1: 40
 };
 
@@ -79,6 +77,8 @@ function loadFixture(): FixtureRow[] {
  * `expected`. */
 function puzzleExhibitsMotif(row: FixtureRow): boolean {
   let fen = row.fen;
+  let previous: PreviousMove | null = null;
+
   for (let ply = 0; ply < row.moves.length; ply++) {
     const chess = new Chess(fen);
     const mover: 'white' | 'black' = chess.turn() === 'w' ? 'white' : 'black';
@@ -91,20 +91,35 @@ function puzzleExhibitsMotif(row: FixtureRow): boolean {
     }
     if (!move) return false;
 
-    if (ply % 2 === 1) {
-      const result = classifyTacticMotif({
-        fenBefore: fen,
-        moveSan: move.san,
-        mover,
-        quality: 'best',
-        isCheckmate: chess.isCheckmate(),
-        isTacticalPosition: true
-      });
-      if (result === row.motif) return true;
-    }
+    if (ply % 2 === 1 && motifsOn(fen, move.san, mover, chess.isCheckmate(), previous).has(row.motif)) return true;
+    previous = { from: move.from as Square, to: move.to as Square, wasCapture: move.captured !== undefined };
     fen = chess.fen();
   }
   return false;
+}
+
+/** Every motif the move carries: the headline (which can be `checkmate`,
+ * answered before any detector runs) plus every verified claim alongside
+ * it. */
+function motifsOn(
+  fenBefore: string,
+  moveSan: string,
+  mover: 'white' | 'black',
+  isCheckmate: boolean,
+  previous: PreviousMove | null
+): Set<TacticMotifType> {
+  const classification = classifyTacticClaims({
+    fenBefore,
+    moveSan,
+    mover,
+    quality: 'best',
+    isCheckmate,
+    isTacticalPosition: true,
+    previous
+  });
+  const motifs = new Set<TacticMotifType>(classification.claims.map((claim) => claim.type));
+  if (classification.headline) motifs.add(classification.headline);
+  return motifs;
 }
 
 describe('classifyTacticMotif against real Lichess puzzles', () => {

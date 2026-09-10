@@ -14,6 +14,44 @@ export type ImportableGameSource = z.infer<typeof ImportableGameSourceSchema>;
 export const PlayerColorSchema = z.enum(['white', 'black']);
 export type PlayerColor = z.infer<typeof PlayerColorSchema>;
 
+/** The Games list's four tabs, in ascending stack order — a game is
+ * "promoted" up the stack (imported/bot -> review -> coach), never down.
+ * `imported`/`bot` sit at the same rung (rank 0): both are a game's
+ * unpromoted starting tier, distinguished only by `source`, and either can
+ * be promoted straight to `review` or straight to `coach`. */
+export const GAME_REVIEW_TIERS = ['imported', 'bot', 'review', 'coach'] as const;
+export const GameReviewTierSchema = z.enum(GAME_REVIEW_TIERS);
+export type GameReviewTier = z.infer<typeof GameReviewTierSchema>;
+
+const REVIEW_TIER_RANK: Record<GameReviewTier, number> = { imported: 0, bot: 0, review: 1, coach: 2 };
+
+/** A promotion is only ever "up" the stack — strictly higher rank than the
+ * game's current tier. Used both server-side (promoteGame's own guard) and
+ * client-side (which promote buttons a row offers). */
+export function canPromoteGameReviewTier(current: GameReviewTier, target: GameReviewTier): boolean {
+  return REVIEW_TIER_RANK[target] > REVIEW_TIER_RANK[current];
+}
+
+/** The top of the stack — nothing can ever promote a game further than this.
+ * A UI deciding "is there anywhere left to promote this game to" should ask
+ * this rather than comparing `tier === 'coach'` directly, so a future tier
+ * added above `coach` only needs this one definition updated. */
+export function isTopReviewTier(tier: GameReviewTier): boolean {
+  return REVIEW_TIER_RANK[tier] === Math.max(...Object.values(REVIEW_TIER_RANK));
+}
+
+/** A freshly-created game's starting tier, derived from `source` — never
+ * client-supplied (see games repository's `insert`, the only place a game
+ * row is created). `coach_play` already IS a coaching session by
+ * construction (architecture §14), so it starts at the top of the stack
+ * with nothing left to promote; `vs_bot` starts at `bot`; every importable
+ * source starts at `imported`. */
+export function defaultReviewTierForSource(source: GameSource): GameReviewTier {
+  if (source === 'vs_bot') return 'bot';
+  if (source === 'coach_play') return 'coach';
+  return 'imported';
+}
+
 export const ImportGameRequestSchema = z.object({
   pgn: z.string().min(1),
   source: ImportableGameSourceSchema,
@@ -93,9 +131,24 @@ export const GameListItemSchema = z.object({
   /** Only ever set for source === 'vs_bot' — the BOT_ROSTER id the game was
    * played against, so the Games list can show which bot without a
    * follow-up request. Null for every other source. */
-  botId: z.string().nullable()
+  botId: z.string().nullable(),
+  /** Which of the Games page's four tabs this game belongs in — see
+   * GAME_REVIEW_TIERS. Defaults for a row persisted before this column
+   * existed (a pre-migration DB row is backfilled, but an older cached/
+   * fixture response might not carry it). */
+  reviewTier: GameReviewTierSchema.default('imported')
 });
 export type GameListItem = z.infer<typeof GameListItemSchema>;
 
 export const GameListResponseSchema = z.array(GameListItemSchema);
 export type GameListResponse = z.infer<typeof GameListResponseSchema>;
+
+/** POST /api/games/:id/promote — moves a game one or more rungs up the
+ * stack (see canPromoteGameReviewTier). `imported`/`bot` are never valid
+ * targets: nothing is ever demoted, and every game already starts at
+ * whichever of those two rungs its source dictates. */
+export const PromoteGameRequestSchema = z.object({ tier: z.enum(['review', 'coach']) });
+export type PromoteGameRequest = z.infer<typeof PromoteGameRequestSchema>;
+
+export const PromoteGameResponseSchema = z.object({ reviewTier: GameReviewTierSchema });
+export type PromoteGameResponse = z.infer<typeof PromoteGameResponseSchema>;

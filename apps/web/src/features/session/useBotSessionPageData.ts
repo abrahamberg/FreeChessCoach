@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../api/client.js';
 import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
 import { useWasmEngine } from '../../hooks/useWasmEngine.js';
+import type { BotGameOverInfo } from './botGameOver.js';
 import { toClassifiedMoves } from './liveMoveQualities.js';
 import {
   ClaimBotTimeoutResponseSchema,
@@ -99,13 +100,30 @@ export function useBotSessionPageData(sessionId: string) {
     setClock({ whiteRemainingMs, blackRemainingMs, anchoredAt: Date.now() });
   }
 
+  // Set the moment any of the four ways a bot game can end reports one
+  // (checkmate/draw via a play-move response, a recovered bot reply via
+  // useBotTurnFailover, a clock claim, or the student's own resignation) —
+  // BotSessionPage reads this to show GameOverDialog/BotStatusPanel's result
+  // line without waiting on a session refetch, and to know a completion just
+  // happened live rather than being a cold-loaded already-finished game (see
+  // its own doc comment on why that distinction matters).
+  const [gameOverInfo, setGameOverInfo] = useState<BotGameOverInfo | null>(null);
+
+  /** commitBotTurn/requestBotMove/claimBotGameTimeout have already marked the
+   * session completed server-side by the time this fires — refetching just
+   * picks that up. */
+  function handleGameOver(gameOver: BotGameOverInfo): void {
+    setGameOverInfo(gameOver);
+    void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+  }
+
   // ClockDisplay's own "my countdown hit 0" trigger — see
   // bot-claim-timeout.ts for why the server re-verifies rather than trusting
   // this client-side call outright.
   const claimTimeoutMutation = useMutation({
     mutationFn: () => apiPost(`/api/sessions/${sessionId}/claim-timeout`, {}, ClaimBotTimeoutResponseSchema),
     onSuccess: (result) => {
-      if (result.gameOver) void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+      if (result.gameOver) handleGameOver(result.gameOver);
     }
   });
 
@@ -118,13 +136,17 @@ export function useBotSessionPageData(sessionId: string) {
       mover: moverForPly(result.ply)
     });
     boardState.applyServerMove(result.ply, result.fen, uci);
-  }
-
-  /** The game ended on this turn — commitBotTurn already marked the session
-   * completed server-side, so refetching picks that up and SessionSummaryCard
-   * (BotSessionPage) takes over the render. */
-  function handleGameOver(): void {
-    void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+    // The server already classified this move and persisted its evalAfterCp
+    // (commitBotTurn's classifyAndRecordMove) — nothing in the play-move
+    // response surfaces it directly, so pick it up the same way handleGameOver
+    // picks up session completion: invalidate and let the next gameQuery
+    // refetch bring gameQuery.data.liveMoveQualities current. Fires once for
+    // the student's move and once for the bot's reply (this callback runs
+    // for both) — a harmless extra refetch, not a race, since TanStack Query
+    // dedupes concurrent fetches for the same key. Without this, EvalBar and
+    // every other classifiedMoves-driven indicator (MoveStrip, GameEvalChart)
+    // stay frozen at whatever they showed when the page first loaded.
+    void queryClient.invalidateQueries({ queryKey: ['game', gameId] });
   }
 
   // "Whose turn is it really" — currentRealPosition, not boardState.ply,
@@ -160,12 +182,13 @@ export function useBotSessionPageData(sessionId: string) {
 
   // The "flag" button — ends the game immediately as a loss for the
   // student. Reuses the same completed-session path checkmate/stalemate
-  // endings already take (invalidating ['session', sessionId] flips
-  // session.status to 'completed', which BotSessionPage already renders
-  // SessionSummaryCard for), so no extra game-over UI plumbing is needed.
+  // endings already take (handleGameOver flips session.status to
+  // 'completed' and surfaces the result) — the endpoint itself has no
+  // "reason" field (unlike a play-move response's gameOver), but resigning
+  // is the only way this mutation ever fires, so it's supplied here.
   const resignMutation = useMutation({
     mutationFn: () => apiPost(`/api/sessions/${sessionId}/resign`, {}, ResignBotGameResponseSchema),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+    onSuccess: (result) => handleGameOver({ result: result.result, reason: 'resignation' })
   });
 
   return {
@@ -183,6 +206,7 @@ export function useBotSessionPageData(sessionId: string) {
     engine,
     handleBotMoveCommitted,
     handleGameOver,
+    gameOverInfo,
     undoLastMove: () => undoMutation.mutate(),
     canUndo: sanMoves.length > 0 && !undoMutation.isPending,
     resign: () => resignMutation.mutate(),

@@ -21,6 +21,33 @@
   flex: 0 0 auto;
 }
 
+.games-page__tabs {
+  display: flex;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-4);
+}
+
+.games-page__tab {
+  height: 40px;
+  padding: 0 var(--space-2);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.games-page__tab:hover {
+  color: var(--color-text);
+}
+
+.games-page__tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
 .games-page__filters {
   display: flex;
   gap: var(--space-2);
@@ -68,11 +95,56 @@
     flex-direction: column;
   }
 
+  /* Stacked full-width rather than sharing one row: three buttons
+   * (Play coach / Play a bot / Analyze game) never fit a phone width at
+   * their natural label size, and flex's default min-width:auto refuses to
+   * shrink them below that — letting them share a row here overflowed the
+   * viewport instead of wrapping. */
   .games-page__header-actions {
+    flex-direction: column;
     width: 100%;
   }
 
   .games-page__header-actions a {
-    flex: 1;
+    width: 100%;
+  }
+
+  /* Same overflow problem one level down: four review tabs and five status
+   * filters don't fit a phone width unwrapped either, and the page has no
+   * horizontal scrollbar to reveal what wrapping or clipping hid. A
+   * horizontal scroller (nowrap + its own overflow-x) keeps every tab/filter
+   * reachable with a swipe, edge-to-edge like a native segmented control,
+   * instead of "Imported games" breaking across two lines or the last
+   * filter chip running off the edge of the screen entirely. */
+  .games-page__tabs,
+  .games-page__filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* A soft fade hints there's more to scroll to without a visible
+     * scrollbar; harmless no-op in browsers that don't support mask-image. */
+    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  }
+
+  .games-page__tabs::-webkit-scrollbar,
+  .games-page__filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .games-page__tab,
+  .games-page__filter {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* design-improvements.md: minimum 44x44px mobile touch targets. */
+  .games-page__tab {
+    min-height: 44px;
+  }
+
+  .games-page__filter {
+    min-height: 40px;
   }
 }

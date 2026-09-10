@@ -9,9 +9,10 @@ import {
   positionKey,
   repairEvalSignConvention,
   resolveOpening,
+  tacticPreventionReason,
   type ParsedPosition
 } from '@freechesscoach/chess-analysis';
-import { ratingForPromptScoping, TACTIC_MOTIF_LABELS } from '@freechesscoach/shared';
+import { ratingForPromptScoping } from '@freechesscoach/shared';
 import type {
   BookReport,
   ClassifiedMoveDto,
@@ -19,7 +20,8 @@ import type {
   EngineEval,
   PlayerBookReport,
   PositionAnalysis,
-  TacticMotifType
+  TacticMotifType,
+  TacticVisualDto
 } from '@freechesscoach/shared';
 import { buildPlannerMessages, type PlannerPromptInput } from '@freechesscoach/prompts';
 import type { Kysely } from 'kysely';
@@ -31,6 +33,8 @@ import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-obser
 import { checkBrilliantSoundness } from './brilliant-soundness.js';
 import { buildDiagnosticObservations } from './build-diagnostics.js';
 import { buildGameReportForAnalysis } from './build-game-report.js';
+import { getPlayerStatsText } from './coach-player-stats.js';
+import * as userProfileService from './user-profile.js';
 import { computeTacticMotifPrevented, type TacticMotifPreventionResult } from './tactic-prevention.js';
 
 /** Positions per engine call. Small enough that the progress percentage moves
@@ -61,10 +65,12 @@ export interface AnalysisJobDependencies {
  * architecture §5 `analyze-game` job: engine_running -> (evals) -> planning ->
  * (validated plan) -> ready, or failed with `error` set on any step's failure.
  *
- * Findings/focus-areas aren't wired into the planner prompt yet — those repos
- * are Task 5.1's — so this passes empty history; `buildPlannerMessages` renders
- * that as its normal "(none yet…)" fallback, which is also just correct for a
- * user's first analyzed game.
+ * The planner is given the same standing evidence the coach itself works
+ * from — the student's focus areas and recent findings, plus how this game
+ * compares to their own baseline at this time control — so the plan it
+ * produces (its `sessionGoal` above all) is grounded in what has actually
+ * been measured about this student, not only in what this one game shows.
+ * A first-ever analyzed game renders as the usual "(none yet…)" fallbacks.
  */
 export async function runAnalyzeGameJob(
   db: Kysely<Database>,
@@ -125,15 +131,20 @@ export async function runAnalyzeGameJob(
 
     await analysesRepo.updateStatus(db, analysis.id, 'planning');
 
+    const [profileSummary, playerStats] = await Promise.all([
+      userProfileService.getProfileSummary(db, game.userId),
+      getPlayerStatsText(db, { userId: game.userId, gameId })
+    ]);
     const plannerInput: PlannerPromptInput = {
       band: user.ratingBand,
       rating: ratingForPromptScoping(user.rating, user.ratingBand),
-      focusAreas: [],
-      recentFindings: [],
+      focusAreas: profileSummary.focusAreas,
+      recentFindings: profileSummary.recentFindings,
       selfAssessment: user.selfAssessment,
       userColor: game.userColor,
       moves: classifiedMoves,
-      candidateMoments
+      candidateMoments,
+      playerStats
     };
     const plan = await generatePlan(deps, plannerInput);
 
@@ -243,7 +254,7 @@ function attachEnrichment(
  * gaining a `tacticOpportunity`. */
 function attachTacticPrevention(
   moves: ClassifiedMoveDto[],
-  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null }>
+  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisualDto | null }>
 ): ClassifiedMoveDto[] {
   return moves.map((move) => {
     const prevention = byPly.get(move.ply);
@@ -255,17 +266,12 @@ function attachTacticPrevention(
       // spelling out which motif + whether it was defused, right in the same
       // per-move notes the UI already shows, so a reviewer can eyeball
       // false-positive detector hits without a DB query.
-      reasons: [...(move.reasons ?? []), tacticPreventionReason(prevention)]
+      // Whose move this was decides the voice — "you stopped them" versus
+      // "their move stopped you" — and it lives on the move, not on the
+      // card, so an older stored report reads correctly too.
+      reasons: [...(move.reasons ?? []), tacticPreventionReason({ ...prevention, isUserMove: move.isUserMove })]
     };
   });
-}
-
-function tacticPreventionReason(prevention: { type: TacticMotifType; prevented: boolean; detail: string | null }): string {
-  const label = TACTIC_MOTIF_LABELS[prevention.type];
-  const detailClause = prevention.detail ? ` — ${prevention.detail}` : '';
-  return prevention.prevented
-    ? `Opponent's ${label} threat: defused${detailClause}`
-    : `Opponent's ${label} threat: not defused${detailClause}`;
 }
 
 function buildBookReport(positions: ParsedPosition[]): BookReport {

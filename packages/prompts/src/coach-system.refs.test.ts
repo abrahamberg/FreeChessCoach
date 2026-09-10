@@ -14,11 +14,14 @@ import { baseCoachInput } from './fixtures.js';
  * or fix the reference that quotes it.
  */
 const CROSS_REFERENCES: { reference: string; anchor: string }[] = [
-  { reference: "howYouRunTheSession point 2 ('GET THE BOARD THERE FIRST') is invoked by point 5's flashback rule", anchor: 'GET THE BOARD THERE FIRST' },
-  { reference: "howYouRunTheSession point 9 ('diagnose eval drops') is invoked by SESSION_FLOW's walkthrough instructions", anchor: 'DIAGNOSE EVAL DROPS BEFORE EXPLAINING THEM' },
+  { reference: "howYouRunTheSession point 3 ('GET THE BOARD THERE FIRST') is invoked by SESSION_FLOW's closing line", anchor: 'GET THE BOARD THERE FIRST' },
+  { reference: "howYouRunTheSession point 1 ('ask only real questions') is invoked by SESSION_FLOW's walkthrough instructions", anchor: 'ASK ONLY REAL QUESTIONS' },
+  { reference: "howYouRunTheSession point 8 ('diagnose before you explain') is invoked by SESSION_FLOW's walkthrough instructions", anchor: 'DIAGNOSE BEFORE YOU EXPLAIN' },
+  { reference: "SESSION_GOALS is invoked by both session flows ('see \"What the session is for\"') and by yourStudent", anchor: '## What the session is for' },
   { reference: "ENGINE_VISIBILITY is invoked by howYouRunTheSession's closing line ('See \"Engine visibility\" below')", anchor: '## Engine visibility' },
   { reference: "PERSONA_VOICE's BOARD_DISCIPLINE_REMINDER refers to show_position discipline defined in howYouRunTheSession", anchor: 'show_position' },
-  { reference: "CONVERSATION_THREADING's durable-memory note refers to record_move_note, defined in yourToolsAndWhenToUseThem", anchor: 'record_move_note' }
+  { reference: "CONVERSATION_THREADING's durable-memory note refers to record_move_note, defined in yourToolsAndWhenToUseThem", anchor: 'record_move_note' },
+  { reference: "GROUND_TRUTH points at check_moves as the free legality check every unverified move goes through", anchor: 'check_moves' }
 ];
 
 describe('coach-system.ts internal cross-references', () => {

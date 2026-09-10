@@ -1,6 +1,5 @@
 import {
   MOVE_QUALITIES,
-  TACTIC_MOTIF_LABELS,
   TACTIC_MOTIF_TYPES,
   type BookReport,
   type ClassificationCounts,
@@ -49,7 +48,9 @@ import {
 } from './rating-estimate.js';
 import { computePositionFeatures } from './position-features.js';
 import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
-import { classifyTacticMotifOpportunity, computeTacticMotifCounts, type TacticMotifOpportunity } from './game-tactic-motifs.js';
+import { classifyTacticMotifOpportunity, computeTacticMotifCounts } from './game-tactic-motifs.js';
+import { previousMoveOf } from './previous-move-of.js';
+import { tacticOpportunityReason } from './tactic-reason-text.js';
 import { CONFIG } from './config.js';
 
 type Colour = 'white' | 'black';
@@ -95,7 +96,7 @@ interface GameContext {
  */
 export function buildGameReport(input: BuildGameReportInput): GameReport {
   const boundaries = resolvePhaseBoundaries(input.game, input.book);
-  const moves = input.moves.map((move) => enrichWithPhaseAndTactics(move, boundaries, input.evals));
+  const moves = input.moves.map((move) => enrichWithPhaseAndTactics(move, boundaries, input.evals, input.moves));
   const context: GameContext = {
     game: input.game,
     evals: input.evals,
@@ -144,14 +145,15 @@ function resolvePhaseBoundaries(game: ParsedGame, book: BookReport): PhaseBounda
 function enrichWithPhaseAndTactics(
   move: ClassifiedMoveDto,
   boundaries: PhaseBoundaries,
-  evals: EngineEval[]
+  evals: EngineEval[],
+  allMoves: readonly ClassifiedMoveDto[]
 ): ClassifiedMoveDto {
   const phase: MovePhase = phaseForPly(move.ply, boundaries);
   const withPhase = { ...move, phase, isTacticalPosition: computeIsTacticalPosition(move, evals) };
   // classifyTacticMotifOpportunity needs isTacticalPosition already set (it
   // reads move.isTacticalPosition), so this runs against withPhase, not the
   // raw input move — the move-list UI's per-ply tactic indicator.
-  const opportunity = classifyTacticMotifOpportunity(withPhase, evals);
+  const opportunity = classifyTacticMotifOpportunity(withPhase, evals, previousMoveOf(allMoves, move.ply));
   if (!opportunity) return withPhase;
   return {
     ...withPhase,
@@ -161,17 +163,12 @@ function enrichWithPhaseAndTactics(
     // per-move notes the UI already shows, so a reviewer can eyeball
     // false-positive detector hits without a DB query. Appended after
     // buildReasons' own MAX_REASONS truncation, so it's never crowded out.
-    reasons: [...(withPhase.reasons ?? []), tacticOpportunityReason(opportunity, withPhase.bestMoveSan)]
+    // The card is written to the person whose review this is, so the
+    // narrator needs to know whose move it was. `isUserMove` has been on
+    // every move all along; it is passed rather than stored on the
+    // opportunity so an older report renders in the right voice too.
+    reasons: [...(withPhase.reasons ?? []), tacticOpportunityReason({ ...opportunity, isUserMove: withPhase.isUserMove }, withPhase.bestMoveSan)]
   };
-}
-
-function tacticOpportunityReason(opportunity: TacticMotifOpportunity, bestMoveSan: string | undefined): string {
-  const label = TACTIC_MOTIF_LABELS[opportunity.type];
-  const moveClause = bestMoveSan ? ` (${bestMoveSan})` : '';
-  const detailClause = opportunity.detail ? ` — ${opportunity.detail}` : '';
-  return opportunity.found
-    ? `Tactic available — ${label}${moveClause}: found${detailClause}`
-    : `Tactic available — ${label}${moveClause}: not played${detailClause}`;
 }
 
 function computeIsTacticalPosition(move: ClassifiedMoveDto, evals: EngineEval[]): boolean {
@@ -228,7 +225,7 @@ function buildPlayerReport(
     acpl: round1(mean(colourMoves.map((move) => move.cpLoss))),
     estimatedRating: buildEstimatedRating(colourMoves, weights, accuracy, counts, prior),
     tacticMotifs: mergeMotifCounts(
-      mergeMotifCounts(computeTacticMotifCounts(colourMoves, context.evals), 'preventable', preventableCounts ?? {}),
+      mergeMotifCounts(computeTacticMotifCounts(colourMoves, context.evals, moves), 'preventable', preventableCounts ?? {}),
       'prevented',
       preventedCounts ?? {}
     )

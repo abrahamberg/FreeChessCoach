@@ -7,10 +7,10 @@ const QUIET_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 describe('freePieceDetector', () => {
   test('detects capturing an undefended piece', () => {
-    expect(freePieceDetector.detect(buildTacticDetectionContext(FREE_PIECE_FEN, 'Bxd5', 'white'))).toBe(true);
+    expect(freePieceDetector.detect(buildTacticDetectionContext(FREE_PIECE_FEN, 'Bxd5', 'white'))).not.toHaveLength(0);
   });
 
   test('does not flag a quiet developing move', () => {
-    expect(freePieceDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toBe(false);
+    expect(freePieceDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toEqual([]);
   });
 });

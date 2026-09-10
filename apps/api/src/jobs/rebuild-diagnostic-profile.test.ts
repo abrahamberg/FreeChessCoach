@@ -34,6 +34,7 @@ function game(overrides: Partial<GameRow> = {}): GameRow {
     speed: null,
     playedAtTime: null,
     moveTimes: null,
+    reviewTier: 'imported',
     ...overrides
   };
 }

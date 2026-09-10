@@ -70,7 +70,7 @@ describe('usePlayBotMoveSubmit ("Play vs Bot" plan)', () => {
     });
 
     expect(onPlayMoveCommitted).toHaveBeenCalledTimes(1);
-    expect(onGameOver).toHaveBeenCalledTimes(1);
+    expect(onGameOver).toHaveBeenCalledWith({ result: '0-1', reason: 'checkmate' });
   });
 
   test('onClockUpdate fires once per submit with the post-exchange remaining time', async () => {

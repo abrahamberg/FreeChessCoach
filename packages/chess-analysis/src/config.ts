@@ -209,6 +209,41 @@ export const CONFIG = {
     mobilityDropThreshold: -8
   },
 
+  /** §5 layer 2 of docs/tactics-rework.md — the gate that turns "does this
+   * shape exist on the board?" into "does this shape win something?".
+   * `minStaticGainPawns` is the smallest material edge a static claim has to
+   * show before it earns a sentence (a pawn); `minLineGainPawns` is the
+   * larger bar a claim must clear inside the engine's own continuation,
+   * where an exchange that merely comes out level would otherwise register.
+   * `minWinProbabilitySwing` is the positional rung for motifs where no
+   * material changes hands (a pin that binds, an overload) — win% points, the
+   * same scale `CONFIG.severity` uses. `maxLinePlies` bounds the PV walk at
+   * §5's own 4-8. The confidence cut-offs are §3 rule 2's three specificity
+   * levels: squares at high, the bare motif at medium, silence below. */
+  tacticVerification: {
+    minStaticGainPawns: 1,
+    minLineGainPawns: 1.5,
+    minWinProbabilitySwing: 8,
+    maxLinePlies: 8,
+    highConfidence: 0.7,
+    mediumConfidence: 0.4
+  },
+
+  /** §5 layer 5 of docs/tactics-rework.md — the game-level note measured
+   * against this player's own history. `minBaselineGames`/`minBaselineChances`
+   * are the floor below which there is no history worth comparing to, so no
+   * note is made rather than a note made out of two games. `noteworthyGap` is
+   * how far this game's rate has to sit from the player's usual one before it
+   * is worth a sentence, and `habitBaselineRate` is where the tone stops
+   * being "unusual for you" and starts being the thing to train. All rates,
+   * not counts. */
+  tacticBaseline: {
+    minBaselineGames: 4,
+    minBaselineChances: 6,
+    noteworthyGap: 0.25,
+    habitBaselineRate: 0.5
+  },
+
   /** Both-sides tactic scanning (scan-tactics-for-lines.ts / position-tactics.ts).
    * `defaultTopN` is `ENGINE_MULTI_PV` itself (from @freechesscoach/shared,
    * the canonical single source) — no more hand-synced duplicate literal. */

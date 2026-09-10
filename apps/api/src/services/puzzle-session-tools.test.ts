@@ -51,7 +51,18 @@ describe('puzzle-session-tools (Task 59.4)', () => {
 
   test('the tool set has no show_position, check_position, recall_move, or record_move_note', () => {
     const tools = buildPuzzleSessionTools({ userId: 'u1', assignmentId: 'a1', currentItemIndex: 0 }, { db });
-    expect(Object.keys(tools).sort()).toEqual(['advance_puzzle', 'annotate_board', 'expect_move', 'hypothetical_line']);
+    expect(Object.keys(tools).sort()).toEqual(['advance_puzzle', 'annotate_board', 'check_moves', 'expect_move', 'hypothetical_line']);
+  });
+
+  test('check_moves answers from the board alone, so the coach never judges a student\'s proposed move from memory', async () => {
+    const tools = buildPuzzleSessionTools({ userId: 'u1', assignmentId: 'a1', currentItemIndex: 0 }, { db });
+
+    const result = await tools.check_moves?.execute?.(
+      { fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', moves: ['Nf6'] },
+      TOOL_OPTIONS
+    );
+
+    expect(result).toContain('NOT LEGAL in this position');
   });
 
   test('annotate_board, expect_move, hypothetical_line are client tools with no execute', () => {

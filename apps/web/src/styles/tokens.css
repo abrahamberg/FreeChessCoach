@@ -52,6 +52,14 @@
   --quality-forced: #6f6a5e;
   --syntax-string: #2f9e8f;
 
+  /* Game Review's clickable tactic sentences (GameReviewPage) — a tactic
+   * that was played/found/defused draws green, one that was missed/left in
+   * play draws red, independent of any --quality-* tier. */
+  --tactic-good: var(--quality-best);
+  --tactic-good-fill: rgb(91 156 106 / 32%);
+  --tactic-bad: var(--quality-blunder);
+  --tactic-bad-fill: rgb(192 57 43 / 32%);
+
   /* 4px base scale (design-improvements.md §5) */
   --space-1: 4px;
   --space-2: 8px;
