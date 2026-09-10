@@ -50,8 +50,9 @@ import { computePositionFeatures } from './position-features.js';
 import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
 import { classifyTacticMotifOpportunity, computeTacticMotifCounts } from './game-tactic-motifs.js';
 import { previousMoveOf } from './previous-move-of.js';
-import { tacticOpportunityReason, tacticPreventionReason } from './tactic-reason-text.js';
-import { opportunityLeadsCard } from './tactic-card-order.js';
+import { tacticAllowedReason, tacticOpportunityReason, tacticPreventionReason } from './tactic-reason-text.js';
+import { orderTacticCards, type TacticCardKind } from './tactic-card-order.js';
+import { computeTacticAllowed } from './tactic-allowed.js';
 import { CONFIG } from './config.js';
 
 type Colour = 'white' | 'black';
@@ -97,7 +98,11 @@ interface GameContext {
  */
 export function buildGameReport(input: BuildGameReportInput): GameReport {
   const boundaries = resolvePhaseBoundaries(input.game, input.book);
-  const moves = input.moves.map((move) => enrichWithPhaseAndTactics(move, boundaries, input.evals, input.moves));
+  const enriched = input.moves.map((move) => enrichWithPhaseAndTactics(move, boundaries, input.evals, input.moves));
+  // Second pass: what a move allowed is read off the *next* ply's own
+  // opportunity, so every move has to be enriched before any of them can be
+  // told what it handed over.
+  const moves = enriched.map((move, index) => withAllowedTacticAndSentences(move, enriched[index + 1]));
   const context: GameContext = {
     game: input.game,
     evals: input.evals,
@@ -156,39 +161,54 @@ function enrichWithPhaseAndTactics(
   // raw input move — the move-list UI's per-ply tactic indicator.
   const opportunity = classifyTacticMotifOpportunity(withPhase, evals, previousMoveOf(allMoves, move.ply));
   if (!opportunity) return withPhase;
-  const withOpportunity = { ...withPhase, tacticOpportunity: opportunity };
-  return {
-    ...withOpportunity,
-    // Diagnostic-first (see the tactic-prevention over-firing investigation):
-    // spelling out which motif + whether it was played, right in the same
-    // per-move notes the UI already shows, so a reviewer can eyeball
-    // false-positive detector hits without a DB query. Placed after
-    // buildReasons' own MAX_REASONS truncation, so it's never crowded out.
-    // The card is written to the person whose review this is, so the
-    // narrator needs to know whose move it was. `isUserMove` has been on
-    // every move all along; it is passed rather than stored on the
-    // opportunity so an older report renders in the right voice too.
-    reasons: withTacticSentence(withOpportunity, tacticOpportunityReason({ ...opportunity, isUserMove: withPhase.isUserMove }, withPhase.bestMoveSan))
-  };
+  return { ...withPhase, tacticOpportunity: opportunity };
 }
 
 /**
- * The opportunity sentence, placed relative to the prevention sentence
- * `attachTacticPrevention` already appended rather than simply after it —
- * `tactic-card-order.ts` has the rule and the reason. Insertion (not a
- * re-sort) because everything before the prevention sentence is
- * `buildReasons`' own output and keeps its order.
+ * The move's tactic sentences, all three of them, in `tactic-card-order.ts`'s
+ * order.
+ *
+ * Diagnostic-first (see the tactic-prevention over-firing investigation):
+ * spelling out which motif and what became of it, right in the same per-move
+ * notes the UI already shows, so a reviewer can eyeball false-positive
+ * detector hits without a DB query. They sit after `buildReasons`' own
+ * MAX_REASONS truncation, so they are never crowded out.
+ *
+ * Rebuilt rather than appended to: the prevention sentence is written into
+ * `reasons` by the API's `attachTacticPrevention` before this package ever
+ * sees the move, so "append the others after it" would let the order be
+ * decided by which layer ran first — which is exactly the bug
+ * `tactic-card-order.ts` exists to fix. Each card is written to the person
+ * whose review this is, so the narrator needs to know whose move it was;
+ * `isUserMove` is passed rather than stored on the card so an older report
+ * renders in the right voice too.
  */
-function withTacticSentence(move: ClassifiedMoveDto, sentence: string): string[] {
-  const reasons = [...(move.reasons ?? [])];
-  if (!opportunityLeadsCard(move)) return [...reasons, sentence];
+function withAllowedTacticAndSentences(move: ClassifiedMoveDto, next: ClassifiedMoveDto | undefined): ClassifiedMoveDto {
+  const allowed = computeTacticAllowed(move, next);
+  const withAllowed = allowed ? { ...move, tacticAllowed: allowed } : move;
+  const sentences = tacticSentencesOf(withAllowed);
+  if (sentences.size === 0) return withAllowed;
 
-  const preventionAt = move.tacticPrevention
-    ? reasons.indexOf(tacticPreventionReason({ ...move.tacticPrevention, isUserMove: move.isUserMove }))
-    : -1;
-  if (preventionAt < 0) return [...reasons, sentence];
-  reasons.splice(preventionAt, 0, sentence);
-  return reasons;
+  const written = new Set(sentences.values());
+  const base = (withAllowed.reasons ?? []).filter((reason) => !written.has(reason));
+  const ordered = orderTacticCards(withAllowed)
+    .map((kind) => sentences.get(kind))
+    .filter((sentence): sentence is string => sentence !== undefined);
+  return { ...withAllowed, reasons: [...base, ...ordered] };
+}
+
+function tacticSentencesOf(move: ClassifiedMoveDto): Map<TacticCardKind, string> {
+  const sentences = new Map<TacticCardKind, string>();
+  if (move.tacticAllowed) {
+    sentences.set('allowed', tacticAllowedReason({ ...move.tacticAllowed, isUserMove: move.isUserMove }));
+  }
+  if (move.tacticPrevention) {
+    sentences.set('prevention', tacticPreventionReason({ ...move.tacticPrevention, isUserMove: move.isUserMove }));
+  }
+  if (move.tacticOpportunity) {
+    sentences.set('opportunity', tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove: move.isUserMove }, move.bestMoveSan));
+  }
+  return sentences;
 }
 
 function computeIsTacticalPosition(move: ClassifiedMoveDto, evals: EngineEval[]): boolean {

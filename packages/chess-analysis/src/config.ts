@@ -223,6 +223,13 @@ export const CONFIG = {
   tacticVerification: {
     minStaticGainPawns: 1,
     minLineGainPawns: 1.5,
+    /** How far apart two claims' verified gains may sit and still count as
+     * winning the same thing (`played-tactic-alternative.ts`). A pin walked
+     * through the engine's line and a fork priced by SEE both "win a queen"
+     * and report 6.0 and 5.8 for it; without slack, which of two ways to win
+     * the same queen the card names would turn on that rounding. A pawn is
+     * comfortably below the gap between any two actual prizes. */
+    equalPrizeTolerancePawns: 1,
     minWinProbabilitySwing: 8,
     maxLinePlies: 8,
     highConfidence: 0.7,

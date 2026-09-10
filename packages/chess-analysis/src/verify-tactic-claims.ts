@@ -3,8 +3,8 @@ import type { TacticHorizon } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 import { see } from './see.js';
 import { PIECE_VALUES } from './tactics.js';
-import { attackersOf, defendersOf, enemyTargetsOf, pieceTypeAt, pieceValueAt } from './tactic-board-facts.js';
-import type { TacticClaim } from './tactic-claim.js';
+import { attackersOf, defendersOf, enemyTargetsOf, pieceNameAt, pieceTypeAt, pieceValueAt } from './tactic-board-facts.js';
+import type { TacticClaim, TacticGainKind } from './tactic-claim.js';
 import { isRecapture, type TacticDetectionContext } from './tactic-detectors/context.js';
 
 /** How far away the claim's payoff is — `null` on a claim verified purely
@@ -26,6 +26,14 @@ interface Verdict {
   ok: boolean;
   confidence: number;
   gain: number;
+  /** Set only when verification changes what *kind* of thing the claim wins.
+   * A detector proposes the mechanism it can see on the board; whether that
+   * mechanism costs the opponent a piece or merely binds them is an exchange
+   * question, and this file is where exchange questions are answered — see
+   * `verifyPin`, where an absolute pin on a piece the mover can profitably
+   * take is material, not a bind. */
+  gainKind?: TacticGainKind;
+  prize?: string | null;
 }
 
 const REJECT: Verdict = { ok: false, confidence: 0, gain: 0 };
@@ -59,6 +67,8 @@ export function verifyTacticClaims(context: TacticDetectionContext, claims: read
     if (!verdict.ok) continue;
     verified.push({
       ...claim,
+      gainKind: verdict.gainKind ?? claim.gainKind,
+      prize: verdict.prize === undefined ? claim.prize : verdict.prize,
       confidence: verdict.confidence,
       verifiedGain: verdict.gain,
       horizon: null,
@@ -162,7 +172,7 @@ function verifyPin(context: TacticDetectionContext, claim: TacticClaim): Verdict
   // cannot move. That holds for a pawn too — a pinned pawn that cannot
   // capture or advance is a real bind, and Lichess tags 8 of its 40 pin
   // puzzles on exactly that.
-  if (pieceTypeAt(after, against) === 'k') return { ok: true, confidence: 0.8, gain: 0 };
+  if (pieceTypeAt(after, against) === 'k') return absolutePinVerdict(context, pinned);
 
   // A king in front is not pinned — it is in check, and the piece behind it
   // is a skewer's prize. `pins()` reports the shape because the king is just
@@ -201,6 +211,30 @@ function verifyPin(context: TacticDetectionContext, claim: TacticClaim): Verdict
   const gap = pieceValueAt(after, against) - pieceValueAt(after, pinned);
   if (gap >= 2) return { ok: true, confidence: 0.45, gain: 0 };
   return REJECT;
+}
+
+/**
+ * A piece that cannot legally move and is attacked at a profit is not bound,
+ * it is lost — so an absolute pin is priced as material whenever the mover
+ * can actually take the pinned piece, and as the bind TR-01 and TR-10 are
+ * about when they cannot.
+ *
+ * This is what a queen dropped to `Bb5` was missing: the card said "You
+ * missed a chance to pin a piece", priced at zero, on the move that wins the
+ * queen. Nothing downstream could recover from that — `verify-tactic-line.ts`
+ * only ever re-prices a claim that already promises material, and
+ * `tactic-allowed.ts` only reports material handed over — so the whole point
+ * of the position went unsaid on both sides' cards.
+ *
+ * TR-01 (`4.Bb5`, knight defended twice) and TR-10 (`16.Rae1`, bishop
+ * defended twice) keep the positional rung they were measured on: the
+ * exchange on the pinned square wins nothing there, which is the same
+ * question asked of every other motif in this file.
+ */
+function absolutePinVerdict(context: TacticDetectionContext, pinned: Square): Verdict {
+  const prize = winnableValue(context, pinned);
+  if (prize < CONFIG.tacticVerification.minStaticGainPawns) return { ok: true, confidence: 0.8, gain: 0 };
+  return { ok: true, confidence: 0.85, gain: prize, gainKind: 'material', prize: pieceNameAt(context.after!, pinned) };
 }
 
 /**

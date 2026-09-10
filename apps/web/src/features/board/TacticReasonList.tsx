@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import { orderTacticCards, tacticOpportunityReason, tacticPreventionReason, type TacticCardKind } from '@freechesscoach/chess-analysis';
+import {
+  orderTacticCards,
+  tacticAllowedReason,
+  tacticOpportunityReason,
+  tacticPreventionReason,
+  type TacticCardKind
+} from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { hasTacticVisual, type TacticSelectionKey } from './tacticSelection.js';
 import { CloseIcon } from '../../components/Icon.js';
@@ -56,19 +62,31 @@ export function TacticReasonList({ move, selection, onToggle }: TacticReasonList
   // `isUserMove` decides "You" vs "They" and lives on the move rather than
   // on either card, so a report stored before the voice rewrite renders in
   // the right voice too.
+  const allowedText = move.tacticAllowed ? tacticAllowedReason({ ...move.tacticAllowed, isUserMove: move.isUserMove }) : null;
   const preventionText = move.tacticPrevention
     ? tacticPreventionReason({ ...move.tacticPrevention, isUserMove: move.isUserMove })
     : null;
   const opportunityText = move.tacticOpportunity
     ? tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove: move.isUserMove }, move.bestMoveSan)
     : null;
-  if (!preventionText && !opportunityText) return null;
+  if (!allowedText && !preventionText && !opportunityText) return null;
 
   // Which sentence opens the card is a coaching decision, not a rendering
   // one — orderTacticCards owns it (a missed queen leads a blunder; the
   // consolation prize does not), and build-game-report.ts orders the same
   // move's plain-text `reasons` by the same rule.
   const cards: Record<TacticCardKind, ReactNode> = {
+    // Never "good": this is the card for what the move handed over.
+    allowed: allowedText && move.tacticAllowed ? (
+      <TacticReasonItem
+        key="allowed"
+        text={allowedText}
+        good={false}
+        clickable={Boolean(move.tacticAllowed.visual)}
+        active={selection === 'allowed' || (selection === 'all' && Boolean(move.tacticAllowed.visual))}
+        onClick={() => onToggle('allowed')}
+      />
+    ) : null,
     prevention: preventionText && move.tacticPrevention ? (
       <TacticReasonItem
         key="prevention"
@@ -117,6 +135,7 @@ export function TacticReasonList({ move, selection, onToggle }: TacticReasonList
  * items above are the only place they're shown, not duplicated below them. */
 export function tacticReasonTexts(move: ClassifiedMoveDto): Set<string> {
   const texts = new Set<string>();
+  if (move.tacticAllowed) texts.add(tacticAllowedReason({ ...move.tacticAllowed, isUserMove: move.isUserMove }));
   if (move.tacticPrevention) texts.add(tacticPreventionReason({ ...move.tacticPrevention, isUserMove: move.isUserMove }));
   if (move.tacticOpportunity) {
     texts.add(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove: move.isUserMove }, move.bestMoveSan));

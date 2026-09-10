@@ -395,6 +395,26 @@ export const ClassifiedMoveSchema = z.object({
       embodiedBySan: z.string().optional()
     })
     .optional(),
+  /** What this move handed the opponent: the tactic their reply gets to
+   * play, which this move is the reason for. `docs/tactics-rework.md` §5
+   * layer 4's outcome verbs are found / missed / allowed / prevented, and
+   * "allowed" was the one with nowhere to live — so a queen dropped to a pin
+   * showed up only on the *opponent's* next move, as a chance they missed,
+   * and never on the move that gave it away. Read off the next ply's own
+   * `tacticOpportunity` (`tactic-allowed.ts`), so it names the same motif,
+   * prize and geometry that ply's card does. */
+  tacticAllowed: z
+    .object({
+      type: TacticMotifTypeSchema,
+      detail: z.string().nullable().optional(),
+      visual: TacticVisualSchema.nullable().optional(),
+      gain: TacticGainSchema.optional(),
+      horizon: TacticHorizonSchema.optional(),
+      confidence: z.number().min(0).max(1).optional(),
+      /** The reply that collects it — the move the sentence names. */
+      byMoveSan: z.string().optional()
+    })
+    .optional(),
   /** The opponent had this tactic reachable right before this move — did the
    * player's move defuse it (see computeTacticMotifPrevented). When the scan
    * finds more than one reachable motif type, this names only the

@@ -1,5 +1,5 @@
 import { Chess, type Square } from 'chess.js';
-import type { TacticHorizon } from '@freechesscoach/shared';
+import type { TacticHorizon, TacticMotifType } from '@freechesscoach/shared';
 import { applySanSequence } from './apply-san-sequence.js';
 import { CONFIG } from './config.js';
 import { materialBalance } from './tactic-board-facts.js';
@@ -115,12 +115,30 @@ function verifyOne(claim: VerifiedTacticClaim, line: LineStep[]): VerifiedTactic
  */
 function attributes(claim: VerifiedTacticClaim, line: LineStep[], paid: LineStep): boolean {
   if (paid.isMate) return true;
-  const targets = new Set<Square>([...claim.targets, ...(claim.victim ? [claim.victim] : [])]);
+  const squares = payoffSquares(claim);
 
   return line
     .filter((step) => step.ply <= paid.ply && step.capturedOn !== null)
-    .some((step) => targets.has(step.capturedOn!) || step.capturedFrom === claim.actor);
+    .some((step) => squares.has(step.capturedOn!) || step.capturedFrom === claim.actor);
 }
+
+/**
+ * Where a claim's payoff is allowed to land.
+ *
+ * Normally that is the squares it named. A claim that binds a piece along a
+ * ray has one more: the answer to `Bb5` is `Qxb5`, so the queen the pin wins
+ * is collected on the *pinner's* own square, and attributing only to the
+ * pinned square drops the claim on the exact line that proves it. Restricted
+ * to the ray motifs on purpose — for a fork, material on the forker's square
+ * means the forker was traded off, which is the opposite of the fork paying.
+ */
+function payoffSquares(claim: VerifiedTacticClaim): Set<Square> {
+  const squares = new Set<Square>([...claim.targets, ...(claim.victim ? [claim.victim] : [])]);
+  if (RAY_BIND_MOTIFS.has(claim.type)) squares.add(claim.actor);
+  return squares;
+}
+
+const RAY_BIND_MOTIFS: ReadonlySet<TacticMotifType> = new Set(['pin', 'skewer', 'xRayAttack']);
 
 function horizonOf(ply: number): TacticHorizon {
   if (ply <= 1) return 'immediate';
