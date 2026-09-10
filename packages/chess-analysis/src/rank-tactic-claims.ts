@@ -9,7 +9,7 @@ import type { VerifiedTacticClaim } from './verify-tactic-claims.js';
  * a tempo and a bind are real but softer, and a defensive save only leads
  * the card when nothing was won.
  */
-const GAIN_KIND_WEIGHT: Record<TacticGainKind, number> = {
+export const GAIN_KIND_WEIGHT: Record<TacticGainKind, number> = {
   mate: 12,
   material: 8,
   tempo: 5,

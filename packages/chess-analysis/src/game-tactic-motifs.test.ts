@@ -60,6 +60,30 @@ describe('computeTacticMotifCounts', () => {
     expect(counts.fork).toEqual({ opportunities: 1, found: 0 });
   });
 
+  test('credits the tactic the player actually played when their own move gave up nothing', () => {
+    // The engine's first line pins the c6 knight; the player forked instead
+    // and won the rook. Calling that a missed pin is what
+    // played-tactic-alternative.ts exists to stop.
+    const move = baseMove({
+      ply: 1,
+      moveSan: 'Nd6+',
+      quality: 'excellent',
+      drop: 0,
+      fenBefore: MULTI_MOTIF_FEN
+    });
+    const evalWithPinBest: EngineEval = {
+      ply: 1,
+      fen: MULTI_MOTIF_FEN,
+      depth: 16,
+      lines: [{ moveUci: 'd3b5', moveSan: 'Bb5', cp: 500, mateIn: null }]
+    };
+
+    const counts = computeTacticMotifCounts([move], [evalWithPinBest]);
+
+    expect(counts.fork).toEqual({ opportunities: 1, found: 1 });
+    expect(counts.pin).toEqual({ opportunities: 0, found: 0 });
+  });
+
   test('skips a move with no stored fenBefore or no best-line move', () => {
     const noFenBefore = baseMove({ ply: 1, moveSan: 'Kb1', quality: 'good', fenBefore: undefined });
     const noBestLine = baseMove({ ply: 2, moveSan: 'Kb1', quality: 'good' });

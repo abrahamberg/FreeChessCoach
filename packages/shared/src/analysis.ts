@@ -384,7 +384,15 @@ export const ClassifiedMoveSchema = z.object({
       /** Every verified motif this move embodies, best first, `type`
        * included — the multi-label view §5 layer 3 keeps so the coach agent
        * can reason over a move that is genuinely two tactics at once. */
-      motifs: z.array(TacticMotifTypeSchema).optional()
+      motifs: z.array(TacticMotifTypeSchema).optional(),
+      /** Which move this motif was actually read off: the engine's top move
+       * normally, the player's own when they reached as much by an equally
+       * good one (`played-tactic-alternative.ts`). Anything that replays the
+       * motif — `motifToCode`'s fork piece and pin kind — has to replay
+       * *this* move, not an assumed one. Absent on a report stored before
+       * the field existed, where the engine's top move is the only answer it
+       * could have had. */
+      embodiedBySan: z.string().optional()
     })
     .optional(),
   /** The opponent had this tactic reachable right before this move — did the

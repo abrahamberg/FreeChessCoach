@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { tacticOpportunityReason, tacticPreventionReason } from '@freechesscoach/chess-analysis';
+import { orderTacticCards, tacticOpportunityReason, tacticPreventionReason, type TacticCardKind } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { hasTacticVisual, type TacticSelectionKey } from './tacticSelection.js';
 import { CloseIcon } from '../../components/Icon.js';
@@ -64,29 +64,39 @@ export function TacticReasonList({ move, selection, onToggle }: TacticReasonList
     : null;
   if (!preventionText && !opportunityText) return null;
 
+  // Which sentence opens the card is a coaching decision, not a rendering
+  // one — orderTacticCards owns it (a missed queen leads a blunder; the
+  // consolation prize does not), and build-game-report.ts orders the same
+  // move's plain-text `reasons` by the same rule.
+  const cards: Record<TacticCardKind, ReactNode> = {
+    prevention: preventionText && move.tacticPrevention ? (
+      <TacticReasonItem
+        key="prevention"
+        text={preventionText}
+        good={move.tacticPrevention.prevented}
+        clickable={Boolean(move.tacticPrevention.visual)}
+        // 'all' (the "show tactic arrows" toggle) draws this one's arrow
+        // too, so it reads as active right alongside the other sentence —
+        // unless it has nothing to draw, matching the board's own state.
+        active={selection === 'prevention' || (selection === 'all' && Boolean(move.tacticPrevention.visual))}
+        onClick={() => onToggle('prevention')}
+      />
+    ) : null,
+    opportunity: opportunityText && move.tacticOpportunity ? (
+      <TacticReasonItem
+        key="opportunity"
+        text={opportunityText}
+        good={move.tacticOpportunity.found}
+        clickable={Boolean(move.tacticOpportunity.visual)}
+        active={selection === 'opportunity' || (selection === 'all' && Boolean(move.tacticOpportunity.visual))}
+        onClick={() => onToggle('opportunity')}
+      />
+    ) : null
+  };
+
   return (
     <div className="tactic-reason-list">
-      {preventionText && move.tacticPrevention && (
-        <TacticReasonItem
-          text={preventionText}
-          good={move.tacticPrevention.prevented}
-          clickable={Boolean(move.tacticPrevention.visual)}
-          // 'all' (the "show tactic arrows" toggle) draws this one's arrow
-          // too, so it reads as active right alongside the other sentence —
-          // unless it has nothing to draw, matching the board's own state.
-          active={selection === 'prevention' || (selection === 'all' && Boolean(move.tacticPrevention.visual))}
-          onClick={() => onToggle('prevention')}
-        />
-      )}
-      {opportunityText && move.tacticOpportunity && (
-        <TacticReasonItem
-          text={opportunityText}
-          good={move.tacticOpportunity.found}
-          clickable={Boolean(move.tacticOpportunity.visual)}
-          active={selection === 'opportunity' || (selection === 'all' && Boolean(move.tacticOpportunity.visual))}
-          onClick={() => onToggle('opportunity')}
-        />
-      )}
+      {orderTacticCards(move).map((kind) => cards[kind])}
       {hasTacticVisual(move) && (
         <button
           type="button"
