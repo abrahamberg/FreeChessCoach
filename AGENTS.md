@@ -25,8 +25,12 @@ Socratically while tracking their progress over time. The initial build
 - `docs/tactics-rework.md` — why Game Review's tactic sentences misfired, what
   was measured, and the layered rebuild that shipped. Read it before touching
   `tactic-detectors/`, `classify-tactic-motif.ts`, the `verify-tactic-*`
-  files, `tactic-reason-text.ts`, or the tactic-prevention path; irrelevant to
-  everything else. Its §1 cards are pinned as fixtures in
+  files, `tactic-reason-text.ts`, `tactic-card-order.ts`,
+  `played-tactic-alternative.ts`, or the tactic-prevention path; irrelevant to
+  everything else. §9 is the second review pass (which sentence leads, an
+  equally good move of the player's own, the vocabulary for a trade) and
+  records one gate that was tried and reverted — read it before re-trying
+  that one. Its §1 cards are pinned as fixtures in
   `packages/chess-analysis/src/tactic-review-cases.ts`,
   `tactic-precision.test.ts` holds the false-positive ceilings and
   `tactic-detectors/lichess-puzzle-validation.test.ts` the recall floors — a
