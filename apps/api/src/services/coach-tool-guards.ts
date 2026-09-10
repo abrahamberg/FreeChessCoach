@@ -1,5 +1,5 @@
 /** architecture §8.3: per-turn call budgets and a repeat-call cache, shared
- * by both coach-tools.ts (analyze mode's 15 tools) and coach-tools-play.ts
+ * by both coach-tools.ts (analyze mode's 17 tools) and coach-tools-play.ts
  * (play mode's 3 additional tools) — extracted here so both files can build
  * on the exact same guardrails without importing from one another. */
 export const TOOL_BUDGETS: Partial<Record<string, number>> = {
@@ -20,12 +20,13 @@ export const TOOL_BUDGETS: Partial<Record<string, number>> = {
   // calls, so the outer per-turn count stays tight; the tool's own
   // description tells the coach to fold related sub-questions into one call.
   investigate_position: 1
+  // Deliberately absent: `check_moves` and `check_position`. Both are pure,
+  // engine-free lookups whose whole purpose is to be cheaper than the coach
+  // asserting a move from memory — a budget on them would put back the
+  // incentive to guess. The repeat-call cache below still collapses
+  // identical calls within a turn.
 };
-/** Deliberately absent from the budget table: `check_moves` (and
- * `check_position`). Both are pure, engine-free lookups, and their whole
- * purpose is to be cheaper than the coach asserting a move from memory — a
- * budget on them would recreate the incentive to guess. The repeat-call
- * cache above still collapses identical calls within a turn. */
+
 export const BUDGET_EXHAUSTED = { error: 'budget_exhausted — answer with what you have' } as const;
 
 export interface TurnGuardState {
