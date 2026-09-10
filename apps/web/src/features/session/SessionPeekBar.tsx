@@ -10,21 +10,17 @@ export interface BoardContext {
   ply: number;
   san: string | null;
   hasDivergedLine: boolean;
-  /** The board is parked one ply before the move under discussion (the
-   * "reveal →" state) — so the thumbnail is showing the position *before* it,
-   * not after. */
-  isAnchoredPreMove: boolean;
 }
 
 /** One line naming what the board is currently showing — the whole reason the
  * peek bar earns its space in the coach panel. */
-export function boardContextLabel({ mode, ply, san, hasDivergedLine, isAnchoredPreMove }: BoardContext): string {
+export function boardContextLabel({ mode, ply, san, hasDivergedLine }: BoardContext): string {
   if (hasDivergedLine) return 'your line';
   if (mode === 'peek') return 'exploring';
   if (ply <= 0 || !san) return 'start position';
   const { moveNumber, color } = describePly(ply);
   const move = `${moveNumber}${color === 'white' ? '.' : '…'}${san}`;
-  return isAnchoredPreMove ? `before ${move}` : `after ${move}`;
+  return `after ${move}`;
 }
 
 /** True once the board is showing something worth previewing from the chat —

@@ -40,18 +40,14 @@ export const checkPositionParameters = z
  * conversation's subject doesn't) from a "subject" change (you're moving on
  * to actually discuss this move — both the board and the subject move, and
  * the old subject's episode folds into a summary, same as show_position's
- * only behavior before this field existed). `preMove` decides what the
- * board actually shows: false is the normal case — the real, final position
- * for this move, fully revealed. true anchors the board one ply BEFORE this
- * move instead, with a red arrow drawn for the move that was actually
- * played — for setting up a moment for the student to look at the position
- * fresh (e.g. before exploring alternatives with hypothetical_line), not a
- * hidden-answer quiz (the arrow always shows what was played; the student
- * already knows their own move). Both fields required, not defaulted: the
- * model must decide every time, never fall back to remembering a previous
- * choice. */
+ * only behavior before this field existed). Always moves the board straight
+ * to the real, final position for this move, fully revealed — there is no
+ * pre-move/hidden-answer state to opt into. If you want the student to look
+ * at a position fresh before hearing your take, let them use Explore on
+ * their own, or make your point with annotate_board instead of anchoring
+ * the board one ply behind. */
 export const showPositionParameters = z
-  .object({ ...moveAddressShape, intent: z.enum(['flashback', 'subject']), preMove: z.boolean() })
+  .object({ ...moveAddressShape, intent: z.enum(['flashback', 'subject']) })
   .refine(refineMoveAddress, { message: MOVE_ADDRESS_REFINEMENT_MESSAGE });
 
 export const annotateBoardParameters = z.object({
@@ -158,7 +154,7 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'show_position',
     description:
-      'Move the student\'s board to a move in THIS game AND load that move\'s own analysis. Address the move the way you would say it out loud — { moveNumber, color }: White\'s 18th is { moveNumber: 18, color: "white" }, Black\'s 18th is { moveNumber: 18, color: "black" }, the game\'s starting position is { moveNumber: 0, color: null }. Never a bare ply, never any arithmetic. Wait for the result before you say anything about the move: this call is what refreshes "## Current position" with THIS move\'s engine analysis (the move played, the engine\'s best move and line, the other options) and returns the move\'s real fen. Until it comes back, the analysis in front of you is still the PREVIOUS move\'s and nothing warns you about the mismatch. The returned fen is ground truth — never reconstruct one from memory. intent: "subject" means you are moving on to discuss this move, so the conversation moves with the board and what you were discussing folds into a summary; "flashback" means you are only glancing at another move to make a point about the one you are still on, so the board moves and the conversation does not. preMove: false is the normal case — the real position after the move, fully revealed, and required the moment your own words describe the move. preMove: true anchors one ply earlier with a red arrow on the move actually played, for setting a position up fresh before you explore alternatives together; it is not a hidden-answer quiz, since the arrow always shows what was played.'
+      'Move the student\'s board to a move in THIS game AND load that move\'s own analysis. Address the move the way you would say it out loud — { moveNumber, color }: White\'s 18th is { moveNumber: 18, color: "white" }, Black\'s 18th is { moveNumber: 18, color: "black" }, the game\'s starting position is { moveNumber: 0, color: null }. Never a bare ply, never any arithmetic. Wait for the result before you say anything about the move: this call is what refreshes "## Current position" with THIS move\'s engine analysis (the move played, the engine\'s best move and line, the other options) and returns the move\'s real fen. Until it comes back, the analysis in front of you is still the PREVIOUS move\'s and nothing warns you about the mismatch. The returned fen is ground truth — never reconstruct one from memory. Always moves straight to the real, final position, fully revealed — intent: "subject" means you are moving on to discuss this move, so the conversation moves with the board and what you were discussing folds into a summary; "flashback" means you are only glancing at another move to make a point about the one you are still on, so the board moves and the conversation does not.'
   },
   {
     name: 'check_position',

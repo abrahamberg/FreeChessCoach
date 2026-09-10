@@ -215,8 +215,7 @@ export function SessionPage(): ReactNode {
             mode: boardState.mode,
             ply: boardState.ply,
             san: sanForPly(sanMoves, boardState.ply),
-            hasDivergedLine: Boolean(divergedLine.line),
-            isAnchoredPreMove: boardState.isAnchoredPreMove
+            hasDivergedLine: Boolean(divergedLine.line)
           }}
           viewState={mobileView}
         />

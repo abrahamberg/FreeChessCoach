@@ -150,27 +150,6 @@
   padding: 0 0 0 6px;
 }
 
-.played-move-pill {
-  align-self: center;
-  background: color-mix(in srgb, var(--played-move) 15%, var(--color-surface-subtle));
-  border-radius: var(--radius-pill);
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--font-size-sm);
-  margin: 0;
-}
-
-.played-move-pill button {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  vertical-align: middle;
-  background: none;
-  border: none;
-  color: var(--played-move);
-  font-weight: 600;
-  padding: 0 0 0 6px;
-}
-
 /* architecture §14: belt-and-suspenders 422 surface for a play-mode move
  * the server rejected — rare, since CoachBoard's chess.js check already
  * blocks most illegal drops before this ever POSTs. */
@@ -441,7 +420,6 @@
 
 .session-body.desktop .undo-pill,
 .session-body.desktop .peek-pill,
-.session-body.desktop .played-move-pill,
 .session-body.desktop .move-strip,
 .session-body.desktop .bot-move-toolbar,
 .session-body.desktop .explore-panel-toggle,

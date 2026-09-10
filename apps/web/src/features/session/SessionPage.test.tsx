@@ -397,49 +397,12 @@ describe('SessionPage', () => {
     const divider = within(screen.getByTestId('message-list')).getByText(/move 1 \(black\)/i).closest('.position-divider');
     expect(divider).toHaveTextContent('e5');
 
-    // The board anchors one ply BEFORE the move being discussed, so this
-    // reopens showing the position after 1.e4, not after 1...e5, with a red
-    // arrow for the move actually played (1...e5) — resuming a session at a
-    // nonzero subjectPly reconstructs the same anchor+arrow state a fresh
-    // show_position(..., preMove: true) call would leave it in.
+    // Resuming a session at a nonzero subjectPly shows the real, final
+    // position for that move, fully revealed — same as a fresh
+    // show_position call always does now.
     const options = capturedOptions.at(-1);
-    expect(options?.position).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
-    expect(options?.arrows).toEqual([{ startSquare: 'e7', endSquare: 'e5', color: 'var(--played-move)' }]);
-  });
-
-  test('the played-move reveal pill shows the real outcome on click', async () => {
-    vi.stubGlobal(
-      'fetch',
-      mockFetch({
-        subjectPly: 2,
-        messages: [
-          { id: 'm1', role: 'user', content: '[session_start]' },
-          {
-            id: 'm2',
-            role: 'assistant',
-            content: [
-              { type: 'text', text: 'Let me show you.' },
-              {
-                type: 'tool-call',
-                toolName: 'show_position',
-                input: { moveNumber: 1, color: 'black' },
-                toolCallId: 'call-1'
-              }
-            ]
-          }
-        ]
-      })
-    );
-    renderSessionPage();
-    const user = userEvent.setup();
-
-    await screen.findByText(/let's dive into your game|let me show you/i);
-    expect(capturedOptions.at(-1)?.position).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
-
-    await user.click(screen.getByRole('button', { name: /reveal/i }));
-
-    expect(capturedOptions.at(-1)?.position).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2');
-    expect(screen.queryByRole('button', { name: /reveal/i })).not.toBeInTheDocument();
+    expect(options?.position).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2');
+    expect(options?.arrows).toEqual([]);
   });
 
   test('a persisted show_position tool-call in the OLD {ply} shape (pre-move-number-fix data) still reopens correctly, not as NaN', async () => {
@@ -466,14 +429,12 @@ describe('SessionPage', () => {
     const divider = within(screen.getByTestId('message-list')).getByText(/move 1 \(black\)/i).closest('.position-divider');
     expect(divider).toHaveTextContent('e5');
 
-    // The board anchors one ply BEFORE the move being discussed, so this
-    // reopens showing the position after 1.e4, not after 1...e5, with a red
-    // arrow for the move actually played (1...e5) — same as the reload test
-    // above, this old {ply} data shape only affects the position divider's
-    // parsing, not the resumed anchor/arrow state.
+    // Same as the reload test above, this old {ply} data shape only affects
+    // the position divider's parsing, not the resumed board position — it
+    // still shows the real, final position, fully revealed.
     const options = capturedOptions.at(-1);
-    expect(options?.position).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
-    expect(options?.arrows).toEqual([{ startSquare: 'e7', endSquare: 'e5', color: 'var(--played-move)' }]);
+    expect(options?.position).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2');
+    expect(options?.arrows).toEqual([]);
   });
 
   test('a fresh session (only the internal [session_start] marker, no assistant reply yet) auto-kicks off the coach opening turn', async () => {
@@ -667,7 +628,7 @@ describe('SessionPage', () => {
             toolCallFrame({
               toolCallId: 'call-1',
               toolName: 'show_position',
-              input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: true }
+              input: { moveNumber: 1, color: 'black', intent: 'subject' }
             })
           ])
         : streamResponse([...textFrames('There it is.')]);
@@ -682,10 +643,9 @@ describe('SessionPage', () => {
     await user.type(screen.getByPlaceholderText(/ask about this position/i), 'show me move 1 for black');
     await user.keyboard('{Enter}');
 
-    // preMove: true anchors one ply BEFORE the move being discussed,
-    // i.e. the position after 1.e4.
+    // show_position moves the board straight to the real, final position.
     await vi.waitFor(() =>
-      expect(capturedOptions.at(-1)?.position).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1')
+      expect(capturedOptions.at(-1)?.position).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2')
     );
 
     // ...and marks the jump in the transcript with a position divider.
