@@ -17,8 +17,7 @@ const AT_MOVE_2_BLACK: BoardContext = {
   mode: 'answer',
   ply: 4,
   san: 'Nf3',
-  hasDivergedLine: false,
-  isAnchoredPreMove: false
+  hasDivergedLine: false
 };
 
 interface HarnessProps {

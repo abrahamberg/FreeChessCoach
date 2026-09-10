@@ -11,7 +11,6 @@ import { GameEvalChart } from '../board/GameEvalChart.js';
 import { MoveStrip } from '../board/MoveStrip.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
-import { describePly, sanForPly } from '../chat/positionDivider.js';
 import type { BotGameOverInfo } from './botGameOver.js';
 import type { CommittedPlayMove } from './usePlayMoveSubmit.js';
 import { usePlayMoveSubmit } from './usePlayMoveSubmit.js';
@@ -401,15 +400,6 @@ export function SessionBoardColumn({
               : hintTopMoves.length > 0
                 ? `Top moves: ${hintTopMoves.map((move) => move.san).join(', ')}`
                 : 'No moves to suggest.'}
-        </p>
-      )}
-      {boardState.isAnchoredPreMove && (
-        <p className="played-move-pill">
-          {describePly(boardState.ply).color} played {sanForPly(sanMoves, boardState.ply)}{' '}
-          <button type="button" onClick={boardState.revealPlayedMove}>
-            reveal
-            <ChevronRightIcon width={13} height={13} />
-          </button>
         </p>
       )}
       {!isDesktop && (

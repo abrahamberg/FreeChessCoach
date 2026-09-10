@@ -207,12 +207,6 @@ describe('buildCoachSystemPrompt', () => {
     expect(staticPart).toContain('more than one ply from the current position');
   });
 
-  test('staticPart tells the coach about show_position\'s preMove option — the pre-move anchor + red arrow are folded into show_position itself, not a separate reveal tool', () => {
-    const { staticPart } = buildCoachSystemPrompt(baseInput());
-    expect(staticPart).toContain('preMove');
-    expect(staticPart).not.toContain('reveal_move');
-  });
-
   describe('engine visibility (always on, no per-user toggle)', () => {
     test('staticPart tells the coach it may cite raw evaluations and lines, for every student', () => {
       const { staticPart } = buildCoachSystemPrompt(baseInput());
@@ -336,15 +330,6 @@ describe('buildCoachSystemPrompt', () => {
       const { staticPart } = buildCoachSystemPrompt(basePlayInput());
       expect(staticPart).toContain('show_position');
       expect(staticPart).toContain('record_move_note');
-    });
-
-    // preMove is a show_position option, not a separate tool, so it's
-    // available in both modes — a live move just played still has an
-    // earlier position worth flashing back to pre-move (architecture §14).
-    test('mode: "play" staticPart also mentions preMove and never mentions reveal_move', () => {
-      const { staticPart } = buildCoachSystemPrompt(basePlayInput());
-      expect(staticPart).toContain('preMove');
-      expect(staticPart).not.toContain('reveal_move');
     });
 
     // Item 3: "get the board there first" used to live only in analyze

@@ -70,7 +70,7 @@ export function useBotSessionPageData(sessionId: string) {
   const sanMoves = positions.filter((position) => position.moveSan !== null).map((position) => position.moveSan as string);
 
   const initialPly = sessionQuery.data?.subjectPly;
-  const boardState = useSessionBoardState(positions, initialPly, true);
+  const boardState = useSessionBoardState(positions, initialPly);
   const divergedLine = useDivergedLine();
   const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(DEFAULT_AUTOPLAY_INTERVAL_MS);
   // boardState.coachPly, not boardState.ply: peekAt (move-list/Explore

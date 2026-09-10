@@ -425,7 +425,7 @@ describe('sessions routes', () => {
       const { model } = textStreamModel('Let me show you.', {
         toolCallId: 'call-1',
         toolName: 'show_position',
-        input: { moveNumber: 2, color: 'black', intent: 'subject', preMove: true }
+        input: { moveNumber: 2, color: 'black', intent: 'subject' }
       });
       const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(model), engineBackendOptions: fakeEngineBackendOptions() });
       const created = await app.inject({

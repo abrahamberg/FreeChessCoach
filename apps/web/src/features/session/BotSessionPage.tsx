@@ -193,8 +193,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
             mode: boardState.mode,
             ply: boardState.ply,
             san: sanForPly(sanMoves, boardState.ply),
-            hasDivergedLine: false,
-            isAnchoredPreMove: boardState.isAnchoredPreMove
+            hasDivergedLine: false
           }}
           viewState={mobileView}
         />
