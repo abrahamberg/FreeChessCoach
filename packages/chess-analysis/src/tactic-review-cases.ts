@@ -55,10 +55,10 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
     isTacticalPosition: true,
     todayMotif: 'pin',
     todayDetectors: ['pin'],
-    todaySentence: "You pinned a piece — their knight on c6 is stuck in front of the king.",
+    todaySentence: 'You pinned a piece — the knight on c6 is stuck in front of the king.',
     targetMotif: 'pin',
     targetDetectors: ['pin'],
-    targetSentence: "You pinned a piece — their knight on c6 is stuck in front of the king.",
+    targetSentence: 'You pinned a piece — the knight on c6 is stuck in front of the king.',
     defect: null,
     note:
       'A real absolute pin that wins no material, so it exercises the positional rung of the gain test. `trappedPiece` used to fire alongside it — the pinned knight has no legal move, which `trappedPieces` read as cornered — and no longer does: a piece with no moves in a position that is not check is pinned, not trapped. Together with TR-05 and TR-10 this is the matched set the pin rework is judged on: keep the two absolute pins, drop the relative pin on a pawn.'
@@ -204,7 +204,7 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
     isTacticalPosition: true,
     todayMotif: 'pin',
     todayDetectors: ['pin', 'seizesOpenFile', 'improvesWorstPiece'],
-    todaySentence: "You pinned a piece — their bishop on e7 is stuck in front of the king.",
+    todaySentence: 'You pinned a piece — the bishop on e7 is stuck in front of the king.',
     targetMotif: 'pin',
     targetDetectors: ['pin', 'seizesOpenFile', 'improvesWorstPiece'],
     targetSentence: "You pinned their bishop against the king — it can't move.",

@@ -47,9 +47,13 @@ export const pinDetector: TacticDetector = {
           expectedGain: 0,
           prize: null,
           evidence: { arrows: [{ from: hit.by, to: hit.against }], highlights: [hit.pinned] },
+          // No possessive: this card is printed from both sides now — as the
+          // chance the mover had, and as the thing their opponent's last move
+          // handed over (`tactic-allowed.ts`) — so "their queen" named the
+          // wrong side's piece on one of them.
           detail: absolute
-            ? `their ${pieceNameAt(after, hit.pinned)} on ${hit.pinned} is stuck in front of the king`
-            : `their ${pieceNameAt(after, hit.pinned)} on ${hit.pinned} can't move without losing the ${pieceNameAt(after, hit.against)} behind it`
+            ? `the ${pieceNameAt(after, hit.pinned)} on ${hit.pinned} is stuck in front of the king`
+            : `the ${pieceNameAt(after, hit.pinned)} on ${hit.pinned} can't move without losing the ${pieceNameAt(after, hit.against)} behind it`
         };
       });
   }
