@@ -85,6 +85,24 @@ export const MOVE_QUALITY_SYMBOLS: Record<MoveQuality, string> = {
   forced: '→'
 };
 
+/** The tiers that actually cost the player something, so a note about what
+ * was better is worth reading. Everything else (book, forced, and
+ * brilliant/great/best/excellent/good) had nothing meaningfully better to
+ * play, which is why fault-finding copy — "costs N squares of mobility",
+ * "you missed a chance to …" — has no business printing on them. One
+ * source of truth: the move list, the review card and the reason builder
+ * all ask this same question. */
+export const IMPROVABLE_MOVE_QUALITIES: ReadonlySet<MoveQuality> = new Set([
+  'inaccuracy',
+  'mistake',
+  'miss',
+  'blunder'
+] satisfies MoveQuality[]);
+
+export function isImprovableQuality(quality: MoveQuality | undefined): boolean {
+  return quality !== undefined && IMPROVABLE_MOVE_QUALITIES.has(quality);
+}
+
 export const MoveQualitySchema = z.enum(MOVE_QUALITIES);
 export const ClassificationSchema = MoveQualitySchema;
 

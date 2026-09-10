@@ -193,16 +193,56 @@ describe('buildReasons', () => {
 
   test('mobility drop of at least 8 squares', () => {
     const reasons = buildReasons(baseInput({
+      quality: 'mistake',
       featureDelta: { newForks: [], newHangingPieces: [], mobilityDelta: -9 }
     }));
     expect(reasons).toEqual(['Costs 9 squares of piece mobility']);
   });
 
+  test('a move that cost nothing is never faulted for its mobility', () => {
+    // The natural recapture gives squares up by definition; "Costs 9 squares
+    // of piece mobility" as the whole note on a best move reads as a
+    // criticism of the only sensible move on the board.
+    for (const quality of ['best', 'great', 'excellent', 'good'] as const) {
+      const reasons = buildReasons(baseInput({
+        quality,
+        featureDelta: { newForks: [], newHangingPieces: [], mobilityDelta: -9 }
+      }));
+      expect(reasons).toEqual([]);
+    }
+  });
+
   test('below the mobility drop threshold is not flagged', () => {
     const reasons = buildReasons(baseInput({
+      quality: 'mistake',
       featureDelta: { newForks: [], newHangingPieces: [], mobilityDelta: -7 }
     }));
     expect(reasons).toEqual([]);
+  });
+
+  test('names the exchange on a trade that has no fault to report', () => {
+    // The Scotch after 4.Nxd4: ...Nxd4 is the natural trade and had nothing
+    // but the "Best move" badge to show for it.
+    const reasons = buildReasons(baseInput({
+      quality: 'best',
+      mover: 'black',
+      fenBefore: 'r1bqkbnr/pppp1ppp/2n5/8/3NP3/8/PPP2PPP/RNBQKB1R b KQkq - 0 4',
+      moveSan: 'Nxd4',
+      evalBefore: evalWith([{ moveUci: 'c6d4', moveSan: 'Nxd4', cp: 0, mateIn: null }])
+    }));
+    expect(reasons).toEqual(['Trades knights on d4']);
+  });
+
+  test('names the recapture rather than what it gave up', () => {
+    const reasons = buildReasons(baseInput({
+      quality: 'best',
+      fenBefore: 'r1bqkbnr/pppp1ppp/8/8/3nP3/8/PPP2PPP/RNBQKB1R w KQkq - 0 5',
+      moveSan: 'Qxd4',
+      isRecapture: true,
+      evalBefore: evalWith([{ moveUci: 'd1d4', moveSan: 'Qxd4', cp: 0, mateIn: null }]),
+      featureDelta: { newForks: [], newHangingPieces: [], mobilityDelta: -9 }
+    }));
+    expect(reasons).toEqual(['Recaptures the knight on d4']);
   });
 
   test('mobility is dropped once a better reason already explains the move', () => {

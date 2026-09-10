@@ -17,6 +17,14 @@ describe('breaksPinDetector', () => {
     expect(claim).toMatchObject({ type: 'breaksPin', actor: 'd7', targets: ['c6'], gainKind: 'safety' });
   });
 
+  test('names the freed piece without a possessive', () => {
+    // The freed piece is the mover's own, and the sentence around this detail
+    // already names them — "their knight" put the wrong side's word on it.
+    const [claim] = breaksPinDetector.detect(buildTacticDetectionContext(PINNED_KNIGHT, 'Bd7', 'black'));
+
+    expect(claim?.detail).toBe('the knight on c6 is free to move again');
+  });
+
   test('says nothing when the move simply captures the pinning piece', () => {
     // Taking the pinner is a capture, and the capture is the card — without
     // this rule every recapture in the game "breaks a pin".

@@ -33,6 +33,7 @@ export * from './move-metrics.js';
 export * from './checks-captures-threats.js';
 export * from './move-flags.js';
 export * from './move-reasons.js';
+export * from './piece-names.js';
 export * from './null-move-fen.js';
 export * from './opening-development.js';
 export * from './opening-mistakes.js';

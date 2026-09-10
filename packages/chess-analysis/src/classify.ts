@@ -169,6 +169,8 @@ function buildClassifiedMove(input: {
     fenAfter: input.position.fen,
     moveSan: input.position.moveSan ?? '',
     evalBefore: input.evalBefore,
+    quality: result.classification,
+    isRecapture: input.isRecapture,
     isBookMove: input.isBookMove,
     openingName: input.opening?.name,
     eco: input.opening?.eco,

@@ -1,4 +1,4 @@
-import { PIECE_NAMES } from '../move-reasons.js';
+import { PIECE_NAMES } from '../piece-names.js';
 import { attackersOf, kingSquareOf } from '../tactic-board-facts.js';
 import type { TacticClaim } from '../tactic-claim.js';
 import type { TacticDetector } from './types.js';

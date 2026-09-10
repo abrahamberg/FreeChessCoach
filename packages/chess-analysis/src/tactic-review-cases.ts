@@ -74,13 +74,13 @@ export const TACTIC_REVIEW_CASES: readonly TacticReviewCase[] = [
     isTacticalPosition: false,
     todayMotif: 'breaksPin',
     todayDetectors: ['breaksPin', 'develops'],
-    todaySentence: "They broke the pin — their knight on c6 can move again.",
+    todaySentence: 'They broke the pin — the knight on c6 is free to move again.',
     targetMotif: 'breaksPin',
     targetDetectors: ['breaksPin', 'develops'],
-    targetSentence: "They broke the pin — their knight on c6 can move again.",
+    targetSentence: 'They broke the pin — the knight on c6 is free to move again.',
     defect: null,
     note:
-      'The move that most deserved a note in this game used to get the empty state, because every shipped motif described something done TO the opponent and there was no word for unpinning. `develops` co-fires and is kept: the bishop really does come out doing it, and a second *true* claim is the multi-label view working, not the noise TR-01 and TR-07 were about.'
+      'The move that most deserved a note in this game used to get the empty state, because every shipped motif described something done TO the opponent and there was no word for unpinning. `develops` co-fires and is kept: the bishop really does come out doing it, and a second *true* claim is the multi-label view working, not the noise TR-01 and TR-07 were about. The detail carries no possessive: the freed piece belongs to whoever made the move, so "their knight" printed the wrong side\'s word whenever the reader was the mover.'
   },
   {
     id: 'TR-03-phantom-fork-hanging-forker',
