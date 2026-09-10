@@ -546,6 +546,61 @@ still calls book that we score as a mistake. Our book is
 a game database orders of magnitude larger. Widening it is a data change, not
 a detector change.
 
+### The queen nobody mentioned — and the fourth outcome verb
+
+The same report, one card further in. `9…Qd7` walks into `Bb5`, which pins
+the queen against the king and wins it; the eval bar reads **+5.8**. The card
+on that move said:
+
+    They missed a chance to break the pin with Be7 — the knight on f6 is free to move again.
+    Their move stopped you overloading a defender — overloads the king on e8.
+
+Both true, neither the point. Three separate things were wrong, and each one
+alone was enough to lose the queen:
+
+1. **An absolute pin was always priced at zero.** `verifyPin` returned
+   `{gain: 0}` for every pin against a king, because the two pins in the
+   fixture (TR-01, TR-10) win nothing and survive on the positional rung. A
+   piece that cannot legally move and is attacked at a profit is not bound,
+   it is lost — so `absolutePinVerdict` now prices the pinned piece by the
+   same exchange question every other motif answers, and re-labels the claim
+   `material` when it pays. TR-01 and TR-10 are unchanged: their exchange
+   wins nothing.
+2. **A pin's payoff can land on the pinner's own square.** The answer to
+   `Bb5` is `Qxb5`, so the line pays on b5 while the claim names d7 and e8,
+   and `attributes` dropped the claim on the exact line that proved it. The
+   ray-bind motifs (`pin`, `skewer`, `xRayAttack`) now attribute on the
+   actor's square too. Not the others: material on a *forker's* square means
+   the forker was traded off, which is the opposite of the fork paying.
+3. **Nothing said what the move handed over.** §5 layer 4's outcome verbs are
+   found / missed / allowed / prevented, and "allowed" had nowhere to live —
+   so what `Qd7` cost was narrated only on White's next move, as a chance
+   White then missed. `tactic-allowed.ts` reads the next ply's own
+   opportunity back onto the move that caused it, on any move that cost
+   evaluation and gave up material or mate, and `tactic-card-order.ts` opens
+   the card with it:
+
+       They let you win a queen through a pin two moves away with Bb5 — the queen on d7 is stuck in front of the king.
+
+   Nothing new is detected: it is the same claim, prize and geometry the next
+   ply's card carries, which is also why its arrows are already drawn for the
+   board this move produced.
+
+The `pin` detail lost its possessive along the way, for the reason
+`breaksPin`'s did: the card is printed from both sides now, so "their queen
+on d7" named the wrong side's piece on one of them.
+
+The same report's `13.Nxf6+` — a royal fork taking the queen with check —
+still printed "You missed a chance to win a queen … with Bb5", because
+§9's equal-value rule compared the two claims strictly and they priced the
+same queen at 5.8 (SEE) and 6.0 (line-walked). Two ways to win one queen are
+not a miss of either: the comparison carries `equalPrizeTolerancePawns` of
+slack now, and a move that *collected* material qualifies whatever its drop,
+since "you missed a chance to win a queen" is simply false on the move that
+won it. A missed **mate** still stays missed — nothing short of mate is as
+much, and the pawn-weighted comparison would otherwise rank a queen above
+one.
+
 ### A gate that was tried and reverted
 
 Dropping `breaksPin` claims for *relative pins on pawns* — TR-05's phantom
