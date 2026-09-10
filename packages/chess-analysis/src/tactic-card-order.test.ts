@@ -13,7 +13,7 @@ describe('orderTacticCards', () => {
       tacticPrevention: { prevented: true, gain: BISHOP }
     });
 
-    expect(order).toEqual(['opportunity', 'prevention']);
+    expect(order).toEqual(['allowed', 'opportunity', 'prevention']);
   });
 
   test('the missed chance leads a costly move even when it names no prize', () => {
@@ -43,7 +43,18 @@ describe('orderTacticCards', () => {
         tacticOpportunity: { found: true, gain: BIND },
         tacticPrevention: { prevented: true, gain: BISHOP }
       })
-    ).toEqual(['prevention', 'opportunity']);
+    ).toEqual(['allowed', 'prevention', 'opportunity']);
+  });
+
+  test('what the move handed over opens the card, ahead of both', () => {
+    const order = orderTacticCards({
+      quality: 'blunder',
+      tacticAllowed: { gain: QUEEN },
+      tacticOpportunity: { found: false, gain: BISHOP },
+      tacticPrevention: { prevented: true, gain: BISHOP }
+    });
+
+    expect(order[0]).toBe('allowed');
   });
 
   test('an equally priced pair keeps the order the cards have always had', () => {

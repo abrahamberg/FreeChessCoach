@@ -69,6 +69,42 @@ function legacyOpportunityReason(opportunity: TacticOpportunityLike, bestMoveSan
   return `Missed ${articleFor(noun)} ${noun}${detail || (bestMoveSan ? `, available with ${bestMoveSan}` : '')}.`;
 }
 
+export interface TacticAllowedLike {
+  type: TacticMotifType;
+  detail?: string | null;
+  gain?: TacticGainDto;
+  horizon?: TacticHorizon;
+  confidence?: number;
+  /** The reply that collects it. */
+  byMoveSan?: string;
+  /** True when the reader is the player who made the move that allowed it. */
+  isUserMove?: boolean;
+}
+
+/**
+ * The card for what this move handed the other side — §5 layer 4's fourth
+ * outcome verb, and the one that says why a blunder was one.
+ *
+ * It is written from the same 2×2 as the other two: the move belongs to
+ * whoever made it, and the tactic belongs to the other side. The move that
+ * dropped a queen reads "They let you win a queen through a pin with Bb5"
+ * when the opponent played it, and "You let them win a queen…" when the
+ * reader did.
+ *
+ * Unlike the opportunity card, this one always names the move — the whole
+ * point is to show the reader the reply they are about to face (or the one
+ * they are about to get), and a card that says a queen is falling without
+ * saying to what is a riddle.
+ */
+export function tacticAllowedReason(allowed: TacticAllowedLike): string {
+  const specificity = specificityOf(allowed.confidence);
+  const clause = gainClause(allowed, specificity, allowed.horizon);
+  const detail = specificity === 'high' && allowed.detail ? ` — ${allowed.detail}` : '';
+  const move = allowed.byMoveSan ? ` with ${allowed.byMoveSan}` : '';
+  const subject = allowed.isUserMove ? 'You let them' : 'They let you';
+  return `${subject} ${clause.toDo}${move}${detail}.`;
+}
+
 export interface TacticPreventionLike {
   type: TacticMotifType;
   prevented: boolean;

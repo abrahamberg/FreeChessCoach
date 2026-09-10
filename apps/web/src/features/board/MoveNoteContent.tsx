@@ -31,7 +31,7 @@ function plainTextReasons(move: ClassifiedMoveDto, excludeTacticText: boolean): 
  * fallback instead of an empty card for a plain good/excellent move. */
 export function hasMoveNoteText(move: ClassifiedMoveDto, excludeTacticText = false): boolean {
   if (move.quality === 'book') return Boolean(move.reasons?.[0]);
-  if (excludeTacticText && (move.tacticOpportunity || move.tacticPrevention)) return true;
+  if (excludeTacticText && (move.tacticAllowed || move.tacticOpportunity || move.tacticPrevention)) return true;
   if (plainTextReasons(move, excludeTacticText).length > 0) return true;
   return isImprovableQuality(move.quality) && move.bestLineSan.length > 0;
 }

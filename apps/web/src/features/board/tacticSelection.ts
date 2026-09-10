@@ -1,12 +1,12 @@
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import type { BoardArrow, BoardHighlight } from './CoachBoard.js';
 
-/** Which of a move's two tactic sentences (if any) currently has its
- * board arrows showing — `'all'` is the "ready-made arrows" toggle
- * (both at once), `null` is nothing selected. Only one of these is ever
- * active: picking a new one replaces whatever was showing, per Daniel's
- * call ("click on other sentence to show other one"). */
-export type TacticSelectionKey = 'opportunity' | 'prevention' | 'all' | null;
+/** Which of a move's tactic sentences (if any) currently has its board
+ * arrows showing — `'all'` is the "ready-made arrows" toggle (every one at
+ * once), `null` is nothing selected. Only one of these is ever active:
+ * picking a new one replaces whatever was showing, per Daniel's call
+ * ("click on other sentence to show other one"). */
+export type TacticSelectionKey = 'allowed' | 'opportunity' | 'prevention' | 'all' | null;
 
 /** Clicking the sentence/toggle that's already active turns it off — the
  * click-again-to-deselect half of the interaction (the note card's own ×
@@ -37,6 +37,11 @@ export function tacticSelectionOverlay(move: ClassifiedMoveDto | undefined, key:
   if (!move || !key) return EMPTY_OVERLAY;
 
   const parts: TacticOverlay[] = [];
+  // Always red: what a move handed over is never the reader's good news, and
+  // the geometry is the opponent's reply drawn on the board this move made.
+  if ((key === 'allowed' || key === 'all') && move.tacticAllowed?.visual) {
+    parts.push(colorOverlay(move.tacticAllowed.visual, false));
+  }
   if ((key === 'opportunity' || key === 'all') && move.tacticOpportunity?.visual) {
     parts.push(colorOverlay(move.tacticOpportunity.visual, move.tacticOpportunity.found));
   }
@@ -60,9 +65,9 @@ function colorOverlay(visual: { arrows: { from: string; to: string }[]; highligh
   };
 }
 
-/** True once either tactic sentence has arrows worth drawing — governs
+/** True once any tactic sentence has arrows worth drawing — governs
  * whether the "show tactic arrows" (ready-made-arrows) toggle even
  * appears, and whether a given sentence is clickable at all. */
 export function hasTacticVisual(move: ClassifiedMoveDto | undefined): boolean {
-  return Boolean(move?.tacticOpportunity?.visual || move?.tacticPrevention?.visual);
+  return Boolean(move?.tacticAllowed?.visual || move?.tacticOpportunity?.visual || move?.tacticPrevention?.visual);
 }

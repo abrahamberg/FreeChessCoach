@@ -172,6 +172,60 @@ describe('buildGameReport', () => {
     expect(forkMove?.reasons).toContain('You won a rook through a fork — knight on d6 forks e8 and b7.');
   });
 
+  test('a move that hands over a queen says so, ahead of every other sentence on it', () => {
+    // Dany_Abr vs hnpr24, the position before 9...Qd7: the queen steps onto
+    // d7 and Bb5 pins it against the king on e8. The card for the move that
+    // gave the queen away used to say only what the mover *should* have
+    // played; what it cost showed up a ply later, on the opponent's card.
+    const blunderPgn = `[White "Dany_Abr"]
+[Black "hnpr24"]
+[SetUp "1"]
+[FEN "r1bqkb1r/pp3ppp/3p1n2/2p3B1/2B1P3/3Q4/PPP2PPP/RN3RK1 b kq - 1 9"]
+[Result "1-0"]
+
+9... Qd7 10. Bxf6`;
+    const game = parsePgn(blunderPgn);
+    const evals: EngineEval[] = [
+      { ply: 0, fen: game.positions[0]!.fen, depth: 20, lines: [{ moveUci: 'f8e7', moveSan: 'Be7', cp: 20, mateIn: null }] },
+      {
+        ply: 1,
+        fen: game.positions[1]!.fen,
+        depth: 20,
+        lines: [
+          { moveUci: 'c4b5', moveSan: 'Bb5', cp: 580, mateIn: null, pvSan: ['Bb5', 'Qxb5', 'Qxb5+', 'Nd7', 'Bxf6'] }
+        ]
+      },
+      { ply: 2, fen: game.positions[2]!.fen, depth: 20, lines: [{ moveUci: 'g7f6', moveSan: 'gxf6', cp: 400, mateIn: null }] }
+    ];
+
+    const report = buildGameReport({
+      game,
+      evals,
+      moves: classifyMoves(game, evals, 'white'),
+      book: buildFixtureBook(),
+      engine: { name: 'stockfish', depth: 20, multiPv: 1 },
+      priorRating: { white: null, black: null },
+      result: { white: 'win', black: 'loss' }
+    });
+
+    const blunder = report.moves.find((move) => move.moveSan === 'Qd7');
+    expect(blunder?.quality).toBe('blunder');
+    expect(blunder?.tacticAllowed).toMatchObject({
+      type: 'pin',
+      gain: { kind: 'material', prize: 'queen' },
+      byMoveSan: 'Bb5'
+    });
+    // First of the move's tactic sentences, ahead of the "they should have
+    // played Be7" one that used to be the whole card, and it names both the
+    // prize and the reply that collects it.
+    const reasons = blunder?.reasons ?? [];
+    const allowedAt = reasons.indexOf(
+      'They let you win a queen through a pin two moves away with Bb5 — the queen on d7 is stuck in front of the king.'
+    );
+    expect(allowedAt).toBeGreaterThanOrEqual(0);
+    expect(allowedAt).toBeLessThan(reasons.indexOf('They missed a chance to break the pin with Be7 — the knight on f6 is free to move again.'));
+  });
+
   test('the tactic sentence worth more opens the note, ahead of the prevention sentence already on the move', () => {
     // The prevention sentence is appended by the API's attachTacticPrevention
     // *before* the report is built, so ordering the two is an insertion, not
