@@ -1,10 +1,10 @@
+import { buildAnnotatedPgn } from '@freechesscoach/chess-analysis';
 import { BOT_ROSTER, TACTIC_MOTIF_TYPES, type CoachingPlan, type GameReport } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildApp } from '../app.js';
 import { buildResolveEngineBackendOptions, type CoachAgentBaseDependencies } from '../bootstrap.js';
 import * as analysesRepo from '../db/repositories/analyses.js';
-import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
@@ -560,21 +560,13 @@ describe('POST/GET /api/games', () => {
       payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
     });
     const { gameId } = imported.json();
-    const analysis = await analysesRepo.findByGameId(db, gameId);
-    if (!analysis) throw new Error('expected an analysis row to exist for the imported game');
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, [
-      {
-        ply: 1,
-        moveSan: 'e4',
-        mover: 'white',
-        isUserMove: true,
-        cpLoss: 0,
-        quality: 'good',
-        bestLineSan: ['e4'],
-        evalAfterCp: 20,
-        hangsPiece: false
-      }
-    ]);
+    const game = await gamesRepo.findById(db, gameId);
+    if (!game) throw new Error('expected the imported game to exist');
+    const annotatedPgn = buildAnnotatedPgn(
+      game.pgn,
+      new Map([[1, { quality: 'good', cpLoss: 0, bestLineSan: ['e4'], evalAfterCp: 20, hangsPiece: false }]])
+    );
+    await gamesRepo.updateAnnotatedPgn(db, gameId, annotatedPgn);
 
     const detail = await app.inject({ method: 'GET', url: `/api/games/${gameId}`, headers });
 
@@ -627,18 +619,11 @@ describe('POST/GET /api/games', () => {
       eco: null,
       playedAt: null
     });
-    await gameMoveQualitiesRepo.insert(db, {
-      gameId: game.id,
-      ply: 1,
-      moveSan: 'e4',
-      mover: 'white',
-      quality: 'best',
-      cpLoss: 0,
-      bestLineSan: ['e4'],
-      evalAfterCp: 20,
-      reasons: [],
-      diagnosisCodes: []
-    });
+    const annotatedPgn = buildAnnotatedPgn(
+      game.pgn,
+      new Map([[1, { quality: 'best', cpLoss: 0, bestLineSan: ['e4'], evalAfterCp: 20, hangsPiece: false, reasons: [] }]])
+    );
+    await gamesRepo.updateAnnotatedPgn(db, game.id, annotatedPgn);
 
     const detail = await app.inject({ method: 'GET', url: `/api/games/${game.id}`, headers });
 

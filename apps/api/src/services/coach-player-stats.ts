@@ -1,6 +1,6 @@
 import { classifyTimeControl, comparePlayerBaseline, type GameSpeed } from '@freechesscoach/chess-analysis';
 import { renderPlayerStats } from '@freechesscoach/prompts';
-import { GameReportSchema, type PlayerReport } from '@freechesscoach/shared';
+import { StoredGameReportSchema, type PlayerReport } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import type { StatsSourceRow } from '../db/repositories/analyses.js';
@@ -33,7 +33,7 @@ export async function getPlayerStatsText(db: Kysely<Database>, ctx: PlayerStatsC
 
   const speed = classifyTimeControl(game?.timeControl ?? null);
   const baseline = baselineReports(rows, ctx.gameId, speed);
-  const thisGame = game && gameReport ? (GameReportSchema.safeParse(gameReport).data?.players[game.userColor] ?? null) : null;
+  const thisGame = game && gameReport ? (StoredGameReportSchema.safeParse(gameReport).data?.players[game.userColor] ?? null) : null;
 
   return renderPlayerStats({
     comparison: comparePlayerBaseline(thisGame, baseline),
@@ -50,7 +50,7 @@ function baselineReports(rows: StatsSourceRow[], gameId: string, speed: GameSpee
     .filter((row) => speed === 'unknown' || classifyTimeControl(row.timeControl) === speed)
     .sort((a, b) => playedAtOf(b) - playedAtOf(a))
     .slice(0, BASELINE_GAME_LIMIT)
-    .map((row) => GameReportSchema.safeParse(row.gameReport).data?.players[row.userColor])
+    .map((row) => StoredGameReportSchema.safeParse(row.gameReport).data?.players[row.userColor])
     .filter((report): report is PlayerReport => report !== undefined);
 }
 

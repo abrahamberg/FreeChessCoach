@@ -1,8 +1,7 @@
-import { CONFIG } from '@freechesscoach/chess-analysis';
+import { buildAnnotatedPgn, CONFIG } from '@freechesscoach/chess-analysis';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
-import * as analysesRepo from '../db/repositories/analyses.js';
 import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
 import type { NewDiagnosticObservation } from '../db/repositories/diagnostic-observations.js';
 import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
@@ -62,7 +61,6 @@ describe('runRebuildDiagnosticProfileJob (Task 56.4, real DB — Testcontainers)
       hwdl: 0.4,
       severity: 'meaningful',
       reachability: 0.7,
-      detail: { text: 'missed a fork' },
       ...overrides
     };
   }
@@ -85,21 +83,11 @@ describe('runRebuildDiagnosticProfileJob (Task 56.4, real DB — Testcontainers)
     for (let i = 0; i < MIN_GAMES; i++) {
       const game = await makeRatedGame(user.id, new Date(2026, 1, i + 1));
       if (i === MIN_GAMES - 1) {
-        const analysis = await analysesRepo.insertQueued(db, game.id);
-        await analysesRepo.storeClassifiedMoves(db, analysis.id, [
-          {
-            ply: observedPly,
-            moveSan: 'Nxe5',
-            mover: 'white',
-            isUserMove: true,
-            cpLoss: 0,
-            quality: 'good',
-            bestLineSan: [],
-            evalAfterCp: 0,
-            hangsPiece: false,
-            phase: 'middlegame'
-          }
-        ]);
+        const annotatedPgn = buildAnnotatedPgn(
+          game.pgn,
+          new Map([[observedPly, { cpLoss: 0, quality: 'good', bestLineSan: [], evalAfterCp: 0, hangsPiece: false, phase: 'middlegame' }]])
+        );
+        await gamesRepo.updateAnnotatedPgn(db, game.id, annotatedPgn);
         await diagnosticObservationsRepo.insertMany(db, [observation(user.id, game.id, { ply: observedPly })]);
         observedGameId = game.id;
       }

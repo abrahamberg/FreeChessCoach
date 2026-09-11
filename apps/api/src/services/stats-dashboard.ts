@@ -1,9 +1,9 @@
 import { buildStatsDashboard, classifyTimeControl, headlineTacticBaselineNote, type StatsEntry } from '@freechesscoach/chess-analysis';
 import {
-  GameReportSchema,
+  StoredGameReportSchema,
   TACTIC_MOTIF_TYPES,
-  type GameSpeedFilter,
   type PlayerColor,
+  type GameSpeedFilter,
   type StatsDashboard,
   type StatsRange,
   type TacticBaselineNoteDto,
@@ -14,6 +14,7 @@ import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import type { Database } from '../db/schema.js';
 import { resultForColour } from './build-game-report.js';
+import { composeGameReport } from './game-report.js';
 
 const RANGE_DAYS: Record<Exclude<StatsRange, 'all'>, number> = {
   last7: 7,
@@ -55,15 +56,20 @@ export async function getStatsDashboard(
 /**
  * `gameReport` is jsonb with no migration (see `game-report.ts`'s own
  * comments on `tacticMotifs`/`strategySubScores`/`endgame`) — a report
- * stored before those fields existed fails `GameReportSchema` and is
+ * stored before those fields existed fails `StoredGameReportSchema` and is
  * skipped here rather than crashing the whole dashboard. The user can pick
- * these back up by re-analyzing the game.
+ * these back up by re-analyzing the game. `StoredGameReportSchema` (not
+ * `GameReportSchema`) since `analyses.game_report` no longer stores `moves`
+ * (0032_annotated_pgn.ts) — `composeGameReport` adds `.moves` back from
+ * `row.annotatedPgn` (`aggregate-opening-stats.ts`'s `openingMistakeCount`
+ * genuinely needs per-move data; the rest of this file's aggregators don't,
+ * but `StatsEntry` is one shared shape for both).
  */
 function toStatsEntry(row: analysesRepo.StatsSourceRow): StatsEntry | null {
-  const parsed = GameReportSchema.safeParse(row.gameReport);
+  const parsed = StoredGameReportSchema.safeParse(row.gameReport);
   if (!parsed.success) return null;
   return {
-    gameReport: parsed.data,
+    gameReport: composeGameReport(parsed.data, row),
     result: resultForColour(row.pgnResult, row.userColor),
     userColor: row.userColor,
     playedAt: row.playedAt,
@@ -91,7 +97,7 @@ export async function getGameTacticBaselineNote(
   gameReport: unknown,
   userColor: PlayerColor
 ): Promise<TacticBaselineNoteDto | null> {
-  const parsed = GameReportSchema.safeParse(gameReport);
+  const parsed = StoredGameReportSchema.safeParse(gameReport);
   if (!parsed.success) return null;
 
   const rows = await analysesRepo.listReadyReportsForUser(db, userId, null);

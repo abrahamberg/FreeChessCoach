@@ -1,12 +1,17 @@
 import type { Kysely } from 'kysely';
-import { appendMoveToPgn, parsePgn, removeLastMoveFromPgn } from '@freechesscoach/chess-analysis';
+import {
+  appendAnnotatedMove,
+  appendMoveToPgn,
+  parsePgn,
+  removeLastMoveFromPgn,
+  toAnnotatedMoveData
+} from '@freechesscoach/chess-analysis';
 import type { MoveQuality, PositionAnalysis } from '@freechesscoach/shared';
-import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import type { Database } from '../db/schema.js';
 import { NotFoundError } from '../lib/errors.js';
-import { classifyAndRecordMove } from './play-move-quality.js';
+import { classifyPlayMove } from './play-move-quality.js';
 
 export interface PlayMovesDependencies {
   db: Kysely<Database>;
@@ -84,11 +89,8 @@ async function commitMove(
   const applied = appendMoveToPgn(game.pgn, san, options);
   if ('error' in applied) return applied;
 
-  await gamesRepo.updatePgn(deps.db, gameId, applied.pgn);
-
   const mover = applied.ply % 2 === 1 ? 'white' : 'black';
-  const classified = await classifyAndRecordMove(deps.db, deps.analyzePosition, {
-    gameId,
+  const classified = await classifyPlayMove(deps.analyzePosition, {
     ply: applied.ply,
     moveSan: applied.san,
     mover,
@@ -96,6 +98,27 @@ async function commitMove(
     fenAfter: applied.fen,
     userColor: game.userColor,
     computeDiagnosisCodes: classifyOptions?.computeDiagnosisCodes ?? false
+  });
+
+  // Appended separately from `applied` above rather than derived from it:
+  // `annotatedPgn` carries the same mainline as `pgn` (see this game's
+  // updateAnnotatedPgn call sites) plus each move's `[%fcc ...]` comment,
+  // and only exists once classification has actually run. `game.annotatedPgn`
+  // is null until the first live move on a fresh game — bootstraps from
+  // `game.pgn` at that point, which at a fresh game is exactly what an
+  // empty annotatedPgn should start as (no moves yet either way).
+  const annotated = appendAnnotatedMove(game.annotatedPgn ?? game.pgn, san, toAnnotatedMoveData(classified), options);
+  if ('error' in annotated) return annotated;
+
+  // One transaction, not two independent UPDATEs: `pgn` and `annotatedPgn`
+  // must land together or not at all. Left non-atomic, a crash between them
+  // desyncs the two mainlines — the next commit replays its SAN against
+  // whichever one is now stale, `chess.move` throws inside `appendAnnotatedMove`,
+  // and every subsequent move on the game fails as "illegal" with no
+  // in-app recovery path.
+  await deps.db.transaction().execute(async (trx) => {
+    await gamesRepo.updatePgn(trx, gameId, applied.pgn);
+    await gamesRepo.updateAnnotatedPgn(trx, gameId, annotated.pgn, new Date());
   });
 
   return { fen: applied.fen, san: applied.san, ply: applied.ply, quality: classified.quality };
@@ -112,9 +135,20 @@ export interface UndoResult {
  * Play-mode undo (architecture.md §14): pops the live game's last move —
  * legitimate because a play-mode game is in-progress, server-authored data,
  * not an immutable imported PGN. session_messages stays untouched (append-
- * only, hard project rule); the removed ply's quality row and move note are
- * deleted so nothing downstream ever references a move that no longer
- * exists.
+ * only, hard project rule); the removed ply's move note is deleted, and
+ * `removeLastMoveFromPgn` on `annotatedPgn` drops that ply's `[%fcc ...]`
+ * annotation along with it — comments live on their move, so undoing the
+ * move undoes its annotation for free (no separate row/delete needed
+ * anymore — see `removeLastMoveFromPgn`'s own use in
+ * `annotated-pgn.test.ts`).
+ *
+ * `lastMoveAt` is reset to now, not left pointing at the undone move's
+ * (now-stale) commit time: it exists purely to measure "how long has the
+ * position been sitting like this" for clock/timeout math
+ * (bot-move-commit.ts, bot-claim-timeout.ts), and the position genuinely
+ * just changed. Leaving it stale would either inflate the resumed mover's
+ * next elapsed-time deduction by the whole pre-undo gap, or let a timeout
+ * poll landing right after the undo fire a bogus loss.
  */
 export async function undoLastMove(
   deps: PlayMovesDependencies,
@@ -130,9 +164,17 @@ export async function undoLastMove(
   const removed = removeLastMoveFromPgn(game.pgn);
   if ('error' in removed) return removed;
 
-  await gamesRepo.updatePgn(deps.db, gameId, removed.pgn);
-  await gameMoveQualitiesRepo.deleteByPly(deps.db, gameId, removedPly);
-  await sessionMoveNotesRepo.deleteByPly(deps.db, sessionId, removedPly);
+  const removedAnnotated = game.annotatedPgn ? removeLastMoveFromPgn(game.annotatedPgn) : null;
+  if (removedAnnotated && 'error' in removedAnnotated) return removedAnnotated;
+
+  // One transaction — see commitMove's identical reasoning: `pgn` and
+  // `annotatedPgn` must move together, and the move-note delete is part of
+  // the same logical "undo" action.
+  await deps.db.transaction().execute(async (trx) => {
+    await gamesRepo.updatePgn(trx, gameId, removed.pgn);
+    if (removedAnnotated) await gamesRepo.updateAnnotatedPgn(trx, gameId, removedAnnotated.pgn, new Date());
+    await sessionMoveNotesRepo.deleteByPly(trx, sessionId, removedPly);
+  });
 
   return { fen: removed.fen, removedPly };
 }

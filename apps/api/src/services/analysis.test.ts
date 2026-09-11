@@ -1,12 +1,21 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import { BookReportSchema, CoachingPlanSchema, GameReportSchema, type EngineEval, type PositionAnalysis } from '@freechesscoach/shared';
+import { parseAnnotatedPgn, parsePgn } from '@freechesscoach/chess-analysis';
+import {
+  BookReportSchema,
+  CoachingPlanSchema,
+  GameReportSchema,
+  type EngineEval,
+  type PositionAnalysis,
+  type StoredGameReport
+} from '@freechesscoach/shared';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
-import { runAnalyzeGameJob, type AnalysisJobDependencies } from './analysis.js';
+import { composeGameReport } from './game-report.js';
+import { analyzeInChunks, runAnalyzeGameJob, type AnalysisJobDependencies } from './analysis.js';
 
 const PGN = `[Event "Test"]
 [White "Ann"]
@@ -157,17 +166,17 @@ describe('runAnalyzeGameJob', () => {
 
     const row = await db
       .selectFrom('analyses')
-      .select(['status', 'engineEvals', 'coachingPlan', 'classifiedMoves', 'error'])
+      .select(['status', 'evalsComputed', 'coachingPlan', 'error'])
       .where('id', '=', analysisId)
       .executeTakeFirstOrThrow();
     expect(row.status).toBe('ready');
     expect(row.error).toBeNull();
-    expect(row.engineEvals).toBeTruthy();
-    expect((row.engineEvals as EngineEval[]).length).toBeGreaterThan(0);
+    expect(row.evalsComputed).toBeGreaterThan(0);
     expect((row.coachingPlan as { gameSummary: string }).gameSummary).toContain('Scholar');
     expect(callPlanner).toHaveBeenCalledTimes(1);
 
-    const classifiedMoves = row.classifiedMoves as Array<{ ply: number; moveSan: string; quality: string }>;
+    const game = await gamesRepo.findById(db, gameId);
+    const classifiedMoves = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor);
     expect(classifiedMoves.length).toBeGreaterThan(0);
     expect(classifiedMoves[0]).toMatchObject({ ply: 1, moveSan: 'e4' });
   });
@@ -211,7 +220,8 @@ describe('runAnalyzeGameJob', () => {
       .select('gameReport')
       .where('id', '=', analysisId)
       .executeTakeFirstOrThrow();
-    const report = GameReportSchema.parse(row.gameReport);
+    const game = await gamesRepo.findById(db, gameId);
+    const report = GameReportSchema.parse(composeGameReport(row.gameReport as StoredGameReport, game!));
 
     expect(report.engine).toMatchObject({ name: 'stockfish' });
     expect(report.book.name).toBe('Sicilian Defense: Najdorf Variation, English Attack');
@@ -226,26 +236,18 @@ describe('runAnalyzeGameJob', () => {
   });
 
   test('persists per-move feature enrichment and move flags', async () => {
-    const { gameId, analysisId } = await setupGame(FORK_PGN);
+    const { gameId } = await setupGame(FORK_PGN);
     const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
 
     await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
 
-    const row = await db
-      .selectFrom('analyses')
-      .select('classifiedMoves')
-      .where('id', '=', analysisId)
-      .executeTakeFirstOrThrow();
-    const move = (row.classifiedMoves as Array<{
-      features: { forks: Array<{ square: string }> };
-      moveFlags: { movedPieceType: string };
-      featureDelta: { newForks: Array<{ square: string }> };
-    }>)[0];
+    const game = await gamesRepo.findById(db, gameId);
+    const move = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor)[0];
     if (!move) throw new Error('classified move fixture is empty');
 
     expect(move.moveFlags).toMatchObject({ movedPieceType: 'n' });
-    expect(move.features.forks.some((fork) => fork.square === 'd5')).toBe(true);
-    expect(move.featureDelta.newForks.some((fork) => fork.square === 'd5')).toBe(true);
+    expect(move.features!.forks.some((fork) => fork.square === 'd5')).toBe(true);
+    expect(move.featureDelta!.newForks.some((fork) => fork.square === 'd5')).toBe(true);
   });
 
   // Task 40.3: the whole point of the free path is that this never needs the
@@ -272,7 +274,8 @@ describe('runAnalyzeGameJob', () => {
       .select('gameReport')
       .where('id', '=', analysisId)
       .executeTakeFirstOrThrow();
-    const report = GameReportSchema.parse(row.gameReport);
+    const game = await gamesRepo.findById(db, gameId);
+    const report = GameReportSchema.parse(composeGameReport(row.gameReport as StoredGameReport, game!));
 
     expect(report.players.black.tacticMotifs.fork.prevented).toBe(1);
     expect(analyzePosition).not.toHaveBeenCalled();
@@ -283,7 +286,7 @@ describe('runAnalyzeGameJob', () => {
   // runAnalyzeGameJob today — isBrilliantMove always sees
   // brilliantSoundness === undefined and fails closed at B6.
   test('a known sound sacrifice is classified brilliant once B6 soundness is checked', async () => {
-    const { gameId, analysisId } = await setupGame(BRILLIANT_PGN);
+    const { gameId } = await setupGame(BRILLIANT_PGN);
     const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
     const analyzeGamePositions = vi.fn(async (fens: string[]) =>
       fens.map((fen): EngineEval =>
@@ -312,12 +315,8 @@ describe('runAnalyzeGameJob', () => {
 
     await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition, callPlanner }, gameId);
 
-    const row = await db
-      .selectFrom('analyses')
-      .select('classifiedMoves')
-      .where('id', '=', analysisId)
-      .executeTakeFirstOrThrow();
-    const moves = row.classifiedMoves as Array<{ ply: number; quality: string }>;
+    const game = await gamesRepo.findById(db, gameId);
+    const moves = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor);
 
     expect(moves.find((move) => move.ply === 1)?.quality).toBe('brilliant');
     expect(analyzePosition).toHaveBeenCalledWith(BRILLIANT_AFTER_FEN);
@@ -370,10 +369,10 @@ describe('runAnalyzeGameJob', () => {
     const analyzeGamePositions = vi.fn(async (fens: string[]) => {
       const row = await db
         .selectFrom('analyses')
-        .select('engineEvals')
+        .select('evalsComputed')
         .where('id', '=', analysisId)
         .executeTakeFirstOrThrow();
-      storedBeforeEachCall.push(((row.engineEvals as EngineEval[] | null) ?? []).length);
+      storedBeforeEachCall.push(row.evalsComputed);
       chunkSizes.push(fens.length);
       return Promise.all(fens.map((fen) => makeEval(fen)));
     });
@@ -389,23 +388,26 @@ describe('runAnalyzeGameJob', () => {
 
     const row = await db
       .selectFrom('analyses')
-      .select(['status', 'engineEvals'])
+      .select(['status', 'evalsComputed'])
       .where('id', '=', analysisId)
       .executeTakeFirstOrThrow();
     expect(row.status).toBe('ready');
     // Every position still gets analyzed exactly once.
-    expect((row.engineEvals as EngineEval[]).length).toBe(chunkSizes.reduce((a, b) => a + b, 0));
+    expect(row.evalsComputed).toBe(chunkSizes.reduce((a, b) => a + b, 0));
   });
 
   // Regression: the real EngineBackend numbers each EngineEval's `ply`
   // relative to the chunk it was asked to analyze (0..chunkLength-1), since
   // that's all it's given — `analyzeInChunks` is what's responsible for
   // turning per-chunk-relative plies into the game's real, globally
-  // sequential ply. It used to just concatenate the chunks verbatim, so
-  // `engine_evals[i].ply` cycled 0..5,0..5,... instead of counting up.
+  // sequential ply. It used to just concatenate the chunks verbatim, so the
+  // stored ply cycled 0..5,0..5,... instead of counting up. Calls
+  // analyzeInChunks directly (exported for this reason) and inspects its
+  // returned array — engine evals aren't persisted as their own document
+  // anymore (0032_annotated_pgn.ts), so there's no DB column left to read
+  // this back from.
   test('renumbers each chunk\'s ply to the position\'s real index in the game', async () => {
     const { gameId, analysisId } = await setupGame();
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
     const analyzeGamePositions = vi.fn(async (fens: string[]) =>
       fens.map((fen, chunkRelativePly): EngineEval => ({
         ply: chunkRelativePly,
@@ -414,15 +416,16 @@ describe('runAnalyzeGameJob', () => {
         lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 20, mateIn: null }]
       }))
     );
+    const game = await gamesRepo.findById(db, gameId);
+    const fens = parsePgn(game!.pgn).positions.map((position) => position.fen);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
+    const evals = await analyzeInChunks(
+      db,
+      { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner: vi.fn() },
+      analysisId,
+      fens
+    );
 
-    const row = await db
-      .selectFrom('analyses')
-      .select('engineEvals')
-      .where('id', '=', analysisId)
-      .executeTakeFirstOrThrow();
-    const evals = row.engineEvals as EngineEval[];
     // This PGN is 8 positions against a chunk size of 6, so a naive
     // concatenation would show 0,1,2,3,4,5,0,1 instead of 0..7.
     expect(evals.map((e) => e.ply)).toEqual(evals.map((_, i) => i));
@@ -434,7 +437,6 @@ describe('runAnalyzeGameJob', () => {
   // analysis. It should now self-heal by reordering the two lines instead.
   test('a near-tied multiPv ordering violation self-heals instead of failing the analysis', async () => {
     const { gameId, analysisId } = await setupGame();
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
     const analyzeGamePositions = vi.fn(async (fens: string[]) =>
       fens.map((fen, chunkRelativePly): EngineEval => ({
         ply: chunkRelativePly,
@@ -446,16 +448,16 @@ describe('runAnalyzeGameJob', () => {
         ]
       }))
     );
+    const game = await gamesRepo.findById(db, gameId);
+    const fens = parsePgn(game!.pgn).positions.map((position) => position.fen);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
+    const evals = await analyzeInChunks(
+      db,
+      { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner: vi.fn() },
+      analysisId,
+      fens
+    );
 
-    const row = await db
-      .selectFrom('analyses')
-      .select(['status', 'engineEvals'])
-      .where('id', '=', analysisId)
-      .executeTakeFirstOrThrow();
-    expect(row.status).toBe('ready');
-    const evals = row.engineEvals as EngineEval[];
     // Ply 0 is the starting position (white to move): d4's cp (40) beats
     // e4's (10), so it should now lead after the repair swaps them.
     expect(evals[0]!.lines[0]!.moveSan).toBe('d4');

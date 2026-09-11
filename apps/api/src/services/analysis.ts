@@ -1,4 +1,5 @@
 import {
+  buildAnnotatedPgn,
   classifyMoves,
   findCandidateMoments,
   inBookWalk,
@@ -10,6 +11,7 @@ import {
   repairEvalSignConvention,
   resolveOpening,
   tacticPreventionReason,
+  toAnnotatedMoveData,
   type ParsedPosition
 } from '@freechesscoach/chess-analysis';
 import { ratingForPromptScoping } from '@freechesscoach/shared';
@@ -111,7 +113,11 @@ export async function runAnalyzeGameJob(
       evals
     );
     const classifiedMoves = attachTacticPrevention(unannotatedMoves, prevention.byPly);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, classifiedMoves);
+    const annotatedPgn = buildAnnotatedPgn(
+      game.pgn,
+      new Map(classifiedMoves.map((move) => [move.ply, toAnnotatedMoveData(move)]))
+    );
+    await gamesRepo.updateAnnotatedPgn(db, gameId, annotatedPgn);
     const bookReport = buildBookReport(parsedGame.positions);
     await analysesRepo.storeBookReport(db, analysis.id, bookReport);
     const gameReport = buildGameReportForAnalysis({
@@ -326,7 +332,7 @@ function buildPlayerBookReport(
  * Deliberately at this layer rather than in either EngineBackend, so native
  * and browser mode report progress the same way.
  */
-async function analyzeInChunks(
+export async function analyzeInChunks(
   db: Kysely<Database>,
   deps: AnalysisJobDependencies,
   analysisId: string,
@@ -350,11 +356,8 @@ async function analyzeInChunks(
       lines: repairEvalSignConvention(evalResult.fen, evalResult.lines)
     }));
     evals.push(...renumberedChunkEvals);
-    await analysesRepo.storeEngineEvals(db, analysisId, evals);
+    await analysesRepo.incrementEvalsComputed(db, analysisId, chunk.length);
   }
-
-  // An empty game would otherwise never write the (empty) evals at all.
-  if (fens.length === 0) await analysesRepo.storeEngineEvals(db, analysisId, evals);
 
   return evals;
 }

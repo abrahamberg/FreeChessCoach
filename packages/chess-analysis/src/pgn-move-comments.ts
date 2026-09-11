@@ -16,7 +16,14 @@ export interface PgnMoveComment {
 const CLOCK_TAG = /\[%clk\s+(\d+):(\d{2}):(\d{2}(?:\.\d+)?)\]/;
 const EVAL_TAG = /\[%eval\s+(#?-?\d+(?:\.\d+)?)\]/;
 const TIME_CONTROL_HEADER = /^\[TimeControl\s+"([^"]*)"\]/m;
-const MOVE_NUMBER_TOKEN = /^\d+\.+$/;
+/** A move-number marker, `12.` style — or a bare continuation ellipsis,
+ * `...`, which chess.js's own `Chess#pgn()` serializer emits as a second,
+ * space-separated token (`3. ... Nf6`) whenever the position needs to
+ * restate "Black to move" — e.g. every annotated PGN `annotated-pgn.ts`
+ * rebuilds from a `[FEN]`/`[SetUp]` custom start where Black moves first.
+ * Without the second alternative, `...` gets counted as if it were a real
+ * move token, off-by-one-shifting every ply's comment attribution after it. */
+const MOVE_NUMBER_TOKEN = /^\d+\.+$|^\.{2,}$/;
 const RESULT_TOKEN = /^(1-0|0-1|1\/2-1\/2|\*)$/;
 const NAG_TOKEN = /^\$\d+$/;
 
@@ -30,7 +37,7 @@ const NAG_TOKEN = /^\$\d+$/;
  */
 export function extractPgnMoveComments(pgn: string): PgnMoveComment[] {
   const firstGame = extractFirstGame(pgn);
-  const commentTextByPly = collectCommentTextByPly(stripHeaderLines(firstGame));
+  const commentTextByPly = commentTextByPlyOf(pgn);
   const incrementMs = parseIncrementMs(firstGame);
 
   const parsed = [...commentTextByPly.entries()]
@@ -54,6 +61,16 @@ function stripHeaderLines(pgn: string): string {
     .split('\n')
     .filter((line) => !/^\s*\[.*\]\s*$/.test(line))
     .join('\n');
+}
+
+/**
+ * `extractFirstGame` + `stripHeaderLines` + `collectCommentTextByPly` in one
+ * call — the raw-text "what comment text follows each ply's move" primitive,
+ * reused by `annotated-pgn.ts` to decode its own `[%fcc ...]` tag out of
+ * whatever else a move's comment carries (`[%clk]`/`[%eval]` included).
+ */
+export function commentTextByPlyOf(pgn: string): Map<number, string> {
+  return collectCommentTextByPly(stripHeaderLines(extractFirstGame(pgn)));
 }
 
 /**

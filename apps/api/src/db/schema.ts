@@ -1,6 +1,6 @@
 import type { ColumnType, Generated } from 'kysely';
 import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { BotConfig, CoachPersona, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, MoveQuality, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { BotConfig, CoachPersona, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -78,6 +78,19 @@ export interface GamesTable {
    * same pattern as ratingsProvisional below; the column default only backfills
    * rows that predate the migration. */
   reviewTier: Generated<GameReviewTier>;
+  /** 0032_annotated_pgn.ts — the canonical per-move analysis store: the same
+   * mainline as `pgn`, with each analyzed ply's `ClassifiedMoveDto` (minus
+   * what's already reconstructible by replay) embedded as a `[%fcc ...]`
+   * comment tag (packages/chess-analysis/src/annotated-pgn.ts). Null until
+   * the batch analysis job or a live-play move first writes it. Replaces
+   * `game_move_qualities` and `analyses.classified_moves`. */
+  annotatedPgn: string | null;
+  /** The wall-clock time `annotatedPgn` was last appended to — live play's
+   * replacement for `game_move_qualities.createdAt` (bot-move-commit.ts's
+   * elapsed-time calc reads this directly off the game row instead of a
+   * second query). Null for a game that has never had a move committed
+   * through the live-play path. */
+  lastMoveAt: Date | null;
 }
 
 export interface AnalysesTable {
@@ -85,10 +98,20 @@ export interface AnalysesTable {
   gameId: string;
   status: 'queued' | 'engine_running' | 'planning' | 'ready' | 'failed';
   error: string | null;
-  engineEvals: Jsonb<unknown> | null;
+  /** 0032_annotated_pgn.ts — replaces `engineEvals`, which was write-only
+   * (persisted per chunk during `engine_running`, read back only via
+   * `jsonb_array_length` for the progress bar — never for its content once
+   * a game reaches `ready`). Incremented per chunk instead of growing a
+   * jsonb array nothing re-reads. */
+  evalsComputed: Generated<number>;
   coachingPlan: Jsonb<unknown> | null;
-  classifiedMoves: Jsonb<unknown> | null;
   bookReport: Jsonb<unknown> | null;
+  /** 0032_annotated_pgn.ts — now `StoredGameReport` (GameReportSchema minus
+   * `moves`, packages/shared), not a full `GameReport`: `moves` was a
+   * confirmed duplicate of this same column's own `.moves` (both held the
+   * identical `ClassifiedMoveDto[]`), so it now lives solely in
+   * `games.annotatedPgn`. `services/game-report.ts`'s `getFullGameReport`
+   * composes the two back into a full `GameReport` at read time. */
   gameReport: Jsonb<unknown> | null;
   createdAt: Generated<Date>;
   completedAt: Date | null;
@@ -170,25 +193,6 @@ export interface CreditLedgerTable {
   createdAt: Generated<Date>;
 }
 
-export interface GameMoveQualitiesTable {
-  id: Generated<string>;
-  gameId: string;
-  ply: number;
-  moveSan: string;
-  mover: 'white' | 'black';
-  quality: MoveQuality;
-  cpLoss: number;
-  bestLineSan: Jsonb<string[]>;
-  evalAfterCp: number;
-  reasons: Jsonb<string[]>;
-  /** Real per-move diagnosis codes (docs/plan.md Phase 62 Task 62.4) —
-   * always `[]` except for a bot's own move, where it's the diagnostics
-   * registry's canonical read of what the move actually exhibited. See
-   * 0030_bot_move_diagnosis_codes.ts. */
-  diagnosisCodes: Jsonb<DiagnosisCodeId[]>;
-  createdAt: Generated<Date>;
-}
-
 export interface PositionEvaluationsTable {
   fen: string;
   depth: number;
@@ -215,7 +219,6 @@ export interface DiagnosticObservationsTable {
   hwdl: number;
   severity: Severity;
   reachability: number;
-  detail: Jsonb<unknown> | null;
   createdAt: Generated<Date>;
 }
 
@@ -300,7 +303,6 @@ export interface Database {
   creditLedger: CreditLedgerTable;
   llmCallLog: LlmCallLogTable;
   positionEvaluations: PositionEvaluationsTable;
-  gameMoveQualities: GameMoveQualitiesTable;
   diagnosticObservations: DiagnosticObservationsTable;
   diagnosticProfiles: DiagnosticProfilesTable;
   puzzleAssignments: PuzzleAssignmentsTable;

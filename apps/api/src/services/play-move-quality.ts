@@ -1,4 +1,3 @@
-import type { Kysely } from 'kysely';
 import {
   buildPlyDiagnosticContext,
   classifyLiveMove,
@@ -6,11 +5,17 @@ import {
   type ClassifiedMove
 } from '@freechesscoach/chess-analysis';
 import type { DiagnosisCodeId, EngineEval, PositionAnalysis } from '@freechesscoach/shared';
-import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
-import type { Database } from '../db/schema.js';
 
-export interface ClassifyAndRecordMoveArgs {
-  gameId: string;
+/** `classifyPlayMove`'s result: a `ClassifiedMove` widened with the one
+ * field `ClassifiedMoveSchema` doesn't carry (see
+ * `annotated-pgn.ts`'s `AnnotatedMoveData`'s own doc comment) — the caller
+ * (`services/play-moves.ts`) folds this straight into that move's
+ * `[%fcc ...]` annotation via `toAnnotatedMoveData`. */
+export interface ClassifiedLiveMove extends ClassifiedMove {
+  diagnosisCodes: DiagnosisCodeId[];
+}
+
+export interface ClassifyPlayMoveArgs {
   ply: number;
   moveSan: string;
   mover: 'white' | 'black';
@@ -30,19 +35,19 @@ export interface ClassifyAndRecordMoveArgs {
 }
 
 /**
- * Play mode's live equivalent of the batch pipeline's classifyMoves +
- * analyses.classified_moves: two engine calls (before/after the move, via
- * the cache-first `analyzePosition` dependency) feed the exact same
- * classification code path the batch pipeline uses (classifyLiveMove
- * delegates to classify.ts's private classifyMove), then the result is
- * persisted as one game_move_qualities row. Synchronous, not enqueued — the
- * feedback is needed in the very next coach turn.
+ * Play mode's live equivalent of the batch pipeline's classifyMoves: two
+ * engine calls (before/after the move, via the cache-first `analyzePosition`
+ * dependency) feed the exact same classification code path the batch
+ * pipeline uses (classifyLiveMove delegates to classify.ts's private
+ * classifyMove). Synchronous, not enqueued — the feedback is needed in the
+ * very next coach turn. Purely a classifier now (0032_annotated_pgn.ts) —
+ * the caller (`services/play-moves.ts`) is the one that persists the result,
+ * by folding it into the game's `annotatedPgn`.
  */
-export async function classifyAndRecordMove(
-  db: Kysely<Database>,
+export async function classifyPlayMove(
   analyzePosition: (fen: string) => Promise<PositionAnalysis>,
-  args: ClassifyAndRecordMoveArgs
-): Promise<ClassifiedMove> {
+  args: ClassifyPlayMoveArgs
+): Promise<ClassifiedLiveMove> {
   const [analysisBefore, analysisAfter] = await Promise.all([
     analyzePosition(args.fenBefore),
     analyzePosition(args.fenAfter)
@@ -58,20 +63,7 @@ export async function classifyAndRecordMove(
     userColor: args.userColor
   });
 
-  await gameMoveQualitiesRepo.insert(db, {
-    gameId: args.gameId,
-    ply: classified.ply,
-    moveSan: classified.moveSan,
-    mover: classified.mover,
-    quality: classified.quality,
-    cpLoss: classified.cpLoss,
-    bestLineSan: classified.bestLineSan,
-    evalAfterCp: classified.evalAfterCp,
-    reasons: classified.reasons ?? [],
-    diagnosisCodes: args.computeDiagnosisCodes ? diagnosisCodesFor(classified) : []
-  });
-
-  return classified;
+  return { ...classified, diagnosisCodes: args.computeDiagnosisCodes ? diagnosisCodesFor(classified) : [] };
 }
 
 /**

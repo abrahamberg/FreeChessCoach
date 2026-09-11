@@ -1,13 +1,12 @@
-import type { ClassifiedMove } from '@freechesscoach/chess-analysis';
 import { sql, type Kysely } from 'kysely';
 import {
   ImportableGameSourceSchema,
   type AnalysisStatus,
   type BookReport,
   type CoachingPlan,
-  type EngineEval,
   type GameReport,
-  type PlayerColor
+  type PlayerColor,
+  type StoredGameReport
 } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
@@ -51,26 +50,22 @@ export function findById(db: Kysely<Database>, id: string): Promise<AnalysisRow 
 
 export interface AnalysisProgressRow {
   status: AnalysisStatus;
-  /** Engine evals persisted so far. services/analysis.ts stores them a chunk
-   * at a time, so this climbs through the `engine_running` step. */
+  /** Positions analyzed so far — services/analysis.ts increments this a
+   * chunk at a time, so it climbs through the `engine_running` step. */
   progress: number;
 }
 
 /** For the status SSE, which re-reads this row every second while a game
- * analyzes: counts the stored evals in Postgres instead of shipping the whole
- * `engine_evals` document back on each poll just to measure its length.
- * Raw SQL because `engine_evals` isn't on AnalysisRow, and the column is
- * spelled snake_case here since CamelCasePlugin doesn't rewrite sql``. */
+ * analyzes. */
 export async function findProgress(
   db: Kysely<Database>,
   id: string
 ): Promise<AnalysisProgressRow | undefined> {
-  const result = await sql<AnalysisProgressRow>`
-    select status, coalesce(jsonb_array_length(engine_evals), 0)::int as progress
-    from analyses
-    where id = ${id}
-  `.execute(db);
-  return result.rows[0];
+  return db
+    .selectFrom('analyses')
+    .select(['status', 'evalsComputed as progress'])
+    .where('id', '=', id)
+    .executeTakeFirst();
 }
 
 /** Scoped by game ownership — for the status route, which runs in a request context. */
@@ -108,27 +103,13 @@ export function updateStatus(
     .then(() => undefined);
 }
 
-export function storeEngineEvals(
-  db: Kysely<Database>,
-  id: string,
-  evals: EngineEval[]
-): Promise<void> {
+/** Replaces `storeEngineEvals` (0032_annotated_pgn.ts): the batch job calls
+ * this once per analyzed chunk instead of persisting the whole growing evals
+ * array, which nothing ever read back once a game reached `ready`. */
+export function incrementEvalsComputed(db: Kysely<Database>, id: string, by: number): Promise<void> {
   return db
     .updateTable('analyses')
-    .set({ engineEvals: JSON.stringify(evals) })
-    .where('id', '=', id)
-    .execute()
-    .then(() => undefined);
-}
-
-export function storeClassifiedMoves(
-  db: Kysely<Database>,
-  id: string,
-  moves: ClassifiedMove[]
-): Promise<void> {
-  return db
-    .updateTable('analyses')
-    .set({ classifiedMoves: JSON.stringify(moves) })
+    .set((eb) => ({ evalsComputed: eb('evalsComputed', '+', by) }))
     .where('id', '=', id)
     .execute()
     .then(() => undefined);
@@ -147,44 +128,37 @@ export function storeBookReport(
     .then(() => undefined);
 }
 
+/** Stores the report with `moves` omitted (0032_annotated_pgn.ts) — `moves`
+ * was a confirmed duplicate of `games.annotatedPgn`'s own data. Callers pass
+ * a full `GameReport`; this strips `moves` before persisting rather than
+ * pushing that onto every call site. */
 export function storeGameReport(
   db: Kysely<Database>,
   id: string,
   report: GameReport
 ): Promise<void> {
+  const { moves: _moves, ...stored } = report;
   return db
     .updateTable('analyses')
-    .set({ gameReport: JSON.stringify(report) })
+    .set({ gameReport: JSON.stringify(stored) })
     .where('id', '=', id)
     .execute()
     .then(() => undefined);
 }
 
-/** Reads back the assembled game report (game report summary panel). */
+/** Reads back the stored (moves-less) report — `services/game-report.ts`'s
+ * `getFullGameReport` is what composes this with `games.annotatedPgn` into
+ * a full `GameReport` for callers that need per-move detail. */
 export function findGameReportByGameId(
   db: Kysely<Database>,
   gameId: string
-): Promise<GameReport | undefined> {
+): Promise<StoredGameReport | undefined> {
   return db
     .selectFrom('analyses')
     .select('gameReport')
     .where('gameId', '=', gameId)
     .executeTakeFirst()
-    .then((row) => row?.gameReport as GameReport | undefined);
-}
-
-/** Reads back the stored per-move classification for a ready analysis (move
- * explorer color-coding). */
-export function findClassifiedMovesByGameId(
-  db: Kysely<Database>,
-  gameId: string
-): Promise<ClassifiedMove[] | undefined> {
-  return db
-    .selectFrom('analyses')
-    .select('classifiedMoves')
-    .where('gameId', '=', gameId)
-    .executeTakeFirst()
-    .then((row) => row?.classifiedMoves as ClassifiedMove[] | undefined);
+    .then((row) => row?.gameReport as StoredGameReport | undefined);
 }
 
 export function markReady(
@@ -217,7 +191,7 @@ export interface ActiveAnalysisRow {
   id: string;
   gameId: string;
   status: AnalysisStatus;
-  /** Engine evals persisted so far — same definition as AnalysisProgressRow. */
+  /** Positions analyzed so far — same definition as AnalysisProgressRow. */
   progress: number;
   pgn: string;
 }
@@ -230,7 +204,7 @@ export interface ActiveAnalysisRow {
 export async function findActiveForUser(db: Kysely<Database>, userId: string): Promise<ActiveAnalysisRow[]> {
   const result = await sql<ActiveAnalysisRow>`
     select analyses.id, analyses.game_id as "gameId", analyses.status,
-           coalesce(jsonb_array_length(analyses.engine_evals), 0)::int as progress,
+           analyses.evals_computed as progress,
            games.pgn
     from analyses
     join games on games.id = analyses.game_id
@@ -259,13 +233,19 @@ export interface StatsSourceRow {
    * the player's *other* games without re-querying (see
    * `getGameTacticBaselineNote`). */
   gameId: string;
-  gameReport: GameReport;
+  /** Moves-less, as actually stored (0032_annotated_pgn.ts). Some
+   * aggregators (`aggregate-opening-stats.ts`'s `openingMistakeCount`)
+   * genuinely need per-move data, not just the aggregate fields — callers
+   * that do compose the full report via `services/game-report.ts`'s
+   * `composeGameReport(gameReport, { annotatedPgn, userColor })`. */
+  gameReport: StoredGameReport;
   /** The PGN `Result` header — resolved to a per-colour outcome at the
    * service layer, same as `buildGameReportForAnalysis`'s own resultForColour. */
   pgnResult: string | null;
   userColor: PlayerColor;
   playedAt: Date | null;
   timeControl: string | null;
+  annotatedPgn: string | null;
 }
 
 /** Feeds the stats dashboard (Phase 29): every ready analysis for one of
@@ -290,7 +270,8 @@ export async function listReadyReportsForUser(
       'games.result as pgnResult',
       'games.userColor as userColor',
       'games.playedAt as playedAt',
-      'games.timeControl as timeControl'
+      'games.timeControl as timeControl',
+      'games.annotatedPgn as annotatedPgn'
     ])
     .where('analyses.status', '=', 'ready')
     .where('games.userId', '=', userId)
@@ -303,5 +284,5 @@ export async function listReadyReportsForUser(
   }
 
   const rows = await query.execute();
-  return rows.map((row) => ({ ...row, gameReport: row.gameReport as GameReport }));
+  return rows.map((row) => ({ ...row, gameReport: row.gameReport as StoredGameReport }));
 }

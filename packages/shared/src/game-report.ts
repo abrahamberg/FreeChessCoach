@@ -159,3 +159,16 @@ export const GameReportSchema = z.object({
   moves: z.array(ClassifiedMoveSchema)
 });
 export type GameReport = z.infer<typeof GameReportSchema>;
+
+/**
+ * What `analyses.game_report` actually persists: everything `GameReportSchema`
+ * has except `moves`, which now lives solely in the game's own
+ * `annotated_pgn` (one canonical per-move store instead of two copies of the
+ * same array). `GameReportSchema` — `.moves` included — stays the *served*
+ * shape web/prompts/the coach agent consume; the service layer composes a
+ * full `GameReport` by reading `StoredGameReport` back and attaching
+ * `moves` from `parseAnnotatedPgn` (see `services/game-report.ts`'s
+ * `getFullGameReport`).
+ */
+export const StoredGameReportSchema = GameReportSchema.omit({ moves: true });
+export type StoredGameReport = z.infer<typeof StoredGameReportSchema>;

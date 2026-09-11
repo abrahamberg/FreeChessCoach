@@ -30,6 +30,9 @@ import * as puzzleAssignments from './migrations/0028_puzzle_assignments.js';
 import * as puzzleSessions from './migrations/0029_puzzle_sessions.js';
 import * as botMoveDiagnosisCodes from './migrations/0030_bot_move_diagnosis_codes.js';
 import * as gameReviewTier from './migrations/0031_game_review_tier.js';
+import * as annotatedPgn from './migrations/0032_annotated_pgn.js';
+import * as gamesUserCreatedIndex from './migrations/0033_games_user_created_index.js';
+import * as stripStaleGameReportMoves from './migrations/0034_strip_stale_game_report_moves.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -64,7 +67,10 @@ const provider: MigrationProvider = {
       '0028_puzzle_assignments': puzzleAssignments,
       '0029_puzzle_sessions': puzzleSessions,
       '0030_bot_move_diagnosis_codes': botMoveDiagnosisCodes,
-      '0031_game_review_tier': gameReviewTier
+      '0031_game_review_tier': gameReviewTier,
+      '0032_annotated_pgn': annotatedPgn,
+      '0033_games_user_created_index': gamesUserCreatedIndex,
+      '0034_strip_stale_game_report_moves': stripStaleGameReportMoves
     })
 };
 

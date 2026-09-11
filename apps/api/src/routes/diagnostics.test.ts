@@ -194,8 +194,7 @@ describe('diagnostics routes', () => {
           failed: true,
           hwdl: 0.8,
           severity: 'major',
-          reachability: 0.7,
-          detail: null
+          reachability: 0.7
         },
         {
           userId: otherUser.id,
@@ -206,8 +205,7 @@ describe('diagnostics routes', () => {
           failed: true,
           hwdl: 0.5,
           severity: 'minor',
-          reachability: 0.7,
-          detail: null
+          reachability: 0.7
         }
       ]);
       const app = buildApp({ authMode: 'proxy', db });
