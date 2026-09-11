@@ -1,5 +1,6 @@
 export * from './apply-san-sequence.js';
 export * from './accuracy-curve.js';
+export * from './annotated-pgn.js';
 export * from './attack-map.js';
 export * from './aggregate-opening-stats.js';
 export * from './assert-eval-sign.js';

@@ -30,7 +30,7 @@ const NAG_TOKEN = /^\$\d+$/;
  */
 export function extractPgnMoveComments(pgn: string): PgnMoveComment[] {
   const firstGame = extractFirstGame(pgn);
-  const commentTextByPly = collectCommentTextByPly(stripHeaderLines(firstGame));
+  const commentTextByPly = commentTextByPlyOf(pgn);
   const incrementMs = parseIncrementMs(firstGame);
 
   const parsed = [...commentTextByPly.entries()]
@@ -54,6 +54,16 @@ function stripHeaderLines(pgn: string): string {
     .split('\n')
     .filter((line) => !/^\s*\[.*\]\s*$/.test(line))
     .join('\n');
+}
+
+/**
+ * `extractFirstGame` + `stripHeaderLines` + `collectCommentTextByPly` in one
+ * call — the raw-text "what comment text follows each ply's move" primitive,
+ * reused by `annotated-pgn.ts` to decode its own `[%fcc ...]` tag out of
+ * whatever else a move's comment carries (`[%clk]`/`[%eval]` included).
+ */
+export function commentTextByPlyOf(pgn: string): Map<number, string> {
+  return collectCommentTextByPly(stripHeaderLines(extractFirstGame(pgn)));
 }
 
 /**
