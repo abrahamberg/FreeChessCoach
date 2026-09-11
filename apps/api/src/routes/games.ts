@@ -54,7 +54,7 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
     // different fields in the response for the frontend's benefit.
     if (game.source === 'coach_play') {
       const liveMoveQualities = movesFromAnnotatedPgn(game);
-      return { ...game, analysisStatus: null, classifiedMoves: null, liveMoveQualities, gameReport: null };
+      return { ...withoutAnnotatedPgn(game), analysisStatus: null, classifiedMoves: null, liveMoveQualities, gameReport: null };
     }
 
     // Play-vs-bot plan: a vs_bot game gets both worlds — live per-move quality
@@ -68,7 +68,7 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
       const storedBotReport = await analysesRepo.findGameReportByGameId(db, game.id);
       const botGameReport = storedBotReport ? composeGameReport(storedBotReport, game) : null;
       return {
-        ...game,
+        ...withoutAnnotatedPgn(game),
         analysisStatus: botAnalysis?.status ?? null,
         classifiedMoves: null,
         liveMoveQualities,
@@ -92,7 +92,7 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
     // stays available on its own timeline, same as before that migration.
     const classifiedMoves = game.annotatedPgn ? movesFromAnnotatedPgn(game) : null;
     return {
-      ...game,
+      ...withoutAnnotatedPgn(game),
       analysisStatus: analysis?.status ?? null,
       classifiedMoves,
       liveMoveQualities: null,
@@ -161,6 +161,16 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
  * does, just null-guarded for a fresh game with no moves committed yet. */
 function movesFromAnnotatedPgn(game: { annotatedPgn: string | null; userColor: 'white' | 'black' }) {
   return game.annotatedPgn ? parseAnnotatedPgn(game.annotatedPgn, game.userColor) : [];
+}
+
+/** The raw `[%fcc ...]`-annotated PGN text is never read by `apps/web`
+ * (confirmed by grep) — every field it would carry is already decoded and
+ * shipped separately as `classifiedMoves`/`liveMoveQualities`/
+ * `gameReport.moves`, so including it too would roughly double an analyzed
+ * game's response size for a field nothing consumes. */
+function withoutAnnotatedPgn<T extends { annotatedPgn: string | null }>(game: T): Omit<T, 'annotatedPgn'> {
+  const { annotatedPgn, ...rest } = game;
+  return rest;
 }
 
 function handleImportError(reply: FastifyReply, error: unknown): FastifyReply | never {

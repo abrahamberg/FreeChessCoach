@@ -16,7 +16,14 @@ export interface PgnMoveComment {
 const CLOCK_TAG = /\[%clk\s+(\d+):(\d{2}):(\d{2}(?:\.\d+)?)\]/;
 const EVAL_TAG = /\[%eval\s+(#?-?\d+(?:\.\d+)?)\]/;
 const TIME_CONTROL_HEADER = /^\[TimeControl\s+"([^"]*)"\]/m;
-const MOVE_NUMBER_TOKEN = /^\d+\.+$/;
+/** A move-number marker, `12.` style — or a bare continuation ellipsis,
+ * `...`, which chess.js's own `Chess#pgn()` serializer emits as a second,
+ * space-separated token (`3. ... Nf6`) whenever the position needs to
+ * restate "Black to move" — e.g. every annotated PGN `annotated-pgn.ts`
+ * rebuilds from a `[FEN]`/`[SetUp]` custom start where Black moves first.
+ * Without the second alternative, `...` gets counted as if it were a real
+ * move token, off-by-one-shifting every ply's comment attribution after it. */
+const MOVE_NUMBER_TOKEN = /^\d+\.+$|^\.{2,}$/;
 const RESULT_TOKEN = /^(1-0|0-1|1\/2-1\/2|\*)$/;
 const NAG_TOKEN = /^\$\d+$/;
 

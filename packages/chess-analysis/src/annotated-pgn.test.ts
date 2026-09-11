@@ -68,13 +68,15 @@ describe('appendAnnotatedMove', () => {
     expect(move?.bestLineSan).toEqual(SAMPLE_DATA.bestLineSan);
   });
 
-  test('a move appended with no data (e.g. a live move not yet classified) parses back bare', () => {
+  test('a move appended with no data produces valid PGN with no [%fcc] comment', () => {
     const appended = appendAnnotatedMove(`${HEADERS}*`, 'e4', null);
     if ('error' in appended) throw new Error(appended.error);
+    expect(appended.pgn).not.toContain('[%fcc');
 
-    const [move] = parseAnnotatedPgn(appended.pgn, 'white');
-    expect(move?.moveSan).toBe('e4');
-    expect(move?.cpLoss).toBeUndefined();
+    // parseAnnotatedPgn can't reconstruct a full ClassifiedMoveDto without a
+    // decodable comment (cpLoss/quality/etc. are required fields, not
+    // optional) — it drops the ply rather than fabricate one.
+    expect(parseAnnotatedPgn(appended.pgn, 'white')).toEqual([]);
   });
 
   test('preserves an [%clk] comment alongside the annotation', () => {
@@ -139,7 +141,7 @@ describe('parseAnnotatedPgn', () => {
 });
 
 describe('buildAnnotatedPgn', () => {
-  test('builds one annotated PGN from a plain PGN plus a per-ply data map, mixing annotated and bare plies', () => {
+  test('builds one annotated PGN from a plain PGN plus a per-ply data map, dropping the bare (unannotated) ply on read', () => {
     const plain = `${HEADERS}1. e4 e5 2. Nf3 *`;
     const annotated = buildAnnotatedPgn(
       plain,
@@ -149,11 +151,13 @@ describe('buildAnnotatedPgn', () => {
       ])
     );
 
+    // Ply 2 (e5) has no movesData entry, so it's written with no [%fcc]
+    // comment — parseAnnotatedPgn can't reconstruct a full ClassifiedMoveDto
+    // for it (cpLoss/quality/etc. are required fields) and drops it.
     const moves = parseAnnotatedPgn(annotated, 'white');
-    expect(moves.map((move) => move.moveSan)).toEqual(['e4', 'e5', 'Nf3']);
+    expect(moves.map((move) => move.moveSan)).toEqual(['e4', 'Nf3']);
     expect(moves[0]?.cpLoss).toBe(0);
-    expect(moves[1]?.cpLoss).toBeUndefined();
-    expect(moves[2]?.cpLoss).toBe(15);
+    expect(moves[1]?.cpLoss).toBe(15);
   });
 
   test('round-trips a custom starting position ([FEN]/[SetUp] headers)', () => {
@@ -165,5 +169,29 @@ describe('buildAnnotatedPgn', () => {
     expect(moves).toHaveLength(1);
     expect(moves[0]?.moveSan).toBe('Bb5');
     expect(moves[0]?.cpLoss).toBe(SAMPLE_DATA.cpLoss);
+  });
+
+  // Regression: mover/isUserMove must come from the actual replay
+  // (position.mover), not ply-parity (plyToMoveRef assumes ply 1 is always
+  // White) — a custom start with Black to move is exactly the case that
+  // breaks the parity assumption.
+  test('derives mover from the actual replay, not ply parity, for a custom start with Black to move', () => {
+    const fen = 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 2 3';
+    const plain = `[Event "Test"]\n[White "Alice"]\n[Black "Bob"]\n[Result "*"]\n[FEN "${fen}"]\n[SetUp "1"]\n\n3... Nf6 4. Nc3 *`;
+    const annotated = buildAnnotatedPgn(
+      plain,
+      new Map([
+        [1, { ...SAMPLE_DATA, cpLoss: 1 }],
+        [2, { ...SAMPLE_DATA, cpLoss: 2 }]
+      ])
+    );
+
+    const movesAsWhite = parseAnnotatedPgn(annotated, 'white');
+    expect(movesAsWhite[0]).toMatchObject({ moveSan: 'Nf6', mover: 'black', isUserMove: false });
+    expect(movesAsWhite[1]).toMatchObject({ moveSan: 'Nc3', mover: 'white', isUserMove: true });
+
+    const movesAsBlack = parseAnnotatedPgn(annotated, 'black');
+    expect(movesAsBlack[0]).toMatchObject({ mover: 'black', isUserMove: true });
+    expect(movesAsBlack[1]).toMatchObject({ mover: 'white', isUserMove: false });
   });
 });

@@ -3,7 +3,7 @@ import type { ClassifiedMoveDto, DiagnosisCodeId } from '@freechesscoach/shared'
 import { plyToMoveRef } from './move-ref.js';
 import { commentTextByPlyOf } from './pgn-move-comments.js';
 import { parsePgn } from './pgn.js';
-import type { AppendMoveOptions, AppendedMove } from './pgn-mutation.js';
+import { formatClock, tryMove, type AppendMoveOptions, type AppendedMove } from './pgn-mutation.js';
 
 /**
  * Everything a `ClassifiedMoveDto` carries that isn't already reconstructible
@@ -105,14 +105,23 @@ export function appendAnnotatedMove(
 
 /**
  * Builds a whole annotated PGN in one pass from a plain PGN (headers +
- * mainline, no `[%fcc]` comments yet) and a per-ply annotation map — the
- * batch analysis job's use (services/analysis.ts): the classifier already
- * produces the full `ClassifiedMoveDto[]` for a game at once, so this avoids
- * O(plies) repeated `loadPgn` reparsing that calling `appendAnnotatedMove`
- * in a loop would cost. A ply with no entry in `movesData` is written bare
- * (no comment) — every existing ply keeps whatever `[%clk]`/`[%eval]`
- * comment the source PGN already carried, since this replays through
- * chess.js's own `loadPgn`/`history`, not a hand-rebuilt movetext string.
+ * mainline) and a per-ply annotation map — the batch analysis job's use
+ * (services/analysis.ts): the classifier already produces the full
+ * `ClassifiedMoveDto[]` for a game at once, so this avoids O(plies) repeated
+ * `loadPgn` reparsing that calling `appendAnnotatedMove` in a loop would
+ * cost. `headers['FEN']` (chess.js parses `[FEN]`/`[SetUp]` into it, same as
+ * `pgn.ts`'s own custom-start handling) seeds the rebuild at the correct
+ * starting position without a second full replay through `parsePgn` just to
+ * read it back out.
+ *
+ * A ply with no entry in `movesData` is written bare — no comment at all,
+ * `[%clk]`/`[%eval]` included, even if the source PGN had one for that ply.
+ * That's never lost data: `games.pgn` (the source this is built from) is
+ * untouched and stays the one place clock/eval display reads from
+ * (`extractPgnMoveComments`) — `annotatedPgn` only ever needs to answer
+ * "what did the analysis say about this move," never "what was the clock."
+ * The one real caller supplies a `movesData` entry for every ply, so this
+ * only matters for a hypothetical partial-map caller.
  */
 export function buildAnnotatedPgn(pgn: string, movesData: ReadonlyMap<number, AnnotatedMoveData>): string {
   const source = new Chess();
@@ -120,9 +129,7 @@ export function buildAnnotatedPgn(pgn: string, movesData: ReadonlyMap<number, An
   const headers = source.getHeaders();
   const verboseMoves = source.history({ verbose: true });
 
-  const parsed = parsePgn(pgn);
-  const startFen = parsed.positions[0]!.fen;
-  const chess = new Chess(startFen);
+  const chess = headers['FEN'] ? new Chess(headers['FEN']) : new Chess();
   for (const [key, value] of Object.entries(headers)) {
     if (value) chess.header(key, value);
   }
@@ -141,32 +148,44 @@ export function buildAnnotatedPgn(pgn: string, movesData: ReadonlyMap<number, An
 /**
  * Reads an annotated PGN back into `ClassifiedMoveDto[]` — the read side of
  * `buildAnnotatedPgn`/`appendAnnotatedMove`. Reuses `parsePgn` for the
- * mainline (ply/fen/moveSan/mover, and correct handling of a `[FEN]`/
- * `[SetUp]` custom start) and `commentTextByPlyOf` for the raw per-ply
- * comment text, same primitive `pgn-move-comments.ts`'s `[%clk]`/`[%eval]`
- * extraction already uses. A ply with no `[%fcc]` tag (never analyzed, or a
- * live move not yet classified) still yields a move — just without the
- * optional analysis fields.
+ * mainline (ply/fen/moveSan, and — critically — the replay-derived `mover`,
+ * correct even for a `[FEN]`/`[SetUp]` custom start where Black moves
+ * first, unlike `plyToMoveRef`'s pure ply-parity guess) and
+ * `commentTextByPlyOf` for the raw per-ply comment text, same primitive
+ * `pgn-move-comments.ts`'s `[%clk]`/`[%eval]` extraction already uses.
+ *
+ * A ply whose comment doesn't decode (no `[%fcc]` tag, or a garbled one) is
+ * dropped from the result rather than synthesized with fabricated values:
+ * `cpLoss`/`quality`/`bestLineSan`/`evalAfterCp` are required, not optional,
+ * on `ClassifiedMoveSchema`, and there's no honest placeholder for "quality
+ * unknown" in that closed enum. Not currently reachable — every real writer
+ * (`appendAnnotatedMove`'s callers, `buildAnnotatedPgn`'s one caller)
+ * always supplies full per-ply data — so this only matters for a corrupted
+ * or hand-edited comment.
  */
 export function parseAnnotatedPgn(pgn: string, userColor: 'white' | 'black'): ClassifiedMoveDto[] {
   const parsed = parsePgn(pgn);
   const commentTextByPly = commentTextByPlyOf(pgn);
 
-  return parsed.positions.slice(1).map((position) => {
-    const { moveNumber, color } = plyToMoveRef(position.ply);
-    const data = decodeMoveComment(commentTextByPly.get(position.ply) ?? '');
-    return {
-      ...(data ?? {}),
-      ply: position.ply,
-      moveNumber,
-      moveSan: position.moveSan!,
-      uci: position.moveUci ?? undefined,
-      mover: color!,
-      isUserMove: color === userColor,
-      fenBefore: parsed.positions[position.ply - 1]!.fen,
-      fenAfter: position.fen
-    } as ClassifiedMoveDto;
-  });
+  return parsed.positions
+    .slice(1)
+    .map((position): ClassifiedMoveDto | null => {
+      const data = decodeMoveComment(commentTextByPly.get(position.ply) ?? '');
+      if (!data) return null;
+      const { moveNumber } = plyToMoveRef(position.ply);
+      return {
+        ...data,
+        ply: position.ply,
+        moveNumber,
+        moveSan: position.moveSan!,
+        uci: position.moveUci ?? undefined,
+        mover: position.mover!,
+        isUserMove: position.mover === userColor,
+        fenBefore: parsed.positions[position.ply - 1]!.fen,
+        fenAfter: position.fen
+      };
+    })
+    .filter((move): move is ClassifiedMoveDto => move !== null);
 }
 
 function buildCommentText(data: AnnotatedMoveData | null, elapsedMs: number | undefined): string | null {
@@ -174,24 +193,4 @@ function buildCommentText(data: AnnotatedMoveData | null, elapsedMs: number | un
   if (elapsedMs !== undefined) parts.push(`[%clk ${formatClock(elapsedMs)}]`);
   if (data) parts.push(encodeMoveComment(data));
   return parts.length > 0 ? parts.join(' ') : null;
-}
-
-/** h:mm:ss, hours unpadded (Lichess/chess.com convention) — mirrors
- * `pgn-mutation.ts`'s own `formatClock`, duplicated rather than imported to
- * keep that module untouched (its existing callers/tests are unaffected by
- * this one). */
-function formatClock(elapsedMs: number): string {
-  const totalSeconds = Math.max(0, Math.round(elapsedMs / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
-
-function tryMove(chess: Chess, san: string): ReturnType<Chess['move']> | null {
-  try {
-    return chess.move(san);
-  } catch {
-    return null;
-  }
 }
