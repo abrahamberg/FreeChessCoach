@@ -163,4 +163,61 @@ describe('ChatPane', () => {
     expect(onStopMessage).toHaveBeenCalledTimes(1);
     expect(onPlayMessage).not.toHaveBeenCalled();
   });
+
+  describe('collapsibleComposer (mobile: the board sits above this panel now, no Board/Coach tabs)', () => {
+    test('starts collapsed behind a trigger button, not the always-open input', () => {
+      render(<ChatPane messages={[]} activeToolName={null} onSend={vi.fn()} collapsibleComposer />);
+
+      expect(screen.getByRole('button', { name: /ask the coach a question/i })).toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: /reply/i })).not.toBeInTheDocument();
+    });
+
+    test('tapping the trigger opens the composer; tapping "Close keyboard" collapses it back', async () => {
+      const user = userEvent.setup();
+      render(<ChatPane messages={[]} activeToolName={null} onSend={vi.fn()} collapsibleComposer />);
+
+      await user.click(screen.getByRole('button', { name: /ask the coach a question/i }));
+
+      expect(screen.getByRole('textbox', { name: /reply/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /ask the coach a question/i })).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /close keyboard/i }));
+
+      expect(screen.getByRole('button', { name: /ask the coach a question/i })).toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: /reply/i })).not.toBeInTheDocument();
+    });
+
+    test('sending a message leaves the composer open for the next reply', async () => {
+      const onSend = vi.fn();
+      const user = userEvent.setup();
+      render(<ChatPane messages={[]} activeToolName={null} onSend={onSend} collapsibleComposer />);
+      await user.click(screen.getByRole('button', { name: /ask the coach a question/i }));
+
+      await user.type(screen.getByRole('textbox', { name: /reply/i }), 'hello coach');
+      await user.click(screen.getByRole('button', { name: /send/i }));
+
+      expect(onSend).toHaveBeenCalledWith('hello coach');
+      expect(screen.getByRole('textbox', { name: /reply/i })).toBeInTheDocument();
+    });
+
+    test('drawing a board arrow while collapsed opens the composer so the chip is reachable', () => {
+      const { rerender } = render(
+        <ChatPane messages={[]} activeToolName={null} onSend={vi.fn()} collapsibleComposer boardArrows={[]} />
+      );
+      expect(screen.queryByRole('textbox', { name: /reply/i })).not.toBeInTheDocument();
+
+      rerender(
+        <ChatPane
+          messages={[]}
+          activeToolName={null}
+          onSend={vi.fn()}
+          collapsibleComposer
+          boardArrows={[{ from: 'e2', to: 'e4' }]}
+        />
+      );
+
+      expect(screen.getByTestId('arrow-chip')).toBeInTheDocument();
+      expect(screen.getAllByRole('textbox', { name: /reply/i }).length).toBeGreaterThan(0);
+    });
+  });
 });

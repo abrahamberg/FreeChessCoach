@@ -13,18 +13,21 @@ import { encodeDivergedLine } from '../chat/divergedLine.js';
 import type { HoverMove } from '../chat/MessageList.js';
 import { encodePositionContext, sanForPly } from '../chat/positionDivider.js';
 import { SessionSummaryCard } from '../chat/SessionSummaryCard.js';
-import { MobileSessionBody } from './MobileSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { SessionHeader } from './SessionHeader.js';
-import { useMobileSessionView } from './useMobileSessionView.js';
 import { useSessionPageData } from './useSessionPageData.js';
 import './SessionPage.css';
 
 /** design.md §5: composes board + chat for an active coaching session.
  * All fetching lives in useSessionPageData (AGENTS.md rule 7); this is
  * presentational — local UI state, a few small handlers, and the layout.
- * At/above 768px board and chat sit side by side; below it each owns a full
- * screen and MobileSessionBody switches between them. */
+ * At/above 768px board and chat sit side by side; below it, board then chat
+ * stack in one scrollable column (GameReviewPage's own mobile structure,
+ * reused here — see SessionPage.css's `.stacked` block) rather than the
+ * two-tab Board/Coach switch BotSessionPage (a bot never talks, so it keeps
+ * MobileSessionBody's tabs) still uses. The board stays visible while
+ * typing — ChatPane's collapsibleComposer keeps the keyboard from being
+ * summoned until the student actually taps to reply. */
 export function SessionPage(): ReactNode {
   const { id } = useParams<{ id: string }>();
   const sessionId = id ?? '';
@@ -53,7 +56,6 @@ export function SessionPage(): ReactNode {
   const [boardArrows, setBoardArrows] = useState<ArrowRef[]>([]);
   const [hoverMove, setHoverMove] = useState<HoverMove>(null);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
-  const mobileView = useMobileSessionView(chat.messages.length);
   const persona = profileQuery.data?.coachPersona ?? 'general';
   const ttsEnabled = profileQuery.data?.ttsEnabled ?? false;
   const ttsBackend = profileQuery.data?.ttsBackend ?? 'openai';
@@ -164,6 +166,7 @@ export function SessionPage(): ReactNode {
         onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
         playingMessageId={coachVoice.playingMessageId}
         loadingMessageId={coachVoice.loadingMessageId}
+        collapsibleComposer={!isSideBySide}
       />
     );
 
@@ -207,18 +210,10 @@ export function SessionPage(): ReactNode {
           {chatPanel}
         </div>
       ) : (
-        <MobileSessionBody
-          board={board}
-          chat={chatPanel}
-          fen={fen}
-          boardContext={{
-            mode: boardState.mode,
-            ply: boardState.ply,
-            san: sanForPly(sanMoves, boardState.ply),
-            hasDivergedLine: Boolean(divergedLine.line)
-          }}
-          viewState={mobileView}
-        />
+        <div className="session-body mobile stacked">
+          {board}
+          {chatPanel}
+        </div>
       )}
     </div>
   );

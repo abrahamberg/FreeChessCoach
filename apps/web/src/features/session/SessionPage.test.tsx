@@ -157,7 +157,7 @@ describe('SessionPage', () => {
     vi.useRealTimers();
   });
 
-  test('below 768px the board and the coach are two switchable panels, not a stack', async () => {
+  test('below 768px, board and chat stack on one screen — no Board/Coach tabs', async () => {
     mockMatchMedia(false);
     window.localStorage.clear();
     vi.stubGlobal('fetch', mockFetch());
@@ -165,15 +165,18 @@ describe('SessionPage', () => {
     renderSessionPage();
 
     await screen.findByTestId('mock-chessboard');
-    // Opens on the coach: the composer is reachable, the board's own controls
-    // are not (both panels are mounted — only one is exposed).
-    expect(screen.getByRole('textbox', { name: /reply/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /explore on your own/i })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: /board/i }));
-
+    // No more tab switch (GameReviewPage's own mobile structure, reused
+    // here) — the board's own controls and the chat panel are both on
+    // screen at once, not hidden behind a Board/Coach segmented control.
+    expect(screen.queryByRole('tablist', { name: /session view/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
+
+    // The composer starts collapsed behind a button (mobile only — the
+    // board sits right above it now, no room for an always-open keyboard)
+    // and opens on tap.
     expect(screen.queryByRole('textbox', { name: /reply/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /ask the coach a question/i }));
+    expect(screen.getByRole('textbox', { name: /reply/i })).toBeInTheDocument();
   });
 
   test('at/above 768px the split layout is unchanged — board and chat together, no view switch', async () => {

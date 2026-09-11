@@ -254,6 +254,52 @@
   border-top: 1px solid var(--color-border);
 }
 
+/* The collapsed state of a `collapsibleComposer` ChatPane (mobile's coach
+ * chat, ChatPane.tsx) — a compact bar in the same spot the always-open form
+ * would sit, rather than a text field/keyboard summoned on every visit
+ * whether wanted or not. */
+.chat-pane__composer-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) var(--space-4);
+  padding: 12px var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  text-align: left;
+}
+
+.chat-pane__composer-trigger:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+/* Blurs every reply input (closing the on-screen keyboard) and collapses
+ * back to .chat-pane__composer-trigger above — see ChatPane.tsx's
+ * closeComposer. Only rendered when collapsibleComposer is set; the
+ * always-open desktop composer has nothing to collapse back to. */
+.chat-pane__composer-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+}
+
+.chat-pane__composer-close:hover {
+  background: var(--color-surface-strong);
+  color: var(--color-text);
+}
+
 .chip-reply-input {
   flex: 1;
   min-width: 0;

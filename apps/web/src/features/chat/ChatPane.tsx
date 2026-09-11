@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import type { ArrowRef } from './arrowToken.js';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
-import { VolumeOffIcon, VolumeOnIcon } from '../../components/Icon.js';
+import { CloseIcon, MessageCircleIcon, VolumeOffIcon, VolumeOnIcon } from '../../components/Icon.js';
 import { ChipReplyInput } from './ChipReplyInput.js';
 import { createEmptyDraft, isDraftEmpty, reconcileArrowChips, serializeDraft, type DraftPart } from './composerDraft.js';
 import { MessageList, type HoverMove } from './MessageList.js';
@@ -55,6 +55,14 @@ export interface ChatPaneProps {
   onStopMessage?: () => void;
   playingMessageId?: string | null;
   loadingMessageId?: string | null;
+  /** SessionPage passes true only below the side-by-side breakpoint: the
+   * reply composer starts collapsed behind a button instead of an
+   * always-open text row. The board now sits right above this panel on
+   * mobile (no more separate Board/Coach tabs) — an always-summoned
+   * keyboard would cover it whether the student wanted to type or not.
+   * Desktop's side-by-side board+chat has room to spare, so it keeps the
+   * classic always-open input (default false). */
+  collapsibleComposer?: boolean;
 }
 
 /** Composes MessageList + ToolActivity + the reply input. No fetching — the
@@ -78,15 +86,54 @@ export function ChatPane({
   onPlayMessage,
   onStopMessage,
   playingMessageId,
-  loadingMessageId
+  loadingMessageId,
+  collapsibleComposer = false
 }: ChatPaneProps): ReactNode {
   const [parts, setParts] = useState<DraftPart[]>(createEmptyDraft);
+  const [isComposerOpen, setIsComposerOpen] = useState(!collapsibleComposer);
   const prevArrowsRef = useRef<ArrowRef[]>([]);
+  const formRef = useRef<HTMLFormElement>(null);
+  // Only a user gesture (tapping the trigger button, or drawing a board
+  // arrow while collapsed) should summon the keyboard — set right before the
+  // state flip that reveals the input, and consumed by the focus effect
+  // below so opening for any other reason (nothing else does today, but
+  // the guard costs nothing) never steals focus unexpectedly.
+  const shouldFocusRef = useRef(false);
 
   useEffect(() => {
-    setParts((current) => reconcileArrowChips(current, prevArrowsRef.current, boardArrows));
+    // Captured once as a local, not re-read from the ref inside the setParts
+    // updater below — updater functions run whenever React gets around to
+    // processing the queued state change, which can be after the
+    // `prevArrowsRef.current = boardArrows` line further down has already
+    // mutated the ref, silently turning every arrow into a no-op diff.
+    const previousArrows = prevArrowsRef.current;
+    setParts((current) => reconcileArrowChips(current, previousArrows, boardArrows));
     prevArrowsRef.current = boardArrows;
-  }, [boardArrows]);
+    if (collapsibleComposer && !isComposerOpen && boardArrows.length > previousArrows.length) {
+      shouldFocusRef.current = true;
+      setIsComposerOpen(true);
+    }
+  }, [boardArrows, collapsibleComposer, isComposerOpen]);
+
+  useEffect(() => {
+    if (!isComposerOpen || !shouldFocusRef.current) return;
+    shouldFocusRef.current = false;
+    const inputs = formRef.current?.querySelectorAll('input');
+    inputs?.[inputs.length - 1]?.focus();
+  }, [isComposerOpen]);
+
+  function openComposer(): void {
+    shouldFocusRef.current = true;
+    setIsComposerOpen(true);
+  }
+
+  // Blurring every input first is what actually dismisses the on-screen
+  // keyboard — collapsing the composer alone wouldn't, since focus would
+  // otherwise still sit on an element about to unmount.
+  function closeComposer(): void {
+    formRef.current?.querySelectorAll('input').forEach((input) => input.blur());
+    setIsComposerOpen(false);
+  }
 
   function handleSubmit(event: FormEvent): void {
     event.preventDefault();
@@ -136,12 +183,24 @@ export function ChatPane({
       />
       <ThinkingIndicator visible={isThinking} />
       <ToolActivity toolName={activeToolName} />
-      <form onSubmit={handleSubmit}>
-        <ChipReplyInput parts={parts} onChange={setParts} />
-        <button type="submit" className="btn-primary">
-          Send
+      {isComposerOpen ? (
+        <form ref={formRef} onSubmit={handleSubmit}>
+          <ChipReplyInput parts={parts} onChange={setParts} />
+          <button type="submit" className="btn-primary">
+            Send
+          </button>
+          {collapsibleComposer && (
+            <button type="button" className="chat-pane__composer-close" onClick={closeComposer} aria-label="Close keyboard">
+              <CloseIcon width={16} height={16} />
+            </button>
+          )}
+        </form>
+      ) : (
+        <button type="button" className="chat-pane__composer-trigger" onClick={openComposer}>
+          <MessageCircleIcon width={18} height={18} />
+          Ask the coach a question
         </button>
-      </form>
+      )}
     </div>
   );
 }
