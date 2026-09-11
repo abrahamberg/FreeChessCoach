@@ -110,8 +110,16 @@ async function commitMove(
   const annotated = appendAnnotatedMove(game.annotatedPgn ?? game.pgn, san, toAnnotatedMoveData(classified), options);
   if ('error' in annotated) return annotated;
 
-  await gamesRepo.updatePgn(deps.db, gameId, applied.pgn);
-  await gamesRepo.updateAnnotatedPgn(deps.db, gameId, annotated.pgn, new Date());
+  // One transaction, not two independent UPDATEs: `pgn` and `annotatedPgn`
+  // must land together or not at all. Left non-atomic, a crash between them
+  // desyncs the two mainlines — the next commit replays its SAN against
+  // whichever one is now stale, `chess.move` throws inside `appendAnnotatedMove`,
+  // and every subsequent move on the game fails as "illegal" with no
+  // in-app recovery path.
+  await deps.db.transaction().execute(async (trx) => {
+    await gamesRepo.updatePgn(trx, gameId, applied.pgn);
+    await gamesRepo.updateAnnotatedPgn(trx, gameId, annotated.pgn, new Date());
+  });
 
   return { fen: applied.fen, san: applied.san, ply: applied.ply, quality: classified.quality };
 }
@@ -133,6 +141,14 @@ export interface UndoResult {
  * move undoes its annotation for free (no separate row/delete needed
  * anymore — see `removeLastMoveFromPgn`'s own use in
  * `annotated-pgn.test.ts`).
+ *
+ * `lastMoveAt` is reset to now, not left pointing at the undone move's
+ * (now-stale) commit time: it exists purely to measure "how long has the
+ * position been sitting like this" for clock/timeout math
+ * (bot-move-commit.ts, bot-claim-timeout.ts), and the position genuinely
+ * just changed. Leaving it stale would either inflate the resumed mover's
+ * next elapsed-time deduction by the whole pre-undo gap, or let a timeout
+ * poll landing right after the undo fire a bogus loss.
  */
 export async function undoLastMove(
   deps: PlayMovesDependencies,
@@ -148,13 +164,17 @@ export async function undoLastMove(
   const removed = removeLastMoveFromPgn(game.pgn);
   if ('error' in removed) return removed;
 
-  await gamesRepo.updatePgn(deps.db, gameId, removed.pgn);
-  if (game.annotatedPgn) {
-    const removedAnnotated = removeLastMoveFromPgn(game.annotatedPgn);
-    if ('error' in removedAnnotated) return removedAnnotated;
-    await gamesRepo.updateAnnotatedPgn(deps.db, gameId, removedAnnotated.pgn);
-  }
-  await sessionMoveNotesRepo.deleteByPly(deps.db, sessionId, removedPly);
+  const removedAnnotated = game.annotatedPgn ? removeLastMoveFromPgn(game.annotatedPgn) : null;
+  if (removedAnnotated && 'error' in removedAnnotated) return removedAnnotated;
+
+  // One transaction — see commitMove's identical reasoning: `pgn` and
+  // `annotatedPgn` must move together, and the move-note delete is part of
+  // the same logical "undo" action.
+  await deps.db.transaction().execute(async (trx) => {
+    await gamesRepo.updatePgn(trx, gameId, removed.pgn);
+    if (removedAnnotated) await gamesRepo.updateAnnotatedPgn(trx, gameId, removedAnnotated.pgn, new Date());
+    await sessionMoveNotesRepo.deleteByPly(trx, sessionId, removedPly);
+  });
 
   return { fen: removed.fen, removedPly };
 }

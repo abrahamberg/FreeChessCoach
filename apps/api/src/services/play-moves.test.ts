@@ -123,6 +123,23 @@ describe('play-moves service', () => {
     expect(await sessionMoveNotesRepo.findByPly(db, sessionId, 1)).toBeUndefined();
   });
 
+  test('undoLastMove resets lastMoveAt to now, not the undone move\'s stale commit time', async () => {
+    const { gameId, sessionId } = await seed();
+    await commitPlayerMove({ db, analyzePosition }, gameId, 'e4');
+    await commitPlayerMove({ db, analyzePosition }, gameId, 'e5');
+    const beforeUndo = (await gamesRepo.findById(db, gameId))!.lastMoveAt!;
+
+    await undoLastMove({ db, analyzePosition }, sessionId, gameId);
+
+    const afterUndo = (await gamesRepo.findById(db, gameId))!.lastMoveAt!;
+    // If this were left stale (pinned to the undone move's own commit time),
+    // afterUndo would equal beforeUndo exactly rather than advance past it —
+    // the bug this regression-tests (bot-move-commit.ts's elapsed-time math
+    // reading a pre-undo timestamp) would otherwise inflate or spuriously
+    // time out the resumed mover's very next move.
+    expect(afterUndo.getTime()).toBeGreaterThan(beforeUndo.getTime());
+  });
+
   test('undoLastMove on a game with no moves returns an error', async () => {
     const { gameId, sessionId } = await seed();
 
