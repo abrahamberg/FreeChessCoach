@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ClassifiedMoveDto } from '@freechesscoach/shared';
+import type { ClassifiedMoveDto, MoveQuality } from '@freechesscoach/shared';
 import { CoachBoard, type BoardArrow, type BoardHighlight } from '../board/CoachBoard.js';
 import { EvalBar } from '../board/EvalBar.js';
 import { GameEvalChart } from '../board/GameEvalChart.js';
@@ -14,9 +14,11 @@ export interface GameReviewBoardColumnProps {
    * otherwise; the board never shows anything but the position the game
    * actually reached. */
   arrows: BoardArrow[];
-  /** The square a 'good'-quality move landed on — see CoachBoard's own
-   * `moveQualityBadgeSquare` doc comment. Undefined draws nothing. */
+  /** The current ply's move landed square + quality tier — see CoachBoard's
+   * own `moveQualityBadgeSquare`/`moveQualityBadgeQuality` doc comments.
+   * Either undefined draws nothing. */
   moveQualityBadgeSquare?: string;
+  moveQualityBadgeQuality?: MoveQuality;
   classifiedMoves: ClassifiedMoveDto[];
   ply: number;
   onSelect: (ply: number) => void;
@@ -42,6 +44,7 @@ export function GameReviewBoardColumn({
   highlights,
   arrows,
   moveQualityBadgeSquare,
+  moveQualityBadgeQuality,
   classifiedMoves,
   ply,
   onSelect,
@@ -61,6 +64,7 @@ export function GameReviewBoardColumn({
           arrows={arrows}
           highlights={highlights}
           moveQualityBadgeSquare={moveQualityBadgeSquare}
+          moveQualityBadgeQuality={moveQualityBadgeQuality}
           showLegalMoveDots={false}
           disabled
         />

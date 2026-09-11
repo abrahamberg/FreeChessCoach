@@ -70,13 +70,16 @@ export type MoveQuality = (typeof MOVE_QUALITIES)[number];
  * the classifier migration is complete. */
 export type Classification = MoveQuality;
 
-/** Chess.com/lichess-style NAG symbols for each quality tier. */
+/** Chess.com/lichess-style NAG symbols for each quality tier. `good` shares
+ * `excellent`'s checkmark family (rather than `great`'s '!', which it used to
+ * collide with silently back when MoveQualityBadge skipped both `good` and
+ * `excellent` — now that every tier renders, the two need distinct glyphs). */
 export const MOVE_QUALITY_SYMBOLS: Record<MoveQuality, string> = {
   brilliant: '!!',
   great: '!',
   best: '★',
   excellent: '✓',
-  good: '!',
+  good: '✓',
   book: '📖',
   inaccuracy: '?!',
   mistake: '?',

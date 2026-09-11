@@ -21,14 +21,19 @@ import './GameReviewPage.css';
  * small icon in MoveNoteCard's own header — and the only mutation this page
  * makes.
  *
- * Below the desktop breakpoint: note card, nav pills, MoveStrip, then the
- * board, as one fixed (non-scrolling) layout — the board's position and
- * size stay put regardless of how long the current move's note is (the
- * note card scrolls internally instead), rather than the whole page
- * scrolling and the board landing wherever that leaves it. Game Report is
- * a bottom sheet (GameReportSummary's own existing expand/collapse state,
- * just given fixed/overlay positioning here) rather than another flex
- * child, so opening it covers the board instead of pushing it around.
+ * Below the desktop breakpoint: note card, then the board, then nav pills +
+ * MoveStrip below it — chess.com's own mobile ordering (note above, moves
+ * below), and the reason nav/strip sit under the board rather than above it
+ * now: the board is the scarcest-space element on a phone (same call
+ * SessionPage.css makes for the live session), so everything that doesn't
+ * need to precede it stays out of its way. One fixed (non-scrolling) layout
+ * overall — the board's position and size stay put regardless of how long
+ * the current move's note is (the note card scrolls internally instead),
+ * rather than the whole page scrolling and the board landing wherever that
+ * leaves it. Game Report is a bottom sheet (GameReportSummary's own
+ * existing expand/collapse state, just given fixed/overlay positioning
+ * here) rather than another flex child, so opening it covers the board
+ * instead of pushing it around.
  *
  * At the desktop breakpoint, the note card takes the same MoveNoteCard the
  * mobile layout uses, placed in the column a coaching session's chat pane
@@ -51,6 +56,7 @@ export function GameReviewPage(): ReactNode {
     highlights,
     arrows,
     moveQualityBadgeSquare,
+    moveQualityBadgeQuality,
     tacticSelection,
     onToggleTacticSelection,
     continueWithCoach,
@@ -72,6 +78,7 @@ export function GameReviewPage(): ReactNode {
       highlights={highlights}
       arrows={arrows}
       moveQualityBadgeSquare={moveQualityBadgeSquare}
+      moveQualityBadgeQuality={moveQualityBadgeQuality}
       classifiedMoves={classifiedMoves}
       ply={ply}
       onSelect={setPly}
@@ -124,6 +131,7 @@ export function GameReviewPage(): ReactNode {
         <>
           <div className={game.gameReport ? 'game-review-body mobile has-report-sheet' : 'game-review-body mobile'}>
             {noteCard}
+            {board}
             <MoveNavPills ply={ply} totalPlies={sanMoves.length} onSelect={setPly} />
             {/* MoveStrip's own currentPly/onSelect are the sanMoves array
                 index (0-based — confirmed by its tests), not the 1-based
@@ -138,7 +146,6 @@ export function GameReviewPage(): ReactNode {
               momentPlies={[]}
               onSelect={(index) => setPly(index + 1)}
             />
-            {board}
           </div>
           {game.gameReport && (
             <div className="game-review-report-sheet">

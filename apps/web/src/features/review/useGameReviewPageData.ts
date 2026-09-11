@@ -14,17 +14,12 @@ import { lastMoveHighlightsFor } from '../session/useSessionBoardState.js';
 
 const SessionSummarySchema = z.object({ id: z.string() });
 
-/** Tiers MoveQualityBadge's move-list pill renders nothing for — a merely-fine
- * move just reads as plain move text there (MoveQualityBadge.tsx). Both get a
- * quiet on-board nod instead so neither goes unlabeled everywhere at once. */
-const QUALITIES_WITHOUT_A_PILL_ICON: ReadonlySet<MoveQuality> = new Set(['good', 'excellent']);
-
-/** The square to draw MoveQualityBadgeOverlay's on-board checkmark on for the
+/** The square to draw MoveQualityBadgeOverlay's on-board badge on for the
  * current ply, or `undefined` to draw nothing — see MoveQualityBadgeOverlay's
  * own doc comment. Exported for direct unit testing rather than only through
  * the whole hook. */
 export function moveQualityBadgeSquareFor(quality: MoveQuality | undefined, moveUci: string | null | undefined): string | undefined {
-  if (!quality || !QUALITIES_WITHOUT_A_PILL_ICON.has(quality) || !moveUci) return undefined;
+  if (!quality || !moveUci) return undefined;
   return moveUci.slice(2, 4);
 }
 
@@ -95,10 +90,10 @@ export function useGameReviewPageData(gameId: string) {
   // board merges the same way, so there's nothing to reconcile between them.
   const tacticOverlay = tacticSelectionOverlay(currentMove, tacticSelection);
   const highlights = [...lastMoveHighlightsFor(currentPosition?.moveUci), ...tacticOverlay.highlights];
-  // A 'good' or 'excellent' move (MoveQualityBadge leaves both unlabeled in
-  // the move list) gets a quiet checkmark on the square it landed on,
-  // board-only — see MoveQualityBadgeOverlay.
+  // Every classified move gets its quality badge echoed on the board too,
+  // on the square it landed on — see MoveQualityBadgeOverlay.
   const moveQualityBadgeSquare = moveQualityBadgeSquareFor(currentMove?.quality, currentPosition?.moveUci);
+  const moveQualityBadgeQuality = moveQualityBadgeSquare ? currentMove?.quality : undefined;
 
   // The one visual for "what was actually best" — MoveNoteCard no longer
   // spells it out as a "Best: <line>" sentence (Daniel's call: obvious once
@@ -152,6 +147,7 @@ export function useGameReviewPageData(gameId: string) {
     highlights,
     arrows,
     moveQualityBadgeSquare,
+    moveQualityBadgeQuality,
     tacticSelection,
     onToggleTacticSelection: toggleTacticSelectionKey,
     continueWithCoach,

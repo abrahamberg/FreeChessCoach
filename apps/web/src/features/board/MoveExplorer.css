@@ -180,6 +180,12 @@
   color: var(--quality-best);
   font-weight: 600;
 }
+.move-explorer__list button.move-quality-excellent {
+  color: var(--quality-excellent);
+}
+.move-explorer__list button.move-quality-good {
+  color: var(--quality-good);
+}
 .move-explorer__list button.move-quality-book {
   color: var(--quality-book);
 }
@@ -203,6 +209,8 @@
 .move-explorer__list button[aria-current='true'].move-quality-brilliant,
 .move-explorer__list button[aria-current='true'].move-quality-great,
 .move-explorer__list button[aria-current='true'].move-quality-best,
+.move-explorer__list button[aria-current='true'].move-quality-excellent,
+.move-explorer__list button[aria-current='true'].move-quality-good,
 .move-explorer__list button[aria-current='true'].move-quality-book,
 .move-explorer__list button[aria-current='true'].move-quality-inaccuracy,
 .move-explorer__list button[aria-current='true'].move-quality-mistake,
