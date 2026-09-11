@@ -59,7 +59,8 @@ function row(gameId: string, fork: { opportunities: number; found: number }) {
     pgnResult: '1-0',
     userColor: 'white' as const,
     playedAt: null,
-    timeControl: null
+    timeControl: null,
+    annotatedPgn: null
   };
 }
 

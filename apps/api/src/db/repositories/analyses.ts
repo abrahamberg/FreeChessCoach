@@ -233,9 +233,11 @@ export interface StatsSourceRow {
    * the player's *other* games without re-querying (see
    * `getGameTacticBaselineNote`). */
   gameId: string;
-  /** Moves-less — every consumer of this row (coach-player-stats.ts,
-   * stats-dashboard.ts) reads only aggregate fields, confirmed by grep
-   * before 0032_annotated_pgn.ts dropped `.moves` from what's stored. */
+  /** Moves-less, as actually stored (0032_annotated_pgn.ts). Some
+   * aggregators (`aggregate-opening-stats.ts`'s `openingMistakeCount`)
+   * genuinely need per-move data, not just the aggregate fields — callers
+   * that do compose the full report via `services/game-report.ts`'s
+   * `composeGameReport(gameReport, { annotatedPgn, userColor })`. */
   gameReport: StoredGameReport;
   /** The PGN `Result` header — resolved to a per-colour outcome at the
    * service layer, same as `buildGameReportForAnalysis`'s own resultForColour. */
@@ -243,6 +245,7 @@ export interface StatsSourceRow {
   userColor: PlayerColor;
   playedAt: Date | null;
   timeControl: string | null;
+  annotatedPgn: string | null;
 }
 
 /** Feeds the stats dashboard (Phase 29): every ready analysis for one of
@@ -267,7 +270,8 @@ export async function listReadyReportsForUser(
       'games.result as pgnResult',
       'games.userColor as userColor',
       'games.playedAt as playedAt',
-      'games.timeControl as timeControl'
+      'games.timeControl as timeControl',
+      'games.annotatedPgn as annotatedPgn'
     ])
     .where('analyses.status', '=', 'ready')
     .where('games.userId', '=', userId)
