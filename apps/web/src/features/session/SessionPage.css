@@ -198,26 +198,41 @@
   min-height: 0;
 }
 
-/* --- SessionPage's own mobile layout: board on top, edge-to-edge, then the
- * coach chat below it, both always visible — GameReviewPage's own mobile
- * structure (see its own CSS), reused here rather than the Board/Coach tab
- * switch above. BotSessionPage keeps the tabs (a bot never talks, so
- * there's no chat-vs-keyboard problem worth solving there); this `.stacked`
- * modifier is what keeps the two layouts from fighting over the same
- * .session-body.mobile selectors. flex: 0 0 auto (not flex: 1) on the board
- * column so it claims only the height its own content actually needs,
- * rather than stretching to fill leftover space and centering the board
- * inside that extra room — GameReviewPage's fix for the same "dead space"
- * problem applies identically here. overflow-y: auto is the safety net for
- * a viewport too short for the whole stack (an expanded Explore panel,
- * play_bot's toolbar, etc.) — the chat's own message list already scrolls
- * internally for the common case (see its min-height below), so this
- * rarely fires. */
+/* --- SessionPage's own mobile layout: the coach chat above, capped, then
+ * the board below it edge-to-edge — the exact order/sizing philosophy
+ * GameReviewPage's mobile layout landed on (its note card above the board,
+ * both intrinsically sized, nothing stretching to fill leftover space and
+ * centering the board inside it — see that page's own CSS), reused here
+ * rather than the Board/Coach tab switch above. BotSessionPage keeps the
+ * tabs (a bot never talks, so there's no chat-vs-keyboard problem worth
+ * solving there); this `.stacked` modifier is what keeps the two layouts
+ * from fighting over the same .session-body.mobile selectors. Chat above,
+ * board below, is also why collapsibleComposer's keyboard reads as
+ * "covering the board": the input sits in the capped chat card near the
+ * top, so the keyboard rising from the bottom of the screen covers the
+ * board beneath it, not the chat. flex: 0 0 auto (not flex: 1) on the board
+ * column so it claims only the height its own content actually needs.
+ * overflow-y: auto is the safety net for a viewport too short for the whole
+ * stack (an expanded Explore panel, play_bot's toolbar, etc.) — the chat's
+ * own message list already scrolls internally within its own cap for the
+ * common case, so this rarely fires. */
 .session-body.mobile.stacked {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   gap: var(--space-2);
+}
+
+/* Capped, not flex: 1 — same call as GameReviewPage's own note card
+ * (MoveNoteCard.css/GameReviewPage.css): a short conversation only claims
+ * what it needs, and even a long one stays bounded so the board below
+ * stays the dominant element. Taller than the note card's own 18vh (a real
+ * back-and-forth transcript needs more room than one pre-baked sentence),
+ * with its own internal scroll — MessageList's [data-testid='message-list']
+ * already scrolls (ChatPane.css) once content exceeds this cap. */
+.session-body.mobile.stacked .chat-pane {
+  flex: 0 0 auto;
+  max-height: 32vh;
 }
 
 .session-body.mobile.stacked .session-board-column {
@@ -242,15 +257,6 @@
   margin: 0 -8px;
   padding-left: 8px;
   padding-right: 8px;
-}
-
-/* Always a decent share of the screen regardless of how tall the board
- * column above gets (min-height wins over flex: 1's own basis when the
- * column is short) — a real back-and-forth conversation shouldn't be
- * squeezed to a sliver by the board's own panels. */
-.session-body.mobile.stacked .chat-pane {
-  flex: 1;
-  min-height: 35vh;
 }
 
 .session-view-tabs {

@@ -21,13 +21,15 @@ import './SessionPage.css';
 /** design.md §5: composes board + chat for an active coaching session.
  * All fetching lives in useSessionPageData (AGENTS.md rule 7); this is
  * presentational — local UI state, a few small handlers, and the layout.
- * At/above 768px board and chat sit side by side; below it, board then chat
- * stack in one scrollable column (GameReviewPage's own mobile structure,
- * reused here — see SessionPage.css's `.stacked` block) rather than the
- * two-tab Board/Coach switch BotSessionPage (a bot never talks, so it keeps
- * MobileSessionBody's tabs) still uses. The board stays visible while
- * typing — ChatPane's collapsibleComposer keeps the keyboard from being
- * summoned until the student actually taps to reply. */
+ * At/above 768px board and chat sit side by side; below it, chat then board
+ * stack in one scrollable column — the exact same order/structure
+ * GameReviewPage's mobile layout landed on (note card above the board, see
+ * SessionPage.css's `.stacked` block), not the two-tab Board/Coach switch
+ * BotSessionPage (a bot never talks, so it keeps MobileSessionBody's tabs)
+ * still uses. Chat above, board below, is also what makes
+ * collapsibleComposer's keyboard read as "covering the board": the input
+ * sits in the capped chat card near the top, so the keyboard rising from
+ * the bottom of the screen covers the board beneath it, not the chat. */
 export function SessionPage(): ReactNode {
   const { id } = useParams<{ id: string }>();
   const sessionId = id ?? '';
@@ -211,8 +213,8 @@ export function SessionPage(): ReactNode {
         </div>
       ) : (
         <div className="session-body mobile stacked">
-          {board}
           {chatPanel}
+          {board}
         </div>
       )}
     </div>
