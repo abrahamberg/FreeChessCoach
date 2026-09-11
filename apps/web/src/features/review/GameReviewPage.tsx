@@ -26,14 +26,12 @@ import './GameReviewPage.css';
  * below), and the reason nav/strip sit under the board rather than above it
  * now: the board is the scarcest-space element on a phone (same call
  * SessionPage.css makes for the live session), so everything that doesn't
- * need to precede it stays out of its way. One fixed (non-scrolling) layout
- * overall — the board's position and size stay put regardless of how long
- * the current move's note is (the note card scrolls internally instead),
- * rather than the whole page scrolling and the board landing wherever that
- * leaves it. Game Report is a bottom sheet (GameReportSummary's own
- * existing expand/collapse state, just given fixed/overlay positioning
- * here) rather than another flex child, so opening it covers the board
- * instead of pushing it around.
+ * need to precede it stays out of its way, edge-to-edge and sized from its
+ * own width rather than from whatever its neighbors leave behind (see
+ * GameReviewPage.css's own mobile section for the reasoning). Game Report
+ * is a bottom sheet (GameReportSummary's own existing expand/collapse
+ * state, just given fixed/overlay positioning here) rather than another
+ * flex child, so opening it covers the board instead of pushing it around.
  *
  * At the desktop breakpoint, the note card takes the same MoveNoteCard the
  * mobile layout uses, placed in the column a coaching session's chat pane
@@ -57,6 +55,7 @@ export function GameReviewPage(): ReactNode {
     arrows,
     moveQualityBadgeSquare,
     moveQualityBadgeQuality,
+    coachPersona,
     tacticSelection,
     onToggleTacticSelection,
     continueWithCoach,
@@ -91,6 +90,7 @@ export function GameReviewPage(): ReactNode {
       ply={ply}
       san={sanMoves[ply - 1] ?? null}
       move={currentMove}
+      coachPersona={coachPersona}
       onContinueWithCoach={canContinueWithCoach ? continueWithCoach : undefined}
       isContinuingWithCoach={isContinuingWithCoach}
       tacticSelection={tacticSelection}

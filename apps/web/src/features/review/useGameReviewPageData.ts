@@ -1,5 +1,5 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
-import { PromoteGameResponseSchema, type MoveQuality } from '@freechesscoach/shared';
+import { PromoteGameResponseSchema, UserProfileSchema, type MoveQuality } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -58,6 +58,16 @@ export function useGameReviewPageData(gameId: string) {
     queryFn: ({ signal }) => apiGet(`/api/games/${gameId}`, GameDetailSchema, signal),
     enabled: gameId !== ''
   });
+
+  // Same query key useSessionPageData.ts/SettingsPage.tsx use (TanStack Query
+  // dedupes/shares the cache) — this is only the coach's selected persona,
+  // for MoveNoteCard's avatar (coaches.md), same as the live chat's own
+  // per-message avatar.
+  const profileQuery = useQuery({
+    queryKey: ['profile'],
+    queryFn: ({ signal }) => apiGet('/api/users/me', UserProfileSchema, signal)
+  });
+  const coachPersona = profileQuery.data?.coachPersona ?? 'general';
 
   const positions = gameQuery.data ? parsePgn(gameQuery.data.pgn).positions : [];
   const sanMoves = positions.filter((position) => position.moveSan !== null).map((position) => position.moveSan as string);
@@ -148,6 +158,7 @@ export function useGameReviewPageData(gameId: string) {
     arrows,
     moveQualityBadgeSquare,
     moveQualityBadgeQuality,
+    coachPersona,
     tacticSelection,
     onToggleTacticSelection: toggleTacticSelectionKey,
     continueWithCoach,
