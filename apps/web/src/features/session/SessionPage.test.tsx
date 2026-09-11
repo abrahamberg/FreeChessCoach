@@ -179,6 +179,36 @@ describe('SessionPage', () => {
     expect(screen.getByRole('textbox', { name: /reply/i })).toBeInTheDocument();
   });
 
+  test('below 768px, only the current transcript entry shows — paged left/right, same as GameReviewPage\'s move notes', async () => {
+    mockMatchMedia(false);
+    window.localStorage.clear();
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        messages: [
+          { id: 'm1', role: 'assistant', content: 'First things first — what did you think of your opening?' },
+          { id: 'm2', role: 'user', content: 'It felt fine, standard stuff.' },
+          { id: 'm3', role: 'assistant', content: 'Right, nothing to flag there.' }
+        ]
+      })
+    );
+    const user = userEvent.setup();
+    renderSessionPage();
+
+    await screen.findByTestId('mock-chessboard');
+    // Opens on the latest message only — the earlier ones aren't on screen
+    // at the same time.
+    expect(screen.getByText('Right, nothing to flag there.')).toBeInTheDocument();
+    expect(screen.queryByText('It felt fine, standard stuff.')).not.toBeInTheDocument();
+    expect(screen.getByText('message 3 of 3')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /previous message/i }));
+
+    expect(screen.getByText('It felt fine, standard stuff.')).toBeInTheDocument();
+    expect(screen.queryByText('Right, nothing to flag there.')).not.toBeInTheDocument();
+    expect(screen.getByText('message 2 of 3')).toBeInTheDocument();
+  });
+
   test('at/above 768px the split layout is unchanged — board and chat together, no view switch', async () => {
     vi.stubGlobal('fetch', mockFetch());
     renderSessionPage();

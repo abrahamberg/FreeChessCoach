@@ -246,12 +246,17 @@
   color: var(--color-text-secondary);
 }
 
-.chat-pane form {
+/* Base layout only — self-contained (not `.chat-pane form`) so ChatComposer
+ * renders the same whether it's ChatPane's own inline footer (desktop) or
+ * pinned to the screen's bottom edge in SessionPage's mobile layout (see
+ * .session-composer-fixed there). */
+.chat-composer {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 /* The collapsed state of a `collapsibleComposer` ChatPane (mobile's coach

@@ -79,6 +79,107 @@ function renderTextSegment(
   });
 }
 
+export interface MessageRenderContext {
+  fen: string;
+  positions: ParsedPosition[];
+  onSelectPly?: (ply: number) => void;
+  onHoverMove?: (move: HoverMove) => void;
+  coachPersona: CoachPersona;
+  onPlayMessage?: (messageId: string, text: string) => void;
+  onStopMessage?: () => void;
+  playingMessageId: string | null;
+  loadingMessageId: string | null;
+  /** SessionPage's mobile PagedMessageCard shows one message at a time, so
+   * "starts a coach run" (the default: only the first of consecutive
+   * assistant messages gets an avatar) has no adjacent message to compare
+   * against — every assistant message gets its own avatar there instead. */
+  alwaysShowAvatar?: boolean;
+}
+
+/** Renders one transcript entry — a move card, position divider, annotation,
+ * diverged-line message, or plain text with resolved move mentions/arrow
+ * tokens and the optional voice-playback button. Extracted so both
+ * MessageList (the desktop transcript, every message stacked and scrolling)
+ * and PagedMessageCard (mobile: one message at a time) share the exact same
+ * per-message-type rendering instead of two copies drifting apart. */
+export function renderMessageItem(message: CoachMessage, index: number, visible: CoachMessage[], ctx: MessageRenderContext): ReactNode {
+  const boardMove = message.text.match(BOARD_MOVE_PATTERN);
+  if (boardMove) {
+    const [, san, fen] = boardMove;
+    return <MoveCard key={message.id} san={san ?? ''} fen={fen ?? ''} />;
+  }
+  const playerMove = message.text.match(PLAYER_MOVE_PATTERN);
+  if (playerMove) {
+    const [, san] = playerMove;
+    return <MoveCard key={message.id} san={san ?? ''} fen="" />;
+  }
+  const divider = decodePositionDivider(message.text);
+  if (divider) {
+    return <PositionDivider key={message.id} ply={divider.ply} san={divider.san} onSelect={ctx.onSelectPly} />;
+  }
+  const annotation = decodeAnnotationNote(message.text);
+  if (annotation) {
+    return <AnnotationNote key={message.id} arrows={annotation.arrows} highlights={annotation.highlights} />;
+  }
+  const context = decodePositionContext(message.text);
+  if (context) {
+    return (
+      <PositionContextMessage
+        key={message.id}
+        moveNumber={context.moveNumber}
+        color={context.color}
+        san={context.san}
+        content={context.content}
+      />
+    );
+  }
+  const divergedLineStart = decodeDivergedLineStart(message.text);
+  if (divergedLineStart) {
+    return <DivergedLineStart key={message.id} basePly={divergedLineStart.basePly} sanMoves={divergedLineStart.sanMoves} />;
+  }
+  const divergedLine = decodeDivergedLine(message.text);
+  if (divergedLine) {
+    return <DivergedLineMessage key={message.id} basePly={divergedLine.basePly} sanText={divergedLine.sanText} content={divergedLine.content} />;
+  }
+  // design.md §5.3: one small avatar at the start of each coach run, not on
+  // every message — only when the previous visible message wasn't also from
+  // the assistant. (ctx.alwaysShowAvatar skips that adjacency check — see
+  // its own doc comment.)
+  const startsCoachRun = message.role === 'assistant' && (ctx.alwaysShowAvatar || visible[index - 1]?.role !== 'assistant');
+  const speakableText = ctx.onPlayMessage ? getSpeakableText(message) : null;
+  const voiceState = ctx.loadingMessageId === message.id ? 'loading' : ctx.playingMessageId === message.id ? 'playing' : 'idle';
+  return (
+    <p key={message.id} data-role={message.role}>
+      {startsCoachRun && <CoachAvatar persona={ctx.coachPersona} />}
+      {renderMessageText(message.text, ctx.fen, ctx.positions, ctx.onHoverMove)}
+      {speakableText && (
+        <button
+          type="button"
+          className="coach-voice-button"
+          data-state={voiceState}
+          aria-label={voiceState === 'idle' ? 'Play coach message' : 'Stop coach message'}
+          onClick={() => (voiceState === 'idle' ? ctx.onPlayMessage?.(message.id, speakableText) : ctx.onStopMessage?.())}
+        >
+          {voiceState === 'loading' ? (
+            <span className="coach-voice-button__spinner" aria-hidden="true" />
+          ) : voiceState === 'playing' ? (
+            <PauseIcon width={11} height={11} />
+          ) : (
+            <PlaySmallIcon width={11} height={11} />
+          )}
+        </button>
+      )}
+    </p>
+  );
+}
+
+/** The visible (non-empty) transcript, in the order every caller needs it —
+ * PagedMessageCard/useMessagePaging index into this same filtered array so
+ * "message 3 of 8" always agrees with what MessageList itself would show. */
+export function visibleMessages(messages: CoachMessage[]): CoachMessage[] {
+  return messages.filter((message) => message.text.trim() !== '');
+}
+
 export interface MessageListProps {
   messages: CoachMessage[];
   /** Clicking a PositionDivider jumps the board to that ply (peek mode). */
@@ -121,7 +222,11 @@ const AT_BOTTOM_THRESHOLD_PX = 24;
 const DEFAULT_COACH_PERSONA: CoachPersona = 'general';
 
 /** design.md §5.3: auto-scroll only if the user is already at the bottom —
- * never yank them while reading history. */
+ * never yank them while reading history. Desktop's own transcript view;
+ * SessionPage's mobile layout uses PagedMessageCard instead (one message at
+ * a time, paged left/right — see that component's own doc comment), sharing
+ * this file's renderMessageItem/visibleMessages rather than duplicating the
+ * per-message-type rendering. */
 export function MessageList({
   messages,
   onSelectPly,
@@ -150,93 +255,21 @@ export function MessageList({
     }
   }, [messages]);
 
+  const ctx: MessageRenderContext = {
+    fen,
+    positions,
+    onSelectPly,
+    onHoverMove,
+    coachPersona,
+    onPlayMessage,
+    onStopMessage,
+    playingMessageId,
+    loadingMessageId
+  };
+
   return (
     <div ref={containerRef} onScroll={handleScroll} data-testid="message-list" aria-live="polite">
-      {messages
-        .filter((message) => message.text.trim() !== '')
-        .map((message, index, visible) => {
-          const boardMove = message.text.match(BOARD_MOVE_PATTERN);
-          if (boardMove) {
-            const [, san, fen] = boardMove;
-            return <MoveCard key={message.id} san={san ?? ''} fen={fen ?? ''} />;
-          }
-          const playerMove = message.text.match(PLAYER_MOVE_PATTERN);
-          if (playerMove) {
-            const [, san] = playerMove;
-            return <MoveCard key={message.id} san={san ?? ''} fen="" />;
-          }
-          const divider = decodePositionDivider(message.text);
-          if (divider) {
-            return <PositionDivider key={message.id} ply={divider.ply} san={divider.san} onSelect={onSelectPly} />;
-          }
-          const annotation = decodeAnnotationNote(message.text);
-          if (annotation) {
-            return <AnnotationNote key={message.id} arrows={annotation.arrows} highlights={annotation.highlights} />;
-          }
-          const context = decodePositionContext(message.text);
-          if (context) {
-            return (
-              <PositionContextMessage
-                key={message.id}
-                moveNumber={context.moveNumber}
-                color={context.color}
-                san={context.san}
-                content={context.content}
-              />
-            );
-          }
-          const divergedLineStart = decodeDivergedLineStart(message.text);
-          if (divergedLineStart) {
-            return (
-              <DivergedLineStart key={message.id} basePly={divergedLineStart.basePly} sanMoves={divergedLineStart.sanMoves} />
-            );
-          }
-          const divergedLine = decodeDivergedLine(message.text);
-          if (divergedLine) {
-            return (
-              <DivergedLineMessage
-                key={message.id}
-                basePly={divergedLine.basePly}
-                sanText={divergedLine.sanText}
-                content={divergedLine.content}
-              />
-            );
-          }
-          // design.md §5.3: one small avatar at the start of each coach run,
-          // not on every message — only when the previous visible message
-          // wasn't also from the assistant.
-          const startsCoachRun = message.role === 'assistant' && visible[index - 1]?.role !== 'assistant';
-          const speakableText = onPlayMessage ? getSpeakableText(message) : null;
-          const voiceState =
-            loadingMessageId === message.id ? 'loading' : playingMessageId === message.id ? 'playing' : 'idle';
-          return (
-            <p key={message.id} data-role={message.role}>
-              {startsCoachRun && (
-                <CoachAvatar persona={coachPersona} />
-              )}
-              {renderMessageText(message.text, fen, positions, onHoverMove)}
-              {speakableText && (
-                <button
-                  type="button"
-                  className="coach-voice-button"
-                  data-state={voiceState}
-                  aria-label={voiceState === 'idle' ? 'Play coach message' : 'Stop coach message'}
-                  onClick={() =>
-                    voiceState === 'idle' ? onPlayMessage?.(message.id, speakableText) : onStopMessage?.()
-                  }
-                >
-                  {voiceState === 'loading' ? (
-                    <span className="coach-voice-button__spinner" aria-hidden="true" />
-                  ) : voiceState === 'playing' ? (
-                    <PauseIcon width={11} height={11} />
-                  ) : (
-                    <PlaySmallIcon width={11} height={11} />
-                  )}
-                </button>
-              )}
-            </p>
-          );
-        })}
+      {visibleMessages(messages).map((message, index, visible) => renderMessageItem(message, index, visible, ctx))}
     </div>
   );
 }

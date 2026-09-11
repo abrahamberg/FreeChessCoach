@@ -1,0 +1,42 @@
+/* One transcript entry at a time — the same accent-bordered card language
+ * MoveNoteCard.css uses for Game Review's note card, reused here for chat
+ * messages. Content itself (move mentions, arrow tokens, the voice button)
+ * is MessageList's own styling/markup (renderMessageItem) — only the
+ * bubble-per-message-in-a-stack layout ChatPane.css uses is replaced, since
+ * there's just one message in this box at a time. */
+.paged-message-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4) var(--space-5);
+}
+
+.paged-message-card--user {
+  border-left-color: var(--color-primary);
+}
+
+.paged-message-card__body {
+  max-height: 32vh;
+  overflow-y: auto;
+  line-height: var(--line-height-reading);
+  white-space: pre-wrap;
+}
+
+.paged-message-card__body .move-card,
+.paged-message-card__body .position-divider,
+.paged-message-card__body .annotation-note {
+  font-size: var(--font-size-sm);
+}
+
+.paged-message-card__body .position-context-message__note {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.paged-message-card__empty-text {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
