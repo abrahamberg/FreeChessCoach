@@ -601,6 +601,38 @@ won it. A missed **mate** still stays missed — nothing short of mate is as
 much, and the pawn-weighted comparison would otherwise rank a queen above
 one.
 
+### Where §9's cards went, and why the same game still read wrong
+
+Every rule above shipped and is covered by tests, and the same game still
+printed the same two cards. The detectors were never the problem the second
+time: `Bb5` on `r1b1kb1r/pp1q1ppp/3p1n2/2p3B1/2B1P3/3Q4/PPP2PPP/RN3RK1 w`
+classifies as a `pin` worth a queen (line-verified to 9 pawns at confidence
+0.95), and `13.Nxf6+` as a `fork` worth 5.8. Both were computed on every
+run. Neither was ever stored.
+
+`0032_annotated_pgn.ts` made `games.annotatedPgn` the single per-move store:
+`storeGameReport` drops `moves`, and `composeGameReport` reads them back out
+of that PGN, so what is annotated *is* the served report. The batch job
+annotated `classifiedMoves` — the array as it stands **before**
+`buildGameReport` — and `buildGameReport` is where a move gains its `phase`,
+`isTacticalPosition`, `tacticOpportunity`, `tacticAllowed` and this
+section's ordering of `reasons`. All five were rebuilt on every analysis and
+then thrown away.
+
+What survived was `tacticPrevention`, attached upstream of the report — so
+every card in Game Review fell back to its prevention sentence alone, which
+is exactly the "consolation prize leads" symptom `tactic-card-order.ts` was
+written to end, one layer further down. Two counts were quietly dead for the
+same reason: `ta-offensive`'s diagnostic reads `ctx.tacticOpportunity`, and
+the observations were recorded from the same pre-report array.
+
+The write now goes through `services/game-report.ts`'s
+`annotatedPgnForReport`, next to `composeGameReport` and taking a whole
+`GameReport` rather than a `ClassifiedMoveDto[]` — the two are one contract,
+and a caller can no longer hand the write side the moves it had before the
+report. **A game analysed before this fix keeps the stripped annotations it
+was stored with; it has to be re-analysed to get its cards back.**
+
 ### A gate that was tried and reverted
 
 Dropping `breaksPin` claims for *relative pins on pawns* — TR-05's phantom

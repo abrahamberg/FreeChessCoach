@@ -1,4 +1,4 @@
-import { parseAnnotatedPgn } from '@freechesscoach/chess-analysis';
+import { buildAnnotatedPgn, parseAnnotatedPgn, toAnnotatedMoveData } from '@freechesscoach/chess-analysis';
 import type { GameReport, PlayerColor, StoredGameReport } from '@freechesscoach/shared';
 
 /** The two fields `composeGameReport` actually needs — deliberately not
@@ -25,4 +25,27 @@ export interface ComposeGameReportSource {
 export function composeGameReport(stored: StoredGameReport, source: ComposeGameReportSource): GameReport {
   const moves = source.annotatedPgn ? parseAnnotatedPgn(source.annotatedPgn, source.userColor) : [];
   return { ...stored, moves };
+}
+
+/**
+ * The write side of `composeGameReport`, and deliberately its neighbour: the
+ * two are one contract — whatever this function annotates is exactly what
+ * that one reads back as the served report's `moves`, since
+ * `storeGameReport` drops them.
+ *
+ * Takes the whole `GameReport` rather than a `ClassifiedMoveDto[]` so a
+ * caller cannot hand it the moves it had *before* `buildGameReport`.
+ * `buildGameReport` is where a move gains its `phase`,
+ * `isTacticalPosition`, `tacticOpportunity`, `tacticAllowed` and
+ * `tactic-card-order.ts`'s ordering of `reasons`, so annotating the
+ * pre-report moves silently served a report with none of them — Game Review
+ * then showed only the prevention sentence on a move that hung a queen to a
+ * pin (`docs/tactics-rework.md` §9).
+ *
+ * `pgn` is the game's own plain PGN — headers and mainline — not an
+ * already-annotated one: `buildAnnotatedPgn` rebuilds every comment from
+ * `report.moves` alone.
+ */
+export function annotatedPgnForReport(pgn: string, report: GameReport): string {
+  return buildAnnotatedPgn(pgn, new Map(report.moves.map((move) => [move.ply, toAnnotatedMoveData(move)])));
 }
