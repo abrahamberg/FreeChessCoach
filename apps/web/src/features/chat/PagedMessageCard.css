@@ -4,7 +4,22 @@
  * is MessageList's own styling/markup (renderMessageItem) — only the
  * bubble-per-message-in-a-stack layout ChatPane.css uses is replaced, since
  * there's just one message in this box at a time. */
+
+/* Coach portrait (left) / student initials (right) sit outside the card
+ * itself as row siblings — see PagedMessageCard.tsx — rather than inline
+ * before the text, so which side of the conversation a message came from
+ * reads instantly even with only this one message on screen. No `gap`:
+ * CoachAvatar/UserAvatar each carry their own margin toward the card
+ * (margin-right/margin-left respectively) so spacing stays consistent
+ * whichever side is showing. */
+.paged-message-card-row {
+  display: flex;
+  align-items: flex-start;
+}
+
 .paged-message-card {
+  flex: 1;
+  min-width: 0;
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   border-left: 4px solid var(--color-border);
@@ -12,7 +27,14 @@
   padding: var(--space-4) var(--space-5);
 }
 
+/* A distinctly different color (not just the border accent) plus an
+ * indent from the left — the same two cues (tinted background,
+ * right-shifted position) the desktop transcript's own right-aligned user
+ * bubble uses (ChatPane.css), adapted to a single full-width card instead
+ * of a floating one. */
 .paged-message-card--user {
+  margin-left: var(--space-5);
+  background: var(--color-primary-soft);
   border-left-color: var(--color-primary);
 }
 

@@ -241,7 +241,7 @@
  * instead the card and the nav pills below the board each get their own
  * inset directly, matching the reading margin GameReviewPage's page
  * padding gave its own note card/move nav for free. */
-.session-body.mobile.stacked > .paged-message-card,
+.session-body.mobile.stacked > .paged-message-card-row,
 .session-body.mobile.stacked > .move-explorer__nav {
   margin-left: var(--space-4);
   margin-right: var(--space-4);

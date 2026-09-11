@@ -1,0 +1,17 @@
+/* Same circle-with-initials language as UserMenu.css's own avatar, sized to
+ * match CoachAvatar's "chat" portrait (64px) it sits opposite — margin-left
+ * instead of margin-right since this one sits on the right of its row. */
+.user-avatar-initials {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-left: 7px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3c7a50, var(--color-gold));
+  color: #fff;
+  font-weight: 700;
+  font-size: 22px;
+}

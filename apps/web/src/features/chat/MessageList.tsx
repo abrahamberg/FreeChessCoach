@@ -89,11 +89,13 @@ export interface MessageRenderContext {
   onStopMessage?: () => void;
   playingMessageId: string | null;
   loadingMessageId: string | null;
-  /** SessionPage's mobile PagedMessageCard shows one message at a time, so
-   * "starts a coach run" (the default: only the first of consecutive
-   * assistant messages gets an avatar) has no adjacent message to compare
-   * against — every assistant message gets its own avatar there instead. */
-  alwaysShowAvatar?: boolean;
+  /** Suppresses the built-in inline coach avatar (the assistant-text branch
+   * below). PagedMessageCard sets this — it renders its own avatar
+   * (CoachAvatar or UserAvatar) externally instead, positioned left/right
+   * by role rather than inline before the text, so a message's side is
+   * clear even with only one message on screen and no adjacent one to
+   * compare against for "starts a coach run". */
+  hideAvatar?: boolean;
 }
 
 /** Renders one transcript entry — a move card, position divider, annotation,
@@ -143,9 +145,9 @@ export function renderMessageItem(message: CoachMessage, index: number, visible:
   }
   // design.md §5.3: one small avatar at the start of each coach run, not on
   // every message — only when the previous visible message wasn't also from
-  // the assistant. (ctx.alwaysShowAvatar skips that adjacency check — see
-  // its own doc comment.)
-  const startsCoachRun = message.role === 'assistant' && (ctx.alwaysShowAvatar || visible[index - 1]?.role !== 'assistant');
+  // the assistant. (ctx.hideAvatar drops this entirely — see its own doc
+  // comment.)
+  const startsCoachRun = !ctx.hideAvatar && message.role === 'assistant' && visible[index - 1]?.role !== 'assistant';
   const speakableText = ctx.onPlayMessage ? getSpeakableText(message) : null;
   const voiceState = ctx.loadingMessageId === message.id ? 'loading' : ctx.playingMessageId === message.id ? 'playing' : 'idle';
   return (

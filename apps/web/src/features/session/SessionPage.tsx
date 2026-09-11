@@ -240,6 +240,7 @@ export function SessionPage(): ReactNode {
             onSelectPly={peekAt}
             onHoverMove={setHoverMove}
             coachPersona={persona}
+            displayName={profileQuery.data?.displayName}
             onPlayMessage={ttsEnabled ? coachVoice.play : undefined}
             onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
             playingMessageId={coachVoice.playingMessageId}
