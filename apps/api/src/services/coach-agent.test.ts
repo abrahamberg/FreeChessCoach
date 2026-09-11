@@ -317,7 +317,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: the model itself calls show_position — no clientToolResult
@@ -395,7 +394,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: one assistant step makes TWO tool-calls — record_move_note
@@ -520,7 +518,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: coach shows move 2 for white (ply 3) and talks about it.
@@ -572,7 +569,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: the model calls record_move_note (a SERVER-executed tool —
@@ -637,7 +633,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     const agentDeps = deps(instantTextModel('Got it.'));
@@ -700,7 +695,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     const turn1 = await coachAgent.startTurn(deps(instantTextModel('Hello!')), session, { content: 'hi coach' });
@@ -795,7 +789,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Claim a ply far beyond the game's actual length.

@@ -29,6 +29,22 @@ export type AnnotatedMoveData = Omit<
 
 const ANNOTATION_TAG = /\[%fcc ([^\]]+)\]/;
 
+const DERIVABLE_FIELDS = ['ply', 'moveNumber', 'moveSan', 'uci', 'mover', 'isUserMove', 'fenBefore', 'fenAfter'] as const;
+
+/** Strips the fields `parseAnnotatedPgn` reconstructs from the mainline
+ * itself, so a move's `[%fcc ...]` comment carries only what replay can't
+ * recover — `moveSan`/`fenBefore`/`fenAfter` included, which would otherwise
+ * double the size of every annotated PGN for no benefit (both callers,
+ * `services/analysis.ts` and `services/play-move-quality.ts`, already have
+ * a `ClassifiedMoveDto` in hand with those fields filled in from the same
+ * replay this module itself does). `diagnosisCodes` (not part of
+ * `ClassifiedMoveSchema`) passes through untouched when present. */
+export function toAnnotatedMoveData(move: ClassifiedMoveDto & { diagnosisCodes?: DiagnosisCodeId[] }): AnnotatedMoveData {
+  const data = { ...move };
+  for (const field of DERIVABLE_FIELDS) delete data[field];
+  return data as AnnotatedMoveData;
+}
+
 /** Percent-encoding, not base64: dependency-free and identical in both
  * Node (api/worker) and the browser (`apps/web` imports this package
  * directly) — unlike `Buffer`, which only exists in Node. The encoded

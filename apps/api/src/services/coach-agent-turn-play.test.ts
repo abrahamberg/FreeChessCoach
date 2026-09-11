@@ -1,9 +1,9 @@
 import type { Kysely } from 'kysely';
+import { buildAnnotatedPgn, parseAnnotatedPgn } from '@freechesscoach/chess-analysis';
 import type { PositionAnalysis } from '@freechesscoach/shared';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { drain, mockResolution, multiStepModel } from '../../test/helpers/mock-model.js';
-import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
@@ -101,18 +101,11 @@ describe('coach-agent startTurn — play mode ply advance (architecture §14)', 
 
     // Seed one already-played move (ply 1) as if the student had just played it.
     await gamesRepo.updatePgn(db, session.gameId, '1. e4');
-    await gameMoveQualitiesRepo.insert(db, {
-      gameId: session.gameId,
-      ply: 1,
-      moveSan: 'e4',
-      mover: 'white',
-      quality: 'best',
-      cpLoss: 0,
-      bestLineSan: ['e4'],
-      evalAfterCp: 20,
-      reasons: [],
-      diagnosisCodes: []
-    });
+    const annotatedPgn = buildAnnotatedPgn(
+      '1. e4',
+      new Map([[1, { quality: 'best', cpLoss: 0, bestLineSan: ['e4'], evalAfterCp: 20, hangsPiece: false, reasons: [] }]])
+    );
+    await gamesRepo.updateAnnotatedPgn(db, session.gameId, annotatedPgn, new Date());
     await sessionsRepo.updateCurrentPly(db, session.id, 1);
     await sessionMessagesRepo.insert(db, session.id, 'user', '[player_move] I played e4.', 1);
     const freshSession = { ...session, currentPly: 1 };
@@ -127,7 +120,11 @@ describe('coach-agent startTurn — play mode ply advance (architecture §14)', 
     const updated = await sessionsRepo.findById(db, session.id);
     expect(updated?.currentPly).toBe(0);
 
-    expect(await gameMoveQualitiesRepo.listByGameId(db, session.gameId)).toHaveLength(0);
+    const gameAfterUndo = await gamesRepo.findById(db, session.gameId);
+    const movesAfterUndo = gameAfterUndo?.annotatedPgn
+      ? parseAnnotatedPgn(gameAfterUndo.annotatedPgn, gameAfterUndo.userColor)
+      : [];
+    expect(movesAfterUndo).toHaveLength(0);
     expect(await sessionMoveNotesRepo.findByPly(db, session.id, 1)).toBeUndefined();
 
     const ply1Messages = await sessionMessagesRepo.listBySessionAndPly(db, session.id, 1);

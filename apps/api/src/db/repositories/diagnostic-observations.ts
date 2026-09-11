@@ -13,7 +13,6 @@ export interface DiagnosticObservationRow {
   hwdl: number;
   severity: Severity;
   reachability: number;
-  detail: unknown;
   createdAt: Date;
 }
 
@@ -27,19 +26,18 @@ export interface NewDiagnosticObservation {
   hwdl: number;
   severity: Severity;
   reachability: number;
-  detail: unknown;
 }
 
 /** One row per `DiagnosticEntry` the detector registry + episode resolution
  * produced for a game (Task 56.3). Batched via Kysely's array-values insert
- * — a game analysis emits many entries at once, never one at a time. */
+ * — a game analysis emits many entries at once, never one at a time.
+ * 0032_annotated_pgn.ts dropped `detail` (a per-observation context
+ * snapshot the migration's own comment already called "never queried on")
+ * — the evidence drill-down now derives that context on demand from
+ * `(gameId, ply)` by decoding the game's own `annotatedPgn`. */
 export function insertMany(db: Kysely<Database>, observations: readonly NewDiagnosticObservation[]): Promise<void> {
   if (observations.length === 0) return Promise.resolve();
-  return db
-    .insertInto('diagnosticObservations')
-    .values(observations.map((o) => ({ ...o, detail: o.detail === null ? null : JSON.stringify(o.detail) })))
-    .execute()
-    .then(() => undefined);
+  return db.insertInto('diagnosticObservations').values(observations).execute().then(() => undefined);
 }
 
 /** Every observation for `userId` from `since` onward — the profile

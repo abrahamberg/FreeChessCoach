@@ -115,7 +115,11 @@ describe('buildDiagnosticObservations', () => {
     expect(rows[0]!.failed).toBe(false);
   });
 
-  test('maps observation fields onto the persisted row, including gameId/userId and wrapped detail', () => {
+  // 0032_annotated_pgn.ts: the detector's own `detail` text is no longer
+  // persisted onto the row — a thin (gameId, ply) pointer now, with detail
+  // derivable on demand from the game's own annotatedPgn instead of
+  // snapshotted redundantly at write time (see toRow's doc comment).
+  test('maps observation fields onto the persisted row, including gameId/userId', () => {
     const always = detector('BV-01', 'D', 10, (ctx) =>
       observation({ ply: ctx.ply, hwdl: 0.42, severity: 'major', reachability: 0.3, detail: 'missed Nd6+' })
     );
@@ -130,8 +134,8 @@ describe('buildDiagnosticObservations', () => {
       failed: true,
       hwdl: 0.42,
       severity: 'major',
-      reachability: 0.3,
-      detail: { text: 'missed Nd6+' }
+      reachability: 0.3
     });
+    expect(rows[0]).not.toHaveProperty('detail');
   });
 });

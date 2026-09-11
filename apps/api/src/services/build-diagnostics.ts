@@ -117,12 +117,13 @@ function groupRankHitsByPly<T extends { ply: number }>(hits: readonly T[]): Map<
 }
 
 /**
- * `detail` holds only the detector's human-readable text for now.
+ * `observation.detail` (the detector's human-readable text) and
  * `DiagnosticEntry`'s richer per-opportunity context (opening, phase,
- * clock, complexity, opponent rating — Task 55.3's aggregation input) is
- * game/session-level, not per-observation, so Task 56.4's profile-rebuild
- * job joins it from `games`/`analyses` at read time rather than
- * duplicating it onto every row here.
+ * clock, complexity, opponent rating — Task 55.3's aggregation input)
+ * aren't persisted onto this row (0032_annotated_pgn.ts): the row is a thin
+ * `(gameId, ply)` pointer into the game's own `annotatedPgn`, which is
+ * where that detail is derived from on read (the evidence drill-down),
+ * rather than snapshotted redundantly onto every observation.
  */
 function toRow(input: BuildDiagnosticsInput, observation: DiagnosticObservation): NewDiagnosticObservation {
   return {
@@ -134,7 +135,6 @@ function toRow(input: BuildDiagnosticsInput, observation: DiagnosticObservation)
     failed: observation.failed,
     hwdl: observation.hwdl,
     severity: observation.severity,
-    reachability: observation.reachability,
-    detail: { text: observation.detail }
+    reachability: observation.reachability
   };
 }

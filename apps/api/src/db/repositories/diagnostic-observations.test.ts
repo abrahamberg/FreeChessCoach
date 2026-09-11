@@ -50,7 +50,6 @@ describe('diagnostic-observations repository (Task 56.2)', () => {
       hwdl: 0.42,
       severity: 'meaningful',
       reachability: 0.7,
-      detail: { opening: 'C50' },
       ...overrides
     };
   }
@@ -64,7 +63,6 @@ describe('diagnostic-observations repository (Task 56.2)', () => {
     const forUser = await diagnosticObservationsRepo.listForUserSince(db, user.id, new Date(Date.now() - 60_000));
     expect(forUser).toHaveLength(2);
     expect(forUser.map((row) => row.ply).sort()).toEqual([12, 20]);
-    expect(forUser[0]?.detail).toEqual({ opening: 'C50' });
 
     const forGame = await diagnosticObservationsRepo.listForGame(db, game.id);
     expect(forGame).toHaveLength(2);

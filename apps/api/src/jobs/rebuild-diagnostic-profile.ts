@@ -4,6 +4,7 @@ import {
   buildDiagnosticProfile,
   evaluateGates,
   extractPgnMoveComments,
+  parseAnnotatedPgn,
   type DiagnosticEntry,
   type DiagnosticProfileEntry,
   type FocusCandidate,
@@ -11,7 +12,6 @@ import {
   type PuzzleRecord
 } from '@freechesscoach/chess-analysis';
 import type { MovePhase } from '@freechesscoach/shared';
-import * as analysesRepo from '../db/repositories/analyses.js';
 import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
 import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
 import * as gamesRepo from '../db/repositories/games.js';
@@ -55,21 +55,20 @@ function opponentRatingFor(game: GameRow): number | null {
  * documented gap rather than a new pure-analysis computation this
  * persistence task shouldn't be inventing.
  */
-async function toDiagnosticEntries(
-  db: Kysely<Database>,
+function toDiagnosticEntries(
   windowedGames: ReadonlyMap<string, GameRow>,
   observations: readonly diagnosticObservationsRepo.DiagnosticObservationRow[]
-): Promise<DiagnosticEntry[]> {
+): DiagnosticEntry[] {
   const relevant = observations.filter((row) => windowedGames.has(row.gameId));
   const gameIds = [...new Set(relevant.map((row) => row.gameId))];
 
   const phaseByGame = new Map<string, Map<number, MovePhase | null>>();
   const clockByGame = new Map<string, Map<number, number | null>>();
   for (const gameId of gameIds) {
-    const moves = await analysesRepo.findClassifiedMovesByGameId(db, gameId);
-    phaseByGame.set(gameId, new Map((moves ?? []).map((move) => [move.ply, move.phase ?? null])));
-
     const game = windowedGames.get(gameId);
+    const moves = game?.annotatedPgn ? parseAnnotatedPgn(game.annotatedPgn, game.userColor) : [];
+    phaseByGame.set(gameId, new Map(moves.map((move) => [move.ply, move.phase ?? null])));
+
     const comments = game ? extractPgnMoveComments(game.pgn) : [];
     clockByGame.set(gameId, new Map(comments.map((comment) => [comment.ply, comment.clockMs])));
   }
@@ -160,7 +159,7 @@ export async function runRebuildDiagnosticProfileJob(
 
   for (const [timeControl, bucket] of windows) {
     const windowedGames = new Map(bucket.map((w) => [w.game.id, w.game]));
-    const entries = await toDiagnosticEntries(db, windowedGames, observations);
+    const entries = toDiagnosticEntries(windowedGames, observations);
 
     const previous = await diagnosticProfilesRepo.latestProfile(db, userId, timeControl);
     const profile = buildDiagnosticProfile({ entries, studentRating, previousProfile: toPreviousProfile(previous) });

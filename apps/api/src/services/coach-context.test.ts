@@ -1,5 +1,6 @@
 import { describe, expect, test, vi, beforeAll, afterAll } from 'vitest';
 import type { Kysely } from 'kysely';
+import { buildAnnotatedPgn } from '@freechesscoach/chess-analysis';
 import { TACTIC_MOTIF_TYPES, type GameReport, type PlayerReport } from '@freechesscoach/shared';
 import type { ChatMessage } from '../llm/messages.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
@@ -9,7 +10,6 @@ import * as sessionsRepo from '../db/repositories/sessions.js';
 import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import * as analysesRepo from '../db/repositories/analyses.js';
-import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
 import type { Database } from '../db/schema.js';
 import {
   buildEpisodeContext,
@@ -314,8 +314,7 @@ describe('coach-context', () => {
 
   describe('buildEpisodeContext', () => {
     test('a past episode\'s raw messages are excluded from the request; only its note appears, in the other-moves-summary layer', async () => {
-      const { session, gameId } = await seedSession();
-      await analysesRepo.insertQueued(db, gameId).then((a) => analysesRepo.storeClassifiedMoves(db, a.id, []));
+      const { session } = await seedSession();
       await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
       await sessionMessagesRepo.insert(db, session.id, 'assistant', 'raw talk about move 18 you should never see again', 4);
       await sessionMoveNotesRepo.upsert(db, session.id, 4, 'discussed the knight development');
@@ -346,8 +345,7 @@ describe('coach-context', () => {
     });
 
     test('the "## Current position" block describes the actual current (post-move) fen and names the move played', async () => {
-      const { session, gameId } = await seedSession();
-      await analysesRepo.insertQueued(db, gameId).then((a) => analysesRepo.storeClassifiedMoves(db, a.id, []));
+      const { session } = await seedSession();
       await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
       const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
 
@@ -378,7 +376,6 @@ describe('coach-context', () => {
     test('folds the game\'s tactic-motif summary into the annotated-PGN layer, scoped to studentColor, rather than claiming a 5th cache breakpoint', async () => {
       const { session, gameId } = await seedSession();
       const analysis = await analysesRepo.insertQueued(db, gameId);
-      await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
       await analysesRepo.storeGameReport(db, analysis.id, fakeGameReport({ fork: { opportunities: 3, found: 2 } }));
       await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
       const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
@@ -405,8 +402,7 @@ describe('coach-context', () => {
     });
 
     test('renders no tactics section when the game has no stored report yet', async () => {
-      const { session, gameId } = await seedSession();
-      await analysesRepo.insertQueued(db, gameId).then((a) => analysesRepo.storeClassifiedMoves(db, a.id, []));
+      const { session } = await seedSession();
       await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
       const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
 
@@ -428,8 +424,7 @@ describe('coach-context', () => {
     });
 
     test('calls analyzePosition on the pre-move fen, and again on the post-move fen for the played line\'s continuation, embedding a curated summary instead of the old raw JSON dump', async () => {
-      const { session, gameId } = await seedSession();
-      await analysesRepo.insertQueued(db, gameId).then((a) => analysesRepo.storeClassifiedMoves(db, a.id, []));
+      const { session } = await seedSession();
       await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
       const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
       // ply 2 is Black's reply to 1.e4 — the pre-move fen has Black to move,
@@ -469,8 +464,7 @@ describe('coach-context', () => {
     });
 
     test('skips the post-move analysis fetch when the student played the engine\'s own best move — nothing downstream reads it in that branch', async () => {
-      const { session, gameId } = await seedSession();
-      await analysesRepo.insertQueued(db, gameId).then((a) => analysesRepo.storeClassifiedMoves(db, a.id, []));
+      const { session } = await seedSession();
       await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
       const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
       const analysis = {
@@ -645,18 +639,11 @@ describe('coach-context', () => {
 
       test('produces exactly 3 cached breakpoints (static, dynamic, other-moves) — layer 3 (annotatedPgn) is skipped, never analyses-backed', async () => {
         const { session, gameId } = await seedPlaySession();
-        await gameMoveQualitiesRepo.insert(db, {
-          gameId,
-          ply: 1,
-          moveSan: 'e4',
-          mover: 'white',
-          quality: 'best',
-          cpLoss: 0,
-          bestLineSan: ['e4'],
-          evalAfterCp: 20,
-          reasons: [],
-          diagnosisCodes: []
-        });
+        const annotatedPgn = buildAnnotatedPgn(
+          '1. e4 e5',
+          new Map([[1, { quality: 'best', cpLoss: 0, bestLineSan: ['e4'], evalAfterCp: 20, hangsPiece: false, reasons: [] }]])
+        );
+        await gamesRepo.updateAnnotatedPgn(db, gameId, annotatedPgn);
         await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
         const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
 
@@ -681,18 +668,11 @@ describe('coach-context', () => {
 
       test('the uncached current-move block folds in a "## Game so far" section built live from game_move_qualities', async () => {
         const { session, gameId } = await seedPlaySession();
-        await gameMoveQualitiesRepo.insert(db, {
-          gameId,
-          ply: 1,
-          moveSan: 'e4',
-          mover: 'white',
-          quality: 'best',
-          cpLoss: 0,
-          bestLineSan: ['e4'],
-          evalAfterCp: 20,
-          reasons: [],
-          diagnosisCodes: []
-        });
+        const annotatedPgn = buildAnnotatedPgn(
+          '1. e4 e5',
+          new Map([[1, { quality: 'best', cpLoss: 0, bestLineSan: ['e4'], evalAfterCp: 20, hangsPiece: false, reasons: [] }]])
+        );
+        await gamesRepo.updateAnnotatedPgn(db, gameId, annotatedPgn);
         await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
         const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
 

@@ -40,6 +40,8 @@ export interface GameRow {
   playedAtTime: string | null;
   moveTimes: PgnMoveComment[] | null;
   reviewTier: GameReviewTier;
+  annotatedPgn: string | null;
+  lastMoveAt: Date | null;
 }
 
 export interface NewGame {
@@ -109,7 +111,9 @@ export function insert(db: Kysely<Database>, values: NewGame): Promise<GameRow> 
       variant: values.variant ?? null,
       speed: values.speed ?? null,
       playedAtTime: values.playedAtTime ?? null,
-      moveTimes: moveTimes === null ? null : JSON.stringify(moveTimes)
+      moveTimes: moveTimes === null ? null : JSON.stringify(moveTimes),
+      annotatedPgn: null,
+      lastMoveAt: null
     })
     .returningAll()
     .executeTakeFirstOrThrow();
@@ -132,6 +136,26 @@ export function updateRemainingMs(
  * other source is an immutable imported PGN). */
 export function updatePgn(db: Kysely<Database>, id: string, pgn: string): Promise<void> {
   return db.updateTable('games').set({ pgn }).where('id', '=', id).execute().then(() => undefined);
+}
+
+/** Writes the canonical per-move analysis store (0032_annotated_pgn.ts) —
+ * the batch analysis job (whole game, once) and live play's per-move commit/
+ * undo path (services/play-moves.ts) both call this instead of the old
+ * gameMoveQualitiesRepo insert/delete or analysesRepo.storeClassifiedMoves.
+ * `lastMoveAt` is optional so the batch job (which has no "elapsed time
+ * since last move" concept) can leave it untouched. */
+export function updateAnnotatedPgn(
+  db: Kysely<Database>,
+  id: string,
+  annotatedPgn: string,
+  lastMoveAt?: Date
+): Promise<void> {
+  return db
+    .updateTable('games')
+    .set({ annotatedPgn, ...(lastMoveAt ? { lastMoveAt } : {}) })
+    .where('id', '=', id)
+    .execute()
+    .then(() => undefined);
 }
 
 /** POST /api/games/:id/promote — the games service validates the transition
@@ -157,7 +181,27 @@ export function listByUser(db: Kysely<Database>, userId: string): Promise<GameRo
     .execute();
 }
 
-export interface GameListRow extends GameRow {
+/** Exactly what `services/games.ts`'s `toListItem` (the Games-page list
+ * response) reads off a row — deliberately narrower than `GameRow`. That
+ * page renders metadata only, never move text, so `listByUserWithStatus`
+ * below skips `pgn`/`annotatedPgn`/`moveTimes`/`botConfigSnapshot` (0032_
+ * annotated_pgn.ts's "don't load large per-game payloads into memory for a
+ * view that doesn't render them" pass) — pulling every game's full text for
+ * every list-page load doesn't scale with library size. Callers that need
+ * the full row (a game's own detail page, the diagnostics/stats jobs) use
+ * `listByUser`/`findByIdForUser` instead. */
+export interface GameListRow {
+  id: string;
+  source: GameSource;
+  userColor: PlayerColor;
+  whiteName: string | null;
+  blackName: string | null;
+  result: string | null;
+  timeControl: string | null;
+  playedAt: Date | null;
+  createdAt: Date;
+  botId: string | null;
+  reviewTier: GameReviewTier;
   analysisStatus: AnalysisStatus | null;
 }
 
@@ -167,8 +211,20 @@ export function listByUserWithStatus(db: Kysely<Database>, userId: string): Prom
   return db
     .selectFrom('games')
     .leftJoin('analyses', 'analyses.gameId', 'games.id')
-    .selectAll('games')
-    .select('analyses.status as analysisStatus')
+    .select([
+      'games.id',
+      'games.source',
+      'games.userColor',
+      'games.whiteName',
+      'games.blackName',
+      'games.result',
+      'games.timeControl',
+      'games.playedAt',
+      'games.createdAt',
+      'games.botId',
+      'games.reviewTier',
+      'analyses.status as analysisStatus'
+    ])
     .where('games.userId', '=', userId)
     .orderBy('games.createdAt', 'desc')
     .execute();

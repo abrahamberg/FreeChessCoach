@@ -1,7 +1,6 @@
 import type { Kysely } from 'kysely';
 import { gameOutcomeFromPgn, type GameOutcome } from '@freechesscoach/chess-analysis';
 import type { BotConfig, MoveQuality } from '@freechesscoach/shared';
-import * as gameMoveQualitiesRepo from '../../db/repositories/game-move-qualities.js';
 import * as gamesRepo from '../../db/repositories/games.js';
 import type { GameRow } from '../../db/repositories/games.js';
 import * as sessionsRepo from '../../db/repositories/sessions.js';
@@ -129,8 +128,10 @@ export async function commitBotTurn(
     blackRemainingMs: gameBefore.blackRemainingMs
   };
 
-  const previousTimestamp =
-    (await gameMoveQualitiesRepo.findLatestByGameId(deps.db, session.gameId))?.createdAt ?? session.startedAt;
+  // gameBefore.lastMoveAt (0032_annotated_pgn.ts) replaces a second query
+  // for game_move_qualities' latest row — same "previous move's timestamp,
+  // or session start for the very first move" fallback.
+  const previousTimestamp = gameBefore.lastMoveAt ?? session.startedAt;
   const playerElapsedMs = now() - previousTimestamp.getTime();
 
   const playerResult = await commitPlayerMove(deps, session.gameId, playerSan, { elapsedMs: playerElapsedMs });

@@ -1,14 +1,14 @@
-import { InvalidPgnError } from '@freechesscoach/chess-analysis';
+import { InvalidPgnError, parseAnnotatedPgn } from '@freechesscoach/chess-analysis';
 import { ImportGameRequestSchema, PromoteGameRequestSchema } from '@freechesscoach/shared';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
-import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { pgnFilename } from '../lib/pgn-filename.js';
+import { composeGameReport } from '../services/game-report.js';
 import { importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
 import { deleteGameForUser, listGamesForUser, promoteGame } from '../services/games.js';
 import { getGameTacticBaselineNote } from '../services/stats-dashboard.js';
@@ -47,29 +47,32 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
 
     // architecture §14: a play-mode game never gets an `analyses` row (no
     // pre-game batch pipeline), so it skips that lookup entirely and returns
-    // its live move-quality rows instead — a distinctly-named field, not
+    // its live move-quality plies instead — a distinctly-named field, not
     // overloaded onto classifiedMoves, so the frontend can tell the two
-    // data sources apart.
+    // data sources apart. 0032_annotated_pgn.ts: both this and the batch
+    // pipeline now read the same column (game.annotatedPgn), just via
+    // different fields in the response for the frontend's benefit.
     if (game.source === 'coach_play') {
-      const liveMoveQualities = await gameMoveQualitiesRepo.listByGameId(db, game.id);
+      const liveMoveQualities = movesFromAnnotatedPgn(game);
       return { ...game, analysisStatus: null, classifiedMoves: null, liveMoveQualities, gameReport: null };
     }
 
     // Play-vs-bot plan: a vs_bot game gets both worlds — live per-move quality
-    // rows while the game is in progress (same as coach_play) AND, once the
+    // plies while the game is in progress (same as coach_play) AND, once the
     // deferred standard-depth post-game analysis job (queued by
     // commitBotTurn when the game ends) completes, a real Game Report —
     // unlike coach_play, which never gets one.
     if (game.source === 'vs_bot') {
-      const liveMoveQualities = await gameMoveQualitiesRepo.listByGameId(db, game.id);
+      const liveMoveQualities = movesFromAnnotatedPgn(game);
       const botAnalysis = await analysesRepo.findByGameId(db, game.id);
-      const botGameReport = await analysesRepo.findGameReportByGameId(db, game.id);
+      const storedBotReport = await analysesRepo.findGameReportByGameId(db, game.id);
+      const botGameReport = storedBotReport ? composeGameReport(storedBotReport, game) : null;
       return {
         ...game,
         analysisStatus: botAnalysis?.status ?? null,
         classifiedMoves: null,
         liveMoveQualities,
-        gameReport: botGameReport ?? null,
+        gameReport: botGameReport,
         // Same read-time derivation as the analyze branch below: a finished
         // bot game with a Game Report is reviewed through exactly the same
         // page, so leaving this out here would silently hide the baseline
@@ -81,14 +84,19 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
     }
 
     const analysis = await analysesRepo.findByGameId(db, game.id);
-    const classifiedMoves = await analysesRepo.findClassifiedMovesByGameId(db, game.id);
-    const gameReport = await analysesRepo.findGameReportByGameId(db, game.id);
+    const storedReport = await analysesRepo.findGameReportByGameId(db, game.id);
+    const gameReport = storedReport ? composeGameReport(storedReport, game) : null;
+    // Sourced straight from annotatedPgn (like the two branches above), not
+    // from gameReport.moves: the batch job writes annotatedPgn well before
+    // the game report is ready (0032_annotated_pgn.ts), so classifiedMoves
+    // stays available on its own timeline, same as before that migration.
+    const classifiedMoves = game.annotatedPgn ? movesFromAnnotatedPgn(game) : null;
     return {
       ...game,
       analysisStatus: analysis?.status ?? null,
-      classifiedMoves: classifiedMoves ?? null,
+      classifiedMoves,
       liveMoveQualities: null,
-      gameReport: gameReport ?? null,
+      gameReport,
       // Derived at read time, not stored: what counts as "unusual for you"
       // depends on the games played since, so a note frozen into the report
       // would go stale the moment the next game is analysed.
@@ -146,6 +154,13 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
     await deleteGameForUser(db, request.params.id, user.id);
     return reply.code(204).send();
   });
+}
+
+/** A play-mode game's live per-move quality — 0032_annotated_pgn.ts: reads
+ * the same `annotatedPgn` column the batch pipeline's `classifiedMoves`
+ * does, just null-guarded for a fresh game with no moves committed yet. */
+function movesFromAnnotatedPgn(game: { annotatedPgn: string | null; userColor: 'white' | 'black' }) {
+  return game.annotatedPgn ? parseAnnotatedPgn(game.annotatedPgn, game.userColor) : [];
 }
 
 function handleImportError(reply: FastifyReply, error: unknown): FastifyReply | never {

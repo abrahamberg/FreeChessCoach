@@ -1,12 +1,17 @@
 import type { Kysely } from 'kysely';
-import { appendMoveToPgn, parsePgn, removeLastMoveFromPgn } from '@freechesscoach/chess-analysis';
+import {
+  appendAnnotatedMove,
+  appendMoveToPgn,
+  parsePgn,
+  removeLastMoveFromPgn,
+  toAnnotatedMoveData
+} from '@freechesscoach/chess-analysis';
 import type { MoveQuality, PositionAnalysis } from '@freechesscoach/shared';
-import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import type { Database } from '../db/schema.js';
 import { NotFoundError } from '../lib/errors.js';
-import { classifyAndRecordMove } from './play-move-quality.js';
+import { classifyPlayMove } from './play-move-quality.js';
 
 export interface PlayMovesDependencies {
   db: Kysely<Database>;
@@ -84,11 +89,8 @@ async function commitMove(
   const applied = appendMoveToPgn(game.pgn, san, options);
   if ('error' in applied) return applied;
 
-  await gamesRepo.updatePgn(deps.db, gameId, applied.pgn);
-
   const mover = applied.ply % 2 === 1 ? 'white' : 'black';
-  const classified = await classifyAndRecordMove(deps.db, deps.analyzePosition, {
-    gameId,
+  const classified = await classifyPlayMove(deps.analyzePosition, {
     ply: applied.ply,
     moveSan: applied.san,
     mover,
@@ -97,6 +99,19 @@ async function commitMove(
     userColor: game.userColor,
     computeDiagnosisCodes: classifyOptions?.computeDiagnosisCodes ?? false
   });
+
+  // Appended separately from `applied` above rather than derived from it:
+  // `annotatedPgn` carries the same mainline as `pgn` (see this game's
+  // updateAnnotatedPgn call sites) plus each move's `[%fcc ...]` comment,
+  // and only exists once classification has actually run. `game.annotatedPgn`
+  // is null until the first live move on a fresh game — bootstraps from
+  // `game.pgn` at that point, which at a fresh game is exactly what an
+  // empty annotatedPgn should start as (no moves yet either way).
+  const annotated = appendAnnotatedMove(game.annotatedPgn ?? game.pgn, san, toAnnotatedMoveData(classified), options);
+  if ('error' in annotated) return annotated;
+
+  await gamesRepo.updatePgn(deps.db, gameId, applied.pgn);
+  await gamesRepo.updateAnnotatedPgn(deps.db, gameId, annotated.pgn, new Date());
 
   return { fen: applied.fen, san: applied.san, ply: applied.ply, quality: classified.quality };
 }
@@ -112,9 +127,12 @@ export interface UndoResult {
  * Play-mode undo (architecture.md §14): pops the live game's last move —
  * legitimate because a play-mode game is in-progress, server-authored data,
  * not an immutable imported PGN. session_messages stays untouched (append-
- * only, hard project rule); the removed ply's quality row and move note are
- * deleted so nothing downstream ever references a move that no longer
- * exists.
+ * only, hard project rule); the removed ply's move note is deleted, and
+ * `removeLastMoveFromPgn` on `annotatedPgn` drops that ply's `[%fcc ...]`
+ * annotation along with it — comments live on their move, so undoing the
+ * move undoes its annotation for free (no separate row/delete needed
+ * anymore — see `removeLastMoveFromPgn`'s own use in
+ * `annotated-pgn.test.ts`).
  */
 export async function undoLastMove(
   deps: PlayMovesDependencies,
@@ -131,7 +149,11 @@ export async function undoLastMove(
   if ('error' in removed) return removed;
 
   await gamesRepo.updatePgn(deps.db, gameId, removed.pgn);
-  await gameMoveQualitiesRepo.deleteByPly(deps.db, gameId, removedPly);
+  if (game.annotatedPgn) {
+    const removedAnnotated = removeLastMoveFromPgn(game.annotatedPgn);
+    if ('error' in removedAnnotated) return removedAnnotated;
+    await gamesRepo.updateAnnotatedPgn(deps.db, gameId, removedAnnotated.pgn);
+  }
   await sessionMoveNotesRepo.deleteByPly(deps.db, sessionId, removedPly);
 
   return { fen: removed.fen, removedPly };
