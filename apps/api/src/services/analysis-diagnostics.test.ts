@@ -24,6 +24,7 @@ const VALID_PLAN = CoachingPlanSchema.parse({
   openingNote: 'Fine through the opening.',
   themes: ['king_safety'],
   connectionToHistory: 'First session together.',
+  sessionGoal: 'Spot the tactic before it costs material.',
   moments: [
     {
       ply: 4,

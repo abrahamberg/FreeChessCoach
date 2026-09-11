@@ -56,6 +56,22 @@ const FORK_PREVENTED_PGN = `[Event "Test"]
 
 1. Ka2 Rb8 *`;
 
+// docs/tactics-rework.md §9's "the queen nobody mentioned", as a whole-job
+// fixture: Black's 9...Qd7 walks the queen in front of its own king, White's
+// Bb5 pins it and wins it. Black then has the tacticAllowed card and White's
+// next ply the tacticOpportunity — both of which are added by buildGameReport,
+// i.e. *after* the moves the annotated PGN used to be written from.
+const PINNED_QUEEN_START_FEN = 'r1bqkb1r/pp3ppp/3p1n2/2p3B1/2B1P3/3Q4/PPP2PPP/RN3RK1 b - - 0 9';
+const PINNED_QUEEN_AFTER_QD7_FEN = 'r1b1kb1r/pp1q1ppp/3p1n2/2p3B1/2B1P3/3Q4/PPP2PPP/RN3RK1 w - - 1 10';
+const PINNED_QUEEN_PGN = `[Event "Test"]
+[SetUp "1"]
+[FEN "${PINNED_QUEEN_START_FEN}"]
+[White "Ann"]
+[Black "Bob"]
+[Result "1-0"]
+
+9... Qd7 10. Bxf6 1-0`;
+
 // A textbook §5.5 brilliant: White's undefended bishop sacs onto e6 (only a
 // pawn recapture undoes it, no material comes back), a real alternative
 // (Kd2) exists 150cp worse, and the position is roughly balanced either way
@@ -90,6 +106,7 @@ const VALID_PLAN = CoachingPlanSchema.parse({
   openingNote: 'Fine through the opening.',
   themes: ['king_safety'],
   connectionToHistory: 'First session together.',
+  sessionGoal: 'Spot the pin before it costs a queen.',
   moments: [
     {
       ply: 4,
@@ -279,6 +296,62 @@ describe('runAnalyzeGameJob', () => {
 
     expect(report.players.black.tacticMotifs.fork.prevented).toBe(1);
     expect(analyzePosition).not.toHaveBeenCalled();
+  });
+
+  // The regression 0032_annotated_pgn.ts introduced: the annotated PGN is the
+  // only per-move store now (storeGameReport strips `moves`, composeGameReport
+  // reads them back out of it), so writing it from the pre-report moves threw
+  // away everything buildGameReport adds — phase, tacticOpportunity,
+  // tacticAllowed, and tactic-card-order.ts's ordering of `reasons`. Game
+  // Review then showed only the prevention sentence on a move that hung a
+  // queen.
+  test('the served report keeps the tactic cards buildGameReport adds', async () => {
+    const { gameId } = await setupGame(PINNED_QUEEN_PGN);
+    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
+    const analyzeGamePositions = vi.fn(async (fens: string[]) =>
+      fens.map((fen): EngineEval => {
+        if (fen === PINNED_QUEEN_START_FEN) {
+          return { ply: 0, fen, depth: 16, lines: [{ moveUci: 'f8e7', moveSan: 'Be7', cp: 20, mateIn: null, pvSan: ['Be7'] }] };
+        }
+        if (fen === PINNED_QUEEN_AFTER_QD7_FEN) {
+          return {
+            ply: 0,
+            fen,
+            depth: 16,
+            lines: [
+              {
+                moveUci: 'c4b5',
+                moveSan: 'Bb5',
+                cp: 580,
+                mateIn: null,
+                pvSan: ['Bb5', 'a6', 'Bxd7+', 'Nxd7']
+              }
+            ]
+          };
+        }
+        return { ply: 0, fen, depth: 16, lines: [{ moveUci: 'g7g6', moveSan: 'gxf6', cp: 560, mateIn: null, pvSan: ['gxf6'] }] };
+      })
+    );
+
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
+
+    const game = await gamesRepo.findById(db, gameId);
+    const storedReport = await analysesRepo.findGameReportByGameId(db, game!.id);
+    const report = GameReportSchema.parse(composeGameReport(storedReport!, game!));
+    const [blunder, reply] = report.moves;
+
+    // White's ply: the chance Bb5 was, read off the engine's own line.
+    expect(reply?.tacticOpportunity).toMatchObject({
+      type: 'pin',
+      found: false,
+      embodiedBySan: 'Bb5',
+      gain: { kind: 'material', prize: 'queen' }
+    });
+    // Black's ply: what 9...Qd7 handed over, plus the sentence for it.
+    expect(blunder?.tacticAllowed).toMatchObject({ type: 'pin', byMoveSan: 'Bb5' });
+    expect(blunder?.reasons?.[0]).toContain('Bb5');
+    // Non-tactic enrichment from the same pass.
+    expect(blunder?.phase).toBeDefined();
   });
 
   // Task 50.3: checkBrilliantSoundness has no caller in the batch pipeline

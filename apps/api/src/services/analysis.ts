@@ -1,5 +1,4 @@
 import {
-  buildAnnotatedPgn,
   classifyMoves,
   findCandidateMoments,
   inBookWalk,
@@ -11,7 +10,6 @@ import {
   repairEvalSignConvention,
   resolveOpening,
   tacticPreventionReason,
-  toAnnotatedMoveData,
   type ParsedPosition
 } from '@freechesscoach/chess-analysis';
 import { ratingForPromptScoping } from '@freechesscoach/shared';
@@ -35,6 +33,7 @@ import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-obser
 import { checkBrilliantSoundness } from './brilliant-soundness.js';
 import { buildDiagnosticObservations } from './build-diagnostics.js';
 import { buildGameReportForAnalysis } from './build-game-report.js';
+import { annotatedPgnForReport } from './game-report.js';
 import { getPlayerStatsText } from './coach-player-stats.js';
 import * as userProfileService from './user-profile.js';
 import { computeTacticMotifPrevented, type TacticMotifPreventionResult } from './tactic-prevention.js';
@@ -103,21 +102,16 @@ export async function runAnalyzeGameJob(
       classifyMoves(parsedGame, evals, game.userColor, { brilliantSoundnessByPly }),
       enrichPositions(parsedGame.positions)
     );
-    // Computed before storeClassifiedMoves (not after, as before) so its
-    // per-ply byPly map can be attached onto the stored moves themselves —
-    // the move-list UI's per-ply "prevented" indicator reads it straight off
-    // ClassifiedMoveDto, the same way tacticOpportunity already does.
+    // Computed before the moves are annotated so its per-ply byPly map can
+    // be attached onto them — the move-list UI's per-ply "prevented"
+    // indicator reads it straight off ClassifiedMoveDto, the same way
+    // tacticOpportunity does.
     const prevention = await computeTacticMotifPrevented(
       { analyzePosition: deps.analyzePosition },
       unannotatedMoves,
       evals
     );
     const classifiedMoves = attachTacticPrevention(unannotatedMoves, prevention.byPly);
-    const annotatedPgn = buildAnnotatedPgn(
-      game.pgn,
-      new Map(classifiedMoves.map((move) => [move.ply, toAnnotatedMoveData(move)]))
-    );
-    await gamesRepo.updateAnnotatedPgn(db, gameId, annotatedPgn);
     const bookReport = buildBookReport(parsedGame.positions);
     await analysesRepo.storeBookReport(db, analysis.id, bookReport);
     const gameReport = buildGameReportForAnalysis({
@@ -131,9 +125,13 @@ export async function runAnalyzeGameJob(
       userColor: game.userColor,
       userRating: user.rating
     });
+    // Annotated from the report's own moves, not `classifiedMoves` — see
+    // `annotatedPgnForReport`. Written before storeGameReport so a reader
+    // never sees a stored report pointing at a PGN with no annotations yet.
+    await gamesRepo.updateAnnotatedPgn(db, gameId, annotatedPgnForReport(game.pgn, gameReport));
     await analysesRepo.storeGameReport(db, analysis.id, gameReport);
-    await recordDiagnosticObservations(db, gameId, game.userId, game.userColor, game.pgn, classifiedMoves, evals, prevention.diagnosticByPly);
-    const candidateMoments = findCandidateMoments(classifiedMoves, evals);
+    await recordDiagnosticObservations(db, gameId, game.userId, game.userColor, game.pgn, gameReport.moves, evals, prevention.diagnosticByPly);
+    const candidateMoments = findCandidateMoments(gameReport.moves, evals);
 
     await analysesRepo.updateStatus(db, analysis.id, 'planning');
 
