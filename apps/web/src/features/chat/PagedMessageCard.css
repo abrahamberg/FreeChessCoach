@@ -41,10 +41,14 @@
 /* A fixed height, not just a cap — paging left/right between a one-line
  * message and a long one must not resize the card (and shift the board
  * and nav pills below it) on every step; a short message just leaves
- * blank space below it instead. Big enough for a handful of lines before
- * its own scroll kicks in. */
+ * blank space below it instead. A rem value (not vh) so this stays
+ * "a few lines of text" regardless of viewport height, rather than
+ * ballooning on a tall phone and eating the room the board — full device
+ * width, so its height already scales with the screen — needs to render
+ * without getting clipped behind the fixed composer bar on a short one.
+ * Anything longer scrolls internally. */
 .paged-message-card__body {
-  height: 22vh;
+  height: 4.5rem;
   overflow-y: auto;
   line-height: var(--line-height-reading);
   white-space: pre-wrap;
