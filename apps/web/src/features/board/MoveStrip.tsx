@@ -5,6 +5,20 @@ import { MoveAnalysisModal } from './MoveAnalysisModal.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import './MoveStrip.css';
 
+/** MoveStrip's own `currentPly`/`onSelect` use the sanMoves array index
+ * (0-based) — every other ply in the app (positions, ClassifiedMoveDto,
+ * useSessionBoardState) is 1-based (ply 0 = game start). Callers convert
+ * through these instead of re-deriving the +/-1 inline, which is what let
+ * SessionBoardColumn's mobile move strip drift out of sync with the app's
+ * ply and silently navigate to the wrong position. */
+export function plyToMoveStripIndex(ply: number): number {
+  return ply - 1;
+}
+
+export function moveStripIndexToPly(index: number): number {
+  return index + 1;
+}
+
 export interface MoveStripProps {
   sanMoves: string[];
   classifiedMoves: ClassifiedMoveDto[];

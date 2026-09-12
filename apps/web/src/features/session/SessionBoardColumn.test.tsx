@@ -29,6 +29,7 @@ interface HarnessProps {
   positions?: { ply: number; fen: string; moveUci: string | null }[];
   showEvalIndicators?: boolean;
   isSideBySide?: boolean;
+  isDesktop?: boolean;
 }
 
 function Harness({
@@ -40,7 +41,8 @@ function Harness({
   undoDisabled,
   positions = POSITIONS,
   showEvalIndicators,
-  isSideBySide = true
+  isSideBySide = true,
+  isDesktop = true
 }: HarnessProps): ReactNode {
   const boardState = useSessionBoardState(positions);
   const divergedLine = useDivergedLine();
@@ -55,7 +57,7 @@ function Harness({
       sanMoves={sanMoves}
       positions={positions}
       classifiedMoves={[]}
-      isDesktop
+      isDesktop={isDesktop}
       isSideBySide={isSideBySide}
       engine={engine}
       autoplayIntervalMs={1000}
@@ -422,6 +424,48 @@ describe('SessionBoardColumn — play_bot hint', () => {
     expect(capturedOptions.at(-1)?.arrows).toEqual(
       expect.arrayContaining([expect.objectContaining({ startSquare: 'e1', endSquare: 'd2' })])
     );
+  });
+});
+
+// Mobile's move strip (rendered only when !isDesktop) shares MoveStrip with
+// GameReviewPage's MoveNavStrip, but converts the app's 1-based ply
+// (positions/classifiedMoves/useSessionBoardState's own convention) to
+// MoveStrip's 0-based sanMoves-index convention itself, separately from
+// MoveNavStrip's own conversion — the exact kind of duplicated arithmetic
+// that drifts out of sync, which is what happened here.
+describe('SessionBoardColumn — mobile move strip ply conversion', () => {
+  beforeEach(() => {
+    capturedOptions.length = 0;
+  });
+
+  const POSITIONS_TWO_MOVES = [
+    { ply: 0, fen: 'fen-start', moveUci: null },
+    { ply: 1, fen: 'fen-after-e4', moveUci: 'e2e4' },
+    { ply: 2, fen: 'fen-after-e5', moveUci: 'e7e5' }
+  ];
+
+  test('tapping the first move chip navigates to the position just after that move, not the game start', async () => {
+    render(
+      <Harness sessionMode="analyze" sanMoves={['e4', 'e5']} positions={POSITIONS_TWO_MOVES} isDesktop={false} />
+    );
+    await screen.findByTestId('mock-chessboard');
+
+    fireEvent.click(screen.getByRole('button', { name: 'e4' }));
+
+    await waitFor(() => expect(capturedOptions.at(-1)?.position).toBe('fen-after-e4'));
+  });
+
+  test('the chip marked as current always matches the position actually shown on the board', async () => {
+    render(
+      <Harness sessionMode="analyze" sanMoves={['e4', 'e5']} positions={POSITIONS_TWO_MOVES} isDesktop={false} />
+    );
+    await screen.findByTestId('mock-chessboard');
+
+    fireEvent.click(screen.getByRole('button', { name: 'e5' }));
+
+    await waitFor(() => expect(capturedOptions.at(-1)?.position).toBe('fen-after-e5'));
+    expect(screen.getByRole('button', { name: 'e5' })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('button', { name: 'e4' })).not.toHaveAttribute('aria-current');
   });
 });
 
