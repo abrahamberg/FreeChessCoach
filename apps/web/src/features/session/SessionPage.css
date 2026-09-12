@@ -247,6 +247,31 @@
   margin-right: var(--space-4);
 }
 
+/* Reserves constant room for ThinkingIndicator/ToolActivity (MobileCoachSessionBody)
+ * regardless of whether either is currently rendering — sized to fit
+ * .thinking-indicator's own content (the taller of the two: --space-3
+ * padding around a 6px dot + its own 8px bottom margin). flex: 0 0 auto so
+ * it never grows/shrinks in the stack. */
+.mobile-coach-status {
+  flex: 0 0 auto;
+  height: 38px;
+  margin-left: var(--space-4);
+  margin-right: var(--space-4);
+  overflow: hidden;
+}
+
+/* Both already carry their own 16px of horizontal spacing (ChatPane.css) for
+ * their usual placement flush against a scrolling transcript's own edge —
+ * redundant, and misaligning, once nested inside this wrapper's own
+ * var(--space-4) margin. */
+.mobile-coach-status .thinking-indicator {
+  margin: 0 0 8px;
+}
+
+.mobile-coach-status .tool-activity {
+  padding: 0 0 8px;
+}
+
 .session-body.mobile.stacked .session-board-column {
   flex: 0 0 auto;
 }

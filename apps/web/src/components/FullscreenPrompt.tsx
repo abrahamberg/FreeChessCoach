@@ -75,7 +75,7 @@ export function FullscreenPrompt(): ReactNode {
       <MaximizeIcon className="fullscreen-prompt__icon" width={18} height={18} />
       <p className="fullscreen-prompt__text">
         {isIos()
-          ? 'Add FreeChessCoach to your Home Screen for a full-screen board, no browser bar.'
+          ? 'Tap the Share icon, then Add to Home Screen for a full-screen board, no browser bar.'
           : 'Install FreeChessCoach for a full-screen board, no browser bar.'}
       </p>
       {showPrimaryButton && (

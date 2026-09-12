@@ -1,10 +1,17 @@
+/* This is a board route's own topmost element (AppShell hides its global
+ * top bar for /session|/bot-session|/practice|/review — see
+ * BOARD_ROUTE_PREFIXES), so it needs the same safe-area top padding
+ * AppShell.css gives its own top bar. Height/flex-basis grow by the inset
+ * so the padding doesn't eat into the 56px content area (box-sizing:
+ * border-box, base.css) — align-items: center then re-centers the
+ * unchanged content within that 56px, same as AppShell.css's topbar. */
 .session-header {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  height: 56px;
-  flex: 0 0 56px;
-  padding: 0 var(--space-3);
+  height: calc(56px + env(safe-area-inset-top));
+  flex: 0 0 calc(56px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) var(--space-3) 0;
   background: color-mix(in srgb, var(--color-surface) 90%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
