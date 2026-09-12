@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useEngineActivityIndicator } from '../hooks/useEngineActivityIndicator.js';
 import { useIsDesktop } from '../hooks/useIsDesktop.js';
 import { EngineActivityIndicator } from './EngineActivityIndicator.js';
+import { FullscreenPrompt } from './FullscreenPrompt.js';
 import { BarChartIcon, BoardIcon, TrendingUpIcon } from './Icon.js';
 import { UserMenu } from './UserMenu.js';
 import './AppShell.css';
@@ -44,6 +45,10 @@ export function AppShell({ children }: AppShellProps): ReactNode {
 
   return (
     <div className="app-shell" data-layout={isDesktop ? 'desktop' : 'mobile'} data-bottom-bar={showBottomTabBar}>
+      {/* Fixed overlay, not gated by showGlobalNav — a board route (session/
+       * bot-session/review) hides the top bar but still wants the nudge
+       * toward full screen, arguably more than any other page. */}
+      <FullscreenPrompt />
       {showGlobalNav && <TopBar isDesktop={isDesktop} />}
       <main className="app-shell__content">{children}</main>
       {showBottomTabBar && <BottomTabBar />}

@@ -1,0 +1,61 @@
+/* Fixed overlay, not an in-flow child — see FullscreenPrompt.tsx's doc
+ * comment for why this must never participate in a page's own height-driven
+ * flex layout. Sits above the app shell's own top bar/bottom tab bar and
+ * every board route's page-level header. */
+.fullscreen-prompt {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  padding-top: calc(var(--space-2) + env(safe-area-inset-top));
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: 0 2px 8px rgb(18 28 22 / 18%);
+}
+
+.fullscreen-prompt__icon {
+  flex: none;
+}
+
+.fullscreen-prompt__text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.3;
+}
+
+.fullscreen-prompt__action {
+  flex: none;
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-on-primary);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.fullscreen-prompt__dismiss {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-on-primary);
+}
+
+.fullscreen-prompt__dismiss:hover {
+  background: color-mix(in srgb, var(--color-on-primary) 20%, transparent);
+}
