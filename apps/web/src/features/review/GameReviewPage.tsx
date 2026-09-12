@@ -3,11 +3,10 @@ import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
-import { MoveStrip } from '../board/MoveStrip.js';
+import { MoveNavStrip } from '../board/MoveNavStrip.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { SessionHeader } from '../session/SessionHeader.js';
 import { GameReviewBoardColumn } from './GameReviewBoardColumn.js';
-import { MoveNavPills } from './MoveNavPills.js';
 import { MoveNoteCard } from './MoveNoteCard.js';
 import { useGameReviewPageData } from './useGameReviewPageData.js';
 import './GameReviewPage.css';
@@ -21,14 +20,16 @@ import './GameReviewPage.css';
  * small icon in MoveNoteCard's own header — and the only mutation this page
  * makes.
  *
- * Below the desktop breakpoint: note card, then the board, then nav pills +
- * MoveStrip below it — chess.com's own mobile ordering (note above, moves
- * below), and the reason nav/strip sit under the board rather than above it
- * now: the board is the scarcest-space element on a phone (same call
- * SessionPage.css makes for the live session), so everything that doesn't
- * need to precede it stays out of its way, edge-to-edge and sized from its
- * own width rather than from whatever its neighbors leave behind (see
- * GameReviewPage.css's own mobile section for the reasoning). Game Report
+ * Below the desktop breakpoint: note card, then the board, then MoveNavStrip
+ * (step chevrons + the scrollable move-chip list, combined into one row —
+ * they used to be two stacked rows) below it — chess.com's own mobile
+ * ordering (note above, moves below), and that combined row sits under the
+ * board rather than above it: the board is the scarcest-space element on a
+ * phone (same call SessionPage.css makes for the live session), so
+ * everything that doesn't need to precede it stays out of its way,
+ * edge-to-edge and sized from its own width rather than from whatever its
+ * neighbors leave behind (see GameReviewPage.css's own mobile section for
+ * the reasoning). Game Report
  * is a bottom sheet (GameReportSummary's own existing expand/collapse
  * state, just given fixed/overlay positioning here) rather than another
  * flex child, so opening it covers the board instead of pushing it around.
@@ -130,20 +131,7 @@ export function GameReviewPage(): ReactNode {
           <div className={game.gameReport ? 'game-review-body mobile has-report-sheet' : 'game-review-body mobile'}>
             {noteCard}
             {board}
-            <MoveNavPills ply={ply} totalPlies={sanMoves.length} onSelect={setPly} />
-            {/* MoveStrip's own currentPly/onSelect are the sanMoves array
-                index (0-based — confirmed by its tests), not the 1-based
-                halfmove ply `ply`/`setPly` use everywhere else on this page
-                (matching `positions[].ply`, ply 0 = start position) —
-                hence the +/-1 translation at this one boundary. */}
-            <MoveStrip
-              sanMoves={sanMoves}
-              classifiedMoves={classifiedMoves}
-              positions={positions}
-              currentPly={ply - 1}
-              momentPlies={[]}
-              onSelect={(index) => setPly(index + 1)}
-            />
+            <MoveNavStrip sanMoves={sanMoves} classifiedMoves={classifiedMoves} positions={positions} ply={ply} onSelect={setPly} />
           </div>
           {game.gameReport && (
             <div className="game-review-report-sheet">
