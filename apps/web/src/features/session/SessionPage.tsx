@@ -36,10 +36,11 @@ import './SessionPage.css';
  * board — see SessionPage.css's `.stacked` block for the full reasoning.
  * Not the two-tab Board/Coach switch BotSessionPage (a bot never talks, so
  * it keeps MobileSessionBody's tabs) still uses. ChatComposer is pinned to
- * the bottom of the screen rather than part of the stack (no
- * GameReviewPage equivalent — a read-only review has no reply): its
- * keyboard, opening from the card near the top, covers the board beneath
- * it rather than the conversation. */
+ * the bottom of the screen rather than part of the stack (no GameReviewPage
+ * equivalent — a read-only review has no reply), always open — iMessage-
+ * style, not a button that reveals the field — so its keyboard only ever
+ * appears once the student actually taps in to type, covering the board
+ * beneath it rather than the conversation above. */
 export function SessionPage(): ReactNode {
   const { id } = useParams<{ id: string }>();
   const sessionId = id ?? '';
@@ -251,7 +252,7 @@ export function SessionPage(): ReactNode {
           {board}
           <MessageNavPills index={messagePaging.index} total={messagePaging.total} onSelect={messagePaging.goTo} />
           <div className="session-composer-fixed">
-            <ChatComposer onSend={handleSendMessage} boardArrows={boardArrows} hasPendingLine={Boolean(divergedLine.line)} collapsible />
+            <ChatComposer onSend={handleSendMessage} boardArrows={boardArrows} hasPendingLine={Boolean(divergedLine.line)} />
           </div>
         </div>
       )}

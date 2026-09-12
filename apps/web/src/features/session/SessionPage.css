@@ -227,13 +227,13 @@
   gap: var(--space-2);
   /* Reserves room for .session-composer-fixed below, which takes no space
    * of its own in this flow (position: fixed) — without this, the last bit
-   * of scrolled content would sit behind it. Sized to the collapsed
-   * trigger button's own height (ChatPane.css's
-   * .chat-pane__composer-trigger); the taller open-input state is
-   * transient and a brief overlap while actively typing is an accepted
-   * trade-off, same call as GameReviewPage's own fixed-height sheet
-   * reserve. */
-  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+   * of scrolled content would sit behind it. Sized to .chat-composer's own
+   * fixed height (ChatPane.css: --space-3 padding top/bottom around
+   * .chip-reply-input's 44px min-height, plus its 1px border-top) — a
+   * constant here tracks it fine since the composer no longer has a
+   * shorter collapsed state, same call as GameReviewPage's own fixed-height
+   * sheet reserve. */
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 
 /* .stacked itself carries no page-level padding (unlike GameReviewPage's

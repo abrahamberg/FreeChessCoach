@@ -161,7 +161,6 @@ describe('SessionPage', () => {
     mockMatchMedia(false);
     window.localStorage.clear();
     vi.stubGlobal('fetch', mockFetch());
-    const user = userEvent.setup();
     renderSessionPage();
 
     await screen.findByTestId('mock-chessboard');
@@ -171,11 +170,7 @@ describe('SessionPage', () => {
     expect(screen.queryByRole('tablist', { name: /session view/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
 
-    // The composer starts collapsed behind a button (mobile only — the
-    // board sits right above it now, no room for an always-open keyboard)
-    // and opens on tap.
-    expect(screen.queryByRole('textbox', { name: /reply/i })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /ask the coach a question/i }));
+    // The composer is always open, iMessage-style — no tap-to-reveal step.
     expect(screen.getByRole('textbox', { name: /reply/i })).toBeInTheDocument();
   });
 
