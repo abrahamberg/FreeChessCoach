@@ -1,13 +1,10 @@
-/* chess.com's own reference: a coach portrait beside a speech-bubble card,
- * not the card alone — CoachAvatar sits to the left (its own fixed width),
- * the card takes the rest. min-width: 0 lets the card's own text wrap/scroll
- * instead of forcing the row wider than its container. */
-.move-note-card-row {
-  display: flex;
-  align-items: flex-start;
-}
-
-/* The Game Review page's dominant note element — a card meant to read
+/* The row layout itself (portrait beside the card) is AvatarNoteRow.css's
+ * shared '.avatar-note-row' rule — MoveNoteCardRow applies 'move-note-card-row'
+ * alongside it purely as a selector hook for GameReviewPage.css's desktop
+ * column styling. min-width: 0 below lets the card's own text wrap/scroll
+ * instead of forcing the row wider than its container.
+ *
+ * The Game Review page's dominant note element — a card meant to read
  * first, before the board: a colored accent bar keyed to the move's
  * quality, a headline row, and the note text at a size that competes with
  * the board for attention instead of losing to it. Reuses MoveExplorer's

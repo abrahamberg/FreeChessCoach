@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, test, vi } from 'vitest';
 import { PagedMessageCard } from './PagedMessageCard.js';
 
 describe('PagedMessageCard', () => {
@@ -38,5 +39,32 @@ describe('PagedMessageCard', () => {
 
     expect(screen.getByTestId('coach-avatar')).toBeInTheDocument();
     expect(screen.getByText(/no messages yet/i)).toBeInTheDocument();
+  });
+
+  test('onToggleAutoplay renders the voice toggle as the row\'s own action, replacing MobileCoachSessionBody\'s old dedicated header', async () => {
+    const onToggleAutoplay = vi.fn();
+    const user = userEvent.setup();
+    const messages = [{ id: 'm1', role: 'assistant' as const, text: 'Good move.' }];
+    render(
+      <PagedMessageCard
+        message={messages[0]}
+        index={0}
+        visible={messages}
+        coachPersona="general"
+        autoplayEnabled={false}
+        onToggleAutoplay={onToggleAutoplay}
+      />
+    );
+
+    const toggle = screen.getByRole('button', { name: /enable automatic coach voice/i });
+    await user.click(toggle);
+    expect(onToggleAutoplay).toHaveBeenCalledWith(true);
+  });
+
+  test('no onToggleAutoplay: no voice toggle rendered', () => {
+    const messages = [{ id: 'm1', role: 'assistant' as const, text: 'Good move.' }];
+    render(<PagedMessageCard message={messages[0]} index={0} visible={messages} coachPersona="general" />);
+
+    expect(screen.queryByRole('button', { name: /automatic coach voice/i })).not.toBeInTheDocument();
   });
 });

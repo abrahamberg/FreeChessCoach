@@ -1,0 +1,16 @@
+/* The one shared "portrait beside a card" row layout — MoveNoteCard.css and
+ * PagedMessageCard.css used to each define this same rule under their own
+ * name (.move-note-card-row / .paged-message-card-row); both classes still
+ * exist as modifiers (AvatarNoteRow's `className` prop) for their own
+ * page-specific CSS, but the layout itself lives here once. No `gap`: the
+ * avatar components each carry their own margin toward the card, so spacing
+ * stays consistent whichever avatar is showing. */
+.avatar-note-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.avatar-note-row__action {
+  flex: none;
+  margin-left: var(--space-2);
+}

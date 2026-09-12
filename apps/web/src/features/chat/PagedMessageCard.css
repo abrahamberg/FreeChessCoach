@@ -8,14 +8,10 @@
 /* Coach portrait (left) / student initials (right) sit outside the card
  * itself as row siblings — see PagedMessageCard.tsx — rather than inline
  * before the text, so which side of the conversation a message came from
- * reads instantly even with only this one message on screen. No `gap`:
- * CoachAvatar/UserAvatar each carry their own margin toward the card
- * (margin-right/margin-left respectively) so spacing stays consistent
- * whichever side is showing. */
-.paged-message-card-row {
-  display: flex;
-  align-items: flex-start;
-}
+ * reads instantly even with only this one message on screen. The row
+ * layout itself is AvatarNoteRow.css's shared '.avatar-note-row' rule;
+ * 'paged-message-card-row' is just a selector hook here (SessionPage.css's
+ * mobile stacked layout margins). */
 
 .paged-message-card {
   flex: 1;
