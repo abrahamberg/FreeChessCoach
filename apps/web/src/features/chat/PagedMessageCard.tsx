@@ -65,7 +65,7 @@ export function PagedMessageCard({
   }
 
   const isUser = message.role === 'user';
-  const ctx: MessageRenderContext = {
+  const context: MessageRenderContext = {
     fen,
     positions,
     onSelectPly,
@@ -78,14 +78,19 @@ export function PagedMessageCard({
     // Both avatars render externally below, positioned by role — the
     // built-in inline one (MessageList's own "starts a coach run" rule)
     // would otherwise show up a second time for a plain-text coach message.
-    hideAvatar: true
+    avatarHidden: true
   };
 
   return (
     <div className="paged-message-card-row">
       {!isUser && <CoachAvatar persona={coachPersona} size="chat" />}
       <div className={isUser ? 'paged-message-card paged-message-card--user' : 'paged-message-card'}>
-        <div className="paged-message-card__body">{renderMessageItem(message, index, visible, ctx)}</div>
+        {/* Same live-region contract MessageList's own transcript container
+            makes (design.md §7) — a streamed reply here should be announced
+            just as it would be in the desktop transcript. */}
+        <div className="paged-message-card__body" aria-live="polite">
+          {renderMessageItem(message, index, visible, context)}
+        </div>
       </div>
       {isUser && <UserAvatar displayName={displayName} />}
     </div>

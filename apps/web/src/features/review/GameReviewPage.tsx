@@ -53,8 +53,7 @@ export function GameReviewPage(): ReactNode {
     fen,
     highlights,
     arrows,
-    moveQualityBadgeSquare,
-    moveQualityBadgeQuality,
+    moveQualityBadge,
     coachPersona,
     tacticSelection,
     onToggleTacticSelection,
@@ -76,8 +75,7 @@ export function GameReviewPage(): ReactNode {
       orientation={orientation}
       highlights={highlights}
       arrows={arrows}
-      moveQualityBadgeSquare={moveQualityBadgeSquare}
-      moveQualityBadgeQuality={moveQualityBadgeQuality}
+      moveQualityBadge={moveQualityBadge}
       classifiedMoves={classifiedMoves}
       ply={ply}
       onSelect={setPly}

@@ -14,13 +14,18 @@ import { lastMoveHighlightsFor } from '../session/useSessionBoardState.js';
 
 const SessionSummarySchema = z.object({ id: z.string() });
 
-/** The square to draw MoveQualityBadgeOverlay's on-board badge on for the
- * current ply, or `undefined` to draw nothing — see MoveQualityBadgeOverlay's
- * own doc comment. Exported for direct unit testing rather than only through
- * the whole hook. */
-export function moveQualityBadgeSquareFor(quality: MoveQuality | undefined, moveUci: string | null | undefined): string | undefined {
+/** MoveQualityBadgeOverlay's on-board badge for the current ply — the
+ * square the move landed on plus its quality tier, or `undefined` to draw
+ * nothing — see that component's own doc comment. One combined value (not
+ * a square alone that CoachBoard then has to re-pair with the move's
+ * quality) since the two only ever mean anything together. Exported for
+ * direct unit testing rather than only through the whole hook. */
+export function moveQualityBadgeFor(
+  quality: MoveQuality | undefined,
+  moveUci: string | null | undefined
+): { square: string; quality: MoveQuality } | undefined {
   if (!quality || !moveUci) return undefined;
-  return moveUci.slice(2, 4);
+  return { square: moveUci.slice(2, 4), quality };
 }
 
 /** All fetching + derived state for the standalone Game Review page
@@ -102,8 +107,7 @@ export function useGameReviewPageData(gameId: string) {
   const highlights = [...lastMoveHighlightsFor(currentPosition?.moveUci), ...tacticOverlay.highlights];
   // Every classified move gets its quality badge echoed on the board too,
   // on the square it landed on — see MoveQualityBadgeOverlay.
-  const moveQualityBadgeSquare = moveQualityBadgeSquareFor(currentMove?.quality, currentPosition?.moveUci);
-  const moveQualityBadgeQuality = moveQualityBadgeSquare ? currentMove?.quality : undefined;
+  const moveQualityBadge = moveQualityBadgeFor(currentMove?.quality, currentPosition?.moveUci);
 
   // The one visual for "what was actually best" — MoveNoteCard no longer
   // spells it out as a "Best: <line>" sentence (Daniel's call: obvious once
@@ -156,8 +160,7 @@ export function useGameReviewPageData(gameId: string) {
     fen,
     highlights,
     arrows,
-    moveQualityBadgeSquare,
-    moveQualityBadgeQuality,
+    moveQualityBadge,
     coachPersona,
     tacticSelection,
     onToggleTacticSelection: toggleTacticSelectionKey,

@@ -15,10 +15,8 @@ export interface GameReviewBoardColumnProps {
    * actually reached. */
   arrows: BoardArrow[];
   /** The current ply's move landed square + quality tier — see CoachBoard's
-   * own `moveQualityBadgeSquare`/`moveQualityBadgeQuality` doc comments.
-   * Either undefined draws nothing. */
-  moveQualityBadgeSquare?: string;
-  moveQualityBadgeQuality?: MoveQuality;
+   * own `moveQualityBadge` doc comment. Undefined draws nothing. */
+  moveQualityBadge?: { square: string; quality: MoveQuality };
   classifiedMoves: ClassifiedMoveDto[];
   ply: number;
   onSelect: (ply: number) => void;
@@ -43,8 +41,7 @@ export function GameReviewBoardColumn({
   orientation,
   highlights,
   arrows,
-  moveQualityBadgeSquare,
-  moveQualityBadgeQuality,
+  moveQualityBadge,
   classifiedMoves,
   ply,
   onSelect,
@@ -63,8 +60,7 @@ export function GameReviewBoardColumn({
           mode="peek"
           arrows={arrows}
           highlights={highlights}
-          moveQualityBadgeSquare={moveQualityBadgeSquare}
-          moveQualityBadgeQuality={moveQualityBadgeQuality}
+          moveQualityBadge={moveQualityBadge}
           showLegalMoveDots={false}
           disabled
         />

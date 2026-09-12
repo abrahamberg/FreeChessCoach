@@ -20,11 +20,11 @@ export function useMessagePaging(messages: CoachMessage[]): UseMessagePagingResu
   const visible = visibleMessages(messages);
   const [index, setIndex] = useState(() => Math.max(visible.length - 1, 0));
   const isAtLatestRef = useRef(true);
-  const prevLengthRef = useRef(visible.length);
 
+  // The [visible.length] dependency already means this only re-runs when the
+  // count actually changes, so there's no need for a second ref to detect
+  // that same condition again.
   useEffect(() => {
-    if (visible.length === prevLengthRef.current) return;
-    prevLengthRef.current = visible.length;
     if (isAtLatestRef.current) setIndex(Math.max(visible.length - 1, 0));
   }, [visible.length]);
 

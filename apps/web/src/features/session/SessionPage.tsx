@@ -7,18 +7,14 @@ import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
-import { ChatComposer } from '../chat/ChatComposer.js';
 import { ChatPane } from '../chat/ChatPane.js';
 import { DebugPanel } from '../chat/DebugPanel.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
 import type { HoverMove } from '../chat/MessageList.js';
-import { MessageNavPills } from '../chat/MessageNavPills.js';
-import { PagedMessageCard } from '../chat/PagedMessageCard.js';
 import { encodePositionContext, sanForPly } from '../chat/positionDivider.js';
 import { SessionSummaryCard } from '../chat/SessionSummaryCard.js';
-import { ThinkingIndicator } from '../chat/ThinkingIndicator.js';
-import { ToolActivity } from '../chat/ToolActivity.js';
 import { useMessagePaging } from '../chat/useMessagePaging.js';
+import { MobileCoachSessionBody } from './MobileCoachSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { SessionHeader } from './SessionHeader.js';
 import { useSessionPageData } from './useSessionPageData.js';
@@ -28,19 +24,10 @@ import './SessionPage.css';
  * All fetching lives in useSessionPageData (AGENTS.md rule 7); this is
  * presentational — local UI state, a few small handlers, and the layout.
  * At/above 768px board and chat sit side by side (ChatPane's own full,
- * vertically-scrolling transcript). Below it, the exact same structure
- * GameReviewPage's mobile Review page landed on: one card above (there, the
- * current move's note; here, PagedMessageCard showing one transcript entry
- * at a time, paged left/right via MessageNavPills — not a scrolling list of
- * stacked messages), the board edge-to-edge below it, nav pills below the
- * board — see SessionPage.css's `.stacked` block for the full reasoning.
- * Not the two-tab Board/Coach switch BotSessionPage (a bot never talks, so
- * it keeps MobileSessionBody's tabs) still uses. ChatComposer is pinned to
- * the bottom of the screen rather than part of the stack (no GameReviewPage
- * equivalent — a read-only review has no reply), always open — iMessage-
- * style, not a button that reveals the field — so its keyboard only ever
- * appears once the student actually taps in to type, covering the board
- * beneath it rather than the conversation above. */
+ * vertically-scrolling transcript); below it, MobileCoachSessionBody's own
+ * layout (its doc comment has the design reasoning) — not the two-tab
+ * Board/Coach switch BotSessionPage (a bot never talks, so it keeps
+ * MobileSessionBody's tabs) still uses. */
 export function SessionPage(): ReactNode {
   const { id } = useParams<{ id: string }>();
   const sessionId = id ?? '';
@@ -231,30 +218,23 @@ export function SessionPage(): ReactNode {
       ) : isPausedNoCredits ? (
         pausedCard
       ) : (
-        <div className="session-body mobile stacked">
-          <PagedMessageCard
-            message={messagePaging.current}
-            index={messagePaging.index}
-            visible={messagePaging.visible}
-            fen={fen}
-            positions={positions}
-            onSelectPly={peekAt}
-            onHoverMove={setHoverMove}
-            coachPersona={persona}
-            displayName={profileQuery.data?.displayName}
-            onPlayMessage={ttsEnabled ? coachVoice.play : undefined}
-            onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
-            playingMessageId={coachVoice.playingMessageId}
-            loadingMessageId={coachVoice.loadingMessageId}
-          />
-          <ThinkingIndicator visible={chat.isThinking} />
-          <ToolActivity toolName={chat.activeToolName} />
-          {board}
-          <MessageNavPills index={messagePaging.index} total={messagePaging.total} onSelect={messagePaging.goTo} />
-          <div className="session-composer-fixed">
-            <ChatComposer onSend={handleSendMessage} boardArrows={boardArrows} hasPendingLine={Boolean(divergedLine.line)} />
-          </div>
-        </div>
+        <MobileCoachSessionBody
+          board={board}
+          messagePaging={messagePaging}
+          fen={fen}
+          positions={positions}
+          onSelectPly={peekAt}
+          onHoverMove={setHoverMove}
+          coachPersona={persona}
+          displayName={profileQuery.data?.displayName}
+          ttsEnabled={ttsEnabled}
+          coachVoice={coachVoice}
+          isThinking={chat.isThinking}
+          activeToolName={chat.activeToolName}
+          onSend={handleSendMessage}
+          boardArrows={boardArrows}
+          hasPendingLine={Boolean(divergedLine.line)}
+        />
       )}
     </div>
   );

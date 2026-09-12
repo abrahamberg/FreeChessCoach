@@ -64,6 +64,18 @@ function CoachButton({ onContinueWithCoach, isContinuingWithCoach }: Pick<MoveNo
   );
 }
 
+/** The portrait-beside-the-card row both the empty ("select a move") and
+ * populated states share — factored out so the wrapper isn't duplicated
+ * between them. */
+function MoveNoteCardRow({ coachPersona, children }: { coachPersona: CoachPersona; children: ReactNode }): ReactNode {
+  return (
+    <div className="move-note-card-row">
+      <CoachAvatar persona={coachPersona} size="chat" />
+      {children}
+    </div>
+  );
+}
+
 /** The Game Review page's dominant note element — chess.com's own mobile
  * review puts its coaching note (portrait + speech-bubble card) above the
  * board rather than a small aside below a move list, adapted here to what
@@ -86,15 +98,14 @@ export function MoveNoteCard({
 }: MoveNoteCardProps): ReactNode {
   if (ply <= 0 || !san) {
     return (
-      <div className="move-note-card-row">
-        <CoachAvatar persona={coachPersona} size="chat" />
+      <MoveNoteCardRow coachPersona={coachPersona}>
         <div className="move-note-card move-note-card--empty">
           <div className="move-note-card__header">
             <p className="move-note-card__prompt">Select a move to see the coach's note.</p>
             <CoachButton onContinueWithCoach={onContinueWithCoach} isContinuingWithCoach={isContinuingWithCoach} />
           </div>
         </div>
-      </div>
+      </MoveNoteCardRow>
     );
   }
 
@@ -104,8 +115,7 @@ export function MoveNoteCard({
   const headline = quality ? QUALITY_HEADLINES[quality] : undefined;
 
   return (
-    <div className="move-note-card-row">
-      <CoachAvatar persona={coachPersona} size="chat" />
+    <MoveNoteCardRow coachPersona={coachPersona}>
       <div className={quality ? `move-note-card move-note-card--${quality}` : 'move-note-card'}>
         <div className="move-note-card__header">
           <MoveQualityBadge quality={quality} size="md" />
@@ -129,6 +139,6 @@ export function MoveNoteCard({
           )}
         </div>
       </div>
-    </div>
+    </MoveNoteCardRow>
   );
 }

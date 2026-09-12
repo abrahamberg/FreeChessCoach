@@ -8,9 +8,9 @@ describe('MoveQualityBadge', () => {
     expect(screen.getByText('✓')).toHaveClass('move-quality-badge--good');
   });
 
-  test('renders the checkmark glyph for an excellent move — same glyph family as good, distinct color', () => {
+  test('renders a heavier checkmark glyph for an excellent move — same glyph family as good, distinct weight and color', () => {
     render(<MoveQualityBadge quality="excellent" size="md" />);
-    expect(screen.getByText('✓')).toHaveClass('move-quality-badge--excellent');
+    expect(screen.getByText('✔')).toHaveClass('move-quality-badge--excellent');
   });
 
   test('renders nothing when quality is undefined', () => {
