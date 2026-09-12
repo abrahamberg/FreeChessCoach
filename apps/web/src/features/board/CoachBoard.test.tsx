@@ -371,11 +371,11 @@ describe('CoachBoard', () => {
     expect(onUserMove).toHaveBeenCalled();
   });
 
-  test('moveQualityBadgeSquare draws the on-board checkmark; omitted draws nothing', () => {
+  test('moveQualityBadge draws the on-board badge; omitted draws nothing', () => {
     const { rerender } = render(<CoachBoard fen={START_FEN} orientation="white" mode="peek" />);
     expect(screen.queryByText('✓')).not.toBeInTheDocument();
 
-    rerender(<CoachBoard fen={START_FEN} orientation="white" mode="peek" moveQualityBadgeSquare="e4" />);
+    rerender(<CoachBoard fen={START_FEN} orientation="white" mode="peek" moveQualityBadge={{ square: 'e4', quality: 'good' }} />);
     expect(screen.getByText('✓')).toBeInTheDocument();
   });
 });

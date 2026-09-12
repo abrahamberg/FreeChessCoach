@@ -1,5 +1,6 @@
 import { Chess, type PieceSymbol, type Square } from 'chess.js';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import type { MoveQuality } from '@freechesscoach/shared';
 import {
   Chessboard,
   type Arrow,
@@ -122,12 +123,14 @@ export interface CoachBoardProps {
    * analyze/peek-mode boards, which never submit anything server-side, are
    * unaffected. */
   disabled?: boolean;
-  /** The square a 'good' or 'excellent' move landed on — Game Review's own
-   * quiet on-board nod for the two tiers MoveQualityBadge deliberately
-   * skips in the move list (best/brilliant/etc. already get their own pill
-   * icon there). Purely cosmetic, recomputed fresh per render from the
-   * current ply; never written back into move data. */
-  moveQualityBadgeSquare?: string;
+  /** The square the current ply's move landed on, and that move's quality —
+   * Game Review's own on-board echo of MoveQualityBadge's move-list icon,
+   * chess.com-style. Purely cosmetic, recomputed fresh per render from the
+   * current ply; never written back into move data. One object (not two
+   * independently-optional props) since the two values only ever mean
+   * anything together — see useGameReviewPageData's own
+   * moveQualityBadgeFor. */
+  moveQualityBadge?: { square: string; quality: MoveQuality };
 }
 
 interface PendingPromotion {
@@ -150,7 +153,7 @@ export function CoachBoard({
   onArrowsChange,
   showLegalMoveDots = true,
   disabled = false,
-  moveQualityBadgeSquare
+  moveQualityBadge
 }: CoachBoardProps): ReactNode {
   const justDroppedRef = useRef(false);
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
@@ -321,7 +324,9 @@ export function CoachBoard({
   return (
     <div className={frameClassName}>
       <Chessboard options={options} />
-      {moveQualityBadgeSquare && <MoveQualityBadgeOverlay square={moveQualityBadgeSquare} orientation={orientation} />}
+      {moveQualityBadge && (
+        <MoveQualityBadgeOverlay square={moveQualityBadge.square} quality={moveQualityBadge.quality} orientation={orientation} />
+      )}
       {pendingPromotion && (
         <PromotionPicker
           square={pendingPromotion.to}

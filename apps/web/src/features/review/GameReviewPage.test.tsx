@@ -106,8 +106,32 @@ function mockFetch(game: GameFixture = {}) {
         new Response(JSON.stringify({ id: 'session-1' }), { status: 200, headers: { 'content-type': 'application/json' } })
       );
     }
+    if (path === '/api/users/me') {
+      return Promise.resolve(new Response(JSON.stringify(mockUserProfile()), { status: 200, headers: { 'content-type': 'application/json' } }));
+    }
     throw new Error(`unexpected fetch: ${path}`);
   });
+}
+
+// Same shape SessionPage.test.tsx mocks — MoveNoteCard's avatar (via
+// useGameReviewPageData's own profileQuery) reads coachPersona off this.
+function mockUserProfile() {
+  return {
+    id: '7d9f2a44-9a5f-4f6e-b1a1-0a4c1e2d3f4b',
+    email: 'daniel@example.com',
+    displayName: 'daniel',
+    ratingBand: 'club',
+    rating: null,
+    ratingSource: null,
+    engineMode: 'native',
+    coachPersona: 'general',
+    lichessUsername: null,
+    chesscomUsername: null,
+    selfAssessment: null,
+    creditBalance: 100,
+    ttsEnabled: false,
+    ttsBackend: 'openai'
+  };
 }
 
 function renderReviewPage() {
@@ -294,6 +318,9 @@ describe('GameReviewPage', () => {
       }
       if (path === '/api/games/game-1/promote' && init?.method === 'POST') {
         return Promise.resolve(new Response(JSON.stringify({ title: 'nope' }), { status: 400 }));
+      }
+      if (path === '/api/users/me') {
+        return Promise.resolve(new Response(JSON.stringify(mockUserProfile()), { status: 200, headers: { 'content-type': 'application/json' } }));
       }
       throw new Error(`unexpected fetch: ${path}`);
     });

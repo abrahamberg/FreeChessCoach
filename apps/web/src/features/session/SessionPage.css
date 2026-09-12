@@ -185,14 +185,111 @@
   margin: 12px 6px 0;
 }
 
-/* --- mobile (<768px): Board and Coach as two switchable full-height panels
- * --- The switch's whole state is one number, --session-view-progress:
- * 0 = Board, 1 = Coach, fractional while a swipe is in flight. The panel
- * track and the segmented control's indicator both read it, so the control
- * follows the finger rather than snapping after the fact. */
+/* --- mobile (<768px): BotSessionPage's Board and Coach as two switchable
+ * full-height panels --- The switch's whole state is one number,
+ * --session-view-progress: 0 = Board, 1 = Coach, fractional while a swipe
+ * is in flight. The panel track and the segmented control's indicator both
+ * read it, so the control follows the finger rather than snapping after the
+ * fact. SessionPage's own live coaching session uses the `.stacked`
+ * modifier below instead — see that block's own doc comment for why the
+ * two mobile layouts diverge. */
 .session-body.mobile {
   flex: 1;
   min-height: 0;
+}
+
+/* --- SessionPage's own mobile layout: the exact same structure
+ * GameReviewPage's mobile Review page landed on — one card above (there,
+ * the current move's note; here, PagedMessageCard showing one transcript
+ * entry), the board below it edge-to-edge, then nav pills below the board
+ * (MessageNavPills paging left/right through messages, same as
+ * GameReviewPage's MoveNavPills paging through moves) — reused here rather
+ * than the Board/Coach tab switch above. BotSessionPage keeps the tabs (a
+ * bot never talks, so there's no chat-vs-keyboard problem worth solving
+ * there); this `.stacked` modifier is what keeps the two layouts from
+ * fighting over the same .session-body.mobile selectors. The composer is
+ * the one piece with no GameReviewPage equivalent (a read-only review has
+ * no reply) — pinned to the bottom of the screen instead of the stack, so
+ * it's reachable without scrolling and its keyboard, opening from a card
+ * near the top of the screen, covers the board beneath it rather than the
+ * conversation. flex: 0 0 auto (not flex: 1) throughout so the message
+ * card and the board column each claim only the height their own content
+ * needs — GameReviewPage's fix for "dead space" (something stretching to
+ * fill leftover room and centering its content inside it) applies
+ * identically here. overflow-y: auto is the safety net for a viewport too
+ * short for the whole stack (an expanded Explore panel, play_bot's
+ * toolbar, etc.) — the message card's own internal scroll (see its own
+ * CSS) already handles a long single message. */
+.session-body.mobile.stacked {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: var(--space-2);
+  /* Reserves room for .session-composer-fixed below, which takes no space
+   * of its own in this flow (position: fixed) — without this, the last bit
+   * of scrolled content would sit behind it. Sized to .chat-composer's own
+   * fixed height (ChatPane.css: --space-3 padding top/bottom around
+   * .chip-reply-input's 44px min-height, plus its 1px border-top) — a
+   * constant here tracks it fine since the composer no longer has a
+   * shorter collapsed state, same call as GameReviewPage's own fixed-height
+   * sheet reserve. */
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+/* .stacked itself carries no page-level padding (unlike GameReviewPage's
+ * .game-review-body) — the board wants to be edge-to-edge by default, so
+ * instead the card and the nav pills below the board each get their own
+ * inset directly, matching the reading margin GameReviewPage's page
+ * padding gave its own note card/move nav for free. */
+.session-body.mobile.stacked > .paged-message-card-row,
+.session-body.mobile.stacked > .move-explorer__nav {
+  margin-left: var(--space-4);
+  margin-right: var(--space-4);
+}
+
+.session-body.mobile.stacked .session-board-column {
+  flex: 0 0 auto;
+}
+
+/* Edge-to-edge board + eval bar only — cancels .session-board-column's own
+ * --space-2 mobile padding (the media query above) for just these two
+ * rows, leaving the pills/Explore panel/bot toolbar below with their
+ * normal inset (those read as cramped flush to the edge; the board reads
+ * better that way, chess.com-style). Token-based (not a hardcoded -8px) so
+ * a rebase of --space-2 keeps this in sync automatically, same as
+ * GameReviewPage.css's own edge-to-edge trick. */
+.session-body.mobile.stacked .session-board-column > .session-board-row,
+.session-body.mobile.stacked .session-board-column > .eval-bar-wrap--horizontal {
+  margin: 0 calc(-1 * var(--space-2));
+}
+
+.session-body.mobile.stacked .session-board-column .coach-board-frame {
+  border-radius: 0;
+}
+
+.session-body.mobile.stacked .session-board-column .move-strip {
+  margin: 0 calc(-1 * var(--space-2));
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+
+/* Pinned to the screen's bottom edge, not the end of the (scrollable)
+ * stack above — see .session-body.mobile.stacked's own padding-bottom for
+ * why that stack reserves room for this. */
+.session-composer-fixed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -2px 12px var(--color-border-strong);
+}
+
+.session-composer-fixed .chat-composer {
+  border-top: none;
 }
 
 .session-view-tabs {
@@ -292,17 +389,6 @@
  * scrolls it rather than clipping the Explore panel off the bottom. */
 .session-body.mobile #session-panel-board {
   overflow-y: auto;
-}
-
-.session-body.mobile .chat-pane {
-  flex: 1;
-  min-height: 0;
-}
-
-/* Composer clears the home indicator; the 56px tab bar itself is accounted
- * for by .app-shell__content's padding. */
-.session-body.mobile .chat-pane form {
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
 }
 
 /* Position context while reading the coach — shown only once the board has

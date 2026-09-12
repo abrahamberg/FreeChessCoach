@@ -157,23 +157,51 @@ describe('SessionPage', () => {
     vi.useRealTimers();
   });
 
-  test('below 768px the board and the coach are two switchable panels, not a stack', async () => {
+  test('below 768px, board and chat stack on one screen — no Board/Coach tabs', async () => {
     mockMatchMedia(false);
     window.localStorage.clear();
     vi.stubGlobal('fetch', mockFetch());
+    renderSessionPage();
+
+    await screen.findByTestId('mock-chessboard');
+    // No more tab switch (GameReviewPage's own mobile structure, reused
+    // here) — the board's own controls and the chat panel are both on
+    // screen at once, not hidden behind a Board/Coach segmented control.
+    expect(screen.queryByRole('tablist', { name: /session view/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
+
+    // The composer is always open, iMessage-style — no tap-to-reveal step.
+    expect(screen.getByRole('textbox', { name: /reply/i })).toBeInTheDocument();
+  });
+
+  test('below 768px, only the current transcript entry shows — paged left/right, same as GameReviewPage\'s move notes', async () => {
+    mockMatchMedia(false);
+    window.localStorage.clear();
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        messages: [
+          { id: 'm1', role: 'assistant', content: 'First things first — what did you think of your opening?' },
+          { id: 'm2', role: 'user', content: 'It felt fine, standard stuff.' },
+          { id: 'm3', role: 'assistant', content: 'Right, nothing to flag there.' }
+        ]
+      })
+    );
     const user = userEvent.setup();
     renderSessionPage();
 
     await screen.findByTestId('mock-chessboard');
-    // Opens on the coach: the composer is reachable, the board's own controls
-    // are not (both panels are mounted — only one is exposed).
-    expect(screen.getByRole('textbox', { name: /reply/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /explore on your own/i })).not.toBeInTheDocument();
+    // Opens on the latest message only — the earlier ones aren't on screen
+    // at the same time.
+    expect(screen.getByText('Right, nothing to flag there.')).toBeInTheDocument();
+    expect(screen.queryByText('It felt fine, standard stuff.')).not.toBeInTheDocument();
+    expect(screen.getByText('message 3 of 3')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: /board/i }));
+    await user.click(screen.getByRole('button', { name: /previous message/i }));
 
-    expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
-    expect(screen.queryByRole('textbox', { name: /reply/i })).not.toBeInTheDocument();
+    expect(screen.getByText('It felt fine, standard stuff.')).toBeInTheDocument();
+    expect(screen.queryByText('Right, nothing to flag there.')).not.toBeInTheDocument();
+    expect(screen.getByText('message 2 of 3')).toBeInTheDocument();
   });
 
   test('at/above 768px the split layout is unchanged — board and chat together, no view switch', async () => {

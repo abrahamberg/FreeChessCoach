@@ -118,7 +118,7 @@ describe('MoveExplorer', () => {
     expect(onSelect).toHaveBeenCalledWith(4);
   });
 
-  test('renders a NAG symbol for a non-good move, but none for a good move', () => {
+  test('renders a NAG symbol for every classified move, including a good one', () => {
     const classifiedMoves = [
       classifiedMove({ ply: 3, moveSan: 'Qh5', quality: 'inaccuracy' }),
       classifiedMove({ ply: 1, moveSan: 'e4', quality: 'good' })
@@ -126,7 +126,7 @@ describe('MoveExplorer', () => {
     render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={0} onSelect={vi.fn()} />);
 
     expect(screen.getByRole('button', { name: '?!Qh5' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'e4' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '✓e4' })).toBeInTheDocument();
   });
 
   test('applies a quality-specific class per move for color coding', () => {
@@ -192,7 +192,7 @@ describe('MoveExplorer', () => {
     ];
     render(<MoveExplorer sanMoves={SAN_MOVES} classifiedMoves={classifiedMoves} positions={[]} currentPly={0} onSelect={vi.fn()} />);
 
-    expect(screen.getByRole('button', { name: 'e4' })).not.toHaveTextContent('⚡');
+    expect(screen.getByRole('button', { name: '✓e4' })).not.toHaveTextContent('⚡');
     expect(screen.getByTitle('Forks: found')).toBeInTheDocument();
   });
 

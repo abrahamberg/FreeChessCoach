@@ -1,0 +1,73 @@
+/* One transcript entry at a time — the same accent-bordered card language
+ * MoveNoteCard.css uses for Game Review's note card, reused here for chat
+ * messages. Content itself (move mentions, arrow tokens, the voice button)
+ * is MessageList's own styling/markup (renderMessageItem) — only the
+ * bubble-per-message-in-a-stack layout ChatPane.css uses is replaced, since
+ * there's just one message in this box at a time. */
+
+/* Coach portrait (left) / student initials (right) sit outside the card
+ * itself as row siblings — see PagedMessageCard.tsx — rather than inline
+ * before the text, so which side of the conversation a message came from
+ * reads instantly even with only this one message on screen. No `gap`:
+ * CoachAvatar/UserAvatar each carry their own margin toward the card
+ * (margin-right/margin-left respectively) so spacing stays consistent
+ * whichever side is showing. */
+.paged-message-card-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.paged-message-card {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4) var(--space-5);
+}
+
+/* A distinctly different color (not just the border accent) plus an
+ * indent from the left — the same two cues (tinted background,
+ * right-shifted position) the desktop transcript's own right-aligned user
+ * bubble uses (ChatPane.css), adapted to a single full-width card instead
+ * of a floating one. */
+.paged-message-card--user {
+  margin-left: var(--space-5);
+  background: var(--color-primary-soft);
+  border-left-color: var(--color-primary);
+}
+
+/* A fixed height, not just a cap — paging left/right between a one-line
+ * message and a long one must not resize the card (and shift the board
+ * and nav pills below it) on every step; a short message just leaves
+ * blank space below it instead. A rem value (not vh) so this stays
+ * "a few lines of text" regardless of viewport height, rather than
+ * ballooning on a tall phone and eating the room the board — full device
+ * width, so its height already scales with the screen — needs to render
+ * without getting clipped behind the fixed composer bar on a short one.
+ * Anything longer scrolls internally. */
+.paged-message-card__body {
+  height: 4.5rem;
+  overflow-y: auto;
+  line-height: var(--line-height-reading);
+  white-space: pre-wrap;
+}
+
+.paged-message-card__body .move-card,
+.paged-message-card__body .position-divider,
+.paged-message-card__body .annotation-note {
+  font-size: var(--font-size-sm);
+}
+
+.paged-message-card__body .position-context-message__note {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.paged-message-card__empty-text {
+  margin: 0;
+  color: var(--color-text-secondary);
+}

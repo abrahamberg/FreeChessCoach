@@ -13,18 +13,21 @@ import { encodeDivergedLine } from '../chat/divergedLine.js';
 import type { HoverMove } from '../chat/MessageList.js';
 import { encodePositionContext, sanForPly } from '../chat/positionDivider.js';
 import { SessionSummaryCard } from '../chat/SessionSummaryCard.js';
-import { MobileSessionBody } from './MobileSessionBody.js';
+import { useMessagePaging } from '../chat/useMessagePaging.js';
+import { MobileCoachSessionBody } from './MobileCoachSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { SessionHeader } from './SessionHeader.js';
-import { useMobileSessionView } from './useMobileSessionView.js';
 import { useSessionPageData } from './useSessionPageData.js';
 import './SessionPage.css';
 
 /** design.md §5: composes board + chat for an active coaching session.
  * All fetching lives in useSessionPageData (AGENTS.md rule 7); this is
  * presentational — local UI state, a few small handlers, and the layout.
- * At/above 768px board and chat sit side by side; below it each owns a full
- * screen and MobileSessionBody switches between them. */
+ * At/above 768px board and chat sit side by side (ChatPane's own full,
+ * vertically-scrolling transcript); below it, MobileCoachSessionBody's own
+ * layout (its doc comment has the design reasoning) — not the two-tab
+ * Board/Coach switch BotSessionPage (a bot never talks, so it keeps
+ * MobileSessionBody's tabs) still uses. */
 export function SessionPage(): ReactNode {
   const { id } = useParams<{ id: string }>();
   const sessionId = id ?? '';
@@ -53,7 +56,9 @@ export function SessionPage(): ReactNode {
   const [boardArrows, setBoardArrows] = useState<ArrowRef[]>([]);
   const [hoverMove, setHoverMove] = useState<HoverMove>(null);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
-  const mobileView = useMobileSessionView(chat.messages.length);
+  // Unconditional (hooks always are) — only the mobile branch below renders
+  // PagedMessageCard/MessageNavPills off it.
+  const messagePaging = useMessagePaging(chat.messages);
   const persona = profileQuery.data?.coachPersona ?? 'general';
   const ttsEnabled = profileQuery.data?.ttsEnabled ?? false;
   const ttsBackend = profileQuery.data?.ttsBackend ?? 'openai';
@@ -137,35 +142,39 @@ export function SessionPage(): ReactNode {
     />
   );
 
-  const chatPanel =
-    session.status === 'paused_no_credits' ? (
-      <div className="session-paused-card">
-        <p>The session is saved. Add credits or your own API key to continue.</p>
-        <button type="button" onClick={() => navigate('/settings')}>
-          Add credits
-        </button>
-      </div>
-    ) : (
-      <ChatPane
-        messages={chat.messages}
-        activeToolName={chat.activeToolName}
-        isThinking={chat.isThinking}
-        onSend={handleSendMessage}
-        onSelectPly={peekAt}
-        boardArrows={boardArrows}
-        hasPendingLine={Boolean(divergedLine.line)}
-        fen={fen}
-        positions={positions}
-        onHoverMove={setHoverMove}
-        coachPersona={persona}
-        autoplayEnabled={coachVoice.autoplayEnabled}
-        onToggleAutoplay={ttsEnabled ? coachVoice.setAutoplayEnabled : undefined}
-        onPlayMessage={ttsEnabled ? coachVoice.play : undefined}
-        onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
-        playingMessageId={coachVoice.playingMessageId}
-        loadingMessageId={coachVoice.loadingMessageId}
-      />
-    );
+  const isPausedNoCredits = session.status === 'paused_no_credits';
+  const pausedCard = (
+    <div className="session-paused-card">
+      <p>The session is saved. Add credits or your own API key to continue.</p>
+      <button type="button" onClick={() => navigate('/settings')}>
+        Add credits
+      </button>
+    </div>
+  );
+
+  const chatPanel = isPausedNoCredits ? (
+    pausedCard
+  ) : (
+    <ChatPane
+      messages={chat.messages}
+      activeToolName={chat.activeToolName}
+      isThinking={chat.isThinking}
+      onSend={handleSendMessage}
+      onSelectPly={peekAt}
+      boardArrows={boardArrows}
+      hasPendingLine={Boolean(divergedLine.line)}
+      fen={fen}
+      positions={positions}
+      onHoverMove={setHoverMove}
+      coachPersona={persona}
+      autoplayEnabled={coachVoice.autoplayEnabled}
+      onToggleAutoplay={ttsEnabled ? coachVoice.setAutoplayEnabled : undefined}
+      onPlayMessage={ttsEnabled ? coachVoice.play : undefined}
+      onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
+      playingMessageId={coachVoice.playingMessageId}
+      loadingMessageId={coachVoice.loadingMessageId}
+    />
+  );
 
   return (
     <div className="session-page">
@@ -206,18 +215,28 @@ export function SessionPage(): ReactNode {
           {board}
           {chatPanel}
         </div>
+      ) : isPausedNoCredits ? (
+        <div className="session-body mobile stacked">
+          {board}
+          {pausedCard}
+        </div>
       ) : (
-        <MobileSessionBody
+        <MobileCoachSessionBody
           board={board}
-          chat={chatPanel}
+          messagePaging={messagePaging}
           fen={fen}
-          boardContext={{
-            mode: boardState.mode,
-            ply: boardState.ply,
-            san: sanForPly(sanMoves, boardState.ply),
-            hasDivergedLine: Boolean(divergedLine.line)
-          }}
-          viewState={mobileView}
+          positions={positions}
+          onSelectPly={peekAt}
+          onHoverMove={setHoverMove}
+          coachPersona={persona}
+          displayName={profileQuery.data?.displayName}
+          ttsEnabled={ttsEnabled}
+          coachVoice={coachVoice}
+          isThinking={chat.isThinking}
+          activeToolName={chat.activeToolName}
+          onSend={handleSendMessage}
+          boardArrows={boardArrows}
+          hasPendingLine={Boolean(divergedLine.line)}
         />
       )}
     </div>

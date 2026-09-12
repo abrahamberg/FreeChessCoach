@@ -1,18 +1,16 @@
 import type { ParsedPosition } from '@freechesscoach/chess-analysis';
 import { COACH_PERSONA_INFO, type CoachPersona } from '@freechesscoach/shared';
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { ArrowRef } from './arrowToken.js';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
 import { VolumeOffIcon, VolumeOnIcon } from '../../components/Icon.js';
-import { ChipReplyInput } from './ChipReplyInput.js';
-import { createEmptyDraft, isDraftEmpty, reconcileArrowChips, serializeDraft, type DraftPart } from './composerDraft.js';
+import { ChatComposer } from './ChatComposer.js';
 import { MessageList, type HoverMove } from './MessageList.js';
 import { ThinkingIndicator } from './ThinkingIndicator.js';
 import { ToolActivity } from './ToolActivity.js';
 import './ChatPane.css';
 
-const NO_ARROWS: ArrowRef[] = [];
 const DEFAULT_COACH_PERSONA: CoachPersona = 'general';
 
 export interface ChatPaneProps {
@@ -57,18 +55,27 @@ export interface ChatPaneProps {
   loadingMessageId?: string | null;
 }
 
-/** Composes MessageList + ToolActivity + the reply input. No fetching — the
- * parent (SessionPage) owns useCoachChat. The "Debug last answer" trigger
- * now lives in SessionHeader's overflow menu (SessionPage owns that state
- * and DebugPanel), not here. */
+/** The desktop side-by-side chat column: MessageList (the full, vertically
+ * scrolling transcript) + ToolActivity + an always-open ChatComposer. No
+ * fetching — the parent (SessionPage) owns useCoachChat. The "Debug last
+ * answer" trigger now lives in SessionHeader's overflow menu (SessionPage
+ * owns that state and DebugPanel), not here.
+ *
+ * Mobile has its own, differently-structured layout (SessionPage's
+ * `.stacked` branch: one message at a time, paged left/right, the board
+ * between the card and its nav pills, ChatComposer pinned to the screen's
+ * bottom edge) — the exact same structure GameReviewPage's mobile layout
+ * uses for its note card, not a vertically scrolling transcript. It
+ * composes ChatHeader/PagedMessageCard/MessageNavPills/ChatComposer
+ * directly rather than rendering this component. */
 export function ChatPane({
   messages,
   activeToolName,
   isThinking = false,
   onSend,
   onSelectPly,
-  boardArrows = NO_ARROWS,
-  hasPendingLine = false,
+  boardArrows,
+  hasPendingLine,
   fen,
   positions,
   onHoverMove,
@@ -80,21 +87,6 @@ export function ChatPane({
   playingMessageId,
   loadingMessageId
 }: ChatPaneProps): ReactNode {
-  const [parts, setParts] = useState<DraftPart[]>(createEmptyDraft);
-  const prevArrowsRef = useRef<ArrowRef[]>([]);
-
-  useEffect(() => {
-    setParts((current) => reconcileArrowChips(current, prevArrowsRef.current, boardArrows));
-    prevArrowsRef.current = boardArrows;
-  }, [boardArrows]);
-
-  function handleSubmit(event: FormEvent): void {
-    event.preventDefault();
-    if (isDraftEmpty(parts) && !hasPendingLine) return;
-    onSend(serializeDraft(parts).trim());
-    setParts(createEmptyDraft());
-  }
-
   return (
     <div className="chat-pane">
       <div className="chat-pane__header">
@@ -136,12 +128,7 @@ export function ChatPane({
       />
       <ThinkingIndicator visible={isThinking} />
       <ToolActivity toolName={activeToolName} />
-      <form onSubmit={handleSubmit}>
-        <ChipReplyInput parts={parts} onChange={setParts} />
-        <button type="submit" className="btn-primary">
-          Send
-        </button>
-      </form>
+      <ChatComposer onSend={onSend} boardArrows={boardArrows} hasPendingLine={hasPendingLine} />
     </div>
   );
 }

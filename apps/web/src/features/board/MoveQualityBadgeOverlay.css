@@ -16,9 +16,25 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--tactic-good);
-  color: var(--color-on-primary);
+  color: #15140f;
   font-size: 12px;
   font-weight: 700;
   box-shadow: var(--shadow-sm);
 }
+
+/* Per-tier background, same palette/contrast reasoning as
+ * MoveQualityBadge.css's own tier rules (kept as a separate, duplicated
+ * list rather than shared classes — same call as MoveStrip.css's own copy —
+ * since relying on cross-file CSS-import order for a cascade tie would be
+ * fragile). */
+.move-quality-badge-overlay__icon--brilliant { background: var(--quality-brilliant); color: #fff; }
+.move-quality-badge-overlay__icon--great { background: var(--quality-great); }
+.move-quality-badge-overlay__icon--best { background: var(--quality-best); }
+.move-quality-badge-overlay__icon--excellent { background: var(--quality-excellent); }
+.move-quality-badge-overlay__icon--good { background: var(--quality-good); }
+.move-quality-badge-overlay__icon--book { background: var(--quality-book); }
+.move-quality-badge-overlay__icon--inaccuracy { background: var(--quality-inaccuracy); }
+.move-quality-badge-overlay__icon--mistake { background: var(--quality-mistake); }
+.move-quality-badge-overlay__icon--miss { background: var(--quality-miss); color: #fff; }
+.move-quality-badge-overlay__icon--blunder { background: var(--quality-blunder); color: #fff; }
+.move-quality-badge-overlay__icon--forced { background: var(--quality-forced); }

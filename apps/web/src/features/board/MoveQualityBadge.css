@@ -26,15 +26,16 @@
 
 /* Per-tier glyph color: WCAG AA (4.5:1) is checked against each tier's own
  * background (see design.md §2.1). The shared base rule's #15140f passes for
- * great/best/book/inaccuracy/mistake/forced; brilliant/miss/blunder
- * override to #fff, which measures higher contrast on those three
+ * great/best/excellent/good/book/inaccuracy/mistake/forced; brilliant/miss/
+ * blunder override to #fff, which measures higher contrast on those three
  * backgrounds. brilliant is a known residual: neither #15140f (~4.26:1) nor
  * #fff (~4.33:1) reaches 4.5:1 against #2f7dc4 — #fff is used as the closer
- * of the two. No --excellent rule any more: 'excellent' is badge-less
- * (MoveQualityBadge.tsx), same as 'good'. */
+ * of the two. */
 .move-quality-badge--brilliant { background: var(--quality-brilliant); color: #fff; }
 .move-quality-badge--great { background: var(--quality-great); }
 .move-quality-badge--best { background: var(--quality-best); }
+.move-quality-badge--excellent { background: var(--quality-excellent); }
+.move-quality-badge--good { background: var(--quality-good); }
 .move-quality-badge--book { background: var(--quality-book); }
 .move-quality-badge--inaccuracy { background: var(--quality-inaccuracy); }
 .move-quality-badge--mistake { background: var(--quality-mistake); }

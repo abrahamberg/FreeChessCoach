@@ -1,5 +1,5 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
-import { PromoteGameResponseSchema, type MoveQuality } from '@freechesscoach/shared';
+import { PromoteGameResponseSchema, UserProfileSchema, type MoveQuality } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -14,18 +14,18 @@ import { lastMoveHighlightsFor } from '../session/useSessionBoardState.js';
 
 const SessionSummarySchema = z.object({ id: z.string() });
 
-/** Tiers MoveQualityBadge's move-list pill renders nothing for — a merely-fine
- * move just reads as plain move text there (MoveQualityBadge.tsx). Both get a
- * quiet on-board nod instead so neither goes unlabeled everywhere at once. */
-const QUALITIES_WITHOUT_A_PILL_ICON: ReadonlySet<MoveQuality> = new Set(['good', 'excellent']);
-
-/** The square to draw MoveQualityBadgeOverlay's on-board checkmark on for the
- * current ply, or `undefined` to draw nothing — see MoveQualityBadgeOverlay's
- * own doc comment. Exported for direct unit testing rather than only through
- * the whole hook. */
-export function moveQualityBadgeSquareFor(quality: MoveQuality | undefined, moveUci: string | null | undefined): string | undefined {
-  if (!quality || !QUALITIES_WITHOUT_A_PILL_ICON.has(quality) || !moveUci) return undefined;
-  return moveUci.slice(2, 4);
+/** MoveQualityBadgeOverlay's on-board badge for the current ply — the
+ * square the move landed on plus its quality tier, or `undefined` to draw
+ * nothing — see that component's own doc comment. One combined value (not
+ * a square alone that CoachBoard then has to re-pair with the move's
+ * quality) since the two only ever mean anything together. Exported for
+ * direct unit testing rather than only through the whole hook. */
+export function moveQualityBadgeFor(
+  quality: MoveQuality | undefined,
+  moveUci: string | null | undefined
+): { square: string; quality: MoveQuality } | undefined {
+  if (!quality || !moveUci) return undefined;
+  return { square: moveUci.slice(2, 4), quality };
 }
 
 /** All fetching + derived state for the standalone Game Review page
@@ -64,6 +64,16 @@ export function useGameReviewPageData(gameId: string) {
     enabled: gameId !== ''
   });
 
+  // Same query key useSessionPageData.ts/SettingsPage.tsx use (TanStack Query
+  // dedupes/shares the cache) — this is only the coach's selected persona,
+  // for MoveNoteCard's avatar (coaches.md), same as the live chat's own
+  // per-message avatar.
+  const profileQuery = useQuery({
+    queryKey: ['profile'],
+    queryFn: ({ signal }) => apiGet('/api/users/me', UserProfileSchema, signal)
+  });
+  const coachPersona = profileQuery.data?.coachPersona ?? 'general';
+
   const positions = gameQuery.data ? parsePgn(gameQuery.data.pgn).positions : [];
   const sanMoves = positions.filter((position) => position.moveSan !== null).map((position) => position.moveSan as string);
   // Prefer the Game Report's own moves — enrichWithPhaseAndTactics
@@ -95,10 +105,9 @@ export function useGameReviewPageData(gameId: string) {
   // board merges the same way, so there's nothing to reconcile between them.
   const tacticOverlay = tacticSelectionOverlay(currentMove, tacticSelection);
   const highlights = [...lastMoveHighlightsFor(currentPosition?.moveUci), ...tacticOverlay.highlights];
-  // A 'good' or 'excellent' move (MoveQualityBadge leaves both unlabeled in
-  // the move list) gets a quiet checkmark on the square it landed on,
-  // board-only — see MoveQualityBadgeOverlay.
-  const moveQualityBadgeSquare = moveQualityBadgeSquareFor(currentMove?.quality, currentPosition?.moveUci);
+  // Every classified move gets its quality badge echoed on the board too,
+  // on the square it landed on — see MoveQualityBadgeOverlay.
+  const moveQualityBadge = moveQualityBadgeFor(currentMove?.quality, currentPosition?.moveUci);
 
   // The one visual for "what was actually best" — MoveNoteCard no longer
   // spells it out as a "Best: <line>" sentence (Daniel's call: obvious once
@@ -151,7 +160,8 @@ export function useGameReviewPageData(gameId: string) {
     fen,
     highlights,
     arrows,
-    moveQualityBadgeSquare,
+    moveQualityBadge,
+    coachPersona,
     tacticSelection,
     onToggleTacticSelection: toggleTacticSelectionKey,
     continueWithCoach,

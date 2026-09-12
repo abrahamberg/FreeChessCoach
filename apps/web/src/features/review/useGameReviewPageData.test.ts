@@ -1,24 +1,24 @@
 import { describe, expect, test } from 'vitest';
-import { moveQualityBadgeSquareFor } from './useGameReviewPageData.js';
+import { moveQualityBadgeFor } from './useGameReviewPageData.js';
 
-describe('moveQualityBadgeSquareFor', () => {
-  test('draws the checkmark for a good move', () => {
-    expect(moveQualityBadgeSquareFor('good', 'e2e4')).toBe('e4');
+describe('moveQualityBadgeFor', () => {
+  test('draws the badge for a good move', () => {
+    expect(moveQualityBadgeFor('good', 'e2e4')).toEqual({ square: 'e4', quality: 'good' });
   });
 
-  test('draws the checkmark for an excellent move — MoveQualityBadge leaves this tier unlabeled too', () => {
-    expect(moveQualityBadgeSquareFor('excellent', 'e2e4')).toBe('e4');
+  test('draws the badge for an excellent move', () => {
+    expect(moveQualityBadgeFor('excellent', 'e2e4')).toEqual({ square: 'e4', quality: 'excellent' });
   });
 
-  test('draws nothing for a tier MoveQualityBadge already labels', () => {
-    expect(moveQualityBadgeSquareFor('best', 'e2e4')).toBeUndefined();
+  test('draws the badge for any other classified tier too — every move gets one now', () => {
+    expect(moveQualityBadgeFor('best', 'e2e4')).toEqual({ square: 'e4', quality: 'best' });
   });
 
   test('draws nothing without a quality', () => {
-    expect(moveQualityBadgeSquareFor(undefined, 'e2e4')).toBeUndefined();
+    expect(moveQualityBadgeFor(undefined, 'e2e4')).toBeUndefined();
   });
 
   test('draws nothing without a move', () => {
-    expect(moveQualityBadgeSquareFor('good', undefined)).toBeUndefined();
+    expect(moveQualityBadgeFor('good', undefined)).toBeUndefined();
   });
 });

@@ -103,6 +103,14 @@
   background: var(--color-surface);
 }
 
+.game-review-notes-column .move-note-card-row {
+  height: 100%;
+  /* Top/left only — the note card provides its own bottom/right padding
+   * internally (MoveNoteCard.css), this is just breathing room around the
+   * portrait so it doesn't sit flush against the column's rounded corner. */
+  padding: var(--space-4) 0 var(--space-4) var(--space-4);
+}
+
 .game-review-notes-column .move-note-card {
   height: 100%;
   max-height: none;
@@ -114,21 +122,38 @@
   flex: 1;
 }
 
-/* --- mobile (below this page's own desktop breakpoint): a fixed, non-
- * scrolling layout — note card, nav pills, move strip, then the board fills
- * whatever's left. Daniel's call: the board's position/size should stay put
- * regardless of how long the current move's note is, rather than the whole
- * page scrolling and the board landing wherever that leaves it — the note
- * card's own internal scroll (MoveNoteCard.css) absorbs a long note
- * instead. Game Report is a fixed bottom sheet below, not a flex child
+/* --- mobile (below this page's own desktop breakpoint): note card, then
+ * the board, then nav pills + move strip below it (chess.com's own
+ * ordering: note above the board, moves below). Daniel's second-round call,
+ * after the board still read as too small next to chess.com's own review:
+ * the board's size should come from its own width (edge-to-edge, like
+ * chess.com — see .session-board-column below) rather than from whatever
+ * vertical space its neighbors happen to leave behind, and every neighbor
+ * (note card included) should claim only what its own content needs rather
+ * than a fixed share of the screen — either one leaves "dead" space the
+ * board could otherwise be using. That decouples the board's size from the
+ * note's length entirely (no need for a fixed-height note card to keep the
+ * board from jumping between moves — the board no longer depends on the
+ * note's height at all), so the page can scroll on a phone short/narrow
+ * enough that the stack doesn't fit, rather than clipping or shrinking
+ * anything. Game Report is a fixed bottom sheet below, not a flex child
  * here — see .game-review-report-sheet. */
 .game-review-body.mobile {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   /* Tighter than the base .game-review-body gap — every pixel here is a
-   * pixel the fixed-height board row below doesn't get (see the note-card/
-   * board comments below), and four stacked elements at the base var(--space-4)
-   * gap adds up fast on a phone. */
+   * pixel the board doesn't get, and four stacked elements at the base
+   * var(--space-4) gap adds up fast on a phone. */
   gap: var(--space-2);
+  /* Also tighter than the base .game-review-body padding, top/bottom only —
+   * same "the board is the scarcest-space element on a phone" call
+   * SessionPage.css makes for the live session's own board column. Left/right
+   * stay at the base var(--space-4): that's reading margin for the note card
+   * and MoveStrip's edge-to-edge scroll area (see its own negative-margin
+   * full-bleed below) — the board goes edge-to-edge too, but via its own
+   * negative margin below, not by removing this page-level inset. */
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
 }
 
 /* Only when a Game Report sheet actually exists below (GameReviewPage.tsx
@@ -147,20 +172,17 @@
   padding-bottom: calc(44px + env(safe-area-inset-bottom));
 }
 
-/* A fixed height, not just a cap — a short note (or none selected yet)
- * must claim exactly as much space as a long one, so the board's own
- * available space below stays constant across moves instead of growing
- * and shrinking as the note's content changes length. Long notes still
- * scroll internally via .move-note-card__body's own overflow-y: auto.
- * 22vh (rather than the 30-38vh a note card gets elsewhere) balances
- * "notes are the dominant element" against the board needing enough of
- * this same fixed budget to still be a usable size once the nav pills,
- * move strip, and the Game Report sheet's reserved space below all take
- * their own fixed shares of it too. */
+/* No fixed height any more — MoveNoteCard.css's own auto height already
+ * lets a short note (or the empty "select a move" state) claim only what it
+ * needs. This is just a cap so a genuinely long note (several tactic
+ * reasons plus alternatives) can't eat too much of the board's own
+ * width-driven budget below; long notes scroll internally via
+ * .move-note-card__body's own overflow-y: auto once they hit it. Well
+ * under the 38vh cap a note card gets elsewhere (the desktop notes column
+ * ignores this entirely — it fills the column instead, see
+ * .game-review-notes-column below). */
 .game-review-body.mobile .move-note-card {
-  flex: 0 0 22vh;
-  height: 22vh;
-  max-height: none;
+  max-height: 18vh;
 }
 
 .game-review-body.mobile .move-explorer__nav {
@@ -174,35 +196,35 @@
   padding-right: var(--space-4);
 }
 
+/* Edge-to-edge, chess.com-style — negative-margins out of this page's own
+ * side padding (the same full-bleed trick .move-strip already uses below),
+ * so the board's available width is the full device width instead of
+ * width-minus-padding. flex: 0 0 auto (not flex: 1) so this column claims
+ * only the height its own content (eval bar + board, both sized from
+ * width) actually needs, rather than stretching to fill whatever's left
+ * and centering the board inside that extra room — that stretch-then-center
+ * was exactly what read as "dead space" bracketing the board. */
 .game-review-body.mobile .session-board-column {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* container-type: size, not just flex:1, so .coach-board-frame below can
- * size itself from this row's actual computed box (cqi/cqb) rather than
- * from viewport units — the row's own height already comes purely from the
- * flex algorithm (flex:1 with the default flex-basis:0%, so it never
- * depends on the frame's content size), so this introduces no circularity.
- * On a short phone, the note+nav+strip above (plus the space reserved for
- * the Game Report sheet) can leave less height than the frame's natural
- * width-driven size would need, which would otherwise push its bottom edge
- * off-screen — sizing from the row's real remaining space instead of a
- * viewport-unit guess keeps the board the largest square that actually
- * fits, on any phone, without a magic-number budget for its neighbors. */
-.game-review-body.mobile .session-board-row {
-  flex: 1;
-  min-height: 0;
-  align-items: center;
-  justify-content: center;
-  container-type: size;
-}
-
-.game-review-body.mobile .session-board-row .coach-board-frame {
   flex: 0 0 auto;
-  width: min(100cqi, 100cqb);
-  height: auto;
+  margin: 0 calc(-1 * var(--space-4));
+  /* Zeroes out .session-board-column's own inherited side padding
+   * (SessionPage.css) on top of the negative margin above — otherwise the
+   * column's own padding would still inset the board from the edge the
+   * negative margin just extended it to, leaving a smaller but still
+   * visible gap instead of a true edge-to-edge board. */
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Flat corners at the screen edge, chess.com-style — .coach-board-frame's
+ * own border-radius (CoachBoard.css) reads oddly once the board is flush
+ * against both edges rather than inset with margin around it. */
+.game-review-body.mobile .session-board-column .coach-board-frame {
+  border-radius: 0;
+}
+
+.game-review-body.mobile .session-board-column .eval-bar-wrap--horizontal {
+  padding: 0 var(--space-2);
 }
 
 /* Game Report as a bottom sheet: "a layer on top of the board with a
