@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>FreeChessCoach</title>
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32x32.png" />
@@ -10,6 +10,14 @@
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
     <link rel="manifest" href="/brand/site.webmanifest" />
     <meta name="theme-color" content="#2f6b45" />
+    <!-- iOS Safari ignores the manifest's own display:standalone — these are
+         the only way it runs full screen from a home-screen launch (no
+         Safari chrome, no bottom nav bar). Android/Chrome reads the
+         manifest, so mobile-web-app-capable is the one of these it needs. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FreeChessCoach" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

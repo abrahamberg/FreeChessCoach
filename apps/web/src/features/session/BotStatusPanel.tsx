@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AvatarNoteRow } from '../../components/AvatarNoteRow.js';
 import { BotAvatar } from '../../components/BotAvatar.js';
 import { FlagIcon } from '../../components/Icon.js';
 import { useLiteEngineHint } from '../../hooks/useLiteEngineHint.js';
@@ -43,6 +44,13 @@ export interface BotStatusPanelProps {
    * omitted (no readout at all) rather than defaulted, since a caller that
    * doesn't track a live fen shouldn't silently get a stale/empty hint. */
   fen?: string;
+  /** 'panel' (default): the full-height, centered layout for a dedicated
+   * column of its own (desktop's side-by-side layout — SessionPage.css's
+   * `.session-body.desktop .bot-status-panel`). 'card': a compact,
+   * left-aligned row — the bot's portrait beside the status text, same
+   * shape as MoveNoteCard/PagedMessageCard — for the mobile stacked layout,
+   * where this sits above the board instead of owning a whole screen. */
+  variant?: 'panel' | 'card';
 }
 
 /** "if the light engine is not loaded the bot shows that the light engine
@@ -70,7 +78,10 @@ function LiteHintReadout({ fen }: { fen: string }): ReactNode {
 }
 
 /** The chat-less bot session's status panel — replaces ChatPane in the
- * play_bot layout ("Play vs Bot" plan). */
+ * play_bot layout ("Play vs Bot" plan). `variant="card"` moves the bot's
+ * portrait out to an AvatarNoteRow sibling (mirroring MoveNoteCard/
+ * PagedMessageCard) instead of rendering it inside `__opponent` — same
+ * status content either way, just re-homed for the compact mobile shape. */
 export function BotStatusPanel({
   botName,
   botAvatarIndex,
@@ -83,10 +94,11 @@ export function BotStatusPanel({
   clock,
   activeColor,
   onClockExpire,
-  fen
+  fen,
+  variant = 'panel'
 }: BotStatusPanelProps): ReactNode {
-  return (
-    <div className="bot-status-panel">
+  const content = (
+    <div className={`bot-status-panel bot-status-panel--${variant}`}>
       {clock && activeColor && onClockExpire && (
         <ClockDisplay
           whiteRemainingMs={clock.whiteRemainingMs}
@@ -97,7 +109,7 @@ export function BotStatusPanel({
         />
       )}
       <div className="bot-status-panel__opponent">
-        {botAvatarIndex !== undefined && <BotAvatar avatarIndex={botAvatarIndex} size="panel" />}
+        {variant === 'panel' && botAvatarIndex !== undefined && <BotAvatar avatarIndex={botAvatarIndex} size="panel" />}
         <span className="bot-status-panel__name">{botName}</span>
         {botElo !== undefined && <span className="bot-status-panel__level">{botElo}</span>}
       </div>
@@ -119,4 +131,15 @@ export function BotStatusPanel({
       {fen && !gameOver && <LiteHintReadout fen={fen} />}
     </div>
   );
+
+  if (variant === 'card') {
+    return (
+      <AvatarNoteRow className="bot-status-card-row">
+        {botAvatarIndex !== undefined && <BotAvatar avatarIndex={botAvatarIndex} size="card" />}
+        {content}
+      </AvatarNoteRow>
+    );
+  }
+
+  return content;
 }

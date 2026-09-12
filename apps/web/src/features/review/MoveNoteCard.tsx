@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { ClassifiedMoveDto, CoachPersona, MoveQuality } from '@freechesscoach/shared';
+import { AvatarNoteRow } from '../../components/AvatarNoteRow.js';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
 import { MessageCircleIcon } from '../../components/Icon.js';
 import { AlternativesPanel, hasMoveNoteText, MoveNote, OpeningLabel } from '../board/MoveNoteContent.js';
@@ -67,13 +68,15 @@ function CoachButton({ onContinueWithCoach, isContinuingWithCoach }: Pick<MoveNo
 
 /** The portrait-beside-the-card row both the empty ("select a move") and
  * populated states share — factored out so the wrapper isn't duplicated
- * between them. */
+ * between them. Keeps the 'move-note-card-row' class name (via AvatarNoteRow's
+ * own className prop) since GameReviewPage.css's desktop column styling
+ * still targets it directly. */
 function MoveNoteCardRow({ coachPersona, children }: { coachPersona: CoachPersona; children: ReactNode }): ReactNode {
   return (
-    <div className="move-note-card-row">
+    <AvatarNoteRow className="move-note-card-row">
       <CoachAvatar persona={coachPersona} size="chat" />
       {children}
-    </div>
+    </AvatarNoteRow>
   );
 }
 

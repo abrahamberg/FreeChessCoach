@@ -283,3 +283,14 @@ export function MessageCircleIcon(props: IconProps): ReactNode {
     </svg>
   );
 }
+
+export function MaximizeIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M9 4H5a1 1 0 0 0-1 1v4" />
+      <path d="M15 4h4a1 1 0 0 1 1 1v4" />
+      <path d="M9 20H5a1 1 0 0 1-1-1v-4" />
+      <path d="M15 20h4a1 1 0 0 0 1-1v-4" />
+    </svg>
+  );
+}

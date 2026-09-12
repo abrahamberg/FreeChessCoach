@@ -7,14 +7,12 @@ import { useShowStatusBar } from '../../hooks/useShowStatusBar.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
 import { SessionSummaryCard } from '../chat/SessionSummaryCard.js';
-import { sanForPly } from '../chat/positionDivider.js';
 import { BotStatusPanel } from './BotStatusPanel.js';
 import { GameOverDialog } from './GameOverDialog.js';
-import { MobileSessionBody } from './MobileSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { SessionHeader } from './SessionHeader.js';
+import { StackedSessionBody } from './StackedSessionBody.js';
 import { useBotSessionPageData } from './useBotSessionPageData.js';
-import { useMobileSessionView } from './useMobileSessionView.js';
 import './SessionPage.css';
 
 export interface BotSessionPageProps {
@@ -27,12 +25,19 @@ export interface BotSessionPageProps {
  * all, since a bot never talks. Deliberately a separate component (not a
  * branch inside SessionPage) so useCoachChat's SSE/tool-calling machinery,
  * which has no meaning here, is never constructed for a bot game.
+ *
+ * Below the side-by-side breakpoint this used to be a Board/Coach tab
+ * switch (MobileSessionBody) — replaced with StackedSessionBody, the same
+ * "compact card above an edge-to-edge board" shape SessionPage's own
+ * coaching session and GameReviewPage's Review page already use: a bot game
+ * has no transcript to page through, so BotStatusPanel's own status
+ * (`variant="card"`) is that card, board and status both on screen at once
+ * instead of a tab away from each other.
  */
 export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   const navigate = useNavigate();
   const isSideBySide = useIsBoardSideBySide();
   const isDesktop = useIsDesktop();
-  const mobileView = useMobileSessionView(0);
   const [showStatusBar, setShowStatusBar] = useShowStatusBar();
   // Dismisses GameOverDialog while leaving gameOverInfo itself alone — the
   // board/status panel below key off gameOverInfo (not this) to keep
@@ -147,22 +152,24 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
     />
   );
 
-  const statusPanel = showStatusBar && (
-    <BotStatusPanel
-      botName={botName}
-      botAvatarIndex={bot?.avatarIndex}
-      botElo={bot?.elo}
-      isPlayerTurn={isPlayerTurn}
-      isBotThinking={isBotThinking}
-      gameOver={gameOverInfo}
-      userColor={orientation}
-      onResign={isResigning ? undefined : handleResign}
-      clock={clock}
-      activeColor={activeColor}
-      onClockExpire={claimTimeout}
-      fen={fen}
-    />
-  );
+  // Shared between desktop's full panel and mobile's compact card — same
+  // status, just re-homed (BotStatusPanel's `variant` prop) for each layout.
+  const statusPanelProps = {
+    botName,
+    botAvatarIndex: bot?.avatarIndex,
+    botElo: bot?.elo,
+    isPlayerTurn,
+    isBotThinking,
+    gameOver: gameOverInfo,
+    userColor: orientation,
+    onResign: isResigning ? undefined : handleResign,
+    clock,
+    activeColor,
+    onClockExpire: claimTimeout,
+    fen
+  };
+  const statusPanel = showStatusBar && <BotStatusPanel {...statusPanelProps} />;
+  const statusCard = showStatusBar && <BotStatusPanel {...statusPanelProps} variant="card" />;
 
   return (
     <div className="session-page">
@@ -185,18 +192,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
           {statusPanel}
         </div>
       ) : (
-        <MobileSessionBody
-          board={board}
-          chat={statusPanel}
-          fen={fen}
-          boardContext={{
-            mode: boardState.mode,
-            ply: boardState.ply,
-            san: sanForPly(sanMoves, boardState.ply),
-            hasDivergedLine: false
-          }}
-          viewState={mobileView}
-        />
+        <StackedSessionBody card={statusCard} board={board} />
       )}
       {gameOverInfo && !dialogDismissed && (
         <GameOverDialog gameOver={gameOverInfo} userColor={orientation} botName={botName} onContinue={() => setDialogDismissed(true)} />

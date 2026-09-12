@@ -1,10 +1,15 @@
 import type { ParsedPosition } from '@freechesscoach/chess-analysis';
 import type { CoachPersona } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
+import { AvatarNoteRow } from '../../components/AvatarNoteRow.js';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
+import { VolumeOffIcon, VolumeOnIcon } from '../../components/Icon.js';
 import { UserAvatar } from '../../components/UserAvatar.js';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { renderMessageItem, type HoverMove, type MessageRenderContext } from './MessageList.js';
+// For .chat-pane__voice-toggle — shared with ChatPane's own desktop toggle
+// rather than a second copy of the same button styling.
+import './ChatPane.css';
 import './PagedMessageCard.css';
 
 export interface PagedMessageCardProps {
@@ -24,6 +29,12 @@ export interface PagedMessageCardProps {
   onStopMessage?: () => void;
   playingMessageId?: string | null;
   loadingMessageId?: string | null;
+  /** The account's coach-voice autoplay switch (Settings), surfaced here as
+   * the row's own action button now that MobileCoachSessionBody no longer
+   * has a dedicated header to put it in — undefined hides the toggle
+   * entirely, same as ChatPane's own onToggleAutoplay contract. */
+  autoplayEnabled?: boolean;
+  onToggleAutoplay?: (enabled: boolean) => void;
 }
 
 /** SessionPage's mobile layout shows one transcript entry at a time — the
@@ -51,16 +62,31 @@ export function PagedMessageCard({
   onPlayMessage,
   onStopMessage,
   playingMessageId = null,
-  loadingMessageId = null
+  loadingMessageId = null,
+  autoplayEnabled,
+  onToggleAutoplay
 }: PagedMessageCardProps): ReactNode {
+  const voiceToggle = onToggleAutoplay && (
+    <button
+      type="button"
+      className="chat-pane__voice-toggle"
+      aria-label={autoplayEnabled ? 'Disable automatic coach voice' : 'Enable automatic coach voice'}
+      aria-pressed={autoplayEnabled ?? false}
+      title={autoplayEnabled ? 'Disable automatic coach voice' : 'Enable automatic coach voice'}
+      onClick={() => onToggleAutoplay(!(autoplayEnabled ?? false))}
+    >
+      {autoplayEnabled ? <VolumeOnIcon width={20} height={20} /> : <VolumeOffIcon width={20} height={20} />}
+    </button>
+  );
+
   if (!message) {
     return (
-      <div className="paged-message-card-row">
+      <AvatarNoteRow className="paged-message-card-row" action={voiceToggle}>
         <CoachAvatar persona={coachPersona} size="chat" />
         <div className="paged-message-card">
           <p className="paged-message-card__empty-text">No messages yet.</p>
         </div>
-      </div>
+      </AvatarNoteRow>
     );
   }
 
@@ -82,7 +108,7 @@ export function PagedMessageCard({
   };
 
   return (
-    <div className="paged-message-card-row">
+    <AvatarNoteRow className="paged-message-card-row" action={voiceToggle}>
       {!isUser && <CoachAvatar persona={coachPersona} size="chat" />}
       <div className={isUser ? 'paged-message-card paged-message-card--user' : 'paged-message-card'}>
         {/* Same live-region contract MessageList's own transcript container
@@ -93,6 +119,6 @@ export function PagedMessageCard({
         </div>
       </div>
       {isUser && <UserAvatar displayName={displayName} />}
-    </div>
+    </AvatarNoteRow>
   );
 }

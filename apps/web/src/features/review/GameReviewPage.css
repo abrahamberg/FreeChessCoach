@@ -185,15 +185,8 @@
   max-height: 18vh;
 }
 
-.game-review-body.mobile .move-explorer__nav {
+.game-review-body.mobile .move-nav-strip {
   flex: 0 0 auto;
-}
-
-.game-review-body.mobile .move-strip {
-  flex: 0 0 auto;
-  margin: 0 calc(-1 * var(--space-4));
-  padding-left: var(--space-4);
-  padding-right: var(--space-4);
 }
 
 /* Edge-to-edge, chess.com-style — negative-margins out of this page's own
