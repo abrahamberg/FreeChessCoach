@@ -34,6 +34,12 @@
    * nav" bug on mobile. */
   z-index: 20;
   flex: none;
+  /* Installed full-screen on iOS (apple-mobile-web-app-status-bar-style:
+   * black-translucent — index.html) has no browser chrome covering the
+   * status bar, so without this the clock/battery/signal row overlaps the
+   * brand/nav content below it. Zero in a normal browser tab, where the
+   * address bar already clears the notch/Dynamic Island area. */
+  padding-top: env(safe-area-inset-top);
   background: color-mix(in srgb, var(--color-surface) 88%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);

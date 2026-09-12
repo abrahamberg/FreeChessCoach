@@ -131,13 +131,15 @@
  * vertical space its neighbors happen to leave behind, and every neighbor
  * (note card included) should claim only what its own content needs rather
  * than a fixed share of the screen — either one leaves "dead" space the
- * board could otherwise be using. That decouples the board's size from the
- * note's length entirely (no need for a fixed-height note card to keep the
- * board from jumping between moves — the board no longer depends on the
- * note's height at all), so the page can scroll on a phone short/narrow
- * enough that the stack doesn't fit, rather than clipping or shrinking
- * anything. Game Report is a fixed bottom sheet below, not a flex child
- * here — see .game-review-report-sheet. */
+ * board could otherwise be using. The board's own size stays independent of
+ * the note either way (from-width, not from-leftover-height), but the note
+ * card itself gets a fixed height below (not just a cap) — same call
+ * PagedMessageCard.css makes for the live coaching session's own card:
+ * paging from a short note to a long one must not move the board sitting
+ * right below it. The page can still scroll on a phone short/narrow enough
+ * that the stack doesn't fit, rather than clipping or shrinking anything.
+ * Game Report is a fixed bottom sheet below, not a flex child here — see
+ * .game-review-report-sheet. */
 .game-review-body.mobile {
   overflow-x: hidden;
   overflow-y: auto;
@@ -172,17 +174,18 @@
   padding-bottom: calc(44px + env(safe-area-inset-bottom));
 }
 
-/* No fixed height any more — MoveNoteCard.css's own auto height already
- * lets a short note (or the empty "select a move" state) claim only what it
- * needs. This is just a cap so a genuinely long note (several tactic
- * reasons plus alternatives) can't eat too much of the board's own
- * width-driven budget below; long notes scroll internally via
- * .move-note-card__body's own overflow-y: auto once they hit it. Well
- * under the 38vh cap a note card gets elsewhere (the desktop notes column
- * ignores this entirely — it fills the column instead, see
- * .game-review-notes-column below). */
+/* A fixed height, not just a cap — overrides MoveNoteCard.css's own `height:
+ * auto`. Switching between a short note and a long one (or landing on the
+ * empty "select a move" state) must not resize the card and shift the
+ * board sitting right below it in this stack, the same jump
+ * PagedMessageCard.css's own fixed height prevents for the live coaching
+ * session. A short note just leaves blank space below it inside the card;
+ * a long one scrolls internally via .move-note-card__body's own
+ * overflow-y: auto. Well under the 38vh cap a note card gets elsewhere (the
+ * desktop notes column ignores this entirely — it fills the column
+ * instead, see .game-review-notes-column below). */
 .game-review-body.mobile .move-note-card {
-  max-height: 18vh;
+  height: 18vh;
 }
 
 .game-review-body.mobile .move-nav-strip {

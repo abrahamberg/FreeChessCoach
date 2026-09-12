@@ -92,8 +92,17 @@ export function MobileCoachSessionBody({
             autoplayEnabled={coachVoice.autoplayEnabled}
             onToggleAutoplay={ttsEnabled ? coachVoice.setAutoplayEnabled : undefined}
           />
-          <ThinkingIndicator visible={isThinking} />
-          <ToolActivity toolName={activeToolName} />
+          {/* A fixed-height slot, not a conditionally-mounted one: isThinking
+              and activeToolName both toggle independently of any message
+              paging, and StackedSessionBody stacks this card directly above
+              `board` — letting either line mount/unmount at its own content
+              height would shift the board every time one appears or
+              disappears, the same jump PagedMessageCard's own fixed height
+              already prevents for message-length changes. */}
+          <div className="mobile-coach-status">
+            <ThinkingIndicator visible={isThinking} />
+            <ToolActivity toolName={activeToolName} />
+          </div>
         </>
       }
       board={board}
