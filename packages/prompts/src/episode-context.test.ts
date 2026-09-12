@@ -37,7 +37,7 @@ describe('renderAnnotatedPgn', () => {
       move({ ply: 1, moveSan: 'e4', quality: 'best' }),
       move({ ply: 2, moveSan: 'e5', quality: 'good' })
     ];
-    expect(renderAnnotatedPgn(moves)).toBe('## This game (annotated)\n\n1.e4★ e5!');
+    expect(renderAnnotatedPgn(moves)).toBe('## This game (annotated)\n\n1.e4★ e5✓');
   });
 
   test('unsound moves (mistake/blunder/miss/dubious) get cpLoss and the best line inline', () => {
@@ -71,7 +71,7 @@ describe('renderGameSoFarInline (architecture §14, play mode\'s live layer-3 re
 
   test('renders identically to renderAnnotatedPgn\'s move formatting, just without its own heading', () => {
     const moves = [move({ ply: 1, moveSan: 'e4', quality: 'best' }), move({ ply: 2, moveSan: 'e5', quality: 'good' })];
-    expect(renderGameSoFarInline(moves)).toBe('1.e4★ e5!');
+    expect(renderGameSoFarInline(moves)).toBe('1.e4★ e5✓');
     expect(renderAnnotatedPgn(moves)).toBe(`## This game (annotated)\n\n${renderGameSoFarInline(moves)}`);
   });
 

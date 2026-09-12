@@ -33,9 +33,10 @@ export interface MoveNoteCardProps {
   onToggleTacticSelection: (key: Exclude<TacticSelectionKey, null>) => void;
 }
 
-/** 'good'/'excellent' get no headline, same call as MoveQualityBadge's own
- * "nothing worth flagging" — the card still shows the move itself, just
- * without a quality tag pulling focus onto a non-event. */
+/** 'good'/'excellent' still get a badge and a border accent color (see
+ * MoveNoteCard.css) like every other tier, just no headline text — these
+ * are non-events, not worth a text callout pulling focus the way "Blunder"
+ * or "Best move" should. */
 const QUALITY_HEADLINES: Partial<Record<MoveQuality, string>> = {
   brilliant: 'Brilliant move',
   great: 'Great move',

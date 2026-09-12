@@ -216,7 +216,10 @@ export function SessionPage(): ReactNode {
           {chatPanel}
         </div>
       ) : isPausedNoCredits ? (
-        pausedCard
+        <div className="session-body mobile stacked">
+          {board}
+          {pausedCard}
+        </div>
       ) : (
         <MobileCoachSessionBody
           board={board}

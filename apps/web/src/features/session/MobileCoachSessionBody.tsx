@@ -1,8 +1,11 @@
 import type { ParsedPosition } from '@freechesscoach/chess-analysis';
-import type { CoachPersona } from '@freechesscoach/shared';
+import { COACH_PERSONA_INFO, type CoachPersona } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
+import { CoachAvatar } from '../../components/CoachAvatar.js';
+import { VolumeOffIcon, VolumeOnIcon } from '../../components/Icon.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { ChatComposer } from '../chat/ChatComposer.js';
+import '../chat/ChatPane.css';
 import type { HoverMove } from '../chat/MessageList.js';
 import { MessageNavPills } from '../chat/MessageNavPills.js';
 import { PagedMessageCard } from '../chat/PagedMessageCard.js';
@@ -60,8 +63,34 @@ export function MobileCoachSessionBody({
   boardArrows,
   hasPendingLine
 }: MobileCoachSessionBodyProps): ReactNode {
+  const onToggleAutoplay = ttsEnabled ? coachVoice.setAutoplayEnabled : undefined;
   return (
     <div className="session-body mobile stacked">
+      <div className="chat-pane__header">
+        <a
+          href="/settings"
+          className="chat-pane__coach-identity"
+          aria-label={`Change coach (currently ${COACH_PERSONA_INFO[coachPersona].label})`}
+          title="Change coach"
+        >
+          <CoachAvatar persona={coachPersona} size="header" />
+          <div className="chat-pane__coach-details">
+            <strong className="chat-pane__coach-name">{COACH_PERSONA_INFO[coachPersona].label}</strong>
+          </div>
+        </a>
+        {onToggleAutoplay && (
+          <button
+            type="button"
+            className="chat-pane__voice-toggle"
+            aria-label={coachVoice.autoplayEnabled ? 'Disable automatic coach voice' : 'Enable automatic coach voice'}
+            aria-pressed={coachVoice.autoplayEnabled}
+            title={coachVoice.autoplayEnabled ? 'Disable automatic coach voice' : 'Enable automatic coach voice'}
+            onClick={() => onToggleAutoplay(!coachVoice.autoplayEnabled)}
+          >
+            {coachVoice.autoplayEnabled ? <VolumeOnIcon width={25} height={25} /> : <VolumeOffIcon width={25} height={25} />}
+          </button>
+        )}
+      </div>
       <PagedMessageCard
         message={messagePaging.current}
         index={messagePaging.index}

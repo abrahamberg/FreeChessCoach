@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { visibleMessages } from './MessageList.js';
 
@@ -17,7 +17,7 @@ export interface UseMessagePagingResult {
  * index terms instead of scroll position — jumps to the new latest message
  * only when the student was already viewing the latest one. */
 export function useMessagePaging(messages: CoachMessage[]): UseMessagePagingResult {
-  const visible = visibleMessages(messages);
+  const visible = useMemo(() => visibleMessages(messages), [messages]);
   const [index, setIndex] = useState(() => Math.max(visible.length - 1, 0));
   const isAtLatestRef = useRef(true);
 

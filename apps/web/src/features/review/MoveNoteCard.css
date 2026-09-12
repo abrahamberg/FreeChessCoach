@@ -70,6 +70,12 @@
 .move-note-card--forced {
   border-left-color: var(--quality-forced);
 }
+.move-note-card--excellent {
+  border-left-color: var(--quality-excellent);
+}
+.move-note-card--good {
+  border-left-color: var(--quality-good);
+}
 
 .move-note-card__header {
   display: flex;
