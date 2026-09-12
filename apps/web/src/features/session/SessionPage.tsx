@@ -25,9 +25,9 @@ import './SessionPage.css';
  * presentational — local UI state, a few small handlers, and the layout.
  * At/above 768px board and chat sit side by side (ChatPane's own full,
  * vertically-scrolling transcript); below it, MobileCoachSessionBody's own
- * layout (its doc comment has the design reasoning) — not the two-tab
- * Board/Coach switch BotSessionPage (a bot never talks, so it keeps
- * MobileSessionBody's tabs) still uses. */
+ * StackedSessionBody layout (its doc comment has the design reasoning) —
+ * the same shape BotSessionPage's mobile layout now uses too, with a
+ * compact BotStatusPanel card in place of PagedMessageCard. */
 export function SessionPage(): ReactNode {
   const { id } = useParams<{ id: string }>();
   const sessionId = id ?? '';

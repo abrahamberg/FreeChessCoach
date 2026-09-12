@@ -185,54 +185,54 @@
   margin: 12px 6px 0;
 }
 
-/* --- mobile (<768px): BotSessionPage's Board and Coach as two switchable
- * full-height panels --- The switch's whole state is one number,
- * --session-view-progress: 0 = Board, 1 = Coach, fractional while a swipe
- * is in flight. The panel track and the segmented control's indicator both
- * read it, so the control follows the finger rather than snapping after the
- * fact. SessionPage's own live coaching session uses the `.stacked`
- * modifier below instead — see that block's own doc comment for why the
- * two mobile layouts diverge. */
 .session-body.mobile {
   flex: 1;
   min-height: 0;
 }
 
-/* --- SessionPage's own mobile layout: the exact same structure
- * GameReviewPage's mobile Review page landed on — one card above (there,
- * the current move's note; here, PagedMessageCard showing one transcript
- * entry), the board below it edge-to-edge, then nav pills below the board
- * (MessageNavPills paging left/right through messages, same as
- * GameReviewPage's MoveNavPills paging through moves) — reused here rather
- * than the Board/Coach tab switch above. BotSessionPage keeps the tabs (a
- * bot never talks, so there's no chat-vs-keyboard problem worth solving
- * there); this `.stacked` modifier is what keeps the two layouts from
- * fighting over the same .session-body.mobile selectors. The composer is
- * the one piece with no GameReviewPage equivalent (a read-only review has
- * no reply) — pinned to the bottom of the screen instead of the stack, so
- * it's reachable without scrolling and its keyboard, opening from a card
- * near the top of the screen, covers the board beneath it rather than the
- * conversation. flex: 0 0 auto (not flex: 1) throughout so the message
- * card and the board column each claim only the height their own content
- * needs — GameReviewPage's fix for "dead space" (something stretching to
- * fill leftover room and centering its content inside it) applies
- * identically here. overflow-y: auto is the safety net for a viewport too
- * short for the whole stack (an expanded Explore panel, play_bot's
- * toolbar, etc.) — the message card's own internal scroll (see its own
- * CSS) already handles a long single message. */
+/* --- StackedSessionBody's own layout (<768px): the exact same structure
+ * GameReviewPage's mobile Review page landed on — one compact card above
+ * (a coaching session's PagedMessageCard, or a bot game's BotStatusPanel
+ * card), the board below it edge-to-edge, then whatever belongs between the
+ * board and a pinned footer (MessageNavPills paging left/right through
+ * messages for a coaching session, same as GameReviewPage's MoveNavStrip
+ * paging through moves; nothing here for a bot game — its own Undo/Hint
+ * controls already live inside the board column). Used to be two diverging
+ * mobile layouts (this one for a live coaching session, a Board/Coach tab
+ * switch for "Play vs Bot") — collapsed into one once a bot game's status
+ * turned out to fit the same "compact card above the board" shape just as
+ * well as a transcript entry does. The composer is the one piece with no
+ * GameReviewPage/bot-game equivalent (a read-only review or a chat-less bot
+ * game has no reply) — pinned to the bottom of the screen instead of the
+ * stack when present (StackedSessionBody's `footer` prop, `.has-composer`
+ * below), so it's reachable without scrolling and its keyboard, opening
+ * from a card near the top of the screen, covers the board beneath it
+ * rather than the conversation. flex: 0 0 auto (not flex: 1) throughout so
+ * the card and the board column each claim only the height their own
+ * content needs — GameReviewPage's fix for "dead space" (something
+ * stretching to fill leftover room and centering its content inside it)
+ * applies identically here. overflow-y: auto is the safety net for a
+ * viewport too short for the whole stack (an expanded Explore panel,
+ * play_bot's toolbar, etc.) — the card's own internal scroll (see its own
+ * CSS) already handles a long single message/status. */
 .session-body.mobile.stacked {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   gap: var(--space-2);
-  /* Reserves room for .session-composer-fixed below, which takes no space
-   * of its own in this flow (position: fixed) — without this, the last bit
-   * of scrolled content would sit behind it. Sized to .chat-composer's own
-   * fixed height (ChatPane.css: --space-3 padding top/bottom around
-   * .chip-reply-input's 44px min-height, plus its 1px border-top) — a
-   * constant here tracks it fine since the composer no longer has a
-   * shorter collapsed state, same call as GameReviewPage's own fixed-height
-   * sheet reserve. */
+}
+
+/* Reserves room for .session-composer-fixed below, which takes no space of
+ * its own in this flow (position: fixed) — without this, the last bit of
+ * scrolled content would sit behind it. Only present for a page that
+ * actually has a footer (StackedSessionBody's `footer` prop) — a bot game
+ * has no composer, so it gets the full stack height with no reserve. Sized
+ * to .chat-composer's own fixed height (ChatPane.css: --space-3 padding
+ * top/bottom around .chip-reply-input's 44px min-height, plus its 1px
+ * border-top) — a constant here tracks it fine since the composer no longer
+ * has a shorter collapsed state, same call as GameReviewPage's own
+ * fixed-height sheet reserve. */
+.session-body.mobile.stacked.has-composer {
   padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 
@@ -241,7 +241,7 @@
  * instead the card and the nav pills below the board each get their own
  * inset directly, matching the reading margin GameReviewPage's page
  * padding gave its own note card/move nav for free. */
-.session-body.mobile.stacked > .paged-message-card-row,
+.session-body.mobile.stacked > .avatar-note-row,
 .session-body.mobile.stacked > .move-explorer__nav {
   margin-left: var(--space-4);
   margin-right: var(--space-4);
@@ -292,135 +292,6 @@
   border-top: none;
 }
 
-.session-view-tabs {
-  position: relative;
-  display: flex;
-  gap: 4px;
-  flex: 0 0 auto;
-  margin: 8px 12px;
-  padding: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-subtle);
-}
-
-.session-view-tabs button {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  min-height: 44px;
-  border: none;
-  border-radius: var(--radius-pill);
-  background: none;
-  color: var(--color-text-secondary);
-  font-size: 15px;
-  font-weight: 600;
-  transition: color 160ms ease;
-}
-
-.session-view-tabs button[aria-selected='true'] {
-  color: var(--color-on-primary);
-}
-
-.session-view-tabs button:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.session-view-tabs__indicator {
-  position: absolute;
-  z-index: 0;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  width: calc(50% - 5px);
-  border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  transform: translateX(calc(var(--session-view-progress, 0) * (100% + 4px)));
-  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-/* The unread dot rides the label rather than the tab's corner — it reads as
- * "the coach said something", not as a badge count. */
-.session-view-tabs__dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-left: 6px;
-  border-radius: 50%;
-  background: var(--annotate-1);
-  vertical-align: 1px;
-}
-
-.session-view-tabs button[aria-selected='true'] .session-view-tabs__dot {
-  background: var(--color-on-primary);
-}
-
-.session-views {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.session-views__track {
-  display: flex;
-  width: 200%;
-  height: 100%;
-  transform: translateX(calc(var(--session-view-progress, 0) * -50%));
-  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-/* While a finger is down both already follow it — a transition would only
- * lag them a frame behind the touch. */
-.session-body.mobile[data-dragging] .session-views__track,
-.session-body.mobile[data-dragging] .session-view-tabs__indicator {
-  transition: none;
-}
-
-.session-view {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 50%;
-  width: 50%;
-  min-width: 0;
-  min-height: 0;
-}
-
-/* The board panel owns the full screen now, so a short viewport (iPhone SE)
- * scrolls it rather than clipping the Explore panel off the bottom. */
-.session-body.mobile #session-panel-board {
-  overflow-y: auto;
-}
-
-/* Position context while reading the coach — shown only once the board has
- * something to show (see hasBoardContext). */
-.session-peek-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 8px 12px;
-  border: none;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-  text-align: left;
-}
-
-.session-peek-bar__label {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.session-peek-bar__cue {
-  color: var(--color-primary);
-  font-size: 20px;
-  font-weight: 600;
-}
-
 /* line-height: 0 is load-bearing. react-chessboard sizes each piece with
  * height: 100% against a square whose height comes from aspect-ratio, which
  * doesn't resolve — so the piece box falls back to the inherited line box
@@ -437,14 +308,6 @@
   overflow: hidden;
   flex: 0 0 auto;
   line-height: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .session-views__track,
-  .session-view-tabs__indicator,
-  .session-view-tabs button {
-    transition: none;
-  }
 }
 
 /* --- desktop: board column | chat column, side by side --- */

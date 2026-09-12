@@ -71,3 +71,40 @@
   color: var(--quality-blunder);
   font-weight: 600;
 }
+
+/* The mobile stacked layout's compact card — same card language MoveNoteCard/
+ * PagedMessageCard use (accent border, surface background), left-aligned and
+ * auto height instead of the panel variant's centered full-height column.
+ * The bot's own portrait moves out to the AvatarNoteRow sibling (see
+ * BotStatusPanel.tsx), so `__opponent` here is just name + rating. */
+.bot-status-panel--card {
+  flex: 1;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+  height: auto;
+  max-height: 18vh;
+  overflow-y: auto;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.bot-status-panel--card .bot-status-panel__opponent {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.bot-status-panel--card .bot-status-panel__turn,
+.bot-status-panel--card .bot-status-panel__result {
+  font-size: var(--font-size-md);
+}
+
+.bot-status-panel--card .bot-status-panel__resign {
+  margin-top: 0;
+}

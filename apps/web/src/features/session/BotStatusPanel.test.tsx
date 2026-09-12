@@ -74,6 +74,23 @@ describe('BotStatusPanel', () => {
     expect(screen.getByText('1200')).toBeInTheDocument();
   });
 
+  test('variant="card": renders exactly one bot avatar (moved out to the row, not duplicated inside __opponent) and the same status text', () => {
+    render(
+      <BotStatusPanel
+        botName="Trappy Tom"
+        botAvatarIndex={7}
+        botElo={1200}
+        isPlayerTurn
+        gameOver={null}
+        userColor="white"
+        variant="card"
+      />
+    );
+    expect(screen.getAllByTestId('bot-avatar')).toHaveLength(1);
+    expect(screen.getByText('Trappy Tom')).toBeInTheDocument();
+    expect(screen.getByText('Your move')).toBeInTheDocument();
+  });
+
   test('the resign button fires onResign', () => {
     const onResign = vi.fn();
     render(<BotStatusPanel botName="Trappy Tom" isPlayerTurn gameOver={null} userColor="white" onResign={onResign} />);
