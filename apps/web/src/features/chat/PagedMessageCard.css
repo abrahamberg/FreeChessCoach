@@ -38,8 +38,13 @@
   border-left-color: var(--color-primary);
 }
 
+/* A fixed height, not just a cap — paging left/right between a one-line
+ * message and a long one must not resize the card (and shift the board
+ * and nav pills below it) on every step; a short message just leaves
+ * blank space below it instead. Big enough for a handful of lines before
+ * its own scroll kicks in. */
 .paged-message-card__body {
-  max-height: 32vh;
+  height: 22vh;
   overflow-y: auto;
   line-height: var(--line-height-reading);
   white-space: pre-wrap;
