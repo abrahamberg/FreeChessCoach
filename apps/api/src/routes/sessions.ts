@@ -266,6 +266,7 @@ async function buildBotMoveCommitDeps(
   return {
     db: base.db,
     jobQueue: base.jobQueue,
+    callLightModel: base.callLightModel,
     analyzePosition: (fen) => cachedBackend.analyzePosition(fen),
     // 'interactive': a bot move is a live "your move" round trip the student
     // is watching, not background batch work — it must jump ahead of a

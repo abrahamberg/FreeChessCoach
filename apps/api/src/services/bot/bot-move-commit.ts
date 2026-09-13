@@ -3,11 +3,14 @@ import { gameOutcomeFromPgn, type GameOutcome } from '@freechesscoach/chess-anal
 import type { BotConfig, MoveQuality } from '@freechesscoach/shared';
 import * as gamesRepo from '../../db/repositories/games.js';
 import type { GameRow } from '../../db/repositories/games.js';
+import * as sessionMessagesRepo from '../../db/repositories/session-messages.js';
 import * as sessionsRepo from '../../db/repositories/sessions.js';
 import type { SessionRow } from '../../db/repositories/sessions.js';
 import type { Database } from '../../db/schema.js';
 import { NotFoundError } from '../../lib/errors.js';
 import type { JobQueue } from '../../jobs/queue.js';
+import { currentEpisode } from '../../lib/episodes.js';
+import { closeEpisodeIfNeeded, type CoachContextDependencies } from '../coach-context.js';
 import { commitBotMove, commitPlayerMove, currentFen, type PlayMovesDependencies } from '../play-moves.js';
 import { moverToMoveNext } from './bot-claim-timeout.js';
 import { finalizeBotGame } from './bot-finalize.js';
@@ -18,7 +21,7 @@ import { BotSelectionError, selectBotMove, type BotMoveSelectorDependencies } fr
  * per-call via `minThinkMs` (tests set it to 0 to avoid real delays). */
 export const MIN_BOT_THINK_MS = 900;
 
-export interface BotMoveCommitDependencies extends PlayMovesDependencies, BotMoveSelectorDependencies {
+export interface BotMoveCommitDependencies extends PlayMovesDependencies, BotMoveSelectorDependencies, CoachContextDependencies {
   jobQueue: JobQueue;
   now?: () => number;
   minThinkMs?: number;
@@ -146,6 +149,21 @@ export async function commitBotTurn(
     await gamesRepo.updateRemainingMs(deps.db, session.gameId, ticked);
   }
 
+  // Fold whatever the student and coach discussed about the position they
+  // just moved from into session_move_notes before the ply pointer leaves
+  // it — the same closeEpisodeIfNeeded-then-advance pairing every other
+  // ply-advancing path in the app uses (coach-agent-turn.ts's position
+  // jumps and play-mode moves, coach-agent-client-tool-result.ts's
+  // show_position, play-move-commit.ts's own play-mode equivalent of this
+  // function). Without it, that discussion's raw messages stay tagged at
+  // the old ply forever — invisible to the next episode's scan AND never
+  // folded into a note, so the coach starts the next position with no
+  // memory of what was just said. A no-op today (play_bot mode has no live
+  // chat yet, so there is nothing pending at this ply — see
+  // closeEpisodeIfNeeded's own early return), but required once it does.
+  const historyBeforePlayerMove = await sessionMessagesRepo.listBySession(deps.db, session.id);
+  const closedPlayerEpisode = currentEpisode(historyBeforePlayerMove, session.subjectPly);
+  await closeEpisodeIfNeeded(deps, session.id, closedPlayerEpisode.messages, session.subjectPly);
   await sessionsRepo.updateSubjectAndCurrentPly(deps.db, session.id, player.ply);
 
   const gameOverAfterPlayer = gameOverInfo(gameOutcomeFromPgn((await requireGame(deps.db, session.gameId)).pgn));
@@ -225,6 +243,13 @@ async function commitBotReply(
     return { bot: botMove, gameOver: gameOverAfterBot, whiteRemainingMs, blackRemainingMs };
   }
 
+  // Same pairing as commitBotTurn's own player-move advance above: fold
+  // anything discussed about `afterPly` (the position the bot is replying
+  // to) before the pointer moves past it. A no-op today for the same
+  // reason (no live play_bot chat yet).
+  const historyBeforeBotMove = await sessionMessagesRepo.listBySession(deps.db, session.id);
+  const closedBotEpisode = currentEpisode(historyBeforeBotMove, afterPly);
+  await closeEpisodeIfNeeded(deps, session.id, closedBotEpisode.messages, afterPly);
   await sessionsRepo.updateSubjectAndCurrentPly(deps.db, session.id, botMove.ply);
   return { bot: botMove, gameOver: null, whiteRemainingMs, blackRemainingMs };
 }
