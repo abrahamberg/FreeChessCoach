@@ -292,12 +292,6 @@
   border-radius: 0;
 }
 
-.session-body.mobile.stacked .session-board-column .move-strip {
-  margin: 0 calc(-1 * var(--space-2));
-  padding-left: var(--space-2);
-  padding-right: var(--space-2);
-}
-
 /* Pinned to the screen's bottom edge, not the end of the (scrollable)
  * stack above — see .session-body.mobile.stacked's own padding-bottom for
  * why that stack reserves room for this. */
