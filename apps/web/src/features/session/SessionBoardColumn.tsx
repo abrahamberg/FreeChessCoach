@@ -8,7 +8,7 @@ import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { EvalBar } from '../board/EvalBar.js';
 import { ExplorePanel } from '../board/ExplorePanel.js';
 import { GameEvalChart } from '../board/GameEvalChart.js';
-import { MoveStrip } from '../board/MoveStrip.js';
+import { MoveStrip, moveStripIndexToPly, plyToMoveStripIndex } from '../board/MoveStrip.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
 import type { BotGameOverInfo } from './botGameOver.js';
@@ -407,9 +407,9 @@ export function SessionBoardColumn({
           sanMoves={sanMoves}
           classifiedMoves={classifiedMoves ?? []}
           positions={positions}
-          currentPly={boardState.ply}
+          currentPly={plyToMoveStripIndex(boardState.ply)}
           momentPlies={[]}
-          onSelect={peekAt}
+          onSelect={(index) => peekAt(moveStripIndexToPly(index))}
         />
       )}
       {sessionMode === 'analyze' &&

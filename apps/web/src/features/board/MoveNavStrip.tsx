@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { ChevronLeftIcon, ChevronRightIcon } from '../../components/Icon.js';
-import { MoveStrip } from './MoveStrip.js';
+import { MoveStrip, moveStripIndexToPly, plyToMoveStripIndex } from './MoveStrip.js';
 import './MoveNavStrip.css';
 
 export interface MoveNavStripProps {
@@ -48,9 +48,9 @@ export function MoveNavStrip({ sanMoves, classifiedMoves, positions, ply, onSele
         sanMoves={sanMoves}
         classifiedMoves={classifiedMoves}
         positions={positions}
-        currentPly={ply - 1}
+        currentPly={plyToMoveStripIndex(ply)}
         momentPlies={[]}
-        onSelect={(index) => onSelect(index + 1)}
+        onSelect={(index) => onSelect(moveStripIndexToPly(index))}
       />
       <button
         type="button"
