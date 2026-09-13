@@ -122,24 +122,14 @@
   flex: 1;
 }
 
-/* --- mobile (below this page's own desktop breakpoint): note card, then
- * the board, then nav pills + move strip below it (chess.com's own
- * ordering: note above the board, moves below). Daniel's second-round call,
- * after the board still read as too small next to chess.com's own review:
- * the board's size should come from its own width (edge-to-edge, like
- * chess.com — see .session-board-column below) rather than from whatever
- * vertical space its neighbors happen to leave behind, and every neighbor
- * (note card included) should claim only what its own content needs rather
- * than a fixed share of the screen — either one leaves "dead" space the
- * board could otherwise be using. The board's own size stays independent of
- * the note either way (from-width, not from-leftover-height), but the note
- * card itself gets a fixed height below (not just a cap) — same call
- * PagedMessageCard.css makes for the live coaching session's own card:
- * paging from a short note to a long one must not move the board sitting
- * right below it. The page can still scroll on a phone short/narrow enough
- * that the stack doesn't fit, rather than clipping or shrinking anything.
- * Game Report is a fixed bottom sheet below, not a flex child here — see
- * .game-review-report-sheet. */
+/* --- mobile (below this page's own desktop breakpoint): the board first,
+ * then nav pills + move strip below it, with the note card riding along as
+ * a CoachPanel bottom sheet anchored to the board's bottom edge rather than
+ * a flex sibling of its own (see .game-review-board-stack below). The
+ * board's size still comes from its own width (edge-to-edge, like
+ * chess.com — see .session-board-column below), independent of the panel
+ * either way. Game Report is a separate fixed bottom sheet below, not a
+ * flex child here — see .game-review-report-sheet. */
 .game-review-body.mobile {
   overflow-x: hidden;
   overflow-y: auto;
@@ -174,18 +164,25 @@
   padding-bottom: calc(44px + env(safe-area-inset-bottom));
 }
 
-/* A fixed height, not just a cap — overrides MoveNoteCard.css's own `height:
- * auto`. Switching between a short note and a long one (or landing on the
- * empty "select a move" state) must not resize the card and shift the
- * board sitting right below it in this stack, the same jump
- * PagedMessageCard.css's own fixed height prevents for the live coaching
- * session. A short note just leaves blank space below it inside the card;
- * a long one scrolls internally via .move-note-card__body's own
- * overflow-y: auto. Well under the 38vh cap a note card gets elsewhere (the
- * desktop notes column ignores this entirely — it fills the column
- * instead, see .game-review-notes-column below). */
-.game-review-body.mobile .move-note-card {
-  height: 18vh;
+/* The positioning context CoachPanel's `--expanded` state anchors to
+ * (CoachPanel.css) — peek/normal sit in flow right after the board, sized
+ * from CoachPanel's own state-driven height (not this page's concern
+ * anymore); expanded switches to `position: absolute`, overlapping the
+ * board below it instead of pushing the move-nav strip down, the same
+ * collapsed-in-flow/expanded-overlay technique the desktop explorer column
+ * already uses for `.game-report-summary--expanded` further down this
+ * file. */
+.game-review-board-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-review-board-stack .coach-panel--expanded {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .game-review-body.mobile .move-nav-strip {
