@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { textFrames, toolCallFrame } from '../../../test/helpers/uiMessageStream.js';
+import { textFrames, toolCallFrame, toolOutputFrame } from '../../../test/helpers/uiMessageStream.js';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { ChessboardOptions, PieceDropHandlerArgs } from 'react-chessboard';
@@ -57,6 +57,10 @@ interface SessionFixture {
   /** Settings-page coach-voice master switch — defaults to false (off),
    * matching the real default; tests exercising the voice UI opt in. */
   ttsEnabled?: boolean;
+  /** Defaults to 'analyze' (SessionDetailSchema's own default) — set to
+   * 'play' for tests exercising the coach-vs-student sparring flow
+   * (play_coach_move/undo_last_move resolving mid-stream). */
+  mode?: 'analyze' | 'play' | 'play_bot';
 }
 
 // Most tests aren't about the fresh-session kickoff behavior — default to a
@@ -78,6 +82,7 @@ function mockFetch(session: SessionFixture = {}, extra: (path: string) => Respon
             id: 'session-1',
             gameId: 'game-1',
             status: session.status ?? 'active',
+            mode: session.mode ?? 'analyze',
             currentPly: 0,
             subjectPly: session.subjectPly ?? 0,
             summary: session.summary ?? null,
@@ -364,6 +369,48 @@ describe('SessionPage', () => {
     expect(body.content).toMatch(/^\[diverged_line\] Exploring from move 1 \(white\): 1\.e4 \(position now: .+\): what about this instead\?$/);
     // The line stays active after send — the panel is still showing.
     expect(screen.getByText(/diverged line/i)).toBeInTheDocument();
+  });
+
+  test('play mode: a rejected play_coach_move leaves the board at the student\'s own move instead of corrupting it', async () => {
+    // architecture §14: the student's own move commits synchronously via
+    // POST /play-move, then the follow-up chat turn tries to play the
+    // coach's own reply via play_coach_move — which the server can reject
+    // (an illegal move) the same way undo_last_move already can. Regression
+    // for handleServerToolResult applying an `{ error }` result's
+    // `undefined` fen/ply straight onto the board (useSessionPageData.ts),
+    // which left react-chessboard fed `''` until a hard reload.
+    const AFTER_STUDENT_MOVE_FEN = 'rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3';
+    const fetchMock = mockFetch({ mode: 'play', subjectPly: 3 }, (path) => {
+      if (path === '/api/sessions/session-1/play-move') {
+        return new Response(
+          JSON.stringify({ fen: AFTER_STUDENT_MOVE_FEN, san: 'Nf6', ply: 4, quality: 'best' }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        );
+      }
+      if (path === '/api/sessions/session-1/messages') {
+        return streamResponse([
+          ...textFrames('Nice development move.'),
+          toolCallFrame({ toolCallId: 'call-1', toolName: 'play_coach_move', input: { san: 'Qh5' } }),
+          toolOutputFrame('call-1', { error: 'that move is not legal here' })
+        ]);
+      }
+      return undefined;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderSessionPage();
+
+    await vi.waitFor(() => expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument());
+    const options = capturedOptions.at(-1);
+    act(() => {
+      options?.onPieceDrop?.({
+        piece: { pieceType: 'bN' },
+        sourceSquare: 'g8',
+        targetSquare: 'f6'
+      } as PieceDropHandlerArgs);
+    });
+
+    await screen.findByText('Nice development move.');
+    expect(capturedOptions.at(-1)?.position).toBe(AFTER_STUDENT_MOVE_FEN);
   });
 
   test('a completed session renders the summary card instead of the board and chat', async () => {

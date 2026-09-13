@@ -27,7 +27,15 @@ interface UndoLastMoveOutput {
   removedPly: number;
 }
 
-function isUndoError(output: unknown): boolean {
+/** Both play_coach_move and undo_last_move resolve to `{ error: string }` on
+ * a server-side rejection (an illegal move, "no move to undo") instead of
+ * their normal success shape — this must be checked before touching the
+ * board, or `output.fen`/`output.ply` read off the error shape come back
+ * `undefined` and get written straight into `positions`/`boardState` (see
+ * handleServerToolResult below), corrupting the board's fen for the rest of
+ * the session (react-chessboard fed `''`) until a hard reload rebuilds it
+ * from the server's own truth. */
+function isErrorOutput(output: unknown): boolean {
   return typeof output === 'object' && output !== null && 'error' in output;
 }
 
@@ -141,10 +149,19 @@ export function useSessionPageData(sessionId: string) {
   // below for the student's own move.
   function handleServerToolResult(toolName: string, output: unknown): void {
     if (toolName === 'play_coach_move') {
+      if (isErrorOutput(output)) {
+        // The coach tried to play an illegal move — the game (and the
+        // board) stay exactly where they were; nothing to apply. Logged
+        // since this is otherwise invisible on the client (see
+        // isErrorOutput's doc comment for what silently applying it here
+        // used to do to the board).
+        console.error('play_coach_move rejected:', (output as { error: string }).error);
+        return;
+      }
       applyPlayCoachMove(boardState, livePositions, currentRealPosition.fen, output as PlayCoachMoveOutput);
       return;
     }
-    if (toolName === 'undo_last_move' && !isUndoError(output)) {
+    if (toolName === 'undo_last_move' && !isErrorOutput(output)) {
       applyUndoLastMove(boardState, livePositions, output as UndoLastMoveOutput);
     }
   }
