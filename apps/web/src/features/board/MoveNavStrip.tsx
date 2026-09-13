@@ -14,6 +14,13 @@ export interface MoveNavStripProps {
    * convention everywhere else on that page. */
   ply: number;
   onSelect: (ply: number) => void;
+  /** Overrides the step buttons' own click handler — SessionBoardColumn's
+   * play_bot mode returns to the coach's own live position (answer mode)
+   * instead of peek mode when stepping forward past the last move, a
+   * distinction plain onSelect(ply ± 1) can't express. Game Review has no
+   * such distinction and leaves these unset. */
+  onStepBack?: () => void;
+  onStepForward?: () => void;
 }
 
 /** The mobile Review layout used to stack MoveNavPills' first/prev/"N of
@@ -26,7 +33,7 @@ export interface MoveNavStripProps {
  * specific chip. The "N of M" readout and first/last skips are dropped
  * rather than folded in — the chip list already shows exactly where you are
  * and lets you jump anywhere directly. */
-export function MoveNavStrip({ sanMoves, classifiedMoves, positions, ply, onSelect }: MoveNavStripProps): ReactNode {
+export function MoveNavStrip({ sanMoves, classifiedMoves, positions, ply, onSelect, onStepBack, onStepForward }: MoveNavStripProps): ReactNode {
   const totalPlies = sanMoves.length;
 
   function goTo(next: number): void {
@@ -39,7 +46,7 @@ export function MoveNavStrip({ sanMoves, classifiedMoves, positions, ply, onSele
         type="button"
         className="move-nav-strip__step"
         aria-label="previous move"
-        onClick={() => goTo(ply - 1)}
+        onClick={onStepBack ?? (() => goTo(ply - 1))}
         disabled={ply <= 0}
       >
         <ChevronLeftIcon width={20} height={20} />
@@ -56,7 +63,7 @@ export function MoveNavStrip({ sanMoves, classifiedMoves, positions, ply, onSele
         type="button"
         className="move-nav-strip__step"
         aria-label="next move"
-        onClick={() => goTo(ply + 1)}
+        onClick={onStepForward ?? (() => goTo(ply + 1))}
         disabled={ply >= totalPlies}
       >
         <ChevronRightIcon width={20} height={20} />

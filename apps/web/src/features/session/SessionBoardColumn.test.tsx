@@ -257,6 +257,10 @@ describe('SessionBoardColumn — "Explore on your own" (live play modes)', () =>
   });
 });
 
+// Desktop only (Harness defaults isDesktop to true) — the toolbar keeps its
+// own Previous/Next pair there since the sidebar's MoveExplorer (rendered by
+// SessionPage/BotSessionPage, not this component) has a separate set of nav
+// pills of its own, not a bare move strip these would otherwise duplicate.
 describe('SessionBoardColumn — play_bot move navigation and undo', () => {
   beforeEach(() => {
     capturedOptions.length = 0;
@@ -427,12 +431,12 @@ describe('SessionBoardColumn — play_bot hint', () => {
   });
 });
 
-// Mobile's move strip (rendered only when !isDesktop) shares MoveStrip with
-// GameReviewPage's MoveNavStrip, but converts the app's 1-based ply
-// (positions/classifiedMoves/useSessionBoardState's own convention) to
-// MoveStrip's 0-based sanMoves-index convention itself, separately from
-// MoveNavStrip's own conversion — the exact kind of duplicated arithmetic
-// that drifts out of sync, which is what happened here.
+// Mobile's move row (rendered only when !isDesktop) is MoveNavStrip — the
+// same combined chevrons + move-chip list GameReviewPage's mobile Review
+// page uses — passed the app's own 1-based ply directly; MoveNavStrip owns
+// the conversion to MoveStrip's 0-based sanMoves-index convention internally
+// (plyToMoveStripIndex/moveStripIndexToPly), so this file no longer
+// re-derives that arithmetic itself.
 describe('SessionBoardColumn — mobile move strip ply conversion', () => {
   beforeEach(() => {
     capturedOptions.length = 0;
@@ -466,6 +470,39 @@ describe('SessionBoardColumn — mobile move strip ply conversion', () => {
     await waitFor(() => expect(capturedOptions.at(-1)?.position).toBe('fen-after-e5'));
     expect(screen.getByRole('button', { name: 'e5' })).toHaveAttribute('aria-current', 'true');
     expect(screen.getByRole('button', { name: 'e4' })).not.toHaveAttribute('aria-current');
+  });
+});
+
+// On mobile, every session mode gets the same combined row Game Review
+// already uses (MoveNavStrip: step chevrons + the move-chip list in one
+// line) instead of a bare, buttonless chip list — and play_bot mode must not
+// end up with two redundant pairs of step buttons once its own toolbar and
+// this row both exist on screen.
+describe('SessionBoardColumn — mobile combined move-nav row', () => {
+  beforeEach(() => {
+    capturedOptions.length = 0;
+  });
+
+  test('analyze mode gets step chevrons alongside the move chips, not just a bare list', async () => {
+    render(<Harness sessionMode="analyze" sanMoves={['e4', 'e5']} isDesktop={false} />);
+    await screen.findByTestId('mock-chessboard');
+
+    expect(screen.getByLabelText('previous move')).toBeInTheDocument();
+    expect(screen.getByLabelText('next move')).toBeInTheDocument();
+  });
+
+  test('play_bot mode shows exactly one pair of step buttons, not the toolbar\'s own pair on top of the combined row\'s', async () => {
+    render(<Harness sessionMode="play_bot" sanMoves={['e4', 'e5']} onUndoMove={() => undefined} isDesktop={false} />);
+    await screen.findByTestId('mock-chessboard');
+
+    expect(screen.getByLabelText('previous move')).toBeInTheDocument();
+    expect(screen.getByLabelText('next move')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Previous move')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Next move')).not.toBeInTheDocument();
+
+    // Undo/Hint survive the toolbar's own step buttons being dropped.
+    expect(screen.getByText('Undo')).toBeInTheDocument();
+    expect(screen.getByText('Hint')).toBeInTheDocument();
   });
 });
 

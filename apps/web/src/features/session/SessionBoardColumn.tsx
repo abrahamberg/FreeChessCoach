@@ -8,7 +8,7 @@ import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { EvalBar } from '../board/EvalBar.js';
 import { ExplorePanel } from '../board/ExplorePanel.js';
 import { GameEvalChart } from '../board/GameEvalChart.js';
-import { MoveStrip, moveStripIndexToPly, plyToMoveStripIndex } from '../board/MoveStrip.js';
+import { MoveNavStrip } from '../board/MoveNavStrip.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
 import type { BotGameOverInfo } from './botGameOver.js';
@@ -359,14 +359,35 @@ export function SessionBoardColumn({
           </button>
         </p>
       )}
+      {/* Mobile's own combined row (chevrons + the scrollable move-chip
+          list, one line — MoveNavStrip, shared with Game Review's mobile
+          layout) replaces play_bot's own Previous/Next below to avoid two
+          redundant pairs of step buttons stacked on a phone; desktop keeps
+          the toolbar's own pair since MoveNavStrip never renders there
+          (the sidebar's MoveExplorer has its own separate nav pills). */}
+      {!isDesktop && (
+        <MoveNavStrip
+          sanMoves={sanMoves}
+          classifiedMoves={classifiedMoves ?? []}
+          positions={positions}
+          ply={boardState.ply}
+          onSelect={peekAt}
+          onStepBack={handleStepBack}
+          onStepForward={handleStepForward}
+        />
+      )}
       {sessionMode === 'play_bot' && (
         <div className="bot-move-toolbar">
-          <button type="button" onClick={handleStepBack} disabled={boardState.ply <= 0} aria-label="Previous move">
-            <ChevronLeftIcon width={16} height={16} />
-          </button>
-          <button type="button" onClick={handleStepForward} disabled={boardState.ply >= maxPly} aria-label="Next move">
-            <ChevronRightIcon width={16} height={16} />
-          </button>
+          {isDesktop && (
+            <>
+              <button type="button" onClick={handleStepBack} disabled={boardState.ply <= 0} aria-label="Previous move">
+                <ChevronLeftIcon width={16} height={16} />
+              </button>
+              <button type="button" onClick={handleStepForward} disabled={boardState.ply >= maxPly} aria-label="Next move">
+                <ChevronRightIcon width={16} height={16} />
+              </button>
+            </>
+          )}
           {onUndoMove && (
             <button type="button" className="bot-move-toolbar__undo" onClick={onUndoMove} disabled={undoDisabled}>
               <UndoIcon width={14} height={14} />
@@ -401,16 +422,6 @@ export function SessionBoardColumn({
                 ? `Top moves: ${hintTopMoves.map((move) => move.san).join(', ')}`
                 : 'No moves to suggest.'}
         </p>
-      )}
-      {!isDesktop && (
-        <MoveStrip
-          sanMoves={sanMoves}
-          classifiedMoves={classifiedMoves ?? []}
-          positions={positions}
-          currentPly={plyToMoveStripIndex(boardState.ply)}
-          momentPlies={[]}
-          onSelect={(index) => peekAt(moveStripIndexToPly(index))}
-        />
       )}
       {sessionMode === 'analyze' &&
         (!isDesktop && divergedLine.line ? (
