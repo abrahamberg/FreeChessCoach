@@ -69,15 +69,23 @@ function applyPlayCoachMove(
 
 /** architecture §14: undo_last_move pops the game's last move — trims the
  * positions array back down rather than appending. `removedPly` names the
- * ply the game is left AT after the undo (see play-moves.ts's UndoResult),
- * not the ply that was removed. */
+ * ply that was POPPED (play-moves.ts's UndoResult — same convention
+ * bot-undo.ts and coach-agent-turn.ts's advancePlyForPlayMove already use,
+ * both via `removedPly - 1`), NOT the ply the game is left at — `output.fen`
+ * is the position one ply earlier, after the undo. Using `removedPly` as-is
+ * here left the popped move's own (now-stale) entry sitting in `positions`
+ * (truncateTo's `<=` kept it) and pointed the board's `ply` state at it too,
+ * so `positions.find` resolved back to the pre-undo position instead of
+ * ever reaching applyServerMove's fen/pendingServerPosition fallback — the
+ * undo silently did nothing on the board. */
 function applyUndoLastMove(
   boardState: UseSessionBoardStateResult,
   livePositions: ReturnType<typeof useLivePositions>,
   output: UndoLastMoveOutput
 ): void {
-  livePositions.truncateTo(output.removedPly);
-  boardState.applyServerMove(output.removedPly, output.fen);
+  const ply = output.removedPly - 1;
+  livePositions.truncateTo(ply);
+  boardState.applyServerMove(ply, output.fen);
 }
 
 /** All fetching + derived state for the session page (AGENTS.md rule 7) —

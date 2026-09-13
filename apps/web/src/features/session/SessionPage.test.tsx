@@ -413,6 +413,38 @@ describe('SessionPage', () => {
     expect(capturedOptions.at(-1)?.position).toBe(AFTER_STUDENT_MOVE_FEN);
   });
 
+  test('play mode: undo_last_move actually moves the board back a ply, not the ply that was popped', async () => {
+    // Regression for applyUndoLastMove (useSessionPageData.ts) treating
+    // `removedPly` as "the ply the game is left at" when play-moves.ts
+    // documents (and bot-undo.ts/coach-agent-turn.ts both already handle)
+    // it as "the ply that was POPPED" — one ply ahead of `output.fen`. Used
+    // as-is, the popped move's own stale position entry never got
+    // truncated out of `positions` and the board's `ply` pointed straight
+    // at it, so positions.find resolved back to the pre-undo position and
+    // the undo looked like it did nothing.
+    const AFTER_UNDO_FEN = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2';
+    const fetchMock = mockFetch({ mode: 'play', subjectPly: 3 }, (path) => {
+      if (path === '/api/sessions/session-1/messages') {
+        return streamResponse([
+          ...textFrames('Sure — taking that back.'),
+          toolCallFrame({ toolCallId: 'call-1', toolName: 'undo_last_move', input: {} }),
+          toolOutputFrame('call-1', { fen: AFTER_UNDO_FEN, removedPly: 3 })
+        ]);
+      }
+      return undefined;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    renderSessionPage();
+
+    await vi.waitFor(() => expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument());
+    await user.type(screen.getByRole('textbox', { name: /reply/i }), 'actually take that back');
+    await user.click(screen.getByRole('button', { name: /send/i }));
+
+    await screen.findByText('Sure — taking that back.');
+    expect(capturedOptions.at(-1)?.position).toBe(AFTER_UNDO_FEN);
+  });
+
   test('a completed session renders the summary card instead of the board and chat', async () => {
     vi.stubGlobal('fetch', mockFetch({ status: 'completed', summary: 'Great progress on king safety.', homework: null }));
     const user = userEvent.setup();
