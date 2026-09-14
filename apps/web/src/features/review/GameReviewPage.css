@@ -122,24 +122,15 @@
   flex: 1;
 }
 
-/* --- mobile (below this page's own desktop breakpoint): note card, then
- * the board, then nav pills + move strip below it (chess.com's own
- * ordering: note above the board, moves below). Daniel's second-round call,
- * after the board still read as too small next to chess.com's own review:
- * the board's size should come from its own width (edge-to-edge, like
- * chess.com — see .session-board-column below) rather than from whatever
- * vertical space its neighbors happen to leave behind, and every neighbor
- * (note card included) should claim only what its own content needs rather
- * than a fixed share of the screen — either one leaves "dead" space the
- * board could otherwise be using. The board's own size stays independent of
- * the note either way (from-width, not from-leftover-height), but the note
- * card itself gets a fixed height below (not just a cap) — same call
- * PagedMessageCard.css makes for the live coaching session's own card:
- * paging from a short note to a long one must not move the board sitting
- * right below it. The page can still scroll on a phone short/narrow enough
- * that the stack doesn't fit, rather than clipping or shrinking anything.
- * Game Report is a fixed bottom sheet below, not a flex child here — see
- * .game-review-report-sheet. */
+/* --- mobile (below this page's own desktop breakpoint): the board pinned
+ * at the top, MoveNavStrip pinned at the bottom, and the note card as a
+ * CoachPanel filling exactly the space left between them (see
+ * .game-review-board-stack below) rather than sizing itself from its own
+ * content and leaving whatever's left as bare page background. The board's
+ * size still comes from its own width (edge-to-edge, like chess.com — see
+ * .session-board-column below), independent of the panel either way. Game
+ * Report is a separate fixed bottom sheet below, not a flex child here —
+ * see .game-review-report-sheet. */
 .game-review-body.mobile {
   overflow-x: hidden;
   overflow-y: auto;
@@ -174,18 +165,34 @@
   padding-bottom: calc(44px + env(safe-area-inset-bottom));
 }
 
-/* A fixed height, not just a cap — overrides MoveNoteCard.css's own `height:
- * auto`. Switching between a short note and a long one (or landing on the
- * empty "select a move" state) must not resize the card and shift the
- * board sitting right below it in this stack, the same jump
- * PagedMessageCard.css's own fixed height prevents for the live coaching
- * session. A short note just leaves blank space below it inside the card;
- * a long one scrolls internally via .move-note-card__body's own
- * overflow-y: auto. Well under the 38vh cap a note card gets elsewhere (the
- * desktop notes column ignores this entirely — it fills the column
- * instead, see .game-review-notes-column below). */
-.game-review-body.mobile .move-note-card {
-  height: 18vh;
+/* The positioning context CoachPanel's `expanded` state anchors to
+ * (CoachPanel.css sets `position: absolute` on it universally — this is
+ * just the `position: relative` host), and the flex column whose remaining
+ * height (after the board's own fixed size) CoachPanel's `normal` state
+ * fills — `flex: 1 1 auto` here is what makes this stack (not just the
+ * panel) claim the space MoveNavStrip, its sibling below, doesn't need.
+ * Expanded then overlaps the board below it instead of pushing the
+ * move-nav strip down, the same collapsed-in-flow/expanded-overlay
+ * technique the desktop explorer column already uses for
+ * `.game-report-summary--expanded` further down this file. */
+.game-review-board-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Edge-to-edge, matching the board exactly (same negative-margin trick as
+ * .session-board-column below) — the panel used to stay inset at this
+ * page's own padding while the board bled full-width above it, so the
+ * "sheet" read as a narrower card floating on top of the board rather than
+ * a surface flush with it. CoachPanel.css restores the lost inset as its
+ * own internal padding, so the avatar/card inside sit exactly where they
+ * did before — only the panel's own background/shadow/corners now reach
+ * the true screen edge. */
+.game-review-body.mobile .coach-panel {
+  margin: 0 calc(-1 * var(--space-4));
 }
 
 .game-review-body.mobile .move-nav-strip {

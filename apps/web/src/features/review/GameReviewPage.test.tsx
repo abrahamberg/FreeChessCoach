@@ -346,6 +346,27 @@ describe('GameReviewPage', () => {
     expect(screen.getByText(/select a move to see the coach's note/i)).toBeInTheDocument();
   });
 
+  // The note card rides along inside a CoachPanel on mobile (see
+  // GameReviewPage's own doc comment) — starts at 'normal' (filling the
+  // space between the board and MoveNavStrip) and the handle toggles it to
+  // 'expanded' (overlaying the board) and back, confirming the panel is
+  // actually wired to the page rather than just unit-tested in isolation.
+  test('on mobile, tapping the coach panel handle toggles it between normal and expanded', async () => {
+    mockMatchMedia(false);
+    vi.stubGlobal('fetch', mockFetch());
+    const user = userEvent.setup();
+    const { container } = renderReviewPage();
+    await screen.findByText(/daniel/);
+
+    expect(container.querySelector('.coach-panel--normal')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /expand coach panel/i }));
+    expect(container.querySelector('.coach-panel--expanded')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /collapse coach panel/i }));
+    expect(container.querySelector('.coach-panel--normal')).toBeInTheDocument();
+  });
+
   test('on mobile, selecting a move in the strip updates the note card', async () => {
     mockMatchMedia(false);
     vi.stubGlobal('fetch', mockFetch());

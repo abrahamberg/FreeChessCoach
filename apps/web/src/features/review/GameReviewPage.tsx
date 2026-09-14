@@ -1,9 +1,10 @@
 import { isTopReviewTier } from '@freechesscoach/shared';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
 import { MoveNavStrip } from '../board/MoveNavStrip.js';
+import { CoachPanel, type CoachPanelState } from '../../components/CoachPanel.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { SessionHeader } from '../session/SessionHeader.js';
 import { GameReviewBoardColumn } from './GameReviewBoardColumn.js';
@@ -20,17 +21,13 @@ import './GameReviewPage.css';
  * small icon in MoveNoteCard's own header — and the only mutation this page
  * makes.
  *
- * Below the desktop breakpoint: note card, then the board, then MoveNavStrip
- * (step chevrons + the scrollable move-chip list, combined into one row —
- * they used to be two stacked rows) below it — chess.com's own mobile
- * ordering (note above, moves below), and that combined row sits under the
- * board rather than above it: the board is the scarcest-space element on a
- * phone (same call SessionPage.css makes for the live session), so
- * everything that doesn't need to precede it stays out of its way,
- * edge-to-edge and sized from its own width rather than from whatever its
- * neighbors leave behind (see GameReviewPage.css's own mobile section for
- * the reasoning). Game Report
- * is a bottom sheet (GameReportSummary's own existing expand/collapse
+ * Below the desktop breakpoint: the board pinned at the top (fixed, sized
+ * from its own width — see GameReviewPage.css's own mobile section), the
+ * note card as a CoachPanel filling exactly the space left before
+ * MoveNavStrip (step chevrons + the scrollable move-chip list, pinned at the
+ * bottom), and only CoachPanel's `expanded` state breaking that budget to
+ * overlay the board — see CoachPanel's own doc comment. Game Report is a
+ * separate bottom sheet (GameReportSummary's own existing expand/collapse
  * state, just given fixed/overlay positioning here) rather than another
  * flex child, so opening it covers the board instead of pushing it around.
  *
@@ -43,6 +40,8 @@ export function GameReviewPage(): ReactNode {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
+  // Mobile-only (see the CoachPanel below).
+  const [coachPanelState, setCoachPanelState] = useState<CoachPanelState>('normal');
   const {
     gameQuery,
     positions,
@@ -129,8 +128,12 @@ export function GameReviewPage(): ReactNode {
       ) : (
         <>
           <div className={game.gameReport ? 'game-review-body mobile has-report-sheet' : 'game-review-body mobile'}>
-            {noteCard}
-            {board}
+            <div className="game-review-board-stack">
+              {board}
+              <CoachPanel state={coachPanelState} onStateChange={setCoachPanelState}>
+                {noteCard}
+              </CoachPanel>
+            </div>
             <MoveNavStrip sanMoves={sanMoves} classifiedMoves={classifiedMoves} positions={positions} ply={ply} onSelect={setPly} />
           </div>
           {game.gameReport && (

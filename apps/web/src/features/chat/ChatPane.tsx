@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import type { ArrowRef } from './arrowToken.js';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
-import { VolumeOffIcon, VolumeOnIcon } from '../../components/Icon.js';
 import { ChatComposer } from './ChatComposer.js';
 import { MessageList, type HoverMove } from './MessageList.js';
 import { ThinkingIndicator } from './ThinkingIndicator.js';
@@ -41,13 +40,6 @@ export interface ChatPaneProps {
   onHoverMove?: (move: HoverMove) => void;
   /** The selected coach persona — passed through to MessageList. */
   coachPersona?: CoachPersona;
-  /** Coach voice (TTS, OpenAI or browser — Settings): whether a finished
-   * turn's audio plays automatically. Omit both this and onToggleAutoplay to
-   * hide the toggle (SessionPage does this whenever the account's TTS master
-   * switch is off); onPlayMessage gates the per-message play buttons the
-   * same way. */
-  autoplayEnabled?: boolean;
-  onToggleAutoplay?: (enabled: boolean) => void;
   /** Passed straight through to MessageList — see its own doc comments. */
   onPlayMessage?: (messageId: string, text: string) => void;
   onStopMessage?: () => void;
@@ -58,8 +50,10 @@ export interface ChatPaneProps {
 /** The desktop side-by-side chat column: MessageList (the full, vertically
  * scrolling transcript) + ToolActivity + an always-open ChatComposer. No
  * fetching — the parent (SessionPage) owns useCoachChat. The "Debug last
- * answer" trigger now lives in SessionHeader's overflow menu (SessionPage
- * owns that state and DebugPanel), not here.
+ * answer" trigger, and the coach-voice autoplay toggle that used to live in
+ * this header, both now live in SessionHeader's overflow menu instead
+ * (SessionPage owns that state and DebugPanel) — one settings menu at the
+ * top of the screen rather than one per layout.
  *
  * Mobile has its own, differently-structured layout (SessionPage's
  * `.stacked` branch: one message at a time, paged left/right, the board
@@ -80,8 +74,6 @@ export function ChatPane({
   positions,
   onHoverMove,
   coachPersona = DEFAULT_COACH_PERSONA,
-  autoplayEnabled,
-  onToggleAutoplay,
   onPlayMessage,
   onStopMessage,
   playingMessageId,
@@ -101,18 +93,6 @@ export function ChatPane({
             <strong className="chat-pane__coach-name">{COACH_PERSONA_INFO[coachPersona].label}</strong>
           </div>
         </a>
-        {onToggleAutoplay && (
-          <button
-            type="button"
-            className="chat-pane__voice-toggle"
-            aria-label={autoplayEnabled ? 'Disable automatic coach voice' : 'Enable automatic coach voice'}
-            aria-pressed={autoplayEnabled ?? false}
-            title={autoplayEnabled ? 'Disable automatic coach voice' : 'Enable automatic coach voice'}
-            onClick={() => onToggleAutoplay(!(autoplayEnabled ?? false))}
-          >
-            {autoplayEnabled ? <VolumeOnIcon width={25} height={25} /> : <VolumeOffIcon width={25} height={25} />}
-          </button>
-        )}
       </div>
       <MessageList
         messages={messages}

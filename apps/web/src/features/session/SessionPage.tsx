@@ -167,8 +167,6 @@ export function SessionPage(): ReactNode {
       positions={positions}
       onHoverMove={setHoverMove}
       coachPersona={persona}
-      autoplayEnabled={coachVoice.autoplayEnabled}
-      onToggleAutoplay={ttsEnabled ? coachVoice.setAutoplayEnabled : undefined}
       onPlayMessage={ttsEnabled ? coachVoice.play : undefined}
       onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
       playingMessageId={coachVoice.playingMessageId}
@@ -186,6 +184,16 @@ export function SessionPage(): ReactNode {
         onReset={handleReset}
         onDebug={import.meta.env.DEV ? () => setIsDebugOpen(true) : undefined}
         debugDisabled={!hasCompletedTurn}
+        extraItems={
+          ttsEnabled
+            ? [
+                {
+                  label: coachVoice.autoplayEnabled ? 'Turn off coach voice' : 'Turn on coach voice',
+                  onSelect: () => coachVoice.setAutoplayEnabled(!coachVoice.autoplayEnabled)
+                }
+              ]
+            : []
+        }
       />
       {isDebugOpen && <DebugPanel sessionId={sessionId} onClose={() => setIsDebugOpen(false)} />}
       {isSideBySide ? (
