@@ -28,7 +28,13 @@
   height: auto;
   max-height: 38vh;
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
+  /* Square on the accent-bar side, rounded on the other — a border-radius
+   * on all four corners of a box that only has a border-left makes that
+   * border follow the top-left/bottom-left curve instead of running as one
+   * straight bar, which reads as a wobbly, hand-drawn line rather than a
+   * clean quality-colored edge (Linear/GitHub's own callout cards use this
+   * same square-accent/round-outer-corner split for the same reason). */
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   border-left: 4px solid var(--color-border);
   box-shadow: var(--shadow-sm);
   padding: var(--space-4) var(--space-5);

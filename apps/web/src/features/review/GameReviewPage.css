@@ -185,6 +185,18 @@
   bottom: 0;
 }
 
+/* Edge-to-edge, matching the board exactly (same negative-margin trick as
+ * .session-board-column below) — the panel used to stay inset at this
+ * page's own padding while the board bled full-width above it, so the
+ * "sheet" read as a narrower card floating on top of the board rather than
+ * a surface flush with it. CoachPanel.css restores the lost inset as its
+ * own internal padding, so the avatar/card inside sit exactly where they
+ * did before — only the panel's own background/shadow/corners now reach
+ * the true screen edge. */
+.game-review-body.mobile .coach-panel {
+  margin: 0 calc(-1 * var(--space-4));
+}
+
 .game-review-body.mobile .move-nav-strip {
   flex: 0 0 auto;
 }

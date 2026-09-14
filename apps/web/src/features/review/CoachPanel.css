@@ -40,9 +40,14 @@
   background: var(--color-border-strong);
 }
 
+/* Its host (GameReviewPage.css) now bleeds the whole panel edge-to-edge to
+ * match the board above it — this padding is what keeps the avatar/card
+ * inside from sitting flush against the true screen edge instead of just
+ * losing the inset that move used to come from the page's own padding. */
 .coach-panel__content {
   flex: 0 1 auto;
   min-width: 0;
+  padding: 0 var(--space-4);
 }
 
 /* Overrides MoveNoteCard.css's own `max-height: 38vh` (tuned for a
