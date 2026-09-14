@@ -4,7 +4,7 @@ import { useEngineActivityIndicator } from '../hooks/useEngineActivityIndicator.
 import { useIsDesktop } from '../hooks/useIsDesktop.js';
 import { EngineActivityIndicator } from './EngineActivityIndicator.js';
 import { FullscreenPrompt } from './FullscreenPrompt.js';
-import { BarChartIcon, BoardIcon, TrendingUpIcon } from './Icon.js';
+import { BarChartIcon, BoardIcon, PlayCircleIcon, TrendingUpIcon } from './Icon.js';
 import { UserMenu } from './UserMenu.js';
 import './AppShell.css';
 
@@ -12,8 +12,13 @@ export interface AppShellProps {
   children: ReactNode;
 }
 
+// Daniel's IA feedback: "Play" used to be two giant CTAs crowding GamesPage's
+// own header — it's a primary nav destination in its own right (playing
+// chess is a different job from studying it), not a button living on
+// whichever page had room.
 const NAV_DESTINATIONS = [
   { to: '/games', label: 'Games', Icon: BoardIcon },
+  { to: '/play', label: 'Play', Icon: PlayCircleIcon },
   { to: '/dashboard', label: 'Progress', Icon: TrendingUpIcon },
   { to: '/stats', label: 'Stats', Icon: BarChartIcon }
 ];

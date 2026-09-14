@@ -6,6 +6,7 @@ import { AppShell } from './components/AppShell.js';
 import { DashboardPage } from './features/dashboard/DashboardPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
 import { ImportPage } from './features/import/ImportPage.js';
+import { PlayPage } from './features/play/PlayPage.js';
 import { PlayStartPage } from './features/play/PlayStartPage.js';
 import { PlayBotStartPage } from './features/play-bot/PlayBotStartPage.js';
 import { PuzzleSessionPage } from './features/puzzle-session/PuzzleSessionPage.js';
@@ -72,6 +73,7 @@ export function AppRoutes(): ReactNode {
       <Routes>
         <Route path="/" element={<Navigate to="/games" replace />} />
         <Route path="/import" element={<ImportPage />} />
+        <Route path="/play" element={<PlayPage />} />
         <Route path="/play/new" element={<PlayStartPage />} />
         <Route path="/play-bot/new" element={<PlayBotStartPage />} />
         <Route path="/games" element={<GamesPage />} />
