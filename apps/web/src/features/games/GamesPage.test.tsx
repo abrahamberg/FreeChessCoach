@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -97,8 +97,8 @@ function renderGamesPage(games: unknown[] = GAMES_RESPONSE, { deleteStatus = 204
         <Routes>
           <Route path="/games" element={<GamesPage />} />
           <Route path="/import" element={<div>import-page-marker</div>} />
-          <Route path="/play/new" element={<div>play-start-page-marker</div>} />
           <Route path="/session/:id" element={<div>session-page-marker</div>} />
+          <Route path="/bot-session/:id" element={<div>bot-session-page-marker</div>} />
           <Route path="/review/:gameId" element={<div>review-page-marker</div>} />
         </Routes>
       </MemoryRouter>
@@ -114,7 +114,7 @@ async function deleteFirstGame(): Promise<void> {
   await user.click(screen.getByRole('button', { name: 'Delete game' }));
 }
 
-describe('GamesPage (design-improvements.md §3.3)', () => {
+describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source is metadata)', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -126,30 +126,16 @@ describe('GamesPage (design-improvements.md §3.3)', () => {
     expect(screen.getByText('Marta')).toBeInTheDocument();
   });
 
-  test('the "Analyze game" CTA navigates to Import', async () => {
+  test('the "Add games" CTA navigates to Import', async () => {
     const user = userEvent.setup();
     renderGamesPage();
     await screen.findByText('daniel');
 
-    await user.click(screen.getByRole('link', { name: /analyze game/i }));
+    await user.click(screen.getByRole('link', { name: /add games/i }));
     expect(await screen.findByText('import-page-marker')).toBeInTheDocument();
   });
 
-  // architecture §14: the second entry point into a coaching session — a
-  // live game against the coach, rather than reviewing an imported one.
-  test('the "Play coach" CTA navigates to the play-mode start page', async () => {
-    const user = userEvent.setup();
-    renderGamesPage();
-    await screen.findByText('daniel');
-
-    await user.click(screen.getByRole('link', { name: /play coach/i }));
-    expect(await screen.findByText('play-start-page-marker')).toBeInTheDocument();
-  });
-
-  // A ready, unpromoted (imported) game opens the static Review page, not a
-  // coaching session — that's the whole point of the Review tier: a free
-  // look at the Game Report before spending a credit on the coach.
-  test('the "Review" action on a ready, unpromoted game navigates to its Review page', async () => {
+  test('the "Review" action on a ready game navigates to its Review page without touching sessions', async () => {
     const user = userEvent.setup();
     const fetchMock = renderGamesPage();
     await screen.findByText('daniel');
@@ -160,73 +146,87 @@ describe('GamesPage (design-improvements.md §3.3)', () => {
     expect(fetchMock).not.toHaveBeenCalledWith('/api/sessions', expect.anything());
   });
 
-  // Once a game is promoted to the coach tier (via "Move to Coach", tested
-  // below, or already coach_play/vs_bot), "ready" opens the coaching
-  // session through the same find-or-create POST /api/sessions as before
-  // Game Review tabs existed.
-  test('the "Continue with Coach" action on a coach-tier game starts a session and navigates to it', async () => {
+  // A ready game not yet at the coach tier promotes it first, then starts
+  // (or resumes) its coaching session — Review and Coach are always shown
+  // together, so there's no tab to switch to first.
+  test('the "Coach" action on a ready, unpromoted game promotes it and starts a session', async () => {
+    const user = userEvent.setup();
+    const fetchMock = renderGamesPage();
+    await screen.findByText('daniel');
+
+    await user.click(screen.getByRole('button', { name: 'Coach' }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/games/g1/promote',
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({ tier: 'coach' }) })
+      )
+    );
+    expect(fetchMock).toHaveBeenCalledWith('/api/sessions', expect.objectContaining({ body: JSON.stringify({ gameId: 'g1' }) }));
+    expect(await screen.findByText('session-page-marker')).toBeInTheDocument();
+  });
+
+  // A game already at the coach tier skips the (now redundant) promote call
+  // and goes straight to finding-or-creating its session.
+  test('the "Coach" action on a game already at the coach tier skips promoting and opens the session directly', async () => {
     const user = userEvent.setup();
     const fetchMock = renderGamesPage([{ ...GAMES_RESPONSE[0], reviewTier: 'coach' }]);
-    await user.click(await screen.findByRole('tab', { name: 'Coach' }));
     await screen.findByText('daniel');
 
-    await user.click(screen.getByRole('button', { name: 'Continue with Coach' }));
+    await user.click(screen.getByRole('button', { name: 'Coach' }));
 
     expect(await screen.findByText('session-page-marker')).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/sessions',
-      expect.objectContaining({ body: JSON.stringify({ gameId: 'g1' }) })
-    );
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/games/g1/promote', expect.anything());
+    expect(fetchMock).toHaveBeenCalledWith('/api/sessions', expect.objectContaining({ body: JSON.stringify({ gameId: 'g1' }) }));
   });
 
-  test('tabs group games by review tier, defaulting to Imported games', async () => {
+  test('tabs filter games by source, defaulting to All', async () => {
     const user = userEvent.setup();
-    renderGamesPage([
-      GAMES_RESPONSE[0],
-      { ...GAMES_RESPONSE[0], id: 'g3', whiteName: 'bottest', reviewTier: 'bot', source: 'vs_bot' }
-    ]);
+    renderGamesPage([GAMES_RESPONSE[0], { ...GAMES_RESPONSE[0], id: 'g3', whiteName: 'bottest', source: 'vs_bot', reviewTier: 'bot' }]);
 
-    await screen.findByText('daniel');
-    expect(screen.queryByText('bottest')).not.toBeInTheDocument();
+    expect(await screen.findByText('daniel')).toBeInTheDocument();
+    expect(screen.getByText('bottest')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: 'Bot games' }));
+    await user.click(screen.getByRole('tab', { name: 'Bot' }));
     expect(await screen.findByText('bottest')).toBeInTheDocument();
     expect(screen.queryByText('daniel')).not.toBeInTheDocument();
-  });
 
-  test('promoting a game from its overflow menu moves it into the target tab', async () => {
-    const user = userEvent.setup();
-    renderGamesPage();
-    await screen.findByText('daniel');
-
-    await user.click(screen.getByRole('button', { name: /more actions/i }));
-    await user.click(screen.getByRole('menuitem', { name: 'Move to Review' }));
-
-    await user.click(screen.getByRole('tab', { name: 'Review' }));
+    await user.click(screen.getByRole('tab', { name: 'Imported' }));
     expect(await screen.findByText('daniel')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: 'Imported games' }));
-    expect(screen.queryByText('daniel')).not.toBeInTheDocument();
+    expect(screen.queryByText('bottest')).not.toBeInTheDocument();
   });
 
-  // architecture §14: a coach_play row must link back into its existing
-  // session directly, never through analyze mode's gated POST /api/sessions
-  // (which would 409 — a play-mode game never has an `analyses` row).
-  test('the "Continue" action on an in-progress play-mode row navigates straight to its session', async () => {
+  // architecture §14: a coach_play/vs_bot row with a live session surfaces
+  // above the source-filtered list, not just inside whichever tab it falls
+  // under — this is the thing the student most likely came back to finish.
+  test('an in-progress play-mode game shows in a "Continue" section, and its action navigates straight to its session', async () => {
     const user = userEvent.setup();
-    const fetchMock = renderGamesPage([PLAY_MODE_GAME]);
-    await user.click(await screen.findByRole('tab', { name: 'Coach' }));
-    await screen.findByText('daniel');
+    const fetchMock = renderGamesPage([GAMES_RESPONSE[0], PLAY_MODE_GAME]);
+    // Both fixtures have 'daniel' as White — wait on the unique name instead.
+    await screen.findByText('Marta');
 
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByRole('heading', { name: 'Continue' })).toBeInTheDocument();
+    const continueSection = screen.getByRole('region', { name: 'Continue' });
+    expect(continueSection).toHaveTextContent('daniel vs Coach');
+
+    // The same in-progress game may also appear as a row further down the
+    // source-filtered list — scope to the "Continue" section itself so the
+    // click is unambiguous.
+    await user.click(within(continueSection).getByRole('button', { name: 'Continue' }));
 
     expect(await screen.findByText('session-page-marker')).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith('/api/sessions', expect.anything());
   });
 
+  test('no "Continue" section when nothing is in progress', async () => {
+    renderGamesPage();
+    await screen.findByText('daniel');
+    expect(screen.queryByRole('heading', { name: 'Continue' })).not.toBeInTheDocument();
+  });
+
   test('shows a friendly empty state with no games and no dummy data', async () => {
     renderGamesPage([]);
-    expect(await screen.findByText(/no games yet|analyze your first game/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no games yet|add your first game/i)).toBeInTheDocument();
     expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
   });
 
@@ -237,7 +237,7 @@ describe('GamesPage (design-improvements.md §3.3)', () => {
     await deleteFirstGame();
 
     expect(fetchMock).toHaveBeenCalledWith('/api/games/g1', expect.objectContaining({ method: 'DELETE' }));
-    expect(await screen.findByText(/no games yet|analyze your first game/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no games yet|add your first game/i)).toBeInTheDocument();
   });
 
   test('canceling the confirmation dialog does not delete the game', async () => {
@@ -297,7 +297,7 @@ describe('GamesPage (design-improvements.md §3.3)', () => {
     await screen.findByText('daniel');
 
     expect(screen.getByText('Failed')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /start session/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /review|coach/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /more actions/i })).toBeInTheDocument();
   });
 });

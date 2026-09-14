@@ -75,14 +75,24 @@
   border-color: var(--color-text);
 }
 
+/* One card per game (GameRow.css owns each card's own border/shadow/radius)
+ * with breathing room between them, rather than one bordered list of flush
+ * rows. */
 .games-page__list {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.games-page__section-heading {
+  margin: var(--space-6) 0 var(--space-3);
+}
+
+.games-page__section-heading:first-child {
+  margin-top: 0;
 }
 
 .games-page__empty {
@@ -95,27 +105,17 @@
     flex-direction: column;
   }
 
-  /* Stacked full-width rather than sharing one row: three buttons
-   * (Play coach / Play a bot / Analyze game) never fit a phone width at
-   * their natural label size, and flex's default min-width:auto refuses to
-   * shrink them below that — letting them share a row here overflowed the
-   * viewport instead of wrapping. */
-  .games-page__header-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-
   .games-page__header-actions a {
     width: 100%;
   }
 
-  /* Same overflow problem one level down: four review tabs and five status
-   * filters don't fit a phone width unwrapped either, and the page has no
-   * horizontal scrollbar to reveal what wrapping or clipping hid. A
-   * horizontal scroller (nowrap + its own overflow-x) keeps every tab/filter
-   * reachable with a swipe, edge-to-edge like a native segmented control,
-   * instead of "Imported games" breaking across two lines or the last
-   * filter chip running off the edge of the screen entirely. */
+  /* Four source tabs and five status filters don't fit a phone width
+   * unwrapped, and the page has no horizontal scrollbar to reveal what
+   * wrapping or clipping hid. A horizontal scroller (nowrap + its own
+   * overflow-x) keeps every tab/filter reachable with a swipe, edge-to-edge
+   * like a native segmented control, instead of a label breaking across two
+   * lines or the last filter chip running off the edge of the screen
+   * entirely. */
   .games-page__tabs,
   .games-page__filters {
     flex-wrap: nowrap;

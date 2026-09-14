@@ -1,34 +1,31 @@
-import { GameListResponseSchema, PromoteGameResponseSchema, type GameListItem, type GameReviewTier } from '@freechesscoach/shared';
+import { GameListResponseSchema, PromoteGameResponseSchema, isTopReviewTier, type GameListItem } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiDelete, apiGet, apiPost } from '../../api/client.js';
-import { PlayCircleIcon, PlusIcon } from '../../components/Icon.js';
-import { GameRow, statusAndActionFor } from './GameRow.js';
+import { PlusIcon } from '../../components/Icon.js';
+import { ContinueSessionCard } from './ContinueSessionCard.js';
+import { GameRow, sourceGroupFor, statusAndActionFor, type SourceGroup } from './GameRow.js';
 import './GamesPage.css';
 
 const SessionSummarySchema = z.object({ id: z.string() });
 const AnalyzeResponseSchema = z.object({ analysisId: z.string() });
 
-// One label per GameReviewTier, in GAME_REVIEW_TIERS' own stack order
-// (imported/bot -> review -> coach) just with imported/bot split into their
-// own tabs since they're distinguished by `source`, not `reviewTier` — see
-// promotionOptionsFor/canPromoteGameReviewTier. A Record, not an
-// array-of-{key,label}: adding a 5th tier without a matching label here is a
-// compile error rather than a tab that silently never shows any of that
-// tier's games (visibleGames filters strictly by `game.reviewTier === tab`).
-// Object.keys preserves this literal's insertion order for string keys, so
-// the tab order below is exactly this declaration order.
-const TAB_LABELS: Record<GameReviewTier, string> = {
-  coach: 'Coach',
-  review: 'Review',
-  bot: 'Bot games',
-  imported: 'Imported games'
-};
-const TABS = (Object.keys(TAB_LABELS) as GameReviewTier[]).map((key) => ({ key, label: TAB_LABELS[key] }));
+type SourceTab = 'all' | SourceGroup;
 
-type TabKey = GameReviewTier;
+// Source is metadata, not navigation (Daniel's IA feedback) — this replaces
+// the old four review-tier tabs (Coach/Review/Bot games/Imported games,
+// which conflated "what you can do with a game" with "where it came from")
+// with a plain filter over GameRow's own source grouping. Every game always
+// offers both Review and Coach once it's ready (see GameRow), regardless of
+// which of these tabs it's under.
+const SOURCE_TABS: { key: SourceTab; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'imported', label: 'Imported' },
+  { key: 'bot', label: 'Bot' },
+  { key: 'coached', label: 'Coached' }
+];
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -40,48 +37,42 @@ const FILTERS = [
 
 type FilterKey = (typeof FILTERS)[number]['key'];
 
-/** design.md §4.1: Games (home) — "Analyze a game" CTA, the game list, and
- * a no-dummy-data empty state. Owns fetching (AGENTS.md rule 7); GameRow is
- * presentational. A ready analyze-mode row hits POST /api/sessions (mirrors
- * ImportPage's post-analysis handoff) — the endpoint itself is find-or-create
- * (coachAgent.resumeOrCreateSession), so an existing active/paused session
- * for the game is linked back into rather than shadowed by a new one. A
- * coach_play row (architecture §14) instead navigates straight to its
- * already-existing sessionId — see handleSelect. */
+/** design.md §4.1: Games (home) — a single "Add games" CTA, an in-progress
+ * "Continue" section, the game list, and a no-dummy-data empty state. Owns
+ * fetching (AGENTS.md rule 7); GameRow/ContinueSessionCard are
+ * presentational. */
 export function GamesPage(): ReactNode {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>('all');
-  // A freshly-analyzed game starts at 'imported' or 'bot' (GAME_REVIEW_TIERS'
-  // default-by-source), never at 'review'/'coach' without an explicit
-  // promotion — so defaulting here to either avoids the likely-empty
-  // Coach/Review tabs. 'imported' specifically since it's the more common
-  // entry point (import/paste a game vs. play a bot); a bot-only user just
-  // takes one extra tap to their "Bot games" tab.
-  const [tab, setTab] = useState<TabKey>('imported');
+  const [tab, setTab] = useState<SourceTab>('all');
 
   const gamesQuery = useQuery({
     queryKey: ['games'],
     queryFn: ({ signal }) => apiGet('/api/games', GameListResponseSchema, signal)
   });
+  const games = gamesQuery.data ?? [];
 
-  const sessionMutation = useMutation({
-    mutationFn: (gameId: string) => apiPost('/api/sessions', { gameId }, SessionSummarySchema),
+  // Promotes to the coach tier first when the game hasn't reached it yet
+  // (a game already at 'coach' — including coach_play/vs_bot, which start
+  // there — skips straight to opening the session), then finds-or-creates
+  // its session the same way "Continue with Coach" always has. One mutation
+  // covers both the first time a game gets a coach and every time after:
+  // there's no tier left to "spend" once you're there, just the same
+  // session to reopen.
+  const coachMutation = useMutation({
+    mutationFn: async (game: GameListItem) => {
+      if (!isTopReviewTier(game.reviewTier)) {
+        await apiPost(`/api/games/${game.id}/promote`, { tier: 'coach' }, PromoteGameResponseSchema);
+        void queryClient.invalidateQueries({ queryKey: ['games'] });
+      }
+      return apiPost('/api/sessions', { gameId: game.id }, SessionSummarySchema);
+    },
     onSuccess: (session) => navigate(`/session/${session.id}`)
   });
 
   const deleteMutation = useMutation({
     mutationFn: (gameId: string) => apiDelete(`/api/games/${gameId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['games'] })
-  });
-
-  // "Move up the stack" (GameRow's promotionOptionsFor) — imported/bot to
-  // review or coach, review to coach. Following the row to wherever it lands
-  // would be nice but isn't necessary: the row itself picks up the new tier
-  // (and its tab) as soon as this invalidates ['games'].
-  const promoteMutation = useMutation({
-    mutationFn: ({ gameId, tier }: { gameId: string; tier: GameReviewTier }) =>
-      apiPost(`/api/games/${gameId}/promote`, { tier }, PromoteGameResponseSchema),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['games'] })
   });
 
@@ -113,39 +104,33 @@ export function GamesPage(): ReactNode {
     }
   });
 
-  // architecture §14: a coach_play game already has its session (created by
-  // POST /api/sessions/play) — link straight back into it rather than
-  // routing through analyze mode's POST /api/sessions, which gates on an
-  // `analyses` row a play-mode game never has. A vs_bot game (the "Play vs
-  // Bot" plan) is the same story while it's still being played, but links
-  // into the dedicated /bot-session route rather than /session — see
-  // App.tsx's BotSessionRoute doc comment. Once a game (any source) has a
-  // ready analysis, where it opens depends on its review tier: everything
-  // below `coach` opens the static Review page; `coach` opens the LLM
-  // coaching session, same find-or-create flow as before this tab existed. */
-  function handleSelect(game: GameListItem): void {
-    if (game.source === 'coach_play') {
-      if (game.sessionId) void navigate(`/session/${game.sessionId}`);
-      return;
-    }
-    if (game.source === 'vs_bot' && game.sessionId) {
-      void navigate(`/bot-session/${game.sessionId}`);
-      return;
-    }
-    if (game.analysisStatus !== 'ready') return;
-    if (game.reviewTier === 'coach') {
-      sessionMutation.mutate(game.id);
-      return;
-    }
-    void navigate(`/review/${game.id}`);
+  // architecture §14: a coach_play/vs_bot row already has its own live
+  // session (created by POST /api/sessions/play or /api/sessions/bot) —
+  // link straight back into it rather than routing through analyze mode's
+  // gated POST /api/sessions, which a play-mode game never has an
+  // `analyses` row for. Only ever called for a row with a `sessionId` (the
+  // top "Continue" section, or an in-progress row in the list below) — a
+  // ready game's Review/Coach buttons call onReview/onCoach directly
+  // instead.
+  function handleContinue(gameId: string): void {
+    const game = games.find((candidate) => candidate.id === gameId);
+    if (!game?.sessionId) return;
+    if (game.source === 'coach_play') void navigate(`/session/${game.sessionId}`);
+    if (game.source === 'vs_bot') void navigate(`/bot-session/${game.sessionId}`);
   }
 
-  function handlePromote(gameId: string, tier: GameReviewTier): void {
-    promoteMutation.mutate({ gameId, tier });
+  function handleReview(gameId: string): void {
+    void navigate(`/review/${gameId}`);
   }
 
-  const visibleGames = (gamesQuery.data ?? [])
-    .filter((game) => game.reviewTier === tab)
+  function handleCoach(gameId: string): void {
+    const game = games.find((candidate) => candidate.id === gameId);
+    if (game) coachMutation.mutate(game);
+  }
+
+  const inProgressGames = games.filter((game) => game.sessionId !== null);
+  const visibleGames = games
+    .filter((game) => tab === 'all' || sourceGroupFor(game.source) === tab)
     .filter((game) => filter === 'all' || statusAndActionFor(game).statusLabel === filter);
 
   return (
@@ -156,17 +141,9 @@ export function GamesPage(): ReactNode {
           <p className="games-page__description">Review your games and continue coaching sessions.</p>
         </div>
         <div className="games-page__header-actions">
-          <Link to="/play/new" className="btn-secondary">
-            <PlayCircleIcon width={16} height={16} />
-            Play coach
-          </Link>
-          <Link to="/play-bot/new" className="btn-secondary">
-            <PlayCircleIcon width={16} height={16} />
-            Play a bot
-          </Link>
           <Link to="/import" className="btn-primary">
             <PlusIcon width={16} height={16} />
-            Analyze game
+            Add games
           </Link>
         </div>
       </header>
@@ -174,9 +151,9 @@ export function GamesPage(): ReactNode {
       {gamesQuery.isLoading && <p>Loading…</p>}
       {gamesQuery.isError && <p>Could not load your games.</p>}
 
-      {gamesQuery.data && gamesQuery.data.length === 0 && (
+      {gamesQuery.data && games.length === 0 && (
         <p className="games-page__empty">
-          No games yet — analyze your first game to start a coaching session, or connect your Lichess account in
+          No games yet — add your first game to start a coaching session, or connect your Lichess account in
           Settings.
         </p>
       )}
@@ -184,12 +161,25 @@ export function GamesPage(): ReactNode {
       {deleteMutation.isError && <p>Could not delete that game — try again.</p>}
       {analyzeMutation.isError && <p>Could not start analysis — try again.</p>}
       {copyPgnMutation.isError && <p>Could not copy the PGN — try again.</p>}
-      {promoteMutation.isError && <p>Could not move that game — try again.</p>}
+      {coachMutation.isError && <p>Could not start a coaching session — try again.</p>}
 
-      {gamesQuery.data && gamesQuery.data.length > 0 && (
+      {inProgressGames.length > 0 && (
+        <section aria-label="Continue">
+          <h2 className="games-page__section-heading">Continue</h2>
+          <div className="games-page__list">
+            {inProgressGames.map((game) => (
+              <ContinueSessionCard key={game.id} game={game} onContinue={handleContinue} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {gamesQuery.data && games.length > 0 && (
         <>
-          <div className="games-page__tabs" role="tablist" aria-label="Filter by tab">
-            {TABS.map((option) => (
+          <h2 className="games-page__section-heading">Your games</h2>
+
+          <div className="games-page__tabs" role="tablist" aria-label="Filter by source">
+            {SOURCE_TABS.map((option) => (
               <button
                 key={option.key}
                 type="button"
@@ -217,19 +207,20 @@ export function GamesPage(): ReactNode {
           </div>
 
           {visibleGames.length === 0 ? (
-            <p className="games-page__empty">Nothing in {TABS.find((option) => option.key === tab)?.label} yet.</p>
+            <p className="games-page__empty">Nothing in {SOURCE_TABS.find((option) => option.key === tab)?.label} yet.</p>
           ) : (
             <ul className="games-page__list">
               {visibleGames.map((game) => (
                 <GameRow
                   key={game.id}
                   game={game}
-                  onSelect={() => handleSelect(game)}
+                  onSelect={() => handleContinue(game.id)}
+                  onReview={handleReview}
+                  onCoach={handleCoach}
                   onAnalyze={(gameId) => analyzeMutation.mutate(gameId)}
                   onExportPgn={handleExportPgn}
                   onCopyPgn={(gameId) => copyPgnMutation.mutate(gameId)}
                   onDelete={(gameId) => deleteMutation.mutate(gameId)}
-                  onPromote={handlePromote}
                 />
               ))}
             </ul>
