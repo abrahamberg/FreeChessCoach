@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { apiDelete, apiGet, apiPost } from '../../api/client.js';
 import { PlusIcon } from '../../components/Icon.js';
 import { ContinueSessionCard } from './ContinueSessionCard.js';
-import { GameRow, sourceGroupFor, statusAndActionFor, type SourceGroup } from './GameRow.js';
+import { GameRow, sourceGroupFor, type SourceGroup } from './GameRow.js';
 import './GamesPage.css';
 
 const SessionSummarySchema = z.object({ id: z.string() });
@@ -27,24 +27,18 @@ const SOURCE_TABS: { key: SourceTab; label: string }[] = [
   { key: 'coached', label: 'Coached' }
 ];
 
-const FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'Not analyzed', label: 'Not analyzed' },
-  { key: 'Ready', label: 'Ready' },
-  { key: 'In progress', label: 'In progress' },
-  { key: 'Completed', label: 'Completed' }
-] as const;
-
-type FilterKey = (typeof FILTERS)[number]['key'];
-
 /** design.md §4.1: Games (home) — a single "Add games" CTA, an in-progress
  * "Continue" section, the game list, and a no-dummy-data empty state. Owns
  * fetching (AGENTS.md rule 7); GameRow/ContinueSessionCard are
- * presentational. */
+ * presentational. One filter row, not two: a second row filtering by status
+ * (Ready/Analyzing/…) used to sit under the source tabs, but with a status
+ * badge already on every card and most students' lists small enough to just
+ * scan, stacking a second segmented control under the first read as chrome
+ * for its own sake — the exact "tabs as primary IA" clutter this redesign
+ * was meant to remove. */
 export function GamesPage(): ReactNode {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<FilterKey>('all');
   const [tab, setTab] = useState<SourceTab>('all');
 
   const gamesQuery = useQuery({
@@ -129,9 +123,7 @@ export function GamesPage(): ReactNode {
   }
 
   const inProgressGames = games.filter((game) => game.sessionId !== null);
-  const visibleGames = games
-    .filter((game) => tab === 'all' || sourceGroupFor(game.source) === tab)
-    .filter((game) => filter === 'all' || statusAndActionFor(game).statusLabel === filter);
+  const visibleGames = games.filter((game) => tab === 'all' || sourceGroupFor(game.source) === tab);
 
   return (
     <div className="page games-page">
@@ -187,19 +179,6 @@ export function GamesPage(): ReactNode {
                 aria-selected={tab === option.key}
                 className={tab === option.key ? 'games-page__tab active' : 'games-page__tab'}
                 onClick={() => setTab(option.key)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="games-page__filters" role="group" aria-label="Filter by status">
-            {FILTERS.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                className={filter === option.key ? 'games-page__filter active' : 'games-page__filter'}
-                onClick={() => setFilter(option.key)}
               >
                 {option.label}
               </button>
