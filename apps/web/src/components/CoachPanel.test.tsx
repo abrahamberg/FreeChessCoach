@@ -14,10 +14,10 @@ describe('CoachPanel', () => {
     expect(container.querySelector('.coach-panel--normal')).toBeInTheDocument();
   });
 
-  test('tapping the handle cycles peek -> normal -> expanded -> peek', () => {
+  test('tapping the handle toggles normal -> expanded', () => {
     const onStateChange = vi.fn();
     render(
-      <CoachPanel state="peek" onStateChange={onStateChange}>
+      <CoachPanel state="normal" onStateChange={onStateChange}>
         <p>note</p>
       </CoachPanel>
     );
@@ -26,10 +26,10 @@ describe('CoachPanel', () => {
     fireEvent.pointerDown(handle, { pointerId: 1, clientY: 100 });
     fireEvent.pointerUp(handle, { pointerId: 1, clientY: 100 });
 
-    expect(onStateChange).toHaveBeenCalledWith('normal');
+    expect(onStateChange).toHaveBeenCalledWith('expanded');
   });
 
-  test('tapping the handle while expanded collapses back to peek', () => {
+  test('tapping the handle while expanded collapses back to normal', () => {
     const onStateChange = vi.fn();
     render(
       <CoachPanel state="expanded" onStateChange={onStateChange}>
@@ -41,13 +41,13 @@ describe('CoachPanel', () => {
     fireEvent.pointerDown(handle, { pointerId: 1, clientY: 100 });
     fireEvent.pointerUp(handle, { pointerId: 1, clientY: 100 });
 
-    expect(onStateChange).toHaveBeenCalledWith('peek');
+    expect(onStateChange).toHaveBeenCalledWith('normal');
   });
 
-  test('dragging the handle up past the threshold advances to the next state', () => {
+  test('dragging the handle up past the threshold expands', () => {
     const onStateChange = vi.fn();
     render(
-      <CoachPanel state="peek" onStateChange={onStateChange}>
+      <CoachPanel state="normal" onStateChange={onStateChange}>
         <p>note</p>
       </CoachPanel>
     );
@@ -56,10 +56,10 @@ describe('CoachPanel', () => {
     fireEvent.pointerDown(handle, { pointerId: 1, clientY: 200 });
     fireEvent.pointerMove(handle, { pointerId: 1, clientY: 130 });
 
-    expect(onStateChange).toHaveBeenCalledWith('normal');
+    expect(onStateChange).toHaveBeenCalledWith('expanded');
   });
 
-  test('dragging the handle down past the threshold retreats to the previous state', () => {
+  test('dragging the handle down past the threshold collapses', () => {
     const onStateChange = vi.fn();
     render(
       <CoachPanel state="expanded" onStateChange={onStateChange}>
@@ -74,10 +74,10 @@ describe('CoachPanel', () => {
     expect(onStateChange).toHaveBeenCalledWith('normal');
   });
 
-  test('a drag past the threshold does not also fire the tap-cycle on release', () => {
+  test('a drag past the threshold does not also fire the tap toggle on release', () => {
     const onStateChange = vi.fn();
     render(
-      <CoachPanel state="peek" onStateChange={onStateChange}>
+      <CoachPanel state="normal" onStateChange={onStateChange}>
         <p>note</p>
       </CoachPanel>
     );
@@ -88,21 +88,6 @@ describe('CoachPanel', () => {
     fireEvent.pointerUp(handle, { pointerId: 1, clientY: 130 });
 
     expect(onStateChange).toHaveBeenCalledTimes(1);
-    expect(onStateChange).toHaveBeenCalledWith('normal');
-  });
-
-  test('dragging up from the top state stays put — there is nothing further to snap to', () => {
-    const onStateChange = vi.fn();
-    render(
-      <CoachPanel state="expanded" onStateChange={onStateChange}>
-        <p>note</p>
-      </CoachPanel>
-    );
-    const handle = screen.getByRole('button', { name: /collapse coach panel/i });
-
-    fireEvent.pointerDown(handle, { pointerId: 1, clientY: 200 });
-    fireEvent.pointerMove(handle, { pointerId: 1, clientY: 130 });
-
-    expect(onStateChange).not.toHaveBeenCalled();
+    expect(onStateChange).toHaveBeenCalledWith('expanded');
   });
 });

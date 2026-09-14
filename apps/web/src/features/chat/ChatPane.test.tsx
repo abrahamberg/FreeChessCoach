@@ -109,37 +109,23 @@ describe('ChatPane', () => {
     expect(screen.queryByTestId('arrow-chip')).not.toBeInTheDocument();
   });
 
-  test('keeps the coach identity visible when autoplay is unavailable', () => {
+  test('shows the coach identity', () => {
     render(<ChatPane messages={[]} activeToolName={null} onSend={vi.fn()} />);
     expect(screen.getByText('Coach')).toBeInTheDocument();
     expect(screen.getByTestId('coach-avatar')).toHaveAttribute('data-coach-persona', 'general');
     expect(screen.getByRole('link', { name: /change coach/i })).toHaveAttribute('href', '/settings');
     expect(screen.queryByText(/male|female|\d+s/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /automatic coach voice/i })).not.toBeInTheDocument();
   });
 
-  test('renders the selected coach and forwards the speaker toggle', async () => {
-    const onToggleAutoplay = vi.fn();
-    const user = userEvent.setup();
-    render(
-      <ChatPane
-        messages={[]}
-        activeToolName={null}
-        onSend={vi.fn()}
-        coachPersona="gambler"
-        autoplayEnabled={false}
-        onToggleAutoplay={onToggleAutoplay}
-      />
-    );
+  // The coach-voice autoplay toggle used to live in this header — it now
+  // lives in SessionHeader's overflow menu instead (SessionPage.test.tsx).
+  test('renders the selected coach', () => {
+    render(<ChatPane messages={[]} activeToolName={null} onSend={vi.fn()} coachPersona="gambler" />);
 
     expect(screen.getByText('The Gambler')).toBeInTheDocument();
     expect(screen.getByTestId('coach-avatar')).toHaveAttribute('data-coach-persona', 'gambler');
     expect(screen.queryByText(/male|female|\d+s/i)).not.toBeInTheDocument();
-    const toggle = screen.getByRole('button', { name: /enable automatic coach voice/i });
-    expect(toggle).toHaveAttribute('aria-pressed', 'false');
-    await user.click(toggle);
-
-    expect(onToggleAutoplay).toHaveBeenCalledWith(true);
+    expect(screen.queryByRole('button', { name: /automatic coach voice/i })).not.toBeInTheDocument();
   });
 
   test('forwards onPlayMessage/onStopMessage/playingMessageId/loadingMessageId through to MessageList', async () => {

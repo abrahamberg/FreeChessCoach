@@ -244,31 +244,36 @@ describe('SessionPage', () => {
     expect(await within(messageList).findByTestId('coach-avatar')).toHaveAttribute('data-coach-persona', 'general');
   });
 
-  test('renders the coach identity and speaker toggle with a play button on the coach message', async () => {
+  // The coach-voice autoplay toggle lives in SessionHeader's overflow menu
+  // now (alongside Reset/Debug — one settings menu at the top of the
+  // screen), not as its own dedicated button competing for space in the
+  // chat header or the mobile card.
+  test('the session options menu offers to turn coach voice on, then off, with a play button on the coach message', async () => {
     vi.stubGlobal('fetch', mockFetch({ ttsEnabled: true }));
     const user = userEvent.setup();
     renderSessionPage();
 
     const messageList = await screen.findByTestId('message-list');
-    const voiceToggle = screen.getByRole('button', { name: /enable automatic coach voice/i });
-    expect(voiceToggle).toHaveAttribute('aria-pressed', 'false');
     expect(within(messageList).getByRole('button', { name: 'Play coach message' })).toBeInTheDocument();
 
-    await user.click(voiceToggle);
-    expect(screen.getByRole('button', { name: /disable automatic coach voice/i })).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    );
+    await user.click(screen.getByRole('button', { name: /session options/i }));
+    await user.click(screen.getByRole('menuitem', { name: 'Turn on coach voice' }));
+
+    await user.click(screen.getByRole('button', { name: /session options/i }));
+    expect(screen.getByRole('menuitem', { name: 'Turn off coach voice' })).toBeInTheDocument();
   });
 
-  test('coach identity remains visible when the account has not enabled voice (default off)', async () => {
+  test('coach identity remains visible when the account has not enabled voice (default off), with no voice option in the menu', async () => {
     vi.stubGlobal('fetch', mockFetch());
+    const user = userEvent.setup();
     renderSessionPage();
 
     const messageList = await screen.findByTestId('message-list');
     expect(screen.getByText('Coach')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /automatic coach voice/i })).not.toBeInTheDocument();
     expect(within(messageList).queryByRole('button', { name: 'Play coach message' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /session options/i }));
+    expect(screen.queryByRole('menuitem', { name: /coach voice/i })).not.toBeInTheDocument();
   });
 
   test('design.md §5.3: hovering a move mention in chat previews it on the board in a distinct color from the coach\'s own arrows', async () => {

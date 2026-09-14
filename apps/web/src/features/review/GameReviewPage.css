@@ -122,14 +122,15 @@
   flex: 1;
 }
 
-/* --- mobile (below this page's own desktop breakpoint): the board first,
- * then nav pills + move strip below it, with the note card riding along as
- * a CoachPanel bottom sheet anchored to the board's bottom edge rather than
- * a flex sibling of its own (see .game-review-board-stack below). The
- * board's size still comes from its own width (edge-to-edge, like
- * chess.com — see .session-board-column below), independent of the panel
- * either way. Game Report is a separate fixed bottom sheet below, not a
- * flex child here — see .game-review-report-sheet. */
+/* --- mobile (below this page's own desktop breakpoint): the board pinned
+ * at the top, MoveNavStrip pinned at the bottom, and the note card as a
+ * CoachPanel filling exactly the space left between them (see
+ * .game-review-board-stack below) rather than sizing itself from its own
+ * content and leaving whatever's left as bare page background. The board's
+ * size still comes from its own width (edge-to-edge, like chess.com — see
+ * .session-board-column below), independent of the panel either way. Game
+ * Report is a separate fixed bottom sheet below, not a flex child here —
+ * see .game-review-report-sheet. */
 .game-review-body.mobile {
   overflow-x: hidden;
   overflow-y: auto;
@@ -164,25 +165,22 @@
   padding-bottom: calc(44px + env(safe-area-inset-bottom));
 }
 
-/* The positioning context CoachPanel's `--expanded` state anchors to
- * (CoachPanel.css) — peek/normal sit in flow right after the board, sized
- * from CoachPanel's own state-driven height (not this page's concern
- * anymore); expanded switches to `position: absolute`, overlapping the
- * board below it instead of pushing the move-nav strip down, the same
- * collapsed-in-flow/expanded-overlay technique the desktop explorer column
- * already uses for `.game-report-summary--expanded` further down this
- * file. */
+/* The positioning context CoachPanel's `expanded` state anchors to
+ * (CoachPanel.css sets `position: absolute` on it universally — this is
+ * just the `position: relative` host), and the flex column whose remaining
+ * height (after the board's own fixed size) CoachPanel's `normal` state
+ * fills — `flex: 1 1 auto` here is what makes this stack (not just the
+ * panel) claim the space MoveNavStrip, its sibling below, doesn't need.
+ * Expanded then overlaps the board below it instead of pushing the
+ * move-nav strip down, the same collapsed-in-flow/expanded-overlay
+ * technique the desktop explorer column already uses for
+ * `.game-report-summary--expanded` further down this file. */
 .game-review-board-stack {
   position: relative;
   display: flex;
   flex-direction: column;
-}
-
-.game-review-board-stack .coach-panel--expanded {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* Edge-to-edge, matching the board exactly (same negative-margin trick as
