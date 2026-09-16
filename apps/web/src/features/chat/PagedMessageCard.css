@@ -5,18 +5,6 @@
  * and sizing overrides for the move mentions/position dividers/annotation
  * notes that can appear inline in a coach message. */
 
-/* A true fixed height (not CoachCard's default min-height + flex-grow,
- * which lets a caller with its own outer height/max-height — MoveNoteCard,
- * BotStatusPanel — grow into it) — paging left/right between a one-line
- * message and a long one must not resize the card (and shift the board and
- * nav pills below it) on every step; a short message just leaves blank
- * space below it instead. */
-.paged-message-card .coach-card__slot {
-  flex: 0 0 auto;
-  height: 4.5rem;
-  min-height: 0;
-}
-
 /* A distinctly different color (not just the border accent) plus an
  * indent from the left — the same two cues (tinted background,
  * right-shifted position) the desktop transcript's own right-aligned user
@@ -28,12 +16,24 @@
   border-left-color: var(--color-primary);
 }
 
-/* Fills whatever height CoachCard's own slot/panel gives it (4.5rem
- * collapsed, the expanded overlay's height once toggled) — paging left/right
- * between a one-line message and a long one must not resize the card (and
- * shift the board and nav pills below it) on every step; a short message
- * just leaves blank space below it instead. Anything longer scrolls
- * internally. */
+/* ThinkingIndicator/ToolActivity's own base rules (ChatPane.css) add 16px of
+ * horizontal margin/padding for their usual placement in the desktop
+ * transcript's own unpadded scroll column — redundant, and misaligning,
+ * once nested inside this card's own reading padding (CoachCard.css). */
+.paged-message-card .thinking-indicator {
+  margin: 0 0 8px;
+}
+
+.paged-message-card .tool-activity {
+  padding: 0 0 8px;
+}
+
+/* Fills whatever height CoachCard's own slot/panel gives it (the
+ * header-to-board gap collapsed, the expanded overlay's height once
+ * toggled) — paging left/right between a one-line message and a long one
+ * must not resize the card (and shift the board and nav pills below it) on
+ * every step; a short message just leaves blank space below it instead.
+ * Anything longer scrolls internally. */
 .paged-message-card__body {
   height: 100%;
   line-height: var(--line-height-reading);

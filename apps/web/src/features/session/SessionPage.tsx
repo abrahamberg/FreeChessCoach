@@ -20,6 +20,7 @@ import { MobileCoachSessionBody } from './MobileCoachSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { SessionHeader } from './SessionHeader.js';
 import { useSessionPageData } from './useSessionPageData.js';
+import '../../styles/board-bottom-bar.css';
 import './SessionPage.css';
 
 /** design.md §5: composes board + chat for an active coaching session.

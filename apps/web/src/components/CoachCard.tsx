@@ -49,19 +49,19 @@ export function CoachCard({ avatar, header, className, expanded = false, onToggl
       <div className="coach-card__slot">
         <div className="coach-card__panel">
           <div className="coach-card__text">{children}</div>
+          {onToggleExpand && (
+            <button
+              type="button"
+              className="coach-card__expand-toggle"
+              onClick={onToggleExpand}
+              aria-expanded={expanded}
+              aria-label={expanded ? 'Show less' : 'Show more'}
+              title={expanded ? 'Show less' : 'Show more'}
+            >
+              {expanded ? <ChevronDownIcon width={16} height={16} /> : <ChevronUpIcon width={16} height={16} />}
+            </button>
+          )}
         </div>
-        {onToggleExpand && (
-          <button
-            type="button"
-            className="coach-card__expand-toggle"
-            onClick={onToggleExpand}
-            aria-expanded={expanded}
-            aria-label={expanded ? 'Show less' : 'Show more'}
-            title={expanded ? 'Show less' : 'Show more'}
-          >
-            {expanded ? <ChevronDownIcon width={16} height={16} /> : <ChevronUpIcon width={16} height={16} />}
-          </button>
-        )}
       </div>
     </div>
   );

@@ -1,0 +1,52 @@
+/* Shared chrome for the mobile board views' fixed bottom bar — which one of
+ * SessionPage.css's .board-bottom-bar--composer (ChatComposer, live Coach/
+ * Play sessions) or GameReviewPage.css's .board-bottom-bar--report
+ * (GameReportSummary, Review and, once a report exists, Play vs Bot) renders
+ * is decided by the page/mode, not a user toggle — but both are the same
+ * "pinned to the screen's bottom edge" box, so that positioning/background/
+ * safe-area/shadow chrome lives once here instead of twice, one copy per
+ * page. Each page's own stylesheet still owns its variant's content-specific
+ * rules (border-top for the composer, rounded corners/collapsed-state rules
+ * for the report). */
+.board-bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background: var(--color-surface);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -2px 12px var(--color-border-strong);
+}
+
+/* --report variant: a GameReportSummary as the bottom sheet — used by both
+ * GameReviewPage (Review) and BotSessionPage (Play vs Bot, once its own
+ * post-game report exists). "A layer on top of the board with a button to
+ * expand from bottom to top overlaying the board while expanded" — opening
+ * it never moves the board or the card above it, since the bar itself is
+ * outside the page's flex flow (position: fixed, above). Collapsed, it's
+ * just GameReportSummary's own header + always-visible headline cards
+ * floating over the board's bottom edge as a handle; the max-height on its
+ * own --expanded state below caps how far it grows and gives its
+ * already-internally-scrolling __body (GameReportSummary.css) somewhere to
+ * stop, so a long report scrolls inside the sheet instead of pushing past
+ * the top of the screen. */
+.board-bottom-bar--report .game-report-summary {
+  border-radius: 12px 12px 0 0;
+}
+
+/* Collapsed, this is supplementary, not a view in its own right — a tiny
+ * ribbon ("Game Report" + chevron, .game-report-summary__header, which
+ * already toggles on click) is all that should show, not the headline
+ * cards/expand-toggle GameReportSummary also renders while collapsed
+ * everywhere else it's used (the desktop explorer column has room to
+ * spare for those; this bottom sheet is fighting the board for space on a
+ * phone). Expanding reveals both again, along with the full body. */
+.board-bottom-bar--report .game-report-summary:not(.game-report-summary--expanded) .game-report-summary__headline,
+.board-bottom-bar--report .game-report-summary:not(.game-report-summary--expanded) .game-report-summary__expand-toggle {
+  display: none;
+}
+
+.board-bottom-bar--report .game-report-summary--expanded {
+  max-height: 85vh;
+}

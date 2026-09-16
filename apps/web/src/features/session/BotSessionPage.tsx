@@ -15,6 +15,7 @@ import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { SessionHeader } from './SessionHeader.js';
 import { StackedSessionBody } from './StackedSessionBody.js';
 import { useBotSessionPageData } from './useBotSessionPageData.js';
+import '../../styles/board-bottom-bar.css';
 import './SessionPage.css';
 
 export interface BotSessionPageProps {
@@ -176,6 +177,10 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   };
   const statusPanel = showStatusBar && <BotStatusPanel {...statusPanelProps} />;
   const statusCard = showStatusBar && <BotStatusPanel {...statusPanelProps} variant="card" />;
+  // Mobile's own bottom sheet for the same report the desktop sidebar
+  // already shows once it exists (below) — absent while the game is still
+  // in progress, same as desktop.
+  const reportFooter = gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} userColor={orientation} />;
   const engineBadge = engineActivity.engineMode ? ENGINE_MODE_BADGE[engineActivity.engineMode] : 'Engine';
   const headerExtraItems: OverflowMenuItem[] = [
     { label: showStatusBar ? 'Hide status bar' : 'Show status bar', onSelect: () => setShowStatusBar(!showStatusBar) },
@@ -204,7 +209,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
           {statusPanel}
         </div>
       ) : (
-        <StackedSessionBody card={statusCard} board={board} />
+        <StackedSessionBody card={statusCard} board={board} footer={reportFooter} footerKind="report" />
       )}
       {gameOverInfo && !dialogDismissed && (
         <GameOverDialog gameOver={gameOverInfo} userColor={orientation} botName={botName} onContinue={() => setDialogDismissed(true)} />

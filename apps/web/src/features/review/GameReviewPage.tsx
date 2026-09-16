@@ -11,6 +11,7 @@ import { SessionHeader } from '../session/SessionHeader.js';
 import { GameReviewBoardColumn } from './GameReviewBoardColumn.js';
 import { MoveNoteCard } from './MoveNoteCard.js';
 import { useGameReviewPageData } from './useGameReviewPageData.js';
+import '../../styles/board-bottom-bar.css';
 import './GameReviewPage.css';
 
 /** The static, move-by-move Game Report review — chess.com-style "Review",
@@ -151,7 +152,7 @@ export function GameReviewPage(): ReactNode {
             <MoveNavStrip sanMoves={sanMoves} classifiedMoves={classifiedMoves} positions={positions} ply={ply} onSelect={setPly} />
           </div>
           {game.gameReport && (
-            <div className="game-review-report-sheet">
+            <div className="board-bottom-bar board-bottom-bar--report">
               <GameReportSummary report={game.gameReport} userColor={orientation} tacticBaseline={game.tacticBaseline} />
             </div>
           )}

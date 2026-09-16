@@ -105,13 +105,17 @@
   color: var(--color-text-secondary);
 }
 
-/* No expand toggle for the empty state (nothing to expand into) — center
- * the prompt in the space that leaves instead of stacking it flush under
- * the header. */
+/* Used to vertically center the prompt in the space a missing expand
+ * toggle leaves — read fine back when the card's own height was a small
+ * fixed one (18vh). Now that the card flex-fills the real header-to-board
+ * gap (SessionPage.css/GameReviewPage.css's own .coach-card rules), that
+ * gap can be much taller than one line of prompt text, and centering it
+ * left the prompt floating in the middle of a mostly-empty box with the
+ * border framing nothing in particular. Left top-aligned instead, right
+ * under the header — the same place every other card's real content
+ * starts — just still centered horizontally, since it's one short
+ * line worth reading as a caption rather than a paragraph. */
 .move-note-card--empty .coach-card__text {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   text-align: center;
 }
 

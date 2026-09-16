@@ -25,6 +25,18 @@
   padding-bottom: var(--space-2);
 }
 
+/* `header` content sits after the avatar and claims the row's remaining
+ * width — MoveNoteCard's badge/label/headline size to their own content,
+ * but PagedMessageCard's MessageNavPills (.move-explorer__nav) is built to
+ * spread its five buttons across a full-width bar (justify-content:
+ * space-between, MoveExplorer.css) the way it used to as its own row below
+ * the board; without flex-grow here it would just collapse to hugging its
+ * own buttons instead. */
+.coach-card__header > .move-explorer__nav {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* Small and inline, at the head of the card's own content — not a
  * full-height column beside it. Works regardless of which avatar component
  * (CoachAvatar/BotAvatar/UserAvatar) is passed in: all three are plain
@@ -36,11 +48,16 @@
   line-height: 0;
 }
 
+/* 2.5x the original 28px (Daniel's call, mobile-board-views redesign
+ * follow-up) — big enough to read as a real portrait, not just an
+ * identifying dot, now that the header row is free to grow with it
+ * (flex-wrap above, and the card itself no longer has a fixed height to
+ * fight). */
 .coach-card__avatar :is(.coach-avatar-image, .bot-avatar-image, .user-avatar-initials) {
-  width: 28px;
-  height: 28px;
+  width: 70px;
+  height: 70px;
   margin: 0;
-  font-size: 11px;
+  font-size: 28px;
 }
 
 /* Reserves the collapsed panel's own height in flow at all times — even
@@ -55,19 +72,62 @@
   position: relative;
   flex: 1 1 auto;
   min-height: 4.5rem;
+  /* Relays .coach-card's own border-left-color (the plain default, or a
+   * caller's own quality/variant override — MoveNoteCard's per-quality
+   * colors, PagedMessageCard's user-message tint) one level down so the
+   * expanded panel below can pick the same color back up via `inherit` —
+   * border-left-color isn't an inherited property by default, so without
+   * this the panel would only ever see the browser's own initial value,
+   * not whatever color this specific card actually is. */
+  border-left-color: inherit;
 }
 
+/* position: relative anchors .coach-card__expand-toggle (now this panel's
+ * own child, not the slot's) to this panel's actual bottom edge — the
+ * slot's own collapsed height when collapsed (height: 100% below), the
+ * panel's real content-driven height when expanded (--expanded overrides
+ * height to auto below) — so the toggle always sits right at the visible
+ * edge instead of a value computed from whichever box happens to be taller. */
+/* padding-bottom is the actual toggle clearance, and it has to live HERE —
+ * not on .coach-card__text, not on .coach-card__slot. .coach-card__text
+ * (below) has flex:1 1 auto with no explicit height, so its own border-box
+ * size is whatever the flex algorithm gives it; padding on an element like
+ * that doesn't shrink that box, so it can't be what creates a gap.
+ * .coach-card__slot's own padding looked promising but doesn't work either:
+ * .coach-card__expand-toggle is position: absolute with bottom: -11px
+ * relative to THIS element (its containing block), and .coach-card__text
+ * fills exactly 100% of this element's height — so slot padding shifts the
+ * panel and the toggle up together, leaving the gap between them (still
+ * -11px) unchanged no matter the value. What actually works: an absolutely
+ * positioned child's offsets are measured from the containing block's
+ * PADDING edge (i.e. unaffected by this element's own padding), while
+ * .coach-card__text is normal flow and DOES get squeezed into this
+ * element's smaller content box by that same padding — so this padding
+ * moves .coach-card__text's own bottom edge up while leaving the toggle
+ * exactly where it was, which is what actually opens the gap between them.
+ * 20px clears the toggle's 11px overlap with a few px to spare; verified
+ * scrolled to the top (the default, most-common view) against both a short
+ * note and a long one with a full alternatives list that fills the card
+ * right to its edge. */
 .coach-card__panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
+  padding-bottom: 20px;
 }
 
+/* flex-basis: auto (not the flex: 1 shorthand's own 0%) so this item's
+ * hypothetical size comes from its actual content — needed for the
+ * expanded panel's own height: auto (below) to correctly shrink-wrap a
+ * short message; a 0% basis leaves an auto-height ancestor nothing to size
+ * itself from. Once the ancestor's max-height clamps it for a long message,
+ * this still stretches to fill the now-definite remaining space and
+ * overflow-y: auto scrolls it, same as before. */
 .coach-card__text {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding-bottom: var(--space-2);
 }
 
 /* A small handle centered on the card's own bottom edge — same affordance
@@ -100,23 +160,63 @@
 /* Expanding takes the panel out of flow and grows it downward as an
  * overlay — the slot above still reserves the collapsed height (nothing
  * else moves), and z-index lifts this above the board/move-nav/composer it
- * now covers. Bounded well short of the full viewport so it reads as
- * "reaching toward the board", not a full-screen takeover. */
+ * now covers. max-height (not a fixed height) bounds how far it can reach —
+ * Daniel's call, most of the screen (3/4 of the viewport height) rather
+ * than stopping around half, so it reads as "reaching toward the board",
+ * not a full-screen takeover — but the panel only grows as tall as its own
+ * content actually needs up to that bound, instead of always claiming the
+ * full bound regardless of content: a short message used to leave a large
+ * blank panel of bare card background below it; now it just stops where
+ * the text does, and only a message long enough to hit the cap scrolls
+ * internally (.coach-card__text's own overflow-y: auto).
+ *
+ * left/right push past this card's own padding (above, var(--space-4)) so
+ * the expanded panel fills the card's own full rounded-corner width, not
+ * just the narrower reading column the collapsed slot sits inside of —
+ * without this the panel left the card's own side padding showing as a
+ * bare gutter next to it. It stops there, at the card's own outer edge —
+ * the page-level margin/padding outside that (SessionPage.css's `.coach-card`
+ * margin, GameReviewPage.css's container padding) stays untouched, so the
+ * expanded card still reads as the same floating, rounded, inset card the
+ * collapsed one is, just taller — not a flat full-bleed slab flush with the
+ * screen edges. padding puts the card's own reading margin (above, on
+ * .coach-card itself) back — bleeding the panel out past that margin for
+ * the border fix above also took the margin away from everything inside
+ * it, unless restored here. */
 .coach-card--expanded .coach-card__panel {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  /* The extra 4px (on the left only) is the card's own border-left width —
+   * without it the panel's left edge lands 4px in from the card's true
+   * outer edge (where the card's own content starts, past that border), so
+   * the accent stripe below would pick up 4px to the right of where the
+   * header's own stripe stops, a visible jog instead of one continuous
+   * line down the card's left edge. */
+  left: calc(-1 * var(--space-4) - 4px);
+  right: calc(-1 * var(--space-4));
   z-index: 21;
-  height: min(58vh, 520px);
+  height: auto;
+  max-height: min(75vh, 760px);
+  padding: 0 var(--space-4) var(--space-3);
   background: var(--color-surface);
+  /* Continues the card's own colored left accent (plain, or a caller's
+   * quality/variant color — see .coach-card__slot's own border-left-color:
+   * inherit above) down past where the card's own border stops, so the
+   * stripe reads as one unbroken line the full height of the expanded card
+   * instead of stopping at the collapsed boundary while the panel grows on
+   * past it with no matching edge. */
+  border-left: 4px solid;
+  border-left-color: inherit;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   box-shadow: var(--shadow-lg);
 }
 
+/* Only z-index changes here — position (bottom: -11px, relative to this
+ * panel, set above) already tracks the panel's real bottom edge whether
+ * that's the collapsed slot's height or the expanded panel's own
+ * content-driven one, so there's no separate offset to compute for this
+ * state. Elevated above the board/move-nav/composer this state now covers,
+ * same as the panel itself. */
 .coach-card--expanded .coach-card__expand-toggle {
-  bottom: auto;
-  top: min(58vh, 520px);
   z-index: 22;
-  margin-top: -11px;
 }
