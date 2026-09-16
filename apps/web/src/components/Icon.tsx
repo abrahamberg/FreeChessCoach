@@ -85,6 +85,14 @@ export function ChevronDownIcon(props: IconProps): ReactNode {
   );
 }
 
+export function ChevronUpIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <polyline points="6 15 12 9 18 15" />
+    </svg>
+  );
+}
+
 export function MoreVerticalIcon(props: IconProps): ReactNode {
   return (
     <svg {...iconProps({ strokeWidth: 0, fill: 'currentColor', ...props })}>

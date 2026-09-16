@@ -241,7 +241,7 @@
  * instead the card and the nav pills below the board each get their own
  * inset directly, matching the reading margin GameReviewPage's page
  * padding gave its own note card/move nav for free. */
-.session-body.mobile.stacked > .avatar-note-row,
+.session-body.mobile.stacked > .coach-card,
 .session-body.mobile.stacked > .move-explorer__nav {
   margin-left: var(--space-4);
   margin-right: var(--space-4);
@@ -276,15 +276,14 @@
   flex: 0 0 auto;
 }
 
-/* Edge-to-edge board + eval bar only — cancels .session-board-column's own
- * --space-2 mobile padding (the media query above) for just these two
- * rows, leaving the pills/Explore panel/bot toolbar below with their
- * normal inset (those read as cramped flush to the edge; the board reads
- * better that way, chess.com-style). Token-based (not a hardcoded -8px) so
- * a rebase of --space-2 keeps this in sync automatically, same as
- * GameReviewPage.css's own edge-to-edge trick. */
-.session-body.mobile.stacked .session-board-column > .session-board-row,
-.session-body.mobile.stacked .session-board-column > .eval-bar-wrap--horizontal {
+/* Edge-to-edge board + eval bar row only — cancels .session-board-column's
+ * own --space-2 mobile padding (the media query above) for just this row,
+ * leaving the pills/Explore panel/bot toolbar below with their normal inset
+ * (those read as cramped flush to the edge; the board reads better that
+ * way, chess.com-style). Token-based (not a hardcoded -8px) so a rebase of
+ * --space-2 keeps this in sync automatically, same as GameReviewPage.css's
+ * own edge-to-edge trick. */
+.session-body.mobile.stacked .session-board-column > .session-board-row {
   margin: 0 calc(-1 * var(--space-2));
 }
 
@@ -391,7 +390,7 @@
 .session-body.desktop .move-strip,
 .session-body.desktop .bot-move-toolbar,
 .session-body.desktop .explore-panel-toggle,
-.session-body.desktop .explore-panel {
+.session-body.desktop .explore-panel-pill {
   flex-shrink: 0;
 }
 

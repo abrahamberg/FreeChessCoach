@@ -49,11 +49,12 @@ export interface MobileCoachSessionBodyProps {
  *
  * There used to be a dedicated header row above the card (a portrait +
  * persona name, the voice toggle) — dropped: PagedMessageCard already shows
- * the same portrait beside every coach message, so the header was a second,
+ * the same portrait in its own header, so a separate row was a second,
  * larger copy of an identity the student can already see, costing a whole
- * row the board could use instead. The voice toggle survives as
- * PagedMessageCard's own row action (its `onToggleAutoplay` prop) instead
- * of a header of its own. */
+ * row the board could use instead. The voice autoplay toggle now lives in
+ * SessionHeader's overflow menu (SessionPage), alongside Settings/the
+ * engine indicator — otherwise unreachable on a board route (AppShell hides
+ * its own top bar there) — rather than a per-card button. */
 export function MobileCoachSessionBody({
   board,
   messagePaging,
@@ -89,8 +90,6 @@ export function MobileCoachSessionBody({
             onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
             playingMessageId={coachVoice.playingMessageId}
             loadingMessageId={coachVoice.loadingMessageId}
-            autoplayEnabled={coachVoice.autoplayEnabled}
-            onToggleAutoplay={ttsEnabled ? coachVoice.setAutoplayEnabled : undefined}
           />
           {/* A fixed-height slot, not a conditionally-mounted one: isThinking
               and activeToolName both toggle independently of any message

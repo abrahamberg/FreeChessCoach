@@ -6,30 +6,22 @@ import { EvalBar } from './EvalBar.js';
 const CLASSIFIED_MOVES = [{ ply: 1, evalAfterCp: 200 }] as ClassifiedMoveDto[];
 
 describe('EvalBar', () => {
-  test('defaults to a vertical bar filling from the bottom for white orientation', () => {
-    render(<EvalBar ply={1} classifiedMoves={CLASSIFIED_MOVES} orientation="white" />);
-
-    const label = screen.getByLabelText(/evaluation:/i);
-    expect(label.parentElement).not.toHaveClass('eval-bar-wrap--horizontal');
-    const fill = label.querySelector('.eval-bar__fill') as HTMLElement;
-    expect(fill.style.bottom).toBe('0px');
-    expect(fill.style.height).not.toBe('');
-  });
-
-  test('horizontal layout fills from the right for white orientation, left for black', () => {
-    const { rerender } = render(
-      <EvalBar ply={1} classifiedMoves={CLASSIFIED_MOVES} orientation="white" layout="horizontal" />
-    );
+  test('fills from the bottom for white orientation, top for black', () => {
+    const { rerender } = render(<EvalBar ply={1} classifiedMoves={CLASSIFIED_MOVES} orientation="white" />);
 
     let label = screen.getByLabelText(/evaluation:/i);
-    expect(label.parentElement).toHaveClass('eval-bar-wrap--horizontal');
     let fill = label.querySelector('.eval-bar__fill') as HTMLElement;
-    expect(fill.style.right).toBe('0px');
-    expect(fill.style.width).not.toBe('');
+    expect(fill.style.bottom).toBe('0px');
+    expect(fill.style.height).not.toBe('');
 
-    rerender(<EvalBar ply={1} classifiedMoves={CLASSIFIED_MOVES} orientation="black" layout="horizontal" />);
+    rerender(<EvalBar ply={1} classifiedMoves={CLASSIFIED_MOVES} orientation="black" />);
     label = screen.getByLabelText(/evaluation:/i);
     fill = label.querySelector('.eval-bar__fill') as HTMLElement;
-    expect(fill.style.left).toBe('0px');
+    expect(fill.style.top).toBe('0px');
+  });
+
+  test('defaults to an even 0cp label when the current ply has no classified move yet', () => {
+    render(<EvalBar ply={0} classifiedMoves={CLASSIFIED_MOVES} orientation="white" />);
+    expect(screen.getByLabelText('Evaluation: 0.0')).toBeInTheDocument();
   });
 });

@@ -103,17 +103,10 @@
   background: var(--color-surface);
 }
 
-.game-review-notes-column .move-note-card-row {
-  height: 100%;
-  /* Top/left only — the note card provides its own bottom/right padding
-   * internally (MoveNoteCard.css), this is just breathing room around the
-   * portrait so it doesn't sit flush against the column's rounded corner. */
-  padding: var(--space-4) 0 var(--space-4) var(--space-4);
-}
-
 .game-review-notes-column .move-note-card {
   height: 100%;
   max-height: none;
+  padding: var(--space-4);
   border-radius: 0;
   box-shadow: none;
 }
@@ -217,10 +210,6 @@
  * against both edges rather than inset with margin around it. */
 .game-review-body.mobile .session-board-column .coach-board-frame {
   border-radius: 0;
-}
-
-.game-review-body.mobile .session-board-column .eval-bar-wrap--horizontal {
-  padding: 0 var(--space-2);
 }
 
 /* Game Report as a bottom sheet: "a layer on top of the board with a

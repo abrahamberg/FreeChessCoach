@@ -20,10 +20,11 @@ export interface GameReviewBoardColumnProps {
   classifiedMoves: ClassifiedMoveDto[];
   ply: number;
   onSelect: (ply: number) => void;
-  /** >=1080px: eval-over-time chart under the board — a bonus visual, not a
-   * navigation control (MoveExplorer, always rendered by GameReviewPage
-   * itself at every width, already owns that plus the plain-language notes
-   * a mobile Review page has no chat to convey otherwise). */
+  /** >=1080px only: eval-over-time chart under the board — a bonus visual,
+   * not a navigation control (MoveExplorer, always rendered by
+   * GameReviewPage itself at every width, already owns that plus the
+   * plain-language notes a mobile Review page has no chat to convey
+   * otherwise). */
   isDesktop: boolean;
 }
 
@@ -47,13 +48,10 @@ export function GameReviewBoardColumn({
   onSelect,
   isDesktop
 }: GameReviewBoardColumnProps): ReactNode {
-  const evalBar = <EvalBar ply={ply} classifiedMoves={classifiedMoves} orientation={orientation} layout={isDesktop ? 'vertical' : 'horizontal'} />;
-
   return (
     <div className="session-board-column">
-      {!isDesktop && evalBar}
       <div className="session-board-row">
-        {isDesktop && evalBar}
+        <EvalBar ply={ply} classifiedMoves={classifiedMoves} orientation={orientation} />
         <CoachBoard
           fen={fen}
           orientation={orientation}

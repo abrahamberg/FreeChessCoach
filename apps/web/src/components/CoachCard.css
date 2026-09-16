@@ -1,0 +1,122 @@
+/* The shared "coach note" card shell — PagedMessageCard, MoveNoteCard and
+ * BotStatusPanel's card variant each used to build their own version of this
+ * box (accent-bordered card, portrait as a sibling column beside it); now
+ * they share one shell and only append their own modifier class (kept
+ * alongside 'coach-card', see CoachCard.tsx) for content-specific CSS —
+ * quality border colors, note text sizing, and so on stay defined once, next
+ * to that content, in each caller's own stylesheet. */
+
+.coach-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-3) var(--space-4) 0;
+}
+
+.coach-card__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  padding-bottom: var(--space-2);
+}
+
+/* Small and inline, at the head of the card's own content — not a
+ * full-height column beside it. Works regardless of which avatar component
+ * (CoachAvatar/BotAvatar/UserAvatar) is passed in: all three are plain
+ * background-image circles sized by width alone (aspect-ratio: 1), so
+ * shrinking the width here is enough; no per-avatar override needed. */
+.coach-card__avatar {
+  display: inline-flex;
+  flex: none;
+  line-height: 0;
+}
+
+.coach-card__avatar :is(.coach-avatar-image, .bot-avatar-image, .user-avatar-initials) {
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  font-size: 11px;
+}
+
+/* Reserves the collapsed panel's own height in flow at all times — even
+ * once `--expanded` below takes the panel itself out of flow — so
+ * expanding/collapsing never resizes this element, and nothing sitting
+ * after it (the board, move nav, composer) ever moves. flex: 1 1 auto lets
+ * a caller that fixes *this* element's own height (GameReviewPage's mobile
+ * `.move-note-card { height: 18vh }`) stretch the slot to fill it; with no
+ * such constraint (PagedMessageCard/BotStatusPanel, height: auto) the
+ * min-height alone decides it. */
+.coach-card__slot {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 4.5rem;
+}
+
+.coach-card__panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.coach-card__text {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: var(--space-2);
+}
+
+/* A small handle centered on the card's own bottom edge — same affordance
+ * language chess.com-style bottom sheets use, just inline instead of fixed.
+ * Half-overlaps the card's own bottom border so it reads as "part of the
+ * edge", not a stray floating button. */
+.coach-card__expand-toggle {
+  position: absolute;
+  left: 50%;
+  bottom: -11px;
+  transform: translateX(-50%);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-strong);
+  color: var(--color-text-secondary);
+  box-shadow: var(--shadow-xs);
+}
+
+.coach-card__expand-toggle:hover {
+  background: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+/* Expanding takes the panel out of flow and grows it downward as an
+ * overlay — the slot above still reserves the collapsed height (nothing
+ * else moves), and z-index lifts this above the board/move-nav/composer it
+ * now covers. Bounded well short of the full viewport so it reads as
+ * "reaching toward the board", not a full-screen takeover. */
+.coach-card--expanded .coach-card__panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 21;
+  height: min(58vh, 520px);
+  background: var(--color-surface);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.coach-card--expanded .coach-card__expand-toggle {
+  bottom: auto;
+  top: min(58vh, 520px);
+  z-index: 22;
+  margin-top: -11px;
+}

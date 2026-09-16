@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
 import { useCoachVoice } from '../../hooks/useCoachVoice.js';
+import { ENGINE_MODE_BADGE, useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
@@ -56,6 +58,12 @@ export function SessionPage(): ReactNode {
   const [boardArrows, setBoardArrows] = useState<ArrowRef[]>([]);
   const [hoverMove, setHoverMove] = useState<HoverMove>(null);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
+  // AppShell hides its own top bar (Settings, the engine indicator) for
+  // every board route, session included — SessionHeader's own overflow menu
+  // is the only place left to reach them, and the coach voice autoplay
+  // toggle, from here (design ask: nothing this page needs should be
+  // unreachable just because it's a board route).
+  const engineActivity = useEngineActivityIndicator();
   // Unconditional (hooks always are) — only the mobile branch below renders
   // PagedMessageCard/MessageNavPills off it.
   const messagePaging = useMessagePaging(chat.messages);
@@ -129,7 +137,6 @@ export function SessionPage(): ReactNode {
       positions={positions}
       classifiedMoves={gameQuery.data?.classifiedMoves}
       isDesktop={isDesktop}
-      isSideBySide={isSideBySide}
       engine={engine}
       autoplayIntervalMs={autoplayIntervalMs}
       onChangeAutoplayInterval={setAutoplayIntervalMs}
@@ -141,6 +148,20 @@ export function SessionPage(): ReactNode {
       onPlayMoveCommitted={handlePlayMoveCommitted}
     />
   );
+
+  const engineBadge = engineActivity.engineMode ? ENGINE_MODE_BADGE[engineActivity.engineMode] : 'Engine';
+  const headerExtraItems: OverflowMenuItem[] = [
+    ...(ttsEnabled
+      ? [
+          {
+            label: coachVoice.autoplayEnabled ? 'Turn off coach voice' : 'Turn on coach voice',
+            onSelect: () => coachVoice.setAutoplayEnabled(!coachVoice.autoplayEnabled)
+          }
+        ]
+      : []),
+    { label: `Engine: ${engineBadge}`, onSelect: () => navigate('/settings#settings-engine') },
+    { label: 'Settings', onSelect: () => navigate('/settings') }
+  ];
 
   const isPausedNoCredits = session.status === 'paused_no_credits';
   const pausedCard = (
@@ -186,6 +207,7 @@ export function SessionPage(): ReactNode {
         onReset={handleReset}
         onDebug={import.meta.env.DEV ? () => setIsDebugOpen(true) : undefined}
         debugDisabled={!hasCompletedTurn}
+        extraItems={headerExtraItems}
       />
       {isDebugOpen && <DebugPanel sessionId={sessionId} onClose={() => setIsDebugOpen(false)} />}
       {isSideBySide ? (

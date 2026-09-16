@@ -1,15 +1,11 @@
 import type { ParsedPosition } from '@freechesscoach/chess-analysis';
 import type { CoachPersona } from '@freechesscoach/shared';
-import type { ReactNode } from 'react';
-import { AvatarNoteRow } from '../../components/AvatarNoteRow.js';
+import { useState, type ReactNode } from 'react';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
-import { VolumeOffIcon, VolumeOnIcon } from '../../components/Icon.js';
+import { CoachCard } from '../../components/CoachCard.js';
 import { UserAvatar } from '../../components/UserAvatar.js';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { renderMessageItem, type HoverMove, type MessageRenderContext } from './MessageList.js';
-// For .chat-pane__voice-toggle — shared with ChatPane's own desktop toggle
-// rather than a second copy of the same button styling.
-import './ChatPane.css';
 import './PagedMessageCard.css';
 
 export interface PagedMessageCardProps {
@@ -29,12 +25,6 @@ export interface PagedMessageCardProps {
   onStopMessage?: () => void;
   playingMessageId?: string | null;
   loadingMessageId?: string | null;
-  /** The account's coach-voice autoplay switch (Settings), surfaced here as
-   * the row's own action button now that MobileCoachSessionBody no longer
-   * has a dedicated header to put it in — undefined hides the toggle
-   * entirely, same as ChatPane's own onToggleAutoplay contract. */
-  autoplayEnabled?: boolean;
-  onToggleAutoplay?: (enabled: boolean) => void;
 }
 
 /** SessionPage's mobile layout shows one transcript entry at a time — the
@@ -44,11 +34,14 @@ export interface PagedMessageCardProps {
  * paging left/right between entries; the board sits between the two, same
  * as it sits between GameReviewPage's note card and its nav pills). Content
  * rendering is shared with the desktop transcript via
- * MessageList.renderMessageItem — only the container (one card instead of a
- * scrolling stack of every message, plus which side the avatar sits on)
- * differs. The coach's portrait sits to the left of the card, the
- * student's own initials to the right (UserAvatar) — whose turn it was is
- * never ambiguous even with no neighboring message to compare against. */
+ * MessageList.renderMessageItem — only the container (CoachCard, one entry
+ * at a time instead of a scrolling stack of every message) differs. The
+ * coach's own account-level voice controls (autoplay, and access to
+ * Settings/the engine indicator — otherwise unreachable on a board route,
+ * see AppShell's isBoardRoute) live in SessionHeader's overflow menu now,
+ * not a per-card button — a per-message play/pause button still lives
+ * inline in the message text itself (renderMessageItem's own
+ * coach-voice-button), which is a different, message-scoped feature. */
 export function PagedMessageCard({
   message,
   index,
@@ -62,31 +55,15 @@ export function PagedMessageCard({
   onPlayMessage,
   onStopMessage,
   playingMessageId = null,
-  loadingMessageId = null,
-  autoplayEnabled,
-  onToggleAutoplay
+  loadingMessageId = null
 }: PagedMessageCardProps): ReactNode {
-  const voiceToggle = onToggleAutoplay && (
-    <button
-      type="button"
-      className="chat-pane__voice-toggle"
-      aria-label={autoplayEnabled ? 'Disable automatic coach voice' : 'Enable automatic coach voice'}
-      aria-pressed={autoplayEnabled ?? false}
-      title={autoplayEnabled ? 'Disable automatic coach voice' : 'Enable automatic coach voice'}
-      onClick={() => onToggleAutoplay(!(autoplayEnabled ?? false))}
-    >
-      {autoplayEnabled ? <VolumeOnIcon width={20} height={20} /> : <VolumeOffIcon width={20} height={20} />}
-    </button>
-  );
+  const [expanded, setExpanded] = useState(false);
 
   if (!message) {
     return (
-      <AvatarNoteRow className="paged-message-card-row" action={voiceToggle}>
-        <CoachAvatar persona={coachPersona} size="chat" />
-        <div className="paged-message-card">
-          <p className="paged-message-card__empty-text">No messages yet.</p>
-        </div>
-      </AvatarNoteRow>
+      <CoachCard avatar={<CoachAvatar persona={coachPersona} size="chat" />} className="paged-message-card">
+        <p className="paged-message-card__empty-text">No messages yet.</p>
+      </CoachCard>
     );
   }
 
@@ -101,24 +78,25 @@ export function PagedMessageCard({
     onStopMessage,
     playingMessageId,
     loadingMessageId,
-    // Both avatars render externally below, positioned by role — the
-    // built-in inline one (MessageList's own "starts a coach run" rule)
-    // would otherwise show up a second time for a plain-text coach message.
+    // The built-in inline avatar (MessageList's own "starts a coach run"
+    // rule) would otherwise show up a second time for a plain-text coach
+    // message — CoachCard already renders one in its header.
     avatarHidden: true
   };
 
   return (
-    <AvatarNoteRow className="paged-message-card-row" action={voiceToggle}>
-      {!isUser && <CoachAvatar persona={coachPersona} size="chat" />}
-      <div className={isUser ? 'paged-message-card paged-message-card--user' : 'paged-message-card'}>
-        {/* Same live-region contract MessageList's own transcript container
-            makes (design.md §7) — a streamed reply here should be announced
-            just as it would be in the desktop transcript. */}
-        <div className="paged-message-card__body" aria-live="polite">
-          {renderMessageItem(message, index, visible, context)}
-        </div>
+    <CoachCard
+      avatar={isUser ? <UserAvatar displayName={displayName} /> : <CoachAvatar persona={coachPersona} size="chat" />}
+      className={isUser ? 'paged-message-card paged-message-card--user' : 'paged-message-card'}
+      expanded={expanded}
+      onToggleExpand={() => setExpanded((value) => !value)}
+    >
+      {/* Same live-region contract MessageList's own transcript container
+          makes (design.md §7) — a streamed reply here should be announced
+          just as it would be in the desktop transcript. */}
+      <div className="paged-message-card__body" aria-live="polite">
+        {renderMessageItem(message, index, visible, context)}
       </div>
-      {isUser && <UserAvatar displayName={displayName} />}
-    </AvatarNoteRow>
+    </CoachCard>
   );
 }

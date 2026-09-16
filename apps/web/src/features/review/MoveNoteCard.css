@@ -1,45 +1,30 @@
-/* The row layout itself (portrait beside the card) is AvatarNoteRow.css's
- * shared '.avatar-note-row' rule — MoveNoteCardRow applies 'move-note-card-row'
- * alongside it purely as a selector hook for GameReviewPage.css's desktop
- * column styling. min-width: 0 below lets the card's own text wrap/scroll
- * instead of forcing the row wider than its container.
- *
- * The Game Review page's dominant note element — a card meant to read
- * first, before the board: a colored accent bar keyed to the move's
- * quality, a headline row, and the note text at a size that competes with
- * the board for attention instead of losing to it. Reuses MoveExplorer's
- * own .move-explorer__note/__opening-label/__alternatives* markup (via
- * MoveNoteContent) so the note text itself has one source of truth — this
- * file only resizes it up for the card's own larger context. */
+/* The Game Review page's dominant note element — the shared CoachCard shell
+ * (components/CoachCard.css owns the box chrome: background, border accent,
+ * shadow, padding, the avatar header, expand/collapse) with a colored
+ * accent bar keyed to the move's quality, plus the note text at a size that
+ * competes with the board for attention instead of losing to it. Reuses
+ * MoveExplorer's own .move-explorer__note/__opening-label/__alternatives*
+ * markup (via MoveNoteContent) so the note text itself has one source of
+ * truth — this file only resizes it up for the card's own larger context. */
+
+/* Capped rather than left to grow with the note's length — a blunder with
+ * several reasons plus alternatives can otherwise push the board (and
+ * everything below it) well down the page. The header stays outside this
+ * budget, always visible; only .move-note-card__body scrolls (via
+ * CoachCard's own .coach-card__text). Auto height (not a fixed one) so a
+ * short note — or the empty "select a move" state — only claims what it
+ * actually needs, leaving the rest of the page (the board especially) that
+ * much more room instead of reserving dead space for a card that isn't
+ * using it. */
 .move-note-card {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-  gap: var(--space-2);
-  /* Capped rather than left to grow with the note's length — a blunder with
-   * several reasons plus alternatives can otherwise push the board (and
-   * everything below it) well down the page. The header stays outside this
-   * budget, always visible; only .move-note-card__body scrolls. Auto height
-   * (not a fixed one) so a short note — or the empty "select a move" state —
-   * only claims what it actually needs, leaving the rest of the page (the
-   * board especially) that much more room instead of reserving dead space
-   * for a card that isn't using it. */
   height: auto;
   max-height: 38vh;
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  border-left: 4px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-4) var(--space-5);
 }
 
 .move-note-card__body {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  overflow-y: auto;
-  min-height: 0;
 }
 
 .move-note-card--brilliant,
@@ -72,13 +57,6 @@
 }
 .move-note-card--good {
   border-left-color: var(--quality-good);
-}
-
-.move-note-card__header {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
 
 /* Replaces the old full-width "Continue with Coach" bar above the card —
@@ -127,7 +105,11 @@
   color: var(--color-text-secondary);
 }
 
-.move-note-card--empty {
+/* No expand toggle for the empty state (nothing to expand into) — center
+ * the prompt in the space that leaves instead of stacking it flush under
+ * the header. */
+.move-note-card--empty .coach-card__text {
+  display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;

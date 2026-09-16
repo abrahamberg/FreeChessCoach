@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { ClassifiedMoveDto, CoachPersona, MoveQuality } from '@freechesscoach/shared';
-import { AvatarNoteRow } from '../../components/AvatarNoteRow.js';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
+import { CoachCard } from '../../components/CoachCard.js';
 import { MessageCircleIcon } from '../../components/Icon.js';
 import { AlternativesPanel, hasMoveNoteText, MoveNote, OpeningLabel } from '../board/MoveNoteContent.js';
 import { MoveQualityBadge } from '../board/MoveQualityBadge.js';
@@ -22,7 +22,7 @@ export interface MoveNoteCardProps {
   /** Omit to hide the Coach entry point entirely (already at the coach
    * tier, or analysis not ready yet) — GameReviewPage's own gating,
    * unchanged from the standalone "Continue with Coach" button this
-   * replaces; just an icon now, in the note card's own header, instead of
+   * replaces; just an icon now, in the card's own header, instead of
    * a full-width bar that cost space on every visit whether wanted or
    * not. */
   onContinueWithCoach?: () => void;
@@ -66,30 +66,18 @@ function CoachButton({ onContinueWithCoach, isContinuingWithCoach }: Pick<MoveNo
   );
 }
 
-/** The portrait-beside-the-card row both the empty ("select a move") and
- * populated states share — factored out so the wrapper isn't duplicated
- * between them. Keeps the 'move-note-card-row' class name (via AvatarNoteRow's
- * own className prop) since GameReviewPage.css's desktop column styling
- * still targets it directly. */
-function MoveNoteCardRow({ coachPersona, children }: { coachPersona: CoachPersona; children: ReactNode }): ReactNode {
-  return (
-    <AvatarNoteRow className="move-note-card-row">
-      <CoachAvatar persona={coachPersona} size="chat" />
-      {children}
-    </AvatarNoteRow>
-  );
-}
-
 /** The Game Review page's dominant note element — chess.com's own mobile
  * review puts its coaching note (portrait + speech-bubble card) above the
  * board rather than a small aside below a move list, adapted here to what
  * the static Review page actually has (no LLM turn, the same pre-baked note
  * text MoveExplorer's list already shows, but the same persona portrait the
- * live chat uses). Used twice: as the mobile layout's top card, and as the
- * desktop layout's right column, in the spot a coaching session's chat pane
- * would occupy — the prompt text below is deliberately neutral about where
- * "select a move" happens (a tap on the strip below on mobile, a click in
- * the list on the left on desktop). */
+ * live chat uses) — and, since the redesign, the same shared CoachCard shell
+ * every board view's own coach note now uses (SessionPage's PagedMessageCard,
+ * BotSessionPage's BotStatusPanel card). Used twice: as the mobile layout's
+ * top card, and as the desktop layout's right column, in the spot a
+ * coaching session's chat pane would occupy — the prompt text below is
+ * deliberately neutral about where "select a move" happens (a tap on the
+ * strip below on mobile, a click in the list on the left on desktop). */
 export function MoveNoteCard({
   ply,
   san,
@@ -100,16 +88,18 @@ export function MoveNoteCard({
   tacticSelection,
   onToggleTacticSelection
 }: MoveNoteCardProps): ReactNode {
+  const [expanded, setExpanded] = useState(false);
+  const avatar = <CoachAvatar persona={coachPersona} size="chat" />;
+
   if (ply <= 0 || !san) {
     return (
-      <MoveNoteCardRow coachPersona={coachPersona}>
-        <div className="move-note-card move-note-card--empty">
-          <div className="move-note-card__header">
-            <p className="move-note-card__prompt">Select a move to see the coach's note.</p>
-            <CoachButton onContinueWithCoach={onContinueWithCoach} isContinuingWithCoach={isContinuingWithCoach} />
-          </div>
-        </div>
-      </MoveNoteCardRow>
+      <CoachCard
+        avatar={avatar}
+        header={<CoachButton onContinueWithCoach={onContinueWithCoach} isContinuingWithCoach={isContinuingWithCoach} />}
+        className="move-note-card move-note-card--empty"
+      >
+        <p className="move-note-card__prompt">Select a move to see the coach's note.</p>
+      </CoachCard>
     );
   }
 
@@ -119,30 +109,32 @@ export function MoveNoteCard({
   const headline = quality ? QUALITY_HEADLINES[quality] : undefined;
 
   return (
-    <MoveNoteCardRow coachPersona={coachPersona}>
-      <div className={quality ? `move-note-card move-note-card--${quality}` : 'move-note-card'}>
-        <div className="move-note-card__header">
+    <CoachCard
+      avatar={avatar}
+      header={
+        <>
           <MoveQualityBadge quality={quality} size="md" />
           <span className="move-note-card__move">{moveLabel}</span>
           {headline && <span className="move-note-card__headline">{headline}</span>}
           <CoachButton onContinueWithCoach={onContinueWithCoach} isContinuingWithCoach={isContinuingWithCoach} />
-        </div>
-        {/* Scrolls on its own (long reasons + alternatives can run past a
-            screen's worth) — the header above stays put so the move/quality is
-            never scrolled out of view while reading. */}
-        <div className="move-note-card__body">
-          {move ? (
-            <>
-              <TacticReasonList move={move} selection={tacticSelection} onToggle={onToggleTacticSelection} />
-              {move.quality === 'book' ? <OpeningLabel move={move} /> : <MoveNote move={move} excludeTacticText />}
-              {!hasMoveNoteText(move, true) && <p className="move-note-card__empty-text">Nothing to flag — a solid, natural move.</p>}
-              <AlternativesPanel move={move} hideBestLine />
-            </>
-          ) : (
-            <p className="move-note-card__empty-text">No analysis for this move.</p>
-          )}
-        </div>
+        </>
+      }
+      className={quality ? `move-note-card move-note-card--${quality}` : 'move-note-card'}
+      expanded={expanded}
+      onToggleExpand={() => setExpanded((value) => !value)}
+    >
+      <div className="move-note-card__body">
+        {move ? (
+          <>
+            <TacticReasonList move={move} selection={tacticSelection} onToggle={onToggleTacticSelection} />
+            {move.quality === 'book' ? <OpeningLabel move={move} /> : <MoveNote move={move} excludeTacticText />}
+            {!hasMoveNoteText(move, true) && <p className="move-note-card__empty-text">Nothing to flag — a solid, natural move.</p>}
+            <AlternativesPanel move={move} hideBestLine />
+          </>
+        ) : (
+          <p className="move-note-card__empty-text">No analysis for this move.</p>
+        )}
       </div>
-    </MoveNoteCardRow>
+    </CoachCard>
   );
 }

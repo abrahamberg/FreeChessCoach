@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { AvatarNoteRow } from '../../components/AvatarNoteRow.js';
+import { useState, type ReactNode } from 'react';
 import { BotAvatar } from '../../components/BotAvatar.js';
+import { CoachCard } from '../../components/CoachCard.js';
 import { FlagIcon } from '../../components/Icon.js';
 import { useLiteEngineHint } from '../../hooks/useLiteEngineHint.js';
 import { describeGameOver, type BotGameOverInfo } from './botGameOver.js';
@@ -46,10 +46,10 @@ export interface BotStatusPanelProps {
   fen?: string;
   /** 'panel' (default): the full-height, centered layout for a dedicated
    * column of its own (desktop's side-by-side layout — SessionPage.css's
-   * `.session-body.desktop .bot-status-panel`). 'card': a compact,
-   * left-aligned row — the bot's portrait beside the status text, same
-   * shape as MoveNoteCard/PagedMessageCard — for the mobile stacked layout,
-   * where this sits above the board instead of owning a whole screen. */
+   * `.session-body.desktop .bot-status-panel`). 'card': the shared
+   * CoachCard shell every board view's own coach note uses — for the mobile
+   * stacked layout, where this sits above the board instead of owning a
+   * whole screen. */
   variant?: 'panel' | 'card';
 }
 
@@ -78,10 +78,12 @@ function LiteHintReadout({ fen }: { fen: string }): ReactNode {
 }
 
 /** The chat-less bot session's status panel — replaces ChatPane in the
- * play_bot layout ("Play vs Bot" plan). `variant="card"` moves the bot's
- * portrait out to an AvatarNoteRow sibling (mirroring MoveNoteCard/
- * PagedMessageCard) instead of rendering it inside `__opponent` — same
- * status content either way, just re-homed for the compact mobile shape. */
+ * play_bot layout ("Play vs Bot" plan). `variant="card"` renders the same
+ * shared CoachCard shell every board view's own coach note uses (mirroring
+ * MoveNoteCard/PagedMessageCard) instead of the full centered `panel`
+ * layout — the bot's own portrait moves into CoachCard's header alongside
+ * the name/rating, same status content either way, just re-homed for the
+ * compact mobile shape. */
 export function BotStatusPanel({
   botName,
   botAvatarIndex,
@@ -97,8 +99,10 @@ export function BotStatusPanel({
   fen,
   variant = 'panel'
 }: BotStatusPanelProps): ReactNode {
-  const content = (
-    <div className={`bot-status-panel bot-status-panel--${variant}`}>
+  const [expanded, setExpanded] = useState(false);
+
+  const body = (
+    <>
       {clock && activeColor && onClockExpire && (
         <ClockDisplay
           whiteRemainingMs={clock.whiteRemainingMs}
@@ -108,11 +112,13 @@ export function BotStatusPanel({
           onExpire={onClockExpire}
         />
       )}
-      <div className="bot-status-panel__opponent">
-        {variant === 'panel' && botAvatarIndex !== undefined && <BotAvatar avatarIndex={botAvatarIndex} size="panel" />}
-        <span className="bot-status-panel__name">{botName}</span>
-        {botElo !== undefined && <span className="bot-status-panel__level">{botElo}</span>}
-      </div>
+      {variant === 'panel' && (
+        <div className="bot-status-panel__opponent">
+          {botAvatarIndex !== undefined && <BotAvatar avatarIndex={botAvatarIndex} size="panel" />}
+          <span className="bot-status-panel__name">{botName}</span>
+          {botElo !== undefined && <span className="bot-status-panel__level">{botElo}</span>}
+        </div>
+      )}
       {gameOver ? (
         <p className="bot-status-panel__result" role="status">
           {describeGameOver(gameOver, userColor, botName)}
@@ -129,17 +135,27 @@ export function BotStatusPanel({
         </button>
       )}
       {fen && !gameOver && <LiteHintReadout fen={fen} />}
-    </div>
+    </>
   );
 
   if (variant === 'card') {
     return (
-      <AvatarNoteRow className="bot-status-card-row">
-        {botAvatarIndex !== undefined && <BotAvatar avatarIndex={botAvatarIndex} size="card" />}
-        {content}
-      </AvatarNoteRow>
+      <CoachCard
+        avatar={botAvatarIndex !== undefined ? <BotAvatar avatarIndex={botAvatarIndex} size="card" /> : null}
+        header={
+          <>
+            <span className="bot-status-panel__name">{botName}</span>
+            {botElo !== undefined && <span className="bot-status-panel__level">{botElo}</span>}
+          </>
+        }
+        className="bot-status-panel bot-status-panel--card"
+        expanded={expanded}
+        onToggleExpand={() => setExpanded((value) => !value)}
+      >
+        {body}
+      </CoachCard>
     );
   }
 
-  return content;
+  return <div className="bot-status-panel bot-status-panel--panel">{body}</div>;
 }
