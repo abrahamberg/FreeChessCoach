@@ -1,22 +1,14 @@
-import { randomBytes } from 'node:crypto';
 import type { Kysely } from 'kysely';
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import * as usersRepo from '../db/repositories/users.js';
-import * as creditsRepo from '../db/repositories/credits.js';
-import * as llmKeysRepo from '../db/repositories/llm-keys.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
-import { createKeyVault } from './key-vault.js';
-import { getModelForUser, recordUsage, type GatewayConfig } from './gateway.js';
+import { createMemoryLlmUnlockStore } from './unlock-store.js';
+import { getModelForUser, type GatewayConfig } from './gateway.js';
+import { ValidationError } from '../lib/errors.js';
 
-const config: GatewayConfig = {
-  keyVault: createKeyVault(randomBytes(32).toString('base64')),
-  platformKeys: { anthropic: 'platform-anthropic-key' },
-  modelIds: {
-    standard: { anthropic: 'claude-standard', openai: 'gpt-standard' },
-    light: { anthropic: 'claude-light', openai: 'gpt-light' }
-  }
-};
+const unlockStore = createMemoryLlmUnlockStore({ pepper: 'gateway-test', ttlSeconds: 60 });
+const config: GatewayConfig = { unlockStore };
 
 describe('llm gateway', () => {
   let testDb: TestDb;
@@ -36,134 +28,30 @@ describe('llm gateway', () => {
     return user.id;
   }
 
-  describe('getModelForUser', () => {
-    test('falls back to the platform key when the user has no BYOK key', async () => {
-      const userId = await makeUser('platform-user@example.com');
-
-      const resolution = await getModelForUser(db, config, userId, 'standard');
-
-      expect(resolution.provider).toBe('anthropic');
-      expect(resolution.metered).toBe(true);
-      expect(resolution.model).toBeDefined();
-    });
-
-    test('uses the user\'s BYOK key and reports metered:false', async () => {
-      const userId = await makeUser('byok-user@example.com');
-      const { ciphertext, iv } = config.keyVault.encrypt('sk-ant-byok-secret');
-      await llmKeysRepo.upsert(db, userId, 'openai', ciphertext, iv);
-
-      const resolution = await getModelForUser(db, config, userId, 'light');
-
-      expect(resolution.provider).toBe('openai');
-      expect(resolution.metered).toBe(false);
-      expect(resolution.model).toBeDefined();
-    });
-
-    test('prefers anthropic when the user has BYOK keys for both providers', async () => {
-      const userId = await makeUser('both-keys-user@example.com');
-      const anthropicKey = config.keyVault.encrypt('sk-ant-1');
-      const openaiKey = config.keyVault.encrypt('sk-oai-1');
-      await llmKeysRepo.upsert(db, userId, 'openai', openaiKey.ciphertext, openaiKey.iv);
-      await llmKeysRepo.upsert(db, userId, 'anthropic', anthropicKey.ciphertext, anthropicKey.iv);
-
-      const resolution = await getModelForUser(db, config, userId, 'standard');
-
-      expect(resolution.provider).toBe('anthropic');
-      expect(resolution.metered).toBe(false);
-    });
-
-    test('Task 7.2: config.fake short-circuits to a canned model, never touching keys or the DB', async () => {
-      const fakeConfig: GatewayConfig = { ...config, fake: true };
-
-      const resolution = await getModelForUser(db, fakeConfig, 'nonexistent-user-id', 'standard');
-
-      expect(resolution.metered).toBe(false);
-      expect(resolution.model).toBeDefined();
-    });
+  test('requires an active unlock instead of decrypting from a database row', async () => {
+    const userId = await makeUser('no-unlock-user@example.com');
+    await expect(getModelForUser(db, config, userId, 'standard')).rejects.toThrow(ValidationError);
+    await expect(getModelForUser(db, config, userId, 'standard')).rejects.toThrow(/unlock/i);
   });
 
-  describe('recordUsage', () => {
-    beforeEach(async () => {
-      // no-op: each test creates its own user
+  test('uses the active setup and selects the correct low/high model', async () => {
+    const userId = await makeUser('unlocked-user@example.com');
+    await unlockStore.unlock(userId, {
+      endpoint: 'https://provider.example/v1',
+      apiKey: 'secret',
+      lowModel: 'luna',
+      highModel: 'terra',
+      voiceModel: undefined,
+      protocol: 'openai-chat'
     });
 
-    test('metered usage writes a debited ledger row and a call-log row atomically', async () => {
-      const userId = await makeUser('metered-usage@example.com');
-      await creditsRepo.insertSignupGrant(db, userId);
+    expect((await getModelForUser(db, config, userId, 'light')).modelId).toBe('luna');
+    expect((await getModelForUser(db, config, userId, 'standard')).modelId).toBe('terra');
+  });
 
-      await recordUsage(db, {
-        userId,
-        provider: 'anthropic',
-        model: 'claude-standard',
-        tier: 'standard',
-        usage: { inputTokens: 2000, outputTokens: 1000, cachedInputTokens: 0 },
-        purpose: 'coach_turn',
-        metered: true
-      });
-
-      const balance = await creditsRepo.balance(db, userId);
-      expect(balance).toBe(97); // 100 signup - ceil(3000/1000 * 1) = 100 - 3
-
-      const logs = await db
-        .selectFrom('llmCallLog')
-        .selectAll()
-        .where('userId', '=', userId)
-        .execute();
-      expect(logs).toHaveLength(1);
-      expect(logs[0]).toMatchObject({
-        provider: 'anthropic',
-        model: 'claude-standard',
-        inputTokens: 2000,
-        outputTokens: 1000,
-        creditsMetered: 3,
-        purpose: 'coach_turn'
-      });
-    });
-
-    test('BYOK (unmetered) usage logs the call with 0 credits and never touches the ledger', async () => {
-      const userId = await makeUser('byok-usage@example.com');
-      await creditsRepo.insertSignupGrant(db, userId);
-
-      await recordUsage(db, {
-        userId,
-        provider: 'openai',
-        model: 'gpt-light',
-        tier: 'light',
-        usage: { inputTokens: 5000, outputTokens: 1000, cachedInputTokens: 0 },
-        purpose: 'analysis_plan',
-        metered: false
-      });
-
-      const balance = await creditsRepo.balance(db, userId);
-      expect(balance).toBe(100);
-
-      const logs = await db
-        .selectFrom('llmCallLog')
-        .selectAll()
-        .where('userId', '=', userId)
-        .execute();
-      expect(logs).toHaveLength(1);
-      expect(logs[0]?.creditsMetered).toBe(0);
-    });
-
-    test('non-finite token counts from a provider quirk are sanitized to 0 rather than crashing the insert', async () => {
-      const userId = await makeUser('nan-usage@example.com');
-      await creditsRepo.insertSignupGrant(db, userId);
-
-      await recordUsage(db, {
-        userId,
-        provider: 'openai',
-        model: 'gpt-standard',
-        tier: 'standard',
-        usage: { inputTokens: NaN, outputTokens: 1000, cachedInputTokens: 0 },
-        purpose: 'coach_turn',
-        metered: true
-      });
-
-      const logs = await db.selectFrom('llmCallLog').selectAll().where('userId', '=', userId).execute();
-      expect(logs).toHaveLength(1);
-      expect(logs[0]?.inputTokens).toBe(0);
-      expect(Number.isFinite(logs[0]?.creditsMetered)).toBe(true);
-    });
+  test('fake mode still avoids the unlock store', async () => {
+    const fakeConfig: GatewayConfig = { ...config, fake: true };
+    const resolution = await getModelForUser(db, fakeConfig, 'nonexistent-user-id', 'standard');
+    expect(resolution.model).toBeDefined();
   });
 });

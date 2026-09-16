@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { buildApp } from './app.js';
 import {
   ConflictError,
-  InsufficientCreditsError,
   NotFoundError,
   ValidationError
 } from './lib/errors.js';
@@ -33,7 +32,8 @@ describe('probes', () => {
   // through oauth2-proxy at all — so in the deployed posture (AUTH_MODE unset =>
   // 'proxy') an authenticated probe endpoint means pods never become Ready.
   // architecture.md §11 puts /healthz and /readyz in oauth2-proxy's
-  // --skip-auth-route alongside the Stripe webhook for the same reason.
+  // --skip-auth-route (and /api/stripe/webhook used to sit there too, before
+  // the Stripe credit-pack route was removed).
   test.each(['/healthz', '/readyz'] as const)(
     'GET %s answers without proxy auth headers in proxy mode (k8s probes are unauthenticated)',
     async (url) => {
@@ -85,15 +85,6 @@ describe('proxy auth headers', () => {
     expect(user).toEqual({ email: user.email, displayName: user.email });
   });
 
-  test('exempts /api/stripe/webhook from the proxy-header requirement (architecture.md §11/§12: oauth2-proxy skip-auth-route, authenticated by Stripe signature instead)', async () => {
-    const app = buildApp({ authMode: 'proxy' });
-    app.post('/api/stripe/webhook', async () => ({ received: true }));
-
-    const response = await app.inject({ method: 'POST', url: '/api/stripe/webhook' });
-
-    expect(response.statusCode).toBe(200);
-  });
-
   test('dev-stub mode still honors real headers when present', async () => {
     const app = buildApp({ authMode: 'dev-stub' });
     app.get('/test-route', async (request) => ({ user: request.user }));
@@ -124,7 +115,6 @@ describe('error mapping', () => {
 
   test.each([
     [ValidationError, 400],
-    [InsufficientCreditsError, 402],
     [ConflictError, 409]
   ] as const)('maps %s to status %i', async (ErrorClass, status) => {
     const app = buildTestApp();

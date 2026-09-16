@@ -22,8 +22,7 @@ const BACKEND_LABEL: Record<TtsBackend, string> = {
 
 const BACKEND_WARNING: Record<TtsBackend, string> = {
   openai:
-    'OpenAI voice streams speech from the cloud. It sounds better and starts almost instantly, but it spends ' +
-    'AI credits every time a coach message is read aloud.',
+    'OpenAI voice streams speech from the cloud using your own OpenAI API key. It sounds better and starts almost instantly, but it spends usage on your OpenAI account every time a coach message is read aloud.',
   browser:
     'Browser voice runs entirely on your device — it never leaves your machine, and it’s free. Speed ' +
     'depends on your hardware and is generally much slower than the cloud option; keep this tab open while it ' +
@@ -33,7 +32,7 @@ const BACKEND_WARNING: Record<TtsBackend, string> = {
 /** Coach voice (TTS): a master on/off switch, default off, plus which
  * backend to use once it's on. Turning the switch on, or picking a
  * different backend, is gated behind a confirmation dialog explaining that
- * choice's tradeoff (credits vs. local speed) — cancelling leaves `enabled`/
+ * choice's tradeoff (your own OpenAI key's usage vs. local speed) — cancelling leaves `enabled`/
  * `backend` untouched, which is the "undo". Turning the switch off never
  * needs confirmation; there's no downside to applying it immediately. */
 export function TtsSection({ enabled, backend, onChange }: TtsSectionProps): ReactNode {

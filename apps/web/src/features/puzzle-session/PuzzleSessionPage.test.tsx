@@ -34,7 +34,7 @@ function streamResponse(parts: string[]): Response {
 }
 
 interface Fixture {
-  status?: 'active' | 'completed' | 'paused_no_credits' | 'abandoned';
+  status?: 'active' | 'completed' | 'abandoned';
   currentItemIndex?: number;
   messages?: Array<{ id: string; role: 'user' | 'assistant' | 'tool'; content: unknown; itemIndex: number | null }>;
 }

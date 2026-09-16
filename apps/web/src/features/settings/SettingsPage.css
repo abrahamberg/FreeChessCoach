@@ -110,8 +110,25 @@
   flex: 1;
 }
 
-.credit-balance {
-  font-size: 20px;
+.llm-setup-form {
+  display: grid;
+  gap: 8px;
+  max-width: 620px;
+}
+
+.llm-setup-form input {
+  width: 100%;
+}
+
+.llm-setup-form__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.settings-page__hint {
+  color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
 .settings-page__legal {

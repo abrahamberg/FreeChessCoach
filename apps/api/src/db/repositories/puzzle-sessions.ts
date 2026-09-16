@@ -1,7 +1,7 @@
 import type { Kysely } from 'kysely';
 import type { Database } from '../schema.js';
 
-export type PuzzleSessionStatus = 'active' | 'completed' | 'paused_no_credits' | 'abandoned';
+export type PuzzleSessionStatus = 'active' | 'completed' | 'abandoned';
 
 export interface PuzzleSessionRow {
   id: string;
@@ -44,7 +44,7 @@ export function findActiveByAssignmentId(db: Kysely<Database>, assignmentId: str
     .selectFrom('puzzleSessions')
     .select(BASE_COLUMNS)
     .where('assignmentId', '=', assignmentId)
-    .where('status', 'in', ['active', 'paused_no_credits'])
+    .where('status', '=', 'active')
     .orderBy('startedAt', 'desc')
     .limit(1)
     .executeTakeFirst();
@@ -70,10 +70,6 @@ export function markAbandoned(db: Kysely<Database>, id: string): Promise<void> {
     .where('id', '=', id)
     .execute()
     .then(() => undefined);
-}
-
-export function markPausedNoCredits(db: Kysely<Database>, id: string): Promise<void> {
-  return db.updateTable('puzzleSessions').set({ status: 'paused_no_credits' }).where('id', '=', id).execute().then(() => undefined);
 }
 
 export type PuzzleSessionMessageRole = 'user' | 'assistant' | 'tool';

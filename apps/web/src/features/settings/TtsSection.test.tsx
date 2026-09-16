@@ -30,7 +30,7 @@ describe('TtsSection', () => {
     await user.click(screen.getByRole('checkbox', { name: /enable coach voice/i }));
 
     expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog')).toHaveTextContent(/credits/i);
+    expect(screen.getByRole('dialog')).toHaveTextContent(/your own OpenAI API key/i);
 
     await user.click(screen.getByRole('button', { name: /use openai voice/i }));
     expect(onChange).toHaveBeenCalledWith({ ttsEnabled: true });

@@ -78,7 +78,7 @@ export async function apiPatch<T>(path: string, payload: unknown, schema: ZodTyp
   return schema.parse(body);
 }
 
-/** PUT/DELETE endpoints in this app return 204 No Content (e.g. llm-keys) — no schema to parse. */
+/** PUT/DELETE endpoints in this app return 204 No Content. */
 export async function apiPut(path: string, payload: unknown): Promise<void> {
   const response = await fetch(path, {
     method: 'PUT',
@@ -96,6 +96,17 @@ export async function apiDelete(path: string): Promise<void> {
   if (!response.ok) {
     throw new ApiError(response.status, `DELETE ${path} failed with ${response.status}`, await safeJson(response));
   }
+}
+
+export async function apiPostVoid(path: string, payload?: unknown): Promise<void> {
+  const response = await fetch(path, {
+    method: 'POST',
+    credentials: 'include',
+    ...(payload === undefined
+      ? {}
+      : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+  });
+  if (!response.ok) throw new ApiError(response.status, `POST ${path} failed with ${response.status}`, await safeJson(response));
 }
 
 /** Problem+json error bodies (e.g. {missing: 'userColor'}) carry data callers

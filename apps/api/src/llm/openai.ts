@@ -1,9 +1,21 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import type { LanguageModel } from 'ai';
+import { providerEndpointOptions } from './provider-fetch.js';
 
-/** Uses the Responses API (`/v1/responses`), not the default Chat Completions
- * path: OpenAI's newer reasoning models (gpt-5.x and later) reject function
- * tools on `/v1/chat/completions` outright and require `/v1/responses`. */
-export function openaiModel(apiKey: string, modelId: string): LanguageModel {
-  return createOpenAI({ apiKey }).responses(modelId);
+/** Builds either standard OpenAI Chat Completions or Responses transport. The
+ * compatibility probe chooses the format that the user's endpoint accepts. */
+export function openaiModel(
+  apiKey: string,
+  modelId: string,
+  endpoint: string,
+  protocol: 'openai-chat' | 'openai-responses'
+): LanguageModel {
+  // `api-key` covers Azure OpenAI; bearer auth is the normal OpenAI-compatible
+  // convention and remains the primary header for OpenRouter and other proxies.
+  const provider = createOpenAI({
+    apiKey,
+    ...providerEndpointOptions(endpoint),
+    headers: { 'api-key': apiKey },
+  });
+  return protocol === 'openai-responses' ? provider.responses(modelId) : provider.chat(modelId);
 }

@@ -4,14 +4,14 @@ import {
   buildCoachAgentBaseDependencies,
   buildGatewayConfigFromEnv,
   buildResolveEngineBackendOptions,
-  buildStripeClientFromEnv,
   buildTtsConfigFromEnv,
   openLichessEvalIndexFromEnv,
-  requireEnv
+  requireEnv,
+  buildLlmUnlockStoreFromEnv
 } from './bootstrap.js';
 import { createDb } from './db/index.js';
 import { createGraphileJobQueue } from './jobs/queue.js';
-import { createKeyVault } from './llm/key-vault.js';
+import { createUserSetupVault } from './llm/key-vault.js';
 import { EngineTunnelRegistry } from './services/engine/engine-tunnel-registry.js';
 
 const isMainModule =
@@ -27,8 +27,8 @@ if (isMainModule) {
 async function main(): Promise<void> {
   const connectionString = requireEnv('DATABASE_URL');
   const db = createDb(connectionString);
-  const keyVault = createKeyVault(requireEnv('LLM_KEY_MASTER_KEY'));
-  const gatewayConfig = buildGatewayConfigFromEnv(keyVault);
+  const llmUnlockStore = buildLlmUnlockStoreFromEnv();
+  const gatewayConfig = buildGatewayConfigFromEnv(llmUnlockStore);
   const engineUrl = requireEnv('ENGINE_URL');
 
   const { queue: jobQueue } = await createGraphileJobQueue(connectionString);
@@ -36,18 +36,17 @@ async function main(): Promise<void> {
   const lichessEvalIndex = await openLichessEvalIndexFromEnv();
   const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, engineTunnelRegistry, lichessEvalIndex);
   const coachAgentBaseDeps = buildCoachAgentBaseDependencies(db, jobQueue, gatewayConfig);
-  const stripeClient = buildStripeClientFromEnv();
   const ttsConfig = buildTtsConfigFromEnv();
 
   const app = buildApp({
     db,
     jobQueue,
-    keyVault,
+    llmSetupVault: createUserSetupVault(),
+    llmUnlockStore,
     coachAgentBaseDeps,
     engineBackendOptions,
     engineTunnelRegistry,
     internalToken: requireEnv('ENGINE_TUNNEL_INTERNAL_TOKEN'),
-    stripeClient,
     ttsConfig
   });
   const port = Number(process.env.PORT ?? 3000);

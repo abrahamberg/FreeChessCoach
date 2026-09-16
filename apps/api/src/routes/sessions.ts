@@ -15,6 +15,8 @@ import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
 import type { CoachAgentBaseDependencies } from '../bootstrap.js';
 import { ConflictError, NotFoundError, ValidationError } from '../lib/errors.js';
+import { getModelForUser } from '../llm/gateway.js';
+import { generateProse } from '../llm/text.js';
 import { pipeCoachStreamToResponse } from '../llm/stream-response.js';
 import * as coachAgent from '../services/coach-agent.js';
 import { commitPlayerMoveAndAdvance } from '../services/play-move-commit.js';
@@ -56,7 +58,7 @@ export function registerSessionsRoutes(
     return coachAgent.resumeOrCreateSession(db, user.id, game.id);
   });
 
-  // architecture §14: no credits/analysis gate — a play-mode game has no
+  // architecture §14: no analysis gate — a play-mode game has no
   // pre-session analysis pipeline to wait on.
   app.post('/api/sessions/play', async (request) => {
     const parsed = CreatePlaySessionRequestSchema.safeParse(request.body);
@@ -240,13 +242,31 @@ export function registerSessionsRoutes(
   });
 }
 
+/** The light-tier subagent call, bound to `userId` — BYOK is the only LLM
+ * path, so this resolves the specific user's own key rather than a shared
+ * platform-level model (see CoachAgentDependencies.callLightModel's doc
+ * comment). Shared by buildRequestScopedAgentDeps and
+ * buildBotMoveCommitDeps, the two request-scoped dependency builders that
+ * both need it. */
+function buildCallLightModel(
+  base: CoachAgentBaseDependencies,
+  userId: string
+): (messages: { system: string; user: string }) => Promise<string> {
+  const resolveModel = base.resolveModel ?? getModelForUser;
+  return async (messages) => {
+    const resolution = await resolveModel(base.db, base.gatewayConfig, userId, 'light');
+    const result = await generateProse({ resolution, system: messages.system, prompt: messages.user });
+    return result.text;
+  };
+}
+
 async function buildRequestScopedAgentDeps(
   base: CoachAgentBaseDependencies,
   engineBackendOptions: ResolveEngineBackendOptions,
   userId: string
 ): Promise<CoachAgentDependencies> {
   const backend = await resolveEngineBackend(engineBackendOptions, userId);
-  return { ...base, analyzePosition: (fen) => backend.analyzePosition(fen) };
+  return { ...base, analyzePosition: (fen) => backend.analyzePosition(fen), callLightModel: buildCallLightModel(base, userId) };
 }
 
 /** "Play vs Bot" plan: analyzePosition (cached, standard depth) grades move
@@ -266,7 +286,7 @@ async function buildBotMoveCommitDeps(
   return {
     db: base.db,
     jobQueue: base.jobQueue,
-    callLightModel: base.callLightModel,
+    callLightModel: buildCallLightModel(base, userId),
     analyzePosition: (fen) => cachedBackend.analyzePosition(fen),
     // 'interactive': a bot move is a live "your move" round trip the student
     // is watching, not background batch work — it must jump ahead of a

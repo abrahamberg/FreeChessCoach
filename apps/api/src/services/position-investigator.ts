@@ -4,8 +4,6 @@ import type { PositionAnalysis } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { runBoundedToolLoop } from '../llm/agent-text.js';
 import type { GatewayConfig } from '../llm/gateway.js';
-import { recordUsage } from '../llm/gateway.js';
-import { toBillableTokens } from '../llm/usage.js';
 import type { Database } from '../db/schema.js';
 import { buildInvestigatorTools } from './investigator-tools.js';
 import type { ModelResolver } from './coach-agent-types.js';
@@ -35,11 +33,10 @@ export interface InvestigatePositionArgs {
 
 /**
  * The investigate_position coach tool's service layer (design doc: a true
- * bounded agentic loop, not a fixed gather-then-digest pattern). Metered on
- * the per-user "planner/summarizer" pattern (gateway.ts's getModelForUser +
- * recordUsage), not the free digest pattern the mechanical single-shot
- * subagents use — this call can trigger several internal engine + light-model
- * calls, so making it invisible cost would be inconsistent with credits.ts.
+ * bounded agentic loop, not a fixed gather-then-digest pattern). Resolves the
+ * user's own BYOK key via the gateway (BYOK is the only LLM path) — this call
+ * can trigger several internal engine + light-model round-trips, all billed
+ * to the user's own provider account.
  *
  * Never throws into the outer coach turn — mirrors
  * coach-context-episode-close.ts's closeEpisodeIfNeeded, except this one must
@@ -64,17 +61,6 @@ export async function investigatePosition(
       prompt: renderInvestigatePositionPrompt(startingFen, args.question),
       tools: buildInvestigatorTools({ analyzePosition: deps.analyzePosition }),
       maxSteps: MAX_INVESTIGATOR_STEPS
-    });
-
-    await recordUsage(deps.db, {
-      userId: ctx.userId,
-      sessionId: ctx.sessionId,
-      provider: resolution.provider,
-      model: resolution.modelId,
-      tier: 'light',
-      usage: toBillableTokens(result.usage),
-      purpose: 'investigate_position',
-      metered: resolution.metered
     });
 
     return result.text.trim() || 'Investigation did not reach a conclusion in time.';

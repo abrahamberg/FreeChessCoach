@@ -59,17 +59,6 @@ export function PuzzleSessionPage(): ReactNode {
     );
   }
 
-  if (session.status === 'paused_no_credits') {
-    return (
-      <div className="session-paused-card">
-        <p>The session is saved. Add credits or your own API key to continue.</p>
-        <button type="button" onClick={() => navigate('/settings')}>
-          Add credits
-        </button>
-      </div>
-    );
-  }
-
   if (!currentItem) return <p>Could not load the current puzzle.</p>;
 
   function handleSendMessage(content: string): void {

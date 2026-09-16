@@ -164,19 +164,7 @@ export function SessionPage(): ReactNode {
     { label: 'Settings', onSelect: () => navigate('/settings') }
   ];
 
-  const isPausedNoCredits = session.status === 'paused_no_credits';
-  const pausedCard = (
-    <div className="session-paused-card">
-      <p>The session is saved. Add credits or your own API key to continue.</p>
-      <button type="button" onClick={() => navigate('/settings')}>
-        Add credits
-      </button>
-    </div>
-  );
-
-  const chatPanel = isPausedNoCredits ? (
-    pausedCard
-  ) : (
+  const chatPanel = (
     <ChatPane
       messages={chat.messages}
       activeToolName={chat.activeToolName}
@@ -237,11 +225,6 @@ export function SessionPage(): ReactNode {
             ))}
           {board}
           {chatPanel}
-        </div>
-      ) : isPausedNoCredits ? (
-        <div className="session-body mobile stacked">
-          {board}
-          {pausedCard}
         </div>
       ) : (
         <MobileCoachSessionBody

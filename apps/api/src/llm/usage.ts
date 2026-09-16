@@ -1,5 +1,4 @@
 import type { LanguageModelUsage } from 'ai';
-import type { UsageTokens } from './metering.js';
 
 /** Provider-normalized token usage for one model call (coach debug mode
  * design doc, "Provider-specific usage"). `cacheWriteTokens` is `null` —
@@ -17,10 +16,9 @@ export interface TurnUsage {
 }
 
 /** Providers occasionally report non-finite usage on multi-step tool-calling
- * turns (the same quirk `gateway.ts`'s `toSafeCount` guards for the DB
- * columns) — a NaN here would serialize to `null` over JSON and fail the
+ * turns — a NaN here would serialize to `null` over JSON and fail the
  * frontend's schema validation, so every number is sanitized at this
- * boundary too. */
+ * boundary. */
 function toSafeCount(value: number | null | undefined): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
@@ -38,17 +36,5 @@ export function toTurnUsage(usage: LanguageModelUsage): TurnUsage {
     cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? null,
     outputTokens: toSafeCount(usage.outputTokens),
     reasoningTokens: toSafeCount(usage.outputTokenDetails.reasoningTokens)
-  };
-}
-
-/** The billing view of a turn: total input tokens (fresh + reused-from-cache),
- * matching `computeCredits`' expectation of a pre-discount input total.
- * Cache-write tokens are intentionally excluded — billing math for the
- * cache-write premium is out of scope (see design doc). */
-export function toBillableTokens(usage: TurnUsage): UsageTokens {
-  return {
-    inputTokens: usage.freshInputTokens + usage.cacheReadTokens,
-    outputTokens: usage.outputTokens,
-    cachedInputTokens: usage.cacheReadTokens
   };
 }

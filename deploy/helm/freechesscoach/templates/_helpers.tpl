@@ -137,14 +137,6 @@ imagePullSecrets:
   value: {{ .Values.api.authMode | quote }}
 - name: ENGINE_URL
   value: {{ include "freechesscoach.engineUrl" . | quote }}
-- name: LLM_STANDARD_MODEL_ANTHROPIC
-  value: {{ .Values.llm.standardModel.anthropic | quote }}
-- name: LLM_STANDARD_MODEL_OPENAI
-  value: {{ .Values.llm.standardModel.openai | quote }}
-- name: LLM_LIGHT_MODEL_ANTHROPIC
-  value: {{ .Values.llm.lightModel.anthropic | quote }}
-- name: LLM_LIGHT_MODEL_OPENAI
-  value: {{ .Values.llm.lightModel.openai | quote }}
 - name: LLM_FAKE
   value: {{ ternary "1" "0" .Values.llm.fake | quote }}
 - name: LLM_REASONING_STANDARD
@@ -153,57 +145,23 @@ imagePullSecrets:
   value: {{ .Values.llm.reasoning.light | quote }}
 - name: LLM_OPENAI_SERVICE_TIER
   value: {{ .Values.llm.openaiServiceTier | quote }}
-- name: LLM_KEY_MASTER_KEY
+- name: LLM_UNLOCK_PEPPER
   valueFrom:
     secretKeyRef:
-      name: {{ required "llm.masterKey.existingSecret is required" .Values.llm.masterKey.existingSecret }}
-      key: {{ .Values.llm.masterKey.key }}
-{{- if .Values.llm.platformKeys.enabled }}
-- name: ANTHROPIC_API_KEY
+      name: {{ required "llm.unlock.existingSecret is required" .Values.llm.unlock.existingSecret }}
+      key: {{ .Values.llm.unlock.pepperKey }}
+- name: LLM_UNLOCK_CACHE_KEY
   valueFrom:
     secretKeyRef:
-      name: {{ required "llm.platformKeys.existingSecret is required" .Values.llm.platformKeys.existingSecret }}
-      key: {{ .Values.llm.platformKeys.anthropicKey }}
-      optional: true
-- name: OPENAI_API_KEY
+      name: {{ required "llm.unlock.existingSecret is required" .Values.llm.unlock.existingSecret }}
+      key: {{ .Values.llm.unlock.cacheKey }}
+- name: REDIS_URL
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.llm.platformKeys.existingSecret }}
-      key: {{ .Values.llm.platformKeys.openaiKey }}
-      optional: true
-{{- end }}
-{{- if .Values.stripe.enabled }}
-{{- $secret := required "stripe.existingSecret is required when stripe.enabled" .Values.stripe.existingSecret }}
-- name: STRIPE_SECRET_KEY
-  valueFrom:
-    secretKeyRef:
-      name: {{ $secret }}
-      key: {{ .Values.stripe.keys.secretKey }}
-- name: STRIPE_WEBHOOK_SECRET
-  valueFrom:
-    secretKeyRef:
-      name: {{ $secret }}
-      key: {{ .Values.stripe.keys.webhookSecret }}
-- name: STRIPE_PRICE_SMALL
-  valueFrom:
-    secretKeyRef:
-      name: {{ $secret }}
-      key: {{ .Values.stripe.keys.priceSmall }}
-- name: STRIPE_PRICE_MEDIUM
-  valueFrom:
-    secretKeyRef:
-      name: {{ $secret }}
-      key: {{ .Values.stripe.keys.priceMedium }}
-- name: STRIPE_PRICE_LARGE
-  valueFrom:
-    secretKeyRef:
-      name: {{ $secret }}
-      key: {{ .Values.stripe.keys.priceLarge }}
-- name: STRIPE_CHECKOUT_SUCCESS_URL
-  value: {{ required "stripe.checkoutSuccessUrl is required when stripe.enabled" .Values.stripe.checkoutSuccessUrl | quote }}
-- name: STRIPE_CHECKOUT_CANCEL_URL
-  value: {{ required "stripe.checkoutCancelUrl is required when stripe.enabled" .Values.stripe.checkoutCancelUrl | quote }}
-{{- end }}
+      name: {{ required "llm.unlock.existingSecret is required" .Values.llm.unlock.existingSecret }}
+      key: {{ .Values.llm.unlock.redisUrlKey }}
+- name: LLM_UNLOCK_TTL_SECONDS
+  value: {{ .Values.llm.unlock.ttlSeconds | quote }}
 {{- if .Values.lichessEvalIndex.enabled }}
 - name: LICHESS_EVAL_INDEX_PATH
   value: {{ .Values.lichessEvalIndex.mountPath | quote }}

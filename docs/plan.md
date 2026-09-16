@@ -1809,14 +1809,19 @@ guidance when this task started (that fork ran concurrently and flagged
 the mismatch itself, correctly, rather than guessing) — fixed here as part
 of this task's own commit, along with its test and `docs/prompts.md`.
 
-Architecture notes not spelled out above: `puzzle_sessions.status` reuses
-`sessions.status`'s exact four values including `paused_no_credits` —
-puzzle-session turns go through the same credits-metered
-`getModelForUser`/`assertCanSpend`/`recordUsage` path as every other coach
-turn (`services/puzzle-session-turn.ts`'s `startPuzzleTurn`, a deliberately
-much simpler sibling of `coach-agent-turn.ts`'s `startTurn`: no episodes,
+Architecture notes not spelled out above: at the time this task shipped,
+`puzzle_sessions.status` reused `sessions.status`'s four values including
+`paused_no_credits`, and puzzle-session turns went through the same
+credits-metered `getModelForUser`/`assertCanSpend`/`recordUsage` path as
+every other coach turn. The credit/ledger system was removed afterward
+(BYOK-only now — see the "remove credit/ledger system" work): both tables'
+status now has just three values (`active`/`completed`/`abandoned`,
+0035_remove_credits.ts), and `startPuzzleTurn` no longer does any
+credit-gating or usage recording. What's still accurate:
+`services/puzzle-session-turn.ts`'s `startPuzzleTurn` is a deliberately
+much simpler sibling of `coach-agent-turn.ts`'s `startTurn` — no episodes,
 no `subjectPly`, no position-jump resolution — `messages` is just the
-session's whole history replayed as-is, since a puzzle session is linear).
+session's whole history replayed as-is, since a puzzle session is linear.
 A brand-new session's opening turn (empty history, empty request body)
 synthesizes an unpersisted `"Begin the puzzle session."` user message
 rather than seeding a stored `[session_start]`-style marker row — nothing

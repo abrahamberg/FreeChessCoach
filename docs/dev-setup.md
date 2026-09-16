@@ -77,17 +77,17 @@ Set `LLM_FAKE=1` to make **every** model call (`llm/gateway.ts`'s
 `getModelForUser` — used by the coach chat, the analysis planner, and the
 session summarizer) return a canned `MockLanguageModelV1` stream instead of
 calling Anthropic/OpenAI. No `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` is needed in
-this mode; `LLM_STANDARD_MODEL_*`/`LLM_LIGHT_MODEL_*` still need *some* value
-(the compose file defaults them to placeholder strings) since they're read
-unconditionally, but they're never actually sent anywhere when faked.
+this mode; the compose file supplies local unlock-cache defaults and no
+provider credentials or model ids are read.
 
 ```sh
 LLM_FAKE=1 docker compose up -d postgres engine migrate api worker
 ```
 
-This is what `scripts/smoke.sh` uses. To use real models instead, set
-`ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` and real `LLM_*_MODEL_*` ids in
-your `.env`, and leave `LLM_FAKE` unset (or `0`).
+This is what `scripts/smoke.sh` uses. To use real models instead, leave
+`LLM_FAKE` unset (or `0`), start Redis, and enter the provider URL, key,
+low/high model names, optional voice model, and your unlock phrase in Settings.
+The default OpenAI preset is `luna`, `terra`, and `gpt-4o-mini-tts`.
 
 ## Smoke test
 

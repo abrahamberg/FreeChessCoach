@@ -8,9 +8,9 @@ import { createSessionForGame } from './coach-agent-session.js';
 /**
  * Starts a fresh live sparring game (architecture.md §14): a minimal,
  * header-only PGN that grows move by move as the game is played, paired
- * with a 'play'-mode session. Skips the whole analyses/credits-gate
- * pipeline entirely — there's no pre-game analysis to wait on, and the
- * student's live profile/focus areas are the coach's "prep" instead.
+ * with a 'play'-mode session. Skips the whole analyses-gate pipeline
+ * entirely — there's no pre-game analysis to wait on, and the student's live
+ * profile/focus areas are the coach's "prep" instead.
  */
 export async function createPlaySession(
   db: Kysely<Database>,

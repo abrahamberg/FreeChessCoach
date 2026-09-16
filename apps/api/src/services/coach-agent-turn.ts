@@ -2,29 +2,30 @@ import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { SessionRow } from '../db/repositories/sessions.js';
 import { runCoachTurn, MAX_STEPS, type CoachTurnCompletion, type CoachTurnStream } from '../llm/chat.js';
-import { getModelForUser, recordUsage, streamTimeoutsFor } from '../llm/gateway.js';
-import { toBillableTokens } from '../llm/usage.js';
-import { InsufficientCreditsError } from '../lib/errors.js';
+import { getModelForUser, streamTimeoutsFor } from '../llm/gateway.js';
 import { createKeyedLock } from '../lib/keyedLock.js';
 import { currentEpisode } from '../lib/episodes.js';
 import { findSuccessfulToolResult } from '../lib/tool-parts.js';
 import { buildCoachTools, type CoachToolsDependencies } from './coach-tools.js';
 import * as coachContext from './coach-context.js';
-import { createCreditsService } from './credits.js';
 import { applyClientToolResult } from './coach-agent-client-tool-result.js';
 import { buildSystemPromptForSession } from './coach-agent-system-prompt.js';
 import { serializeTools, type TurnDebugSnapshot } from './coach-agent-debug.js';
 import { investigatePosition } from './position-investigator.js';
 import type { CoachAgentDependencies, ModelResolver, StartTurnInput } from './coach-agent-types.js';
+import type { Kysely } from 'kysely';
+import type { Database } from '../db/schema.js';
 
 /** Serializes startTurn calls per session — see createKeyedLock's doc comment
  * for why this is needed (the client-tool round-trip race). */
 const sessionLock = createKeyedLock();
 
 /**
- * architecture §7.2 turn flow: check credits (if metered) -> persist the new
- * user input -> stream the coach turn with the full replayed history ->
- * onFinish persists generated messages append-only and meters usage.
+ * architecture §7.2 turn flow: persist the new user input -> stream the
+ * coach turn with the full replayed history -> onFinish persists generated
+ * messages append-only. The app is BYOK-only, so the light-tier subagents
+ * (episode folds, move notes) resolve the session user's own key here rather
+ * than at boot.
  */
 export async function startTurn(
   deps: CoachAgentDependencies,
@@ -48,18 +49,7 @@ export async function startTurn(
   try {
     const resolveModel = deps.resolveModel ?? getModelForUser;
     const resolution = await resolveModel(deps.db, deps.gatewayConfig, session.userId, 'standard');
-
-    if (resolution.metered) {
-      const creditsService = deps.creditsService ?? createCreditsService(deps.db);
-      try {
-        await creditsService.assertCanSpend(session.userId);
-      } catch (error) {
-        await sessionsRepo.markPausedNoCredits(deps.db, session.id);
-        throw error instanceof InsufficientCreditsError
-          ? error
-          : new InsufficientCreditsError('Insufficient credits');
-      }
-    }
+    const { callLightModel } = deps;
 
     // currentPly: what the board/analysis shows. subjectPly: what the
     // conversation is actually about, and what this turn's messages get
@@ -77,7 +67,7 @@ export async function startTurn(
       if (jump && jump.ply !== subjectPly) {
         const historyBeforeTurn = await sessionMessagesRepo.listBySession(deps.db, session.id);
         const closedEpisode = currentEpisode(historyBeforeTurn, subjectPly);
-        await coachContext.closeEpisodeIfNeeded(deps, session.id, closedEpisode.messages, subjectPly);
+        await coachContext.closeEpisodeIfNeeded({ db: deps.db, callLightModel }, session.id, closedEpisode.messages, subjectPly);
         currentPly = jump.ply;
         subjectPly = jump.ply;
         await sessionsRepo.updateSubjectAndCurrentPly(deps.db, session.id, currentPly);
@@ -85,7 +75,7 @@ export async function startTurn(
       await sessionMessagesRepo.insert(deps.db, session.id, 'user', input.content, subjectPly);
     }
     if (input.clientToolResult) {
-      const applied = await applyClientToolResult(deps, session, input.clientToolResult, currentPly, subjectPly);
+      const applied = await applyClientToolResult(deps, callLightModel, session, input.clientToolResult, currentPly, subjectPly);
       currentPly = applied.ply;
       subjectPly = applied.subjectPly;
     }
@@ -94,7 +84,7 @@ export async function startTurn(
     const historyAfterTurn = await sessionMessagesRepo.listBySession(deps.db, session.id);
     const { instructions, messages } = await coachContext.buildEpisodeContext({
       db: deps.db,
-      callLightModel: deps.callLightModel,
+      callLightModel,
       session,
       currentPly,
       subjectPly,
@@ -107,7 +97,7 @@ export async function startTurn(
 
     const tools = buildCoachTools(
       { userId: session.userId, sessionId: session.id, gameId: session.gameId },
-      buildTurnToolsDependencies(deps, session, resolveModel),
+      buildTurnToolsDependencies(deps, session, callLightModel, resolveModel),
       session.mode
     );
     const requestTools = serializeTools(tools);
@@ -128,12 +118,11 @@ export async function startTurn(
         // The response has already been piped to the client by the time this
         // runs (see routes/sessions.ts's reply.hijack()), so nothing
         // downstream can catch a rejection here — an uncaught error would
-        // otherwise crash the whole process (seen live: a NaN token count
-        // from a provider quirk took down the entire API). Persisting the
-        // transcript and metering the call must never be able to do that.
+        // otherwise crash the whole process. Persisting the transcript must
+        // never be able to do that.
         try {
-          // Debug snapshot capture is independent of the persistence/metering
-          // below — written first so a failure further down never hides it.
+          // Debug snapshot capture is independent of the persistence below —
+          // written first so a failure further down never hides it.
           await sessionsRepo.updateDebugSnapshot(deps.db, session.id, {
             request: {
               provider: resolution.provider,
@@ -157,18 +146,8 @@ export async function startTurn(
             await sessionMessagesRepo.insert(deps.db, session.id, message.role, message.content, subjectPly);
           }
           if (session.mode === 'play') {
-            await advancePlyForPlayMove(deps, session.id, subjectPly, completion.messages);
+            await advancePlyForPlayMove(deps.db, callLightModel, session.id, subjectPly, completion.messages);
           }
-          await recordUsage(deps.db, {
-            userId: session.userId,
-            sessionId: session.id,
-            provider: resolution.provider,
-            model: resolution.modelId,
-            tier: 'standard',
-            usage: toBillableTokens(completion.usage),
-            purpose: 'coach_turn',
-            metered: resolution.metered
-          });
         } catch (error) {
           console.error(`coach-agent onFinish failed for session ${session.id}:`, error);
         } finally {
@@ -205,13 +184,14 @@ export async function startTurn(
 function buildTurnToolsDependencies(
   deps: CoachAgentDependencies,
   session: SessionRow,
+  callLightModel: (messages: { system: string; user: string }) => Promise<string>,
   resolveModel: ModelResolver
 ): CoachToolsDependencies {
   return {
     db: deps.db,
     jobQueue: deps.jobQueue,
     analyzePosition: deps.analyzePosition,
-    callLightModel: deps.callLightModel,
+    callLightModel,
     investigatePosition: (args) =>
       investigatePosition(
         { db: deps.db, gatewayConfig: deps.gatewayConfig, resolveModel, analyzePosition: deps.analyzePosition },
@@ -251,19 +231,20 @@ interface UndoLastMoveResult {
  * the ply intentionally does not move in that case.
  */
 async function advancePlyForPlayMove(
-  deps: CoachAgentDependencies,
+  db: Kysely<Database>,
+  callLightModel: (messages: { system: string; user: string }) => Promise<string>,
   sessionId: string,
   closedPly: number,
   messages: CoachTurnCompletion['messages']
 ): Promise<void> {
   const coachMove = findSuccessfulToolResult(messages, 'play_coach_move') as PlayCoachMoveResult | null;
   if (coachMove) {
-    const historyAfterTurn = await sessionMessagesRepo.listBySession(deps.db, sessionId);
+    const historyAfterTurn = await sessionMessagesRepo.listBySession(db, sessionId);
     const closedEpisode = currentEpisode(historyAfterTurn, closedPly);
-    await coachContext.closeEpisodeIfNeeded(deps, sessionId, closedEpisode.messages, closedPly);
+    await coachContext.closeEpisodeIfNeeded({ db, callLightModel }, sessionId, closedEpisode.messages, closedPly);
     // A newly-played move is always a subject change — play mode has no
     // flashback concept.
-    await sessionsRepo.updateSubjectAndCurrentPly(deps.db, sessionId, coachMove.ply);
+    await sessionsRepo.updateSubjectAndCurrentPly(db, sessionId, coachMove.ply);
     return;
   }
 
@@ -272,6 +253,6 @@ async function advancePlyForPlayMove(
     // The undone move's subject no longer exists — revert both together,
     // same as a subject change, even though no episode closes (nothing
     // sound to summarize, per this function's doc comment above).
-    await sessionsRepo.updateSubjectAndCurrentPly(deps.db, sessionId, undo.removedPly - 1);
+    await sessionsRepo.updateSubjectAndCurrentPly(db, sessionId, undo.removedPly - 1);
   }
 }

@@ -2,7 +2,7 @@ import type { Kysely } from 'kysely';
 import type { SessionMode, Thread } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
-export type SessionStatus = 'active' | 'completed' | 'paused_no_credits' | 'abandoned';
+export type SessionStatus = 'active' | 'completed' | 'abandoned';
 
 export interface SessionRow {
   id: string;
@@ -67,15 +67,15 @@ export function findByIdForUser(
 }
 
 /** The most recent still-resumable session for a game, in the given mode —
- * 'active' or 'paused_no_credits', never 'completed'/'abandoned'. Used to
- * make the Games page link back into an ongoing session instead of starting
- * a new one. Filtered by `mode` (not just `gameId`/`userId`): once a game
- * can carry sessions of more than one mode over its lifetime (e.g. a
- * finished `vs_bot` game promoted to the Coach tier gets a brand-new
- * 'analyze' session alongside its now-completed 'play_bot' one), a mode-blind
- * lookup could return the wrong one — e.g. handing an 'analyze' session back
- * to a caller that only ever expects to find a 'play_bot' session for that
- * game, which then renders/polls it as if the bot game were still live. */
+ * 'active', never 'completed'/'abandoned'. Used to make the Games page link
+ * back into an ongoing session instead of starting a new one. Filtered by
+ * `mode` (not just `gameId`/`userId`): once a game can carry sessions of more
+ * than one mode over its lifetime (e.g. a finished `vs_bot` game promoted to
+ * the Coach tier gets a brand-new 'analyze' session alongside its now-completed
+ * 'play_bot' one), a mode-blind lookup could return the wrong one — e.g.
+ * handing an 'analyze' session back to a caller that only ever expects to
+ * find a 'play_bot' session for that game, which then renders/polls it as if
+ * the bot game were still live. */
 export function findActiveByGameIdForUser(
   db: Kysely<Database>,
   gameId: string,
@@ -88,7 +88,7 @@ export function findActiveByGameIdForUser(
     .where('gameId', '=', gameId)
     .where('userId', '=', userId)
     .where('mode', '=', mode)
-    .where('status', 'in', ['active', 'paused_no_credits'])
+    .where('status', '=', 'active')
     .orderBy('startedAt', 'desc')
     .limit(1)
     .executeTakeFirst();
@@ -137,15 +137,6 @@ export function markAbandoned(db: Kysely<Database>, id: string): Promise<void> {
   return db
     .updateTable('sessions')
     .set({ status: 'abandoned', endedAt: new Date() })
-    .where('id', '=', id)
-    .execute()
-    .then(() => undefined);
-}
-
-export function markPausedNoCredits(db: Kysely<Database>, id: string): Promise<void> {
-  return db
-    .updateTable('sessions')
-    .set({ status: 'paused_no_credits' })
     .where('id', '=', id)
     .execute()
     .then(() => undefined);

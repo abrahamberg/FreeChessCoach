@@ -43,8 +43,8 @@ export interface UseCoachVoiceOptions {
   /** users.tts_enabled — the Settings master switch, off by default. Play
    * and autoplay both no-op while this is false, so a stale autoplay
    * preference or in-flight queue from before the user turned voice off
-   * can't still trigger playback (or, on the OpenAI backend, spend credits
-   * via a route the server would reject anyway). */
+   * can't still trigger playback (or, on the OpenAI backend, bill usage to
+   * the user's own OpenAI key via a route the server would reject anyway). */
   enabled: boolean;
   /** users.tts_backend — which client (openai-tts-client.ts vs.
    * kokoro-tts-client.ts) actually synthesizes the audio. */

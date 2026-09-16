@@ -19,7 +19,7 @@ describe('GET/PATCH /api/users/me', () => {
 
   const authHeaders = { 'x-auth-request-email': 'ann@example.com', 'x-auth-request-user': 'Ann' };
 
-  test('GET creates the user on first call, with default profile and a 100-credit signup grant', async () => {
+  test('GET creates the user on first call, with the default profile', async () => {
     const app = buildApp({ authMode: 'proxy', db });
 
     const response = await app.inject({ method: 'GET', url: '/api/users/me', headers: authHeaders });
@@ -34,14 +34,13 @@ describe('GET/PATCH /api/users/me', () => {
       lichessUsername: null,
       chesscomUsername: null,
       selfAssessment: null,
-      creditBalance: 100,
       ttsEnabled: false,
       ttsBackend: 'openai'
     });
     expect(typeof body.id).toBe('string');
   });
 
-  test('GET a second time finds the same user and grants the signup credit only once', async () => {
+  test('GET a second time finds the same user', async () => {
     const app = buildApp({ authMode: 'proxy', db });
     const headers = { 'x-auth-request-email': 'bo@example.com', 'x-auth-request-user': 'Bo' };
 
@@ -49,8 +48,6 @@ describe('GET/PATCH /api/users/me', () => {
     const second = await app.inject({ method: 'GET', url: '/api/users/me', headers });
 
     expect(first.json().id).toBe(second.json().id);
-    expect(first.json().creditBalance).toBe(100);
-    expect(second.json().creditBalance).toBe(100);
   });
 
   test('PATCH updates the rating band', async () => {

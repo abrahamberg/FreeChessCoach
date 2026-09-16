@@ -54,7 +54,7 @@ describe('puzzle-sessions repository (Task 59.4)', () => {
     expect(await puzzleSessionsRepo.findSessionByIdForUser(db, session.id, crypto.randomUUID())).toBeUndefined();
   });
 
-  test('findActiveByAssignmentId returns the latest active/paused session, not a completed one', async () => {
+  test('findActiveByAssignmentId returns the latest active session, not a completed one', async () => {
     const user = await makeUser();
     const assignment = await makeAssignment(user.id);
     const completed = await puzzleSessionsRepo.insertSession(db, { assignmentId: assignment.id, userId: user.id });
@@ -65,16 +65,13 @@ describe('puzzle-sessions repository (Task 59.4)', () => {
     expect(found?.id).toBe(active.id);
   });
 
-  test('advanceItemIndex, markCompleted, markAbandoned, markPausedNoCredits update status/index', async () => {
+  test('advanceItemIndex, markCompleted, markAbandoned update status/index', async () => {
     const user = await makeUser();
     const assignment = await makeAssignment(user.id);
     const session = await puzzleSessionsRepo.insertSession(db, { assignmentId: assignment.id, userId: user.id });
 
     await puzzleSessionsRepo.advanceItemIndex(db, session.id, 1);
     expect((await puzzleSessionsRepo.findSessionById(db, session.id))?.currentItemIndex).toBe(1);
-
-    await puzzleSessionsRepo.markPausedNoCredits(db, session.id);
-    expect((await puzzleSessionsRepo.findSessionById(db, session.id))?.status).toBe('paused_no_credits');
 
     await puzzleSessionsRepo.markCompleted(db, session.id);
     const completed = await puzzleSessionsRepo.findSessionById(db, session.id);

@@ -23,11 +23,11 @@ export interface UsersTable {
   createdAt: Generated<Date>;
 }
 
-export interface UserLlmKeysTable {
+export interface UserLlmSetupsTable {
   userId: string;
-  provider: 'anthropic' | 'openai';
-  keyCiphertext: Buffer;
-  keyIv: Buffer;
+  setupCiphertext: Buffer;
+  setupIv: Buffer;
+  setupSalt: Buffer;
   createdAt: Generated<Date>;
 }
 
@@ -121,7 +121,7 @@ export interface SessionsTable {
   id: Generated<string>;
   gameId: string;
   userId: string;
-  status: 'active' | 'completed' | 'paused_no_credits' | 'abandoned';
+  status: 'active' | 'completed' | 'abandoned';
   mode: Generated<SessionMode>;
   currentPly: Generated<number>;
   /** What the conversation is actually about — episode boundaries
@@ -180,16 +180,6 @@ export interface FocusAreasTable {
   note: string;
   evidenceCount: Generated<number>;
   lastSeenAt: Generated<Date>;
-  createdAt: Generated<Date>;
-}
-
-export interface CreditLedgerTable {
-  id: Generated<string>;
-  userId: string;
-  delta: number;
-  reason: 'signup_grant' | 'purchase' | 'session_usage' | 'refund';
-  sessionId: string | null;
-  stripeEventId: string | null;
   createdAt: Generated<Date>;
 }
 
@@ -260,7 +250,7 @@ export interface PuzzleSessionsTable {
   id: Generated<string>;
   assignmentId: string;
   userId: string;
-  status: Generated<'active' | 'completed' | 'paused_no_credits' | 'abandoned'>;
+  status: Generated<'active' | 'completed' | 'abandoned'>;
   currentItemIndex: Generated<number>;
   startedAt: Generated<Date>;
   endedAt: Date | null;
@@ -276,23 +266,9 @@ export interface PuzzleSessionMessagesTable {
   createdAt: Generated<Date>;
 }
 
-export interface LlmCallLogTable {
-  id: Generated<string>;
-  userId: string;
-  sessionId: string | null;
-  provider: string;
-  model: string;
-  inputTokens: number;
-  outputTokens: number;
-  cachedInputTokens: Generated<number>;
-  creditsMetered: Generated<number>;
-  purpose: string;
-  createdAt: Generated<Date>;
-}
-
 export interface Database {
   users: UsersTable;
-  userLlmKeys: UserLlmKeysTable;
+  userLlmSetups: UserLlmSetupsTable;
   games: GamesTable;
   analyses: AnalysesTable;
   sessions: SessionsTable;
@@ -300,8 +276,6 @@ export interface Database {
   sessionMoveNotes: SessionMoveNotesTable;
   findings: FindingsTable;
   focusAreas: FocusAreasTable;
-  creditLedger: CreditLedgerTable;
-  llmCallLog: LlmCallLogTable;
   positionEvaluations: PositionEvaluationsTable;
   diagnosticObservations: DiagnosticObservationsTable;
   diagnosticProfiles: DiagnosticProfilesTable;

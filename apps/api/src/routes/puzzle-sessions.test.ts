@@ -2,11 +2,9 @@ import type { Kysely } from 'kysely';
 import { MockLanguageModelV4 } from 'ai/test';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { buildApp } from '../app.js';
-import * as creditsRepo from '../db/repositories/credits.js';
 import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
-import { createKeyVault } from '../llm/key-vault.js';
 import type { GatewayConfig } from '../llm/gateway.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { instantTextModel, mockResolution, multiStepModel } from '../../test/helpers/mock-model.js';
@@ -16,7 +14,6 @@ import { noopJobQueue } from '../jobs/queue.js';
 describe('puzzle-sessions routes (Task 59.4)', () => {
   let testDb: TestDb;
   let db: Kysely<Database>;
-  const keyVault = createKeyVault(Buffer.alloc(32, 7).toString('base64'));
 
   beforeAll(async () => {
     testDb = await createTestDb();
@@ -32,26 +29,17 @@ describe('puzzle-sessions routes (Task 59.4)', () => {
   }
 
   function coachAgentBaseDeps(model: MockLanguageModelV4): CoachAgentBaseDependencies {
-    const gatewayConfig: GatewayConfig = {
-      keyVault,
-      platformKeys: { anthropic: 'platform-key' },
-      modelIds: {
-        standard: { anthropic: 'claude-standard', openai: 'gpt-standard' },
-        light: { anthropic: 'claude-light', openai: 'gpt-light' }
-      }
-    };
+    const gatewayConfig: GatewayConfig = {};
     return {
       db,
       jobQueue: noopJobQueue,
       gatewayConfig,
-      callLightModel: async () => 'unused',
       resolveModel: () => Promise.resolve(mockResolution(model))
     };
   }
 
   async function setupAssignment(email: string) {
     const user = await usersRepo.insert(db, { email, displayName: 'Ann' });
-    await creditsRepo.insertSignupGrant(db, user.id);
     const assignment = await puzzleAssignmentsRepo.insert(db, {
       userId: user.id,
       diagnosisCode: 'TA-07',

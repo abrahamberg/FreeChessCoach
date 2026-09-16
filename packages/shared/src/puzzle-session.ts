@@ -39,7 +39,7 @@ export type PuzzleAssignment = z.infer<typeof PuzzleAssignmentSchema>;
 export const PuzzleAssignmentListResponseSchema = z.array(PuzzleAssignmentSchema);
 export type PuzzleAssignmentListResponse = z.infer<typeof PuzzleAssignmentListResponseSchema>;
 
-export const PuzzleSessionStatusSchema = z.enum(['active', 'completed', 'paused_no_credits', 'abandoned']);
+export const PuzzleSessionStatusSchema = z.enum(['active', 'completed', 'abandoned']);
 export type PuzzleSessionStatus = z.infer<typeof PuzzleSessionStatusSchema>;
 
 export const PuzzleSessionSchema = z.object({

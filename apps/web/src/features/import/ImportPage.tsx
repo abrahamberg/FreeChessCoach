@@ -1,9 +1,10 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import {
+  ChesscomRecentGamesResponseSchema,
   ImportGameRequestSchema,
   ImportGameResponseSchema,
   LichessRecentGamesResponseSchema,
@@ -15,9 +16,9 @@ import { useAnalysisStatus } from '../../hooks/useAnalysisStatus.js';
 import { AnalysisProgress } from './AnalysisProgress.js';
 import { ColorConfirm } from './ColorConfirm.js';
 import { ImportErrorNotice } from './ImportErrorNotice.js';
-import { LichessGamePicker } from './LichessGamePicker.js';
 import { PgnPasteForm } from './PgnPasteForm.js';
 import { PgnUploadForm } from './PgnUploadForm.js';
+import { RemoteImportPanel, type BulkResult, type RemoteTab } from './RemoteImportPanel.js';
 import './ImportPage.css';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -44,24 +45,25 @@ function fensOf(pgn: string): string[] {
 }
 
 const SessionSummarySchema = z.object({ id: z.string() });
-type ImportTab = 'paste' | 'upload' | 'lichess';
+type ImportTab = 'paste' | 'upload' | RemoteTab;
 
-interface BulkImportResult {
-  succeeded: number;
-  total: number;
-  rateLimited: boolean;
+interface BulkImportArgs {
+  pgns: string[];
+  source: RemoteTab;
 }
 
-/** Stat-bank bulk import (Task 31.4): imports each selected Lichess game
- * with `deferAnalysis: true`, one request per game (the API has no batch
- * import endpoint), tolerating individual failures so one rate-limited or
- * malformed game doesn't lose the rest of the batch. */
-async function importForStatBank(pgns: string[]): Promise<BulkImportResult> {
+/** Stat-bank bulk import (Task 31.4): imports each selected game with
+ * `deferAnalysis: true`, one request per game (the API has no batch import
+ * endpoint), tolerating individual failures so one rate-limited or malformed
+ * game doesn't lose the rest of the batch. Shared by both remote pickers
+ * (Lichess, Chess.com) since the only per-source difference is the `source`
+ * tag on the request body. */
+async function importForStatBank({ pgns, source }: BulkImportArgs): Promise<BulkResult> {
   let succeeded = 0;
   let rateLimited = false;
   for (const pgn of pgns) {
     try {
-      const body = ImportGameRequestSchema.parse({ pgn, source: 'lichess', deferAnalysis: true });
+      const body = ImportGameRequestSchema.parse({ pgn, source, deferAnalysis: true });
       await apiPost('/api/games', body, ImportGameResponseSchema);
       succeeded += 1;
     } catch (error) {
@@ -81,7 +83,7 @@ export function ImportPage(): ReactNode {
   const [gameId, setGameId] = useState<string | null>(null);
   const [tab, setTab] = useState<ImportTab>('paste');
   const [statBankMode, setStatBankMode] = useState(false);
-  const [selectedLichessIds, setSelectedLichessIds] = useState<ReadonlySet<string>>(new Set());
+  const [selectedRemoteIds, setSelectedRemoteIds] = useState<ReadonlySet<string>>(new Set());
 
   const importMutation = useMutation({
     mutationFn: (body: ImportGameRequest) => apiPost('/api/games', body, ImportGameResponseSchema),
@@ -108,20 +110,30 @@ export function ImportPage(): ReactNode {
     }
   });
 
-  function toggleLichessSelection(lichessGameId: string): void {
-    setSelectedLichessIds((current) => {
+  /** Bulk-import selection is one shared Set for whichever remote tab is
+   * active — clear it on every switch so a selection made against one
+   * platform's game ids (e.g. Lichess) can't leak into the other tab's
+   * import (Chess.com), where those ids almost never match. */
+  function switchTab(next: ImportTab): void {
+    setTab(next);
+    setSelectedRemoteIds(new Set());
+  }
+
+  function toggleRemoteSelection(remoteGameId: string): void {
+    setSelectedRemoteIds((current) => {
       const next = new Set(current);
-      if (next.has(lichessGameId)) next.delete(lichessGameId);
-      else next.add(lichessGameId);
+      if (next.has(remoteGameId)) next.delete(remoteGameId);
+      else next.add(remoteGameId);
       return next;
     });
   }
 
+  /** Only meaningful while `tab` is a RemoteTab — the stat-bank checkbox is
+   * only rendered for those tabs, so this is only ever called then. */
   function importSelectedForStatBank(): void {
-    const pgns = (lichessQuery.data ?? [])
-      .filter((game) => selectedLichessIds.has(game.id))
-      .map((game) => game.pgn);
-    bulkImportMutation.mutate(pgns);
+    const games = tab === 'chesscom' ? chesscomQuery.data : lichessQuery.data;
+    const pgns = (games ?? []).filter((game) => selectedRemoteIds.has(game.id)).map((game) => game.pgn);
+    bulkImportMutation.mutate({ pgns, source: tab as RemoteTab });
   }
 
   const { status, analyzedPositions } = useAnalysisStatus(analysisId);
@@ -132,6 +144,13 @@ export function ImportPage(): ReactNode {
     enabled: tab === 'lichess'
   });
   const lichessNotLinked = lichessQuery.error instanceof ApiError && lichessQuery.error.status === 404;
+
+  const chesscomQuery = useQuery({
+    queryKey: ['chesscom-recent-games'],
+    queryFn: ({ signal }) => apiGet('/api/chesscom/recent-games', ChesscomRecentGamesResponseSchema, signal),
+    enabled: tab === 'chesscom'
+  });
+  const chesscomNotLinked = chesscomQuery.error instanceof ApiError && chesscomQuery.error.status === 404;
 
   useEffect(() => {
     if (status === 'ready' && gameId && !sessionMutation.isPending && !sessionMutation.isSuccess) {
@@ -188,48 +207,37 @@ export function ImportPage(): ReactNode {
         <>
           {importError && <ImportErrorNotice error={importError} />}
           <div role="tablist">
-            <button type="button" aria-pressed={tab === 'paste'} onClick={() => setTab('paste')}>
+            <button type="button" aria-pressed={tab === 'paste'} onClick={() => switchTab('paste')}>
               Paste
             </button>
-            <button type="button" aria-pressed={tab === 'upload'} onClick={() => setTab('upload')}>
+            <button type="button" aria-pressed={tab === 'upload'} onClick={() => switchTab('upload')}>
               Upload
             </button>
-            <button type="button" aria-pressed={tab === 'lichess'} onClick={() => setTab('lichess')}>
+            <button type="button" aria-pressed={tab === 'lichess'} onClick={() => switchTab('lichess')}>
               From Lichess
+            </button>
+            <button type="button" aria-pressed={tab === 'chesscom'} onClick={() => switchTab('chesscom')}>
+              From Chess.com
             </button>
           </div>
           {tab === 'paste' && <PgnPasteForm onSubmit={(body) => importPgn(body.pgn, body.source, body.userColor)} />}
           {tab === 'upload' && <PgnUploadForm onSubmit={(body) => importPgn(body.pgn, body.source)} />}
-          {tab === 'lichess' && (
-            <>
-              <label className="import-page__stat-bank-toggle">
-                <input type="checkbox" checked={statBankMode} onChange={(event) => setStatBankMode(event.target.checked)} />
-                Bulk import for stat bank
-              </label>
-              <LichessGamePicker
-                games={lichessQuery.data ?? []}
-                isLoading={lichessQuery.isLoading}
-                isLinked={!lichessNotLinked}
-                onSelect={(pgn) => importPgn(pgn, 'lichess')}
-                bulkSelection={
-                  statBankMode
-                    ? {
-                        selectedIds: selectedLichessIds,
-                        onToggle: toggleLichessSelection,
-                        onImportSelected: importSelectedForStatBank,
-                        isImporting: bulkImportMutation.isPending
-                      }
-                    : undefined
-                }
-              />
-              {bulkImportMutation.isSuccess && bulkImportMutation.data.succeeded < bulkImportMutation.data.total && (
-                <p className="import-page__bulk-result">
-                  Imported {bulkImportMutation.data.succeeded} of {bulkImportMutation.data.total} games for your stat
-                  bank.{bulkImportMutation.data.rateLimited && ' Daily import limit reached (10 games/day).'}{' '}
-                  <Link to="/games">Go to Games</Link>
-                </p>
-              )}
-            </>
+          {(tab === 'lichess' || tab === 'chesscom') && (
+            <RemoteImportPanel
+              tab={tab}
+              statBankMode={statBankMode}
+              onStatBankModeChange={setStatBankMode}
+              lichess={{ games: lichessQuery.data ?? [], isLoading: lichessQuery.isLoading, isLinked: !lichessNotLinked }}
+              chesscom={{ games: chesscomQuery.data ?? [], isLoading: chesscomQuery.isLoading, isLinked: !chesscomNotLinked }}
+              onSelect={(pgn) => importPgn(pgn, tab)}
+              bulkSelection={{
+                selectedIds: selectedRemoteIds,
+                onToggle: toggleRemoteSelection,
+                onImportSelected: importSelectedForStatBank,
+                isImporting: bulkImportMutation.isPending
+              }}
+              bulkResult={bulkImportMutation.isSuccess ? bulkImportMutation.data : undefined}
+            />
           )}
         </>
       )}

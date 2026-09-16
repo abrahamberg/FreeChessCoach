@@ -5,16 +5,13 @@ import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js
 import * as puzzleSessionsRepo from '../db/repositories/puzzle-sessions.js';
 import type { PuzzleSessionRow } from '../db/repositories/puzzle-sessions.js';
 import type { Database } from '../db/schema.js';
-import { ConflictError, InsufficientCreditsError, NotFoundError } from '../lib/errors.js';
+import { ConflictError, NotFoundError } from '../lib/errors.js';
 import { createKeyedLock } from '../lib/keyedLock.js';
 import { findSuccessfulToolResult } from '../lib/tool-parts.js';
 import { runCoachTurn, type CoachTurnStream } from '../llm/chat.js';
 import type { GatewayConfig, ModelResolution, Tier } from '../llm/gateway.js';
-import { getModelForUser, recordUsage, streamTimeoutsFor } from '../llm/gateway.js';
+import { getModelForUser, streamTimeoutsFor } from '../llm/gateway.js';
 import { cachedSystemMessage, systemMessage, type ChatMessage } from '../llm/messages.js';
-import { toBillableTokens } from '../llm/usage.js';
-import type { CreditsService } from './credits.js';
-import { createCreditsService } from './credits.js';
 import { buildPuzzleSessionTools, type AdvancePuzzleToolResult } from './puzzle-session-tools.js';
 
 /** Serializes startPuzzleTurn calls per session — same client-tool-result
@@ -36,8 +33,6 @@ export interface PuzzleTurnDependencies {
   gatewayConfig: GatewayConfig;
   /** Defaults to the real gateway; tests override with a MockLanguageModelV4. */
   resolveModel?: PuzzleModelResolver;
-  /** Defaults to a real CreditsService over `db`. */
-  creditsService?: CreditsService;
 }
 
 export interface StartPuzzleTurnInput {
@@ -75,16 +70,6 @@ export async function startPuzzleTurn(
   try {
     const resolveModel = deps.resolveModel ?? getModelForUser;
     const resolution = await resolveModel(deps.db, deps.gatewayConfig, session.userId, 'standard');
-
-    if (resolution.metered) {
-      const creditsService = deps.creditsService ?? createCreditsService(deps.db);
-      try {
-        await creditsService.assertCanSpend(session.userId);
-      } catch (error) {
-        await puzzleSessionsRepo.markPausedNoCredits(deps.db, session.id);
-        throw error instanceof InsufficientCreditsError ? error : new InsufficientCreditsError('Insufficient credits');
-      }
-    }
 
     const assignment = await puzzleAssignmentsRepo.findById(deps.db, session.assignmentId);
     if (!assignment) throw new NotFoundError('Assignment not found');
@@ -156,17 +141,6 @@ export async function startPuzzleTurn(
               await puzzleSessionsRepo.advanceItemIndex(deps.db, session.id, advanced.itemIndex + 1);
             }
           }
-
-          await recordUsage(deps.db, {
-            userId: session.userId,
-            sessionId: session.id,
-            provider: resolution.provider,
-            model: resolution.modelId,
-            tier: 'standard',
-            usage: toBillableTokens(completion.usage),
-            purpose: 'puzzle_turn',
-            metered: resolution.metered
-          });
         } catch (error) {
           console.error(`puzzle-session-turn onFinish failed for session ${session.id}:`, error);
         } finally {
