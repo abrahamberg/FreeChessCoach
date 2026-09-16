@@ -9,7 +9,31 @@ export interface CandidateMoveAnnotation {
   moveSan: string;
   createsFork: boolean;
   createsHangingPiece: boolean;
+  /** `createsHangingPiece` split by whose piece is newly hanging —
+   * `createsHangingPiece` itself doesn't distinguish the mover's own piece
+   * (a genuine blunder) from the opponent's (a genuine attacking threat),
+   * which conflated the two under bot-move-pick.ts's "aggression" weight
+   * (see docs/plan.md Phase 62). Both are subsets of `createsHangingPiece`
+   * (their OR); existing callers reading `createsHangingPiece` are
+   * unaffected. */
+  createsOwnHangingPiece: boolean;
+  createsOpponentHangingPiece: boolean;
   createsUnderDefendedPiece: boolean;
+  /** True when a piece of the mover's own color was already hanging in
+   * `fenBefore` (an existing capture/threat available to the opponent) and
+   * the same piece (same square/piece/color) is still hanging in
+   * `fenAfter` — the candidate ignored it rather than defending it, moving
+   * it, or trading it off. Cheap proxy for `MS-02`/`MS-03` (opponent
+   * capture/threat scan omission, see docs/plan.md Phase 62) — a real
+   * per-move detector run (Task 62.4) is the accuracy backstop; this only
+   * needs to be good enough to steer sampling. */
+  ignoresOwnHangingPiece: boolean;
+  /** Mirror of `ignoresOwnHangingPiece` for the opponent's pieces: true
+   * when an opponent piece was already hanging in `fenBefore` and the
+   * candidate doesn't capture it — cheap proxy for `BV-02` (opponent
+   * hanging-piece blindness: "fails to take free enemy pieces despite
+   * adequate time"), see docs/plan.md Phase 62. */
+  ignoresOpponentHangingPiece: boolean;
   mobilityDelta: number;
   /** The move's full tactic motif (fork/pin/discoveredAttack/.../other),
    * classified via the same registry (Phase 32) the batch pipeline uses —
@@ -26,7 +50,11 @@ export interface AnnotateCandidateMovesOptions {
   linesAtFenBefore?: EngineLine[];
 }
 
-function underDefendedPieceKey(piece: AttackedPieceDto): string {
+/** Identity key for a piece-on-square reference — used to tell whether the
+ * same piece is still present across a before/after diff (both
+ * under-defended and hanging-piece tracking need this, hence the shared
+ * helper). */
+function pieceKey(piece: AttackedPieceDto): string {
   return `${piece.square}:${piece.piece}:${piece.color}`;
 }
 
@@ -46,7 +74,13 @@ export function annotateCandidateMoves(
 ): CandidateMoveAnnotation[] {
   const mover = options.mover ?? fenActiveColor(fenBefore);
   const featuresBefore = computePositionFeatures(fenBefore);
-  const underDefendedBeforeKeys = new Set(featuresBefore.underDefendedPieces.map(underDefendedPieceKey));
+  const underDefendedBeforeKeys = new Set(featuresBefore.underDefendedPieces.map(pieceKey));
+  const ownHangingBeforeKeys = new Set(
+    featuresBefore.hangingPieces.filter((piece) => piece.color === mover).map(pieceKey)
+  );
+  const opponentHangingBeforeKeys = new Set(
+    featuresBefore.hangingPieces.filter((piece) => piece.color !== mover).map(pieceKey)
+  );
 
   const annotations: CandidateMoveAnnotation[] = [];
   for (const moveSan of candidateSanMoves) {
@@ -59,14 +93,22 @@ export function annotateCandidateMoves(
     const featuresAfter = computePositionFeatures(fenAfter);
     const delta = diffPositionFeatures(featuresBefore, featuresAfter);
     const createsUnderDefendedPiece = featuresAfter.underDefendedPieces.some(
-      (piece) => !underDefendedBeforeKeys.has(underDefendedPieceKey(piece))
+      (piece) => !underDefendedBeforeKeys.has(pieceKey(piece))
     );
 
     annotations.push({
       moveSan,
       createsFork: delta.newForks.length > 0,
       createsHangingPiece: delta.newHangingPieces.length > 0,
+      createsOwnHangingPiece: delta.newHangingPieces.some((piece) => piece.color === mover),
+      createsOpponentHangingPiece: delta.newHangingPieces.some((piece) => piece.color !== mover),
       createsUnderDefendedPiece,
+      ignoresOwnHangingPiece: featuresAfter.hangingPieces.some(
+        (piece) => piece.color === mover && ownHangingBeforeKeys.has(pieceKey(piece))
+      ),
+      ignoresOpponentHangingPiece: featuresAfter.hangingPieces.some(
+        (piece) => piece.color !== mover && opponentHangingBeforeKeys.has(pieceKey(piece))
+      ),
       mobilityDelta: delta.mobilityDelta,
       motif: classifyCandidateMove(fenBefore, moveSan, mover, { linesAtFenBefore: options.linesAtFenBefore })
     });

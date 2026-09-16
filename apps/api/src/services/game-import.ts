@@ -1,4 +1,11 @@
-import { detectUserColor, parsePgn, type Usernames } from '@freechesscoach/chess-analysis';
+import {
+  classifyTimeControl,
+  detectUserColor,
+  extractPgnMoveComments,
+  parseGameHeaders,
+  parsePgn,
+  type Usernames
+} from '@freechesscoach/chess-analysis';
 import type { ImportGameRequest, PlayerColor } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
@@ -37,6 +44,28 @@ export async function startAnalysis(
   return { analysisId: analysis.id };
 }
 
+/** importGame's dedup path (findByUserAndPgn matched an existing row) —
+ * hands back that game rather than inserting a second one, same idempotent
+ * shape as the `/api/games/:id/analyze` route already gives a double-click:
+ * no new job queued when one is already in flight or done. A deferred
+ * (stat-bank) re-import never queues analysis at all, matching a first-time
+ * deferred import. A non-deferred one queues analysis only if the earlier
+ * import happened to be deferred and nothing has started it yet. */
+async function resultForExistingGame(
+  db: Kysely<Database>,
+  jobQueue: JobQueue,
+  gameId: string,
+  deferAnalysis: boolean | undefined
+): Promise<ImportGameResult> {
+  if (deferAnalysis) return { gameId, analysisId: null };
+
+  const existingAnalysis = await analysesRepo.findByGameId(db, gameId);
+  if (existingAnalysis) return { gameId, analysisId: existingAnalysis.id };
+
+  const { analysisId } = await startAnalysis(db, jobQueue, gameId);
+  return { gameId, analysisId };
+}
+
 export async function importGame(
   db: Kysely<Database>,
   jobQueue: JobQueue,
@@ -44,6 +73,9 @@ export async function importGame(
   usernames: Usernames,
   request: ImportGameRequest
 ): Promise<ImportGameResult> {
+  const duplicate = await gamesRepo.findByUserAndPgn(db, userId, request.pgn);
+  if (duplicate) return resultForExistingGame(db, jobQueue, duplicate.id, request.deferAnalysis);
+
   await assertUnderDailyLimit(db, userId);
 
   const parsed = parsePgn(request.pgn);
@@ -52,6 +84,9 @@ export async function importGame(
 
   await learnPlatformUsername(db, userId, request.source, parsed.headers, usernames, userColor);
 
+  const timeControl = parsed.headers['TimeControl'] ?? null;
+  const headerMetadata = parseGameHeaders(parsed.headers);
+  const moveTimes = extractPgnMoveComments(request.pgn);
   const game = await gamesRepo.insert(db, {
     userId,
     pgn: request.pgn,
@@ -60,9 +95,22 @@ export async function importGame(
     whiteName: parsed.headers['White'] ?? null,
     blackName: parsed.headers['Black'] ?? null,
     result: parsed.headers['Result'] ?? null,
-    timeControl: parsed.headers['TimeControl'] ?? null,
+    timeControl,
     eco: parsed.headers['ECO'] ?? null,
-    playedAt: parsePlayedAt(parsed.headers)
+    playedAt: parsePlayedAt(parsed.headers),
+    whiteElo: headerMetadata.whiteElo,
+    blackElo: headerMetadata.blackElo,
+    ratingsProvisional: headerMetadata.ratingsProvisional,
+    rated: headerMetadata.rated,
+    termination: headerMetadata.termination,
+    variant: headerMetadata.variant,
+    speed: classifyTimeControl(timeControl),
+    playedAtTime: headerMetadata.utcTime,
+    // Always the (possibly empty) array, never null — null is reserved for
+    // "not yet processed by this metadata pipeline" (see
+    // gamesRepo.findBatchMissingMoveTimes's doc comment), and this pipeline
+    // just ran, right here.
+    moveTimes
   });
 
   if (request.deferAnalysis) {
@@ -109,6 +157,7 @@ function detectPlatform(
   headers: Record<string, string>
 ): 'lichess' | 'chesscom' | null {
   if (source === 'lichess') return 'lichess';
+  if (source === 'chesscom') return 'chesscom';
   const site = headers['Site']?.toLowerCase() ?? '';
   if (site.includes('lichess.org')) return 'lichess';
   if (site.includes('chess.com')) return 'chesscom';

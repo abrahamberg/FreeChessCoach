@@ -13,12 +13,17 @@ describe('classifyCandidateMove', () => {
     expect(classifyCandidateMove(QUIET_FEN, 'Qh5+', 'white')).toBeNull();
   });
 
-  test('a quiet move is null without engine lines, but "other" once a forced mate is signaled via linesAtFenBefore', () => {
-    expect(classifyCandidateMove(QUIET_FEN, 'e4', 'white')).toBeNull();
-
+  test('a quiet move stays null even once a forced mate is signalled via linesAtFenBefore', () => {
+    // The mate line makes `isTacticalPosition` true, which used to turn a
+    // quiet move into the `'other'` catch-all — a card claiming a tactic it
+    // could not name. Since docs/tactics-rework.md's rework the sharpness of
+    // the position is no longer, on its own, something to say about the move.
+    const withoutLines = classifyCandidateMove(QUIET_FEN, 'e4', 'white');
     const withMateLine = classifyCandidateMove(QUIET_FEN, 'e4', 'white', {
       linesAtFenBefore: [{ moveUci: 'e2e4', moveSan: 'e4', cp: null, mateIn: 3 }]
     });
-    expect(withMateLine).toBe('other');
+
+    expect(withoutLines).toBeNull();
+    expect(withMateLine).toBeNull();
   });
 });

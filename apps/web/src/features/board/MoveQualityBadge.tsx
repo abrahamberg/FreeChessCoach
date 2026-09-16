@@ -9,12 +9,13 @@ export interface MoveQualityBadgeProps {
 
 /** Chess.com-style colored circle + glyph for a move's quality tier. Shared
  * by MoveExplorer (desktop, size="md") and MoveStrip (mobile, size="sm") so
- * the badge markup/styling exists in exactly one place. Renders nothing for
- * 'good', 'excellent', or undefined — per Daniel's call, only tiers actually
- * worth flagging get an icon; a merely-fine move (excellent included) just
- * reads as plain move text. */
+ * the badge markup/styling exists in exactly one place. Every tier gets an
+ * icon — chess.com's own move list/strip marks every move, not just the
+ * ones worth flagging, and Daniel's call was to match that rather than stay
+ * quiet on 'good'/'excellent'. Renders nothing only when there's no quality
+ * yet (a ply with no classified move). */
 export function MoveQualityBadge({ quality, size }: MoveQualityBadgeProps): ReactNode {
-  if (!quality || quality === 'good' || quality === 'excellent') return null;
+  if (!quality) return null;
   return (
     <span className={`move-quality-badge move-quality-badge--${size} move-quality-badge--${quality}`}>
       {MOVE_QUALITY_SYMBOLS[quality]}

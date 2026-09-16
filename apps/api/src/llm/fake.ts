@@ -13,6 +13,7 @@ const FAKE_COACHING_PLAN = JSON.stringify({
   openingNote: 'LLM_FAKE canned note.',
   themes: ['calculation_error'],
   connectionToHistory: 'LLM_FAKE canned connection.',
+  sessionGoal: 'LLM_FAKE canned session goal.',
   moments: [
     {
       ply: 1,

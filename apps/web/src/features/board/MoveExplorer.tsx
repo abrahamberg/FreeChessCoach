@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react';
-import type { ClassifiedMoveDto, MoveQuality } from '@freechesscoach/shared';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { ChevronLeftIcon, ChevronRightIcon, SkipBackIcon, SkipForwardIcon } from '../../components/Icon.js';
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
+import { AlternativesPanel, MoveNote, OpeningLabel } from './MoveNoteContent.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import { TacticMotifBadge } from './TacticMotifBadge.js';
 import './MoveExplorer.css';
@@ -14,72 +15,12 @@ export interface MoveExplorerProps {
   positions: { ply: number; fen: string }[];
   currentPly: number;
   onSelect: (ply: number) => void;
-}
-
-/** Tiers worth a "better was" coaching note — everything else (book, forced,
- * brilliant/great/best/excellent/good) had nothing meaningfully better to
- * play. */
-const IMPROVABLE_QUALITIES: ReadonlySet<MoveQuality> = new Set(['inaccuracy', 'mistake', 'miss', 'blunder']);
-
-function isImprovableQuality(quality: MoveQuality | undefined): boolean {
-  return quality !== undefined && IMPROVABLE_QUALITIES.has(quality);
-}
-
-/** §11's closing paragraph: a book move's theory label is shown unconditionally
- * via `OpeningLabel` below, not gated behind the notes toggle — so `MoveNote`
- * skips it here to avoid rendering the same "Theory — …" line twice. */
-function MoveNote({ move }: { move: ClassifiedMoveDto }): ReactNode {
-  if (move.quality === 'book') return null;
-  if (move.reasons && move.reasons.length > 0) {
-    return (
-      <ul className="move-explorer__note">
-        {move.reasons.map((reason) => (
-          <li key={reason}>{reason}</li>
-        ))}
-      </ul>
-    );
-  }
-  if (isImprovableQuality(move.quality) && move.bestLineSan.length > 0) {
-    return (
-      <p className="move-explorer__note">
-        {move.quality}: better was {move.bestLineSan.join(' ')}
-      </p>
-    );
-  }
-  return null;
-}
-
-/** §11's last trigger row: a book move always shows the opening name/ECO,
- * regardless of whether notes are toggled on — theory context is cheap to
- * show and is what tells a player they've left book. */
-function OpeningLabel({ move }: { move: ClassifiedMoveDto }): ReactNode {
-  const theory = move.reasons?.[0];
-  if (move.quality !== 'book' || !theory) return null;
-  return <p className="move-explorer__opening-label">{theory}</p>;
-}
-
-/** §11's closing paragraph: the engine's actual best line plus its two
- * win%-ranked (not raw-cp) runners-up, so a player can see what else was
- * playable without leaving the move list. */
-function AlternativesPanel({ move }: { move: ClassifiedMoveDto }): ReactNode {
-  if (!move.bestMoveSan) return null;
-  const pv = move.bestLinePvSan && move.bestLinePvSan.length > 0 ? move.bestLinePvSan.join(' ') : move.bestMoveSan;
-  const runnersUp = (move.alternatives ?? []).slice(0, 2);
-
-  return (
-    <div className="move-explorer__alternatives">
-      <p className="move-explorer__alternatives-best">Best: {pv}</p>
-      {runnersUp.length > 0 && (
-        <ul className="move-explorer__alternatives-list">
-          {runnersUp.map((alternative) => (
-            <li key={alternative.san}>
-              {alternative.san} ({alternative.winPct.toFixed(1)}%)
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+  /** The coaching session's desktop layout has nowhere else to show a
+   * move's note, so this stays the one place it lives there. The Game
+   * Review page's desktop layout has its own dedicated MoveNoteCard column
+   * (the same note, shown large) — repeating it here too would just be the
+   * same text twice, so that caller passes false. */
+  showNotes?: boolean;
 }
 
 interface MovePair {
@@ -110,7 +51,7 @@ function pairMoves(sanMoves: string[]): MovePair[] {
  * <details>, open by default — no separate show/hide button, just click the
  * "Notes" summary to collapse it. Sidelines/PGN comments are out of scope
  * here — parsePgn only produces a mainline. */
-export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly, onSelect }: MoveExplorerProps): ReactNode {
+export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly, onSelect, showNotes = true }: MoveExplorerProps): ReactNode {
   const [inspecting, setInspecting] = useState<{ fen: string; label: string } | null>(null);
   const qualityByPly = new Map(classifiedMoves.map((move) => [move.ply, move]));
   const fenByPly = new Map(positions.map((position) => [position.ply, position.fen]));
@@ -171,18 +112,22 @@ export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly,
           );
         })}
       </ol>
-      {currentMove && <OpeningLabel move={currentMove} />}
-      <details className="move-explorer__notes" open>
-        <summary className="move-explorer__notes-summary">Notes</summary>
-        {currentMove ? (
-          <>
-            <MoveNote move={currentMove} />
-            <AlternativesPanel move={currentMove} />
-          </>
-        ) : (
-          <p className="move-explorer__notes-empty">Select a move to see notes.</p>
-        )}
-      </details>
+      {showNotes && (
+        <>
+          {currentMove && <OpeningLabel move={currentMove} />}
+          <details className="move-explorer__notes" open>
+            <summary className="move-explorer__notes-summary">Notes</summary>
+            {currentMove ? (
+              <>
+                <MoveNote move={currentMove} />
+                <AlternativesPanel move={currentMove} />
+              </>
+            ) : (
+              <p className="move-explorer__notes-empty">Select a move to see notes.</p>
+            )}
+          </details>
+        </>
+      )}
       {inspecting && (
         <MoveAnalysisModal fen={inspecting.fen} moveLabel={inspecting.label} onClose={() => setInspecting(null)} />
       )}

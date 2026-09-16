@@ -7,10 +7,10 @@ const QUIET_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 describe('removesDefenderDetector', () => {
   test('detects capturing the sole defender of a hanging piece', () => {
-    expect(removesDefenderDetector.detect(buildTacticDetectionContext(DEFLECTION_FEN, 'Bxb7', 'white'))).toBe(true);
+    expect(removesDefenderDetector.detect(buildTacticDetectionContext(DEFLECTION_FEN, 'Bxb7', 'white'))).not.toHaveLength(0);
   });
 
   test('does not flag a quiet developing move', () => {
-    expect(removesDefenderDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toBe(false);
+    expect(removesDefenderDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toEqual([]);
   });
 });

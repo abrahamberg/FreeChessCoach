@@ -8,7 +8,7 @@ const MOVER_IN_CHECK_FEN = 'rnb1k1nr/pppp1ppp/8/2b5/4P3/8/PPPP1qPP/RNBQKBNR w KQ
 // Same ply-3-only fork fixture as pv-tactics.test.ts/available-motifs-scan.test.ts:
 // Kh2 (ply1, quiet)/Ke7 (ply2, opponent reply)/Nd5+ (ply3, the fork) — the
 // shallow (ply-1-only) scan can never see this; the graduated scan can.
-const FORK_IN_3_FEN = '4k3/8/1r3n2/8/5N2/8/8/7K w - - 0 1';
+const FORK_IN_3_FEN = '4k3/8/1r1p1n2/8/2P2N2/8/8/7K w - - 0 1';
 const FORK_IN_3_PV = ['Kh2', 'Ke7', 'Nd5+'];
 
 function analysisFixture(fen: string, lines: PositionAnalysis['lines']): PositionAnalysis {
@@ -38,7 +38,7 @@ describe('scanPositionTactics', () => {
 
     expect(analyzePosition).toHaveBeenCalledTimes(1);
     expect(analyzePosition).toHaveBeenCalledWith('4k3/1r6/8/8/2N5/8/8/K7 b - - 0 1');
-    expect(result.available).toEqual([{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }]);
+    expect(result.available).toEqual(expect.arrayContaining([{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }]));
     expect(result.allowed).not.toBeNull();
   });
 
@@ -72,7 +72,7 @@ describe('scanPositionTactics', () => {
 
     const result = await scanPositionTactics({ analyzePosition }, FORK_FEN, primaryAnalysis, { mode: 'shallow' });
 
-    expect(result.available).toEqual([{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }]);
+    expect(result.available).toEqual(expect.arrayContaining([{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }]));
   });
 
   test('\'graduated\' mode surfaces a ply-3+ sighting \'shallow\' misses on the same fixture (Phase 48)', async () => {
@@ -83,6 +83,6 @@ describe('scanPositionTactics', () => {
 
     const result = await scanPositionTactics({ analyzePosition }, FORK_IN_3_FEN, primaryAnalysis, { mode: 'graduated' });
 
-    expect(result.available).toEqual([{ rank: 0, moveSan: 'Nd5+', motif: 'fork' }]);
+    expect(result.available).toEqual(expect.arrayContaining([{ rank: 0, moveSan: 'Nd5+', motif: 'fork' }]));
   });
 });

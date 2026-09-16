@@ -2,6 +2,7 @@ import type { MoveQuality } from '@freechesscoach/shared';
 import { resolveSanMove } from '@freechesscoach/chess-analysis';
 import { useState } from 'react';
 import { apiPost, ApiError } from '../../api/client.js';
+import type { BotGameOverInfo } from './botGameOver.js';
 import { CommitBotMoveResponseSchema } from './sessionPageSchemas.js';
 
 export interface CommittedBotTurnMove {
@@ -14,6 +15,14 @@ export interface CommittedBotTurnMove {
 
 export interface UsePlayBotMoveSubmitResult {
   error: string | null;
+  /** True from the moment `submit` is called until its response resolves —
+   * see usePlayMoveSubmit's identical field for why this matters: the
+   * board's own optimistic preview makes a move look fully applied well
+   * before the server round trip (a real engine search here can take
+   * several seconds) returns, so without this a second drop mid-flight can
+   * race the first or land as a spurious "Illegal move" after the first has
+   * already advanced the position past it. */
+  isSubmitting: boolean;
   submit: (san: string, uci: string) => Promise<void>;
 }
 
@@ -35,23 +44,26 @@ function describePlayMoveError(error: unknown): string {
  * there is no chat in play_bot mode. `onPlayMoveCommitted` fires once for
  * the student's move and, when present, again for the bot's — reusing
  * SessionBoardColumn's existing callback contract unchanged. `onGameOver`
- * fires once when the response's `gameOver` is non-null, so the caller can
- * refetch session status (the session is already marked 'completed'
- * server-side by the time this response arrives).
+ * fires once with the response's `gameOver` when it's non-null, so the
+ * caller can both refetch session status (the session is already marked
+ * 'completed' server-side by the time this response arrives) and show the
+ * result (GameOverDialog/BotStatusPanel).
  */
 export function usePlayBotMoveSubmit(
   sessionId: string,
   onPlayMoveCommitted?: (result: CommittedBotTurnMove, uci: string) => void,
-  onGameOver?: () => void,
+  onGameOver?: (gameOver: BotGameOverInfo) => void,
   /** The clock phase's own hook — fires once per submit with the
    * post-exchange remaining time for each side (null/null for an untimed
    * game), so the caller can re-anchor its ticking ClockDisplay. */
   onClockUpdate?: (whiteRemainingMs: number | null, blackRemainingMs: number | null) => void
 ): UsePlayBotMoveSubmitResult {
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function submit(san: string, uci: string): Promise<void> {
     setError(null);
+    setIsSubmitting(true);
     try {
       const result = await apiPost(`/api/sessions/${sessionId}/play-move`, { san }, CommitBotMoveResponseSchema);
       // `player` is only ever null on the sibling request-bot-move response
@@ -70,11 +82,13 @@ export function usePlayBotMoveSubmit(
         }
       }
       onClockUpdate?.(result.whiteRemainingMs, result.blackRemainingMs);
-      if (result.gameOver) onGameOver?.();
+      if (result.gameOver) onGameOver?.(result.gameOver);
     } catch (submitError) {
       setError(describePlayMoveError(submitError));
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
-  return { error, submit };
+  return { error, isSubmitting, submit };
 }

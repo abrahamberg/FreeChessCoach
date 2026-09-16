@@ -1,12 +1,14 @@
 import { describe, expect, test } from 'vitest';
 import {
   annotateBoardParameters,
+  checkMovesParameters,
   checkPositionParameters,
   COACH_TOOL_SPECS,
   coachToolDescription,
   endSessionParameters,
   expectMoveParameters,
   getEngineAnalysisParameters,
+  getPlayerStatsParameters,
   getUserProfileParameters,
   hypotheticalLineParameters,
   investigatePositionParameters,
@@ -19,45 +21,21 @@ import {
 } from './tools.js';
 
 describe('coach agent tool parameter schemas (architecture §7.1)', () => {
-  test('show_position: { moveNumber, color, intent, preMove } — never a bare ply, which is not standard PGN terminology and is what caused the coach to compute the wrong position', () => {
-    expect(
-      showPositionParameters.safeParse({ moveNumber: 2, color: 'white', intent: 'subject', preMove: false }).success
-    ).toBe(true);
-    expect(
-      showPositionParameters.safeParse({ moveNumber: 0, color: 'white', intent: 'subject', preMove: false }).success
-    ).toBe(false);
-    expect(
-      showPositionParameters.safeParse({ moveNumber: 2, color: 'purple', intent: 'subject', preMove: false }).success
-    ).toBe(false);
-    expect(showPositionParameters.safeParse({ ply: 12, intent: 'subject', preMove: false }).success).toBe(false);
+  test('show_position: { moveNumber, color, intent } — never a bare ply, which is not standard PGN terminology and is what caused the coach to compute the wrong position', () => {
+    expect(showPositionParameters.safeParse({ moveNumber: 2, color: 'white', intent: 'subject' }).success).toBe(true);
+    expect(showPositionParameters.safeParse({ moveNumber: 0, color: 'white', intent: 'subject' }).success).toBe(false);
+    expect(showPositionParameters.safeParse({ moveNumber: 2, color: 'purple', intent: 'subject' }).success).toBe(false);
+    expect(showPositionParameters.safeParse({ ply: 12, intent: 'subject' }).success).toBe(false);
   });
 
   test('show_position: moveNumber 0 with color null means the game start (ply 0)', () => {
-    expect(
-      showPositionParameters.safeParse({ moveNumber: 0, color: null, intent: 'subject', preMove: false }).success
-    ).toBe(true);
+    expect(showPositionParameters.safeParse({ moveNumber: 0, color: null, intent: 'subject' }).success).toBe(true);
   });
 
   test('show_position: intent is required and must be "flashback" or "subject"', () => {
-    expect(showPositionParameters.safeParse({ moveNumber: 2, color: 'white', preMove: false }).success).toBe(false);
-    expect(
-      showPositionParameters.safeParse({ moveNumber: 2, color: 'white', intent: 'flashback', preMove: false }).success
-    ).toBe(true);
-    expect(
-      showPositionParameters.safeParse({ moveNumber: 2, color: 'white', intent: 'glance', preMove: false }).success
-    ).toBe(false);
-  });
-
-  test('show_position: preMove is required and must be a boolean — true anchors the board one ply before the move with a red arrow, false shows the real position fully revealed', () => {
-    expect(
-      showPositionParameters.safeParse({ moveNumber: 2, color: 'white', intent: 'subject' }).success
-    ).toBe(false);
-    expect(
-      showPositionParameters.safeParse({ moveNumber: 2, color: 'white', intent: 'subject', preMove: true }).success
-    ).toBe(true);
-    expect(
-      showPositionParameters.safeParse({ moveNumber: 2, color: 'white', intent: 'subject', preMove: 'yes' }).success
-    ).toBe(false);
+    expect(showPositionParameters.safeParse({ moveNumber: 2, color: 'white' }).success).toBe(false);
+    expect(showPositionParameters.safeParse({ moveNumber: 2, color: 'white', intent: 'flashback' }).success).toBe(true);
+    expect(showPositionParameters.safeParse({ moveNumber: 2, color: 'white', intent: 'glance' }).success).toBe(false);
   });
 
   test('check_position: same address shape as show_position, { moveNumber, color }', () => {
@@ -97,9 +75,9 @@ describe('coach agent tool parameter schemas (architecture §7.1)', () => {
   });
 
   test('propose_focus_area_update: FocusAreaUpdate schema', () => {
-    const valid = { category: 'hanging_piece', action: 'create', note: 'x' };
+    const valid = { diagnosisCode: 'TA-07', action: 'progress', note: 'x' };
     expect(proposeFocusAreaUpdateParameters.safeParse(valid).success).toBe(true);
-    expect(proposeFocusAreaUpdateParameters.safeParse({ ...valid, action: 'delete' }).success).toBe(false);
+    expect(proposeFocusAreaUpdateParameters.safeParse({ ...valid, action: 'create' }).success).toBe(false);
   });
 
   test('update_threads: { threads }', () => {
@@ -175,11 +153,14 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
   const EXPECTED_NAMES = [
     'show_position',
     'check_position',
+    'check_moves',
     'annotate_board',
     'expect_move',
     'hypothetical_line',
     'get_engine_analysis',
     'get_user_profile',
+    'get_diagnostic_profile',
+    'get_player_stats',
     'record_finding',
     'propose_focus_area_update',
     'update_threads',
@@ -189,7 +170,7 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
     'end_session'
   ];
 
-  test('has exactly the coach agent\'s 14 tools, each with a unique name and a non-empty description', () => {
+  test('has exactly the coach agent\'s 17 tools, each with a unique name and a non-empty description', () => {
     expect(COACH_TOOL_SPECS.map((spec) => spec.name)).toEqual(EXPECTED_NAMES);
     for (const spec of COACH_TOOL_SPECS) {
       expect(spec.description.length).toBeGreaterThan(0);
@@ -204,5 +185,32 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
 
   test('coachToolDescription throws on an unregistered tool name', () => {
     expect(() => coachToolDescription('not_a_real_tool')).toThrow(/not_a_real_tool/);
+  });
+});
+
+describe('checkMovesParameters', () => {
+  const fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+  test('accepts a fen plus the moves to check', () => {
+    expect(checkMovesParameters.safeParse({ fen, moves: ['e4', 'Nf3'] }).success).toBe(true);
+  });
+
+  test('requires at least one move — an empty check is never what the coach meant', () => {
+    expect(checkMovesParameters.safeParse({ fen, moves: [] }).success).toBe(false);
+  });
+
+  test('caps the batch so one call stays a check, not a board dump', () => {
+    expect(checkMovesParameters.safeParse({ fen, moves: ['a3', 'a4', 'b3', 'b4', 'c3', 'c4', 'd3'] }).success).toBe(false);
+  });
+
+  test('rejects a missing fen — the coach must pass one it actually received', () => {
+    expect(checkMovesParameters.safeParse({ moves: ['e4'] }).success).toBe(false);
+    expect(checkMovesParameters.safeParse({ fen: '', moves: ['e4'] }).success).toBe(false);
+  });
+});
+
+describe('getPlayerStatsParameters', () => {
+  test('takes no arguments — there is no address to get wrong', () => {
+    expect(getPlayerStatsParameters.safeParse({}).success).toBe(true);
   });
 });

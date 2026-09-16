@@ -1,11 +1,52 @@
-import { plyToMoveRef } from '@freechesscoach/chess-analysis';
-import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
-import type { CoachingPlan, MistakeCategory, Thread } from '@freechesscoach/shared';
+import { DIAGNOSTIC_DETECTORS, plyToMoveRef } from '@freechesscoach/chess-analysis';
+import { ALL_DIAGNOSIS_CODES, MISTAKE_CATEGORIES } from '@freechesscoach/shared';
+import type { CoachingPlan, DiagnosisCodeId, MistakeCategory, Thread } from '@freechesscoach/shared';
 
 export const MISTAKE_CATEGORIES_BLOCK = MISTAKE_CATEGORIES.join(', ');
 
 const FOCUS_AREAS_EMPTY_FALLBACK = '(none yet — this is early in your work together)';
 const RECENT_FINDINGS_EMPTY_FALLBACK = '(none yet — no findings recorded so far)';
+const SCOPED_DIAGNOSIS_CODES_EMPTY_FALLBACK =
+  '(no catalog codes are scoped to this student yet — leave diagnosisCode unset and use the category list above instead)';
+
+/** Every code with a real detector (Task 53+) — the only way
+ * `renderScopedDiagnosisCodes` grounds a code. Computed once, not per call —
+ * `DIAGNOSTIC_DETECTORS` is a fixed module-level registry, not per-request
+ * data. */
+export const ACTIVE_DETECTOR_CODES: ReadonlySet<DiagnosisCodeId> = new Set(
+  DIAGNOSTIC_DETECTORS.map((detector) => detector.code)
+);
+
+/**
+ * docs/diagnose.md §0.1: a code's `ratingPrior` is the interval where it's
+ * "most likely to be a primary, high-value coaching diagnosis," not an
+ * exclusive cutoff — this filters to that operational window rather than
+ * trying to model the wider penumbra the spec describes in prose.
+ * Restricted to `activeDetectorCodes` (never `detectability: 'dialogue'`,
+ * `'probe'` or `'unsupported'`): most of the 410-code catalog is still
+ * `'dialogue'` by design (docs/diagnose.md's "extensible operational
+ * glossary" — undetected codes the coach reasons about in conversation, the
+ * same way `record_finding`'s tool description already guides it, with no
+ * catalog list at all). Measured at rating 900-1500 the dialogue-inclusive
+ * version of this filter matches 300+ of 410 codes — exactly what "never
+ * inject all 410 codes" rules out — so only the ~30 detector-backed codes
+ * (the ones `get_diagnostic_profile` can actually put real evidence behind)
+ * are worth spending prompt-cache/token budget to name explicitly. Pure and
+ * rating-only so a caller can place it in whichever cache tier (static per
+ * rating band, or dynamic per numeric rating) actually matches how it's
+ * computing `rating`.
+ */
+export function renderScopedDiagnosisCodes(rating: number, activeDetectorCodes: ReadonlySet<DiagnosisCodeId>): string {
+  const scoped = ALL_DIAGNOSIS_CODES.filter(
+    (entry) =>
+      entry.detectability === 'detector' &&
+      activeDetectorCodes.has(entry.id) &&
+      rating >= entry.ratingPrior[0] &&
+      rating <= entry.ratingPrior[1]
+  );
+  if (scoped.length === 0) return SCOPED_DIAGNOSIS_CODES_EMPTY_FALLBACK;
+  return scoped.map((entry) => `${entry.id} — ${entry.label}`).join('\n');
+}
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -23,23 +64,30 @@ function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+/** `diagnosisCode` is Task 57.3's code-level target — nullable for legacy
+ * category-only rows. Rendered so `propose_focus_area_update` has something
+ * to address: since selection is now programmatic, the code is the only
+ * stable handle the LLM can reference in a later progress/regress/resolve
+ * call. */
 export interface FocusAreaSummary {
   category: MistakeCategory;
+  diagnosisCode: DiagnosisCodeId | null;
   status: 'active' | 'improving' | 'resolved';
   note: string;
   evidenceCount: number;
   lastSeenAt: Date;
 }
 
-/** Format: `- [status] category: note (seen Nx, last {date})`. Injected into
+/** Format: `- [status] category (CODE): note (seen Nx, last {date})`, or
+ * without the code for a legacy category-only row. Injected into
  * coach-system.ts's yourStudent and analysis-planner.ts's user message. */
 export function renderFocusAreasBlock(focusAreas: FocusAreaSummary[], now: Date): string {
   if (focusAreas.length === 0) return FOCUS_AREAS_EMPTY_FALLBACK;
   return focusAreas
-    .map(
-      (area) =>
-        `- [${area.status}] ${area.category}: ${area.note} (seen ${area.evidenceCount}x, last ${relativeDate(area.lastSeenAt, now)})`
-    )
+    .map((area) => {
+      const label = area.diagnosisCode ? `${area.category} (${area.diagnosisCode})` : area.category;
+      return `- [${area.status}] ${label}: ${area.note} (seen ${area.evidenceCount}x, last ${relativeDate(area.lastSeenAt, now)})`;
+    })
     .join('\n');
 }
 

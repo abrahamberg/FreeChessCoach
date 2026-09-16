@@ -28,6 +28,7 @@ interface HarnessProps {
   undoDisabled?: boolean;
   positions?: { ply: number; fen: string; moveUci: string | null }[];
   showEvalIndicators?: boolean;
+  isDesktop?: boolean;
 }
 
 function Harness({
@@ -38,7 +39,8 @@ function Harness({
   onUndoMove,
   undoDisabled,
   positions = POSITIONS,
-  showEvalIndicators
+  showEvalIndicators,
+  isDesktop = true
 }: HarnessProps): ReactNode {
   const boardState = useSessionBoardState(positions);
   const divergedLine = useDivergedLine();
@@ -53,7 +55,7 @@ function Harness({
       sanMoves={sanMoves}
       positions={positions}
       classifiedMoves={[]}
-      isDesktop
+      isDesktop={isDesktop}
       engine={engine}
       autoplayIntervalMs={1000}
       onChangeAutoplayInterval={() => undefined}
@@ -153,6 +155,81 @@ describe('SessionBoardColumn — play mode (architecture §14)', () => {
   });
 });
 
+// A slow /play-move (a real engine search can take several seconds) leaves
+// the board's own optimistic onLocalMove preview looking fully "done" with
+// no visual sign a request is still pending — without a guard, an
+// impatient second drop either double-submits (racing the first request)
+// or lands as a spurious "Illegal move" once the first has already
+// advanced the position past it.
+describe('SessionBoardColumn — blocks a second drop while a move is still in flight', () => {
+  beforeEach(() => {
+    capturedOptions.length = 0;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test('play mode: the board frame tints pending, and a second drop is ignored, until the request resolves', async () => {
+    let resolveFetch: (response: Response) => void = () => undefined;
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<Harness sessionMode="play" />);
+    await screen.findByTestId('mock-chessboard');
+
+    dropE2E4();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('mock-chessboard').parentElement).toHaveClass('coach-board-frame--pending');
+
+    // A second drop attempt while the first is still pending must not fire
+    // a second request.
+    dropE2E4();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFetch(jsonResponse({ fen: 'fen-after-e4', san: 'e4', ply: 1, quality: 'best' }));
+    });
+    await waitFor(() => expect(screen.getByTestId('mock-chessboard').parentElement).not.toHaveClass('coach-board-frame--pending'));
+  });
+
+  test('play_bot mode: a second drop is ignored while the first is still in flight', async () => {
+    let resolveFetch: (response: Response) => void = () => undefined;
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<Harness sessionMode="play_bot" />);
+    await screen.findByTestId('mock-chessboard');
+
+    dropE2E4();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    dropE2E4();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFetch(
+        jsonResponse({
+          player: { fen: 'fen-after-e4', san: 'e4', ply: 1, quality: 'best', elapsedMs: 1000 },
+          bot: { fen: 'fen-after-e5', san: 'e5', ply: 2, quality: 'best', elapsedMs: 900 },
+          gameOver: null,
+          whiteRemainingMs: null,
+          blackRemainingMs: null
+        })
+      );
+    });
+    await waitFor(() => expect(screen.getByTestId('mock-chessboard').parentElement).not.toHaveClass('coach-board-frame--pending'));
+  });
+});
+
 describe('SessionBoardColumn — "Explore on your own" (live play modes)', () => {
   beforeEach(() => {
     capturedOptions.length = 0;
@@ -161,22 +238,26 @@ describe('SessionBoardColumn — "Explore on your own" (live play modes)', () =>
   test('is offered in analyze mode', async () => {
     render(<Harness sessionMode="analyze" />);
     await screen.findByTestId('mock-chessboard');
-    expect(screen.getByText(/explore on your own/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
   });
 
   test('is not offered in play mode', async () => {
     render(<Harness sessionMode="play" />);
     await screen.findByTestId('mock-chessboard');
-    expect(screen.queryByText(/explore on your own/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /explore on your own/i })).not.toBeInTheDocument();
   });
 
   test('is not offered in play_bot mode', async () => {
     render(<Harness sessionMode="play_bot" />);
     await screen.findByTestId('mock-chessboard');
-    expect(screen.queryByText(/explore on your own/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /explore on your own/i })).not.toBeInTheDocument();
   });
 });
 
+// Desktop only (Harness defaults isDesktop to true) — the toolbar keeps its
+// own Previous/Next pair there since the sidebar's MoveExplorer (rendered by
+// SessionPage/BotSessionPage, not this component) has a separate set of nav
+// pills of its own, not a bare move strip these would otherwise duplicate.
 describe('SessionBoardColumn — play_bot move navigation and undo', () => {
   beforeEach(() => {
     capturedOptions.length = 0;
@@ -208,13 +289,23 @@ describe('SessionBoardColumn — play_bot move navigation and undo', () => {
   });
 });
 
-// White rook e3 and Black queen e5 mutually attack each other along the
-// e-file with nothing else on the board — an unambiguous fixture for
-// "your piece needs defending" (e3) vs "a piece you can attack" (e5).
+// White rook e3, black queen e5, kings at e8/e1 — an unambiguous fixture
+// with one clearly-best move (Rxe5+) for the engine to suggest.
 const HANGING_PIECES_FEN = '4k3/8/8/4q3/8/4R3/8/4K3 w - - 0 1';
 const HANGING_PIECES_POSITIONS = [{ ply: 0, fen: HANGING_PIECES_FEN, moveUci: null }];
 
-describe('SessionBoardColumn — play_bot hint bubble', () => {
+// A Response body can only be read once, so every fetch resolution needs its
+// own instance — a single shared one would break the second test to consume it.
+function topMovesResponse(): Response {
+  return jsonResponse({
+    lines: [
+      { moveUci: 'e3e5', moveSan: 'Rxe5+', cp: 900, mateIn: null },
+      { moveUci: 'e1d2', moveSan: 'Kd2', cp: 10, mateIn: null }
+    ]
+  });
+}
+
+describe('SessionBoardColumn — play_bot hint', () => {
   beforeEach(() => {
     capturedOptions.length = 0;
   });
@@ -223,79 +314,86 @@ describe('SessionBoardColumn — play_bot hint bubble', () => {
     vi.unstubAllGlobals();
   });
 
-  test('stage 1 highlights the attacked-by-me and needs-defending squares, without calling the server', async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
-    render(<Harness sessionMode="play_bot" positions={HANGING_PIECES_POSITIONS} />);
-    await screen.findByTestId('mock-chessboard');
-
-    fireEvent.click(screen.getByText('Hint'));
-
-    expect(await screen.findByText(/red squares need defending/i)).toBeInTheDocument();
-    const options = capturedOptions.at(-1);
-    expect(options?.squareStyles?.e3).toMatchObject({ backgroundColor: 'rgba(192, 57, 43, 0.35)' });
-    expect(options?.squareStyles?.e5).toMatchObject({ backgroundColor: 'rgba(91, 156, 106, 0.35)' });
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
   // The bot's own moves are computed server-side (the reliable path — the
-  // native engine, same as commitBotTurn) — stage 2 reuses that same path
+  // native engine, same as commitBotTurn) — this reuses that same path
   // (POST /api/positions/hint-moves) rather than the in-browser WASM engine,
   // which has no such reliability guarantee across every user's browser.
-  test("stage 2 draws arrows for the server's top moves", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({
-        lines: [
-          { moveUci: 'e3e5', moveSan: 'Rxe5+', cp: 900, mateIn: null },
-          { moveUci: 'e1d2', moveSan: 'Kd2', cp: 10, mateIn: null }
-        ]
-      })
-    );
+  test('stage 1 fetches the engine\'s top moves and highlights the squares of the pieces to move, with no arrows yet', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(topMovesResponse()));
     vi.stubGlobal('fetch', fetchMock);
     render(<Harness sessionMode="play_bot" positions={HANGING_PIECES_POSITIONS} />);
     await screen.findByTestId('mock-chessboard');
 
     fireEvent.click(screen.getByText('Hint'));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/positions/hint-moves',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ fen: HANGING_PIECES_FEN }) })
+    );
+    await waitFor(() => expect(capturedOptions.at(-1)?.squareStyles?.e3).toBeDefined());
+    const options = capturedOptions.at(-1);
+    expect(options?.squareStyles?.e3).toMatchObject({ backgroundColor: expect.stringContaining('color-mix') });
+    expect(options?.squareStyles?.e1).toMatchObject({ backgroundColor: expect.stringContaining('color-mix') });
+    expect(options?.arrows).toEqual([]);
+  });
+
+  test('stage 2 draws arrows to the same moves\' destinations, without a second fetch', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(topMovesResponse()));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<Harness sessionMode="play_bot" positions={HANGING_PIECES_POSITIONS} />);
+    await screen.findByTestId('mock-chessboard');
+
+    fireEvent.click(screen.getByText('Hint'));
+    await waitFor(() => expect(capturedOptions.at(-1)?.squareStyles?.e3).toBeDefined());
     fireEvent.click(screen.getByText('Hint'));
 
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/positions/hint-moves',
-        expect.objectContaining({ method: 'POST', body: JSON.stringify({ fen: HANGING_PIECES_FEN }) })
-      )
-    );
-    expect(await screen.findByText(/top moves: rxe5/i)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     const options = capturedOptions.at(-1);
     expect(options?.arrows).toEqual(
       expect.arrayContaining([expect.objectContaining({ startSquare: 'e3', endSquare: 'e5' })])
     );
+    // The piece highlight from stage 1 stays up alongside the new arrow.
+    expect(options?.squareStyles?.e3).toBeDefined();
   });
 
-  test('a third click collapses the hint, and a new position resets it', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ lines: [] })));
+  // The color highlights/arrows carry the hint's actual content visually —
+  // a screen reader has no way to read a square's fill or an arrow's color,
+  // so the same information (which moves are suggested) must still reach it
+  // through the visually-hidden status region once loaded, not just a
+  // transient "Getting a hint…" that goes silent forever after.
+  test('once loaded, the hint result is still announced for screen readers even though the bubble is gone', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(topMovesResponse())));
     render(<Harness sessionMode="play_bot" positions={HANGING_PIECES_POSITIONS} />);
     await screen.findByTestId('mock-chessboard');
 
     fireEvent.click(screen.getByText('Hint'));
-    expect(await screen.findByText(/red squares need defending/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Hint'));
-    await waitFor(() => expect(screen.queryByText(/thinking/i)).not.toBeInTheDocument());
-    fireEvent.click(screen.getByText('Hint'));
 
-    expect(screen.queryByText(/red squares need defending/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/top moves/i)).not.toBeInTheDocument();
+    expect(await screen.findByText(/top moves: rxe5\+, kd2/i)).toBeInTheDocument();
   });
 
-  test('a failed request shows an error instead of hanging on "Thinking…" forever', async () => {
+  test('a third click collapses the hint, and a new position resets it', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(topMovesResponse())));
+    render(<Harness sessionMode="play_bot" positions={HANGING_PIECES_POSITIONS} />);
+    await screen.findByTestId('mock-chessboard');
+
+    fireEvent.click(screen.getByText('Hint'));
+    await waitFor(() => expect(capturedOptions.at(-1)?.squareStyles?.e3).toBeDefined());
+    fireEvent.click(screen.getByText('Hint'));
+    fireEvent.click(screen.getByText('Hint'));
+
+    const options = capturedOptions.at(-1);
+    expect(options?.squareStyles?.e3).toBeUndefined();
+    expect(options?.arrows).toEqual([]);
+  });
+
+  test('a failed request is announced for screen readers instead of hanging forever', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')));
     render(<Harness sessionMode="play_bot" positions={HANGING_PIECES_POSITIONS} />);
     await screen.findByTestId('mock-chessboard');
 
     fireEvent.click(screen.getByText('Hint'));
-    fireEvent.click(screen.getByText('Hint'));
 
     expect(await screen.findByText(/couldn't get a suggestion/i)).toBeInTheDocument();
-    expect(screen.queryByText(/thinking/i)).not.toBeInTheDocument();
   });
 
   test('a late response for an abandoned request is ignored', async () => {
@@ -308,18 +406,100 @@ describe('SessionBoardColumn — play_bot hint bubble', () => {
     render(<Harness sessionMode="play_bot" positions={HANGING_PIECES_POSITIONS} />);
     await screen.findByTestId('mock-chessboard');
 
-    // Stage 1 -> stage 2 (first, never-resolving request) -> collapse -> stage 1 -> stage 2 (second request).
+    // Stage 1 (first, never-resolving fetch) -> stage 2 -> collapse -> stage 1 (second fetch) -> stage 2.
     fireEvent.click(screen.getByText('Hint'));
     fireEvent.click(screen.getByText('Hint'));
     fireEvent.click(screen.getByText('Hint'));
     fireEvent.click(screen.getByText('Hint'));
     fireEvent.click(screen.getByText('Hint'));
-    expect(await screen.findByText(/top moves: kd2/i)).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(capturedOptions.at(-1)?.arrows).toEqual(
+        expect.arrayContaining([expect.objectContaining({ startSquare: 'e1', endSquare: 'd2' })])
+      )
+    );
 
     // The first request finally resolves — it must not clobber the second one's result.
     resolveFirst?.(jsonResponse({ lines: [] }));
     await Promise.resolve();
-    expect(screen.getByText(/top moves: kd2/i)).toBeInTheDocument();
+    expect(capturedOptions.at(-1)?.arrows).toEqual(
+      expect.arrayContaining([expect.objectContaining({ startSquare: 'e1', endSquare: 'd2' })])
+    );
+  });
+});
+
+// Mobile's move row (rendered only when !isDesktop) is MoveNavStrip — the
+// same combined chevrons + move-chip list GameReviewPage's mobile Review
+// page uses — passed the app's own 1-based ply directly; MoveNavStrip owns
+// the conversion to MoveStrip's 0-based sanMoves-index convention internally
+// (plyToMoveStripIndex/moveStripIndexToPly), so this file no longer
+// re-derives that arithmetic itself.
+describe('SessionBoardColumn — mobile move strip ply conversion', () => {
+  beforeEach(() => {
+    capturedOptions.length = 0;
+  });
+
+  const POSITIONS_TWO_MOVES = [
+    { ply: 0, fen: 'fen-start', moveUci: null },
+    { ply: 1, fen: 'fen-after-e4', moveUci: 'e2e4' },
+    { ply: 2, fen: 'fen-after-e5', moveUci: 'e7e5' }
+  ];
+
+  test('tapping the first move chip navigates to the position just after that move, not the game start', async () => {
+    render(
+      <Harness sessionMode="analyze" sanMoves={['e4', 'e5']} positions={POSITIONS_TWO_MOVES} isDesktop={false} />
+    );
+    await screen.findByTestId('mock-chessboard');
+
+    fireEvent.click(screen.getByRole('button', { name: 'e4' }));
+
+    await waitFor(() => expect(capturedOptions.at(-1)?.position).toBe('fen-after-e4'));
+  });
+
+  test('the chip marked as current always matches the position actually shown on the board', async () => {
+    render(
+      <Harness sessionMode="analyze" sanMoves={['e4', 'e5']} positions={POSITIONS_TWO_MOVES} isDesktop={false} />
+    );
+    await screen.findByTestId('mock-chessboard');
+
+    fireEvent.click(screen.getByRole('button', { name: 'e5' }));
+
+    await waitFor(() => expect(capturedOptions.at(-1)?.position).toBe('fen-after-e5'));
+    expect(screen.getByRole('button', { name: 'e5' })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('button', { name: 'e4' })).not.toHaveAttribute('aria-current');
+  });
+});
+
+// On mobile, every session mode gets the same combined row Game Review
+// already uses (MoveNavStrip: step chevrons + the move-chip list in one
+// line) instead of a bare, buttonless chip list — and play_bot mode must not
+// end up with two redundant pairs of step buttons once its own toolbar and
+// this row both exist on screen.
+describe('SessionBoardColumn — mobile combined move-nav row', () => {
+  beforeEach(() => {
+    capturedOptions.length = 0;
+  });
+
+  test('analyze mode gets step chevrons alongside the move chips, not just a bare list', async () => {
+    render(<Harness sessionMode="analyze" sanMoves={['e4', 'e5']} isDesktop={false} />);
+    await screen.findByTestId('mock-chessboard');
+
+    expect(screen.getByLabelText('previous move')).toBeInTheDocument();
+    expect(screen.getByLabelText('next move')).toBeInTheDocument();
+  });
+
+  test('play_bot mode shows exactly one pair of step buttons, not the toolbar\'s own pair on top of the combined row\'s', async () => {
+    render(<Harness sessionMode="play_bot" sanMoves={['e4', 'e5']} onUndoMove={() => undefined} isDesktop={false} />);
+    await screen.findByTestId('mock-chessboard');
+
+    expect(screen.getByLabelText('previous move')).toBeInTheDocument();
+    expect(screen.getByLabelText('next move')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Previous move')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Next move')).not.toBeInTheDocument();
+
+    // Undo/Hint survive the toolbar's own step buttons being dropped.
+    expect(screen.getByText('Undo')).toBeInTheDocument();
+    expect(screen.getByText('Hint')).toBeInTheDocument();
   });
 });
 
@@ -334,5 +514,16 @@ describe('SessionBoardColumn — showEvalIndicators', () => {
     render(<Harness sessionMode="play_bot" showEvalIndicators={false} />);
     await screen.findByTestId('mock-chessboard');
     expect(screen.queryByLabelText(/evaluation:/i)).not.toBeInTheDocument();
+  });
+
+  // Always a vertical bar beside the board (design ask: consistent across
+  // every viewport width, freeing the row mobile used to spend on a
+  // horizontal strip above the board).
+  test('renders as a vertical bar inside the board row, beside the board', async () => {
+    render(<Harness sessionMode="play_bot" />);
+    await screen.findByTestId('mock-chessboard');
+
+    expect(screen.getByLabelText(/evaluation:/i)).toBeInTheDocument();
+    expect(document.querySelector('.session-board-row .eval-bar-wrap')).toBeInTheDocument();
   });
 });

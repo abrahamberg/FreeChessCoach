@@ -1,6 +1,11 @@
 import type { EngineEval } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { isBrilliantMove, type MoveClassificationInput } from './classify-brilliant.js';
+import {
+  isBrilliantMove,
+  isBrilliantSoundnessCandidate,
+  type BrilliantSoundnessCandidateInput,
+  type MoveClassificationInput
+} from './classify-brilliant.js';
 
 const BEFORE = '4k3/3p1p2/8/8/2B5/8/8/4K3 w - - 0 1';
 const AFTER = '4k3/3p1p2/4B3/8/8/8/8/4K3 b - - 1 1';
@@ -78,5 +83,49 @@ describe('isBrilliantMove', () => {
   test('fails closed when the targeted soundness check is missing or negative', () => {
     expect(isBrilliantMove(candidate({ brilliantSoundness: undefined }))).toBe(false);
     expect(isBrilliantMove(candidate({ brilliantSoundness: false }))).toBe(false);
+  });
+});
+
+describe('isBrilliantSoundnessCandidate', () => {
+  function candidateInput(overrides: Partial<BrilliantSoundnessCandidateInput> = {}): BrilliantSoundnessCandidateInput {
+    return {
+      fenBefore: BEFORE,
+      fenAfter: AFTER,
+      moveSan: 'Be6',
+      mover: 'white',
+      isBookMove: false,
+      legalMoveCount: 20,
+      isCapture: false,
+      drop: 0,
+      ...overrides
+    };
+  }
+
+  test('flags an undefended sacrifice as worth the extra engine call', () => {
+    expect(isBrilliantSoundnessCandidate(candidateInput())).toBe(true);
+  });
+
+  test('rejects a book move regardless of sacrifice shape', () => {
+    expect(isBrilliantSoundnessCandidate(candidateInput({ isBookMove: true }))).toBe(false);
+  });
+
+  test('rejects a forced move (no real alternative)', () => {
+    expect(isBrilliantSoundnessCandidate(candidateInput({ legalMoveCount: 1 }))).toBe(false);
+  });
+
+  test('rejects a move whose drop exceeds the brilliant budget', () => {
+    expect(isBrilliantSoundnessCandidate(candidateInput({ drop: 10 }))).toBe(false);
+  });
+
+  test('rejects a quiet, non-sacrificial move', () => {
+    const before = '4k3/8/8/8/2B5/8/8/4K3 w - - 0 1';
+    const after = '4k3/8/8/8/8/8/4B3/4K3 b - - 1 1';
+    expect(isBrilliantSoundnessCandidate(candidateInput({ fenBefore: before, fenAfter: after, moveSan: 'Be2' }))).toBe(
+      false
+    );
+  });
+
+  test('rejects an illegal moveSan instead of throwing', () => {
+    expect(isBrilliantSoundnessCandidate(candidateInput({ moveSan: 'Zz9' }))).toBe(false);
   });
 });

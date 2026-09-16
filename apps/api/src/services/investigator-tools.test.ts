@@ -86,9 +86,16 @@ describe('buildInvestigatorTools', () => {
 
       const result = await tools.list_candidate_moves?.execute?.({ fen: START_FEN, moves: ['e4', 'd4'] }, TOOL_OPTIONS);
 
+      const noHangingPieceSignals = {
+        createsHangingPiece: false,
+        createsOwnHangingPiece: false,
+        createsOpponentHangingPiece: false,
+        ignoresOwnHangingPiece: false,
+        ignoresOpponentHangingPiece: false
+      };
       expect(result).toEqual([
-        { moveSan: 'e4', createsFork: false, createsHangingPiece: false, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number), motif: null },
-        { moveSan: 'd4', createsFork: false, createsHangingPiece: false, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number), motif: null }
+        { moveSan: 'e4', createsFork: false, ...noHangingPieceSignals, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number), motif: null },
+        { moveSan: 'd4', createsFork: false, ...noHangingPieceSignals, createsUnderDefendedPiece: false, mobilityDelta: expect.any(Number), motif: null }
       ]);
       expect(deps.analyzePosition).not.toHaveBeenCalled();
     });
@@ -157,7 +164,12 @@ describe('buildInvestigatorTools', () => {
 
       const result = await tools.scan_tactics?.execute?.({ fen: FORK_FEN }, TOOL_OPTIONS);
 
-      expect(result).toEqual({ available: [{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }], allowed: [] });
+      // Multi-label: a move carries every motif it survives verification
+      // with, and Nd6+ hits the rook with tempo as well as forking it.
+      expect(result).toMatchObject({
+        available: expect.arrayContaining([{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }]),
+        allowed: expect.arrayContaining([{ moveSan: 'Kd8', motif: 'prophylaxis', rank: 0 }])
+      });
       expect(analyzePosition).toHaveBeenCalledWith(FORK_FEN);
       expect(analyzePosition).toHaveBeenCalledWith(FLIPPED_FORK_FEN);
     });
@@ -181,7 +193,7 @@ describe('buildInvestigatorTools', () => {
       const withRank1 = await tools.scan_tactics?.execute?.({ fen: FORK_FEN, topN: 2 }, TOOL_OPTIONS);
 
       expect(withoutRank1).toMatchObject({ available: [] });
-      expect(withRank1).toMatchObject({ available: [{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }] });
+      expect(withRank1).toMatchObject({ available: expect.arrayContaining([{ moveSan: 'Nd6+', motif: 'fork', rank: 1 }]) });
     });
 
     test('returns allowed: null cleanly, without throwing, when the side to move is in check', async () => {

@@ -1,12 +1,12 @@
 import { describe, expect, test, vi, beforeAll, afterAll } from 'vitest';
 import type { Kysely } from 'kysely';
+import { parseAnnotatedPgn } from '@freechesscoach/chess-analysis';
 import type { PositionAnalysis } from '@freechesscoach/shared';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import * as usersRepo from '../db/repositories/users.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
-import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
 import type { Database } from '../db/schema.js';
 import { commitCoachMove, commitPlayerMove, undoLastMove } from './play-moves.js';
 
@@ -74,7 +74,7 @@ describe('play-moves service', () => {
     return { gameId: game.id, sessionId: session.id };
   }
 
-  test('commitPlayerMove appends the move to the game PGN and records a quality row', async () => {
+  test('commitPlayerMove appends the move to the game PGN and its annotated PGN', async () => {
     const { gameId } = await seed();
 
     const result = await commitPlayerMove({ db, analyzePosition }, gameId, 'e4');
@@ -86,10 +86,11 @@ describe('play-moves service', () => {
 
     const game = await gamesRepo.findById(db, gameId);
     expect(game?.pgn).toContain('e4');
+    expect(game?.lastMoveAt).toBeInstanceOf(Date);
 
-    const qualities = await gameMoveQualitiesRepo.listByGameId(db, gameId);
-    expect(qualities).toHaveLength(1);
-    expect(qualities[0]?.ply).toBe(1);
+    const moves = parseAnnotatedPgn(game!.annotatedPgn!, 'white');
+    expect(moves).toHaveLength(1);
+    expect(moves[0]?.ply).toBe(1);
   });
 
   test('commitCoachMove rejects an illegal SAN without mutating the game', async () => {
@@ -103,7 +104,7 @@ describe('play-moves service', () => {
     expect(after?.pgn).toBe(before?.pgn);
   });
 
-  test('undoLastMove pops the last move and deletes its quality + move-note rows', async () => {
+  test('undoLastMove pops the last move from both PGNs and deletes the move-note row', async () => {
     const { gameId, sessionId } = await seed();
     await commitPlayerMove({ db, analyzePosition }, gameId, 'e4');
     await sessionMoveNotesRepo.upsert(db, sessionId, 1, 'discussed e4');
@@ -116,9 +117,27 @@ describe('play-moves service', () => {
 
     const game = await gamesRepo.findById(db, gameId);
     expect(game?.pgn.includes('e4')).toBe(false);
+    expect(game?.annotatedPgn?.includes('e4')).toBe(false);
 
-    expect(await gameMoveQualitiesRepo.listByGameId(db, gameId)).toHaveLength(0);
+    expect(parseAnnotatedPgn(game!.annotatedPgn!, 'white')).toHaveLength(0);
     expect(await sessionMoveNotesRepo.findByPly(db, sessionId, 1)).toBeUndefined();
+  });
+
+  test('undoLastMove resets lastMoveAt to now, not the undone move\'s stale commit time', async () => {
+    const { gameId, sessionId } = await seed();
+    await commitPlayerMove({ db, analyzePosition }, gameId, 'e4');
+    await commitPlayerMove({ db, analyzePosition }, gameId, 'e5');
+    const beforeUndo = (await gamesRepo.findById(db, gameId))!.lastMoveAt!;
+
+    await undoLastMove({ db, analyzePosition }, sessionId, gameId);
+
+    const afterUndo = (await gamesRepo.findById(db, gameId))!.lastMoveAt!;
+    // If this were left stale (pinned to the undone move's own commit time),
+    // afterUndo would equal beforeUndo exactly rather than advance past it —
+    // the bug this regression-tests (bot-move-commit.ts's elapsed-time math
+    // reading a pre-undo timestamp) would otherwise inflate or spuriously
+    // time out the resumed mover's very next move.
+    expect(afterUndo.getTime()).toBeGreaterThan(beforeUndo.getTime());
   });
 
   test('undoLastMove on a game with no moves returns an error', async () => {

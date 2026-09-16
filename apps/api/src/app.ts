@@ -4,13 +4,17 @@ import type { Kysely } from 'kysely';
 import { pingDb } from './db/index.js';
 import type { Database } from './db/schema.js';
 import { registerAnalysesRoutes } from './routes/analyses.js';
+import { registerChesscomRoutes } from './routes/chesscom.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
+import { registerDiagnosticsRoutes } from './routes/diagnostics.js';
 import { registerEngineTunnelRoutes } from './routes/engine-tunnel.js';
 import { registerEngineTunnelInternalRoutes } from './routes/engine-tunnel-internal.js';
 import { registerGamesRoutes } from './routes/games.js';
 import { registerLichessRoutes } from './routes/lichess.js';
 import { registerLlmSetupRoutes } from './routes/llm-setup.js';
 import { registerPositionAnalysisRoutes } from './routes/positions.js';
+import { registerPuzzleAssignmentsRoutes } from './routes/puzzle-assignments.js';
+import { registerPuzzleSessionsRoutes } from './routes/puzzle-sessions.js';
 import { registerSessionsRoutes } from './routes/sessions.js';
 import { registerStatsRoutes } from './routes/stats.js';
 import { registerTtsRoutes } from './routes/tts.js';
@@ -20,6 +24,7 @@ import { registerUsersRoutes } from './routes/users.js';
 import { noopJobQueue, type JobQueue } from './jobs/queue.js';
 import type { UserSetupVault } from './llm/key-vault.js';
 import type { LlmUnlockStore } from './llm/unlock-store.js';
+import { createChesscomClient, type ChesscomClient } from './services/chesscom.js';
 import { createLichessClient, type LichessClient } from './services/lichess.js';
 import type { CoachAgentBaseDependencies } from './bootstrap.js';
 import type { EngineTunnelRegistry } from './services/engine/engine-tunnel-registry.js';
@@ -41,6 +46,7 @@ export interface BuildAppOptions {
   coachAgentBaseDeps?: CoachAgentBaseDependencies;
   engineBackendOptions?: ResolveEngineBackendOptions;
   lichessClient?: LichessClient;
+  chesscomClient?: ChesscomClient;
   /** Required to register POST /api/tts/speak (the OpenAI coach-voice backend,
    *  resolved per-request against the user's BYOK OpenAI key). */
   ttsConfig?: TtsConfig;
@@ -80,9 +86,12 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (options.db) {
     registerUsersRoutes(app, options.db);
     registerDashboardRoutes(app, options.db);
+    registerDiagnosticsRoutes(app, options.db);
+    registerPuzzleAssignmentsRoutes(app, options.db);
     registerStatsRoutes(app, options.db);
     registerGamesRoutes(app, options.db, options.jobQueue ?? noopJobQueue);
     registerLichessRoutes(app, options.db, options.lichessClient ?? createLichessClient());
+    registerChesscomRoutes(app, options.db, options.chesscomClient ?? createChesscomClient());
     registerAnalysesRoutes(
       app,
       options.db,
@@ -94,6 +103,12 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     if (options.coachAgentBaseDeps && options.engineBackendOptions) {
       registerSessionsRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions);
       registerPositionAnalysisRoutes(app, options.db, options.engineBackendOptions);
+    }
+    // No engine backend needed — a puzzle session's tool set has no
+    // get_engine_analysis-equivalent (the coach reasons from the puzzle's
+    // own known solution, not a live engine call).
+    if (options.coachAgentBaseDeps) {
+      registerPuzzleSessionsRoutes(app, options.db, options.coachAgentBaseDeps);
     }
     if (options.ttsConfig && options.llmUnlockStore) {
       registerTtsRoutes(app, options.db, options.llmUnlockStore, options.ttsConfig);

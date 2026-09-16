@@ -4,6 +4,7 @@ import type { CoachPromptInput } from './coach-system.js';
 import type { PlannerPromptInput } from './analysis-planner.js';
 import type { SummarizerPromptInput } from './progress-summarizer.js';
 import type { ProfilerPromptInput } from './onboarding-profiler.js';
+import type { PuzzleCoachPromptInput } from './puzzle-coach-system.js';
 
 /**
  * Shared fixtures for this package's own tests and scripts/generate-doc.ts.
@@ -19,6 +20,7 @@ export const basePlan: CoachingPlan = {
   openingNote: 'opening',
   themes: ['king_safety'],
   connectionToHistory: 'Second game in a row with a delayed castle.',
+  sessionGoal: 'Castle before starting play on the flank — the same king-safety habit as last session.',
   moments: [
     {
       ply: 23,
@@ -36,6 +38,7 @@ export function baseCoachInput(overrides: Partial<CoachPromptInput> = {}): Coach
   return {
     user: { displayName: 'Ann', selfAssessment: 'I blunder pieces', sessionCount: 3 },
     band: 'club',
+    rating: 1500,
     persona: 'general',
     mode: 'analyze',
     game: {
@@ -95,6 +98,7 @@ const plannerCandidateMoments: CandidateMoment[] = [{ ply: 3, kind: 'user_mistak
 export function basePlannerInput(overrides: Partial<PlannerPromptInput> = {}): PlannerPromptInput {
   return {
     band: 'club',
+    rating: 1500,
     focusAreas: [],
     recentFindings: [],
     selfAssessment: 'I blunder pieces',
@@ -109,6 +113,7 @@ export function basePlannerInput(overrides: Partial<PlannerPromptInput> = {}): P
 export function baseSummarizerInput(overrides: Partial<SummarizerPromptInput> = {}): SummarizerPromptInput {
   return {
     band: 'club',
+    rating: 1500,
     focusAreas: [],
     recentFindings: [],
     selfAssessment: 'I blunder pieces',
@@ -133,3 +138,16 @@ export const investigatePositionFixture = {
   fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3',
   question: 'Does Nc3 hang the e4 pawn?'
 };
+
+export function basePuzzleCoachInput(overrides: Partial<PuzzleCoachPromptInput> = {}): PuzzleCoachPromptInput {
+  return {
+    reason: 'You missed several knight forks in your last few games.',
+    totalCount: 5,
+    currentItem: {
+      fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      moves: ['e2e4', 'e7e5', 'g1f3', 'b8c6'],
+      index: 2
+    },
+    ...overrides
+  };
+}

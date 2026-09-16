@@ -11,14 +11,32 @@ Socratically while tracking their progress over time. The initial build
 (Phases 0–9) is complete and merged — read before coding:
 
 - `docs/architecture.md` — how it fits together (layout, DB, agent, K8s). Always relevant.
-- `docs/plan.md` — remaining work: the Game Report feature (accuracy, phase
-  accuracy, opening/tactics/strategy/endgame scores, classification counts,
-  estimated rating, opening-book integration). Only relevant when a task
-  touches that feature — irrelevant to everything else in the repo, do not
-  read it otherwise. When it is relevant: open it, find the one Phase/Task
-  being worked on, and read only that task's `docs/algorith.md` section per
-  its own "Read:" pointer — never open `docs/algorith.md` cold or read it
-  end-to-end; it's long and most of it won't apply to any single task.
+- `docs/plan.md` — remaining work: programmatic coach diagnostics (the
+  `docs/diagnose.md` code taxonomy, opportunity/episode counting, confidence,
+  data-quality gates, focus selection). Only relevant when a task touches
+  that feature — irrelevant to everything else in the repo, do not read it
+  otherwise. When it is relevant: open it, find the one Phase/Task being
+  worked on, and read only that task's `docs/diagnose.md` section per its own
+  "Read:" pointer — never open `docs/diagnose.md` cold or read it end-to-end;
+  it's long and most of it won't apply to any single task.
+- `docs/algorith.md` — the spec behind the *shipped* Game Report (accuracy,
+  scores, classification, estimated rating, opening book). Same rule: only
+  open the one subsection a task's "Read:" line names, never cold.
+- `docs/tactics-rework.md` — why Game Review's tactic sentences misfired, what
+  was measured, and the layered rebuild that shipped. Read it before touching
+  `tactic-detectors/`, `classify-tactic-motif.ts`, the `verify-tactic-*`
+  files, `tactic-reason-text.ts`, `tactic-card-order.ts`,
+  `played-tactic-alternative.ts`, `tactic-allowed.ts`, or the
+  tactic-prevention path; irrelevant to everything else. §9 is the second
+  review pass (which sentence leads, what a move handed over, an equally good
+  move of the player's own, the vocabulary for a trade) and records one gate
+  that was tried and reverted — read it before re-trying that one. Its §1 cards are pinned as fixtures in
+  `packages/chess-analysis/src/tactic-review-cases.ts`,
+  `tactic-precision.test.ts` holds the false-positive ceilings and
+  `tactic-detectors/lichess-puzzle-validation.test.ts` the recall floors — a
+  detector change is expected to move all three, the ceilings only go down and
+  the floors only go up. `tactic-detectors/README.md` is the how-to for adding
+  a motif and is the shorter read when that is all you need.
 
 
 ## Commands
@@ -173,7 +191,46 @@ Socratically while tracking their progress over time. The initial build
   the LLM gateway and engine HTTP — never call real providers in tests.
 - Agent tests: mock model via AI SDK's `MockLanguageModel`; assert tool-call
   sequences and that tool wrappers enforce budgets.
-- Run before claiming done: `npm run lint && npm run typecheck && npm test`.
+- Run before claiming done: `npm run lint && npm run typecheck && npm test`
+  locally, in full — regardless of what CI itself runs (below).
+- Before adding a new test, check whether an existing catalog/aggregate-level
+  test already covers the assertion (e.g. `packages/shared/src/diagnosis/
+  index.test.ts` checks every family's count, global id uniqueness, and
+  schema validation across the *whole* catalog in one pass — a per-family
+  file re-asserting its own slice of that is redundant, not extra safety).
+  Prefer strengthening a shared/aggregate test over adding a narrower
+  duplicate of it next to each new module.
+
+### CI runs affected tests, not everything, every time
+
+`npm test` runs the whole workspace and is what you run locally and what
+CI's full-suite mode uses — it is not itself the "reduced" set. CI
+(`.github/workflows/ci.yml`) chooses one of two modes:
+
+- **Affected-only** (PR pushes, branch pushes): `vitest run --changed
+  origin/<base-branch>`. Vitest walks the real import graph from every
+  changed file to the test files that could exercise it — exact for
+  anything reached through an import, not a hand-maintained path map, so it
+  doesn't go stale as the tree grows. A push with no affected tests exits 0
+  with nothing run.
+- **Full suite** (pushes to `main`, a nightly cron, or `workflow_dispatch`
+  with `full: true`): plain `npm test`. This is the safety net for the one
+  thing affected-only can't see: a test that reads a fixture at runtime
+  (`readFileSync` on `data/*.csv`/`data/*.tsv`) has no static import edge to
+  that file, so regenerating the fixture alone won't re-trigger it under
+  `--changed`. **If you touch a `data/` fixture without also touching the
+  code that reads it in the same change, run that package's tests locally**
+  (`npm run test -w @freechesscoach/chess-analysis`, etc.) rather than
+  relying on the next push to catch it.
+
+This is also why some deliberately expensive guardrail suites are still
+worth keeping at all: `tactic-precision.test.ts` and
+`tactic-detectors/{registry-coverage,lichess-puzzle-validation}.test.ts`
+(see the tactics-rework pointer above) each scan hundreds of real
+positions and cost 1-4 minutes apiece, but affected-only mode only pays
+that cost on a push that actually touches the tactic-detector import
+graph — everything else skips them for free instead of needing them
+deleted or manually excluded.
 
 ## Git
 

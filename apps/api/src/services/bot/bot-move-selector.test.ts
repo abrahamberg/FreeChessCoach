@@ -1,9 +1,11 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { BotConfig, PositionAnalysis } from '@freechesscoach/shared';
+import { BOT_SEARCH_DEPTH } from './bot-candidates.js';
 import { selectBotMove, type BotMoveSelectorDependencies } from './bot-move-selector.js';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-// No book entries for this contrived endgame FEN — forces the engine+scoring path.
+// No book entries for this contrived bare-king FEN — always forces the
+// engine + %A/%B/%C path.
 const OFF_BOOK_FEN = '4k3/8/8/8/8/8/8/4K3 w - - 0 1';
 
 function baseBot(overrides: Partial<BotConfig> = {}): BotConfig {
@@ -13,11 +15,12 @@ function baseBot(overrides: Partial<BotConfig> = {}): BotConfig {
     avatarIndex: 0,
     description: 'A bot for tests.',
     elo: 800,
-    depth: 6,
-    multiPv: 3,
+    topFiveChance: 0.6,
+    bestMoveGivenTopFiveChance: 0.5,
+    blunderGivenMissChance: 0.2,
     personality: { aggression: 50, trapSeeking: 50, defensiveness: 50 },
-    aiEnabled: false,
-    temperature: 0.3,
+    mateConversionChance: 0.9,
+    diagnosisCodes: [],
     bookPlies: 0,
     bookMistakeChance: 0,
     ...overrides
@@ -27,7 +30,7 @@ function baseBot(overrides: Partial<BotConfig> = {}): BotConfig {
 function analysis(lines: PositionAnalysis['lines']): PositionAnalysis {
   return {
     fen: OFF_BOOK_FEN,
-    depth: 6,
+    depth: BOT_SEARCH_DEPTH,
     multiPv: lines.length,
     bestMove: lines[0]?.moveSan ?? null,
     eval: { cp: lines[0]?.cp ?? null, mateIn: lines[0]?.mateIn ?? null },
@@ -44,7 +47,6 @@ function baseDeps(overrides: Partial<BotMoveSelectorDependencies> = {}): BotMove
         { moveUci: 'e1d2', moveSan: 'Kd2', pvSan: ['Kd2'], cp: 4, mateIn: null }
       ])
     ),
-    callTiebreak: vi.fn().mockResolvedValue(null),
     random: () => 0,
     ...overrides
   };
@@ -55,52 +57,48 @@ describe('selectBotMove', () => {
     const deps = baseDeps();
     const result = await selectBotMove(deps, START_FEN, 0, baseBot({ bookPlies: 8 }));
     expect(result.usedBook).toBe(true);
-    expect(result.usedAi).toBe(false);
     expect(deps.analyzeBotPosition).not.toHaveBeenCalled();
   });
 
-  test('AI-off never calls the tiebreak, even with a close cluster', async () => {
-    const deps = baseDeps();
-    await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot({ aiEnabled: false }));
-    expect(deps.callTiebreak).not.toHaveBeenCalled();
+  test('all three rolls at 0 hit the %A and %B branches: plays the engine\'s own top candidate', async () => {
+    const deps = baseDeps({ random: () => 0 });
+    const result = await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot({ topFiveChance: 0.6, bestMoveGivenTopFiveChance: 0.5 }));
+    expect(result.san).toBe('Ke2');
   });
 
-  test('AI-on with a close cluster calls the tiebreak with that cluster and uses its valid answer', async () => {
-    const deps = baseDeps({ callTiebreak: vi.fn().mockResolvedValue('Kd2') });
-    const result = await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot({ aiEnabled: true }));
-
-    expect(deps.callTiebreak).toHaveBeenCalledTimes(1);
-    const call = (deps.callTiebreak as ReturnType<typeof vi.fn>).mock.calls.at(0)?.[0];
-    expect(call?.candidates.map((c: { moveSan: string }) => c.moveSan)).toEqual(expect.arrayContaining(['Ke2', 'Kd2']));
-    expect(result).toEqual({ san: 'Kd2', usedBook: false, usedAi: true });
+  test('a %A roll that misses falls through to the TTC-based tactical-mistake pool', async () => {
+    // random() 0.999999 misses topFiveChance and blunderGivenMissChance alike,
+    // landing in pickTacticalMistake. Neither king move loses anywhere near
+    // enough cp from Ke2 (candidates[0], cp 5) to clear the real-mistake
+    // floor — Kd2 only loses 1cp — so nothing qualifies as an actual
+    // mistake and the fallback picks the sample's own worst-scoring
+    // candidate instead (Kd2, cp 4 < Ke2's cp 5).
+    const deps = baseDeps({ random: () => 0.999999 });
+    const result = await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot({ diagnosisCodes: [] }));
+    expect(result.san).toBe('Kd2');
   });
 
-  test('AI-on falls back to sampling when the tiebreak returns null', async () => {
-    const deps = baseDeps({ callTiebreak: vi.fn().mockResolvedValue(null), random: () => 0 });
-    const result = await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot({ aiEnabled: true }));
-    expect(result.usedAi).toBe(false);
-    expect(['Ke2', 'Kd2']).toContain(result.san);
+  test('always searches at the fixed BOT_SEARCH_DEPTH, regardless of the bot or the position', async () => {
+    const analyzeBotPosition = vi.fn().mockResolvedValue(analysis([{ moveUci: 'e1e2', moveSan: 'Ke2', pvSan: ['Ke2'], cp: 5, mateIn: null }]));
+    const deps = baseDeps({ analyzeBotPosition, random: () => 0 });
+    await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot());
+    expect(analyzeBotPosition).toHaveBeenCalledWith(OFF_BOOK_FEN, expect.objectContaining({ depth: BOT_SEARCH_DEPTH }));
   });
 
-  test('AI-on falls back to sampling when the tiebreak returns a SAN outside the cluster', async () => {
-    const deps = baseDeps({ callTiebreak: vi.fn().mockResolvedValue('Qh5') });
-    const result = await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot({ aiEnabled: true }));
-    expect(result.usedAi).toBe(false);
-  });
-
-  test('AI-on with only one candidate in the top cluster skips the LLM call entirely', async () => {
+  test('a forced mate uses mateConversionChance even when bestMoveGivenTopFiveChance would otherwise miss', async () => {
     const deps = baseDeps({
       analyzeBotPosition: vi.fn().mockResolvedValue(
         analysis([
-          { moveUci: 'e1e2', moveSan: 'Ke2', pvSan: ['Ke2'], cp: 500, mateIn: null },
-          { moveUci: 'e1d2', moveSan: 'Kd2', pvSan: ['Kd2'], cp: -500, mateIn: null }
+          { moveUci: 'e1e2', moveSan: 'Ke2#', pvSan: ['Ke2#'], cp: null, mateIn: 1 },
+          { moveUci: 'e1d2', moveSan: 'Kd2', pvSan: ['Kd2'], cp: 4, mateIn: null }
         ])
-      )
+      ),
+      // Hits %A (topFiveChance 0.9), and would miss bestMoveGivenTopFiveChance
+      // (0.3) on its own — only mateConversionChance's max() saves it.
+      random: () => 0.7
     });
-    const result = await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot({ aiEnabled: true }));
-    expect(deps.callTiebreak).not.toHaveBeenCalled();
-    expect(result.san).toBe('Ke2');
-    expect(result.usedAi).toBe(false);
+    const result = await selectBotMove(deps, OFF_BOOK_FEN, 0, baseBot({ topFiveChance: 0.9, bestMoveGivenTopFiveChance: 0.3, mateConversionChance: 0.9 }));
+    expect(result.san).toBe('Ke2#');
   });
 
   // A live bot move sits behind the player's "your move" round trip

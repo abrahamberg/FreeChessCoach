@@ -46,4 +46,26 @@ describe('buildPlannerMessages', () => {
     expect(user).toContain('I blunder pieces');
     expect(user).toContain('white');
   });
+
+  test('renders the "this game vs their usual" comparison when the caller has one', () => {
+    const { user } = buildPlannerMessages(baseInput({ playerStats: 'Baseline: 12 recent rapid games (this game excluded).' }));
+
+    expect(user).toContain('THIS GAME VS THEIR USUAL');
+    expect(user).toContain('Baseline: 12 recent rapid games');
+  });
+
+  test('drops the comparison section entirely when there is none, rather than showing an empty heading', () => {
+    const { user } = buildPlannerMessages(baseInput());
+
+    expect(user).not.toContain('THIS GAME VS THEIR USUAL');
+  });
+
+  test('the system prompt makes sessionGoal the first decision, weighted to measured evidence over this one game', () => {
+    const { system, user } = buildPlannerMessages(baseInput());
+
+    expect(system).toContain('SET ONE GOAL FIRST (sessionGoal)');
+    expect(system).toContain('one game is the weakest evidence you have');
+    // The output schema is rendered into the user message, next to the data.
+    expect(user).toContain('"sessionGoal": string');
+  });
 });

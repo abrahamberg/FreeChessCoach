@@ -244,6 +244,56 @@ describe('ImportPage', () => {
     );
   });
 
+  test('switching to the Chess.com tab fetches and lists recent games; selecting one imports it as source chesscom', async () => {
+    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
+      if (path === '/api/chesscom/recent-games') {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify([
+              {
+                id: 'g1',
+                pgn: '1. e4 e5 1-0',
+                whiteName: 'daniel',
+                blackName: 'Marta',
+                result: '1-0',
+                timeControl: '600',
+                playedAt: '2026-07-20T10:00:00.000Z',
+                rated: true,
+                timeClass: 'rapid',
+                whiteRating: 1500,
+                blackRating: 1480
+              }
+            ]),
+            { status: 200, headers: { 'content-type': 'application/json' } }
+          )
+        );
+      }
+      if (path === '/api/games' && init?.method === 'POST') {
+        return Promise.resolve(
+          new Response(JSON.stringify({ gameId: 'game-2', analysisId: 'analysis-2' }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' }
+          })
+        );
+      }
+      throw new Error(`unexpected fetch: ${path}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+
+    renderImportPage();
+    await user.click(screen.getByRole('button', { name: /from chess\.com/i }));
+
+    await user.click(await screen.findByRole('button', { name: /daniel.*marta/is }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/games',
+        expect.objectContaining({ body: JSON.stringify({ pgn: '1. e4 e5 1-0', source: 'chesscom' }) })
+      )
+    );
+  });
+
   describe('stat-bank bulk import (Task 31.4)', () => {
     const LICHESS_GAMES = [
       {
@@ -347,6 +397,48 @@ describe('ImportPage', () => {
       expect(await screen.findByText(/imported 1 of 2 games/i)).toBeInTheDocument();
       expect(screen.getByText(/daily import limit reached/i)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /go to games/i })).toBeInTheDocument();
+    });
+
+    test('switching from Lichess to Chess.com clears the selection instead of carrying over stale ids', async () => {
+      const CHESSCOM_GAMES = [
+        {
+          id: 'c1',
+          pgn: 'chesscom-pgn-1',
+          whiteName: 'daniel',
+          blackName: 'Nadia',
+          result: '1-0',
+          timeControl: '600',
+          playedAt: '2026-07-22T10:00:00.000Z',
+          rated: true,
+          timeClass: 'rapid',
+          whiteRating: 1500,
+          blackRating: 1480
+        }
+      ];
+      const fetchMock = vi.fn().mockImplementation((path: string) => {
+        if (path === '/api/lichess/recent-games') {
+          return Promise.resolve(
+            new Response(JSON.stringify(LICHESS_GAMES), { status: 200, headers: { 'content-type': 'application/json' } })
+          );
+        }
+        if (path === '/api/chesscom/recent-games') {
+          return Promise.resolve(
+            new Response(JSON.stringify(CHESSCOM_GAMES), { status: 200, headers: { 'content-type': 'application/json' } })
+          );
+        }
+        throw new Error(`unexpected fetch: ${path}`);
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      const user = userEvent.setup();
+
+      renderImportPage();
+      await enterBulkModeWithBothSelected(user);
+      expect(screen.getByRole('button', { name: 'Import 2 for stat bank' })).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /from chess\.com/i }));
+      await screen.findByRole('button', { name: /daniel.*nadia/is });
+
+      expect(screen.getByRole('button', { name: 'Import 0 for stat bank' })).toBeDisabled();
     });
   });
 });

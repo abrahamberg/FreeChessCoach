@@ -9,7 +9,10 @@ export interface EvalBarProps {
   orientation: 'white' | 'black';
 }
 
-/** lichess/chess.com-style vertical evaluation bar next to the board. Reads
+/** lichess/chess.com-style evaluation bar beside the board — always to its
+ * left, at every viewport width (design ask: the vertical bar reads
+ * consistently across desktop and mobile, and leaves the horizontal strip
+ * mobile used to render above the board free for other things). Reads
  * straight from classifiedMoves (already loaded with the game, white-
  * perspective cp, mate pre-clamped to +-1000 — see classify.ts), so it needs
  * no fetch of its own: ply 0 has no classified move yet and defaults to an
@@ -18,14 +21,11 @@ export interface EvalBarProps {
 export function EvalBar({ ply, classifiedMoves, orientation }: EvalBarProps): ReactNode {
   const cp = classifiedMoves.find((move) => move.ply === ply)?.evalAfterCp ?? 0;
   const whitePercent = expectedPoints(cp) * 100;
-  // The white-fill segment tracks the board flip: white's pieces sit at the
-  // bottom when orientation is 'white' (unflipped), at the top when it's
-  // 'black' (flipped) — so the bar always fills from whichever edge white
-  // actually occupies.
+  // White's pieces sit at the bottom when orientation is 'white' (unflipped),
+  // at the top when it's 'black' (flipped) — the white-fill segment always
+  // fills from whichever edge white actually occupies.
   const fillStyle: CSSProperties =
-    orientation === 'white'
-      ? { height: `${whitePercent}%`, bottom: 0 }
-      : { height: `${whitePercent}%`, top: 0 };
+    orientation === 'white' ? { height: `${whitePercent}%`, bottom: 0 } : { height: `${whitePercent}%`, top: 0 };
 
   return (
     <div className="eval-bar-wrap">

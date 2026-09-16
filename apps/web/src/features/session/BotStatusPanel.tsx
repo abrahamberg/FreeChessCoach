@@ -1,13 +1,11 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { BotAvatar } from '../../components/BotAvatar.js';
+import { CoachCard } from '../../components/CoachCard.js';
 import { FlagIcon } from '../../components/Icon.js';
+import { useLiteEngineHint } from '../../hooks/useLiteEngineHint.js';
+import { describeGameOver, type BotGameOverInfo } from './botGameOver.js';
 import { ClockDisplay } from './ClockDisplay.js';
 import './BotStatusPanel.css';
-
-export interface BotGameOverInfo {
-  result: '1-0' | '0-1' | '1/2-1/2';
-  reason: 'checkmate' | 'stalemate' | 'insufficient_material' | 'threefold_repetition' | 'fifty_move_rule';
-}
 
 export interface BotStatusPanelProps {
   botName: string;
@@ -17,12 +15,21 @@ export interface BotStatusPanelProps {
    * rather than requiring every caller to resolve one first. */
   botAvatarIndex?: number;
   botElo?: number;
-  /** Whose turn it is right now. The whole "player move + bot's synchronous
-   * reply" round trip resolves as one request before any UI update happens
-   * (see usePlayBotMoveSubmit), so there's no genuinely observable
-   * mid-request "bot is thinking" gap to animate — this reflects the
-   * position on screen, not a live request state. */
+  /** Whose turn it is right now, as reflected by the position on screen —
+   * the player's own drop already looks committed (the board's optimistic
+   * preview) well before the "player move + bot's synchronous reply" round
+   * trip (usePlayBotMoveSubmit) actually resolves, so this alone still reads
+   * "Your move" for the whole wait. `isBotThinking` below is what covers
+   * that gap. */
   isPlayerTurn: boolean;
+  /** True for the live duration of that round trip (usePlayBotMoveSubmit's
+   * own `isSubmitting`, threaded down through SessionBoardColumn) — shows
+   * "{botName} is thinking…" even though `isPlayerTurn` hasn't flipped yet,
+   * so the wait (which the engine's own movetime cap still bounds, but can
+   * still take several seconds) isn't silent. Defaults false so a caller
+   * that doesn't track submission state (there is none today, but this
+   * keeps the prop optional) degrades to the old position-only text. */
+  isBotThinking?: boolean;
   gameOver: BotGameOverInfo | null;
   userColor: 'white' | 'black';
   /** The "flag" button — resigns immediately. Omitted while the resign
@@ -33,39 +40,69 @@ export interface BotStatusPanelProps {
   clock?: { whiteRemainingMs: number; blackRemainingMs: number; anchoredAt: number } | null;
   activeColor?: 'white' | 'black';
   onClockExpire?: () => void;
+  /** Current position, for the just-in-time lite-engine hint readout below —
+   * omitted (no readout at all) rather than defaulted, since a caller that
+   * doesn't track a live fen shouldn't silently get a stale/empty hint. */
+  fen?: string;
+  /** 'panel' (default): the full-height, centered layout for a dedicated
+   * column of its own (desktop's side-by-side layout — SessionPage.css's
+   * `.session-body.desktop .bot-status-panel`). 'card': the shared
+   * CoachCard shell every board view's own coach note uses — for the mobile
+   * stacked layout, where this sits above the board instead of owning a
+   * whole screen. */
+  variant?: 'panel' | 'card';
 }
 
-const DRAW_REASON_TEXT: Record<Exclude<BotGameOverInfo['reason'], 'checkmate'>, string> = {
-  stalemate: 'Draw by stalemate.',
-  insufficient_material: 'Draw by insufficient material.',
-  threefold_repetition: 'Draw by threefold repetition.',
-  fifty_move_rule: 'Draw by the fifty-move rule.'
-};
+/** "if the light engine is not loaded the bot shows that the light engine
+ * is not loaded until it's loaded" — this panel only exists once the caller
+ * is already showing the status bar (BotSessionPage gates the whole
+ * BotStatusPanel on that), so no separate on/off toggle is needed here. */
+function LiteHintReadout({ fen }: { fen: string }): ReactNode {
+  const { status, evaluation } = useLiteEngineHint({ enabled: true, fen });
 
-function describeGameOver(gameOver: BotGameOverInfo, userColor: 'white' | 'black', botName: string): string {
-  if (gameOver.reason === 'checkmate') {
-    const userWon = (userColor === 'white' && gameOver.result === '1-0') || (userColor === 'black' && gameOver.result === '0-1');
-    return userWon ? 'Checkmate — you win!' : `Checkmate — ${botName} wins.`;
+  if (status === 'not-loaded' || status === 'loading') {
+    return (
+      <p className="bot-status-panel__hint bot-status-panel__hint--loading" role="status">
+        Live analysis: light engine not loaded yet…
+      </p>
+    );
   }
-  return DRAW_REASON_TEXT[gameOver.reason];
+
+  if (!evaluation) return null;
+
+  return (
+    <p className="bot-status-panel__hint" role="status">
+      <span className="bot-status-panel__hint-label">Exploratory:</span> {evaluation}
+    </p>
+  );
 }
 
 /** The chat-less bot session's status panel — replaces ChatPane in the
- * play_bot layout ("Play vs Bot" plan). */
+ * play_bot layout ("Play vs Bot" plan). `variant="card"` renders the same
+ * shared CoachCard shell every board view's own coach note uses (mirroring
+ * MoveNoteCard/PagedMessageCard) instead of the full centered `panel`
+ * layout — the bot's own portrait moves into CoachCard's header alongside
+ * the name/rating, same status content either way, just re-homed for the
+ * compact mobile shape. */
 export function BotStatusPanel({
   botName,
   botAvatarIndex,
   botElo,
   isPlayerTurn,
+  isBotThinking = false,
   gameOver,
   userColor,
   onResign,
   clock,
   activeColor,
-  onClockExpire
+  onClockExpire,
+  fen,
+  variant = 'panel'
 }: BotStatusPanelProps): ReactNode {
-  return (
-    <div className="bot-status-panel">
+  const [expanded, setExpanded] = useState(false);
+
+  const body = (
+    <>
       {clock && activeColor && onClockExpire && (
         <ClockDisplay
           whiteRemainingMs={clock.whiteRemainingMs}
@@ -75,18 +112,20 @@ export function BotStatusPanel({
           onExpire={onClockExpire}
         />
       )}
-      <div className="bot-status-panel__opponent">
-        {botAvatarIndex !== undefined && <BotAvatar avatarIndex={botAvatarIndex} size="panel" />}
-        <span className="bot-status-panel__name">{botName}</span>
-        {botElo !== undefined && <span className="bot-status-panel__level">{botElo}</span>}
-      </div>
+      {variant === 'panel' && (
+        <div className="bot-status-panel__opponent">
+          {botAvatarIndex !== undefined && <BotAvatar avatarIndex={botAvatarIndex} size="panel" />}
+          <span className="bot-status-panel__name">{botName}</span>
+          {botElo !== undefined && <span className="bot-status-panel__level">{botElo}</span>}
+        </div>
+      )}
       {gameOver ? (
         <p className="bot-status-panel__result" role="status">
           {describeGameOver(gameOver, userColor, botName)}
         </p>
       ) : (
         <p className="bot-status-panel__turn" role="status">
-          {isPlayerTurn ? 'Your move' : `${botName} is thinking…`}
+          {isPlayerTurn && !isBotThinking ? 'Your move' : `${botName} is thinking…`}
         </p>
       )}
       {onResign && !gameOver && (
@@ -95,6 +134,28 @@ export function BotStatusPanel({
           Resign
         </button>
       )}
-    </div>
+      {fen && !gameOver && <LiteHintReadout fen={fen} />}
+    </>
   );
+
+  if (variant === 'card') {
+    return (
+      <CoachCard
+        avatar={botAvatarIndex !== undefined ? <BotAvatar avatarIndex={botAvatarIndex} size="card" /> : null}
+        header={
+          <>
+            <span className="bot-status-panel__name">{botName}</span>
+            {botElo !== undefined && <span className="bot-status-panel__level">{botElo}</span>}
+          </>
+        }
+        className="bot-status-panel bot-status-panel--card"
+        expanded={expanded}
+        onToggleExpand={() => setExpanded((value) => !value)}
+      >
+        {body}
+      </CoachCard>
+    );
+  }
+
+  return <div className="bot-status-panel bot-status-panel--panel">{body}</div>;
 }

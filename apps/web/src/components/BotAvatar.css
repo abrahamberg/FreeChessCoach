@@ -16,8 +16,16 @@
   vertical-align: middle;
 }
 
-.bot-avatar-image--picker {
+.bot-avatar-image--picker,
+.bot-avatar-image--card {
   width: 64px;
+}
+
+/* Matches CoachAvatar's own '--chat' size — BotStatusPanel's compact mobile
+ * card row sits the bot's portrait the same way MoveNoteCard/PagedMessageCard
+ * sit the coach's. */
+.bot-avatar-image--card {
+  margin-right: 7px;
 }
 
 .bot-avatar-image--panel {

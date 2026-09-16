@@ -4,6 +4,7 @@ import {
   computePositionFeatures,
   diffPositionFeatures,
   moveRefToPly,
+  parseAnnotatedPgn,
   type FeatureDelta
 } from '@freechesscoach/chess-analysis';
 import {
@@ -18,7 +19,7 @@ import {
 import type { PositionAnalysis } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
-import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
+import * as gamesRepo from '../db/repositories/games.js';
 import type { SessionMessageRow } from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
@@ -153,15 +154,17 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
   const orphanExtendedMessages = includeOrphanedToolCall(input.historyAfterTurn, episode.messages);
   const isPlayMode = input.session.mode === 'play';
 
-  const [position, previousMovePosition, moveQualities, otherNotes, threads, gameReport] = await Promise.all([
+  const [position, previousMovePosition, game, otherNotes, threads, gameReport] = await Promise.all([
     getPositionAtPly(input.db, input.session.gameId, input.currentPly),
     input.currentPly > 0 ? getPositionAtPly(input.db, input.session.gameId, input.currentPly - 1) : undefined,
-    fetchMoveQualities(input.db, input.session.gameId, isPlayMode),
+    gamesRepo.findById(input.db, input.session.gameId),
     sessionMoveNotesRepo.listOtherPlies(input.db, input.session.id, [input.currentPly, input.subjectPly]),
     sessionsRepo.getThreads(input.db, input.session.id),
     isPlayMode ? undefined : analysesRepo.findGameReportByGameId(input.db, input.session.gameId)
   ]);
   if (!position) throw new NotFoundError('Current position not found for this session');
+  if (!game) throw new NotFoundError('Game not found for this session');
+  const moveQualities = movesFromAnnotatedPgn(game.annotatedPgn, input.studentColor);
 
   // Play mode (architecture §14): layer 3 is skipped entirely (annotatedPgn:
   // null) rather than caching a placeholder — a live game's move-quality
@@ -229,22 +232,13 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
   );
 }
 
-/** architecture §14: analyze mode reads the batch pipeline's classified
- * moves (analysesRepo, unchanged); play mode reads the live equivalent
- * (game_move_qualities) instead and never queries analysesRepo at all — a
- * play-mode game never gets an `analyses` row in the first place. Both
- * branches return the same AnnotatedMoveLike[] shape so every caller above
- * (renderAnnotatedPgn/renderGameSoFarInline/renderOtherMovesSummary/the
- * classifiedMove lookup) works unmodified regardless of which mode it came
- * from. */
-async function fetchMoveQualities(
-  db: Kysely<Database>,
-  gameId: string,
-  isPlayMode: boolean
-): Promise<AnnotatedMoveLike[]> {
-  if (isPlayMode) return gameMoveQualitiesRepo.listByGameId(db, gameId);
-  const moves = await analysesRepo.findClassifiedMovesByGameId(db, gameId);
-  return moves ?? [];
+/** architecture §14, updated by 0032_annotated_pgn.ts: analyze mode and play
+ * mode both store their per-move analysis the same way now (the game's own
+ * `annotatedPgn`), so this is one read for both instead of a branch between
+ * `analysesRepo` and `game_move_qualities` — null (never analyzed / no live
+ * moves yet) reads as no moves, same as the old empty-array fallbacks. */
+function movesFromAnnotatedPgn(annotatedPgn: string | null, userColor: 'white' | 'black'): AnnotatedMoveLike[] {
+  return annotatedPgn ? parseAnnotatedPgn(annotatedPgn, userColor) : [];
 }
 
 /**

@@ -258,6 +258,53 @@
   gap: var(--space-5);
 }
 
+/* "You vs {bot}" — the modal's own title already names the bot, so this row
+ * exists to frame the matchup at a glance, not to repeat it. */
+.play-bot-start-page__matchup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.play-bot-start-page__matchup-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.play-bot-start-page__matchup-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.play-bot-start-page__matchup-vs {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.play-bot-start-page__you-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid var(--color-surface);
+  background: var(--color-surface-strong);
+  color: var(--color-text-secondary);
+  box-shadow: 0 1px 3px rgb(18 28 22 / 18%), 0 0 0 1px rgb(18 28 22 / 8%);
+}
+
 .play-bot-start-page__summary-bot {
   display: flex;
   align-items: flex-start;

@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { MistakeCategory } from '@freechesscoach/shared';
+import type { DiagnosisCodeId, MistakeCategory } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export type FocusAreaStatus = 'active' | 'improving' | 'resolved';
@@ -8,6 +8,7 @@ export interface FocusAreaRow {
   id: string;
   userId: string;
   category: MistakeCategory;
+  diagnosisCode: DiagnosisCodeId | null;
   status: FocusAreaStatus;
   note: string;
   evidenceCount: number;
@@ -15,6 +16,9 @@ export interface FocusAreaRow {
   createdAt: Date;
 }
 
+/** Legacy lookup for category-only rows created before Task 57.3 — new
+ * focus areas are always keyed by `diagnosisCode` (see `findByUserAndDiagnosisCode`)
+ * since several active areas can now share one broad category. */
 export function findByUserAndCategory(
   db: Kysely<Database>,
   userId: string,
@@ -25,6 +29,23 @@ export function findByUserAndCategory(
     .selectAll()
     .where('userId', '=', userId)
     .where('category', '=', category)
+    .executeTakeFirst();
+}
+
+/** Task 57.3 — the addressing lookup `applyFocusAreaUpdate` and
+ * `syncProgrammaticFocusAreas` use: `UNIQUE (user_id, diagnosis_code)` makes
+ * this the correct one-row lookup now that several active areas can share a
+ * broad category. */
+export function findByUserAndDiagnosisCode(
+  db: Kysely<Database>,
+  userId: string,
+  diagnosisCode: DiagnosisCodeId
+): Promise<FocusAreaRow | undefined> {
+  return db
+    .selectFrom('focusAreas')
+    .selectAll()
+    .where('userId', '=', userId)
+    .where('diagnosisCode', '=', diagnosisCode)
     .executeTakeFirst();
 }
 
@@ -41,6 +62,7 @@ export async function countActiveByUser(db: Kysely<Database>, userId: string): P
 export interface NewFocusArea {
   userId: string;
   category: MistakeCategory;
+  diagnosisCode: DiagnosisCodeId | null;
   status: FocusAreaStatus;
   note: string;
 }

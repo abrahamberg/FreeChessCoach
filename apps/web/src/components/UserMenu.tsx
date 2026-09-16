@@ -5,6 +5,7 @@ import { NavLink } from 'react-router-dom';
 import { apiGet } from '../api/client.js';
 import { describeEngineActivity } from './EngineActivityIndicator.js';
 import { ChevronDownIcon, LogOutIcon, SettingsIcon } from './Icon.js';
+import { TunnelStatusDots } from './TunnelStatusDots.js';
 import type { EngineActivityIndicatorState } from '../hooks/useEngineActivityIndicator.js';
 import './UserMenu.css';
 
@@ -112,6 +113,7 @@ function EngineActivityMenuRow({ state, onNavigate }: { state: EngineActivityInd
     <NavLink to="/settings#settings-engine" role="menuitem" className="user-menu__item" title={info.title} onClick={onNavigate}>
       <span className={`engine-activity-indicator__dot${state.kind === 'idle' ? ' engine-activity-indicator__dot--idle' : ''}`} aria-hidden="true" />
       {info.label}
+      <TunnelStatusDots engineMode={state.engineMode} />
     </NavLink>
   );
 }

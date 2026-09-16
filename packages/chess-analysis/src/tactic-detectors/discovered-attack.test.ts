@@ -7,10 +7,10 @@ const QUIET_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 describe('discoveredAttackDetector', () => {
   test('detects a discovered check', () => {
-    expect(discoveredAttackDetector.detect(buildTacticDetectionContext(DISCOVERY_FEN, 'Nb3', 'white'))).toBe(true);
+    expect(discoveredAttackDetector.detect(buildTacticDetectionContext(DISCOVERY_FEN, 'Nb3', 'white'))).not.toHaveLength(0);
   });
 
   test('does not flag a quiet developing move', () => {
-    expect(discoveredAttackDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toBe(false);
+    expect(discoveredAttackDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toEqual([]);
   });
 });

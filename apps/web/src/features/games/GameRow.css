@@ -1,46 +1,42 @@
+/* One self-contained card per game (Daniel's "2026 app, not a POC" pass) —
+ * GamesPage.css lays these out with a gap between them instead of one
+ * bordered list, so each card gets its own border/radius/shadow here. */
 .game-row {
   list-style: none;
   display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-4) var(--space-5);
-  min-height: 68px;
-  transition: background-color 0.15s ease;
-}
-
-.game-row:last-child {
-  border-bottom: none;
-}
-
-.game-row:hover {
-  background: var(--color-surface-subtle);
-}
-
-.game-row__identity {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-}
-
-.game-row__text {
-  min-width: 0;
-  display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4) var(--space-5);
+}
+
+.game-row__top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .game-row__players {
   min-width: 0;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: 9px;
+  font-size: 15px;
+}
+
+/* Each name truncates on its own rather than the whole row sharing one
+ * ellipsis — design-improvements.md: never truncate both player names until
+ * the game can no longer be identified. A long opponent name used to be able
+ * to clip the "vs"/result right along with it. */
+.game-row__players > span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 15px;
 }
 
 .game-row__you {
@@ -48,12 +44,14 @@
 }
 
 .game-row__vs {
+  flex-shrink: 0;
   color: var(--color-text-muted);
   font-weight: 500;
   font-size: 13px;
 }
 
 .game-row__result {
+  flex-shrink: 0;
   padding: 2px 9px;
   font-size: 11.5px;
 }
@@ -73,6 +71,9 @@
   color: var(--color-text-secondary);
 }
 
+/* Source label (Imported/Bot/Coached) + date — source is metadata riding
+ * alongside the date, not a tab of its own (see SOURCE_LABELS in
+ * GameRow.tsx). */
 .game-row__meta {
   display: flex;
   align-items: center;
@@ -81,8 +82,12 @@
   color: var(--color-text-muted);
 }
 
-.game-row__status {
-  flex: 0 0 auto;
+.game-row__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
 }
 
 .game-row__status[data-animate='true'] {
@@ -105,32 +110,32 @@
   }
 }
 
+/* Review + Coach, side by side — every ready game offers both (Daniel's IA
+ * feedback: reviewing and coaching are two different things you can always
+ * do with the same game, not two rungs of a promotion ladder). */
+.game-row__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
 .game-row__action {
   flex: 0 0 auto;
   height: 36px;
 }
 
 @media (max-width: 639px) {
-  .game-row {
-    flex-wrap: wrap;
-    align-items: flex-start;
+  .game-row__footer {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .game-row__identity {
-    flex: 1 1 100%;
-    order: 1;
+  .game-row__actions {
+    width: 100%;
   }
 
-  .game-row__status {
-    order: 2;
-  }
-
+  /* design-improvements.md: minimum 44x44px mobile touch targets. */
   .game-row__action {
-    order: 3;
-    margin-left: auto;
-  }
-
-  .overflow-menu {
-    order: 4;
+    flex: 1;
+    height: 44px;
   }
 }

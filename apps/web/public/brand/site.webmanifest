@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "FreeChessCoach",
   "short_name": "FreeChessCoach",
   "icons": [
@@ -8,5 +9,8 @@
   "theme_color": "#3d6b48",
   "background_color": "#faf9f7",
   "display": "standalone",
-  "start_url": "/"
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "start_url": "/",
+  "scope": "/"
 }

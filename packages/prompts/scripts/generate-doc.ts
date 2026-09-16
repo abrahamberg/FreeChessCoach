@@ -7,12 +7,14 @@ import { buildPlannerMessages } from '../src/analysis-planner.js';
 import { buildSummarizerMessages } from '../src/progress-summarizer.js';
 import { buildOnboardingProfilerMessages } from '../src/onboarding-profiler.js';
 import { INVESTIGATE_POSITION_SYSTEM_PROMPT, renderInvestigatePositionPrompt } from '../src/investigate-position.js';
+import { buildPuzzleCoachSystemPrompt } from '../src/puzzle-coach-system.js';
 import { CALIBRATION } from '../src/calibration.js';
 import {
   baseCoachInput,
   basePlannerInput,
   baseSummarizerInput,
   baseOnboardingInput,
+  basePuzzleCoachInput,
   investigatePositionFixture
 } from '../src/fixtures.js';
 
@@ -29,6 +31,7 @@ export function renderDoc(): string {
   const summarizer = buildSummarizerMessages(baseSummarizerInput());
   const onboarding = buildOnboardingProfilerMessages(baseOnboardingInput());
   const investigate = renderInvestigatePositionPrompt(investigatePositionFixture.fen, investigatePositionFixture.question);
+  const puzzleCoach = buildPuzzleCoachSystemPrompt(basePuzzleCoachInput());
 
   return `# Chess AI Coach — LLM Prompts
 
@@ -71,6 +74,7 @@ ${fence(MISTAKE_CATEGORIES.join(', '))}
 | Engine-interpreter subagent | light | inside \`investigate_position\` tool | \`investigate-position.ts\` |
 | Progress summarizer | light | worker, at session end | \`progress-summarizer.ts\`: \`buildSummarizerMessages\` |
 | Onboarding profiler | light | api, once at onboarding | \`onboarding-profiler.ts\`: \`buildOnboardingProfilerMessages\` |
+| Puzzle-session coach system prompt | standard | every puzzle-session turn | \`puzzle-coach-system.ts\`: \`buildPuzzleCoachSystemPrompt\` |
 
 ## 1. Coach agent system prompt
 
@@ -129,7 +133,26 @@ ${fence(onboarding.system)}
 
 ${fence(onboarding.user)}
 
-## 6. Rating-band calibration (\`calibration.ts\`)
+## 6. Puzzle-session coach system prompt
+
+Example rendered for a 5-puzzle assignment, currently on puzzle 2
+(\`packages/prompts/src/fixtures.ts\`'s \`basePuzzleCoachInput()\`) — Task 59.5
+(docs/plan.md Phase 59). Unlike prompt 1 above, \`staticPart\` never varies:
+there is no band/mode/persona axis for this session type, so every puzzle
+session in the product shares one cached copy. \`dynamicPart\` carries the
+assignment's \`reason\` and the current puzzle's position and known solution
+line — the coach never re-derives or guesses the answer. See
+\`puzzle-coach-system.test.ts\` for every case.
+
+### staticPart (cache-shared across every puzzle session)
+
+${fence(puzzleCoach.staticPart)}
+
+### dynamicPart (this assignment, this puzzle)
+
+${fence(puzzleCoach.dynamicPart)}
+
+## 7. Rating-band calibration (\`calibration.ts\`)
 
 | Band | Label | revealDepthPlies | Description |
 |---|---|---|---|

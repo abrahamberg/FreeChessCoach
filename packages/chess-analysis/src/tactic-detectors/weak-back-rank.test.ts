@@ -7,10 +7,10 @@ const QUIET_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 describe('weakBackRankDetector', () => {
   test('detects a rook infiltrating a pawn-boxed back rank', () => {
-    expect(weakBackRankDetector.detect(buildTacticDetectionContext(BACK_RANK_FEN, 'Ra8#', 'white'))).toBe(true);
+    expect(weakBackRankDetector.detect(buildTacticDetectionContext(BACK_RANK_FEN, 'Ra8#', 'white'))).not.toHaveLength(0);
   });
 
   test('does not flag a quiet developing move', () => {
-    expect(weakBackRankDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toBe(false);
+    expect(weakBackRankDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toEqual([]);
   });
 });

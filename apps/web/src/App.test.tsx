@@ -28,7 +28,10 @@ function renderAt(path: string) {
 describe('AppRoutes', () => {
   test.each([
     ['/import', /import/i],
-    ['/games', /games/i]
+    ['/games', /games/i],
+    // Not /play/i alone: PlayPage's own destination cards ("Play with
+    // Coach", "Play a Bot") are headings too, and would match ambiguously.
+    ['/play', /^play$/i]
   ])('renders the %s route', (path, expectedText) => {
     renderAt(path);
     expect(screen.getByRole('heading', { name: expectedText })).toBeInTheDocument();

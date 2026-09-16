@@ -17,11 +17,12 @@ function baseBot(): BotConfig {
     avatarIndex: 0,
     description: 'A bot for tests.',
     elo: 800,
-    depth: 6,
-    multiPv: 2,
+    topFiveChance: 0.6,
+    bestMoveGivenTopFiveChance: 0.5,
+    blunderGivenMissChance: 0.2,
     personality: { aggression: 50, trapSeeking: 50, defensiveness: 50 },
-    aiEnabled: false,
-    temperature: 0.3,
+    mateConversionChance: 0.9,
+    diagnosisCodes: [],
     bookPlies: 0,
     bookMistakeChance: 0
   };
@@ -61,7 +62,7 @@ describe('resignBotGame', () => {
   }
 
   function deps(): FinalizeBotGameDependencies {
-    return { db, jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn() } };
+    return { db, jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn() } };
   }
 
   test('resigning as White records a Black win and completes the session', async () => {

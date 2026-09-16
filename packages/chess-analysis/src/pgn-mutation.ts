@@ -52,8 +52,10 @@ export function appendMoveToPgn(
   };
 }
 
-/** h:mm:ss, hours unpadded (Lichess/chess.com convention), e.g. `0:01:23`. */
-function formatClock(elapsedMs: number): string {
+/** h:mm:ss, hours unpadded (Lichess/chess.com convention), e.g. `0:01:23` —
+ * also used by `annotated-pgn.ts`'s `appendAnnotatedMove`/`buildAnnotatedPgn`,
+ * which need the identical `[%clk]` formatting. */
+export function formatClock(elapsedMs: number): string {
   const totalSeconds = Math.max(0, Math.round(elapsedMs / 1000));
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -77,7 +79,9 @@ export function removeLastMoveFromPgn(pgn: string): RemovedMove | { error: strin
   return { pgn: chess.pgn(), fen: chess.fen() };
 }
 
-function tryMove(chess: Chess, san: string): ReturnType<Chess['move']> | null {
+/** Also used by `annotated-pgn.ts`'s `appendAnnotatedMove`, which needs the
+ * identical "illegal move returns null instead of throwing" contract. */
+export function tryMove(chess: Chess, san: string): ReturnType<Chess['move']> | null {
   try {
     return chess.move(san);
   } catch {

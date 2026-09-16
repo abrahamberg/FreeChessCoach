@@ -27,7 +27,15 @@ interface UndoLastMoveOutput {
   removedPly: number;
 }
 
-function isUndoError(output: unknown): boolean {
+/** Both play_coach_move and undo_last_move resolve to `{ error: string }` on
+ * a server-side rejection (an illegal move, "no move to undo") instead of
+ * their normal success shape — this must be checked before touching the
+ * board, or `output.fen`/`output.ply` read off the error shape come back
+ * `undefined` and get written straight into `positions`/`boardState` (see
+ * handleServerToolResult below), corrupting the board's fen for the rest of
+ * the session (react-chessboard fed `''`) until a hard reload rebuilds it
+ * from the server's own truth. */
+function isErrorOutput(output: unknown): boolean {
   return typeof output === 'object' && output !== null && 'error' in output;
 }
 
@@ -61,15 +69,23 @@ function applyPlayCoachMove(
 
 /** architecture §14: undo_last_move pops the game's last move — trims the
  * positions array back down rather than appending. `removedPly` names the
- * ply the game is left AT after the undo (see play-moves.ts's UndoResult),
- * not the ply that was removed. */
+ * ply that was POPPED (play-moves.ts's UndoResult — same convention
+ * bot-undo.ts and coach-agent-turn.ts's advancePlyForPlayMove already use,
+ * both via `removedPly - 1`), NOT the ply the game is left at — `output.fen`
+ * is the position one ply earlier, after the undo. Using `removedPly` as-is
+ * here left the popped move's own (now-stale) entry sitting in `positions`
+ * (truncateTo's `<=` kept it) and pointed the board's `ply` state at it too,
+ * so `positions.find` resolved back to the pre-undo position instead of
+ * ever reaching applyServerMove's fen/pendingServerPosition fallback — the
+ * undo silently did nothing on the board. */
 function applyUndoLastMove(
   boardState: UseSessionBoardStateResult,
   livePositions: ReturnType<typeof useLivePositions>,
   output: UndoLastMoveOutput
 ): void {
-  livePositions.truncateTo(output.removedPly);
-  boardState.applyServerMove(output.removedPly, output.fen);
+  const ply = output.removedPly - 1;
+  livePositions.truncateTo(ply);
+  boardState.applyServerMove(ply, output.fen);
 }
 
 /** All fetching + derived state for the session page (AGENTS.md rule 7) —
@@ -141,10 +157,19 @@ export function useSessionPageData(sessionId: string) {
   // below for the student's own move.
   function handleServerToolResult(toolName: string, output: unknown): void {
     if (toolName === 'play_coach_move') {
+      if (isErrorOutput(output)) {
+        // The coach tried to play an illegal move — the game (and the
+        // board) stay exactly where they were; nothing to apply. Logged
+        // since this is otherwise invisible on the client (see
+        // isErrorOutput's doc comment for what silently applying it here
+        // used to do to the board).
+        console.error('play_coach_move rejected:', (output as { error: string }).error);
+        return;
+      }
       applyPlayCoachMove(boardState, livePositions, currentRealPosition.fen, output as PlayCoachMoveOutput);
       return;
     }
-    if (toolName === 'undo_last_move' && !isUndoError(output)) {
+    if (toolName === 'undo_last_move' && !isErrorOutput(output)) {
       applyUndoLastMove(boardState, livePositions, output as UndoLastMoveOutput);
     }
   }

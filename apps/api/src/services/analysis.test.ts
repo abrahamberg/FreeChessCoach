@@ -1,12 +1,21 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import { BookReportSchema, CoachingPlanSchema, GameReportSchema, type EngineEval, type PositionAnalysis } from '@freechesscoach/shared';
+import { parseAnnotatedPgn, parsePgn } from '@freechesscoach/chess-analysis';
+import {
+  BookReportSchema,
+  CoachingPlanSchema,
+  GameReportSchema,
+  type EngineEval,
+  type PositionAnalysis,
+  type StoredGameReport
+} from '@freechesscoach/shared';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
-import { runAnalyzeGameJob, type AnalysisJobDependencies } from './analysis.js';
+import { composeGameReport } from './game-report.js';
+import { analyzeInChunks, runAnalyzeGameJob, type AnalysisJobDependencies } from './analysis.js';
 
 const PGN = `[Event "Test"]
 [White "Ann"]
@@ -47,11 +56,57 @@ const FORK_PREVENTED_PGN = `[Event "Test"]
 
 1. Ka2 Rb8 *`;
 
+// docs/tactics-rework.md §9's "the queen nobody mentioned", as a whole-job
+// fixture: Black's 9...Qd7 walks the queen in front of its own king, White's
+// Bb5 pins it and wins it. Black then has the tacticAllowed card and White's
+// next ply the tacticOpportunity — both of which are added by buildGameReport,
+// i.e. *after* the moves the annotated PGN used to be written from.
+const PINNED_QUEEN_START_FEN = 'r1bqkb1r/pp3ppp/3p1n2/2p3B1/2B1P3/3Q4/PPP2PPP/RN3RK1 b - - 0 9';
+const PINNED_QUEEN_AFTER_QD7_FEN = 'r1b1kb1r/pp1q1ppp/3p1n2/2p3B1/2B1P3/3Q4/PPP2PPP/RN3RK1 w - - 1 10';
+const PINNED_QUEEN_PGN = `[Event "Test"]
+[SetUp "1"]
+[FEN "${PINNED_QUEEN_START_FEN}"]
+[White "Ann"]
+[Black "Bob"]
+[Result "1-0"]
+
+9... Qd7 10. Bxf6 1-0`;
+
+// A textbook §5.5 brilliant: White's undefended bishop sacs onto e6 (only a
+// pawn recapture undoes it, no material comes back), a real alternative
+// (Kd2) exists 150cp worse, and the position is roughly balanced either way
+// — Task 50.3's cheap pre-filter should flag ply 1 as worth the one extra
+// analyzePosition call, and a "sound" reply should then classify it brilliant.
+const BRILLIANT_SETUP_FEN = '4k3/3p1p2/8/8/2B5/8/8/4K3 w - - 0 1';
+const BRILLIANT_AFTER_FEN = '4k3/3p1p2/4B3/8/8/8/8/4K3 b - - 1 1';
+const BRILLIANT_PGN = `[Event "Test"]
+[SetUp "1"]
+[FEN "${BRILLIANT_SETUP_FEN}"]
+[White "Ann"]
+[Black "Bob"]
+[Result "*"]
+
+1. Be6 *`;
+
+// A bare king-and-king endgame: no piece on the board can ever be sacrificed,
+// so the cheap pre-filter must reject every ply without needing to know
+// anything about the (irrelevant) engine eval.
+const KINGS_ONLY_FEN = '4k3/8/8/8/8/8/8/4K3 w - - 0 1';
+const NO_SACRIFICE_PGN = `[Event "Test"]
+[SetUp "1"]
+[FEN "${KINGS_ONLY_FEN}"]
+[White "Ann"]
+[Black "Bob"]
+[Result "*"]
+
+1. Kd2 Kd8 2. Ke3 Ke7 *`;
+
 const VALID_PLAN = CoachingPlanSchema.parse({
   gameSummary: 'A sharp Scholar\'s-mate-adjacent game.',
   openingNote: 'Fine through the opening.',
   themes: ['king_safety'],
   connectionToHistory: 'First session together.',
+  sessionGoal: 'Spot the pin before it costs a queen.',
   moments: [
     {
       ply: 4,
@@ -128,17 +183,17 @@ describe('runAnalyzeGameJob', () => {
 
     const row = await db
       .selectFrom('analyses')
-      .select(['status', 'engineEvals', 'coachingPlan', 'classifiedMoves', 'error'])
+      .select(['status', 'evalsComputed', 'coachingPlan', 'error'])
       .where('id', '=', analysisId)
       .executeTakeFirstOrThrow();
     expect(row.status).toBe('ready');
     expect(row.error).toBeNull();
-    expect(row.engineEvals).toBeTruthy();
-    expect((row.engineEvals as EngineEval[]).length).toBeGreaterThan(0);
+    expect(row.evalsComputed).toBeGreaterThan(0);
     expect((row.coachingPlan as { gameSummary: string }).gameSummary).toContain('Scholar');
     expect(callPlanner).toHaveBeenCalledTimes(1);
 
-    const classifiedMoves = row.classifiedMoves as Array<{ ply: number; moveSan: string; quality: string }>;
+    const game = await gamesRepo.findById(db, gameId);
+    const classifiedMoves = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor);
     expect(classifiedMoves.length).toBeGreaterThan(0);
     expect(classifiedMoves[0]).toMatchObject({ ply: 1, moveSan: 'e4' });
   });
@@ -182,7 +237,8 @@ describe('runAnalyzeGameJob', () => {
       .select('gameReport')
       .where('id', '=', analysisId)
       .executeTakeFirstOrThrow();
-    const report = GameReportSchema.parse(row.gameReport);
+    const game = await gamesRepo.findById(db, gameId);
+    const report = GameReportSchema.parse(composeGameReport(row.gameReport as StoredGameReport, game!));
 
     expect(report.engine).toMatchObject({ name: 'stockfish' });
     expect(report.book.name).toBe('Sicilian Defense: Najdorf Variation, English Attack');
@@ -197,26 +253,18 @@ describe('runAnalyzeGameJob', () => {
   });
 
   test('persists per-move feature enrichment and move flags', async () => {
-    const { gameId, analysisId } = await setupGame(FORK_PGN);
+    const { gameId } = await setupGame(FORK_PGN);
     const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
 
     await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
 
-    const row = await db
-      .selectFrom('analyses')
-      .select('classifiedMoves')
-      .where('id', '=', analysisId)
-      .executeTakeFirstOrThrow();
-    const move = (row.classifiedMoves as Array<{
-      features: { forks: Array<{ square: string }> };
-      moveFlags: { movedPieceType: string };
-      featureDelta: { newForks: Array<{ square: string }> };
-    }>)[0];
+    const game = await gamesRepo.findById(db, gameId);
+    const move = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor)[0];
     if (!move) throw new Error('classified move fixture is empty');
 
     expect(move.moveFlags).toMatchObject({ movedPieceType: 'n' });
-    expect(move.features.forks.some((fork) => fork.square === 'd5')).toBe(true);
-    expect(move.featureDelta.newForks.some((fork) => fork.square === 'd5')).toBe(true);
+    expect(move.features!.forks.some((fork) => fork.square === 'd5')).toBe(true);
+    expect(move.featureDelta!.newForks.some((fork) => fork.square === 'd5')).toBe(true);
   });
 
   // Task 40.3: the whole point of the free path is that this never needs the
@@ -243,9 +291,120 @@ describe('runAnalyzeGameJob', () => {
       .select('gameReport')
       .where('id', '=', analysisId)
       .executeTakeFirstOrThrow();
-    const report = GameReportSchema.parse(row.gameReport);
+    const game = await gamesRepo.findById(db, gameId);
+    const report = GameReportSchema.parse(composeGameReport(row.gameReport as StoredGameReport, game!));
 
     expect(report.players.black.tacticMotifs.fork.prevented).toBe(1);
+    expect(analyzePosition).not.toHaveBeenCalled();
+  });
+
+  // The regression 0032_annotated_pgn.ts introduced: the annotated PGN is the
+  // only per-move store now (storeGameReport strips `moves`, composeGameReport
+  // reads them back out of it), so writing it from the pre-report moves threw
+  // away everything buildGameReport adds — phase, tacticOpportunity,
+  // tacticAllowed, and tactic-card-order.ts's ordering of `reasons`. Game
+  // Review then showed only the prevention sentence on a move that hung a
+  // queen.
+  test('the served report keeps the tactic cards buildGameReport adds', async () => {
+    const { gameId } = await setupGame(PINNED_QUEEN_PGN);
+    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
+    const analyzeGamePositions = vi.fn(async (fens: string[]) =>
+      fens.map((fen): EngineEval => {
+        if (fen === PINNED_QUEEN_START_FEN) {
+          return { ply: 0, fen, depth: 16, lines: [{ moveUci: 'f8e7', moveSan: 'Be7', cp: 20, mateIn: null, pvSan: ['Be7'] }] };
+        }
+        if (fen === PINNED_QUEEN_AFTER_QD7_FEN) {
+          return {
+            ply: 0,
+            fen,
+            depth: 16,
+            lines: [
+              {
+                moveUci: 'c4b5',
+                moveSan: 'Bb5',
+                cp: 580,
+                mateIn: null,
+                pvSan: ['Bb5', 'a6', 'Bxd7+', 'Nxd7']
+              }
+            ]
+          };
+        }
+        return { ply: 0, fen, depth: 16, lines: [{ moveUci: 'g7g6', moveSan: 'gxf6', cp: 560, mateIn: null, pvSan: ['gxf6'] }] };
+      })
+    );
+
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
+
+    const game = await gamesRepo.findById(db, gameId);
+    const storedReport = await analysesRepo.findGameReportByGameId(db, game!.id);
+    const report = GameReportSchema.parse(composeGameReport(storedReport!, game!));
+    const [blunder, reply] = report.moves;
+
+    // White's ply: the chance Bb5 was, read off the engine's own line.
+    expect(reply?.tacticOpportunity).toMatchObject({
+      type: 'pin',
+      found: false,
+      embodiedBySan: 'Bb5',
+      gain: { kind: 'material', prize: 'queen' }
+    });
+    // Black's ply: what 9...Qd7 handed over, plus the sentence for it.
+    expect(blunder?.tacticAllowed).toMatchObject({ type: 'pin', byMoveSan: 'Bb5' });
+    expect(blunder?.reasons?.[0]).toContain('Bb5');
+    // Non-tactic enrichment from the same pass.
+    expect(blunder?.phase).toBeDefined();
+  });
+
+  // Task 50.3: checkBrilliantSoundness has no caller in the batch pipeline
+  // without this pre-pass, so 'brilliant' is unreachable from
+  // runAnalyzeGameJob today — isBrilliantMove always sees
+  // brilliantSoundness === undefined and fails closed at B6.
+  test('a known sound sacrifice is classified brilliant once B6 soundness is checked', async () => {
+    const { gameId } = await setupGame(BRILLIANT_PGN);
+    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
+    const analyzeGamePositions = vi.fn(async (fens: string[]) =>
+      fens.map((fen): EngineEval =>
+        fen === BRILLIANT_SETUP_FEN
+          ? {
+              ply: 0,
+              fen,
+              depth: 16,
+              lines: [
+                { moveUci: 'c4e6', moveSan: 'Be6', cp: 0, mateIn: null, pvSan: ['Be6', 'dxe6'] },
+                { moveUci: 'e1d2', moveSan: 'Kd2', cp: -150, mateIn: null }
+              ]
+            }
+          : { ply: 0, fen, depth: 16, lines: [{ moveUci: 'd7e6', moveSan: 'dxe6', cp: 0, mateIn: null }] }
+      )
+    );
+    const analyzePosition = vi.fn().mockResolvedValue({
+      fen: BRILLIANT_AFTER_FEN,
+      depth: 16,
+      multiPv: 1,
+      bestMove: 'dxe6',
+      eval: { cp: 0, mateIn: null },
+      lines: [{ moveUci: 'd7e6', moveSan: 'dxe6', pvSan: ['dxe6'], cp: 0, mateIn: null }],
+      features: {} as PositionAnalysis['features']
+    });
+
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition, callPlanner }, gameId);
+
+    const game = await gamesRepo.findById(db, gameId);
+    const moves = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor);
+
+    expect(moves.find((move) => move.ply === 1)?.quality).toBe('brilliant');
+    expect(analyzePosition).toHaveBeenCalledWith(BRILLIANT_AFTER_FEN);
+  });
+
+  // Verifies the gate ordering itself, not just the outcome: a game where no
+  // ply can possibly be a sacrifice (bare kings) must never reach the extra
+  // engine call the soundness check would otherwise cost.
+  test('a game with no possible sacrifice makes zero extra engine calls for brilliant soundness', async () => {
+    const { gameId } = await setupGame(NO_SACRIFICE_PGN);
+    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
+    const analyzePosition = fakeAnalyzePosition();
+
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition, callPlanner }, gameId);
+
     expect(analyzePosition).not.toHaveBeenCalled();
   });
 
@@ -283,10 +442,10 @@ describe('runAnalyzeGameJob', () => {
     const analyzeGamePositions = vi.fn(async (fens: string[]) => {
       const row = await db
         .selectFrom('analyses')
-        .select('engineEvals')
+        .select('evalsComputed')
         .where('id', '=', analysisId)
         .executeTakeFirstOrThrow();
-      storedBeforeEachCall.push(((row.engineEvals as EngineEval[] | null) ?? []).length);
+      storedBeforeEachCall.push(row.evalsComputed);
       chunkSizes.push(fens.length);
       return Promise.all(fens.map((fen) => makeEval(fen)));
     });
@@ -302,23 +461,26 @@ describe('runAnalyzeGameJob', () => {
 
     const row = await db
       .selectFrom('analyses')
-      .select(['status', 'engineEvals'])
+      .select(['status', 'evalsComputed'])
       .where('id', '=', analysisId)
       .executeTakeFirstOrThrow();
     expect(row.status).toBe('ready');
     // Every position still gets analyzed exactly once.
-    expect((row.engineEvals as EngineEval[]).length).toBe(chunkSizes.reduce((a, b) => a + b, 0));
+    expect(row.evalsComputed).toBe(chunkSizes.reduce((a, b) => a + b, 0));
   });
 
   // Regression: the real EngineBackend numbers each EngineEval's `ply`
   // relative to the chunk it was asked to analyze (0..chunkLength-1), since
   // that's all it's given — `analyzeInChunks` is what's responsible for
   // turning per-chunk-relative plies into the game's real, globally
-  // sequential ply. It used to just concatenate the chunks verbatim, so
-  // `engine_evals[i].ply` cycled 0..5,0..5,... instead of counting up.
+  // sequential ply. It used to just concatenate the chunks verbatim, so the
+  // stored ply cycled 0..5,0..5,... instead of counting up. Calls
+  // analyzeInChunks directly (exported for this reason) and inspects its
+  // returned array — engine evals aren't persisted as their own document
+  // anymore (0032_annotated_pgn.ts), so there's no DB column left to read
+  // this back from.
   test('renumbers each chunk\'s ply to the position\'s real index in the game', async () => {
     const { gameId, analysisId } = await setupGame();
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
     const analyzeGamePositions = vi.fn(async (fens: string[]) =>
       fens.map((fen, chunkRelativePly): EngineEval => ({
         ply: chunkRelativePly,
@@ -327,15 +489,16 @@ describe('runAnalyzeGameJob', () => {
         lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 20, mateIn: null }]
       }))
     );
+    const game = await gamesRepo.findById(db, gameId);
+    const fens = parsePgn(game!.pgn).positions.map((position) => position.fen);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
+    const evals = await analyzeInChunks(
+      db,
+      { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner: vi.fn() },
+      analysisId,
+      fens
+    );
 
-    const row = await db
-      .selectFrom('analyses')
-      .select('engineEvals')
-      .where('id', '=', analysisId)
-      .executeTakeFirstOrThrow();
-    const evals = row.engineEvals as EngineEval[];
     // This PGN is 8 positions against a chunk size of 6, so a naive
     // concatenation would show 0,1,2,3,4,5,0,1 instead of 0..7.
     expect(evals.map((e) => e.ply)).toEqual(evals.map((_, i) => i));
@@ -347,7 +510,6 @@ describe('runAnalyzeGameJob', () => {
   // analysis. It should now self-heal by reordering the two lines instead.
   test('a near-tied multiPv ordering violation self-heals instead of failing the analysis', async () => {
     const { gameId, analysisId } = await setupGame();
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
     const analyzeGamePositions = vi.fn(async (fens: string[]) =>
       fens.map((fen, chunkRelativePly): EngineEval => ({
         ply: chunkRelativePly,
@@ -359,16 +521,16 @@ describe('runAnalyzeGameJob', () => {
         ]
       }))
     );
+    const game = await gamesRepo.findById(db, gameId);
+    const fens = parsePgn(game!.pgn).positions.map((position) => position.fen);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
+    const evals = await analyzeInChunks(
+      db,
+      { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner: vi.fn() },
+      analysisId,
+      fens
+    );
 
-    const row = await db
-      .selectFrom('analyses')
-      .select(['status', 'engineEvals'])
-      .where('id', '=', analysisId)
-      .executeTakeFirstOrThrow();
-    expect(row.status).toBe('ready');
-    const evals = row.engineEvals as EngineEval[];
     // Ply 0 is the starting position (white to move): d4's cp (40) beats
     // e4's (10), so it should now lead after the repair swaps them.
     expect(evals[0]!.lines[0]!.moveSan).toBe('d4');

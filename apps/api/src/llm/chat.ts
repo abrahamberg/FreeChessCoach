@@ -20,8 +20,11 @@ const TOOL_ORDER = [
   'expect_move',
   'hypothetical_line',
   'check_position',
+  'check_moves',
   'get_engine_analysis',
   'get_user_profile',
+  'get_diagnostic_profile',
+  'get_player_stats',
   'record_finding',
   'propose_focus_area_update',
   'update_threads',
@@ -30,11 +33,16 @@ const TOOL_ORDER = [
   'investigate_position',
   'end_session',
   // Play mode's tools (architecture §14) — fixed at the end, never
-  // interleaved with the analyze-mode 13 above, so an analyze-mode
+  // interleaved with the analyze-mode tools above, so an analyze-mode
   // session's cached tool-definition prefix never shifts.
   'get_candidate_moves',
   'play_coach_move',
-  'undo_last_move'
+  'undo_last_move',
+  // Puzzle sessions' own tool set (docs/plan.md Phase 59, Task 59.4) never
+  // shares a request with the two groups above — annotate_board/
+  // expect_move/hypothetical_line are already listed and reused as-is;
+  // advance_puzzle is the one addition.
+  'advance_puzzle'
 ];
 
 /** What the caller gets back: the raw part stream plus the tool set it was

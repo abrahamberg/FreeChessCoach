@@ -1,0 +1,35 @@
+.move-nav-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.move-nav-strip .move-strip {
+  flex: 1;
+  min-width: 0;
+}
+
+/* A little larger than MoveExplorer's own .move-explorer__nav buttons
+ * (30px) — this pair is now the only step control on the page, doing the
+ * job two rows used to share. */
+.move-nav-strip__step {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+}
+
+.move-nav-strip__step:hover {
+  background: var(--color-surface-strong);
+  color: var(--color-text);
+}
+
+.move-nav-strip__step:disabled {
+  opacity: 0.4;
+}

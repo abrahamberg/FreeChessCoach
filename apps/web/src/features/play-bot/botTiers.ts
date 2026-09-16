@@ -8,7 +8,7 @@ export interface BotTier {
 
 /** Elo thresholds match the gaps between BOT_ROSTER's five tiers (beginner
  * tops out at 500, developing at 750, intermediate at 1300, advanced at
- * 1750 — see packages/shared/src/bot-roster.ts's tier comment blocks), so a
+ * 1750 — see packages/shared/src/bot-roster-presets.ts's tier comment blocks), so a
  * bot's tier is derived from its elo rather than duplicated as its own
  * field on BotConfig. */
 export const BOT_TIERS: readonly BotTier[] = [

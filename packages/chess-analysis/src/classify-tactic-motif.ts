@@ -1,6 +1,9 @@
 import type { MoveQuality, TacticMotifType } from '@freechesscoach/shared';
-import { buildTacticDetectionContext } from './tactic-detectors/context.js';
-import { TACTIC_DETECTORS } from './tactic-detectors/registry.js';
+import { headlineTacticClaim, rankTacticClaims } from './rank-tactic-claims.js';
+import { buildTacticDetectionContext, type PreviousMove } from './tactic-detectors/context.js';
+import { proposeTacticClaims } from './tactic-detectors/registry.js';
+import { verifyTacticClaimsAgainstLine } from './verify-tactic-line.js';
+import { verifyTacticClaims, type VerifiedTacticClaim } from './verify-tactic-claims.js';
 
 export type { TacticMotifType } from '@freechesscoach/shared';
 
@@ -14,30 +17,86 @@ export interface TacticMotifContext {
    * hypothetical classification. */
   quality: MoveQuality;
   isCheckmate: boolean;
-  /** §7.2's existing "is this a tactical position" signal — gates the
-   * `'other'` catch-all and the `null` ("not tactical at all") result. */
+  /** §7.2's existing "is this a tactical position" signal.
+   *
+   * No longer gates a catch-all: the shipped classifier answered `'other'`
+   * for a sharp position it couldn't name, which is a card that says "a
+   * tactic happened, we don't know which" — exactly the sentence
+   * `docs/tactics-rework.md` §3's acceptance bar rules out ("no sentence
+   * ships that can't say what the tactic gets you"). With the phase-D
+   * vocabulary a move that still matches nothing genuinely has nothing to
+   * say. Kept on the input because callers pass it and because it stays part
+   * of the move's own report data. */
   isTacticalPosition: boolean;
+  /** The opponent's previous move, when the caller knows it. Only a
+   * recapture gate reads it, but that gate is the single biggest source of
+   * false tactics: see `verify-tactic-claims.ts`. */
+  previous?: PreviousMove | null;
+  /** The engine's own continuation from this position, starting with
+   * `moveSan` itself. When the caller has it, a claim that promises material
+   * has to be paid inside it — see `verify-tactic-line.ts`. Absent (or
+   * shorter than three plies) leaves the static verdict standing, which is
+   * what every engine-free caller gets. */
+  pvSan?: readonly string[];
 }
 
 /**
- * Tags a single move with the most-specific tactical motif it embodies, in
- * priority order (checkmate first, a catch-all `'other'` last) — a move can
- * only ever carry one tag, mirroring `classify-move.ts`'s decision order.
+ * Every claim this move survives with, plus the one that leads the card.
  *
- * `checkmate`/`brilliantSacrifice` are answered directly from `context` —
- * they need no replay/AttackMap. Everything else runs through
- * `tactic-detectors/registry.ts`'s priority-ordered `TACTIC_DETECTORS`; to
- * add a new tactic, see `tactic-detectors/README.md` rather than editing
- * this function.
+ * Multi-label by design (`docs/tactics-rework.md` §5 layer 3): a move that
+ * is genuinely a fork *and* a discovered attack keeps both, so the coach
+ * agent can reason over the full set while the review shows the one that won
+ * the material.
  */
-export function classifyTacticMotif(context: TacticMotifContext): TacticMotifType | null {
+export interface TacticClassification {
+  /** The motif the card leads with, `null` when the move has nothing to
+   * say. `checkmate`/`brilliantSacrifice` come from the move's own quality
+   * rather than from a claim. */
+  headline: TacticMotifType | null;
+  /** Verified claims, best first. Kept even when `headline` is one of the
+   * quality-derived motifs — TR-08 in `tactic-review-cases.ts` is the case
+   * where answering "brilliant sacrifice" used to discard the discovered
+   * attack that made it brilliant. */
+  claims: VerifiedTacticClaim[];
+}
+
+/**
+ * Runs the four layers over one move: propose (every detector), verify
+ * (`verify-tactic-claims.ts`), rank (`rank-tactic-claims.ts`), and pick a
+ * headline. Narration is layer 4's job and lives in `tactic-reason-text.ts`.
+ *
+ * To add a new tactic, add a detector — see `tactic-detectors/README.md` —
+ * rather than editing this function.
+ */
+export function classifyTacticClaims(context: TacticMotifContext): TacticClassification {
+  const detectionContext = buildTacticDetectionContext(
+    context.fenBefore,
+    context.moveSan,
+    context.mover,
+    context.previous ?? null
+  );
+  const statically = verifyTacticClaims(detectionContext, proposeTacticClaims(detectionContext));
+  const verified = context.pvSan
+    ? verifyTacticClaimsAgainstLine(detectionContext, statically, context.pvSan)
+    : statically;
+  const claims = rankTacticClaims(verified, detectionContext.destination);
+
+  return { headline: headlineFor(context, claims), claims };
+}
+
+function headlineFor(context: TacticMotifContext, claims: readonly VerifiedTacticClaim[]): TacticMotifType | null {
   if (context.isCheckmate) return 'checkmate';
   if (context.quality === 'brilliant') return 'brilliantSacrifice';
 
-  const detectionContext = buildTacticDetectionContext(context.fenBefore, context.moveSan, context.mover);
-  for (const detector of TACTIC_DETECTORS) {
-    if (detector.detect(detectionContext)) return detector.type;
-  }
+  return headlineTacticClaim(claims)?.type ?? null;
+}
 
-  return context.isTacticalPosition ? 'other' : null;
+/**
+ * The single motif a move's card leads with. Kept as its own function
+ * because most callers only need the headline; anything that wants the
+ * mechanism behind a `brilliantSacrifice`, or the second motif a move also
+ * embodies, calls `classifyTacticClaims` instead.
+ */
+export function classifyTacticMotif(context: TacticMotifContext): TacticMotifType | null {
+  return classifyTacticClaims(context).headline;
 }

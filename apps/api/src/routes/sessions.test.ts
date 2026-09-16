@@ -22,6 +22,7 @@ const PLAN: CoachingPlan = {
   openingNote: 'Fine.',
   themes: ['king_safety'],
   connectionToHistory: 'First session together.',
+  sessionGoal: 'Check every capture before moving.',
   moments: [
     {
       ply: 4,
@@ -149,7 +150,7 @@ describe('sessions routes', () => {
     };
     return {
       db,
-      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn() },
+      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn() },
       gatewayConfig,
       resolveModel: () => Promise.resolve(mockResolution(model))
     };
@@ -416,7 +417,7 @@ describe('sessions routes', () => {
       const { model } = textStreamModel('Let me show you.', {
         toolCallId: 'call-1',
         toolName: 'show_position',
-        input: { moveNumber: 2, color: 'black', intent: 'subject', preMove: true }
+        input: { moveNumber: 2, color: 'black', intent: 'subject' }
       });
       const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(model), engineBackendOptions: fakeEngineBackendOptions() });
       const created = await app.inject({

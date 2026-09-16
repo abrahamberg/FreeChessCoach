@@ -16,11 +16,12 @@ function baseBot(): BotConfig {
     avatarIndex: 0,
     description: 'A bot for tests.',
     elo: 800,
-    depth: 6,
-    multiPv: 2,
+    topFiveChance: 0.6,
+    bestMoveGivenTopFiveChance: 0.5,
+    blunderGivenMissChance: 0.2,
     personality: { aggression: 50, trapSeeking: 50, defensiveness: 50 },
-    aiEnabled: false,
-    temperature: 0.3,
+    mateConversionChance: 0.9,
+    diagnosisCodes: [],
     bookPlies: 0,
     bookMistakeChance: 0
   };
@@ -66,7 +67,7 @@ describe('claimBotGameTimeout', () => {
   test('is a no-op for an untimed game', async () => {
     const { game, session } = await setupBotGame(null);
 
-    const result = await claimBotGameTimeout({ db, jobQueue: { enqueueAnalyzeGame: async () => undefined, enqueueSummarizeSession: async () => undefined } }, session, game);
+    const result = await claimBotGameTimeout({ db, jobQueue: { enqueueAnalyzeGame: async () => undefined, enqueueSummarizeSession: async () => undefined, enqueueBackfillGameMetadata: async () => undefined, enqueueRebuildDiagnosticProfile: async () => undefined } }, session, game);
 
     expect(result.gameOver).toBeNull();
     const updatedSession = await sessionsRepo.findById(db, session.id);
@@ -76,14 +77,14 @@ describe('claimBotGameTimeout', () => {
   test('is a no-op while time genuinely remains', async () => {
     const { game, session } = await setupBotGame({ initialMs: 300000, incrementMs: 0 });
 
-    const result = await claimBotGameTimeout({ db, jobQueue: { enqueueAnalyzeGame: async () => undefined, enqueueSummarizeSession: async () => undefined } }, session, game);
+    const result = await claimBotGameTimeout({ db, jobQueue: { enqueueAnalyzeGame: async () => undefined, enqueueSummarizeSession: async () => undefined, enqueueBackfillGameMetadata: async () => undefined, enqueueRebuildDiagnosticProfile: async () => undefined } }, session, game);
 
     expect(result.gameOver).toBeNull();
   });
 
   test('finalizes the game as a loss for whoever was on move once their clock has run out', async () => {
     const { game, session } = await setupBotGame({ initialMs: 1, incrementMs: 0 });
-    const jobQueue = { enqueueAnalyzeGame: async () => undefined, enqueueSummarizeSession: async () => undefined };
+    const jobQueue = { enqueueAnalyzeGame: async () => undefined, enqueueSummarizeSession: async () => undefined, enqueueBackfillGameMetadata: async () => undefined, enqueueRebuildDiagnosticProfile: async () => undefined };
 
     // session.currentPly is 0 (White to move) — a fresh game, so it's the
     // student's (White's) clock that's expired here.

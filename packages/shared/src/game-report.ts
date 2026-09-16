@@ -51,9 +51,16 @@ const TacticMotifCountSchema = z.object({
    * convention as `preventable` above. */
   prevented: z.number().int().nonnegative().optional()
 });
+/** Every motif key is `.default()`-ed rather than required: the catalogue
+ * grew when `docs/tactics-rework.md` §6's vocabulary landed, and reports are
+ * stored as jsonb with no migration, so a report written before a motif
+ * existed simply has no key for it. Defaulting to a zero count keeps those
+ * rows parseable and reads correctly — a motif that could not be detected
+ * when the game was analysed genuinely had zero opportunities. */
+const TacticMotifCountEntrySchema = TacticMotifCountSchema.default({ opportunities: 0, found: 0 });
 export const TacticMotifCountsSchema = z.object(
-  Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, TacticMotifCountSchema]))
-) as z.ZodObject<Record<(typeof TACTIC_MOTIF_TYPES)[number], typeof TacticMotifCountSchema>>;
+  Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, TacticMotifCountEntrySchema]))
+) as z.ZodObject<Record<(typeof TACTIC_MOTIF_TYPES)[number], typeof TacticMotifCountEntrySchema>>;
 export type TacticMotifCounts = z.infer<typeof TacticMotifCountsSchema>;
 
 /** Phase 26: the "from equal/worse/better positions" and "by theme" buckets
@@ -152,3 +159,16 @@ export const GameReportSchema = z.object({
   moves: z.array(ClassifiedMoveSchema)
 });
 export type GameReport = z.infer<typeof GameReportSchema>;
+
+/**
+ * What `analyses.game_report` actually persists: everything `GameReportSchema`
+ * has except `moves`, which now lives solely in the game's own
+ * `annotated_pgn` (one canonical per-move store instead of two copies of the
+ * same array). `GameReportSchema` — `.moves` included — stays the *served*
+ * shape web/prompts/the coach agent consume; the service layer composes a
+ * full `GameReport` by reading `StoredGameReport` back and attaching
+ * `moves` from `parseAnnotatedPgn` (see `services/game-report.ts`'s
+ * `getFullGameReport`).
+ */
+export const StoredGameReportSchema = GameReportSchema.omit({ moves: true });
+export type StoredGameReport = z.infer<typeof StoredGameReportSchema>;

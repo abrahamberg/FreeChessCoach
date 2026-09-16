@@ -138,6 +138,7 @@ function buildClassifiedMove(input: {
   const winPctAfter = winPctFor(mover, cpAfter);
   const drop = deliveredMate ? 0 : computeMoveDrop(winPctWhite(cpBefore), winPctWhite(cpAfter), mover);
   const bestMoveSan = firstLine(input.evalBefore)?.moveSan ?? '';
+  const bestLinePvSan = bestMoveSan ? (firstLine(input.evalBefore)?.pvSan ?? [bestMoveSan]) : [];
   const classificationInput: MoveClassificationInput = {
     ply: input.position.ply,
     moveSan: input.position.moveSan ?? '',
@@ -155,7 +156,7 @@ function buildClassifiedMove(input: {
     cpAfter,
     isBookMove: input.isBookMove,
     brilliantSoundness: input.brilliantSoundness,
-    bestLinePvSan: bestMoveSan ? [bestMoveSan] : [],
+    bestLinePvSan,
     features: input.features,
     featureDelta: input.featureDelta,
     isRecapture: input.isRecapture
@@ -168,6 +169,8 @@ function buildClassifiedMove(input: {
     fenAfter: input.position.fen,
     moveSan: input.position.moveSan ?? '',
     evalBefore: input.evalBefore,
+    quality: result.classification,
+    isRecapture: input.isRecapture,
     isBookMove: input.isBookMove,
     openingName: input.opening?.name,
     eco: input.opening?.eco,
@@ -199,7 +202,7 @@ function buildClassifiedMove(input: {
     drop,
     accuracy: calculateMoveAccuracy(drop),
     bestMoveSan,
-    bestLinePvSan: bestMoveSan ? [bestMoveSan] : [],
+    bestLinePvSan,
     alternatives: input.evalBefore.lines.slice(1).map((line) => ({
       san: line.moveSan,
       cp: toCpWhite(line),

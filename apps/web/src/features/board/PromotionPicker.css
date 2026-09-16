@@ -1,0 +1,39 @@
+/* Requires `.coach-board-frame` (CoachBoard.css) to be `position: relative` —
+ * this backdrop covers only the board, not the whole page. */
+.promotion-picker-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: rgb(0 0 0 / 15%);
+}
+
+.promotion-picker {
+  position: absolute;
+  width: 12.5%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.promotion-picker__option {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8%;
+  border: none;
+  background: var(--color-surface);
+}
+
+.promotion-picker__option:not(:last-child) {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.promotion-picker__option:hover,
+.promotion-picker__option:focus-visible {
+  background: var(--color-surface-subtle);
+}

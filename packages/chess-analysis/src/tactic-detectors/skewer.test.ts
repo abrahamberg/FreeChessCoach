@@ -7,10 +7,10 @@ const QUIET_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 describe('skewerDetector', () => {
   test('detects a skewer-creating check', () => {
-    expect(skewerDetector.detect(buildTacticDetectionContext(SKEWER_FEN, 'Ra1+', 'white'))).toBe(true);
+    expect(skewerDetector.detect(buildTacticDetectionContext(SKEWER_FEN, 'Ra1+', 'white'))).not.toHaveLength(0);
   });
 
   test('does not flag a quiet developing move', () => {
-    expect(skewerDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toBe(false);
+    expect(skewerDetector.detect(buildTacticDetectionContext(QUIET_FEN, 'e4', 'white'))).toEqual([]);
   });
 });

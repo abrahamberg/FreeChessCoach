@@ -302,17 +302,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 7. The chart must also render with its optional integrations disabled.
-# ---------------------------------------------------------------------------
-NOSTRIPE="$RENDER_DIR/nostripe.yaml"
-if render "$NOSTRIPE" --show-only templates/api-deployment.yaml; then
-  assert_not_matches "removed payment env is absent" 'STRIPE_SECRET_KEY' "$NOSTRIPE"
-else
-  fail "renders with stripe.enabled=false" "$(head -3 "$NOSTRIPE.err" | tr '\n' ' ')"
-fi
-
-# ---------------------------------------------------------------------------
-# 8. Schema validation (optional, only when kubeconform is installed).
+# 7. Schema validation (optional, only when kubeconform is installed).
 # ---------------------------------------------------------------------------
 if command -v kubeconform >/dev/null 2>&1; then
   if kubeconform -strict -summary "$ALL" >"$RENDER_DIR/kubeconform.txt" 2>&1; then

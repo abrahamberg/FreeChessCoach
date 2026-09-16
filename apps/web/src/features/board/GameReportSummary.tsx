@@ -5,8 +5,11 @@ import {
   type EstimatedRatingReport,
   type GameReport,
   type MoveQuality,
-  type PlayerColor
+  type PlayerColor,
+  type TacticBaselineNoteDto
 } from '@freechesscoach/shared';
+import { tacticBaselineDrill, tacticBaselineHeadline } from '@freechesscoach/chess-analysis';
+import { ChevronDownIcon, ChevronUpIcon } from '../../components/Icon.js';
 import { TacticsStatsSection } from '../stats/TacticsStatsSection.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import './GameReportSummary.css';
@@ -17,6 +20,11 @@ export interface GameReportSummaryProps {
   /** Whose tactic-motif breakdown to show — same dashboard component as the
    * stats page's "Should Play"/"Prevented" tabs, scoped to this one game. */
   userColor: PlayerColor;
+  /** What this game did that is out of line with the player's own record,
+   * when anything did. Shown above the fold, because "you allowed a fork
+   * this game, which is unusual for you" is the one line on the card that
+   * says something about the player rather than about the game. */
+  tacticBaseline?: TacticBaselineNoteDto | null;
 }
 
 const COUNT_LABELS: Record<MoveQuality, string> = {
@@ -57,7 +65,7 @@ function formatRating(rating: EstimatedRatingReport): string {
  * bottom of the sidebar column, above the move list — expanding overlays it
  * rather than pushing it down, per SessionPage.css's `--expanded` rule, so
  * opening the report never disturbs the move list's scroll position. */
-export function GameReportSummary({ report, userColor }: GameReportSummaryProps): ReactNode {
+export function GameReportSummary({ report, userColor, tacticBaseline }: GameReportSummaryProps): ReactNode {
   const [expanded, setExpanded] = useState(false);
   const { white, black } = report.players;
 
@@ -70,16 +78,17 @@ export function GameReportSummary({ report, userColor }: GameReportSummaryProps)
       <button type="button" className="game-report-summary__header" aria-expanded={expanded} onClick={toggle}>
         <span className="game-report-summary__title">Game Report</span>
         <span className="game-report-summary__chevron" aria-hidden="true">
-          {expanded ? '⌄' : '⌃'}
+          {expanded ? <ChevronDownIcon width={16} height={16} /> : <ChevronUpIcon width={16} height={16} />}
         </span>
       </button>
       <div className="game-report-summary__headline">
         <HeadlineCard label="White" accuracy={white.accuracy} rating={white.estimatedRating} />
         <HeadlineCard label="Black" accuracy={black.accuracy} rating={black.estimatedRating} />
       </div>
+      {tacticBaseline && <BaselineNote note={tacticBaseline} />}
       <button type="button" className="game-report-summary__expand-toggle" aria-expanded={expanded} onClick={toggle}>
         {expanded ? 'Hide full report' : 'Show full report'}
-        <span aria-hidden="true">{expanded ? '▴' : '▾'}</span>
+        {expanded ? <ChevronUpIcon width={14} height={14} /> : <ChevronDownIcon width={14} height={14} />}
       </button>
       {expanded && (
         <div className="game-report-summary__body">
@@ -93,6 +102,19 @@ export function GameReportSummary({ report, userColor }: GameReportSummaryProps)
         </div>
       )}
     </section>
+  );
+}
+
+/** The game-level card docs/tactics-rework.md §5 layer 5 asks for: what
+ * stood out against this player's own history, and one thing to do about it.
+ * Both sentences are deterministic — no LLM at render time — and come from
+ * `chess-analysis` alongside every other reason string. */
+function BaselineNote({ note }: { note: TacticBaselineNoteDto }): ReactNode {
+  return (
+    <div className={`game-report-summary__baseline game-report-summary__baseline--${note.tone}`}>
+      <p className="game-report-summary__baseline-headline">{tacticBaselineHeadline(note)}</p>
+      <p className="game-report-summary__baseline-drill">{tacticBaselineDrill(note)}</p>
+    </div>
   );
 }
 

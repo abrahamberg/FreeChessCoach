@@ -5,11 +5,13 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./lichess-eval-index-format": "./src/lichess-eval-index-format.ts"
+    "./lichess-eval-index-format": "./src/lichess-eval-index-format.ts",
+    "./puzzle-pool-format": "./src/puzzle-pool-format.ts"
   },
   "types": "./src/index.ts",
   "scripts": {
     "build-book": "tsx scripts/build-opening-book.mjs",
+    "build-puzzle-fixture": "tsx scripts/build-lichess-puzzle-fixture.mjs",
     "test": "vitest run"
   },
   "dependencies": {

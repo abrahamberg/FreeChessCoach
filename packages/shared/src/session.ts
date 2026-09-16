@@ -135,6 +135,17 @@ export const PostSessionMessageRequestSchema = z.object({
 });
 export type PostSessionMessageRequest = z.infer<typeof PostSessionMessageRequestSchema>;
 
+/** docs/plan.md Phase 59, Task 59.4 — POST /api/puzzle-sessions body: which
+ * assignment (puzzle_assignments row, apps/api/src/db/repositories/puzzle-
+ * assignments.ts) to start or resume a session for. Resumes an already-
+ * open session for the same assignment rather than starting a second one
+ * (resumeOrCreatePuzzleSession), same shape as CreateSessionRequestSchema's
+ * gameId. */
+export const CreatePuzzleSessionRequestSchema = z.object({
+  assignmentId: z.string().min(1)
+});
+export type CreatePuzzleSessionRequest = z.infer<typeof CreatePuzzleSessionRequestSchema>;
+
 export const ThreadSchema = z.object({
   id: z.number().int(),
   topic: z.string().max(200),

@@ -85,6 +85,14 @@ export function ChevronDownIcon(props: IconProps): ReactNode {
   );
 }
 
+export function ChevronUpIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <polyline points="6 15 12 9 18 15" />
+    </svg>
+  );
+}
+
 export function MoreVerticalIcon(props: IconProps): ReactNode {
   return (
     <svg {...iconProps({ strokeWidth: 0, fill: 'currentColor', ...props })}>
@@ -272,6 +280,25 @@ export function LightbulbIcon(props: IconProps): ReactNode {
       <path d="M9 18h6" />
       <path d="M10 21h4" />
       <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.45 1.1 1.2 1.1 2.2h5c0-1 .5-1.75 1.1-2.2A6 6 0 0 0 12 3Z" />
+    </svg>
+  );
+}
+
+export function MessageCircleIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" />
+    </svg>
+  );
+}
+
+export function MaximizeIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M9 4H5a1 1 0 0 0-1 1v4" />
+      <path d="M15 4h4a1 1 0 0 1 1 1v4" />
+      <path d="M9 20H5a1 1 0 0 1-1-1v-4" />
+      <path d="M15 20h4a1 1 0 0 0 1-1v-4" />
     </svg>
   );
 }

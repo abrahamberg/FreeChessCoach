@@ -14,16 +14,19 @@ import { ENGINE_MULTI_PV, type EngineEval, type EnginePriority, type PositionAna
 export { ENGINE_MULTI_PV };
 
 /** Wraps `POST engine/analyze-game` (architecture §4) — the lean, whole-game
- * batch path used by the fast classify/plan pipeline. */
+ * batch path used by the fast classify/plan pipeline. Signature mirrors
+ * analyzePositionViaEngine's (multiPv, depth, priority) below it. */
 export async function analyzeGameViaEngine(
   engineUrl: string,
   fens: string[],
+  multiPv: number = ENGINE_MULTI_PV,
+  depth?: number,
   priority?: EnginePriority
 ): Promise<EngineEval[]> {
   const response = await fetch(`${engineUrl}/analyze-game`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ fens, priority })
+    body: JSON.stringify({ fens, priority, multiPv, depth })
   });
   if (!response.ok) throw new Error(`engine analyze-game failed: HTTP ${response.status}`);
   const body = (await response.json()) as { evals: EngineEval[] };

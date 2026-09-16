@@ -301,6 +301,28 @@ describe('classifyMoves', () => {
     expect(whiteMove?.evalAfterCp).toBe(25);
   });
 
+  test('bestLinePvSan carries the engine top line\'s full multi-ply PV, not just the first move', () => {
+    const game = twoPlyGame();
+    const evals = [
+      evalWithLines(START_FEN, [{ moveUci: 'g1f3', moveSan: 'Nxe5', cp: 30, mateIn: null, pvSan: ['Nxe5', 'Nxe5', 'd4'] }]),
+      evalAt(AFTER_E4_FEN, 25),
+      evalAt(AFTER_E4_E5_FEN, 25)
+    ];
+
+    const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
+
+    expect(whiteMove?.bestLinePvSan).toEqual(['Nxe5', 'Nxe5', 'd4']);
+  });
+
+  test('bestLinePvSan degrades gracefully to just the best move when the stored eval has no pvSan', () => {
+    const game = twoPlyGame();
+    const evals = [evalAt(START_FEN, 30), evalAt(AFTER_E4_FEN, 25), evalAt(AFTER_E4_E5_FEN, 25)];
+
+    const whiteMove = classifyMoves(game, evals, 'white').find((move) => move.ply === 1);
+
+    expect(whiteMove?.bestLinePvSan).toEqual(['e4']);
+  });
+
   test('evalAfterCp maps a mate score for the position after the move to the shared mate-folded score', () => {
     const game = twoPlyGame();
     // After White's move (ply 1), White has mate-in-2 -> white-perspective
@@ -454,6 +476,35 @@ describe('classifyMoves', () => {
 
     expect(whiteMove?.cpLoss).toBe(0);
     expect(whiteMove?.quality).toBe('great');
+  });
+
+  test('a sacrifice whose real PV shows the material coming right back is never classified as brilliant (regression for the truncated-PV bug)', () => {
+    // White sacs a hanging rook on e6; the PV shows it's not a real sac —
+    // the pawn recapture opens the d-file for White's queen to win Black's
+    // undefended queen right back (restoresSacrificedMaterial's job).
+    const beforeFen = '3qk3/3p1p2/2R5/8/8/8/8/3Q2K1 w - - 0 1';
+    const afterFen = '3qk3/3p1p2/4R3/8/8/8/8/3Q2K1 b - - 1 1';
+    const game: ParsedGame = {
+      headers: {},
+      positions: [
+        { ply: 0, fen: beforeFen, moveSan: null, moveUci: null, mover: null },
+        { ply: 1, fen: afterFen, moveSan: 'Re6', moveUci: 'c6e6', mover: 'white' }
+      ]
+    };
+    const evals = [
+      evalWithLines(beforeFen, [
+        { moveUci: 'c6e6', moveSan: 'Re6', cp: 0, mateIn: null, pvSan: ['Re6', 'dxe6', 'Qxd8'] },
+        { moveUci: 'c6a6', moveSan: 'Ra6', cp: -150, mateIn: null }
+      ]),
+      evalAt(afterFen, 0)
+    ];
+
+    const whiteMove = classifyMoves(game, evals, 'white', { brilliantSoundnessByPly: new Map([[1, true]]) }).find(
+      (move) => move.ply === 1
+    );
+
+    expect(whiteMove?.bestLinePvSan).toEqual(['Re6', 'dxe6', 'Qxd8']);
+    expect(whiteMove?.quality).not.toBe('brilliant');
   });
 
   test('classifyMoves surfaces hangsPiece on the returned move', () => {

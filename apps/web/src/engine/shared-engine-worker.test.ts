@@ -44,6 +44,23 @@ describe('SharedEngineWorker', () => {
     expect(lines).toEqual([{ multiPv: 1, moveUci: 'e2e4', cp: 25, mateIn: null, pvUci: ['e2e4', 'e7e5'] }]);
   });
 
+  // Regression: a slow browser tab can't be trusted to reach a given depth
+  // quickly (see LiteSupplementedEngineBackend's own doc comment — a
+  // depth-8 lite search measured ~14-15s in production). movetimeMs adds a
+  // hard wall-clock ceiling on top of depth, so `go` never waits past it
+  // regardless of the host's actual speed.
+  test('appends movetime to the go command when movetimeMs is given, and omits it otherwise', async () => {
+    const worker = fakeWorker();
+    const client = new SharedEngineWorker({ createWorker: () => worker });
+
+    void client.analyze({ fen: START_FEN, depth: 8, multiPv: 1, movetimeMs: 3000 });
+    worker.emit('uciok');
+    worker.emit('readyok');
+
+    expect(worker.sent).toContain('go depth 8 movetime 3000');
+    expect(worker.sent).not.toContain('go depth 8');
+  });
+
   test('collects one line per multipv slot, sorted by multipv index', async () => {
     const worker = fakeWorker();
     const client = new SharedEngineWorker({ createWorker: () => worker });

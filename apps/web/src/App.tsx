@@ -6,8 +6,11 @@ import { AppShell } from './components/AppShell.js';
 import { DashboardPage } from './features/dashboard/DashboardPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
 import { ImportPage } from './features/import/ImportPage.js';
+import { PlayPage } from './features/play/PlayPage.js';
 import { PlayStartPage } from './features/play/PlayStartPage.js';
 import { PlayBotStartPage } from './features/play-bot/PlayBotStartPage.js';
+import { PuzzleSessionPage } from './features/puzzle-session/PuzzleSessionPage.js';
+import { GameReviewPage } from './features/review/GameReviewPage.js';
 import { BotSessionPage } from './features/session/BotSessionPage.js';
 import { SessionPage } from './features/session/SessionPage.js';
 import { SettingsPage } from './features/settings/SettingsPage.js';
@@ -36,6 +39,22 @@ function BotSessionRoute(): ReactNode {
   return <BotSessionPage key={id} sessionId={id ?? ''} />;
 }
 
+/** Keyed by assignmentId, same remount-on-change reasoning as SessionRoute
+ * — PracticeCard can link into a different assignment without an actual
+ * route unmount/remount otherwise happening. */
+function PracticeRoute(): ReactNode {
+  const { assignmentId } = useParams<{ assignmentId: string }>();
+  return <PuzzleSessionPage key={assignmentId} />;
+}
+
+/** Keyed by gameId, same remount-on-change reasoning as SessionRoute — the
+ * Games list's Review tab can link into a different game's review without
+ * an actual route unmount/remount otherwise happening. */
+function GameReviewRoute(): ReactNode {
+  const { gameId } = useParams<{ gameId: string }>();
+  return <GameReviewPage key={gameId} />;
+}
+
 export function App(): ReactNode {
   return (
     <QueryClientProvider client={queryClient}>
@@ -54,11 +73,14 @@ export function AppRoutes(): ReactNode {
       <Routes>
         <Route path="/" element={<Navigate to="/games" replace />} />
         <Route path="/import" element={<ImportPage />} />
+        <Route path="/play" element={<PlayPage />} />
         <Route path="/play/new" element={<PlayStartPage />} />
         <Route path="/play-bot/new" element={<PlayBotStartPage />} />
         <Route path="/games" element={<GamesPage />} />
         <Route path="/session/:id" element={<SessionRoute />} />
         <Route path="/bot-session/:id" element={<BotSessionRoute />} />
+        <Route path="/review/:gameId" element={<GameReviewRoute />} />
+        <Route path="/practice/:assignmentId" element={<PracticeRoute />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/settings" element={<SettingsPage />} />

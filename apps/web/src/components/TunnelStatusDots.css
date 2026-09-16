@@ -1,0 +1,29 @@
+/* Small red/yellow/green status dots for the browser engine tunnel — see
+   TunnelStatusDots.tsx. Sits inline next to EngineActivityIndicator's own
+   pill in AppShell's topbar. */
+
+.tunnel-status-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+}
+
+.tunnel-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.tunnel-status-dot--green {
+  background: var(--color-success);
+}
+
+.tunnel-status-dot--yellow {
+  background: var(--color-warning);
+}
+
+.tunnel-status-dot--red {
+  background: var(--color-danger);
+}

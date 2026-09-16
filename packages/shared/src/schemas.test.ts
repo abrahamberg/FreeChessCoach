@@ -36,6 +36,7 @@ function validPlanFixture(): CoachingPlan {
     openingNote: 'Opening was fine through move 8.',
     themes: ['calculation_error', 'king_safety'],
     connectionToHistory: 'Second game in a row with a delayed castle.',
+    sessionGoal: 'Castle before starting play on the flank.',
     moments: [
       {
         ply: 23,
@@ -309,6 +310,21 @@ describe('FindingSchema', () => {
   test('rejects invalid severity', () => {
     expect(FindingSchema.safeParse({ ...valid, severity: 'huge' }).success).toBe(false);
   });
+  test('accepts optional diagnosisCode/mechanism/direction', () => {
+    const parsed = FindingSchema.safeParse({ ...valid, diagnosisCode: 'TA-07', mechanism: 'R', direction: 'D' });
+    expect(parsed.success).toBe(true);
+  });
+  test('derives category from diagnosisCode\'s parentCategory, overriding a mismatched category', () => {
+    const parsed = FindingSchema.parse({ ...valid, category: 'opening_knowledge', diagnosisCode: 'TA-07' });
+    expect(parsed.category).toBe('missed_tactic');
+  });
+  test('falls back to the supplied category when diagnosisCode is not in the catalog', () => {
+    const parsed = FindingSchema.parse({ ...valid, category: 'calculation_error', diagnosisCode: 'ZZ-99' });
+    expect(parsed.category).toBe('calculation_error');
+  });
+  test('rejects a malformed diagnosisCode', () => {
+    expect(FindingSchema.safeParse({ ...valid, diagnosisCode: 'not-a-code' }).success).toBe(false);
+  });
 });
 
 describe('SessionOutcomeSchema', () => {
@@ -318,7 +334,7 @@ describe('SessionOutcomeSchema', () => {
       homework: 'Blunder-check every move in your next two games.',
       findings: [],
       focusAreaUpdates: [
-        { category: 'calculation_error', action: 'progress', note: 'Found the refutation unprompted.' }
+        { diagnosisCode: 'TA-07', action: 'progress', note: 'Found the refutation unprompted.' }
       ]
     };
     expect(SessionOutcomeSchema.safeParse(outcome).success).toBe(true);
@@ -394,6 +410,8 @@ describe('UserProfileSchema', () => {
       email: 'student@example.com',
       displayName: 'daniel',
       ratingBand: 'club',
+      rating: null,
+      ratingSource: null,
       lichessUsername: null,
       chesscomUsername: 'daniel_c',
       selfAssessment: null,
@@ -470,6 +488,7 @@ describe('DashboardResponseSchema', () => {
       active: [
         {
           category: 'king_safety',
+          diagnosisCode: 'BV-01',
           status: 'active',
           note: 'Delays castling under pressure.',
           evidenceCount: 3,

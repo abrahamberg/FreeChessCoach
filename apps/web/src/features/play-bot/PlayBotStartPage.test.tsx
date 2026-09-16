@@ -93,6 +93,21 @@ describe('PlayBotStartPage ("Play vs Bot" plan)', () => {
     );
   });
 
+  test('picking a bot shows a "You vs {bot}" matchup and a light-engine readiness check before the color choice', async () => {
+    vi.stubGlobal('fetch', vi.fn());
+    const user = userEvent.setup();
+    renderPlayBotStartPage();
+
+    await user.click(screen.getByText('Tony Varga'));
+
+    expect(screen.getByText('You')).toBeInTheDocument();
+    expect(screen.getByText('vs')).toBeInTheDocument();
+    // Nothing in this test environment ever connects the tunnel socket, so
+    // the check reports "not connected" — proving the dialog renders some
+    // real verdict, not just static copy.
+    expect(screen.getByText(/light engine not connected/i)).toBeInTheDocument();
+  });
+
   test('a failed start shows an inline error instead of navigating', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 500 }));
     vi.stubGlobal('fetch', fetchMock);

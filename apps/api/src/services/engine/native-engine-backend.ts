@@ -18,11 +18,7 @@ export class NativeEngineBackend implements EngineBackend {
   }
 
   async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
-    // Note: analyzeGameViaEngine doesn't currently support depth/multiPv overrides,
-    // but we accept opts for API consistency with future backends.
-    // The underlying function uses the engine's defaults for those two —
-    // priority is supported, though, and forwarded the same way
-    // analyzePosition above already does.
-    return analyzeGameViaEngine(this.engineUrl, fens, opts?.priority);
+    const multiPv = opts?.multiPv ?? ENGINE_MULTI_PV;
+    return analyzeGameViaEngine(this.engineUrl, fens, multiPv, opts?.depth, opts?.priority);
   }
 }

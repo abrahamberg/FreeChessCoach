@@ -32,6 +32,7 @@ const PLAN: CoachingPlan = {
   openingNote: 'Fine.',
   themes: ['king_safety'],
   connectionToHistory: 'First session together.',
+  sessionGoal: 'Check every capture before moving.',
   moments: []
 };
 
@@ -62,7 +63,7 @@ describe('coach-agent startTurn concurrency', () => {
     };
     return {
       db,
-      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn() },
+      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn() },
       gatewayConfig,
       analyzePosition: vi.fn().mockResolvedValue({
         fen: 'startpos',
@@ -118,7 +119,7 @@ describe('coach-agent startTurn concurrency', () => {
     const { model, finish } = controllableStreamModel('Let me show you.', {
       toolCallId: 'call-race-1',
       toolName: 'show_position',
-      input: { moveNumber: 2, color: 'black', intent: 'subject', preMove: true }
+      input: { moveNumber: 2, color: 'black', intent: 'subject' }
     });
 
     // Gate turn 1's onFinish persistence of its own assistant/tool-call
@@ -299,7 +300,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: the model itself calls show_position — no clientToolResult
@@ -308,7 +308,7 @@ describe('coach-agent startTurn concurrency', () => {
     const { model: showModel, finish: showFinish } = controllableStreamModel('Let me show you.', {
       toolCallId: 'call-show-1',
       toolName: 'show_position',
-      input: { moveNumber: 2, color: 'black', intent: 'subject', preMove: true }
+      input: { moveNumber: 2, color: 'black', intent: 'subject' }
     });
     const turn1 = await coachAgent.startTurn(deps(showModel), session, { content: 'hi coach' });
     const drain1 = drain(turn1);
@@ -376,7 +376,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: one assistant step makes TWO tool-calls — record_move_note
@@ -400,7 +399,7 @@ describe('coach-agent startTurn concurrency', () => {
                 type: 'tool-call',
                 toolCallId: 'call-show-2',
                 toolName: 'show_position',
-                input: JSON.stringify({ moveNumber: 2, color: 'black', intent: 'subject', preMove: true })
+                input: JSON.stringify({ moveNumber: 2, color: 'black', intent: 'subject' })
               });
               controller.enqueue({
                 type: 'finish',
@@ -499,7 +498,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: coach shows move 2 for white (ply 3) and talks about it.
@@ -550,7 +548,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: the model calls record_move_note (a SERVER-executed tool —
@@ -614,7 +611,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     const agentDeps = deps(instantTextModel('Got it.'));
@@ -676,7 +672,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     const turn1 = await coachAgent.startTurn(deps(instantTextModel('Hello!')), session, { content: 'hi coach' });
@@ -769,7 +764,6 @@ describe('coach-agent startTurn concurrency', () => {
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
     await analysesRepo.markReady(db, analysis.id, PLAN);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, []);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Claim a ply far beyond the game's actual length.

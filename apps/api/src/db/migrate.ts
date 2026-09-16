@@ -21,8 +21,20 @@ import * as generalFemaleCoach from './migrations/0019_general_female_coach.js';
 import * as playBotMode from './migrations/0020_play_bot_mode.js';
 import * as botGameClock from './migrations/0021_bot_game_clock.js';
 import * as chessApiEngineMode from './migrations/0022_chess_api_engine_mode.js';
-import * as removeCredits from './migrations/0023_remove_credits.js';
-import * as passphraseLlmSetup from './migrations/0024_passphrase_llm_setup.js';
+import * as gameMetadata from './migrations/0023_game_metadata.js';
+import * as userRating from './migrations/0024_user_rating.js';
+import * as diagnostics from './migrations/0025_diagnostics.js';
+import * as findingDiagnosis from './migrations/0026_finding_diagnosis.js';
+import * as focusAreaDiagnosis from './migrations/0027_focus_area_diagnosis.js';
+import * as puzzleAssignments from './migrations/0028_puzzle_assignments.js';
+import * as puzzleSessions from './migrations/0029_puzzle_sessions.js';
+import * as botMoveDiagnosisCodes from './migrations/0030_bot_move_diagnosis_codes.js';
+import * as gameReviewTier from './migrations/0031_game_review_tier.js';
+import * as annotatedPgn from './migrations/0032_annotated_pgn.js';
+import * as gamesUserCreatedIndex from './migrations/0033_games_user_created_index.js';
+import * as stripStaleGameReportMoves from './migrations/0034_strip_stale_game_report_moves.js';
+import * as removeCredits from './migrations/0035_remove_credits.js';
+import * as passphraseLlmSetup from './migrations/0036_passphrase_llm_setup.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -49,8 +61,20 @@ const provider: MigrationProvider = {
       '0020_play_bot_mode': playBotMode,
       '0021_bot_game_clock': botGameClock,
       '0022_chess_api_engine_mode': chessApiEngineMode,
-      '0023_remove_credits': removeCredits,
-      '0024_passphrase_llm_setup': passphraseLlmSetup
+      '0023_game_metadata': gameMetadata,
+      '0024_user_rating': userRating,
+      '0025_diagnostics': diagnostics,
+      '0026_finding_diagnosis': findingDiagnosis,
+      '0027_focus_area_diagnosis': focusAreaDiagnosis,
+      '0028_puzzle_assignments': puzzleAssignments,
+      '0029_puzzle_sessions': puzzleSessions,
+      '0030_bot_move_diagnosis_codes': botMoveDiagnosisCodes,
+      '0031_game_review_tier': gameReviewTier,
+      '0032_annotated_pgn': annotatedPgn,
+      '0033_games_user_created_index': gamesUserCreatedIndex,
+      '0034_strip_stale_game_report_moves': stripStaleGameReportMoves,
+      '0035_remove_credits': removeCredits,
+      '0036_passphrase_llm_setup': passphraseLlmSetup
     })
 };
 

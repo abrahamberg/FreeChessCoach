@@ -3,14 +3,14 @@ import { describe, expect, test } from 'vitest';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 
 describe('MoveQualityBadge', () => {
-  test('renders nothing for a good move', () => {
-    const { container } = render(<MoveQualityBadge quality="good" size="md" />);
-    expect(container).toBeEmptyDOMElement();
+  test('renders the checkmark glyph for a good move', () => {
+    render(<MoveQualityBadge quality="good" size="md" />);
+    expect(screen.getByText('✓')).toHaveClass('move-quality-badge--good');
   });
 
-  test('renders nothing for an excellent move — only tiers worth flagging get a badge', () => {
-    const { container } = render(<MoveQualityBadge quality="excellent" size="md" />);
-    expect(container).toBeEmptyDOMElement();
+  test('renders a heavier checkmark glyph for an excellent move — same glyph family as good, distinct weight and color', () => {
+    render(<MoveQualityBadge quality="excellent" size="md" />);
+    expect(screen.getByText('✔')).toHaveClass('move-quality-badge--excellent');
   });
 
   test('renders nothing when quality is undefined', () => {

@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import './BotAvatar.css';
 
-export type BotAvatarSize = 'picker' | 'panel' | 'grid';
+export type BotAvatarSize = 'picker' | 'panel' | 'grid' | 'card';
 
 export interface BotAvatarProps {
   avatarIndex: number;

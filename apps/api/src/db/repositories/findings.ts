@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { MistakeCategory } from '@freechesscoach/shared';
+import type { DiagnosisCodeId, Direction, Mechanism, MistakeCategory } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export type FindingSeverity = 'minor' | 'significant' | 'critical';
@@ -14,6 +14,9 @@ export interface FindingRow {
   ply: number | null;
   description: string;
   isPositive: boolean;
+  diagnosisCode: DiagnosisCodeId | null;
+  mechanism: Mechanism | null;
+  direction: Direction | null;
   createdAt: Date;
 }
 
@@ -26,10 +29,22 @@ export interface NewFinding {
   ply: number | null;
   description: string;
   isPositive: boolean;
+  diagnosisCode?: DiagnosisCodeId | null;
+  mechanism?: Mechanism | null;
+  direction?: Direction | null;
 }
 
 export function insert(db: Kysely<Database>, values: NewFinding): Promise<FindingRow> {
-  return db.insertInto('findings').values(values).returningAll().executeTakeFirstOrThrow();
+  return db
+    .insertInto('findings')
+    .values({
+      ...values,
+      diagnosisCode: values.diagnosisCode ?? null,
+      mechanism: values.mechanism ?? null,
+      direction: values.direction ?? null
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
 }
 
 /** Task 5.4 summarizer dedup: same category + same ply within a session -> skip. */

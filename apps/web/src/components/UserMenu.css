@@ -103,3 +103,7 @@
 .user-menu__item--muted {
   color: var(--color-text-secondary);
 }
+
+.user-menu__item .tunnel-status-dots {
+  margin-left: auto;
+}

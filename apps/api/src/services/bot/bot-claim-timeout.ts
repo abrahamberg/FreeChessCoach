@@ -1,4 +1,3 @@
-import * as gameMoveQualitiesRepo from '../../db/repositories/game-move-qualities.js';
 import type { GameRow } from '../../db/repositories/games.js';
 import type { SessionRow } from '../../db/repositories/sessions.js';
 import type { Database } from '../../db/schema.js';
@@ -40,8 +39,7 @@ export async function claimBotGameTimeout(
   if (game.clockInitialMs === null) return { gameOver: null };
 
   const now = deps.now ?? Date.now;
-  const lastMoveAt =
-    (await gameMoveQualitiesRepo.findLatestByGameId(deps.db, game.id))?.createdAt ?? session.startedAt;
+  const lastMoveAt = game.lastMoveAt ?? session.startedAt;
   const elapsedSinceLastMove = now() - lastMoveAt.getTime();
 
   const moverColor = moverToMoveNext(session.currentPly);

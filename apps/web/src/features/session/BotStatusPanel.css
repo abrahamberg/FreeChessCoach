@@ -1,4 +1,8 @@
-.bot-status-panel {
+/* 'panel' (desktop's dedicated column): centered, full-height. 'card'
+ * (mobile stacked layout) instead uses the shared CoachCard shell
+ * (components/CoachCard.css owns its box chrome) — see BotStatusPanel.tsx;
+ * only this variant's own box styling lives here. */
+.bot-status-panel--panel {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -7,6 +11,12 @@
   height: 100%;
   padding: 24px;
   text-align: center;
+}
+
+.bot-status-panel--card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .bot-status-panel__opponent {
@@ -37,9 +47,31 @@
   margin: 0;
 }
 
+.bot-status-panel--card .bot-status-panel__turn,
+.bot-status-panel--card .bot-status-panel__result {
+  font-size: var(--font-size-md);
+}
+
 .bot-status-panel__result {
   font-weight: 600;
   color: var(--color-text-primary);
+}
+
+.bot-status-panel__hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.bot-status-panel__hint--loading {
+  font-style: italic;
+}
+
+.bot-status-panel__hint-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 11px;
 }
 
 .bot-status-panel__resign {
@@ -53,4 +85,9 @@
   background: transparent;
   color: var(--quality-blunder);
   font-weight: 600;
+}
+
+.bot-status-panel--card .bot-status-panel__resign {
+  margin-top: 0;
+  align-self: flex-start;
 }

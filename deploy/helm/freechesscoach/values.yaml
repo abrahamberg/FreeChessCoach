@@ -302,8 +302,7 @@ oauth2-proxy:
     - --provider=google
     # Forward the authenticated identity to the api as X-Auth-Request-* headers.
     - --set-xauthrequest=true
-    # architecture §11: the Stripe webhook and the probes bypass auth. The
-    # webhook is still signature-verified in-app (§12).
+    # architecture §11: the health/readiness probes bypass auth.
     - --skip-auth-route=^/healthz$
     - --skip-auth-route=^/readyz$
     # Public landing page (apps/web/public/landing.html, served by web's

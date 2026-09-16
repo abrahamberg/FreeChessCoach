@@ -1,6 +1,5 @@
 import {
   MOVE_QUALITIES,
-  TACTIC_MOTIF_LABELS,
   TACTIC_MOTIF_TYPES,
   type BookReport,
   type ClassificationCounts,
@@ -49,7 +48,11 @@ import {
 } from './rating-estimate.js';
 import { computePositionFeatures } from './position-features.js';
 import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
-import { classifyTacticMotifOpportunity, computeTacticMotifCounts, type TacticMotifOpportunity } from './game-tactic-motifs.js';
+import { classifyTacticMotifOpportunity, computeTacticMotifCounts } from './game-tactic-motifs.js';
+import { previousMoveOf } from './previous-move-of.js';
+import { tacticAllowedReason, tacticOpportunityReason, tacticPreventionReason } from './tactic-reason-text.js';
+import { orderTacticCards, type TacticCardKind } from './tactic-card-order.js';
+import { computeTacticAllowed } from './tactic-allowed.js';
 import { CONFIG } from './config.js';
 
 type Colour = 'white' | 'black';
@@ -95,7 +98,11 @@ interface GameContext {
  */
 export function buildGameReport(input: BuildGameReportInput): GameReport {
   const boundaries = resolvePhaseBoundaries(input.game, input.book);
-  const moves = input.moves.map((move) => enrichWithPhaseAndTactics(move, boundaries, input.evals));
+  const enriched = input.moves.map((move) => enrichWithPhaseAndTactics(move, boundaries, input.evals, input.moves));
+  // Second pass: what a move allowed is read off the *next* ply's own
+  // opportunity, so every move has to be enriched before any of them can be
+  // told what it handed over.
+  const moves = enriched.map((move, index) => withAllowedTacticAndSentences(move, enriched[index + 1]));
   const context: GameContext = {
     game: input.game,
     evals: input.evals,
@@ -144,34 +151,64 @@ function resolvePhaseBoundaries(game: ParsedGame, book: BookReport): PhaseBounda
 function enrichWithPhaseAndTactics(
   move: ClassifiedMoveDto,
   boundaries: PhaseBoundaries,
-  evals: EngineEval[]
+  evals: EngineEval[],
+  allMoves: readonly ClassifiedMoveDto[]
 ): ClassifiedMoveDto {
   const phase: MovePhase = phaseForPly(move.ply, boundaries);
   const withPhase = { ...move, phase, isTacticalPosition: computeIsTacticalPosition(move, evals) };
   // classifyTacticMotifOpportunity needs isTacticalPosition already set (it
   // reads move.isTacticalPosition), so this runs against withPhase, not the
   // raw input move — the move-list UI's per-ply tactic indicator.
-  const opportunity = classifyTacticMotifOpportunity(withPhase, evals);
+  const opportunity = classifyTacticMotifOpportunity(withPhase, evals, previousMoveOf(allMoves, move.ply));
   if (!opportunity) return withPhase;
-  return {
-    ...withPhase,
-    tacticOpportunity: opportunity,
-    // Diagnostic-first (see the tactic-prevention over-firing investigation):
-    // spelling out which motif + whether it was played, right in the same
-    // per-move notes the UI already shows, so a reviewer can eyeball
-    // false-positive detector hits without a DB query. Appended after
-    // buildReasons' own MAX_REASONS truncation, so it's never crowded out.
-    reasons: [...(withPhase.reasons ?? []), tacticOpportunityReason(opportunity, withPhase.bestMoveSan)]
-  };
+  return { ...withPhase, tacticOpportunity: opportunity };
 }
 
-function tacticOpportunityReason(opportunity: TacticMotifOpportunity, bestMoveSan: string | undefined): string {
-  const label = TACTIC_MOTIF_LABELS[opportunity.type];
-  const moveClause = bestMoveSan ? ` (${bestMoveSan})` : '';
-  const detailClause = opportunity.detail ? ` — ${opportunity.detail}` : '';
-  return opportunity.found
-    ? `Tactic available — ${label}${moveClause}: found${detailClause}`
-    : `Tactic available — ${label}${moveClause}: not played${detailClause}`;
+/**
+ * The move's tactic sentences, all three of them, in `tactic-card-order.ts`'s
+ * order.
+ *
+ * Diagnostic-first (see the tactic-prevention over-firing investigation):
+ * spelling out which motif and what became of it, right in the same per-move
+ * notes the UI already shows, so a reviewer can eyeball false-positive
+ * detector hits without a DB query. They sit after `buildReasons`' own
+ * MAX_REASONS truncation, so they are never crowded out.
+ *
+ * Rebuilt rather than appended to: the prevention sentence is written into
+ * `reasons` by the API's `attachTacticPrevention` before this package ever
+ * sees the move, so "append the others after it" would let the order be
+ * decided by which layer ran first — which is exactly the bug
+ * `tactic-card-order.ts` exists to fix. Each card is written to the person
+ * whose review this is, so the narrator needs to know whose move it was;
+ * `isUserMove` is passed rather than stored on the card so an older report
+ * renders in the right voice too.
+ */
+function withAllowedTacticAndSentences(move: ClassifiedMoveDto, next: ClassifiedMoveDto | undefined): ClassifiedMoveDto {
+  const allowed = computeTacticAllowed(move, next);
+  const withAllowed = allowed ? { ...move, tacticAllowed: allowed } : move;
+  const sentences = tacticSentencesOf(withAllowed);
+  if (sentences.size === 0) return withAllowed;
+
+  const written = new Set(sentences.values());
+  const base = (withAllowed.reasons ?? []).filter((reason) => !written.has(reason));
+  const ordered = orderTacticCards(withAllowed)
+    .map((kind) => sentences.get(kind))
+    .filter((sentence): sentence is string => sentence !== undefined);
+  return { ...withAllowed, reasons: [...base, ...ordered] };
+}
+
+function tacticSentencesOf(move: ClassifiedMoveDto): Map<TacticCardKind, string> {
+  const sentences = new Map<TacticCardKind, string>();
+  if (move.tacticAllowed) {
+    sentences.set('allowed', tacticAllowedReason({ ...move.tacticAllowed, isUserMove: move.isUserMove }));
+  }
+  if (move.tacticPrevention) {
+    sentences.set('prevention', tacticPreventionReason({ ...move.tacticPrevention, isUserMove: move.isUserMove }));
+  }
+  if (move.tacticOpportunity) {
+    sentences.set('opportunity', tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove: move.isUserMove }, move.bestMoveSan));
+  }
+  return sentences;
 }
 
 function computeIsTacticalPosition(move: ClassifiedMoveDto, evals: EngineEval[]): boolean {
@@ -228,7 +265,7 @@ function buildPlayerReport(
     acpl: round1(mean(colourMoves.map((move) => move.cpLoss))),
     estimatedRating: buildEstimatedRating(colourMoves, weights, accuracy, counts, prior),
     tacticMotifs: mergeMotifCounts(
-      mergeMotifCounts(computeTacticMotifCounts(colourMoves, context.evals), 'preventable', preventableCounts ?? {}),
+      mergeMotifCounts(computeTacticMotifCounts(colourMoves, context.evals, moves), 'preventable', preventableCounts ?? {}),
       'prevented',
       preventedCounts ?? {}
     )

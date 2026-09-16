@@ -21,14 +21,18 @@
   flex: 0 0 auto;
 }
 
-.games-page__filters {
+/* One segmented pill row (Daniel: "[All] [Imported] [Bot]", not a browser-
+ * style underlined tab strip) — source is metadata riding along on each
+ * card already, so this filter is a light touch, not a second navigation
+ * layer. */
+.games-page__tabs {
   display: flex;
   gap: var(--space-2);
   margin-bottom: var(--space-4);
 }
 
-.games-page__filter {
-  height: 32px;
+.games-page__tab {
+  height: 36px;
   padding: 0 var(--space-4);
   border-radius: var(--radius-pill);
   border: 1px solid var(--color-border);
@@ -38,24 +42,34 @@
   font-weight: 600;
 }
 
-.games-page__filter:hover {
+.games-page__tab:hover {
   background: var(--color-surface-subtle);
 }
 
-.games-page__filter.active {
+.games-page__tab.active {
   background: var(--color-text);
   color: var(--color-on-primary);
   border-color: var(--color-text);
 }
 
+/* One card per game (GameRow.css owns each card's own border/shadow/radius)
+ * with breathing room between them, rather than one bordered list of flush
+ * rows. */
 .games-page__list {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.games-page__section-heading {
+  margin: var(--space-6) 0 var(--space-3);
+}
+
+.games-page__section-heading:first-child {
+  margin-top: 0;
 }
 
 .games-page__empty {
@@ -68,11 +82,35 @@
     flex-direction: column;
   }
 
-  .games-page__header-actions {
+  .games-page__header-actions a {
     width: 100%;
   }
 
-  .games-page__header-actions a {
-    flex: 1;
+  /* Four source tabs don't fit a phone width unwrapped, and the page has no
+   * horizontal scrollbar to reveal what wrapping or clipping hid. A
+   * horizontal scroller (nowrap + its own overflow-x) keeps every tab
+   * reachable with a swipe, edge-to-edge like a native segmented control,
+   * instead of a label breaking across two lines or the last chip running
+   * off the edge of the screen entirely. */
+  .games-page__tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* A soft fade hints there's more to scroll to without a visible
+     * scrollbar; harmless no-op in browsers that don't support mask-image. */
+    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  }
+
+  .games-page__tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .games-page__tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    /* design-improvements.md: minimum 44x44px mobile touch targets. */
+    min-height: 44px;
   }
 }

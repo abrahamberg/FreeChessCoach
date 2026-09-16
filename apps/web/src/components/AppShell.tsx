@@ -3,7 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useEngineActivityIndicator } from '../hooks/useEngineActivityIndicator.js';
 import { useIsDesktop } from '../hooks/useIsDesktop.js';
 import { EngineActivityIndicator } from './EngineActivityIndicator.js';
-import { BarChartIcon, BoardIcon, TrendingUpIcon } from './Icon.js';
+import { FullscreenPrompt } from './FullscreenPrompt.js';
+import { BarChartIcon, BoardIcon, PlayCircleIcon, TrendingUpIcon } from './Icon.js';
 import { UserMenu } from './UserMenu.js';
 import './AppShell.css';
 
@@ -11,30 +12,49 @@ export interface AppShellProps {
   children: ReactNode;
 }
 
+// Daniel's IA feedback: "Play" used to be two giant CTAs crowding GamesPage's
+// own header — it's a primary nav destination in its own right (playing
+// chess is a different job from studying it), not a button living on
+// whichever page had room.
 const NAV_DESTINATIONS = [
   { to: '/games', label: 'Games', Icon: BoardIcon },
+  { to: '/play', label: 'Play', Icon: PlayCircleIcon },
   { to: '/dashboard', label: 'Progress', Icon: TrendingUpIcon },
   { to: '/stats', label: 'Stats', Icon: BarChartIcon }
 ];
 
+// Every route that puts a board on screen (session/bot-session/practice)
+// renders its own back-navigation header directly above it (SessionHeader,
+// PuzzleSessionPage's own header) — showing the global top bar and bottom
+// tab bar on top of that would cost the board vertical space it needs more
+// than a second nav layer, and turns the brand/primary-nav links into an
+// easy accidental tap away from a live game.
+const BOARD_ROUTE_PREFIXES = ['/session/', '/bot-session/', '/practice/', '/review/'];
+
+function isBoardRoute(pathname: string): boolean {
+  return BOARD_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
 /** design-improvements.md (redesign, 2026-08-24): a sticky top bar — logo,
  * primary nav, and an account avatar menu (Settings/Sign out) — replaces the
  * old icon rail of stacked nav links, and stays visible on every route
- * (including an active session) so the app never loses its identity/nav
- * mid-session. Below the desktop breakpoint the primary nav also appears as
- * a bottom tab bar — that one DOES hide during an active session (design doc
- * P0: "prevent bottom navigation from covering session content"), since
- * SessionHeader's own back/menu bar already sits directly under the top bar
- * and the board needs the vertical space more than a second nav layer does. */
+ * except a board route (see isBoardRoute above), which hides it entirely in
+ * favor of its own page-level back button. Below the desktop breakpoint the
+ * primary nav also appears as a bottom tab bar — that one also hides on a
+ * board route. */
 export function AppShell({ children }: AppShellProps): ReactNode {
   const isDesktop = useIsDesktop();
   const { pathname } = useLocation();
-  const isSession = pathname.startsWith('/session/');
-  const showBottomTabBar = !isDesktop && !isSession;
+  const showGlobalNav = !isBoardRoute(pathname);
+  const showBottomTabBar = showGlobalNav && !isDesktop;
 
   return (
     <div className="app-shell" data-layout={isDesktop ? 'desktop' : 'mobile'} data-bottom-bar={showBottomTabBar}>
-      <TopBar isDesktop={isDesktop} />
+      {/* Fixed overlay, not gated by showGlobalNav — a board route (session/
+       * bot-session/review) hides the top bar but still wants the nudge
+       * toward full screen, arguably more than any other page. */}
+      <FullscreenPrompt />
+      {showGlobalNav && <TopBar isDesktop={isDesktop} />}
       <main className="app-shell__content">{children}</main>
       {showBottomTabBar && <BottomTabBar />}
     </div>

@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
 import { useCoachVoice } from '../../hooks/useCoachVoice.js';
+import { ENGINE_MODE_BADGE, useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
@@ -13,18 +15,22 @@ import { encodeDivergedLine } from '../chat/divergedLine.js';
 import type { HoverMove } from '../chat/MessageList.js';
 import { encodePositionContext, sanForPly } from '../chat/positionDivider.js';
 import { SessionSummaryCard } from '../chat/SessionSummaryCard.js';
-import { MobileSessionBody } from './MobileSessionBody.js';
+import { useMessagePaging } from '../chat/useMessagePaging.js';
+import { MobileCoachSessionBody } from './MobileCoachSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { SessionHeader } from './SessionHeader.js';
-import { useMobileSessionView } from './useMobileSessionView.js';
 import { useSessionPageData } from './useSessionPageData.js';
+import '../../styles/board-bottom-bar.css';
 import './SessionPage.css';
 
 /** design.md §5: composes board + chat for an active coaching session.
  * All fetching lives in useSessionPageData (AGENTS.md rule 7); this is
  * presentational — local UI state, a few small handlers, and the layout.
- * At/above 768px board and chat sit side by side; below it each owns a full
- * screen and MobileSessionBody switches between them. */
+ * At/above 768px board and chat sit side by side (ChatPane's own full,
+ * vertically-scrolling transcript); below it, MobileCoachSessionBody's own
+ * StackedSessionBody layout (its doc comment has the design reasoning) —
+ * the same shape BotSessionPage's mobile layout now uses too, with a
+ * compact BotStatusPanel card in place of PagedMessageCard. */
 export function SessionPage(): ReactNode {
   const { id } = useParams<{ id: string }>();
   const sessionId = id ?? '';
@@ -53,7 +59,15 @@ export function SessionPage(): ReactNode {
   const [boardArrows, setBoardArrows] = useState<ArrowRef[]>([]);
   const [hoverMove, setHoverMove] = useState<HoverMove>(null);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
-  const mobileView = useMobileSessionView(chat.messages.length);
+  // AppShell hides its own top bar (Settings, the engine indicator) for
+  // every board route, session included — SessionHeader's own overflow menu
+  // is the only place left to reach them, and the coach voice autoplay
+  // toggle, from here (design ask: nothing this page needs should be
+  // unreachable just because it's a board route).
+  const engineActivity = useEngineActivityIndicator();
+  // Unconditional (hooks always are) — only the mobile branch below renders
+  // PagedMessageCard/MessageNavPills off it.
+  const messagePaging = useMessagePaging(chat.messages);
   const persona = profileQuery.data?.coachPersona ?? 'general';
   const ttsEnabled = profileQuery.data?.ttsEnabled ?? false;
   const ttsBackend = profileQuery.data?.ttsBackend ?? 'openai';
@@ -136,27 +150,41 @@ export function SessionPage(): ReactNode {
     />
   );
 
+  const engineBadge = engineActivity.engineMode ? ENGINE_MODE_BADGE[engineActivity.engineMode] : 'Engine';
+  const headerExtraItems: OverflowMenuItem[] = [
+    ...(ttsEnabled
+      ? [
+          {
+            label: coachVoice.autoplayEnabled ? 'Turn off coach voice' : 'Turn on coach voice',
+            onSelect: () => coachVoice.setAutoplayEnabled(!coachVoice.autoplayEnabled)
+          }
+        ]
+      : []),
+    { label: `Engine: ${engineBadge}`, onSelect: () => navigate('/settings#settings-engine') },
+    { label: 'Settings', onSelect: () => navigate('/settings') }
+  ];
+
   const chatPanel = (
     <ChatPane
-        messages={chat.messages}
-        activeToolName={chat.activeToolName}
-        isThinking={chat.isThinking}
-        onSend={handleSendMessage}
-        onSelectPly={peekAt}
-        boardArrows={boardArrows}
-        hasPendingLine={Boolean(divergedLine.line)}
-        fen={fen}
-        positions={positions}
-        onHoverMove={setHoverMove}
-        coachPersona={persona}
-        autoplayEnabled={coachVoice.autoplayEnabled}
-        onToggleAutoplay={ttsEnabled ? coachVoice.setAutoplayEnabled : undefined}
-        onPlayMessage={ttsEnabled ? coachVoice.play : undefined}
-        onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
-        playingMessageId={coachVoice.playingMessageId}
-        loadingMessageId={coachVoice.loadingMessageId}
-      />
-    );
+      messages={chat.messages}
+      activeToolName={chat.activeToolName}
+      isThinking={chat.isThinking}
+      onSend={handleSendMessage}
+      onSelectPly={peekAt}
+      boardArrows={boardArrows}
+      hasPendingLine={Boolean(divergedLine.line)}
+      fen={fen}
+      positions={positions}
+      onHoverMove={setHoverMove}
+      coachPersona={persona}
+      autoplayEnabled={coachVoice.autoplayEnabled}
+      onToggleAutoplay={ttsEnabled ? coachVoice.setAutoplayEnabled : undefined}
+      onPlayMessage={ttsEnabled ? coachVoice.play : undefined}
+      onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
+      playingMessageId={coachVoice.playingMessageId}
+      loadingMessageId={coachVoice.loadingMessageId}
+    />
+  );
 
   return (
     <div className="session-page">
@@ -168,6 +196,7 @@ export function SessionPage(): ReactNode {
         onReset={handleReset}
         onDebug={import.meta.env.DEV ? () => setIsDebugOpen(true) : undefined}
         debugDisabled={!hasCompletedTurn}
+        extraItems={headerExtraItems}
       />
       {isDebugOpen && <DebugPanel sessionId={sessionId} onClose={() => setIsDebugOpen(false)} />}
       {isSideBySide ? (
@@ -198,18 +227,22 @@ export function SessionPage(): ReactNode {
           {chatPanel}
         </div>
       ) : (
-        <MobileSessionBody
+        <MobileCoachSessionBody
           board={board}
-          chat={chatPanel}
+          messagePaging={messagePaging}
           fen={fen}
-          boardContext={{
-            mode: boardState.mode,
-            ply: boardState.ply,
-            san: sanForPly(sanMoves, boardState.ply),
-            hasDivergedLine: Boolean(divergedLine.line),
-            isAnchoredPreMove: boardState.isAnchoredPreMove
-          }}
-          viewState={mobileView}
+          positions={positions}
+          onSelectPly={peekAt}
+          onHoverMove={setHoverMove}
+          coachPersona={persona}
+          displayName={profileQuery.data?.displayName}
+          ttsEnabled={ttsEnabled}
+          coachVoice={coachVoice}
+          isThinking={chat.isThinking}
+          activeToolName={chat.activeToolName}
+          onSend={handleSendMessage}
+          boardArrows={boardArrows}
+          hasPendingLine={Boolean(divergedLine.line)}
         />
       )}
     </div>

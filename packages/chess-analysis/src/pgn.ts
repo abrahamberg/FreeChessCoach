@@ -148,9 +148,11 @@ function stripMoveAnnotations(pgn: string): string {
 
 /**
  * Cuts a multi-game PGN down to just its first game, splitting on the
- * boundary before the second game's `[Event ` header tag.
+ * boundary before the second game's `[Event ` header tag. Exported so
+ * pgn-move-comments.ts's raw-string extractor can honor the same "first game
+ * only" boundary this module's own chess.js-facing parser does.
  */
-function extractFirstGame(pgn: string): string {
+export function extractFirstGame(pgn: string): string {
   const eventHeaderStarts = [...pgn.matchAll(/^\[Event\s/gm)].map((match) => match.index);
   const secondGameStart = eventHeaderStarts[1];
   if (eventHeaderStarts.length < 2 || secondGameStart === undefined) return pgn;

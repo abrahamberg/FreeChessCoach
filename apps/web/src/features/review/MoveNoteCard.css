@@ -1,0 +1,146 @@
+/* The Game Review page's dominant note element — the shared CoachCard shell
+ * (components/CoachCard.css owns the box chrome: background, border accent,
+ * shadow, padding, the avatar header, expand/collapse) with a colored
+ * accent bar keyed to the move's quality, plus the note text at a size that
+ * competes with the board for attention instead of losing to it. Reuses
+ * MoveExplorer's own .move-explorer__note/__opening-label/__alternatives*
+ * markup (via MoveNoteContent) so the note text itself has one source of
+ * truth — this file only resizes it up for the card's own larger context. */
+
+/* Capped rather than left to grow with the note's length — a blunder with
+ * several reasons plus alternatives can otherwise push the board (and
+ * everything below it) well down the page. The header stays outside this
+ * budget, always visible; only .move-note-card__body scrolls (via
+ * CoachCard's own .coach-card__text). Auto height (not a fixed one) so a
+ * short note — or the empty "select a move" state — only claims what it
+ * actually needs, leaving the rest of the page (the board especially) that
+ * much more room instead of reserving dead space for a card that isn't
+ * using it. */
+.move-note-card {
+  height: auto;
+  max-height: 38vh;
+}
+
+.move-note-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.move-note-card--brilliant,
+.move-note-card--great {
+  border-left-color: var(--quality-great);
+}
+.move-note-card--best {
+  border-left-color: var(--quality-best);
+}
+.move-note-card--book {
+  border-left-color: var(--quality-book);
+}
+.move-note-card--inaccuracy {
+  border-left-color: var(--quality-inaccuracy);
+}
+.move-note-card--mistake {
+  border-left-color: var(--quality-mistake);
+}
+.move-note-card--miss {
+  border-left-color: var(--quality-miss);
+}
+.move-note-card--blunder {
+  border-left-color: var(--quality-blunder);
+}
+.move-note-card--forced {
+  border-left-color: var(--quality-forced);
+}
+.move-note-card--excellent {
+  border-left-color: var(--quality-excellent);
+}
+.move-note-card--good {
+  border-left-color: var(--quality-good);
+}
+
+/* Replaces the old full-width "Continue with Coach" bar above the card —
+ * same action, as a small icon instead of a row that cost space whether or
+ * not the student wanted it. Pushed to the row's far end regardless of how
+ * much header content precedes it. */
+.move-note-card__coach-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  margin-left: auto;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.move-note-card__coach-button:hover {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.move-note-card__coach-button:disabled {
+  opacity: 0.5;
+}
+
+.move-note-card__move {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.move-note-card__headline {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.move-note-card__prompt,
+.move-note-card__empty-text {
+  margin: 0;
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+}
+
+/* Used to vertically center the prompt in the space a missing expand
+ * toggle leaves — read fine back when the card's own height was a small
+ * fixed one (18vh). Now that the card flex-fills the real header-to-board
+ * gap (SessionPage.css/GameReviewPage.css's own .coach-card rules), that
+ * gap can be much taller than one line of prompt text, and centering it
+ * left the prompt floating in the middle of a mostly-empty box with the
+ * border framing nothing in particular. Left top-aligned instead, right
+ * under the header — the same place every other card's real content
+ * starts — just still centered horizontally, since it's one short
+ * line worth reading as a caption rather than a paragraph. */
+.move-note-card--empty .coach-card__text {
+  text-align: center;
+}
+
+/* Upsizes MoveExplorer's own note/theory/alternatives text for this card's
+ * larger context — the content and its conditions stay defined once in
+ * MoveNoteContent.tsx. */
+.move-note-card .move-explorer__note,
+.move-note-card .move-explorer__opening-label {
+  margin: 0;
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.move-note-card .move-explorer__note li + li {
+  margin-top: var(--space-2);
+}
+
+.move-note-card .move-explorer__alternatives {
+  margin-top: var(--space-1);
+  padding-top: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.move-note-card .move-explorer__alternatives-best {
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+}

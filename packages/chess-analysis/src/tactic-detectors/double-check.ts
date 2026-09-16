@@ -1,20 +1,32 @@
-import type { Square } from 'chess.js';
-import { occupiedSquares, opponentOf, toColorName } from '../attack-map.js';
+import { attackersOf, formatSquareList, kingSquareOf } from '../tactic-board-facts.js';
+import type { TacticClaim } from '../tactic-claim.js';
 import type { TacticDetector } from './types.js';
 
-/** Ignores `ctx.afterAttackMap`'s per-square breakdown beyond a simple
- * attacker count — two-or-more mover attackers on the enemy king square is
- * exactly what "double check" means, discovered or not. */
+/** Two or more of the mover's pieces attack the enemy king at once —
+ * discovered or not. The king must move, which is what makes a double check
+ * worth naming even when it wins nothing directly. */
 export const doubleCheckDetector: TacticDetector = {
   type: 'doubleCheck',
   priority: 5,
   detect: (ctx) => {
-    if (ctx.after === null || ctx.afterAttackMap === null) return false;
-    const opponent = opponentOf(ctx.mover);
-    const king = occupiedSquares(ctx.after).find((piece) => piece.type === 'k' && piece.color === opponent);
-    if (!king) return false;
+    if (!ctx.after || !ctx.afterAttackMap || !ctx.destination) return [];
+    const king = kingSquareOf(ctx.after, ctx.opponent);
+    if (!king) return [];
 
-    const checkers = ctx.afterAttackMap.attackersOf.get(king.square as Square)?.[toColorName(ctx.mover)] ?? [];
-    return checkers.length >= 2;
+    const checkers = attackersOf(ctx.afterAttackMap, king, ctx.mover);
+    if (checkers.length < 2) return [];
+
+    const claim: TacticClaim = {
+      type: 'doubleCheck',
+      actor: ctx.destination,
+      targets: [king],
+      victim: null,
+      gainKind: 'tempo',
+      expectedGain: 0,
+      prize: null,
+      evidence: { arrows: checkers.map((square) => ({ from: square, to: king })), highlights: [] },
+      detail: `checks the king on ${king} from ${formatSquareList(checkers)} at once`
+    };
+    return [claim];
   }
 };

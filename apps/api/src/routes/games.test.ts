@@ -1,10 +1,10 @@
-import { TACTIC_MOTIF_TYPES, type CoachingPlan, type GameReport } from '@freechesscoach/shared';
+import { buildAnnotatedPgn } from '@freechesscoach/chess-analysis';
+import { BOT_ROSTER, TACTIC_MOTIF_TYPES, type CoachingPlan, type GameReport } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildApp } from '../app.js';
 import { buildResolveEngineBackendOptions, type CoachAgentBaseDependencies } from '../bootstrap.js';
 import * as analysesRepo from '../db/repositories/analyses.js';
-import * as gameMoveQualitiesRepo from '../db/repositories/game-move-qualities.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
@@ -23,11 +23,34 @@ const ILLEGAL_PGN = `[Event "Test"]
 
 1. e4 e5 2. Zz9 garbage`;
 
+// A real Lichess export (Task 51.1/51.2/51.3): rating/rated/termination/
+// variant/UTCTime headers plus per-move [%clk]/[%eval] comments.
+const LICHESS_ANNOTATED_PGN = `[Event "Rated Blitz game"]
+[Site "https://lichess.org/zFCbLgLe"]
+[Date "2026.08.12"]
+[White "Ann"]
+[Black "Bob"]
+[Result "1-0"]
+[UTCDate "2026.08.12"]
+[UTCTime "12:34:56"]
+[WhiteElo "1500"]
+[BlackElo "1520"]
+[Variant "Standard"]
+[TimeControl "300+0"]
+[ECO "C50"]
+[Termination "Normal"]
+
+1. e4 { [%eval 0.2] [%clk 0:05:00] } 1... e5 { [%eval 0.1] [%clk 0:05:00] }
+2. Qh5 { [%eval 0.3] [%clk 0:04:58] } 2... Nc6 { [%eval 0.2] [%clk 0:04:55] }
+3. Bc4 { [%eval 0.4] [%clk 0:04:57] } 3... Nf6 { [%eval -2.0] [%clk 0:04:40] }
+4. Qxf7# { [%clk 0:04:56] } 1-0`;
+
 const PLAN: CoachingPlan = {
   gameSummary: 'A sharp game.',
   openingNote: 'Fine.',
   themes: ['king_safety'],
   connectionToHistory: 'First session together.',
+  sessionGoal: 'Check every capture before moving.',
   moments: [
     {
       ply: 4,
@@ -117,7 +140,9 @@ describe('POST/GET /api/games', () => {
   function buildTestApp() {
     jobQueue = {
       enqueueAnalyzeGame: vi.fn().mockResolvedValue(undefined),
-      enqueueSummarizeSession: vi.fn().mockResolvedValue(undefined)
+      enqueueSummarizeSession: vi.fn().mockResolvedValue(undefined),
+      enqueueBackfillGameMetadata: vi.fn().mockResolvedValue(undefined),
+      enqueueRebuildDiagnosticProfile: vi.fn().mockResolvedValue(undefined)
     };
     // Required to register /api/sessions/* (POST /api/sessions/play, used by
     // the coach_play listing test below) — the LLM-facing fields are never
@@ -189,6 +214,95 @@ describe('POST/GET /api/games', () => {
     expect(jobQueue.enqueueAnalyzeGame).not.toHaveBeenCalled();
   });
 
+  // Bug report: re-selecting an already-imported game from the Lichess/
+  // Chess.com picker (which has no memory of what's already in the library)
+  // used to insert a second row starting back at the bottom of the
+  // review-tier stack — making a game already promoted to Review look like
+  // it "reverted" to Imported when really an indistinguishable duplicate had
+  // just appeared alongside it.
+  test('re-importing the exact same pgn returns the existing game instead of creating a duplicate', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('dedup-import@example.com', 'Dedup');
+
+    const first = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const second = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      // A re-import via a different source (e.g. re-picking a Lichess game
+      // already pasted in manually) is still the same real game.
+      payload: { pgn: VALID_PGN, source: 'lichess', userColor: 'white' }
+    });
+
+    expect(second.statusCode).toBe(200);
+    expect(second.json()).toEqual(first.json());
+
+    const user = await usersRepo.findByEmail(db, 'dedup-import@example.com');
+    const rows = await db
+      .selectFrom('games')
+      .selectAll()
+      .where('pgn', '=', VALID_PGN)
+      .where('userId', '=', user?.id ?? '')
+      .execute();
+    expect(rows).toHaveLength(1);
+    expect(jobQueue.enqueueAnalyzeGame).toHaveBeenCalledTimes(1);
+  });
+
+  test('re-importing the same pgn in stat-bank (deferAnalysis) mode returns the existing game without creating a duplicate', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('dedup-defer@example.com', 'DedupDefer');
+
+    const first = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'lichess', userColor: 'white', deferAnalysis: true }
+    });
+    const second = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'lichess', userColor: 'white', deferAnalysis: true }
+    });
+
+    expect(second.statusCode).toBe(200);
+    expect(second.json()).toEqual(first.json());
+    expect(second.json().analysisId).toBeNull();
+    expect(jobQueue.enqueueAnalyzeGame).not.toHaveBeenCalled();
+  });
+
+  test('re-importing a game already promoted to Review leaves its review tier alone', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('dedup-review@example.com', 'DedupReview');
+
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'lichess', userColor: 'white' }
+    });
+    const { gameId, analysisId } = imported.json();
+    await analysesRepo.markReady(db, analysisId, PLAN);
+    await app.inject({ method: 'POST', url: `/api/games/${gameId}/promote`, headers, payload: { tier: 'review' } });
+
+    const reimported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'lichess', userColor: 'white' }
+    });
+
+    expect(reimported.json().gameId).toBe(gameId);
+    const list = await app.inject({ method: 'GET', url: '/api/games', headers });
+    expect(list.json()).toContainEqual(expect.objectContaining({ id: gameId, reviewTier: 'review' }));
+    expect(list.json()).toHaveLength(1);
+  });
+
   test('detects userColor from PGN headers when omitted from the request', async () => {
     const app = buildTestApp();
     const headers = headersFor('ann-detect@example.com', 'Ann');
@@ -207,6 +321,39 @@ describe('POST/GET /api/games', () => {
       .where('id', '=', response.json().gameId)
       .executeTakeFirstOrThrow();
     expect(game.userColor).toBe('white');
+  });
+
+  // Task 51.3: everything Tasks 51.1/51.2 can extract from the raw PGN
+  // actually lands on the stored row.
+  test('importing a Lichess PGN with clocks stores rating/rated/termination/variant/speed and non-null move_times', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('ann-metadata@example.com', 'Ann');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: LICHESS_ANNOTATED_PGN, source: 'paste', userColor: 'white' }
+    });
+
+    expect(response.statusCode).toBe(200);
+    const game = await db
+      .selectFrom('games')
+      .selectAll()
+      .where('id', '=', response.json().gameId)
+      .executeTakeFirstOrThrow();
+
+    expect(game.whiteElo).toBe(1500);
+    expect(game.blackElo).toBe(1520);
+    expect(game.ratingsProvisional).toBe(false);
+    expect(game.rated).toBe(true);
+    expect(game.termination).toBe('Normal');
+    expect(game.variant).toBe('Standard');
+    expect(game.speed).toBe('blitz');
+    expect(game.playedAtTime).toBe('12:34:56');
+    expect(game.moveTimes).not.toBeNull();
+    expect(Array.isArray(game.moveTimes)).toBe(true);
+    expect((game.moveTimes as unknown[]).length).toBeGreaterThan(0);
   });
 
   test('rejects an illegal PGN as 400 problem+json', async () => {
@@ -290,6 +437,31 @@ describe('POST/GET /api/games', () => {
     expect(user?.chesscomUsername).toBe('cc_learner');
   });
 
+  // Task 51.6: source: 'chesscom' (the new client's own import path) must
+  // learn the username the same way source: 'lichess' already does, even
+  // with no Site header naming chess.com to sniff.
+  test('learns the chess.com username from source: "chesscom" alone, with no Site header to sniff', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('cc-source-learner@example.com', 'CcSourceLearner');
+    const noSiteHeaderPgn = `[Event "Test"]
+[White "cc_source_learner"]
+[Black "Bob"]
+[Result "1-0"]
+
+1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0`;
+
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: noSiteHeaderPgn, source: 'chesscom', userColor: 'white' }
+    });
+    expect(imported.statusCode).toBe(200);
+
+    const user = await usersRepo.findByEmail(db, 'cc-source-learner@example.com');
+    expect(user?.chesscomUsername).toBe('cc_source_learner');
+  });
+
   test('never overwrites an already-known lichess username', async () => {
     const app = buildTestApp();
     const headers = headersFor('already-known@example.com', 'AlreadyKnown');
@@ -330,20 +502,25 @@ describe('POST/GET /api/games', () => {
   test('rate limits at 10 imports/day, returning 429 on the 11th', async () => {
     const app = buildTestApp();
     const headers = headersFor('prolific@example.com', 'Prolific');
-    const importOnce = () =>
+    // Distinct PGN text per call (a varying Round header) — the dedup guard
+    // (findByUserAndPgn) would otherwise resolve every repeat of the same
+    // exact PGN to the same existing game rather than counting toward the
+    // limit, which is exactly the behavior under test here: 11 genuinely
+    // different games.
+    const importOnce = (round: number) =>
       app.inject({
         method: 'POST',
         url: '/api/games',
         headers,
-        payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+        payload: { pgn: VALID_PGN.replace('[Event "Test"]', `[Event "Test"]\n[Round "${round}"]`), source: 'paste', userColor: 'white' }
       });
 
     for (let i = 0; i < 10; i++) {
-      const response = await importOnce();
+      const response = await importOnce(i);
       expect(response.statusCode).toBe(200);
     }
 
-    const eleventh = await importOnce();
+    const eleventh = await importOnce(10);
     expect(eleventh.statusCode).toBe(429);
     expect(eleventh.headers['content-type']).toContain('application/problem+json');
   });
@@ -380,21 +557,13 @@ describe('POST/GET /api/games', () => {
       payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
     });
     const { gameId } = imported.json();
-    const analysis = await analysesRepo.findByGameId(db, gameId);
-    if (!analysis) throw new Error('expected an analysis row to exist for the imported game');
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, [
-      {
-        ply: 1,
-        moveSan: 'e4',
-        mover: 'white',
-        isUserMove: true,
-        cpLoss: 0,
-        quality: 'good',
-        bestLineSan: ['e4'],
-        evalAfterCp: 20,
-        hangsPiece: false
-      }
-    ]);
+    const game = await gamesRepo.findById(db, gameId);
+    if (!game) throw new Error('expected the imported game to exist');
+    const annotatedPgn = buildAnnotatedPgn(
+      game.pgn,
+      new Map([[1, { quality: 'good', cpLoss: 0, bestLineSan: ['e4'], evalAfterCp: 20, hangsPiece: false }]])
+    );
+    await gamesRepo.updateAnnotatedPgn(db, gameId, annotatedPgn);
 
     const detail = await app.inject({ method: 'GET', url: `/api/games/${gameId}`, headers });
 
@@ -447,17 +616,11 @@ describe('POST/GET /api/games', () => {
       eco: null,
       playedAt: null
     });
-    await gameMoveQualitiesRepo.insert(db, {
-      gameId: game.id,
-      ply: 1,
-      moveSan: 'e4',
-      mover: 'white',
-      quality: 'best',
-      cpLoss: 0,
-      bestLineSan: ['e4'],
-      evalAfterCp: 20,
-      reasons: []
-    });
+    const annotatedPgn = buildAnnotatedPgn(
+      game.pgn,
+      new Map([[1, { quality: 'best', cpLoss: 0, bestLineSan: ['e4'], evalAfterCp: 20, hangsPiece: false, reasons: [] }]])
+    );
+    await gamesRepo.updateAnnotatedPgn(db, game.id, annotatedPgn);
 
     const detail = await app.inject({ method: 'GET', url: `/api/games/${game.id}`, headers });
 
@@ -504,6 +667,42 @@ describe('POST/GET /api/games', () => {
       url: `/api/games/${gameId}`,
       headers: intruder
     });
+
+    expect(response.statusCode).toBe(404);
+  });
+
+  test('GET /api/games/:id/pgn downloads the game\'s stored PGN as an attachment', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('pgn-export@example.com', 'PgnExport');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId } = imported.json();
+
+    const response = await app.inject({ method: 'GET', url: `/api/games/${gameId}/pgn`, headers });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('application/x-chess-pgn; charset=utf-8');
+    expect(response.headers['content-disposition']).toBe('attachment; filename="ann-vs-bob-' + new Date().toISOString().slice(0, 10) + '.pgn"');
+    expect(response.body).toContain('Qxf7#');
+  });
+
+  test('GET /api/games/:id/pgn 404s for another user\'s game', async () => {
+    const app = buildTestApp();
+    const owner = headersFor('pgn-owner@example.com', 'PgnOwner');
+    const intruder = headersFor('pgn-intruder@example.com', 'PgnIntruder');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers: owner,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId } = imported.json();
+
+    const response = await app.inject({ method: 'GET', url: `/api/games/${gameId}/pgn`, headers: intruder });
 
     expect(response.statusCode).toBe(404);
   });
@@ -630,5 +829,185 @@ describe('POST/GET /api/games', () => {
 
     const stillThere = await app.inject({ method: 'GET', url: `/api/games/${gameId}`, headers: owner });
     expect(stillThere.statusCode).toBe(200);
+  });
+
+  test('a freshly imported game starts in the imported tier', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('tier-default@example.com', 'TierDefault');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId } = imported.json();
+
+    const list = await app.inject({ method: 'GET', url: '/api/games', headers });
+    expect(list.json()).toContainEqual(expect.objectContaining({ id: gameId, reviewTier: 'imported' }));
+  });
+
+  test('POST /api/games/:id/promote moves a ready, imported game up to review', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('promote-review@example.com', 'PromoteReview');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId, analysisId } = imported.json();
+    await analysesRepo.markReady(db, analysisId, PLAN);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/games/${gameId}/promote`,
+      headers,
+      payload: { tier: 'review' }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ reviewTier: 'review' });
+
+    const list = await app.inject({ method: 'GET', url: '/api/games', headers });
+    expect(list.json()).toContainEqual(expect.objectContaining({ id: gameId, reviewTier: 'review' }));
+  });
+
+  test('POST /api/games/:id/promote can jump straight from imported to coach', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('promote-coach@example.com', 'PromoteCoach');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId, analysisId } = imported.json();
+    await analysesRepo.markReady(db, analysisId, PLAN);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/games/${gameId}/promote`,
+      headers,
+      payload: { tier: 'coach' }
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ reviewTier: 'coach' });
+  });
+
+  test('POST /api/games/:id/promote rejects a game whose analysis is not ready yet', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('promote-not-ready@example.com', 'PromoteNotReady');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId } = imported.json();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/games/${gameId}/promote`,
+      headers,
+      payload: { tier: 'review' }
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  test('POST /api/games/:id/promote rejects demoting/repeating a tier (coach -> review)', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('promote-invalid@example.com', 'PromoteInvalid');
+    const owner = await usersRepo.insert(db, { email: 'promote-invalid@example.com', displayName: 'PromoteInvalid' });
+    const game = await gamesRepo.insert(db, {
+      userId: owner.id,
+      pgn: '1. e4',
+      source: 'coach_play',
+      userColor: 'white',
+      whiteName: 'You',
+      blackName: 'Coach',
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/games/${game.id}/promote`,
+      headers,
+      payload: { tier: 'review' }
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  // Promoting a finished vs_bot game to Coach creates a brand-new 'analyze'
+  // session for it (via POST /api/sessions, same as any other ready game) —
+  // the row's sessionId must stay null (not leak that analyze session's id)
+  // since findActiveByGameIdForUser is now mode-scoped: a vs_bot row only
+  // ever surfaces a still-active 'play_bot' session, and this game has none.
+  // Before that fix, GamesPage would have shown "Continue" and routed this
+  // row into /bot-session/:id — a finished game rendered as though the bot
+  // match were still live, polling for a bot reply that never comes.
+  test('promoting a finished vs_bot game to coach does not leak its new analyze session as a live bot session', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('vsbot-promote@example.com', 'VsBotPromote');
+    const owner = await usersRepo.insert(db, { email: 'vsbot-promote@example.com', displayName: 'VsBotPromote' });
+    const game = await gamesRepo.insert(db, {
+      userId: owner.id,
+      pgn: VALID_PGN,
+      source: 'vs_bot',
+      userColor: 'white',
+      whiteName: 'You',
+      blackName: 'Bot',
+      result: '1-0',
+      timeControl: null,
+      eco: null,
+      playedAt: null,
+      botId: BOT_ROSTER[0]!.id,
+      botConfigSnapshot: BOT_ROSTER[0]!
+    });
+    const analysis = await analysesRepo.insertQueued(db, game.id);
+    await analysesRepo.markReady(db, analysis.id, PLAN);
+
+    const promote = await app.inject({
+      method: 'POST',
+      url: `/api/games/${game.id}/promote`,
+      headers,
+      payload: { tier: 'coach' }
+    });
+    expect(promote.statusCode).toBe(200);
+
+    const session = await app.inject({ method: 'POST', url: '/api/sessions', headers, payload: { gameId: game.id } });
+    expect(session.statusCode).toBe(200);
+
+    const list = await app.inject({ method: 'GET', url: '/api/games', headers });
+    expect(list.json()).toContainEqual(
+      expect.objectContaining({ id: game.id, source: 'vs_bot', reviewTier: 'coach', sessionId: null })
+    );
+  });
+
+  test('POST /api/games/:id/promote 404s for another user\'s game', async () => {
+    const app = buildTestApp();
+    const owner = headersFor('promote-owner@example.com', 'PromoteOwner');
+    const intruder = headersFor('promote-intruder@example.com', 'PromoteIntruder');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers: owner,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId, analysisId } = imported.json();
+    await analysesRepo.markReady(db, analysisId, PLAN);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/games/${gameId}/promote`,
+      headers: intruder,
+      payload: { tier: 'review' }
+    });
+    expect(response.statusCode).toBe(404);
   });
 });

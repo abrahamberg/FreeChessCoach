@@ -7,7 +7,13 @@
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
-  z-index: 20;
+  /* Above every other layer a board route can stack on top of it — the
+   * fixed chat composer, an expanded CoachCard overlay, a Game Report
+   * bottom sheet — so this menu (now also the one place a board route can
+   * reach Settings/the engine indicator/coach voice controls from, see
+   * SessionPage/BotSessionPage/GameReviewPage) never renders underneath
+   * any of them. */
+  z-index: 40;
   min-width: 180px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);

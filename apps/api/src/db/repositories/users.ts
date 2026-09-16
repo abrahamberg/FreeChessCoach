@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { CoachPersona, EngineMode, RatingBand, TtsBackend } from '@freechesscoach/shared';
+import type { CoachPersona, EngineMode, RatingBand, RatingSource, TtsBackend } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
 
 export interface UserRow {
@@ -7,6 +7,8 @@ export interface UserRow {
   email: string;
   displayName: string;
   ratingBand: RatingBand;
+  rating: number | null;
+  ratingSource: RatingSource | null;
   engineMode: EngineMode;
   coachPersona: CoachPersona;
   lichessUsername: string | null;
@@ -32,6 +34,11 @@ export interface UserPatch {
   // both write this.
   displayName?: string;
   ratingBand?: RatingBand;
+  /** Only ever set together, by user-profile.ts's updateProfile when a
+   * numeric rating comes in — see deriveRatingBand's doc comment for why
+   * ratingBand isn't independently patchable once a rating is known. */
+  rating?: number;
+  ratingSource?: RatingSource;
   engineMode?: EngineMode;
   coachPersona?: CoachPersona;
   lichessUsername?: string | null;

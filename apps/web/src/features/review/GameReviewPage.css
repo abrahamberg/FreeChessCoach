@@ -1,0 +1,221 @@
+/* The read-only Game Review page — same board-column/eval-bar building
+ * blocks SessionPage.css lays out for the coaching session (this reuses
+ * their class names, e.g. .session-board-column, so their un-prefixed base
+ * rules apply for free), just without a chat column to share space with. */
+
+.game-review-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* "Continue with Coach" is a small icon inside MoveNoteCard's own header
+ * now (move-note-card__coach-button) — this only ever appears on a failure,
+ * so it costs no space the rest of the time. */
+.game-review-page__error {
+  margin: var(--space-2) var(--space-4) 0;
+  color: var(--color-danger);
+}
+
+.game-review-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+  gap: var(--space-4);
+}
+
+.game-review-body.desktop {
+  flex-direction: row;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.game-review-body.desktop .session-board-column {
+  width: min(72vh, 720px);
+  max-width: 100%;
+  min-width: 0;
+  flex: 0 1 auto;
+  height: 100%;
+  margin: 0 auto;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.game-review-body.desktop .session-board-row {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.game-review-body.desktop .session-board-column .game-eval-chart {
+  align-self: stretch;
+}
+
+.game-review-explorer-column {
+  width: 300px;
+  flex: 0 0 300px;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.game-review-explorer-column .move-explorer {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Collapsed (the default): a slim header bar at the bottom of the column.
+ * Expanded: floats over the move list instead of pushing it around. */
+.game-review-explorer-column .game-report-summary--expanded {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 70%;
+  z-index: 2;
+}
+
+/* The desktop layout's right column — same width/chrome as SessionPage
+ * .css's .chat-pane, since this occupies the exact spot a coaching
+ * session's chat would. MoveNoteCard's own mobile sizing (a capped height
+ * so it doesn't grow the whole page, its own border/shadow/radius for
+ * sitting directly on the page background) doesn't apply here — the column
+ * already provides that chrome, and should fill the full column height
+ * instead of capping at a fraction of it. */
+.game-review-notes-column {
+  width: 400px;
+  flex: 0 0 400px;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.game-review-notes-column .move-note-card {
+  height: 100%;
+  max-height: none;
+  padding: var(--space-4);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.game-review-notes-column .move-note-card__body {
+  flex: 1;
+}
+
+/* --- mobile (below this page's own desktop breakpoint): note card, then
+ * the board, then nav pills + move strip below it (chess.com's own
+ * ordering: note above the board, moves below). Daniel's second-round call,
+ * after the board still read as too small next to chess.com's own review:
+ * the board's size should come from its own width (edge-to-edge, like
+ * chess.com — see .session-board-column below) rather than from whatever
+ * vertical space its neighbors happen to leave behind, so the board column
+ * and nav strip stay flex: 0 0 auto (content-sized) while the note card is
+ * the one sibling that grows to fill the real header-to-board gap (see
+ * .game-review-body.mobile .move-note-card below) — same call
+ * SessionPage.css's own .coach-card rule makes for the live coaching
+ * session's card: switching between a short note and a long one must not
+ * move the board sitting right below it. The page can still scroll on a
+ * phone short/narrow enough that the stack doesn't fit, rather than
+ * clipping or shrinking anything. Game Report is a fixed bottom sheet
+ * below, not a flex child here — see .board-bottom-bar--report. */
+.game-review-body.mobile {
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Tighter than the base .game-review-body gap — every pixel here is a
+   * pixel the board doesn't get, and four stacked elements at the base
+   * var(--space-4) gap adds up fast on a phone. */
+  gap: var(--space-2);
+  /* Also tighter than the base .game-review-body padding, top/bottom only —
+   * same "the board is the scarcest-space element on a phone" call
+   * SessionPage.css makes for the live session's own board column. Left/right
+   * stay at the base var(--space-4): that's reading margin for the note card
+   * and MoveStrip's edge-to-edge scroll area (see its own negative-margin
+   * full-bleed below) — the board goes edge-to-edge too, but via its own
+   * negative margin below, not by removing this page-level inset. */
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+
+/* Only when a Game Report sheet actually exists below (GameReviewPage.tsx
+ * only renders .board-bottom-bar--report when game.gameReport is present)
+ * — reserves room at the bottom for it, since it's position: fixed and so
+ * takes no space in this flex flow on its own. Without this, the
+ * board/note/strip stack would extend the full column height and the
+ * sheet's handle would sit on top of the board's bottom ranks even when
+ * collapsed. 44px is the collapsed ribbon's own measured height (just
+ * .game-report-summary__header — the headline cards and expand-toggle are
+ * hidden while collapsed, see .board-bottom-bar--report below) — fixed
+ * regardless of viewport, so a constant here tracks it fine;
+ * env(safe-area-inset-bottom) matches the same inset the sheet pads itself
+ * by. */
+.game-review-body.mobile.has-report-sheet {
+  padding-bottom: calc(44px + env(safe-area-inset-bottom));
+}
+
+/* Fills the real gap between the header and the board instead of a fixed
+ * guessed height — overrides both MoveNoteCard.css's own `height: auto` and
+ * its 38vh cap (max-height: none), the same flex-fill CoachCard.css's own
+ * .coach-card__slot already wants to do by default (SessionPage.css's
+ * .coach-card rule does the identical thing for the live coaching session's
+ * card). Switching between a short note and a long one (or landing on the
+ * empty "select a move" state) never resizes the card or shifts the board
+ * sitting right below it in this stack — a short note just leaves blank
+ * space below it inside the card; a long one scrolls internally via
+ * .move-note-card__body's own overflow-y: auto. The desktop notes column
+ * ignores this entirely — it fills the column instead, see
+ * .game-review-notes-column below. */
+.game-review-body.mobile .move-note-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.game-review-body.mobile .move-nav-strip {
+  flex: 0 0 auto;
+}
+
+/* Edge-to-edge, chess.com-style — negative-margins out of this page's own
+ * side padding (the same full-bleed trick .move-strip already uses below),
+ * so the board's available width is the full device width instead of
+ * width-minus-padding. flex: 0 0 auto (not flex: 1) so this column claims
+ * only the height its own content (eval bar + board, both sized from
+ * width) actually needs, rather than stretching to fill whatever's left
+ * and centering the board inside that extra room — that stretch-then-center
+ * was exactly what read as "dead space" bracketing the board. */
+.game-review-body.mobile .session-board-column {
+  flex: 0 0 auto;
+  margin: 0 calc(-1 * var(--space-4));
+  /* Zeroes out .session-board-column's own inherited side padding
+   * (SessionPage.css) on top of the negative margin above — otherwise the
+   * column's own padding would still inset the board from the edge the
+   * negative margin just extended it to, leaving a smaller but still
+   * visible gap instead of a true edge-to-edge board. */
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Flat corners at the screen edge, chess.com-style — .coach-board-frame's
+ * own border-radius (CoachBoard.css) reads oddly once the board is flush
+ * against both edges rather than inset with margin around it. */
+.game-review-body.mobile .session-board-column .coach-board-frame {
+  border-radius: 0;
+}
+
+/* Game Report as a bottom sheet ("a layer on top of the board with a button
+ * to expand from bottom to top overlaying the board while expanded") is a
+ * shared .board-bottom-bar--report look, not Review-specific — Play vs Bot's
+ * mobile view renders the same bar once its own post-game report exists —
+ * so those rules live once in board-bottom-bar.css rather than here. */

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { textFrames, toolCallFrame } from '../../../test/helpers/uiMessageStream.js';
+import { textFrames, toolCallFrame, toolOutputFrame } from '../../../test/helpers/uiMessageStream.js';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { ChessboardOptions, PieceDropHandlerArgs } from 'react-chessboard';
@@ -57,6 +57,10 @@ interface SessionFixture {
   /** Settings-page coach-voice master switch — defaults to false (off),
    * matching the real default; tests exercising the voice UI opt in. */
   ttsEnabled?: boolean;
+  /** Defaults to 'analyze' (SessionDetailSchema's own default) — set to
+   * 'play' for tests exercising the coach-vs-student sparring flow
+   * (play_coach_move/undo_last_move resolving mid-stream). */
+  mode?: 'analyze' | 'play' | 'play_bot';
 }
 
 // Most tests aren't about the fresh-session kickoff behavior — default to a
@@ -78,6 +82,7 @@ function mockFetch(session: SessionFixture = {}, extra: (path: string) => Respon
             id: 'session-1',
             gameId: 'game-1',
             status: session.status ?? 'active',
+            mode: session.mode ?? 'analyze',
             currentPly: 0,
             subjectPly: session.subjectPly ?? 0,
             summary: session.summary ?? null,
@@ -96,6 +101,8 @@ function mockFetch(session: SessionFixture = {}, extra: (path: string) => Respon
             email: 'daniel@example.com',
             displayName: 'daniel',
             ratingBand: 'club',
+            rating: null,
+            ratingSource: null,
             engineMode: 'native',
             coachPersona: session.coachPersona ?? 'general',
             lichessUsername: null,
@@ -154,23 +161,51 @@ describe('SessionPage', () => {
     vi.useRealTimers();
   });
 
-  test('below 768px the board and the coach are two switchable panels, not a stack', async () => {
+  test('below 768px, board and chat stack on one screen — no Board/Coach tabs', async () => {
     mockMatchMedia(false);
     window.localStorage.clear();
     vi.stubGlobal('fetch', mockFetch());
+    renderSessionPage();
+
+    await screen.findByTestId('mock-chessboard');
+    // No more tab switch (GameReviewPage's own mobile structure, reused
+    // here) — the board's own controls and the chat panel are both on
+    // screen at once, not hidden behind a Board/Coach segmented control.
+    expect(screen.queryByRole('tablist', { name: /session view/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
+
+    // The composer is always open, iMessage-style — no tap-to-reveal step.
+    expect(screen.getByRole('textbox', { name: /reply/i })).toBeInTheDocument();
+  });
+
+  test('below 768px, only the current transcript entry shows — paged left/right, same as GameReviewPage\'s move notes', async () => {
+    mockMatchMedia(false);
+    window.localStorage.clear();
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        messages: [
+          { id: 'm1', role: 'assistant', content: 'First things first — what did you think of your opening?' },
+          { id: 'm2', role: 'user', content: 'It felt fine, standard stuff.' },
+          { id: 'm3', role: 'assistant', content: 'Right, nothing to flag there.' }
+        ]
+      })
+    );
     const user = userEvent.setup();
     renderSessionPage();
 
     await screen.findByTestId('mock-chessboard');
-    // Opens on the coach: the composer is reachable, the board's own controls
-    // are not (both panels are mounted — only one is exposed).
-    expect(screen.getByRole('textbox', { name: /reply/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /explore on your own/i })).not.toBeInTheDocument();
+    // Opens on the latest message only — the earlier ones aren't on screen
+    // at the same time.
+    expect(screen.getByText('Right, nothing to flag there.')).toBeInTheDocument();
+    expect(screen.queryByText('It felt fine, standard stuff.')).not.toBeInTheDocument();
+    expect(screen.getByText('message 3 of 3')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: /board/i }));
+    await user.click(screen.getByRole('button', { name: /previous message/i }));
 
-    expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
-    expect(screen.queryByRole('textbox', { name: /reply/i })).not.toBeInTheDocument();
+    expect(screen.getByText('It felt fine, standard stuff.')).toBeInTheDocument();
+    expect(screen.queryByText('Right, nothing to flag there.')).not.toBeInTheDocument();
+    expect(screen.getByText('message 2 of 3')).toBeInTheDocument();
   });
 
   test('at/above 768px the split layout is unchanged — board and chat together, no view switch', async () => {
@@ -335,6 +370,80 @@ describe('SessionPage', () => {
     expect(screen.getByText(/diverged line/i)).toBeInTheDocument();
   });
 
+  test('play mode: a rejected play_coach_move leaves the board at the student\'s own move instead of corrupting it', async () => {
+    // architecture §14: the student's own move commits synchronously via
+    // POST /play-move, then the follow-up chat turn tries to play the
+    // coach's own reply via play_coach_move — which the server can reject
+    // (an illegal move) the same way undo_last_move already can. Regression
+    // for handleServerToolResult applying an `{ error }` result's
+    // `undefined` fen/ply straight onto the board (useSessionPageData.ts),
+    // which left react-chessboard fed `''` until a hard reload.
+    const AFTER_STUDENT_MOVE_FEN = 'rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3';
+    const fetchMock = mockFetch({ mode: 'play', subjectPly: 3 }, (path) => {
+      if (path === '/api/sessions/session-1/play-move') {
+        return new Response(
+          JSON.stringify({ fen: AFTER_STUDENT_MOVE_FEN, san: 'Nf6', ply: 4, quality: 'best' }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        );
+      }
+      if (path === '/api/sessions/session-1/messages') {
+        return streamResponse([
+          ...textFrames('Nice development move.'),
+          toolCallFrame({ toolCallId: 'call-1', toolName: 'play_coach_move', input: { san: 'Qh5' } }),
+          toolOutputFrame('call-1', { error: 'that move is not legal here' })
+        ]);
+      }
+      return undefined;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderSessionPage();
+
+    await vi.waitFor(() => expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument());
+    const options = capturedOptions.at(-1);
+    act(() => {
+      options?.onPieceDrop?.({
+        piece: { pieceType: 'bN' },
+        sourceSquare: 'g8',
+        targetSquare: 'f6'
+      } as PieceDropHandlerArgs);
+    });
+
+    await screen.findByText('Nice development move.');
+    expect(capturedOptions.at(-1)?.position).toBe(AFTER_STUDENT_MOVE_FEN);
+  });
+
+  test('play mode: undo_last_move actually moves the board back a ply, not the ply that was popped', async () => {
+    // Regression for applyUndoLastMove (useSessionPageData.ts) treating
+    // `removedPly` as "the ply the game is left at" when play-moves.ts
+    // documents (and bot-undo.ts/coach-agent-turn.ts both already handle)
+    // it as "the ply that was POPPED" — one ply ahead of `output.fen`. Used
+    // as-is, the popped move's own stale position entry never got
+    // truncated out of `positions` and the board's `ply` pointed straight
+    // at it, so positions.find resolved back to the pre-undo position and
+    // the undo looked like it did nothing.
+    const AFTER_UNDO_FEN = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2';
+    const fetchMock = mockFetch({ mode: 'play', subjectPly: 3 }, (path) => {
+      if (path === '/api/sessions/session-1/messages') {
+        return streamResponse([
+          ...textFrames('Sure — taking that back.'),
+          toolCallFrame({ toolCallId: 'call-1', toolName: 'undo_last_move', input: {} }),
+          toolOutputFrame('call-1', { fen: AFTER_UNDO_FEN, removedPly: 3 })
+        ]);
+      }
+      return undefined;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    renderSessionPage();
+
+    await vi.waitFor(() => expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument());
+    await user.type(screen.getByRole('textbox', { name: /reply/i }), 'actually take that back');
+    await user.click(screen.getByRole('button', { name: /send/i }));
+
+    await screen.findByText('Sure — taking that back.');
+    expect(capturedOptions.at(-1)?.position).toBe(AFTER_UNDO_FEN);
+  });
+
   test('a completed session renders the summary card instead of the board and chat', async () => {
     vi.stubGlobal('fetch', mockFetch({ status: 'completed', summary: 'Great progress on king safety.', homework: null }));
     const user = userEvent.setup();
@@ -394,49 +503,12 @@ describe('SessionPage', () => {
     const divider = within(screen.getByTestId('message-list')).getByText(/move 1 \(black\)/i).closest('.position-divider');
     expect(divider).toHaveTextContent('e5');
 
-    // The board anchors one ply BEFORE the move being discussed, so this
-    // reopens showing the position after 1.e4, not after 1...e5, with a red
-    // arrow for the move actually played (1...e5) — resuming a session at a
-    // nonzero subjectPly reconstructs the same anchor+arrow state a fresh
-    // show_position(..., preMove: true) call would leave it in.
+    // Resuming a session at a nonzero subjectPly shows the real, final
+    // position for that move, fully revealed — same as a fresh
+    // show_position call always does now.
     const options = capturedOptions.at(-1);
-    expect(options?.position).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
-    expect(options?.arrows).toEqual([{ startSquare: 'e7', endSquare: 'e5', color: 'var(--played-move)' }]);
-  });
-
-  test('the played-move reveal pill shows the real outcome on click', async () => {
-    vi.stubGlobal(
-      'fetch',
-      mockFetch({
-        subjectPly: 2,
-        messages: [
-          { id: 'm1', role: 'user', content: '[session_start]' },
-          {
-            id: 'm2',
-            role: 'assistant',
-            content: [
-              { type: 'text', text: 'Let me show you.' },
-              {
-                type: 'tool-call',
-                toolName: 'show_position',
-                input: { moveNumber: 1, color: 'black' },
-                toolCallId: 'call-1'
-              }
-            ]
-          }
-        ]
-      })
-    );
-    renderSessionPage();
-    const user = userEvent.setup();
-
-    await screen.findByText(/let's dive into your game|let me show you/i);
-    expect(capturedOptions.at(-1)?.position).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
-
-    await user.click(screen.getByRole('button', { name: /reveal/i }));
-
-    expect(capturedOptions.at(-1)?.position).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2');
-    expect(screen.queryByRole('button', { name: /reveal/i })).not.toBeInTheDocument();
+    expect(options?.position).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2');
+    expect(options?.arrows).toEqual([]);
   });
 
   test('a persisted show_position tool-call in the OLD {ply} shape (pre-move-number-fix data) still reopens correctly, not as NaN', async () => {
@@ -463,14 +535,12 @@ describe('SessionPage', () => {
     const divider = within(screen.getByTestId('message-list')).getByText(/move 1 \(black\)/i).closest('.position-divider');
     expect(divider).toHaveTextContent('e5');
 
-    // The board anchors one ply BEFORE the move being discussed, so this
-    // reopens showing the position after 1.e4, not after 1...e5, with a red
-    // arrow for the move actually played (1...e5) — same as the reload test
-    // above, this old {ply} data shape only affects the position divider's
-    // parsing, not the resumed anchor/arrow state.
+    // Same as the reload test above, this old {ply} data shape only affects
+    // the position divider's parsing, not the resumed board position — it
+    // still shows the real, final position, fully revealed.
     const options = capturedOptions.at(-1);
-    expect(options?.position).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
-    expect(options?.arrows).toEqual([{ startSquare: 'e7', endSquare: 'e5', color: 'var(--played-move)' }]);
+    expect(options?.position).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2');
+    expect(options?.arrows).toEqual([]);
   });
 
   test('a fresh session (only the internal [session_start] marker, no assistant reply yet) auto-kicks off the coach opening turn', async () => {
@@ -656,7 +726,7 @@ describe('SessionPage', () => {
             toolCallFrame({
               toolCallId: 'call-1',
               toolName: 'show_position',
-              input: { moveNumber: 1, color: 'black', intent: 'subject', preMove: true }
+              input: { moveNumber: 1, color: 'black', intent: 'subject' }
             })
           ])
         : streamResponse([...textFrames('There it is.')]);
@@ -671,10 +741,9 @@ describe('SessionPage', () => {
     await user.type(screen.getByPlaceholderText(/ask about this position/i), 'show me move 1 for black');
     await user.keyboard('{Enter}');
 
-    // preMove: true anchors one ply BEFORE the move being discussed,
-    // i.e. the position after 1.e4.
+    // show_position moves the board straight to the real, final position.
     await vi.waitFor(() =>
-      expect(capturedOptions.at(-1)?.position).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1')
+      expect(capturedOptions.at(-1)?.position).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2')
     );
 
     // ...and marks the jump in the transcript with a position divider.

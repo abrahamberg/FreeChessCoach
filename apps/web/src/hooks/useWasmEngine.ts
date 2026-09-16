@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { cpToWords, mateToWords } from '../engine/eval-words.js';
 import { getSharedEngineWorker } from '../engine/shared-engine-worker-instance.js';
 import type { SharedEngineWorkerOptions } from '../engine/shared-engine-worker.js';
 
@@ -19,23 +20,6 @@ export interface UseWasmEngineResult {
 }
 
 const EXPLORE_DEPTH = 15;
-
-function cpToWords(cp: number, sideToMove: 'w' | 'b'): string {
-  const whiteCp = sideToMove === 'w' ? cp : -cp;
-  const abs = Math.abs(whiteCp);
-  const side = whiteCp >= 0 ? 'White' : 'Black';
-  if (abs < 50) return 'The position is roughly equal';
-  if (abs < 150) return `${side} is slightly better`;
-  if (abs < 400) return `${side} is better`;
-  if (abs < 900) return `${side} is much better`;
-  return `${side} is winning`;
-}
-
-function mateToWords(mateIn: number, sideToMove: 'w' | 'b'): string {
-  const whiteMateIn = sideToMove === 'w' ? mateIn : -mateIn;
-  const side = whiteMateIn > 0 ? 'White' : 'Black';
-  return `${side} has a forced mate in ${Math.abs(whiteMateIn)}`;
-}
 
 function parseUciSquares(uciMove: string): EngineBestMoveArrow {
   return { from: uciMove.slice(0, 2), to: uciMove.slice(2, 4) };

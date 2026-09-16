@@ -6,9 +6,19 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { SettingsPage } from './SettingsPage.js';
 
 const PROFILE = {
-  id: '7d9f2a44-9a5f-4f6e-b1a1-0a4c1e2d3f4b', email: 'daniel@example.com', displayName: 'daniel',
-  ratingBand: 'club', lichessUsername: null, chesscomUsername: null, selfAssessment: null,
-  engineMode: 'native', coachPersona: 'general', ttsEnabled: false, ttsBackend: 'openai'
+  id: '7d9f2a44-9a5f-4f6e-b1a1-0a4c1e2d3f4b',
+  email: 'daniel@example.com',
+  displayName: 'daniel',
+  ratingBand: 'club',
+  rating: null,
+  ratingSource: null,
+  lichessUsername: null,
+  chesscomUsername: null,
+  selfAssessment: null,
+  engineMode: 'native',
+  coachPersona: 'general',
+  ttsEnabled: false,
+  ttsBackend: 'openai'
 };
 const EMPTY_SETUP = { configured: false, unlocked: false, voiceAvailable: false };
 

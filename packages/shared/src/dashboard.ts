@@ -1,9 +1,13 @@
 import { z } from 'zod';
 import { MISTAKE_CATEGORIES } from './constants.js';
+import { DiagnosisCodeIdSchema } from './diagnosis/index.js';
 import { PlayerColorSchema } from './game.js';
 
+/** `diagnosisCode` is Task 57.3's code-level target — nullable for legacy
+ * rows created before focus-area selection became programmatic. */
 export const FocusAreaSummarySchema = z.object({
   category: z.enum(MISTAKE_CATEGORIES),
+  diagnosisCode: DiagnosisCodeIdSchema.nullable(),
   status: z.enum(['active', 'improving', 'resolved']),
   note: z.string(),
   evidenceCount: z.number().int(),

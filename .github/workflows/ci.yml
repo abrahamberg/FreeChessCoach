@@ -4,13 +4,28 @@ on:
   push:
     branches: ['**']
   pull_request:
+  schedule:
+    # Full-suite safety net: --changed only sees files a test statically
+    # imports, so a regenerated fixture (e.g. data/*.csv, data/*.tsv) or any
+    # other change with no import edge to its test could slip past the
+    # affected-only run below. This catches that drift daily.
+    - cron: '17 3 * * *'
   workflow_dispatch:
+    inputs:
+      full:
+        description: 'Run the full test suite regardless of what changed'
+        type: boolean
+        default: false
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history (all branches) so `vitest --changed` can diff
+          # against the base branch below.
+          fetch-depth: 0
 
       # Matches the apt-installed path Dockerfile.engine and
       # services/engine/test/helpers/stockfish-path.ts both expect.
@@ -27,9 +42,39 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
 
+      # main only ever advances via a merged, already-CI-passed PR, so the
+      # full run here (plus the nightly cron above) is a backstop, not the
+      # primary gate — everyday PR/branch pushes run affected-only below.
+      - name: Decide test scope
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          FORCE_FULL: ${{ github.event.inputs.full }}
+        run: |
+          if [ "$EVENT_NAME" = "schedule" ] || [ "$FORCE_FULL" = "true" ] || [ "$REF_NAME" = "main" ]; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "full=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # apps/api's suite spins up a real Postgres via Testcontainers; the
       # ubuntu-latest runner ships a working Docker daemon for that.
-      - run: npm test
+      - name: Run full test suite
+        if: steps.scope.outputs.full == 'true'
+        run: npm test
+
+      # vitest walks the real import graph from every changed file (working
+      # tree + everything committed since the base branch) to the test files
+      # that could exercise it, so this isn't a hand-maintained path map —
+      # it's exact for anything reached through an import. A change with no
+      # affected tests exits 0 with nothing run (see the schedule note above
+      # for what this mode can't see).
+      - name: Run tests affected by this change
+        if: steps.scope.outputs.full == 'false'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: npx vitest run --changed "origin/${BASE_REF:-main}"
 
   helm-lint:
     runs-on: ubuntu-latest

@@ -3,14 +3,16 @@ import {
   findCandidateMoments,
   inBookWalk,
   enrichPositions,
+  isBrilliantSoundnessCandidate,
   OPENING_BOOK_SOURCE,
   parsePgn,
   positionKey,
   repairEvalSignConvention,
   resolveOpening,
+  tacticPreventionReason,
   type ParsedPosition
 } from '@freechesscoach/chess-analysis';
-import { TACTIC_MOTIF_LABELS } from '@freechesscoach/shared';
+import { ratingForPromptScoping } from '@freechesscoach/shared';
 import type {
   BookReport,
   ClassifiedMoveDto,
@@ -18,7 +20,8 @@ import type {
   EngineEval,
   PlayerBookReport,
   PositionAnalysis,
-  TacticMotifType
+  TacticMotifType,
+  TacticVisualDto
 } from '@freechesscoach/shared';
 import { buildPlannerMessages, type PlannerPromptInput } from '@freechesscoach/prompts';
 import type { Kysely } from 'kysely';
@@ -26,8 +29,14 @@ import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
+import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
+import { checkBrilliantSoundness } from './brilliant-soundness.js';
+import { buildDiagnosticObservations } from './build-diagnostics.js';
 import { buildGameReportForAnalysis } from './build-game-report.js';
-import { computeTacticMotifPrevented } from './tactic-prevention.js';
+import { annotatedPgnForReport } from './game-report.js';
+import { getPlayerStatsText } from './coach-player-stats.js';
+import * as userProfileService from './user-profile.js';
+import { computeTacticMotifPrevented, type TacticMotifPreventionResult } from './tactic-prevention.js';
 
 /** Positions per engine call. Small enough that the progress percentage moves
  * often, large enough not to pay per-request overhead on every ply — and it
@@ -57,10 +66,12 @@ export interface AnalysisJobDependencies {
  * architecture §5 `analyze-game` job: engine_running -> (evals) -> planning ->
  * (validated plan) -> ready, or failed with `error` set on any step's failure.
  *
- * Findings/focus-areas aren't wired into the planner prompt yet — those repos
- * are Task 5.1's — so this passes empty history; `buildPlannerMessages` renders
- * that as its normal "(none yet…)" fallback, which is also just correct for a
- * user's first analyzed game.
+ * The planner is given the same standing evidence the coach itself works
+ * from — the student's focus areas and recent findings, plus how this game
+ * compares to their own baseline at this time control — so the plan it
+ * produces (its `sessionGoal` above all) is grounded in what has actually
+ * been measured about this student, not only in what this one game shows.
+ * A first-ever analyzed game renders as the usual "(none yet…)" fallbacks.
  */
 export async function runAnalyzeGameJob(
   db: Kysely<Database>,
@@ -82,21 +93,25 @@ export async function runAnalyzeGameJob(
     const fens = parsedGame.positions.map((position) => position.fen);
     const evals = await analyzeInChunks(db, deps, analysis.id, fens);
 
-    const unannotatedMoves = attachEnrichment(
+    const brilliantSoundnessByPly = await resolveBrilliantSoundness(
+      deps,
       classifyMoves(parsedGame, evals, game.userColor),
+      inBookWalk(parsedGame.positions)
+    );
+    const unannotatedMoves = attachEnrichment(
+      classifyMoves(parsedGame, evals, game.userColor, { brilliantSoundnessByPly }),
       enrichPositions(parsedGame.positions)
     );
-    // Computed before storeClassifiedMoves (not after, as before) so its
-    // per-ply byPly map can be attached onto the stored moves themselves —
-    // the move-list UI's per-ply "prevented" indicator reads it straight off
-    // ClassifiedMoveDto, the same way tacticOpportunity already does.
+    // Computed before the moves are annotated so its per-ply byPly map can
+    // be attached onto them — the move-list UI's per-ply "prevented"
+    // indicator reads it straight off ClassifiedMoveDto, the same way
+    // tacticOpportunity does.
     const prevention = await computeTacticMotifPrevented(
       { analyzePosition: deps.analyzePosition },
       unannotatedMoves,
       evals
     );
     const classifiedMoves = attachTacticPrevention(unannotatedMoves, prevention.byPly);
-    await analysesRepo.storeClassifiedMoves(db, analysis.id, classifiedMoves);
     const bookReport = buildBookReport(parsedGame.positions);
     await analysesRepo.storeBookReport(db, analysis.id, bookReport);
     const gameReport = buildGameReportForAnalysis({
@@ -106,21 +121,34 @@ export async function runAnalyzeGameJob(
       book: bookReport,
       pgnResult: game.result,
       preventedCounts: { white: prevention.counts.white.prevented, black: prevention.counts.black.prevented },
-      preventableCounts: { white: prevention.counts.white.preventable, black: prevention.counts.black.preventable }
+      preventableCounts: { white: prevention.counts.white.preventable, black: prevention.counts.black.preventable },
+      userColor: game.userColor,
+      userRating: user.rating
     });
+    // Annotated from the report's own moves, not `classifiedMoves` — see
+    // `annotatedPgnForReport`. Written before storeGameReport so a reader
+    // never sees a stored report pointing at a PGN with no annotations yet.
+    await gamesRepo.updateAnnotatedPgn(db, gameId, annotatedPgnForReport(game.pgn, gameReport));
     await analysesRepo.storeGameReport(db, analysis.id, gameReport);
-    const candidateMoments = findCandidateMoments(classifiedMoves, evals);
+    await recordDiagnosticObservations(db, gameId, game.userId, game.userColor, game.pgn, gameReport.moves, evals, prevention.diagnosticByPly);
+    const candidateMoments = findCandidateMoments(gameReport.moves, evals);
 
     await analysesRepo.updateStatus(db, analysis.id, 'planning');
 
+    const [profileSummary, playerStats] = await Promise.all([
+      userProfileService.getProfileSummary(db, game.userId),
+      getPlayerStatsText(db, { userId: game.userId, gameId })
+    ]);
     const plannerInput: PlannerPromptInput = {
       band: user.ratingBand,
-      focusAreas: [],
-      recentFindings: [],
+      rating: ratingForPromptScoping(user.rating, user.ratingBand),
+      focusAreas: profileSummary.focusAreas,
+      recentFindings: profileSummary.recentFindings,
       selfAssessment: user.selfAssessment,
       userColor: game.userColor,
       moves: classifiedMoves,
-      candidateMoments
+      candidateMoments,
+      playerStats
     };
     const plan = await generatePlan(deps, plannerInput);
 
@@ -132,6 +160,78 @@ export async function runAnalyzeGameJob(
     console.error(`runAnalyzeGameJob failed for game ${gameId} (analysis ${analysis.id}):`, error);
     await analysesRepo.markFailed(db, analysis.id, describeError(error));
   }
+}
+
+/** Task 56.3: runs the diagnostic detector registry + episode resolution and
+ * persists the result. Isolated the same way `deepen-analysis` is isolated
+ * from the fast pipeline — as a wholly separate concern that must never turn
+ * a successful analysis into a failed one — except here the isolation is a
+ * try/catch rather than a separate job, since the plan places this step
+ * inline right after `buildGameReportForAnalysis`, not behind its own queue
+ * entry. `buildDiagnosticObservations` also isolates each individual
+ * detector, so one bad detector only loses its own finding, not the whole
+ * game's diagnostics. */
+async function recordDiagnosticObservations(
+  db: Kysely<Database>,
+  gameId: string,
+  userId: string,
+  userColor: 'white' | 'black',
+  pgn: string,
+  moves: ClassifiedMoveDto[],
+  evals: EngineEval[],
+  diagnosticByPly: TacticMotifPreventionResult['diagnosticByPly']
+): Promise<void> {
+  try {
+    const observations = buildDiagnosticObservations({ gameId, userId, userColor, pgn, moves, evals, diagnosticByPly });
+    await diagnosticObservationsRepo.insertMany(db, observations);
+  } catch (error) {
+    console.error(`diagnostic observation build/persist failed for game ${gameId}:`, error);
+  }
+}
+
+/** Task 50.3: `isBrilliantMove` sees `brilliantSoundness === undefined` (its
+ * fail-closed default) unless we run this pre-pass. Cheap-gate candidates
+ * (typically 0-2 per game) each cost one extra `analyzePosition` call to
+ * evaluate §5.5's B6 — the opponent's best reply, at the batch's normal
+ * depth, still leaves the mover close to their pre-sacrifice win%. */
+async function resolveBrilliantSoundness(
+  deps: AnalysisJobDependencies,
+  candidateMoves: ClassifiedMoveDto[],
+  bookWalk: ReturnType<typeof inBookWalk>
+): Promise<ReadonlyMap<number, boolean>> {
+  const soundnessByPly = new Map<number, boolean>();
+  for (const move of candidateMoves) {
+    const candidate = brilliantSoundnessCandidate(move, bookWalk);
+    if (!candidate) continue;
+    const sound = await checkBrilliantSoundness(
+      { analyzePosition: deps.analyzePosition },
+      candidate.fenAfter,
+      candidate.mover,
+      candidate.beforeWin
+    );
+    soundnessByPly.set(move.ply, sound);
+  }
+  return soundnessByPly;
+}
+
+function brilliantSoundnessCandidate(
+  move: ClassifiedMoveDto,
+  bookWalk: ReturnType<typeof inBookWalk>
+): { fenAfter: string; mover: 'white' | 'black'; beforeWin: number } | null {
+  const { fenBefore, fenAfter, drop, winPctBefore, moveFlags } = move;
+  if (fenBefore === undefined || fenAfter === undefined) return null;
+  if (drop === undefined || winPctBefore === undefined || !moveFlags) return null;
+  const isCandidate = isBrilliantSoundnessCandidate({
+    fenBefore,
+    fenAfter,
+    moveSan: move.moveSan,
+    mover: move.mover,
+    isBookMove: bookWalk[move.ply - 1]?.classification === 'book',
+    legalMoveCount: moveFlags.legalMoveCount,
+    isCapture: moveFlags.isCapture,
+    drop
+  });
+  return isCandidate ? { fenAfter, mover: move.mover, beforeWin: winPctBefore } : null;
 }
 
 function attachEnrichment(
@@ -158,7 +258,7 @@ function attachEnrichment(
  * gaining a `tacticOpportunity`. */
 function attachTacticPrevention(
   moves: ClassifiedMoveDto[],
-  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null }>
+  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisualDto | null }>
 ): ClassifiedMoveDto[] {
   return moves.map((move) => {
     const prevention = byPly.get(move.ply);
@@ -170,17 +270,12 @@ function attachTacticPrevention(
       // spelling out which motif + whether it was defused, right in the same
       // per-move notes the UI already shows, so a reviewer can eyeball
       // false-positive detector hits without a DB query.
-      reasons: [...(move.reasons ?? []), tacticPreventionReason(prevention)]
+      // Whose move this was decides the voice — "you stopped them" versus
+      // "their move stopped you" — and it lives on the move, not on the
+      // card, so an older stored report reads correctly too.
+      reasons: [...(move.reasons ?? []), tacticPreventionReason({ ...prevention, isUserMove: move.isUserMove })]
     };
   });
-}
-
-function tacticPreventionReason(prevention: { type: TacticMotifType; prevented: boolean; detail: string | null }): string {
-  const label = TACTIC_MOTIF_LABELS[prevention.type];
-  const detailClause = prevention.detail ? ` — ${prevention.detail}` : '';
-  return prevention.prevented
-    ? `Opponent's ${label} threat: defused${detailClause}`
-    : `Opponent's ${label} threat: not defused${detailClause}`;
 }
 
 function buildBookReport(positions: ParsedPosition[]): BookReport {
@@ -235,7 +330,7 @@ function buildPlayerBookReport(
  * Deliberately at this layer rather than in either EngineBackend, so native
  * and browser mode report progress the same way.
  */
-async function analyzeInChunks(
+export async function analyzeInChunks(
   db: Kysely<Database>,
   deps: AnalysisJobDependencies,
   analysisId: string,
@@ -259,11 +354,8 @@ async function analyzeInChunks(
       lines: repairEvalSignConvention(evalResult.fen, evalResult.lines)
     }));
     evals.push(...renumberedChunkEvals);
-    await analysesRepo.storeEngineEvals(db, analysisId, evals);
+    await analysesRepo.incrementEvalsComputed(db, analysisId, chunk.length);
   }
-
-  // An empty game would otherwise never write the (empty) evals at all.
-  if (fens.length === 0) await analysesRepo.storeEngineEvals(db, analysisId, evals);
 
   return evals;
 }

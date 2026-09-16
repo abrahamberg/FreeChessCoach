@@ -72,13 +72,37 @@ function captureKey(move: CaptureMove): string {
   return `${move.from}${move.to}${move.promotion ?? ''}`;
 }
 
+/**
+ * King captures are excluded, not merely undervalued.
+ *
+ * SEE sets the side to move artificially, so it routinely asks about a
+ * position whose *other* king is already attacked — and chess.js answers
+ * that by generating a legal capture of that king. Playing it produces a
+ * FEN with one king missing, which chess.js then refuses to load, so the
+ * recursion throws rather than returning a score. A king is never material
+ * in an exchange either way: `SEE_PIECE_VALUES` prices it at 20,000
+ * precisely so no sequence ever chooses to trade for it.
+ */
 function isCapture(move: Move): move is CaptureMove {
-  return move.captured !== undefined;
+  return move.captured !== undefined && move.captured !== 'k';
 }
 
+/**
+ * Sets a FEN's side to move, clearing en-passant rights along with it.
+ *
+ * The clear is load-bearing rather than tidiness: an en-passant target
+ * square belongs to the side that was about to move, so a FEN that keeps it
+ * while naming the *other* side to move is not a legal position, and
+ * `chess.js` rejects it outright. SEE asks "what if this side could capture
+ * on that square right now", which is exactly that flip, so without the
+ * clear every SEE on a position one square after a double pawn push throws.
+ * Nothing is lost: SEE resolves an exchange on one named square, and an
+ * en-passant capture never lands on the square of the pawn it takes.
+ */
 function withSideToMove(fen: string, sideToMove: Color): string {
   const fields = fen.trim().split(/\s+/);
   fields[1] = sideToMove;
+  fields[3] = '-';
   return fields.join(' ');
 }
 

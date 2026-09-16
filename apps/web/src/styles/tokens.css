@@ -39,11 +39,11 @@
   --annotate-2: #4a7fb5;
   --annotate-hover: #8a4fbf;
   --last-move: rgb(130 190 130 / 55%);
-  --played-move: #c0392b;
   --quality-brilliant: #2f7dc4;
   --quality-great: #3f9fd1;
   --quality-best: #5b9c6a;
   --quality-excellent: #6fae7c;
+  --quality-good: #86bf8f;
   --quality-book: #8a7355;
   --quality-inaccuracy: #c9a227;
   --quality-mistake: #d9622b;
@@ -51,6 +51,14 @@
   --quality-blunder: #c0392b;
   --quality-forced: #6f6a5e;
   --syntax-string: #2f9e8f;
+
+  /* Game Review's clickable tactic sentences (GameReviewPage) — a tactic
+   * that was played/found/defused draws green, one that was missed/left in
+   * play draws red, independent of any --quality-* tier. */
+  --tactic-good: var(--quality-best);
+  --tactic-good-fill: rgb(91 156 106 / 32%);
+  --tactic-bad: var(--quality-blunder);
+  --tactic-bad-fill: rgb(192 57 43 / 32%);
 
   /* 4px base scale (design-improvements.md §5) */
   --space-1: 4px;

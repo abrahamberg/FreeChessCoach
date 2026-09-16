@@ -1,11 +1,15 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
+import type { DiagnosticProfileEntry } from '@freechesscoach/chess-analysis';
 import type { PositionAnalysis } from '@freechesscoach/shared';
+import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
+import * as focusAreasRepo from '../db/repositories/focus-areas.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { buildCoachTools, type CoachToolsDependencies } from './coach-tools.js';
+import { TOOL_BUDGETS } from './coach-tool-guards.js';
 
 /** The execution options the SDK hands a tool's `execute`. None of the coach's
  * tools read them — they close over their own context from buildCoachTools —
@@ -45,6 +49,27 @@ function positionAnalysisFixture(fen: string): PositionAnalysis {
 
 const ENGINE_EVAL = positionAnalysisFixture('r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3');
 
+function profileEntryFixture(overrides: Partial<DiagnosticProfileEntry> = {}): DiagnosticProfileEntry {
+  return {
+    code: 'TA-07',
+    direction: 'D',
+    opportunities: 9,
+    episodes: 6,
+    failureRate: 6 / 9,
+    posteriorMean: 0.6,
+    credibleInterval: [0.4, 0.8],
+    confidence: 'probable',
+    spread: { games: 5, sessions: 3, openings: 3, sides: 2 },
+    totalHwdl: 1.8,
+    severityMix: { minor: 0, meaningful: 2, major: 4, decisive: 0 },
+    meanReachability: 0.7,
+    scopeTags: ['general'],
+    controlSkill: { code: 'TA-07', direction: 'O', failureRate: 0.1 },
+    historyStatus: 'persistent',
+    ...overrides
+  };
+}
+
 describe('buildCoachTools', () => {
   let testDb: TestDb;
   let db: Kysely<Database>;
@@ -80,6 +105,33 @@ describe('buildCoachTools', () => {
     return { userId: user.id, gameId: game.id, sessionId: session.id };
   }
 
+  /** Clears §4.2's `minRatedGames` window minimum so `windowByTimeControl`
+   * (get_diagnostic_profile's on-demand gate evaluation) has a real window
+   * to evaluate rather than an empty one, which would make DQ-01
+   * (insufficient rated games) fire spuriously for every test. Alternates
+   * `userColor` and gives every game reliable clock data so a "healthy
+   * window" test doesn't spuriously also trip DQ-04 (missing clock data) and
+   * DQ-06 (one side dominates the window) — both real bugs this helper had
+   * until Docker was available to actually run `evaluateGates` against it. */
+  async function seedRatedGames(userId: string, timeControl: string, count: number): Promise<void> {
+    for (let i = 0; i < count; i++) {
+      await gamesRepo.insert(db, {
+        userId,
+        pgn: '1. e4 e5',
+        source: 'paste',
+        userColor: i % 2 === 0 ? 'white' : 'black',
+        whiteName: null,
+        blackName: null,
+        result: null,
+        timeControl,
+        eco: null,
+        playedAt: new Date(2026, 0, i + 1),
+        rated: true,
+        moveTimes: [{ ply: 1, clockMs: 300000, evalCp: null, timeSpentMs: null }]
+      });
+    }
+  }
+
   function makeDeps(overrides: Partial<CoachToolsDependencies> = {}): CoachToolsDependencies {
     return {
       db,
@@ -90,17 +142,20 @@ describe('buildCoachTools', () => {
     };
   }
 
-  test('exposes all 14 architecture §7.1 tools', async () => {
+  test('exposes all 17 architecture §7.1 tools', async () => {
     const ctx = await setupCtx();
     const tools = buildCoachTools(ctx, makeDeps());
 
     expect(Object.keys(tools).sort()).toEqual(
       [
         'annotate_board',
+        'check_moves',
         'check_position',
         'end_session',
         'expect_move',
+        'get_diagnostic_profile',
         'get_engine_analysis',
+        'get_player_stats',
         'get_user_profile',
         'hypothetical_line',
         'investigate_position',
@@ -123,14 +178,14 @@ describe('buildCoachTools', () => {
     expect(tools.undo_last_move).toBeUndefined();
   });
 
-  test('mode: "play" adds get_candidate_moves, play_coach_move, and undo_last_move alongside the 14 analyze-mode tools, without removing any of them', async () => {
+  test('mode: "play" adds get_candidate_moves, play_coach_move, and undo_last_move alongside the 17 analyze-mode tools, without removing any of them', async () => {
     const ctx = await setupCtx();
     const tools = buildCoachTools(ctx, makeDeps(), 'play');
 
     expect(tools.get_candidate_moves).toBeDefined();
     expect(tools.play_coach_move).toBeDefined();
     expect(tools.undo_last_move).toBeDefined();
-    expect(Object.keys(tools)).toHaveLength(17);
+    expect(Object.keys(tools)).toHaveLength(20);
   });
 
   test('show_position, annotate_board, expect_move, and hypothetical_line have no execute (client tools)', async () => {
@@ -237,6 +292,65 @@ describe('buildCoachTools', () => {
     });
   });
 
+  describe('check_moves', () => {
+    test('answers what a move actually does, from the board alone — no engine call', async () => {
+      const ctx = await setupCtx();
+      const deps = makeDeps();
+      const tools = buildCoachTools(ctx, deps);
+
+      const result = await tools.check_moves?.execute?.(
+        { fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', moves: ['e4'] },
+        TOOL_OPTIONS
+      );
+
+      expect(result).toContain('e4: legal (white pawn e2-e4)');
+      expect(deps.analyzePosition).not.toHaveBeenCalled();
+    });
+
+    test('an illegal move comes back as illegal — this is the hallucination the tool exists to catch', async () => {
+      const ctx = await setupCtx();
+      const tools = buildCoachTools(ctx, makeDeps());
+
+      const result = await tools.check_moves?.execute?.(
+        { fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', moves: ['Nf6'] },
+        TOOL_OPTIONS
+      );
+
+      expect(result).toContain('NOT LEGAL in this position');
+    });
+
+    test('is unbudgeted — checking a move must never be more expensive than guessing one', async () => {
+      const ctx = await setupCtx();
+      const tools = buildCoachTools(ctx, makeDeps());
+      const fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+      const results = [];
+      for (const move of ['e4', 'd4', 'Nf3', 'c4', 'g3', 'b3', 'f4']) {
+        results.push(await tools.check_moves?.execute?.({ fen, moves: [move] }, TOOL_OPTIONS));
+      }
+
+      for (const result of results) {
+        expect(result).not.toEqual({ error: 'budget_exhausted — answer with what you have' });
+      }
+    });
+  });
+
+  describe('get_player_stats', () => {
+    test('degrades to a plain "nothing to compare" answer for a student with no analyzed games', async () => {
+      const ctx = await setupCtx();
+      const tools = buildCoachTools(ctx, makeDeps());
+
+      const result = await tools.get_player_stats?.execute?.({}, TOOL_OPTIONS);
+
+      expect(result).toContain('nothing to compare');
+    });
+
+    test('is budgeted to one read per turn, and check_moves deliberately is not budgeted at all', () => {
+      expect(TOOL_BUDGETS.get_player_stats).toBe(1);
+      expect(TOOL_BUDGETS.check_moves).toBeUndefined();
+    });
+  });
+
   describe('check_position', () => {
     test('returns the authoritative fen and moveSan for a move in the game, without touching the client board', async () => {
       const ctx = await setupCtx('1. e4 e5 2. Nf3 Nc6');
@@ -289,23 +403,35 @@ describe('buildCoachTools', () => {
   });
 
   describe('propose_focus_area_update', () => {
-    test('a 4th active-focus-area create is queued (applied: false), not inserted', async () => {
+    test('progress on an existing focus area, addressed by diagnosisCode, applies it', async () => {
+      const ctx = await setupCtx();
+      await focusAreasRepo.insert(db, {
+        userId: ctx.userId,
+        category: 'missed_tactic',
+        diagnosisCode: 'TA-07',
+        status: 'active',
+        note: 'n'
+      });
+      const tools = buildCoachTools(ctx, makeDeps());
+
+      const result = await tools.propose_focus_area_update?.execute?.(
+        { diagnosisCode: 'TA-07', action: 'resolve', note: 'consistently spotting the fork now' },
+        TOOL_OPTIONS
+      );
+
+      expect(result).toMatchObject({ applied: true, focusArea: { status: 'resolved' } });
+    });
+
+    test('a diagnosisCode with no existing focus area is a no-op (applied: false) — the LLM cannot create one', async () => {
       const ctx = await setupCtx();
       const tools = buildCoachTools(ctx, makeDeps());
-      const categories = ['hanging_piece', 'missed_tactic', 'allowed_tactic', 'calculation_error'] as const;
 
-      const results = [];
-      for (const category of categories) {
-        results.push(
-          await tools.propose_focus_area_update?.execute?.(
-            { category, action: 'create', note: 'note' },
-            TOOL_OPTIONS
-          )
-        );
-      }
+      const result = await tools.propose_focus_area_update?.execute?.(
+        { diagnosisCode: 'TA-07', action: 'progress', note: 'note' },
+        TOOL_OPTIONS
+      );
 
-      expect(results.slice(0, 3).every((r) => (r as { applied: boolean }).applied)).toBe(true);
-      expect((results[3] as { applied: boolean }).applied).toBe(false);
+      expect(result).toEqual({ applied: false });
     });
   });
 
@@ -395,6 +521,58 @@ describe('buildCoachTools', () => {
         TOOL_OPTIONS
       );
       expect(overBudget).toEqual({ error: 'budget_exhausted — answer with what you have' });
+    });
+  });
+
+  describe('get_diagnostic_profile', () => {
+    test('no time control on the current game degrades to the no-confident-diagnoses message', async () => {
+      const { userId, gameId, sessionId } = await setupCtx();
+      const tools = buildCoachTools({ userId, sessionId, gameId }, makeDeps());
+
+      const result = await tools.get_diagnostic_profile?.execute?.({}, TOOL_OPTIONS);
+
+      expect(result).toContain('no confident diagnoses');
+    });
+
+    test('a game with a time control but no stored profile yet also degrades gracefully', async () => {
+      const { userId, gameId, sessionId } = await setupCtx();
+      await db.updateTable('games').set({ timeControl: '600+0' }).where('id', '=', gameId).execute();
+      const tools = buildCoachTools({ userId, sessionId, gameId }, makeDeps());
+
+      const result = await tools.get_diagnostic_profile?.execute?.({}, TOOL_OPTIONS);
+
+      expect(result).toContain('no confident diagnoses');
+    });
+
+    test('renders the top diagnoses, excluding insufficient confidence, with no failed gates in a healthy window', async () => {
+      const { userId, gameId, sessionId } = await setupCtx();
+      await db.updateTable('games').set({ timeControl: '600+0' }).where('id', '=', gameId).execute();
+      await seedRatedGames(userId, '600+0', 30);
+      await diagnosticProfilesRepo.upsertProfile(db, userId, '600+0', new Date(2026, 0, 1), new Date(2026, 0, 30), [
+        profileEntryFixture({ code: 'TA-07', confidence: 'probable' }),
+        profileEntryFixture({ code: 'BV-01', confidence: 'insufficient' })
+      ]);
+      const tools = buildCoachTools({ userId, sessionId, gameId }, makeDeps());
+
+      const result = await tools.get_diagnostic_profile?.execute?.({}, TOOL_OPTIONS);
+
+      expect(result).toContain('TA-07.D');
+      expect(result).not.toContain('BV-01');
+      expect(result).not.toContain('Failed gates');
+    });
+
+    test('shows a failed reachability gate for a code below the human-reachability threshold', async () => {
+      const { userId, gameId, sessionId } = await setupCtx();
+      await db.updateTable('games').set({ timeControl: '600+0' }).where('id', '=', gameId).execute();
+      await seedRatedGames(userId, '600+0', 30);
+      await diagnosticProfilesRepo.upsertProfile(db, userId, '600+0', new Date(2026, 0, 1), new Date(2026, 0, 30), [
+        profileEntryFixture({ code: 'TA-07', confidence: 'probable', meanReachability: 0.1 })
+      ]);
+      const tools = buildCoachTools({ userId, sessionId, gameId }, makeDeps());
+
+      const result = await tools.get_diagnostic_profile?.execute?.({}, TOOL_OPTIONS);
+
+      expect(result).toContain('Failed gates: DQ-05');
     });
   });
 });

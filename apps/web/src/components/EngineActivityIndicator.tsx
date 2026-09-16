@@ -6,6 +6,7 @@ import {
   speedTooltip,
   type EngineActivityIndicatorState
 } from '../hooks/useEngineActivityIndicator.js';
+import { TunnelStatusDots } from './TunnelStatusDots.js';
 import './EngineActivityIndicator.css';
 
 const QUEUE_BAR_MAX = 5;
@@ -95,6 +96,7 @@ export function EngineActivityIndicator({ state }: EngineActivityIndicatorProps)
     <Link to="/settings#settings-engine" className="engine-activity-indicator" title={info.title} aria-live="polite">
       <span className={`engine-activity-indicator__dot${state.kind === 'idle' ? ' engine-activity-indicator__dot--idle' : ''}`} aria-hidden="true" />
       <span className="engine-activity-indicator__label">{info.label}</span>
+      <TunnelStatusDots engineMode={state.engineMode} />
     </Link>
   );
 }

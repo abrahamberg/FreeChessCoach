@@ -1,6 +1,7 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { buildApp } from '../app.js';
+import * as focusAreasRepo from '../db/repositories/focus-areas.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
@@ -68,17 +69,25 @@ describe('GET /api/users/me/dashboard', () => {
       isPositive: false
     });
 
-    await applyFocusAreaUpdate(db, user.id, {
+    // Focus-area creation is programmatic (Task 57.3) — seed directly via
+    // the repo, the same way `syncProgrammaticFocusAreas` would, rather than
+    // through the LLM-facing `applyFocusAreaUpdate` (progress/regress/resolve
+    // only now).
+    await focusAreasRepo.insert(db, {
+      userId: user.id,
       category: 'king_safety',
-      action: 'create',
+      diagnosisCode: 'MS-01',
+      status: 'active',
       note: 'Delays castling under pressure.'
     });
-    await applyFocusAreaUpdate(db, user.id, {
+    const passivePlay = await focusAreasRepo.insert(db, {
+      userId: user.id,
       category: 'passive_play',
-      action: 'create',
+      diagnosisCode: 'CA-01',
+      status: 'active',
       note: 'Avoids active plans.'
     });
-    await applyFocusAreaUpdate(db, user.id, { category: 'passive_play', action: 'resolve', note: 'Fixed it.' });
+    await applyFocusAreaUpdate(db, user.id, { diagnosisCode: passivePlay.diagnosisCode!, action: 'resolve', note: 'Fixed it.' });
 
     await db
       .insertInto('sessions')
