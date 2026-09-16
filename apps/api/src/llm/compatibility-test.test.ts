@@ -42,6 +42,24 @@ describe('testLlmSetup', () => {
     expect(result.voice).toMatchObject({ model: 'voice-model', ok: false, error: 'The endpoint did not return audio data' });
   });
 
+  test('extracts the provider message instead of dumping the raw JSON body', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ error: { message: 'The model `luna` does not exist', type: 'invalid_request_error', code: 'model_not_found' } }), {
+            status: 404
+          })
+        )
+      )
+    );
+
+    const result = await testLlmSetup({ ...setup, voiceModel: undefined });
+
+    expect(result.low.error).toContain('The model `luna` does not exist');
+    expect(result.low.error).not.toContain('invalid_request_error');
+  });
+
   test('reports every attempted format when neither text model is compatible', async () => {
     vi.stubGlobal('fetch', vi.fn<typeof fetch>(() => Promise.resolve(new Response('bad key', { status: 401 }))));
 

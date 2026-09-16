@@ -8,7 +8,12 @@ const REQUEST_TIMEOUT_MS = 15_000;
  * therefore never makes text coaching unavailable. */
 export async function testLlmSetup(setup: LlmSetup): Promise<LlmSetupTestResponse> {
   const candidates: ProtocolTest[] = [];
-  for (const protocol of ['openai-chat', 'openai-responses', 'anthropic'] as const) {
+  // Responses is tried before Chat Completions: reasoning models (e.g. OpenAI's
+  // gpt-5.6 family) reject function tools + reasoning_effort together on
+  // /chat/completions ("use /v1/responses instead") even though this simple,
+  // tool-free probe succeeds on both — picking Chat here would pass the test
+  // and then fail every real coaching call, which uses tools.
+  for (const protocol of ['openai-responses', 'openai-chat', 'anthropic'] as const) {
     const candidate = await testProtocol(setup, protocol);
     candidates.push(candidate);
     if (candidate.low.ok && candidate.high.ok) break;
@@ -91,13 +96,13 @@ async function fetchForProtocol(setup: LlmSetup, protocol: LlmProtocol, model: s
     return fetchAt(setup.endpoint, '/responses', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ model, input: PROBE_PROMPT, max_output_tokens: 8 })
+      body: JSON.stringify({ model, input: PROBE_PROMPT })
     });
   }
   return fetchAt(setup.endpoint, '/chat/completions', {
     method: 'POST',
     headers,
-    body: JSON.stringify({ model, messages: [{ role: 'user', content: PROBE_PROMPT }], max_tokens: 8 })
+    body: JSON.stringify({ model, messages: [{ role: 'user', content: PROBE_PROMPT }] })
   });
 }
 
@@ -138,8 +143,28 @@ function hasTextResponse(body: unknown, protocol: LlmProtocol): boolean {
 }
 
 async function providerError(response: Response, apiKey: string): Promise<string> {
-  const body = (await response.text().catch(() => '')).slice(0, 500).replaceAll(apiKey, '[redacted]');
-  return body ? `Provider rejected this model (${response.status}): ${body}` : `Provider rejected this model (${response.status})`;
+  const body = (await response.text().catch(() => '')).replaceAll(apiKey, '[redacted]');
+  const message = extractErrorMessage(body) ?? body.slice(0, 200);
+  return message ? `Provider rejected this model (${response.status}): ${message}` : `Provider rejected this model (${response.status})`;
+}
+
+/** Providers wrap their error text differently ({ error: { message } } for
+ * OpenAI, { error: { type, message } } for Anthropic) — pull just the
+ * human-readable message out so the UI never has to show a raw JSON body. */
+function extractErrorMessage(body: string): string | null {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const error = (parsed as { error?: unknown }).error;
+    if (typeof error === 'string') return error;
+    if (typeof error === 'object' && error !== null) {
+      const message = (error as { message?: unknown }).message;
+      if (typeof message === 'string') return message;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function requestError(error: unknown): string {

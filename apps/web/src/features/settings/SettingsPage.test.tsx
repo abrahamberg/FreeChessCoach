@@ -41,17 +41,17 @@ function defaultFetch(path: string, init?: RequestInit): Response | undefined {
 describe('SettingsPage', () => {
   afterEach(() => { vi.unstubAllGlobals(); localStorage.clear(); });
 
-  test('renders the passphrase-protected AI setup defaults', async () => {
+  test('renders the passphrase-protected AI setup prefilled with the current default models', async () => {
     const fetchMock = vi.fn((path: string, init?: RequestInit) => defaultFetch(path, init) ?? (() => { throw new Error(`unexpected fetch: ${path}`); })());
     renderSettings(fetchMock);
     await screen.findByRole('heading', { name: 'Settings', level: 1 });
     expect(screen.getByLabelText('API URL')).toHaveValue('https://api.openai.com/v1');
-    expect(screen.getByLabelText('Low model')).toHaveValue('luna');
-    expect(screen.getByLabelText('High model')).toHaveValue('terra');
+    expect(screen.getByLabelText('Low model')).toHaveValue('gpt-5.6-luna');
+    expect(screen.getByLabelText('High model')).toHaveValue('gpt-5.6-terra');
     expect(screen.getByLabelText('Voice model (optional)')).toHaveValue('gpt-4o-mini-tts');
   });
 
-  test('saves the endpoint, models, key and unlock phrase as one setup', async () => {
+  test('saves the endpoint, models, key and unlock phrase as one setup, using the default models when left untouched', async () => {
     const fetchMock = vi.fn((path: string, init?: RequestInit) => {
       if (path === '/api/users/me/llm-setup' && init?.method === 'PUT') return new Response(null, { status: 204 });
       return defaultFetch(path, init) ?? (() => { throw new Error(`unexpected fetch: ${path}`); })();
@@ -64,7 +64,12 @@ describe('SettingsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Test and save' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/users/me/llm-setup', expect.objectContaining({ method: 'PUT' })));
     const request = fetchMock.mock.calls.find(([path, init]) => path === '/api/users/me/llm-setup' && init?.method === 'PUT')?.[1];
-    expect(JSON.parse(request?.body as string)).toMatchObject({ apiKey: 'secret', lowModel: 'luna', highModel: 'terra', unlockPhrase: 'correct horse battery staple' });
+    expect(JSON.parse(request?.body as string)).toMatchObject({
+      apiKey: 'secret',
+      lowModel: 'gpt-5.6-luna',
+      highModel: 'gpt-5.6-terra',
+      unlockPhrase: 'correct horse battery staple'
+    });
   });
 
   test('unlocks and locks the configured setup', async () => {
