@@ -1,14 +1,17 @@
 import { isTopReviewTier } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
+import { ENGINE_MODE_BADGE, useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
+import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
 import { MoveNavStrip } from '../board/MoveNavStrip.js';
-import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { SessionHeader } from '../session/SessionHeader.js';
 import { GameReviewBoardColumn } from './GameReviewBoardColumn.js';
 import { MoveNoteCard } from './MoveNoteCard.js';
 import { useGameReviewPageData } from './useGameReviewPageData.js';
+import '../../styles/board-bottom-bar.css';
 import './GameReviewPage.css';
 
 /** The static, move-by-move Game Report review — chess.com-style "Review",
@@ -43,6 +46,10 @@ export function GameReviewPage(): ReactNode {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
+  // AppShell hides its own top bar (Settings, the engine indicator) for
+  // every board route — SessionHeader's own overflow menu is the only place
+  // left to reach them from here.
+  const engineActivity = useEngineActivityIndicator();
   const {
     gameQuery,
     positions,
@@ -69,6 +76,11 @@ export function GameReviewPage(): ReactNode {
   const game = gameQuery.data;
   const orientation = game.userColor;
   const canContinueWithCoach = !isTopReviewTier(game.reviewTier) && game.analysisStatus === 'ready';
+  const engineBadge = engineActivity.engineMode ? ENGINE_MODE_BADGE[engineActivity.engineMode] : 'Engine';
+  const headerExtraItems: OverflowMenuItem[] = [
+    { label: `Engine: ${engineBadge}`, onSelect: () => navigate('/settings#settings-engine') },
+    { label: 'Settings', onSelect: () => navigate('/settings') }
+  ];
 
   const board = (
     <GameReviewBoardColumn
@@ -99,7 +111,13 @@ export function GameReviewPage(): ReactNode {
 
   return (
     <div className="game-review-page">
-      <SessionHeader whiteName={game.whiteName} blackName={game.blackName} result={game.result} onBack={() => navigate('/games')} />
+      <SessionHeader
+        whiteName={game.whiteName}
+        blackName={game.blackName}
+        result={game.result}
+        onBack={() => navigate('/games')}
+        extraItems={headerExtraItems}
+      />
       {continueWithCoachError && (
         <p className="game-review-page__error" role="alert">
           Could not start a coaching session — try again.
@@ -134,7 +152,7 @@ export function GameReviewPage(): ReactNode {
             <MoveNavStrip sanMoves={sanMoves} classifiedMoves={classifiedMoves} positions={positions} ply={ply} onSelect={setPly} />
           </div>
           {game.gameReport && (
-            <div className="game-review-report-sheet">
+            <div className="board-bottom-bar board-bottom-bar--report">
               <GameReportSummary report={game.gameReport} userColor={orientation} tacticBaseline={game.tacticBaseline} />
             </div>
           )}

@@ -28,7 +28,6 @@ interface HarnessProps {
   undoDisabled?: boolean;
   positions?: { ply: number; fen: string; moveUci: string | null }[];
   showEvalIndicators?: boolean;
-  isSideBySide?: boolean;
   isDesktop?: boolean;
 }
 
@@ -41,7 +40,6 @@ function Harness({
   undoDisabled,
   positions = POSITIONS,
   showEvalIndicators,
-  isSideBySide = true,
   isDesktop = true
 }: HarnessProps): ReactNode {
   const boardState = useSessionBoardState(positions);
@@ -58,7 +56,6 @@ function Harness({
       positions={positions}
       classifiedMoves={[]}
       isDesktop={isDesktop}
-      isSideBySide={isSideBySide}
       engine={engine}
       autoplayIntervalMs={1000}
       onChangeAutoplayInterval={() => undefined}
@@ -241,19 +238,19 @@ describe('SessionBoardColumn — "Explore on your own" (live play modes)', () =>
   test('is offered in analyze mode', async () => {
     render(<Harness sessionMode="analyze" />);
     await screen.findByTestId('mock-chessboard');
-    expect(screen.getByText(/explore on your own/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
   });
 
   test('is not offered in play mode', async () => {
     render(<Harness sessionMode="play" />);
     await screen.findByTestId('mock-chessboard');
-    expect(screen.queryByText(/explore on your own/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /explore on your own/i })).not.toBeInTheDocument();
   });
 
   test('is not offered in play_bot mode', async () => {
     render(<Harness sessionMode="play_bot" />);
     await screen.findByTestId('mock-chessboard');
-    expect(screen.queryByText(/explore on your own/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /explore on your own/i })).not.toBeInTheDocument();
   });
 });
 
@@ -519,24 +516,14 @@ describe('SessionBoardColumn — showEvalIndicators', () => {
     expect(screen.queryByLabelText(/evaluation:/i)).not.toBeInTheDocument();
   });
 
-  // Mobile's single-column layout (design ask: make the board as big as
-  // possible) — the vertical bar beside the board would eat into its width,
-  // the scarcer dimension on a phone screen, so it moves above instead.
-  test('below the side-by-side breakpoint, renders as a horizontal strip above the board instead of beside it', async () => {
-    render(<Harness sessionMode="play_bot" isSideBySide={false} />);
+  // Always a vertical bar beside the board (design ask: consistent across
+  // every viewport width, freeing the row mobile used to spend on a
+  // horizontal strip above the board).
+  test('renders as a vertical bar inside the board row, beside the board', async () => {
+    render(<Harness sessionMode="play_bot" />);
     await screen.findByTestId('mock-chessboard');
 
-    const evalBar = screen.getByLabelText(/evaluation:/i);
-    expect(evalBar.parentElement).toHaveClass('eval-bar-wrap--horizontal');
-    expect(document.querySelector('.session-board-row .eval-bar-wrap')).not.toBeInTheDocument();
-  });
-
-  test('at/above the side-by-side breakpoint, renders as a vertical bar inside the board row', async () => {
-    render(<Harness sessionMode="play_bot" isSideBySide />);
-    await screen.findByTestId('mock-chessboard');
-
-    const evalBar = screen.getByLabelText(/evaluation:/i);
-    expect(evalBar.parentElement).not.toHaveClass('eval-bar-wrap--horizontal');
+    expect(screen.getByLabelText(/evaluation:/i)).toBeInTheDocument();
     expect(document.querySelector('.session-board-row .eval-bar-wrap')).toBeInTheDocument();
   });
 });

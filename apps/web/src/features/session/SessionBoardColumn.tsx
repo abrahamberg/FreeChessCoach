@@ -54,12 +54,6 @@ export interface SessionBoardColumnProps {
   positions: { ply: number; fen: string }[];
   classifiedMoves: ClassifiedMoveDto[] | null | undefined;
   isDesktop: boolean;
-  /** useIsBoardSideBySide() (>=768px) — narrower than `isDesktop` (>=1080px).
-   * Below it (the single-column mobile layout, board and chat/status as
-   * separate full-screen panels) the eval bar renders as a horizontal strip
-   * above the board instead of a vertical one beside it, so it doesn't eat
-   * into the board's own width — the scarcer dimension there. */
-  isSideBySide: boolean;
   engine: ReturnType<typeof useWasmEngine>;
   autoplayIntervalMs: number;
   onChangeAutoplayInterval: (ms: number) => void;
@@ -143,7 +137,6 @@ export function SessionBoardColumn({
   positions,
   classifiedMoves,
   isDesktop,
-  isSideBySide,
   engine,
   autoplayIntervalMs,
   onChangeAutoplayInterval,
@@ -302,19 +295,13 @@ export function SessionBoardColumn({
     hintStage === 2 ? hintTopMoves.map((move, index) => ({ from: move.from, to: move.to, color: hintMoveColor(index) })) : [];
 
   const evalBar = showEvalIndicators && (
-    <EvalBar
-      ply={boardState.ply}
-      classifiedMoves={classifiedMoves ?? []}
-      orientation={orientation}
-      layout={isSideBySide ? 'vertical' : 'horizontal'}
-    />
+    <EvalBar ply={boardState.ply} classifiedMoves={classifiedMoves ?? []} orientation={orientation} />
   );
 
   return (
     <div className="session-board-column">
-      {!isSideBySide && evalBar}
       <div className="session-board-row">
-        {isSideBySide && evalBar}
+        {evalBar}
         <CoachBoard
           fen={fen}
           orientation={orientation}
@@ -437,7 +424,13 @@ export function SessionBoardColumn({
           // "Explore on your own" is an engine-assisted analysis mode — it
           // doesn't belong in a game you're actively playing (play/play_bot),
           // only in reviewing a finished/imported one.
-          <ExplorePanel fen={fen} mode={boardState.mode} onEnterPeekMode={() => boardState.setMode('peek')} engine={engine} />
+          <ExplorePanel
+            fen={fen}
+            mode={boardState.mode}
+            onEnterPeekMode={() => boardState.setMode('peek')}
+            onExitPeekMode={boardState.backToCoach}
+            engine={engine}
+          />
         ))}
       {isDesktop && showEvalIndicators && classifiedMoves && classifiedMoves.length > 0 && (
         <GameEvalChart classifiedMoves={classifiedMoves} currentPly={boardState.ply} onSelect={peekAt} />

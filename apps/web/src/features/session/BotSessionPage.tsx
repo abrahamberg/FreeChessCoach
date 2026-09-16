@@ -1,6 +1,8 @@
 import { findBotConfig } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
+import { ENGINE_MODE_BADGE, useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { useShowStatusBar } from '../../hooks/useShowStatusBar.js';
@@ -13,6 +15,7 @@ import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { SessionHeader } from './SessionHeader.js';
 import { StackedSessionBody } from './StackedSessionBody.js';
 import { useBotSessionPageData } from './useBotSessionPageData.js';
+import '../../styles/board-bottom-bar.css';
 import './SessionPage.css';
 
 export interface BotSessionPageProps {
@@ -39,6 +42,11 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   const isSideBySide = useIsBoardSideBySide();
   const isDesktop = useIsDesktop();
   const [showStatusBar, setShowStatusBar] = useShowStatusBar();
+  // AppShell hides its own top bar (Settings, the engine indicator) for
+  // every board route — SessionHeader's own overflow menu is the only place
+  // left to reach them from here (design ask: nothing this page needs
+  // should be unreachable just because it's a board route).
+  const engineActivity = useEngineActivityIndicator();
   // Dismisses GameOverDialog while leaving gameOverInfo itself alone — the
   // board/status panel below key off gameOverInfo (not this) to keep
   // rendering the finished game rather than swapping to SessionSummaryCard.
@@ -129,7 +137,6 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       positions={positions}
       classifiedMoves={classifiedMoves}
       isDesktop={isDesktop}
-      isSideBySide={isSideBySide}
       engine={engine}
       autoplayIntervalMs={autoplayIntervalMs}
       onChangeAutoplayInterval={setAutoplayIntervalMs}
@@ -170,6 +177,16 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   };
   const statusPanel = showStatusBar && <BotStatusPanel {...statusPanelProps} />;
   const statusCard = showStatusBar && <BotStatusPanel {...statusPanelProps} variant="card" />;
+  // Mobile's own bottom sheet for the same report the desktop sidebar
+  // already shows once it exists (below) — absent while the game is still
+  // in progress, same as desktop.
+  const reportFooter = gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} userColor={orientation} />;
+  const engineBadge = engineActivity.engineMode ? ENGINE_MODE_BADGE[engineActivity.engineMode] : 'Engine';
+  const headerExtraItems: OverflowMenuItem[] = [
+    { label: showStatusBar ? 'Hide status bar' : 'Show status bar', onSelect: () => setShowStatusBar(!showStatusBar) },
+    { label: `Engine: ${engineBadge}`, onSelect: () => navigate('/settings#settings-engine') },
+    { label: 'Settings', onSelect: () => navigate('/settings') }
+  ];
 
   return (
     <div className="session-page">
@@ -178,7 +195,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
         blackName={gameQuery.data?.blackName ?? null}
         result={gameQuery.data?.result ?? null}
         onBack={() => navigate('/games')}
-        extraItems={[{ label: showStatusBar ? 'Hide status bar' : 'Show status bar', onSelect: () => setShowStatusBar(!showStatusBar) }]}
+        extraItems={headerExtraItems}
       />
       {isSideBySide ? (
         <div className="session-body desktop">
@@ -192,7 +209,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
           {statusPanel}
         </div>
       ) : (
-        <StackedSessionBody card={statusCard} board={board} />
+        <StackedSessionBody card={statusCard} board={board} footer={reportFooter} footerKind="report" />
       )}
       {gameOverInfo && !dialogDismissed && (
         <GameOverDialog gameOver={gameOverInfo} userColor={orientation} botName={botName} onContinue={() => setDialogDismissed(true)} />

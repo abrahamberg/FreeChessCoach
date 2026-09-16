@@ -249,7 +249,7 @@
 /* Base layout only — self-contained (not `.chat-pane form`) so ChatComposer
  * renders the same whether it's ChatPane's own inline footer (desktop) or
  * pinned to the screen's bottom edge in SessionPage's mobile layout (see
- * .session-composer-fixed there). */
+ * .board-bottom-bar--composer there). */
 .chat-composer {
   display: flex;
   align-items: center;

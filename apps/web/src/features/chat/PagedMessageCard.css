@@ -1,27 +1,9 @@
-/* One transcript entry at a time — the same accent-bordered card language
- * MoveNoteCard.css uses for Game Review's note card, reused here for chat
- * messages. Content itself (move mentions, arrow tokens, the voice button)
- * is MessageList's own styling/markup (renderMessageItem) — only the
- * bubble-per-message-in-a-stack layout ChatPane.css uses is replaced, since
- * there's just one message in this box at a time. */
-
-/* Coach portrait (left) / student initials (right) sit outside the card
- * itself as row siblings — see PagedMessageCard.tsx — rather than inline
- * before the text, so which side of the conversation a message came from
- * reads instantly even with only this one message on screen. The row
- * layout itself is AvatarNoteRow.css's shared '.avatar-note-row' rule;
- * 'paged-message-card-row' is just a selector hook here (SessionPage.css's
- * mobile stacked layout margins). */
-
-.paged-message-card {
-  flex: 1;
-  min-width: 0;
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  border-left: 4px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-4) var(--space-5);
-}
+/* One transcript entry at a time, in the shared CoachCard shell
+ * (components/CoachCard.css owns the box chrome — background, border
+ * accent, shadow, padding, the avatar header, expand/collapse). This file
+ * only adds the chat-specific bits: the user-message color/indent variant,
+ * and sizing overrides for the move mentions/position dividers/annotation
+ * notes that can appear inline in a coach message. */
 
 /* A distinctly different color (not just the border accent) plus an
  * indent from the left — the same two cues (tinted background,
@@ -34,18 +16,26 @@
   border-left-color: var(--color-primary);
 }
 
-/* A fixed height, not just a cap — paging left/right between a one-line
- * message and a long one must not resize the card (and shift the board
- * and nav pills below it) on every step; a short message just leaves
- * blank space below it instead. A rem value (not vh) so this stays
- * "a few lines of text" regardless of viewport height, rather than
- * ballooning on a tall phone and eating the room the board — full device
- * width, so its height already scales with the screen — needs to render
- * without getting clipped behind the fixed composer bar on a short one.
+/* ThinkingIndicator/ToolActivity's own base rules (ChatPane.css) add 16px of
+ * horizontal margin/padding for their usual placement in the desktop
+ * transcript's own unpadded scroll column — redundant, and misaligning,
+ * once nested inside this card's own reading padding (CoachCard.css). */
+.paged-message-card .thinking-indicator {
+  margin: 0 0 8px;
+}
+
+.paged-message-card .tool-activity {
+  padding: 0 0 8px;
+}
+
+/* Fills whatever height CoachCard's own slot/panel gives it (the
+ * header-to-board gap collapsed, the expanded overlay's height once
+ * toggled) — paging left/right between a one-line message and a long one
+ * must not resize the card (and shift the board and nav pills below it) on
+ * every step; a short message just leaves blank space below it instead.
  * Anything longer scrolls internally. */
 .paged-message-card__body {
-  height: 4.5rem;
-  overflow-y: auto;
+  height: 100%;
   line-height: var(--line-height-reading);
   white-space: pre-wrap;
 }

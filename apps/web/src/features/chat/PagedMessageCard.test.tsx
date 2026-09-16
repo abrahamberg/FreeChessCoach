@@ -1,22 +1,34 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
+import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { PagedMessageCard } from './PagedMessageCard.js';
+import type { UseMessagePagingResult } from './useMessagePaging.js';
+
+function pagingAt(visible: CoachMessage[], index: number): UseMessagePagingResult {
+  return { visible, index, current: visible[index], total: visible.length, goTo: () => undefined };
+}
 
 describe('PagedMessageCard', () => {
-  test('an assistant message shows the coach portrait on the left, no user initials', () => {
+  test('an assistant message shows the coach portrait, no user initials', () => {
     const messages = [{ id: 'm1', role: 'assistant' as const, text: 'Good move.' }];
-    render(<PagedMessageCard message={messages[0]} index={0} visible={messages} coachPersona="general" />);
+    render(<PagedMessageCard messagePaging={pagingAt(messages, 0)} coachPersona="general" isThinking={false} activeToolName={null} />);
 
     expect(screen.getByTestId('coach-avatar')).toBeInTheDocument();
     expect(screen.queryByTestId('user-avatar')).not.toBeInTheDocument();
     expect(screen.getByText('Good move.').closest('.paged-message-card')).not.toHaveClass('paged-message-card--user');
   });
 
-  test('a user message shows their own initials on the right, no coach portrait, and the user color/margin', () => {
+  test('a user message shows their own initials, no coach portrait, and the user color/margin', () => {
     const messages = [{ id: 'm1', role: 'user' as const, text: 'Thanks!' }];
     render(
-      <PagedMessageCard message={messages[0]} index={0} visible={messages} coachPersona="general" displayName="Dany_Abr" />
+      <PagedMessageCard
+        messagePaging={pagingAt(messages, 0)}
+        coachPersona="general"
+        displayName="Dany_Abr"
+        isThinking={false}
+        activeToolName={null}
+      />
     );
 
     expect(screen.getByTestId('user-avatar')).toHaveTextContent('DA');
@@ -29,42 +41,32 @@ describe('PagedMessageCard', () => {
       { id: 'm1', role: 'assistant' as const, text: 'First.' },
       { id: 'm2', role: 'assistant' as const, text: 'Second.' }
     ];
-    render(<PagedMessageCard message={messages[1]} index={1} visible={messages} coachPersona="general" />);
+    render(<PagedMessageCard messagePaging={pagingAt(messages, 1)} coachPersona="general" isThinking={false} activeToolName={null} />);
 
     expect(screen.getByTestId('coach-avatar')).toBeInTheDocument();
   });
 
-  test('no messages yet: still shows the coach portrait beside the empty-state text', () => {
-    render(<PagedMessageCard message={undefined} index={0} visible={[]} coachPersona="general" />);
+  test('no messages yet: still shows the coach portrait beside the empty-state text, with no expand toggle', () => {
+    render(<PagedMessageCard messagePaging={pagingAt([], 0)} coachPersona="general" isThinking={false} activeToolName={null} />);
 
     expect(screen.getByTestId('coach-avatar')).toBeInTheDocument();
     expect(screen.getByText(/no messages yet/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /show more/i })).not.toBeInTheDocument();
   });
 
-  test('onToggleAutoplay renders the voice toggle as the row\'s own action, replacing MobileCoachSessionBody\'s old dedicated header', async () => {
-    const onToggleAutoplay = vi.fn();
+  test('the expand toggle grows the card and flips to "show less", then back', async () => {
     const user = userEvent.setup();
     const messages = [{ id: 'm1', role: 'assistant' as const, text: 'Good move.' }];
-    render(
-      <PagedMessageCard
-        message={messages[0]}
-        index={0}
-        visible={messages}
-        coachPersona="general"
-        autoplayEnabled={false}
-        onToggleAutoplay={onToggleAutoplay}
-      />
-    );
+    render(<PagedMessageCard messagePaging={pagingAt(messages, 0)} coachPersona="general" isThinking={false} activeToolName={null} />);
 
-    const toggle = screen.getByRole('button', { name: /enable automatic coach voice/i });
+    const toggle = screen.getByRole('button', { name: /show more/i });
+    expect(screen.getByText('Good move.').closest('.coach-card')).not.toHaveClass('coach-card--expanded');
+
     await user.click(toggle);
-    expect(onToggleAutoplay).toHaveBeenCalledWith(true);
-  });
+    expect(screen.getByText('Good move.').closest('.coach-card')).toHaveClass('coach-card--expanded');
+    expect(screen.getByRole('button', { name: /show less/i })).toBeInTheDocument();
 
-  test('no onToggleAutoplay: no voice toggle rendered', () => {
-    const messages = [{ id: 'm1', role: 'assistant' as const, text: 'Good move.' }];
-    render(<PagedMessageCard message={messages[0]} index={0} visible={messages} coachPersona="general" />);
-
-    expect(screen.queryByRole('button', { name: /automatic coach voice/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /show less/i }));
+    expect(screen.getByText('Good move.').closest('.coach-card')).not.toHaveClass('coach-card--expanded');
   });
 });

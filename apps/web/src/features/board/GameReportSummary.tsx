@@ -9,6 +9,7 @@ import {
   type TacticBaselineNoteDto
 } from '@freechesscoach/shared';
 import { tacticBaselineDrill, tacticBaselineHeadline } from '@freechesscoach/chess-analysis';
+import { ChevronDownIcon, ChevronUpIcon } from '../../components/Icon.js';
 import { TacticsStatsSection } from '../stats/TacticsStatsSection.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import './GameReportSummary.css';
@@ -77,7 +78,7 @@ export function GameReportSummary({ report, userColor, tacticBaseline }: GameRep
       <button type="button" className="game-report-summary__header" aria-expanded={expanded} onClick={toggle}>
         <span className="game-report-summary__title">Game Report</span>
         <span className="game-report-summary__chevron" aria-hidden="true">
-          {expanded ? '⌄' : '⌃'}
+          {expanded ? <ChevronDownIcon width={16} height={16} /> : <ChevronUpIcon width={16} height={16} />}
         </span>
       </button>
       <div className="game-report-summary__headline">
@@ -87,7 +88,7 @@ export function GameReportSummary({ report, userColor, tacticBaseline }: GameRep
       {tacticBaseline && <BaselineNote note={tacticBaseline} />}
       <button type="button" className="game-report-summary__expand-toggle" aria-expanded={expanded} onClick={toggle}>
         {expanded ? 'Hide full report' : 'Show full report'}
-        <span aria-hidden="true">{expanded ? '▴' : '▾'}</span>
+        {expanded ? <ChevronUpIcon width={14} height={14} /> : <ChevronDownIcon width={14} height={14} />}
       </button>
       {expanded && (
         <div className="game-report-summary__body">

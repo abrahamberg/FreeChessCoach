@@ -193,28 +193,28 @@
 /* --- StackedSessionBody's own layout (<768px): the exact same structure
  * GameReviewPage's mobile Review page landed on — one compact card above
  * (a coaching session's PagedMessageCard, or a bot game's BotStatusPanel
- * card), the board below it edge-to-edge, then whatever belongs between the
- * board and a pinned footer (MessageNavPills paging left/right through
- * messages for a coaching session, same as GameReviewPage's MoveNavStrip
- * paging through moves; nothing here for a bot game — its own Undo/Hint
- * controls already live inside the board column). Used to be two diverging
- * mobile layouts (this one for a live coaching session, a Board/Coach tab
- * switch for "Play vs Bot") — collapsed into one once a bot game's status
- * turned out to fit the same "compact card above the board" shape just as
- * well as a transcript entry does. The composer is the one piece with no
- * GameReviewPage/bot-game equivalent (a read-only review or a chat-less bot
- * game has no reply) — pinned to the bottom of the screen instead of the
- * stack when present (StackedSessionBody's `footer` prop, `.has-composer`
- * below), so it's reachable without scrolling and its keyboard, opening
- * from a card near the top of the screen, covers the board beneath it
- * rather than the conversation. flex: 0 0 auto (not flex: 1) throughout so
- * the card and the board column each claim only the height their own
- * content needs — GameReviewPage's fix for "dead space" (something
- * stretching to fill leftover room and centering its content inside it)
- * applies identically here. overflow-y: auto is the safety net for a
- * viewport too short for the whole stack (an expanded Explore panel,
- * play_bot's toolbar, etc.) — the card's own internal scroll (see its own
- * CSS) already handles a long single message/status. */
+ * card — each card owns its own "which item is this, page to another one"
+ * controls in its own CoachCard header now, MessageNavPills/move label
+ * alike, not a separate sibling row here), the board below it edge-to-edge,
+ * then a pinned footer. Used to be two diverging mobile layouts (this one
+ * for a live coaching session, a Board/Coach tab switch for "Play vs Bot")
+ * — collapsed into one once a bot game's status turned out to fit the same
+ * "compact card above the board" shape just as well as a transcript entry
+ * does. The composer is the one piece with no GameReviewPage/bot-game
+ * equivalent (a read-only review or a chat-less bot game has no reply) —
+ * pinned to the bottom of the screen instead of the stack when present
+ * (StackedSessionBody's `footer` prop, `.has-composer` below), so it's
+ * reachable without scrolling and its keyboard, opening from a card near
+ * the top of the screen, covers the board beneath it rather than the
+ * conversation. The card is the one child that grows (flex: 1 1 auto, see
+ * .coach-card below) to fill the real gap between the header and the
+ * board; everything else here — the board column — stays flex: 0 0 auto,
+ * claiming only the height its own content needs, so the board's position
+ * is a pure function of the card's leftover space rather than a
+ * fixed/guessed height. overflow-y: auto is the safety net for a viewport
+ * too short for the whole stack (an expanded Explore panel, play_bot's
+ * toolbar, etc.) — the card's own internal scroll (see its own CSS) already
+ * handles a long single message/status. */
 .session-body.mobile.stacked {
   display: flex;
   flex-direction: column;
@@ -222,69 +222,64 @@
   gap: var(--space-2);
 }
 
-/* Reserves room for .session-composer-fixed below, which takes no space of
+/* Reserves room for .board-bottom-bar--composer below, which takes no space of
  * its own in this flow (position: fixed) — without this, the last bit of
  * scrolled content would sit behind it. Only present for a page that
  * actually has a footer (StackedSessionBody's `footer` prop) — a bot game
- * has no composer, so it gets the full stack height with no reserve. Sized
- * to .chat-composer's own fixed height (ChatPane.css: --space-3 padding
- * top/bottom around .chip-reply-input's 44px min-height, plus its 1px
- * border-top) — a constant here tracks it fine since the composer no longer
- * has a shorter collapsed state, same call as GameReviewPage's own
- * fixed-height sheet reserve. */
+ * with no report yet has neither, so it gets the full stack height with no
+ * reserve. Sized to .chat-composer's own fixed height (ChatPane.css:
+ * --space-3 padding top/bottom around .chip-reply-input's 44px min-height,
+ * plus its 1px border-top) — a constant here tracks it fine since the
+ * composer no longer has a shorter collapsed state, same call as
+ * GameReviewPage's own fixed-height sheet reserve. */
 .session-body.mobile.stacked.has-composer {
   padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 
+/* Play vs Bot's own StackedSessionBody instance, once a post-game report
+ * exists (`footerKind="report"`) — the exact same 44px collapsed-ribbon
+ * reserve GameReviewPage.css's `.game-review-body.mobile.has-report-sheet`
+ * uses for the identical .board-bottom-bar--report bar, duplicated here
+ * rather than shared across files since the two pages don't import each
+ * other's stylesheets (see board-bottom-bar.css for the bar's own shared
+ * chrome). */
+.session-body.mobile.stacked.has-report-sheet {
+  padding-bottom: calc(44px + env(safe-area-inset-bottom));
+}
+
 /* .stacked itself carries no page-level padding (unlike GameReviewPage's
  * .game-review-body) — the board wants to be edge-to-edge by default, so
- * instead the card and the nav pills below the board each get their own
- * inset directly, matching the reading margin GameReviewPage's page
- * padding gave its own note card/move nav for free. */
-.session-body.mobile.stacked > .avatar-note-row,
-.session-body.mobile.stacked > .move-explorer__nav {
+ * instead the card gets its own inset directly, matching the reading margin
+ * GameReviewPage's page padding gives its own note card for free. */
+.session-body.mobile.stacked > .coach-card {
   margin-left: var(--space-4);
   margin-right: var(--space-4);
 }
 
-/* Reserves constant room for ThinkingIndicator/ToolActivity (MobileCoachSessionBody)
- * regardless of whether either is currently rendering — sized to fit
- * .thinking-indicator's own content (the taller of the two: --space-3
- * padding around a 6px dot + its own 8px bottom margin). flex: 0 0 auto so
- * it never grows/shrinks in the stack. */
-.mobile-coach-status {
-  flex: 0 0 auto;
-  height: 38px;
-  margin-left: var(--space-4);
-  margin-right: var(--space-4);
-  overflow: hidden;
-}
-
-/* Both already carry their own 16px of horizontal spacing (ChatPane.css) for
- * their usual placement flush against a scrolling transcript's own edge —
- * redundant, and misaligning, once nested inside this wrapper's own
- * var(--space-4) margin. */
-.mobile-coach-status .thinking-indicator {
-  margin: 0 0 8px;
-}
-
-.mobile-coach-status .tool-activity {
-  padding: 0 0 8px;
+/* The one child of the stack that grows: fills the real gap between the
+ * header and the board instead of sitting at CoachCard's own min-height
+ * floor (4.5rem) — covers PagedMessageCard and BotStatusPanel's card
+ * variant alike, since both render as StackedSessionBody's `card` slot.
+ * min-height: 0 lets the flex item shrink below its content size so the
+ * card's own internal overflow-y: auto (CoachCard.css) does the scrolling,
+ * not this container. */
+.session-body.mobile.stacked > .coach-card {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .session-body.mobile.stacked .session-board-column {
   flex: 0 0 auto;
 }
 
-/* Edge-to-edge board + eval bar only — cancels .session-board-column's own
- * --space-2 mobile padding (the media query above) for just these two
- * rows, leaving the pills/Explore panel/bot toolbar below with their
- * normal inset (those read as cramped flush to the edge; the board reads
- * better that way, chess.com-style). Token-based (not a hardcoded -8px) so
- * a rebase of --space-2 keeps this in sync automatically, same as
- * GameReviewPage.css's own edge-to-edge trick. */
-.session-body.mobile.stacked .session-board-column > .session-board-row,
-.session-body.mobile.stacked .session-board-column > .eval-bar-wrap--horizontal {
+/* Edge-to-edge board + eval bar row only — cancels .session-board-column's
+ * own --space-2 mobile padding (the media query above) for just this row,
+ * leaving the pills/Explore panel/bot toolbar below with their normal inset
+ * (those read as cramped flush to the edge; the board reads better that
+ * way, chess.com-style). Token-based (not a hardcoded -8px) so a rebase of
+ * --space-2 keeps this in sync automatically, same as GameReviewPage.css's
+ * own edge-to-edge trick. */
+.session-body.mobile.stacked .session-board-column > .session-board-row {
   margin: 0 calc(-1 * var(--space-2));
 }
 
@@ -294,20 +289,14 @@
 
 /* Pinned to the screen's bottom edge, not the end of the (scrollable)
  * stack above — see .session-body.mobile.stacked's own padding-bottom for
- * why that stack reserves room for this. */
-.session-composer-fixed {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 20;
-  background: var(--color-surface);
+ * why that stack reserves room for this. Shared fixed-bar chrome (position,
+ * background, safe-area padding, shadow) lives in board-bottom-bar.css,
+ * next to GameReviewPage.css's own --report variant of the same bar. */
+.board-bottom-bar--composer {
   border-top: 1px solid var(--color-border);
-  padding-bottom: env(safe-area-inset-bottom);
-  box-shadow: 0 -2px 12px var(--color-border-strong);
 }
 
-.session-composer-fixed .chat-composer {
+.board-bottom-bar--composer .chat-composer {
   border-top: none;
 }
 
@@ -391,7 +380,7 @@
 .session-body.desktop .move-strip,
 .session-body.desktop .bot-move-toolbar,
 .session-body.desktop .explore-panel-toggle,
-.session-body.desktop .explore-panel {
+.session-body.desktop .explore-panel-pill {
   flex-shrink: 0;
 }
 
