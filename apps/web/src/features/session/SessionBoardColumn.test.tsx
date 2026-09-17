@@ -1,11 +1,12 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { ChessboardOptions, PieceDropHandlerArgs } from 'react-chessboard';
 import type { ReactNode } from 'react';
+import { useExploreFeedback } from '../board/useExploreFeedback.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { useDivergedLine } from './useDivergedLine.js';
 import { useSessionBoardState } from './useSessionBoardState.js';
-import { useWasmEngine } from '../../hooks/useWasmEngine.js';
 
 const capturedOptions: ChessboardOptions[] = [];
 
@@ -44,7 +45,15 @@ function Harness({
 }: HarnessProps): ReactNode {
   const boardState = useSessionBoardState(positions);
   const divergedLine = useDivergedLine();
-  const engine = useWasmEngine();
+  // Mirrors SessionPage's own ownership of "Explore on your own" state
+  // (isExploring lives above SessionBoardColumn now, for the mobile "coach
+  // box" swap) — the harness has to reproduce that wiring, not just render
+  // the column, for the explore tests below to exercise anything real.
+  const [isExploring, setIsExploring] = useState(false);
+  useEffect(() => {
+    if (boardState.mode !== 'peek') setIsExploring(false);
+  }, [boardState.mode]);
+  const exploreFeedback = useExploreFeedback({ enabled: isExploring, fen: boardState.fen, lastMove: boardState.lastLocalMove });
 
   return (
     <SessionBoardColumn
@@ -56,7 +65,6 @@ function Harness({
       positions={positions}
       classifiedMoves={[]}
       isDesktop={isDesktop}
-      engine={engine}
       autoplayIntervalMs={1000}
       onChangeAutoplayInterval={() => undefined}
       sendMessage={sendMessage}
@@ -67,6 +75,13 @@ function Harness({
       onUndoMove={onUndoMove}
       undoDisabled={undoDisabled}
       showEvalIndicators={showEvalIndicators}
+      isExploring={isExploring}
+      onOpenExplore={() => {
+        setIsExploring(true);
+        boardState.setMode('peek');
+      }}
+      onCloseExplore={boardState.backToCoach}
+      exploreFeedback={exploreFeedback}
     />
   );
 }
@@ -235,6 +250,10 @@ describe('SessionBoardColumn — "Explore on your own" (live play modes)', () =>
     capturedOptions.length = 0;
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   test('is offered in analyze mode', async () => {
     render(<Harness sessionMode="analyze" />);
     await screen.findByTestId('mock-chessboard');
@@ -251,6 +270,62 @@ describe('SessionBoardColumn — "Explore on your own" (live play modes)', () =>
     render(<Harness sessionMode="play_bot" />);
     await screen.findByTestId('mock-chessboard');
     expect(screen.queryByRole('button', { name: /explore on your own/i })).not.toBeInTheDocument();
+  });
+
+  test('opening the sandbox calls the engine pipeline for the current position, shows a word-based eval on the pill, and a "not played yet" prompt in the coach box (desktop)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 30, mateIn: null }] })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<Harness sessionMode="analyze" />);
+    await screen.findByTestId('mock-chessboard');
+    fireEvent.click(screen.getByRole('button', { name: /explore on your own/i }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/positions/hint-moves',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ fen: START_FEN }) })
+    );
+    await waitFor(() => expect(document.querySelector('.explore-panel-pill')).toHaveTextContent(/roughly equal|better|winning/i));
+    // The coach box already renders (desktop) so it's there the moment
+    // exploring starts, but with nothing to flag yet — not the same
+    // no-note-until-you-explore gap the old below-the-board-only version had.
+    expect(document.querySelector('.explore-note-card--empty')).toBeInTheDocument();
+  });
+
+  test('playing a move in the sandbox re-analyzes and renders a coach-box note for it, plus board arrows for the reply', async () => {
+    const fetchMock = vi.fn().mockImplementation((_url: string, init: { body: string }) => {
+      const { fen } = JSON.parse(init.body) as { fen: string };
+      if (fen === START_FEN) {
+        return Promise.resolve(jsonResponse({ lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 30, mateIn: null }] }));
+      }
+      return Promise.resolve(
+        jsonResponse({
+          lines: [
+            { moveUci: 'e7e5', moveSan: 'e5', cp: 25, mateIn: null },
+            { moveUci: 'c7c5', moveSan: 'c5', cp: 20, mateIn: null }
+          ]
+        })
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<Harness sessionMode="analyze" />);
+    await screen.findByTestId('mock-chessboard');
+    fireEvent.click(screen.getByRole('button', { name: /explore on your own/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    dropE2E4();
+
+    await waitFor(() => expect(document.querySelector('.explore-note-card')).toBeInTheDocument());
+    expect(screen.getByText('e4')).toBeInTheDocument();
+    const options = capturedOptions.at(-1);
+    expect(options?.arrows?.length).toBeGreaterThan(0);
+    // Same live treatment Game Review's board gives a real position — the
+    // eval bar and the on-board move-quality icon both track the sandbox
+    // move instead of sitting frozen/blank.
+    expect(document.querySelector('.eval-bar')).toHaveAttribute('aria-label', expect.stringMatching(/Evaluation: \+0\.[23]/));
+    expect(document.querySelector('[class*="move-quality-badge-overlay"]')).toBeInTheDocument();
   });
 });
 

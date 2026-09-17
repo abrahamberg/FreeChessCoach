@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import { CoachingPlanSchema, type EngineEval, type PositionAnalysis } from '@freechesscoach/shared';
+import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
@@ -18,25 +18,6 @@ const PGN = `[Event "Test"]
 [Result "1-0"]
 
 1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0`;
-
-const VALID_PLAN = CoachingPlanSchema.parse({
-  gameSummary: 'A sharp game.',
-  openingNote: 'Fine through the opening.',
-  themes: ['king_safety'],
-  connectionToHistory: 'First session together.',
-  sessionGoal: 'Spot the tactic before it costs material.',
-  moments: [
-    {
-      ply: 4,
-      kind: 'user_mistake',
-      category: 'king_safety',
-      whatHappened: 'Missed the mating idea.',
-      socraticQuestion: 'What was your opponent threatening?',
-      keyLine: 'Qxf7#',
-      revealDepthPlies: 2
-    }
-  ]
-});
 
 async function makeEval(fen: string): Promise<EngineEval> {
   return { ply: 0, fen, depth: 10, lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 20, mateIn: null }] };
@@ -75,8 +56,7 @@ async function setupGame(db: Kysely<Database>): Promise<{ gameId: string; analys
 function deps(): AnalysisJobDependencies {
   return {
     analyzeGamePositions: vi.fn(async (fens: string[]) => Promise.all(fens.map((fen) => makeEval(fen)))),
-    analyzePosition: fakeAnalyzePosition(),
-    callPlanner: vi.fn().mockResolvedValue(VALID_PLAN)
+    analyzePosition: fakeAnalyzePosition()
   };
 }
 

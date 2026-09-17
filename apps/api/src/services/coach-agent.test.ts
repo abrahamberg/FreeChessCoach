@@ -113,7 +113,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     const { model, finish } = controllableStreamModel('Let me show you.', {
@@ -184,7 +185,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // No 'finish' part at all — mirrors a provider rejecting the request
@@ -214,7 +216,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // 400 fresh + 2000 read back from cache. The SDK reports these in one
@@ -258,7 +261,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     const turn = await coachAgent.startTurn(deps(instantTextModel('Got it.')), session, {
@@ -299,7 +303,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: the model itself calls show_position — no clientToolResult
@@ -375,7 +380,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: one assistant step makes TWO tool-calls — record_move_note
@@ -461,7 +467,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     const testDeps = deps(instantTextModel('Sure.'));
@@ -497,7 +504,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: coach shows move 2 for white (ply 3) and talks about it.
@@ -547,7 +555,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Turn 1: the model calls record_move_note (a SERVER-executed tool —
@@ -610,7 +619,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     const agentDeps = deps(instantTextModel('Got it.'));
@@ -671,7 +681,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     const turn1 = await coachAgent.startTurn(deps(instantTextModel('Hello!')), session, { content: 'hi coach' });
@@ -712,7 +723,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     const outerModel = multiStepModel([
@@ -763,7 +775,8 @@ describe('coach-agent startTurn concurrency', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     const session = await coachAgent.createSession(db, user.id, game.id);
 
     // Claim a ply far beyond the game's actual length.

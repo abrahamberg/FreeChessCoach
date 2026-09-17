@@ -77,7 +77,10 @@ describe('CoachBoard', () => {
 
     expect(accepted).toBe(true);
     expect(onUserMove).not.toHaveBeenCalled();
-    expect(onLocalMove).toHaveBeenCalledWith(expect.stringContaining('4P3'));
+    expect(onLocalMove).toHaveBeenCalledWith(
+      expect.stringContaining('4P3'),
+      { fenBefore: START_FEN, san: 'e4', mover: 'white' }
+    );
   });
 
   test('answer mode: a legal move also fires onLocalMove, so the drop is reflected immediately', () => {
@@ -92,7 +95,10 @@ describe('CoachBoard', () => {
       targetSquare: 'e4'
     });
 
-    expect(onLocalMove).toHaveBeenCalledWith(expect.stringContaining('4P3'));
+    expect(onLocalMove).toHaveBeenCalledWith(
+      expect.stringContaining('4P3'),
+      { fenBefore: START_FEN, san: 'e4', mover: 'white' }
+    );
   });
 
   test('an illegal move never fires onLocalMove', () => {
@@ -142,7 +148,10 @@ describe('CoachBoard', () => {
     expect(accepted).toBe(true);
     // rook jumps from h1 to f1 as part of the same move — onLocalMove's fen
     // must show that too, not just the king's destination.
-    expect(onLocalMove).toHaveBeenCalledWith(expect.stringContaining('RNBQ1RK1'));
+    expect(onLocalMove).toHaveBeenCalledWith(
+      expect.stringContaining('RNBQ1RK1'),
+      { fenBefore: CASTLE_READY_FEN, san: 'O-O', mover: 'white' }
+    );
   });
 
   test('passes orientation and position through to the underlying board', () => {

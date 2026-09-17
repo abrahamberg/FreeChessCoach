@@ -1,0 +1,43 @@
+.unlock-phrase-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.unlock-phrase-modal__description {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.unlock-phrase-modal form {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.unlock-phrase-modal input {
+  width: 100%;
+}
+
+.unlock-phrase-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.unlock-phrase-modal__feedback {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.unlock-phrase-modal__feedback--success {
+  background: var(--color-primary-soft);
+  color: var(--color-success);
+}
+
+.unlock-phrase-modal__feedback--error {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}

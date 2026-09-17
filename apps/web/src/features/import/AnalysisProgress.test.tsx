@@ -46,7 +46,7 @@ describe('AnalysisProgress (design.md §4.2)', () => {
 
   test('reports the phase to screen readers, not just visually', () => {
     render(<AnalysisProgress status="planning" finalFen={FINAL_FEN} />);
-    expect(screen.getByRole('status')).toHaveTextContent(/preparing your coaching session/i);
+    expect(screen.getByRole('status')).toHaveTextContent(/finishing up your analysis/i);
   });
 
   test('shows a calm failure message with a retry action when analysis fails', () => {
@@ -55,6 +55,18 @@ describe('AnalysisProgress (design.md §4.2)', () => {
     expect(screen.getByText(/couldn.t finish analyzing/i)).toBeInTheDocument();
     screen.getByRole('button', { name: /try again/i }).click();
     expect(onRetry).toHaveBeenCalledOnce();
+  });
+
+  test('shows the specific failure reason instead of the generic message when one is given', () => {
+    render(
+      <AnalysisProgress
+        status="failed"
+        finalFen={FINAL_FEN}
+        error="Unlock your AI setup in Settings with your unlock phrase before coaching."
+      />
+    );
+    expect(screen.getByText(/unlock your ai setup in settings/i)).toBeInTheDocument();
+    expect(screen.queryByText(/couldn.t finish analyzing/i)).not.toBeInTheDocument();
   });
 
   test('lights up a quarter of the engine squares at 25% engine progress', () => {

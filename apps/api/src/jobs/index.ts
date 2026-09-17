@@ -4,12 +4,13 @@ import { createBackfillGameMetadataTask, type BackfillGameMetadataTaskOptions } 
 import { createDeepenAnalysisTask } from './deepen-analysis.js';
 import { createPrunePositionEvaluationsTask, type PrunePositionEvaluationsTaskOptions } from './prune-position-evaluations.js';
 import { createRebuildDiagnosticProfileTask, type RebuildDiagnosticProfileTaskOptions } from './rebuild-diagnostic-profile.js';
-import { createSummarizeSessionTask } from './summarize-session.js';
+import { createSummarizeSessionTask, type SummarizeSessionTaskOptions } from './summarize-session.js';
 
 export type TaskListOptions = AnalyzeGameTaskOptions &
   PrunePositionEvaluationsTaskOptions &
   BackfillGameMetadataTaskOptions &
-  RebuildDiagnosticProfileTaskOptions;
+  RebuildDiagnosticProfileTaskOptions &
+  SummarizeSessionTaskOptions;
 
 export function createTaskList(options: TaskListOptions): TaskList {
   return {

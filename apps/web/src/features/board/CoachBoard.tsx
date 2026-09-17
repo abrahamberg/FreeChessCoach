@@ -84,6 +84,17 @@ export interface BoardHighlight {
   color: string;
 }
 
+/** A local move's own metadata, alongside the resulting fen onLocalMove
+ * already reports — lets a caller (useSessionBoardState's previewMove) know
+ * *what* was just played and from *where*, not just where it landed, so
+ * something like the Explore panel's engine feedback can classify the move
+ * instead of only re-analyzing the resulting position. */
+export interface LocalMoveInfo {
+  fenBefore: string;
+  san: string;
+  mover: 'white' | 'black';
+}
+
 export interface CoachBoardProps {
   fen: string;
   orientation: 'white' | 'black';
@@ -106,7 +117,7 @@ export interface CoachBoardProps {
    * only animates through that same prop-driven path). Separate from
    * onUserMove, which is answer-mode-only and drives the chat side-effect —
    * peek mode must keep updating the display without notifying the coach. */
-  onLocalMove?: (fen: string) => void;
+  onLocalMove?: (fen: string, move: LocalMoveInfo) => void;
   /** Settings > Board's "show legal moves" toggle (useShowLegalMoveDots) —
    * clicking a piece always selects it and lets you click a destination to
    * move regardless of this flag; the flag only controls whether the
@@ -205,7 +216,7 @@ export function CoachBoard({
     if (!move) return false;
 
     setPendingPromotion(null);
-    onLocalMove?.(board.fen());
+    onLocalMove?.(board.fen(), { fenBefore: sourceFen, san: move.san, mover: move.color === 'w' ? 'white' : 'black' });
     if (mode === 'answer') {
       onUserMove?.(move.san, board.fen(), `${move.from}${move.to}${move.promotion ?? ''}`);
     }

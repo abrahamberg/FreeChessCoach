@@ -51,6 +51,19 @@ export async function startTurn(
     const resolution = await resolveModel(deps.db, deps.gatewayConfig, session.userId, 'standard');
     const { callLightModel } = deps;
 
+    // Resolved before anything below persists a message: buildSystemPromptForSession
+    // (via a game's first turn -> coaching-plan.ts's ensureCoachingPlan) can
+    // itself make a real BYOK LLM call and throw for reasons unrelated to
+    // input.content (a malformed model response, a provider timeout, a
+    // second "unlock required" past the resolveModel call above). If that
+    // throw happened after the insert further down, a client retrying with
+    // the same content (useCoachChat.ts's onUnlockRequired) would insert a
+    // second, duplicate user-role row into session_messages — append-only,
+    // so nothing downstream could ever remove it. Doing this first keeps the
+    // insert the last thing that can fail, so a retry with the original body
+    // is always safe.
+    const { staticPart, dynamicPart, studentColor } = await buildSystemPromptForSession(deps.db, deps.gatewayConfig, session);
+
     // currentPly: what the board/analysis shows. subjectPly: what the
     // conversation is actually about, and what this turn's messages get
     // tagged with (read by the onFinish closure further down) — the two
@@ -80,7 +93,6 @@ export async function startTurn(
       subjectPly = applied.subjectPly;
     }
 
-    const { staticPart, dynamicPart, studentColor } = await buildSystemPromptForSession(deps.db, session);
     const historyAfterTurn = await sessionMessagesRepo.listBySession(deps.db, session.id);
     const { instructions, messages } = await coachContext.buildEpisodeContext({
       db: deps.db,

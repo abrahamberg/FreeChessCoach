@@ -136,7 +136,8 @@ describe('sessions routes', () => {
       playedAt: null
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
     return { user, game };
   }
 

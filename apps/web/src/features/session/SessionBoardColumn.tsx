@@ -3,12 +3,15 @@ import { HintMovesResponseSchema, type ClassifiedMoveDto } from '@freechesscoach
 import { apiPost } from '../../api/client.js';
 import { ChevronLeftIcon, ChevronRightIcon, LightbulbIcon, UndoIcon } from '../../components/Icon.js';
 import type { HoverMove } from '../chat/MessageList.js';
+import { candidateMoveColor, candidateMoveHighlightColor } from '../board/candidateMoveColors.js';
 import { CoachBoard, type BoardArrow, type BoardHighlight } from '../board/CoachBoard.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { EvalBar } from '../board/EvalBar.js';
+import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
 import { ExplorePanel } from '../board/ExplorePanel.js';
 import { GameEvalChart } from '../board/GameEvalChart.js';
 import { MoveNavStrip } from '../board/MoveNavStrip.js';
+import type { UseExploreFeedbackResult } from '../board/useExploreFeedback.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
 import type { BotGameOverInfo } from './botGameOver.js';
@@ -17,25 +20,9 @@ import { usePlayMoveSubmit } from './usePlayMoveSubmit.js';
 import { usePlayBotMoveSubmit } from './usePlayBotMoveSubmit.js';
 import type { useDivergedLine } from './useDivergedLine.js';
 import type { useSessionBoardState } from './useSessionBoardState.js';
-import type { useWasmEngine } from '../../hooks/useWasmEngine.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
 
 const UNDO_PILL_MS = 2000;
-
-// Deliberately not the same tokens legal-move dots/selection use, so a hint
-// never gets confused with those. Each of the top 3 suggested moves keeps
-// the same color across both hint stages — its piece highlight (stage 1)
-// and its arrow (stage 2) — so the two reveals read as one continuous idea
-// ("this piece — going here") rather than two unrelated overlays.
-const HINT_MOVE_COLORS = ['var(--annotate-1)', 'var(--annotate-2)', 'var(--annotate-hover)'];
-
-function hintMoveColor(index: number): string {
-  return HINT_MOVE_COLORS[index % HINT_MOVE_COLORS.length] ?? 'var(--annotate-1)';
-}
-
-function hintPieceHighlightColor(index: number): string {
-  return `color-mix(in srgb, ${hintMoveColor(index)} 40%, transparent)`;
-}
 
 interface HintTopMove {
   san: string;
@@ -54,7 +41,6 @@ export interface SessionBoardColumnProps {
   positions: { ply: number; fen: string }[];
   classifiedMoves: ClassifiedMoveDto[] | null | undefined;
   isDesktop: boolean;
-  engine: ReturnType<typeof useWasmEngine>;
   autoplayIntervalMs: number;
   onChangeAutoplayInterval: (ms: number) => void;
   sendMessage: (content: string) => void;
@@ -107,7 +93,18 @@ export interface SessionBoardColumnProps {
    * them. Defaults false so analyze/play mode, which never pass this prop,
    * are unaffected. */
   boardDisabled?: boolean;
+  /** "Explore on your own" (analyze mode only) — owned by SessionPage, not
+   * this column, since SessionPage's mobile layout also needs it (the
+   * "coach box" swap in MobileCoachSessionBody). Omitted entirely by
+   * BotSessionPage/play_bot, which never renders the Explore toggle in the
+   * first place. */
+  isExploring?: boolean;
+  onOpenExplore?: () => void;
+  onCloseExplore?: () => void;
+  exploreFeedback?: UseExploreFeedbackResult;
 }
+
+const IDLE_EXPLORE_FEEDBACK: UseExploreFeedbackResult = { status: 'idle', evaluation: null, evalCp: null, arrows: [], note: undefined };
 
 /** Distinct from the coach's own annotate_board arrows (--annotate-1) and
  * the last-played-move highlight — a third color reserved for previewing a
@@ -137,7 +134,6 @@ export function SessionBoardColumn({
   positions,
   classifiedMoves,
   isDesktop,
-  engine,
   autoplayIntervalMs,
   onChangeAutoplayInterval,
   sendMessage,
@@ -152,7 +148,11 @@ export function SessionBoardColumn({
   onClockUpdate,
   onBotThinkingChange,
   showEvalIndicators = true,
-  boardDisabled = false
+  boardDisabled = false,
+  isExploring = false,
+  onOpenExplore,
+  onCloseExplore,
+  exploreFeedback = IDLE_EXPLORE_FEEDBACK
 }: SessionBoardColumnProps): ReactNode {
   const [showLegalMoveDots] = useShowLegalMoveDots();
   const [pendingMove, setPendingMove] = useState<{ san: string; fen: string } | null>(null);
@@ -289,13 +289,28 @@ export function SessionBoardColumn({
 
   const hintHighlights: BoardHighlight[] =
     hintStage >= 1
-      ? hintTopMoves.map((move, index) => ({ square: move.from, color: hintPieceHighlightColor(index) }))
+      ? hintTopMoves.map((move, index) => ({ square: move.from, color: candidateMoveHighlightColor(index) }))
       : [];
   const hintArrows: BoardArrow[] =
-    hintStage === 2 ? hintTopMoves.map((move, index) => ({ from: move.from, to: move.to, color: hintMoveColor(index) })) : [];
+    hintStage === 2 ? hintTopMoves.map((move, index) => ({ from: move.from, to: move.to, color: candidateMoveColor(index) })) : [];
+
+  // While exploring, the eval bar and the on-board move-quality icon track
+  // the sandbox's own engine-pipeline feedback instead of the recorded
+  // game's classifiedMoves — same live behavior Game Review's board has for
+  // a real position (GameReviewBoardColumn), just sourced from
+  // useExploreFeedback instead of a persisted classification.
+  const exploreMoveQualityBadge =
+    isExploring && exploreFeedback.note?.uci
+      ? { square: exploreFeedback.note.uci.slice(2, 4), quality: exploreFeedback.note.quality }
+      : undefined;
 
   const evalBar = showEvalIndicators && (
-    <EvalBar ply={boardState.ply} classifiedMoves={classifiedMoves ?? []} orientation={orientation} />
+    <EvalBar
+      ply={boardState.ply}
+      classifiedMoves={classifiedMoves ?? []}
+      orientation={orientation}
+      cpOverride={isExploring ? (exploreFeedback.evalCp ?? undefined) : undefined}
+    />
   );
 
   return (
@@ -306,13 +321,14 @@ export function SessionBoardColumn({
           fen={fen}
           orientation={orientation}
           mode={boardState.mode}
-          arrows={[...boardState.arrows, ...hoverMoveArrowsFor(hoverMove), ...hintArrows]}
+          arrows={[...boardState.arrows, ...hoverMoveArrowsFor(hoverMove), ...hintArrows, ...exploreFeedback.arrows]}
           highlights={[...boardState.highlights, ...hoverMoveHighlightsFor(hoverMove), ...hintHighlights]}
           onUserMove={handleUserMove}
           onLocalMove={boardState.previewMove}
           onArrowsChange={onArrowsChange}
           showLegalMoveDots={showLegalMoveDots}
           disabled={playMove.isSubmitting || playBotMove.isSubmitting || boardDisabled}
+          moveQualityBadge={exploreMoveQualityBadge}
         />
       </div>
       {(playMove.error || playBotMove.error) && (
@@ -425,13 +441,19 @@ export function SessionBoardColumn({
           // doesn't belong in a game you're actively playing (play/play_bot),
           // only in reviewing a finished/imported one.
           <ExplorePanel
-            fen={fen}
-            mode={boardState.mode}
-            onEnterPeekMode={() => boardState.setMode('peek')}
-            onExitPeekMode={boardState.backToCoach}
-            engine={engine}
+            isOpen={isExploring}
+            onOpen={() => onOpenExplore?.()}
+            onClose={() => onCloseExplore?.()}
+            status={exploreFeedback.status}
+            evaluation={exploreFeedback.evaluation}
           />
         ))}
+      {/* Mobile gets the same note through MobileCoachSessionBody's own
+          "coach box" swap instead (SessionPage) — rendering it here too
+          would just be the same card twice, stacked below the board. */}
+      {isDesktop && isExploring && (
+        <ExploreNoteCard status={exploreFeedback.status} evaluation={exploreFeedback.evaluation} note={exploreFeedback.note} />
+      )}
       {isDesktop && showEvalIndicators && classifiedMoves && classifiedMoves.length > 0 && (
         <GameEvalChart classifiedMoves={classifiedMoves} currentPly={boardState.ply} onSelect={peekAt} />
       )}

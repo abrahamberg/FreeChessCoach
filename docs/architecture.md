@@ -194,15 +194,17 @@ Engine Evaluation
     ↓
 Move Classification
     ↓
-LLM Planning
-    ↓
-Coaching Plan Ready
+Diagnostics / Game Report Ready
 ```
+
+Purely mechanical — no LLM call, no BYOK-unlock dependency, so importing and
+reviewing games is always free. The coaching plan is *not* produced here; see
+Coaching Flow below.
 
 Output:
 
 - Engine evaluations
-- Coaching plan
+- Game report / diagnostics
 - Learning themes
 
 ---
@@ -220,6 +222,12 @@ Service Layer
       ↓
 Database / Engine
 ```
+
+The first turn of a game's first coaching session generates and persists its
+coaching plan (`services/coaching-plan.ts`'s `ensureCoachingPlan`) before the
+system prompt is built — lazily, not at import time, and only once per game.
+This is also the point where a BYOK unlock first becomes required for that
+game, no earlier than the turn's own model resolution already required it.
 
 The coach follows a Socratic teaching model:
 

@@ -5,7 +5,9 @@ export interface LlmSetupFormProps {
   status: LlmSetupStatus;
   onTest: (setup: LlmSetup) => void;
   onSave: (setup: LlmSetup, unlockPhrase: string) => void;
-  onUnlock: (unlockPhrase: string) => void;
+  /** Opens the shared UnlockPhraseModal (SettingsPage owns the mutation) —
+   * the phrase is entered there now, not inline. */
+  onUnlockClick: () => void;
   onLock: () => void;
   onDelete: () => void;
   testResult?: LlmSetupTestResponse;
@@ -17,8 +19,11 @@ const DEFAULT_LOW_MODEL = 'gpt-5.6-luna';
 const DEFAULT_HIGH_MODEL = 'gpt-5.6-terra';
 const DEFAULT_VOICE_MODEL = 'gpt-4o-mini-tts';
 
-export function LlmSetupForm({ status, onTest, onSave, onUnlock, onLock, onDelete, testResult, error }: LlmSetupFormProps): ReactNode {
+type Step = 1 | 2;
+
+export function LlmSetupForm({ status, onTest, onSave, onUnlockClick, onLock, onDelete, testResult, error }: LlmSetupFormProps): ReactNode {
   const [editing, setEditing] = useState(!status.configured);
+  const [step, setStep] = useState<Step>(1);
   const [endpoint, setEndpoint] = useState(status.endpoint ?? DEFAULT_ENDPOINT);
   const [apiKey, setApiKey] = useState('');
   const [lowModel, setLowModel] = useState(status.lowModel ?? DEFAULT_LOW_MODEL);
@@ -30,12 +35,23 @@ export function LlmSetupForm({ status, onTest, onSave, onUnlock, onLock, onDelet
     return { endpoint, apiKey, lowModel, highModel, voiceModel };
   }
 
+  function startEditing(): void {
+    setStep(1);
+    setEditing(true);
+  }
+
+  function continueToStep2(event: FormEvent): void {
+    event.preventDefault();
+    setStep(2);
+  }
+
   function submit(event: FormEvent): void {
     event.preventDefault();
     onSave(currentSetup(), unlockPhrase);
     setApiKey('');
     setUnlockPhrase('');
     setEditing(false);
+    setStep(1);
   }
 
   if (status.configured && !editing) {
@@ -51,40 +67,66 @@ export function LlmSetupForm({ status, onTest, onSave, onUnlock, onLock, onDelet
           <>
             <p><strong>AI setup is locked</strong></p>
             <p className="settings-page__hint">Enter your unlock phrase to use coaching and view the saved model details.</p>
-            <form onSubmit={(event) => { event.preventDefault(); onUnlock(unlockPhrase); setUnlockPhrase(''); }}>
-              <label htmlFor="llm-unlock-phrase">Unlock phrase</label>
-              <input id="llm-unlock-phrase" type="password" value={unlockPhrase} onChange={(event) => setUnlockPhrase(event.target.value)} />
-              <button type="submit" className="btn-primary">Unlock</button>
-            </form>
+            <button type="button" className="btn-primary" onClick={onUnlockClick}>Enter unlock phrase</button>
           </>
         )}
-        <button type="button" onClick={() => setEditing(true)}>Replace setup</button>
+        <button type="button" onClick={startEditing}>Replace setup</button>
         <button type="button" onClick={onDelete}>Delete setup</button>
         {error && <p role="alert">{error}</p>}
       </div>
     );
   }
 
+  // A 2-step wizard rather than one long form: mixing "which model do I
+  // point at" with "what phrase protects it" in a single screen was
+  // confusing enough (support asks) to split — step 1 is purely the
+  // connection, step 2 is purely the phrase. Each `<input required>` only
+  // validates once its own step is mounted, since the other step's fields
+  // aren't in the DOM to be checked.
   return (
-    <form className="llm-setup-form" onSubmit={submit}>
-      <p className="settings-page__hint">Your endpoint must support OpenAI Chat/Responses or Anthropic Messages. We make a tiny test call for low, high, and voice before saving.</p>
-      <label htmlFor="llm-endpoint">API URL</label>
-      <input id="llm-endpoint" type="url" value={endpoint} onChange={(event) => setEndpoint(event.target.value)} required />
-      <label htmlFor="llm-api-key">API key</label>
-      <input id="llm-api-key" type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} required />
-      <label htmlFor="llm-low-model">Low model</label>
-      <input id="llm-low-model" value={lowModel} onChange={(event) => setLowModel(event.target.value)} required />
-      <label htmlFor="llm-high-model">High model</label>
-      <input id="llm-high-model" value={highModel} onChange={(event) => setHighModel(event.target.value)} required />
-      <label htmlFor="llm-voice-model">Voice model (optional)</label>
-      <input id="llm-voice-model" value={voiceModel} onChange={(event) => setVoiceModel(event.target.value)} />
-      <label htmlFor="llm-save-phrase">Unlock phrase (8+ characters)</label>
-      <input id="llm-save-phrase" type="password" value={unlockPhrase} onChange={(event) => setUnlockPhrase(event.target.value)} minLength={8} required />
-      <div className="llm-setup-form__actions">
-        <button type="button" onClick={() => onTest(currentSetup())}>Test models</button>
-        <button type="submit" className="btn-primary">Test and save</button>
-      </div>
-      {testResult && <TestResults result={testResult} />}
+    <form className="llm-setup-form llm-setup-wizard" onSubmit={step === 1 ? continueToStep2 : submit}>
+      <ol className="llm-setup-wizard__steps" aria-label="Setup steps">
+        <li className={`llm-setup-wizard__step ${step === 1 ? 'is-active' : 'is-done'}`}>
+          <span className="llm-setup-wizard__step-number" aria-hidden="true">1</span>
+          Connect your AI
+        </li>
+        <li className={`llm-setup-wizard__step ${step === 2 ? 'is-active' : ''}`}>
+          <span className="llm-setup-wizard__step-number" aria-hidden="true">2</span>
+          Set an unlock phrase
+        </li>
+      </ol>
+
+      {step === 1 ? (
+        <>
+          <p className="settings-page__hint">Your endpoint must support OpenAI Chat/Responses or Anthropic Messages. We make a tiny test call for low, high, and voice before saving.</p>
+          <label htmlFor="llm-endpoint">API URL</label>
+          <input id="llm-endpoint" type="url" value={endpoint} onChange={(event) => setEndpoint(event.target.value)} required />
+          <label htmlFor="llm-api-key">API key</label>
+          <input id="llm-api-key" type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} required />
+          <label htmlFor="llm-low-model">Low model</label>
+          <input id="llm-low-model" value={lowModel} onChange={(event) => setLowModel(event.target.value)} required />
+          <label htmlFor="llm-high-model">High model</label>
+          <input id="llm-high-model" value={highModel} onChange={(event) => setHighModel(event.target.value)} required />
+          <label htmlFor="llm-voice-model">Voice model (optional)</label>
+          <input id="llm-voice-model" value={voiceModel} onChange={(event) => setVoiceModel(event.target.value)} />
+          <div className="llm-setup-form__actions">
+            <button type="button" onClick={() => onTest(currentSetup())}>Test models</button>
+            <button type="submit" className="btn-primary">Continue</button>
+          </div>
+          {testResult && <TestResults result={testResult} />}
+        </>
+      ) : (
+        <>
+          <p className="settings-page__hint">Last step — pick a phrase to encrypt your key with. You&rsquo;ll enter it again whenever your AI setup needs unlocking.</p>
+          <label htmlFor="llm-save-phrase">Unlock phrase (8+ characters)</label>
+          <input id="llm-save-phrase" type="password" value={unlockPhrase} onChange={(event) => setUnlockPhrase(event.target.value)} minLength={8} required autoFocus />
+          <div className="llm-setup-form__actions">
+            <button type="button" onClick={() => setStep(1)}>Back</button>
+            <button type="submit" className="btn-primary">Save</button>
+          </div>
+        </>
+      )}
+
       {status.configured && <button type="button" onClick={() => setEditing(false)}>Cancel</button>}
       {error && <p role="alert">{error}</p>}
     </form>

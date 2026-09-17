@@ -1,9 +1,31 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { GamesPage } from './GamesPage.js';
+
+// Same mock shape useAnalysisStatus.test.ts already established for the SSE
+// endpoints this app streams status over.
+class MockEventSource {
+  static instances: MockEventSource[] = [];
+  url: string;
+  onmessage: ((event: { data: string }) => void) | null = null;
+  closed = false;
+
+  constructor(url: string) {
+    this.url = url;
+    MockEventSource.instances.push(this);
+  }
+
+  close(): void {
+    this.closed = true;
+  }
+
+  emit(data: unknown): void {
+    this.onmessage?.({ data: JSON.stringify(data) });
+  }
+}
 
 const GAMES_RESPONSE = [
   {
@@ -115,6 +137,11 @@ async function deleteFirstGame(): Promise<void> {
 }
 
 describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source is metadata)', () => {
+  beforeEach(() => {
+    MockEventSource.instances = [];
+    vi.stubGlobal('EventSource', MockEventSource);
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -290,6 +317,59 @@ describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source
 
     expect(fetchMock).toHaveBeenCalledWith('/api/games/g1/analyze', expect.objectContaining({ method: 'POST' }));
     expect(await screen.findByText('Analyzing…')).toBeInTheDocument();
+  });
+
+  // The bug this session's SSE fix addresses: a row used to stay on
+  // "Analyzing…" forever once the initial fetch landed — nothing on this
+  // page ever learned the background job had finished short of a manual
+  // reload or a window-focus refetch. GET /api/analyses/active (the same SSE
+  // stream the topbar engine indicator already watches) reports every
+  // in-progress analysis; the moment a gameId drops out of that stream is
+  // the signal used here to refetch ['games'] and pick up the real,
+  // now-terminal status.
+  test('a row updates itself once its background analysis finishes, via the active-analyses SSE stream', async () => {
+    let currentGames: unknown[] = [{ ...GAMES_RESPONSE[0], analysisStatus: 'engine_running' }];
+    const fetchMock = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/games') {
+        return Promise.resolve(
+          new Response(JSON.stringify(currentGames), { status: 200, headers: { 'content-type': 'application/json' } })
+        );
+      }
+      throw new Error(`unexpected fetch: ${path}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/games']}>
+          <Routes>
+            <Route path="/games" element={<GamesPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await screen.findByText('Analyzing…');
+    expect(MockEventSource.instances).toHaveLength(1);
+    expect(MockEventSource.instances[0]?.url).toBe('/api/analyses/active');
+
+    // Still running — reported in the active-analyses frame.
+    act(() => {
+      MockEventSource.instances[0]?.emit({
+        engineMode: 'native',
+        analyses: [{ analysisId: 'a1', gameId: 'g1', status: 'engine_running', analyzedPositions: 3, totalPositions: 10 }]
+      });
+    });
+    expect(screen.getByText('Analyzing…')).toBeInTheDocument();
+
+    // Finishes server-side; the next frame simply no longer mentions it.
+    currentGames = [{ ...GAMES_RESPONSE[0], analysisStatus: 'ready' }];
+    act(() => {
+      MockEventSource.instances[0]?.emit({ engineMode: 'native', analyses: [] });
+    });
+
+    expect(await screen.findByText('Ready')).toBeInTheDocument();
+    expect(screen.queryByText('Analyzing…')).not.toBeInTheDocument();
   });
 
   test('a failed-to-analyse game has no action button, and can still be deleted from the overflow menu', async () => {

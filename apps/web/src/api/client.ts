@@ -118,3 +118,17 @@ async function safeJson(response: Response): Promise<unknown> {
     return undefined;
   }
 }
+
+/** Pulls the user-facing message out of a thrown ApiError's problem+json
+ * body (the fastify error-mapper's `title`, always written to be read by a
+ * user — e.g. "That unlock phrase is incorrect."), falling back to the
+ * generic fetch-failure message for anything else. */
+export function describeApiError(error: unknown): string | undefined {
+  if (!error) return undefined;
+  if (error instanceof ApiError) {
+    const body = error.body;
+    if (typeof body === 'object' && body !== null && 'title' in body && typeof body.title === 'string') return body.title;
+    return error.message;
+  }
+  return error instanceof Error ? error.message : undefined;
+}

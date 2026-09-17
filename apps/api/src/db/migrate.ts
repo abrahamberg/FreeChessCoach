@@ -35,6 +35,7 @@ import * as gamesUserCreatedIndex from './migrations/0033_games_user_created_ind
 import * as stripStaleGameReportMoves from './migrations/0034_strip_stale_game_report_moves.js';
 import * as removeCredits from './migrations/0035_remove_credits.js';
 import * as passphraseLlmSetup from './migrations/0036_passphrase_llm_setup.js';
+import * as candidateMoments from './migrations/0037_candidate_moments.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -74,7 +75,8 @@ const provider: MigrationProvider = {
       '0033_games_user_created_index': gamesUserCreatedIndex,
       '0034_strip_stale_game_report_moves': stripStaleGameReportMoves,
       '0035_remove_credits': removeCredits,
-      '0036_passphrase_llm_setup': passphraseLlmSetup
+      '0036_passphrase_llm_setup': passphraseLlmSetup,
+      '0037_candidate_moments': candidateMoments
     })
 };
 

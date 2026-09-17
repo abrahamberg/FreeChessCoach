@@ -2,92 +2,51 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 import { ExplorePanel } from './ExplorePanel.js';
-import type { UseWasmEngineResult } from '../../hooks/useWasmEngine.js';
-
-const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-
-function makeEngine(overrides: Partial<UseWasmEngineResult> = {}): UseWasmEngineResult {
-  return { status: 'idle', evaluation: null, bestMoveArrow: null, analyze: vi.fn(), ...overrides };
-}
 
 describe('ExplorePanel', () => {
   test('collapsed by default, showing only the small "Explore on your own" icon toggle', () => {
-    render(
-      <ExplorePanel fen={START_FEN} mode="answer" onEnterPeekMode={vi.fn()} onExitPeekMode={vi.fn()} engine={makeEngine()} />
-    );
+    render(<ExplorePanel isOpen={false} onOpen={vi.fn()} onClose={vi.fn()} status="idle" evaluation={null} />);
 
     expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
     expect(document.querySelector('.explore-panel-pill')).not.toBeInTheDocument();
   });
 
-  test('expanding calls analyze(fen), enters peek mode, and shows the compact exploration pill', async () => {
-    const analyze = vi.fn();
-    const onEnterPeekMode = vi.fn();
+  test('clicking the toggle calls onOpen and, once open, shows the compact exploration pill', async () => {
+    const onOpen = vi.fn();
     const user = userEvent.setup();
-    render(
-      <ExplorePanel
-        fen={START_FEN}
-        mode="answer"
-        onEnterPeekMode={onEnterPeekMode}
-        onExitPeekMode={vi.fn()}
-        engine={makeEngine({ analyze })}
-      />
-    );
+    render(<ExplorePanel isOpen={false} onOpen={onOpen} onClose={vi.fn()} status="idle" evaluation={null} />);
 
     await user.click(screen.getByRole('button', { name: /explore on your own/i }));
 
-    expect(analyze).toHaveBeenCalledWith(START_FEN);
-    expect(onEnterPeekMode).toHaveBeenCalledOnce();
-    expect(document.querySelector('.explore-panel-pill')).toBeInTheDocument();
+    expect(onOpen).toHaveBeenCalledOnce();
   });
 
-  test('renders the word-based evaluation once available, never a number', async () => {
-    const user = userEvent.setup();
-    render(
-      <ExplorePanel
-        fen={START_FEN}
-        mode="answer"
-        onEnterPeekMode={vi.fn()}
-        onExitPeekMode={vi.fn()}
-        engine={makeEngine({ status: 'ready', evaluation: 'White is better' })}
-      />
-    );
-
-    await user.click(screen.getByRole('button', { name: /explore on your own/i }));
+  test('renders the word-based evaluation once available, never a number', () => {
+    render(<ExplorePanel isOpen status="ready" evaluation="White is better" onOpen={vi.fn()} onClose={vi.fn()} />);
 
     expect(screen.getByText('White is better')).toBeInTheDocument();
+    expect(document.querySelector('.explore-panel-pill')).toBeInTheDocument();
   });
 
-  test('the pill\'s own close icon exits peek mode', async () => {
-    const onExitPeekMode = vi.fn();
-    const user = userEvent.setup();
-    render(
-      <ExplorePanel fen={START_FEN} mode="answer" onEnterPeekMode={vi.fn()} onExitPeekMode={onExitPeekMode} engine={makeEngine()} />
-    );
+  test('shows "thinking…" while a request is in flight and no evaluation has arrived yet', () => {
+    render(<ExplorePanel isOpen status="loading" evaluation={null} onOpen={vi.fn()} onClose={vi.fn()} />);
 
-    await user.click(screen.getByRole('button', { name: /explore on your own/i }));
+    expect(screen.getByText('thinking…')).toBeInTheDocument();
+  });
+
+  test('shows an error message if the engine pipeline request fails', () => {
+    render(<ExplorePanel isOpen status="error" evaluation={null} onOpen={vi.fn()} onClose={vi.fn()} />);
+
+    expect(screen.getByText(/couldn't reach the engine/i)).toBeInTheDocument();
+  });
+
+  test('the pill\'s own close icon calls onClose', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(<ExplorePanel isOpen status="ready" evaluation="The position is roughly equal" onOpen={vi.fn()} onClose={onClose} />);
+
     await user.click(screen.getByRole('button', { name: /stop exploring/i }));
 
-    expect(onExitPeekMode).toHaveBeenCalledOnce();
-  });
-
-  test('collapses back to the toggle once the board leaves peek mode (e.g. "back to coach")', async () => {
-    const user = userEvent.setup();
-    const { rerender } = render(
-      <ExplorePanel fen={START_FEN} mode="answer" onEnterPeekMode={vi.fn()} onExitPeekMode={vi.fn()} engine={makeEngine()} />
-    );
-
-    await user.click(screen.getByRole('button', { name: /explore on your own/i }));
-    rerender(
-      <ExplorePanel fen={START_FEN} mode="peek" onEnterPeekMode={vi.fn()} onExitPeekMode={vi.fn()} engine={makeEngine()} />
-    );
-    expect(document.querySelector('.explore-panel-pill')).toBeInTheDocument();
-
-    rerender(
-      <ExplorePanel fen={START_FEN} mode="answer" onEnterPeekMode={vi.fn()} onExitPeekMode={vi.fn()} engine={makeEngine()} />
-    );
-
-    expect(document.querySelector('.explore-panel-pill')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
+    expect(onClose).toHaveBeenCalledOnce();
   });
 });

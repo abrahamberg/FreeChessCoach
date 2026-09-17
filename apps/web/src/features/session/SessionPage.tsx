@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
 import { useCoachVoice } from '../../hooks/useCoachVoice.js';
@@ -8,6 +8,7 @@ import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
+import { useExploreFeedback } from '../board/useExploreFeedback.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { ChatPane } from '../chat/ChatPane.js';
 import { DebugPanel } from '../chat/DebugPanel.js';
@@ -16,6 +17,7 @@ import type { HoverMove } from '../chat/MessageList.js';
 import { encodePositionContext, sanForPly } from '../chat/positionDivider.js';
 import { SessionSummaryCard } from '../chat/SessionSummaryCard.js';
 import { useMessagePaging } from '../chat/useMessagePaging.js';
+import { UnlockPhraseModal } from '../settings/UnlockPhraseModal.js';
 import { MobileCoachSessionBody } from './MobileCoachSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { SessionHeader } from './SessionHeader.js';
@@ -50,8 +52,8 @@ export function SessionPage(): ReactNode {
     peekAt,
     autoplayIntervalMs,
     setAutoplayIntervalMs,
-    engine,
     chat,
+    unlockModal,
     handleReset,
     handlePlayMoveCommitted
   } = useSessionPageData(sessionId);
@@ -59,6 +61,27 @@ export function SessionPage(): ReactNode {
   const [boardArrows, setBoardArrows] = useState<ArrowRef[]>([]);
   const [hoverMove, setHoverMove] = useState<HoverMove>(null);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
+  // Same fen SessionBoardColumn computes for the board itself — needed here
+  // too so ChatPane can resolve move mentions against the position actually
+  // on screen (design.md §5.3), so the mobile peek shows it, and now to
+  // drive the Explore sandbox's own engine-pipeline feedback (below), which
+  // both SessionBoardColumn (board arrows/EvalBar) and
+  // MobileCoachSessionBody (the mobile "coach box" swap) need — lifted up
+  // to their common ancestor rather than owned inside either sibling.
+  const fen = divergedLine.fen ?? boardState.fen;
+  const [isExploring, setIsExploring] = useState(false);
+  // Leaving peek mode any other way (the peek pill's "back to coach", a new
+  // coach show_position, the move strip) must collapse this too — otherwise
+  // its pill/note stay stuck on screen even once the coach is watching
+  // again.
+  useEffect(() => {
+    if (boardState.mode !== 'peek') setIsExploring(false);
+  }, [boardState.mode]);
+  const exploreFeedback = useExploreFeedback({ enabled: isExploring, fen, lastMove: boardState.lastLocalMove });
+  function openExplore(): void {
+    setIsExploring(true);
+    boardState.setMode('peek');
+  }
   // AppShell hides its own top bar (Settings, the engine indicator) for
   // every board route, session included — SessionHeader's own overflow menu
   // is the only place left to reach them, and the coach voice autoplay
@@ -123,10 +146,6 @@ export function SessionPage(): ReactNode {
 
   const orientation = gameQuery.data?.userColor ?? 'white';
   const hasCompletedTurn = chat.messages.some((message) => message.role === 'assistant' && message.text !== '');
-  // Same fen SessionBoardColumn computes for the board itself — needed here
-  // too so ChatPane can resolve move mentions against the position actually
-  // on screen (design.md §5.3), and so the mobile peek shows it.
-  const fen = divergedLine.fen ?? boardState.fen;
 
   const board = (
     <SessionBoardColumn
@@ -138,7 +157,6 @@ export function SessionPage(): ReactNode {
       positions={positions}
       classifiedMoves={gameQuery.data?.classifiedMoves}
       isDesktop={isDesktop}
-      engine={engine}
       autoplayIntervalMs={autoplayIntervalMs}
       onChangeAutoplayInterval={setAutoplayIntervalMs}
       sendMessage={(content) => void chat.sendMessage(content)}
@@ -147,6 +165,10 @@ export function SessionPage(): ReactNode {
       sessionMode={session.mode}
       sessionId={sessionId}
       onPlayMoveCommitted={handlePlayMoveCommitted}
+      isExploring={isExploring}
+      onOpenExplore={openExplore}
+      onCloseExplore={boardState.backToCoach}
+      exploreFeedback={exploreFeedback}
     />
   );
 
@@ -188,6 +210,17 @@ export function SessionPage(): ReactNode {
 
   return (
     <div className="session-page">
+      {unlockModal.isOpen && (
+        <UnlockPhraseModal
+          description="Your coach needs your AI setup unlocked to continue this session."
+          onClose={unlockModal.onClose}
+          onUnlock={unlockModal.onUnlock}
+          onUnlocked={unlockModal.onUnlocked}
+          isPending={unlockModal.isPending}
+          isSuccess={unlockModal.isSuccess}
+          errorMessage={unlockModal.errorMessage}
+        />
+      )}
       <SessionHeader
         whiteName={gameQuery.data?.whiteName ?? null}
         blackName={gameQuery.data?.blackName ?? null}
@@ -243,6 +276,8 @@ export function SessionPage(): ReactNode {
           onSend={handleSendMessage}
           boardArrows={boardArrows}
           hasPendingLine={Boolean(divergedLine.line)}
+          isExploring={isExploring}
+          exploreFeedback={exploreFeedback}
         />
       )}
     </div>

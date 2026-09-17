@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../api/client.js';
 import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
-import { useWasmEngine } from '../../hooks/useWasmEngine.js';
 import type { BotGameOverInfo } from './botGameOver.js';
 import { toClassifiedMoves } from './liveMoveQualities.js';
 import {
@@ -79,7 +78,6 @@ export function useBotSessionPageData(sessionId: string) {
   // what the student is currently looking at.
   const currentRealPosition =
     positions.find((position) => position.ply === boardState.coachPly) ?? positions[0] ?? FALLBACK_POSITION;
-  const engine = useWasmEngine();
 
   // Seeded once the game loads (a timed game's initial remaining time), then
   // owned by handleClockUpdate after every move — same "arrives after
@@ -203,7 +201,6 @@ export function useBotSessionPageData(sessionId: string) {
     peekAt,
     autoplayIntervalMs,
     setAutoplayIntervalMs,
-    engine,
     handleBotMoveCommitted,
     handleGameOver,
     gameOverInfo,

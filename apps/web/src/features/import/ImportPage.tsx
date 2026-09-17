@@ -52,18 +52,24 @@ interface BulkImportArgs {
   source: RemoteTab;
 }
 
-/** Stat-bank bulk import (Task 31.4): imports each selected game with
- * `deferAnalysis: true`, one request per game (the API has no batch import
- * endpoint), tolerating individual failures so one rate-limited or malformed
- * game doesn't lose the rest of the batch. Shared by both remote pickers
- * (Lichess, Chess.com) since the only per-source difference is the `source`
- * tag on the request body. */
+/** Stat-bank bulk import (Task 31.4): imports each selected game, one request
+ * per game (the API has no batch import endpoint), tolerating individual
+ * failures so one rate-limited or malformed game doesn't lose the rest of
+ * the batch. Shared by both remote pickers (Lichess, Chess.com) since the
+ * only per-source difference is the `source` tag on the request body.
+ *
+ * No `deferAnalysis` here (unlike the on-demand `/api/games/:id/analyze`
+ * re-analyze path GameRow's "Get coach analysis" button still uses for
+ * older, already-deferred rows) — engine analysis has no AI/BYOK-unlock
+ * dependency (services/analysis.ts), so there's no cost left to defer by
+ * making the student click into every row by hand; every bulk-imported game
+ * gets the same free engine pass a single-game import already does. */
 async function importForStatBank({ pgns, source }: BulkImportArgs): Promise<BulkResult> {
   let succeeded = 0;
   let rateLimited = false;
   for (const pgn of pgns) {
     try {
-      const body = ImportGameRequestSchema.parse({ pgn, source, deferAnalysis: true });
+      const body = ImportGameRequestSchema.parse({ pgn, source });
       await apiPost('/api/games', body, ImportGameResponseSchema);
       succeeded += 1;
     } catch (error) {
@@ -100,9 +106,10 @@ export function ImportPage(): ReactNode {
 
   // No AnalysisProgress/coaching-session hand-off here — that's specific to
   // the single-game "Analyze game" flow above. A fully-successful batch goes
-  // straight back to the Games list, where the new rows show "Not
-  // analyzed"; a partial failure stays on this page so the remaining-count
-  // message (10 games/day limit) isn't shown and immediately lost.
+  // straight back to the Games list, where the new rows show "Analyzing…"
+  // (each one's own engine pass is already queued — see importForStatBank);
+  // a partial failure stays on this page so the remaining-count message (10
+  // games/day limit) isn't shown and immediately lost.
   const bulkImportMutation = useMutation({
     mutationFn: importForStatBank,
     onSuccess: (result) => {
@@ -136,7 +143,7 @@ export function ImportPage(): ReactNode {
     bulkImportMutation.mutate({ pgns, source: tab as RemoteTab });
   }
 
-  const { status, analyzedPositions } = useAnalysisStatus(analysisId);
+  const { status, analyzedPositions, error: analysisError } = useAnalysisStatus(analysisId);
 
   const lichessQuery = useQuery({
     queryKey: ['lichess-recent-games'],
@@ -190,6 +197,7 @@ export function ImportPage(): ReactNode {
           status={status}
           finalFen={finalFenOf(pendingPgn ?? '')}
           onRetry={retry}
+          error={analysisError}
           analyzedPositions={analyzedPositions}
           totalPositions={positionCountOf(pendingPgn ?? '')}
           positions={fensOf(pendingPgn ?? '')}

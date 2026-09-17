@@ -287,7 +287,8 @@ describe('POST/GET /api/games', () => {
       payload: { pgn: VALID_PGN, source: 'lichess', userColor: 'white' }
     });
     const { gameId, analysisId } = imported.json();
-    await analysesRepo.markReady(db, analysisId, PLAN);
+    await analysesRepo.markReady(db, analysisId);
+    await analysesRepo.storeCoachingPlan(db, analysisId, PLAN);
     await app.inject({ method: 'POST', url: `/api/games/${gameId}/promote`, headers, payload: { tier: 'review' } });
 
     const reimported = await app.inject({
@@ -741,7 +742,8 @@ describe('POST/GET /api/games', () => {
       payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
     });
     const { gameId, analysisId } = imported.json();
-    await analysesRepo.markReady(db, analysisId, PLAN);
+    await analysesRepo.markReady(db, analysisId);
+    await analysesRepo.storeCoachingPlan(db, analysisId, PLAN);
 
     const session = await app.inject({ method: 'POST', url: '/api/sessions', headers, payload: { gameId } });
     expect(session.statusCode).toBe(200);
@@ -856,7 +858,8 @@ describe('POST/GET /api/games', () => {
       payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
     });
     const { gameId, analysisId } = imported.json();
-    await analysesRepo.markReady(db, analysisId, PLAN);
+    await analysesRepo.markReady(db, analysisId);
+    await analysesRepo.storeCoachingPlan(db, analysisId, PLAN);
 
     const response = await app.inject({
       method: 'POST',
@@ -882,7 +885,8 @@ describe('POST/GET /api/games', () => {
       payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
     });
     const { gameId, analysisId } = imported.json();
-    await analysesRepo.markReady(db, analysisId, PLAN);
+    await analysesRepo.markReady(db, analysisId);
+    await analysesRepo.storeCoachingPlan(db, analysisId, PLAN);
 
     const response = await app.inject({
       method: 'POST',
@@ -970,7 +974,8 @@ describe('POST/GET /api/games', () => {
       botConfigSnapshot: BOT_ROSTER[0]!
     });
     const analysis = await analysesRepo.insertQueued(db, game.id);
-    await analysesRepo.markReady(db, analysis.id, PLAN);
+    await analysesRepo.markReady(db, analysis.id);
+    await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
 
     const promote = await app.inject({
       method: 'POST',
@@ -1000,7 +1005,8 @@ describe('POST/GET /api/games', () => {
       payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
     });
     const { gameId, analysisId } = imported.json();
-    await analysesRepo.markReady(db, analysisId, PLAN);
+    await analysesRepo.markReady(db, analysisId);
+    await analysesRepo.storeCoachingPlan(db, analysisId, PLAN);
 
     const response = await app.inject({
       method: 'POST',

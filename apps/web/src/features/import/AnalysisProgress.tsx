@@ -7,6 +7,9 @@ export interface AnalysisProgressProps {
   status: AnalysisStatus | string | null;
   finalFen: string;
   onRetry?: () => void;
+  /** Shown in place of the generic failure copy when set — already scrubbed
+   * server-side to a message safe to show a user as-is (useAnalysisStatus). */
+  error?: string | null;
   /** Positions the engine has finished, from the status stream. */
   analyzedPositions?: number;
   /** The game's ply count, which the caller already knows from its own PGN.
@@ -27,14 +30,16 @@ const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 const SQUARES = Array.from({ length: 64 }, (_, i) => `${FILES[i % 8]}${Math.floor(i / 8) + 1}`);
 
 /** Ranks 1-7 track the engine's measurable progress (positions analyzed).
- * Rank 8 stands in for the coach's prep pass, which has no countable unit of
- * work, so it fills as an indeterminate wave instead of a real count.
- * "Reading game" isn't represented at all — it's instant, nothing to show. */
+ * Rank 8 stands in for building the game report/diagnostics, which has no
+ * countable unit of work, so it fills as an indeterminate wave instead of a
+ * real count. Coaching-plan generation no longer happens here at all — it's
+ * lazy, on a game's first coaching session (services/coaching-plan.ts). No
+ * "Reading game" square either — it's instant, nothing to show. */
 const ENGINE_SQUARES = 56;
 const TOTAL_SQUARES = 64;
 
 const TIPS = [
-  "The coach reviews every move, but you'll only talk about what matters.",
+  'The engine reviews every move, but you\'ll only talk about what matters once you start coaching.',
   'No engine numbers here — just the moments worth understanding.',
   'This can take a few minutes, especially for longer games.'
 ];
@@ -113,7 +118,7 @@ function describeProgress(status: AnalysisProgressProps['status'], enginePercent
   if (status === 'engine_running') {
     return enginePercent !== null ? `Reviewing your game — ${enginePercent}%` : 'Reviewing your game';
   }
-  if (status === 'planning') return 'Preparing your coaching session';
+  if (status === 'planning') return 'Finishing up your analysis';
   if (status === 'ready') return 'Analysis ready';
   return 'Reading your game';
 }
@@ -128,6 +133,7 @@ export function AnalysisProgress({
   status,
   finalFen,
   onRetry,
+  error,
   analyzedPositions = 0,
   totalPositions = 0,
   positions
@@ -142,7 +148,7 @@ export function AnalysisProgress({
   if (status === 'failed') {
     return (
       <div className="analysis-progress analysis-progress--failed">
-        <p>That game couldn&rsquo;t finish analyzing. Nothing was lost — you can try again.</p>
+        <p>{error || "That game couldn't finish analyzing. Nothing was lost — you can try again."}</p>
         {onRetry && (
           <button type="button" className="btn-primary" onClick={onRetry}>
             Try again

@@ -10,8 +10,9 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost, apiPostVoid, apiPut } from '../../api/client.js';
+import { apiDelete, apiGet, apiPatch, apiPost, apiPostVoid, apiPut, describeApiError } from '../../api/client.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
+import { useUnlockLlmSetup } from '../../hooks/useUnlockLlmSetup.js';
 import { BandSelect } from './BandSelect.js';
 import { LlmSetupForm } from './LlmSetupForm.js';
 import { CoachPersonaSelect } from './CoachPersonaSelect.js';
@@ -19,6 +20,7 @@ import { EngineModeSelect } from './EngineModeSelect.js';
 import { NicknameForm } from './NicknameForm.js';
 import { PlatformUsernameForm } from './PlatformUsernameForm.js';
 import { TtsSection, type TtsProfilePatch } from './TtsSection.js';
+import { UnlockPhraseModal } from './UnlockPhraseModal.js';
 import './SettingsPage.css';
 
 type Theme = 'light' | 'dark';
@@ -35,6 +37,8 @@ export function SettingsPage(): ReactNode {
   const [theme, setTheme] = useState<Theme | null>(() => readStoredTheme());
   const [showLegalMoveDots, setShowLegalMoveDots] = useShowLegalMoveDots();
   const { hash } = useLocation();
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const unlock = useUnlockLlmSetup();
 
   useEffect(() => {
     if (theme) {
@@ -109,11 +113,6 @@ export function SettingsPage(): ReactNode {
     mutationFn: ({ setup, unlockPhrase }: { setup: LlmSetup; unlockPhrase: string }) =>
       apiPut('/api/users/me/llm-setup', { ...setup, unlockPhrase }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['llm-setup'] })
-  });
-
-  const unlockLlmSetupMutation = useMutation({
-    mutationFn: (unlockPhrase: string) => apiPost('/api/users/me/llm-setup/unlock', { unlockPhrase }, LlmSetupStatusSchema),
-    onSuccess: (status) => queryClient.setQueryData(['llm-setup'], status)
   });
 
   const lockLlmSetupMutation = useMutation({
@@ -218,12 +217,28 @@ export function SettingsPage(): ReactNode {
           status={llmSetup}
           onTest={(setup) => testLlmSetupMutation.mutate(setup)}
           onSave={(setup, unlockPhrase) => saveLlmSetupMutation.mutate({ setup, unlockPhrase })}
-          onUnlock={(unlockPhrase) => unlockLlmSetupMutation.mutate(unlockPhrase)}
+          onUnlockClick={() => setShowUnlockModal(true)}
           onLock={() => lockLlmSetupMutation.mutate()}
           onDelete={() => deleteLlmSetupMutation.mutate()}
           testResult={testLlmSetupMutation.data}
-          error={setupError(saveLlmSetupMutation.error ?? unlockLlmSetupMutation.error ?? testLlmSetupMutation.error)}
+          error={describeApiError(saveLlmSetupMutation.error ?? testLlmSetupMutation.error)}
         />
+        {showUnlockModal && (
+          <UnlockPhraseModal
+            onClose={() => {
+              setShowUnlockModal(false);
+              unlock.reset();
+            }}
+            onUnlock={unlock.unlock}
+            onUnlocked={() => {
+              setShowUnlockModal(false);
+              unlock.reset();
+            }}
+            isPending={unlock.isPending}
+            isSuccess={unlock.isSuccess}
+            errorMessage={unlock.errorMessage}
+          />
+        )}
       </section>
 
       <section aria-label="Appearance" className="card">
@@ -254,11 +269,4 @@ export function SettingsPage(): ReactNode {
       </footer>
     </div>
   );
-}
-
-function setupError(error: unknown): string | undefined {
-  if (!(error instanceof ApiError)) return error instanceof Error ? error.message : undefined;
-  const body = error.body;
-  if (typeof body === 'object' && body !== null && 'title' in body && typeof body.title === 'string') return body.title;
-  return error.message;
 }

@@ -1,13 +1,10 @@
-import { CoachingPlanSchema, type CoachingPlan } from '@freechesscoach/shared';
 import type { Task } from 'graphile-worker';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import type { Database } from '../db/schema.js';
-import { getModelForUser, type GatewayConfig } from '../llm/gateway.js';
-import { generateStructured } from '../llm/text.js';
 import { resolveReviewEngineBackend, type ResolveEngineBackendOptions } from '../services/engine/resolve-engine-backend.js';
-import { runAnalyzeGameJob, type AnalysisJobDependencies, type PlannerMessages } from '../services/analysis.js';
+import { runAnalyzeGameJob, type AnalysisJobDependencies } from '../services/analysis.js';
 import type { DeepenAnalysisJobPayload } from './deepen-analysis.js';
 import type { RebuildDiagnosticProfileJobPayload } from './rebuild-diagnostic-profile.js';
 
@@ -18,18 +15,18 @@ export interface AnalyzeGameJobPayload {
 export interface AnalyzeGameTaskOptions {
   db: Kysely<Database>;
   engineBackendOptions: ResolveEngineBackendOptions;
-  gatewayConfig: GatewayConfig;
 }
 
 /** graphile-worker Task wrapper around services/analysis.ts's pure job logic:
- * resolves the real engine HTTP call and the real light-tier planner call, then
- * delegates the actual pipeline (and its retry/error handling) to runAnalyzeGameJob.
- * Once that pipeline reaches 'ready', enqueues the deepen-analysis follow-up
- * pass (jobs/deepen-analysis.ts) and the diagnostic profile rebuild (Task
- * 56.4, jobs/rebuild-diagnostic-profile.ts) via graphile-worker's own
- * job-helpers addJob rather than a failed/'ready' check inside
- * runAnalyzeGameJob itself, so the fast pipeline's own error handling stays
- * untouched. */
+ * resolves the real engine HTTP call, then delegates the actual pipeline (and
+ * its retry/error handling) to runAnalyzeGameJob — purely mechanical, no LLM
+ * call (see services/coaching-plan.ts for where the coaching plan is
+ * generated instead, lazily, on a game's first coaching session). Once that
+ * pipeline reaches 'ready', enqueues the deepen-analysis follow-up pass
+ * (jobs/deepen-analysis.ts) and the diagnostic profile rebuild (Task 56.4,
+ * jobs/rebuild-diagnostic-profile.ts) via graphile-worker's own job-helpers
+ * addJob rather than a failed/'ready' check inside runAnalyzeGameJob itself,
+ * so the fast pipeline's own error handling stays untouched. */
 export function createAnalyzeGameTask(options: AnalyzeGameTaskOptions): Task {
   return async (payload, helpers) => {
     const { gameId } = payload as AnalyzeGameJobPayload;
@@ -43,8 +40,7 @@ export function createAnalyzeGameTask(options: AnalyzeGameTaskOptions): Task {
     const backend = await resolveReviewEngineBackend(options.engineBackendOptions, game.userId);
     const deps: AnalysisJobDependencies = {
       analyzeGamePositions: (fens) => backend.analyzeGame(fens),
-      analyzePosition: (fen) => backend.analyzePosition(fen),
-      callPlanner: (messages) => callPlannerModel(options.db, options.gatewayConfig, game.userId, messages)
+      analyzePosition: (fen) => backend.analyzePosition(fen)
     };
 
     await runAnalyzeGameJob(options.db, deps, gameId);
@@ -55,21 +51,4 @@ export function createAnalyzeGameTask(options: AnalyzeGameTaskOptions): Task {
       await helpers.addJob('rebuild-diagnostic-profile', { userId: game.userId } satisfies RebuildDiagnosticProfileJobPayload);
     }
   };
-}
-
-async function callPlannerModel(
-  db: Kysely<Database>,
-  gatewayConfig: GatewayConfig,
-  userId: string,
-  messages: PlannerMessages
-): Promise<CoachingPlan> {
-  const resolution = await getModelForUser(db, gatewayConfig, userId, 'light');
-  const result = await generateStructured({
-    resolution,
-    system: messages.system,
-    prompt: messages.user,
-    schema: CoachingPlanSchema
-  });
-
-  return result.object;
 }

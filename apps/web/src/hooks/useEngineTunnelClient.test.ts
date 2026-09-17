@@ -173,8 +173,9 @@ describe('useEngineTunnelClient', () => {
 
   // Regression: the raw UCI `score cp` is relative to whichever side is to
   // move in the position being analyzed (confirmed by shared-engine-worker's
-  // own tests and by useWasmEngine.ts, which does its own `sideToMove === 'w'
-  // ? cp : -cp` conversion before displaying it). The native engine backend
+  // own tests and by eval-words.ts's cpToWords, which does its own
+  // `sideToMove === 'w' ? cp : -cp` conversion before displaying it). The
+  // native engine backend
   // (services/engine/src/uci.ts recordInfoLine) converts this to a
   // white-perspective cp before it ever reaches the shared EngineEval shape.
   // The tunnel handlers used to skip that conversion entirely, so every

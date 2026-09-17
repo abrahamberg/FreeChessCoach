@@ -7,6 +7,13 @@ export interface EvalBarProps {
   ply: number;
   classifiedMoves: ClassifiedMoveDto[];
   orientation: 'white' | 'black';
+  /** Takes over from the classifiedMoves/ply lookup below when given — the
+   * Explore panel's sandbox has no classified move for an off-book position
+   * to look up (SessionBoardColumn feeds it useExploreFeedback's own
+   * evalCp instead), so this bar can still track the live position the same
+   * way Game Review's does for a real one. Undefined leaves the normal
+   * lookup untouched. */
+  cpOverride?: number;
 }
 
 /** lichess/chess.com-style evaluation bar beside the board — always to its
@@ -17,9 +24,9 @@ export interface EvalBarProps {
  * perspective cp, mate pre-clamped to +-1000 — see classify.ts), so it needs
  * no fetch of its own: ply 0 has no classified move yet and defaults to an
  * even 0cp start. Presentational only (AGENTS.md rule 7) — the parent owns
- * which ply/classifiedMoves to pass in. */
-export function EvalBar({ ply, classifiedMoves, orientation }: EvalBarProps): ReactNode {
-  const cp = classifiedMoves.find((move) => move.ply === ply)?.evalAfterCp ?? 0;
+ * which ply/classifiedMoves (or cpOverride) to pass in. */
+export function EvalBar({ ply, classifiedMoves, orientation, cpOverride }: EvalBarProps): ReactNode {
+  const cp = cpOverride ?? classifiedMoves.find((move) => move.ply === ply)?.evalAfterCp ?? 0;
   const whitePercent = expectedPoints(cp) * 100;
   // White's pieces sit at the bottom when orientation is 'white' (unflipped),
   // at the top when it's 'black' (flipped) — the white-fill segment always

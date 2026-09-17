@@ -68,7 +68,6 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
     peekAt,
     autoplayIntervalMs,
     setAutoplayIntervalMs,
-    engine,
     handleBotMoveCommitted,
     handleGameOver,
     gameOverInfo,
@@ -137,7 +136,6 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       positions={positions}
       classifiedMoves={classifiedMoves}
       isDesktop={isDesktop}
-      engine={engine}
       autoplayIntervalMs={autoplayIntervalMs}
       onChangeAutoplayInterval={setAutoplayIntervalMs}
       sendMessage={() => undefined}

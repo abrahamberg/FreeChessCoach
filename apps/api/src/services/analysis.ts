@@ -12,41 +12,32 @@ import {
   tacticPreventionReason,
   type ParsedPosition
 } from '@freechesscoach/chess-analysis';
-import { ratingForPromptScoping } from '@freechesscoach/shared';
 import type {
   BookReport,
   ClassifiedMoveDto,
-  CoachingPlan,
   EngineEval,
   PlayerBookReport,
   PositionAnalysis,
   TacticMotifType,
   TacticVisualDto
 } from '@freechesscoach/shared';
-import { buildPlannerMessages, type PlannerPromptInput } from '@freechesscoach/prompts';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
+import { HttpError } from '../lib/errors.js';
 import { checkBrilliantSoundness } from './brilliant-soundness.js';
 import { buildDiagnosticObservations } from './build-diagnostics.js';
 import { buildGameReportForAnalysis } from './build-game-report.js';
 import { annotatedPgnForReport } from './game-report.js';
-import { getPlayerStatsText } from './coach-player-stats.js';
-import * as userProfileService from './user-profile.js';
 import { computeTacticMotifPrevented, type TacticMotifPreventionResult } from './tactic-prevention.js';
 
 /** Positions per engine call. Small enough that the progress percentage moves
  * often, large enough not to pay per-request overhead on every ply — and it
  * keeps each browser-mode tunnel request comfortably inside its timeout. */
 const ENGINE_CHUNK_POSITIONS = 6;
-
-export interface PlannerMessages {
-  system: string;
-  user: string;
-}
 
 export interface AnalysisJobDependencies {
   /** Wraps `POST engine/analyze-game` (architecture §4). */
@@ -56,22 +47,16 @@ export interface AnalysisJobDependencies {
    * gated fallback (`computeTacticMotifPrevented`'s Step B): one extra call
    * per game at most on a normal position, never per-ply. */
   analyzePosition: (fen: string) => Promise<PositionAnalysis>;
-  /** Wraps the gateway's light-tier model call. The model is constrained to
-   * CoachingPlanSchema by the provider, so this yields an already-valid plan
-   * or throws — LLM output never reaches the DB unvalidated. */
-  callPlanner: (messages: PlannerMessages) => Promise<CoachingPlan>;
 }
 
 /**
  * architecture §5 `analyze-game` job: engine_running -> (evals) -> planning ->
- * (validated plan) -> ready, or failed with `error` set on any step's failure.
- *
- * The planner is given the same standing evidence the coach itself works
- * from — the student's focus areas and recent findings, plus how this game
- * compares to their own baseline at this time control — so the plan it
- * produces (its `sessionGoal` above all) is grounded in what has actually
- * been measured about this student, not only in what this one game shows.
- * A first-ever analyzed game renders as the usual "(none yet…)" fallbacks.
+ * ready, or failed with `error` set on any step's failure. Purely mechanical
+ * (engine + deterministic classification/diagnostics) — no LLM call, no BYOK
+ * unlock dependency, so importing/reviewing a game is always free. The
+ * coaching plan is generated separately and lazily, the first time a user
+ * actually starts a coaching session on this game (services/coaching-plan.ts's
+ * `ensureCoachingPlan`), not here.
  */
 export async function runAnalyzeGameJob(
   db: Kysely<Database>,
@@ -131,28 +116,13 @@ export async function runAnalyzeGameJob(
     await gamesRepo.updateAnnotatedPgn(db, gameId, annotatedPgnForReport(game.pgn, gameReport));
     await analysesRepo.storeGameReport(db, analysis.id, gameReport);
     await recordDiagnosticObservations(db, gameId, game.userId, game.userColor, game.pgn, gameReport.moves, evals, prevention.diagnosticByPly);
-    const candidateMoments = findCandidateMoments(gameReport.moves, evals);
 
     await analysesRepo.updateStatus(db, analysis.id, 'planning');
 
-    const [profileSummary, playerStats] = await Promise.all([
-      userProfileService.getProfileSummary(db, game.userId),
-      getPlayerStatsText(db, { userId: game.userId, gameId })
-    ]);
-    const plannerInput: PlannerPromptInput = {
-      band: user.ratingBand,
-      rating: ratingForPromptScoping(user.rating, user.ratingBand),
-      focusAreas: profileSummary.focusAreas,
-      recentFindings: profileSummary.recentFindings,
-      selfAssessment: user.selfAssessment,
-      userColor: game.userColor,
-      moves: classifiedMoves,
-      candidateMoments,
-      playerStats
-    };
-    const plan = await generatePlan(deps, plannerInput);
+    const candidateMoments = findCandidateMoments(gameReport.moves, evals);
+    await analysesRepo.storeCandidateMoments(db, analysis.id, candidateMoments);
 
-    await analysesRepo.markReady(db, analysis.id, plan);
+    await analysesRepo.markReady(db, analysis.id);
   } catch (error) {
     // markFailed only persists the message to `analyses.error` — without this,
     // the job queue still logs the job as completed (it caught its own
@@ -360,10 +330,12 @@ export async function analyzeInChunks(
   return evals;
 }
 
-async function generatePlan(deps: AnalysisJobDependencies, input: PlannerPromptInput): Promise<CoachingPlan> {
-  return deps.callPlanner(buildPlannerMessages(input));
-}
-
+/** `analyses.error` reaches the client verbatim (status SSE, AnalysisProgress).
+ * Same rule as the error-mapper plugin: an `HttpError`'s message is written for
+ * a user to read (e.g. "Unlock your AI setup..."), everything else — engine
+ * timeouts, provider errors, DB errors — is arbitrary internal detail and gets
+ * collapsed to a generic message instead of leaking it to the UI. */
 function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  if (error instanceof HttpError) return error.message;
+  return 'Analysis failed unexpectedly.';
 }

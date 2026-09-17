@@ -1,6 +1,8 @@
 import type { ParsedPosition } from '@freechesscoach/chess-analysis';
 import type { CoachPersona } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
+import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
+import type { UseExploreFeedbackResult } from '../board/useExploreFeedback.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { ChatComposer } from '../chat/ChatComposer.js';
 import '../chat/ChatPane.css';
@@ -26,6 +28,14 @@ export interface MobileCoachSessionBodyProps {
   onSend: (content: string) => void;
   boardArrows: ArrowRef[];
   hasPendingLine: boolean;
+  /** "Explore on your own" (SessionPage/SessionBoardColumn) — while true,
+   * this screen's one "coach box" slot shows ExploreNoteCard's own
+   * off-the-record take on the sandbox instead of the real transcript, same
+   * as BotStatusPanel already stands in for it during a bot game. Reverts to
+   * PagedMessageCard automatically once the student leaves peek mode
+   * (isExploring flips back to false — see SessionPage's own effect). */
+  isExploring: boolean;
+  exploreFeedback: UseExploreFeedbackResult;
 }
 
 /** SessionPage's own mobile layout — the exact same structure
@@ -67,26 +77,32 @@ export function MobileCoachSessionBody({
   activeToolName,
   onSend,
   boardArrows,
-  hasPendingLine
+  hasPendingLine,
+  isExploring,
+  exploreFeedback
 }: MobileCoachSessionBodyProps): ReactNode {
   return (
     <StackedSessionBody
       card={
-        <PagedMessageCard
-          messagePaging={messagePaging}
-          fen={fen}
-          positions={positions}
-          onSelectPly={onSelectPly}
-          onHoverMove={onHoverMove}
-          coachPersona={coachPersona}
-          displayName={displayName}
-          onPlayMessage={ttsEnabled ? coachVoice.play : undefined}
-          onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
-          playingMessageId={coachVoice.playingMessageId}
-          loadingMessageId={coachVoice.loadingMessageId}
-          isThinking={isThinking}
-          activeToolName={activeToolName}
-        />
+        isExploring ? (
+          <ExploreNoteCard status={exploreFeedback.status} evaluation={exploreFeedback.evaluation} note={exploreFeedback.note} />
+        ) : (
+          <PagedMessageCard
+            messagePaging={messagePaging}
+            fen={fen}
+            positions={positions}
+            onSelectPly={onSelectPly}
+            onHoverMove={onHoverMove}
+            coachPersona={coachPersona}
+            displayName={displayName}
+            onPlayMessage={ttsEnabled ? coachVoice.play : undefined}
+            onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
+            playingMessageId={coachVoice.playingMessageId}
+            loadingMessageId={coachVoice.loadingMessageId}
+            isThinking={isThinking}
+            activeToolName={activeToolName}
+          />
+        )
       }
       board={board}
       footer={<ChatComposer onSend={onSend} boardArrows={boardArrows} hasPendingLine={hasPendingLine} />}

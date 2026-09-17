@@ -1,0 +1,63 @@
+/* Reuses the shared CoachCard shell (components/CoachCard.css) and
+ * MoveExplorer's own note/alternatives markup (MoveNoteContent.tsx) — this
+ * file only adds the quality accent color and this card's own compact
+ * layout, same pattern as review/MoveNoteCard.css. */
+.explore-note-card {
+  height: auto;
+}
+
+.explore-note-card--brilliant,
+.explore-note-card--great {
+  border-left-color: var(--quality-great);
+}
+.explore-note-card--best {
+  border-left-color: var(--quality-best);
+}
+.explore-note-card--book {
+  border-left-color: var(--quality-book);
+}
+.explore-note-card--inaccuracy {
+  border-left-color: var(--quality-inaccuracy);
+}
+.explore-note-card--mistake {
+  border-left-color: var(--quality-mistake);
+}
+.explore-note-card--miss {
+  border-left-color: var(--quality-miss);
+}
+.explore-note-card--blunder {
+  border-left-color: var(--quality-blunder);
+}
+.explore-note-card--forced {
+  border-left-color: var(--quality-forced);
+}
+.explore-note-card--excellent {
+  border-left-color: var(--quality-excellent);
+}
+.explore-note-card--good {
+  border-left-color: var(--quality-good);
+}
+
+.explore-note-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.explore-note-card__move {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.explore-note-card__status {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.explore-note-card__empty-text,
+.explore-note-card__eval {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}

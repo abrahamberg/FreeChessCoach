@@ -42,7 +42,7 @@ describe('GET /api/analyses/:id/status', () => {
     return { user, game, analysis };
   }
 
-  function parseSseFrames(payload: string): Array<{ status: string }> {
+  function parseSseFrames(payload: string): Array<{ status: string; error?: string | null }> {
     return payload
       .split('\n\n')
       .filter((chunk) => chunk.trim().length > 0)
@@ -78,6 +78,7 @@ describe('GET /api/analyses/:id/status', () => {
     expect(response.statusCode).toBe(200);
     const frames = parseSseFrames(response.payload);
     expect(frames.map((f) => f.status)).toEqual(['queued', 'engine_running', 'planning', 'failed']);
+    expect(frames.at(-1)?.error).toBe('boom');
   }, 20000);
 
   test('404s for an analysis belonging to another user\'s game', async () => {

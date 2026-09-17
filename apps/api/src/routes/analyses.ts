@@ -132,13 +132,15 @@ function streamStatusUntilTerminal(
       // already knows the game's ply count (it holds the PGN) and turns the
       // two into a percentage — no schema change needed to carry progress.
       const analyzedPositions = analysis?.progress ?? 0;
+      // Only meaningful once status is 'failed' — see AnalysisProgressRow.
+      const error = analysis?.error ?? null;
 
       // Emitted on progress as well as status: `engine_running` covers the
       // whole engine pass, so without this the longest step reports nothing.
       if (status !== null && (status !== lastStatus || analyzedPositions !== lastAnalyzedPositions)) {
         lastStatus = status;
         lastAnalyzedPositions = analyzedPositions;
-        raw.write(`data: ${JSON.stringify({ status, analyzedPositions })}\n\n`);
+        raw.write(`data: ${JSON.stringify({ status, analyzedPositions, error })}\n\n`);
       }
 
       if (status === null || analysesRepo.TERMINAL_ANALYSIS_STATUSES.has(status)) {

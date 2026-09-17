@@ -126,6 +126,61 @@
   margin-top: 8px;
 }
 
+.llm-setup-wizard__steps {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+}
+
+.llm-setup-wizard__step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.llm-setup-wizard__step + .llm-setup-wizard__step::before {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: var(--color-border-strong);
+  margin: 0 var(--space-2);
+}
+
+.llm-setup-wizard__step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+
+.llm-setup-wizard__step.is-active {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.llm-setup-wizard__step.is-active .llm-setup-wizard__step-number {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.llm-setup-wizard__step.is-done .llm-setup-wizard__step-number {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-success);
+}
+
 .llm-test-log {
   display: flex;
   flex-direction: column;

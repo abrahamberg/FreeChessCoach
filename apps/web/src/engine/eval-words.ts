@@ -1,7 +1,10 @@
-/** Word-based eval phrasing shared by every in-browser engine readout
- * (Explore panel's useWasmEngine, the JIT bot-play hint panel) — never sent
- * to the server, always relative to the side to move in the FEN the raw
- * cp/mateIn came from. */
+/** Word-based eval phrasing shared by every engine readout that deliberately
+ * never shows a raw number — the JIT bot-play hint panel (browser-engine cp,
+ * mover-relative) and the Explore panel's engine-pipeline feedback (server
+ * cp, already white-perspective — callers pass sideToMove='w' unchanged).
+ * `sideToMove` says how to read the `cp`/`mateIn` given: mover-relative
+ * input un-flips through the real side to move; already-white-perspective
+ * input passes 'w' so no flip happens. */
 export function cpToWords(cp: number, sideToMove: 'w' | 'b'): string {
   const whiteCp = sideToMove === 'w' ? cp : -cp;
   const abs = Math.abs(whiteCp);

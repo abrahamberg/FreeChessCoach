@@ -16,7 +16,7 @@ import { useEngineTunnelClient } from './useEngineTunnelClient.js';
  *
  * Also preloads the lite engine's ~7MB WASM build immediately, rather than
  * waiting for the first tunnel request to need it (SharedEngineWorker's
- * normal lazy-create-on-first-analyze design, useWasmEngine.test.ts): a bot
+ * normal lazy-create-on-first-analyze design, shared-engine-worker.test.ts): a bot
  * move is a live, user-waiting request, so downloading the lite build only
  * once one is already in flight means the very first bot move of a session
  * eats that download as latency instead of it having already happened in

@@ -38,7 +38,7 @@ describe('buildSystemPromptForSession — play mode (architecture §14)', () => 
     const session = await sessionsRepo.insert(db, { gameId: game.id, userId: user.id, mode: 'play' });
     const findCoachingPlanSpy = vi.spyOn(analysesRepo, 'findCoachingPlanByGameId');
 
-    const prompt = await buildSystemPromptForSession(db, session);
+    const prompt = await buildSystemPromptForSession(db, {}, session);
 
     expect(findCoachingPlanSpy).not.toHaveBeenCalled();
     expect(prompt.staticPart).toContain('play_coach_move');
@@ -46,7 +46,13 @@ describe('buildSystemPromptForSession — play mode (architecture §14)', () => 
     findCoachingPlanSpy.mockRestore();
   });
 
-  test('analyze mode is unaffected: still requires and uses a coaching plan', async () => {
+  // Analyze mode still ends up with a plan in its prompt — it's just
+  // generated lazily now (services/coaching-plan.ts's `ensureCoachingPlan`)
+  // instead of pre-existing from import. With no analysis row at all (this
+  // game never went through runAnalyzeGameJob), there's nothing to generate
+  // a plan from — the failure surfaces earlier than before, but still fails
+  // clearly rather than silently.
+  test('analyze mode is unaffected: still ends up with a coaching plan in the prompt', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
     const game = await gamesRepo.insert(db, {
       userId: user.id,
@@ -62,6 +68,6 @@ describe('buildSystemPromptForSession — play mode (architecture §14)', () => 
     });
     const session = await sessionsRepo.insert(db, { gameId: game.id, userId: user.id });
 
-    await expect(buildSystemPromptForSession(db, session)).rejects.toThrow('Coaching plan not found');
+    await expect(buildSystemPromptForSession(db, {}, session)).rejects.toThrow('Analysis not found');
   });
 });

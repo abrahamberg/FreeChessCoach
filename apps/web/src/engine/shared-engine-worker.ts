@@ -115,8 +115,8 @@ function workerFromUrls(wasmUrl: URL, workerUrl: URL): EngineWorkerLike {
 // same depth 16, so it was never a search-depth difference. Browser-mode
 // evaluations that get persisted and shown next to server-analyzed games
 // have to come from a comparable engine, which is why this is the default
-// variant and the only one the Explore panel / tunnel 'main' fulfillment
-// ever uses. `-single` (rather than the threaded `stockfish-18.js`) keeps
+// variant and the only one tunnel 'main' fulfillment ever uses. `-single`
+// (rather than the threaded `stockfish-18.js`) keeps
 // this working without serving the app cross-origin-isolated for
 // SharedArrayBuffer.
 function createFullWorker(): EngineWorkerLike {
@@ -167,8 +167,8 @@ interface QueuedAnalysis {
 
 /** A `go` that never answers with `bestmove` (worker crash, a dropped
  * postMessage, or the WASM engine itself wedging) used to hang pump() forever:
- * `active` never clears, so every later analyze() call — Explore panel or
- * tunnel fulfillment alike — queues silently behind it for the rest of the
+ * `active` never clears, so every later analyze() call — tunnel fulfillment
+ * included — queues silently behind it for the rest of the
  * tab's life with no visible error. `go depth 16`/multiPv 3 has no time bound
  * at all, and ordinary early-game positions measured up to ~16s on the
  * single-threaded full-net WASM build (packages/shared's
@@ -179,10 +179,10 @@ interface QueuedAnalysis {
  * for a search that's actually never coming back. */
 const SEARCH_TIMEOUT_MS = 45_000;
 
-/** Owns the single WASM Stockfish Worker — shared between the Explore panel
- * and browser-mode tunnel fulfillment so only one engine process ever runs
- * client-side (design spec §5). Serializes analyze() calls: a WASM engine
- * can only run one search at a time.
+/** Owns the single WASM Stockfish Worker driving browser-mode tunnel
+ * fulfillment, so only one engine process ever runs client-side for it.
+ * Serializes analyze() calls: a WASM engine can only run one search at a
+ * time.
  *
  * Driven entirely off worker.onmessage callbacks rather than promise chains:
  * a `.then()` continuation is always deferred to a microtask, which would
@@ -192,8 +192,8 @@ const SEARCH_TIMEOUT_MS = 45_000;
  * analyze() and inside the onmessage handlers — so sent commands are
  * observable immediately after the event that triggers them. */
 /** Whether the shared worker is currently crunching a position and how many
- * more analyze() calls (Explore panel, or — in browser engine mode — tunnel
- * fulfillment) are waiting behind it. Exists for the global engine-activity
+ * more analyze() calls (tunnel fulfillment) are waiting behind it. Exists
+ * for the global engine-activity
  * indicator (useEngineActivityIndicator.ts), which has no other way to know
  * this engine is doing anything: install status alone reads 'ready' whether
  * it's idle or mid-search. */

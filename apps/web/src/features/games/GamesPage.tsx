@@ -1,10 +1,11 @@
 import { GameListResponseSchema, PromoteGameResponseSchema, isTopReviewTier, type GameListItem } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiDelete, apiGet, apiPost } from '../../api/client.js';
 import { PlusIcon } from '../../components/Icon.js';
+import { useActiveAnalyses } from '../../hooks/useActiveAnalyses.js';
 import { ContinueSessionCard } from './ContinueSessionCard.js';
 import { GameRow, sourceGroupFor, type SourceGroup } from './GameRow.js';
 import './GamesPage.css';
@@ -47,6 +48,24 @@ export function GamesPage(): ReactNode {
   });
   const games = gamesQuery.data ?? [];
 
+  // A row stuck on "Analyzing…" used to only ever clear on a manual reload
+  // or a window-focus refetch — nothing on this page ever learned that a
+  // background analysis had finished. GET /api/analyses/active (SSE) already
+  // pushes every one of this user's in-progress analyses, live, to the same
+  // AppShell topbar indicator (useEngineActivityIndicator) — reused here
+  // rather than building a second live-status channel. It only reports
+  // *in-progress* analyses, so the terminal status (ready/failed) itself
+  // isn't in the frame; the moment a gameId drops out of that list is the
+  // signal to refetch ['games'] once and pick up wherever it actually landed.
+  const { analyses: activeAnalyses } = useActiveAnalyses();
+  const previouslyActiveGameIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const currentlyActiveGameIds = new Set(activeAnalyses.map((analysis) => analysis.gameId));
+    const justFinished = [...previouslyActiveGameIdsRef.current].some((gameId) => !currentlyActiveGameIds.has(gameId));
+    previouslyActiveGameIdsRef.current = currentlyActiveGameIds;
+    if (justFinished) void queryClient.invalidateQueries({ queryKey: ['games'] });
+  }, [activeAnalyses, queryClient]);
+
   // Promotes to the coach tier first when the game hasn't reached it yet
   // (a game already at 'coach' — including coach_play/vs_bot, which start
   // there — skips straight to opening the session), then finds-or-creates
@@ -72,8 +91,8 @@ export function GamesPage(): ReactNode {
 
   // Phase 31 stat-bank import: starts analysis for a game that was imported
   // with deferAnalysis. Invalidating ['games'] flips the row from "Not
-  // analyzed" to "Analyzing…" via the existing polling/status mechanism —
-  // no separate progress UI needed here.
+  // analyzed" to "Analyzing…" immediately; the active-analyses effect above
+  // takes it from there once the engine actually finishes.
   const analyzeMutation = useMutation({
     mutationFn: (gameId: string) => apiPost(`/api/games/${gameId}/analyze`, {}, AnalyzeResponseSchema),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['games'] })

@@ -1,12 +1,12 @@
 import { parsePgn, resolveSanMove } from '@freechesscoach/chess-analysis';
 import { UserProfileSchema } from '@freechesscoach/shared';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiGet, apiPost } from '../../api/client.js';
 import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
 import { useCoachChat, type CoachToolCall } from '../../hooks/useCoachChat.js';
-import { useWasmEngine } from '../../hooks/useWasmEngine.js';
+import { useUnlockLlmSetup } from '../../hooks/useUnlockLlmSetup.js';
 import { toClassifiedMoves } from './liveMoveQualities.js';
 import { toCoachMessages } from './sessionMessages.js';
 import { GameDetailSchema, ResetSessionResponseSchema, SessionDetailSchema } from './sessionPageSchemas.js';
@@ -137,7 +137,6 @@ export function useSessionPageData(sessionId: string) {
   const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(DEFAULT_AUTOPLAY_INTERVAL_MS);
   const currentRealPosition =
     positions.find((position) => position.ply === boardState.ply) ?? positions[0] ?? FALLBACK_POSITION;
-  const engine = useWasmEngine();
   const initialMessages =
     sessionQuery.data && gameQuery.data ? toCoachMessages(sessionQuery.data.messages, sanMoves) : undefined;
 
@@ -192,12 +191,44 @@ export function useSessionPageData(sessionId: string) {
     boardState.peekAt(ply);
   }
 
+  // Opens the moment a coaching turn fails because AI is locked (see
+  // useCoachChat's onUnlockRequired) — the popup's own onUnlock/feedback
+  // state comes from this same shared hook Settings uses, so both places
+  // give identical correct/wrong/checking feedback.
+  const unlock = useUnlockLlmSetup();
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const pendingRetryRef = useRef<(() => Promise<void>) | null>(null);
+  const handleUnlockRequired = useCallback((retry: () => Promise<void>) => {
+    pendingRetryRef.current = retry;
+    setShowUnlockModal(true);
+  }, []);
+
   const chat = useCoachChat(sessionId, {
     onToolCall: handleCoachToolCall,
     onServerToolResult: handleServerToolResult,
+    onUnlockRequired: handleUnlockRequired,
     initialMessages,
     sanMoves
   });
+
+  const unlockModal = {
+    isOpen: showUnlockModal,
+    isPending: unlock.isPending,
+    isSuccess: unlock.isSuccess,
+    errorMessage: unlock.errorMessage,
+    onUnlock: unlock.unlock,
+    onClose: () => {
+      setShowUnlockModal(false);
+      unlock.reset();
+    },
+    onUnlocked: () => {
+      setShowUnlockModal(false);
+      unlock.reset();
+      const retry = pendingRetryRef.current;
+      pendingRetryRef.current = null;
+      void retry?.();
+    }
+  };
 
   // A fresh session has only the internal [session_start] marker persisted
   // at creation (coach-agent.ts) — nothing has ever triggered a model turn
@@ -237,8 +268,8 @@ export function useSessionPageData(sessionId: string) {
     peekAt,
     autoplayIntervalMs,
     setAutoplayIntervalMs,
-    engine,
     chat,
+    unlockModal,
     handleReset,
     handlePlayMoveCommitted
   };

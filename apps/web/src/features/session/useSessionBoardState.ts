@@ -1,6 +1,6 @@
 import { moveRefToPly } from '@freechesscoach/chess-analysis';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { BoardArrow, BoardHighlight } from '../board/CoachBoard.js';
+import type { BoardArrow, BoardHighlight, LocalMoveInfo } from '../board/CoachBoard.js';
 import { useAnnotationLayer, type AnnotationState } from '../board/AnnotationLayer.js';
 import type { CoachToolCall } from '../../hooks/useCoachChat.js';
 
@@ -29,9 +29,19 @@ export interface UseSessionBoardStateResult {
   /** Immediately reflects a locally-dropped move (react-chessboard is a
    * fully-controlled component with no optimistic state of its own — see
    * CoachBoard's onLocalMove doc comment). Superseded by the next
-   * show_position or peekAt navigation, and cleared by clearPreview (undo). */
-  previewMove: (fen: string) => void;
+   * show_position or peekAt navigation, and cleared by clearPreview (undo).
+   * `move` is omitted by callers with no move metadata to report (a fen-only
+   * preview); when given, it also becomes `lastLocalMove`. */
+  previewMove: (fen: string, move?: LocalMoveInfo) => void;
   clearPreview: () => void;
+  /** The most recent locally-dropped move's own metadata (not just the
+   * resulting fen) — set by previewMove, cleared by clearPreview and by
+   * every navigation away from that local preview (peekAt, backToCoach,
+   * show_position, applyServerMove), since none of those leave the board on
+   * a position that move actually produced. The Explore panel's engine
+   * feedback (useExploreFeedback) uses this to classify the move that got
+   * the student to the position on screen, not just re-analyze it. */
+  lastLocalMove: LocalMoveInfo | null;
   /** Wire directly as useCoachChat's onToolCall. */
   handleToolCall: (toolCall: CoachToolCall) => unknown;
   /** Local-only move-strip/Explore navigation (design.md §5.5) — never sent
@@ -82,6 +92,7 @@ export function useSessionBoardState(positions: SessionPosition[], initialPly?: 
   const [mode, setMode] = useState<BoardMode>('answer');
   const [coachPly, setCoachPly] = useState(0);
   const [previewFen, setPreviewFen] = useState<string | null>(null);
+  const [lastLocalMove, setLastLocalMove] = useState<LocalMoveInfo | null>(null);
   // Fallback for applyServerMove's new ply until the caller's `positions`
   // array — owned outside this hook — actually contains it (same render or
   // a later one; both must work, see applyServerMove's doc comment).
@@ -108,12 +119,14 @@ export function useSessionBoardState(positions: SessionPosition[], initialPly?: 
   const fen = previewFen ?? currentPosition?.fen ?? '';
   const lastMoveHighlights = lastMoveHighlightsFor(currentPosition?.moveUci);
 
-  const previewMove = useCallback((newFen: string) => {
+  const previewMove = useCallback((newFen: string, move?: LocalMoveInfo) => {
     setPreviewFen(newFen);
+    setLastLocalMove(move ?? null);
   }, []);
 
   const clearPreview = useCallback(() => {
     setPreviewFen(null);
+    setLastLocalMove(null);
   }, []);
 
   const handleToolCall = useCallback(
@@ -129,6 +142,7 @@ export function useSessionBoardState(positions: SessionPosition[], initialPly?: 
         setCoachPly(newPly);
         setMode('answer');
         setPreviewFen(null);
+        setLastLocalMove(null);
         annotations.clear();
         // intent round-trips to the server as-is (apps/api's
         // applyClientToolResult reads it to decide whether to move the
@@ -149,12 +163,14 @@ export function useSessionBoardState(positions: SessionPosition[], initialPly?: 
     setPly(newPly);
     setMode('peek');
     setPreviewFen(null);
+    setLastLocalMove(null);
   }, []);
 
   const backToCoach = useCallback(() => {
     setPly(coachPly);
     setMode('answer');
     setPreviewFen(null);
+    setLastLocalMove(null);
   }, [coachPly]);
 
   const anchorHere = useCallback(() => {
@@ -169,6 +185,7 @@ export function useSessionBoardState(positions: SessionPosition[], initialPly?: 
       setCoachPly(newPly);
       setMode('answer');
       setPreviewFen(null);
+      setLastLocalMove(null);
       annotations.clear();
     },
     [annotations]
@@ -185,6 +202,7 @@ export function useSessionBoardState(positions: SessionPosition[], initialPly?: 
     setAnnotations: annotations.setAnnotations,
     previewMove,
     clearPreview,
+    lastLocalMove,
     handleToolCall,
     peekAt,
     backToCoach,

@@ -3,7 +3,6 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { parseAnnotatedPgn, parsePgn } from '@freechesscoach/chess-analysis';
 import {
   BookReportSchema,
-  CoachingPlanSchema,
   GameReportSchema,
   type EngineEval,
   type PositionAnalysis,
@@ -101,25 +100,6 @@ const NO_SACRIFICE_PGN = `[Event "Test"]
 
 1. Kd2 Kd8 2. Ke3 Ke7 *`;
 
-const VALID_PLAN = CoachingPlanSchema.parse({
-  gameSummary: 'A sharp Scholar\'s-mate-adjacent game.',
-  openingNote: 'Fine through the opening.',
-  themes: ['king_safety'],
-  connectionToHistory: 'First session together.',
-  sessionGoal: 'Spot the pin before it costs a queen.',
-  moments: [
-    {
-      ply: 4,
-      kind: 'user_mistake',
-      category: 'king_safety',
-      whatHappened: 'Missed the mating idea.',
-      socraticQuestion: 'What was your opponent threatening?',
-      keyLine: 'Qxf7#',
-      revealDepthPlies: 2
-    }
-  ]
-});
-
 async function makeEval(fen: string): Promise<EngineEval> {
   return { ply: 0, fen, depth: 10, lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 20, mateIn: null }] };
 }
@@ -174,23 +154,26 @@ describe('runAnalyzeGameJob', () => {
     });
   }
 
-  test('valid plan on the first try -> analysis ready with stored evals and plan', async () => {
+  // The whole point of this decoupling: import/analysis never touches the
+  // AI or needs a BYOK unlock — candidateMoments is stored (pure, cheap) for
+  // services/coaching-plan.ts's `ensureCoachingPlan` to consume later, but no
+  // coachingPlan is ever generated here.
+  test('a completed job reaches ready with stored evals and candidate moments, never a coaching plan', async () => {
     const { gameId, analysisId } = await setupGame();
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
-    const deps: AnalysisJobDependencies = { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner };
+    const deps: AnalysisJobDependencies = { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition() };
 
     await runAnalyzeGameJob(db, deps, gameId);
 
     const row = await db
       .selectFrom('analyses')
-      .select(['status', 'evalsComputed', 'coachingPlan', 'error'])
+      .select(['status', 'evalsComputed', 'coachingPlan', 'candidateMoments', 'error'])
       .where('id', '=', analysisId)
       .executeTakeFirstOrThrow();
     expect(row.status).toBe('ready');
     expect(row.error).toBeNull();
     expect(row.evalsComputed).toBeGreaterThan(0);
-    expect((row.coachingPlan as { gameSummary: string }).gameSummary).toContain('Scholar');
-    expect(callPlanner).toHaveBeenCalledTimes(1);
+    expect(row.coachingPlan).toBeNull();
+    expect(row.candidateMoments).not.toBeNull();
 
     const game = await gamesRepo.findById(db, gameId);
     const classifiedMoves = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor);
@@ -200,9 +183,8 @@ describe('runAnalyzeGameJob', () => {
 
   test('persists the opening book report for a named opening', async () => {
     const { gameId, analysisId } = await setupGame(NAJDORF_PGN);
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition() }, gameId);
 
     const row = await db
       .selectFrom('analyses')
@@ -228,9 +210,8 @@ describe('runAnalyzeGameJob', () => {
 
   test('assembles and persists a full, schema-valid game report', async () => {
     const { gameId, analysisId } = await setupGame(NAJDORF_PGN);
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition() }, gameId);
 
     const row = await db
       .selectFrom('analyses')
@@ -254,9 +235,8 @@ describe('runAnalyzeGameJob', () => {
 
   test('persists per-move feature enrichment and move flags', async () => {
     const { gameId } = await setupGame(FORK_PGN);
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition() }, gameId);
 
     const game = await gamesRepo.findById(db, gameId);
     const move = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor)[0];
@@ -274,7 +254,6 @@ describe('runAnalyzeGameJob', () => {
   // deps.analyzePosition.
   test('tactics prevented: a defused opponent fork is credited via the free path, no gated engine call', async () => {
     const { gameId, analysisId } = await setupGame(FORK_PREVENTED_PGN);
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
     const analyzePosition = fakeAnalyzePosition();
     const analyzeGamePositions = vi.fn(async (fens: string[]) =>
       fens.map((fen): EngineEval =>
@@ -284,7 +263,7 @@ describe('runAnalyzeGameJob', () => {
       )
     );
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition, callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition }, gameId);
 
     const row = await db
       .selectFrom('analyses')
@@ -307,7 +286,6 @@ describe('runAnalyzeGameJob', () => {
   // queen.
   test('the served report keeps the tactic cards buildGameReport adds', async () => {
     const { gameId } = await setupGame(PINNED_QUEEN_PGN);
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
     const analyzeGamePositions = vi.fn(async (fens: string[]) =>
       fens.map((fen): EngineEval => {
         if (fen === PINNED_QUEEN_START_FEN) {
@@ -333,7 +311,7 @@ describe('runAnalyzeGameJob', () => {
       })
     );
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition() }, gameId);
 
     const game = await gamesRepo.findById(db, gameId);
     const storedReport = await analysesRepo.findGameReportByGameId(db, game!.id);
@@ -360,7 +338,6 @@ describe('runAnalyzeGameJob', () => {
   // brilliantSoundness === undefined and fails closed at B6.
   test('a known sound sacrifice is classified brilliant once B6 soundness is checked', async () => {
     const { gameId } = await setupGame(BRILLIANT_PGN);
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
     const analyzeGamePositions = vi.fn(async (fens: string[]) =>
       fens.map((fen): EngineEval =>
         fen === BRILLIANT_SETUP_FEN
@@ -386,7 +363,7 @@ describe('runAnalyzeGameJob', () => {
       features: {} as PositionAnalysis['features']
     });
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition, callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition }, gameId);
 
     const game = await gamesRepo.findById(db, gameId);
     const moves = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor);
@@ -400,42 +377,21 @@ describe('runAnalyzeGameJob', () => {
   // engine call the soundness check would otherwise cost.
   test('a game with no possible sacrifice makes zero extra engine calls for brilliant soundness', async () => {
     const { gameId } = await setupGame(NO_SACRIFICE_PGN);
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
     const analyzePosition = fakeAnalyzePosition();
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition, callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition }, gameId);
 
     expect(analyzePosition).not.toHaveBeenCalled();
   });
 
-  // The planner is now constrained to CoachingPlanSchema by the provider, so
-  // there is no local parse-and-retry loop left to exercise: the call either
-  // yields a valid plan or throws. What still has to hold is that a throw
-  // leaves the analysis 'failed' with an error, never half-written or stuck
-  // in 'planning' forever.
-  test('a planner that cannot produce a valid plan -> failed with an error message', async () => {
-    const { gameId, analysisId } = await setupGame();
-    const callPlanner = vi.fn().mockRejectedValue(new Error('could not generate a valid object'));
-    const deps: AnalysisJobDependencies = { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition(), callPlanner };
-
-    await runAnalyzeGameJob(db, deps, gameId);
-
-    const row = await db
-      .selectFrom('analyses')
-      .select(['status', 'error'])
-      .where('id', '=', analysisId)
-      .executeTakeFirstOrThrow();
-    expect(row.status).toBe('failed');
-    expect(row.error).toBeTruthy();
-    expect(callPlanner).toHaveBeenCalledTimes(1);
-  });
+  // The planner's own HttpError-vs-generic-error handling moved with it to
+  // services/coaching-plan.ts — see coaching-plan.test.ts.
 
   // The percentage on the import screen is derived from how many evals are
   // stored, so partial results have to land while the engine step is still
   // running rather than all at once when it finishes.
   test('analyzes in chunks, persisting evals as it goes so progress is observable mid-run', async () => {
     const { gameId, analysisId } = await setupGame();
-    const callPlanner = vi.fn().mockResolvedValue(VALID_PLAN);
 
     const storedBeforeEachCall: number[] = [];
     const chunkSizes: number[] = [];
@@ -450,7 +406,7 @@ describe('runAnalyzeGameJob', () => {
       return Promise.all(fens.map((fen) => makeEval(fen)));
     });
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition() }, gameId);
 
     // This PGN is 8 positions against a chunk size of 6.
     expect(chunkSizes.length).toBeGreaterThan(1);
@@ -494,7 +450,7 @@ describe('runAnalyzeGameJob', () => {
 
     const evals = await analyzeInChunks(
       db,
-      { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner: vi.fn() },
+      { analyzeGamePositions, analyzePosition: fakeAnalyzePosition() },
       analysisId,
       fens
     );
@@ -526,7 +482,7 @@ describe('runAnalyzeGameJob', () => {
 
     const evals = await analyzeInChunks(
       db,
-      { analyzeGamePositions, analyzePosition: fakeAnalyzePosition(), callPlanner: vi.fn() },
+      { analyzeGamePositions, analyzePosition: fakeAnalyzePosition() },
       analysisId,
       fens
     );
@@ -537,13 +493,11 @@ describe('runAnalyzeGameJob', () => {
     expect(evals[0]!.lines[1]!.moveSan).toBe('e4');
   });
 
-  test('engine failure -> failed with an error message, planner never called', async () => {
+  test('engine failure -> failed with a generic error, never the internal message', async () => {
     const { gameId, analysisId } = await setupGame();
-    const callPlanner = vi.fn();
     const deps: AnalysisJobDependencies = {
       analyzeGamePositions: vi.fn().mockRejectedValue(new Error('engine 500')),
-      analyzePosition: fakeAnalyzePosition(),
-      callPlanner
+      analyzePosition: fakeAnalyzePosition()
     };
 
     await runAnalyzeGameJob(db, deps, gameId);
@@ -554,7 +508,7 @@ describe('runAnalyzeGameJob', () => {
       .where('id', '=', analysisId)
       .executeTakeFirstOrThrow();
     expect(row.status).toBe('failed');
-    expect(row.error).toContain('engine 500');
-    expect(callPlanner).not.toHaveBeenCalled();
+    expect(row.error).toBeTruthy();
+    expect(row.error).not.toContain('engine 500');
   });
 });

@@ -324,7 +324,10 @@ describe('ImportPage', () => {
       for (const checkbox of checkboxes) await user.click(checkbox);
     }
 
-    test('a fully-successful batch posts deferAnalysis:true per game and navigates to Games', async () => {
+    // Engine analysis has no AI/BYOK-unlock dependency, so a bulk import
+    // queues it per game exactly like a single-game import does — no
+    // deferAnalysis, no manual "Get coach analysis" click needed afterward.
+    test('a fully-successful batch queues analysis per game (no deferAnalysis) and navigates to Games', async () => {
       const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
         if (path === '/api/lichess/recent-games') {
           return Promise.resolve(
@@ -333,7 +336,7 @@ describe('ImportPage', () => {
         }
         if (path === '/api/games' && init?.method === 'POST') {
           return Promise.resolve(
-            new Response(JSON.stringify({ gameId: 'game-x', analysisId: null }), {
+            new Response(JSON.stringify({ gameId: 'game-x', analysisId: 'analysis-x' }), {
               status: 200,
               headers: { 'content-type': 'application/json' }
             })
@@ -352,11 +355,11 @@ describe('ImportPage', () => {
       expect(await screen.findByText('Games')).toBeInTheDocument();
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/games',
-        expect.objectContaining({ body: JSON.stringify({ pgn: 'pgn-1', source: 'lichess', deferAnalysis: true }) })
+        expect.objectContaining({ body: JSON.stringify({ pgn: 'pgn-1', source: 'lichess' }) })
       );
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/games',
-        expect.objectContaining({ body: JSON.stringify({ pgn: 'pgn-2', source: 'lichess', deferAnalysis: true }) })
+        expect.objectContaining({ body: JSON.stringify({ pgn: 'pgn-2', source: 'lichess' }) })
       );
     });
 

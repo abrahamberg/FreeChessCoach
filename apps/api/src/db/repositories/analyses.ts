@@ -1,4 +1,5 @@
 import { sql, type Kysely } from 'kysely';
+import type { CandidateMoment } from '@freechesscoach/chess-analysis';
 import {
   ImportableGameSourceSchema,
   type AnalysisStatus,
@@ -53,6 +54,10 @@ export interface AnalysisProgressRow {
   /** Positions analyzed so far — services/analysis.ts increments this a
    * chunk at a time, so it climbs through the `engine_running` step. */
   progress: number;
+  /** Set only when status is 'failed' — see services/analysis.ts's
+   * describeError, which already collapses anything not client-safe before
+   * it lands here. */
+  error: string | null;
 }
 
 /** For the status SSE, which re-reads this row every second while a game
@@ -63,7 +68,7 @@ export async function findProgress(
 ): Promise<AnalysisProgressRow | undefined> {
   return db
     .selectFrom('analyses')
-    .select(['status', 'evalsComputed as progress'])
+    .select(['status', 'evalsComputed as progress', 'error'])
     .where('id', '=', id)
     .executeTakeFirst();
 }
@@ -161,14 +166,14 @@ export function findGameReportByGameId(
     .then((row) => row?.gameReport as StoredGameReport | undefined);
 }
 
-export function markReady(
-  db: Kysely<Database>,
-  id: string,
-  coachingPlan: CoachingPlan
-): Promise<void> {
+/** Engine analysis complete — game report, diagnostics, and candidate
+ * moments are all stored. No coaching plan: that's generated lazily, the
+ * first time a user actually starts a coaching session on this game (see
+ * services/coaching-plan.ts's `ensureCoachingPlan`), not at import time. */
+export function markReady(db: Kysely<Database>, id: string): Promise<void> {
   return db
     .updateTable('analyses')
-    .set({ status: 'ready', coachingPlan: JSON.stringify(coachingPlan), completedAt: new Date() })
+    .set({ status: 'ready', completedAt: new Date() })
     .where('id', '=', id)
     .execute()
     .then(() => undefined);
@@ -185,6 +190,41 @@ export function findCoachingPlanByGameId(
     .where('gameId', '=', gameId)
     .executeTakeFirst()
     .then((row) => row?.coachingPlan as CoachingPlan | undefined);
+}
+
+/** Set independently of `markReady`, the first time `ensureCoachingPlan`
+ * generates a plan for this game — every session after the first reuses it. */
+export function storeCoachingPlan(db: Kysely<Database>, id: string, plan: CoachingPlan): Promise<void> {
+  return db
+    .updateTable('analyses')
+    .set({ coachingPlan: JSON.stringify(plan) })
+    .where('id', '=', id)
+    .execute()
+    .then(() => undefined);
+}
+
+/** `findCandidateMoments`' output (packages/chess-analysis) — pure, computed
+ * during analysis, stored so `ensureCoachingPlan` never needs raw per-position
+ * evals to rebuild it later (see 0037_candidate_moments.ts). */
+export function storeCandidateMoments(db: Kysely<Database>, id: string, moments: CandidateMoment[]): Promise<void> {
+  return db
+    .updateTable('analyses')
+    .set({ candidateMoments: JSON.stringify(moments) })
+    .where('id', '=', id)
+    .execute()
+    .then(() => undefined);
+}
+
+export function findCandidateMomentsByGameId(
+  db: Kysely<Database>,
+  gameId: string
+): Promise<CandidateMoment[] | undefined> {
+  return db
+    .selectFrom('analyses')
+    .select('candidateMoments')
+    .where('gameId', '=', gameId)
+    .executeTakeFirst()
+    .then((row) => row?.candidateMoments as CandidateMoment[] | undefined);
 }
 
 export interface ActiveAnalysisRow {

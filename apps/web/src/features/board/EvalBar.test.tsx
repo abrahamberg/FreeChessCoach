@@ -24,4 +24,9 @@ describe('EvalBar', () => {
     render(<EvalBar ply={0} classifiedMoves={CLASSIFIED_MOVES} orientation="white" />);
     expect(screen.getByLabelText('Evaluation: 0.0')).toBeInTheDocument();
   });
+
+  test('cpOverride wins over the classifiedMoves/ply lookup — the Explore sandbox has no classified move to look up', () => {
+    render(<EvalBar ply={1} classifiedMoves={CLASSIFIED_MOVES} orientation="white" cpOverride={-150} />);
+    expect(screen.getByLabelText('Evaluation: -1.5')).toBeInTheDocument();
+  });
 });

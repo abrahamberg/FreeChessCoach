@@ -33,7 +33,17 @@ export interface UseCoachChatOptions {
    * tool names (get_candidate_moves, record_finding, ...) are silent and
    * never reach this callback. */
   onServerToolResult?: (toolName: string, output: unknown) => void;
+  /** Fires every time a turn fails specifically because the AI needs to be
+   * unlocked (never for any other failure) — the caller should prompt for
+   * the unlock phrase (e.g. open UnlockPhraseModal). Call the given `retry`
+   * once unlocking succeeds to resend the message that failed; it replaces
+   * the error bubble with a fresh streamed reply instead of adding a
+   * duplicate. Fires again on every subsequent failure, even if a previous
+   * prompt was dismissed without unlocking. */
+  onUnlockRequired?: (retry: () => Promise<void>) => void;
 }
+
+type PostTurnBody = { content?: string } | { clientToolResult: { toolCallId: string; toolName: string; result: unknown } };
 
 export interface UseCoachChatResult {
   messages: CoachMessage[];
@@ -60,6 +70,21 @@ function isServerToolResultName(toolName: string): boolean {
   return SERVER_TOOL_RESULT_NAMES.has(toolName);
 }
 
+/** A non-ok POST /api/sessions/:id/messages response is the fastify
+ * error-mapper's problem+json body (`{ title, status }`) — `title` is always
+ * written to be read by a user (e.g. "Unlock your AI setup..."), same
+ * convention the import flow's AnalysisProgress error surfacing already
+ * relies on. Falls back to a generic message if the body isn't JSON at all
+ * (a network-level failure never reaching the API). */
+async function readProblemDetailTitle(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as { title?: string };
+    return body.title || 'Something went wrong sending that message.';
+  } catch {
+    return 'Something went wrong sending that message.';
+  }
+}
+
 /** Drives POST /api/sessions/:id/messages (architecture §7.2). Reads the
  * stream directly (see ./coachStream.ts) rather than using `useChat`: this
  * project's request contract is {content} / {clientToolResult}, and a client
@@ -82,18 +107,49 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
   }, [options.initialMessages]);
 
   const postTurn = useCallback(
-    async (body: { content?: string } | { clientToolResult: { toolCallId: string; toolName: string; result: unknown } }) => {
+    async (body: PostTurnBody) => {
       const response = await fetch(`/api/sessions/${sessionId}/messages`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body)
       });
-      if (!response.body) return;
 
       const assistantId = crypto.randomUUID();
       let assistantText = '';
       setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', text: '' }]);
+
+      // A thrown error (e.g. "unlock your AI setup") never reaches the SSE
+      // stream at all — it's a plain problem+json response instead (see
+      // routes/sessions.ts: startTurn is awaited before reply.hijack()).
+      // Without this, the assistant bubble above stays permanently blank —
+      // readCoachStream would otherwise try to parse the error body as an
+      // SSE frame and only console.error it.
+      if (!response.ok) {
+        const reason = await readProblemDetailTitle(response);
+        setMessages((prev) =>
+          prev.map((message) => (message.id === assistantId ? { ...message, text: reason } : message))
+        );
+        // getModelForUser's own ValidationError (llm/gateway.ts) — the same
+        // message coaching-plan.ts's ensureCoachingPlan surfaces on a game's
+        // first turn. Named recursive reference to `postTurn` itself: by the
+        // time `retry` actually runs (after the user unlocks, an arbitrary
+        // amount later), this useCallback's own binding is long since
+        // assigned, so this is safe, not a use-before-init.
+        if (response.status === 400 && /unlock your ai setup/i.test(reason)) {
+          options.onUnlockRequired?.(async () => {
+            setMessages((prev) => prev.filter((message) => message.id !== assistantId));
+            setIsStreaming(true);
+            try {
+              await postTurn(body);
+            } finally {
+              setIsStreaming(false);
+            }
+          });
+        }
+        return;
+      }
+      if (!response.body) return;
 
       try {
         await readCoachStream(response.body, {

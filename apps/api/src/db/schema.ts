@@ -105,6 +105,9 @@ export interface AnalysesTable {
    * jsonb array nothing re-reads. */
   evalsComputed: Generated<number>;
   coachingPlan: Jsonb<unknown> | null;
+  /** 0037_candidate_moments.ts — `findCandidateMoments`' output, persisted so
+   * the lazily-generated coaching plan never needs raw per-position evals. */
+  candidateMoments: Jsonb<unknown> | null;
   bookReport: Jsonb<unknown> | null;
   /** 0032_annotated_pgn.ts — now `StoredGameReport` (GameReportSchema minus
    * `moves`, packages/shared), not a full `GameReport`: `moves` was a

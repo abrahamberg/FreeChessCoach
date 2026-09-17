@@ -178,6 +178,39 @@ describe('SessionPage', () => {
     expect(screen.getByRole('textbox', { name: /reply/i })).toBeInTheDocument();
   });
 
+  test('below 768px, exploring swaps the one "coach box" slot for the sandbox\'s own note, then reverts to the real transcript on "back to coach"', async () => {
+    mockMatchMedia(false);
+    window.localStorage.clear();
+    const fetchMock = mockFetch({}, (path) =>
+      path === '/api/positions/hint-moves'
+        ? new Response(
+            JSON.stringify({ lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 30, mateIn: null }] }),
+            { status: 200, headers: { 'content-type': 'application/json' } }
+          )
+        : undefined
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    renderSessionPage();
+
+    await screen.findByTestId('mock-chessboard');
+    expect(screen.getByText('Hi there!')).toBeInTheDocument();
+
+    act(() => {
+      screen.getByRole('button', { name: /explore on your own/i }).click();
+    });
+
+    await waitFor(() => expect(document.querySelector('.explore-note-card')).toBeInTheDocument());
+    expect(screen.queryByText('Hi there!')).not.toBeInTheDocument();
+    expect(screen.getByText(/play a move and I'll flag it here/i)).toBeInTheDocument();
+
+    act(() => {
+      screen.getByRole('button', { name: /stop exploring/i }).click();
+    });
+
+    expect(document.querySelector('.explore-note-card')).not.toBeInTheDocument();
+    expect(await screen.findByText('Hi there!')).toBeInTheDocument();
+  });
+
   test('below 768px, only the current transcript entry shows — paged left/right, same as GameReviewPage\'s move notes', async () => {
     mockMatchMedia(false);
     window.localStorage.clear();
@@ -751,5 +784,49 @@ describe('SessionPage', () => {
       .getByText(/move 1 \(black\)/i)
       .closest('.position-divider');
     expect(divider).toHaveTextContent('e5');
+  });
+
+  // useCoachChat's onUnlockRequired -> useSessionPageData's unlockModal ->
+  // SessionPage rendering UnlockPhraseModal, end to end: a locked-AI turn
+  // failure should pop the unlock popup, and a successful unlock should
+  // silently resend the message that failed rather than leaving the student
+  // stuck rereading the error bubble.
+  test('a coaching turn that fails because AI is locked opens the unlock popup, and unlocking retries it', async () => {
+    let messagesCallCount = 0;
+    const fetchMock = mockFetch({}, (path) => {
+      if (path === '/api/sessions/session-1/messages') {
+        messagesCallCount += 1;
+        if (messagesCallCount === 1) {
+          return new Response(
+            JSON.stringify({ type: 'about:blank', title: 'Unlock your AI setup in Settings with your unlock phrase before coaching.', status: 400 }),
+            { status: 400, headers: { 'content-type': 'application/problem+json' } }
+          );
+        }
+        return streamResponse([...textFrames('Welcome back!')]);
+      }
+      if (path === '/api/users/me/llm-setup/unlock') {
+        return new Response(
+          JSON.stringify({ configured: true, unlocked: true, protocol: 'openai-chat', lowModel: 'luna', highModel: 'terra', voiceAvailable: false }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        );
+      }
+      return undefined;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    renderSessionPage();
+
+    await screen.findByTestId('mock-chessboard');
+    await user.type(screen.getByRole('textbox', { name: /reply/i }), 'what should I have played?');
+    await user.click(screen.getByRole('button', { name: /send/i }));
+
+    await screen.findByRole('dialog', { name: 'Unlock your AI setup' });
+    await user.type(screen.getByLabelText('Unlock phrase'), 'correct horse battery staple');
+    await user.click(screen.getByRole('button', { name: 'Unlock' }));
+
+    await waitFor(() => expect(messagesCallCount).toBe(2));
+    expect(await screen.findByText('Welcome back!')).toBeInTheDocument();
+    // The error bubble is gone, not just superseded further down.
+    expect(screen.queryByText(/unlock your ai setup/i)).not.toBeInTheDocument();
   });
 });

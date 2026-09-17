@@ -1,6 +1,7 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import type { GameReport } from '@freechesscoach/shared';
+import type { CandidateMoment } from '@freechesscoach/chess-analysis';
+import { CoachingPlanSchema, type GameReport } from '@freechesscoach/shared';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import type { Database } from '../schema.js';
 import * as analysesRepo from './analyses.js';
@@ -108,5 +109,92 @@ describe('analyses repository — listReadyReportsForUser (Task 29.1)', () => {
     const rows = await analysesRepo.listReadyReportsForUser(db, user.id, since);
 
     expect(rows).toHaveLength(2);
+  });
+});
+
+describe('analyses repository — candidate moments and coaching plan storage', () => {
+  let testDb: TestDb;
+  let db: Kysely<Database>;
+
+  beforeAll(async () => {
+    testDb = await createTestDb();
+    db = testDb.db;
+  }, 60000);
+
+  afterAll(async () => {
+    await testDb.cleanup();
+  });
+
+  const FIXTURE_MOMENTS: CandidateMoment[] = [{ ply: 4, kind: 'user_mistake', cpLoss: 300 }];
+  const FIXTURE_PLAN = CoachingPlanSchema.parse({
+    gameSummary: 'A sharp game.',
+    openingNote: 'Fine through the opening.',
+    themes: ['king_safety'],
+    connectionToHistory: 'First session together.',
+    sessionGoal: 'Spot the pin before it costs a queen.',
+    moments: [
+      {
+        ply: 4,
+        kind: 'user_mistake',
+        category: 'king_safety',
+        whatHappened: 'Missed the mating idea.',
+        socraticQuestion: 'What was your opponent threatening?',
+        keyLine: 'Qxf7#',
+        revealDepthPlies: 2
+      }
+    ]
+  });
+
+  async function makeGame() {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
+    const game = await gamesRepo.insert(db, {
+      userId: user.id,
+      pgn: '1. e4 e5',
+      source: 'paste',
+      userColor: 'white',
+      whiteName: null,
+      blackName: null,
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+    const analysis = await analysesRepo.insertQueued(db, game.id);
+    return { gameId: game.id, analysisId: analysis.id };
+  }
+
+  test('storeCandidateMoments / findCandidateMomentsByGameId round-trip', async () => {
+    const { gameId, analysisId } = await makeGame();
+    expect(await analysesRepo.findCandidateMomentsByGameId(db, gameId)).toBeFalsy();
+
+    await analysesRepo.storeCandidateMoments(db, analysisId, FIXTURE_MOMENTS);
+
+    expect(await analysesRepo.findCandidateMomentsByGameId(db, gameId)).toEqual(FIXTURE_MOMENTS);
+  });
+
+  test('markReady sets status ready without touching coachingPlan', async () => {
+    const { gameId, analysisId } = await makeGame();
+
+    await analysesRepo.markReady(db, analysisId);
+
+    const row = await db
+      .selectFrom('analyses')
+      .select(['status', 'coachingPlan', 'completedAt'])
+      .where('id', '=', analysisId)
+      .executeTakeFirstOrThrow();
+    expect(row.status).toBe('ready');
+    expect(row.coachingPlan).toBeFalsy();
+    expect(row.completedAt).not.toBeNull();
+    expect(await analysesRepo.findCoachingPlanByGameId(db, gameId)).toBeFalsy();
+  });
+
+  test('storeCoachingPlan sets the plan independent of status', async () => {
+    const { gameId, analysisId } = await makeGame();
+
+    await analysesRepo.storeCoachingPlan(db, analysisId, FIXTURE_PLAN);
+
+    expect(await analysesRepo.findCoachingPlanByGameId(db, gameId)).toEqual(FIXTURE_PLAN);
+    const row = await db.selectFrom('analyses').select('status').where('id', '=', analysisId).executeTakeFirstOrThrow();
+    expect(row.status).toBe('queued');
   });
 });

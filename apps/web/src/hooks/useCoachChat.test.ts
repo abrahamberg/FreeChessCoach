@@ -47,6 +47,84 @@ describe('useCoachChat', () => {
     expect(last?.text).toBe('Hello there!');
   });
 
+  // startTurn can throw before the response is ever hijacked into an SSE
+  // stream (e.g. the gateway's "unlock your AI setup" ValidationError) — a
+  // plain problem+json 400, not a stream frame. Without surfacing it, the
+  // assistant bubble stayed blank forever and the failure only reached
+  // console.error.
+  test('a non-ok response shows the server\'s error text instead of leaving the assistant bubble blank', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ type: 'about:blank', title: 'Unlock your AI setup in Settings.', status: 400 }), {
+        status: 400,
+        headers: { 'content-type': 'application/problem+json' }
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => useCoachChat('session-1'));
+    await act(async () => {
+      await result.current.sendMessage('hi coach');
+    });
+
+    const last = result.current.messages.at(-1);
+    expect(last?.role).toBe('assistant');
+    expect(last?.text).toBe('Unlock your AI setup in Settings.');
+  });
+
+  test('onUnlockRequired fires with a retry that resends the failed turn, replacing the error bubble in place', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ type: 'about:blank', title: 'Unlock your AI setup in Settings with your unlock phrase before coaching.', status: 400 }), {
+          status: 400,
+          headers: { 'content-type': 'application/problem+json' }
+        })
+      )
+      .mockResolvedValueOnce(streamResponse([...textFrames('Welcome back!')]));
+    vi.stubGlobal('fetch', fetchMock);
+    const onUnlockRequired = vi.fn();
+
+    const { result } = renderHook(() => useCoachChat('session-1', { onUnlockRequired }));
+    await act(async () => {
+      await result.current.sendMessage('hi coach');
+    });
+
+    expect(onUnlockRequired).toHaveBeenCalledTimes(1);
+    expect(result.current.messages.at(-1)?.text).toContain('Unlock your AI setup');
+    const messageCountBeforeRetry = result.current.messages.length;
+
+    const retry = onUnlockRequired.mock.calls[0]?.[0] as () => Promise<void>;
+    await act(async () => {
+      await retry();
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    // The failed bubble was replaced, not appended to — same total count,
+    // now carrying the successful reply instead of the error text.
+    expect(result.current.messages.length).toBe(messageCountBeforeRetry);
+    expect(result.current.messages.at(-1)?.text).toBe('Welcome back!');
+  });
+
+  // Never fires for an unrelated failure — a "wrong unlock phrase" style
+  // error from a different flow entirely should never pop the unlock modal.
+  test('onUnlockRequired never fires for a non-unlock error', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ type: 'about:blank', title: 'Something else went wrong.', status: 400 }), {
+        status: 400,
+        headers: { 'content-type': 'application/problem+json' }
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const onUnlockRequired = vi.fn();
+
+    const { result } = renderHook(() => useCoachChat('session-1', { onUnlockRequired }));
+    await act(async () => {
+      await result.current.sendMessage('hi coach');
+    });
+
+    expect(onUnlockRequired).not.toHaveBeenCalled();
+  });
+
   test('design.md §5.7: isThinking is true once sendMessage starts, false once text arrives', async () => {
     const encoder = new TextEncoder();
     let enqueueText: (() => void) | undefined;
