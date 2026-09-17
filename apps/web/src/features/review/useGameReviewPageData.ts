@@ -158,6 +158,9 @@ export function useGameReviewPageData(gameId: string) {
     ply,
     setPly,
     fen,
+    // Where an explore sandbox (useGameReviewExplore) branches off from —
+    // the real game's own ply/fen, untouched by any diverged-line preview.
+    currentRealPosition: { ply, fen },
     highlights,
     arrows,
     moveQualityBadge,

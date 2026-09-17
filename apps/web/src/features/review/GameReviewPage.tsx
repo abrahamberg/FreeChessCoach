@@ -4,12 +4,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
 import { ENGINE_MODE_BADGE, useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
+import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
+import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
 import { MoveNavStrip } from '../board/MoveNavStrip.js';
 import { SessionHeader } from '../session/SessionHeader.js';
 import { GameReviewBoardColumn } from './GameReviewBoardColumn.js';
 import { MoveNoteCard } from './MoveNoteCard.js';
+import { useGameReviewExplore } from './useGameReviewExplore.js';
 import { useGameReviewPageData } from './useGameReviewPageData.js';
 import '../../styles/board-bottom-bar.css';
 import './GameReviewPage.css';
@@ -21,7 +24,11 @@ import './GameReviewPage.css';
  * (move-reasons.ts/describe-tactic-hit.ts) already stored on the analysis.
  * "Continue with Coach" is the one bridge to the paid conversation — a
  * small icon in MoveNoteCard's own header — and the only mutation this page
- * makes.
+ * makes. "Explore on your own" (useGameReviewExplore) is a separate,
+ * unlimited escape hatch from the read-only move list: a local sandbox that
+ * scores whatever the student actually drags on the board via the same free
+ * engine endpoint the live Coach session's Explore panel uses — never a
+ * chat turn, never touches the stored game.
  *
  * Below the desktop breakpoint: note card, then the board, then MoveNavStrip
  * (step chevrons + the scrollable move-chip list, combined into one row —
@@ -59,6 +66,7 @@ export function GameReviewPage(): ReactNode {
     ply,
     setPly,
     fen,
+    currentRealPosition,
     highlights,
     arrows,
     moveQualityBadge,
@@ -69,6 +77,14 @@ export function GameReviewPage(): ReactNode {
     isContinuingWithCoach,
     continueWithCoachError
   } = useGameReviewPageData(gameId ?? '');
+
+  const explore = useGameReviewExplore(currentRealPosition);
+  // While exploring, the board shows the sandbox's own position (the real
+  // game's line prefixed with whatever the student has played locally) —
+  // useGameReviewExplore closes the sandbox itself the moment `ply` moves
+  // out from under it (MoveExplorer/MoveNavStrip), so `fen` alone is always
+  // correct once that happens.
+  const displayFen = explore.divergedLine.fen ?? fen;
 
   if (gameQuery.isLoading) return <p>Loading…</p>;
   if (gameQuery.isError || !gameQuery.data) return <p>Could not load this game.</p>;
@@ -84,7 +100,7 @@ export function GameReviewPage(): ReactNode {
 
   const board = (
     <GameReviewBoardColumn
-      fen={fen}
+      fen={displayFen}
       orientation={orientation}
       highlights={highlights}
       arrows={arrows}
@@ -93,10 +109,22 @@ export function GameReviewPage(): ReactNode {
       ply={ply}
       onSelect={setPly}
       isDesktop={isDesktop}
+      explore={{
+        isExploring: explore.isExploring,
+        open: explore.open,
+        close: explore.close,
+        divergedLine: explore.divergedLine,
+        exploreFeedback: explore.exploreFeedback,
+        onLocalMove: explore.handleLocalMove,
+        autoplayIntervalMs: explore.autoplayIntervalMs,
+        onChangeAutoplayInterval: explore.setAutoplayIntervalMs
+      }}
     />
   );
 
-  const noteCard = (
+  const noteCard = explore.isExploring ? (
+    <ExploreNoteCard status={explore.exploreFeedback.status} evaluation={explore.exploreFeedback.evaluation} note={explore.exploreFeedback.note} />
+  ) : (
     <MoveNoteCard
       ply={ply}
       san={sanMoves[ply - 1] ?? null}
@@ -131,15 +159,28 @@ export function GameReviewPage(): ReactNode {
               sit; the note card takes the right column a chat pane would
               occupy in a coaching session, rather than displacing either. */}
           <div className="game-review-explorer-column">
-            <MoveExplorer
-              sanMoves={sanMoves}
-              classifiedMoves={classifiedMoves}
-              positions={positions}
-              currentPly={ply}
-              onSelect={setPly}
-              showNotes={false}
-            />
-            {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} tacticBaseline={game.tacticBaseline} />}
+            {explore.divergedLine.line ? (
+              <DivergedLinePanel
+                line={explore.divergedLine.line}
+                stepIndex={explore.divergedLine.stepIndex}
+                onSelectStep={explore.divergedLine.previewStep}
+                onExit={explore.close}
+                autoplayIntervalMs={explore.autoplayIntervalMs}
+                onChangeAutoplayInterval={explore.setAutoplayIntervalMs}
+              />
+            ) : (
+              <>
+                <MoveExplorer
+                  sanMoves={sanMoves}
+                  classifiedMoves={classifiedMoves}
+                  positions={positions}
+                  currentPly={ply}
+                  onSelect={setPly}
+                  showNotes={false}
+                />
+                {game.gameReport && <GameReportSummary report={game.gameReport} userColor={orientation} tacticBaseline={game.tacticBaseline} />}
+              </>
+            )}
           </div>
           {board}
           <div className="game-review-notes-column">{noteCard}</div>

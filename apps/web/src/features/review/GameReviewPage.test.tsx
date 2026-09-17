@@ -109,6 +109,16 @@ function mockFetch(game: GameFixture = {}) {
     if (path === '/api/users/me') {
       return Promise.resolve(new Response(JSON.stringify(mockUserProfile()), { status: 200, headers: { 'content-type': 'application/json' } }));
     }
+    // "Explore on your own" — useExploreFeedback's engine-pipeline call.
+    // Harmless for every other test here, none of which open the sandbox.
+    if (path === '/api/positions/hint-moves' && init?.method === 'POST') {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({ lines: [{ moveUci: 'e7e5', moveSan: 'e5', cp: 20, mateIn: null }] }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
+      );
+    }
     throw new Error(`unexpected fetch: ${path}`);
   });
 }
@@ -450,5 +460,32 @@ describe('GameReviewPage', () => {
       const latest = capturedOptions[capturedOptions.length - 1];
       expect(latest?.arrows).toEqual([]);
     });
+  });
+
+  // "Explore on your own" — the sandbox ported from the live Coach
+  // session's SessionBoardColumn (useGameReviewExplore). react-chessboard
+  // itself is mocked out (no real drag to simulate here — see
+  // useGameReviewExplore.test.ts for the move-accumulation/feedback
+  // behavior), so this only covers the toggle's own on-page wiring: opening
+  // it flips the board from inert to interactive and swaps in the sandbox's
+  // own note card, and "back to game" reverses both.
+  test('"Explore on your own" makes the board interactive and swaps in its own note; "back to game" restores read-only', async () => {
+    mockMatchMedia(false);
+    vi.stubGlobal('fetch', mockFetch());
+    const user = userEvent.setup();
+    const { container } = renderReviewPage();
+    await screen.findByText(/daniel/);
+    expect(screen.getByText(/select a move to see the coach's note/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /explore on your own/i }));
+
+    expect(container.querySelector('.coach-board-frame--pending')).not.toBeInTheDocument();
+    expect(container.querySelector('.coach-board-frame--peek')).toBeInTheDocument();
+    expect(await screen.findByText(/off the record/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'back to game' }));
+
+    expect(container.querySelector('.coach-board-frame--pending')).toBeInTheDocument();
+    expect(screen.getByText(/select a move to see the coach's note/i)).toBeInTheDocument();
   });
 });
