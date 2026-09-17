@@ -1,7 +1,7 @@
 import type { CoachingPlan, RatingBand } from '@freechesscoach/shared';
 import { CALIBRATION } from './calibration.js';
 import {
-  ACTIVE_DETECTOR_CODES,
+  ACTIVE_DIAGNOSIS_CODES,
   MISTAKE_CATEGORIES_BLOCK,
   renderCoachingPlanBlock,
   renderFocusAreasBlock,
@@ -74,7 +74,7 @@ Recent findings: ${renderRecentFindingsBlock(input.recentFindings, now)}
 Self-assessment: "${input.selfAssessment ?? ''}"
 
 Catalog diagnosis codes you may use for a finding's diagnosisCode (use ONLY these; leave it unset if none fit):
-${renderScopedDiagnosisCodes(input.rating, ACTIVE_DETECTOR_CODES)}
+${renderScopedDiagnosisCodes(input.rating, ACTIVE_DIAGNOSIS_CODES)}
 
 COACHING PLAN${sessionGoalLine(input.plan)}
 ${renderCoachingPlanBlock(input.plan)}

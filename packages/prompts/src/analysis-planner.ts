@@ -2,7 +2,7 @@ import { MOVE_QUALITY_SYMBOLS, type RatingBand } from '@freechesscoach/shared';
 import type { CandidateMoment, ClassifiedMove } from '@freechesscoach/chess-analysis';
 import { CALIBRATION } from './calibration.js';
 import {
-  ACTIVE_DETECTOR_CODES,
+  ACTIVE_DIAGNOSIS_CODES,
   MISTAKE_CATEGORIES_BLOCK,
   renderFocusAreasBlock,
   renderRecentFindingsBlock,
@@ -82,7 +82,7 @@ Recent findings: ${renderRecentFindingsBlock(input.recentFindings, now)}
 Self-assessment: "${input.selfAssessment ?? ''}"
 ${playerStatsSection(input.playerStats)}
 Catalog diagnosis codes relevant to this student's level (for grounding whatHappened in the same vocabulary the coach and progress summary use — not a field in your output schema):
-${renderScopedDiagnosisCodes(input.rating, ACTIVE_DETECTOR_CODES)}
+${renderScopedDiagnosisCodes(input.rating, ACTIVE_DIAGNOSIS_CODES)}
 
 GAME (${input.userColor} = student)
 ${renderMovesTable(input.moves)}

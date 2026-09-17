@@ -2963,30 +2963,61 @@ everything."
 `active-dialogue-codes.ts` beside `ACTIVE_DETECTOR_CODES`'s own definition)
 + tests.
 
-- [ ] Hand-pick (or systematically filter — e.g. one representative code
+- [x] Hand-pick (or systematically filter — e.g. one representative code
       per mechanism × broad category combination that appears in
       `record_finding`'s own example list already) a moderate set, similar
       order of magnitude to `ACTIVE_DETECTOR_CODES` (~30-50 codes), of
       `detectability: 'dialogue'` codes worth surfacing as real options.
-- [ ] Same rating-scoping `renderScopedDiagnosisCodes` already does for
+- [x] Same rating-scoping `renderScopedDiagnosisCodes` already does for
       detector codes.
-- [ ] Unit tests: the set's size stays bounded, every id is a real catalog
+- [x] Unit tests: the set's size stays bounded, every id is a real catalog
       member, `detectability` is actually `'dialogue'` for each (never
       accidentally include a detector code twice).
-- [ ] Commit: `feat: curated active dialogue-code vocabulary`.
+- [x] Commit: `feat: curated active dialogue-code vocabulary`.
+
+**Done:** Went with systematic filtering, not hand-picking — `mechanism`
+turned out not to be a catalog field at all (it's assigned per-finding at
+runtime, not baked into a `DiagnosisCodeEntry`), so a literal
+mechanism×category matrix wasn't available to filter on. `ACTIVE_DIALOGUE_CODES`
+instead takes up to 3 `detectability: 'dialogue'` codes per `parentCategory`
+(widest `ratingPrior` span first — broadest applicability — id ascending to
+break ties), landing at 33 codes spanning 11 of the 13 categories (the other
+2, `allowed_tactic`/`passive_play`, have zero codes in the catalog at all,
+dialogue or otherwise — a pre-existing catalog gap, not something this task
+introduced or needs to fix). Deterministic and needs no manual upkeep as the
+catalog changes. Also added `ACTIVE_DIAGNOSIS_CODES` (the detector ∪ dialogue
+union) since every real caller wants both, not one or the other — see Task
+65.2, which turned out to need no separate per-call-site union logic because
+of this. `renderScopedDiagnosisCodes` dropped its hard-coded
+`detectability === 'detector'` filter in favor of trusting whatever set the
+caller passes in — the set itself is now the single source of truth for
+what's in scope, tested explicitly (a dialogue code IS included once it's in
+the passed set, reversing the old test that asserted the opposite).
 
 ### Task 65.2: Surface it everywhere a diagnosis gets picked
 
 **Files:** `packages/prompts/src/coach-system.ts`
 (`diagnosisCodesForThisStudent`), `packages/prompts/src/progress-summarizer.ts` + snapshot tests.
 
-- [ ] Both the live coach's injected code list and the summarizer's catalog
+- [x] Both the live coach's injected code list and the summarizer's catalog
       block include the Task 65.1 dialogue set alongside the existing
       detector set (union, not replacement — detector codes stay available
       too).
-- [ ] Re-run `npm run docs:prompts`; diff the rendered list size to confirm
+- [x] Re-run `npm run docs:prompts`; diff the rendered list size to confirm
       it's still bounded (tens of lines, not hundreds) before committing.
-- [ ] Commit: `feat: surface dialogue-detectable codes to record_finding and the summarizer`.
+- [x] Commit: `feat: surface dialogue-detectable codes to record_finding and the summarizer`.
+
+**Done:** All three call sites (`coach-system.ts`'s `diagnosisCodesForThisStudent`,
+`progress-summarizer.ts`, and — beyond the task's literal file list —
+`analysis-planner.ts`, whose own doc comment already claimed "the same
+vocabulary the coach and progress summary use," which would have gone false
+without updating it too) now pass `ACTIVE_DIAGNOSIS_CODES` instead of
+`ACTIVE_DETECTOR_CODES`. Measured the rendered list size across ratings
+400-2000 before committing: 33-60 lines depending on rating band — bounded,
+"tens of lines, not hundreds" as the checklist asked, nowhere near the 300+
+lines a naive "every dialogue code" approach would have produced. Diffed the
+regenerated `docs/prompts.md` and updated snapshots to confirm only the
+diagnosis-code list itself grew, line for line, with nothing else disturbed.
 
 ### Task 65.3: Push toward a real code, without forcing false positives
 

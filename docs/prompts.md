@@ -196,6 +196,9 @@ This profile, get_diagnostic_profile and get_player_stats are what the session's
 When you set `record_finding`'s diagnosisCode or address a focus area with `propose_focus_area_update`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
 BV-12 — Removed-blocker blindness
 BV-16 — Self-exposure blindness
+BV-17 — Backward/retreating-move blindness
+BV-19 — Multi-attack tracking overload
+BV-20 — Cross-board attention split
 MS-14 — Loose-piece scan omission
 TA-10 — Sliding-piece double attack
 TA-16 — Discovered-attack recognition
@@ -203,6 +206,36 @@ TA-17 — Discovered-check/double-check recognition
 TA-18 — Removal-of-defender recognition
 TA-19 — Overload recognition
 TA-26 — Trapped-piece recognition
+TA-33 — Perpetual-check recognition
+TA-34 — Counter-tactic recognition
+TA-44 — Named mating-pattern retrieval
+CA-20 — Confirmation-biased calculation
+CA-21 — Critical-moment recognition failure
+TM-03 — Time-to-complexity mismatch
+TM-12 — Session-fatigue degradation
+TM-15 — Distraction-conditioned error rate
+OP-09 — Core-line recall gap
+OP-14 — Recurring branch-specific leak
+OP-15 — Opening clock-allocation failure
+EV-23 — Win/draw/loss classification failure
+PW-16 — Pawn-lever identification failure
+PW-17 — Pawn-break preparation failure
+PW-18 — Pawn-break timing failure
+AT-13 — Wishful-sacrifice attack
+AT-14 — Counterplay omission during attack
+AT-18 — Opposite-side castling race failure
+DF-04 — Active-defense generation failure
+DF-11 — Counterplay-generation failure
+DF-17 — Post-error collapse
+EG-38 — Bishop-versus-knight ending judgment
+EG-44 — Queen-ending king-safety judgment
+EG-52 — Endgame-entry decision failure
+PS-05 — Attack-pressure performance drop
+PS-06 — Post-blunder state degradation
+PS-07 — Post-loss carryover
+LR-13 — Excessive consecutive-game volume
+LR-15 — Training-difficulty mismatch
+LR-18 — Persistent nonresponse
 
 ## This game
 
@@ -257,6 +290,9 @@ Self-assessment: "I blunder pieces"
 Catalog diagnosis codes relevant to this student's level (for grounding whatHappened in the same vocabulary the coach and progress summary use — not a field in your output schema):
 BV-12 — Removed-blocker blindness
 BV-16 — Self-exposure blindness
+BV-17 — Backward/retreating-move blindness
+BV-19 — Multi-attack tracking overload
+BV-20 — Cross-board attention split
 MS-14 — Loose-piece scan omission
 TA-10 — Sliding-piece double attack
 TA-16 — Discovered-attack recognition
@@ -264,6 +300,36 @@ TA-17 — Discovered-check/double-check recognition
 TA-18 — Removal-of-defender recognition
 TA-19 — Overload recognition
 TA-26 — Trapped-piece recognition
+TA-33 — Perpetual-check recognition
+TA-34 — Counter-tactic recognition
+TA-44 — Named mating-pattern retrieval
+CA-20 — Confirmation-biased calculation
+CA-21 — Critical-moment recognition failure
+TM-03 — Time-to-complexity mismatch
+TM-12 — Session-fatigue degradation
+TM-15 — Distraction-conditioned error rate
+OP-09 — Core-line recall gap
+OP-14 — Recurring branch-specific leak
+OP-15 — Opening clock-allocation failure
+EV-23 — Win/draw/loss classification failure
+PW-16 — Pawn-lever identification failure
+PW-17 — Pawn-break preparation failure
+PW-18 — Pawn-break timing failure
+AT-13 — Wishful-sacrifice attack
+AT-14 — Counterplay omission during attack
+AT-18 — Opposite-side castling race failure
+DF-04 — Active-defense generation failure
+DF-11 — Counterplay-generation failure
+DF-17 — Post-error collapse
+EG-38 — Bishop-versus-knight ending judgment
+EG-44 — Queen-ending king-safety judgment
+EG-52 — Endgame-entry decision failure
+PS-05 — Attack-pressure performance drop
+PS-06 — Post-blunder state degradation
+PS-07 — Post-loss carryover
+LR-13 — Excessive consecutive-game volume
+LR-15 — Training-difficulty mismatch
+LR-18 — Persistent nonresponse
 
 GAME (white = student)
 1. e4 | best line: e4 e5
@@ -334,6 +400,9 @@ Self-assessment: "I blunder pieces"
 Catalog diagnosis codes you may use for a finding's diagnosisCode (use ONLY these; leave it unset if none fit):
 BV-12 — Removed-blocker blindness
 BV-16 — Self-exposure blindness
+BV-17 — Backward/retreating-move blindness
+BV-19 — Multi-attack tracking overload
+BV-20 — Cross-board attention split
 MS-14 — Loose-piece scan omission
 TA-10 — Sliding-piece double attack
 TA-16 — Discovered-attack recognition
@@ -341,6 +410,36 @@ TA-17 — Discovered-check/double-check recognition
 TA-18 — Removal-of-defender recognition
 TA-19 — Overload recognition
 TA-26 — Trapped-piece recognition
+TA-33 — Perpetual-check recognition
+TA-34 — Counter-tactic recognition
+TA-44 — Named mating-pattern retrieval
+CA-20 — Confirmation-biased calculation
+CA-21 — Critical-moment recognition failure
+TM-03 — Time-to-complexity mismatch
+TM-12 — Session-fatigue degradation
+TM-15 — Distraction-conditioned error rate
+OP-09 — Core-line recall gap
+OP-14 — Recurring branch-specific leak
+OP-15 — Opening clock-allocation failure
+EV-23 — Win/draw/loss classification failure
+PW-16 — Pawn-lever identification failure
+PW-17 — Pawn-break preparation failure
+PW-18 — Pawn-break timing failure
+AT-13 — Wishful-sacrifice attack
+AT-14 — Counterplay omission during attack
+AT-18 — Opposite-side castling race failure
+DF-04 — Active-defense generation failure
+DF-11 — Counterplay-generation failure
+DF-17 — Post-error collapse
+EG-38 — Bishop-versus-knight ending judgment
+EG-44 — Queen-ending king-safety judgment
+EG-52 — Endgame-entry decision failure
+PS-05 — Attack-pressure performance drop
+PS-06 — Post-blunder state degradation
+PS-07 — Post-loss carryover
+LR-13 — Excessive consecutive-game volume
+LR-15 — Training-difficulty mismatch
+LR-18 — Persistent nonresponse
 
 COACHING PLAN
 Goal for this session: Castle before starting play on the flank — the same king-safety habit as last session.

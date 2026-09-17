@@ -14,7 +14,7 @@ import {
 import { PERSONA_VOICE } from './coach-persona.js';
 import { PLAY_SESSION_FLOW, SESSION_FLOW } from './coach-session-flow.js';
 import {
-  ACTIVE_DETECTOR_CODES,
+  ACTIVE_DIAGNOSIS_CODES,
   MISTAKE_CATEGORIES_BLOCK,
   renderCoachingPlanBlock,
   renderFocusAreasBlock,
@@ -138,7 +138,7 @@ function diagnosisCodesForThisStudent(rating: number): string {
   return `## Diagnosis codes for this student
 
 When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
-${renderScopedDiagnosisCodes(rating, ACTIVE_DETECTOR_CODES)}`;
+${renderScopedDiagnosisCodes(rating, ACTIVE_DIAGNOSIS_CODES)}`;
 }
 
 function requirePlan(plan: CoachingPlan | null): CoachingPlan {

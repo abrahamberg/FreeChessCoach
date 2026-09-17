@@ -9,40 +9,68 @@ const RECENT_FINDINGS_EMPTY_FALLBACK = '(none yet — no findings recorded so fa
 const SCOPED_DIAGNOSIS_CODES_EMPTY_FALLBACK =
   '(no catalog codes are scoped to this student yet — leave diagnosisCode unset and use the category list above instead)';
 
-/** Every code with a real detector (Task 53+) — the only way
- * `renderScopedDiagnosisCodes` grounds a code. Computed once, not per call —
- * `DIAGNOSTIC_DETECTORS` is a fixed module-level registry, not per-request
- * data. */
+/** Every code with a real detector (Task 53+) — grounded by measured
+ * evidence (`get_diagnostic_profile`), not just conversation. Computed once,
+ * not per call — `DIAGNOSTIC_DETECTORS` is a fixed module-level registry,
+ * not per-request data. */
 export const ACTIVE_DETECTOR_CODES: ReadonlySet<DiagnosisCodeId> = new Set(
   DIAGNOSTIC_DETECTORS.map((detector) => detector.code)
 );
+
+/** Task 65.1's per-category cap — similar order of magnitude to
+ * `ACTIVE_DETECTOR_CODES`, not "every dialogue code" (360 of them, which
+ * Task 57.4 ruled out for exactly the reason `ACTIVE_DIALOGUE_CODES`'s own
+ * doc comment below explains). */
+const DIALOGUE_CODES_PER_CATEGORY = 3;
+
+/**
+ * Task 65.1 — root cause of "general diagnosis instead of a real one": the
+ * ~360 `detectability: 'dialogue'` codes are exactly what a live
+ * conversation reveals (a student describing their own thinking, not
+ * something an engine detector measures), but until now NONE of them were
+ * ever listed as pickable options anywhere — only the ~30 detector-backed
+ * codes were, structurally excluding most of what a lesson actually
+ * produces. Task 57.4's original constraint still holds (all 360 would blow
+ * the cache/token budget for no benefit), so this is a curated, bounded
+ * subset: up to `DIALOGUE_CODES_PER_CATEGORY` per `parentCategory`, so
+ * every mistake category the coach might discuss has a few nameable
+ * options, not just the categories that happen to have an engine detector.
+ * Within a category, widest `ratingPrior` span first (broadest applicability
+ * across students), id ascending to break ties — deterministic, no manual
+ * per-code curation to keep in sync as the catalog changes. */
+export const ACTIVE_DIALOGUE_CODES: ReadonlySet<DiagnosisCodeId> = new Set(
+  MISTAKE_CATEGORIES.flatMap((category) =>
+    ALL_DIAGNOSIS_CODES.filter((entry) => entry.parentCategory === category && entry.detectability === 'dialogue')
+      .sort((a, b) => b.ratingPrior[1] - b.ratingPrior[0] - (a.ratingPrior[1] - a.ratingPrior[0]) || a.id.localeCompare(b.id))
+      .slice(0, DIALOGUE_CODES_PER_CATEGORY)
+      .map((entry) => entry.id)
+  )
+);
+
+/** Task 65.2 — the union every caller actually wants: detector codes (hard
+ * measured evidence) plus the curated dialogue set (conversation-revealable
+ * patterns), never a replacement of one by the other. */
+export const ACTIVE_DIAGNOSIS_CODES: ReadonlySet<DiagnosisCodeId> = new Set([
+  ...ACTIVE_DETECTOR_CODES,
+  ...ACTIVE_DIALOGUE_CODES
+]);
 
 /**
  * docs/diagnose.md §0.1: a code's `ratingPrior` is the interval where it's
  * "most likely to be a primary, high-value coaching diagnosis," not an
  * exclusive cutoff — this filters to that operational window rather than
- * trying to model the wider penumbra the spec describes in prose.
- * Restricted to `activeDetectorCodes` (never `detectability: 'dialogue'`,
- * `'probe'` or `'unsupported'`): most of the 410-code catalog is still
- * `'dialogue'` by design (docs/diagnose.md's "extensible operational
- * glossary" — undetected codes the coach reasons about in conversation, the
- * same way `record_finding`'s tool description already guides it, with no
- * catalog list at all). Measured at rating 900-1500 the dialogue-inclusive
- * version of this filter matches 300+ of 410 codes — exactly what "never
- * inject all 410 codes" rules out — so only the ~30 detector-backed codes
- * (the ones `get_diagnostic_profile` can actually put real evidence behind)
- * are worth spending prompt-cache/token budget to name explicitly. Pure and
+ * trying to model the wider penumbra the spec describes in prose. Scoped to
+ * whatever `activeCodes` the caller passes — Task 65.1 broadened every
+ * caller to a union of `ACTIVE_DETECTOR_CODES` and `ACTIVE_DIALOGUE_CODES`,
+ * so this no longer hard-codes `detectability === 'detector'` itself: the
+ * passed-in set is the one place that decides what's in scope. Pure and
  * rating-only so a caller can place it in whichever cache tier (static per
  * rating band, or dynamic per numeric rating) actually matches how it's
  * computing `rating`.
  */
-export function renderScopedDiagnosisCodes(rating: number, activeDetectorCodes: ReadonlySet<DiagnosisCodeId>): string {
+export function renderScopedDiagnosisCodes(rating: number, activeCodes: ReadonlySet<DiagnosisCodeId>): string {
   const scoped = ALL_DIAGNOSIS_CODES.filter(
-    (entry) =>
-      entry.detectability === 'detector' &&
-      activeDetectorCodes.has(entry.id) &&
-      rating >= entry.ratingPrior[0] &&
-      rating <= entry.ratingPrior[1]
+    (entry) => activeCodes.has(entry.id) && rating >= entry.ratingPrior[0] && rating <= entry.ratingPrior[1]
   );
   if (scoped.length === 0) return SCOPED_DIAGNOSIS_CODES_EMPTY_FALLBACK;
   return scoped.map((entry) => `${entry.id} — ${entry.label}`).join('\n');

@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import { DIAGNOSIS_CODES_BY_ID, MISTAKE_CATEGORIES } from '@freechesscoach/shared';
 import {
+  ACTIVE_DETECTOR_CODES,
+  ACTIVE_DIAGNOSIS_CODES,
+  ACTIVE_DIALOGUE_CODES,
   MISTAKE_CATEGORIES_BLOCK,
   relativeDate,
   renderCoachingPlanBlock,
@@ -243,9 +246,9 @@ describe('renderScopedDiagnosisCodes', () => {
     expect(result).not.toContain('BV-03');
   });
 
-  test('a dialogue-detectable code stays excluded even if its id is (incorrectly) passed as active — the catalog\'s own detectability is the actual gate, not caller discipline', () => {
+  test('Task 65.1: a dialogue-detectable code IS included once the caller explicitly puts it in the active set — the passed-in set is the actual gate now, not a hard-coded detectability check', () => {
     const result = renderScopedDiagnosisCodes(800, new Set(['BV-03' as DiagnosisCodeId]));
-    expect(result).not.toContain('BV-03');
+    expect(result).toContain('BV-03');
   });
 
   test('with no active detectors at all, every rating renders the empty fallback', () => {
@@ -268,5 +271,41 @@ describe('renderScopedDiagnosisCodes', () => {
   test('each rendered line names the code id and its label', () => {
     const result = renderScopedDiagnosisCodes(250, new Set(['BV-01' as DiagnosisCodeId]));
     expect(result).toContain(`BV-01 — ${bv01.label}`);
+  });
+});
+
+describe('ACTIVE_DIALOGUE_CODES', () => {
+  test('stays a bounded, similar order of magnitude to ACTIVE_DETECTOR_CODES — not "every dialogue code" (360 of them)', () => {
+    expect(ACTIVE_DIALOGUE_CODES.size).toBeGreaterThan(0);
+    expect(ACTIVE_DIALOGUE_CODES.size).toBeLessThanOrEqual(60);
+  });
+
+  test('every id is a real catalog member with detectability exactly "dialogue"', () => {
+    for (const id of ACTIVE_DIALOGUE_CODES) {
+      const entry = DIAGNOSIS_CODES_BY_ID.get(id);
+      expect(entry).toBeDefined();
+      expect(entry?.detectability).toBe('dialogue');
+    }
+  });
+
+  test('never accidentally includes a detector code', () => {
+    for (const id of ACTIVE_DIALOGUE_CODES) {
+      expect(ACTIVE_DETECTOR_CODES.has(id)).toBe(false);
+    }
+  });
+
+  test('spans multiple mistake categories, not just one or two families', () => {
+    const categories = new Set(
+      [...ACTIVE_DIALOGUE_CODES].map((id) => DIAGNOSIS_CODES_BY_ID.get(id)?.parentCategory)
+    );
+    expect(categories.size).toBeGreaterThan(MISTAKE_CATEGORIES.length / 2);
+  });
+});
+
+describe('ACTIVE_DIAGNOSIS_CODES', () => {
+  test('is exactly the union of the detector and dialogue sets', () => {
+    expect(ACTIVE_DIAGNOSIS_CODES.size).toBe(ACTIVE_DETECTOR_CODES.size + ACTIVE_DIALOGUE_CODES.size);
+    for (const id of ACTIVE_DETECTOR_CODES) expect(ACTIVE_DIAGNOSIS_CODES.has(id)).toBe(true);
+    for (const id of ACTIVE_DIALOGUE_CODES) expect(ACTIVE_DIAGNOSIS_CODES.has(id)).toBe(true);
   });
 });
