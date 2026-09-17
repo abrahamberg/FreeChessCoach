@@ -6,7 +6,7 @@ import { usePracticeAssignments } from './usePracticeAssignments.js';
 
 function progressLabel(assignment: PuzzleAssignment): string {
   const solved = assignment.items.filter((item) => item.result !== 'pending').length;
-  return `${solved} of ${assignment.items.length} puzzles`;
+  return `${solved} of ${assignment.items.length} items`;
 }
 
 /**

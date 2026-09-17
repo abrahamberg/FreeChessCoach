@@ -59,7 +59,7 @@ describe('PracticeCard (Task 59.6)', () => {
     renderCard([assignment()]);
 
     expect(await screen.findByText('You missed several knight forks in your last few games.')).toBeInTheDocument();
-    expect(screen.getByText('1 of 2 puzzles')).toBeInTheDocument();
+    expect(screen.getByText('1 of 2 items')).toBeInTheDocument();
   });
 
   test('shows "Continue" for an in_progress assignment and "Start" for a pending one', async () => {

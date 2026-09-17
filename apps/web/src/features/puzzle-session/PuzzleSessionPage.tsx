@@ -59,7 +59,7 @@ export function PuzzleSessionPage(): ReactNode {
     );
   }
 
-  if (!currentItem) return <p>Could not load the current puzzle.</p>;
+  if (!currentItem) return <p>Could not load the current item.</p>;
 
   function handleSendMessage(content: string): void {
     if (divergedLine.line) {
@@ -116,7 +116,7 @@ export function PuzzleSessionPage(): ReactNode {
           ← Progress
         </button>
         <span className="puzzle-session-page__progress">
-          Puzzle {session.currentItemIndex + 1} of {session.assignment.items.length}
+          Item {session.currentItemIndex + 1} of {session.assignment.items.length}
         </span>
       </header>
       <div className={isSideBySide ? 'session-body desktop' : 'session-body'}>

@@ -3070,10 +3070,25 @@ doesn't leak into user-facing copy at the nav/route level (branded
 **Files:** `apps/web/src/features/puzzle-session/PuzzleSessionPage.tsx`,
 `apps/web/src/features/dashboard/PracticeCard.tsx` + tests.
 
-- [ ] Replace the remaining "puzzle" strings ("Puzzle N of M", "N of M
+- [x] Replace the remaining "puzzle" strings ("Puzzle N of M", "N of M
       puzzles") with "focused session" / "item" wording, matching the
       "Practice"/"Progress" branding the route and nav already use.
-- [ ] Commit: `fix: finish renaming puzzle copy to focused-session wording`.
+- [x] Commit: `fix: finish renaming puzzle copy to focused-session wording`.
+
+**Done:** `PuzzleSessionPage.tsx`'s header progress ("Puzzle N of M" →
+"Item N of M") and its load-failure fallback ("the current puzzle" → "the
+current item"); `PracticeCard.tsx`'s `progressLabel` ("N of M puzzles" →
+"N of M items") — both already used "item(s)" internally
+(`session.currentItemIndex`, `assignment.items`), so this just brings the
+user-facing text in line with existing internal naming. Left the coach's
+own "Solve 10 rook-endgame puzzles"-style homework text alone (in
+`SessionSummaryCard`/`SessionHistory` fixtures) — that's the coach
+recommending genuine *external* Lichess-style practice, a different,
+legitimate use of the word that Task 66.3 formalizes, not the in-app
+feature this task is renaming. Left internal identifiers/routes/comments
+(`PuzzleSessionPage`, `puzzle_assignments`, `/api/puzzle-sessions`) alone
+too — out of scope per the task's own file list, which named only
+user-facing copy.
 
 ### Task 66.2: A live tool to assign a focused session
 
