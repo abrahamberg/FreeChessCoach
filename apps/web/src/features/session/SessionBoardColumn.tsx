@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { HintMovesResponseSchema, type ClassifiedMoveDto } from '@freechesscoach/shared';
+import { applySanSequence } from '@freechesscoach/chess-analysis';
 import { apiPost } from '../../api/client.js';
 import { ChevronLeftIcon, ChevronRightIcon, LightbulbIcon, UndoIcon } from '../../components/Icon.js';
 import type { HoverMove } from '../chat/MessageList.js';
 import { candidateMoveColor, candidateMoveHighlightColor } from '../board/candidateMoveColors.js';
-import { CoachBoard, type BoardArrow, type BoardHighlight } from '../board/CoachBoard.js';
+import { CoachBoard, type BoardArrow, type BoardHighlight, type LocalMoveInfo } from '../board/CoachBoard.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { EvalBar } from '../board/EvalBar.js';
 import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
@@ -200,6 +201,27 @@ export function SessionBoardColumn({
     boardState.clearPreview();
   }
 
+  /** CoachBoard only fires onUserMove in 'answer' mode (design.md §5.4) — a
+   * move played while peeked/exploring only ever reaches onLocalMove, a
+   * fen-only preview that overwrites itself on the next move with no
+   * sequence kept. But coach-method.ts already tells the coach "the student
+   * can build [a hypothetical] themselves by moving pieces on the board —
+   * those moves reach you together with their comment", so a peek-mode move
+   * (analyze mode only — Explore on your own doesn't exist elsewhere) must
+   * still accumulate into divergedLine exactly like an answer-mode one does,
+   * or the whole line explored is lost by the time Send is pressed and only
+   * a single-move [position_context] naming the real game's own move
+   * survives. applySanSequence recomputes the uci here since onLocalMove's
+   * LocalMoveInfo carries none (CoachBoard's onUserMove is the only caller
+   * that already has it, from the chess.js move object itself). */
+  function handleLocalMove(fen: string, move: LocalMoveInfo): void {
+    boardState.previewMove(fen, move);
+    if (sessionMode !== 'analyze' || boardState.mode !== 'peek') return;
+    const applied = applySanSequence(move.fenBefore, [move.san]).moves[0];
+    if (!applied) return;
+    divergedLine.appendMove({ san: move.san, fen, uci: applied.uci }, currentRealPosition);
+  }
+
   const fen = divergedLine.fen ?? boardState.fen;
 
   function peekAt(ply: number): void {
@@ -324,7 +346,7 @@ export function SessionBoardColumn({
           arrows={[...boardState.arrows, ...hoverMoveArrowsFor(hoverMove), ...hintArrows, ...exploreFeedback.arrows]}
           highlights={[...boardState.highlights, ...hoverMoveHighlightsFor(hoverMove), ...hintHighlights]}
           onUserMove={handleUserMove}
-          onLocalMove={boardState.previewMove}
+          onLocalMove={handleLocalMove}
           onArrowsChange={onArrowsChange}
           showLegalMoveDots={showLegalMoveDots}
           disabled={playMove.isSubmitting || playBotMove.isSubmitting || boardDisabled}

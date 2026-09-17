@@ -327,6 +327,42 @@ describe('SessionBoardColumn — "Explore on your own" (live play modes)', () =>
     expect(document.querySelector('.eval-bar')).toHaveAttribute('aria-label', expect.stringMatching(/Evaluation: \+0\.[23]/));
     expect(document.querySelector('[class*="move-quality-badge-overlay"]')).toBeInTheDocument();
   });
+
+  // coach-method.ts already tells the coach "the student can build [a
+  // hypothetical] themselves by moving pieces on the board — those moves
+  // reach you together with their comment", but a move played while
+  // exploring (board mode 'peek') never fired onUserMove — only the
+  // fen-only local preview — so it silently never reached divergedLine at
+  // all. Sending afterwards fell back to [position_context], which only
+  // names the real move at the peeked ply, losing every move actually
+  // explored. The undo pill only renders once divergedLine.line is set
+  // (see the "analyze mode ... still goes through the existing
+  // diverged-line path" test above for the answer-mode equivalent of this
+  // assertion).
+  test('a move played while exploring builds a diverged line too, not just a silent local preview', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ lines: [] })));
+
+    render(<Harness sessionMode="analyze" />);
+    await screen.findByTestId('mock-chessboard');
+    fireEvent.click(screen.getByRole('button', { name: /explore on your own/i }));
+
+    dropE2E4();
+
+    expect(await screen.findByText(/undo last move/i)).toBeInTheDocument();
+  });
+
+  test('the diverged line built while exploring shows up in the mobile panel with the real move numbering', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ lines: [] })));
+
+    render(<Harness sessionMode="analyze" isDesktop={false} />);
+    await screen.findByTestId('mock-chessboard');
+    fireEvent.click(screen.getByRole('button', { name: /explore on your own/i }));
+
+    dropE2E4();
+
+    expect(await screen.findByText(/diverged line — from move 1 \(white\)/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'e4' })).toBeInTheDocument();
+  });
 });
 
 // Desktop only (Harness defaults isDesktop to true) — the toolbar keeps its
