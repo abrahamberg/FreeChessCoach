@@ -35,7 +35,7 @@
     "redis": "^4.7.0"
   },
   "devDependencies": {
-    "@testcontainers/postgresql": "^10.13.1",
+    "@testcontainers/postgresql": "^12.1.0",
     "@types/node": "^22.5.0",
     "@types/pg": "^8.11.6",
     "@types/ws": "^8.18.1",
