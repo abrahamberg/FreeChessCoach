@@ -2861,7 +2861,7 @@ needs the same grep-for-fixtures sweep as the app-level tests.
 **Files:** `packages/prompts/src/coach-method.ts`,
 `packages/prompts/src/coach-session-flow.ts` + snapshot tests.
 
-- [ ] Add guidance (near the existing focus-area material in
+- [x] Add guidance (near the existing focus-area material in
       `coach-method.ts`) describing the loop the student actually asked
       for: notice a pattern → name what the student should do about it →
       next time it comes up, check whether it's better → decide whether
@@ -2871,7 +2871,26 @@ needs the same grep-for-fixtures sweep as the app-level tests.
       cap (Task 64.2) already implement the mechanics; this task is making
       sure the coach actually narrates that loop instead of updating state
       silently.
-- [ ] Commit: `feat: coach guidance for the focus-area check-in loop`.
+- [x] Commit: `feat: coach guidance for the focus-area check-in loop`.
+
+**Done:** New exported `FOCUS_AREA_LIFECYCLE` section in `coach-method.ts`,
+placed right after `SESSION_GOALS` (which already leans on focus areas as
+evidence) in `buildStaticPart` — cached, user-invariant text, same as every
+other method-block section. Four beats, matching the student's own
+description verbatim: notice out loud (and `create` when it's solid,
+untracked evidence) → assign something concrete → check back next time
+instead of re-teaching from scratch → decide and say so
+(`progress`/`regress`/`resolve`), closing with "never touch state silently."
+Also extended both `coach-session-flow.ts` closing paragraphs (analyze and
+play mode) with one clause — "decide out loud whether today's evidence
+changes anything about the focus area you were tracking... and call
+propose_focus_area_update to match" — since session-end is the single most
+natural moment for the "decide, and say so" beat to actually fire, and
+Phase 63 had just made that closing moment explicit. Diffed both the
+`coach-system.snapshot.test.ts` snapshots and the regenerated
+`docs/prompts.md` before accepting: the only changes were the new section
+appearing once (in `SESSION_GOALS`'s neighborhood) and the one added closing
+clause, repeated per persona/band as expected for cached static text.
 
 ### Task 64.5 (opportunistic, verify before committing to it): cache-breakpoint order
 
