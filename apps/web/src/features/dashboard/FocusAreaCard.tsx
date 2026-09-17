@@ -1,7 +1,6 @@
 import type { DiagnosisCodeId, FocusAreaSummary } from '@freechesscoach/shared';
 import type { ComponentType, ReactNode } from 'react';
 import { ArrowRightIcon, CheckIcon, type IconProps, TrendingUpIcon } from '../../components/Icon.js';
-import { CATEGORY_LABELS } from './categoryLabels.js';
 
 export interface FocusAreaCardProps {
   area: FocusAreaSummary;
@@ -41,7 +40,7 @@ export function FocusAreaCard({ area, onViewEvidence }: FocusAreaCardProps): Rea
         {TREND_LABEL[area.status]}
         <TrendIcon width={11} height={11} strokeWidth={2.75} />
       </span>
-      <h3>{CATEGORY_LABELS[area.category]}</h3>
+      <h3>{area.label}</h3>
       <p>{area.note}</p>
       <p className="focus-area-card__meta">
         {area.evidenceCount} pieces of evidence
@@ -49,11 +48,7 @@ export function FocusAreaCard({ area, onViewEvidence }: FocusAreaCardProps): Rea
           <>
             {' '}
             &middot;{' '}
-            <button
-              type="button"
-              className="focus-area-card__evidence-link"
-              onClick={() => onViewEvidence(diagnosisCode, CATEGORY_LABELS[area.category])}
-            >
+            <button type="button" className="focus-area-card__evidence-link" onClick={() => onViewEvidence(diagnosisCode, area.label)}>
               View evidence
             </button>
           </>

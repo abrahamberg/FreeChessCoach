@@ -8,6 +8,10 @@ import { PlayerColorSchema } from './game.js';
 export const FocusAreaSummarySchema = z.object({
   category: z.enum(MISTAKE_CATEGORIES),
   diagnosisCode: DiagnosisCodeIdSchema.nullable(),
+  /** The specific skill ("Knight forks"), resolved server-side from
+   * `diagnosisCode` — falls back to the broad category label for legacy
+   * rows with no code. Never the bare code or category enum. */
+  label: z.string(),
   status: z.enum(['active', 'improving', 'resolved']),
   note: z.string(),
   evidenceCount: z.number().int(),

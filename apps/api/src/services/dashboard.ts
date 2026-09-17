@@ -1,4 +1,4 @@
-import { MISTAKE_CATEGORIES } from '@freechesscoach/shared';
+import { CATEGORY_LABELS, DIAGNOSIS_CODES_BY_ID, MISTAKE_CATEGORIES } from '@freechesscoach/shared';
 import type { DashboardResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as findingsRepo from '../db/repositories/findings.js';
@@ -50,6 +50,7 @@ function toFocusAreaSummary(row: focusAreasRepo.FocusAreaRow): DashboardResponse
   return {
     category: row.category,
     diagnosisCode: row.diagnosisCode,
+    label: (row.diagnosisCode && DIAGNOSIS_CODES_BY_ID.get(row.diagnosisCode)?.label) ?? CATEGORY_LABELS[row.category],
     status: row.status,
     note: row.note,
     evidenceCount: row.evidenceCount,

@@ -4,7 +4,6 @@ import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiGet } from '../../api/client.js';
 import { TrendingUpIcon } from '../../components/Icon.js';
-import { CATEGORY_LABELS } from './categoryLabels.js';
 import { DiagnosisCard } from './DiagnosisCard.js';
 import { EvidenceModal } from './EvidenceModal.js';
 import { FocusAreaCard } from './FocusAreaCard.js';
@@ -80,7 +79,7 @@ export function DashboardPage(): ReactNode {
               <TrendingUpIcon width={13} height={13} strokeWidth={2.4} />
               This week's focus
             </span>
-            <h2>{CATEGORY_LABELS[weeklyFocus.category]}</h2>
+            <h2>{weeklyFocus.label}</h2>
             <p>{weeklyFocus.note}</p>
           </div>
         </section>

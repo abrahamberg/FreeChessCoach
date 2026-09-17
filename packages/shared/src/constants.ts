@@ -15,6 +15,25 @@ export const MISTAKE_CATEGORIES = [
 ] as const;
 export type MistakeCategory = (typeof MISTAKE_CATEGORIES)[number];
 
+/** design.md §4.3/§4.4: "category name in plain words" — never the raw
+ * enum. Server-side fallback for a focus area with no resolvable
+ * diagnosisCode label (legacy rows); the web dashboard re-exports this. */
+export const CATEGORY_LABELS: Record<MistakeCategory, string> = {
+  hanging_piece: 'Hanging pieces',
+  missed_tactic: 'Missed tactics',
+  allowed_tactic: 'Allowed tactics',
+  calculation_error: 'Calculation depth',
+  premature_action: 'Premature action',
+  passive_play: 'Passive play',
+  pawn_structure: 'Pawn structure',
+  king_safety: 'King safety',
+  piece_activity: 'Piece activity',
+  endgame_technique: 'Endgame technique',
+  opening_knowledge: 'Opening knowledge',
+  no_plan: 'Having a plan',
+  time_management: 'Time management'
+};
+
 export const RATING_BANDS = ['novice', 'improving', 'club', 'advanced'] as const;
 export type RatingBand = (typeof RATING_BANDS)[number];
 

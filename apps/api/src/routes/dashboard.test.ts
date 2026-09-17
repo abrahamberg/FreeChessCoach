@@ -107,10 +107,10 @@ describe('GET /api/users/me/dashboard', () => {
     const body = response.json();
 
     expect(body.focusAreas.active).toEqual([
-      expect.objectContaining({ category: 'king_safety', status: 'active' })
+      expect.objectContaining({ category: 'king_safety', status: 'active', label: 'Opponent-check scan omission' })
     ]);
     expect(body.focusAreas.resolved).toEqual([
-      expect.objectContaining({ category: 'passive_play', status: 'resolved' })
+      expect.objectContaining({ category: 'passive_play', status: 'resolved', label: 'Single-candidate search' })
     ]);
 
     expect(body.mistakeTrends).toEqual([{ category: 'king_safety', last5: 1, last20: 1 }]);
@@ -125,6 +125,26 @@ describe('GET /api/users/me/dashboard', () => {
         summary: 'Worked on king safety today.',
         homework: 'Solve 10 rook-endgame puzzles.'
       })
+    ]);
+  });
+
+  test('a legacy focus area with no diagnosisCode falls back to the category label', async () => {
+    const user = await usersRepo.insert(db, { email: 'legacy-dash@example.com', displayName: 'Legacy' });
+    const headers = { 'x-auth-request-email': 'legacy-dash@example.com', 'x-auth-request-user': 'Legacy' };
+
+    await focusAreasRepo.insert(db, {
+      userId: user.id,
+      category: 'endgame_technique',
+      diagnosisCode: null,
+      status: 'active',
+      note: 'Struggles converting won endgames.'
+    });
+
+    const app = buildApp({ authMode: 'proxy', db });
+    const response = await app.inject({ method: 'GET', url: '/api/users/me/dashboard', headers });
+
+    expect(response.json().focusAreas.active).toEqual([
+      expect.objectContaining({ category: 'endgame_technique', label: 'Endgame technique', diagnosisCode: null })
     ]);
   });
 

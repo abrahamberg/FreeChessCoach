@@ -11,6 +11,7 @@ const DASHBOARD_RESPONSE = {
       {
         category: 'king_safety',
         diagnosisCode: 'MS-01',
+        label: 'Opponent-check scan omission',
         status: 'improving',
         note: 'Delays castling under pressure.',
         evidenceCount: 3,
@@ -21,6 +22,7 @@ const DASHBOARD_RESPONSE = {
       {
         category: 'passive_play',
         diagnosisCode: 'CA-01',
+        label: 'Single-candidate search',
         status: 'resolved',
         note: 'Fixed it.',
         evidenceCount: 4,
@@ -104,26 +106,26 @@ describe('DashboardPage', () => {
   test('fetches the dashboard and renders focus areas, trends, and session history', async () => {
     const fetchMock = renderDashboard();
 
-    await screen.findByRole('heading', { level: 3, name: /king safety/i });
+    await screen.findByRole('heading', { level: 3, name: /opponent-check scan omission/i });
     expect(fetchMock).toHaveBeenCalledWith('/api/users/me/dashboard', expect.anything());
     expect(screen.getByText(/worked on king safety today/i)).toBeInTheDocument();
   });
 
   test('the top active focus area appears as this week\'s focus', async () => {
     renderDashboard();
-    await screen.findByRole('heading', { level: 3, name: /king safety/i });
+    await screen.findByRole('heading', { level: 3, name: /opponent-check scan omission/i });
     expect(screen.getByText(/this week's focus/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /king safety/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /opponent-check scan omission/i })).toBeInTheDocument();
   });
 
   test('resolved focus areas start collapsed behind a "Resolved" accordion', async () => {
     const user = userEvent.setup();
     renderDashboard();
-    await screen.findByRole('heading', { level: 3, name: /king safety/i });
+    await screen.findByRole('heading', { level: 3, name: /opponent-check scan omission/i });
 
-    expect(screen.queryByText(/passive play/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/single-candidate search/i)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /resolved/i }));
-    expect(screen.getByText(/passive play/i)).toBeInTheDocument();
+    expect(screen.getByText(/single-candidate search/i)).toBeInTheDocument();
   });
 
   test('tapping a session history row navigates to the session', async () => {
@@ -145,11 +147,11 @@ describe('DashboardPage', () => {
   test('a focus area\'s "View evidence" opens the evidence modal for its diagnosisCode', async () => {
     const user = userEvent.setup();
     const fetchMock = renderDashboard();
-    await screen.findByRole('heading', { level: 3, name: /king safety/i });
+    await screen.findByRole('heading', { level: 3, name: /opponent-check scan omission/i });
 
     await user.click(screen.getAllByRole('button', { name: /view evidence/i })[0]!);
 
-    expect(await screen.findByRole('heading', { name: /evidence — king safety/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /evidence — opponent-check scan omission/i })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith('/api/users/me/diagnostics/MS-01/evidence', expect.anything());
   });
 

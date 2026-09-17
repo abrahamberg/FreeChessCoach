@@ -2730,15 +2730,29 @@ fixing together," not a silent background computation:
 **Files:** `packages/shared/src/dashboard.ts`,
 `apps/api/src/services/dashboard.ts`, `apps/web/src/features/dashboard/FocusAreaCard.tsx` + tests.
 
-- [ ] Add `label: z.string()` to `FocusAreaSummarySchema` (same field
+- [x] Add `label: z.string()` to `FocusAreaSummarySchema` (same field
       `DiagnosisEntryResponseSchema` already carries).
-- [ ] `toFocusAreaSummary` resolves it server-side:
+- [x] `toFocusAreaSummary` resolves it server-side:
       `DIAGNOSIS_CODES_BY_ID.get(diagnosisCode)?.label ?? CATEGORY_LABELS[category]`
       — never ships the bare code, never leaves the frontend needing the
       catalog.
-- [ ] `FocusAreaCard`'s heading renders `area.label`, falling back to the
+- [x] `FocusAreaCard`'s heading renders `area.label`, falling back to the
       existing category heading when `diagnosisCode` is null (legacy rows).
-- [ ] Commit: `feat: resolved diagnosis label on the dashboard's focus areas`.
+- [x] Commit: `feat: resolved diagnosis label on the dashboard's focus areas`.
+
+**Done:** `CATEGORY_LABELS` moved from the web-only `categoryLabels.ts` into
+`packages/shared/src/constants.ts` (the web file now just re-exports it) so
+both the server's fallback and the client's existing usages share one
+source. `FocusAreaSummarySchema` gained a required `label`; `toFocusAreaSummary`
+resolves it via `DIAGNOSIS_CODES_BY_ID.get(diagnosisCode)?.label ?? CATEGORY_LABELS[category]`.
+`FocusAreaCard`'s heading and its "View evidence" callback both switched from
+`CATEGORY_LABELS[area.category]` to `area.label`. Also updated the dashboard's
+"This week's focus" hero (`DashboardPage.tsx`) the same way, since it's the
+same "show the real skill, not just the broad category" ask and was reading
+`CATEGORY_LABELS` directly. Added a dashboard-route test for the legacy-row
+fallback path and updated existing fixtures/assertions (`DashboardPage.test.tsx`,
+`FocusAreaCard.test.tsx`, `dashboard.test.ts`) that previously asserted on
+category text where a specific diagnosis label now renders instead.
 
 ### Task 64.2: Persist which focus area is primary
 
