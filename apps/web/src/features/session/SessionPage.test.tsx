@@ -477,15 +477,32 @@ describe('SessionPage', () => {
     expect(capturedOptions.at(-1)?.position).toBe(AFTER_UNDO_FEN);
   });
 
-  test('a completed session renders the summary card instead of the board and chat', async () => {
-    vi.stubGlobal('fetch', mockFetch({ status: 'completed', summary: 'Great progress on king safety.', homework: null }));
+  test('a completed session shows the summary as a banner but keeps the board and chat usable', async () => {
+    const fetchMock = mockFetch({ status: 'completed', summary: 'Great progress on king safety.', homework: null }, (path) =>
+      path === '/api/sessions/session-1/messages' ? streamResponse([...textFrames('Glad you asked!')]) : undefined
+    );
+    vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
     renderSessionPage();
 
+    // The backend never gated /messages on session status (see
+    // apps/api/src/routes/sessions.ts) — the old hard lock here was purely
+    // client-side, replacing the whole board+chat with a dead-end card. A
+    // student who thinks of one more question right after the coach wraps
+    // up should still be able to ask it.
     expect(await screen.findByText(/great progress on king safety/i)).toBeInTheDocument();
-    expect(screen.queryByTestId('mock-chessboard')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('mock-chessboard')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /back to games/i }));
+    await user.type(screen.getByRole('textbox', { name: /reply/i }), 'wait, one more question');
+    await user.click(screen.getByRole('button', { name: /send/i }));
+
+    expect(await screen.findByText('Glad you asked!')).toBeInTheDocument();
+
+    // SessionHeader's own back button now coexists with the summary
+    // banner's — scope to the banner itself rather than asserting there's
+    // only one "Back to Games" affordance on screen.
+    const banner = screen.getByText(/great progress on king safety/i).closest('.session-summary-card') as HTMLElement;
+    await user.click(within(banner).getByRole('button', { name: /back to games/i }));
     expect(await screen.findByText('games-page-marker')).toBeInTheDocument();
   });
 

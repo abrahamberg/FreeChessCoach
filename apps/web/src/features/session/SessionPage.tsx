@@ -107,16 +107,23 @@ export function SessionPage(): ReactNode {
 
   const session = sessionQuery.data;
 
-  if (session.status === 'completed') {
-    return (
+  // A completed session used to hard-swap the whole board+chat for this
+  // card, a dead end with no way to ask a follow-up. Nothing server-side
+  // ever gated POST /messages on status (routes/sessions.ts) — the coach's
+  // own closing line (coach-session-flow.ts) is now what tells the student
+  // the session is over, so this renders as a banner above the still-live
+  // board and chat instead of replacing them. 'abandoned' (a reset
+  // session's old row — handleReset already navigated away to a fresh one)
+  // stays a real dead end; there is nothing left here to continue.
+  const completedBanner =
+    session.status === 'completed' ? (
       <SessionSummaryCard
         summary={session.summary ?? ''}
         homework={session.homework}
         onBackToGames={() => navigate('/games')}
         onViewProgress={() => navigate('/dashboard')}
       />
-    );
-  }
+    ) : null;
 
   if (session.status === 'abandoned') {
     return (
@@ -233,6 +240,7 @@ export function SessionPage(): ReactNode {
         extraItems={headerExtraItems}
       />
       {isDebugOpen && <DebugPanel sessionId={sessionId} onClose={() => setIsDebugOpen(false)} />}
+      {completedBanner}
       {isSideBySide ? (
         <div className="session-body desktop">
           {isDesktop &&

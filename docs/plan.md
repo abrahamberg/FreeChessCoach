@@ -2614,6 +2614,347 @@ This closes out Phase 62 — all five tasks are now checked off.
 
 ---
 
+## Phase 63 — Session wrap-up clarity and continuing the conversation
+
+Not sourced from `docs/diagnose.md` — a UX gap, not a diagnostics task.
+Two problems, one root cause: `SESSION_FLOW`/`PLAY_SESSION_FLOW`'s closing
+beat ("give your summary and homework... and call `end_session`") never
+tells the coach to actually *say* the session is over, and
+`SessionPage.tsx` hard-swaps the whole board+chat UI for a dead-end
+`SessionSummaryCard` the instant `status` flips to `completed` — two
+buttons, no way to ask a follow-up. Verified in code
+(`apps/api/src/routes/sessions.ts`): `POST /api/sessions/:id/messages` has
+**no** `status !== 'active'` guard, and `coach-agent-turn.ts`/`coach-agent.ts`
+never check status either — the backend already accepts a turn on a
+completed session. The lock is 100% client-side.
+
+### Task 63.1: An explicit, spoken close
+
+**Files:** `packages/prompts/src/coach-session-flow.ts` + snapshot tests.
+
+- [x] Reword the "Closing" paragraph in both `SESSION_FLOW` and
+      `PLAY_SESSION_FLOW`: after the summary and homework, say in plain
+      words that the session is done (e.g. "That's it for today — nice
+      work" — model's own voice, not a fixed string) before calling
+      `end_session`, so a student reading the transcript never has to guess
+      whether the coach is finished or just pausing.
+- [ ] If there's an open practice assignment or a Phase 66 recommendation
+      to give, fold it into this same closing beat rather than a separate
+      tool call — one coherent goodbye, not a checklist. (Deferred to
+      Phase 66, which builds the capability this would reference.)
+- [x] Commit: `feat: explicit spoken close at end_session`.
+
+**Done:** Also added a line telling the coach to keep answering normally if
+the student has a follow-up after closing — pairs with Task 63.2, which
+stops the client from hard-locking the UI the instant `status` flips to
+`completed`. 20 `coach-system.snapshot.test.ts` snapshots updated (diffed:
+only the two closing paragraphs changed), `docs/prompts.md` regenerated.
+
+### Task 63.2: Stop hard-locking the UI when a session ends
+
+**Files:** `apps/web/src/features/session/SessionPage.tsx`,
+`apps/web/src/features/chat/SessionSummaryCard.tsx` + tests.
+
+- [x] Replace the full-page swap-to-`SessionSummaryCard` on
+      `status === 'completed'` with the summary/homework rendered as a
+      card/banner *above* the still-live chat — board and composer stay
+      mounted, `chat.sendMessage` keeps working exactly as it does today
+      (nothing server-side to change, per the finding above).
+- [x] `end_session`'s completed status should stop the kickoff-on-load
+      effect and any "resume where you left off" ply logic from doing
+      anything surprising, but must not disable the composer.
+- [x] Decide (and test) what a NEW coach turn after completion does to the
+      session's `status`/summary row — most likely: leave `status`
+      untouched (still `completed`, purely informational) and simply don't
+      call `end_session` again unless the coach chooses to.
+- [x] Commit: `feat: keep the session chat open after wrap-up`.
+
+**Done:** `SessionPage.tsx` no longer early-returns `SessionSummaryCard` for
+`status === 'completed'` — it's now rendered as a banner between
+`SessionHeader` and the board/chat body, which both stay fully mounted and
+functional (`chat.sendMessage` untouched; nothing server-side gated this in
+the first place — `POST /messages` has no status check). `status ===
+'abandoned'` keeps its original hard dead-end return, unchanged (a reset
+session's old row genuinely has nothing left to continue — `handleReset`
+already navigated to a fresh session). No new "what does a turn after
+completion do to status" logic was needed: `endSessionTool`/`applySessionOutcome`
+only ever run again if the coach calls `end_session` a second time, which
+nothing in this task changes. `BotSessionPage.tsx`'s own, separate
+`SessionSummaryCard` fallback (its own precedent already established by
+`GameOverDialog`'s doc comment) is out of scope — play_bot mode has no
+coach chat to keep open. Rewrote the existing "renders instead of the board
+and chat" test to assert the opposite and exercise a real send-while-completed
+round trip; disambiguated the now-duplicate "Back to Games" affordance
+(SessionHeader's own back button plus the banner's) by scoping the test
+query with `within`, left both buttons in the UI as a harmless, unaddressed
+redundancy rather than changing `SessionSummaryCard`'s shared props for a
+polish concern outside this task's scope. Full web suite (836 tests),
+typecheck, and lint all clean.
+
+This closes out Phase 63 — both tasks are now checked off.
+
+---
+
+## Phase 64 — Focus areas: named, ranked, and conversation-grounded
+
+**Read:** `docs/diagnose.md` §IV (focus selection) and §I.1/§I.2 (codes)
+before Task 64.3 only; Tasks 64.1/64.2 are frontend/schema work with
+nothing new to read there.
+
+Three gaps found by direct code inspection, all in service of the same
+goal — focus areas as the coach's actual working memory of "what we're
+fixing together," not a silent background computation:
+
+1. `apps/api/src/services/dashboard.ts`'s `toFocusAreaSummary` passes
+   `diagnosisCode` straight through with no label lookup — unlike
+   `diagnostics.ts`'s already-shipped `DIAGNOSIS_CODES_BY_ID.get(code)?.label`
+   pattern (`DiagnosisCard.tsx` already renders it). `FocusAreaCard` only
+   ever shows the broad `category` ("Tactics"), never the specific skill
+   ("Knight forks") — even though the coach's own prompt already sees
+   `category (diagnosisCode)` via `renderFocusAreasBlock`.
+2. `focus_areas` has no persisted "primary" concept at all —
+   `selectFocus`'s `primary`/`secondary` split is recomputed fresh on every
+   `rebuild-diagnostic-profile` run and never written anywhere; a focus
+   area's rank can silently flip with zero signal to the student.
+3. `applyFocusAreaUpdate`/`propose_focus_area_update` can only
+   progress/regress/resolve a focus area that already exists (Task 57.3's
+   deliberate anti-noise guardrail) — a live session or the end-of-session
+   summarizer can never turn what was just discussed into a tracked focus
+   area, only the engine-detector-driven background job can. Confirmed via
+   `git log -p` on `services/progress.ts`: not a regression, the original
+   intended replacement (`syncProgrammaticFocusAreas`) simply has no
+   session-completion call site.
+
+### Task 64.1: Resolve a real label for the dashboard, not just a category
+
+**Files:** `packages/shared/src/dashboard.ts`,
+`apps/api/src/services/dashboard.ts`, `apps/web/src/features/dashboard/FocusAreaCard.tsx` + tests.
+
+- [ ] Add `label: z.string()` to `FocusAreaSummarySchema` (same field
+      `DiagnosisEntryResponseSchema` already carries).
+- [ ] `toFocusAreaSummary` resolves it server-side:
+      `DIAGNOSIS_CODES_BY_ID.get(diagnosisCode)?.label ?? CATEGORY_LABELS[category]`
+      — never ships the bare code, never leaves the frontend needing the
+      catalog.
+- [ ] `FocusAreaCard`'s heading renders `area.label`, falling back to the
+      existing category heading when `diagnosisCode` is null (legacy rows).
+- [ ] Commit: `feat: resolved diagnosis label on the dashboard's focus areas`.
+
+### Task 64.2: Persist which focus area is primary
+
+**Files:** migration `00NN_focus_area_primary.ts`,
+`apps/api/src/db/schema.ts`, `apps/api/src/db/repositories/focus-areas.ts`,
+`apps/api/src/services/progress.ts` (`syncProgrammaticFocusAreas`),
+`apps/web/src/features/dashboard/FocusAreaCard.tsx` + tests.
+
+- [ ] Add `focus_areas.is_primary boolean NOT NULL DEFAULT false`; enforce
+      "at most one primary per user" the same way the max-3-active cap is
+      enforced today (application-level check before write, not a DB
+      constraint — a user's active set changes one row at a time).
+- [ ] `syncProgrammaticFocusAreas` sets/moves `is_primary` on **every**
+      rebuild (not just on insert) — `selectFocus`'s `primary` pick gets
+      `is_primary: true`, demoting whichever row held it before; secondary
+      picks and pre-existing rows never demoted-then-repromoted needlessly
+      (no-op write when nothing changed).
+- [ ] Small "primary" badge/ordering on `FocusAreaCard`/the dashboard hero
+      so a rank change is actually visible instead of silent.
+- [ ] Commit: `feat: persist and surface which focus area is primary`.
+
+### Task 64.3: Conversation-grounded, code-anchored focus-area creation
+
+This is the core fix for "the coach didn't update my progress after a
+lesson." Deliberately narrower than the pre-Task-57.3 world: creation must
+still name a real catalog `diagnosisCode` (never free text) and still goes
+through the same anti-duplication/cap checks the programmatic path already
+uses — this is "let the coach act on what it just saw," not "undo the
+anti-noise guardrail."
+
+**Files:** `packages/shared/src/finding.ts` (`FocusAreaUpdateSchema`),
+`packages/prompts/src/tools.ts`, `packages/prompts/src/progress-summarizer.ts`,
+`apps/api/src/services/progress.ts` + tests.
+
+- [ ] Add a `'create'` action to `FocusAreaUpdateSchema`'s action enum,
+      required `diagnosisCode` (already the case) and a `note` describing
+      the transcript evidence.
+- [ ] `applyFocusAreaUpdate`'s `'create'` branch: no-ops into a `'progress'`
+      if a focus area for that code already exists (never a duplicate,
+      never a robotic re-add); otherwise inserts one, re-checking
+      `MAX_ACTIVE_FOCUS_AREAS` and Task 64.2's one-primary rule (a
+      conversation-created focus area is never auto-primary — the
+      programmatic ranking decides that on the next rebuild).
+- [ ] Wire the same `'create'` action into both the live
+      `propose_focus_area_update` tool and `SessionOutcome.focusAreaUpdates`
+      (session-end summarizer) — same validation path either way.
+- [ ] Update `propose_focus_area_update`'s tool description (currently:
+      "You do not create focus areas") and the summarizer's system prompt
+      to describe when creation is warranted: real evidence from *this*
+      session, a specific catalog code, not a hunch — and that it still
+      won't duplicate one the system already tracks.
+- [ ] Commit: `feat: conversation-grounded focus-area creation, anchored to a diagnosis code`.
+
+### Task 64.4: The create → check → graduate lifecycle, in the coach's own voice
+
+**Files:** `packages/prompts/src/coach-method.ts`,
+`packages/prompts/src/coach-session-flow.ts` + snapshot tests.
+
+- [ ] Add guidance (near the existing focus-area material in
+      `coach-method.ts`) describing the loop the student actually asked
+      for: notice a pattern → name what the student should do about it →
+      next time it comes up, check whether it's better → decide whether
+      that's "good enough" to resolve and let the next thing take its
+      place, or still active. This is prose guidance for the model, not new
+      mechanism — `progress`/`regress`/`resolve` and the max-3/one-primary
+      cap (Task 64.2) already implement the mechanics; this task is making
+      sure the coach actually narrates that loop instead of updating state
+      silently.
+- [ ] Commit: `feat: coach guidance for the focus-area check-in loop`.
+
+### Task 64.5 (opportunistic, verify before committing to it): cache-breakpoint order
+
+Found while researching Task 64's caching question, not asked for
+directly — flagging rather than assuming. `coach-context.ts`'s
+`buildEpisodeMessages` orders its four cache breakpoints
+`staticPart, dynamicPart, annotatedPgn, otherMovesSummary`. `dynamicPart`
+(which carries focus areas/notes, and changes whenever
+`record_finding`/`propose_focus_area_update` fire mid-session) sits
+*before* `annotatedPgn`, which for a given game is essentially static once
+analysis completes. Because Anthropic's cache breakpoints are prefix-based,
+a `dynamicPart` change forces `annotatedPgn` (the largest, most stable
+layer) to be recomputed from the cache's perspective too, even though its
+own bytes didn't change.
+
+- [ ] Confirm this empirically (a test asserting cache-relevant byte
+      stability per layer already exists per `coach-system.test.ts` —
+      extend it to assert breakpoint order) before reordering anything.
+- [ ] If confirmed, reorder to `staticPart, annotatedPgn, dynamicPart,
+      otherMovesSummary` (or otherwise put the layer most likely to change
+      mid-session last among the cached ones) and re-verify snapshot tests.
+- [ ] Commit: `perf: order cache breakpoints by change frequency, not build order`.
+
+---
+
+## Phase 65 — Broader diagnosis vocabulary for conversational diagnosis
+
+**Read:** `docs/diagnose.md` §I.1/§I.2 (mechanism/direction vocabulary,
+already typed) and the `detectability` field's own doc comment in
+`packages/shared/src/diagnosis/` before Task 65.1.
+
+Root cause of "general diagnosis instead of a real one": `record_finding`,
+`propose_focus_area_update`, and the session-end summarizer are all told
+"leave `diagnosisCode` unset rather than guess" with zero requirement to
+ever use one, AND the actual list of codes shown to pick from
+(`renderScopedDiagnosisCodes(rating, ACTIVE_DETECTOR_CODES)`) is narrowed
+to ~30 engine-detector codes only — every one of the ~380 `dialogue`-
+detectable codes (the ones actually diagnosable from what a student SAYS,
+which is most of what a live lesson produces) is never listed as a pickable
+option anywhere. Task 57.4 deliberately narrowed this to protect the live
+coach prompt's cache/token budget against dumping 300+ codes in — that
+constraint still holds, so this is a curation task, not "just show
+everything."
+
+### Task 65.1: Curate an active "dialogue" code set
+
+**Files:** `packages/prompts/src/render.ts` (or a new
+`active-dialogue-codes.ts` beside `ACTIVE_DETECTOR_CODES`'s own definition)
++ tests.
+
+- [ ] Hand-pick (or systematically filter — e.g. one representative code
+      per mechanism × broad category combination that appears in
+      `record_finding`'s own example list already) a moderate set, similar
+      order of magnitude to `ACTIVE_DETECTOR_CODES` (~30-50 codes), of
+      `detectability: 'dialogue'` codes worth surfacing as real options.
+- [ ] Same rating-scoping `renderScopedDiagnosisCodes` already does for
+      detector codes.
+- [ ] Unit tests: the set's size stays bounded, every id is a real catalog
+      member, `detectability` is actually `'dialogue'` for each (never
+      accidentally include a detector code twice).
+- [ ] Commit: `feat: curated active dialogue-code vocabulary`.
+
+### Task 65.2: Surface it everywhere a diagnosis gets picked
+
+**Files:** `packages/prompts/src/coach-system.ts`
+(`diagnosisCodesForThisStudent`), `packages/prompts/src/progress-summarizer.ts` + snapshot tests.
+
+- [ ] Both the live coach's injected code list and the summarizer's catalog
+      block include the Task 65.1 dialogue set alongside the existing
+      detector set (union, not replacement — detector codes stay available
+      too).
+- [ ] Re-run `npm run docs:prompts`; diff the rendered list size to confirm
+      it's still bounded (tens of lines, not hundreds) before committing.
+- [ ] Commit: `feat: surface dialogue-detectable codes to record_finding and the summarizer`.
+
+### Task 65.3: Push toward a real code, without forcing false positives
+
+**Files:** `packages/prompts/src/tools.ts` (`record_finding`,
+`propose_focus_area_update` descriptions), `packages/prompts/src/progress-summarizer.ts`.
+
+- [ ] Reword from purely permissive ("leave it unset rather than guess")
+      to actively encouraging a search of the (now-broader) list first,
+      while keeping "genuinely none fit" a valid, honest, still-supported
+      answer — the standing constraint from Phase 55 ("Insufficient
+      evidence is a correct output, not a bug") applies here too.
+- [ ] Commit: `feat: push record_finding toward a specific code, not a default skip`.
+
+---
+
+## Phase 66 — Coach-linked practice assignments
+
+Phase 59 ("Coach-assigned puzzle training") is fully implemented and
+tested — not the stub it might look like. What's actually missing,
+confirmed by direct inspection: (1) the live coach has no tool to assign or
+even mention a practice session in the moment — assignment is 100%
+background-job-driven and invisible to the conversation; (2) there is no
+concept anywhere of recommending *external* practice (Lichess puzzles by
+theme, a suggested bot difficulty); (3) the word "puzzle" already mostly
+doesn't leak into user-facing copy at the nav/route level (branded
+"Practice"/"Progress" already) but still shows up in a few strings
+("Puzzle 1 of N", "N of M puzzles").
+
+### Task 66.1: Finish the terminology cleanup
+
+**Files:** `apps/web/src/features/puzzle-session/PuzzleSessionPage.tsx`,
+`apps/web/src/features/dashboard/PracticeCard.tsx` + tests.
+
+- [ ] Replace the remaining "puzzle" strings ("Puzzle N of M", "N of M
+      puzzles") with "focused session" / "item" wording, matching the
+      "Practice"/"Progress" branding the route and nav already use.
+- [ ] Commit: `fix: finish renaming puzzle copy to focused-session wording`.
+
+### Task 66.2: A live tool to assign a focused session
+
+**Files:** `packages/prompts/src/tools.ts`,
+`apps/api/src/services/coach-tools.ts`,
+`apps/api/src/services/puzzle-assignment.ts` + tests.
+
+- [ ] New coach tool (name TBD at implementation time — avoid "puzzle" in
+      the user-facing description per Task 66.1) that lets the live coach,
+      when a diagnosed weakness comes up in conversation, create or
+      reference a targeted practice assignment right then — reuses
+      `puzzle-assignment.ts`'s selection logic (narrowed to one
+      `diagnosisCode` instead of a whole profile), same `MAX_NEW_
+      ASSIGNMENTS_PER_RUN`-style cap so a chatty session can't spam
+      assignments.
+- [ ] If one already exists for that code (unresolved), the tool returns
+      that instead of creating a second one — same anti-duplication
+      discipline as Task 64.3.
+- [ ] Commit: `feat: let the live coach assign a focused practice session`.
+
+### Task 66.3: External practice and bot-matchup recommendations
+
+**Files:** `packages/prompts/src/coach-session-flow.ts`,
+`packages/prompts/src/coach-method.ts`.
+
+- [ ] Prompt guidance (feeds Task 63.1's closing beat) letting the coach's
+      homework be one of: an in-app focused session (Task 66.2), a named
+      external recommendation ("50 Lichess puzzles tagged fork"), or a
+      suggested next opponent (a specific bot difficulty, up or down from
+      what they've been playing) — concrete and specific rather than vague
+      "keep practicing" text, matching the standing homework field (no new
+      schema needed unless a later task wants these structured).
+- [ ] Commit: `feat: coach can recommend external practice or a bot matchup as homework`.
+
+---
+
 ## Calibration and standing constraints
 
 - **§0.3 and §V require recalibration** of every rating prior and threshold
