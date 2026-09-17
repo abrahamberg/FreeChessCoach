@@ -38,7 +38,7 @@ const SYSTEM_PROMPT = `You review the transcript of a completed chess-coaching s
 You will receive: the student's profile, the coaching plan the coach prepared, the full session transcript (including tool calls), and the findings the coach already recorded during the session.
 
 Extract:
-1. findings: durable observations about the student NOT already recorded by the coach. A finding is about the student's thinking or habits, evidenced in the transcript ("said he never considered his opponent's reply" — not "played a bad move on ply 23"). Mark improvements with isPositive: true. It is fine to return an empty list if the coach recorded everything. When the transcript clearly points at one of the catalog codes below, set diagnosisCode; otherwise leave it unset rather than guess.
+1. findings: durable observations about the student NOT already recorded by the coach. A finding is about the student's thinking or habits, evidenced in the transcript ("said he never considered his opponent's reply" — not "played a bad move on ply 23"). Mark improvements with isPositive: true. It is fine to return an empty list if the coach recorded everything. Check the catalog codes below for a specific match before deciding: set diagnosisCode when one genuinely fits what the transcript actually shows, not a bare category-level guess. Genuinely none fitting is a normal, correct answer too — leave it unset rather than force one that doesn't really match.
 2. focusAreaUpdates: based on ALL evidence (recorded + new), address each update by diagnosisCode:
    - progress: an active focus area with clear positive evidence this session.
    - regress: an improving/resolved area that reappeared.

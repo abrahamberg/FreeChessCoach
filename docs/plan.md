@@ -3024,12 +3024,31 @@ diagnosis-code list itself grew, line for line, with nothing else disturbed.
 **Files:** `packages/prompts/src/tools.ts` (`record_finding`,
 `propose_focus_area_update` descriptions), `packages/prompts/src/progress-summarizer.ts`.
 
-- [ ] Reword from purely permissive ("leave it unset rather than guess")
+- [x] Reword from purely permissive ("leave it unset rather than guess")
       to actively encouraging a search of the (now-broader) list first,
       while keeping "genuinely none fit" a valid, honest, still-supported
       answer — the standing constraint from Phase 55 ("Insufficient
       evidence is a correct output, not a bug") applies here too.
-- [ ] Commit: `feat: push record_finding toward a specific code, not a default skip`.
+- [x] Commit: `feat: push record_finding toward a specific code, not a default skip`.
+
+**Done:** Reworded three spots that all shared the same purely-permissive
+shape ("if nothing fits, leave it unset" with no push to actually look):
+`record_finding`'s tool description, the summarizer's findings-extraction
+point 1, and — beyond the task's literal two-file list, but the same list
+header a model reads in the same turn as the tool description, so leaving
+it permissive-only would have read as contradictory — `coach-system.ts`'s
+`diagnosisCodesForThisStudent` intro line. Each now opens with "check/look
+here first" before naming when to set the code, and closes with "genuinely
+none fitting is a normal, correct answer" rather than ending on the skip
+path — same standing Phase 55 constraint (insufficient evidence is a
+correct output), just no longer the ONLY message a permissive-only phrasing
+sent. `propose_focus_area_update`'s description already got equivalent
+"real, specific evidence, not a hunch" language in Task 64.3, so it needed
+no further change here. Diffed the regenerated snapshots/docs against the
+Task 65.1/65.2 commit's own regeneration to confirm only these three
+sentences moved.
+
+This closes out Phase 65 — all three tasks are now checked off.
 
 ---
 

@@ -137,7 +137,7 @@ function buildDynamicPart(input: CoachPromptInput): string {
 function diagnosisCodesForThisStudent(rating: number): string {
   return `## Diagnosis codes for this student
 
-When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. If nothing here fits, leave diagnosisCode unset rather than guess or invent one.
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. Look here first rather than defaulting to skipping it: a real, specific match is worth more than a vague finding. Genuinely nothing here fitting is a normal, correct answer too — leave diagnosisCode unset rather than force or invent one.
 ${renderScopedDiagnosisCodes(rating, ACTIVE_DIAGNOSIS_CODES)}`;
 }
 
