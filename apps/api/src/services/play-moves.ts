@@ -11,7 +11,20 @@ import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import type { Database } from '../db/schema.js';
 import { NotFoundError } from '../lib/errors.js';
+import { createKeyedLock } from '../lib/keyedLock.js';
 import { classifyPlayMove } from './play-move-quality.js';
+
+/** Serializes read-modify-write cycles against one game's `pgn`/
+ * `annotatedPgn` columns. Without this, two commits that overlap in time
+ * (the player's own move racing the coach's play_coach_move, a bot's timed
+ * reply racing an undo, or a client double-submitting the same drop before
+ * its own in-flight guard re-renders) both read the same starting PGN and
+ * whichever transaction commits last silently wins — the other's move is
+ * lost, and the next commit replays its SAN against a position that no
+ * longer has it, failing as "illegal" with no in-app recovery. See
+ * createKeyedLock's doc comment for the identical per-session pattern
+ * coach-agent-turn.ts already relies on. */
+const gameLock = createKeyedLock();
 
 export interface PlayMovesDependencies {
   db: Kysely<Database>;
@@ -76,6 +89,21 @@ export async function commitBotMove(
 }
 
 async function commitMove(
+  deps: PlayMovesDependencies,
+  gameId: string,
+  san: string,
+  options?: CommitMoveOptions,
+  classifyOptions?: { computeDiagnosisCodes?: boolean }
+): Promise<CommittedMove | { error: string }> {
+  const release = await gameLock.acquire(gameId);
+  try {
+    return await commitMoveLocked(deps, gameId, san, options, classifyOptions);
+  } finally {
+    release();
+  }
+}
+
+async function commitMoveLocked(
   deps: PlayMovesDependencies,
   gameId: string,
   san: string,
@@ -151,6 +179,19 @@ export interface UndoResult {
  * poll landing right after the undo fire a bogus loss.
  */
 export async function undoLastMove(
+  deps: PlayMovesDependencies,
+  sessionId: string,
+  gameId: string
+): Promise<UndoResult | { error: string }> {
+  const release = await gameLock.acquire(gameId);
+  try {
+    return await undoLastMoveLocked(deps, sessionId, gameId);
+  } finally {
+    release();
+  }
+}
+
+async function undoLastMoveLocked(
   deps: PlayMovesDependencies,
   sessionId: string,
   gameId: string

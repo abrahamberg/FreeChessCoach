@@ -1,5 +1,5 @@
 import type { MoveQuality } from '@freechesscoach/shared';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { apiPost, ApiError } from '../../api/client.js';
 import { CommitPlayMoveResponseSchema } from './sessionPageSchemas.js';
 
@@ -53,8 +53,16 @@ export function usePlayMoveSubmit(
 ): UsePlayMoveSubmitResult {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // `isSubmitting` is React state — it only reflects in the `disabled` prop
+  // CoachBoard reads on its NEXT render, leaving a synchronous gap where two
+  // genuine move-commit events in the same tick (a drag/click double-fire)
+  // both read stale `disabled=false` and both call submit(). This ref closes
+  // that gap immediately, before any render.
+  const submittingRef = useRef(false);
 
   async function submit(san: string, uci: string): Promise<void> {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setError(null);
     setIsSubmitting(true);
     try {
@@ -64,6 +72,7 @@ export function usePlayMoveSubmit(
     } catch (submitError) {
       setError(describePlayMoveError(submitError));
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   }

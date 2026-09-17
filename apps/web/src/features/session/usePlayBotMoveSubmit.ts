@@ -1,6 +1,6 @@
 import type { MoveQuality } from '@freechesscoach/shared';
 import { resolveSanMove } from '@freechesscoach/chess-analysis';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { apiPost, ApiError } from '../../api/client.js';
 import type { BotGameOverInfo } from './botGameOver.js';
 import { CommitBotMoveResponseSchema } from './sessionPageSchemas.js';
@@ -60,8 +60,13 @@ export function usePlayBotMoveSubmit(
 ): UsePlayBotMoveSubmitResult {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // See usePlayMoveSubmit's identical ref for why: `isSubmitting` state alone
+  // leaves a synchronous gap before CoachBoard's `disabled` prop re-renders.
+  const submittingRef = useRef(false);
 
   async function submit(san: string, uci: string): Promise<void> {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setError(null);
     setIsSubmitting(true);
     try {
@@ -86,6 +91,7 @@ export function usePlayBotMoveSubmit(
     } catch (submitError) {
       setError(describePlayMoveError(submitError));
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   }
