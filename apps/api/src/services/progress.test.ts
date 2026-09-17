@@ -266,6 +266,47 @@ describe('progress service', () => {
 
       expect(created).toEqual([]);
     });
+
+    test("flags selectFocus's top pick as primary", async () => {
+      const userId = await makeUser('sync-primary@example.com');
+      const candidates: FocusCandidate[] = [
+        candidateFixture({ code: 'EG-01', direction: 'N', totalHwdl: 5, episodes: 8 }),
+        candidateFixture({ code: 'PW-01', direction: 'N', totalHwdl: 1, episodes: 5 })
+      ];
+
+      await syncProgrammaticFocusAreas(db, userId, candidates);
+
+      const primary = await focusAreasRepo.findPrimaryByUser(db, userId);
+      expect(primary?.diagnosisCode).toBe('EG-01');
+      const secondary = await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, 'PW-01');
+      expect(secondary?.isPrimary).toBe(false);
+    });
+
+    test('moves primary to the new top pick on a later rebuild, demoting the old one', async () => {
+      const userId = await makeUser('sync-reprimary@example.com');
+      await syncProgrammaticFocusAreas(db, userId, [candidateFixture({ code: 'EG-01', direction: 'N', totalHwdl: 5, episodes: 8 })]);
+      expect((await focusAreasRepo.findPrimaryByUser(db, userId))?.diagnosisCode).toBe('EG-01');
+
+      await syncProgrammaticFocusAreas(db, userId, [candidateFixture({ code: 'PW-01', direction: 'N', totalHwdl: 9, episodes: 8 })]);
+
+      const primary = await focusAreasRepo.findPrimaryByUser(db, userId);
+      expect(primary?.diagnosisCode).toBe('PW-01');
+      const previous = await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, 'EG-01');
+      expect(previous?.isPrimary).toBe(false);
+    });
+
+    test('a rebuild that reselects the same top pick leaves it primary without an extra write', async () => {
+      const userId = await makeUser('sync-same-primary@example.com');
+      const candidates: FocusCandidate[] = [candidateFixture({ code: 'EG-01', direction: 'N', totalHwdl: 5, episodes: 8 })];
+      await syncProgrammaticFocusAreas(db, userId, candidates);
+      const first = await focusAreasRepo.findPrimaryByUser(db, userId);
+
+      await syncProgrammaticFocusAreas(db, userId, candidates);
+
+      const second = await focusAreasRepo.findPrimaryByUser(db, userId);
+      expect(second?.id).toBe(first?.id);
+      expect(second?.isPrimary).toBe(true);
+    });
   });
 
   describe('applySessionOutcome', () => {

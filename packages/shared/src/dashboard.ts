@@ -12,6 +12,9 @@ export const FocusAreaSummarySchema = z.object({
    * `diagnosisCode` — falls back to the broad category label for legacy
    * rows with no code. Never the bare code or category enum. */
   label: z.string(),
+  /** Task 64.2 — persisted rank, not recomputed client-side: at most one
+   * `true` per user's active+improving set. */
+  isPrimary: z.boolean(),
   status: z.enum(['active', 'improving', 'resolved']),
   note: z.string(),
   evidenceCount: z.number().int(),

@@ -11,6 +11,7 @@ describe('FocusAreaCard', () => {
           category: 'king_safety',
           diagnosisCode: 'MS-01',
           label: 'Opponent-check scan omission',
+          isPrimary: false,
           status: 'improving',
           note: 'Delays castling under pressure.',
           evidenceCount: 3,
@@ -32,6 +33,7 @@ describe('FocusAreaCard', () => {
           category: 'king_safety',
           diagnosisCode: null,
           label: 'King safety',
+          isPrimary: false,
           status: 'active',
           note: 'Delays castling under pressure.',
           evidenceCount: 3,
@@ -50,6 +52,7 @@ describe('FocusAreaCard', () => {
           category: 'passive_play',
           diagnosisCode: 'CA-01',
           label: 'Single-candidate search',
+          isPrimary: false,
           status: 'active',
           note: 'Avoids active plans.',
           evidenceCount: 1,
@@ -67,6 +70,7 @@ describe('FocusAreaCard', () => {
           category: 'passive_play',
           diagnosisCode: 'CA-01',
           label: 'Single-candidate search',
+          isPrimary: false,
           status: 'resolved',
           note: 'Fixed it.',
           evidenceCount: 4,
@@ -86,6 +90,7 @@ describe('FocusAreaCard', () => {
           category: 'king_safety',
           diagnosisCode: 'MS-01',
           label: 'Opponent-check scan omission',
+          isPrimary: false,
           status: 'active',
           note: 'Delays castling under pressure.',
           evidenceCount: 3,
@@ -100,6 +105,44 @@ describe('FocusAreaCard', () => {
     expect(onViewEvidence).toHaveBeenCalledWith('MS-01', 'Opponent-check scan omission');
   });
 
+  test('shows a "Primary" badge when the area is flagged primary', () => {
+    render(
+      <FocusAreaCard
+        area={{
+          category: 'king_safety',
+          diagnosisCode: 'MS-01',
+          label: 'Opponent-check scan omission',
+          isPrimary: true,
+          status: 'active',
+          note: 'Delays castling under pressure.',
+          evidenceCount: 3,
+          lastSeenAt: '2026-07-20T10:00:00.000Z'
+        }}
+      />
+    );
+
+    expect(screen.getByText('Primary')).toBeInTheDocument();
+  });
+
+  test('shows no "Primary" badge for a non-primary area', () => {
+    render(
+      <FocusAreaCard
+        area={{
+          category: 'king_safety',
+          diagnosisCode: 'MS-01',
+          label: 'Opponent-check scan omission',
+          isPrimary: false,
+          status: 'active',
+          note: 'Delays castling under pressure.',
+          evidenceCount: 3,
+          lastSeenAt: '2026-07-20T10:00:00.000Z'
+        }}
+      />
+    );
+
+    expect(screen.queryByText('Primary')).not.toBeInTheDocument();
+  });
+
   test('with no diagnosisCode (a legacy row), "View evidence" is not rendered', () => {
     render(
       <FocusAreaCard
@@ -107,6 +150,7 @@ describe('FocusAreaCard', () => {
           category: 'king_safety',
           diagnosisCode: null,
           label: 'King safety',
+          isPrimary: false,
           status: 'active',
           note: 'Delays castling under pressure.',
           evidenceCount: 3,

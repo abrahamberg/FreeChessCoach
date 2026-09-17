@@ -14,6 +14,7 @@ export interface FocusAreaRow {
   evidenceCount: number;
   lastSeenAt: Date;
   createdAt: Date;
+  isPrimary: boolean;
 }
 
 /** Legacy lookup for category-only rows created before Task 57.3 — new
@@ -90,7 +91,10 @@ export function updateStatusAndNote(
     .executeTakeFirstOrThrow();
 }
 
-/** Active + improving areas — what the coach's system prompt and get_user_profile show. */
+/** Active + improving areas — what the coach's system prompt and
+ * get_user_profile show. Primary first (Task 64.2 — makes the persisted
+ * rank actually visible instead of an incidental recency order), then most
+ * recently touched. */
 export function listActiveAndImproving(
   db: Kysely<Database>,
   userId: string
@@ -100,8 +104,28 @@ export function listActiveAndImproving(
     .selectAll()
     .where('userId', '=', userId)
     .where('status', 'in', ['active', 'improving'])
+    .orderBy('isPrimary', 'desc')
     .orderBy('lastSeenAt', 'desc')
     .execute();
+}
+
+/** Task 64.2 — the row currently flagged primary, if any. At most one per
+ * user, enforced app-level by `progress.ts`'s `promoteToPrimary`. */
+export function findPrimaryByUser(db: Kysely<Database>, userId: string): Promise<FocusAreaRow | undefined> {
+  return db
+    .selectFrom('focusAreas')
+    .selectAll()
+    .where('userId', '=', userId)
+    .where('isPrimary', '=', true)
+    .executeTakeFirst();
+}
+
+export function setPrimary(db: Kysely<Database>, id: string): Promise<FocusAreaRow> {
+  return db.updateTable('focusAreas').set({ isPrimary: true }).where('id', '=', id).returningAll().executeTakeFirstOrThrow();
+}
+
+export function clearPrimary(db: Kysely<Database>, id: string): Promise<FocusAreaRow> {
+  return db.updateTable('focusAreas').set({ isPrimary: false }).where('id', '=', id).returningAll().executeTakeFirstOrThrow();
 }
 
 /** design.md §4.3: the dashboard's "Resolved ✓" history accordion. */

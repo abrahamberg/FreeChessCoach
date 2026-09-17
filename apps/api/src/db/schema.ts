@@ -184,6 +184,7 @@ export interface FocusAreasTable {
   evidenceCount: Generated<number>;
   lastSeenAt: Generated<Date>;
   createdAt: Generated<Date>;
+  isPrimary: Generated<boolean>;
 }
 
 export interface PositionEvaluationsTable {

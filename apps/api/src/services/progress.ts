@@ -165,7 +165,24 @@ export async function syncProgrammaticFocusAreas(
       })
     );
   }
+
+  if (selection.primary) await promoteToPrimary(db, userId, selection.primary.code);
+
   return created;
+}
+
+/** Task 64.2 — moves the persisted `is_primary` flag to whichever code
+ * `selectFocus` just ranked first. A no-op if that row already holds it
+ * (never demotes-then-repromotes the same row), and does nothing if the
+ * pick has no focus-area row at all (e.g. skipped above for being over the
+ * active cap) — there's nothing to flag primary yet. */
+async function promoteToPrimary(db: Kysely<Database>, userId: string, code: DiagnosisCodeId): Promise<void> {
+  const target = await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, code);
+  if (!target || target.isPrimary) return;
+
+  const currentPrimary = await focusAreasRepo.findPrimaryByUser(db, userId);
+  if (currentPrimary) await focusAreasRepo.clearPrimary(db, currentPrimary.id);
+  await focusAreasRepo.setPrimary(db, target.id);
 }
 
 function nextStatusFor(

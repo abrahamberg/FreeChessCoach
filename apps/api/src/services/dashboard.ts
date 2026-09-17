@@ -51,6 +51,7 @@ function toFocusAreaSummary(row: focusAreasRepo.FocusAreaRow): DashboardResponse
     category: row.category,
     diagnosisCode: row.diagnosisCode,
     label: (row.diagnosisCode && DIAGNOSIS_CODES_BY_ID.get(row.diagnosisCode)?.label) ?? CATEGORY_LABELS[row.category],
+    isPrimary: row.isPrimary,
     status: row.status,
     note: row.note,
     evidenceCount: row.evidenceCount,

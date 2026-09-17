@@ -36,6 +36,7 @@ export function FocusAreaCard({ area, onViewEvidence }: FocusAreaCardProps): Rea
   const diagnosisCode = area.diagnosisCode;
   return (
     <div className="focus-area-card">
+      {area.isPrimary && <span className="badge badge--info focus-area-card__primary">Primary</span>}
       <span className={`badge ${TREND_BADGE_VARIANT[area.status]} focus-area-card__trend`}>
         {TREND_LABEL[area.status]}
         <TrendIcon width={11} height={11} strokeWidth={2.75} />

@@ -2761,18 +2761,38 @@ category text where a specific diagnosis label now renders instead.
 `apps/api/src/services/progress.ts` (`syncProgrammaticFocusAreas`),
 `apps/web/src/features/dashboard/FocusAreaCard.tsx` + tests.
 
-- [ ] Add `focus_areas.is_primary boolean NOT NULL DEFAULT false`; enforce
+- [x] Add `focus_areas.is_primary boolean NOT NULL DEFAULT false`; enforce
       "at most one primary per user" the same way the max-3-active cap is
       enforced today (application-level check before write, not a DB
       constraint — a user's active set changes one row at a time).
-- [ ] `syncProgrammaticFocusAreas` sets/moves `is_primary` on **every**
+- [x] `syncProgrammaticFocusAreas` sets/moves `is_primary` on **every**
       rebuild (not just on insert) — `selectFocus`'s `primary` pick gets
       `is_primary: true`, demoting whichever row held it before; secondary
       picks and pre-existing rows never demoted-then-repromoted needlessly
       (no-op write when nothing changed).
-- [ ] Small "primary" badge/ordering on `FocusAreaCard`/the dashboard hero
+- [x] Small "primary" badge/ordering on `FocusAreaCard`/the dashboard hero
       so a rank change is actually visible instead of silent.
-- [ ] Commit: `feat: persist and surface which focus area is primary`.
+- [x] Commit: `feat: persist and surface which focus area is primary`.
+
+**Done:** Migration `0039_focus_area_primary` adds `is_primary boolean NOT
+NULL DEFAULT false`. `focus-areas.ts` gained `findPrimaryByUser`/
+`setPrimary`/`clearPrimary`, and `listActiveAndImproving` now orders
+`isPrimary desc, lastSeenAt desc` so the persisted rank drives display order
+everywhere without extra client logic. `syncProgrammaticFocusAreas` calls a
+new `promoteToPrimary(db, userId, code)` after its existing create loop: it
+resolves `selection.primary`'s row (whether just-created or pre-existing),
+no-ops if that row is already primary, otherwise demotes whatever row
+currently holds it (if any) and promotes the new one — one write either way,
+never a demote-then-repromote of the same row. `FocusAreaSummarySchema`
+gained `isPrimary`; `FocusAreaCard` shows a "Primary" badge (`badge--info`,
+distinct from the trend badge's own variants) when set, and the dashboard
+hero's "This week's focus" now falls out of the same ordering rather than
+being a separate `[0]`-index assumption. Deliberately left
+`renderFocusAreasBlock` (the coach's own prompt text) unchanged here — it
+already renders fine with the extra field present but unused on the object;
+folding `isPrimary` into that block belongs with Task 64.4, which is already
+touching the same prompt text and its snapshot tests for the check-in-loop
+guidance.
 
 ### Task 64.3: Conversation-grounded, code-anchored focus-area creation
 
