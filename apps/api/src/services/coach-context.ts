@@ -77,11 +77,21 @@ export interface EpisodeContext {
 }
 
 /**
- * Design doc §5: four cached system blocks (static/dynamic/annotated-PGN/
+ * Design doc §5: four cached system blocks (static/annotated-PGN/dynamic/
  * other-moves), each with its own breakpoint, then the uncached
  * current-move block, then the episode's own conversation. Two leading
  * cached system messages already worked this way (the old
  * buildCacheableMessages) — this extends the same pattern to five.
+ *
+ * `annotatedPgn` sits BEFORE `dynamicPart` (Task 64.5) rather than after it:
+ * Anthropic's breakpoints are prefix-based, so a change anywhere in one
+ * layer invalidates every breakpoint after it, not just its own. `dynamicPart`
+ * (focus areas/notes — changes whenever record_finding/propose_focus_area_update
+ * fire mid-session) and `otherMovesSummary` (changes on every record_move_note)
+ * are both genuinely per-turn-volatile; `annotatedPgn` is essentially static
+ * once a game's analysis completes. Putting the volatile layers last means a
+ * routine mid-session update no longer forces the largest, most stable layer
+ * to be recomputed from the cache's perspective too.
  *
  * Play mode (architecture §14) uses only three cached breakpoints —
  * `annotatedPgn` is null, so its cachedSystemMessage is skipped entirely
@@ -90,15 +100,15 @@ export interface EpisodeContext {
  * always taken and the output is byte-for-byte what it always was.
  */
 export function buildEpisodeMessages(layers: EpisodeLayers, episodeMessages: ChatMessage[]): EpisodeContext {
-  // Four cached blocks below (static/dynamic/annotatedPgn/otherMovesSummary)
+  // Four cached blocks below (static/annotatedPgn/dynamic/otherMovesSummary)
   // is Anthropic's exact per-request cache-breakpoint maximum (final review
   // #10) — a fifth cached layer can't just be added here without first
   // dropping one of these four, or the request will start failing at the
   // provider.
   const cachedLayers = [
     cachedSystemMessage(layers.staticPart),
-    cachedSystemMessage(layers.dynamicPart),
     ...(layers.annotatedPgn !== null ? [cachedSystemMessage(layers.annotatedPgn)] : []),
+    cachedSystemMessage(layers.dynamicPart),
     cachedSystemMessage(layers.otherMovesSummary)
   ];
 

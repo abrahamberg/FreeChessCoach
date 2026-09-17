@@ -100,12 +100,31 @@ describe('buildEpisodeMessages', () => {
     const { instructions, messages } = context;
     expect(instructions).toHaveLength(5);
     expect(instructions[0]).toEqual({ role: 'system', content: 'STATIC', providerOptions: cacheControl });
-    expect(instructions[1]).toEqual({ role: 'system', content: 'DYNAMIC', providerOptions: cacheControl });
-    expect(instructions[2]).toEqual({ role: 'system', content: 'PGN', providerOptions: cacheControl });
+    // PGN precedes DYNAMIC (Task 64.5): dynamicPart/otherMovesSummary are
+    // the layers that actually change mid-session, so they sit after the
+    // large, stable annotatedPgn layer rather than before it — a
+    // dynamicPart change no longer busts annotatedPgn's own cache entry too.
+    expect(instructions[1]).toEqual({ role: 'system', content: 'PGN', providerOptions: cacheControl });
+    expect(instructions[2]).toEqual({ role: 'system', content: 'DYNAMIC', providerOptions: cacheControl });
     expect(instructions[3]).toEqual({ role: 'system', content: 'OTHER', providerOptions: cacheControl });
     // The current-move block is deliberately the only uncached layer.
     expect(instructions[4]).toEqual({ role: 'system', content: 'CURRENT' });
     expect(messages).toEqual(episodeMessages);
+  });
+
+  test('Task 64.5: a dynamicPart change alone leaves the staticPart+annotatedPgn prefix byte-identical (their own cache breakpoints survive)', () => {
+    const before = buildEpisodeMessages(
+      { staticPart: 'STATIC', dynamicPart: 'DYNAMIC v1', annotatedPgn: 'PGN', otherMovesSummary: 'OTHER', currentMoveBlock: 'CURRENT' },
+      []
+    );
+    const after = buildEpisodeMessages(
+      { staticPart: 'STATIC', dynamicPart: 'DYNAMIC v2', annotatedPgn: 'PGN', otherMovesSummary: 'OTHER', currentMoveBlock: 'CURRENT' },
+      []
+    );
+
+    expect(after.instructions[0]).toEqual(before.instructions[0]);
+    expect(after.instructions[1]).toEqual(before.instructions[1]);
+    expect(after.instructions[2]).not.toEqual(before.instructions[2]);
   });
 
   test('play mode (annotatedPgn: null, architecture §14): only 3 cached breakpoints — layer 3 is skipped entirely, not cached as an empty block', () => {

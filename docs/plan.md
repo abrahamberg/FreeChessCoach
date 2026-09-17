@@ -2906,13 +2906,35 @@ a `dynamicPart` change forces `annotatedPgn` (the largest, most stable
 layer) to be recomputed from the cache's perspective too, even though its
 own bytes didn't change.
 
-- [ ] Confirm this empirically (a test asserting cache-relevant byte
+- [x] Confirm this empirically (a test asserting cache-relevant byte
       stability per layer already exists per `coach-system.test.ts` —
       extend it to assert breakpoint order) before reordering anything.
-- [ ] If confirmed, reorder to `staticPart, annotatedPgn, dynamicPart,
+- [x] If confirmed, reorder to `staticPart, annotatedPgn, dynamicPart,
       otherMovesSummary` (or otherwise put the layer most likely to change
       mid-session last among the cached ones) and re-verify snapshot tests.
-- [ ] Commit: `perf: order cache breakpoints by change frequency, not build order`.
+- [x] Commit: `perf: order cache breakpoints by change frequency, not build order`.
+
+**Done:** Confirmed the diagnosis was real, not just plausible: the existing
+`coach-context.test.ts` test at `buildEpisodeMessages` asserted the exact
+positional order `STATIC, DYNAMIC, PGN, OTHER` — a byte-identical-prefix
+test in everything but name, just not phrased as one. Reordered
+`buildEpisodeMessages`'s `cachedLayers` array to `staticPart, annotatedPgn
+(if non-null), dynamicPart, otherMovesSummary`. Play mode is unaffected
+either way (`annotatedPgn` is `null` there, so its slot is skipped entirely
+and the remaining order is still `staticPart, dynamicPart,
+otherMovesSummary` — nothing to reorder without a PGN layer present).
+Updated the analyze-mode positional assertions to `STATIC, PGN, DYNAMIC,
+OTHER` and added a new test that changes only `dynamicPart` between two
+calls and asserts `instructions[0]` (staticPart) and `instructions[1]`
+(annotatedPgn) stay `toEqual` while `instructions[2]` (dynamicPart) changes
+— i.e., a mid-session focus-area/note update no longer touches the
+serialized content of the layers before it, which is what actually
+determines whether Anthropic's own cache for those earlier breakpoints
+survives. No snapshot changes needed — `coach-system.snapshot.test.ts`
+covers `buildCoachSystemPrompt`'s `staticPart`/`dynamicPart` text content,
+not `coach-context.ts`'s request-assembly order, so the two are independent.
+
+This closes out Phase 64 — all five tasks are now checked off.
 
 ---
 
