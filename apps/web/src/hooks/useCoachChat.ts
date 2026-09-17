@@ -176,6 +176,18 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
           },
           onError: (message) => {
             console.error('coach stream error:', message);
+            // A mid-stream provider error skips onFinish server-side (see
+            // coach-agent-turn.ts's onError), so nothing gets persisted for
+            // this turn — without this, the placeholder pushed above stays
+            // permanently blank (assistantText never received a delta) and
+            // the session looks dead with no visible sign anything failed.
+            setMessages((prev) =>
+              prev.map((current) =>
+                current.id === assistantId && current.text === ''
+                  ? { ...current, text: 'Something went wrong generating a reply. Try sending your message again.' }
+                  : current
+              )
+            );
           },
           onToolOutput: (toolOutput) => {
             if (isServerToolResultName(toolOutput.toolName)) {
