@@ -185,6 +185,14 @@ describe('buildResolveEngineBackendOptions', () => {
     expect(options.lichessEvalIndex).toBeNull();
     expect(options.lichessEvalMinDepth).toBe(20);
   });
+
+  test('backgroundJob defaults to false (server.ts, interactive routes) and is true only when passed (worker.ts)', () => {
+    const interactive = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, null);
+    expect(interactive.backgroundJob).toBe(false);
+
+    const job = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, null, true);
+    expect(job.backgroundJob).toBe(true);
+  });
 });
 
 describe('openLichessEvalIndexFromEnv', () => {

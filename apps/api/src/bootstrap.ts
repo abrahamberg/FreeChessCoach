@@ -142,7 +142,11 @@ export function buildResolveEngineBackendOptions(
   db: Kysely<Database>,
   engineUrl: string,
   tunnelTransport: EngineTunnelTransport,
-  lichessEvalIndex: LichessEvalIndex | null
+  lichessEvalIndex: LichessEvalIndex | null,
+  // worker.ts passes true (every caller there is a background job); server.ts
+  // omits it, since every caller there is an interactive request — see
+  // ResolveEngineBackendOptions.backgroundJob's own doc comment.
+  backgroundJob = false
 ): ResolveEngineBackendOptions {
   return {
     db,
@@ -152,7 +156,8 @@ export function buildResolveEngineBackendOptions(
     chessApiTimeoutMs: parsePositiveInt('CHESS_API_TIMEOUT_MS', 15000),
     chessApiRequestDelayMs: parsePositiveInt('CHESS_API_REQUEST_DELAY_MS', 100),
     lichessEvalIndex,
-    lichessEvalMinDepth: parsePositiveInt('LICHESS_EVAL_MIN_DEPTH', ENGINE_DEFAULT_DEPTH)
+    lichessEvalMinDepth: parsePositiveInt('LICHESS_EVAL_MIN_DEPTH', ENGINE_DEFAULT_DEPTH),
+    backgroundJob
   };
 }
 

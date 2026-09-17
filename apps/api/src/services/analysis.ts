@@ -16,6 +16,7 @@ import type {
   BookReport,
   ClassifiedMoveDto,
   EngineEval,
+  EngineMode,
   PlayerBookReport,
   PositionAnalysis,
   TacticMotifType,
@@ -27,7 +28,7 @@ import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
-import { HttpError } from '../lib/errors.js';
+import { EngineUnavailableError, HttpError } from '../lib/errors.js';
 import { checkBrilliantSoundness } from './brilliant-soundness.js';
 import { buildDiagnosticObservations } from './build-diagnostics.js';
 import { buildGameReportForAnalysis } from './build-game-report.js';
@@ -66,6 +67,13 @@ export async function runAnalyzeGameJob(
   const analysis = await analysesRepo.findByGameId(db, gameId);
   if (!analysis) throw new Error(`No analysis row for game ${gameId}`);
 
+  // Read in the try block below, but declared out here so the catch block
+  // can see it too — see its own comment on why only a tunnel-dependent
+  // mode gets 'paused' instead of 'failed'. Unset (an engine failure before
+  // the user row was even read) falls back to today's 'failed', the same as
+  // 'native' — there's no known tunnel to wait on either way.
+  let engineMode: EngineMode | undefined;
+
   try {
     await analysesRepo.updateStatus(db, analysis.id, 'engine_running');
 
@@ -73,6 +81,7 @@ export async function runAnalyzeGameJob(
     if (!game) throw new Error(`Game ${gameId} not found`);
     const user = await usersRepo.findById(db, game.userId);
     if (!user) throw new Error(`User ${game.userId} not found`);
+    engineMode = user.engineMode;
 
     const parsedGame = parsePgn(game.pgn);
     const fens = parsedGame.positions.map((position) => position.fen);
@@ -128,6 +137,20 @@ export async function runAnalyzeGameJob(
     // the job queue still logs the job as completed (it caught its own
     // error), so a failure is otherwise invisible to log-based ops tooling.
     console.error(`runAnalyzeGameJob failed for game ${gameId} (analysis ${analysis.id}):`, error);
+    // Only chess_api/browser mode ever gets resumed — routes/engine-tunnel.ts
+    // triggers that resume on a *tunnel* reconnect, which has nothing to do
+    // with 'native' recovering from, say, its pod briefly restarting. Pausing
+    // a 'native' failure here would leave it stuck forever with nothing to
+    // ever un-pause it, so it keeps today's 'failed' instead.
+    if (error instanceof EngineUnavailableError && engineMode !== undefined && engineMode !== 'native') {
+      // Not a real failure — the engine call needed the user's own browser
+      // tunnel (see resolve-engine-backend.ts's backgroundJob option) and it
+      // wasn't connected. `evalsComputed` (persisted per chunk by
+      // analyzeInChunks, above) is untouched, so the resumed run's cache
+      // hits pick up right where this one stopped.
+      await analysesRepo.markPaused(db, analysis.id, describeError(error));
+      return;
+    }
     await analysesRepo.markFailed(db, analysis.id, describeError(error));
   }
 }

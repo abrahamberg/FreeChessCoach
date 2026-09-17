@@ -128,6 +128,28 @@ describe('useEngineTunnelClient', () => {
     expect(sentToLiteWorker).toHaveLength(0);
   });
 
+  test('an http-fetch request performs the fetch from this tab and returns its status/body over the socket', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"ok":true}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    renderHook(() => useEngineTunnelClient({ enabled: true, wsUrl: 'ws://localhost/api/engine-tunnel' }));
+    const socket = FakeSocket.instances[0]!;
+
+    socket.emitMessage(
+      JSON.stringify({ requestId: 'req-fetch', kind: 'http-fetch', url: 'https://chess-api.com/v1', method: 'POST', body: '{"fen":"x"}' })
+    );
+    await vi.waitFor(() => expect(socket.sent.length).toBeGreaterThan(0));
+
+    expect(fetchMock).toHaveBeenCalledWith('https://chess-api.com/v1', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{"fen":"x"}'
+    });
+    const response = JSON.parse(socket.sent[0]!) as { requestId: string; ok: boolean; result?: { status: number; body: string } };
+    expect(response.requestId).toBe('req-fetch');
+    expect(response.ok).toBe(true);
+    expect(response.result).toEqual({ status: 200, body: '{"ok":true}' });
+  });
+
   test('does not open a socket when disabled', () => {
     renderHook(() => useEngineTunnelClient({ enabled: false }));
     expect(FakeSocket.instances).toHaveLength(0);

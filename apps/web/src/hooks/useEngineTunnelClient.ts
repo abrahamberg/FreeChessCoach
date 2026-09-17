@@ -17,7 +17,7 @@ const DEFAULT_MULTI_PV = 3;
 
 interface TunnelRequestMessage {
   requestId: string;
-  kind: 'analyze-position' | 'analyze-game';
+  kind: 'analyze-position' | 'analyze-game' | 'http-fetch';
   fen?: string;
   fens?: string[];
   depth?: number;
@@ -31,6 +31,14 @@ interface TunnelRequestMessage {
    * hasn't opted in) means 'main', the full-net worker every existing
    * caller already expects. */
   engine?: 'main' | 'lite';
+  /** 'http-fetch' only: proxies a single outbound HTTP request through this
+   * tab instead of apps/api's own server — see resolve-engine-backend.ts's
+   * chess_api mode, which reaches chess-api.com this way so requests land on
+   * chess-api.com from each user's own IP instead of piling onto the
+   * server's. */
+  url?: string;
+  method?: string;
+  body?: string;
 }
 
 function workerForEngine(engine: TunnelRequestMessage['engine']): SharedEngineWorker {
@@ -124,19 +132,36 @@ async function analyzeGameForTunnel(fens: string[], depth: number, multiPv: numb
   return results;
 }
 
+/** Performs the actual outbound call from this tab, so it lands on the
+ * third party from this user's own IP rather than the server's. Response
+ * body is handed back as text, untouched — apps/api's own ChessApiEngineBackend
+ * does the JSON parsing/validation it already does for a direct server
+ * fetch, so nothing about that logic needs to know its fetch was tunneled. */
+async function fetchForTunnel(url: string, method: string, body: string | undefined) {
+  const response = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body });
+  return { status: response.status, body: await response.text() };
+}
+
+async function resultForTunnelRequest(message: TunnelRequestMessage): Promise<unknown> {
+  if (message.kind === 'analyze-position') {
+    return analyzePositionForTunnel(
+      message.fen ?? '',
+      message.depth ?? DEFAULT_DEPTH,
+      message.multiPv ?? DEFAULT_MULTI_PV,
+      message.engine,
+      message.movetimeMs
+    );
+  }
+  if (message.kind === 'analyze-game') {
+    return analyzeGameForTunnel(message.fens ?? [], message.depth ?? DEFAULT_DEPTH, message.multiPv ?? DEFAULT_MULTI_PV, message.engine);
+  }
+  return fetchForTunnel(message.url ?? '', message.method ?? 'GET', message.body);
+}
+
 async function handleTunnelRequest(socket: WebSocket, raw: string): Promise<void> {
   const message = JSON.parse(raw) as TunnelRequestMessage;
   try {
-    const result =
-      message.kind === 'analyze-position'
-        ? await analyzePositionForTunnel(
-            message.fen ?? '',
-            message.depth ?? DEFAULT_DEPTH,
-            message.multiPv ?? DEFAULT_MULTI_PV,
-            message.engine,
-            message.movetimeMs
-          )
-        : await analyzeGameForTunnel(message.fens ?? [], message.depth ?? DEFAULT_DEPTH, message.multiPv ?? DEFAULT_MULTI_PV, message.engine);
+    const result = await resultForTunnelRequest(message);
     send(socket, { requestId: message.requestId, ok: true, result });
   } catch (error) {
     send(socket, { requestId: message.requestId, ok: false, error: error instanceof Error ? error.message : String(error) });

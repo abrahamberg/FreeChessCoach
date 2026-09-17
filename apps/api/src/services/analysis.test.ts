@@ -13,6 +13,7 @@ import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
+import { EngineUnavailableError } from '../lib/errors.js';
 import { composeGameReport } from './game-report.js';
 import { analyzeInChunks, runAnalyzeGameJob, type AnalysisJobDependencies } from './analysis.js';
 
@@ -117,8 +118,9 @@ describe('runAnalyzeGameJob', () => {
     await testDb.cleanup();
   });
 
-  async function setupGame(pgn = PGN): Promise<{ gameId: string; analysisId: string }> {
+  async function setupGame(pgn = PGN, engineMode?: 'native' | 'chess_api' | 'browser'): Promise<{ gameId: string; analysisId: string }> {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
+    if (engineMode) await usersRepo.update(db, user.id, { engineMode });
     const game = await gamesRepo.insert(db, {
       userId: user.id,
       pgn,
@@ -510,5 +512,43 @@ describe('runAnalyzeGameJob', () => {
     expect(row.status).toBe('failed');
     expect(row.error).toBeTruthy();
     expect(row.error).not.toContain('engine 500');
+  });
+
+  test('engine unavailable for a chess_api-mode user (no browser tunnel connected) -> paused, not failed, keeping progress made so far', async () => {
+    const { gameId, analysisId } = await setupGame(PGN, 'chess_api');
+    await analysesRepo.incrementEvalsComputed(db, analysisId, 3);
+    const deps: AnalysisJobDependencies = {
+      analyzeGamePositions: vi.fn().mockRejectedValue(new EngineUnavailableError('No tunnel connection for user u1')),
+      analyzePosition: fakeAnalyzePosition()
+    };
+
+    await runAnalyzeGameJob(db, deps, gameId);
+
+    const row = await db
+      .selectFrom('analyses')
+      .select(['status', 'error', 'completedAt', 'evalsComputed'])
+      .where('id', '=', analysisId)
+      .executeTakeFirstOrThrow();
+    expect(row.status).toBe('paused');
+    expect(row.error).toBe('No tunnel connection for user u1');
+    expect(row.completedAt).toBeNull();
+    expect(row.evalsComputed).toBe(3);
+  });
+
+  // 'native' mode has no tunnel to reconnect to, so routes/engine-tunnel.ts
+  // would never resume a paused 'native' analysis — it must keep today's
+  // 'failed' instead of getting stuck forever.
+  test('engine unavailable for a native-mode user -> still failed, since nothing would ever resume it', async () => {
+    const { gameId, analysisId } = await setupGame(PGN, 'native');
+    const deps: AnalysisJobDependencies = {
+      analyzeGamePositions: vi.fn().mockRejectedValue(new EngineUnavailableError('engine service unreachable')),
+      analyzePosition: fakeAnalyzePosition()
+    };
+
+    await runAnalyzeGameJob(db, deps, gameId);
+
+    const row = await db.selectFrom('analyses').select(['status', 'completedAt']).where('id', '=', analysisId).executeTakeFirstOrThrow();
+    expect(row.status).toBe('failed');
+    expect(row.completedAt).not.toBeNull();
   });
 });

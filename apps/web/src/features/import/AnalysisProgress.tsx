@@ -158,6 +158,19 @@ export function AnalysisProgress({
     );
   }
 
+  // Waiting on the user's own browser tunnel to reconnect (resolve-engine-
+  // backend.ts's backgroundJob option) — nothing was lost (evalsComputed is
+  // untouched) and no action is needed: routes/engine-tunnel.ts resumes it
+  // automatically the moment a tab reconnects, so there's no "Try again"
+  // button here the way there is for 'failed'.
+  if (status === 'paused') {
+    return (
+      <div className="analysis-progress analysis-progress--paused">
+        <p>Paused — reopen this game in a browser tab to pick up where it left off.</p>
+      </div>
+    );
+  }
+
   // Only the engine step has a measurable unit of work (positions).
   const enginePercent =
     totalPositions > 0 ? Math.min(100, Math.round((analyzedPositions / totalPositions) * 100)) : null;

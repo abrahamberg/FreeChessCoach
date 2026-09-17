@@ -3,6 +3,9 @@ import type { Kysely } from 'kysely';
 import { WebSocket } from 'ws';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { buildTestApp } from '../../test/helpers/build-app.js';
+import * as analysesRepo from '../db/repositories/analyses.js';
+import * as gamesRepo from '../db/repositories/games.js';
+import { noopJobQueue, type JobQueue } from '../jobs/queue.js';
 import { EngineTunnelRegistry } from '../services/engine/engine-tunnel-registry.js';
 import * as userProfileService from '../services/user-profile.js';
 import type { Database } from '../db/schema.js';
@@ -79,6 +82,104 @@ describe('GET /api/engine-tunnel', () => {
     socket.send(JSON.stringify({ requestId, result: { cp: 20 } }));
 
     await expect(pending).resolves.toEqual({ cp: 20 });
+
+    socket.close();
+    await app.close();
+  });
+
+  test('re-enqueues every game paused waiting for this user\'s tunnel, the moment it connects', async () => {
+    const user = await userProfileService.getOrCreate(db, DEV_STUB_USER);
+    const game = await gamesRepo.insert(db, {
+      userId: user.id,
+      pgn: '1. e4 e5',
+      source: 'paste',
+      userColor: 'white',
+      whiteName: null,
+      blackName: null,
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+    const analysis = await analysesRepo.insertQueued(db, game.id);
+    await analysesRepo.markPaused(db, analysis.id, 'No tunnel connection');
+    const jobQueue: JobQueue = { ...noopJobQueue, enqueueAnalyzeGame: vi.fn().mockResolvedValue(undefined) };
+
+    const registry = new EngineTunnelRegistry();
+    const app = buildTestApp({ db, engineTunnelRegistry: registry, jobQueue });
+    await app.listen({ port: 0 });
+    const address = app.server.address();
+    if (address === null || typeof address === 'string') throw new Error('expected a bound port');
+
+    const socket = new WebSocket(`ws://127.0.0.1:${address.port}/api/engine-tunnel`);
+    await new Promise((resolve, reject) => {
+      socket.on('open', resolve);
+      socket.on('error', reject);
+    });
+
+    await vi.waitFor(() => expect(jobQueue.enqueueAnalyzeGame).toHaveBeenCalledWith(game.id));
+
+    socket.close();
+    await app.close();
+    // DEV_STUB_USER (and its db rows) is shared by every test in this file —
+    // leaving this analysis 'paused' would make it re-enqueue again in every
+    // later test's connection too.
+    await analysesRepo.markReady(db, analysis.id);
+  });
+
+  test('does not re-enqueue a ready game, or another user\'s paused one', async () => {
+    const user = await userProfileService.getOrCreate(db, DEV_STUB_USER);
+    const otherUser = await userProfileService.getOrCreate(db, { email: 'other@local.test', displayName: 'other@local.test' });
+    const readyGame = await gamesRepo.insert(db, {
+      userId: user.id,
+      pgn: '1. e4 e5',
+      source: 'paste',
+      userColor: 'white',
+      whiteName: null,
+      blackName: null,
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+    const readyAnalysis = await analysesRepo.insertQueued(db, readyGame.id);
+    await analysesRepo.markReady(db, readyAnalysis.id);
+    const otherUsersGame = await gamesRepo.insert(db, {
+      userId: otherUser.id,
+      pgn: '1. e4 e5',
+      source: 'paste',
+      userColor: 'white',
+      whiteName: null,
+      blackName: null,
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+    const otherUsersAnalysis = await analysesRepo.insertQueued(db, otherUsersGame.id);
+    await analysesRepo.markPaused(db, otherUsersAnalysis.id, 'No tunnel connection');
+    const jobQueue: JobQueue = { ...noopJobQueue, enqueueAnalyzeGame: vi.fn().mockResolvedValue(undefined) };
+
+    const registry = new EngineTunnelRegistry();
+    const registerSpy = vi.spyOn(registry, 'registerConnection');
+    const app = buildTestApp({ db, engineTunnelRegistry: registry, jobQueue });
+    await app.listen({ port: 0 });
+    const address = app.server.address();
+    if (address === null || typeof address === 'string') throw new Error('expected a bound port');
+
+    const socket = new WebSocket(`ws://127.0.0.1:${address.port}/api/engine-tunnel`);
+    await new Promise((resolve, reject) => {
+      socket.on('open', resolve);
+      socket.on('error', reject);
+    });
+    // Negative case: registration (which kicks off the fire-and-forget resume
+    // lookup right after it, in the same route handler) is the only signal
+    // available, so give the lookup's own DB round trip a moment to finish
+    // before asserting it found nothing to enqueue for *this* user.
+    await vi.waitFor(() => expect(registerSpy).toHaveBeenCalledWith(user.id, expect.anything()));
+    await analysesRepo.findPausedGameIdsForUser(db, user.id);
+
+    expect(jobQueue.enqueueAnalyzeGame).not.toHaveBeenCalled();
 
     socket.close();
     await app.close();

@@ -6,8 +6,11 @@ import { toLeanEval } from './caching-engine-backend.js';
 import {
   ChessApiError,
   ChessApiMalformedResponseError,
+  ChessApiRateLimitedError,
   isUsableLine,
   MALFORMED_RESPONSE_RETRY_DELAYS_MS,
+  normalizeChessApiLine,
+  RATE_LIMIT_RETRY_DELAYS_MS,
   type ChessApiLine
 } from './chess-api-response.js';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';
@@ -37,10 +40,14 @@ function delay(ms: number): Promise<void> {
 const CIRCUIT_BREAKER_CONSECUTIVE_FAILURES = 3;
 
 /**
- * Calls the free third-party https://chess-api.com/v1 HTTP API — from the
- * server only, never from the browser, so its evaluations are trusted the
- * same as the native backend's for position_evaluations cache purposes (see
- * resolve-engine-backend.ts's isExternalSource: false for 'chess_api').
+ * Calls the free third-party https://chess-api.com/v1 HTTP API. `fetchImpl`
+ * is always `createTunnelFetch(...)` (see tunnel-fetch.ts) — this server
+ * never calls chess-api.com itself any more; every request reaches it
+ * through the user's own connected browser tab, so it lands on chess-api.com
+ * from each user's own IP rather than piling onto this server's. The result
+ * always comes from the browser, so it's trusted at the same external tier
+ * as 'browser' mode for position_evaluations cache purposes (see
+ * resolve-engine-backend.ts's isExternalSource: true for 'chess_api').
  *
  * chess-api.com's `eval`/`mate` fields are already reported from White's
  * perspective, matching this codebase's own cp/mateIn convention (see
@@ -55,19 +62,22 @@ const CIRCUIT_BREAKER_CONSECUTIVE_FAILURES = 3;
  * just over the network (and paced, since this network has a stranger on
  * the other end) instead.
  *
- * `fallback`, when given, takes over one specific position if chess-api.com
- * can't produce a usable result for it (a non-2xx status, a timeout, or a
- * malformed response surviving all of request()'s retries) — the rest of
- * the user's session still runs on chess_api. This doesn't violate the
- * "no fallback, ever" rule elsewhere in this codebase (see
+ * `fallback`, when given (never for a background job — see resolve-engine-
+ * backend.ts's backgroundJob option), takes over one specific position if
+ * chess-api.com can't produce a usable result for it (a non-2xx status, a
+ * timeout, or a malformed response surviving all of request()'s retries) —
+ * the rest of the user's session still runs on chess_api. This doesn't
+ * violate the "no fallback, ever" rule elsewhere in this codebase (see
  * EngineUnavailableError's doc comment): that rule is about never silently
- * swapping a user's *chosen* engine identity for cache-correctness reasons,
- * but chess_api and native are already the same position_evaluations trust
- * tier (isExternalSource: false for both — see resolve-engine-backend.ts),
- * so substituting one for the other here doesn't introduce a new cache
- * inconsistency. Logged, not surfaced to the user or recorded on the
- * resulting analysis — deliberately silent, since either engine's result is
- * already treated as equally trustworthy. */
+ * swapping a user's *chosen* engine identity for cache-correctness reasons.
+ * resolve-engine-backend.ts wraps this whole class — fallback included — in
+ * one uniform isExternalSource: true for chess_api, so whichever of
+ * chess-api.com-via-tunnel or this `fallback` actually served a given
+ * position, the cache write it produces is tagged the same way —
+ * substituting one for the other here doesn't introduce a mixed-trust cache
+ * row. Logged, not surfaced to the user or recorded on the resulting
+ * analysis — deliberately silent, since both are already treated as equally
+ * trustworthy for this purpose. */
 export class ChessApiEngineBackend implements EngineBackend {
   constructor(
     private readonly timeoutMs: number,
@@ -181,8 +191,11 @@ export class ChessApiEngineBackend implements EngineBackend {
   }
 
   private async request(fen: string, depth: number, variants: number): Promise<ChessApiLine[]> {
-    for (let attempt = 0; ; attempt++) {
-      const lines = await this.requestOnce(fen, depth, variants);
+    let malformedAttempt = 0;
+    let rateLimitAttempt = 0;
+
+    for (;;) {
+      const lines = await this.requestOnceRetryingRateLimit(fen, depth, variants, () => rateLimitAttempt++);
       // lines.every(isUsableLine) is vacuously true for an empty array, so
       // the length check is required — otherwise a no-lines response (see
       // requestOnce) would be accepted as a "usable" empty result instead of
@@ -190,11 +203,39 @@ export class ChessApiEngineBackend implements EngineBackend {
       // shape does.
       if (lines.length > 0 && lines.every(isUsableLine)) return lines;
 
-      const retryDelayMs = MALFORMED_RESPONSE_RETRY_DELAYS_MS[attempt];
+      const retryDelayMs = MALFORMED_RESPONSE_RETRY_DELAYS_MS[malformedAttempt++];
       if (retryDelayMs === undefined) {
         throw new ChessApiMalformedResponseError(fen, lines.find((line) => !isUsableLine(line)));
       }
       await delay(retryDelayMs);
+    }
+  }
+
+  /** Wraps requestOnce with its own independent retry track for a 429 —
+   * distinct from `request()`'s own malformed-response retries above, since
+   * "chess-api.com is actively throttling us" and "chess-api.com sent one
+   * bad line" call for different backoffs and different give-up errors (see
+   * RATE_LIMIT_RETRY_DELAYS_MS's doc comment). `nextRateLimitAttempt` reads
+   * and bumps the caller's own counter rather than owning one locally, since
+   * this needs to be called fresh on every malformed-response retry too
+   * without resetting how many rate-limit retries have already happened. */
+  private async requestOnceRetryingRateLimit(
+    fen: string,
+    depth: number,
+    variants: number,
+    nextRateLimitAttempt: () => number
+  ): Promise<ChessApiLine[]> {
+    for (;;) {
+      try {
+        return await this.requestOnce(fen, depth, variants);
+      } catch (error) {
+        if (!(error instanceof ChessApiError) || error.upstreamStatus !== 429) throw error;
+
+        const retryDelayMs = RATE_LIMIT_RETRY_DELAYS_MS[nextRateLimitAttempt()];
+        if (retryDelayMs === undefined) throw new ChessApiRateLimitedError(fen);
+        console.warn(`ChessApiEngineBackend: rate-limited (429) for fen "${fen}" — retrying in ${retryDelayMs}ms`);
+        await delay(retryDelayMs);
+      }
     }
   }
 
@@ -216,7 +257,10 @@ export class ChessApiEngineBackend implements EngineBackend {
       // against) — returned as-is rather than thrown here so request()'s
       // retry/backoff loop covers it the same way it covers any other
       // unusable line, instead of failing on the very first attempt.
-      return Array.isArray(body) ? body : [body];
+      const lines = Array.isArray(body) ? body : [body];
+      // Normalized before isUsableLine ever sees it — see
+      // normalizeChessApiLine's own doc comment for why `mate` needs this.
+      return lines.map(normalizeChessApiLine);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         throw new EngineUnavailableError(`chess-api.com timed out after ${this.timeoutMs}ms`);

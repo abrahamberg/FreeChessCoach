@@ -57,6 +57,12 @@ describe('AnalysisProgress (design.md §4.2)', () => {
     expect(onRetry).toHaveBeenCalledOnce();
   });
 
+  test('shows a paused message with no retry action, distinct from failed', () => {
+    render(<AnalysisProgress status="paused" finalFen={FINAL_FEN} />);
+    expect(screen.getByText(/reopen this game in a browser tab/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+  });
+
   test('shows the specific failure reason instead of the generic message when one is given', () => {
     render(
       <AnalysisProgress

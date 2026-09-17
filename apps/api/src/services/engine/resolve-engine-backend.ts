@@ -13,6 +13,7 @@ import { LichessEvalEngineBackend } from './lichess-eval-engine-backend.js';
 import type { LichessEvalReader } from './lichess-eval-index.js';
 import { LiteSupplementedEngineBackend } from './lite-supplemented-engine-backend.js';
 import { NativeEngineBackend } from './native-engine-backend.js';
+import { createTunnelFetch } from './tunnel-fetch.js';
 
 export interface ResolveEngineBackendOptions {
   db: Kysely<Database>;
@@ -27,6 +28,16 @@ export interface ResolveEngineBackendOptions {
    * case the Lichess tier is skipped entirely and behavior is unchanged. */
   lichessEvalIndex: LichessEvalReader | null;
   lichessEvalMinDepth: number;
+  /** True only for options built in worker.ts (jobs/analyze-game.ts,
+   * jobs/deepen-analysis.ts) — false for options built in server.ts
+   * (interactive routes). chess_api mode never calls chess-api.com from this
+   * server itself any more, in either case (see tunnel-fetch.ts) — this only
+   * decides what happens once the tunnel is gone too: a background job never
+   * falls back to the native engine either, it pauses instead
+   * (jobs/analyze-game.ts) and resumes once the tunnel reconnects
+   * (routes/engine-tunnel.ts); an interactive, low-volume caller keeps native
+   * as a last resort so a live, user-facing feature doesn't hard-fail. */
+  backgroundJob: boolean;
 }
 
 /**
@@ -42,9 +53,13 @@ export interface ResolveEngineBackendOptions {
  */
 export async function resolveEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
   const { raw, mode } = await resolveRawBackendForUser(options, userId);
-  // 'chess_api' is called from this server, never the browser, so it's
-  // trusted the same as 'native' here — only 'browser' evals are external.
-  const isExternalSource = mode === 'browser';
+  // 'chess_api' now reaches chess-api.com through the user's own browser
+  // tunnel when one is connected (see tunnel-fetch.ts), falling back to a
+  // direct server call otherwise — either way, the result can no longer be
+  // assumed to have come only from this server, so it gets the same
+  // external/untrusted cache tier as 'browser' mode. Only 'native' evals are
+  // internal.
+  const isExternalSource = mode === 'browser' || mode === 'chess_api';
   const cached = new CachingEngineBackend(options.db, raw, { isExternalSource });
   // Same internal/external split, reused for the engine-source-usage
   // analytics log (see engine-source-usage.ts) rather than cache trust.
@@ -132,9 +147,14 @@ async function resolveRawBackendForUser(
       : mode === 'chess_api'
         ? new ChessApiEngineBackend(
             options.chessApiTimeoutMs,
-            fetch,
+            createTunnelFetch(options.tunnelTransport, userId, options.chessApiTimeoutMs),
             options.chessApiRequestDelayMs,
-            new NativeEngineBackend(options.engineUrl)
+            // Background jobs never fall back to native either — see
+            // tunnel-fetch.ts and jobs/analyze-game.ts's pause/resume. An
+            // interactive caller keeps native as a last resort so a live,
+            // user-facing feature doesn't hard-fail the moment a tab closes
+            // mid-request.
+            options.backgroundJob ? undefined : new NativeEngineBackend(options.engineUrl)
           )
         : new NativeEngineBackend(options.engineUrl);
 

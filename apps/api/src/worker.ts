@@ -28,7 +28,7 @@ async function main(): Promise<void> {
     internalToken: requireEnv('ENGINE_TUNNEL_INTERNAL_TOKEN')
   });
   const lichessEvalIndex = await openLichessEvalIndexFromEnv();
-  const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, tunnelTransport, lichessEvalIndex);
+  const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, tunnelTransport, lichessEvalIndex, true);
   const puzzlePool = await openPuzzlePoolFromEnv();
 
   const taskList = createTaskList({

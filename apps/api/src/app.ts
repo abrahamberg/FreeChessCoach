@@ -127,7 +127,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       // off what is actually a Reply blows up with a 500 on every connect.
       // app.after() defers to just after the plugin above has loaded.
       app.after(() => {
-        registerEngineTunnelRoutes(app, db, registry);
+        registerEngineTunnelRoutes(app, db, registry, options.jobQueue ?? noopJobQueue);
       });
     }
   }

@@ -198,3 +198,70 @@ describe('analyses repository — candidate moments and coaching plan storage', 
     expect(row.status).toBe('queued');
   });
 });
+
+describe('analyses repository — markPaused / findPausedGameIdsForUser', () => {
+  let testDb: TestDb;
+  let db: Kysely<Database>;
+
+  beforeAll(async () => {
+    testDb = await createTestDb();
+    db = testDb.db;
+  }, 60000);
+
+  afterAll(async () => {
+    await testDb.cleanup();
+  });
+
+  async function makeGameForUser(userId: string) {
+    const game = await gamesRepo.insert(db, {
+      userId,
+      pgn: '1. e4 e5',
+      source: 'paste',
+      userColor: 'white',
+      whiteName: null,
+      blackName: null,
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+    const analysis = await analysesRepo.insertQueued(db, game.id);
+    return { gameId: game.id, analysisId: analysis.id };
+  }
+
+  test('markPaused sets status paused and the error, leaving completedAt unset', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
+    const { analysisId } = await makeGameForUser(user.id);
+    await analysesRepo.updateStatus(db, analysisId, 'engine_running');
+    await analysesRepo.incrementEvalsComputed(db, analysisId, 4);
+
+    await analysesRepo.markPaused(db, analysisId, 'chess-api.com timed out after 20000ms');
+
+    const row = await db
+      .selectFrom('analyses')
+      .select(['status', 'error', 'completedAt', 'evalsComputed'])
+      .where('id', '=', analysisId)
+      .executeTakeFirstOrThrow();
+    expect(row.status).toBe('paused');
+    expect(row.error).toBe('chess-api.com timed out after 20000ms');
+    expect(row.completedAt).toBeNull();
+    expect(row.evalsComputed).toBe(4);
+  });
+
+  test('findPausedGameIdsForUser returns only this user\'s paused games, not ready/failed/queued ones or another user\'s', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ben' });
+    const otherUser = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cara' });
+
+    const paused = await makeGameForUser(user.id);
+    await analysesRepo.markPaused(db, paused.analysisId, 'No tunnel connection');
+    const ready = await makeGameForUser(user.id);
+    await analysesRepo.markReady(db, ready.analysisId);
+    await makeGameForUser(user.id); // left queued
+    const otherUsersPaused = await makeGameForUser(otherUser.id);
+    await analysesRepo.markPaused(db, otherUsersPaused.analysisId, 'No tunnel connection');
+
+    const gameIds = await analysesRepo.findPausedGameIdsForUser(db, user.id);
+
+    expect(gameIds).toEqual([paused.gameId]);
+  });
+});

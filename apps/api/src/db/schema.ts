@@ -96,7 +96,7 @@ export interface GamesTable {
 export interface AnalysesTable {
   id: Generated<string>;
   gameId: string;
-  status: 'queued' | 'engine_running' | 'planning' | 'ready' | 'failed';
+  status: 'queued' | 'engine_running' | 'planning' | 'ready' | 'failed' | 'paused';
   error: string | null;
   /** 0032_annotated_pgn.ts — replaces `engineEvals`, which was write-only
    * (persisted per chunk during `engine_running`, read back only via

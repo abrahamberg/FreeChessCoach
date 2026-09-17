@@ -96,10 +96,16 @@ export function statusAndActionFor(game: GameListItem): StatusAndAction {
     }
     if (game.analysisStatus === 'ready') return { statusLabel: 'Completed', statusVariant: 'neutral', actionKind: 'reviewCoach' };
     if (game.analysisStatus === 'failed') return { statusLabel: 'Completed', statusVariant: 'neutral' };
+    if (game.analysisStatus === 'paused') return PAUSED_STATUS;
     return { statusLabel: 'Analyzing…', statusVariant: 'neutral', animateStatus: true };
   }
   if (game.analysisStatus === 'ready') return { statusLabel: 'Ready', statusVariant: 'primary', actionKind: 'reviewCoach' };
   if (game.analysisStatus === 'failed') return { statusLabel: 'Failed', statusVariant: 'danger' };
+  // Waiting on the user's own browser tunnel to reconnect (resolve-engine-
+  // backend.ts's backgroundJob option, services/analysis.ts's markPaused) —
+  // distinct from "Analyzing…" below, which would otherwise misleadingly
+  // suggest it's actively making progress right now.
+  if (game.analysisStatus === 'paused') return PAUSED_STATUS;
   // Phase 31 stat-bank import: no `analyses` row yet at all (deferAnalysis)
   // — distinct from every in-progress `analysisStatus` value below, which
   // falls through to the "Analyzing…" default.
@@ -108,6 +114,8 @@ export function statusAndActionFor(game: GameListItem): StatusAndAction {
   }
   return { statusLabel: 'Analyzing…', statusVariant: 'neutral', animateStatus: true };
 }
+
+const PAUSED_STATUS: StatusAndAction = { statusLabel: 'Paused — reopen a tab to resume', statusVariant: 'warning' };
 
 function userSideResult(game: GameListItem): { symbol: string; label: string } | null {
   if (!game.result) return null;

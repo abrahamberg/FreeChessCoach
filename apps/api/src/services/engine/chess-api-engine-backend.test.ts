@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import type { PositionAnalysis } from '@freechesscoach/shared';
 import { computePositionFeatures } from '@freechesscoach/chess-analysis';
+import { EngineUnavailableError } from '../../lib/errors.js';
 import { ChessApiEngineBackend } from './chess-api-engine-backend.js';
 import { ChessApiError, ChessApiMalformedResponseError } from './chess-api-response.js';
 import type { EngineBackend } from './engine-backend.js';
@@ -130,6 +131,22 @@ describe('ChessApiEngineBackend', () => {
     expect(result.eval).toEqual({ cp: null, mateIn: -3 });
   });
 
+  // Regression: chess-api.com has been observed returning `mate` as a
+  // numeric *string* ("9") rather than a number (9) on an otherwise normal
+  // response — Number.isFinite("9") is false, so isUsableLine treated this
+  // as malformed and, without normalizeChessApiLine, it would exhaust
+  // retries and throw ChessApiMalformedResponseError on a perfectly valid
+  // mate line.
+  test('a mate score reported as a numeric string is still accepted and coerced to a number', async () => {
+    const fetchMock = fakeFetch({ move: 'h8f7', san: 'Nf7', eval: 100, mate: '9' });
+    const backend = new ChessApiEngineBackend(5000, fetchMock as unknown as typeof fetch);
+
+    const result = await backend.analyzePosition(START_FEN);
+
+    expect(result.eval).toEqual({ cp: null, mateIn: 9 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   test('a line with neither eval nor mate (undocumented response shape) is retried, then thrown as ChessApiMalformedResponseError once retries are exhausted', async () => {
     vi.useFakeTimers();
     const fetchMock = fakeFetch({ move: 'e2e4', san: 'e4', eval: undefined, mate: null });
@@ -159,6 +176,55 @@ describe('ChessApiEngineBackend', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.eval).toEqual({ cp: 30, mateIn: null });
+    vi.useRealTimers();
+  });
+
+  test('a 429 is retried with backoff, succeeding once chess-api.com stops rate-limiting', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 429, json: () => Promise.resolve(null) })
+      .mockResolvedValueOnce({ ok: false, status: 429, json: () => Promise.resolve(null) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({ move: 'e2e4', san: 'e4', eval: 0.3, mate: null }) });
+    const backend = new ChessApiEngineBackend(5000, fetchMock as unknown as typeof fetch);
+
+    const resultPromise = backend.analyzePosition(START_FEN);
+    await vi.runAllTimersAsync();
+    const result = await resultPromise;
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(result.eval).toEqual({ cp: 30, mateIn: null });
+    vi.useRealTimers();
+  });
+
+  test('a 429 persisting past every retry throws ChessApiRateLimitedError (an EngineUnavailableError), not a generic ChessApiError', async () => {
+    vi.useFakeTimers();
+    const fetchMock = fakeFetch(null, false, 429);
+    const backend = new ChessApiEngineBackend(5000, fetchMock as unknown as typeof fetch);
+
+    const resultPromise = backend.analyzePosition(START_FEN);
+    resultPromise.catch(() => {});
+    await vi.runAllTimersAsync();
+
+    await expect(resultPromise).rejects.toThrow(EngineUnavailableError);
+    // Initial attempt + 3 retries (RATE_LIMIT_RETRY_DELAYS_MS.length).
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    vi.useRealTimers();
+  });
+
+  test('a 429 that outlasts every retry falls back to native, same as any other exhausted failure', async () => {
+    vi.useFakeTimers();
+    const fetchMock = fakeFetch(null, false, 429);
+    const fallback = fakeFallback();
+    vi.spyOn(fallback, 'analyzePosition').mockResolvedValue(fakeNativeResult(START_FEN, 25));
+    const backend = new ChessApiEngineBackend(5000, fetchMock as unknown as typeof fetch, 0, fallback);
+
+    const resultPromise = backend.analyzePosition(START_FEN);
+    await vi.runAllTimersAsync();
+    const result = await resultPromise;
+
+    expect(fallback.analyzePosition).toHaveBeenCalledWith(START_FEN, undefined);
+    expect(result.eval).toEqual({ cp: 25, mateIn: null });
     vi.useRealTimers();
   });
 

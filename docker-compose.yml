@@ -3,6 +3,11 @@ x-node-dev: &node-dev
   working_dir: /app
   volumes:
     - .:/app
+    # Optional — external dir holding lichess-eval-index.bin / puzzle-pool.bin
+    # (set LICHESS_EVAL_INDEX_PATH / PUZZLE_POOL_PATH to matching in-container
+    # paths in .env). Left unset, it's skipped and the repo bind mount above is
+    # used instead. Only api/worker consume these files.
+    - ${LICHESS_EVAL_DATA_HOST_DIR:-/mnt/ssd/applications/pvc-27602c9c-129f-4ca2-922a-6d28e61f16a1_freechesscoach_freechesscoach-lichess-eval-index}:/mnt/ssd/applications/pvc-27602c9c-129f-4ca2-922a-6d28e61f16a1_freechesscoach_freechesscoach-lichess-eval-index
   environment: &node-dev-env
     DATABASE_URL: postgresql://chess_coach:chess_coach@postgres:5432/chess_coach
     ENGINE_URL: http://engine:8081
@@ -25,6 +30,7 @@ x-node-dev: &node-dev
     # with `npm run build-lichess-eval-index -w @freechesscoach/api`, e.g.
     # apps/api/data/lichess-eval-index.bin — no extra volume needed.
     LICHESS_EVAL_INDEX_PATH: ${LICHESS_EVAL_INDEX_PATH:-}
+    PUZZLE_POOL_PATH: ${PUZZLE_POOL_PATH:-}
     LICHESS_EVAL_MIN_DEPTH: ${LICHESS_EVAL_MIN_DEPTH:-16}
     ENGINE_TUNNEL_INTERNAL_TOKEN: ${ENGINE_TUNNEL_INTERNAL_TOKEN:-dev-internal-token}
     API_INTERNAL_URL: http://api:3000

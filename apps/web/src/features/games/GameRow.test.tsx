@@ -95,6 +95,14 @@ describe('GameRow (one consistent card, Daniel\'s IA feedback)', () => {
     expect(screen.queryByRole('button', { name: /review|coach|continue/i })).not.toBeInTheDocument();
   });
 
+  // Distinct from the "Analyzing…" default: paused means waiting on the
+  // user's own browser tunnel to reconnect, not active progress right now.
+  test('shows a "Paused" status, not "Analyzing…", when waiting on the browser tunnel to reconnect', () => {
+    renderRow({ analysisStatus: 'paused' });
+    expect(screen.getByText(/paused/i)).toBeInTheDocument();
+    expect(screen.queryByText('Analyzing…')).not.toBeInTheDocument();
+  });
+
   // architecture §14: a coach_play game never gets an `analyses` row, so it
   // must not fall into the analyze-mode "analyzing…" default forever.
   test('shows an "In progress" status and "Continue" action for an unfinished play-mode game', async () => {

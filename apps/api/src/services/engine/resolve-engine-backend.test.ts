@@ -4,6 +4,7 @@ import { ENGINE_TUNNEL_PER_POSITION_MS } from '@freechesscoach/shared';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import * as usersRepo from '../../db/repositories/users.js';
 import type { Database } from '../../db/schema.js';
+import { EngineUnavailableError } from '../../lib/errors.js';
 import { resolveEngineBackend, resolveRawEngineBackend, type ResolveEngineBackendOptions } from './resolve-engine-backend.js';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
 import type { LichessEvalReader } from './lichess-eval-index.js';
@@ -36,6 +37,7 @@ describe('resolveEngineBackend', () => {
       chessApiRequestDelayMs: 0,
       lichessEvalIndex: null,
       lichessEvalMinDepth: 16,
+      backgroundJob: false,
       ...overrides
     };
   }
@@ -48,6 +50,9 @@ describe('resolveEngineBackend', () => {
   const NATIVE_FEN = `native-${crypto.randomUUID()}`;
   const BROWSER_FEN = `browser-${crypto.randomUUID()}`;
   const CHESS_API_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  const CHESS_API_TUNNELED_FEN = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1';
+  const CHESS_API_JOB_DISCONNECTED_FEN = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2';
+  const CHESS_API_JOB_CONNECTED_FEN = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2';
 
   test('engineMode "native" resolves to a backend that calls the engine HTTP API, not the tunnel', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
@@ -67,23 +72,86 @@ describe('resolveEngineBackend', () => {
     expect(tunnelTransport.request).not.toHaveBeenCalled();
   });
 
-  test('engineMode "chess_api" resolves to a backend that calls chess-api.com, not the engine HTTP API or the tunnel', async () => {
+  // Task: "remove the backend external so external is always used in
+  // frontend" — chess_api never calls chess-api.com directly from this
+  // server any more, interactive or not; when the tunnel is unavailable, an
+  // interactive caller falls back to the *native* engine instead (a
+  // different tier entirely, not "this server asked chess-api.com itself").
+  test('engineMode "chess_api" tries the browser tunnel first, falling back to the native engine (never a direct chess-api.com request) when no tunnel is connected', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cara' });
     await usersRepo.update(db, user.id, { engineMode: 'chess_api' });
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ move: 'e2e4', san: 'e4', eval: 0.3, mate: null }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' }
-      })
+      new Response(
+        JSON.stringify({
+          analysis: { fen: CHESS_API_FEN, depth: 1, multiPv: 1, bestMove: 'Nf3', eval: { cp: 20, mateIn: null }, lines: [], features: {} }
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      )
     );
     vi.stubGlobal('fetch', fetchMock);
-    const tunnelTransport: EngineTunnelTransport = { request: vi.fn() };
+    const tunnelTransport: EngineTunnelTransport = { request: vi.fn().mockRejectedValue(new Error('No tunnel connection')) };
 
     const backend = await resolveEngineBackend(options(tunnelTransport), user.id);
-    await backend.analyzePosition(CHESS_API_FEN);
+    const analysis = await backend.analyzePosition(CHESS_API_FEN);
 
-    expect(fetchMock).toHaveBeenCalledWith('https://chess-api.com/v1', expect.objectContaining({ method: 'POST' }));
-    expect(tunnelTransport.request).not.toHaveBeenCalled();
+    expect(tunnelTransport.request).toHaveBeenCalledWith(
+      user.id,
+      expect.objectContaining({ kind: 'http-fetch', url: 'https://chess-api.com/v1', method: 'POST' }),
+      expect.any(Number)
+    );
+    expect(fetchMock).not.toHaveBeenCalledWith('https://chess-api.com/v1', expect.anything());
+    expect(analysis.bestMove).toBe('Nf3');
+  });
+
+  test('engineMode "chess_api" is served entirely from the browser tunnel when one is connected, never touching this server\'s own network', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cara2' });
+    await usersRepo.update(db, user.id, { engineMode: 'chess_api' });
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const tunnelTransport: EngineTunnelTransport = {
+      request: vi.fn().mockResolvedValue({
+        status: 200,
+        body: JSON.stringify({ move: 'e2e4', san: 'e4', eval: 0.3, mate: null })
+      })
+    };
+
+    const backend = await resolveEngineBackend(options(tunnelTransport), user.id);
+    const analysis = await backend.analyzePosition(CHESS_API_TUNNELED_FEN);
+
+    expect(analysis.bestMove).toBe('e4');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('engineMode "chess_api" as a background job never falls back to a direct request or the native engine when no tunnel is connected', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cara3' });
+    await usersRepo.update(db, user.id, { engineMode: 'chess_api' });
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const tunnelTransport: EngineTunnelTransport = { request: vi.fn().mockRejectedValue(new Error('No tunnel connection')) };
+
+    const backend = await resolveEngineBackend(options(tunnelTransport, { backgroundJob: true }), user.id);
+
+    await expect(backend.analyzePosition(CHESS_API_JOB_DISCONNECTED_FEN)).rejects.toThrow(EngineUnavailableError);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('engineMode "chess_api" as a background job is served entirely from the tunnel when one is connected', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cara4' });
+    await usersRepo.update(db, user.id, { engineMode: 'chess_api' });
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const tunnelTransport: EngineTunnelTransport = {
+      request: vi.fn().mockResolvedValue({
+        status: 200,
+        body: JSON.stringify({ move: 'g1f3', san: 'Nf3', eval: 0.2, mate: null })
+      })
+    };
+
+    const backend = await resolveEngineBackend(options(tunnelTransport, { backgroundJob: true }), user.id);
+    const analysis = await backend.analyzePosition(CHESS_API_JOB_CONNECTED_FEN);
+
+    expect(analysis.bestMove).toBe('Nf3');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test('engineMode "browser" resolves to a backend that calls the tunnel transport, not the engine HTTP API', async () => {
