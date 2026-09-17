@@ -3,17 +3,39 @@ import type { LlmModelTestResult, LlmProtocol, LlmSetup, LlmSetupTestResponse } 
 const PROBE_PROMPT = 'Reply with exactly OK.';
 const REQUEST_TIMEOUT_MS = 15_000;
 
+/** OpenAI's gpt-5.4+ reasoning models reject function tools combined with
+ * reasoning_effort over /v1/chat/completions outright ("use /v1/responses
+ * instead"), even though a tool-free probe passes fine on both formats. A
+ * live probe race between the two can't detect that reliably — a single
+ * flaky /responses request falls back to a chat-completions "pass" that then
+ * breaks every real coaching turn, since those always use tools. Deciding
+ * from the model name instead makes the choice deterministic. Anything not
+ * shaped like a numbered OpenAI model (OpenRouter's gpt-compatible aliases,
+ * local proxies, etc.) is assumed compatible with chat completions, which is
+ * the more widely supported format among those. */
+export function requiresOpenAiResponsesApi(model: string): boolean {
+  const match = /^gpt-(\d+)(?:\.(\d+))?/.exec(model.trim());
+  if (!match) return false;
+  const major = Number(match[1]);
+  const minor = match[2] ? Number(match[2]) : 0;
+  return major > 5 || (major === 5 && minor >= 4);
+}
+
 /** Tests each configured model with a tiny request. A successful pair selects
  * the wire format used later by the gateway; a voice probe is independent and
  * therefore never makes text coaching unavailable. */
 export async function testLlmSetup(setup: LlmSetup): Promise<LlmSetupTestResponse> {
   const candidates: ProtocolTest[] = [];
-  // Responses is tried before Chat Completions: reasoning models (e.g. OpenAI's
-  // gpt-5.6 family) reject function tools + reasoning_effort together on
-  // /chat/completions ("use /v1/responses instead") even though this simple,
-  // tool-free probe succeeds on both — picking Chat here would pass the test
-  // and then fail every real coaching call, which uses tools.
-  for (const protocol of ['openai-responses', 'openai-chat', 'anthropic'] as const) {
+  const needsResponses = requiresOpenAiResponsesApi(setup.lowModel) || requiresOpenAiResponsesApi(setup.highModel);
+  // Chat completions can never work for a gpt-5.4+ pairing, so it's left out
+  // of the order entirely rather than risked as a fallback (see
+  // requiresOpenAiResponsesApi). Everything else tries chat first since it's
+  // the more universally supported format, falling back to Responses only if
+  // the endpoint rejects chat outright.
+  const protocolOrder: readonly LlmProtocol[] = needsResponses
+    ? ['openai-responses', 'anthropic']
+    : ['openai-chat', 'openai-responses', 'anthropic'];
+  for (const protocol of protocolOrder) {
     const candidate = await testProtocol(setup, protocol);
     candidates.push(candidate);
     if (candidate.low.ok && candidate.high.ok) break;
