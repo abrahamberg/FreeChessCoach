@@ -3158,14 +3158,34 @@ mechanism.
 **Files:** `packages/prompts/src/coach-session-flow.ts`,
 `packages/prompts/src/coach-method.ts`.
 
-- [ ] Prompt guidance (feeds Task 63.1's closing beat) letting the coach's
+- [x] Prompt guidance (feeds Task 63.1's closing beat) letting the coach's
       homework be one of: an in-app focused session (Task 66.2), a named
       external recommendation ("50 Lichess puzzles tagged fork"), or a
       suggested next opponent (a specific bot difficulty, up or down from
       what they've been playing) — concrete and specific rather than vague
       "keep practicing" text, matching the standing homework field (no new
       schema needed unless a later task wants these structured).
-- [ ] Commit: `feat: coach can recommend external practice or a bot matchup as homework`.
+- [x] Commit: `feat: coach can recommend external practice or a bot matchup as homework`.
+
+**Done:** New exported `HOMEWORK_OPTIONS` section in `coach-method.ts`,
+placed right after `FOCUS_AREA_LIFECYCLE` in `buildStaticPart` (same cached,
+user-invariant tier) — names the three concrete forms homework can take
+(the `assign_focused_session` tool from Task 66.2, a specifically-named
+external recommendation, or a specific next bot opponent/tier) and forbids
+stacking more than one or falling back to vague "keep practicing" text. Both
+`coach-session-flow.ts` closing paragraphs now point at it by name (`(see
+"Homework, made concrete")`) right where they already say "give your
+summary and homework," the same cross-reference pattern Task 64.4 used for
+`FOCUS_AREA_LIFECYCLE`. Also added both of these as new pairs in
+`coach-system.refs.test.ts`'s hand-maintained cross-reference list — Task
+64.4 had left its own "(see 'The focus-area loop')" reference unguarded
+there, so this closes that gap too rather than repeating it. No new schema:
+homework stays the existing free-text field on `SessionOutcome`/
+`end_session`, same as the plan called for.
+
+This closes out Phase 66 — all three tasks are now checked off, and with
+it every phase from the original "coach didn't update my progress" report
+through this final polish task.
 
 ---
 

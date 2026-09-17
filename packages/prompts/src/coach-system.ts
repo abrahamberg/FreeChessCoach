@@ -7,6 +7,7 @@ import {
   FOCUS_AREA_LIFECYCLE,
   FORMATTING,
   GROUND_TRUTH,
+  HOMEWORK_OPTIONS,
   SESSION_GOALS,
   WHO_YOU_ARE,
   howYouRunTheSession
@@ -105,6 +106,7 @@ function buildStaticPart(band: RatingBand, mode: SessionMode, persona: CoachPers
     howYouRunTheSession(calibration.revealDepthPlies),
     SESSION_GOALS,
     FOCUS_AREA_LIFECYCLE,
+    HOMEWORK_OPTIONS,
     FORMATTING,
     yourToolsAndWhenToUseThem(mode),
     CONVERSATION_THREADING,

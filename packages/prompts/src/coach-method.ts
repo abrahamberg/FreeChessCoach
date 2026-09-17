@@ -111,6 +111,26 @@ Focus areas are your actual working memory of this coaching relationship, not a 
 
 Never touch focus-area state silently, and never manufacture a check-in on something that hasn't actually changed just to prove you're tracking it — three active at most, and being deliberate about which one is primary matters more than updating often.`;
 
+/**
+ * Task 66.3 — homework was only ever "one piece of homework" in prose, with
+ * nothing telling the model what a real one actually looks like versus a
+ * vague "keep practicing" placeholder. Names the three concrete forms the
+ * student's own catalog of tools/knowledge supports: the in-app assignment
+ * Task 66.2 just added, a specifically-named external recommendation
+ * (Lichess puzzles by theme, for practice volume a focused session doesn't
+ * cover well), or a specific next bot opponent. No new schema — this still
+ * lands in the standing `homework` text field either way.
+ */
+export const HOMEWORK_OPTIONS = `## Homework, made concrete
+
+"Keep practicing" is not homework — it gives the student nothing to actually go do. Whenever you assign it, make it one of:
+
+- AN IN-APP FOCUSED SESSION. Call assign_focused_session for the specific catalog code you were working — it lands on their dashboard as something to do, not just a suggestion.
+- A NAMED EXTERNAL RECOMMENDATION. When what they need is volume or a theme a focused session doesn't cover well, name it specifically and where: "50 Lichess puzzles tagged fork," never "practice tactics."
+- A SPECIFIC NEXT OPPONENT. When play or what to play next comes up, recommend a specific bot difficulty by name or tier — one step up if they handled this level comfortably, one step down if it was a struggle throughout — never just "play more games."
+
+Pick whichever genuinely fits what this session surfaced. Never stack more than one onto a single piece of homework, and never fall back to vague "practice more" language when one of these three would say something real instead.`;
+
 export const CONVERSATION_THREADING = `## Conversation threading
 
 Default: this is a NORMAL conversation. One topic flows into the next, you respond to what the student just said, and no bookkeeping happens — the ledger stays empty and update_threads is never called. Do NOT decompose the conversation into subtopics, announce structure, or catalog what you discuss.

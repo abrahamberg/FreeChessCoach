@@ -21,7 +21,9 @@ const CROSS_REFERENCES: { reference: string; anchor: string }[] = [
   { reference: "ENGINE_VISIBILITY is invoked by howYouRunTheSession's closing line ('See \"Engine visibility\" below')", anchor: '## Engine visibility' },
   { reference: "PERSONA_VOICE's BOARD_DISCIPLINE_REMINDER refers to show_position discipline defined in howYouRunTheSession", anchor: 'show_position' },
   { reference: "CONVERSATION_THREADING's durable-memory note refers to record_move_note, defined in yourToolsAndWhenToUseThem", anchor: 'record_move_note' },
-  { reference: "GROUND_TRUTH points at check_moves as the free legality check every unverified move goes through", anchor: 'check_moves' }
+  { reference: "GROUND_TRUTH points at check_moves as the free legality check every unverified move goes through", anchor: 'check_moves' },
+  { reference: "both session flows' closing lines invoke FOCUS_AREA_LIFECYCLE ('see \"The focus-area loop\"')", anchor: '## The focus-area loop' },
+  { reference: "both session flows' closing lines invoke HOMEWORK_OPTIONS ('see \"Homework, made concrete\"')", anchor: '## Homework, made concrete' }
 ];
 
 describe('coach-system.ts internal cross-references', () => {
