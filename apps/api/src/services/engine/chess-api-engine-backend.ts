@@ -62,15 +62,14 @@ const CIRCUIT_BREAKER_CONSECUTIVE_FAILURES = 3;
  * just over the network (and paced, since this network has a stranger on
  * the other end) instead.
  *
- * `fallback`, when given (never for a background job — see resolve-engine-
- * backend.ts's backgroundJob option), takes over one specific position if
+ * `fallback`, when given, takes over one specific position if
  * chess-api.com can't produce a usable result for it (a non-2xx status, a
  * timeout, or a malformed response surviving all of request()'s retries) —
- * the rest of the user's session still runs on chess_api. This doesn't
- * violate the "no fallback, ever" rule elsewhere in this codebase (see
- * EngineUnavailableError's doc comment): that rule is about never silently
- * swapping a user's *chosen* engine identity for cache-correctness reasons.
- * resolve-engine-backend.ts wraps this whole class — fallback included — in
+ * the rest of the user's session still runs on chess_api. This is the
+ * selected-method stage of the shared pipeline; the fallback is
+ * deliberately hidden behind the same engine contract so callers do not need
+ * to know which reliable source produced the answer. resolve-engine-
+ * backend.ts wraps this whole class — fallback included — in
  * one uniform isExternalSource: true for chess_api, so whichever of
  * chess-api.com-via-tunnel or this `fallback` actually served a given
  * position, the cache write it produces is tagged the same way —

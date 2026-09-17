@@ -28,9 +28,10 @@ export class ChessApiError extends HttpError {
  * on purpose — this is a request that could genuinely no longer be served,
  * not a data-shape problem — so it's picked up for free by the two places
  * that already know how to react to that: ChessApiEngineBackend's own
- * `fallback` (falls back to native for an interactive caller — see its own
- * doc comment) and jobs/analyze-game.ts's runAnalyzeGameJob, which pauses a
- * background job instead of failing it outright. Pausing isn't a perfect
+ * `fallback` (the shared engine pipeline's next reliable stage — see its own
+ * doc comment) and jobs/analyze-game.ts's runAnalyzeGameJob, which records an
+ * exhausted pipeline instead of treating the upstream response as a valid
+ * evaluation. Pausing isn't a perfect
  * answer here (unlike a dropped tunnel, chess-api.com being rate-limited
  * doesn't reliably clear the moment the tunnel reconnects — routes/engine-
  * tunnel.ts's resume trigger), but RATE_LIMIT_RETRY_DELAYS_MS is long enough

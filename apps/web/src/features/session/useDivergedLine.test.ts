@@ -146,6 +146,71 @@ describe('useDivergedLine', () => {
     });
   });
 
+  // Bug this guards against: show_position always lands on the position
+  // AFTER a move (its "real, final position"), so proposing the move that
+  // should have replaced the one played there — off the CURRENT position —
+  // applied the alternative to the wrong side to move. `base` lets the coach
+  // name the position one ply earlier instead, where it's actually that
+  // side's turn.
+  test('hypothetical_line with a base address starts the line from that real-game position instead of the current one', () => {
+    const { result } = renderHook(() => useDivergedLine());
+    // ply 2 = after 1.e4 e5, White to move for move 2 — a different, earlier
+    // position than REAL (ply 4), where Bc4 is White's move rather than a
+    // move for whichever side REAL happens to have on the move.
+    const earlierPosition = { ply: 2, fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2' };
+    const positions = [earlierPosition, REAL];
+
+    let toolResult: unknown;
+    act(() => {
+      toolResult = result.current.handleToolCall(
+        // moveRefToPly(1, 'black') === 2 — addressed the same way
+        // show_position would address that same position.
+        { toolCallId: '1', toolName: 'hypothetical_line', input: { moves: ['Bc4'], base: { moveNumber: 1, color: 'black' } } },
+        REAL,
+        positions
+      );
+    });
+
+    expect(result.current.line?.basePly).toBe(2);
+    expect(result.current.line?.baseFen).toBe(earlierPosition.fen);
+    expect(result.current.line?.moves[0]?.san).toBe('Bc4');
+    expect(toolResult).toEqual(expect.objectContaining({ ok: true, basePly: 2, moves: [{ san: 'Bc4' }] }));
+  });
+
+  test('hypothetical_line base falls back to the current real position when the address does not resolve to a known ply', () => {
+    const { result } = renderHook(() => useDivergedLine());
+
+    act(() => {
+      result.current.handleToolCall(
+        { toolCallId: '1', toolName: 'hypothetical_line', input: { moves: ['a4'], base: { moveNumber: 99, color: 'white' } } },
+        REAL,
+        [REAL]
+      );
+    });
+
+    expect(result.current.line?.basePly).toBe(REAL.ply);
+    expect(result.current.line?.baseFen).toBe(REAL.fen);
+  });
+
+  test('hypothetical_line base is ignored once a line is already active — it keeps extending, not restarting', () => {
+    const { result } = renderHook(() => useDivergedLine());
+
+    act(() => {
+      result.current.appendMove(MOVE_A, REAL);
+    });
+    act(() => {
+      result.current.handleToolCall(
+        { toolCallId: '1', toolName: 'hypothetical_line', input: { moves: ['Nf6'], base: { moveNumber: 1, color: 'white' } } },
+        REAL,
+        [REAL]
+      );
+    });
+
+    expect(result.current.line?.basePly).toBe(REAL.ply);
+    expect(result.current.line?.moves).toHaveLength(2);
+    expect(result.current.line?.moves[1]?.san).toBe('Nf6');
+  });
+
   test('hypothetical_line extends an already-active line instead of restarting it', () => {
     const { result } = renderHook(() => useDivergedLine());
 

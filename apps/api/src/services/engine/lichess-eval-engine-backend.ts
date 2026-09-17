@@ -1,15 +1,10 @@
 import { computePositionFeatures, pvUciToSan } from '@freechesscoach/chess-analysis';
-import { ENGINE_DEFAULT_DEPTH, type EngineEval, type PositionAnalysis, type PositionAnalysisLine } from '@freechesscoach/shared';
+import type { EngineEval, PositionAnalysis, PositionAnalysisLine } from '@freechesscoach/shared';
 import { toLeanEval } from './caching-engine-backend.js';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';
 import type { LichessEvalLookupResult, LichessEvalReader } from './lichess-eval-index.js';
 
 export interface LichessEvalEngineBackendOptions {
-  /** A hit shallower than this is treated as a miss and falls through to
-   * `fallback` — defaults to ENGINE_DEFAULT_DEPTH, the same floor every
-   * other backend targets, so callers never silently get a shallower
-   * evaluation than they'd otherwise receive. */
-  minDepth?: number;
   /** Invoked once per successful analyzePosition/analyzeGame call (after
    * `fallback` has resolved, so a failed call never gets counted) with how
    * many of its positions were served directly from the index vs fell
@@ -26,14 +21,13 @@ export interface LichessEvalEngineBackendOptions {
  * deliberately, never written to position_evaluations: that table exists to
  * cache *this app's own* engine calls, and duplicating data that's already
  * durably available in this read-only index would only cost storage for no
- * benefit. A miss, or a hit shallower than `minDepth`, falls straight
- * through to `fallback` unchanged — normally CachingEngineBackend(raw), so
+ * benefit. A miss falls straight through to `fallback` unchanged — normally
+ * CachingEngineBackend(raw), so
  * its own caching/pruning behavior for genuinely Lichess-unseen positions is
  * untouched. Intended as the new outermost layer in resolveEngineBackend,
  * applied uniformly across every engineMode.
  */
 export class LichessEvalEngineBackend implements EngineBackend {
-  private readonly minDepth: number;
   private readonly onLookup?: (counts: { hits: number; misses: number }) => void;
 
   constructor(
@@ -41,12 +35,11 @@ export class LichessEvalEngineBackend implements EngineBackend {
     private readonly fallback: EngineBackend,
     options: LichessEvalEngineBackendOptions = {}
   ) {
-    this.minDepth = options.minDepth ?? ENGINE_DEFAULT_DEPTH;
     this.onLookup = options.onLookup;
   }
 
   async analyzePosition(fen: string, opts?: EngineBackendAnalyzeOptions): Promise<PositionAnalysis> {
-    const hit = await this.lookupHit(fen, opts);
+    const hit = await this.lookupHit(fen);
     if (hit) {
       this.onLookup?.({ hits: 1, misses: 0 });
       return hit;
@@ -58,7 +51,7 @@ export class LichessEvalEngineBackend implements EngineBackend {
   }
 
   async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
-    const hits = await Promise.all(fens.map((fen) => this.lookupHit(fen, opts)));
+    const hits = await Promise.all(fens.map((fen) => this.lookupHit(fen)));
     const missedPlies = hits.flatMap((hit, ply) => (hit ? [] : [ply]));
 
     const computed =
@@ -69,10 +62,9 @@ export class LichessEvalEngineBackend implements EngineBackend {
     return hits.map((hit, ply) => (hit ? { ...toLeanEval(hit), ply } : { ...computedByPly.get(ply)!, ply }));
   }
 
-  private async lookupHit(fen: string, opts?: EngineBackendAnalyzeOptions): Promise<PositionAnalysis | null> {
-    const minDepth = Math.max(this.minDepth, opts?.depth ?? ENGINE_DEFAULT_DEPTH);
+  private async lookupHit(fen: string): Promise<PositionAnalysis | null> {
     const result = await this.index.lookup(fen);
-    if (!result || result.depth < minDepth) return null;
+    if (!result) return null;
     return toPositionAnalysis(fen, result);
   }
 }

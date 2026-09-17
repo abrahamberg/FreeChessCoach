@@ -157,6 +157,8 @@ assert_not_matches "no password literal in the rendered DATABASE_URL" \
 
 assert_contains "unlock secrets come from secretKeyRef" "secretKeyRef" "$OURS"
 assert_contains "unlock secrets reference the llm-unlock-secrets secret" "name: llm-unlock-secrets" "$OURS"
+assert_contains "redis URL is ordinary configured deployment data" "redis://your-redis-host:6379" "$OURS"
+assert_not_matches "redis URL is not read from a Secret" 'key: redis-url' "$OURS"
 assert_contains "external database URL references the configured Secret" \
   "name: freechesscoach-database-url" "$OURS"
 

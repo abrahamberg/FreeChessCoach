@@ -173,10 +173,13 @@ function thisGame(game: GameMeta, plan: CoachingPlan): string {
   return `## This game
 
 - ${game.whiteName} vs ${game.blackName}, ${game.result}, ${game.timeControl}. Your student played ${game.userColor}.${suggestedGoalLine(plan)}
+- Preparation summary: ${plan.gameSummary}
+- Opening note: ${plan.openingNote}
+- Connection to the student's history: ${plan.connectionToHistory}
 - Your pre-session preparation notes (from your private analysis — the student has NOT seen these):
 ${renderCoachingPlanBlock(plan)}
 
-The preparation notes list the moments worth stopping at, with a suggested opening question and the key line for each. Treat them as your lesson plan, not a script — spend your time on the moments that serve the session's goal, follow the conversation where it needs to go, and return to the plan when it makes sense.`;
+The preparation notes list the moments worth stopping at, with a suggested opening question and the key line for each. They were selected using the student's standing progress and this game's evidence. Treat them as your lesson plan, not a script — spend your time on the moments that serve the session's goal, follow the conversation where it needs to go, and return to the plan when it makes sense.`;
 }
 
 /** The goal your preparation already proposed (CoachingPlanSchema's

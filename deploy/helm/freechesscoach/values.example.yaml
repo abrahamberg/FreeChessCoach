@@ -6,8 +6,7 @@
 #     --from-literal=replication-password="$(openssl rand -base64 24)"
 #   kubectl create secret generic llm-unlock-secrets \
 #     --from-literal=pepper="$(openssl rand -base64 32)" \
-#     --from-literal=cache-key="$(openssl rand -base64 32)" \
-#     --from-literal=redis-url=redis://your-redis-host:6379
+#     --from-literal=cache-key="$(openssl rand -base64 32)"
 #   kubectl create secret generic oauth-clients \
 #     --from-literal=client-id=... --from-literal=client-secret=... \
 #     --from-literal=cookie-secret="$(openssl rand -base64 32 | head -c 32)"
@@ -66,7 +65,7 @@ llm:
     existingSecret: llm-unlock-secrets
     pepperKey: pepper
     cacheKey: cache-key
-    redisUrlKey: redis-url
+    redisUrl: redis://your-redis-host:6379
     ttlSeconds: 900
 
 database:

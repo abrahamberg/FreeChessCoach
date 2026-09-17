@@ -18,6 +18,10 @@ export interface ChatPaneProps {
   activeToolName: string | null;
   /** design.md §5.7: shows the delayed 3-dot typing indicator. */
   isThinking?: boolean;
+  /** useCoachChat's `thinkingLabel` — replaces the generic dots-only
+   * indicator with a labeled one (e.g. "Studying your game…") during the
+   * session's kickoff turn. */
+  thinkingLabel?: string | null;
   onSend: (content: string) => void;
   /** Clicking a PositionDivider jumps the board to that ply (peek mode). */
   onSelectPly?: (ply: number) => void;
@@ -72,6 +76,7 @@ export function ChatPane({
   messages,
   activeToolName,
   isThinking = false,
+  thinkingLabel = null,
   onSend,
   onSelectPly,
   boardArrows,
@@ -126,7 +131,7 @@ export function ChatPane({
         playingMessageId={playingMessageId}
         loadingMessageId={loadingMessageId}
       />
-      <ThinkingIndicator visible={isThinking} />
+      <ThinkingIndicator visible={isThinking} label={thinkingLabel} />
       <ToolActivity toolName={activeToolName} />
       <ChatComposer onSend={onSend} boardArrows={boardArrows} hasPendingLine={hasPendingLine} />
     </div>

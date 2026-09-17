@@ -40,9 +40,9 @@ export async function analyzeGameViaEngine(
  * own default) — position_evaluations caches by `fen` alone, so a caller
  * requesting a different depth would silently corrupt that cache for
  * everyone else. The one caller that does pass `depth` today is the "Play
- * vs Bot" plan's bot move-selection engine, which always goes through
- * resolveRawEngineBackend (bypassing CachingEngineBackend entirely), so
- * this cache-correctness concern doesn't apply to it. */
+ * vs Bot" plan's bot move-selection engine, which uses the same source
+ * pipeline but bypasses only CachingEngineBackend, so this cache-correctness
+ * concern doesn't apply to it. */
 export async function analyzePositionViaEngine(
   engineUrl: string,
   fen: string,

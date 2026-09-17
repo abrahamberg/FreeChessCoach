@@ -158,6 +158,71 @@ describe('useCoachChat', () => {
     expect(result.current.isThinking).toBe(false);
   });
 
+  // Before this fix, the placeholder assistant bubble (and so isThinking)
+  // only appeared once `fetch` resolved — on a fresh game's first turn, the
+  // server blocks on a coaching-plan LLM call before it ever sends response
+  // headers (coaching-plan.ts's ensureCoachingPlan, called from startTurn
+  // before reply.hijack()), so the UI showed nothing at all for however long
+  // that took. The placeholder now has to exist the instant a turn starts.
+  test('isThinking is true immediately when a turn starts, even before the network response arrives', async () => {
+    let resolveFetch!: (response: Response) => void;
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => useCoachChat('session-1'));
+    expect(result.current.isThinking).toBe(false);
+
+    act(() => {
+      void result.current.sendMessage('hi');
+    });
+    expect(result.current.isThinking).toBe(true);
+
+    await act(async () => {
+      resolveFetch(streamResponse([...textFrames('hi there')]));
+    });
+    expect(result.current.isThinking).toBe(false);
+  });
+
+  test('kickoff sets a "Studying your game…" thinking label while the first turn is in flight; sendMessage never does', async () => {
+    let resolveFetch!: (response: Response) => void;
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => useCoachChat('session-1'));
+    expect(result.current.thinkingLabel).toBeNull();
+
+    act(() => {
+      void result.current.kickoff();
+    });
+    expect(result.current.isThinking).toBe(true);
+    expect(result.current.thinkingLabel).toBe('Studying your game…');
+
+    await act(async () => {
+      resolveFetch(streamResponse([...textFrames('Welcome back!')]));
+    });
+    expect(result.current.thinkingLabel).toBeNull();
+  });
+
+  test('sendMessage never sets the kickoff thinking label', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(streamResponse([...textFrames('Hello')]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => useCoachChat('session-1'));
+    act(() => {
+      void result.current.sendMessage('hi');
+    });
+    expect(result.current.thinkingLabel).toBeNull();
+    await waitFor(() => expect(result.current.isThinking).toBe(false));
+  });
+
   test('kickoff posts an empty body (resumes the pending [session_start] turn) without adding a user bubble', async () => {
     const fetchMock = vi.fn().mockResolvedValue(streamResponse([...textFrames('Welcome back!')]));
     vi.stubGlobal('fetch', fetchMock);

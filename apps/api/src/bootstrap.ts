@@ -1,4 +1,4 @@
-import { ENGINE_DEFAULT_DEPTH, OpenAiServiceTierSchema, ReasoningEffortSchema } from '@freechesscoach/shared';
+import { OpenAiServiceTierSchema, ReasoningEffortSchema } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { Database } from './db/schema.js';
 import type { JobQueue } from './jobs/queue.js';
@@ -131,12 +131,6 @@ export function buildTtsConfigFromEnv(): TtsConfig | undefined {
  * openLichessEvalIndexFromEnv — and threaded through here rather than
  * opened by this function, which stays synchronous so its existing
  * env-parsing tests don't need to become async.
- *
- * LICHESS_EVAL_MIN_DEPTH floors how deep a Lichess index hit must be before
- * it's trusted in place of a fresh engine call — defaults to
- * ENGINE_DEFAULT_DEPTH, the same depth every other backend targets, so a
- * hit never silently under-delivers relative to what a live call would have
- * produced.
  */
 export function buildResolveEngineBackendOptions(
   db: Kysely<Database>,
@@ -156,7 +150,6 @@ export function buildResolveEngineBackendOptions(
     chessApiTimeoutMs: parsePositiveInt('CHESS_API_TIMEOUT_MS', 15000),
     chessApiRequestDelayMs: parsePositiveInt('CHESS_API_REQUEST_DELAY_MS', 100),
     lichessEvalIndex,
-    lichessEvalMinDepth: parsePositiveInt('LICHESS_EVAL_MIN_DEPTH', ENGINE_DEFAULT_DEPTH),
     backgroundJob
   };
 }
@@ -184,7 +177,10 @@ export function buildResolveEngineBackendOptions(
  * problem worth surfacing loudly. */
 export async function openLichessEvalIndexFromEnv(): Promise<LichessEvalIndex | null> {
   const filePath = process.env.LICHESS_EVAL_INDEX_PATH;
-  if (!filePath) return null;
+  if (!filePath) {
+    console.warn('LICHESS_EVAL_INDEX_PATH is not set; the Lichess eval index is disabled and positions will use the engine path.');
+    return null;
+  }
   try {
     return await LichessEvalIndex.open(filePath);
   } catch (error) {
@@ -196,10 +192,25 @@ export async function openLichessEvalIndexFromEnv(): Promise<LichessEvalIndex | 
     }
     if (error instanceof LichessEvalIndexFormatError) {
       console.warn(
-        `LICHESS_EVAL_INDEX_PATH is set to "${filePath}" but it isn't a v2-format index yet (${error.message}) — skipping the Lichess eval tier until it's rebuilt.`
+        `LICHESS_EVAL_INDEX_PATH is set to "${filePath}" but it isn't a v3-format index yet (${error.message}) — skipping the Lichess eval tier until it's rebuilt.`
+      );
+      return null;
+    }
+    if (isUnreadableFileError(error)) {
+      console.warn(
+        `LICHESS_EVAL_INDEX_PATH is set to "${filePath}" but the file cannot be read (${describeError(error)}) — skipping the Lichess eval tier and using the engine path.`
       );
       return null;
     }
     throw error;
   }
+}
+
+function isUnreadableFileError(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException).code;
+  return code === 'EACCES' || code === 'EPERM' || code === 'EISDIR' || code === 'ENOTDIR';
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

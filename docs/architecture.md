@@ -141,16 +141,35 @@ Single purpose service.
 
 ## Lichess evaluation index
 
-A read-only, pre-built lookup checked ahead of the engine chain
-(`resolveEngineBackend` → `LichessEvalEngineBackend` →
-`CachingEngineBackend` → native/browser/chess_api — see
-`apps/api/src/services/engine/`) for a position the Lichess community has
-already evaluated (~394M positions, published at
-https://database.lichess.org/#evals, CC0). A hit skips the live engine call
-entirely and is never written to `position_evaluations`: that table exists
-to cache the app's own engine calls, and duplicating data already durably
-available here would only cost storage for no benefit. A miss falls through
-unchanged to the existing cache/engine chain.
+A read-only, pre-built lookup is the first stage of the one engine pipeline
+used by every caller: game review, coach positions, hints, and Play vs Bot.
+The priority contract is:
+
+```text
+Lichess eval index
+    ↓ miss only
+user-selected method (chess_api, native, or browser-full)
+    ↓ unavailable only
+configured reliable fallback (native where applicable)
+    ↓ too few candidate lines only
+browser-lite breadth supplement
+```
+
+`LichessEvalEngineBackend` is the outermost decorator, so any index hit
+returns immediately and never invokes the selected method, a fallback, or
+browser-lite. The bot's move algorithm receives the resulting reliable
+candidate lines and is responsible for intentional mistakes; engine
+selection and bot weakening are separate concerns.
+
+The index contains positions the Lichess community has already evaluated
+(~394M positions, published at https://database.lichess.org/#evals, CC0). A
+hit skips the live engine call entirely and is never written to
+`position_evaluations`: that table exists to cache the app's own
+selected/fallback engine calls, and duplicating data already durably available
+here would only cost storage for no benefit. A miss falls through to the next
+pipeline stage. Bot searches bypass only the FEN-only cache because their
+requested depth and candidate breadth differ; they do not bypass any
+source-priority stage.
 
 Deliberately **not** a database engine: the data is immutable at runtime
 (read-only lookups by FEN, no writes), so this is a single sorted,
@@ -315,9 +334,10 @@ Sessions can be resumed after disconnects or restarts.
 
 ### Engine is authoritative
 
-Only server-side Stockfish evaluations are trusted.
-
-Browser analysis is advisory only.
+The Lichess index and the selected/fallback main engine stages are trusted
+sources for the pipeline contract. Browser-lite is supplementary only: it can
+add candidate lines, but it never replaces the main source's top line and is
+never used as the official cached evaluation.
 
 ### Context remains bounded
 

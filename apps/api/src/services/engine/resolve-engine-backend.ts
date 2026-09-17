@@ -9,6 +9,7 @@ import { ChessApiEngineBackend } from './chess-api-engine-backend.js';
 import type { EngineBackend } from './engine-backend.js';
 import { EngineSourceLoggingBackend, logEngineSourceUsage, type EngineSource } from './engine-source-usage.js';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
+import { FallbackEngineBackend } from './fallback-engine-backend.js';
 import { LichessEvalEngineBackend } from './lichess-eval-engine-backend.js';
 import type { LichessEvalReader } from './lichess-eval-index.js';
 import { LiteSupplementedEngineBackend } from './lite-supplemented-engine-backend.js';
@@ -27,16 +28,10 @@ export interface ResolveEngineBackendOptions {
    * opened per call — null when LICHESS_EVAL_INDEX_PATH isn't set, in which
    * case the Lichess tier is skipped entirely and behavior is unchanged. */
   lichessEvalIndex: LichessEvalReader | null;
-  lichessEvalMinDepth: number;
-  /** True only for options built in worker.ts (jobs/analyze-game.ts,
-   * jobs/deepen-analysis.ts) — false for options built in server.ts
-   * (interactive routes). chess_api mode never calls chess-api.com from this
-   * server itself any more, in either case (see tunnel-fetch.ts) — this only
-   * decides what happens once the tunnel is gone too: a background job never
-   * falls back to the native engine either, it pauses instead
-   * (jobs/analyze-game.ts) and resumes once the tunnel reconnects
-   * (routes/engine-tunnel.ts); an interactive, low-volume caller keeps native
-   * as a last resort so a live, user-facing feature doesn't hard-fail. */
+  /** True for options built in worker.ts (background jobs), false for
+   * interactive routes. The pipeline contract is the same in both cases;
+   * this remains part of the options surface for callers that need to label
+   * the request as background work. */
   backgroundJob: boolean;
 }
 
@@ -53,70 +48,63 @@ export interface ResolveEngineBackendOptions {
  */
 export async function resolveEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
   const { raw, mode } = await resolveRawBackendForUser(options, userId);
-  // 'chess_api' now reaches chess-api.com through the user's own browser
-  // tunnel when one is connected (see tunnel-fetch.ts), falling back to a
-  // direct server call otherwise — either way, the result can no longer be
-  // assumed to have come only from this server, so it gets the same
-  // external/untrusted cache tier as 'browser' mode. Only 'native' evals are
-  // internal.
+  return buildEnginePipeline(options, userId, raw, mode, { cache: true, supplementBreadth: true });
+}
+
+/**
+ * Resolves the same engine pipeline as resolveEngineBackend, but without the
+ * standard position_evaluations cache. Bot searches request a different
+ * depth/multiPv than official analysis, so sharing that FEN-only cache would
+ * be incorrect. The source priority remains identical: Lichess first,
+ * selected user method next, then the configured fallback/supplement stages.
+ */
+export async function resolveRawEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
+  const { raw, mode } = await resolveRawBackendForUser(options, userId);
+  return buildEnginePipeline(options, userId, raw, mode, { cache: false, supplementBreadth: true });
+}
+
+interface EnginePipelineOptions {
+  cache: boolean;
+  supplementBreadth: boolean;
+}
+
+/**
+ * The one source-order contract shared by review, interactive analysis, hints,
+ * and bot move generation:
+ *
+ *   Lichess index -> selected user method -> fallback/supplement stages
+ *
+ * Lichess is the outermost decorator intentionally. A successful lookup
+ * returns immediately and cannot invoke a selected engine or browser-lite.
+ * Browser-lite is inside the Lichess decorator, so it can only widen a result
+ * after the selected method was actually needed and returned too few lines.
+ */
+function buildEnginePipeline(
+  options: ResolveEngineBackendOptions,
+  userId: string,
+  selectedBackend: EngineBackend,
+  mode: EngineMode,
+  pipeline: EnginePipelineOptions
+): EngineBackend {
   const isExternalSource = mode === 'browser' || mode === 'chess_api';
-  const cached = new CachingEngineBackend(options.db, raw, { isExternalSource });
-  // Same internal/external split, reused for the engine-source-usage
-  // analytics log (see engine-source-usage.ts) rather than cache trust.
   const fallbackSource: Extract<EngineSource, 'internalEngine' | 'externalEngine'> = isExternalSource
     ? 'externalEngine'
     : 'internalEngine';
 
-  if (!options.lichessEvalIndex) return new EngineSourceLoggingBackend(cached, userId, fallbackSource);
+  let backend = selectedBackend;
+  if (pipeline.cache) backend = new CachingEngineBackend(options.db, backend, { isExternalSource });
+  if (pipeline.supplementBreadth) {
+    backend = new LiteSupplementedEngineBackend(backend, options.tunnelTransport, userId, {
+      timeoutMs: options.tunnelTimeoutMs,
+      mainBucket: mainBucketFor(mode)
+    });
+  }
 
-  return new LichessEvalEngineBackend(options.lichessEvalIndex, cached, {
-    minDepth: options.lichessEvalMinDepth,
+  if (!options.lichessEvalIndex) return new EngineSourceLoggingBackend(backend, userId, fallbackSource);
+
+  return new LichessEvalEngineBackend(options.lichessEvalIndex, backend, {
     onLookup: ({ hits, misses }) => logEngineSourceUsage(userId, { lichessIndex: hits, [fallbackSource]: misses })
   });
-}
-
-/**
- * Same backend selection as resolveEngineBackend, but WITHOUT the
- * CachingEngineBackend wrapper — for the "Play vs Bot" bot move-selection
- * engine, which searches at a shallow, level-dependent depth/multiPv that
- * must never collide with or pollute the standard-depth cache every other
- * caller shares (position_evaluations is keyed by `fen` alone, with no
- * depth/multiPv discrimination — see ENGINE_DEFAULT_DEPTH's doc comment in
- * packages/shared/src/constants.ts). Bot search is cheap enough that not
- * caching it is a deliberate simplification, not a missed optimization.
- *
- * Also deliberately skips the Lichess-index tier (unlike
- * resolveEngineBackend): that index only stores deep, community-strength
- * evals, so wiring it in here would silently hand every bot — including
- * weak, low-depth personas — Lichess's best move for any position it has
- * seen, defeating the bot's own level. Still wrapped in
- * EngineSourceLoggingBackend so bot engine calls show up in the same
- * per-user analytics log as every other caller, just always attributed to
- * `internalEngine`/`externalEngine`, never `lichessIndex`.
- *
- * Whatever `raw` backend the user's mode resolved to is wrapped in
- * LiteSupplementedEngineBackend, which fills a candidate-breadth shortfall
- * from the lightweight browser worker when one's connected. Deliberately
- * does NOT fall back to the native engine when a non-native mode is still
- * short on breadth (no tunnel connected, and chess-api.com's own 5-line
- * cap) — a user who picked 'chess_api' or 'browser' should never have the
- * bot's move-selection silently reach for the server's own native engine
- * behind their back; a narrower candidate pool in that case is the honest
- * cost of the setting they chose, not a bug to paper over. Never touches
- * position_evaluations; see its own doc comment.
- */
-export async function resolveRawEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
-  const { raw, mode } = await resolveRawBackendForUser(options, userId);
-  const liteSupplemented = new LiteSupplementedEngineBackend(raw, options.tunnelTransport, userId, {
-    timeoutMs: options.tunnelTimeoutMs,
-    mainBucket: mainBucketFor(mode),
-    // Only do the lite round trip when the position is actually tactically
-    // sharp — see LiteSupplementedEngineBackendOptions' doc comment. Never
-    // set on resolveReviewEngineBackend below, whose probes keep asking for
-    // every shortfall regardless of sharpness.
-    gateLiveSupplementBySharpness: true
-  });
-  return new EngineSourceLoggingBackend(liteSupplemented, userId, mode === 'browser' ? 'externalEngine' : 'internalEngine');
 }
 
 /** The user's own engineMode — the one thing the lite decorator's debug
@@ -141,20 +129,20 @@ async function resolveRawBackendForUser(
   userId: string
 ): Promise<{ raw: EngineBackend; mode: EngineMode }> {
   const mode = await engineModeForUser(options, userId);
+  const nativeFallback = mode === 'native' ? undefined : new NativeEngineBackend(options.engineUrl);
   const raw: EngineBackend =
     mode === 'browser'
-      ? new BrowserTunnelEngineBackend(options.tunnelTransport, userId, options.tunnelTimeoutMs)
+      ? new FallbackEngineBackend(
+          new BrowserTunnelEngineBackend(options.tunnelTransport, userId, options.tunnelTimeoutMs),
+          nativeFallback ?? new NativeEngineBackend(options.engineUrl),
+          'native'
+        )
       : mode === 'chess_api'
         ? new ChessApiEngineBackend(
             options.chessApiTimeoutMs,
             createTunnelFetch(options.tunnelTransport, userId, options.chessApiTimeoutMs),
             options.chessApiRequestDelayMs,
-            // Background jobs never fall back to native either — see
-            // tunnel-fetch.ts and jobs/analyze-game.ts's pause/resume. An
-            // interactive caller keeps native as a last resort so a live,
-            // user-facing feature doesn't hard-fail the moment a tab closes
-            // mid-request.
-            options.backgroundJob ? undefined : new NativeEngineBackend(options.engineUrl)
+            nativeFallback
           )
         : new NativeEngineBackend(options.engineUrl);
 
@@ -162,9 +150,10 @@ async function resolveRawBackendForUser(
 }
 
 /**
- * The backend game review analyses with: everything `resolveEngineBackend`
- * gives (cache, Lichess index, the user's own mode) plus the lite browser
- * worker filling in breadth on the plies that are actually sharp.
+ * Game review uses the same source-order contract as every other caller:
+ * cache policy is added around the user's selected method, Lichess remains
+ * first, reliable fallback remains next, and browser-lite fills a candidate
+ * shortfall when more paths are needed.
  *
  * Review goes through `analyzeGame`, which the lite decorator used to
  * delegate straight through — so review never touched the browser worker at
@@ -181,19 +170,11 @@ async function resolveRawBackendForUser(
  * that job stores what it concluded from them (the verified claims) rather
  * than the lines themselves.
  *
- * Only worth calling from the background analysis worker: the lite pass
- * spends up to about a minute of a connected browser tab, and a user with no
- * tab connected simply gets today's narrower analysis.
+ * This resolver is called by the background analysis worker. The lite pass
+ * is bounded per pipeline instance, and a user with no tab connected simply
+ * gets the selected/fallback result unchanged.
  */
 export async function resolveReviewEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
-  const cached = await resolveEngineBackend(options, userId);
-  // The mode alone, not a second raw backend: resolveRawBackendForUser would
-  // build (and immediately discard) another NativeEngineBackend /
-  // ChessApiEngineBackend / BrowserTunnelEngineBackend just to read it.
-  const mode = await engineModeForUser(options, userId);
-
-  return new LiteSupplementedEngineBackend(cached, options.tunnelTransport, userId, {
-    timeoutMs: options.tunnelTimeoutMs,
-    mainBucket: mainBucketFor(mode)
-  });
+  const { raw, mode } = await resolveRawBackendForUser(options, userId);
+  return buildEnginePipeline(options, userId, raw, mode, { cache: true, supplementBreadth: true });
 }

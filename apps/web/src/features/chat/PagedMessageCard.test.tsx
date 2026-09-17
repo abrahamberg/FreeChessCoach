@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CoachMessage } from '../../hooks/useCoachChat.js';
 import { PagedMessageCard } from './PagedMessageCard.js';
 import type { UseMessagePagingResult } from './useMessagePaging.js';
@@ -52,6 +52,39 @@ describe('PagedMessageCard', () => {
     expect(screen.getByTestId('coach-avatar')).toBeInTheDocument();
     expect(screen.getByText(/no messages yet/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /show more/i })).not.toBeInTheDocument();
+  });
+
+  // Regression: the placeholder assistant message (empty text) is filtered
+  // out of `visible` (useMessagePaging.ts), so `current` stays undefined the
+  // whole time the coach is thinking with nothing visible yet — this used to
+  // fall straight to the static "No messages yet." text and never render the
+  // thinking indicator at all, most visibly during a session's kickoff turn.
+  describe('no visible messages yet, but the coach is thinking', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    test('shows the thinking indicator (with its label) instead of "no messages yet"', () => {
+      render(
+        <PagedMessageCard
+          messagePaging={pagingAt([], 0)}
+          coachPersona="general"
+          isThinking={true}
+          thinkingLabel="Studying your game…"
+          activeToolName={null}
+        />
+      );
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+
+      expect(screen.getByRole('status', { name: /studying your game/i })).toBeInTheDocument();
+      expect(screen.queryByText(/no messages yet/i)).not.toBeInTheDocument();
+    });
   });
 
   test('the expand toggle grows the card and flips to "show less", then back', async () => {

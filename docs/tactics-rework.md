@@ -387,22 +387,23 @@ Layer 2 consumes lines, not just a best move. Where lines go missing today:
   free-tier variants at 5 and often returns fewer — `logVariantShortfall`
   in `chess-api-engine-backend.ts` exists because this was already observed.
 - The Lichess eval index serves whatever line count the community stored.
-- `LiteSupplementedEngineBackend` — the decorator that fills a shortfall from
-  the user's browser at depth 8 / 6 lines — **only implements
-  `analyzePosition`**. Its `analyzeGame` delegates straight to `main`, and game
-  review goes through `analyzeGame`. Review therefore never touches it.
+The shipped implementation fills a shortfall from the user's browser at depth
+8 / 6 lines through both `analyzePosition` and `analyzeGame`. Every resolver
+uses the same supplement after the selected method and reliable fallback; a
+Lichess hit still returns before this decorator is reached. The merge policy
+never lets lite override the selected/fallback line 1.
 
-Fix, in order:
+Its contract is:
 
-1. **Extend the decorator to `analyzeGame`.** Tunnel, `lite` WASM variant,
-   shared worker, and the merge policy that never lets lite override `main`'s
-   line 1 all exist and are tested. Highest-leverage change here.
-2. **Make it a background review-time job**, not request-blocking. A user with
-   no tab connected gets today's narrower analysis.
-3. **Budget by ply.** Only plies already flagged `isTacticalPosition`, or
-   carrying a candidate claim, need breadth — typically 15–25% of a game, which
-   fits the ~3s/position `LITE_SUPPLEMENT_MOVETIME_MS` budget.
-4. **Store widened lines separately.** `position_evaluations` is keyed by FEN
+1. **Use the same supplement in every pipeline caller**, with the per-instance
+   request cap keeping interactive calls bounded. A user with no tab connected
+   still gets the selected/fallback result unchanged.
+2. **Budget by candidate shortfall.** Every position whose selected/fallback
+   result has fewer lines than requested can use the lite engine for more
+   paths, with a hard cap of 24 positions per pipeline instance. The same rule
+   applies to quiet and tactical positions, and fits the ~3s/position
+   `LITE_SUPPLEMENT_MOVETIME_MS` budget.
+3. **Store widened lines separately.** `position_evaluations` is keyed by FEN
    with no depth discrimination and lite results are explicitly untrusted for
    it, so review-breadth lines need their own table/column.
 
@@ -420,7 +421,7 @@ second-best at equal evaluation.
 | B ✅ | **Line verification** (claims → PV walk → material attribution), plus the static gates that carry every engine-free caller. Reuses `applySanSequence` and `see.ts`. | The noise change. Shipped behind A's ceilings so the drop is a CI number, not a claim. |
 | C ✅ | **Multi-label claims + ranked headline.** Detector signature change, `priority` demoted to tie-breaker. | Recovers the recall first-match was discarding; unifies sentence and arrow. Schema change in `packages/shared`. |
 | D ✅ | **Defensive + quiet vocabulary.** Thirty new detectors. | Retires "Nothing to flag" as the default answer. Nearly free once claims are objects — a defensive motif is an enemy claim that is gone. |
-| E ✅ | **Browser engine breadth for review**: `analyzeGame` on the lite decorator, budgeted to the plies `isTacticalPosition` already flags and capped at 24 of them, with the decorator outside the cache so `position_evaluations` still only ever sees `main`'s lines. | Independent of A–D. Feeds B: verification asks about the engine's *lines*, and review had none to ask about. |
+| E ✅ | **Browser engine breadth for review**: `analyzeGame` on the lite decorator, budgeted to positions whose selected/fallback result is short of requested lines and capped at 24 of them, with the decorator outside the cache so `position_evaluations` still only ever sees `main`'s lines. | Independent of A–D. Feeds B: verification asks about the engine's *lines*, and review had none to ask about. |
 | F ✅ | **Rebuild the prevention path on verified claims.** | Worth little until A–C made claims trustworthy; it was the loudest amplifier of their errors. |
 | G ✅ | **Baseline-relative game report.** Per-user motif rates from the existing cross-game aggregate, a deviation test, game-level cards that say "unusual for you" with a drill attached. Derived at read time on `GET /api/games/:id`, never stored — what counts as unusual changes with every game played after this one. | Depends on A–D producing rates worth comparing; the aggregation itself was already built. |
 

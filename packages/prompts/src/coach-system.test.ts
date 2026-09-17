@@ -132,7 +132,7 @@ describe('buildCoachSystemPrompt', () => {
     expect(staticPart).not.toContain('VeryUniqueName42');
   });
 
-  test('dynamicPart contains the display name, focus areas, and plan moments', () => {
+  test('dynamicPart contains the display name, progress context, game summary, and selected plan moments', () => {
     const { dynamicPart } = buildCoachSystemPrompt(
       baseInput({
         user: { displayName: 'Ann', selfAssessment: 'I blunder pieces', sessionCount: 3 },
@@ -151,6 +151,8 @@ describe('buildCoachSystemPrompt', () => {
 
     expect(dynamicPart).toContain('Ann');
     expect(dynamicPart).toContain('checks captures too slowly');
+    expect(dynamicPart).toContain('Preparation summary: summary');
+    expect(dynamicPart).toContain("Connection to the student's history: Second game in a row with a delayed castle.");
     expect(dynamicPart).toContain('Before pushing this pawn, where is your king going to live?');
     expect(dynamicPart).toContain('O-O Re8 d3 h6');
   });

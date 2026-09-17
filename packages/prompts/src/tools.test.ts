@@ -96,12 +96,29 @@ describe('coach agent tool parameter schemas (architecture §7.1)', () => {
     expect(expectMoveParameters.safeParse({}).success).toBe(true);
   });
 
-  test('hypothetical_line: { moves }, a non-empty list of SAN strings, no { moveNumber, color } address (the base position is implicit)', () => {
+  test('hypothetical_line: { moves }, a non-empty list of SAN strings, base defaults to the implicit current position', () => {
     expect(hypotheticalLineParameters.safeParse({ moves: ['a4'] }).success).toBe(true);
     expect(hypotheticalLineParameters.safeParse({ moves: ['a4', 'Nf6'] }).success).toBe(true);
     expect(hypotheticalLineParameters.safeParse({ moves: [] }).success).toBe(false);
     expect(hypotheticalLineParameters.safeParse({ moves: [''] }).success).toBe(false);
     expect(hypotheticalLineParameters.safeParse({}).success).toBe(false);
+  });
+
+  test('hypothetical_line: an optional base, addressed exactly like show_position ({ moveNumber, color })', () => {
+    expect(
+      hypotheticalLineParameters.safeParse({ moves: ['a4'], base: { moveNumber: 11, color: 'black' } }).success
+    ).toBe(true);
+    expect(
+      hypotheticalLineParameters.safeParse({ moves: ['a4'], base: { moveNumber: 0, color: null } }).success
+    ).toBe(true);
+    // Same move-address refinement every other addressed tool enforces:
+    // color null only at the game start.
+    expect(
+      hypotheticalLineParameters.safeParse({ moves: ['a4'], base: { moveNumber: 11, color: null } }).success
+    ).toBe(false);
+    expect(
+      hypotheticalLineParameters.safeParse({ moves: ['a4'], base: { moveNumber: 0, color: 'white' } }).success
+    ).toBe(false);
   });
 
   test('investigate_position: { fen, moves?, question } — moves is optional and capped at 12', () => {

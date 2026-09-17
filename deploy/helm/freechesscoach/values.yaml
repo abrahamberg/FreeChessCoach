@@ -5,7 +5,7 @@
 # pattern"); this file only ever names the Secret and the key inside it. The
 # four Secrets the chart expects are:
 #
-#   llm-unlock-secrets     pepper, cache-key, redis-url (unlock/cache secrets)
+#   llm-unlock-secrets     pepper, cache-key (unlock/cache secrets)
 #   oauth-clients          client-id, client-secret, cookie-secret
 #   postgres-credentials   postgres-password, password, replication-password
 #
@@ -136,6 +136,9 @@ llm:
     existingSecret: llm-unlock-secrets
     pepperKey: pepper
     cacheKey: cache-key
+    # An unauthenticated in-cluster Redis URL is ordinary deployment config.
+    # Leave this empty when the URL contains credentials and use redisUrlKey.
+    redisUrl: ""
     redisUrlKey: redis-url
     ttlSeconds: 900
 
@@ -168,11 +171,6 @@ lichessEvalIndex:
   size: 64Gi
   # Mounted into api and worker at this path; becomes LICHESS_EVAL_INDEX_PATH.
   mountPath: /var/run/lichess-eval-index/lichess-eval-index.bin
-  # LICHESS_EVAL_MIN_DEPTH — a hit shallower than this is treated as a miss
-  # and falls through to the live engine chain, same as a position the
-  # index has never seen.
-  minDepth: 16
-
 ## Extra env vars appended to the api and worker containers, as a raw k8s env
 ## list. Escape hatch for settings the chart doesn't model yet.
 extraEnv: []

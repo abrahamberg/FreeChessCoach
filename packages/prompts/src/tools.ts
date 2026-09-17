@@ -101,13 +101,24 @@ export const recallMoveParameters = checkPositionParameters;
 export const expectMoveParameters = z.object({});
 
 /** Sets up or continues a hypothetical continuation off the CURRENT
- * position — e.g. "if Black had played a4 instead". No { moveNumber, color }
- * address like the other move-referencing tools: the base position is
- * implicit (continues an already-active hypothetical on the client, or
- * falls back to wherever the board currently is) rather than a real-game
- * move, which a continuing hypothetical may no longer have. */
+ * position by default — e.g. "if Black had played a4 instead". Starting a
+ * FRESH line (none active yet) may instead pass `base`, a { moveNumber,
+ * color } address exactly like show_position's: the common case this
+ * exists for is proposing the move that should have replaced the one
+ * actually played at the moment on screen, but that moment's own position
+ * is already AFTER the move (show_position always reveals the final
+ * position for a move, never a pre-move one) — so without `base`, the
+ * alternative move gets applied to the wrong side to move. `base` should
+ * name the position one ply earlier (the position right before that move)
+ * so it lands on the side who actually had the choice. Ignored once a line
+ * is already active — a continuing hypothetical may be several moves past
+ * any real-game move at all, so `moves` alone extends it. */
 export const hypotheticalLineParameters = z.object({
-  moves: z.array(z.string().min(1)).min(1).max(12)
+  moves: z.array(z.string().min(1)).min(1).max(12),
+  base: z
+    .object(moveAddressShape)
+    .refine(refineMoveAddress, { message: MOVE_ADDRESS_REFINEMENT_MESSAGE })
+    .optional()
 });
 
 /** Delegates an open-ended, potentially multi-position question to the
@@ -179,7 +190,7 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'hypothetical_line',
     description:
-      'Set up or continue a diverged line off the CURRENT position (call show_position first if you have not already) — e.g. "if Black had played a4 instead". Pass the SAN move(s); the client validates them against real chess rules and reports back the resulting position, including its "resultFen" — never invent a resulting fen yourself. A hypothetical position is not part of the game, so nothing analyzes it for you: pass that resultFen to get_engine_analysis (how good it is) or check_moves (what is legal in it) before you judge it. Pass further moves to keep extending a line already in progress. This never touches the real game or its move list.'
+      'Set up or continue a diverged line — e.g. "if Black had played a4 instead". Pass the SAN move(s); the client validates them against real chess rules and reports back the resulting position, including its "resultFen" — never invent a resulting fen yourself. Starting a FRESH line branches off the CURRENT position by default. To propose the move that should have replaced the one actually played at the moment on screen, pass base: { moveNumber, color } for the position ONE PLY BEFORE that move (addressed exactly like show_position) instead — the moment itself is already the position AFTER the move, so starting there hands your alternative to the wrong side to move. base is ignored once a line is already active; pass further moves alone to keep extending it. A hypothetical position is not part of the game, so nothing analyzes it for you: pass that resultFen to get_engine_analysis (how good it is) or check_moves (what is legal in it) before you judge it. This never touches the real game or its move list.'
   },
   {
     name: 'get_engine_analysis',

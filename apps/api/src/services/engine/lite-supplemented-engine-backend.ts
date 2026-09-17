@@ -1,4 +1,4 @@
-import { computePositionFeatures, fenActiveColor, isTacticalPosition } from '@freechesscoach/chess-analysis';
+import { computePositionFeatures } from '@freechesscoach/chess-analysis';
 import { ENGINE_MULTI_PV } from '../engine-client.js';
 import { formatMs, type EngineLineDebugInfo } from './bot-move-debug.js';
 import { BrowserTunnelEngineBackend } from './browser-tunnel-engine-backend.js';
@@ -12,24 +12,10 @@ export interface LiteSupplementedEngineBackendOptions {
    * uses. */
   timeoutMs: number;
   /** Which BotMoveDebugCollector bucket `main`'s own call should be recorded
-   * under — resolveRawEngineBackend already knows the user's engineMode, so
+   * under — the resolver already knows the user's engineMode, so
    * it picks this once at construction time rather than this class needing
    * to know about engineMode itself. */
   mainBucket: 'internal' | 'external' | 'browser';
-  /** When true, a shortfall on the single-position `analyzePosition` path
-   * only reaches for the lite tunnel if the position is also tactically
-   * sharp (the same `isTacticalPosition` signal `analyzeGame`'s own
-   * `positionsWorthWidening` already gates on below). Set by
-   * `resolveRawEngineBackend` for the bot-move path: the lite contribution
-   * there only ever widens pickBotMove's TTC-based mistake/blunder pool
-   * (bot-move-selector.ts), which a quiet, non-tactical position has
-   * nothing to gain from — so paying a browser round trip on every single
-   * shortfall (chess-api.com's 5-line cap makes that most bot moves) was
-   * doing a search the position didn't need. Left unset (and so `false`) for
-   * `resolveReviewEngineBackend`, whose tactic-prevention probes keep their
-   * exact existing behavior — asking for every shortfall regardless of
-   * sharpness. */
-  gateLiveSupplementBySharpness?: boolean;
 }
 
 /** The lite tunnel request always asks for this depth/multiPv, regardless
@@ -46,7 +32,7 @@ export interface LiteSupplementedEngineBackendOptions {
  * 250cp) — coarse enough that a shallow search's eval is just as usable as
  * a deep one for "is this move clearly bad," and lite's own top move is
  * never trusted as *the* best move regardless (see mergeLines below, and
- * resolveRawEngineBackend's doc comment: main's own line 1 always wins).
+ * pipeline contract: main's own line 1 always wins).
  * Confirmed with the user after production logs showed the timeouts.
  *
  * Depth 8 / 6 lines alone still isn't a hard bound: on a slow device it
@@ -67,11 +53,10 @@ const LITE_SUPPLEMENT_MOVETIME_MS = 3000;
  * How many lite requests one instance of this decorator will ever make.
  *
  * `docs/tactics-rework.md` §7 asks for breadth to be budgeted by ply rather
- * than spent uniformly: only positions the classifier already calls sharp
- * need more lines, which is typically 15-25% of a game. This is the hard cap
- * on top of that filter — at `LITE_SUPPLEMENT_MOVETIME_MS` apiece it bounds
- * a review at about a minute of someone's browser tab, which is affordable
- * for a background job and would not be for a request.
+ * than spent uniformly. This is the hard cap: at
+ * `LITE_SUPPLEMENT_MOVETIME_MS` apiece it bounds a review at about a minute
+ * of someone's browser tab, which is affordable for a background job and
+ * would not be for an unbounded request.
  *
  * The budget belongs to the *instance*, not to `analyzeGame`: a review job
  * also makes single-position calls (the gated tactic-prevention probes in
@@ -81,9 +66,9 @@ const LITE_SUPPLEMENT_MOVETIME_MS = 3000;
  * which is the right order — widening the plies the whole report is built
  * from matters more than widening a fallback probe.
  *
- * Every other caller resolves its own backend per request (see
- * `resolveRawEngineBackend`), so a live bot move or hint always starts with
- * the full budget and never notices this.
+ * Every caller resolves its own pipeline per request, so a live bot move,
+ * hint, or review starts with the full budget and never notices another
+ * caller's supplement requests.
  */
 const LITE_SUPPLEMENT_MAX_REQUESTS = 24;
 
@@ -109,7 +94,6 @@ const LITE_SUPPLEMENT_MAX_REQUESTS = 24;
 export class LiteSupplementedEngineBackend implements EngineBackend {
   private readonly lite: BrowserTunnelEngineBackend;
   private readonly mainBucket: 'internal' | 'external' | 'browser';
-  private readonly gateLiveSupplementBySharpness: boolean;
   /** Counts down across every call this instance serves — see
    * `LITE_SUPPLEMENT_MAX_REQUESTS`. */
   private remainingLiteRequests = LITE_SUPPLEMENT_MAX_REQUESTS;
@@ -122,7 +106,6 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
   ) {
     this.lite = new BrowserTunnelEngineBackend(transport, userId, options.timeoutMs);
     this.mainBucket = options.mainBucket;
-    this.gateLiveSupplementBySharpness = options.gateLiveSupplementBySharpness ?? false;
   }
 
   async analyzePosition(fen: string, opts?: EngineBackendAnalyzeOptions): Promise<PositionAnalysis> {
@@ -137,7 +120,6 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
       opts.debug[this.mainBucket] = { moves: toLineDebug(mainResult.lines), time: formatMs(Date.now() - mainStart) };
     }
     if (!needsSupplement(fen, mainResult.lines.length, opts?.multiPv)) return mainResult;
-    if (this.gateLiveSupplementBySharpness && !isSharpAnalysis(mainResult)) return mainResult;
 
     const liteStart = Date.now();
     const { lines: liteLines, error: liteError } = await this.tryLiteLines(fen, opts);
@@ -163,13 +145,11 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
    * every claim was verified against whatever handful of lines chess-api.com
    * or the Lichess index happened to return (`docs/tactics-rework.md` §7).
    *
-   * Two things keep it affordable. Positions are filtered to the ones the
-   * classifier already calls sharp — a quiet position with three lines is
-   * not short of anything worth having — and the survivors draw on the
-   * instance's shared `LITE_SUPPLEMENT_MAX_REQUESTS` budget. Requests go one
-   * at a time because there is one browser tab on the other end of the
-   * tunnel, and a failure anywhere leaves `main`'s own result exactly as it
-   * was: this decorator only ever tries to do better.
+   * The survivors draw on the instance's shared
+   * `LITE_SUPPLEMENT_MAX_REQUESTS` budget. Requests go one at a time because
+   * there is one browser tab on the other end of the tunnel, and a failure
+   * anywhere leaves `main`'s own result exactly as it was: this decorator
+   * only ever tries to do better.
    */
   async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
     const mainResults = await this.main.analyzeGame(fens, opts);
@@ -213,49 +193,20 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
 }
 
 /**
- * Which plies of a game are worth spending browser time on: the ones that
- * are short of lines *and* sharp enough for the extra lines to change an
- * answer.
- *
- * Sharpness is `tactics-score.ts`'s own `isTacticalPosition` — the same
- * signal the report already computes per ply — so breadth lands exactly
- * where the claim verifier needs it and nowhere else. Ties are broken by
- * how short the position is, so a ply with one line is widened before a ply
- * with four.
+ * Which plies of a game are worth spending browser time on: every position
+ * whose selected/fallback result is short of the requested candidate count.
+ * Ties are broken by how short the position is, so a ply with one line is
+ * widened before a ply with four. This is deliberately source-agnostic: the
+ * same pipeline fills a one-line external result and a short native result.
  */
 function positionsWorthWidening(evals: EngineEval[], opts?: EngineBackendAnalyzeOptions): number[] {
   return evals
     .map((evaluation, index) => ({ index, evaluation }))
     .filter(({ evaluation }) => needsSupplement(evaluation.fen, evaluation.lines.length, opts?.multiPv))
-    .filter(({ evaluation }) => isSharp(evaluation))
     .sort((left, right) => left.evaluation.lines.length - right.evaluation.lines.length)
     .slice(0, LITE_SUPPLEMENT_MAX_REQUESTS)
     .map(({ index }) => index)
     .sort((left, right) => left - right);
-}
-
-/** Same sharpness check as `isSharp` below, for the single-position
- * `analyzePosition` path's `PositionAnalysis` result — `isTacticalPosition`
- * only ever reads `.fen`/`.lines` off `evalBefore`, never `EngineEval`'s own
- * `ply`, so a synthetic `ply: 0` (never read) is enough to satisfy its type
- * without this decorator needing to know its caller's ply. */
-function isSharpAnalysis(analysis: PositionAnalysis): boolean {
-  return isSharp({ ...analysis, ply: 0 });
-}
-
-function isSharp(evaluation: EngineEval): boolean {
-  try {
-    return isTacticalPosition({
-      mover: fenActiveColor(evaluation.fen),
-      fenBefore: evaluation.fen,
-      evalBefore: evaluation,
-      features: computePositionFeatures(evaluation.fen)
-    });
-  } catch {
-    // An unreadable FEN is not a reason to fail a whole game's analysis —
-    // it just isn't a position worth spending the tunnel on.
-    return false;
-  }
 }
 
 /** Carries each line's own eval into the dev log alongside its SAN — see
@@ -269,10 +220,16 @@ function toLineDebug(lines: PositionAnalysisLine[]): EngineLineDebugInfo[] {
  * legal moves) naturally returning fewer lines than `multiPv` requested is
  * not a shortfall worth a tunnel round trip for. */
 function needsSupplement(fen: string, mainLineCount: number, requestedMultiPv: number | undefined): boolean {
-  const requested = requestedMultiPv ?? ENGINE_MULTI_PV;
-  const available = computePositionFeatures(fen).availableMoves.length;
-  const target = Math.min(requested, available);
-  return mainLineCount < target;
+  try {
+    const requested = requestedMultiPv ?? ENGINE_MULTI_PV;
+    const available = computePositionFeatures(fen).availableMoves.length;
+    const target = Math.min(requested, available);
+    return mainLineCount < target;
+  } catch {
+    // Some injected/test backends use opaque FEN identifiers. They cannot be
+    // widened, but their selected-source result remains valid for the caller.
+    return false;
+  }
 }
 
 /** Keeps `main`'s own line 1 always — it's the trusted judgment for "is
@@ -285,7 +242,7 @@ function needsSupplement(fen: string, mainLineCount: number, requestedMultiPv: n
  * the cap already happened at the request itself (LITE_SUPPLEMENT_MULTI_PV
  * above), so every line lite actually returned is worth keeping; there's no
  * native fallback left to fall back on if the merged total still comes up
- * short (see resolveRawEngineBackend's doc comment). */
+ * short (the selected source remains authoritative for line 1). */
 function mergeLines<Main extends { moveSan: string }, Lite extends Main>(mainLines: Main[], liteLines: Lite[]): Main[] {
   const seen = new Set(mainLines.map((line) => line.moveSan));
   const liteTopDiffers = liteLines.length > 0 && liteLines[0]?.moveSan !== mainLines[0]?.moveSan;

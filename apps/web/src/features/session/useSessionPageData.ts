@@ -145,7 +145,7 @@ export function useSessionPageData(sessionId: string) {
   // annotate_board — so exactly one of these ever returns a defined result.
   function handleCoachToolCall(toolCall: CoachToolCall): unknown {
     const real = { ply: currentRealPosition.ply, fen: currentRealPosition.fen };
-    const hypotheticalResult = divergedLine.handleToolCall(toolCall, real);
+    const hypotheticalResult = divergedLine.handleToolCall(toolCall, real, positions);
     const boardResult = boardState.handleToolCall(toolCall);
     return boardResult ?? hypotheticalResult;
   }
@@ -236,7 +236,7 @@ export function useSessionPageData(sessionId: string) {
   const kickedOffRef = useRef(false);
   useEffect(() => {
     const messages = sessionQuery.data?.messages;
-    if (!kickedOffRef.current && messages && sessionQuery.data?.status === 'active') {
+    if (!kickedOffRef.current && messages && gameQuery.data && sessionQuery.data?.status === 'active') {
       if (!messages.some((message) => message.role === 'assistant')) {
         kickedOffRef.current = true;
         void chat.kickoff();

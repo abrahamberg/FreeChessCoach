@@ -108,29 +108,27 @@ describe('LichessEvalEngineBackend', () => {
       expect(fallback.analyzePosition).toHaveBeenCalledWith(START_FEN, undefined);
     });
 
-    test('treats a hit shallower than minDepth as a miss', async () => {
+    test('uses an index hit directly even when its stored depth is below the selected method depth', async () => {
       const reader = fakeReader({ [START_FEN]: { depth: 10, lines: [{ cp: 35, mate: null, pvUci: ['e2e4'] }] } });
       const fallback = fakeFallback();
-      const fallbackResult = fakeFallbackResult(START_FEN, 12);
-      vi.mocked(fallback.analyzePosition).mockResolvedValue(fallbackResult);
-      const backend = new LichessEvalEngineBackend(reader, fallback, { minDepth: 16 });
+      const backend = new LichessEvalEngineBackend(reader, fallback);
 
       const result = await backend.analyzePosition(START_FEN);
 
-      expect(result).toEqual(fallbackResult);
+      expect(result.bestMove).toBe('e4');
+      expect(result.depth).toBe(10);
+      expect(fallback.analyzePosition).not.toHaveBeenCalled();
     });
 
-    test('treats a hit shallower than a caller-requested depth as a miss', async () => {
+    test('does not fall through from an index hit when the caller requests a deeper search', async () => {
       const reader = fakeReader({ [START_FEN]: { depth: 20, lines: [{ cp: 35, mate: null, pvUci: ['e2e4'] }] } });
       const fallback = fakeFallback();
-      const fallbackResult = fakeFallbackResult(START_FEN, 12);
-      vi.mocked(fallback.analyzePosition).mockResolvedValue(fallbackResult);
       const backend = new LichessEvalEngineBackend(reader, fallback);
 
       const result = await backend.analyzePosition(START_FEN, { depth: 24 });
 
-      expect(result).toEqual(fallbackResult);
-      expect(fallback.analyzePosition).toHaveBeenCalledWith(START_FEN, { depth: 24 });
+      expect(result.bestMove).toBe('e4');
+      expect(fallback.analyzePosition).not.toHaveBeenCalled();
     });
 
     test('accepts a hit whose depth meets a caller-requested depth', async () => {

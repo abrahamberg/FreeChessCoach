@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { PuzzleRecord } from '@freechesscoach/chess-analysis';
 import { packPuzzlePool } from '@freechesscoach/chess-analysis/puzzle-pool-format';
 import { openPuzzlePoolFromEnv, PuzzlePool, PuzzlePoolFormatError } from './puzzle-pool.js';
@@ -47,8 +47,11 @@ describe('PuzzlePool.open', () => {
 describe('openPuzzlePoolFromEnv', () => {
   test('returns null when PUZZLE_POOL_PATH is unset', async () => {
     delete process.env.PUZZLE_POOL_PATH;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     expect(await openPuzzlePoolFromEnv()).toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('PUZZLE_POOL_PATH is not set'));
+    warn.mockRestore();
   });
 
   test('returns null (not a throw) when the configured file does not exist yet', async () => {
@@ -63,6 +66,15 @@ describe('openPuzzlePoolFromEnv', () => {
     process.env.PUZZLE_POOL_PATH = filePath;
 
     expect(await openPuzzlePoolFromEnv()).toBeNull();
+  });
+
+  test('returns null and warns when the configured path cannot be read', async () => {
+    process.env.PUZZLE_POOL_PATH = dir;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    expect(await openPuzzlePoolFromEnv()).toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('cannot be read'));
+    warn.mockRestore();
   });
 
   test('returns an open pool for a valid file', async () => {

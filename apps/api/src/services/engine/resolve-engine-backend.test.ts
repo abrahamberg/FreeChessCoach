@@ -4,7 +4,6 @@ import { ENGINE_TUNNEL_PER_POSITION_MS } from '@freechesscoach/shared';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import * as usersRepo from '../../db/repositories/users.js';
 import type { Database } from '../../db/schema.js';
-import { EngineUnavailableError } from '../../lib/errors.js';
 import { resolveEngineBackend, resolveRawEngineBackend, type ResolveEngineBackendOptions } from './resolve-engine-backend.js';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
 import type { LichessEvalReader } from './lichess-eval-index.js';
@@ -36,7 +35,6 @@ describe('resolveEngineBackend', () => {
       chessApiTimeoutMs: 5000,
       chessApiRequestDelayMs: 0,
       lichessEvalIndex: null,
-      lichessEvalMinDepth: 16,
       backgroundJob: false,
       ...overrides
     };
@@ -122,17 +120,26 @@ describe('resolveEngineBackend', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  test('engineMode "chess_api" as a background job never falls back to a direct request or the native engine when no tunnel is connected', async () => {
+  test('engineMode "chess_api" as a background job falls back to native when no tunnel is connected', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cara3' });
     await usersRepo.update(db, user.id, { engineMode: 'chess_api' });
-    const fetchMock = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          analysis: { fen: CHESS_API_JOB_DISCONNECTED_FEN, depth: 16, multiPv: 1, bestMove: 'e4', eval: { cp: 20, mateIn: null }, lines: [], features: {} }
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      )
+    );
     vi.stubGlobal('fetch', fetchMock);
     const tunnelTransport: EngineTunnelTransport = { request: vi.fn().mockRejectedValue(new Error('No tunnel connection')) };
 
     const backend = await resolveEngineBackend(options(tunnelTransport, { backgroundJob: true }), user.id);
 
-    await expect(backend.analyzePosition(CHESS_API_JOB_DISCONNECTED_FEN)).rejects.toThrow(EngineUnavailableError);
-    expect(fetchMock).not.toHaveBeenCalled();
+    const analysis = await backend.analyzePosition(CHESS_API_JOB_DISCONNECTED_FEN);
+
+    expect(analysis.bestMove).toBe('e4');
+    expect(fetchMock).toHaveBeenCalledWith('http://engine:4001/analyze-position', expect.anything());
   });
 
   test('engineMode "chess_api" as a background job is served entirely from the tunnel when one is connected', async () => {
@@ -273,6 +280,27 @@ describe('resolveEngineBackend', () => {
     // A CachingEngineBackend-wrapped backend would only ever hit fetch once
     // (see the "native" test above) — the raw backend must be called every time.
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test('resolveRawEngineBackend checks the Lichess index before the selected bot engine', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'LichessBot' });
+    const fen = 'rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq - 1 1';
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const tunnelTransport: EngineTunnelTransport = { request: vi.fn() };
+    const lichessEvalIndex: LichessEvalReader = {
+      lookup: vi.fn().mockResolvedValue({ depth: 40, lines: [{ cp: 20, mate: null, pvUci: ['e7e5'] }] })
+    };
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const backend = await resolveRawEngineBackend(options(tunnelTransport, { lichessEvalIndex }), user.id);
+    const result = await backend.analyzePosition(fen, { depth: 18, multiPv: 40 });
+
+    expect(result.bestMove).toBe('e5');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(tunnelTransport.request).not.toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('lichessIndex=1'));
+    logSpy.mockRestore();
   });
 
   describe('engine-source-usage logging', () => {

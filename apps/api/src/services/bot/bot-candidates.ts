@@ -40,9 +40,9 @@ export const BOT_SEARCH_DEPTH = 18;
 export const BOT_SEARCH_MOVETIME_MS = 8000;
 
 export interface BotCandidatesDependencies {
-  /** Uncached, bot-specific engine search (see resolveRawEngineBackend) —
-   * runs at the caller's phase-resolved depth, deliberately never the shared
-   * position_evaluations cache. */
+  /** Bot-specific search from the shared engine pipeline. It deliberately
+   * avoids the standard position_evaluations cache because its requested
+   * depth/multiPv differ from official analysis. */
   analyzeBotPosition: (
     fen: string,
     opts: { depth: number; multiPv: number; movetimeMs: number; debug?: BotMoveDebugCollector }

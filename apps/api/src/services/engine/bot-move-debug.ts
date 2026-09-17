@@ -39,16 +39,15 @@ export interface BotMoveDebugCollector {
   /** The account's own configured engineMode for this move, in the same
    * internal/external/browser vocabulary as the buckets below (not the DB's
    * own 'native'/'chess_api'/'browser' enum spelling — see
-   * resolveRawEngineBackend's `mainBucket` computation in
+   * the resolver's `mainBucket` computation in
    * resolve-engine-backend.ts) — so the log is always explicit about what
    * setting was actually in effect rather than making the reader infer it
    * from which bucket got populated. Null only for a book move, which never
    * reaches the engine at all. */
   mode: 'internal' | 'external' | 'browser' | null;
-  /** Only ever populated when `mode` is 'internal' (engineMode 'native') —
-   * a non-native mode that falls short of the requested breadth stays
-   * short rather than silently reaching for the server's own native engine;
-   * see resolveRawEngineBackend's doc comment for why. */
+  /** Populated when the selected/fallback pipeline reaches the server's own
+   * native engine. This is a fallback source, not a bot-weakening mechanism;
+   * bot-move-selector still applies the bot's mistake algorithm afterwards. */
   internal: EngineCallDebugInfo | null;
   /** chess-api.com (engineMode 'chess_api'). */
   external: EngineCallDebugInfo | null;

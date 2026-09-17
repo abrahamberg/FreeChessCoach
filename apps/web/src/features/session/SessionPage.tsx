@@ -191,6 +191,7 @@ export function SessionPage(): ReactNode {
       messages={chat.messages}
       activeToolName={chat.activeToolName}
       isThinking={chat.isThinking}
+      thinkingLabel={chat.thinkingLabel}
       onSend={handleSendMessage}
       onSelectPly={peekAt}
       boardArrows={boardArrows}
@@ -272,6 +273,7 @@ export function SessionPage(): ReactNode {
           ttsEnabled={ttsEnabled}
           coachVoice={coachVoice}
           isThinking={chat.isThinking}
+          thinkingLabel={chat.thinkingLabel}
           activeToolName={chat.activeToolName}
           onSend={handleSendMessage}
           boardArrows={boardArrows}

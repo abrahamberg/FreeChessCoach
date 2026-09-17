@@ -55,6 +55,12 @@ export interface UseCoachChatResult {
   /** design.md §5.7: true while waiting for the coach's first token this
    * turn (the empty assistant placeholder hasn't received any text yet). */
   isThinking: boolean;
+  /** Non-null while `isThinking` is true and this is the session's kickoff
+   * turn — its first token can take much longer than an ordinary reply
+   * (coaching-plan.ts's ensureCoachingPlan runs a whole extra LLM call
+   * before the turn's own streaming even starts), so the UI shows this
+   * instead of the generic thinking dots. Null for every other turn. */
+  thinkingLabel: string | null;
   sendMessage: (content: string) => Promise<void>;
   /** Resumes a turn on whatever's already pending in history (the
    * [session_start] marker) without adding a new user-role message — how the
@@ -94,6 +100,7 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeToolName, setActiveToolName] = useState<string | null>(null);
+  const [isKickoffTurn, setIsKickoffTurn] = useState(false);
 
   // The session/game fetch (SessionPage) resolves after this hook's first
   // render, so initialMessages arrives on a later render, not at mount —
@@ -108,16 +115,23 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
 
   const postTurn = useCallback(
     async (body: PostTurnBody) => {
+      // Pushed before the request goes out, not after it resolves: on a
+      // fresh game's first turn, the server blocks on a coaching-plan LLM
+      // call before it ever sends response headers (see coaching-plan.ts's
+      // ensureCoachingPlan, called from startTurn before reply.hijack()), so
+      // waiting for `fetch` to resolve here left the UI showing nothing at
+      // all for however long that took — isThinking has nothing to key off
+      // until this placeholder exists.
+      const assistantId = crypto.randomUUID();
+      let assistantText = '';
+      setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', text: '' }]);
+
       const response = await fetch(`/api/sessions/${sessionId}/messages`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body)
       });
-
-      const assistantId = crypto.randomUUID();
-      let assistantText = '';
-      setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', text: '' }]);
 
       // A thrown error (e.g. "unlock your AI setup") never reaches the SSE
       // stream at all — it's a plain problem+json response instead (see
@@ -237,14 +251,17 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
 
   const kickoff = useCallback(async () => {
     setIsStreaming(true);
+    setIsKickoffTurn(true);
     try {
       await postTurn({});
     } finally {
       setIsStreaming(false);
+      setIsKickoffTurn(false);
     }
   }, [postTurn]);
 
   const isThinking = isStreaming && messages.at(-1)?.text === '';
+  const thinkingLabel = isThinking && isKickoffTurn ? 'Studying your game…' : null;
 
-  return { messages, isStreaming, activeToolName, isThinking, sendMessage, kickoff };
+  return { messages, isStreaming, activeToolName, isThinking, thinkingLabel, sendMessage, kickoff };
 }

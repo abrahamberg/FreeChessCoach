@@ -136,7 +136,6 @@ describe('buildResolveEngineBackendOptions', () => {
     delete process.env.ENGINE_TUNNEL_TIMEOUT_MS;
     delete process.env.CHESS_API_TIMEOUT_MS;
     delete process.env.CHESS_API_REQUEST_DELAY_MS;
-    delete process.env.LICHESS_EVAL_MIN_DEPTH;
   });
 
   test('defaults tunnelTimeoutMs to 10000', () => {
@@ -172,18 +171,15 @@ describe('buildResolveEngineBackendOptions', () => {
     expect(options.chessApiRequestDelayMs).toBe(250);
   });
 
-  test('defaults lichessEvalMinDepth to ENGINE_DEFAULT_DEPTH and passes the given index through as-is', () => {
+  test('passes the Lichess index through as-is', () => {
     const fakeIndex = { lookup: vi.fn() } as never;
     const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, fakeIndex);
-    expect(options.lichessEvalMinDepth).toBe(16);
     expect(options.lichessEvalIndex).toBe(fakeIndex);
   });
 
-  test('is null by default and reads LICHESS_EVAL_MIN_DEPTH when set', () => {
-    process.env.LICHESS_EVAL_MIN_DEPTH = '20';
+  test('keeps the index optional', () => {
     const options = buildResolveEngineBackendOptions({} as never, 'http://engine:4001', { request: vi.fn() }, null);
     expect(options.lichessEvalIndex).toBeNull();
-    expect(options.lichessEvalMinDepth).toBe(20);
   });
 
   test('backgroundJob defaults to false (server.ts, interactive routes) and is true only when passed (worker.ts)', () => {
@@ -202,7 +198,10 @@ describe('openLichessEvalIndexFromEnv', () => {
 
   test('returns null when LICHESS_EVAL_INDEX_PATH is unset', async () => {
     delete process.env.LICHESS_EVAL_INDEX_PATH;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await expect(openLichessEvalIndexFromEnv()).resolves.toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('LICHESS_EVAL_INDEX_PATH is not set'));
+    warn.mockRestore();
   });
 
   test('returns null and warns when LICHESS_EVAL_INDEX_PATH points at a missing file (PVC not populated yet)', async () => {
@@ -224,6 +223,18 @@ describe('openLichessEvalIndexFromEnv', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await expect(openLichessEvalIndexFromEnv()).resolves.toBeNull();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining(filePath));
+    warn.mockRestore();
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  test('returns null and warns when LICHESS_EVAL_INDEX_PATH points at an unreadable directory', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'bootstrap-lichess-eval-index-test-'));
+    process.env.LICHESS_EVAL_INDEX_PATH = dir;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await expect(openLichessEvalIndexFromEnv()).resolves.toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('cannot be read'));
+
     warn.mockRestore();
     await rm(dir, { recursive: true, force: true });
   });

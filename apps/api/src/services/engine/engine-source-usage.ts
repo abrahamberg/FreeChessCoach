@@ -31,15 +31,10 @@ export function logEngineSourceUsage(userId: string, counts: Partial<Record<Engi
   );
 }
 
-/**
- * Decorator for a backend that has no Lichess-index tier of its own — the
- * "Play vs Bot" raw engine (see resolveRawEngineBackend's doc comment for why
- * bot search deliberately never checks that index: it would silently hand
- * every bot a Lichess-community-strength move regardless of the bot's own
- * depth/level) and the no-index-configured path in resolveEngineBackend.
- * Every position it serves is attributed entirely to `source`, so this usage
- * still shows up in the same per-user analytics log as the
- * LichessEvalEngineBackend-wrapped path.
+/** Decorator for the selected-engine portion of the shared pipeline. The
+ * LichessEvalEngineBackend sits outside this decorator, so a Lichess hit is
+ * logged by that outer stage and never reaches here. Every position that does
+ * reach the selected/fallback portion is attributed to its configured source.
  */
 export class EngineSourceLoggingBackend implements EngineBackend {
   constructor(

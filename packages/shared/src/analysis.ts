@@ -7,11 +7,9 @@ export const AnalysisStatusSchema = z.enum([
   'planning',
   'ready',
   'failed',
-  // Not a permanent failure: the engine call needed the user's own browser
-  // tunnel (chess_api or browser mode — see resolve-engine-backend.ts's
-  // backgroundJob option) and it wasn't connected. Progress already made
-  // (analyses.evalsComputed) is kept as-is; jobs/analyze-game.ts resumes
-  // from there once routes/engine-tunnel.ts sees the tunnel reconnect.
+  // Not a permanent failure: every engine stage was unavailable. Progress
+  // already made (analyses.evalsComputed) is kept as-is; a later retry can
+  // run the same pipeline again.
   'paused'
 ]);
 export type AnalysisStatus = z.infer<typeof AnalysisStatusSchema>;

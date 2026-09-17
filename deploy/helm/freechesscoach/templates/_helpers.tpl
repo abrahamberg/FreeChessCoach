@@ -155,18 +155,21 @@ imagePullSecrets:
     secretKeyRef:
       name: {{ required "llm.unlock.existingSecret is required" .Values.llm.unlock.existingSecret }}
       key: {{ .Values.llm.unlock.cacheKey }}
+{{- if .Values.llm.unlock.redisUrl }}
+- name: REDIS_URL
+  value: {{ .Values.llm.unlock.redisUrl | quote }}
+{{- else }}
 - name: REDIS_URL
   valueFrom:
     secretKeyRef:
       name: {{ required "llm.unlock.existingSecret is required" .Values.llm.unlock.existingSecret }}
       key: {{ .Values.llm.unlock.redisUrlKey }}
+{{- end }}
 - name: LLM_UNLOCK_TTL_SECONDS
   value: {{ .Values.llm.unlock.ttlSeconds | quote }}
 {{- if .Values.lichessEvalIndex.enabled }}
 - name: LICHESS_EVAL_INDEX_PATH
   value: {{ .Values.lichessEvalIndex.mountPath | quote }}
-- name: LICHESS_EVAL_MIN_DEPTH
-  value: {{ .Values.lichessEvalIndex.minDepth | quote }}
 {{- end }}
 {{- with .Values.extraEnv }}
 {{ toYaml . }}

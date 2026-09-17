@@ -67,11 +67,10 @@ export async function runAnalyzeGameJob(
   const analysis = await analysesRepo.findByGameId(db, gameId);
   if (!analysis) throw new Error(`No analysis row for game ${gameId}`);
 
-  // Read in the try block below, but declared out here so the catch block
-  // can see it too — see its own comment on why only a tunnel-dependent
-  // mode gets 'paused' instead of 'failed'. Unset (an engine failure before
-  // the user row was even read) falls back to today's 'failed', the same as
-  // 'native' — there's no known tunnel to wait on either way.
+  // Read in the try block below, but declared out here so the catch block can
+  // retry an exhausted pipeline when a user's selected browser source later
+  // reconnects. Unset (an engine failure before the user row was even read)
+  // falls back to today's 'failed'.
   let engineMode: EngineMode | undefined;
 
   try {
@@ -137,17 +136,12 @@ export async function runAnalyzeGameJob(
     // the job queue still logs the job as completed (it caught its own
     // error), so a failure is otherwise invisible to log-based ops tooling.
     console.error(`runAnalyzeGameJob failed for game ${gameId} (analysis ${analysis.id}):`, error);
-    // Only chess_api/browser mode ever gets resumed — routes/engine-tunnel.ts
-    // triggers that resume on a *tunnel* reconnect, which has nothing to do
-    // with 'native' recovering from, say, its pod briefly restarting. Pausing
-    // a 'native' failure here would leave it stuck forever with nothing to
-    // ever un-pause it, so it keeps today's 'failed' instead.
+    // A failed non-native pipeline can become runnable when its selected
+    // browser-backed stage reconnects. The same pipeline will still try its
+    // reliable fallback stages before reaching this point.
     if (error instanceof EngineUnavailableError && engineMode !== undefined && engineMode !== 'native') {
-      // Not a real failure — the engine call needed the user's own browser
-      // tunnel (see resolve-engine-backend.ts's backgroundJob option) and it
-      // wasn't connected. `evalsComputed` (persisted per chunk by
-      // analyzeInChunks, above) is untouched, so the resumed run's cache
-      // hits pick up right where this one stopped.
+      // `evalsComputed` (persisted per chunk by analyzeInChunks, above) is
+      // untouched, so a resumed run's cache hits pick up where it stopped.
       await analysesRepo.markPaused(db, analysis.id, describeError(error));
       return;
     }

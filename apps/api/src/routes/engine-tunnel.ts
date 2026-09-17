@@ -50,10 +50,9 @@ export function registerEngineTunnelRoutes(
 }
 
 /** The moment this user's tunnel connects (a tab opened, or reconnected
- * after a drop), re-enqueue every game whose analysis paused waiting for
- * exactly this (services/analysis.ts's runAnalyzeGameJob, resolve-engine-
- * backend.ts's backgroundJob option) — instead of waiting on a poll, since
- * this is the one moment we actually know the tunnel is there. Re-running
+ * after a drop), re-enqueue every game whose exhausted engine pipeline may
+ * now have a newly available selected source — instead of waiting on a poll,
+ * since this is the one moment we know the tunnel is there. Re-running
  * jobs/analyze-game.ts from the top is safe and cheap even for the positions
  * it already finished before pausing: they're already in
  * position_evaluations, so only the genuinely unanalyzed rest costs a real

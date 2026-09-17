@@ -1,4 +1,4 @@
-import { applySanSequence } from '@freechesscoach/chess-analysis';
+import { applySanSequence, moveRefToPly } from '@freechesscoach/chess-analysis';
 import { useCallback, useState } from 'react';
 import type { CoachToolCall } from '../../hooks/useCoachChat.js';
 
@@ -56,8 +56,34 @@ export interface UseDivergedLineResult {
   /** Owns expect_move + hypothetical_line; a real show_position exits any
    * open hypothetical (never trusted to keep showing a stale line once the
    * coach has moved the board back to the real game). Every other tool name
-   * is left alone — annotate_board etc. must not silently close the line. */
-  handleToolCall: (toolCall: CoachToolCall, real: RealPosition) => unknown;
+   * is left alone — annotate_board etc. must not silently close the line.
+   * `positions` (the real game's own ply->fen, same shape show_position
+   * resolves against) is only consulted for hypothetical_line's optional
+   * `base` address — every other tool call ignores it, so callers that never
+   * expect a `base` may omit it. */
+  handleToolCall: (toolCall: CoachToolCall, real: RealPosition, positions?: RealPosition[]) => unknown;
+}
+
+/** hypothetical_line's optional `base` — the same { moveNumber, color }
+ * address show_position/check_position use. */
+interface HypotheticalBaseAddress {
+  moveNumber: number;
+  color: 'white' | 'black' | null;
+}
+
+/** Resolves `base` against the real game's own positions (moveRefToPly is
+ * the same {moveNumber,color}->ply conversion show_position's own handling
+ * uses — see useSessionBoardState.ts). Starting a fresh hypothetical off the
+ * CURRENT position (`base` omitted, or naming a ply the game doesn't have)
+ * falls back to `fallback` rather than guessing. */
+function resolveHypotheticalBase(
+  base: HypotheticalBaseAddress | undefined,
+  positions: RealPosition[],
+  fallback: RealPosition
+): RealPosition {
+  if (!base) return fallback;
+  const ply = moveRefToPly(base.moveNumber, base.color);
+  return positions.find((position) => position.ply === ply) ?? fallback;
 }
 
 export function useDivergedLine(): UseDivergedLineResult {
@@ -102,20 +128,23 @@ export function useDivergedLine(): UseDivergedLineResult {
   }, []);
 
   const handleToolCall = useCallback(
-    (toolCall: CoachToolCall, real: RealPosition): unknown => {
+    (toolCall: CoachToolCall, real: RealPosition, positions: RealPosition[] = []): unknown => {
       if (toolCall.toolName === 'expect_move') {
         setExpectingMove(true);
         return { acknowledged: true };
       }
       if (toolCall.toolName === 'hypothetical_line') {
-        const { moves: sanMoves } = toolCall.input as { moves: string[] };
-        const startFen = line?.moves.at(-1)?.fen ?? real.fen;
+        const { moves: sanMoves, base } = toolCall.input as { moves: string[]; base?: HypotheticalBaseAddress };
+        // `base` only matters for a FRESH line — a line already in progress
+        // keeps its own basePly/baseFen regardless of what this call passes.
+        const effectiveReal = line ? real : resolveHypotheticalBase(base, positions, real);
+        const startFen = line?.moves.at(-1)?.fen ?? effectiveReal.fen;
         const applied = applySanSequence(startFen, sanMoves);
-        const basePly = line?.basePly ?? real.ply;
+        const basePly = line?.basePly ?? effectiveReal.ply;
         if (applied.moves.length > 0) {
-          const base = line ?? { basePly: real.ply, baseFen: real.fen, moves: [] };
-          const nextMoves = [...base.moves, ...applied.moves];
-          setLine({ ...base, moves: nextMoves });
+          const lineBase = line ?? { basePly: effectiveReal.ply, baseFen: effectiveReal.fen, moves: [] };
+          const nextMoves = [...lineBase.moves, ...applied.moves];
+          setLine({ ...lineBase, moves: nextMoves });
           setStepIndex(nextMoves.length);
         }
         const result: ProposeDivergedLineToolResult = applied.error

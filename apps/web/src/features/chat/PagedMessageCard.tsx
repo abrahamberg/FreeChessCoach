@@ -33,6 +33,7 @@ export interface PagedMessageCardProps {
    * `.coach-card` flex-fill rule), mounting/unmounting either line freely
    * can no longer shift the board beneath it. */
   isThinking: boolean;
+  thinkingLabel?: string | null;
   activeToolName: string | null;
 }
 
@@ -66,15 +67,24 @@ export function PagedMessageCard({
   playingMessageId = null,
   loadingMessageId = null,
   isThinking,
+  thinkingLabel = null,
   activeToolName
 }: PagedMessageCardProps): ReactNode {
   const [expanded, setExpanded] = useState(false);
   const { current: message, index, visible, total, goTo } = messagePaging;
 
+  // A turn with nothing visible yet (the placeholder assistant message is
+  // filtered out by visibleMessages until it has text — see
+  // useMessagePaging.ts) used to fall straight to "No messages yet.", which
+  // swallowed the thinking indicator/tool activity entirely on mobile —
+  // most visibly on a session's kickoff turn, where the first token can be
+  // a long time coming (see useCoachChat's thinkingLabel doc comment).
   if (!message) {
     return (
       <CoachCard avatar={<CoachAvatar persona={coachPersona} size="chat" />} className="paged-message-card">
-        <p className="paged-message-card__empty-text">No messages yet.</p>
+        <ThinkingIndicator visible={isThinking} label={thinkingLabel} />
+        <ToolActivity toolName={activeToolName} />
+        {!isThinking && !activeToolName && <p className="paged-message-card__empty-text">No messages yet.</p>}
       </CoachCard>
     );
   }
@@ -104,7 +114,7 @@ export function PagedMessageCard({
       expanded={expanded}
       onToggleExpand={() => setExpanded((value) => !value)}
     >
-      <ThinkingIndicator visible={isThinking} />
+      <ThinkingIndicator visible={isThinking} label={thinkingLabel} />
       <ToolActivity toolName={activeToolName} />
       {/* Same live-region contract MessageList's own transcript container
           makes (design.md §7) — a streamed reply here should be announced

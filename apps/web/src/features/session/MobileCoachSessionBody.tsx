@@ -24,6 +24,7 @@ export interface MobileCoachSessionBodyProps {
   ttsEnabled: boolean;
   coachVoice: UseCoachVoiceResult;
   isThinking: boolean;
+  thinkingLabel: string | null;
   activeToolName: string | null;
   onSend: (content: string) => void;
   boardArrows: ArrowRef[];
@@ -74,6 +75,7 @@ export function MobileCoachSessionBody({
   ttsEnabled,
   coachVoice,
   isThinking,
+  thinkingLabel,
   activeToolName,
   onSend,
   boardArrows,
@@ -100,6 +102,7 @@ export function MobileCoachSessionBody({
             playingMessageId={coachVoice.playingMessageId}
             loadingMessageId={coachVoice.loadingMessageId}
             isThinking={isThinking}
+            thinkingLabel={thinkingLabel}
             activeToolName={activeToolName}
           />
         )

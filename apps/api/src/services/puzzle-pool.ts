@@ -43,7 +43,10 @@ export class PuzzlePool {
  * (background puzzle assignment) exists to consume it. */
 export async function openPuzzlePoolFromEnv(): Promise<PuzzlePool | null> {
   const filePath = process.env.PUZZLE_POOL_PATH;
-  if (!filePath) return null;
+  if (!filePath) {
+    console.warn('PUZZLE_POOL_PATH is not set; puzzle assignment is disabled until a puzzle pool is configured.');
+    return null;
+  }
   try {
     return await PuzzlePool.open(filePath);
   } catch (error) {
@@ -57,6 +60,21 @@ export async function openPuzzlePoolFromEnv(): Promise<PuzzlePool | null> {
       console.warn(`PUZZLE_POOL_PATH is set to "${filePath}" but ${error.message} — skipping puzzle assignment until it's rebuilt.`);
       return null;
     }
+    if (isUnreadableFileError(error)) {
+      console.warn(
+        `PUZZLE_POOL_PATH is set to "${filePath}" but the file cannot be read (${describeError(error)}) — skipping puzzle assignment.`
+      );
+      return null;
+    }
     throw error;
   }
+}
+
+function isUnreadableFileError(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException).code;
+  return code === 'EACCES' || code === 'EPERM' || code === 'EISDIR' || code === 'ENOTDIR';
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
