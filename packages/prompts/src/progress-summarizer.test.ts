@@ -12,10 +12,11 @@ describe('buildSummarizerMessages', () => {
     expect(system).toContain('ONLY these');
   });
 
-  test('system prompt explains the focus-area state machine and that selection is programmatic', () => {
+  test('system prompt explains the focus-area state machine, including conversation-grounded create', () => {
     const { system } = buildSummarizerMessages(baseInput());
-    expect(system).toContain('diagnosis code');
-    expect(system).toContain('system selects them automatically');
+    expect(system).toContain('progress: an active focus area');
+    expect(system).toContain('create: use ONLY when');
+    expect(system).toContain('capped at 3 active focus areas');
   });
 
   test('user message includes the transcript and already-recorded findings', () => {

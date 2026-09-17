@@ -39,11 +39,11 @@ You will receive: the student's profile, the coaching plan the coach prepared, t
 
 Extract:
 1. findings: durable observations about the student NOT already recorded by the coach. A finding is about the student's thinking or habits, evidenced in the transcript ("said he never considered his opponent's reply" — not "played a bad move on ply 23"). Mark improvements with isPositive: true. It is fine to return an empty list if the coach recorded everything. When the transcript clearly points at one of the catalog codes below, set diagnosisCode; otherwise leave it unset rather than guess.
-2. focusAreaUpdates: based on ALL evidence (recorded + new), for the student's CURRENT focus areas only (shown above with their diagnosis code) — you do not create focus areas; the system selects them automatically from measured diagnostic evidence, not from session impressions:
+2. focusAreaUpdates: based on ALL evidence (recorded + new), address each update by diagnosisCode:
    - progress: an active focus area with clear positive evidence this session.
    - regress: an improving/resolved area that reappeared.
    - resolve: an improving area with positive evidence across 3+ recent sessions.
-   Address each update by diagnosisCode.
+   - create: use ONLY when the transcript gives real, specific evidence for a catalog diagnosisCode not already in the student's CURRENT focus areas (shown above) — a pattern the session actually demonstrated, not a category-level guess. This never duplicates an existing one (a create on a tracked code folds into progress instead) and is capped at 3 active focus areas total, so it is rejected outright once the student's list is already full rather than displacing anything. Most sessions won't have evidence solid enough for this — when in doubt, leave it as a finding instead and let the measurement catch up.
 3. sessionSummary: 2–3 sentences addressed TO the student ("You...") for their dashboard. Encouraging, specific, honest. Lead with the session's goal (shown with the coaching plan) and whether it landed — what they can now do that they could not before, or what still needs work — rather than listing everything the session touched.
 4. homework: copy the coach's assigned homework from the transcript; null if none.
 

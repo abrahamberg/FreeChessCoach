@@ -206,6 +206,54 @@ describe('progress service', () => {
 
       expect(result.applied).toBe(false);
     });
+
+    test('create on a code with no existing focus area inserts a new active one, anchored to the evidence note', async () => {
+      const userId = await makeUser('focus-create@example.com');
+
+      const result = await applyFocusAreaUpdate(db, userId, {
+        diagnosisCode: 'MS-01',
+        action: 'create',
+        note: 'Missed a hanging queen twice this game after not scanning opponent checks.'
+      });
+
+      expect(result.applied).toBe(true);
+      expect(result.focusArea?.status).toBe('active');
+      expect(result.focusArea?.diagnosisCode).toBe('MS-01');
+      expect(result.focusArea?.note).toBe('Missed a hanging queen twice this game after not scanning opponent checks.');
+      expect(result.focusArea?.isPrimary).toBe(false);
+    });
+
+    test('create on a code that already has a focus area folds into a progress note instead of duplicating', async () => {
+      const userId = await makeUser('focus-create-existing@example.com');
+      await seedFocusArea(userId, 'MS-01');
+
+      const result = await applyFocusAreaUpdate(db, userId, {
+        diagnosisCode: 'MS-01',
+        action: 'create',
+        note: 'Saw it again, but this is not a new area.'
+      });
+
+      expect(result.applied).toBe(true);
+      expect(result.focusArea?.status).toBe('improving');
+      expect(await focusAreasRepo.countActiveByUser(db, userId)).toBe(0);
+    });
+
+    test('create is rejected once the 3-active cap is already full, without displacing anything', async () => {
+      const userId = await makeUser('focus-create-cap@example.com');
+      for (const code of ['BV-01', 'TA-07', 'CA-01'] as const) {
+        await seedFocusArea(userId, code, 'missed_tactic');
+      }
+
+      const result = await applyFocusAreaUpdate(db, userId, {
+        diagnosisCode: 'MS-01',
+        action: 'create',
+        note: 'New evidence, but the list is already full.'
+      });
+
+      expect(result.applied).toBe(false);
+      expect(result.reason).toMatch(/3 active/);
+      expect(await focusAreasRepo.countActiveByUser(db, userId)).toBe(3);
+    });
   });
 
   describe('syncProgrammaticFocusAreas', () => {

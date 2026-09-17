@@ -77,7 +77,8 @@ describe('coach agent tool parameter schemas (architecture §7.1)', () => {
   test('propose_focus_area_update: FocusAreaUpdate schema', () => {
     const valid = { diagnosisCode: 'TA-07', action: 'progress', note: 'x' };
     expect(proposeFocusAreaUpdateParameters.safeParse(valid).success).toBe(true);
-    expect(proposeFocusAreaUpdateParameters.safeParse({ ...valid, action: 'create' }).success).toBe(false);
+    expect(proposeFocusAreaUpdateParameters.safeParse({ ...valid, action: 'create' }).success).toBe(true);
+    expect(proposeFocusAreaUpdateParameters.safeParse({ ...valid, action: 'invent' }).success).toBe(false);
   });
 
   test('update_threads: { threads }', () => {

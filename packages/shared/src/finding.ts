@@ -37,18 +37,24 @@ export const FindingSchema = z
 export type Finding = z.infer<typeof FindingSchema>;
 
 /**
- * Task 57.3 — selection of WHICH diagnosis code becomes a focus area is now
- * programmatic (`progress.ts`'s `syncProgrammaticFocusAreas`, driven by
- * `select-focus.ts`'s §IV objective+overrides), so the LLM-facing action set
- * drops `'create'`: this tool now only records a state transition and a note
- * on a focus area the system already selected. Addressed by `diagnosisCode`
- * rather than `category` — several active focus areas can now share one
- * broad category (the old `UNIQUE (user_id, category)` constraint is gone),
- * so category alone is no longer a unique enough address.
+ * Task 57.3 dropped LLM-driven `'create'`: selecting WHICH diagnosis code
+ * becomes a focus area was made programmatic (`progress.ts`'s
+ * `syncProgrammaticFocusAreas`, driven by `select-focus.ts`'s §IV
+ * objective+overrides) so a session impression alone couldn't create noise.
+ * Task 64.3 brings `'create'` back, deliberately narrower than before: it
+ * must still name a real catalog `diagnosisCode` (never free text, same
+ * `DiagnosisCodeIdSchema` format check everything else here uses) and still
+ * goes through `progress.ts`'s same anti-duplication/cap checks the
+ * programmatic path already enforces — this lets the coach act on what it
+ * just saw in conversation, not act on a hunch with no evidence check.
+ * Every action is addressed by `diagnosisCode` rather than `category` —
+ * several active focus areas can now share one broad category (the old
+ * `UNIQUE (user_id, category)` constraint is gone), so category alone is
+ * not a unique enough address.
  */
 export const FocusAreaUpdateSchema = z.object({
   diagnosisCode: DiagnosisCodeIdSchema,
-  action: z.enum(['progress', 'regress', 'resolve']),
+  action: z.enum(['create', 'progress', 'regress', 'resolve']),
   note: z.string()
 });
 export type FocusAreaUpdate = z.infer<typeof FocusAreaUpdateSchema>;

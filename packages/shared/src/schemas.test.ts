@@ -489,6 +489,8 @@ describe('DashboardResponseSchema', () => {
         {
           category: 'king_safety',
           diagnosisCode: 'BV-01',
+          label: 'Delayed castling under pressure',
+          isPrimary: true,
           status: 'active',
           note: 'Delays castling under pressure.',
           evidenceCount: 3,

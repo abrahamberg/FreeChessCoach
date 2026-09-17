@@ -220,7 +220,7 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'propose_focus_area_update',
     description:
-      "Record progress, a regression, or resolution on one of the student's CURRENT focus areas (listed above with their diagnosis code, e.g. \"TA-07\"), based on real evidence from this session. Address it by diagnosisCode. You do not create focus areas — the system selects them from measured evidence, not from a session impression. If you see a pattern that isn't a focus area yet, record it with record_finding and let the measurement catch up."
+      "Record progress, a regression, or resolution on one of the student's CURRENT focus areas (listed above with their diagnosis code, e.g. \"TA-07\"), based on real evidence from this session. Address it by diagnosisCode. You can also create a new one with action: \"create\" when this session gave you real, specific evidence for a catalog diagnosisCode that isn't tracked yet — not a hunch, not a category-level guess: you saw the actual pattern in this game or conversation and can point to the moment. Put that evidence in note. This never duplicates one the system already tracks (a create on an existing code just folds into progress), and it still respects the 3-active-focus-area limit — if the student's list is already full, it's rejected rather than bumping anything, so decide out loud with the student what to swap for if you think it should replace something. When you're not sure it's specific enough to be its own tracked focus area yet, record_finding and let the measurement catch up instead."
   },
   {
     name: 'update_threads',

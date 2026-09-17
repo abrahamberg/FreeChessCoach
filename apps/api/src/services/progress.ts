@@ -79,15 +79,24 @@ export async function applySessionOutcome(
 export interface FocusAreaUpdateResult {
   applied: boolean;
   focusArea?: focusAreasRepo.FocusAreaRow;
+  /** Set only when `applied` is false and the reason isn't the obvious
+   * "no focus area at that code exists yet" — currently just the 3-active
+   * cap on a `'create'` — so the coach doesn't mistake a silent no-op for
+   * success. */
+  reason?: string;
 }
 
 /**
- * Task 57.3 — selection of WHICH diagnosis code becomes a focus area is no
- * longer an LLM decision (see `syncProgrammaticFocusAreas` below); this tool
- * only records a note and a state transition (progress/regress/resolve) on
- * a focus area the system already created. A code with no existing focus
- * area is a no-op, not an error — the LLM cannot conjure one into existence
- * by naming it.
+ * Task 57.3 restricted this to progress/regress/resolve on a focus area the
+ * system already created (a code with no existing row was a no-op, not an
+ * error — the LLM could not conjure one into existence by naming it). Task
+ * 64.3 restores a narrower `'create'`: real transcript evidence can now
+ * start tracking a code, but it goes through the exact same
+ * anti-duplication and cap checks `syncProgrammaticFocusAreas` already
+ * enforces for the programmatic path — `'create'` is never a way to bypass
+ * them. A `'create'` for a code that already has a row quietly folds into a
+ * `'progress'` note instead of erroring or duplicating (never robotic
+ * re-adds of something already tracked).
  */
 export async function applyFocusAreaUpdate(
   db: Kysely<Database>,
@@ -97,6 +106,15 @@ export async function applyFocusAreaUpdate(
   assertValidDiagnosisCode(update.diagnosisCode);
 
   const existing = await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, update.diagnosisCode);
+
+  if (update.action === 'create') {
+    if (existing) {
+      const focusArea = await focusAreasRepo.updateStatusAndNote(db, existing.id, nextStatusFor('progress', existing.status), update.note);
+      return { applied: true, focusArea };
+    }
+    return createFocusAreaFromConversation(db, userId, update.diagnosisCode, update.note);
+  }
+
   if (!existing) return { applied: false };
 
   const focusArea = await focusAreasRepo.updateStatusAndNote(
@@ -105,6 +123,30 @@ export async function applyFocusAreaUpdate(
     nextStatusFor(update.action, existing.status),
     update.note
   );
+  return { applied: true, focusArea };
+}
+
+/** Task 64.3's `'create'` branch — same cap enforcement
+ * `syncProgrammaticFocusAreas` uses (a fresh `countActiveByUser` read right
+ * before the write), so a conversation-created area can never push the
+ * user's active set past `MAX_ACTIVE_FOCUS_AREAS`. Never auto-primary: the
+ * programmatic ranking (`promoteToPrimary`, Task 64.2) decides that on the
+ * next rebuild, not the moment the coach notices something in conversation. */
+async function createFocusAreaFromConversation(
+  db: Kysely<Database>,
+  userId: string,
+  diagnosisCode: DiagnosisCodeId,
+  note: string
+): Promise<FocusAreaUpdateResult> {
+  const activeCount = await focusAreasRepo.countActiveByUser(db, userId);
+  if (activeCount >= MAX_ACTIVE_FOCUS_AREAS) {
+    return { applied: false, reason: `already tracking ${MAX_ACTIVE_FOCUS_AREAS} active focus areas` };
+  }
+
+  const category = DIAGNOSIS_CODES_BY_ID.get(diagnosisCode)?.parentCategory;
+  if (!category) return { applied: false, reason: 'diagnosisCode has no catalog category' };
+
+  const focusArea = await focusAreasRepo.insert(db, { userId, category, diagnosisCode, status: 'active', note });
   return { applied: true, focusArea };
 }
 

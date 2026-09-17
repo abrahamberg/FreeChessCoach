@@ -2807,24 +2807,54 @@ anti-noise guardrail."
 `packages/prompts/src/tools.ts`, `packages/prompts/src/progress-summarizer.ts`,
 `apps/api/src/services/progress.ts` + tests.
 
-- [ ] Add a `'create'` action to `FocusAreaUpdateSchema`'s action enum,
+- [x] Add a `'create'` action to `FocusAreaUpdateSchema`'s action enum,
       required `diagnosisCode` (already the case) and a `note` describing
       the transcript evidence.
-- [ ] `applyFocusAreaUpdate`'s `'create'` branch: no-ops into a `'progress'`
+- [x] `applyFocusAreaUpdate`'s `'create'` branch: no-ops into a `'progress'`
       if a focus area for that code already exists (never a duplicate,
       never a robotic re-add); otherwise inserts one, re-checking
       `MAX_ACTIVE_FOCUS_AREAS` and Task 64.2's one-primary rule (a
       conversation-created focus area is never auto-primary — the
       programmatic ranking decides that on the next rebuild).
-- [ ] Wire the same `'create'` action into both the live
+- [x] Wire the same `'create'` action into both the live
       `propose_focus_area_update` tool and `SessionOutcome.focusAreaUpdates`
       (session-end summarizer) — same validation path either way.
-- [ ] Update `propose_focus_area_update`'s tool description (currently:
+- [x] Update `propose_focus_area_update`'s tool description (currently:
       "You do not create focus areas") and the summarizer's system prompt
       to describe when creation is warranted: real evidence from *this*
       session, a specific catalog code, not a hunch — and that it still
       won't duplicate one the system already tracks.
-- [ ] Commit: `feat: conversation-grounded focus-area creation, anchored to a diagnosis code`.
+- [x] Commit: `feat: conversation-grounded focus-area creation, anchored to a diagnosis code`.
+
+**Done:** `FocusAreaUpdateSchema`'s action enum gained `'create'`; since both
+the live `propose_focus_area_update` tool and the summarizer's
+`SessionOutcome.focusAreaUpdates` already validate against this one schema
+and both route through `progress.ts`'s single `applyFocusAreaUpdate`, wiring
+the new action into that one function covered both call sites for free —
+no separate plumbing needed per surface. `applyFocusAreaUpdate`'s new
+`'create'` branch: an existing row folds the note into a `'progress'`
+transition instead of erroring or duplicating; otherwise a new helper
+`createFocusAreaFromConversation` re-checks `MAX_ACTIVE_FOCUS_AREAS` with a
+fresh `countActiveByUser` read (mirroring `syncProgrammaticFocusAreas`'s own
+cap check) and inserts at `status: 'active'`, never `isPrimary: true` — Task
+64.2's `promoteToPrimary` is the only path that ever sets that flag, on the
+next programmatic rebuild. `FocusAreaUpdateResult` gained an optional
+`reason` string, populated only for the new not-applied case (over cap) so
+the coach doesn't mistake a silent no-op for success — the existing "no
+focus area at that code" no-op for progress/regress/resolve stays reason-less,
+unchanged. Updated `propose_focus_area_update`'s tool description and the
+summarizer's system prompt to describe exactly when creation is warranted
+(real, specific transcript evidence for an untracked catalog code — not a
+hunch, not a category guess) and its two guardrails (folds into progress
+rather than duplicating; hard-rejected over the 3-active cap rather than
+displacing anything). Updated `tools.test.ts`'s schema test (previously
+asserted `action: 'create'` was rejected — now asserts the opposite plus a
+still-rejected made-up action) and `progress-summarizer.test.ts`'s prompt-text
+assertions to match. Also caught and fixed a gap from Task 64.1/64.2:
+`packages/shared/src/schemas.test.ts`'s `DashboardResponseSchema` fixture was
+still missing `label`/`isPrimary`, undetected until this task's full-suite
+run — a reminder that a schema's `.test.ts` sibling in the same package
+needs the same grep-for-fixtures sweep as the app-level tests.
 
 ### Task 64.4: The create → check → graduate lifecycle, in the coach's own voice
 
