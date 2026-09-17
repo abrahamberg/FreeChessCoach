@@ -82,3 +82,55 @@ export async function createPuzzleAssignmentsForProfile(
     created += 1;
   }
 }
+
+export interface AssignFocusedSessionResult {
+  assigned: boolean;
+  /** Set whenever `assigned` is true — a freshly created assignment, or an
+   * existing open one this call pointed back at instead of duplicating. */
+  assignmentId?: string;
+  itemCount?: number;
+  /** Set whenever `assigned` is false, or true via the "already exists"
+   * path — the live coach tool surfaces this back to the model so it
+   * doesn't narrate a fresh assignment for one that was already there, or
+   * go silent when nothing could be assigned. */
+  reason?: string;
+}
+
+/**
+ * Task 66.2 — the live-tool counterpart to `createPuzzleAssignmentsForProfile`
+ * above: same selection logic and anti-duplication discipline, narrowed to
+ * one `diagnosisCode` a student and coach just discussed in conversation
+ * rather than a whole profile rebuild. An existing open assignment for this
+ * code is returned as-is (never a duplicate — same discipline as Task
+ * 64.3's focus-area `'create'`); no configured/matching pool is a named
+ * skip, not an error, same as the background job's own contract.
+ */
+export async function assignFocusedSessionForCode(
+  db: Kysely<Database>,
+  userId: string,
+  code: DiagnosisCodeId,
+  pool: readonly PuzzleRecord[] | null,
+  studentRating: number
+): Promise<AssignFocusedSessionResult> {
+  const existing = await puzzleAssignmentsRepo.findOpenAssignment(db, userId, code);
+  if (existing) {
+    return { assigned: true, assignmentId: existing.id, itemCount: existing.items.length, reason: 'already assigned, not duplicated' };
+  }
+
+  if (!pool || pool.length === 0) {
+    return { assigned: false, reason: 'no practice material is configured yet' };
+  }
+
+  const puzzles = selectPuzzles(pool, { code, rating: studentRating, count: DEFAULT_PUZZLE_COUNT });
+  if (puzzles.length === 0) {
+    return { assigned: false, reason: 'no matching practice material for this specific skill yet' };
+  }
+
+  const created = await puzzleAssignmentsRepo.insert(db, {
+    userId,
+    diagnosisCode: code,
+    reason: buildReason(code),
+    items: toAssignmentItems(puzzles)
+  });
+  return { assigned: true, assignmentId: created.id, itemCount: created.items.length };
+}

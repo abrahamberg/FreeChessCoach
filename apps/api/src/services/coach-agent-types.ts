@@ -1,3 +1,4 @@
+import type { PuzzleRecord } from '@freechesscoach/chess-analysis';
 import type { ClientToolResult, PositionAnalysis } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
@@ -23,6 +24,10 @@ export interface CoachAgentDependencies {
   callLightModel: (messages: { system: string; user: string }) => Promise<string>;
   /** Defaults to the real gateway; tests override with a MockLanguageModelV1. */
   resolveModel?: ModelResolver;
+  /** Task 66.2 — the in-memory puzzle pool, opened once at process start
+   * and carried straight through from CoachAgentBaseDependencies. See
+   * CoachToolsDependencies.puzzlePool's doc comment for the null contract. */
+  puzzlePool?: readonly PuzzleRecord[] | null;
 }
 
 export interface StartTurnInput {

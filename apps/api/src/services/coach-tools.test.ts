@@ -142,13 +142,14 @@ describe('buildCoachTools', () => {
     };
   }
 
-  test('exposes all 17 architecture §7.1 tools', async () => {
+  test('exposes all 18 architecture §7.1 tools', async () => {
     const ctx = await setupCtx();
     const tools = buildCoachTools(ctx, makeDeps());
 
     expect(Object.keys(tools).sort()).toEqual(
       [
         'annotate_board',
+        'assign_focused_session',
         'check_moves',
         'check_position',
         'end_session',
@@ -178,14 +179,14 @@ describe('buildCoachTools', () => {
     expect(tools.undo_last_move).toBeUndefined();
   });
 
-  test('mode: "play" adds get_candidate_moves, play_coach_move, and undo_last_move alongside the 17 analyze-mode tools, without removing any of them', async () => {
+  test('mode: "play" adds get_candidate_moves, play_coach_move, and undo_last_move alongside the 18 analyze-mode tools, without removing any of them', async () => {
     const ctx = await setupCtx();
     const tools = buildCoachTools(ctx, makeDeps(), 'play');
 
     expect(tools.get_candidate_moves).toBeDefined();
     expect(tools.play_coach_move).toBeDefined();
     expect(tools.undo_last_move).toBeDefined();
-    expect(Object.keys(tools)).toHaveLength(20);
+    expect(Object.keys(tools)).toHaveLength(21);
   });
 
   test('show_position, annotate_board, expect_move, and hypothetical_line have no execute (client tools)', async () => {
@@ -432,6 +433,64 @@ describe('buildCoachTools', () => {
       );
 
       expect(result).toEqual({ applied: false });
+    });
+  });
+
+  describe('assign_focused_session', () => {
+    const forkPool = [
+      { puzzleId: 'p1', fen: '8/8/8/8/8/8/8/8 w - - 0 1', moves: ['e1e2'], rating: 1500, themes: ['fork'] },
+      { puzzleId: 'p2', fen: '8/8/8/8/8/8/8/8 w - - 0 1', moves: ['e1e2'], rating: 1520, themes: ['fork'] }
+    ];
+
+    test('assigns a new focused session for a code with matching pool material', async () => {
+      const ctx = await setupCtx();
+      const tools = buildCoachTools(ctx, makeDeps({ puzzlePool: forkPool }));
+
+      const result = await tools.assign_focused_session?.execute?.({ diagnosisCode: 'TA-07' }, TOOL_OPTIONS);
+
+      expect(result).toMatchObject({ assigned: true });
+      const rows = await db.selectFrom('puzzleAssignments').selectAll().where('userId', '=', ctx.userId).execute();
+      expect(rows).toHaveLength(1);
+    });
+
+    test('with no puzzlePool configured, reports a named skip rather than throwing', async () => {
+      const ctx = await setupCtx();
+      const tools = buildCoachTools(ctx, makeDeps());
+
+      const result = await tools.assign_focused_session?.execute?.({ diagnosisCode: 'TA-07' }, TOOL_OPTIONS);
+
+      expect(result).toMatchObject({ assigned: false });
+    });
+
+    test('a call in a later turn for the same code points back at the existing assignment instead of duplicating', async () => {
+      // Two separate buildCoachTools calls — fresh per-turn guard state each
+      // (as two real agent turns would be) — so this exercises the DB-level
+      // anti-duplication check itself, not withTurnGuards' same-turn cache.
+      const ctx = await setupCtx();
+      const deps = makeDeps({ puzzlePool: forkPool });
+      const firstTurnTools = buildCoachTools(ctx, deps);
+      const first = await firstTurnTools.assign_focused_session?.execute?.({ diagnosisCode: 'TA-07' }, TOOL_OPTIONS);
+
+      const secondTurnTools = buildCoachTools(ctx, deps);
+      const second = await secondTurnTools.assign_focused_session?.execute?.({ diagnosisCode: 'TA-07' }, TOOL_OPTIONS);
+
+      expect(second).toMatchObject({ assigned: true, assignmentId: (first as { assignmentId?: string }).assignmentId });
+      const rows = await db.selectFrom('puzzleAssignments').selectAll().where('userId', '=', ctx.userId).execute();
+      expect(rows).toHaveLength(1);
+    });
+
+    test('a 3rd call in one turn returns a budget_exhausted error instead of executing', async () => {
+      const ctx = await setupCtx();
+      const tools = buildCoachTools(ctx, makeDeps({ puzzlePool: forkPool }));
+      const call = (code: string) => tools.assign_focused_session?.execute?.({ diagnosisCode: code as never }, TOOL_OPTIONS);
+
+      await call('TA-07');
+      await call('TA-08');
+      const third = await call('TA-09');
+
+      expect(third).toEqual({ error: 'budget_exhausted — answer with what you have' });
+      const rows = await db.selectFrom('puzzleAssignments').selectAll().where('userId', '=', ctx.userId).execute();
+      expect(rows).toHaveLength(2);
     });
   });
 

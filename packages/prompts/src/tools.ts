@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { FindingSchema, FocusAreaUpdateSchema, ThreadSchema } from '@freechesscoach/shared';
+import { DiagnosisCodeIdSchema, FindingSchema, FocusAreaUpdateSchema, ThreadSchema } from '@freechesscoach/shared';
 
-/** architecture §7.1 — parameter schemas for the coach agent's 17 tools. Pure
+/** architecture §7.1 — parameter schemas for the coach agent's 18 tools. Pure
  * (no execute functions here); apps/api/src/services/coach-tools.ts binds
  * these to real services to build the AI SDK ToolSet. */
 
@@ -69,6 +69,12 @@ export const getDiagnosticProfileParameters = z.object({});
 export const recordFindingParameters = FindingSchema;
 
 export const proposeFocusAreaUpdateParameters = FocusAreaUpdateSchema;
+
+/** Task 66.2 — addressed by diagnosisCode alone, same catalog-anchored
+ * discipline as everything else that names one (never free text). */
+export const assignFocusedSessionParameters = z.object({
+  diagnosisCode: DiagnosisCodeIdSchema
+});
 
 export const updateThreadsParameters = z.object({
   threads: z.array(ThreadSchema)
@@ -221,6 +227,11 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
     name: 'propose_focus_area_update',
     description:
       "Record progress, a regression, or resolution on one of the student's CURRENT focus areas (listed above with their diagnosis code, e.g. \"TA-07\"), based on real evidence from this session. Address it by diagnosisCode. You can also create a new one with action: \"create\" when this session gave you real, specific evidence for a catalog diagnosisCode that isn't tracked yet — not a hunch, not a category-level guess: you saw the actual pattern in this game or conversation and can point to the moment. Put that evidence in note. This never duplicates one the system already tracks (a create on an existing code just folds into progress), and it still respects the 3-active-focus-area limit — if the student's list is already full, it's rejected rather than bumping anything, so decide out loud with the student what to swap for if you think it should replace something. When you're not sure it's specific enough to be its own tracked focus area yet, record_finding and let the measurement catch up instead."
+  },
+  {
+    name: 'assign_focused_session',
+    description:
+      "When a diagnosed weakness comes up in conversation and is worth deliberate practice beyond what you can do together right now, assign a focused practice set targeting that specific catalog diagnosisCode — it appears on the student's dashboard to work through on their own; mention it naturally rather than announcing a feature (\"I'm setting you up with some positions on this\" not \"I have created a focused session assignment\"). Never call \"puzzles\" out loud — this is a focused session, not a puzzle set. Check the result before saying anything: assigned: false means no practice material is available for that skill yet, so say so honestly instead of promising something that didn't happen; assigned: true with reason \"already assigned, not duplicated\" means one was already open for this code, so point the student at what's already there rather than announcing a new one."
   },
   {
     name: 'update_threads',

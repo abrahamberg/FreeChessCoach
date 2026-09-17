@@ -27,6 +27,7 @@ const TOOL_ORDER = [
   'get_player_stats',
   'record_finding',
   'propose_focus_area_update',
+  'assign_focused_session',
   'update_threads',
   'record_move_note',
   'recall_move',

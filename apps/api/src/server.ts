@@ -13,6 +13,7 @@ import { createDb } from './db/index.js';
 import { createGraphileJobQueue } from './jobs/queue.js';
 import { createUserSetupVault } from './llm/key-vault.js';
 import { EngineTunnelRegistry } from './services/engine/engine-tunnel-registry.js';
+import { openPuzzlePoolFromEnv } from './services/puzzle-pool.js';
 
 const isMainModule =
   process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
@@ -35,7 +36,8 @@ async function main(): Promise<void> {
   const engineTunnelRegistry = new EngineTunnelRegistry();
   const lichessEvalIndex = await openLichessEvalIndexFromEnv();
   const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, engineTunnelRegistry, lichessEvalIndex);
-  const coachAgentBaseDeps = buildCoachAgentBaseDependencies(db, jobQueue, gatewayConfig);
+  const puzzlePool = await openPuzzlePoolFromEnv();
+  const coachAgentBaseDeps = buildCoachAgentBaseDependencies(db, jobQueue, gatewayConfig, puzzlePool?.all() ?? null);
   const ttsConfig = buildTtsConfigFromEnv();
 
   const app = buildApp({

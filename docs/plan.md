@@ -3096,7 +3096,7 @@ user-facing copy.
 `apps/api/src/services/coach-tools.ts`,
 `apps/api/src/services/puzzle-assignment.ts` + tests.
 
-- [ ] New coach tool (name TBD at implementation time — avoid "puzzle" in
+- [x] New coach tool (name TBD at implementation time — avoid "puzzle" in
       the user-facing description per Task 66.1) that lets the live coach,
       when a diagnosed weakness comes up in conversation, create or
       reference a targeted practice assignment right then — reuses
@@ -3104,10 +3104,54 @@ user-facing copy.
       `diagnosisCode` instead of a whole profile), same `MAX_NEW_
       ASSIGNMENTS_PER_RUN`-style cap so a chatty session can't spam
       assignments.
-- [ ] If one already exists for that code (unresolved), the tool returns
+- [x] If one already exists for that code (unresolved), the tool returns
       that instead of creating a second one — same anti-duplication
       discipline as Task 64.3.
-- [ ] Commit: `feat: let the live coach assign a focused practice session`.
+- [x] Commit: `feat: let the live coach assign a focused practice session`.
+
+**Done:** Named it `assign_focused_session`; its description explicitly
+tells the coach to never say "puzzles" out loud to the student. New
+`assignFocusedSessionForCode` in `puzzle-assignment.ts` mirrors
+`createPuzzleAssignmentsForProfile`'s selection/anti-duplication logic for
+one code instead of a whole profile — an existing open assignment is
+returned as-is (never duplicated), a missing/non-matching pool is a named
+`reason` string, not a thrown error. Added `assign_focused_session: 2` to
+`TOOL_BUDGETS` (`coach-tool-guards.ts`) as the per-turn backstop the plan
+asked for; the DB-level anti-duplication check is what actually stops a
+chatty *session* (not just one turn) from spamming assignments across
+several turns.
+
+The real work turned out to be plumbing, not the tool itself: the puzzle
+pool was only ever opened in `worker.ts` (the background-job process) —
+`server.ts` (the API process that handles live coach turns) never called
+`openPuzzlePoolFromEnv` at all, so the live tool had no pool to read from
+without new wiring. Threaded a new `puzzlePool` field through
+`CoachAgentBaseDependencies` → `buildCoachAgentBaseDependencies` (now takes
+it as a 4th param) → `server.ts` (opens it once at startup, same as the
+existing `openLichessEvalIndexFromEnv` precedent) → `CoachAgentDependencies`
+→ `buildTurnToolsDependencies` → `CoachToolsDependencies`. Also added
+`'assign_focused_session'` to `llm/chat.ts`'s `TOOL_ORDER` (tool
+definitions sit in the cached prompt prefix — order is fixed, not
+incidental) right after `propose_focus_area_update`. Confirmed
+`docker-compose.yml` already sets `PUZZLE_POOL_PATH` for both `api` and
+`worker` (the comment there already claimed "api/worker" load this file,
+apparently copy-pasted from the eval-index precedent ahead of the code
+actually doing it) — this change makes that comment true for the first
+time. Separately noticed the Helm chart wires `LICHESS_EVAL_INDEX_PATH` for
+production but has no `PUZZLE_POOL_PATH` equivalent at all — a pre-existing
+gap predating this task (the background job itself was presumably never
+deployed with real puzzle data in production either), flagged here but not
+fixed — out of scope for a prompt/tool-wiring task.
+
+Repository gained `findOpenAssignment` (returns the row, unlike the
+existing boolean-only `hasOpenAssignment`) so the tool can report back an
+assignment's id/item count. Test for the "points back at an existing
+assignment" behavior deliberately uses two separate `buildCoachTools` calls
+(simulating two turns) rather than two calls against one tool set — the
+per-turn repeat-call cache in `coach-tool-guards.ts` would otherwise return
+the first call's cached result on the second call regardless of whether the
+DB-level anti-duplication logic actually ran, silently testing the wrong
+mechanism.
 
 ### Task 66.3: External practice and bot-matchup recommendations
 

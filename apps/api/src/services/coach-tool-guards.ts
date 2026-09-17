@@ -19,7 +19,14 @@ export const TOOL_BUDGETS: Partial<Record<string, number>> = {
   // bounded loop (position-investigator.ts) can itself make several engine
   // calls, so the outer per-turn count stays tight; the tool's own
   // description tells the coach to fold related sub-questions into one call.
-  investigate_position: 1
+  investigate_position: 1,
+  // Task 66.2 — same anti-flood reasoning as puzzle-assignment.ts's own
+  // MAX_NEW_ASSIGNMENTS_PER_RUN (the background job's equivalent cap): a
+  // chatty session shouldn't be able to assign a pile of practice sets in
+  // one reply. The DB-level anti-duplication check (an existing open
+  // assignment is returned, not duplicated) already limits repeats across
+  // a whole session; this budget is the per-turn backstop.
+  assign_focused_session: 2
   // Deliberately absent: `check_moves` and `check_position`. Both are pure,
   // engine-free lookups whose whole purpose is to be cheaper than the coach
   // asserting a move from memory — a budget on them would put back the

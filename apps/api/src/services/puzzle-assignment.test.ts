@@ -6,7 +6,7 @@ import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js';
 import type { Database } from '../db/schema.js';
 import * as usersRepo from '../db/repositories/users.js';
-import { createPuzzleAssignmentsForProfile } from './puzzle-assignment.js';
+import { assignFocusedSessionForCode, createPuzzleAssignmentsForProfile } from './puzzle-assignment.js';
 
 describe('createPuzzleAssignmentsForProfile (Task 59.3)', () => {
   let testDb: TestDb;
@@ -119,5 +119,52 @@ describe('createPuzzleAssignmentsForProfile (Task 59.3)', () => {
     const open = await puzzleAssignmentsRepo.listOpenForUser(db, user.id);
     expect(open.length).toBeLessThan(codes.length);
     expect(open.length).toBeGreaterThan(0);
+  });
+
+  describe('assignFocusedSessionForCode (Task 66.2)', () => {
+    test('creates a new assignment for a code with no existing one', async () => {
+      const user = await makeUser();
+
+      const result = await assignFocusedSessionForCode(db, user.id, 'TA-07', forkPool, 1500);
+
+      expect(result.assigned).toBe(true);
+      expect(result.assignmentId).toBeDefined();
+      expect(result.itemCount).toBeGreaterThan(0);
+      const open = await puzzleAssignmentsRepo.listOpenForUser(db, user.id);
+      expect(open).toHaveLength(1);
+      expect(open[0]?.diagnosisCode).toBe('TA-07');
+    });
+
+    test('points back at an existing open assignment instead of duplicating', async () => {
+      const user = await makeUser();
+      const first = await assignFocusedSessionForCode(db, user.id, 'TA-07', forkPool, 1500);
+
+      const second = await assignFocusedSessionForCode(db, user.id, 'TA-07', forkPool, 1500);
+
+      expect(second.assigned).toBe(true);
+      expect(second.assignmentId).toBe(first.assignmentId);
+      expect(second.reason).toMatch(/already assigned/i);
+      expect(await puzzleAssignmentsRepo.listOpenForUser(db, user.id)).toHaveLength(1);
+    });
+
+    test('reports a named skip when no pool is configured', async () => {
+      const user = await makeUser();
+
+      const result = await assignFocusedSessionForCode(db, user.id, 'TA-07', null, 1500);
+
+      expect(result.assigned).toBe(false);
+      expect(result.reason).toMatch(/no practice material is configured/i);
+      expect(await puzzleAssignmentsRepo.listOpenForUser(db, user.id)).toHaveLength(0);
+    });
+
+    test('reports a named skip when the pool has nothing matching this code', async () => {
+      const user = await makeUser();
+
+      const result = await assignFocusedSessionForCode(db, user.id, 'TA-04', forkPool, 1500);
+
+      expect(result.assigned).toBe(false);
+      expect(result.reason).toMatch(/no matching practice material/i);
+      expect(await puzzleAssignmentsRepo.listOpenForUser(db, user.id)).toHaveLength(0);
+    });
   });
 });

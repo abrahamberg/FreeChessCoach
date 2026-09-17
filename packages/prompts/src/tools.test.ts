@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   annotateBoardParameters,
+  assignFocusedSessionParameters,
   checkMovesParameters,
   checkPositionParameters,
   COACH_TOOL_SPECS,
@@ -79,6 +80,12 @@ describe('coach agent tool parameter schemas (architecture §7.1)', () => {
     expect(proposeFocusAreaUpdateParameters.safeParse(valid).success).toBe(true);
     expect(proposeFocusAreaUpdateParameters.safeParse({ ...valid, action: 'create' }).success).toBe(true);
     expect(proposeFocusAreaUpdateParameters.safeParse({ ...valid, action: 'invent' }).success).toBe(false);
+  });
+
+  test('assign_focused_session: { diagnosisCode }', () => {
+    expect(assignFocusedSessionParameters.safeParse({ diagnosisCode: 'TA-07' }).success).toBe(true);
+    expect(assignFocusedSessionParameters.safeParse({ diagnosisCode: 'not-a-code' }).success).toBe(false);
+    expect(assignFocusedSessionParameters.safeParse({}).success).toBe(false);
   });
 
   test('update_threads: { threads }', () => {
@@ -181,6 +188,7 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
     'get_player_stats',
     'record_finding',
     'propose_focus_area_update',
+    'assign_focused_session',
     'update_threads',
     'record_move_note',
     'recall_move',
@@ -188,7 +196,7 @@ describe('COACH_TOOL_SPECS / coachToolDescription — single source of truth for
     'end_session'
   ];
 
-  test('has exactly the coach agent\'s 17 tools, each with a unique name and a non-empty description', () => {
+  test('has exactly the coach agent\'s 18 tools, each with a unique name and a non-empty description', () => {
     expect(COACH_TOOL_SPECS.map((spec) => spec.name)).toEqual(EXPECTED_NAMES);
     for (const spec of COACH_TOOL_SPECS) {
       expect(spec.description.length).toBeGreaterThan(0);

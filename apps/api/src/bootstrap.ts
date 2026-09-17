@@ -1,3 +1,4 @@
+import type { PuzzleRecord } from '@freechesscoach/chess-analysis';
 import { OpenAiServiceTierSchema, ReasoningEffortSchema } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { Database } from './db/schema.js';
@@ -89,6 +90,10 @@ export interface CoachAgentBaseDependencies {
    * so sessions.test.ts can still inject a MockLanguageModelV4 via the base
    * deps — production callers never set this. */
   resolveModel?: CoachAgentDependencies['resolveModel'];
+  /** Task 66.2 — opened once at server start (`openPuzzlePoolFromEnv`),
+   * same in-memory pool `worker.ts` already opens for the background
+   * assignment job. `null` when `PUZZLE_POOL_PATH` isn't configured. */
+  puzzlePool?: readonly PuzzleRecord[] | null;
 }
 
 /** Everything CoachAgentDependencies needs except analyzePosition and
@@ -98,12 +103,14 @@ export interface CoachAgentBaseDependencies {
 export function buildCoachAgentBaseDependencies(
   db: Kysely<Database>,
   jobQueue: JobQueue,
-  gatewayConfig: GatewayConfig
+  gatewayConfig: GatewayConfig,
+  puzzlePool?: readonly PuzzleRecord[] | null
 ): CoachAgentBaseDependencies {
   return {
     db,
     jobQueue,
-    gatewayConfig
+    gatewayConfig,
+    puzzlePool
   };
 }
 

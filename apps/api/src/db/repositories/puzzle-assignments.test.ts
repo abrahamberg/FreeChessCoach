@@ -87,6 +87,18 @@ describe('puzzle-assignments repository (Task 59.2)', () => {
     expect(await puzzleAssignmentsRepo.hasOpenAssignment(db, user.id, 'TA-10')).toBe(false);
   });
 
+  test('findOpenAssignment returns the row for pending/in_progress, undefined once completed or for another code', async () => {
+    const user = await makeUser();
+    const created = await puzzleAssignmentsRepo.insert(db, assignment(user.id, { diagnosisCode: 'TA-12' }));
+
+    const found = await puzzleAssignmentsRepo.findOpenAssignment(db, user.id, 'TA-12');
+    expect(found?.id).toBe(created.id);
+    expect(await puzzleAssignmentsRepo.findOpenAssignment(db, user.id, 'TA-13')).toBeUndefined();
+
+    await puzzleAssignmentsRepo.markCompleted(db, created.id);
+    expect(await puzzleAssignmentsRepo.findOpenAssignment(db, user.id, 'TA-12')).toBeUndefined();
+  });
+
   test('updateItems replaces the items array', async () => {
     const user = await makeUser();
     const created = await puzzleAssignmentsRepo.insert(db, assignment(user.id));

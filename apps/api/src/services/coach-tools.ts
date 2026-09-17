@@ -1,5 +1,6 @@
 import {
   annotateBoardParameters,
+  assignFocusedSessionParameters,
   checkMovesParameters,
   checkPositionParameters,
   coachToolDescription,
@@ -24,13 +25,22 @@ import {
   updateThreadsParameters,
   type DiagnosticReportItem
 } from '@freechesscoach/prompts';
-import { evaluateGates, inspectMoves, moveRefToPly, type DiagnosticProfileEntry } from '@freechesscoach/chess-analysis';
-import type { EmittableConfidenceLevel, Finding, FocusAreaUpdate, PositionAnalysis, SessionMode, Thread } from '@freechesscoach/shared';
+import { evaluateGates, inspectMoves, moveRefToPly, type DiagnosticProfileEntry, type PuzzleRecord } from '@freechesscoach/chess-analysis';
+import type {
+  DiagnosisCodeId,
+  EmittableConfidenceLevel,
+  Finding,
+  FocusAreaUpdate,
+  PositionAnalysis,
+  SessionMode,
+  Thread
+} from '@freechesscoach/shared';
 import { tool, type ToolSet } from '../llm/tools.js';
 import type { Kysely } from 'kysely';
 import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
+import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
 import { buildPlayCoachTools } from './coach-tools-play.js';
@@ -40,8 +50,14 @@ import { toGateWindowGame, windowByTimeControl } from './diagnostic-window.js';
 import { getPositionAtPly } from './game-positions.js';
 import { recallMove, recordMoveNote, type MoveAddress } from './move-notes.js';
 import * as progressService from './progress.js';
+import { assignFocusedSessionForCode, type AssignFocusedSessionResult } from './puzzle-assignment.js';
 import { createThreadsService } from './threads.js';
 import * as userProfileService from './user-profile.js';
+
+/** Same practical, unmeasured default as `rebuild-diagnostic-profile.ts`'s
+ * own `DEFAULT_STUDENT_RATING` — no numeric rating on file yet
+ * (`users.rating` is nullable) until the user sets one. */
+const DEFAULT_STUDENT_RATING = 1200;
 
 export interface CoachToolsContext {
   userId: string;
@@ -60,6 +76,12 @@ export interface CoachToolsDependencies {
    * (position-investigator.ts) — never throws, returns a plain-text answer
    * or a fallback sentence. */
   investigatePosition: (args: { fen: string; moves?: string[]; question: string }) => Promise<string>;
+  /** Task 66.2's `assign_focused_session` tool — the same in-memory pool
+   * `rebuild-diagnostic-profile.ts` uses, opened once at process start
+   * (`openPuzzlePoolFromEnv`). `null`/undefined when `PUZZLE_POOL_PATH`
+   * isn't configured, in which case the tool reports a named skip rather
+   * than assigning anything. */
+  puzzlePool?: readonly PuzzleRecord[] | null;
 }
 
 /** Fresh budget/repeat-call state per call — buildCoachTools is expected to be
@@ -132,6 +154,13 @@ export function buildCoachTools(ctx: CoachToolsContext, deps: CoachToolsDependen
       inputSchema: proposeFocusAreaUpdateParameters,
       execute: withTurnGuards(guardState, 'propose_focus_area_update', (update: FocusAreaUpdate) =>
         progressService.applyFocusAreaUpdate(deps.db, ctx.userId, update)
+      )
+    }),
+    assign_focused_session: tool({
+      description: coachToolDescription('assign_focused_session'),
+      inputSchema: assignFocusedSessionParameters,
+      execute: withTurnGuards(guardState, 'assign_focused_session', (args: { diagnosisCode: DiagnosisCodeId }) =>
+        assignFocusedSessionTool(deps, ctx, args.diagnosisCode)
       )
     }),
     update_threads: tool({
@@ -315,6 +344,19 @@ async function recordFindingTool(
 ): Promise<{ recorded: boolean }> {
   await progressService.recordFinding(db, ctx.userId, ctx.sessionId, ctx.gameId, finding);
   return { recorded: true };
+}
+
+/** Task 66.2 — resolves the student's rating the same way
+ * `rebuild-diagnostic-profile.ts` does, then delegates to
+ * `assignFocusedSessionForCode`'s selection/anti-duplication logic. */
+async function assignFocusedSessionTool(
+  deps: CoachToolsDependencies,
+  ctx: CoachToolsContext,
+  diagnosisCode: DiagnosisCodeId
+): Promise<AssignFocusedSessionResult> {
+  const user = await usersRepo.findById(deps.db, ctx.userId);
+  const studentRating = user?.rating ?? DEFAULT_STUDENT_RATING;
+  return assignFocusedSessionForCode(deps.db, ctx.userId, diagnosisCode, deps.puzzlePool ?? null, studentRating);
 }
 
 async function endSessionTool(

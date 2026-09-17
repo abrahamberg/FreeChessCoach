@@ -83,6 +83,24 @@ export async function hasOpenAssignment(db: Kysely<Database>, userId: string, di
   return row !== undefined;
 }
 
+/** Task 66.2's `assign_focused_session` live tool: the same lookup as
+ * `hasOpenAssignment`, but returning the row itself — the tool needs to
+ * point the coach back at the existing assignment (its id/item count)
+ * rather than just knowing one exists. */
+export function findOpenAssignment(
+  db: Kysely<Database>,
+  userId: string,
+  diagnosisCode: DiagnosisCodeId
+): Promise<PuzzleAssignmentRow | undefined> {
+  return db
+    .selectFrom('puzzleAssignments')
+    .selectAll()
+    .where('userId', '=', userId)
+    .where('diagnosisCode', '=', diagnosisCode)
+    .where('status', 'in', ['pending', 'in_progress'])
+    .executeTakeFirst() as Promise<PuzzleAssignmentRow | undefined>;
+}
+
 /** Task 59.4's `advance_puzzle` tool: persist one item's outcome. Replaces
  * the whole `items` array (jsonb has no in-place element update) — callers
  * read-modify-write via `findById`. */

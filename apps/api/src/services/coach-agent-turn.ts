@@ -209,7 +209,8 @@ function buildTurnToolsDependencies(
         { db: deps.db, gatewayConfig: deps.gatewayConfig, resolveModel, analyzePosition: deps.analyzePosition },
         { userId: session.userId, sessionId: session.id },
         args
-      )
+      ),
+    puzzlePool: deps.puzzlePool
   };
 }
 
