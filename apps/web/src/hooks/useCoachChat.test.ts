@@ -125,6 +125,28 @@ describe('useCoachChat', () => {
     expect(onUnlockRequired).not.toHaveBeenCalled();
   });
 
+  // A user who never saved a setup gets sent to Settings instead of the
+  // unlock-phrase prompt they'd otherwise see for no reason.
+  test('onSetupRequired fires (not onUnlockRequired) when the AI was never set up', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ type: 'about:blank', title: 'Set up your AI in Settings before coaching.', status: 400 }), {
+        status: 400,
+        headers: { 'content-type': 'application/problem+json' }
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const onSetupRequired = vi.fn();
+    const onUnlockRequired = vi.fn();
+
+    const { result } = renderHook(() => useCoachChat('session-1', { onSetupRequired, onUnlockRequired }));
+    await act(async () => {
+      await result.current.sendMessage('hi coach');
+    });
+
+    expect(onSetupRequired).toHaveBeenCalledTimes(1);
+    expect(onUnlockRequired).not.toHaveBeenCalled();
+  });
+
   test('design.md §5.7: isThinking is true once sendMessage starts, false once text arrives', async () => {
     const encoder = new TextEncoder();
     let enqueueText: (() => void) | undefined;

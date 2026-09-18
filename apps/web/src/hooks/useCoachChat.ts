@@ -41,6 +41,11 @@ export interface UseCoachChatOptions {
    * duplicate. Fires again on every subsequent failure, even if a previous
    * prompt was dismissed without unlocking. */
   onUnlockRequired?: (retry: () => Promise<void>) => void;
+  /** Fires when a turn fails because the AI was never set up at all (no
+   * passphrase to unlock — there's nothing saved yet). Distinct from
+   * onUnlockRequired: this should send the student to Settings to create a
+   * setup, not prompt them for a phrase they were never asked to choose. */
+  onSetupRequired?: () => void;
 }
 
 type PostTurnBody = { content?: string } | { clientToolResult: { toolCallId: string; toolName: string; result: unknown } };
@@ -146,11 +151,17 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
         );
         // getModelForUser's own ValidationError (llm/gateway.ts) — the same
         // message coaching-plan.ts's ensureCoachingPlan surfaces on a game's
-        // first turn. Named recursive reference to `postTurn` itself: by the
-        // time `retry` actually runs (after the user unlocks, an arbitrary
-        // amount later), this useCallback's own binding is long since
-        // assigned, so this is safe, not a use-before-init.
-        if (response.status === 400 && /unlock your ai setup/i.test(reason)) {
+        // first turn. Two distinct messages share the 400 status: a user who
+        // never saved a setup gets sent to Settings, while one whose unlock
+        // just expired gets the passphrase prompt — checked in that order
+        // since "set up your ai" alone doesn't mention unlocking at all.
+        if (response.status === 400 && /set up your ai/i.test(reason)) {
+          options.onSetupRequired?.();
+        } else if (response.status === 400 && /unlock your ai setup/i.test(reason)) {
+          // Named recursive reference to `postTurn` itself: by the time
+          // `retry` actually runs (after the user unlocks, an arbitrary
+          // amount later), this useCallback's own binding is long since
+          // assigned, so this is safe, not a use-before-init.
           options.onUnlockRequired?.(async () => {
             setMessages((prev) => prev.filter((message) => message.id !== assistantId));
             setIsStreaming(true);

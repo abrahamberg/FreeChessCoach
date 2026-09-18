@@ -91,6 +91,17 @@ export function markAbandoned(db: Kysely<Database>, id: string): Promise<void> {
     .then(() => undefined);
 }
 
+/** services/account.ts's deletion cascade — every puzzle session id to
+ * clear messages for (deleteMessagesBySessionId) before deleteSessionsByUserId. */
+export async function listSessionIdsByUserId(db: Kysely<Database>, userId: string): Promise<string[]> {
+  const rows = await db.selectFrom('puzzleSessions').select('id').where('userId', '=', userId).execute();
+  return rows.map((row) => row.id);
+}
+
+export function deleteSessionsByUserId(db: Kysely<Database>, userId: string): Promise<void> {
+  return db.deleteFrom('puzzleSessions').where('userId', '=', userId).execute().then(() => undefined);
+}
+
 export type PuzzleSessionMessageRole = 'user' | 'assistant' | 'tool';
 
 export interface PuzzleSessionMessageRow {
@@ -125,4 +136,15 @@ export function listMessagesBySession(db: Kysely<Database>, puzzleSessionId: str
     .where('puzzleSessionId', '=', puzzleSessionId)
     .orderBy('id', 'asc')
     .execute();
+}
+
+/** services/account.ts's deletion cascade — a puzzle session's messages
+ * must go before the session itself (no DB cascade, same discipline as
+ * services/games.ts's cascadeDeleteGame). */
+export function deleteMessagesBySessionId(db: Kysely<Database>, puzzleSessionId: string): Promise<void> {
+  return db
+    .deleteFrom('puzzleSessionMessages')
+    .where('puzzleSessionId', '=', puzzleSessionId)
+    .execute()
+    .then(() => undefined);
 }

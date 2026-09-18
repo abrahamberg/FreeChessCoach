@@ -20,6 +20,7 @@
 
 .settings-page__profile-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
   margin-bottom: var(--space-5);
@@ -87,6 +88,7 @@
 
 .platform-username-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
@@ -97,10 +99,12 @@
 
 .platform-username-form input {
   flex: 1;
+  min-width: 0;
 }
 
 .nickname-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   margin-bottom: 12px;
@@ -108,6 +112,22 @@
 
 .nickname-form input {
   flex: 1;
+  min-width: 0;
+}
+
+/* Below ~480px an input sharing a row with its label/buttons has no room
+ * left to shrink into — full-width on its own line reads better than a
+ * squeezed or overflowing field. */
+@media (max-width: 479px) {
+  .platform-username-form,
+  .nickname-form {
+    align-items: stretch;
+  }
+
+  .platform-username-form input,
+  .nickname-form input {
+    flex-basis: 100%;
+  }
 }
 
 .llm-setup-form {
@@ -122,6 +142,7 @@
 
 .llm-setup-form__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
 }
@@ -179,6 +200,67 @@
   background: var(--color-primary-soft);
   border-color: var(--color-primary);
   color: var(--color-success);
+}
+
+/* Reserves roughly the connect step's height (its five fields are the
+   tallest step) so swapping in the result, phrase, or loading view never
+   collapses the card and snaps it back — that read as the section
+   vanishing and reloading rather than a step finishing. */
+.llm-setup-wizard__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+}
+
+/* Each step is its own <form>/<div>, one level below the outer
+   .llm-setup-form grid, so it needs the same row gap repeated here —
+   otherwise its labels and inputs stack with no spacing between them. */
+.llm-setup-wizard__body form,
+.llm-setup-wizard__body .llm-setup-form__result {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.llm-setup-form__loader {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+}
+
+.llm-setup-form__spinner {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-surface-subtle);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .llm-setup-form__spinner {
+    animation: llm-setup-form-spin 700ms linear infinite;
+  }
+}
+
+/* Without motion the ring alone reads as a stray dot, so give the static
+   case a solid marker instead of a half-drawn circle. */
+@media (prefers-reduced-motion: reduce) {
+  .llm-setup-form__spinner {
+    border-color: var(--color-primary);
+  }
+}
+
+@keyframes llm-setup-form-spin {
+  to {
+    transform: rotate(1turn);
+  }
 }
 
 .llm-test-log {
@@ -245,6 +327,22 @@
 .settings-page__hint {
   color: var(--color-text-secondary);
   font-size: 13px;
+}
+
+.settings-page__danger-zone {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.settings-page__danger-zone h3 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
+.settings-page__danger-zone p[role='alert'] {
+  color: var(--color-danger);
 }
 
 .settings-page__legal {

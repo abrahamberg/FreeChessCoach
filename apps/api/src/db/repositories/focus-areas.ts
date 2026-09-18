@@ -138,3 +138,9 @@ export function listResolved(db: Kysely<Database>, userId: string): Promise<Focu
     .orderBy('lastSeenAt', 'desc')
     .execute();
 }
+
+/** services/account.ts's deletion cascade — focus areas aren't game-scoped,
+ * so no per-game cascade ever reaches them. */
+export function deleteByUserId(db: Kysely<Database>, userId: string): Promise<void> {
+  return db.deleteFrom('focusAreas').where('userId', '=', userId).execute().then(() => undefined);
+}

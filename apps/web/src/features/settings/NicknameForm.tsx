@@ -29,7 +29,7 @@ export function NicknameForm({ value, onSave }: NicknameFormProps): ReactNode {
     return (
       <p className="nickname-form">
         {value}{' '}
-        <button type="button" onClick={startEditing}>
+        <button type="button" className="btn-ghost" onClick={startEditing}>
           Edit
         </button>
       </p>
@@ -43,7 +43,7 @@ export function NicknameForm({ value, onSave }: NicknameFormProps): ReactNode {
       <button type="submit" className="btn-primary">
         Save
       </button>
-      <button type="button" onClick={() => setIsEditing(false)}>
+      <button type="button" className="btn-ghost" onClick={() => setIsEditing(false)}>
         Cancel
       </button>
     </form>

@@ -135,3 +135,10 @@ export function markCompleted(db: Kysely<Database>, id: string): Promise<void> {
     .execute()
     .then(() => undefined);
 }
+
+/** services/account.ts's deletion cascade — run after
+ * puzzleSessionsRepo.deleteSessionsByUserId, since puzzle_sessions
+ * references assignment_id with no DB cascade. */
+export function deleteByUserId(db: Kysely<Database>, userId: string): Promise<void> {
+  return db.deleteFrom('puzzleAssignments').where('userId', '=', userId).execute().then(() => undefined);
+}

@@ -2,6 +2,7 @@ import { UpdateUserProfileRequestSchema } from '@freechesscoach/shared';
 import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import { ValidationError } from '../lib/errors.js';
+import { deleteAccount } from '../services/account.js';
 import * as userProfileService from '../services/user-profile.js';
 import type { Database } from '../db/schema.js';
 
@@ -20,5 +21,11 @@ export function registerUsersRoutes(app: FastifyInstance, db: Kysely<Database>):
     const user = await userProfileService.getOrCreate(db, request.user);
     const updated = await userProfileService.updateProfile(db, user.id, parsed.data);
     return userProfileService.toUserProfile(db, updated);
+  });
+
+  app.delete('/api/users/me', async (request, reply) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    await deleteAccount(db, user.id);
+    return reply.code(204).send();
   });
 }

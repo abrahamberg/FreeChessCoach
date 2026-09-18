@@ -107,13 +107,13 @@ describe('ensureCoachingPlan', () => {
     expect(second).toEqual(first);
   });
 
-  test('propagates the gateway\'s unlock-required error untouched', async () => {
+  test('propagates the gateway\'s setup-required error untouched', async () => {
     const { gameId, userId } = await setupAnalyzedGame();
     const unlockStore = createMemoryLlmUnlockStore({ pepper: 'coaching-plan-test', ttlSeconds: 60 });
     const config: GatewayConfig = { unlockStore };
 
     await expect(ensureCoachingPlan(db, config, gameId, userId)).rejects.toThrow(ValidationError);
-    await expect(ensureCoachingPlan(db, config, gameId, userId)).rejects.toThrow(/unlock/i);
+    await expect(ensureCoachingPlan(db, config, gameId, userId)).rejects.toThrow(/set up your ai/i);
     expect(await analysesRepo.findCoachingPlanByGameId(db, gameId)).toBeFalsy();
   });
 });

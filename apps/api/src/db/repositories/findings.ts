@@ -68,6 +68,13 @@ export function deleteByGameId(db: Kysely<Database>, gameId: string): Promise<vo
   return db.deleteFrom('findings').where('gameId', '=', gameId).execute().then(() => undefined);
 }
 
+/** services/account.ts's deletion cascade — a catch-all for any finding
+ * with no gameId (session-only), since every finding with one is already
+ * removed by its game's own cascadeDeleteGame (deleteByGameId above). */
+export function deleteByUserId(db: Kysely<Database>, userId: string): Promise<void> {
+  return db.deleteFrom('findings').where('userId', '=', userId).execute().then(() => undefined);
+}
+
 export function listRecentByUser(
   db: Kysely<Database>,
   userId: string,

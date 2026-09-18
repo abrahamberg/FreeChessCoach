@@ -203,10 +203,18 @@ export function useSessionPageData(sessionId: string) {
     setShowUnlockModal(true);
   }, []);
 
+  // A user who never saved an AI setup at all has no passphrase to unlock —
+  // send them straight to Settings to create one, rather than opening the
+  // same UnlockPhraseModal a "setup exists but locked" failure shows.
+  const handleSetupRequired = useCallback(() => {
+    void navigate('/settings');
+  }, [navigate]);
+
   const chat = useCoachChat(sessionId, {
     onToolCall: handleCoachToolCall,
     onServerToolResult: handleServerToolResult,
     onUnlockRequired: handleUnlockRequired,
+    onSetupRequired: handleSetupRequired,
     initialMessages,
     sanMoves
   });

@@ -1,6 +1,7 @@
 import type { LlmProvider, StoredLlmSetup } from '@freechesscoach/shared';
 import type { LanguageModel } from 'ai';
 import type { Kysely } from 'kysely';
+import * as llmSetupsRepo from '../db/repositories/llm-setups.js';
 import type { Database } from '../db/schema.js';
 import { ValidationError } from '../lib/errors.js';
 import { anthropicModel } from './anthropic.js';
@@ -50,6 +51,16 @@ export async function getModelForUser(
   if (!config.unlockStore) throw new ValidationError('Unlock storage is not configured.');
   const setup = await config.unlockStore.get(userId);
   if (!setup) {
+    // unlockStore.get is just the short-lived cache — its being empty is
+    // ambiguous between "never saved a setup" and "saved one, but the
+    // unlock expired." The client branches on this message (see
+    // useCoachChat.ts's readProblemDetailTitle handling) to send a
+    // never-configured user to Settings instead of prompting them for a
+    // passphrase they were never asked to set.
+    const row = await llmSetupsRepo.findByUser(db, userId);
+    if (!row) {
+      throw new ValidationError('Set up your AI in Settings before coaching.');
+    }
     throw new ValidationError('Unlock your AI setup in Settings with your unlock phrase before coaching.');
   }
   const provider = providerForProtocol(setup.protocol);

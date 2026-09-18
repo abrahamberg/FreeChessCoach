@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { apiDelete, apiGet, apiPatch, apiPost, apiPostVoid, apiPut, describeApiError } from '../../api/client.js';
+import { ConfirmDialog } from '../../components/ConfirmDialog.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
 import { useUnlockLlmSetup } from '../../hooks/useUnlockLlmSetup.js';
 import { BandSelect } from './BandSelect.js';
@@ -38,6 +39,7 @@ export function SettingsPage(): ReactNode {
   const [showLegalMoveDots, setShowLegalMoveDots] = useShowLegalMoveDots();
   const { hash } = useLocation();
   const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [confirmingDeleteAccount, setConfirmingDeleteAccount] = useState(false);
   const unlock = useUnlockLlmSetup();
 
   useEffect(() => {
@@ -123,6 +125,17 @@ export function SettingsPage(): ReactNode {
   const deleteLlmSetupMutation = useMutation({
     mutationFn: () => apiDelete('/api/users/me/llm-setup'),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['llm-setup'] })
+  });
+
+  // Irreversible: wipes the account and everything under it server-side
+  // (services/account.ts). Ends the oauth2-proxy session on success the
+  // same way the "Sign out" link below does — otherwise the next request
+  // would just recreate a fresh, empty account under the same identity.
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => apiDelete('/api/users/me'),
+    onSuccess: () => {
+      window.location.href = '/oauth2/sign_out?rd=/';
+    }
   });
 
   if (profileQuery.isLoading || llmSetupQuery.isLoading) return <p>Loading…</p>;
@@ -220,8 +233,18 @@ export function SettingsPage(): ReactNode {
           onUnlockClick={() => setShowUnlockModal(true)}
           onLock={() => lockLlmSetupMutation.mutate()}
           onDelete={() => deleteLlmSetupMutation.mutate()}
+          onStartEditing={() => {
+            testLlmSetupMutation.reset();
+            saveLlmSetupMutation.reset();
+          }}
           testResult={testLlmSetupMutation.data}
-          error={describeApiError(saveLlmSetupMutation.error ?? testLlmSetupMutation.error)}
+          isTesting={testLlmSetupMutation.isPending}
+          testError={describeApiError(testLlmSetupMutation.error)}
+          // Keeps the loader up through the post-save refetch (the `key`
+          // above only changes once that lands), so the phrase form can't
+          // flash back on screen between "saved" and the summary view.
+          isSaving={saveLlmSetupMutation.isPending || (saveLlmSetupMutation.isSuccess && llmSetupQuery.isFetching)}
+          saveError={describeApiError(saveLlmSetupMutation.error)}
         />
         {showUnlockModal && (
           <UnlockPhraseModal
@@ -259,6 +282,41 @@ export function SettingsPage(): ReactNode {
         <a className="btn-secondary" href="/oauth2/sign_out?rd=/">
           Sign out
         </a>
+
+        <div className="settings-page__danger-zone">
+          <h3>Delete account</h3>
+          <p>
+            Permanently deletes your account and everything in it — games, analyses, coaching sessions, and
+            progress. This cannot be undone.
+          </p>
+          <button
+            type="button"
+            className="btn-destructive"
+            onClick={() => setConfirmingDeleteAccount(true)}
+            disabled={deleteAccountMutation.isPending}
+          >
+            Delete account
+          </button>
+          {deleteAccountMutation.isError && <p role="alert">{describeApiError(deleteAccountMutation.error)}</p>}
+        </div>
+
+        {confirmingDeleteAccount && (
+          <ConfirmDialog
+            title="Delete your account?"
+            description={
+              <p>
+                This permanently deletes <strong>{profile.email}</strong> and every game, analysis, and coaching
+                session tied to it. This cannot be undone.
+              </p>
+            }
+            confirmLabel="Delete account"
+            onCancel={() => setConfirmingDeleteAccount(false)}
+            onConfirm={() => {
+              setConfirmingDeleteAccount(false);
+              deleteAccountMutation.mutate();
+            }}
+          />
+        )}
       </section>
 
       <footer className="settings-page__legal">

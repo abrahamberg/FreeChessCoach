@@ -1,5 +1,5 @@
 import type { LlmSetup, LlmSetupStatus, LlmSetupTestResponse } from '@freechesscoach/shared';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 
 export interface LlmSetupFormProps {
   status: LlmSetupStatus;
@@ -10,8 +10,15 @@ export interface LlmSetupFormProps {
   onUnlockClick: () => void;
   onLock: () => void;
   onDelete: () => void;
+  /** Fires when a fresh connect/replace wizard opens, so the caller can
+   * clear a test/save result left over from a previous attempt — the
+   * mutations live in SettingsPage and otherwise outlive this form. */
+  onStartEditing?: () => void;
   testResult?: LlmSetupTestResponse;
-  error?: string;
+  isTesting: boolean;
+  testError?: string;
+  isSaving: boolean;
+  saveError?: string;
 }
 
 const DEFAULT_ENDPOINT = 'https://api.openai.com/v1';
@@ -19,11 +26,29 @@ const DEFAULT_LOW_MODEL = 'gpt-5.6-luna';
 const DEFAULT_HIGH_MODEL = 'gpt-5.6-terra';
 const DEFAULT_VOICE_MODEL = 'gpt-4o-mini-tts';
 
-type Step = 1 | 2;
+type Phase = 'connect' | 'result' | 'phrase';
 
-export function LlmSetupForm({ status, onTest, onSave, onUnlockClick, onLock, onDelete, testResult, error }: LlmSetupFormProps): ReactNode {
+/** A controlled wizard, not a form with a spinner bolted on: while a test or
+ * save is in flight the fields are gone, not just disabled; a finished test
+ * replaces the form with its result instead of sitting alongside it; and the
+ * phrase step only appears once a test has actually proven the connection
+ * works — there's no manual "skip ahead" past a check that hasn't run. */
+export function LlmSetupForm({
+  status,
+  onTest,
+  onSave,
+  onUnlockClick,
+  onLock,
+  onDelete,
+  onStartEditing,
+  testResult,
+  isTesting,
+  testError,
+  isSaving,
+  saveError
+}: LlmSetupFormProps): ReactNode {
   const [editing, setEditing] = useState(!status.configured);
-  const [step, setStep] = useState<Step>(1);
+  const [phase, setPhase] = useState<Phase>('connect');
   const [endpoint, setEndpoint] = useState(status.endpoint ?? DEFAULT_ENDPOINT);
   const [apiKey, setApiKey] = useState('');
   const [lowModel, setLowModel] = useState(status.lowModel ?? DEFAULT_LOW_MODEL);
@@ -31,27 +56,34 @@ export function LlmSetupForm({ status, onTest, onSave, onUnlockClick, onLock, on
   const [voiceModel, setVoiceModel] = useState(status.voiceModel ?? DEFAULT_VOICE_MODEL);
   const [unlockPhrase, setUnlockPhrase] = useState('');
 
+  // Every finished test — pass or fail — lands on the result step; the form
+  // only comes back if the user explicitly goes Back to edit it.
+  useEffect(() => {
+    if (testResult) setPhase('result');
+  }, [testResult]);
+
   function currentSetup(): LlmSetup {
     return { endpoint, apiKey, lowModel, highModel, voiceModel };
   }
 
   function startEditing(): void {
-    setStep(1);
+    setPhase('connect');
     setEditing(true);
+    onStartEditing?.();
   }
 
-  function continueToStep2(event: FormEvent): void {
+  function runTest(event: FormEvent): void {
     event.preventDefault();
-    setStep(2);
+    onTest(currentSetup());
   }
 
-  function submit(event: FormEvent): void {
+  function retryTest(): void {
+    onTest(currentSetup());
+  }
+
+  function submitPhrase(event: FormEvent): void {
     event.preventDefault();
     onSave(currentSetup(), unlockPhrase);
-    setApiKey('');
-    setUnlockPhrase('');
-    setEditing(false);
-    setStep(1);
   }
 
   if (status.configured && !editing) {
@@ -61,7 +93,7 @@ export function LlmSetupForm({ status, onTest, onSave, onUnlockClick, onLock, on
           <>
             <p><strong>AI setup saved</strong> ({status.protocol})</p>
             <p className="settings-page__hint">Low: {status.lowModel} · High: {status.highModel} · Voice: {status.voiceModel ?? 'not configured'}</p>
-            <button type="button" onClick={onLock}>Lock now</button>
+            <button type="button" className="btn-secondary" onClick={onLock}>Lock now</button>
           </>
         ) : (
           <>
@@ -70,66 +102,104 @@ export function LlmSetupForm({ status, onTest, onSave, onUnlockClick, onLock, on
             <button type="button" className="btn-primary" onClick={onUnlockClick}>Enter unlock phrase</button>
           </>
         )}
-        <button type="button" onClick={startEditing}>Replace setup</button>
-        <button type="button" onClick={onDelete}>Delete setup</button>
-        {error && <p role="alert">{error}</p>}
+        <button type="button" className="btn-secondary" onClick={startEditing}>Replace setup</button>
+        <button type="button" className="btn-destructive" onClick={onDelete}>Delete setup</button>
       </div>
     );
   }
 
-  // A 2-step wizard rather than one long form: mixing "which model do I
-  // point at" with "what phrase protects it" in a single screen was
-  // confusing enough (support asks) to split — step 1 is purely the
-  // connection, step 2 is purely the phrase. Each `<input required>` only
-  // validates once its own step is mounted, since the other step's fields
-  // aren't in the DOM to be checked.
   return (
-    <form className="llm-setup-form llm-setup-wizard" onSubmit={step === 1 ? continueToStep2 : submit}>
-      <ol className="llm-setup-wizard__steps" aria-label="Setup steps">
-        <li className={`llm-setup-wizard__step ${step === 1 ? 'is-active' : 'is-done'}`}>
-          <span className="llm-setup-wizard__step-number" aria-hidden="true">1</span>
-          Connect your AI
-        </li>
-        <li className={`llm-setup-wizard__step ${step === 2 ? 'is-active' : ''}`}>
-          <span className="llm-setup-wizard__step-number" aria-hidden="true">2</span>
-          Set an unlock phrase
-        </li>
-      </ol>
+    <div className="llm-setup-form llm-setup-wizard">
+      <WizardSteps phase={phase} />
 
-      {step === 1 ? (
-        <>
-          <p className="settings-page__hint">Your endpoint must support OpenAI Chat/Responses or Anthropic Messages. We make a tiny test call for low, high, and voice before saving.</p>
-          <label htmlFor="llm-endpoint">API URL</label>
-          <input id="llm-endpoint" type="url" value={endpoint} onChange={(event) => setEndpoint(event.target.value)} required />
-          <label htmlFor="llm-api-key">API key</label>
-          <input id="llm-api-key" type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} required />
-          <label htmlFor="llm-low-model">Low model</label>
-          <input id="llm-low-model" value={lowModel} onChange={(event) => setLowModel(event.target.value)} required />
-          <label htmlFor="llm-high-model">High model</label>
-          <input id="llm-high-model" value={highModel} onChange={(event) => setHighModel(event.target.value)} required />
-          <label htmlFor="llm-voice-model">Voice model (optional)</label>
-          <input id="llm-voice-model" value={voiceModel} onChange={(event) => setVoiceModel(event.target.value)} />
-          <div className="llm-setup-form__actions">
-            <button type="button" onClick={() => onTest(currentSetup())}>Test models</button>
-            <button type="submit" className="btn-primary">Continue</button>
-          </div>
-          {testResult && <TestResults result={testResult} />}
-        </>
-      ) : (
-        <>
-          <p className="settings-page__hint">Last step — pick a phrase to encrypt your key with. You&rsquo;ll enter it again whenever your AI setup needs unlocking.</p>
-          <label htmlFor="llm-save-phrase">Unlock phrase (8+ characters)</label>
-          <input id="llm-save-phrase" type="password" value={unlockPhrase} onChange={(event) => setUnlockPhrase(event.target.value)} minLength={8} required autoFocus />
-          <div className="llm-setup-form__actions">
-            <button type="button" onClick={() => setStep(1)}>Back</button>
-            <button type="submit" className="btn-primary">Save</button>
-          </div>
-        </>
+      {/* A fixed-footprint frame around whichever step is showing — a test
+       * or save replaces its contents with a same-sized loader instead of
+       * the whole card collapsing to one line and springing back, which
+       * read as the section vanishing and reloading rather than a step
+       * finishing. */}
+      <div className="llm-setup-wizard__body">
+        {isTesting || isSaving ? (
+          <LoaderBlock label={isTesting ? 'Testing your connection…' : 'Saving your setup…'} />
+        ) : (
+          <>
+            {phase === 'connect' && (
+              <form onSubmit={runTest}>
+                <p className="settings-page__hint">Your endpoint must support OpenAI Chat/Responses or Anthropic Messages. We make a tiny test call for low, high, and voice before saving.</p>
+                <label htmlFor="llm-endpoint">API URL</label>
+                <input id="llm-endpoint" type="url" value={endpoint} onChange={(event) => setEndpoint(event.target.value)} required />
+                <label htmlFor="llm-api-key">API key</label>
+                <input id="llm-api-key" type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} required />
+                <label htmlFor="llm-low-model">Low model</label>
+                <input id="llm-low-model" value={lowModel} onChange={(event) => setLowModel(event.target.value)} required />
+                <label htmlFor="llm-high-model">High model</label>
+                <input id="llm-high-model" value={highModel} onChange={(event) => setHighModel(event.target.value)} required />
+                <label htmlFor="llm-voice-model">Voice model (optional)</label>
+                <input id="llm-voice-model" value={voiceModel} onChange={(event) => setVoiceModel(event.target.value)} />
+                <div className="llm-setup-form__actions">
+                  <button type="submit" className="btn-primary">Test connection</button>
+                </div>
+                {testError && <p role="alert">{testError}</p>}
+              </form>
+            )}
+
+            {phase === 'result' && testResult && (
+              <div className="llm-setup-form__result">
+                <TestResults result={testResult} />
+                <div className="llm-setup-form__actions">
+                  <button type="button" className="btn-secondary" onClick={() => setPhase('connect')}>Back</button>
+                  {testResult.protocol ? (
+                    <button type="button" className="btn-primary" onClick={() => setPhase('phrase')}>Proceed</button>
+                  ) : (
+                    <button type="button" className="btn-primary" onClick={retryTest}>Try again</button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {phase === 'phrase' && (
+              <form onSubmit={submitPhrase}>
+                <p className="settings-page__hint">Last step — pick a phrase to encrypt your key with. You&rsquo;ll enter it again whenever your AI setup needs unlocking.</p>
+                <label htmlFor="llm-save-phrase">Unlock phrase (8+ characters)</label>
+                <input id="llm-save-phrase" type="password" value={unlockPhrase} onChange={(event) => setUnlockPhrase(event.target.value)} minLength={8} required autoFocus />
+                <div className="llm-setup-form__actions">
+                  <button type="button" className="btn-secondary" onClick={() => setPhase('result')}>Back</button>
+                  <button type="submit" className="btn-primary">Save</button>
+                </div>
+                {saveError && <p role="alert">{saveError}</p>}
+              </form>
+            )}
+          </>
+        )}
+      </div>
+
+      {status.configured && !isTesting && !isSaving && (
+        <button type="button" className="btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
       )}
+    </div>
+  );
+}
 
-      {status.configured && <button type="button" onClick={() => setEditing(false)}>Cancel</button>}
-      {error && <p role="alert">{error}</p>}
-    </form>
+function WizardSteps({ phase }: { phase: Phase }): ReactNode {
+  return (
+    <ol className="llm-setup-wizard__steps" aria-label="Setup steps">
+      <li className={`llm-setup-wizard__step ${phase === 'phrase' ? 'is-done' : 'is-active'}`}>
+        <span className="llm-setup-wizard__step-number" aria-hidden="true">1</span>
+        Connect your AI
+      </li>
+      <li className={`llm-setup-wizard__step ${phase === 'phrase' ? 'is-active' : ''}`}>
+        <span className="llm-setup-wizard__step-number" aria-hidden="true">2</span>
+        Set an unlock phrase
+      </li>
+    </ol>
+  );
+}
+
+function LoaderBlock({ label }: { label: string }): ReactNode {
+  return (
+    <p className="llm-setup-form__loader" role="status">
+      <span className="llm-setup-form__spinner" aria-hidden="true" />
+      {label}
+    </p>
   );
 }
 

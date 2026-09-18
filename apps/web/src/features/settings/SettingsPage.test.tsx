@@ -51,20 +51,32 @@ describe('SettingsPage', () => {
     expect(screen.getByLabelText('Voice model (optional)')).toHaveValue('gpt-4o-mini-tts');
   });
 
-  test('saves the endpoint, models, key and unlock phrase as one setup, across the connect-then-unlock-phrase wizard', async () => {
+  test('saves the endpoint, models, key and unlock phrase as one setup, gated by a passing test, across the connect-then-unlock-phrase wizard', async () => {
+    const testResponse = {
+      protocol: 'openai-chat',
+      low: { model: 'gpt-5.6-luna', ok: true },
+      high: { model: 'gpt-5.6-terra', ok: true },
+      voice: null
+    };
     const fetchMock = vi.fn((path: string, init?: RequestInit) => {
+      if (path === '/api/users/me/llm-setup/test' && init?.method === 'POST') return jsonResponse(testResponse);
       if (path === '/api/users/me/llm-setup' && init?.method === 'PUT') return new Response(null, { status: 204 });
       return defaultFetch(path, init) ?? (() => { throw new Error(`unexpected fetch: ${path}`); })();
     });
     renderSettings(fetchMock);
     const user = userEvent.setup();
     await screen.findByRole('heading', { name: 'Settings', level: 1 });
-    // Step 1: connection only — no phrase field on screen yet.
+    // Connect step: no phrase field on screen yet.
     expect(screen.queryByLabelText('Unlock phrase (8+ characters)')).not.toBeInTheDocument();
     await user.type(screen.getByLabelText('API key'), 'secret');
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
-    // Step 2: connection fields are gone, only the phrase remains.
+    await user.click(screen.getByRole('button', { name: 'Test connection' }));
+
+    // A passing test replaces the form with the connection result — the
+    // intermediate "form replaced by a loader" behavior is covered
+    // deterministically (via a controlled isTesting prop) in LlmSetupForm.test.tsx.
+    await screen.findByText('Detected format');
     expect(screen.queryByLabelText('API key')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Proceed' }));
     const phraseInput = screen.getByLabelText('Unlock phrase (8+ characters)');
     await user.type(phraseInput, 'correct horse battery staple');
     await user.click(within(phraseInput.closest('form') as HTMLElement).getByRole('button', { name: 'Save' }));
@@ -117,6 +129,28 @@ describe('SettingsPage', () => {
     await user.type(screen.getByLabelText('Unlock phrase'), 'wrong phrase entirely');
     await user.click(screen.getByRole('button', { name: 'Unlock' }));
     expect(await screen.findByText('That unlock phrase is incorrect.')).toBeInTheDocument();
+  });
+
+  test('deleting the account requires confirmation, then DELETEs and signs out', async () => {
+    const fetchMock = vi.fn((path: string, init?: RequestInit) => {
+      if (path === '/api/users/me' && init?.method === 'DELETE') return new Response(null, { status: 204 });
+      return defaultFetch(path, init) ?? (() => { throw new Error(`unexpected fetch: ${path}`); })();
+    });
+    renderSettings(fetchMock);
+    const originalLocation = window.location;
+    Object.defineProperty(window, 'location', { value: { ...originalLocation, href: '' }, writable: true });
+    const user = userEvent.setup();
+    await screen.findByRole('heading', { name: 'Settings', level: 1 });
+
+    await user.click(screen.getByRole('button', { name: 'Delete account' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Delete your account?' });
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/users/me', expect.objectContaining({ method: 'DELETE' }));
+
+    await user.click(within(dialog).getByRole('button', { name: 'Delete account' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/users/me', expect.objectContaining({ method: 'DELETE' })));
+    await waitFor(() => expect(window.location.href).toBe('/oauth2/sign_out?rd=/'));
+    Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
   });
 
   test('editing the nickname still PATCHes the profile', async () => {

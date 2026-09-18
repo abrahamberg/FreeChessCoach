@@ -22,31 +22,36 @@ export async function listGamesForUser(db: Kysely<Database>, userId: string): Pr
   return Promise.all(rows.map((row) => toListItem(db, userId, row)));
 }
 
-/** Deletes a game and everything that hangs off it — none of the foreign
- * keys involved are ON DELETE CASCADE (see migrations 0001/0006/0010/0025),
- * so dependents must go first: session_messages/session_move_notes for each
- * of the game's sessions, then sessions, then findings/analyses/
- * diagnostic_observations, then the game itself. `annotatedPgn` — where all
- * of a game's per-move analysis now lives (0032_annotated_pgn.ts) — needs no
- * separate delete: it's a column on the game row itself, gone the moment
- * `gamesRepo.remove` runs. Wrapped in a transaction so a mid-cascade failure
- * can't leave orphaned rows. */
+/** The per-game delete cascade — none of the foreign keys involved are ON
+ * DELETE CASCADE (see migrations 0001/0006/0010/0025), so dependents must go
+ * first: session_messages/session_move_notes for each of the game's
+ * sessions, then sessions, then findings/analyses/diagnostic_observations,
+ * then the game itself. `annotatedPgn` — where all of a game's per-move
+ * analysis now lives (0032_annotated_pgn.ts) — needs no separate delete:
+ * it's a column on the game row itself, gone the moment `gamesRepo.remove`
+ * runs. Shared by `deleteGameForUser` below and services/account.ts's
+ * full-account deletion; the caller owns the transaction. */
+export async function cascadeDeleteGame(db: Kysely<Database>, gameId: string): Promise<void> {
+  const sessionIds = await sessionsRepo.listIdsByGameId(db, gameId);
+  for (const sessionId of sessionIds) {
+    await sessionMessagesRepo.deleteBySessionId(db, sessionId);
+    await sessionMoveNotesRepo.deleteBySessionId(db, sessionId);
+  }
+  await sessionsRepo.deleteByGameId(db, gameId);
+  await findingsRepo.deleteByGameId(db, gameId);
+  await analysesRepo.deleteByGameId(db, gameId);
+  await diagnosticObservationsRepo.deleteByGameId(db, gameId);
+  await gamesRepo.remove(db, gameId);
+}
+
+/** Deletes a game and everything that hangs off it (`cascadeDeleteGame`),
+ * wrapped in a transaction so a mid-cascade failure can't leave orphaned
+ * rows. */
 export async function deleteGameForUser(db: Kysely<Database>, gameId: string, userId: string): Promise<void> {
   const game = await gamesRepo.findByIdForUser(db, gameId, userId);
   if (!game) throw new NotFoundError('Game not found');
 
-  await db.transaction().execute(async (trx) => {
-    const sessionIds = await sessionsRepo.listIdsByGameId(trx, gameId);
-    for (const sessionId of sessionIds) {
-      await sessionMessagesRepo.deleteBySessionId(trx, sessionId);
-      await sessionMoveNotesRepo.deleteBySessionId(trx, sessionId);
-    }
-    await sessionsRepo.deleteByGameId(trx, gameId);
-    await findingsRepo.deleteByGameId(trx, gameId);
-    await analysesRepo.deleteByGameId(trx, gameId);
-    await diagnosticObservationsRepo.deleteByGameId(trx, gameId);
-    await gamesRepo.remove(trx, gameId);
-  });
+  await db.transaction().execute((trx) => cascadeDeleteGame(trx, gameId));
 }
 
 /** The still-live session mode a `coach_play`/`vs_bot` game's row links back

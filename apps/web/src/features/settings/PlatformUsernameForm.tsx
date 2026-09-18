@@ -45,10 +45,10 @@ export function PlatformUsernameForm({ platform, label, value, onSave, onDelete 
         <span>
           {label}: {value}
         </span>{' '}
-        <button type="button" onClick={startEditing}>
+        <button type="button" className="btn-ghost" onClick={startEditing}>
           Edit
         </button>{' '}
-        <button type="button" onClick={onDelete}>
+        <button type="button" className="btn-destructive" onClick={onDelete}>
           Delete
         </button>
       </p>
@@ -68,7 +68,7 @@ export function PlatformUsernameForm({ platform, label, value, onSave, onDelete 
         Save
       </button>
       {value && (
-        <button type="button" onClick={() => setIsEditing(false)}>
+        <button type="button" className="btn-ghost" onClick={() => setIsEditing(false)}>
           Cancel
         </button>
       )}

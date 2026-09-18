@@ -181,6 +181,13 @@ export function listByUser(db: Kysely<Database>, userId: string): Promise<GameRo
     .execute();
 }
 
+/** services/account.ts's deletion cascade — every game id to run
+ * services/games.ts's cascadeDeleteGame over. */
+export async function listIdsByUserId(db: Kysely<Database>, userId: string): Promise<string[]> {
+  const rows = await db.selectFrom('games').select('id').where('userId', '=', userId).execute();
+  return rows.map((row) => row.id);
+}
+
 /** Exactly what `services/games.ts`'s `toListItem` (the Games-page list
  * response) reads off a row — deliberately narrower than `GameRow`. That
  * page renders metadata only, never move text, so `listByUserWithStatus`

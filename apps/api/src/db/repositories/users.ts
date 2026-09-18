@@ -60,6 +60,13 @@ export function insert(db: Kysely<Database>, values: NewUser): Promise<UserRow> 
   return db.insertInto('users').values(values).returningAll().executeTakeFirstOrThrow();
 }
 
+/** services/account.ts's deletion cascade — must run last, after every
+ * dependent row (games, findings, focus areas, ...) is gone (no DB-level
+ * ON DELETE CASCADE on those FKs, see migrations 0001/0025/0028). */
+export function remove(db: Kysely<Database>, id: string): Promise<void> {
+  return db.deleteFrom('users').where('id', '=', id).execute().then(() => undefined);
+}
+
 export function update(db: Kysely<Database>, id: string, patch: UserPatch): Promise<UserRow> {
   if (Object.keys(patch).length === 0) {
     return db.selectFrom('users').selectAll().where('id', '=', id).executeTakeFirstOrThrow();

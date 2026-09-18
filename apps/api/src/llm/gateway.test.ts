@@ -1,5 +1,6 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import * as llmSetupsRepo from '../db/repositories/llm-setups.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
@@ -28,8 +29,15 @@ describe('llm gateway', () => {
     return user.id;
   }
 
+  test('sends a user who never saved a setup to Settings, not an unlock prompt', async () => {
+    const userId = await makeUser('never-configured-user@example.com');
+    await expect(getModelForUser(db, config, userId, 'standard')).rejects.toThrow(ValidationError);
+    await expect(getModelForUser(db, config, userId, 'standard')).rejects.toThrow(/set up your ai/i);
+  });
+
   test('requires an active unlock instead of decrypting from a database row', async () => {
     const userId = await makeUser('no-unlock-user@example.com');
+    await llmSetupsRepo.upsert(db, userId, Buffer.from('ciphertext'), Buffer.from('iv'), Buffer.from('salt'));
     await expect(getModelForUser(db, config, userId, 'standard')).rejects.toThrow(ValidationError);
     await expect(getModelForUser(db, config, userId, 'standard')).rejects.toThrow(/unlock/i);
   });

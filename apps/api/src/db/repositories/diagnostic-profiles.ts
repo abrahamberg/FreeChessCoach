@@ -73,6 +73,12 @@ export async function profileAt(
 /** Upserts on the `UNIQUE (user_id, time_control, window_end)` constraint
  * (0025_diagnostics.ts) — a rebuild for a window that was already computed
  * replaces it rather than accumulating duplicate rows. */
+/** services/account.ts's deletion cascade — profiles are user-scoped, not
+ * game-scoped, so no per-game cascade ever reaches them. */
+export function deleteByUserId(db: Kysely<Database>, userId: string): Promise<void> {
+  return db.deleteFrom('diagnosticProfiles').where('userId', '=', userId).execute().then(() => undefined);
+}
+
 export function upsertProfile(
   db: Kysely<Database>,
   userId: string,

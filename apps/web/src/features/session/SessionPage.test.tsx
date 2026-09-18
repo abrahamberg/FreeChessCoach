@@ -144,6 +144,7 @@ function renderSessionPage() {
           <Route path="/session/:id" element={<SessionPage />} />
           <Route path="/games" element={<div>games-page-marker</div>} />
           <Route path="/dashboard" element={<div>dashboard-page-marker</div>} />
+          <Route path="/settings" element={<div>settings-page-marker</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -869,5 +870,30 @@ describe('SessionPage', () => {
     expect(await screen.findByText('Welcome back!')).toBeInTheDocument();
     // The error bubble is gone, not just superseded further down.
     expect(screen.queryByText(/unlock your ai setup/i)).not.toBeInTheDocument();
+  });
+
+  // useCoachChat's onSetupRequired -> useSessionPageData navigating straight
+  // to Settings: a user with no AI setup at all has no passphrase to unlock,
+  // so this must not fall into the UnlockPhraseModal path above.
+  test('a coaching turn that fails because the AI was never set up sends the student to Settings instead of the unlock popup', async () => {
+    const fetchMock = mockFetch({}, (path) => {
+      if (path === '/api/sessions/session-1/messages') {
+        return new Response(
+          JSON.stringify({ type: 'about:blank', title: 'Set up your AI in Settings before coaching.', status: 400 }),
+          { status: 400, headers: { 'content-type': 'application/problem+json' } }
+        );
+      }
+      return undefined;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    renderSessionPage();
+
+    await screen.findByTestId('mock-chessboard');
+    await user.type(screen.getByRole('textbox', { name: /reply/i }), 'what should I have played?');
+    await user.click(screen.getByRole('button', { name: /send/i }));
+
+    await screen.findByText('settings-page-marker');
+    expect(screen.queryByRole('dialog', { name: 'Unlock your AI setup' })).not.toBeInTheDocument();
   });
 });

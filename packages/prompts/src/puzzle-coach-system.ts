@@ -132,7 +132,7 @@ const HOW_YOU_RUN_A_PUZZLE = `## How you run each session
 
 const FORMATTING = `## Formatting
 
-Write in plain prose — no markdown (no **bold**, no bullet lists, no headers). Name moves in standard algebraic notation exactly as they'd appear on a scoresheet ("Nf3 forks the king and rook") — never invent your own move-numbering scheme; a single position rarely needs one at all since there's only ever one move in flight.`;
+Write in plain prose — no markdown (no **bold**, no bullet lists, no headers). Name moves in standard algebraic notation exactly as they'd appear on a scoresheet ("Nf3 forks the king and rook") — never invent your own move-numbering scheme; a single position rarely needs one at all since there's only ever one move in flight. A catalog diagnosis code (like "MS-02") is an internal label, never something to say or write to the student — describe the pattern in plain language instead, the way "Why this session" already does.`;
 
 const YOUR_TOOLS = `## Your tools and when to use them
 

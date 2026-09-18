@@ -1,6 +1,7 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { buildApp } from '../app.js';
+import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 
@@ -208,5 +209,48 @@ describe('GET/PATCH /api/users/me', () => {
     const response = await app.inject({ method: 'GET', url: '/api/users/me' });
 
     expect(response.statusCode).toBe(401);
+  });
+
+  test('DELETE removes the account, 204, and a later request from the same identity starts fresh', async () => {
+    const app = buildApp({ authMode: 'proxy', db });
+    const headers = { 'x-auth-request-email': 'leaving@example.com', 'x-auth-request-user': 'Leaving' };
+    const created = await app.inject({ method: 'GET', url: '/api/users/me', headers });
+    const originalId = created.json().id;
+
+    const response = await app.inject({ method: 'DELETE', url: '/api/users/me', headers });
+    expect(response.statusCode).toBe(204);
+
+    const refetched = await app.inject({ method: 'GET', url: '/api/users/me', headers });
+    expect(refetched.statusCode).toBe(200);
+    expect(refetched.json().id).not.toBe(originalId);
+  });
+
+  test('DELETE also clears the account\'s games, sessions, and findings', async () => {
+    const app = buildApp({ authMode: 'proxy', db });
+    const headers = { 'x-auth-request-email': 'full-delete@example.com', 'x-auth-request-user': 'FullDelete' };
+    const created = await app.inject({ method: 'GET', url: '/api/users/me', headers });
+    const userId = created.json().id;
+
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: '1. e4 e5', source: 'paste', userColor: 'white' }
+    });
+    expect(imported.statusCode).toBe(200);
+    const { gameId } = imported.json();
+    // Session-cascade correctness itself is covered by services/account.test.ts;
+    // this only needs a session on the books to prove the route wiring reaches
+    // it — inserted directly rather than via POST /api/sessions, which needs
+    // coachAgent dependencies this route-only buildApp() doesn't set up.
+    const session = await sessionsRepo.insert(db, { gameId, userId });
+
+    const response = await app.inject({ method: 'DELETE', url: '/api/users/me', headers });
+    expect(response.statusCode).toBe(204);
+
+    const games = await db.selectFrom('games').selectAll().where('id', '=', gameId).execute();
+    expect(games).toHaveLength(0);
+    const sessions = await db.selectFrom('sessions').selectAll().where('id', '=', session.id).execute();
+    expect(sessions).toHaveLength(0);
   });
 });

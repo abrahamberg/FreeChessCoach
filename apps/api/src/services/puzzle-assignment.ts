@@ -21,11 +21,13 @@ const DEFAULT_PUZZLE_COUNT = 5;
  * a later catalog edit never rewrites an already-shown card's text. Built
  * from the catalog's own `diagnosis` sentence (what the pattern looks
  * like) rather than `label` alone (too terse to stand on its own on a
- * dashboard card) — falls back to the code itself if the catalog somehow
- * doesn't have an entry, so this never throws. */
+ * dashboard card) — falls back to generic, still-student-facing copy if the
+ * catalog somehow doesn't have an entry, so this never throws AND never
+ * surfaces the internal code (e.g. "MS-02") itself, which means nothing to
+ * a student. */
 function buildReason(code: DiagnosisCodeId): string {
   const entry = DIAGNOSIS_CODES_BY_ID.get(code);
-  if (!entry) return `Practice puzzles for ${code}.`;
+  if (!entry) return 'Practice puzzles for a pattern you\'ve been working on.';
   return `Practice puzzles for ${entry.label.toLowerCase()}: ${entry.diagnosis}`;
 }
 
