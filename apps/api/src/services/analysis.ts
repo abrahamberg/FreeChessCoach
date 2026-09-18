@@ -85,6 +85,13 @@ export async function runAnalyzeGameJob(
     const parsedGame = parsePgn(game.pgn);
     const fens = parsedGame.positions.map((position) => position.fen);
     const evals = await analyzeInChunks(db, deps, analysis.id, fens);
+    // Flipped here, not after the report/diagnostics build below: those
+    // steps are the slow part (tactic-prevention's per-ply PV scan alone
+    // can run tens of seconds) but report no countable progress, so the
+    // progress screen's indeterminate "planning" wave needs to start now —
+    // left until after them, the UI sits fully-lit and motionless for that
+    // whole stretch, reading as stalled rather than working.
+    await analysesRepo.updateStatus(db, analysis.id, 'planning');
 
     const brilliantSoundnessByPly = await resolveBrilliantSoundness(
       deps,
@@ -124,8 +131,6 @@ export async function runAnalyzeGameJob(
     await gamesRepo.updateAnnotatedPgn(db, gameId, annotatedPgnForReport(game.pgn, gameReport));
     await analysesRepo.storeGameReport(db, analysis.id, gameReport);
     await recordDiagnosticObservations(db, gameId, game.userId, game.userColor, game.pgn, gameReport.moves, evals, prevention.diagnosticByPly);
-
-    await analysesRepo.updateStatus(db, analysis.id, 'planning');
 
     const candidateMoments = findCandidateMoments(gameReport.moves, evals);
     await analysesRepo.storeCandidateMoments(db, analysis.id, candidateMoments);

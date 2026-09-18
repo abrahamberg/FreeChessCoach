@@ -1,7 +1,10 @@
 import {
   BEST_OR_BETTER,
+  combineThreatOutcome,
   flipActiveColorFen,
+  scanAvailableMotifs,
   scanThreatOutcome,
+  type AvailableMotifScan,
   type PvMotifSighting,
   type ThreatOutcome
 } from '@freechesscoach/chess-analysis';
@@ -135,6 +138,13 @@ export async function computeTacticMotifPrevented(
   const byPly = new Map<number, PreventionCard>();
   const diagnosticByPly = new Map<number, { type: TacticMotifType; failed: boolean; detail: string | null; visual: TacticVisualDto | null }>();
   const movesByPly = new Map(allMoves.map((move) => [move.ply, move]));
+  // The free path's "before" eval (evals[prior.ply - 1]) and "after" eval
+  // (evals[move.ply]) are each the same position+lines as some other ply's
+  // other end, two plies apart — ply p's "before" is ply (p-2)'s "after".
+  // scanAvailableMotifs is a pure function of (fen, lines), so caching it by
+  // eval index halves the PV-rescanning that otherwise dominates this
+  // function's cost.
+  const motifScanCache = new Map<number, AvailableMotifScan>();
 
   for (const move of allMoves) {
     const prior = movesByPly.get(move.ply - 1);
@@ -145,7 +155,7 @@ export async function computeTacticMotifPrevented(
     // preventable for this player — see this function's own doc comment.
     // Still eligible for the free (zero-cost) path below, for diagnosticByPly.
     const isCountable = !BEST_OR_BETTER.has(move.quality);
-    const freely = findFreelyDefusedThreats(prior, move, opponent, evals);
+    const freely = findFreelyDefusedThreats(prior, move, evals, motifScanCache);
     const outcome =
       freely.preventable.length > 0 || !isCountable ? freely : await findGatedDefusedThreats(engine, move, opponent, evals);
 
@@ -175,14 +185,31 @@ const EMPTY_OUTCOME: ThreatOutcome = { preventable: [], defused: [], sightings: 
 function findFreelyDefusedThreats(
   prior: ClassifiedMoveDto,
   move: ClassifiedMoveDto,
-  opponent: Colour,
-  evals: EngineEval[]
+  evals: EngineEval[],
+  motifScanCache: Map<number, AvailableMotifScan>
 ): ThreatOutcome {
-  const priorEval = evals[prior.ply - 1];
-  const afterEval = evals[move.ply];
+  const priorIndex = prior.ply - 1;
+  const afterIndex = move.ply;
+  const priorEval = evals[priorIndex];
+  const afterEval = evals[afterIndex];
   if (!priorEval || !afterEval || !prior.fenBefore || !move.fenAfter) return EMPTY_OUTCOME;
 
-  return scanThreatOutcome(prior.fenBefore, move.fenAfter, opponent, priorEval.lines, afterEval.lines);
+  const before = cachedMotifScan(motifScanCache, priorIndex, prior.fenBefore, priorEval.lines);
+  const after = cachedMotifScan(motifScanCache, afterIndex, move.fenAfter, afterEval.lines);
+  return combineThreatOutcome(before, after);
+}
+
+function cachedMotifScan(
+  cache: Map<number, AvailableMotifScan>,
+  evalIndex: number,
+  fen: string,
+  lines: readonly EngineLine[]
+): AvailableMotifScan {
+  const cached = cache.get(evalIndex);
+  if (cached) return cached;
+  const scan = scanAvailableMotifs(fen, lines);
+  cache.set(evalIndex, scan);
+  return scan;
 }
 
 async function findGatedDefusedThreats(

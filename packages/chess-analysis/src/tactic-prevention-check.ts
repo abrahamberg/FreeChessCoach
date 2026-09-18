@@ -1,5 +1,5 @@
 import type { EngineLine, TacticMotifType } from '@freechesscoach/shared';
-import { scanAvailableMotifs, threatKey, type PvMotifSighting } from './available-motifs-scan.js';
+import { scanAvailableMotifs, threatKey, type AvailableMotifScan, type PvMotifSighting } from './available-motifs-scan.js';
 
 /**
  * Pure, engine-free check: which of `opponent`'s threats available at
@@ -69,6 +69,18 @@ export function scanThreatOutcome(
 ): ThreatOutcome {
   const before = scanAvailableMotifs(beforeFen, candidateLinesBefore);
   const after = scanAvailableMotifs(afterFen, candidateLinesAfter);
+  return combineThreatOutcome(before, after);
+}
+
+/**
+ * The before/after diff `scanThreatOutcome` runs, split out so a caller that
+ * already has both `AvailableMotifScan`s (e.g. because it's memoizing them
+ * across plies — `scanAvailableMotifs` is pure in its FEN+lines, and
+ * `apps/api/src/services/tactic-prevention.ts`'s batch loop ends up asking
+ * for the same position's scan twice, two plies apart) can reuse them
+ * instead of re-running the PV walk.
+ */
+export function combineThreatOutcome(before: AvailableMotifScan, after: AvailableMotifScan): ThreatOutcome {
   const stillLive = new Set(after.sightings.map((sighting) => threatKey(sighting.claim)));
 
   const defusedSightings = before.sightings.filter((sighting) => !stillLive.has(threatKey(sighting.claim)));
