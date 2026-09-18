@@ -25,7 +25,11 @@ export interface UsePlayMoveSubmitResult {
    * either way, which is exactly the confusing "it said illegal but it
    * worked" report this guards against. */
   isSubmitting: boolean;
-  submit: (san: string, uci: string) => Promise<void>;
+  /** `usedHint`: true when the student clicked BoardActionBar's Hint before
+   * playing this move — folded into the [player_move] message sent to the
+   * coach (see PLAYER_MOVE_PATTERN) so the transcript/coach can see it, the
+   * same way an explored diverged line already announces itself. */
+  submit: (san: string, uci: string, usedHint?: boolean) => Promise<void>;
 }
 
 /** Client-side chess.js validation in CoachBoard already rejects most
@@ -60,7 +64,7 @@ export function usePlayMoveSubmit(
   // that gap immediately, before any render.
   const submittingRef = useRef(false);
 
-  async function submit(san: string, uci: string): Promise<void> {
+  async function submit(san: string, uci: string, usedHint = false): Promise<void> {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setError(null);
@@ -68,7 +72,7 @@ export function usePlayMoveSubmit(
     try {
       const result = await apiPost(`/api/sessions/${sessionId}/play-move`, { san }, CommitPlayMoveResponseSchema);
       onPlayMoveCommitted?.(result, uci);
-      sendMessage(`[player_move] I played ${san}.`);
+      sendMessage(`[player_move] I played ${san}.${usedHint ? ' (used a hint)' : ''}`);
     } catch (submitError) {
       setError(describePlayMoveError(submitError));
     } finally {

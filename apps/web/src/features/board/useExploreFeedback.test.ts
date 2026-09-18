@@ -67,7 +67,7 @@ describe('useExploreFeedback', () => {
     const { result } = renderHook(() => useExploreFeedback({ enabled: false, fen: START_FEN, lastMove: null }));
 
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(result.current).toEqual({ status: 'idle', evaluation: null, evalCp: null, arrows: [], note: undefined });
+    expect(result.current).toEqual({ status: 'idle', evaluation: null, evalCp: null, arrows: [], highlights: [], note: undefined });
   });
 
   test('fetches the current position once opened and phrases the eval in words, never a number, with no note until a move is played', async () => {
@@ -115,6 +115,10 @@ describe('useExploreFeedback', () => {
     expect(result.current.note?.moveSan).toBe('e4');
     expect(result.current.note?.quality).toBeDefined();
     expect(result.current.arrows.length).toBeGreaterThan(0);
+    // One highlight (the destination square) per arrow — the light
+    // background this hook now gives each alternative move.
+    expect(result.current.highlights).toHaveLength(result.current.arrows.length);
+    expect(result.current.highlights[0]).toEqual({ square: result.current.arrows[0]?.to, color: expect.any(String) });
   });
 
   test('closing the sandbox (enabled: false) immediately drops the last feedback instead of leaving it stale on screen', async () => {
@@ -129,6 +133,6 @@ describe('useExploreFeedback', () => {
 
     act(() => rerender({ enabled: false }));
 
-    expect(result.current).toEqual({ status: 'idle', evaluation: null, evalCp: null, arrows: [], note: undefined });
+    expect(result.current).toEqual({ status: 'idle', evaluation: null, evalCp: null, arrows: [], highlights: [], note: undefined });
   });
 });

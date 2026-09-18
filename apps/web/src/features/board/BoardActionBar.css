@@ -1,0 +1,94 @@
+/* One row shared by every live-position board (play with coach, Play vs
+ * Bot, puzzle practice) — Explore toggle, Undo, Hint. See BoardActionBar's
+ * own doc comment for why this replaced three separate per-page toolbars. */
+.board-action-bar {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.board-action-bar__undo,
+.board-action-bar__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.board-action-bar__undo:disabled,
+.board-action-bar__hint:disabled {
+  opacity: 0.4;
+}
+
+.board-action-bar__undo {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.board-action-bar__hint {
+  color: var(--color-gold);
+  font-weight: 600;
+}
+
+.board-action-bar__hint[aria-pressed='true'] {
+  background: var(--color-gold-soft);
+  border-color: var(--color-gold);
+}
+
+.board-action-bar__hint--loading {
+  animation: board-action-bar-hint-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes board-action-bar-hint-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-action-bar__hint--loading {
+    animation: none;
+  }
+}
+
+/* Mobile: smaller icons/tap targets — this bar sits directly under the
+ * move list (MoveNavStrip) there, competing with the board for space, the
+ * same reasoning SessionPage.css's own mobile board-column padding pass
+ * already applies. */
+@media (max-width: 767px) {
+  .board-action-bar {
+    gap: var(--space-1);
+  }
+
+  /* Exploring is already unmistakable on mobile (the board's own bolder
+   * --exploring border + the pill collapsing to just the eye icon —
+   * ExplorePanel.css) — the Hint button next to it would be one control too
+   * many for a phone-width bar, so it's dropped for the duration (design
+   * ask: "remove the hint button" while exploring). Desktop keeps both. */
+  .board-action-bar:has(.explore-panel-pill) .board-action-bar__hint {
+    display: none;
+  }
+
+  .board-action-bar__undo,
+  .board-action-bar__hint {
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: var(--font-size-sm);
+  }
+
+  .board-action-bar__undo svg,
+  .board-action-bar__hint svg {
+    width: 12px;
+    height: 12px;
+  }
+}

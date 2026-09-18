@@ -36,9 +36,15 @@ export function ExplorePanel({ isOpen, onOpen, onClose, status, evaluation }: Ex
 
   return (
     <p className="explore-panel-pill" title="Your private exploration — the coach isn't watching">
-      <EyeIcon width={14} height={14} />
-      {status === 'error' ? "Couldn't reach the engine" : (evaluation ?? 'thinking…')}
-      <button type="button" aria-label="Stop exploring" onClick={onClose}>
+      {/* The eye itself is also a "back to coach" trigger now (design ask),
+          not just decorative — mobile's own compact rule (ExplorePanel.css)
+          hides the status text and the separate close button below, leaving
+          this as the pill's only control there; desktop keeps all three. */}
+      <button type="button" className="explore-panel-pill__icon" aria-label="Back to coach" onClick={onClose}>
+        <EyeIcon width={14} height={14} />
+      </button>
+      <span className="explore-panel-pill__status">{status === 'error' ? "Couldn't reach the engine" : (evaluation ?? 'thinking…')}</span>
+      <button type="button" className="explore-panel-pill__close" aria-label="Stop exploring" onClick={onClose}>
         <CloseIcon width={12} height={12} />
       </button>
     </p>

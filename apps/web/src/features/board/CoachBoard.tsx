@@ -101,6 +101,13 @@ export interface CoachBoardProps {
   /** design.md §5.4: answer mode sends the move as [board_move]; peek mode
    * (move strip / Explore) never sends anything, purely local exploration. */
   mode: 'answer' | 'peek';
+  /** True while "Explore on your own" is actively open (not just any peek —
+   * browsing move history via MoveNavStrip/MoveExplorer is `mode: 'peek'`
+   * too, but shouldn't get this stronger treatment) — gives the frame a
+   * bolder, distinctly-colored border on top of the plain peek tint below,
+   * design ask: "make sure it's visible that it's in exploring mode" now
+   * that mobile drops the Explore pill's own status text. */
+  isExploring?: boolean;
   arrows?: BoardArrow[];
   highlights?: BoardHighlight[];
   onUserMove?: (san: string, fen: string, uci: string) => void;
@@ -157,6 +164,7 @@ export function CoachBoard({
   fen,
   orientation,
   mode,
+  isExploring = false,
   arrows = [],
   highlights = [],
   onUserMove,
@@ -327,6 +335,7 @@ export function CoachBoard({
   const frameClassName = [
     'coach-board-frame',
     mode === 'peek' && 'coach-board-frame--peek',
+    mode === 'peek' && isExploring && 'coach-board-frame--exploring',
     disabled && 'coach-board-frame--pending'
   ]
     .filter(Boolean)

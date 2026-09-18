@@ -3,8 +3,8 @@ import { classifyLiveMove, toCpWhite, winPctFor } from '@freechesscoach/chess-an
 import { HintMovesResponseSchema, type ClassifiedMoveDto, type EngineEval, type EngineLine } from '@freechesscoach/shared';
 import { apiPost } from '../../api/client.js';
 import { cpToWords, mateToWords } from '../../engine/eval-words.js';
-import type { BoardArrow } from './CoachBoard.js';
-import { candidateMoveColor } from './candidateMoveColors.js';
+import type { BoardArrow, BoardHighlight } from './CoachBoard.js';
+import { candidateMoveColor, candidateMoveHighlightFromColor } from './candidateMoveColors.js';
 
 export const EXPLORE_ARROW_MAX_COUNT = 3;
 // The same "still basically the same result" band packages/chess-analysis's
@@ -32,6 +32,12 @@ export interface UseExploreFeedbackResult {
    * Review's EvalBar). Null before the first fetch resolves. */
   evalCp: number | null;
   arrows: BoardArrow[];
+  /** A light background tint on each arrow's destination square (design
+   * ask: "give a light background to the alternative moves") — the same
+   * treatment Hint's own stage-1 reveal gives its candidate squares
+   * (candidateMoveHighlightColor), derived here from each arrow's already-
+   * resolved color rather than recomputing an index. */
+  highlights: BoardHighlight[];
   /** Set once `lastMove` is known and both its before/after positions have
    * been analyzed — undefined while the student is just looking around
    * (nothing played yet) or a request is still in flight. */
@@ -66,6 +72,10 @@ export function arrowsFromLines(lines: EngineLine[], mover: 'white' | 'black'): 
     .map((line, index) => ({ from: line.moveUci.slice(0, 2), to: line.moveUci.slice(2, 4), color: candidateMoveColor(index) }));
 }
 
+function highlightsFromArrows(arrows: BoardArrow[]): BoardHighlight[] {
+  return arrows.map((arrow) => ({ square: arrow.to, color: candidateMoveHighlightFromColor(arrow.color) }));
+}
+
 /**
  * Real engine-pipeline feedback for the Explore panel's sandbox: eval, up to
  * three best-reply arrows, and — once the student has actually played a
@@ -81,6 +91,7 @@ export function useExploreFeedback(options: { enabled: boolean; fen: string; las
   const [evaluation, setEvaluation] = useState<string | null>(null);
   const [evalCp, setEvalCp] = useState<number | null>(null);
   const [arrows, setArrows] = useState<BoardArrow[]>([]);
+  const [highlights, setHighlights] = useState<BoardHighlight[]>([]);
   const [note, setNote] = useState<ClassifiedMoveDto | undefined>(undefined);
   // The previous call's own lines, reused as `lastMove`'s evalBefore when the
   // student is stepping forward one move at a time (the common case) so a
@@ -100,6 +111,7 @@ export function useExploreFeedback(options: { enabled: boolean; fen: string; las
       setEvaluation(null);
       setEvalCp(null);
       setArrows([]);
+      setHighlights([]);
       setNote(undefined);
       return;
     }
@@ -120,7 +132,9 @@ export function useExploreFeedback(options: { enabled: boolean; fen: string; las
       const top = currentLines[0];
       setEvaluation(top ? (top.mateIn !== null ? mateToWords(top.mateIn, 'w') : cpToWords(top.cp ?? 0, 'w')) : null);
       setEvalCp(top ? toCpWhite({ cp: top.cp, mateIn: top.mateIn }) : null);
-      setArrows(arrowsFromLines(currentLines, mover));
+      const nextArrows = arrowsFromLines(currentLines, mover);
+      setArrows(nextArrows);
+      setHighlights(highlightsFromArrows(nextArrows));
       setNote(
         lastMove && beforeLines
           ? classifyLiveMove({
@@ -143,5 +157,5 @@ export function useExploreFeedback(options: { enabled: boolean; fen: string; las
     });
   }, [enabled, fen, lastMove?.fenBefore, lastMove?.san, lastMove?.mover]);
 
-  return { status, evaluation, evalCp, arrows, note };
+  return { status, evaluation, evalCp, arrows, highlights, note };
 }

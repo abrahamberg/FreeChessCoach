@@ -8,7 +8,11 @@ export interface UsePuzzleMoveAttemptResult {
    * 200 response, handled by `onResult`. */
   error: string | null;
   isSubmitting: boolean;
-  submit: (san: string, uci: string) => Promise<void>;
+  /** `usedHint`: true when the student clicked BoardActionBar's Hint before
+   * this attempt — folded into the [move_attempt] message sent to the coach,
+   * the same "the coach can see what happened" treatment usePlayMoveSubmit's
+   * own "(used a hint)" note gets. */
+  submit: (san: string, uci: string, usedHint?: boolean) => Promise<void>;
 }
 
 function describeAttemptError(error: unknown): string {
@@ -40,7 +44,7 @@ export function usePuzzleMoveAttempt(
   // submittingRef documents — React state only reflects on the next render.
   const submittingRef = useRef(false);
 
-  async function submit(san: string, uci: string): Promise<void> {
+  async function submit(san: string, uci: string, usedHint = false): Promise<void> {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setError(null);
@@ -52,10 +56,11 @@ export function usePuzzleMoveAttempt(
         AttemptPuzzleMoveResponseSchema
       );
       onResult(result, san);
+      const hintNote = usedHint ? ' (used a hint)' : '';
       sendMessage(
         result.accepted
-          ? `[move_attempt] I played ${san} — on the line.`
-          : `[move_attempt] I tried ${san} — not on the line, reverted.`
+          ? `[move_attempt] I played ${san} — on the line.${hintNote}`
+          : `[move_attempt] I tried ${san} — not on the line, reverted.${hintNote}`
       );
     } catch (submitError) {
       setError(describeAttemptError(submitError));

@@ -59,3 +59,47 @@
   background: var(--color-surface-strong);
   color: var(--color-text);
 }
+
+/* Specificity note throughout this rule and the two below it: plain
+ * .explore-panel-pill__icon/__close (0,1,0) loses to the unconditional
+ * .explore-panel-pill button rule above (0,1,1) — scoping to the parent
+ * (.explore-panel-pill .explore-panel-pill__icon, 0,2,0) is what actually
+ * wins. */
+.explore-panel-pill .explore-panel-pill__icon {
+  margin-left: 0;
+  color: var(--color-info);
+}
+
+.explore-panel-pill__status {
+  white-space: nowrap;
+}
+
+/* Mobile: the pill collapses to just the (now-clickable) eye icon — no eval
+ * word, no separate close icon — design ask: "remove the exploring [text],
+ * remove the hint button, make the eye icon back to coach." The board's own
+ * bolder border (coach-board-frame--exploring) carries the "you're
+ * exploring" signal instead of this pill's text. */
+@media (max-width: 767px) {
+  .explore-panel-pill {
+    padding: 0;
+    background: none;
+    border: none;
+  }
+
+  .explore-panel-pill__status,
+  .explore-panel-pill .explore-panel-pill__close {
+    display: none;
+  }
+
+  .explore-panel-pill .explore-panel-pill__icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--color-info-soft);
+  }
+
+  .explore-panel-toggle {
+    width: 30px;
+    height: 30px;
+  }
+}

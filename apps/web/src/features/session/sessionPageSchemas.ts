@@ -96,8 +96,9 @@ const CommittedBotMoveSchema = z.object({
  * one request commits both the student's move AND (unless it already ended
  * the game) the bot's synchronous reply. `bot` is null only when the
  * student's own move ended the game first. */
-/** POST /api/sessions/:id/undo-bot-move's response — see bot-undo.ts. */
-export const UndoBotMoveResponseSchema = z.object({
+/** POST /api/sessions/:id/undo-move's response (play and play_bot modes) —
+ * see bot-undo.ts. */
+export const UndoMoveResponseSchema = z.object({
   fen: z.string(),
   ply: z.number().int().nonnegative()
 });

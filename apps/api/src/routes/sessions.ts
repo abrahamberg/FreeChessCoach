@@ -120,9 +120,11 @@ export function registerSessionsRoutes(
 
   // architecture §14: plain JSON, not the SSE chat endpoint above — the
   // frontend needs the confirmed fen immediately, independent of whether/
-  // when the follow-up chat turn runs. No standalone undo route exists:
-  // undo is only ever reached via the undo_last_move coach tool, mediated
-  // by conversation ("the coach asks, the student agrees").
+  // when the follow-up chat turn runs. 'play' mode also still has the
+  // undo_last_move coach tool (the coach can offer to take a move back
+  // mid-conversation) alongside the student-initiated /undo-move route
+  // below — two paths to the same underlying play-moves.ts undo, one
+  // coach-mediated, one self-serve.
   app.post<{ Params: { id: string } }>('/api/sessions/:id/play-move', async (request, reply) => {
     const user = await userProfileService.getOrCreate(db, request.user);
     const session = await sessionsRepo.findByIdForUser(db, request.params.id, user.id);
@@ -184,14 +186,20 @@ export function registerSessionsRoutes(
     return CommitBotMoveResponseSchema.parse(result);
   });
 
-  // play_bot's "Undo" button — no equivalent for 'play' mode, where undo is
-  // only ever reached via the coach's own undo_last_move tool. See
-  // bot-undo.ts's doc comment for why this removes two plies, not one.
-  app.post<{ Params: { id: string } }>('/api/sessions/:id/undo-bot-move', async (request, reply) => {
+  // The student-initiated "Undo" button (BoardActionBar) for both live
+  // sparring modes — play_bot originally, now also 'play' (undoLastBotTurn
+  // isn't actually bot-specific: it pops the opponent's reply, bot or
+  // coach, if it already landed, then the student's own move — see its own
+  // doc comment for why that's two plies, not one). 'play' mode's
+  // undo_last_move coach tool still exists alongside this — this route is
+  // just the student-initiated path, not a replacement for it.
+  app.post<{ Params: { id: string } }>('/api/sessions/:id/undo-move', async (request, reply) => {
     const user = await userProfileService.getOrCreate(db, request.user);
     const session = await sessionsRepo.findByIdForUser(db, request.params.id, user.id);
     if (!session) throw new NotFoundError('Session not found');
-    if (session.mode !== 'play_bot') throw new ConflictError('Session is not a play_bot session');
+    if (session.mode !== 'play' && session.mode !== 'play_bot') {
+      throw new ConflictError('Session is not a play-mode or play_bot-mode session');
+    }
     if (session.status !== 'active') throw new ConflictError('Session is not active');
 
     const agentDeps = await buildRequestScopedAgentDeps(baseDeps, engineBackendOptions, user.id);

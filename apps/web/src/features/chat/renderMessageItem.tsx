@@ -117,8 +117,8 @@ export function renderMessageItem(
   }
   const playerMove = message.text.match(PLAYER_MOVE_PATTERN);
   if (playerMove) {
-    const [, san] = playerMove;
-    return <MoveCard key={message.id} san={san ?? ''} fen="" />;
+    const [, san, usedHint] = playerMove;
+    return <MoveCard key={message.id} san={san ?? ''} fen="" usedHint={Boolean(usedHint)} />;
   }
   const divider = decodePositionDivider(message.text);
   if (divider) {

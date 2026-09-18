@@ -49,4 +49,14 @@ describe('ExplorePanel', () => {
 
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  test('the pill\'s own eye icon also calls onClose — mobile collapses the pill down to just this control', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(<ExplorePanel isOpen status="ready" evaluation="The position is roughly equal" onOpen={vi.fn()} onClose={onClose} />);
+
+    await user.click(screen.getByRole('button', { name: /back to coach/i }));
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
 });

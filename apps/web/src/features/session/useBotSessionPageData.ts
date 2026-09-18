@@ -10,7 +10,7 @@ import {
   GameDetailSchema,
   ResignBotGameResponseSchema,
   SessionDetailSchema,
-  UndoBotMoveResponseSchema
+  UndoMoveResponseSchema
 } from './sessionPageSchemas.js';
 import { useBotTurnFailover } from './useBotTurnFailover.js';
 import { useDivergedLine } from './useDivergedLine.js';
@@ -167,10 +167,10 @@ export function useBotSessionPageData(sessionId: string) {
     boardState.peekAt(ply);
   }
 
-  // No coach tool mediates undo here (unlike 'play' mode's undo_last_move) —
-  // this is the bot page's own standalone "Undo" button.
+  // The bot page's own standalone "Undo" button (BoardActionBar) — 'play'
+  // mode's useSessionPageData has the same mutation against the same route.
   const undoMutation = useMutation({
-    mutationFn: () => apiPost(`/api/sessions/${sessionId}/undo-bot-move`, {}, UndoBotMoveResponseSchema),
+    mutationFn: () => apiPost(`/api/sessions/${sessionId}/undo-move`, {}, UndoMoveResponseSchema),
     onSuccess: (result) => {
       divergedLine.exit();
       livePositions.truncateTo(result.ply);

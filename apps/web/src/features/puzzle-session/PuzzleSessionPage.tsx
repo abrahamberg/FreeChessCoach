@@ -1,10 +1,12 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeftIcon, UndoIcon } from '../../components/Icon.js';
+import { UndoIcon } from '../../components/Icon.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
+import { BoardActionBar } from '../board/BoardActionBar.js';
 import { CoachBoard } from '../board/CoachBoard.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
+import { useExploreFeedback } from '../board/useExploreFeedback.js';
 import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
 import { ChatPane } from '../chat/ChatPane.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
@@ -39,6 +41,7 @@ export function PuzzleSessionPage(): ReactNode {
     boardMode,
     enterPeek,
     exitPeek,
+    hint,
     isMoveSubmitting,
     moveAttemptError,
     handleUserMove,
@@ -49,6 +52,26 @@ export function PuzzleSessionPage(): ReactNode {
     viewedPly,
     selectHistoryPly
   } = usePuzzleSessionPageData(assignmentId ?? '');
+
+  // "Explore on your own" (BoardActionBar's eye toggle) — same ownership
+  // split SessionPage.tsx uses: isExploring lives here, not inside the data
+  // hook, since it's pure UI state with no bearing on what gets persisted.
+  const [isExploring, setIsExploring] = useState(false);
+  useEffect(() => {
+    if (boardMode !== 'peek') setIsExploring(false);
+  }, [boardMode]);
+  // No lastMove (null) — puzzle practice has nowhere to show the per-move
+  // coach-box note ExploreNoteCard gives analyze/play/play_bot, so this only
+  // drives the pill's own live eval word, not a move classification.
+  const exploreFeedback = useExploreFeedback({ enabled: isExploring, fen: boardFen, lastMove: null });
+  function openExplore(): void {
+    setIsExploring(true);
+    enterPeek();
+  }
+  function closeExplore(): void {
+    setIsExploring(false);
+    exitPeek();
+  }
 
   if (createQuery.isError) return <p>Could not start this practice session.</p>;
   if (createQuery.isPending || detailQuery.isLoading) return <p>Loading…</p>;
@@ -95,8 +118,9 @@ export function PuzzleSessionPage(): ReactNode {
           fen={boardFen}
           orientation="white"
           mode={boardMode}
-          arrows={annotations.arrows}
-          highlights={annotations.highlights}
+          isExploring={isExploring}
+          arrows={[...annotations.arrows, ...hint.arrows, ...exploreFeedback.arrows]}
+          highlights={[...annotations.highlights, ...hint.highlights, ...exploreFeedback.highlights]}
           onUserMove={handleUserMove}
           onLocalMove={handleLocalMove}
           disabled={isMoveSubmitting}
@@ -107,22 +131,19 @@ export function PuzzleSessionPage(): ReactNode {
           {moveAttemptError}
         </p>
       )}
+      {/* Same BoardActionBar every live-position board gets (see its own doc
+          comment) — no Undo here: an accepted real attempt just advances,
+          and a rejected one reverts on its own, so there's nothing to
+          self-serve undo the way play/play_bot's own last committed move. */}
       {!divergedLine.line && (
-        <p className="peek-pill">
-          {boardMode === 'peek' ? (
-            <>
-              exploring —{' '}
-              <button type="button" onClick={exitPeek}>
-                <ChevronLeftIcon width={13} height={13} />
-                back to coach
-              </button>
-            </>
-          ) : (
-            <button type="button" onClick={enterPeek}>
-              explore on your own
-            </button>
-          )}
-        </p>
+        <BoardActionBar
+          isExploring={isExploring}
+          onOpenExplore={openExplore}
+          onCloseExplore={closeExplore}
+          exploreStatus={exploreFeedback.status}
+          exploreEvaluation={exploreFeedback.evaluation}
+          hint={hint}
+        />
       )}
       {divergedLine.line && (
         <p className="undo-pill">

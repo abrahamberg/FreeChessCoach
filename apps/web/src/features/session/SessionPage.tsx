@@ -55,7 +55,9 @@ export function SessionPage(): ReactNode {
     chat,
     unlockModal,
     handleReset,
-    handlePlayMoveCommitted
+    handlePlayMoveCommitted,
+    undoLastMove,
+    canUndo
   } = useSessionPageData(sessionId);
 
   const [boardArrows, setBoardArrows] = useState<ArrowRef[]>([]);
@@ -172,6 +174,8 @@ export function SessionPage(): ReactNode {
       sessionMode={session.mode}
       sessionId={sessionId}
       onPlayMoveCommitted={handlePlayMoveCommitted}
+      onUndoMove={session.mode === 'play' ? undoLastMove : undefined}
+      undoDisabled={!canUndo}
       isExploring={isExploring}
       onOpenExplore={openExplore}
       onCloseExplore={boardState.backToCoach}

@@ -44,3 +44,13 @@
 .diverged-line-panel__autoplay input {
   width: 64px;
 }
+
+/* Design ask: keep the hypothetical/diverged-line view minimal on mobile —
+ * no autoplay there (same "minimal exploring" treatment the board's own
+ * Explore pill gets on mobile, ExplorePanel.css) — just the move list and
+ * tapping through it by hand. Desktop keeps autoplay. */
+@media (max-width: 767px) {
+  .diverged-line-panel__autoplay {
+    display: none;
+  }
+}

@@ -9,7 +9,7 @@ import { useCoachChat, type CoachToolCall } from '../../hooks/useCoachChat.js';
 import { useUnlockLlmSetup } from '../../hooks/useUnlockLlmSetup.js';
 import { toClassifiedMoves } from './liveMoveQualities.js';
 import { toCoachMessages } from './sessionMessages.js';
-import { GameDetailSchema, ResetSessionResponseSchema, SessionDetailSchema } from './sessionPageSchemas.js';
+import { GameDetailSchema, ResetSessionResponseSchema, SessionDetailSchema, UndoMoveResponseSchema } from './sessionPageSchemas.js';
 import { useDivergedLine } from './useDivergedLine.js';
 import { useLivePositions } from './useLivePositions.js';
 import { useSessionBoardState, type UseSessionBoardStateResult } from './useSessionBoardState.js';
@@ -255,6 +255,20 @@ export function useSessionPageData(sessionId: string) {
     }
   }
 
+  // BoardActionBar's student-initiated Undo (play mode only — analyze mode
+  // never passes onUndoMove to SessionBoardColumn, see SessionPage.tsx) —
+  // useBotSessionPageData's own undoMutation is the play_bot sibling of this,
+  // same route/response shape (`{fen, ply}`, the resting position, not the
+  // removed one — unlike applyUndoLastMove's coach-tool-mediated path above).
+  const undoMutation = useMutation({
+    mutationFn: () => apiPost(`/api/sessions/${sessionId}/undo-move`, {}, UndoMoveResponseSchema),
+    onSuccess: (result) => {
+      divergedLine.exit();
+      livePositions.truncateTo(result.ply);
+      boardState.applyServerMove(result.ply, result.fen);
+    }
+  });
+
   return {
     sessionQuery,
     profileQuery,
@@ -271,6 +285,8 @@ export function useSessionPageData(sessionId: string) {
     chat,
     unlockModal,
     handleReset,
-    handlePlayMoveCommitted
+    handlePlayMoveCommitted,
+    undoLastMove: () => undoMutation.mutate(),
+    canUndo: isPlayMode && sanMoves.length > 0 && !undoMutation.isPending && sessionQuery.data?.status === 'active'
   };
 }

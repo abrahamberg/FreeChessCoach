@@ -88,8 +88,9 @@ export function GameReviewBoardColumn({
           fen={fen}
           orientation={orientation}
           mode="peek"
+          isExploring={isExploring}
           arrows={isExploring ? [...arrows, ...exploreFeedback.arrows] : arrows}
-          highlights={highlights}
+          highlights={isExploring ? [...highlights, ...exploreFeedback.highlights] : highlights}
           onLocalMove={explore.onLocalMove}
           moveQualityBadge={isExploring ? exploreMoveQualityBadge : moveQualityBadge}
           showLegalMoveDots={isExploring && showLegalMoveDots}

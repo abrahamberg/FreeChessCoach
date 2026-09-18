@@ -16,6 +16,17 @@
   border-color: var(--annotate-2);
 }
 
+/* Actively exploring (not just browsing move history, which only gets the
+ * plain --peek tint above) — a bolder, differently-colored border so the
+ * board itself reads unmistakably as "off the record" even where the Explore
+ * pill's own status text is hidden (mobile). Same info-blue the pill already
+ * uses (ExplorePanel.css), just louder. */
+.coach-board-frame--exploring {
+  border-color: var(--color-info);
+  border-width: 4px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-info) 25%, transparent);
+}
+
 /* A move submission is in flight (see CoachBoard's `disabled` prop) —
  * dragging/clicking is already blocked in TS regardless of this class (see
  * applyMove's `disabled` check), so this is cursor-only: a bot's reply now

@@ -6,6 +6,7 @@ import { apiGet, apiPost } from '../../api/client.js';
 import type { CoachToolCall } from '../../hooks/useCoachChat.js';
 import { useAnnotationLayer, type AnnotationState } from '../board/AnnotationLayer.js';
 import type { LocalMoveInfo } from '../board/CoachBoard.js';
+import { useHintMoves } from '../board/useHintMoves.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
 import { useDivergedLine } from '../session/useDivergedLine.js';
 import { toPuzzleCoachMessages } from './puzzleSessionMessages.js';
@@ -112,6 +113,10 @@ export function usePuzzleSessionPageData(assignmentId: string) {
 
   const boardFen = divergedLine.fen ?? viewedFen ?? previewFen ?? data?.currentFen ?? '';
   const effectiveBoardMode: PuzzleBoardMode = viewedPly !== null ? 'peek' : boardMode;
+  // BoardActionBar's Hint button (same engine round trip play/play_bot use) —
+  // owned here, not the page component, so handleUserMove below can read
+  // whether it was active at the moment a real attempt is submitted.
+  const hint = useHintMoves(boardFen);
 
   function handleMoveAttemptResult(result: { accepted: boolean; fen: string; currentPly: number }): void {
     setPreviewFen(null);
@@ -172,7 +177,7 @@ export function usePuzzleSessionPageData(assignmentId: string) {
       divergedLine.appendMove({ san, fen, uci }, real);
       return;
     }
-    void moveAttempt.submit(san, uci);
+    void moveAttempt.submit(san, uci, hint.stage > 0);
   }
 
   /** Fires for every legal drop regardless of mode (CoachBoard's own
@@ -229,6 +234,7 @@ export function usePuzzleSessionPageData(assignmentId: string) {
     boardMode: effectiveBoardMode,
     enterPeek: () => setBoardMode('peek'),
     exitPeek: () => setBoardMode('answer'),
+    hint,
     isMoveSubmitting: moveAttempt.isSubmitting,
     moveAttemptError: moveAttempt.error,
     handleUserMove,

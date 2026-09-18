@@ -477,6 +477,30 @@ describe('SessionPage', () => {
     expect(capturedOptions.at(-1)?.position).toBe(AFTER_UNDO_FEN);
   });
 
+  // BoardActionBar's student-initiated Undo (distinct from the coach-tool
+  // undo_last_move test above) — /undo-move, reused from Play vs Bot.
+  test('play mode: clicking Undo hits /undo-move and moves the board back a ply', async () => {
+    const AFTER_UNDO_FEN = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2';
+    const fetchMock = mockFetch({ mode: 'play', subjectPly: 3 }, (path) => {
+      if (path === '/api/sessions/session-1/undo-move') {
+        return new Response(JSON.stringify({ fen: AFTER_UNDO_FEN, ply: 2 }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' }
+        });
+      }
+      return undefined;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    renderSessionPage();
+
+    await vi.waitFor(() => expect(screen.getByTestId('mock-chessboard')).toBeInTheDocument());
+    await user.click(screen.getByText('Undo'));
+
+    await waitFor(() => expect(capturedOptions.at(-1)?.position).toBe(AFTER_UNDO_FEN));
+    expect(fetchMock).toHaveBeenCalledWith('/api/sessions/session-1/undo-move', expect.objectContaining({ method: 'POST' }));
+  });
+
   test('a completed session shows the summary as a banner but keeps the board and chat usable', async () => {
     const fetchMock = mockFetch({ status: 'completed', summary: 'Great progress on king safety.', homework: null }, (path) =>
       path === '/api/sessions/session-1/messages' ? streamResponse([...textFrames('Glad you asked!')]) : undefined

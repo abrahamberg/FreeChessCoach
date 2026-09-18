@@ -856,6 +856,37 @@ describe('sessions routes', () => {
 
       expect(response.statusCode).toBe(404);
     });
+
+    // BoardActionBar's student-initiated Undo — 'play' mode's own version of
+    // the play_bot undo-move test above (undoLastBotTurn isn't actually
+    // bot-specific, see its own doc comment).
+    test('POST /api/sessions/:id/undo-move removes the student\'s last move in a play-mode session', async () => {
+      const { user, app, sessionId } = await setupPlaySession('playundo@example.com');
+      await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/play-move`, headers: headersFor(user), payload: { san: 'e4' } });
+
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/undo-move`, headers: headersFor(user) });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().ply).toBe(0);
+      const session = await sessionsRepo.findById(db, sessionId);
+      expect(session?.currentPly).toBe(0);
+    });
+
+    test('POST /api/sessions/:id/undo-move 409s on an analyze-mode session', async () => {
+      const { user, game } = await setupReadyGame('undowrongmode@example.com');
+      const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/sessions',
+        headers: headersFor(user),
+        payload: { gameId: game.id }
+      });
+      const sessionId = created.json().id;
+
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/undo-move`, headers: headersFor(user) });
+
+      expect(response.statusCode).toBe(409);
+    });
   });
 
   describe('play-bot mode routes ("Play vs Bot" plan)', () => {
@@ -1037,11 +1068,11 @@ describe('sessions routes', () => {
       expect(body.blackRemainingMs).toBeNull();
     }, 15000);
 
-    test('POST /api/sessions/:id/undo-bot-move removes the last round trip', async () => {
+    test('POST /api/sessions/:id/undo-move removes the last round trip for a bot game', async () => {
       const { user, app, sessionId } = await setupBotSession('botundo@example.com');
       await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/play-move`, headers: headersFor(user), payload: { san: 'e4' } });
 
-      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/undo-bot-move`, headers: headersFor(user) });
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/undo-move`, headers: headersFor(user) });
 
       expect(response.statusCode).toBe(200);
       expect(response.json().ply).toBe(0);
@@ -1049,10 +1080,10 @@ describe('sessions routes', () => {
       expect(session?.currentPly).toBe(0);
     }, 15000);
 
-    test('POST /api/sessions/:id/undo-bot-move 422s when there is nothing to undo', async () => {
+    test('POST /api/sessions/:id/undo-move 422s when there is nothing to undo', async () => {
       const { user, app, sessionId } = await setupBotSession('botundoempty@example.com');
 
-      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/undo-bot-move`, headers: headersFor(user) });
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/undo-move`, headers: headersFor(user) });
 
       expect(response.statusCode).toBe(422);
     });

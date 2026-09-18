@@ -184,6 +184,13 @@
   margin-bottom: 4px;
 }
 
+.chat-pane [data-testid='message-list'] .move-card__hint-note {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-style: italic;
+  color: var(--color-gold);
+}
+
 .chat-pane [data-testid='message-list'] .annotation-note {
   align-self: flex-start;
   background: var(--color-info-soft);
@@ -372,4 +379,25 @@
   color: var(--color-text-secondary);
   font-size: 14px;
   line-height: 1;
+}
+
+/* Mobile: the composer's own margin/padding was pure overhead on a screen
+ * this tight — shrinking it gives the board underneath a bit more room and
+ * (SessionPage.css's .has-composer reserve, sized off this) fixes
+ * BoardActionBar's bottom edge reading as slightly tucked under the pinned
+ * composer bar. */
+@media (max-width: 767px) {
+  .chat-composer {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .chip-reply-input {
+    min-height: 38px;
+    padding: 6px 12px;
+  }
+
+  .chat-composer__send {
+    width: 36px;
+    height: 36px;
+  }
 }

@@ -31,6 +31,21 @@ describe('usePlayMoveSubmit (architecture §14)', () => {
     expect(result.current.error).toBeNull();
   });
 
+  // BoardActionBar's Hint button — the same "the coach can see what happened"
+  // treatment [diverged_line]'s own "exploring from move…" note already gets.
+  test('usedHint=true appends the "(used a hint)" note to the [player_move] message', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ fen: 'fen-after', san: 'e4', ply: 1, quality: 'best' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const sendMessage = vi.fn();
+
+    const { result } = renderHook(() => usePlayMoveSubmit('session-1', sendMessage));
+    await act(async () => {
+      await result.current.submit('e4', 'e2e4', true);
+    });
+
+    expect(sendMessage).toHaveBeenCalledWith('[player_move] I played e4. (used a hint)');
+  });
+
   test('a 422 response sets error using the problem+json title, and never calls sendMessage/onPlayMoveCommitted', async () => {
     const fetchMock = vi
       .fn()

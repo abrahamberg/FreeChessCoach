@@ -1,18 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { HintMovesResponseSchema, type ClassifiedMoveDto } from '@freechesscoach/shared';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { applySanSequence } from '@freechesscoach/chess-analysis';
-import { apiPost } from '../../api/client.js';
-import { ChevronLeftIcon, ChevronRightIcon, LightbulbIcon, UndoIcon } from '../../components/Icon.js';
+import { ChevronLeftIcon, UndoIcon } from '../../components/Icon.js';
 import type { HoverMove } from '../chat/MessageList.js';
-import { candidateMoveColor, candidateMoveHighlightColor } from '../board/candidateMoveColors.js';
+import { BoardActionBar } from '../board/BoardActionBar.js';
 import { CoachBoard, type BoardArrow, type BoardHighlight, type LocalMoveInfo } from '../board/CoachBoard.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { EvalBar } from '../board/EvalBar.js';
 import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
-import { ExplorePanel } from '../board/ExplorePanel.js';
 import { GameEvalChart } from '../board/GameEvalChart.js';
 import { MoveNavStrip } from '../board/MoveNavStrip.js';
 import type { UseExploreFeedbackResult } from '../board/useExploreFeedback.js';
+import { useHintMoves } from '../board/useHintMoves.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
 import type { BotGameOverInfo } from './botGameOver.js';
@@ -24,12 +23,6 @@ import type { useSessionBoardState } from './useSessionBoardState.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
 
 const UNDO_PILL_MS = 2000;
-
-interface HintTopMove {
-  san: string;
-  from: string;
-  to: string;
-}
 
 export interface SessionBoardColumnProps {
   boardState: ReturnType<typeof useSessionBoardState>;
@@ -66,9 +59,11 @@ export interface SessionBoardColumnProps {
    * ended, with who won/drew and why, so the caller can refetch session
    * status and show the result (GameOverDialog/BotStatusPanel). */
   onGameOver?: (gameOver: BotGameOverInfo) => void;
-  /** play_bot only: the "Undo" button's handler (useBotSessionPageData's
-   * undoLastMove) — undoes the student's last move and the bot's reply to
-   * it together, see bot-undo.ts. */
+  /** play/play_bot only: the BoardActionBar Undo button's handler
+   * (useSessionPageData/useBotSessionPageData's undoLastMove) — undoes the
+   * student's last move and the opponent's (coach's or bot's) reply to it
+   * together, see bot-undo.ts. Omitted by analyze mode, which has no live
+   * move to undo. */
   onUndoMove?: () => void;
   undoDisabled?: boolean;
   /** play_bot only: fires once per move exchange with the post-move
@@ -94,18 +89,24 @@ export interface SessionBoardColumnProps {
    * them. Defaults false so analyze/play mode, which never pass this prop,
    * are unaffected. */
   boardDisabled?: boolean;
-  /** "Explore on your own" (analyze mode only) — owned by SessionPage, not
-   * this column, since SessionPage's mobile layout also needs it (the
-   * "coach box" swap in MobileCoachSessionBody). Omitted entirely by
-   * BotSessionPage/play_bot, which never renders the Explore toggle in the
-   * first place. */
+  /** "Explore on your own" — owned by the caller (SessionPage/
+   * BotSessionPage), not this column, since SessionPage's mobile layout
+   * also needs it (the "coach box" swap in MobileCoachSessionBody).
+   * Available in every sessionMode (analyze, play, play_bot). */
   isExploring?: boolean;
   onOpenExplore?: () => void;
   onCloseExplore?: () => void;
   exploreFeedback?: UseExploreFeedbackResult;
 }
 
-const IDLE_EXPLORE_FEEDBACK: UseExploreFeedbackResult = { status: 'idle', evaluation: null, evalCp: null, arrows: [], note: undefined };
+const IDLE_EXPLORE_FEEDBACK: UseExploreFeedbackResult = {
+  status: 'idle',
+  evaluation: null,
+  evalCp: null,
+  arrows: [],
+  highlights: [],
+  note: undefined
+};
 
 /** Distinct from the coach's own annotate_board arrows (--annotate-1) and
  * the last-played-move highlight — a third color reserved for previewing a
@@ -167,13 +168,24 @@ export function SessionBoardColumn({
     onBotThinkingChange?.(playBotMove.isSubmitting);
   }, [playBotMove.isSubmitting, onBotThinkingChange]);
 
+  const fen = divergedLine.fen ?? boardState.fen;
+  // Shared by every sessionMode that offers a Hint button (play/play_bot,
+  // not analyze — see BoardActionBar's own hint prop doc comment). Declared
+  // unconditionally, like playMove/playBotMove above, so hook order stays
+  // stable regardless of which mode is active.
+  const hintMoves = useHintMoves(fen);
+
   /** design.md-adjacent: expect_move (the coach's "I want exactly one move
    * as the answer" signal) preserves today's instant 2s-undo-then-send
    * path — every other answer-mode drop instead silently appends to the
    * diverged line (no send, no pill) until the student hits Send. */
-  function handleUserMove(san: string, fen: string, uci: string): void {
+  function handleUserMove(san: string, moveFen: string, uci: string): void {
     if (sessionMode === 'play') {
-      void playMove.submit(san, uci);
+      // Captured now, before the move commits and the position (hence
+      // hintMoves' own fen-keyed reset effect) moves on — see the "used
+      // hint" message annotation this feeds, mirrored on
+      // [move_attempt]/[diverged_line]'s own line-explored note.
+      void playMove.submit(san, uci, hintMoves.stage > 0);
       return;
     }
     if (sessionMode === 'play_bot') {
@@ -181,18 +193,18 @@ export function SessionBoardColumn({
       return;
     }
     if (divergedLine.expectingMove) {
-      setPendingMove({ san, fen });
+      setPendingMove({ san, fen: moveFen });
       pendingTimeoutRef.current = setTimeout(() => {
         divergedLine.consumeExpectingMove();
         const message = divergedLine.line
-          ? encodeDivergedLine(divergedLine.appendMove({ san, fen, uci }, currentRealPosition), '')
-          : `[board_move] I played ${san} (position now: ${fen})`;
+          ? encodeDivergedLine(divergedLine.appendMove({ san, fen: moveFen, uci }, currentRealPosition), '')
+          : `[board_move] I played ${san} (position now: ${moveFen})`;
         sendMessage(message);
         setPendingMove(null);
       }, UNDO_PILL_MS);
       return;
     }
-    divergedLine.appendMove({ san, fen, uci }, currentRealPosition);
+    divergedLine.appendMove({ san, fen: moveFen, uci }, currentRealPosition);
   }
 
   function handleUndoMove(): void {
@@ -207,22 +219,23 @@ export function SessionBoardColumn({
    * sequence kept. But coach-method.ts already tells the coach "the student
    * can build [a hypothetical] themselves by moving pieces on the board —
    * those moves reach you together with their comment", so a peek-mode move
-   * (analyze mode only — Explore on your own doesn't exist elsewhere) must
-   * still accumulate into divergedLine exactly like an answer-mode one does,
-   * or the whole line explored is lost by the time Send is pressed and only
-   * a single-move [position_context] naming the real game's own move
-   * survives. applySanSequence recomputes the uci here since onLocalMove's
+   * (any sessionMode — Explore on your own now works everywhere, not just
+   * analyze) must still accumulate into divergedLine exactly like an
+   * answer-mode one does, or the whole line explored is lost by the time
+   * Send is pressed and only a single-move [position_context] naming the
+   * real game's own move survives. Harmless in play_bot, which has no chat
+   * to send it to — it's just the sandbox's own scratch line there, stepped
+   * through via the same undo-last-move pill every other mode gets.
+   * applySanSequence recomputes the uci here since onLocalMove's
    * LocalMoveInfo carries none (CoachBoard's onUserMove is the only caller
    * that already has it, from the chess.js move object itself). */
-  function handleLocalMove(fen: string, move: LocalMoveInfo): void {
-    boardState.previewMove(fen, move);
-    if (sessionMode !== 'analyze' || boardState.mode !== 'peek') return;
+  function handleLocalMove(moveFen: string, move: LocalMoveInfo): void {
+    boardState.previewMove(moveFen, move);
+    if (boardState.mode !== 'peek') return;
     const applied = applySanSequence(move.fenBefore, [move.san]).moves[0];
     if (!applied) return;
-    divergedLine.appendMove({ san: move.san, fen, uci: applied.uci }, currentRealPosition);
+    divergedLine.appendMove({ san: move.san, fen: moveFen, uci: applied.uci }, currentRealPosition);
   }
-
-  const fen = divergedLine.fen ?? boardState.fen;
 
   function peekAt(ply: number): void {
     divergedLine.exit();
@@ -247,74 +260,9 @@ export function SessionBoardColumn({
     }
   }
 
-  // The bot page's two-stage hint, both stages drawn on the board itself
-  // (design ask: no explanatory text) — first click fetches the engine's
-  // top 3 moves and highlights the pieces they'd move (WHICH piece); a
-  // second click reveals the same moves' arrows (WHERE it goes). A third
-  // click, or the position changing (a move was made), collapses/resets it.
-  const [hintStage, setHintStage] = useState<0 | 1 | 2>(0);
-  const [hintTopMoves, setHintTopMoves] = useState<HintTopMove[]>([]);
-  const [isLoadingHintMoves, setIsLoadingHintMoves] = useState(false);
-  const [hintError, setHintError] = useState(false);
-  // Guards against a slow/late engine response landing after the student has
-  // already moved on (a new position, or clicked Hint again) — the request
-  // that's still current is the only one allowed to update state.
-  const hintRequestRef = useRef(0);
-
-  useEffect(() => {
-    setHintStage(0);
-    setHintTopMoves([]);
-    setHintError(false);
-    hintRequestRef.current += 1;
-  }, [fen]);
-
-  function fetchHintMoves(): void {
-    setHintError(false);
-    setIsLoadingHintMoves(true);
-    const requestId = ++hintRequestRef.current;
-    void apiPost('/api/positions/hint-moves', { fen }, HintMovesResponseSchema)
-      .then(({ lines }) => {
-        if (hintRequestRef.current !== requestId) return;
-        setHintTopMoves(
-          lines.map((line) => ({ san: line.moveSan, from: line.moveUci.slice(0, 2), to: line.moveUci.slice(2, 4) }))
-        );
-        setIsLoadingHintMoves(false);
-      })
-      // A server-side search failure (engine unreachable, etc.) — without
-      // this a request could hang forever with no way out (the in-browser
-      // WASM engine this used to call had no error handling either, and
-      // could hang or fail outright depending on the user's own browser/
-      // environment — this endpoint sidesteps that entirely by running
-      // server-side, the same reliable engine path the bot's own moves
-      // already use).
-      .catch(() => {
-        if (hintRequestRef.current !== requestId) return;
-        setIsLoadingHintMoves(false);
-        setHintError(true);
-      });
-  }
-
-  function handleHintClick(): void {
-    if (hintStage === 0) {
-      setHintStage(1);
-      fetchHintMoves();
-      return;
-    }
-    if (hintStage === 1) {
-      setHintStage(2);
-      return;
-    }
-    setHintStage(0);
-    setHintTopMoves([]);
-    setHintError(false);
-  }
-
-  const hintHighlights: BoardHighlight[] =
-    hintStage >= 1
-      ? hintTopMoves.map((move, index) => ({ square: move.from, color: candidateMoveHighlightColor(index) }))
-      : [];
-  const hintArrows: BoardArrow[] =
-    hintStage === 2 ? hintTopMoves.map((move, index) => ({ from: move.from, to: move.to, color: candidateMoveColor(index) })) : [];
+  // Hint only makes sense where there's a live move to hint at — analyze
+  // mode is reviewing an already-played game, nothing to suggest.
+  const showHint = sessionMode !== 'analyze';
 
   // While exploring, the eval bar and the on-board move-quality icon track
   // the sandbox's own engine-pipeline feedback instead of the recorded
@@ -343,8 +291,14 @@ export function SessionBoardColumn({
           fen={fen}
           orientation={orientation}
           mode={boardState.mode}
-          arrows={[...boardState.arrows, ...hoverMoveArrowsFor(hoverMove), ...hintArrows, ...exploreFeedback.arrows]}
-          highlights={[...boardState.highlights, ...hoverMoveHighlightsFor(hoverMove), ...hintHighlights]}
+          isExploring={isExploring}
+          arrows={[...boardState.arrows, ...hoverMoveArrowsFor(hoverMove), ...(showHint ? hintMoves.arrows : []), ...exploreFeedback.arrows]}
+          highlights={[
+            ...boardState.highlights,
+            ...hoverMoveHighlightsFor(hoverMove),
+            ...(showHint ? hintMoves.highlights : []),
+            ...exploreFeedback.highlights
+          ]}
           onUserMove={handleUserMove}
           onLocalMove={handleLocalMove}
           onArrowsChange={onArrowsChange}
@@ -377,7 +331,13 @@ export function SessionBoardColumn({
       )}
       {boardState.mode === 'peek' && (
         <p className="peek-pill">
-          {sessionMode === 'play_bot' ? 'reviewing' : 'exploring'} —{' '}
+          {/* isExploring, not just sessionMode, decides the wording now that
+              Explore also opens play_bot into peek mode — "reviewing" is
+              only accurate for plain history browsing there, not the
+              engine-assisted sandbox (which already has its own pill via
+              BoardActionBar/ExplorePanel below; this one is the generic
+              "you're looking at another position" pill every peek gets). */}
+          {isExploring || sessionMode !== 'play_bot' ? 'exploring' : 'reviewing'} —{' '}
           <button type="button" onClick={boardState.backToCoach}>
             <ChevronLeftIcon width={13} height={13} />
             {sessionMode === 'play_bot' ? 'back to game' : 'back to coach'}
@@ -401,75 +361,35 @@ export function SessionBoardColumn({
           onStepForward={handleStepForward}
         />
       )}
-      {sessionMode === 'play_bot' && (
-        <div className="bot-move-toolbar">
-          {isDesktop && (
-            <>
-              <button type="button" onClick={handleStepBack} disabled={boardState.ply <= 0} aria-label="Previous move">
-                <ChevronLeftIcon width={16} height={16} />
-              </button>
-              <button type="button" onClick={handleStepForward} disabled={boardState.ply >= maxPly} aria-label="Next move">
-                <ChevronRightIcon width={16} height={16} />
-              </button>
-            </>
-          )}
-          {onUndoMove && (
-            <button type="button" className="bot-move-toolbar__undo" onClick={onUndoMove} disabled={undoDisabled}>
-              <UndoIcon width={14} height={14} />
-              Undo
-            </button>
-          )}
-          <button
-            type="button"
-            className={`bot-move-toolbar__hint${isLoadingHintMoves ? ' bot-move-toolbar__hint--loading' : ''}`}
-            onClick={handleHintClick}
-            aria-pressed={hintStage > 0}
-          >
-            <LightbulbIcon width={14} height={14} />
-            Hint
-          </button>
-        </div>
+      {/* One shared bar (Explore toggle, Undo, Hint) for every live-position
+          board — see BoardActionBar's own doc comment for why the old
+          per-mode toolbars (bot-move-toolbar's `< >` included — that step
+          navigation already lives in MoveExplorer/MoveNavStrip above) were
+          replaced with this single component. Mobile without an active
+          diverged line, or desktop unconditionally (its own DivergedLinePanel
+          lives in the sidebar, owned by the page, not this column). */}
+      {(isDesktop || !divergedLine.line) && (
+        <BoardActionBar
+          isExploring={isExploring}
+          onOpenExplore={() => onOpenExplore?.()}
+          onCloseExplore={() => onCloseExplore?.()}
+          exploreStatus={exploreFeedback.status}
+          exploreEvaluation={exploreFeedback.evaluation}
+          onUndo={onUndoMove}
+          undoDisabled={undoDisabled}
+          hint={showHint ? hintMoves : undefined}
+        />
       )}
-      {/* Ditched the descriptive text bubble (design ask) — the highlighted
-          piece(s) and, on the second click, the arrow(s) to their
-          destination speak for themselves for a sighted student. This stays
-          visually hidden, but must still say what the hint actually IS
-          (not just loading/error) — the color highlights/arrows above are
-          the only place that information lives otherwise, and a screen
-          reader has no way to read an arrow's color or a square's fill. */}
-      {sessionMode === 'play_bot' && hintStage > 0 && (
-        <p className="visually-hidden" role="status">
-          {hintError
-            ? "Couldn't get a suggestion — try again."
-            : isLoadingHintMoves
-              ? 'Getting a hint…'
-              : hintTopMoves.length > 0
-                ? `Top moves: ${hintTopMoves.map((move) => move.san).join(', ')}`
-                : 'No moves to suggest.'}
-        </p>
+      {!isDesktop && divergedLine.line && (
+        <DivergedLinePanel
+          line={divergedLine.line}
+          stepIndex={divergedLine.stepIndex}
+          onSelectStep={divergedLine.previewStep}
+          onExit={divergedLine.exit}
+          autoplayIntervalMs={autoplayIntervalMs}
+          onChangeAutoplayInterval={onChangeAutoplayInterval}
+        />
       )}
-      {sessionMode === 'analyze' &&
-        (!isDesktop && divergedLine.line ? (
-          <DivergedLinePanel
-            line={divergedLine.line}
-            stepIndex={divergedLine.stepIndex}
-            onSelectStep={divergedLine.previewStep}
-            onExit={divergedLine.exit}
-            autoplayIntervalMs={autoplayIntervalMs}
-            onChangeAutoplayInterval={onChangeAutoplayInterval}
-          />
-        ) : (
-          // "Explore on your own" is an engine-assisted analysis mode — it
-          // doesn't belong in a game you're actively playing (play/play_bot),
-          // only in reviewing a finished/imported one.
-          <ExplorePanel
-            isOpen={isExploring}
-            onOpen={() => onOpenExplore?.()}
-            onClose={() => onCloseExplore?.()}
-            status={exploreFeedback.status}
-            evaluation={exploreFeedback.evaluation}
-          />
-        ))}
       {/* Mobile gets the same note through MobileCoachSessionBody's own
           "coach box" swap instead (SessionPage) — rendering it here too
           would just be the same card twice, stacked below the board. */}

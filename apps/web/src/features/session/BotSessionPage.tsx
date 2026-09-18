@@ -1,5 +1,5 @@
 import { findBotConfig } from '@freechesscoach/shared';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
 import { ENGINE_MODE_BADGE, useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
@@ -8,6 +8,7 @@ import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { useShowStatusBar } from '../../hooks/useShowStatusBar.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
+import { useExploreFeedback } from '../board/useExploreFeedback.js';
 import { SessionSummaryCard } from '../chat/SessionSummaryCard.js';
 import { BotStatusPanel } from './BotStatusPanel.js';
 import { GameOverDialog } from './GameOverDialog.js';
@@ -80,6 +81,21 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
     claimTimeout
   } = useBotSessionPageData(sessionId);
 
+  // "Explore on your own" (BoardActionBar's eye toggle) — same ownership
+  // split SessionPage.tsx uses (isExploring lives above SessionBoardColumn,
+  // not inside it, since it's a plain useState here with nowhere else to
+  // live for a chat-less page).
+  const fen = divergedLine.fen ?? boardState.fen;
+  const [isExploring, setIsExploring] = useState(false);
+  useEffect(() => {
+    if (boardState.mode !== 'peek') setIsExploring(false);
+  }, [boardState.mode]);
+  const exploreFeedback = useExploreFeedback({ enabled: isExploring, fen, lastMove: boardState.lastLocalMove });
+  function openExplore(): void {
+    setIsExploring(true);
+    boardState.setMode('peek');
+  }
+
   if (sessionQuery.isLoading || gameQuery.isLoading) return <p>Loading…</p>;
   if (sessionQuery.isError || !sessionQuery.data) return <p>Could not load this game.</p>;
 
@@ -117,7 +133,6 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   const botName = (orientation === 'white' ? gameQuery.data?.blackName : gameQuery.data?.whiteName) ?? 'The bot';
   const bot = gameQuery.data?.botId ? findBotConfig(gameQuery.data.botId) : undefined;
   const isPlayerTurn = boardState.ply % 2 === (orientation === 'white' ? 0 : 1);
-  const fen = divergedLine.fen ?? boardState.fen;
   // The clock cares about whose turn it REALLY is, not wherever boardState
   // happens to be peeking into history — currentRealPosition tracks that.
   const activeColor: 'white' | 'black' = currentRealPosition.ply % 2 === 0 ? 'white' : 'black';
@@ -154,6 +169,10 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       // already has no legal moves) would otherwise leave a fully-playable-
       // looking board that just bounces every drop off a 422.
       boardDisabled={session.status !== 'active'}
+      isExploring={isExploring}
+      onOpenExplore={openExplore}
+      onCloseExplore={boardState.backToCoach}
+      exploreFeedback={exploreFeedback}
     />
   );
 

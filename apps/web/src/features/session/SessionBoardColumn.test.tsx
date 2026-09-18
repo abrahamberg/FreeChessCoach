@@ -260,16 +260,16 @@ describe('SessionBoardColumn — "Explore on your own" (live play modes)', () =>
     expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
   });
 
-  test('is not offered in play mode', async () => {
+  test('is also offered in play mode', async () => {
     render(<Harness sessionMode="play" />);
     await screen.findByTestId('mock-chessboard');
-    expect(screen.queryByRole('button', { name: /explore on your own/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
   });
 
-  test('is not offered in play_bot mode', async () => {
+  test('is also offered in play_bot mode', async () => {
     render(<Harness sessionMode="play_bot" />);
     await screen.findByTestId('mock-chessboard');
-    expect(screen.queryByRole('button', { name: /explore on your own/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /explore on your own/i })).toBeInTheDocument();
   });
 
   test('opening the sandbox calls the engine pipeline for the current position, shows a word-based eval on the pill, and a "not played yet" prompt in the coach box (desktop)', async () => {
@@ -365,22 +365,22 @@ describe('SessionBoardColumn — "Explore on your own" (live play modes)', () =>
   });
 });
 
-// Desktop only (Harness defaults isDesktop to true) — the toolbar keeps its
-// own Previous/Next pair there since the sidebar's MoveExplorer (rendered by
-// SessionPage/BotSessionPage, not this component) has a separate set of nav
-// pills of its own, not a bare move strip these would otherwise duplicate.
-describe('SessionBoardColumn — play_bot move navigation and undo', () => {
+// No `< >` step buttons anywhere anymore — that navigation already lives in
+// MoveExplorer (desktop sidebar, rendered by SessionPage/BotSessionPage, not
+// this component) and MoveNavStrip (mobile) — see BoardActionBar's own doc
+// comment for why the old bot-move-toolbar's own pair was redundant.
+describe('SessionBoardColumn — BoardActionBar Undo', () => {
   beforeEach(() => {
     capturedOptions.length = 0;
   });
 
-  test('renders back/forward and, when onUndoMove is provided, an Undo button', async () => {
+  test('never renders `< >` step buttons; Undo works when onUndoMove is provided', async () => {
     const onUndoMove = vi.fn();
     render(<Harness sessionMode="play_bot" sanMoves={['e4', 'e5']} onUndoMove={onUndoMove} />);
     await screen.findByTestId('mock-chessboard');
 
-    expect(screen.getByLabelText('Previous move')).toBeInTheDocument();
-    expect(screen.getByLabelText('Next move')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Previous move')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Next move')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Undo'));
     expect(onUndoMove).toHaveBeenCalledTimes(1);
@@ -393,10 +393,19 @@ describe('SessionBoardColumn — play_bot move navigation and undo', () => {
     expect(screen.getByText('Undo')).toBeDisabled();
   });
 
-  test('no toolbar renders outside play_bot mode', async () => {
-    render(<Harness sessionMode="play" />);
+  test('Undo also works in play mode when onUndoMove is provided', async () => {
+    const onUndoMove = vi.fn();
+    render(<Harness sessionMode="play" sanMoves={['e4', 'e5']} onUndoMove={onUndoMove} />);
     await screen.findByTestId('mock-chessboard');
-    expect(screen.queryByLabelText('Previous move')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Undo'));
+    expect(onUndoMove).toHaveBeenCalledTimes(1);
+  });
+
+  test('no Undo button renders when onUndoMove is omitted (analyze mode)', async () => {
+    render(<Harness sessionMode="analyze" />);
+    await screen.findByTestId('mock-chessboard');
+    expect(screen.queryByText('Undo')).not.toBeInTheDocument();
   });
 });
 

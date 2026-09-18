@@ -115,6 +115,12 @@ function mockFetch(fixture: Fixture = {}, streamParts: string[] = textFrames('He
     if (path === '/api/puzzle-sessions/ps-1/messages' && init?.method === 'POST') {
       return Promise.resolve(streamResponse(streamParts));
     }
+    // BoardActionBar's Explore toggle/Hint button both hit this once opened
+    // — an empty line list is enough for tests that don't assert on the
+    // resulting eval pill/hint highlights themselves.
+    if (path === '/api/positions/hint-moves' && init?.method === 'POST') {
+      return Promise.resolve(jsonResponse({ lines: [] }));
+    }
     throw new Error(`unexpected fetch: ${path} ${init?.method ?? 'GET'}`);
   });
 }
@@ -223,6 +229,25 @@ describe('PuzzleSessionPage (Task 59.6)', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/puzzle-sessions/ps-1/messages',
       expect.objectContaining({ body: JSON.stringify({ content: '[move_attempt] I played e5 — on the line.' }) })
+    );
+  });
+
+  test('a move committed after clicking Hint tells the coach a hint was used', async () => {
+    const fetchMock = mockFetch({ messages: [] });
+    vi.stubGlobal('fetch', fetchMock);
+    renderPage();
+    await screen.findByTestId('mock-chessboard');
+    await waitFor(() => expect(capturedOptions.at(-1)?.position).toBe(AFTER_E4));
+
+    act(() => screen.getByText('Hint').click());
+
+    dropPiece('e7', 'e5');
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/puzzle-sessions/ps-1/messages',
+        expect.objectContaining({ body: JSON.stringify({ content: '[move_attempt] I played e5 — on the line. (used a hint)' }) })
+      )
     );
   });
 
