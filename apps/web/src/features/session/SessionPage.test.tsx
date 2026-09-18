@@ -145,6 +145,7 @@ function renderSessionPage() {
           <Route path="/games" element={<div>games-page-marker</div>} />
           <Route path="/dashboard" element={<div>dashboard-page-marker</div>} />
           <Route path="/settings" element={<div>settings-page-marker</div>} />
+          <Route path="/review/:gameId" element={<div>review-page-marker</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -872,10 +873,12 @@ describe('SessionPage', () => {
     expect(screen.queryByText(/unlock your ai setup/i)).not.toBeInTheDocument();
   });
 
-  // useCoachChat's onSetupRequired -> useSessionPageData navigating straight
-  // to Settings: a user with no AI setup at all has no passphrase to unlock,
-  // so this must not fall into the UnlockPhraseModal path above.
-  test('a coaching turn that fails because the AI was never set up sends the student to Settings instead of the unlock popup', async () => {
+  // useCoachChat's onSetupRequired -> useSessionPageData opening the
+  // AiSetupRequiredModal: a user with no AI setup at all has no passphrase
+  // to unlock, so this must not fall into the UnlockPhraseModal path above,
+  // and must explain what's missing before sending them to Settings rather
+  // than redirecting them unannounced.
+  test('a coaching turn that fails because the AI was never set up explains why before sending the student to Settings', async () => {
     const fetchMock = mockFetch({}, (path) => {
       if (path === '/api/sessions/session-1/messages') {
         return new Response(
@@ -893,7 +896,40 @@ describe('SessionPage', () => {
     await user.type(screen.getByRole('textbox', { name: /reply/i }), 'what should I have played?');
     await user.click(screen.getByRole('button', { name: /send/i }));
 
-    await screen.findByText('settings-page-marker');
+    await screen.findByRole('dialog', { name: 'AI setup needed' });
     expect(screen.queryByRole('dialog', { name: 'Unlock your AI setup' })).not.toBeInTheDocument();
+    expect(screen.queryByText('settings-page-marker')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Go to Settings' }));
+
+    await screen.findByText('settings-page-marker');
+  });
+
+  // The modal's other way out: skip AI setup entirely and fall back to the
+  // free, no-AI Game Report review for this same game (GameReviewPage.tsx,
+  // reached via /review/:gameId — see useSessionPageData's setupRequiredModal
+  // .onAnalyzeInstead).
+  test('the AI-setup-needed popup can send the student to Analyze instead, with no AI key needed', async () => {
+    const fetchMock = mockFetch({}, (path) => {
+      if (path === '/api/sessions/session-1/messages') {
+        return new Response(
+          JSON.stringify({ type: 'about:blank', title: 'Set up your AI in Settings before coaching.', status: 400 }),
+          { status: 400, headers: { 'content-type': 'application/problem+json' } }
+        );
+      }
+      return undefined;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    renderSessionPage();
+
+    await screen.findByTestId('mock-chessboard');
+    await user.type(screen.getByRole('textbox', { name: /reply/i }), 'what should I have played?');
+    await user.click(screen.getByRole('button', { name: /send/i }));
+
+    await screen.findByRole('dialog', { name: 'AI setup needed' });
+    await user.click(screen.getByRole('button', { name: 'Analyze without AI' }));
+
+    await screen.findByText('review-page-marker');
   });
 });

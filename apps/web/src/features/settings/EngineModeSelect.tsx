@@ -11,8 +11,8 @@ export interface EngineModeSelectProps {
 
 const ENGINE_MODE_LABELS: Record<EngineMode, string> = {
   chess_api: 'External engine (default) — a free cloud chess engine',
-  native: 'Our server engine — runs on our infrastructure',
-  browser: 'Your browser — runs locally, so it depends on your device'
+  native: 'Our server engine (slower) — runs on our infrastructure',
+  browser: 'Your device, performance  depends on your device'
 };
 
 const ENGINE_STATUS_TEXT = {

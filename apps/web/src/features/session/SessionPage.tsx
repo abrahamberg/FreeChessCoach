@@ -17,6 +17,7 @@ import type { HoverMove } from '../chat/MessageList.js';
 import { encodePositionContext, sanForPly } from '../chat/positionDivider.js';
 import { SessionSummaryCard } from '../chat/SessionSummaryCard.js';
 import { useMessagePaging } from '../chat/useMessagePaging.js';
+import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
 import { UnlockPhraseModal } from '../settings/UnlockPhraseModal.js';
 import { MobileCoachSessionBody } from './MobileCoachSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
@@ -54,6 +55,7 @@ export function SessionPage(): ReactNode {
     setAutoplayIntervalMs,
     chat,
     unlockModal,
+    setupRequiredModal,
     handleReset,
     handlePlayMoveCommitted,
     undoLastMove,
@@ -231,6 +233,13 @@ export function SessionPage(): ReactNode {
           isPending={unlockModal.isPending}
           isSuccess={unlockModal.isSuccess}
           errorMessage={unlockModal.errorMessage}
+        />
+      )}
+      {setupRequiredModal.isOpen && (
+        <AiSetupRequiredModal
+          onClose={setupRequiredModal.onClose}
+          onGoToSettings={setupRequiredModal.onGoToSettings}
+          onAnalyzeInstead={setupRequiredModal.onAnalyzeInstead}
         />
       )}
       <SessionHeader

@@ -222,7 +222,7 @@ export function SettingsPage(): ReactNode {
         <EngineModeSelect value={profile.engineMode} onChange={(mode) => engineModeMutation.mutate(mode)} />
       </section>
 
-      <section aria-label="API keys" className="card">
+      <section id="settings-api-keys" aria-label="API keys" className="card">
         <h2>AI setup</h2>
         <p>Your endpoint and API key are tested, encrypted with your unlock phrase, and kept available only while you are active. We never show the key again.</p>
         <LlmSetupForm

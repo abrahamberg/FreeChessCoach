@@ -204,11 +204,27 @@ export function useSessionPageData(sessionId: string) {
   }, []);
 
   // A user who never saved an AI setup at all has no passphrase to unlock —
-  // send them straight to Settings to create one, rather than opening the
-  // same UnlockPhraseModal a "setup exists but locked" failure shows.
+  // tell them why before sending them to Settings, rather than opening the
+  // same UnlockPhraseModal a "setup exists but locked" failure shows, or
+  // silently redirecting them without explanation.
+  const [showSetupRequiredModal, setShowSetupRequiredModal] = useState(false);
   const handleSetupRequired = useCallback(() => {
-    void navigate('/settings');
-  }, [navigate]);
+    setShowSetupRequiredModal(true);
+  }, []);
+
+  const setupRequiredModal = {
+    isOpen: showSetupRequiredModal,
+    onClose: () => setShowSetupRequiredModal(false),
+    onGoToSettings: () => {
+      setShowSetupRequiredModal(false);
+      void navigate('/settings#settings-api-keys');
+    },
+    // "Not now" sends the student to the free, no-AI Game Report review
+    // (GameReviewPage.tsx) instead of just closing — deterministic move
+    // feedback with no key and no credit spent, rather than stranding them
+    // on a coaching session that can't proceed without one.
+    onAnalyzeInstead: gameId !== undefined ? () => navigate(`/review/${gameId}`) : undefined
+  };
 
   const chat = useCoachChat(sessionId, {
     onToolCall: handleCoachToolCall,
@@ -292,6 +308,7 @@ export function useSessionPageData(sessionId: string) {
     setAutoplayIntervalMs,
     chat,
     unlockModal,
+    setupRequiredModal,
     handleReset,
     handlePlayMoveCommitted,
     undoLastMove: () => undoMutation.mutate(),
