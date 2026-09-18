@@ -38,6 +38,7 @@ import type {
 import { tool, type ToolSet } from '../llm/tools.js';
 import type { Kysely } from 'kysely';
 import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
+import type { FocusAreaRow } from '../db/repositories/focus-areas.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import * as usersRepo from '../db/repositories/users.js';
@@ -153,7 +154,7 @@ export function buildCoachTools(ctx: CoachToolsContext, deps: CoachToolsDependen
       description: coachToolDescription('propose_focus_area_update'),
       inputSchema: proposeFocusAreaUpdateParameters,
       execute: withTurnGuards(guardState, 'propose_focus_area_update', (update: FocusAreaUpdate) =>
-        progressService.applyFocusAreaUpdate(deps.db, ctx.userId, update)
+        proposeFocusAreaUpdateTool(deps.db, ctx, update)
       )
     }),
     assign_focused_session: tool({
@@ -344,6 +345,36 @@ async function recordFindingTool(
 ): Promise<{ recorded: boolean }> {
   await progressService.recordFinding(db, ctx.userId, ctx.sessionId, ctx.gameId, finding);
   return { recorded: true };
+}
+
+/** `applyFocusAreaUpdate` returns the raw `FocusAreaRow`, whose `lastSeenAt`/
+ * `createdAt` are live `Date` instances from Kysely. The AI SDK validates
+ * tool-result content as plain JSON when it builds the next step's prompt, so
+ * a `Date` here throws `AI_InvalidPromptError` on the *following* turn instead
+ * of failing where the bug is — this narrows the result to JSON-safe values
+ * at the tool boundary, the same way `recordFindingTool` already does. */
+async function proposeFocusAreaUpdateTool(
+  db: Kysely<Database>,
+  ctx: CoachToolsContext,
+  update: FocusAreaUpdate
+): Promise<{
+  applied: boolean;
+  reason?: string;
+  focusArea?: Omit<FocusAreaRow, 'lastSeenAt' | 'createdAt'> & {
+    lastSeenAt: string;
+    createdAt: string;
+  };
+}> {
+  const result = await progressService.applyFocusAreaUpdate(db, ctx.userId, update);
+  if (!result.focusArea) return { applied: result.applied, reason: result.reason };
+  return {
+    ...result,
+    focusArea: {
+      ...result.focusArea,
+      lastSeenAt: result.focusArea.lastSeenAt.toISOString(),
+      createdAt: result.focusArea.createdAt.toISOString()
+    }
+  };
 }
 
 /** Task 66.2 — resolves the student's rating the same way

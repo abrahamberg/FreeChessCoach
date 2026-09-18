@@ -146,7 +146,8 @@ export function basePuzzleCoachInput(overrides: Partial<PuzzleCoachPromptInput> 
     currentItem: {
       fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
       moves: ['e2e4', 'e7e5', 'g1f3', 'b8c6'],
-      index: 2
+      index: 2,
+      currentPly: 1
     },
     ...overrides
   };

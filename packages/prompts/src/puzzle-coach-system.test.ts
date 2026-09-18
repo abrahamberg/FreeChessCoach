@@ -11,13 +11,9 @@ describe('buildPuzzleCoachSystemPrompt', () => {
     expect(a.staticPart).toBe(b.staticPart);
   });
 
-  test('staticPart tells the coach about every reused tool and advance_puzzle, but not show_position', () => {
+  test('staticPart tells the coach about every reused tool, advance_puzzle, and its own address-free show_position', () => {
     const { staticPart } = buildPuzzleCoachSystemPrompt(baseInput());
-    // show_position addresses a real game's move-pairs ({ moveNumber, color }
-    // — packages/prompts/src/tools.ts) which a puzzle session has no
-    // equivalent of; Task 59.4 drops it from the tool set entirely, so it
-    // must not appear here as guidance for a tool the coach doesn't have.
-    expect(staticPart).not.toContain('show_position');
+    expect(staticPart).toContain('show_position');
     expect(staticPart).toContain('annotate_board');
     expect(staticPart).toContain('expect_move');
     expect(staticPart).toContain('hypothetical_line');
@@ -42,12 +38,12 @@ describe('buildPuzzleCoachSystemPrompt', () => {
   test('dynamicPart states the assignment reason up front', () => {
     const { dynamicPart } = buildPuzzleCoachSystemPrompt(baseInput());
     expect(dynamicPart).toContain('You missed several knight forks in your last few games.');
-    expect(dynamicPart).toContain('Why these puzzles');
+    expect(dynamicPart).toContain('Why this session');
   });
 
-  test('dynamicPart states the puzzle\'s 1-based position and total count', () => {
+  test('dynamicPart states the item\'s 1-based position and total count', () => {
     const { dynamicPart } = buildPuzzleCoachSystemPrompt(baseInput({ totalCount: 5, currentItem: { ...baseInput().currentItem, index: 2 } }));
-    expect(dynamicPart).toContain('This puzzle (2 of 5)');
+    expect(dynamicPart).toContain('This position (2 of 5)');
   });
 
   test('dynamicPart resolves the opponent\'s setup move out of the starting position and lists the rest of the known solution as student/opponent turns', () => {
@@ -71,7 +67,26 @@ describe('buildPuzzleCoachSystemPrompt', () => {
   });
 
   test('a solution line of just the setup move renders a graceful fallback instead of an empty line', () => {
-    const { dynamicPart } = buildPuzzleCoachSystemPrompt(baseInput({ currentItem: { fen: START_FEN, moves: ['e2e4'], index: 1 } }));
+    const { dynamicPart } = buildPuzzleCoachSystemPrompt(
+      baseInput({ currentItem: { fen: START_FEN, moves: ['e2e4'], index: 1, currentPly: 1 } })
+    );
     expect(dynamicPart).toContain('(no solution line recorded)');
+  });
+
+  test('a fully-played line tells the coach there is nothing left to reference, without implying missing data', () => {
+    const { dynamicPart } = buildPuzzleCoachSystemPrompt(
+      baseInput({ currentItem: { ...baseInput().currentItem, currentPly: 4 } })
+    );
+    expect(dynamicPart).toContain('(this line is fully played out)');
+    expect(dynamicPart).not.toContain('(no solution line recorded)');
+  });
+
+  test('progress already made is described as real history, not as the known continuation', () => {
+    const { dynamicPart } = buildPuzzleCoachSystemPrompt(
+      baseInput({ currentItem: { ...baseInput().currentItem, currentPly: 3 } })
+    );
+    expect(dynamicPart).toContain('Played so far this session: e5 Nf3.');
+    expect(dynamicPart).not.toContain('Student plays: e5');
+    expect(dynamicPart).toContain('Student plays: Nc6');
   });
 });

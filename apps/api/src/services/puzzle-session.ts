@@ -1,9 +1,21 @@
+import { applyUciSequence } from '@freechesscoach/chess-analysis';
 import type { Kysely } from 'kysely';
 import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js';
 import * as puzzleSessionsRepo from '../db/repositories/puzzle-sessions.js';
 import type { PuzzleSessionMessageRow, PuzzleSessionRow } from '../db/repositories/puzzle-sessions.js';
 import type { Database } from '../db/schema.js';
 import { ConflictError, NotFoundError } from '../lib/errors.js';
+
+/** The live position for `session`'s current item — `item.fen` with
+ * `item.moves.slice(0, session.currentPly)` already applied. Shared by
+ * `getPuzzleSessionDetail` and `puzzle-move-commit.ts` so both agree on
+ * exactly the same replay. */
+export function currentPuzzleFen(session: PuzzleSessionRow, assignment: puzzleAssignmentsRepo.PuzzleAssignmentRow): string {
+  const item = assignment.items[session.currentItemIndex];
+  if (!item) return assignment.items[0]?.fen ?? '';
+  const { moves } = applyUciSequence(item.fen, item.moves.slice(0, session.currentPly));
+  return moves.at(-1)?.fen ?? item.fen;
+}
 
 /** Starts a fresh puzzle session for an assignment — no seed message (unlike
  * createSessionForGame's `[session_start]`): puzzle-session-turn.ts's
@@ -39,6 +51,7 @@ export async function resumeOrCreatePuzzleSession(
 export interface PuzzleSessionDetail extends PuzzleSessionRow {
   messages: PuzzleSessionMessageRow[];
   assignment: puzzleAssignmentsRepo.PuzzleAssignmentRow;
+  currentFen: string;
 }
 
 export async function getPuzzleSessionDetail(
@@ -53,5 +66,5 @@ export async function getPuzzleSessionDetail(
     puzzleAssignmentsRepo.findById(db, session.assignmentId)
   ]);
   if (!assignment) return undefined;
-  return { ...session, messages, assignment };
+  return { ...session, messages, assignment, currentFen: currentPuzzleFen(session, assignment) };
 }

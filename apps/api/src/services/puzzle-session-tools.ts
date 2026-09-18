@@ -31,20 +31,21 @@ export interface PuzzleSessionToolsDependencies {
 }
 
 /**
- * Task 59.4's reduced tool set for a puzzle-review session: `show_position`
- * is dropped, not reused — its `{ moveNumber, color }` address (see
- * packages/prompts/src/tools.ts) is a real game's move-pair numbering,
- * which a puzzle set has no equivalent of (a puzzle session's board always
- * shows the current item's own FEN, rendered by the client the instant a
- * session opens or advances, no tool round-trip needed for that). Also
- * dropped: `check_position`/`recall_move`/`record_move_note`, all
- * addressed the same game-ply way. `annotate_board`/`expect_move` are
- * reused byte-for-byte (genuinely address-free). `hypothetical_line` is
- * reused with its OWN description below rather than
- * `coachToolDescription('hypothetical_line')`, whose text instructs
- * "call show_position first if you haven't already" — not true here, so
- * repeating it verbatim would point the model at a tool this session
- * doesn't have.
+ * Task 59.4's reduced tool set for a focused-practice session:
+ * `check_position`/`recall_move`/`record_move_note` are dropped — all
+ * addressed by a real game's `{ moveNumber, color }` move-pair numbering,
+ * which a single position has no equivalent of. `annotate_board`/
+ * `expect_move` are reused byte-for-byte (genuinely address-free).
+ * `hypothetical_line` is reused with its OWN description below rather than
+ * `coachToolDescription('hypothetical_line')`, whose text instructs "call
+ * show_position first if you haven't already" — not the right framing here.
+ * `show_position` IS reused here, but address-free and client-side-only
+ * (no `execute` — same as `annotate_board`/`expect_move`): a focused
+ * session only ever has one real position to return to, so there's nothing
+ * to address — it's purely "exit whatever hypothetical is open," the exact
+ * same `useDivergedLine.handleToolCall` branch the game-coach session's
+ * `show_position` already falls into client-side, letting the coach revert
+ * a hypothetical the same way the student's own "peek" toggle does.
  */
 export function buildPuzzleSessionTools(ctx: PuzzleSessionToolsContext, deps: PuzzleSessionToolsDependencies): ToolSet {
   const guardState = createTurnGuardState();
@@ -57,6 +58,10 @@ export function buildPuzzleSessionTools(ctx: PuzzleSessionToolsContext, deps: Pu
     expect_move: tool({
       description: coachToolDescription('expect_move'),
       inputSchema: expectMoveParameters
+    }),
+    show_position: tool({
+      description: PUZZLE_SHOW_POSITION_DESCRIPTION,
+      inputSchema: z.object({})
     }),
     hypothetical_line: tool({
       description: PUZZLE_HYPOTHETICAL_LINE_DESCRIPTION,
@@ -86,6 +91,9 @@ export function buildPuzzleSessionTools(ctx: PuzzleSessionToolsContext, deps: Pu
  * illegal moves. */
 const PUZZLE_CHECK_MOVES_DESCRIPTION =
   'Check whether specific moves are actually legal in a position, and what they actually do — pure board reading, no engine, free and unbudgeted. Pass a fen (the puzzle\'s starting position from "This puzzle", or a resultFen hypothetical_line gave you) plus up to 6 moves in SAN. For each you get back: legal or NOT legal (and, when not, what that piece can really do here); what it captures, whether it gives check or mate; the fen it reaches; which of the mover\'s own pieces it leaves hanging; and any fork it creates. Use it before you judge any move the student proposes that is not in the known solution line — telling a student their move is illegal when it is not, or that it hangs a piece it does not, is worse than saying nothing.';
+
+const PUZZLE_SHOW_POSITION_DESCRIPTION =
+  "Bring the board back to the real, current position — call this once you're done showing a hypothetical you opened with hypothetical_line. Takes no arguments: there is only ever one real position in a focused session, so there's nothing to address. Harmless to call even when nothing is diverged.";
 
 const PUZZLE_HYPOTHETICAL_LINE_DESCRIPTION =
   'Set up or continue a diverged line off the CURRENT puzzle position (the board already shows it — no need to call anything first) — e.g. exploring what happens if the student tries a different idea than the one you\'re walking through. Pass the SAN move(s) for the hypothetical; the client validates and applies them against real chess rules and reports back the resulting position, including its "resultFen" — never invent a resulting FEN yourself. Pass further moves to keep extending a hypothetical already in progress. This never touches the puzzle\'s own solution line.';

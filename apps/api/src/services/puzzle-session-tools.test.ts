@@ -49,9 +49,16 @@ describe('puzzle-session-tools (Task 59.4)', () => {
     return { userId: user.id, assignment };
   }
 
-  test('the tool set has no show_position, check_position, recall_move, or record_move_note', () => {
+  test('the tool set has show_position but no check_position, recall_move, or record_move_note', () => {
     const tools = buildPuzzleSessionTools({ userId: 'u1', assignmentId: 'a1', currentItemIndex: 0 }, { db });
-    expect(Object.keys(tools).sort()).toEqual(['advance_puzzle', 'annotate_board', 'check_moves', 'expect_move', 'hypothetical_line']);
+    expect(Object.keys(tools).sort()).toEqual([
+      'advance_puzzle',
+      'annotate_board',
+      'check_moves',
+      'expect_move',
+      'hypothetical_line',
+      'show_position'
+    ]);
   });
 
   test('check_moves answers from the board alone, so the coach never judges a student\'s proposed move from memory', async () => {

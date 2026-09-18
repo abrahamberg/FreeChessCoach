@@ -9,6 +9,9 @@ export interface PuzzleSessionRow {
   userId: string;
   status: PuzzleSessionStatus;
   currentItemIndex: number;
+  /** How many of the current item's solution-line moves have been applied
+   * to the live position — see 0040_puzzle_session_ply.ts. */
+  currentPly: number;
   startedAt: Date;
   endedAt: Date | null;
 }
@@ -18,8 +21,12 @@ export interface NewPuzzleSession {
   userId: string;
 }
 
-const BASE_COLUMNS = ['id', 'assignmentId', 'userId', 'status', 'currentItemIndex', 'startedAt', 'endedAt'] as const;
+const BASE_COLUMNS = ['id', 'assignmentId', 'userId', 'status', 'currentItemIndex', 'currentPly', 'startedAt', 'endedAt'] as const;
 
+/** `currentPly` starts at 1 (its column default) — the item's `moves[0]`
+ * is always the opponent's forced setup move, auto-applied with no student
+ * decision (see puzzle-coach-system.ts), so a fresh session opens already
+ * past it. */
 export function insertSession(db: Kysely<Database>, values: NewPuzzleSession): Promise<PuzzleSessionRow> {
   return db.insertInto('puzzleSessions').values({ ...values, status: 'active' }).returning(BASE_COLUMNS).executeTakeFirstOrThrow();
 }
@@ -50,8 +57,20 @@ export function findActiveByAssignmentId(db: Kysely<Database>, assignmentId: str
     .executeTakeFirst();
 }
 
+/** Moving to a new item always resets `currentPly` to 1 (its own setup
+ * move auto-applied, same as a fresh session — see `insertSession`). */
 export function advanceItemIndex(db: Kysely<Database>, id: string, currentItemIndex: number): Promise<void> {
-  return db.updateTable('puzzleSessions').set({ currentItemIndex }).where('id', '=', id).execute().then(() => undefined);
+  return db
+    .updateTable('puzzleSessions')
+    .set({ currentItemIndex, currentPly: 1 })
+    .where('id', '=', id)
+    .execute()
+    .then(() => undefined);
+}
+
+/** Persists a move-attempt outcome — `puzzle-move-commit.ts`'s only write. */
+export function advancePly(db: Kysely<Database>, id: string, currentPly: number): Promise<void> {
+  return db.updateTable('puzzleSessions').set({ currentPly }).where('id', '=', id).execute().then(() => undefined);
 }
 
 export function markCompleted(db: Kysely<Database>, id: string): Promise<void> {

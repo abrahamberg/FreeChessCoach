@@ -53,15 +53,45 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
     }
   }, [options.initialMessages]);
 
+  /** A turn this hook abandons mid-stream (StrictMode's dev-only double
+   * mount/unmount firing kickoff() twice, or a real unmount while the coach
+   * is still composing) must not leave its fetch running unseen: the server
+   * holds a per-session lock for the whole turn (puzzle-session-turn.ts) and
+   * only releases it when the connection closes. An un-aborted fetch whose
+   * reader nobody drains any further doesn't reliably signal that close, so
+   * every later turn on this session — this kickoff's own retry included —
+   * queues behind the abandoned one forever. */
+  const inFlightRef = useRef<Set<AbortController>>(new Set());
+  useEffect(
+    () => () => {
+      for (const controller of inFlightRef.current) controller.abort();
+      inFlightRef.current.clear();
+    },
+    []
+  );
+
   const postTurn = useCallback(
     async (body: { content?: string } | { clientToolResult: { toolCallId: string; toolName: string; result: unknown } }) => {
-      const response = await fetch(`/api/puzzle-sessions/${sessionId}/messages`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      if (!response.body) return;
+      const controller = new AbortController();
+      inFlightRef.current.add(controller);
+      let response: Response;
+      try {
+        response = await fetch(`/api/puzzle-sessions/${sessionId}/messages`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: controller.signal
+        });
+      } catch (error) {
+        inFlightRef.current.delete(controller);
+        if (controller.signal.aborted) return;
+        throw error;
+      }
+      if (!response.body) {
+        inFlightRef.current.delete(controller);
+        return;
+      }
 
       const assistantId = crypto.randomUUID();
       let assistantText = '';
@@ -122,6 +152,7 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
         });
       } finally {
         setActiveToolName(null);
+        inFlightRef.current.delete(controller);
       }
     },
     [sessionId, options]

@@ -1,4 +1,5 @@
 import { Chess } from 'chess.js';
+import type { AppliedMove } from './apply-san-sequence.js';
 
 /**
  * Some UCI sources (confirmed in Lichess's own eval dataset — see
@@ -40,6 +41,30 @@ export function pvUciToSan(fen: string, pvUci: string[]): string[] {
   }
 
   return sans;
+}
+
+/**
+ * Replays a UCI sequence (e.g. a puzzle item's `moves`, or a prefix of it)
+ * from `startFen`, mirroring `applySanSequence`'s shape/stop-on-illegal
+ * behavior. Used to derive a puzzle session's live position — `item.fen` +
+ * `item.moves.slice(0, currentPly)` — without duplicating the walk at every
+ * call site.
+ */
+export function applyUciSequence(startFen: string, uciMoves: readonly string[]): { moves: AppliedMove[]; error: string | null } {
+  const chess = new Chess(startFen);
+  const moves: AppliedMove[] = [];
+
+  for (const uci of uciMoves) {
+    let move: ReturnType<typeof applyUciMove>;
+    try {
+      move = applyUciMove(chess, uci);
+    } catch {
+      return { moves, error: `Illegal move: ${uci}` };
+    }
+    moves.push({ san: move.san, fen: chess.fen(), uci });
+  }
+
+  return { moves, error: null };
 }
 
 function applyUciMove(chess: Chess, moveUci: string) {

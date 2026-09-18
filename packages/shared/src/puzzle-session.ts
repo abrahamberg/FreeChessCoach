@@ -48,6 +48,10 @@ export const PuzzleSessionSchema = z.object({
   userId: z.string(),
   status: PuzzleSessionStatusSchema,
   currentItemIndex: z.number().int().nonnegative(),
+  /** How many of the current item's solution-line moves have been applied
+   * to the live position — starts at 1 (the opponent's forced setup move
+   * is auto-applied). */
+  currentPly: z.number().int().nonnegative(),
   startedAt: z.string(),
   endedAt: z.string().nullable()
 });
@@ -65,6 +69,33 @@ export type PuzzleSessionMessage = z.infer<typeof PuzzleSessionMessageSchema>;
 
 export const PuzzleSessionDetailSchema = PuzzleSessionSchema.extend({
   messages: z.array(PuzzleSessionMessageSchema),
-  assignment: PuzzleAssignmentSchema
+  assignment: PuzzleAssignmentSchema,
+  /** The live position for the current item — `item.fen` with
+   * `item.moves.slice(0, currentPly)` already applied. Computed server-side
+   * (apply-uci-sequence, packages/chess-analysis) so the client never
+   * replays UCI itself. */
+  currentFen: z.string()
 });
 export type PuzzleSessionDetail = z.infer<typeof PuzzleSessionDetailSchema>;
+
+export const AttemptPuzzleMoveRequestSchema = z.object({
+  san: z.string(),
+  uci: z.string()
+});
+export type AttemptPuzzleMoveRequest = z.infer<typeof AttemptPuzzleMoveRequestSchema>;
+
+/** Response for `POST /api/puzzle-sessions/:id/attempt-move` — a fast,
+ * deterministic check against the item's solution line, decoupled from the
+ * coach's own turn (see puzzle-session-turn.ts / puzzle-move-commit.ts).
+ * `accepted: false` means nothing was persisted — `fen` is just the
+ * last-committed position, for the client to revert to immediately. */
+export const AttemptPuzzleMoveResponseSchema = z.object({
+  accepted: z.boolean(),
+  fen: z.string(),
+  currentPly: z.number().int().nonnegative(),
+  /** True once `currentPly` has reached the end of the item's solution
+   * line — informational only, `advance_puzzle` (the coach's own tool
+   * call) still decides when to actually leave this item. */
+  lineComplete: z.boolean()
+});
+export type AttemptPuzzleMoveResponse = z.infer<typeof AttemptPuzzleMoveResponseSchema>;

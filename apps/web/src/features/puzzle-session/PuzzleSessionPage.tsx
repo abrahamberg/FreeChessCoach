@@ -1,8 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ChevronLeftIcon, UndoIcon } from '../../components/Icon.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { CoachBoard } from '../board/CoachBoard.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
+import { MoveExplorer } from '../board/MoveExplorer.js';
 import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
 import { ChatPane } from '../chat/ChatPane.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
@@ -11,15 +13,14 @@ import { usePuzzleSessionPageData } from './usePuzzleSessionPageData.js';
 import './PuzzleSessionPage.css';
 
 /**
- * docs/plan.md Phase 59, Task 59.6 — coach-guided walkthrough of one
- * puzzle_assignments batch. Mirrors session/SessionPage.tsx's board + chat
- * layout (same SessionPage.css layout classes, same CoachBoard/ChatPane/
- * DivergedLinePanel components — all already generic over a FEN) against
- * the puzzle-sessions endpoints instead of the game-review ones. NOT
- * reused: the move list/MoveExplorer, SessionPeekBar, position-divider
- * navigation, mobile tab-swipe body — none of that exists for a puzzle set
- * (see usePuzzleSessionPageData.ts and puzzle-session-tools.ts on the API
- * side for why show_position specifically has no equivalent here).
+ * docs/plan.md Phase 59, Task 59.6 — a coach-guided focused-practice
+ * session on one puzzle_assignments batch. Same three-column desktop
+ * layout as session/SessionPage.tsx (move list | board | chat, same
+ * SessionPage.css classes) and the same CoachBoard/ChatPane/
+ * DivergedLinePanel/MoveExplorer components — this used to be a bespoke,
+ * puzzle-solving-flavored page; it's now the same coached-session shape as
+ * a real game, just against a known line instead of a played-out one (see
+ * usePuzzleSessionPageData.ts for the move-attempt/peek mechanics).
  */
 export function PuzzleSessionPage(): ReactNode {
   const { assignmentId } = useParams<{ assignmentId: string }>();
@@ -27,12 +28,30 @@ export function PuzzleSessionPage(): ReactNode {
   const isSideBySide = useIsBoardSideBySide();
   const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(DEFAULT_AUTOPLAY_INTERVAL_MS);
 
-  const { createMutation, detailQuery, currentItem, divergedLine, annotations, chat } = usePuzzleSessionPageData(
-    assignmentId ?? ''
-  );
+  const {
+    createQuery,
+    detailQuery,
+    currentItem,
+    divergedLine,
+    annotations,
+    chat,
+    boardFen,
+    boardMode,
+    enterPeek,
+    exitPeek,
+    isMoveSubmitting,
+    moveAttemptError,
+    handleUserMove,
+    handleLocalMove,
+    sanMoves,
+    historyPositions,
+    currentPly,
+    viewedPly,
+    selectHistoryPly
+  } = usePuzzleSessionPageData(assignmentId ?? '');
 
-  if (createMutation.isError) return <p>Could not start this practice session.</p>;
-  if (createMutation.isPending || createMutation.isIdle || detailQuery.isLoading) return <p>Loading…</p>;
+  if (createQuery.isError) return <p>Could not start this practice session.</p>;
+  if (createQuery.isPending || detailQuery.isLoading) return <p>Loading…</p>;
   if (detailQuery.isError || !detailQuery.data) return <p>Could not load this practice session.</p>;
 
   const session = detailQuery.data;
@@ -69,32 +88,50 @@ export function PuzzleSessionPage(): ReactNode {
     void chat.sendMessage(content);
   }
 
-  function handleUserMove(san: string, fen: string, uci: string): void {
-    if (!currentItem) return;
-    const real = { ply: session.currentItemIndex, fen: currentItem.fen };
-    if (divergedLine.expectingMove) {
-      divergedLine.consumeExpectingMove();
-      const message = divergedLine.line
-        ? encodeDivergedLine(divergedLine.appendMove({ san, fen, uci }, real), '')
-        : `[board_move] I played ${san} (position now: ${fen})`;
-      void chat.sendMessage(message);
-      return;
-    }
-    divergedLine.appendMove({ san, fen, uci }, real);
-  }
-
-  const boardFen = divergedLine.fen ?? currentItem.fen;
-
   const board = (
     <div className="session-board-column">
-      <CoachBoard
-        fen={boardFen}
-        orientation="white"
-        mode="answer"
-        arrows={annotations.arrows}
-        highlights={annotations.highlights}
-        onUserMove={handleUserMove}
-      />
+      <div className="session-board-row">
+        <CoachBoard
+          fen={boardFen}
+          orientation="white"
+          mode={boardMode}
+          arrows={annotations.arrows}
+          highlights={annotations.highlights}
+          onUserMove={handleUserMove}
+          onLocalMove={handleLocalMove}
+          disabled={isMoveSubmitting}
+        />
+      </div>
+      {moveAttemptError && (
+        <p className="play-move-error" role="alert">
+          {moveAttemptError}
+        </p>
+      )}
+      {!divergedLine.line && (
+        <p className="peek-pill">
+          {boardMode === 'peek' ? (
+            <>
+              exploring —{' '}
+              <button type="button" onClick={exitPeek}>
+                <ChevronLeftIcon width={13} height={13} />
+                back to coach
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={enterPeek}>
+              explore on your own
+            </button>
+          )}
+        </p>
+      )}
+      {divergedLine.line && (
+        <p className="undo-pill">
+          <button type="button" onClick={divergedLine.undoLastMove}>
+            <UndoIcon width={13} height={13} />
+            undo last move
+          </button>
+        </p>
+      )}
     </div>
   );
 
@@ -120,16 +157,28 @@ export function PuzzleSessionPage(): ReactNode {
         </span>
       </header>
       <div className={isSideBySide ? 'session-body desktop' : 'session-body'}>
-        {isSideBySide && divergedLine.line && (
-          <DivergedLinePanel
-            line={divergedLine.line}
-            stepIndex={divergedLine.stepIndex}
-            onSelectStep={divergedLine.previewStep}
-            onExit={divergedLine.exit}
-            autoplayIntervalMs={autoplayIntervalMs}
-            onChangeAutoplayInterval={setAutoplayIntervalMs}
-          />
-        )}
+        {isSideBySide &&
+          (divergedLine.line ? (
+            <DivergedLinePanel
+              line={divergedLine.line}
+              stepIndex={divergedLine.stepIndex}
+              onSelectStep={divergedLine.previewStep}
+              onExit={divergedLine.exit}
+              autoplayIntervalMs={autoplayIntervalMs}
+              onChangeAutoplayInterval={setAutoplayIntervalMs}
+            />
+          ) : (
+            <div className="session-move-explorer-column">
+              <MoveExplorer
+                sanMoves={sanMoves}
+                classifiedMoves={[]}
+                positions={historyPositions}
+                currentPly={viewedPly ?? currentPly}
+                onSelect={selectHistoryPly}
+                showNotes={false}
+              />
+            </div>
+          ))}
         {board}
         {chatPanel}
       </div>

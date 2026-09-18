@@ -256,6 +256,9 @@ export interface PuzzleSessionsTable {
   userId: string;
   status: Generated<'active' | 'completed' | 'abandoned'>;
   currentItemIndex: Generated<number>;
+  /** How many of the current item's solution-line UCI moves have been
+   * applied to the live position — see 0040_puzzle_session_ply.ts. */
+  currentPly: Generated<number>;
   startedAt: Generated<Date>;
   endedAt: Date | null;
 }

@@ -100,7 +100,7 @@ export async function startPuzzleTurn(
     const { staticPart, dynamicPart } = buildPuzzleCoachSystemPrompt({
       reason: assignment.reason,
       totalCount: assignment.items.length,
-      currentItem: { fen: currentItem.fen, moves: currentItem.moves, index: currentItemIndex + 1 }
+      currentItem: { fen: currentItem.fen, moves: currentItem.moves, index: currentItemIndex + 1, currentPly: session.currentPly }
     });
     const instructions = [cachedSystemMessage(staticPart), systemMessage(dynamicPart)];
 

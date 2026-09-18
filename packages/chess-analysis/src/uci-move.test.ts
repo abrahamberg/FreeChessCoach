@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { pvUciToSan, uciToSan } from './uci-move.js';
+import { applyUciSequence, pvUciToSan, uciToSan } from './uci-move.js';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -45,6 +45,33 @@ describe('uciToSan', () => {
       const fen = 'r3kb1r/ppp1pppp/2nq1n2/3p1b2/3P1B2/2N2N2/PPPQPPPP/2KR1B1R b kq - 9 6';
       expect(uciToSan(fen, 'e8a8')).toBe('O-O-O');
     });
+  });
+});
+
+describe('applyUciSequence', () => {
+  test('replays a clean sequence and returns san/fen/uci per ply', () => {
+    const { moves, error } = applyUciSequence(START_FEN, ['e2e4', 'e7e5']);
+    expect(error).toBeNull();
+    expect(moves.map((m) => m.san)).toEqual(['e4', 'e5']);
+    expect(moves.map((m) => m.uci)).toEqual(['e2e4', 'e7e5']);
+    expect(moves.at(-1)?.fen).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2');
+  });
+
+  test('stops at the first illegal move and reports the valid prefix plus an error', () => {
+    const { moves, error } = applyUciSequence(START_FEN, ['e2e4', 'e2e4']);
+    expect(moves.map((m) => m.san)).toEqual(['e4']);
+    expect(error).toBe('Illegal move: e2e4');
+  });
+
+  test('handles the Lichess eval dataset\'s king-captures-rook castling convention', () => {
+    const fen = 'r1bqkb1r/1ppp1ppp/p1n2n2/4p3/B3P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 2 5';
+    const { moves, error } = applyUciSequence(fen, ['e1h1']);
+    expect(error).toBeNull();
+    expect(moves[0]?.san).toBe('O-O');
+  });
+
+  test('empty input returns no moves and no error', () => {
+    expect(applyUciSequence(START_FEN, [])).toEqual({ moves: [], error: null });
   });
 });
 
