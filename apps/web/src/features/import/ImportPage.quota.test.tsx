@@ -52,7 +52,7 @@ async function openLichessBulkPicker(user: ReturnType<typeof userEvent.setup>): 
       </MemoryRouter>
     </QueryClientProvider>
   );
-  await screen.findByRole('button', { name: /daniel.*marta/is });
+  await screen.findByRole('button', { name: /^analyze.*daniel.*marta/is });
   await user.click(screen.getByRole('checkbox', { name: /select several games to import/i }));
 }
 

@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { IntentButtons } from './IntentButtons.js';
+import type { ImportIntent } from './import-intent.js';
 
 export interface RemoteGamePickerBulkSelection {
   selectedIds: ReadonlySet<string>;
@@ -30,11 +32,13 @@ export interface RemoteGamePickerProps<TGame extends RemoteGamePickerRow> {
   isLoading: boolean;
   isLinked: boolean;
   linkPrompt: ReactNode;
-  onSelect: (pgn: string, playedAt: string | null) => void;
-  /** Stat-bank bulk import (Task 31.4) — additive to the single-click
-   * `onSelect` contract above, which is unaffected: a row's button always
-   * imports it immediately regardless of whether this is set. Omit to keep
-   * today's picker exactly as it was. */
+  /** Import this one game, for the chosen intent (Analyze or Get coaching
+   * session). Each row offers both buttons — except in bulk mode, where a
+   * tick box replaces them. */
+  onSelect: (pgn: string, playedAt: string | null, intent: ImportIntent) => void;
+  /** Bulk import (Task 31.4): tick boxes and one "Import N games" button in
+   * place of each row's own Analyze / Get coaching session buttons. Omit for
+   * the one-game-at-a-time picker. */
   bulkSelection?: RemoteGamePickerBulkSelection;
   /** Extra per-row detail rendered between the result and the date — e.g.
    * Chess.com's time class, which Lichess's feed has no equivalent for. */
@@ -104,14 +108,20 @@ export function RemoteGamePicker<TGame extends RemoteGamePickerRow>({
             ) : (
               bulkSelection && <RowCheckbox game={game} bulkSelection={bulkSelection} />
             )}
-            <button type="button" onClick={() => onSelect(game.pgn, game.playedAt)}>
+            <div className="remote-game-picker__game">
               <span>
                 {game.whiteName ?? '?'} vs. {game.blackName ?? '?'}
               </span>
               <span>{game.result ?? '*'}</span>
               {renderMeta?.(game)}
               {game.playedAt && <time dateTime={game.playedAt}>{new Date(game.playedAt).toLocaleDateString()}</time>}
-            </button>
+            </div>
+            {!bulkSelection && (
+              <IntentButtons
+                subject={`${game.whiteName ?? '?'} vs. ${game.blackName ?? '?'}`}
+                onChoose={(intent) => onSelect(game.pgn, game.playedAt, intent)}
+              />
+            )}
           </li>
         ))}
       </ul>

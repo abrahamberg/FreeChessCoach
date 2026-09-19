@@ -1,6 +1,7 @@
 import type { ChesscomRecentGame, ImportLimitKind, LichessRecentGame } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import type { ImportIntent } from './import-intent.js';
 import { limitMessage } from './import-limit-copy.js';
 import { RemoteGamePicker, type RemoteGamePickerBulkSelection } from './RemoteGamePicker.js';
 
@@ -24,11 +25,11 @@ export interface BulkResult {
 
 export interface RemoteImportPanelProps {
   tab: RemoteTab;
-  statBankMode: boolean;
-  onStatBankModeChange: (enabled: boolean) => void;
+  bulkMode: boolean;
+  onBulkModeChange: (enabled: boolean) => void;
   lichess: RemoteSourceState<LichessRecentGame>;
   chesscom: RemoteSourceState<ChesscomRecentGame>;
-  onSelect: (pgn: string, playedAt: string | null) => void;
+  onSelect: (pgn: string, playedAt: string | null, intent: ImportIntent) => void;
   bulkSelection: RemoteGamePickerBulkSelection;
   bulkResult?: BulkResult;
 }
@@ -39,8 +40,8 @@ export interface RemoteImportPanelProps {
  * ImportPage owns the data fetching and passes it down (AGENTS.md rule 7). */
 export function RemoteImportPanel({
   tab,
-  statBankMode,
-  onStatBankModeChange,
+  bulkMode,
+  onBulkModeChange,
   lichess,
   chesscom,
   onSelect,
@@ -49,8 +50,8 @@ export function RemoteImportPanel({
 }: RemoteImportPanelProps): ReactNode {
   return (
     <>
-      <label className="import-page__stat-bank-toggle">
-        <input type="checkbox" checked={statBankMode} onChange={(event) => onStatBankModeChange(event.target.checked)} />
+      <label className="import-page__bulk-toggle">
+        <input type="checkbox" checked={bulkMode} onChange={(event) => onBulkModeChange(event.target.checked)} />
         Select several games to import
       </label>
       {tab === 'lichess' ? (
@@ -60,7 +61,7 @@ export function RemoteImportPanel({
           isLinked={lichess.isLinked}
           linkPrompt="Link your Lichess account in Settings to import from Lichess."
           onSelect={onSelect}
-          bulkSelection={statBankMode ? bulkSelection : undefined}
+          bulkSelection={bulkMode ? bulkSelection : undefined}
         />
       ) : (
         <RemoteGamePicker
@@ -69,7 +70,7 @@ export function RemoteImportPanel({
           isLinked={chesscom.isLinked}
           linkPrompt="Link your Chess.com account in Settings to import from Chess.com."
           onSelect={onSelect}
-          bulkSelection={statBankMode ? bulkSelection : undefined}
+          bulkSelection={bulkMode ? bulkSelection : undefined}
           renderMeta={(game) => <span>{game.timeClass}</span>}
         />
       )}

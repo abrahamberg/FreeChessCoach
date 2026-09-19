@@ -23,8 +23,11 @@ describe('RemoteGamePicker', () => {
     expect(screen.getByText(/daniel/)).toBeInTheDocument();
     expect(screen.getByText(/marta/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /daniel.*marta/is }));
-    expect(onSelect).toHaveBeenCalledWith(GAMES[0]!.pgn, GAMES[0]!.playedAt);
+    await user.click(screen.getByRole('button', { name: /^analyze.*daniel.*marta/is }));
+    expect(onSelect).toHaveBeenLastCalledWith(GAMES[0]!.pgn, GAMES[0]!.playedAt, 'review');
+
+    await user.click(screen.getByRole('button', { name: /^get coaching session.*daniel.*marta/is }));
+    expect(onSelect).toHaveBeenLastCalledWith(GAMES[0]!.pgn, GAMES[0]!.playedAt, 'coach');
   });
 
   test('shows the given link-account prompt when the user has no linked username', () => {
@@ -98,22 +101,45 @@ describe('RemoteGamePicker', () => {
       expect(onSelect).not.toHaveBeenCalled();
     });
 
-    test('clicking a row\'s button still calls onSelect immediately, even in bulk mode', async () => {
-      const onSelect = vi.fn();
-      const user = userEvent.setup();
+    test('in bulk mode a tick box replaces each row\'s Analyze / Get coaching session buttons', () => {
       render(
         <RemoteGamePicker
           games={GAMES}
           isLoading={false}
           isLinked={true}
           linkPrompt="Link your account."
-          onSelect={onSelect}
+          onSelect={vi.fn()}
           bulkSelection={{ selectedIds: new Set(), onToggle: vi.fn(), onImportSelected: vi.fn(), isImporting: false }}
         />
       );
 
-      await user.click(screen.getByRole('button', { name: /daniel.*marta/is }));
-      expect(onSelect).toHaveBeenCalledWith(GAMES[0]!.pgn, GAMES[0]!.playedAt);
+      expect(screen.getByRole('checkbox')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /analyze/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /get coaching session/i })).not.toBeInTheDocument();
+    });
+
+    test('past the selection cap an unticked row is disabled and labelled with the reason; a ticked row stays enabled', () => {
+      const games = [GAMES[0]!, { ...GAMES[0]!, id: 'efgh5678', blackName: 'Bob' }];
+      render(
+        <RemoteGamePicker
+          games={games}
+          isLoading={false}
+          isLinked={true}
+          linkPrompt="Link your account."
+          onSelect={vi.fn()}
+          bulkSelection={{
+            selectedIds: new Set(['abcd1234']),
+            onToggle: vi.fn(),
+            onImportSelected: vi.fn(),
+            isImporting: false,
+            maxSelectable: 1,
+            capReason: 'You can import 1 more game right now'
+          }}
+        />
+      );
+
+      expect(screen.getByRole('checkbox', { name: /select daniel.*marta to import/is })).toBeEnabled();
+      expect(screen.getByRole('checkbox', { name: 'You can import 1 more game right now' })).toBeDisabled();
     });
 
     test('a settled importedId shows a checkmark in place of its checkbox and the button reports progress', () => {

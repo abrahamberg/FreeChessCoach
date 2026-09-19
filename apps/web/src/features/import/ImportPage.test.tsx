@@ -45,9 +45,9 @@ function renderImportPage(initialPath = '/import') {
   );
 }
 
-async function submitPgn(user: ReturnType<typeof userEvent.setup>) {
+async function submitPgn(user: ReturnType<typeof userEvent.setup>, button: 'Analyze' | 'Get coaching session' = 'Get coaching session') {
   await user.type(screen.getByRole('textbox', { name: /pgn/i }), '1. e4 e5');
-  await user.click(screen.getByRole('button', { name: /import/i }));
+  await user.click(screen.getByRole('button', { name: button }));
 }
 
 describe('ImportPage', () => {
@@ -111,7 +111,7 @@ describe('ImportPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/couldn’t be imported/i);
   });
 
-  test('once the analysis status SSE reports ready, a session is created and the app navigates to it', async () => {
+  test('choosing Get coaching session: once the analysis status SSE reports ready, a session is created and the app navigates to it', async () => {
     const fetchMock = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/games') {
         return Promise.resolve(
@@ -119,6 +119,19 @@ describe('ImportPage', () => {
             status: 200,
             headers: { 'content-type': 'application/json' }
           })
+        );
+      }
+      if (path === '/api/games/game-1') {
+        return Promise.resolve(
+          new Response(JSON.stringify({ id: 'game-1', source: 'paste', reviewTier: 'imported' }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' }
+          })
+        );
+      }
+      if (path === '/api/games/game-1/promote') {
+        return Promise.resolve(
+          new Response(JSON.stringify({ reviewTier: 'coach' }), { status: 200, headers: { 'content-type': 'application/json' } })
         );
       }
       if (path === '/api/sessions') {
@@ -195,6 +208,7 @@ describe('ImportPage', () => {
     await user.click(screen.getByRole('button', { name: /upload/i }));
     const file = new File(['1. e4 e5 *'], 'game.pgn', { type: 'application/x-chess-pgn' });
     await user.upload(screen.getByLabelText(/pgn file/i), file);
+    await user.click(await screen.findByRole('button', { name: 'Analyze' }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -240,7 +254,7 @@ describe('ImportPage', () => {
     renderImportPage();
     await user.click(screen.getByRole('button', { name: /from lichess/i }));
 
-    await user.click(await screen.findByRole('button', { name: /daniel.*marta/is }));
+    await user.click(await screen.findByRole('button', { name: /^analyze.*daniel.*marta/is }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -292,7 +306,7 @@ describe('ImportPage', () => {
     renderImportPage();
     await user.click(screen.getByRole('button', { name: /from chess\.com/i }));
 
-    await user.click(await screen.findByRole('button', { name: /daniel.*marta/is }));
+    await user.click(await screen.findByRole('button', { name: /^analyze.*daniel.*marta/is }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -402,7 +416,7 @@ describe('ImportPage', () => {
         expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ lichessUsername: 'daniel' }) })
       )
     );
-    expect(await screen.findByRole('button', { name: /daniel.*marta/is })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /^analyze.*daniel.*marta/is })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
@@ -430,7 +444,7 @@ describe('ImportPage', () => {
 
     async function enterBulkModeWithBothSelected(user: ReturnType<typeof userEvent.setup>) {
       await user.click(screen.getByRole('button', { name: /from lichess/i }));
-      await screen.findByRole('button', { name: /daniel.*marta/is });
+      await screen.findByRole('button', { name: /^analyze.*daniel.*marta/is });
       await user.click(screen.getByRole('checkbox', { name: /select several games to import/i }));
       const checkboxes = screen.getAllByRole('checkbox').filter((box) => box.getAttribute('aria-label')?.includes('Select'));
       for (const checkbox of checkboxes) await user.click(checkbox);
@@ -614,7 +628,7 @@ describe('ImportPage', () => {
       expect(screen.getByRole('button', { name: 'Import 2 games' })).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: /from chess\.com/i }));
-      await screen.findByRole('button', { name: /daniel.*nadia/is });
+      await screen.findByRole('checkbox', { name: /select daniel.*nadia to import/is });
 
       expect(screen.getByRole('button', { name: 'Import 0 games' })).toBeDisabled();
     });

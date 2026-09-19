@@ -22,7 +22,9 @@ export interface AiSetupPrompt {
  * currently showing; handlers take a game id (the cards'/rows' own
  * callback shape) and look it up here. Owns the mutations (AGENTS.md rule
  * 7: fetching lives in hooks, not components). */
-export function useGameActions(games: GameListItem[]) {
+export type ActionableGame = Pick<GameListItem, 'id' | 'reviewTier' | 'sessionId' | 'source'>;
+
+export function useGameActions(games: ActionableGame[]) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const llmSetupQuery = useLlmSetupStatus();
@@ -35,7 +37,7 @@ export function useGameActions(games: GameListItem[]) {
   // game already at 'coach' skips straight to opening the session), then
   // finds-or-creates its session.
   const coachMutation = useMutation({
-    mutationFn: async (game: GameListItem) => {
+    mutationFn: async (game: ActionableGame) => {
       if (!isTopReviewTier(game.reviewTier)) {
         await apiPost(`/api/games/${game.id}/promote`, { tier: 'coach' }, PromoteGameResponseSchema);
         void refreshGames();
