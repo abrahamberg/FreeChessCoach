@@ -69,11 +69,20 @@ export async function deleteEarliestImportedGames(
   userId: string,
   count: number
 ): Promise<DeleteEarliestImportedResponse> {
-  return db.transaction().execute(async (trx) => {
-    const gameIds = await gamesRepo.listEarliestImportedIds(trx, userId, count);
-    for (const gameId of gameIds) await deleteGameKeepingStats(trx, userId, gameId);
-    return { deleted: gameIds.length };
-  });
+  return db.transaction().execute((trx) => deleteEarliestImportedInTransaction(trx, userId, count));
+}
+
+/** The body of `deleteEarliestImportedGames` for a caller that already owns
+ * the transaction (Kysely cannot nest one) — the import's automatic
+ * make-room-at-1000 step runs it inside the same transaction as the insert. */
+export async function deleteEarliestImportedInTransaction(
+  trx: Kysely<Database>,
+  userId: string,
+  count: number
+): Promise<DeleteEarliestImportedResponse> {
+  const gameIds = await gamesRepo.listEarliestImportedIds(trx, userId, count);
+  for (const gameId of gameIds) await deleteGameKeepingStats(trx, userId, gameId);
+  return { deleted: gameIds.length };
 }
 
 /** The per-game delete cascade — none of the foreign keys involved are ON

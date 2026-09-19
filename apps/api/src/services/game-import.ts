@@ -1,19 +1,16 @@
 import {
-  classifyTimeControl,
   detectUserColor,
-  extractPgnMoveComments,
-  parseGameHeaders,
   parsePgn,
   type Usernames
 } from '@freechesscoach/chess-analysis';
 import type { ImportGameRequest, PlayerColor } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
-import * as gameImportEventsRepo from '../db/repositories/game-import-events.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
+import { buildGameValues, recordImportedGame } from './imported-game-record.js';
 import { assertCanImport } from './import-quota.js';
 
 export { InvalidPgnError } from '@freechesscoach/chess-analysis';
@@ -96,52 +93,6 @@ export async function importGame(
   return { gameId: game.id, analysisId };
 }
 
-function buildGameValues(
-  userId: string,
-  request: ImportGameRequest,
-  headers: Record<string, string>,
-  userColor: PlayerColor
-): Parameters<typeof gamesRepo.insert>[1] {
-  const timeControl = headers['TimeControl'] ?? null;
-  const headerMetadata = parseGameHeaders(headers);
-  return {
-    userId,
-    pgn: request.pgn,
-    source: request.source,
-    userColor,
-    whiteName: headers['White'] ?? null,
-    blackName: headers['Black'] ?? null,
-    result: headers['Result'] ?? null,
-    timeControl,
-    eco: headers['ECO'] ?? null,
-    playedAt: parsePlayedAt(headers) ?? parseClientPlayedAt(request.playedAt),
-    whiteElo: headerMetadata.whiteElo,
-    blackElo: headerMetadata.blackElo,
-    ratingsProvisional: headerMetadata.ratingsProvisional,
-    rated: headerMetadata.rated,
-    termination: headerMetadata.termination,
-    variant: headerMetadata.variant,
-    speed: classifyTimeControl(timeControl),
-    playedAtTime: headerMetadata.utcTime,
-    // Always the (possibly empty) array, never null — null is reserved for
-    // "not yet processed by this metadata pipeline" (see
-    // gamesRepo.findBatchMissingMoveTimes's doc comment), and this pipeline
-    // just ran, right here.
-    moveTimes: extractPgnMoveComments(request.pgn)
-  };
-}
-
-/** Inserts the game and its import-ledger row in one transaction, so a failed
- * insert never burns quota and a ledger row never exists without its game
- * (deleting the game later leaves the row — that is the point). */
-function recordImportedGame(db: Kysely<Database>, values: Parameters<typeof gamesRepo.insert>[1]) {
-  return db.transaction().execute(async (trx) => {
-    const game = await gamesRepo.insert(trx, values);
-    await gameImportEventsRepo.record(trx, values.userId, new Date());
-    return game;
-  });
-}
-
 /** Once a game's side is known, remembers the student's username on whichever
  * platform the PGN came from — so detectUserColor can auto-resolve future
  * imports from that platform without the client falling back to ColorConfirm's
@@ -183,24 +134,4 @@ function detectPlatform(
   if (site.includes('lichess.org')) return 'lichess';
   if (site.includes('chess.com')) return 'chesscom';
   return null;
-}
-
-/** Parses a PGN `Date`/`UTCDate` header (strict "YYYY.MM.DD"); anything else
- * (missing, partial like "2024.??.??") is treated as unknown. */
-function parsePlayedAt(headers: Record<string, string>): Date | null {
-  const raw = headers['UTCDate'] ?? headers['Date'];
-  if (!raw || !/^\d{4}\.\d{2}\.\d{2}$/.test(raw)) return null;
-  const iso = raw.replaceAll('.', '-');
-  const date = new Date(`${iso}T00:00:00Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-/** `request.playedAt`'s fallback half of `parsePlayedAt(parsed.headers) ??
- * parseClientPlayedAt(...)` above — an ISO string the client already
- * resolved from a remote API, so this only needs to guard against a missing
- * or malformed value, not parse a chess-PGN date format. */
-function parseClientPlayedAt(raw: string | null | undefined): Date | null {
-  if (!raw) return null;
-  const date = new Date(raw);
-  return Number.isNaN(date.getTime()) ? null : date;
 }
