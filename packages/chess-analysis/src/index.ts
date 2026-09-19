@@ -17,6 +17,7 @@ export * from './classify.js';
 export * from './classify-brilliant.js';
 export * from './classify-tactic-motif.js';
 export * from './classify-great.js';
+export * from './coaching-candidate.js';
 export * from './classify-miss.js';
 export * from './classify-move.js';
 export * from './classify-severity.js';

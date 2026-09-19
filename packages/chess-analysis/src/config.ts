@@ -251,6 +251,18 @@ export const CONFIG = {
     habitBaselineRate: 0.5
   },
 
+  /** Recommended coaching game (coaching-candidate.ts): after a batch import,
+   * the analyzed game with the most tactical points is offered for a coaching
+   * session. A point is one tactic the player missed or one the opponent had
+   * that the player did not defuse; equal weights to start — a heuristic to
+   * tune, not a calibrated rating. `topMotifCount` is how many motifs the UI
+   * names as the reason. */
+  coachingCandidate: {
+    missedTacticWeight: 1,
+    allowedTacticWeight: 1,
+    topMotifCount: 3
+  },
+
   /** Both-sides tactic scanning (scan-tactics-for-lines.ts / position-tactics.ts).
    * `defaultTopN` is `ENGINE_MULTI_PV` itself (from @freechesscoach/shared,
    * the canonical single source) — no more hand-synced duplicate literal. */
