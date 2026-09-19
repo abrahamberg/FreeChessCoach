@@ -8,8 +8,8 @@ import {
   plotWidthFor,
   ratingDomain,
   ratingTicks,
-  xFor,
-  xTickIndices,
+  xForTime,
+  xTickTimes,
   yForRating
 } from './ratingChartScale.js';
 
@@ -17,13 +17,26 @@ export interface RatingStatsSectionProps {
   stats: RatingStats;
 }
 
-function formatDate(iso: string): string {
+const LONG_SPAN_MS = 120 * 24 * 60 * 60 * 1000;
+
+function formatDate(iso: string | number): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-/** docs/algorith.md §8's estimated-rating trend: one point per game, in the
- * order it was actually played, connected into a line — deliberately not a
- * day/period average (a day with several games gets several points). The
+/** Over months a day is too fine a label; show the month and year instead. */
+function formatTick(time: number, spanMs: number): string {
+  if (spanMs < LONG_SPAN_MS) return formatDate(time);
+  return new Date(time).toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+}
+
+/** Thousands of points at full size smear into a solid band. */
+function pointRadius(pointCount: number): number {
+  return pointCount > 300 ? 1.6 : 3;
+}
+
+/** docs/algorith.md §8's estimated-rating trend: one point per game, placed
+ * on the date it was actually played and connected into a line — deliberately
+ * not a day/period average (a day with several games gets several points). The
  * Stats page's existing range/speed toggles already decide which games feed
  * this, so there's no filter state here. Presentational only; axis/scale
  * math lives in ratingChartScale.ts. */
@@ -75,7 +88,11 @@ function RatingChart({ points }: { points: RatingStats['points'] }): ReactNode {
   const plotDomainMin = yTicks[0]!;
   const plotDomainMax = yTicks.at(-1)!;
   const yFor = (rating: number) => yForRating(rating, plotDomainMin, plotDomainMax);
-  const linePoints = points.map((point, index) => `${xFor(index, points.length, plotWidth)},${yFor(point.estimatedRating)}`).join(' ');
+  const times = points.map((point) => new Date(point.playedAt).getTime());
+  const minTime = Math.min(...times);
+  const maxTime = Math.max(...times);
+  const xFor = (time: number) => xForTime(time, minTime, maxTime, plotWidth);
+  const linePoints = points.map((point, index) => `${xFor(times[index]!)},${yFor(point.estimatedRating)}`).join(' ');
 
   return (
     <div ref={containerRef} className="rating-chart-container">
@@ -110,23 +127,23 @@ function RatingChart({ points }: { points: RatingStats['points'] }): ReactNode {
           <circle
             key={`${point.playedAt}-${index}`}
             className="rating-chart__point"
-            cx={xFor(index, points.length, plotWidth)}
+            cx={xFor(times[index]!)}
             cy={yFor(point.estimatedRating)}
-            r={3}
+            r={pointRadius(points.length)}
           >
             <title>{`${formatDate(point.playedAt)}: ${point.estimatedRating}`}</title>
           </circle>
         ))}
 
-        {xTickIndices(points.length).map((index) => (
+        {xTickTimes(minTime, maxTime).map((time) => (
           <text
-            key={index}
+            key={time}
             className="rating-chart__x-label"
-            x={xFor(index, points.length, plotWidth)}
+            x={xFor(time)}
             y={CHART_MARGIN.top + PLOT_HEIGHT + 18}
             textAnchor="middle"
           >
-            {formatDate(points[index]!.playedAt)}
+            {formatTick(time, maxTime - minTime)}
           </text>
         ))}
 

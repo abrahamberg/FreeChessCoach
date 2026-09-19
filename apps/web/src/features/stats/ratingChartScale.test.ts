@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { ratingDomain, ratingTicks, xFor, xTickIndices, yForRating } from './ratingChartScale.js';
+import { CHART_MARGIN, PLOT_WIDTH, ratingDomain, ratingTicks, xForTime, xTickTimes, yForRating } from './ratingChartScale.js';
+
+const DAY = 24 * 60 * 60 * 1000;
 
 describe('ratingDomain', () => {
   test('spans the actual min/max when ratings differ', () => {
@@ -24,14 +26,22 @@ describe('ratingTicks', () => {
   });
 });
 
-describe('xFor', () => {
-  test('spreads points evenly across the plot width, first and last at the edges', () => {
-    expect(xFor(0, 3)).toBeLessThan(xFor(1, 3));
-    expect(xFor(1, 3)).toBeLessThan(xFor(2, 3));
+describe('xForTime', () => {
+  test('puts the first and last game at the plot edges', () => {
+    expect(xForTime(0, 0, 10 * DAY)).toBe(CHART_MARGIN.left);
+    expect(xForTime(10 * DAY, 0, 10 * DAY)).toBe(CHART_MARGIN.left + PLOT_WIDTH);
   });
 
-  test('centers a single point', () => {
-    expect(xFor(0, 1)).toBeCloseTo(xFor(0, 1));
+  test('spaces games by when they were played, not by how many there were', () => {
+    // Ninety games crammed into the first day, then one a year later: the
+    // crowd stays at the left instead of being stretched across the chart.
+    const crowded = xForTime(0.5 * DAY, 0, 365 * DAY);
+    expect(crowded).toBeLessThan(CHART_MARGIN.left + PLOT_WIDTH * 0.01);
+    expect(xForTime(182.5 * DAY, 0, 365 * DAY)).toBeCloseTo(CHART_MARGIN.left + PLOT_WIDTH / 2);
+  });
+
+  test('centers a lone game, or several played at the same instant', () => {
+    expect(xForTime(5 * DAY, 5 * DAY, 5 * DAY)).toBe(CHART_MARGIN.left + PLOT_WIDTH / 2);
   });
 });
 
@@ -41,15 +51,16 @@ describe('yForRating', () => {
   });
 });
 
-describe('xTickIndices', () => {
-  test('returns every index when there are fewer points than the cap', () => {
-    expect(xTickIndices(4, 6)).toEqual([0, 1, 2, 3]);
+describe('xTickTimes', () => {
+  test('spreads at most the cap of labels evenly, always including the first and last time', () => {
+    const ticks = xTickTimes(0, 100 * DAY, 6);
+    expect(ticks).toHaveLength(6);
+    expect(ticks[0]).toBe(0);
+    expect(ticks.at(-1)).toBe(100 * DAY);
+    expect(ticks[1]! - ticks[0]!).toBeCloseTo(ticks[2]! - ticks[1]!);
   });
 
-  test('caps and spreads evenly, always including the first and last point', () => {
-    const indices = xTickIndices(50, 6);
-    expect(indices.length).toBeLessThanOrEqual(6);
-    expect(indices[0]).toBe(0);
-    expect(indices.at(-1)).toBe(49);
+  test('gives a single label when everything happened within one day', () => {
+    expect(xTickTimes(0, DAY / 2, 6)).toEqual([0]);
   });
 });

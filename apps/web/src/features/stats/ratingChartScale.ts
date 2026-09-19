@@ -53,9 +53,13 @@ export function plotWidthFor(chartWidth: number): number {
   return Math.max(chartWidth - CHART_MARGIN.left - CHART_MARGIN.right, 1);
 }
 
-export function xFor(index: number, pointCount: number, plotWidth = PLOT_WIDTH): number {
-  if (pointCount <= 1) return CHART_MARGIN.left + plotWidth / 2;
-  return CHART_MARGIN.left + (index / (pointCount - 1)) * plotWidth;
+/** Games are placed by when they were played, not by their position in the
+ * list: a player who imports a burst of games and then goes quiet should see
+ * that on the chart, and a year of climbing must keep its true shape once old
+ * games collapse into one archived point per week. */
+export function xForTime(time: number, minTime: number, maxTime: number, plotWidth = PLOT_WIDTH): number {
+  if (maxTime <= minTime) return CHART_MARGIN.left + plotWidth / 2;
+  return CHART_MARGIN.left + ((time - minTime) / (maxTime - minTime)) * plotWidth;
 }
 
 export function yForRating(rating: number, domainMin: number, domainMax: number): number {
@@ -63,12 +67,13 @@ export function yForRating(rating: number, domainMin: number, domainMax: number)
   return CHART_MARGIN.top + PLOT_HEIGHT - ((rating - domainMin) / span) * PLOT_HEIGHT;
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 /** Caps how many x-axis date labels are drawn — one per game would overlap
- * into an unreadable smear once there are more than a handful, so this
- * spreads at most `maxTicks` labels evenly across the series, always
- * including the first and last point. */
-export function xTickIndices(pointCount: number, maxTicks = 6): number[] {
-  if (pointCount <= maxTicks) return Array.from({ length: pointCount }, (_, index) => index);
-  const step = (pointCount - 1) / (maxTicks - 1);
-  return Array.from(new Set(Array.from({ length: maxTicks }, (_, tick) => Math.round(tick * step))));
+ * into an unreadable smear — by spreading at most `maxTicks` evenly across
+ * the time span, always including the first and last moment. */
+export function xTickTimes(minTime: number, maxTime: number, maxTicks = 6): number[] {
+  if (maxTime - minTime < MS_PER_DAY) return [minTime];
+  const step = (maxTime - minTime) / (maxTicks - 1);
+  return Array.from({ length: maxTicks }, (_, tick) => (tick === maxTicks - 1 ? maxTime : minTime + tick * step));
 }
