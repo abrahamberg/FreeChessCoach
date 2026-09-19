@@ -57,6 +57,55 @@ describe('llm gateway', () => {
     expect((await getModelForUser(db, config, userId, 'standard')).modelId).toBe('terra');
   });
 
+  test('a setup that opted into flex resolves OpenAI calls to the flex service tier', async () => {
+    const userId = await makeUser('flex-user@example.com');
+    await unlockStore.unlock(userId, {
+      endpoint: 'https://api.openai.com/v1',
+      apiKey: 'secret',
+      lowModel: 'luna',
+      highModel: 'terra',
+      voiceModel: undefined,
+      protocol: 'openai-responses',
+      useFlex: true
+    });
+
+    const resolution = await getModelForUser(db, config, userId, 'standard');
+    expect(resolution.usesFlex).toBe(true);
+    expect(resolution.callOptions.providerOptions?.openai?.serviceTier).toBe('flex');
+  });
+
+  test('a setup without the flex flag keeps the deployment service tier', async () => {
+    const userId = await makeUser('no-flex-user@example.com');
+    await unlockStore.unlock(userId, {
+      endpoint: 'https://api.openai.com/v1',
+      apiKey: 'secret',
+      lowModel: 'luna',
+      highModel: 'terra',
+      voiceModel: undefined,
+      protocol: 'openai-responses'
+    });
+
+    const resolution = await getModelForUser(db, config, userId, 'standard');
+    expect(resolution.usesFlex).toBe(false);
+    expect(resolution.callOptions.providerOptions?.openai?.serviceTier).toBe('auto');
+  });
+
+  test('flex never applies to an Anthropic setup', async () => {
+    const userId = await makeUser('flex-anthropic-user@example.com');
+    await unlockStore.unlock(userId, {
+      endpoint: 'https://api.anthropic.com/v1',
+      apiKey: 'secret',
+      lowModel: 'haiku',
+      highModel: 'sonnet',
+      voiceModel: undefined,
+      protocol: 'anthropic',
+      useFlex: true
+    });
+
+    const resolution = await getModelForUser(db, config, userId, 'standard');
+    expect(resolution.usesFlex).toBe(false);
+  });
+
   test('fake mode still avoids the unlock store', async () => {
     const fakeConfig: GatewayConfig = { ...config, fake: true };
     const resolution = await getModelForUser(db, fakeConfig, 'nonexistent-user-id', 'standard');

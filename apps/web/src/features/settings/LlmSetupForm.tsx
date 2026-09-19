@@ -54,6 +54,9 @@ export function LlmSetupForm({
   const [lowModel, setLowModel] = useState(status.lowModel ?? DEFAULT_LOW_MODEL);
   const [highModel, setHighModel] = useState(status.highModel ?? DEFAULT_HIGH_MODEL);
   const [voiceModel, setVoiceModel] = useState(status.voiceModel ?? DEFAULT_VOICE_MODEL);
+  // Pre-checked for a brand-new setup; a saved setup keeps whatever it had
+  // (setups from before the option existed never opted in).
+  const [useFlex, setUseFlex] = useState(status.useFlex ?? !status.configured);
   const [unlockPhrase, setUnlockPhrase] = useState('');
 
   // Every finished test — pass or fail — lands on the result step; the form
@@ -63,7 +66,7 @@ export function LlmSetupForm({
   }, [testResult]);
 
   function currentSetup(): LlmSetup {
-    return { endpoint, apiKey, lowModel, highModel, voiceModel };
+    return { endpoint, apiKey, lowModel, highModel, voiceModel, useFlex };
   }
 
   function startEditing(): void {
@@ -92,7 +95,7 @@ export function LlmSetupForm({
         {status.unlocked ? (
           <>
             <p><strong>AI setup saved</strong> ({status.protocol})</p>
-            <p className="settings-page__hint">Low: {status.lowModel} · High: {status.highModel} · Voice: {status.voiceModel ?? 'not configured'}</p>
+            <p className="settings-page__hint">Low: {status.lowModel} · High: {status.highModel} · Voice: {status.voiceModel ?? 'not configured'} · Flex: {status.useFlex ? 'on' : 'off'}</p>
             <button type="button" className="btn-secondary" onClick={onLock}>Lock now</button>
           </>
         ) : (
@@ -135,6 +138,11 @@ export function LlmSetupForm({
                 <input id="llm-high-model" value={highModel} onChange={(event) => setHighModel(event.target.value)} required />
                 <label htmlFor="llm-voice-model">Voice model (optional)</label>
                 <input id="llm-voice-model" value={voiceModel} onChange={(event) => setVoiceModel(event.target.value)} />
+                <label className="llm-setup-form__checkbox" htmlFor="llm-use-flex">
+                  <input id="llm-use-flex" type="checkbox" checked={useFlex} onChange={(event) => setUseFlex(event.target.checked)} />
+                  Use OpenAI Flex processing
+                </label>
+                <p className="settings-page__hint">About half the token price, but responses are slower and can occasionally be unavailable. OpenAI models only — ignored for Anthropic endpoints.</p>
                 <div className="llm-setup-form__actions">
                   <button type="submit" className="btn-primary">Test connection</button>
                 </div>

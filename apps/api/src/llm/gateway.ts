@@ -6,7 +6,14 @@ import type { Database } from '../db/schema.js';
 import { ValidationError } from '../lib/errors.js';
 import { anthropicModel } from './anthropic.js';
 import { buildFakeModel } from './fake.js';
-import { callOptionsFor, DEFAULT_MODEL_TUNING, type ModelCallOptions, type ModelTuning, type Tier } from './model-options.js';
+import {
+  callOptionsFor,
+  DEFAULT_MODEL_TUNING,
+  scaleTimeoutsForFlex,
+  type ModelCallOptions,
+  type ModelTuning,
+  type Tier
+} from './model-options.js';
 import { openaiModel } from './openai.js';
 import type { LlmUnlockStore } from './unlock-store.js';
 
@@ -28,6 +35,9 @@ export interface ModelResolution {
   modelId: string;
   /** Spread into the `streamText`/`generateText` call alongside the model. */
   callOptions: ModelCallOptions;
+  /** True when this call goes out on OpenAI's flex tier — slower, so callers
+   * pass it to `streamTimeoutsFor` to avoid aborting a queued response. */
+  usesFlex: boolean;
 }
 
 /** Resolves the model to use for a user's call from the setup currently held
@@ -44,7 +54,8 @@ export async function getModelForUser(
       model: buildFakeModel(),
       provider: 'anthropic',
       modelId: 'llm-fake',
-      callOptions: resolveCallOptions(config, 'anthropic', tier)
+      callOptions: resolveCallOptions(config, 'anthropic', tier),
+      usesFlex: false
     };
   }
 
@@ -65,20 +76,27 @@ export async function getModelForUser(
   }
   const provider = providerForProtocol(setup.protocol);
   const modelId = tier === 'standard' ? setup.highModel : setup.lowModel;
+  const usesFlex = provider === 'openai' && setup.useFlex === true;
   return {
     model: buildModel(setup, modelId),
     provider,
     modelId,
-    callOptions: resolveCallOptions(config, provider, tier)
+    callOptions: resolveCallOptions(config, provider, tier, usesFlex),
+    usesFlex
   };
 }
 
-export function resolveCallOptions(config: GatewayConfig, provider: LlmProvider, tier: Tier): ModelCallOptions {
-  return callOptionsFor(config.tuning ?? DEFAULT_MODEL_TUNING, provider, tier);
+export function resolveCallOptions(
+  config: GatewayConfig,
+  provider: LlmProvider,
+  tier: Tier,
+  useFlex = false
+): ModelCallOptions {
+  return callOptionsFor(config.tuning ?? DEFAULT_MODEL_TUNING, provider, tier, useFlex);
 }
 
-export function streamTimeoutsFor(config: GatewayConfig): ModelTuning['streamTimeouts'] {
-  return (config.tuning ?? DEFAULT_MODEL_TUNING).streamTimeouts;
+export function streamTimeoutsFor(config: GatewayConfig, usesFlex = false): ModelTuning['streamTimeouts'] {
+  return scaleTimeoutsForFlex((config.tuning ?? DEFAULT_MODEL_TUNING).streamTimeouts, usesFlex);
 }
 
 export function buildModel(setup: StoredLlmSetup, modelId: string): LanguageModel {

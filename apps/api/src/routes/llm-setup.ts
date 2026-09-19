@@ -111,7 +111,8 @@ function statusFor(configured: boolean, setup: StoredLlmSetup | null): object {
           protocol: setup.protocol,
           lowModel: setup.lowModel,
           highModel: setup.highModel,
-          ...(setup.voiceModel ? { voiceModel: setup.voiceModel } : {})
+          ...(setup.voiceModel ? { voiceModel: setup.voiceModel } : {}),
+          ...(setup.useFlex !== undefined ? { useFlex: setup.useFlex } : {})
         }
       : {}),
     voiceAvailable: setup?.voiceModel !== undefined

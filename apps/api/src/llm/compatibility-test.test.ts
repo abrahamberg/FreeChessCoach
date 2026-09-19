@@ -30,6 +30,38 @@ describe('testLlmSetup', () => {
     expect(result.voice).toBeNull();
   });
 
+  test('probes with the flex service tier when the setup opts into it, so an unsupported model fails the test', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>((_input, init) => {
+      bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      return Promise.resolve(new Response(JSON.stringify({ choices: [{ message: { content: 'OK' } }] }), { status: 200 }));
+    }));
+
+    await testLlmSetup({ ...setup, voiceModel: undefined, useFlex: true });
+    expect(bodies.length).toBeGreaterThan(0);
+    expect(bodies.every((body) => body.service_tier === 'flex')).toBe(true);
+
+    bodies.length = 0;
+    await testLlmSetup({ ...setup, voiceModel: undefined, useFlex: false });
+    expect(bodies.every((body) => !('service_tier' in body))).toBe(true);
+  });
+
+  test('never sends service_tier to an Anthropic-format endpoint', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>((input, init) => {
+      if (String(input).endsWith('/messages')) {
+        bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+        return Promise.resolve(new Response(JSON.stringify({ content: [{ type: 'text', text: 'OK' }] }), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify({ error: { message: 'no' } }), { status: 400 }));
+    }));
+
+    const result = await testLlmSetup({ ...setup, voiceModel: undefined, useFlex: true });
+    expect(result.protocol).toBe('anthropic');
+    expect(bodies.length).toBeGreaterThan(0);
+    expect(bodies.every((body) => !('service_tier' in body))).toBe(true);
+  });
+
   test('rejects a voice model that does not return audio', async () => {
     vi.stubGlobal('fetch', vi.fn<typeof fetch>((input) => {
       const url = String(input);

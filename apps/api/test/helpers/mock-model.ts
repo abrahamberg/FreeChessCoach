@@ -178,6 +178,7 @@ export function mockResolution(
     provider: 'anthropic' as LlmProvider,
     modelId: 'claude-standard',
     callOptions: { reasoning: 'medium' },
+    usesFlex: false,
     ...overrides
   };
 }

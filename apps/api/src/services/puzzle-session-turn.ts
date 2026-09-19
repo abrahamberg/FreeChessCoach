@@ -119,7 +119,7 @@ export async function startPuzzleTurn(
       instructions,
       messages,
       tools,
-      timeouts: streamTimeoutsFor(deps.gatewayConfig),
+      timeouts: streamTimeoutsFor(deps.gatewayConfig, resolution.usesFlex),
       // Same shape as play mode's stopOnToolNames (coach-agent-turn.ts):
       // advance_puzzle is a server tool whose result decides what happens
       // next, so the turn must end the instant it's called rather than

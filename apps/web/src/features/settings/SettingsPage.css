@@ -140,6 +140,18 @@
   width: 100%;
 }
 
+.llm-setup-form__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.llm-setup-form .llm-setup-form__checkbox input {
+  width: 18px;
+  flex: none;
+}
+
 .llm-setup-form__actions {
   display: flex;
   flex-wrap: wrap;

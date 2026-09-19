@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { callOptionsFor, DEFAULT_MODEL_TUNING, type ModelTuning } from './model-options.js';
+import { callOptionsFor, DEFAULT_MODEL_TUNING, scaleTimeoutsForFlex, type ModelTuning } from './model-options.js';
 
 const TUNING: ModelTuning = {
   reasoning: { standard: 'high', light: 'none' },
@@ -26,6 +26,25 @@ describe('callOptionsFor', () => {
   test('OpenAI is asked for its reasoning summary, the most it will expose', () => {
     const options = callOptionsFor(TUNING, 'openai', 'standard').providerOptions;
     expect(options?.openai?.reasoningSummary).toBe('detailed');
+  });
+
+  test("a user's flex opt-in overrides the deployment's service tier for OpenAI", () => {
+    const autoTuning: ModelTuning = { ...TUNING, openaiServiceTier: 'auto' };
+    expect(callOptionsFor(autoTuning, 'openai', 'standard', true).providerOptions?.openai?.serviceTier).toBe('flex');
+    expect(callOptionsFor(autoTuning, 'openai', 'standard', false).providerOptions?.openai?.serviceTier).toBe('auto');
+    expect(callOptionsFor(autoTuning, 'openai', 'standard').providerOptions?.openai?.serviceTier).toBe('auto');
+  });
+
+  test('flex is ignored for Anthropic', () => {
+    expect(callOptionsFor(TUNING, 'anthropic', 'standard', true).providerOptions).toBeUndefined();
+  });
+
+  test('flex responses are slower, so stream timeouts are stretched only for flex', () => {
+    const base = { firstChunkMs: 1000, chunkMs: 500 };
+    const stretched = scaleTimeoutsForFlex(base, true);
+    expect(stretched.firstChunkMs).toBeGreaterThan(base.firstChunkMs);
+    expect(stretched.chunkMs).toBeGreaterThan(base.chunkMs);
+    expect(scaleTimeoutsForFlex(base, false)).toEqual(base);
   });
 
   test('Anthropic gets no provider options — it has no service-tier equivalent', () => {

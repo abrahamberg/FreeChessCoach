@@ -2,6 +2,8 @@ import type { LlmModelTestResult, LlmProtocol, LlmSetup, LlmSetupTestResponse } 
 
 const PROBE_PROMPT = 'Reply with exactly OK.';
 const REQUEST_TIMEOUT_MS = 15_000;
+/** A flex probe can queue behind standard traffic, so it gets far longer. */
+const FLEX_REQUEST_TIMEOUT_MS = 60_000;
 
 /** OpenAI's gpt-5.4+ reasoning models reject function tools combined with
  * reasoning_effort over /v1/chat/completions outright ("use /v1/responses
@@ -114,18 +116,23 @@ async function fetchForProtocol(setup: LlmSetup, protocol: LlmProtocol, model: s
       body: JSON.stringify({ model, max_tokens: 8, messages: [{ role: 'user', content: PROBE_PROMPT }] })
     });
   }
+  // Probing on the flex tier proves the chosen model actually supports it —
+  // OpenAI rejects service_tier=flex for models that don't — so a bad pairing
+  // fails the test instead of every later coaching turn.
+  const flex = setup.useFlex ? { service_tier: 'flex' } : {};
+  const timeoutMs = setup.useFlex ? FLEX_REQUEST_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
   if (protocol === 'openai-responses') {
     return fetchAt(setup.endpoint, '/responses', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ model, input: PROBE_PROMPT })
-    });
+      body: JSON.stringify({ model, input: PROBE_PROMPT, ...flex })
+    }, timeoutMs);
   }
   return fetchAt(setup.endpoint, '/chat/completions', {
     method: 'POST',
     headers,
-    body: JSON.stringify({ model, messages: [{ role: 'user', content: PROBE_PROMPT }] })
-  });
+    body: JSON.stringify({ model, messages: [{ role: 'user', content: PROBE_PROMPT }], ...flex })
+  }, timeoutMs);
 }
 
 async function testVoice(setup: LlmSetup): Promise<LlmModelTestResult> {
@@ -146,11 +153,11 @@ async function testVoice(setup: LlmSetup): Promise<LlmModelTestResult> {
   }
 }
 
-function fetchAt(endpoint: string, path: string, init: RequestInit): Promise<Response> {
+function fetchAt(endpoint: string, path: string, init: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
   const endpointUrl = new URL(endpoint);
   endpointUrl.pathname = `${endpointUrl.pathname.replace(/\/$/, '')}/${path.slice(1)}`;
   endpointUrl.hash = '';
-  return fetch(endpointUrl, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  return fetch(endpointUrl, { ...init, signal: AbortSignal.timeout(timeoutMs) });
 }
 
 function hasTextResponse(body: unknown, protocol: LlmProtocol): boolean {

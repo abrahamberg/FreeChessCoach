@@ -31,6 +31,21 @@ export interface ModelCallOptions {
   providerOptions?: Record<string, Record<string, JSONValue>>;
 }
 
+/** Flex requests queue behind standard traffic, so the first token can take
+ * far longer than the deployment's normal stall guard allows; OpenAI's own
+ * guidance for the tier is a ~10 minute timeout. */
+const FLEX_TIMEOUT_MULTIPLIER = 5;
+
+/** Stretches the stall guards for a flex call so a legitimately slow response
+ * isn't aborted as a stall. Standard-tier timeouts are returned untouched. */
+export function scaleTimeoutsForFlex(timeouts: StreamTimeouts, usesFlex: boolean): StreamTimeouts {
+  if (!usesFlex) return timeouts;
+  return {
+    firstChunkMs: timeouts.firstChunkMs * FLEX_TIMEOUT_MULTIPLIER,
+    chunkMs: timeouts.chunkMs * FLEX_TIMEOUT_MULTIPLIER
+  };
+}
+
 export const DEFAULT_MODEL_TUNING: ModelTuning = {
   // The coach reasons about chess positions and its own Socratic strategy, so
   // it earns real thinking budget; light-tier subagents only reformat text
@@ -42,7 +57,8 @@ export const DEFAULT_MODEL_TUNING: ModelTuning = {
 
 /**
  * Builds the per-call options for a (provider, tier) pair. This is the ONLY
- * place reasoning and OpenAI's service tier are decided.
+ * place reasoning and OpenAI's service tier are decided. `useFlex` is the
+ * user's per-setup opt-in to OpenAI's cheaper, slower `flex` tier.
  *
  * Reasoning is deliberately expressed through the SDK's portable `reasoning`
  * setting rather than `providerOptions`: it is the one knob both Anthropic
@@ -51,21 +67,28 @@ export const DEFAULT_MODEL_TUNING: ModelTuning = {
  * gives those FULL precedence and silently ignores `reasoning` when either is
  * present, so setting both would quietly disable this setting.
  */
-export function callOptionsFor(tuning: ModelTuning, provider: LlmProvider, tier: Tier): ModelCallOptions {
+export function callOptionsFor(
+  tuning: ModelTuning,
+  provider: LlmProvider,
+  tier: Tier,
+  useFlex = false
+): ModelCallOptions {
   return {
     reasoning: tuning.reasoning[tier],
-    providerOptions: providerOptionsFor(tuning, provider)
+    providerOptions: providerOptionsFor(tuning, provider, useFlex)
   };
 }
 
 function providerOptionsFor(
   tuning: ModelTuning,
-  provider: LlmProvider
+  provider: LlmProvider,
+  useFlex: boolean
 ): Record<string, Record<string, JSONValue>> | undefined {
   if (provider !== 'openai') return undefined;
   return {
     openai: {
-      serviceTier: tuning.openaiServiceTier,
+      // A user's own flex opt-in (AI setup) wins over the deployment default.
+      serviceTier: useFlex ? 'flex' : tuning.openaiServiceTier,
       // Without this OpenAI emits nothing for its thinking at all, and the
       // coach's thinking note stays permanently empty. `detailed` is the
       // closest OpenAI gets to raw reasoning — the Responses API never

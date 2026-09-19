@@ -180,6 +180,70 @@ describe('LlmSetupForm', () => {
     expect(screen.queryByLabelText('API key')).not.toBeInTheDocument();
   });
 
+  test('the flex option is pre-checked on a fresh setup and is sent with the test request', async () => {
+    const onTest = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <LlmSetupForm
+        status={EMPTY_SETUP}
+        onTest={onTest}
+        onSave={vi.fn()}
+        onUnlockClick={vi.fn()}
+        onLock={vi.fn()}
+        onDelete={vi.fn()}
+        isTesting={false}
+        isSaving={false}
+      />
+    );
+
+    const flex = screen.getByLabelText(/flex/i);
+    expect(flex).toBeChecked();
+    await user.type(screen.getByLabelText('API key'), 'secret');
+    await user.click(screen.getByRole('button', { name: 'Test connection' }));
+    expect(onTest).toHaveBeenCalledWith(expect.objectContaining({ useFlex: true }));
+  });
+
+  test('unchecking flex sends useFlex: false', async () => {
+    const onTest = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <LlmSetupForm
+        status={EMPTY_SETUP}
+        onTest={onTest}
+        onSave={vi.fn()}
+        onUnlockClick={vi.fn()}
+        onLock={vi.fn()}
+        onDelete={vi.fn()}
+        isTesting={false}
+        isSaving={false}
+      />
+    );
+
+    await user.click(screen.getByLabelText(/flex/i));
+    await user.type(screen.getByLabelText('API key'), 'secret');
+    await user.click(screen.getByRole('button', { name: 'Test connection' }));
+    expect(onTest).toHaveBeenCalledWith(expect.objectContaining({ useFlex: false }));
+  });
+
+  test('replacing a saved setup that never opted in starts with flex unchecked', async () => {
+    const user = userEvent.setup();
+    render(
+      <LlmSetupForm
+        status={{ configured: true, unlocked: true, voiceAvailable: false, protocol: 'openai-responses', lowModel: 'a', highModel: 'b' }}
+        onTest={vi.fn()}
+        onSave={vi.fn()}
+        onUnlockClick={vi.fn()}
+        onLock={vi.fn()}
+        onDelete={vi.fn()}
+        isTesting={false}
+        isSaving={false}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Replace setup' }));
+    expect(screen.getByLabelText(/flex/i)).not.toBeChecked();
+  });
+
   test('submitting the phrase calls onSave with the full setup, and a save in flight shows a loader', async () => {
     const onSave = vi.fn();
     const user = userEvent.setup();

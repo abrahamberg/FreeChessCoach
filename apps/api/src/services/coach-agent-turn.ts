@@ -124,7 +124,7 @@ export async function startTurn(
       instructions,
       messages,
       tools,
-      timeouts: streamTimeoutsFor(deps.gatewayConfig),
+      timeouts: streamTimeoutsFor(deps.gatewayConfig, resolution.usesFlex),
       stopOnToolNames,
       onFinish: async (completion) => {
         // The response has already been piped to the client by the time this

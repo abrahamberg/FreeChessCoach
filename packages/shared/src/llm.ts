@@ -43,7 +43,11 @@ export const LlmSetupSchema = z.object({
   voiceModel: z.preprocess(
     (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
     ModelIdSchema.optional()
-  )
+  ),
+  /** OpenAI's `flex` service tier: about half the token price in exchange for
+   * slower responses. Optional so setups saved before it existed (encrypted
+   * JSON, no migration) keep their standard-tier behaviour. */
+  useFlex: z.boolean().optional()
 });
 export type LlmSetup = z.infer<typeof LlmSetupSchema>;
 
@@ -82,6 +86,7 @@ export const LlmSetupStatusSchema = z.object({
   lowModel: z.string().optional(),
   highModel: z.string().optional(),
   voiceModel: z.string().optional(),
+  useFlex: z.boolean().optional(),
   voiceAvailable: z.boolean()
 });
 export type LlmSetupStatus = z.infer<typeof LlmSetupStatusSchema>;
