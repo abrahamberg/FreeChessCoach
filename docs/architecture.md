@@ -228,6 +228,83 @@ Output:
 
 ---
 
+# Import Limits, Library Cap and the Stats Archive
+
+Importing is metered, and deleting a game never costs the user their stats.
+
+## Limits
+
+All limits are constants in `packages/shared/src/import-limits.ts`, shared
+with the web UI so copy can never disagree with the server:
+
+| Limit | Value | Counts |
+|---|---|---|
+| Daily | 30 | imports in the last 24h (rolling) |
+| Weekly | 150 | imports in the last 7×24h (rolling) |
+| In flight | 10 | analyses still `queued`/`engine_running`/`planning`/`paused` |
+| Library | 1000 | imported-source games (paste/upload/lichess/chesscom) |
+
+- **Daily/weekly count an append-only ledger**, `game_import_events`
+  (`0041_game_import_events.ts`, `db/repositories/game-import-events.ts`): one
+  row per *new* import, written in the same transaction as the game insert
+  (`services/imported-game-record.ts`). It has no link to `games`, so deleting
+  a game cannot free quota; coach/bot games never write to it. A duplicate PGN
+  is not a new import and is never blocked.
+- **In flight** is `analysesRepo.countInFlightForUser`. `paused` counts: it is
+  the state a game sits in while the browser tunnel is disconnected, i.e.
+  analysis only completes while the tab is open. It is a soft cap (two tabs
+  importing at the same instant can reach 11).
+- `importAllowance` (`packages/shared/src/import-allowance.ts`) is the one
+  calculation the server enforces with (`services/import-quota.ts`,
+  `assertCanImport`) and the picker caps selection with. A blocked import is a
+  429 problem+json whose `limit` field is `daily` | `weekly` | `in_flight`.
+- `GET /api/games/import-quota` returns all of it in one object, including
+  `library.autoDeleteCount`.
+
+## Library cap
+
+An import at 1000 imported games first deletes the 50 *earliest* (the same
+`deleteEarliestImportedInTransaction` the manual "delete earliest 50" uses),
+then inserts — one transaction, so a failing insert deletes nothing. The
+import page warns first (`AutoDeleteNotice`), single-game imports included.
+
+## Stats survive deletion
+
+Stats are computed from stored per-game reports, so a deleted game used to
+vanish from the Stats page. Now every delete of an imported game folds it into
+`stats_archive_weeks` first (`services/stats-archive.ts`, `bankGameStats`),
+keyed (user, ISO week start — Monday UTC, speed):
+
+- The row holds a `StatsBucket` (`packages/shared/src/stats-bucket.ts`):
+  *sums and counts*, never means, so buckets merge by addition. Rating is the
+  exception in shape only: an archived week is one trend point at its mean
+  estimate rather than one point per game.
+- `buildStatsDashboard(entries, archivedWeeks)` is
+  `finalize(merge(reduce(entries), archive))`
+  (`packages/chess-analysis/src/{stats-bucket,merge-stats-buckets,finalize-stats-dashboard}.ts`).
+  `stats-dashboard-reference.ts` is a frozen copy of the old per-game code,
+  used only by tests to prove the new pipeline gives identical numbers.
+- The dashboard and the tactic baseline note (`getGameTacticBaselineNote`)
+  both read the archive. The coach's recent-games stats
+  (`coach-player-stats.ts`) deliberately do not: they look at the newest 20
+  games, which deletion of the *earliest* games does not touch.
+- **Every deletion path goes through `deleteGameKeepingStats`**
+  (`services/games.ts`); only account deletion calls the bare
+  `cascadeDeleteGame`, and it also wipes the archive and the ledger. Games
+  deleted before this shipped cannot be archived.
+- Archived data is week-granular, so `last7`/`last30` may include a whole
+  archived week that only partly overlaps the range.
+
+## Recommended coaching game
+
+After a batch import finishes analyzing, `GET /api/games/coaching-candidate`
+picks the batch's game with the most *tactical points* — tactics missed plus
+tactics the opponent had that the player did not defuse
+(`chess-analysis/src/coaching-candidate.ts`, weights in `CONFIG`). No AI is
+involved; absent `preventable`/`prevented` (old reports) count as 0.
+
+---
+
 # Coaching Flow
 
 ```text
@@ -344,6 +421,23 @@ never used as the official cached evaluation.
 Large conversations are summarized and compacted.
 
 Raw history remains stored.
+
+### Deleting a game never loses its stats
+
+Any code that deletes an imported game goes through `deleteGameKeepingStats`,
+which folds the game into the weekly archive first. Only account deletion may
+call the bare `cascadeDeleteGame`.
+
+### Import quota is never derived from `games`
+
+Daily/weekly limits count `game_import_events` only, so deleting a game cannot
+reopen quota. Limit numbers live in `packages/shared/src/import-limits.ts`; a
+literal 10/30/150/1000 anywhere else is a bug.
+
+### `preventable`/`prevented` are absent, not zero, on old reports
+
+Every aggregation over tactic counts (stats buckets, the recommended-game
+score) must keep them absent rather than 0 when no game reported them.
 
 ---
 
