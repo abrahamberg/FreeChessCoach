@@ -11,14 +11,18 @@ Socratically while tracking their progress over time. The initial build
 (Phases 0–9) is complete and merged — read before coding:
 
 - `docs/architecture.md` — how it fits together (layout, DB, agent, K8s). Always relevant.
-- `docs/plan.md` — remaining work: programmatic coach diagnostics (the
-  `docs/diagnose.md` code taxonomy, opportunity/episode counting, confidence,
-  data-quality gates, focus selection). Only relevant when a task touches
-  that feature — irrelevant to everything else in the repo, do not read it
+- `docs/plan.md` — remaining work: import limits (30/day, 150/week, 10 in
+  flight, 1000-game library with auto-delete), the weekly stat archive that
+  keeps stats when games are deleted, the recommended-coaching-game pick, and
+  the Analyze / Get-coaching-session import UI (Phases 67–72). Only relevant
+  when a task touches import, quotas, game deletion, the Stats dashboard or
+  the import page — irrelevant to everything else in the repo, do not read it
   otherwise. When it is relevant: open it, find the one Phase/Task being
-  worked on, and read only that task's `docs/diagnose.md` section per its own
-  "Read:" pointer — never open `docs/diagnose.md` cold or read it end-to-end;
-  it's long and most of it won't apply to any single task.
+  worked on, and read only that task's **Read:** files.
+- `docs/diagnose.md` — the spec behind the *shipped* programmatic coach
+  diagnostics (code taxonomy, opportunity/episode counting, confidence,
+  data-quality gates, focus selection). Long; never open it cold or read it
+  end-to-end — only the one section a task explicitly points you at.
 - `docs/algorith.md` — the spec behind the *shipped* Game Report (accuracy,
   scores, classification, estimated rating, opening book). Same rule: only
   open the one subsection a task's "Read:" line names, never cold.
