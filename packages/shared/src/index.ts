@@ -4,6 +4,7 @@ export * from './analysis.js';
 export * from './bot.js';
 export * from './bot-roster.js';
 export * from './bot-roster-presets.js';
+export * from './coaching-candidate.js';
 export * from './coaching-plan.js';
 export * from './dashboard.js';
 export * from './diagnosis/index.js';

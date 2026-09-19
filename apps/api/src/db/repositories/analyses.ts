@@ -380,6 +380,19 @@ export async function listReadyReportsForUser(
   return rows.map((row) => ({ ...row, gameReport: row.gameReport as StoredGameReport }));
 }
 
+/** The same rows for a specific set of the user's own games — ids belonging
+ * to anyone else, or with no ready analysis, are simply absent from the
+ * result (the coaching-candidate pick over a just-imported batch). */
+export async function listReadyReportsForGames(
+  db: Kysely<Database>,
+  userId: string,
+  gameIds: string[]
+): Promise<StatsSourceRow[]> {
+  if (gameIds.length === 0) return [];
+  const rows = await readyReportsQuery(db).where('games.userId', '=', userId).where('games.id', 'in', gameIds).execute();
+  return rows.map((row) => ({ ...row, gameReport: row.gameReport as StoredGameReport }));
+}
+
 /** The same row for one game, or undefined when it is not on the dashboard
  * (no ready analysis, or not an imported source) — what deleting the game
  * banks into the weekly stats archive. */

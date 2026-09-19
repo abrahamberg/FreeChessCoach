@@ -1,5 +1,6 @@
 import { InvalidPgnError, parseAnnotatedPgn } from '@freechesscoach/chess-analysis';
 import {
+  CoachingCandidateQuerySchema,
   DeleteEarliestImportedRequestSchema,
   ImportedGamesQuerySchema,
   ImportGameRequestSchema,
@@ -13,6 +14,7 @@ import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
 import { ImportLimitError, NotFoundError, ValidationError } from '../lib/errors.js';
 import { pgnFilename } from '../lib/pgn-filename.js';
+import { getCoachingCandidate } from '../services/coaching-candidate.js';
 import { composeGameReport } from '../services/game-report.js';
 import { importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
 import { getImportQuota } from '../services/import-quota.js';
@@ -80,6 +82,16 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
   // Games page's "Import games" section (Task: quota indicator) — a static
   // path, so Fastify's radix router matches it ahead of the /:id param
   // route below regardless of registration order.
+  // Import page's "recommended game" after a batch import. Static, so it
+  // is matched ahead of /:id.
+  app.get('/api/games/coaching-candidate', async (request) => {
+    const query = CoachingCandidateQuerySchema.safeParse(request.query);
+    if (!query.success) throw new ValidationError(query.error.issues.map((issue) => issue.message).join('; '));
+
+    const user = await userProfileService.getOrCreate(db, request.user);
+    return getCoachingCandidate(db, user.id, query.data.gameIds);
+  });
+
   app.get('/api/games/import-quota', async (request) => {
     const user = await userProfileService.getOrCreate(db, request.user);
     return getImportQuota(db, user.id);
