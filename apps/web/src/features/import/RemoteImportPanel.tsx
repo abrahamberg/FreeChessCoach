@@ -1,8 +1,7 @@
 import type { ChesscomRecentGame, ImportLimitKind, LichessRecentGame } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import type { ImportIntent } from './import-intent.js';
-import { limitMessage } from './import-limit-copy.js';
+import { BulkResultNotice } from './BulkResultNotice.js';
 import { RemoteGamePicker, type RemoteGamePickerBulkSelection } from './RemoteGamePicker.js';
 
 export type RemoteTab = 'lichess' | 'chesscom';
@@ -21,6 +20,8 @@ export interface BulkResult {
   total: number;
   /** The import limit that stopped the batch, when one did. */
   limit: ImportLimitKind | null;
+  /** The games that did import, in order — the batch view follows their analysis. */
+  games: { gameId: string; analysisId: string | null }[];
 }
 
 export interface RemoteImportPanelProps {
@@ -74,12 +75,7 @@ export function RemoteImportPanel({
           renderMeta={(game) => <span>{game.timeClass}</span>}
         />
       )}
-      {bulkResult && bulkResult.succeeded < bulkResult.total && (
-        <p className="import-page__bulk-result">
-          Imported {bulkResult.succeeded} of {bulkResult.total} games.
-          {bulkResult.limit && ` ${limitMessage(bulkResult.limit)}.`} <Link to="/games">Go to Games</Link>
-        </p>
-      )}
+      {bulkResult && bulkResult.succeeded < bulkResult.total && <BulkResultNotice result={bulkResult} />}
     </>
   );
 }

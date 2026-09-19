@@ -506,13 +506,14 @@ describe('ImportPage', () => {
         })
       );
 
-      await waitFor(() => expect(screen.getByText('Games')).toBeInTheDocument());
+      // The batch stays on this page to follow its games' analysis.
+      expect(await screen.findByRole('region', { name: /analysis progress/i })).toBeInTheDocument();
     });
 
     // Engine analysis has no AI/BYOK-unlock dependency, so a bulk import
     // queues it per game exactly like a single-game import does — no
     // deferAnalysis, no manual "Get coach analysis" click needed afterward.
-    test('a fully-successful batch queues analysis per game (no deferAnalysis) and navigates to Games', async () => {
+    test('a fully-successful batch queues analysis per game (no deferAnalysis) and stays to follow it', async () => {
       const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
         if (path === '/api/lichess/recent-games') {
           return Promise.resolve(
@@ -521,7 +522,7 @@ describe('ImportPage', () => {
         }
         if (path === '/api/games' && init?.method === 'POST') {
           return Promise.resolve(
-            new Response(JSON.stringify({ gameId: 'game-x', analysisId: 'analysis-x' }), {
+            new Response(JSON.stringify({ gameId: `game-${(JSON.parse(init.body as string) as { pgn: string }).pgn}`, analysisId: 'analysis-x' }), {
               status: 200,
               headers: { 'content-type': 'application/json' }
             })
@@ -537,7 +538,7 @@ describe('ImportPage', () => {
 
       await user.click(screen.getByRole('button', { name: 'Import 2 games' }));
 
-      expect(await screen.findByText('Games')).toBeInTheDocument();
+      expect(await screen.findByRole('region', { name: /analysis progress/i })).toBeInTheDocument();
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/games',
         expect.objectContaining({

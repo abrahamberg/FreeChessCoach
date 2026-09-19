@@ -1,10 +1,11 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
 import { useState, type ReactNode } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useImportQuota } from '../../hooks/useImportQuota.js';
 import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
 import { AnalysisProgress } from './AnalysisProgress.js';
 import { useAutoDeleteNotice } from './AutoDeleteNotice.js';
+import { BatchImportView } from './BatchImportView.js';
 import { ColorConfirm } from './ColorConfirm.js';
 import { selectionLimit } from './import-limit-copy.js';
 import { ImportErrorNotice } from './ImportErrorNotice.js';
@@ -54,19 +55,22 @@ function importTabFromSearchParams(params: URLSearchParams): ImportTab {
  * (AGENTS.md rule 7). An import that would push the library past its cap is
  * held behind the auto-delete notice first. */
 export function ImportPage(): ReactNode {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [tab, setTab] = useState<ImportTab>(() => importTabFromSearchParams(searchParams));
   const [bulkMode, setBulkMode] = useState(false);
   const quotaQuery = useImportQuota();
   const autoDelete = useAutoDeleteNotice(quotaQuery.data);
   const single = useSingleImport();
-  const remote = useRemoteImport(tab, () => void navigate('/games'));
+  const remote = useRemoteImport(tab);
   const promptTab = remote.usernamePromptTab;
 
   function switchTab(next: ImportTab): void {
     setTab(next);
     remote.clearSelection();
+  }
+
+  if (remote.bulkResult && remote.bulkResult.games.length > 0) {
+    return <BatchImportView result={remote.bulkResult} onImportMore={remote.clearBatch} />;
   }
 
   if (single.progress) {

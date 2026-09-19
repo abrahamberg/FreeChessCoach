@@ -7,7 +7,7 @@ import {
 } from '@freechesscoach/shared';
 import { apiGet, apiPatch, ApiError } from '../../api/client.js';
 import { IMPORT_QUOTA_QUERY_KEY } from '../../hooks/useImportQuota.js';
-import { importForStatBank } from './bulkImport.js';
+import { importBatch } from './bulkImport.js';
 import type { RemoteTab } from './RemoteImportPanel.js';
 
 /** Everything the "From Lichess" / "From Chess.com" tabs need beyond the
@@ -15,23 +15,19 @@ import type { RemoteTab } from './RemoteImportPanel.js';
  * and bulk-import mutation, and the "set your username" prompt. ImportPage
  * composes this with its own single-game flow (AGENTS.md rule 7: fetching
  * lives in hooks). `tab` is whichever import tab is open. */
-export function useRemoteImport(tab: string, onBatchFullyImported: () => void) {
+export function useRemoteImport(tab: string) {
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
   const [importedIds, setImportedIds] = useState<ReadonlySet<string>>(new Set());
   const [dismissedUsernamePrompts, setDismissedUsernamePrompts] = useState<ReadonlySet<RemoteTab>>(new Set());
 
-  // No AnalysisProgress/coaching-session hand-off here — that's specific to
-  // the single-game "Analyze game" flow. A fully-successful batch goes
-  // straight back to the Games list, where the new rows show "Analyzing…"
-  // (each one's own engine pass is already queued — see importForStatBank);
-  // a partial failure stays on this page so the remaining-count message (10
-  // games/day limit) isn't shown and immediately lost.
+  // A batch stays on this page (BatchImportView) to follow its games'
+  // analysis and offer the most tactical one for coaching; a batch where
+  // nothing imported stays on the picker with the reason.
   const bulkImportMutation = useMutation({
-    mutationFn: importForStatBank,
-    onSuccess: (result) => {
+    mutationFn: importBatch,
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: IMPORT_QUOTA_QUERY_KEY });
-      if (result.succeeded === result.total) onBatchFullyImported();
     }
   });
 
@@ -128,6 +124,11 @@ export function useRemoteImport(tab: string, onBatchFullyImported: () => void) {
     bulkSelection: { selectedIds, onToggle: toggleSelection, onImportSelected: importSelected, isImporting: bulkImportMutation.isPending, importedIds },
     bulkResult: bulkImportMutation.isSuccess ? bulkImportMutation.data : undefined,
     clearSelection,
+    /** Back from the batch view to the picker, ready for another batch. */
+    clearBatch: () => {
+      bulkImportMutation.reset();
+      clearSelection();
+    },
     usernamePromptTab,
     saveUsernameForTab,
     dismissUsernamePrompt

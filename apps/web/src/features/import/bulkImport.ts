@@ -31,18 +31,18 @@ export interface BulkImportArgs {
  * dependency (services/analysis.ts), so there's no cost left to defer by
  * making the student click into every row by hand; every bulk-imported game
  * gets the same free engine pass a single-game import already does. */
-export async function importForStatBank({ games, source, onGameSettled }: BulkImportArgs): Promise<BulkResult> {
-  let succeeded = 0;
+export async function importBatch({ games, source, onGameSettled }: BulkImportArgs): Promise<BulkResult> {
+  const imported: BulkResult['games'] = [];
   let limit: ImportLimitKind | null = null;
   for (const game of games) {
     try {
       const body = ImportGameRequestSchema.parse({ pgn: game.pgn, source, playedAt: game.playedAt });
-      await apiPost('/api/games', body, ImportGameResponseSchema);
-      succeeded += 1;
+      const response = await apiPost('/api/games', body, ImportGameResponseSchema);
+      imported.push({ gameId: response.gameId, analysisId: response.analysisId });
     } catch (error) {
       limit = limitOf(error) ?? limit;
     }
     onGameSettled(game.id);
   }
-  return { succeeded, total: games.length, limit };
+  return { succeeded: imported.length, total: games.length, limit, games: imported };
 }
