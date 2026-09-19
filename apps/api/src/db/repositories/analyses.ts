@@ -298,6 +298,20 @@ export async function findPausedGameIdsForUser(db: Kysely<Database>, userId: str
   return rows.map((row) => row.gameId);
 }
 
+/** Analyses of `userId`'s games that have not finished — queued, running,
+ * planning, or `paused` (waiting on the user's browser tunnel). The import
+ * limit's "max games in flight" reads this; `ready`/`failed` don't count. */
+export async function countInFlightForUser(db: Kysely<Database>, userId: string): Promise<number> {
+  const result = await db
+    .selectFrom('analyses')
+    .innerJoin('games', 'games.id', 'analyses.gameId')
+    .select((eb) => eb.fn.countAll<number>().as('count'))
+    .where('games.userId', '=', userId)
+    .where('analyses.status', 'not in', [...TERMINAL_ANALYSIS_STATUSES])
+    .executeTakeFirstOrThrow();
+  return Number(result.count);
+}
+
 export interface StatsSourceRow {
   /** Which game this report is for — lets a caller compare one game against
    * the player's *other* games without re-querying (see

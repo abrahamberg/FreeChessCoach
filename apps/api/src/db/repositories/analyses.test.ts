@@ -1,7 +1,7 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import type { CandidateMoment } from '@freechesscoach/chess-analysis';
-import { CoachingPlanSchema, type GameReport } from '@freechesscoach/shared';
+import { CoachingPlanSchema, type AnalysisStatus, type GameReport } from '@freechesscoach/shared';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import type { Database } from '../schema.js';
 import * as analysesRepo from './analyses.js';
@@ -263,5 +263,50 @@ describe('analyses repository — markPaused / findPausedGameIdsForUser', () => 
     const gameIds = await analysesRepo.findPausedGameIdsForUser(db, user.id);
 
     expect(gameIds).toEqual([paused.gameId]);
+  });
+});
+
+describe('analyses repository — countInFlightForUser', () => {
+  let testDb: TestDb;
+  let db: Kysely<Database>;
+
+  beforeAll(async () => {
+    testDb = await createTestDb();
+    db = testDb.db;
+  }, 60000);
+
+  afterAll(async () => {
+    await testDb.cleanup();
+  });
+
+  async function makeAnalysis(userId: string, status: AnalysisStatus) {
+    const game = await gamesRepo.insert(db, {
+      userId,
+      pgn: `1. e4 e5 ${crypto.randomUUID()}`,
+      source: 'paste',
+      userColor: 'white',
+      whiteName: null,
+      blackName: null,
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+    const analysis = await analysesRepo.insertQueued(db, game.id);
+    await analysesRepo.updateStatus(db, analysis.id, status);
+  }
+
+  test('counts queued, engine_running, planning and paused for that user only', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
+    const other = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Bob' });
+    for (const status of ['queued', 'engine_running', 'planning', 'paused'] as const) {
+      await makeAnalysis(user.id, status);
+    }
+    await makeAnalysis(user.id, 'ready');
+    await makeAnalysis(user.id, 'failed');
+    await makeAnalysis(other.id, 'queued');
+
+    expect(await analysesRepo.countInFlightForUser(db, user.id)).toBe(4);
+    expect(await analysesRepo.countInFlightForUser(db, other.id)).toBe(1);
   });
 });
