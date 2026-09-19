@@ -10,6 +10,12 @@
 #   postgres-credentials   postgres-password, password, replication-password
 #
 # See values.example.yaml for a filled-in deployment.
+
+global:
+  # Public origin the app is served from, no trailing slash (e.g.
+  # https://freechesscoach.org). Empty leaves oauth2-proxy's redirect URL and
+  # cookie_secure unset, so set it for any real deployment.
+  publicUrl: ""
 #
 # Resource names are derived from the release name alone (there is no
 # nameOverride/fullnameOverride): the oauth2-proxy upstream URLs below are
@@ -288,9 +294,19 @@ oauth2-proxy:
     # subchart values cannot call this chart's helpers, so the service names and
     # ports below are written out. Keep them in step with api.service.port and
     # web.service.port if you change either.
+    #
+    # `global.publicUrl` (top of this file) is the one per-deployment value: it
+    # sets the OAuth callback and the secure-cookie flag here, so a deployment
+    # sets it and overrides neither configFile nor extraArgs (Helm replaces
+    # lists and strings rather than merging them, which is how a copied
+    # skip-auth list goes stale).
     configFile: |-
       email_domains = [ "*" ]
       set_xauthrequest = true
+      {{- if .Values.global.publicUrl }}
+      redirect_url = "{{ .Values.global.publicUrl }}/oauth2/callback"
+      cookie_secure = true
+      {{- end }}
       upstreams = [
         "http://{{ .Release.Name }}-api:3000/api/",
         "http://{{ .Release.Name }}-web/"

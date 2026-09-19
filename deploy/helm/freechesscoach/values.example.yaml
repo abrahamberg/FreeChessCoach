@@ -113,6 +113,10 @@ postgresql:
       enabled: true
       size: 50Gi
 
+global:
+  # Public origin, no trailing slash: feeds oauth2-proxy redirect_url + cookie_secure.
+  publicUrl: https://freechesscoach.org
+
 oauth2-proxy:
   # This is a separate instance for freechesscoach. The server-level
   # oauth2-proxy may use Azure; this instance is configured for Google.
@@ -123,47 +127,19 @@ oauth2-proxy:
     clientID: ""
     clientSecret: ""
     cookieSecret: ""
-    configFile: |-
-      email_domains = [ "*" ]
-      set_xauthrequest = true
-      cookie_secure = true
-      upstreams = [
-        "http://{{ .Release.Name }}-api:3000/api/",
-        "http://{{ .Release.Name }}-web/"
-      ]
-  extraArgs:
-    # Google OIDC. oauth2-proxy runs one provider per instance; to offer
-    # Lichess instead (architecture §11 names it as a generic OAuth2 provider),
-    # swap these for:
+    # No configFile / extraArgs here on purpose: the chart's defaults carry the
+    # upstreams, the provider and every public skip-auth route, and global.publicUrl
+    # (above) supplies the callback URL. Overriding either one copies a list Helm
+    # would replace rather than merge, and the copy goes stale.
+    #
+    # To offer Lichess instead of Google (architecture §11 names it as a generic
+    # OAuth2 provider) you must override extraArgs and copy the chart's
+    # skip-auth routes with it, swapping --provider=google for:
     #   --provider=oidc --provider-display-name=Lichess
     #   --login-url=https://lichess.org/oauth
     #   --redeem-url=https://lichess.org/api/token
     #   --profile-url=https://lichess.org/api/account
     #   --scope=email:read
-    - --provider=google
-    - --set-xauthrequest=true
-    - --skip-auth-route=^/healthz$
-    - --skip-auth-route=^/readyz$
-    # Public landing page + robots.txt (see values.yaml for the full note).
-    - --skip-auth-route=^/$
-    - --skip-auth-route=^/robots.txt$
-    # Public Privacy Policy / Terms of Service + shared stylesheet, required
-    # for the Google OAuth consent screen (see values.yaml for the full note).
-    - --skip-auth-route=^/privacy$
-    - --skip-auth-route=^/terms$
-    - --skip-auth-route=^/legal\.css$
-    # Public marketing pages + their assets (see values.yaml for the full note).
-    - --skip-auth-route=^/tour$
-    - --skip-auth-route=^/guide$
-    - --skip-auth-route=^/keys$
-    - --skip-auth-route=^/openai-key$
-    - --skip-auth-route=^/site\.css$
-    - --skip-auth-route=^/shots/
-    - --skip-auth-route=^/sitemap\.xml$
-    # The live demo and the SPA bundle it runs from (see values.yaml for the full note).
-    - --skip-auth-route=^/demo(/.*)?$
-    - --skip-auth-route=^/assets/
-    - --redirect-url=https://freechesscoach.org/oauth2/callback
   service:
     portNumber: 80
   ingress:
