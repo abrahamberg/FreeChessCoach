@@ -63,10 +63,14 @@
             encrypted at rest with a passphrase only you know. We don't
             generate, hold, or have access to that passphrase — it's never
             stored or logged anywhere. Practically, this means your key is
-            unreadable to us by default: we can decrypt and use it only for
-            the moment you supply the passphrase to start or resume a
-            coaching session, and we discard the decrypted key from memory
-            as soon as that session's calls are done. If you forget your
+            unreadable to us by default: a copy of our database alone cannot
+            decrypt it. When you supply the passphrase to start or resume a
+            coaching session, the decrypted key is held for a short time in a
+            cache on our server, encrypted again with a server-side key. It
+            expires after a period without use (15 minutes by default, and
+            each coaching request restarts the clock), and you can remove it
+            at once with "Lock now" in Settings. While it is unlocked, the
+            server can use it to make your coaching calls. If you forget your
             passphrase, we cannot recover your key for you — you'll need to
             remove it and connect it again.
           </li>
@@ -142,8 +146,8 @@
         <h2>Security</h2>
         <p>
           We take reasonable, standard precautions: encryption in transit,
-          passphrase-based encryption at rest for API keys (so the key is
-          unusable without you), and access controls around the database.
+          passphrase-based encryption at rest for API keys (so a stolen copy
+          of the database alone cannot use them), and access controls around the database.
           That said, no online service can be guaranteed perfectly secure,
           and we don't claim FreeChessCoach is immune to bugs,
           misconfigurations, or attacks by third parties. See the
