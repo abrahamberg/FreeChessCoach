@@ -9,14 +9,24 @@ function problem(status: number, title: string): ApiError {
 
 describe('ImportErrorNotice', () => {
   test('a rate limit keeps the API wording and explains that waiting is the fix', () => {
-    render(<ImportErrorNotice error={problem(429, 'Import limit reached (10 games/day)')} />);
+    render(<ImportErrorNotice error={problem(429, 'Import limit reached (30 games/day)')} />);
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Import limit reached (10 games/day)');
+    expect(screen.getByRole('alert')).toHaveTextContent('Import limit reached (30 games/day)');
     expect(screen.getByRole('alert')).toHaveTextContent(/24-hour mark/i);
   });
 
+  test.each([
+    ['weekly', /7-day mark/i],
+    ['in_flight', /keep this tab open/i]
+  ] as const)('the advice follows which limit was hit (%s)', (limit, advice) => {
+    const error = new ApiError(429, 'failed with 429', { type: 'about:blank', title: 'Blocked', status: 429, limit });
+    render(<ImportErrorNotice error={error} />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(advice);
+  });
+
   test('a rate limit is toned as a limit, not a failure', () => {
-    const { container } = render(<ImportErrorNotice error={problem(429, 'Import limit reached (10 games/day)')} />);
+    const { container } = render(<ImportErrorNotice error={problem(429, 'Import limit reached (30 games/day)')} />);
 
     expect(container.querySelector('.import-error--limit')).not.toBeNull();
     expect(container.querySelector('.import-error--failure')).toBeNull();

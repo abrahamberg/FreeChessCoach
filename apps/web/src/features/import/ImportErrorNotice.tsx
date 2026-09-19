@@ -1,5 +1,7 @@
+import { ImportLimitKindSchema, type ImportLimitKind } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { ApiError } from '../../api/client.js';
+import { limitAdvice } from './import-limit-copy.js';
 import './ImportErrorNotice.css';
 
 const RATE_LIMITED = 429;
@@ -11,10 +13,17 @@ export interface ImportErrorNoticeProps {
 }
 
 /** The API's problem+json bodies carry a human-readable `title` (e.g. "Import
- * limit reached (10 games/day)") — far more useful to show than a status code. */
+ * limit reached (30 games/day)") — far more useful to show than a status code. */
 function problemTitle(error: unknown): string | null {
   const title = error instanceof ApiError ? (error.body as { title?: string } | undefined)?.title : null;
   return typeof title === 'string' && title.length > 0 ? title : null;
+}
+
+/** Which import limit a 429 hit, from its problem+json `limit` field. */
+function limitKindOf(error: unknown): ImportLimitKind | null {
+  if (!(error instanceof ApiError)) return null;
+  const parsed = ImportLimitKindSchema.safeParse((error.body as { limit?: unknown } | undefined)?.limit);
+  return parsed.success ? parsed.data : null;
 }
 
 /** Two tones, because the two failures need different things from the reader:
@@ -26,10 +35,11 @@ function describe(error: unknown): { tone: 'limit' | 'failure'; title: string; h
   const title = problemTitle(error);
 
   if (error instanceof ApiError && error.status === RATE_LIMITED) {
+    const kind = limitKindOf(error);
     return {
       tone: 'limit',
       title: title ?? 'Import limit reached',
-      hint: 'The cap rolls over continuously — you can import again once one of your recent games passes the 24-hour mark.'
+      hint: limitAdvice(kind ?? 'daily')
     };
   }
 

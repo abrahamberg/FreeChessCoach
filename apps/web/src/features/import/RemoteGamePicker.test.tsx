@@ -59,8 +59,8 @@ describe('RemoteGamePicker', () => {
     expect(screen.getByText('rapid')).toBeInTheDocument();
   });
 
-  describe('bulk selection (Task 31.4 stat-bank import)', () => {
-    test('renders a checkbox per row and an "Import N for stat bank" button reflecting the selection count', () => {
+  describe('bulk selection (Task 31.4 bulk import)', () => {
+    test('renders a checkbox per row and an "Import N games" button reflecting the selection count', () => {
       const onToggle = vi.fn();
       render(
         <RemoteGamePicker
@@ -73,8 +73,8 @@ describe('RemoteGamePicker', () => {
         />
       );
 
-      expect(screen.getByRole('checkbox', { name: /select daniel.*marta/is })).toBeChecked();
-      expect(screen.getByRole('button', { name: 'Import 1 for stat bank' })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /select daniel.*marta to import/is })).toBeChecked();
+      expect(screen.getByRole('button', { name: 'Import 1 game' })).toBeInTheDocument();
     });
 
     test('checking a row calls onToggle with its id, without calling onSelect', async () => {
@@ -139,7 +139,7 @@ describe('RemoteGamePicker', () => {
       expect(screen.getByRole('button', { name: 'Importing 1 of 1…' })).toBeInTheDocument();
     });
 
-    test('the "Import N for stat bank" button is disabled with no selection and calls onImportSelected when clicked', async () => {
+    test('the "Import N games" button is disabled with no selection and calls onImportSelected when clicked', async () => {
       const onImportSelected = vi.fn();
       const user = userEvent.setup();
       const { rerender } = render(
@@ -153,7 +153,7 @@ describe('RemoteGamePicker', () => {
         />
       );
 
-      expect(screen.getByRole('button', { name: 'Import 0 for stat bank' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Import 0 games' })).toBeDisabled();
 
       rerender(
         <RemoteGamePicker
@@ -165,7 +165,7 @@ describe('RemoteGamePicker', () => {
           bulkSelection={{ selectedIds: new Set(['abcd1234']), onToggle: vi.fn(), onImportSelected, isImporting: false }}
         />
       );
-      await user.click(screen.getByRole('button', { name: 'Import 1 for stat bank' }));
+      await user.click(screen.getByRole('button', { name: 'Import 1 game' }));
       expect(onImportSelected).toHaveBeenCalled();
     });
   });

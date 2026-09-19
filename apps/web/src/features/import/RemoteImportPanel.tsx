@@ -1,6 +1,7 @@
-import type { ChesscomRecentGame, LichessRecentGame } from '@freechesscoach/shared';
+import type { ChesscomRecentGame, ImportLimitKind, LichessRecentGame } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { limitMessage } from './import-limit-copy.js';
 import { RemoteGamePicker, type RemoteGamePickerBulkSelection } from './RemoteGamePicker.js';
 
 export type RemoteTab = 'lichess' | 'chesscom';
@@ -17,7 +18,8 @@ interface RemoteSourceState<TGame> {
 export interface BulkResult {
   succeeded: number;
   total: number;
-  rateLimited: boolean;
+  /** The import limit that stopped the batch, when one did. */
+  limit: ImportLimitKind | null;
 }
 
 export interface RemoteImportPanelProps {
@@ -49,7 +51,7 @@ export function RemoteImportPanel({
     <>
       <label className="import-page__stat-bank-toggle">
         <input type="checkbox" checked={statBankMode} onChange={(event) => onStatBankModeChange(event.target.checked)} />
-        Bulk import for stat bank
+        Select several games to import
       </label>
       {tab === 'lichess' ? (
         <RemoteGamePicker
@@ -73,8 +75,8 @@ export function RemoteImportPanel({
       )}
       {bulkResult && bulkResult.succeeded < bulkResult.total && (
         <p className="import-page__bulk-result">
-          Imported {bulkResult.succeeded} of {bulkResult.total} games for your stat bank.
-          {bulkResult.rateLimited && ' Daily import limit reached (10 games/day).'} <Link to="/games">Go to Games</Link>
+          Imported {bulkResult.succeeded} of {bulkResult.total} games.
+          {bulkResult.limit && ` ${limitMessage(bulkResult.limit)}.`} <Link to="/games">Go to Games</Link>
         </p>
       )}
     </>

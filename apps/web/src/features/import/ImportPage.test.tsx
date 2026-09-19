@@ -61,10 +61,14 @@ describe('ImportPage', () => {
   });
 
   test('a 422 missing-color response renders ColorConfirm', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({ type: 'about:blank', title: 'x', status: 422, missing: 'userColor' }),
-        { status: 422, headers: { 'content-type': 'application/problem+json' } }
+    // A fresh Response per call: a body can only be read once, and the page
+    // also asks for the import quota.
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ type: 'about:blank', title: 'x', status: 422, missing: 'userColor' }), {
+          status: 422,
+          headers: { 'content-type': 'application/problem+json' }
+        })
       )
     );
     vi.stubGlobal('fetch', fetchMock);
@@ -79,10 +83,12 @@ describe('ImportPage', () => {
   // Regression: a 429 used to render nothing at all, so the Import button just
   // looked dead — no message, no state change, no way to tell what happened.
   test('a rate-limited import surfaces the problem+json title instead of failing silently', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({ type: 'about:blank', title: 'Import limit reached (10 games/day)', status: 429 }),
-        { status: 429, headers: { 'content-type': 'application/problem+json' } }
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ type: 'about:blank', title: 'Import limit reached (30 games/day)', status: 429, limit: 'daily' }), {
+          status: 429,
+          headers: { 'content-type': 'application/problem+json' }
+        })
       )
     );
     vi.stubGlobal('fetch', fetchMock);
@@ -91,7 +97,7 @@ describe('ImportPage', () => {
     renderImportPage();
     await submitPgn(user);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Import limit reached (10 games/day)');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Import limit reached (30 games/day)');
   });
 
   test('an import failure with no problem+json title still surfaces a generic message', async () => {
@@ -425,7 +431,7 @@ describe('ImportPage', () => {
     async function enterBulkModeWithBothSelected(user: ReturnType<typeof userEvent.setup>) {
       await user.click(screen.getByRole('button', { name: /from lichess/i }));
       await screen.findByRole('button', { name: /daniel.*marta/is });
-      await user.click(screen.getByRole('checkbox', { name: /bulk import for stat bank/i }));
+      await user.click(screen.getByRole('checkbox', { name: /select several games to import/i }));
       const checkboxes = screen.getAllByRole('checkbox').filter((box) => box.getAttribute('aria-label')?.includes('Select'));
       for (const checkbox of checkboxes) await user.click(checkbox);
     }
@@ -460,7 +466,7 @@ describe('ImportPage', () => {
       renderImportPage();
       await enterBulkModeWithBothSelected(user);
 
-      await user.click(screen.getByRole('button', { name: 'Import 2 for stat bank' }));
+      await user.click(screen.getByRole('button', { name: 'Import 2 games' }));
 
       // First game's request is still pending: the button reflects 0 of 2
       // done, and no row has been checked off yet.
@@ -515,7 +521,7 @@ describe('ImportPage', () => {
       renderImportPage();
       await enterBulkModeWithBothSelected(user);
 
-      await user.click(screen.getByRole('button', { name: 'Import 2 for stat bank' }));
+      await user.click(screen.getByRole('button', { name: 'Import 2 games' }));
 
       expect(await screen.findByText('Games')).toBeInTheDocument();
       expect(fetchMock).toHaveBeenCalledWith(
@@ -550,7 +556,7 @@ describe('ImportPage', () => {
             );
           }
           return Promise.resolve(
-            new Response(JSON.stringify({ type: 'about:blank', title: 'Import limit reached (10 games/day)', status: 429 }), {
+            new Response(JSON.stringify({ type: 'about:blank', title: 'Import limit reached (30 games/day)', status: 429, limit: 'daily' }), {
               status: 429,
               headers: { 'content-type': 'application/problem+json' }
             })
@@ -564,7 +570,7 @@ describe('ImportPage', () => {
       renderImportPage();
       await enterBulkModeWithBothSelected(user);
 
-      await user.click(screen.getByRole('button', { name: 'Import 2 for stat bank' }));
+      await user.click(screen.getByRole('button', { name: 'Import 2 games' }));
 
       expect(await screen.findByText(/imported 1 of 2 games/i)).toBeInTheDocument();
       expect(screen.getByText(/daily import limit reached/i)).toBeInTheDocument();
@@ -605,12 +611,12 @@ describe('ImportPage', () => {
 
       renderImportPage();
       await enterBulkModeWithBothSelected(user);
-      expect(screen.getByRole('button', { name: 'Import 2 for stat bank' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Import 2 games' })).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: /from chess\.com/i }));
       await screen.findByRole('button', { name: /daniel.*nadia/is });
 
-      expect(screen.getByRole('button', { name: 'Import 0 for stat bank' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Import 0 games' })).toBeDisabled();
     });
   });
 });

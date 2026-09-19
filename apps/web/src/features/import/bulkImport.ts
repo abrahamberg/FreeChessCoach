@@ -1,6 +1,13 @@
-import { ImportGameRequestSchema, ImportGameResponseSchema } from '@freechesscoach/shared';
+import { ImportGameRequestSchema, ImportGameResponseSchema, ImportLimitKindSchema, type ImportLimitKind } from '@freechesscoach/shared';
 import { apiPost, ApiError } from '../../api/client.js';
 import type { BulkResult, RemoteTab } from './RemoteImportPanel.js';
+
+/** The `limit` field a 429 problem+json carries (which import limit tripped). */
+function limitOf(error: unknown): ImportLimitKind | null {
+  if (!(error instanceof ApiError) || error.status !== 429) return null;
+  const parsed = ImportLimitKindSchema.safeParse((error.body as { limit?: unknown } | undefined)?.limit);
+  return parsed.success ? parsed.data : null;
+}
 
 export interface BulkImportArgs {
   games: { id: string; pgn: string; playedAt: string | null }[];
@@ -12,7 +19,7 @@ export interface BulkImportArgs {
   onGameSettled: (gameId: string) => void;
 }
 
-/** Stat-bank bulk import (Task 31.4): imports each selected game, one request
+/** Bulk import (Task 31.4): imports each selected game, one request
  * per game (the API has no batch import endpoint), tolerating individual
  * failures so one rate-limited or malformed game doesn't lose the rest of
  * the batch. Shared by both remote pickers (Lichess, Chess.com) since the
@@ -26,16 +33,16 @@ export interface BulkImportArgs {
  * gets the same free engine pass a single-game import already does. */
 export async function importForStatBank({ games, source, onGameSettled }: BulkImportArgs): Promise<BulkResult> {
   let succeeded = 0;
-  let rateLimited = false;
+  let limit: ImportLimitKind | null = null;
   for (const game of games) {
     try {
       const body = ImportGameRequestSchema.parse({ pgn: game.pgn, source, playedAt: game.playedAt });
       await apiPost('/api/games', body, ImportGameResponseSchema);
       succeeded += 1;
     } catch (error) {
-      if (error instanceof ApiError && error.status === 429) rateLimited = true;
+      limit = limitOf(error) ?? limit;
     }
     onGameSettled(game.id);
   }
-  return { succeeded, total: games.length, rateLimited };
+  return { succeeded, total: games.length, limit };
 }

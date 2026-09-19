@@ -1,10 +1,8 @@
-import { ImportQuotaResponseSchema } from '@freechesscoach/shared';
-import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiGet } from '../../api/client.js';
 import { HorizontalScroller } from '../../components/HorizontalScroller.js';
 import { SearchIcon } from '../../components/Icon.js';
+import { useImportQuota } from '../../hooks/useImportQuota.js';
 import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
 import { ContinueSessionCard } from './ContinueSessionCard.js';
 import { GameCard } from './GameCard.js';
@@ -31,13 +29,9 @@ export function GamesPage(): ReactNode {
   const recentGames = recentQuery.data?.items ?? [];
   const practiceAssignments = practiceQuery.data ?? [];
 
-  // Feeds ImportShortcuts' "N of 10 imported today" — a separate query since
-  // the rolling-24h count the backend enforces isn't just "games with
-  // today's date" (see game-import.ts's getDailyImportUsage).
-  const importQuotaQuery = useQuery({
-    queryKey: ['import-quota'],
-    queryFn: ({ signal }) => apiGet('/api/games/import-quota', ImportQuotaResponseSchema, signal)
-  });
+  // Feeds ImportShortcuts' "N of 30 imported today" — the rolling-24h count
+  // the backend enforces, not "games with today's date".
+  const importQuotaQuery = useImportQuota();
 
   useRefreshGamesWhenAnalysisFinishes();
   const actions = useGameActions([...inProgressGames, ...recentGames]);

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { DAILY_IMPORT_LIMIT, MAX_IN_FLIGHT_IMPORTS, WEEKLY_IMPORT_LIMIT } from '@freechesscoach/shared';
+import { DAILY_IMPORT_LIMIT, MAX_IN_FLIGHT_IMPORTS, WEEKLY_IMPORT_LIMIT } from './import-limits.js';
 import { importAllowance } from './import-allowance.js';
 
 describe('importAllowance', () => {

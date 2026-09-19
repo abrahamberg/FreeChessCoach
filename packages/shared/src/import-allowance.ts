@@ -3,7 +3,7 @@ import {
   MAX_IN_FLIGHT_IMPORTS,
   WEEKLY_IMPORT_LIMIT,
   type ImportLimitKind
-} from '@freechesscoach/shared';
+} from './import-limits.js';
 
 export interface ImportUsage {
   dailyUsed: number;
@@ -28,6 +28,8 @@ function headrooms(usage: ImportUsage): Array<[ImportLimitKind, number]> {
   ];
 }
 
+/** Shared so the server's enforcement and the web picker's cap are one
+ * calculation. */
 export function importAllowance(usage: ImportUsage): ImportAllowance {
   const remaining = Math.max(0, Math.min(...headrooms(usage).map(([, room]) => room)));
   if (remaining > 0) return { remaining, blockedBy: null };

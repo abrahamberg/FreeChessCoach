@@ -1,5 +1,5 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -11,8 +11,10 @@ import {
 } from '@freechesscoach/shared';
 import { apiPost, ApiError } from '../../api/client.js';
 import { useAnalysisStatus } from '../../hooks/useAnalysisStatus.js';
+import { IMPORT_QUOTA_QUERY_KEY, useImportQuota } from '../../hooks/useImportQuota.js';
 import { AnalysisProgress } from './AnalysisProgress.js';
 import { ColorConfirm } from './ColorConfirm.js';
+import { selectionLimit } from './import-limit-copy.js';
 import { ImportErrorNotice } from './ImportErrorNotice.js';
 import { PgnPasteForm } from './PgnPasteForm.js';
 import { PgnUploadForm } from './PgnUploadForm.js';
@@ -62,6 +64,8 @@ function importTabFromSearchParams(params: URLSearchParams): ImportTab {
  * lives in either presentational child (AGENTS.md rule 7). */
 export function ImportPage(): ReactNode {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const quotaQuery = useImportQuota();
   const [searchParams] = useSearchParams();
   const [pendingPgn, setPendingPgn] = useState<string | null>(null);
   const [analysisId, setAnalysisId] = useState<string | null>(null);
@@ -74,6 +78,7 @@ export function ImportPage(): ReactNode {
     onSuccess: (data) => {
       setGameId(data.gameId);
       setAnalysisId(data.analysisId);
+      void queryClient.invalidateQueries({ queryKey: IMPORT_QUOTA_QUERY_KEY });
     }
   });
 
@@ -106,7 +111,7 @@ export function ImportPage(): ReactNode {
   // Every import failure that ISN'T the 422 "which colour were you?" prompt
   // (ColorConfirm handles that one below). Without this the mutation's error
   // state rendered nothing at all, so a rate-limited import — 429 "Import limit
-  // reached (10 games/day)" — looked exactly like a dead button: press it, and
+  // reached (30 games/day)" — looked exactly like a dead button: press it, and
   // the page just sits there.
   const importError = missingColor ? null : importMutation.error;
 
@@ -176,7 +181,7 @@ export function ImportPage(): ReactNode {
               lichess={remote.lichess}
               chesscom={remote.chesscom}
               onSelect={(pgn, playedAt) => importPgn(pgn, tab, undefined, playedAt)}
-              bulkSelection={remote.bulkSelection}
+              bulkSelection={{ ...remote.bulkSelection, ...selectionLimit(quotaQuery.data) }}
               bulkResult={remote.bulkResult}
             />
           )}

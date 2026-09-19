@@ -9,6 +9,11 @@ export interface RemoteGamePickerBulkSelection {
    * row flip from checkbox to a done mark as its own request lands, instead
    * of every row staying frozen until the whole sequential batch finishes. */
   importedIds?: ReadonlySet<string>;
+  /** How many rows may be ticked at once (the smallest headroom of the
+   * import limits — see `selectionLimit`). Rows past it are disabled and
+   * labelled with `capReason`. Omit for no cap. */
+  maxSelectable?: number;
+  capReason?: string | null;
 }
 
 export interface RemoteGamePickerRow {
@@ -34,6 +39,23 @@ export interface RemoteGamePickerProps<TGame extends RemoteGamePickerRow> {
   /** Extra per-row detail rendered between the result and the date — e.g.
    * Chess.com's time class, which Lichess's feed has no equivalent for. */
   renderMeta?: (game: TGame) => ReactNode;
+}
+
+/** A row's tick box. Past the selection cap, an unticked row is disabled and
+ * its label says why (a ticked row can always be unticked). */
+function RowCheckbox({ game, bulkSelection }: { game: RemoteGamePickerRow; bulkSelection: RemoteGamePickerBulkSelection }): ReactNode {
+  const isSelected = bulkSelection.selectedIds.has(game.id);
+  const isCapped = !isSelected && bulkSelection.selectedIds.size >= (bulkSelection.maxSelectable ?? Number.POSITIVE_INFINITY);
+  const label = `Select ${game.whiteName ?? '?'} vs. ${game.blackName ?? '?'} to import`;
+  return (
+    <input
+      type="checkbox"
+      aria-label={isCapped && bulkSelection.capReason ? bulkSelection.capReason : label}
+      checked={isSelected}
+      disabled={bulkSelection.isImporting || isCapped}
+      onChange={() => bulkSelection.onToggle(game.id)}
+    />
+  );
 }
 
 /** design.md §4.2 / Task 51.6: shared "From Lichess" / "From Chess.com" picker
@@ -69,7 +91,7 @@ export function RemoteGamePicker<TGame extends RemoteGamePickerRow>({
         >
           {bulkSelection.isImporting
             ? `Importing ${bulkSelection.importedIds?.size ?? 0} of ${bulkSelection.selectedIds.size}…`
-            : `Import ${bulkSelection.selectedIds.size} for stat bank`}
+            : `Import ${bulkSelection.selectedIds.size} ${bulkSelection.selectedIds.size === 1 ? 'game' : 'games'}`}
         </button>
       )}
       <ul className="remote-game-picker">
@@ -80,15 +102,7 @@ export function RemoteGamePicker<TGame extends RemoteGamePickerRow>({
                 ✓
               </span>
             ) : (
-              bulkSelection && (
-                <input
-                  type="checkbox"
-                  aria-label={`Select ${game.whiteName ?? '?'} vs. ${game.blackName ?? '?'} for stat bank import`}
-                  checked={bulkSelection.selectedIds.has(game.id)}
-                  disabled={bulkSelection.isImporting}
-                  onChange={() => bulkSelection.onToggle(game.id)}
-                />
-              )
+              bulkSelection && <RowCheckbox game={game} bulkSelection={bulkSelection} />
             )}
             <button type="button" onClick={() => onSelect(game.pgn, game.playedAt)}>
               <span>

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
   ChesscomRecentGamesResponseSchema,
@@ -6,6 +6,7 @@ import {
   UserProfileSchema
 } from '@freechesscoach/shared';
 import { apiGet, apiPatch, ApiError } from '../../api/client.js';
+import { IMPORT_QUOTA_QUERY_KEY } from '../../hooks/useImportQuota.js';
 import { importForStatBank } from './bulkImport.js';
 import type { RemoteTab } from './RemoteImportPanel.js';
 
@@ -15,6 +16,7 @@ import type { RemoteTab } from './RemoteImportPanel.js';
  * composes this with its own single-game flow (AGENTS.md rule 7: fetching
  * lives in hooks). `tab` is whichever import tab is open. */
 export function useRemoteImport(tab: string, onBatchFullyImported: () => void) {
+  const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
   const [importedIds, setImportedIds] = useState<ReadonlySet<string>>(new Set());
   const [dismissedUsernamePrompts, setDismissedUsernamePrompts] = useState<ReadonlySet<RemoteTab>>(new Set());
@@ -28,6 +30,7 @@ export function useRemoteImport(tab: string, onBatchFullyImported: () => void) {
   const bulkImportMutation = useMutation({
     mutationFn: importForStatBank,
     onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: IMPORT_QUOTA_QUERY_KEY });
       if (result.succeeded === result.total) onBatchFullyImported();
     }
   });

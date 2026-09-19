@@ -1,6 +1,7 @@
 import {
   AUTO_DELETE_BATCH,
   DAILY_IMPORT_LIMIT,
+  importAllowance,
   MAX_IN_FLIGHT_IMPORTS,
   MAX_LIBRARY_GAMES,
   WEEKLY_IMPORT_LIMIT,
@@ -13,7 +14,6 @@ import * as gameImportEventsRepo from '../db/repositories/game-import-events.js'
 import * as gamesRepo from '../db/repositories/games.js';
 import type { Database } from '../db/schema.js';
 import { ImportLimitError } from '../lib/errors.js';
-import { importAllowance } from '../lib/import-allowance.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEK_MS = 7 * DAY_MS;
