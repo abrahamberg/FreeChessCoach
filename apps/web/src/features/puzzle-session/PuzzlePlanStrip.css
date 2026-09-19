@@ -1,0 +1,58 @@
+.puzzle-plan-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.puzzle-plan-strip__list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.puzzle-plan-strip__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+
+.puzzle-plan-strip__item--current {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.puzzle-plan-strip__item--solved {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: var(--color-on-primary);
+}
+
+.puzzle-plan-strip__item--failed {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.puzzle-plan-strip__item--skipped {
+  border-color: var(--color-warning);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.puzzle-plan-strip__next {
+  margin-left: auto;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Modal } from '../../components/Modal.js';
 import { UndoIcon } from '../../components/Icon.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { BoardActionBar } from '../board/BoardActionBar.js';
@@ -10,7 +11,10 @@ import { useExploreFeedback } from '../board/useExploreFeedback.js';
 import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
 import { ChatPane } from '../chat/ChatPane.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
+import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
+import { UnlockPhraseModal } from '../settings/UnlockPhraseModal.js';
 import '../session/SessionPage.css';
+import { PuzzlePlanStrip } from './PuzzlePlanStrip.js';
 import { usePuzzleSessionPageData } from './usePuzzleSessionPageData.js';
 import './PuzzleSessionPage.css';
 
@@ -50,7 +54,14 @@ export function PuzzleSessionPage(): ReactNode {
     historyPositions,
     currentPly,
     viewedPly,
-    selectHistoryPly
+    selectHistoryPly,
+    items,
+    currentItemIndex,
+    lineComplete,
+    isAdvancingItem,
+    advanceToNextItem,
+    setupRequiredModal,
+    unlockModal
   } = usePuzzleSessionPageData(assignmentId ?? '');
 
   // "Explore on your own" (BoardActionBar's eye toggle) — same ownership
@@ -80,13 +91,19 @@ export function PuzzleSessionPage(): ReactNode {
   const session = detailQuery.data;
 
   if (session.status === 'completed') {
+    const completedCount = session.assignment.items.filter((item) => item.result !== 'pending').length;
     return (
-      <div className="session-summary-card">
-        <p>Nice work — you've finished this practice set.</p>
-        <button type="button" onClick={() => navigate('/dashboard')}>
-          Back to Progress
-        </button>
-      </div>
+      <Modal title="You did it!" onClose={() => navigate('/dashboard')}>
+        <div className="puzzle-session-complete">
+          <p>You've finished the focus session your coach assigned you: {session.assignment.reason}</p>
+          <p>
+            {completedCount} of {session.assignment.items.length} puzzles complete.
+          </p>
+          <button type="button" className="btn-primary" onClick={() => navigate('/dashboard')}>
+            Back to Progress
+          </button>
+        </div>
+      </Modal>
     );
   }
 
@@ -169,6 +186,20 @@ export function PuzzleSessionPage(): ReactNode {
 
   return (
     <div className="session-page puzzle-session-page">
+      {unlockModal.isOpen && (
+        <UnlockPhraseModal
+          description="Your coach needs your AI setup unlocked to continue this session."
+          onClose={unlockModal.onClose}
+          onUnlock={unlockModal.onUnlock}
+          onUnlocked={unlockModal.onUnlocked}
+          isPending={unlockModal.isPending}
+          isSuccess={unlockModal.isSuccess}
+          errorMessage={unlockModal.errorMessage}
+        />
+      )}
+      {setupRequiredModal.isOpen && (
+        <AiSetupRequiredModal onClose={setupRequiredModal.onClose} onGoToSettings={setupRequiredModal.onGoToSettings} />
+      )}
       <header className="puzzle-session-page__header">
         <button type="button" onClick={() => navigate('/dashboard')}>
           ← Progress
@@ -177,6 +208,13 @@ export function PuzzleSessionPage(): ReactNode {
           Item {session.currentItemIndex + 1} of {session.assignment.items.length}
         </span>
       </header>
+      <PuzzlePlanStrip
+        items={items}
+        currentItemIndex={currentItemIndex}
+        lineComplete={lineComplete}
+        isAdvancing={isAdvancingItem}
+        onAdvance={advanceToNextItem}
+      />
       <div className={isSideBySide ? 'session-body desktop' : 'session-body'}>
         {isSideBySide &&
           (divergedLine.line ? (

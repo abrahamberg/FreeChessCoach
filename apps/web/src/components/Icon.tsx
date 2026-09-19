@@ -302,3 +302,44 @@ export function MaximizeIcon(props: IconProps): ReactNode {
     </svg>
   );
 }
+
+export function UploadIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M12 16V4" />
+      <polyline points="7 9 12 4 17 9" />
+      <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
+    </svg>
+  );
+}
+
+export function ClipboardIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <rect x="6" y="4.5" width="12" height="17" rx="1.5" />
+      <path d="M9 4.5V3.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" />
+      <line x1="9" y1="11" x2="15" y2="11" />
+      <line x1="9" y1="15" x2="15" y2="15" />
+    </svg>
+  );
+}
+
+export function PawnIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <circle cx="12" cy="6.5" r="2.5" />
+      <path d="M9.3 10.8c-.9 1-1.3 2.1-.7 3.4.4.9.3 1.7-.3 2.4-.6.8-.8 1.7-.8 3.4h9c0-1.7-.2-2.6-.8-3.4-.6-.7-.7-1.5-.3-2.4.6-1.3.2-2.4-.7-3.4" />
+      <line x1="6.5" y1="20" x2="17.5" y2="20" />
+    </svg>
+  );
+}
+
+export function KnightIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M5 14 5.8 10.5 5.5 9.5 7 7.5 8.5 4.8 9.8 3.2 11 5.3 10.2 6 12.5 6.6 16 8.3 17.3 11.5 17.6 15.5 17.6 18.5 6 18.5 6.3 15.5Z" />
+      <circle cx="7.6" cy="7.6" r="0.55" fill="currentColor" stroke="none" />
+      <line x1="4.5" y1="20" x2="18.5" y2="20" />
+    </svg>
+  );
+}

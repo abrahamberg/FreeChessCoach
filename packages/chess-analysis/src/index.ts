@@ -3,6 +3,7 @@ export * from './accuracy-curve.js';
 export * from './annotated-pgn.js';
 export * from './attack-map.js';
 export * from './aggregate-opening-stats.js';
+export * from './aggregate-rating-stats.js';
 export * from './assert-eval-sign.js';
 export * from './bot-candidate-weighting.js';
 export * from './bot-mistake-pool.js';

@@ -7,12 +7,11 @@ import type { PuzzleSessionRow } from '../db/repositories/puzzle-sessions.js';
 import type { Database } from '../db/schema.js';
 import { ConflictError, NotFoundError } from '../lib/errors.js';
 import { createKeyedLock } from '../lib/keyedLock.js';
-import { findSuccessfulToolResult } from '../lib/tool-parts.js';
 import { runCoachTurn, type CoachTurnStream } from '../llm/chat.js';
 import type { GatewayConfig, ModelResolution, Tier } from '../llm/gateway.js';
 import { getModelForUser, streamTimeoutsFor } from '../llm/gateway.js';
 import { cachedSystemMessage, systemMessage, type ChatMessage } from '../llm/messages.js';
-import { buildPuzzleSessionTools, type AdvancePuzzleToolResult } from './puzzle-session-tools.js';
+import { buildPuzzleSessionTools } from './puzzle-session-tools.js';
 
 /** Serializes startPuzzleTurn calls per session — same client-tool-result
  * race createKeyedLock's own doc comment describes for the game-review
@@ -110,7 +109,10 @@ export async function startPuzzleTurn(
         ? historyRows.map((row) => ({ role: row.role, content: row.content }) as ChatMessage)
         : [{ role: 'user', content: OPENING_TURN_CONTENT }];
 
-    const tools = buildPuzzleSessionTools({ userId: session.userId, assignmentId: session.assignmentId, currentItemIndex }, { db: deps.db });
+    const tools = buildPuzzleSessionTools(
+      { userId: session.userId, assignmentId: session.assignmentId, sessionId: session.id, currentItemIndex },
+      { db: deps.db }
+    );
 
     return runCoachTurn({
       resolution,
@@ -126,20 +128,13 @@ export async function startPuzzleTurn(
       onFinish: async (completion) => {
         // Response already piped to the client by now (routes/puzzle-
         // sessions.ts's reply.hijack()) — same "must never throw" contract
-        // as coach-agent-turn.ts's onFinish.
+        // as coach-agent-turn.ts's onFinish. advance_puzzle's own session/
+        // assignment write already happened synchronously inside the tool's
+        // execute (puzzle-item-advance.ts) — nothing left to do here beyond
+        // persisting the turn's messages.
         try {
           for (const message of completion.messages) {
             await puzzleSessionsRepo.insertMessage(deps.db, session.id, message.role, message.content, currentItemIndex);
-          }
-
-          const advanced = findSuccessfulToolResult(completion.messages, 'advance_puzzle') as AdvancePuzzleToolResult | null;
-          if (advanced) {
-            if (advanced.isLastItem) {
-              await puzzleSessionsRepo.markCompleted(deps.db, session.id);
-              await puzzleAssignmentsRepo.markCompleted(deps.db, session.assignmentId);
-            } else {
-              await puzzleSessionsRepo.advanceItemIndex(deps.db, session.id, advanced.itemIndex + 1);
-            }
           }
         } catch (error) {
           console.error(`puzzle-session-turn onFinish failed for session ${session.id}:`, error);

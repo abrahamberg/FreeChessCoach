@@ -16,7 +16,8 @@ function buildDashboard(gamesAnalyzed: number) {
     opening: { averageBookMoves: 6.5, openingAccuracy: 88, averageOpeningMistakes: 0.5, performanceByOpening: [] },
     tactics: zeroTacticMotifs(),
     strategy: { overall: 78, pawnStructure: 80, spaceAdvantage: 78, activePiece: 85, attacking: 70, defending: 88 },
-    endgame: { overallAccuracy: 70, byStanding: [], byTheme: [] }
+    endgame: { overallAccuracy: 70, byStanding: [], byTheme: [] },
+    rating: { gamesWithEstimate: gamesAnalyzed, points: [] }
   };
 }
 

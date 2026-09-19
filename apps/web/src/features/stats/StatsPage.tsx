@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { apiGet } from '../../api/client.js';
 import { EndgameStatsSection } from './EndgameStatsSection.js';
 import { OpeningStatsSection } from './OpeningStatsSection.js';
+import { RatingStatsSection } from './RatingStatsSection.js';
 import { StrategyStatsSection } from './StrategyStatsSection.js';
 import { TacticsStatsSection } from './TacticsStatsSection.js';
 import './StatsPage.css';
@@ -68,6 +69,7 @@ export function StatsPage(): ReactNode {
       {statsQuery.data?.gamesAnalyzed === 0 && <p className="stats-page__empty">Analyze some games to see your stats.</p>}
       {statsQuery.data && statsQuery.data.gamesAnalyzed > 0 && (
         <div className="stats-page__sections">
+          <RatingStatsSection stats={statsQuery.data.rating} />
           <OpeningStatsSection stats={statsQuery.data.opening} />
           <TacticsStatsSection motifs={statsQuery.data.tactics} />
           <StrategyStatsSection stats={statsQuery.data.strategy} />

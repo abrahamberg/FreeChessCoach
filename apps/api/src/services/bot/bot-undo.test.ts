@@ -3,13 +3,15 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import type { BotConfig, PositionAnalysis } from '@freechesscoach/shared';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import * as gamesRepo from '../../db/repositories/games.js';
+import * as sessionMessagesRepo from '../../db/repositories/session-messages.js';
 import * as sessionsRepo from '../../db/repositories/sessions.js';
 import * as usersRepo from '../../db/repositories/users.js';
 import type { Database } from '../../db/schema.js';
 import { createSessionForGame } from '../coach-agent-session.js';
+import { commitPlayerMoveAndAdvance } from '../play-move-commit.js';
 import type { PlayMovesDependencies } from '../play-moves.js';
 import { commitBotTurn, type BotMoveCommitDependencies } from './bot-move-commit.js';
-import { undoLastBotTurn } from './bot-undo.js';
+import { UNDO_NOTICE_PREFIX, undoLastBotTurn } from './bot-undo.js';
 
 const GENERIC_ANALYSIS: PositionAnalysis = {
   fen: 'irrelevant-for-classification-mock',
@@ -133,5 +135,56 @@ describe('undoLastBotTurn', () => {
     const result = await undoLastBotTurn(deps, session);
 
     expect('error' in result).toBe(true);
+  });
+
+  async function setupPlayGame() {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
+    const game = await gamesRepo.insert(db, {
+      userId: user.id,
+      pgn: '',
+      source: 'coach_play',
+      userColor: 'white',
+      whiteName: null,
+      blackName: null,
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+    const session = await sessionsRepo.insert(db, { gameId: game.id, userId: user.id, mode: 'play' });
+    return { user, game, session };
+  }
+
+  test('play mode: a self-serve undo leaves a hidden [undo] note for the coach at the resulting ply', async () => {
+    const { session } = await setupPlayGame();
+    const commitDeps = { db, analyzePosition: vi.fn().mockResolvedValue(GENERIC_ANALYSIS), callLightModel: vi.fn().mockResolvedValue('note') };
+    await commitPlayerMoveAndAdvance(commitDeps, session, 'e4');
+
+    const deps: PlayMovesDependencies = { db, analyzePosition: vi.fn().mockResolvedValue(GENERIC_ANALYSIS) };
+    const result = await undoLastBotTurn(deps, session);
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.ply).toBe(0);
+
+    const messages = await sessionMessagesRepo.listBySession(db, session.id);
+    const note = messages.at(-1);
+    expect(note?.role).toBe('user');
+    expect(note?.ply).toBe(0);
+    expect(typeof note?.content).toBe('string');
+    expect(note?.content as string).toMatch(new RegExp(`^\\${UNDO_NOTICE_PREFIX}`));
+    expect(note?.content as string).toContain(result.fen);
+  });
+
+  test('play_bot mode: a self-serve undo does not write a coach note (no coach to read it)', async () => {
+    const { session } = await setupBotGame();
+    await commitBotTurn(commitDeps(), session, baseBot(), 'e4');
+
+    const deps: PlayMovesDependencies = { db, analyzePosition: vi.fn().mockResolvedValue(GENERIC_ANALYSIS) };
+    await undoLastBotTurn(deps, session);
+
+    const messages = await sessionMessagesRepo.listBySession(db, session.id);
+    expect(messages.some((message) => typeof message.content === 'string' && message.content.startsWith(UNDO_NOTICE_PREFIX))).toBe(
+      false
+    );
   });
 });

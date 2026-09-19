@@ -30,11 +30,11 @@ class MockEventSource {
   }
 }
 
-function renderImportPage() {
+function renderImportPage(initialPath = '/import') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/import']}>
+      <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
           <Route path="/import" element={<ImportPage />} />
           <Route path="/session/:id" element={<div>session-page-marker</div>} />
@@ -239,7 +239,9 @@ describe('ImportPage', () => {
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/games',
-        expect.objectContaining({ body: JSON.stringify({ pgn: '1. e4 e5 1-0', source: 'lichess' }) })
+        expect.objectContaining({
+          body: JSON.stringify({ pgn: '1. e4 e5 1-0', source: 'lichess', playedAt: '2026-07-20T10:00:00.000Z' })
+        })
       )
     );
   });
@@ -289,9 +291,113 @@ describe('ImportPage', () => {
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/games',
-        expect.objectContaining({ body: JSON.stringify({ pgn: '1. e4 e5 1-0', source: 'chesscom' }) })
+        expect.objectContaining({
+          body: JSON.stringify({ pgn: '1. e4 e5 1-0', source: 'chesscom', playedAt: '2026-07-20T10:00:00.000Z' })
+        })
       )
     );
+  });
+
+  // Games page's "Import games" shortcuts (Task) link straight into a tab
+  // instead of always landing on Paste.
+  test('opens directly on the tab named by the ?tab= query param', async () => {
+    const fetchMock = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/chesscom/recent-games') {
+        return Promise.resolve(new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } }));
+      }
+      throw new Error(`unexpected fetch: ${path}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderImportPage('/import?tab=chesscom');
+
+    expect(screen.getByRole('button', { name: /from chess\.com/i })).toHaveAttribute('aria-pressed', 'true');
+    await screen.findByText(/no recent games/i);
+  });
+
+  test('an unrecognized ?tab= value falls back to Paste instead of crashing', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((path: string) => {
+        throw new Error(`unexpected fetch: ${path}`);
+      })
+    );
+
+    renderImportPage('/import?tab=made-up');
+
+    expect(screen.getByRole('button', { name: /^paste$/i })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('switching to the Lichess tab with no linked username shows a popup to set one, and saving it refetches the games list', async () => {
+    let lichessUsernameSet = false;
+    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
+      if (path === '/api/lichess/recent-games') {
+        return Promise.resolve(
+          lichessUsernameSet
+            ? new Response(
+                JSON.stringify([
+                  {
+                    id: 'g1',
+                    pgn: '1. e4 e5 1-0',
+                    whiteName: 'daniel',
+                    blackName: 'Marta',
+                    result: '1-0',
+                    timeControl: '600+0',
+                    playedAt: '2026-07-20T10:00:00.000Z'
+                  }
+                ]),
+                { status: 200, headers: { 'content-type': 'application/json' } }
+              )
+            : new Response(
+                JSON.stringify({ type: 'about:blank', title: 'Not linked', status: 404 }),
+                { status: 404, headers: { 'content-type': 'application/problem+json' } }
+              )
+        );
+      }
+      if (path === '/api/users/me' && init?.method === 'PATCH') {
+        lichessUsernameSet = true;
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              id: '7d9f2a44-9a5f-4f6e-b1a1-0a4c1e2d3f4b',
+              email: 'student@example.com',
+              displayName: 'daniel',
+              ratingBand: 'club',
+              rating: null,
+              ratingSource: null,
+              lichessUsername: 'daniel',
+              chesscomUsername: null,
+              selfAssessment: null,
+              engineMode: 'native',
+              coachPersona: 'general',
+              ttsEnabled: false,
+              ttsBackend: 'openai'
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } }
+          )
+        );
+      }
+      throw new Error(`unexpected fetch: ${path}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+
+    renderImportPage();
+    await user.click(screen.getByRole('button', { name: /from lichess/i }));
+
+    expect(await screen.findByRole('dialog', { name: /set your lichess username/i })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/^lichess username$/i), 'daniel');
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/users/me',
+        expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ lichessUsername: 'daniel' }) })
+      )
+    );
+    expect(await screen.findByRole('button', { name: /daniel.*marta/is })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   describe('stat-bank bulk import (Task 31.4)', () => {
@@ -324,6 +430,65 @@ describe('ImportPage', () => {
       for (const checkbox of checkboxes) await user.click(checkbox);
     }
 
+    // The batch is sequential (one request per game), so the picker should
+    // show that games are landing one at a time — not a single frozen label
+    // until the whole thing finishes.
+    test('checks off each row and updates the count as its own import settles, instead of all at once at the end', async () => {
+      let resolveFirst!: (response: Response) => void;
+      let resolveSecond!: (response: Response) => void;
+      const firstGameImported = new Promise<Response>((resolve) => {
+        resolveFirst = resolve;
+      });
+      const secondGameImported = new Promise<Response>((resolve) => {
+        resolveSecond = resolve;
+      });
+      const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
+        if (path === '/api/lichess/recent-games') {
+          return Promise.resolve(
+            new Response(JSON.stringify(LICHESS_GAMES), { status: 200, headers: { 'content-type': 'application/json' } })
+          );
+        }
+        if (path === '/api/games' && init?.method === 'POST') {
+          const body = JSON.parse(init.body as string) as { pgn: string };
+          return body.pgn === 'pgn-1' ? firstGameImported : secondGameImported;
+        }
+        throw new Error(`unexpected fetch: ${path}`);
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      const user = userEvent.setup();
+
+      renderImportPage();
+      await enterBulkModeWithBothSelected(user);
+
+      await user.click(screen.getByRole('button', { name: 'Import 2 for stat bank' }));
+
+      // First game's request is still pending: the button reflects 0 of 2
+      // done, and no row has been checked off yet.
+      expect(await screen.findByRole('button', { name: 'Importing 0 of 2…' })).toBeInTheDocument();
+      expect(screen.queryByLabelText('Imported')).not.toBeInTheDocument();
+
+      resolveFirst(
+        new Response(JSON.stringify({ gameId: 'game-x', analysisId: 'analysis-x' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' }
+        })
+      );
+
+      // First game settles while the second one is still in flight: exactly
+      // one row is checked off, and the count reflects that mid-batch state.
+      await waitFor(() => expect(screen.getAllByLabelText('Imported')).toHaveLength(1));
+      expect(screen.getByRole('button', { name: /importing 1 of 2/i })).toBeInTheDocument();
+
+      resolveSecond(
+        new Response(JSON.stringify({ gameId: 'game-y', analysisId: 'analysis-y' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' }
+        })
+      );
+
+      await waitFor(() => expect(screen.getByText('Games')).toBeInTheDocument());
+    });
+
     // Engine analysis has no AI/BYOK-unlock dependency, so a bulk import
     // queues it per game exactly like a single-game import does — no
     // deferAnalysis, no manual "Get coach analysis" click needed afterward.
@@ -355,11 +520,15 @@ describe('ImportPage', () => {
       expect(await screen.findByText('Games')).toBeInTheDocument();
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/games',
-        expect.objectContaining({ body: JSON.stringify({ pgn: 'pgn-1', source: 'lichess' }) })
+        expect.objectContaining({
+          body: JSON.stringify({ pgn: 'pgn-1', source: 'lichess', playedAt: '2026-07-20T10:00:00.000Z' })
+        })
       );
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/games',
-        expect.objectContaining({ body: JSON.stringify({ pgn: 'pgn-2', source: 'lichess' }) })
+        expect.objectContaining({
+          body: JSON.stringify({ pgn: 'pgn-2', source: 'lichess', playedAt: '2026-07-21T10:00:00.000Z' })
+        })
       );
     });
 

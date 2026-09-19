@@ -11,6 +11,7 @@ import {
   type TacticMotifType
 } from '@freechesscoach/shared';
 import { aggregateOpeningStats } from './aggregate-opening-stats.js';
+import { aggregateRatingStats } from './aggregate-rating-stats.js';
 import type { StatsEntry } from './stats-entry.js';
 
 export type { EndgameStandingRow, EndgameStats, EndgameThemeRow, StatsDashboard, StrategyStats } from '@freechesscoach/shared';
@@ -113,6 +114,7 @@ export function buildStatsDashboard(entries: StatsEntry[]): StatsDashboard {
     opening: aggregateOpeningStats(entries),
     tactics: aggregateTacticMotifs(entries),
     strategy: aggregateStrategyStats(entries),
-    endgame: aggregateEndgameStats(entries)
+    endgame: aggregateEndgameStats(entries),
+    rating: aggregateRatingStats(entries)
   };
 }

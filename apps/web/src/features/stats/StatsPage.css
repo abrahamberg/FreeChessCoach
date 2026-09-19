@@ -186,6 +186,40 @@
   text-align: right;
 }
 
+.rating-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.rating-chart__border {
+  stroke: var(--color-border);
+}
+
+.rating-chart__gridline {
+  stroke: var(--color-border);
+  stroke-dasharray: 2 3;
+}
+
+.rating-chart__line {
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.rating-chart__point {
+  fill: var(--color-surface);
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
+
+.rating-chart__y-label,
+.rating-chart__x-label {
+  fill: var(--color-text-secondary);
+  font-size: 10px;
+}
+
 .stats-section__show-more {
   margin-top: var(--space-3);
   min-height: auto;

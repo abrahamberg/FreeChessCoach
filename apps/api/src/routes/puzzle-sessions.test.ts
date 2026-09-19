@@ -185,4 +185,85 @@ describe('puzzle-sessions routes (Task 59.4)', () => {
     });
     expect(detail.json().status).toBe('completed');
   }, 15000);
+
+  async function setupSolvableAssignment(email: string) {
+    const user = await usersRepo.insert(db, { email, displayName: 'Ann' });
+    const assignment = await puzzleAssignmentsRepo.insert(db, {
+      userId: user.id,
+      diagnosisCode: 'TA-07',
+      reason: 'You missed several knight forks recently.',
+      items: [
+        {
+          puzzleId: 'legal1',
+          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          // 1.e4 e5 — the setup move (e2e4) is auto-applied, so the
+          // student's one real move (e7e5) completes the line.
+          moves: ['e2e4', 'e7e5'],
+          rating: 1500,
+          themes: ['fork'],
+          result: 'pending'
+        }
+      ]
+    });
+    return { user, assignment };
+  }
+
+  test('POST /api/puzzle-sessions/:id/advance-item completes the session once the line is solved, with no coach turn involved', async () => {
+    const { user, assignment } = await setupSolvableAssignment('advance-item@example.com');
+    const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(instantTextModel('x')) });
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/puzzle-sessions',
+      headers: headersFor(user),
+      payload: { assignmentId: assignment.id }
+    });
+
+    await app.inject({
+      method: 'POST',
+      url: `/api/puzzle-sessions/${created.json().id}/attempt-move`,
+      headers: headersFor(user),
+      payload: { san: 'e5', uci: 'e7e5' }
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/puzzle-sessions/${created.json().id}/advance-item`,
+      headers: headersFor(user)
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ itemIndex: 0, isLastItem: true });
+    const detail = await app.inject({
+      method: 'GET',
+      url: `/api/puzzle-sessions/${created.json().id}`,
+      headers: headersFor(user)
+    });
+    expect(detail.json().status).toBe('completed');
+    expect(detail.json().assignment.items[0].result).toBe('solved');
+  });
+
+  test('POST /api/puzzle-sessions/:id/advance-item rejects before the line is actually complete', async () => {
+    const { user, assignment } = await setupSolvableAssignment('advance-item-early@example.com');
+    const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(instantTextModel('x')) });
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/puzzle-sessions',
+      headers: headersFor(user),
+      payload: { assignmentId: assignment.id }
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/puzzle-sessions/${created.json().id}/advance-item`,
+      headers: headersFor(user)
+    });
+
+    expect(response.statusCode).toBe(409);
+    const detail = await app.inject({
+      method: 'GET',
+      url: `/api/puzzle-sessions/${created.json().id}`,
+      headers: headersFor(user)
+    });
+    expect(detail.json().status).toBe('active');
+  });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { TACTIC_MOTIF_TYPES } from './game-report.js';
-import { GameSpeedFilterSchema, StatsDashboardSchema, StatsRangeSchema } from './stats-dashboard.js';
+import { GameSpeedFilterSchema, RatingStatsSchema, StatsDashboardSchema, StatsRangeSchema } from './stats-dashboard.js';
 
 function zeroTacticMotifCounts() {
   return Object.fromEntries(TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }]));
@@ -21,6 +21,13 @@ function buildFixture() {
       overallAccuracy: 70,
       byStanding: [{ standing: 'winning', gamesPlayed: 2, winPct: 50 }],
       byTheme: [{ theme: 'kingAndPawn', gamesPlayed: 2, accuracy: 70 }]
+    },
+    rating: {
+      gamesWithEstimate: 2,
+      points: [
+        { playedAt: '2026-08-01T00:00:00.000Z', estimatedRating: 1480 },
+        { playedAt: '2026-08-12T00:00:00.000Z', estimatedRating: 1520 }
+      ]
     }
   };
 }
@@ -51,7 +58,8 @@ describe('StatsDashboardSchema', () => {
       opening: { averageBookMoves: null, openingAccuracy: null, averageOpeningMistakes: null, performanceByOpening: [] },
       tactics: zeroTacticMotifCounts(),
       strategy: { overall: null, pawnStructure: null, spaceAdvantage: null, activePiece: null, attacking: null, defending: null },
-      endgame: { overallAccuracy: null, byStanding: [], byTheme: [] }
+      endgame: { overallAccuracy: null, byStanding: [], byTheme: [] },
+      rating: { gamesWithEstimate: 0, points: [] }
     };
 
     expect(StatsDashboardSchema.safeParse(empty).success).toBe(true);
@@ -61,5 +69,16 @@ describe('StatsDashboardSchema', () => {
     const fixture = buildFixture();
     fixture.opening.performanceByOpening[0]!.winPct = 150;
     expect(StatsDashboardSchema.safeParse(fixture).success).toBe(false);
+  });
+});
+
+describe('RatingStatsSchema', () => {
+  test('accepts an empty trend', () => {
+    expect(RatingStatsSchema.safeParse({ gamesWithEstimate: 0, points: [] }).success).toBe(true);
+  });
+
+  test('rejects a point with a non-integer estimated rating', () => {
+    const fixture = { gamesWithEstimate: 1, points: [{ playedAt: '2026-08-01T00:00:00.000Z', estimatedRating: 1450.5 }] };
+    expect(RatingStatsSchema.safeParse(fixture).success).toBe(false);
   });
 });

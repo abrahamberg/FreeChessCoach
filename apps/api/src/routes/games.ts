@@ -9,7 +9,7 @@ import type { JobQueue } from '../jobs/queue.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { pgnFilename } from '../lib/pgn-filename.js';
 import { composeGameReport } from '../services/game-report.js';
-import { importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
+import { getDailyImportUsage, importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
 import { deleteGameForUser, listGamesForUser, promoteGame } from '../services/games.js';
 import { getGameTacticBaselineNote } from '../services/stats-dashboard.js';
 import * as userProfileService from '../services/user-profile.js';
@@ -38,6 +38,14 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
   app.get('/api/games', async (request) => {
     const user = await userProfileService.getOrCreate(db, request.user);
     return listGamesForUser(db, user.id);
+  });
+
+  // Games page's "Import games" section (Task: quota indicator) — a static
+  // path, so Fastify's radix router matches it ahead of the /:id param
+  // route below regardless of registration order.
+  app.get('/api/games/import-quota', async (request) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    return getDailyImportUsage(db, user.id);
   });
 
   app.get<{ Params: { id: string } }>('/api/games/:id', async (request) => {

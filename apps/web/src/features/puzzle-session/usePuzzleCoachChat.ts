@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CoachMessage, CoachToolCall } from '../../hooks/useCoachChat.js';
-import { readCoachStream } from '../../hooks/coachStream.js';
+import { readCoachStream, readProblemDetailTitle } from '../../hooks/coachStream.js';
 import { encodeAnnotationNote, type AnnotationNoteState } from '../chat/positionDivider.js';
 import { encodeDivergedLineStart } from '../chat/divergedLine.js';
 
@@ -15,6 +15,14 @@ export interface UsePuzzleCoachChatOptions {
    * fired once its result streams in, so the page can advance the board to
    * the next item (or notice the session just completed). */
   onServerToolResult?: (toolName: string, output: unknown) => void;
+  /** Same contract as useCoachChat's own onUnlockRequired/onSetupRequired —
+   * fires when a turn fails because the AI is locked, or was never set up at
+   * all. Previously this hook had neither check at all: a non-ok response
+   * (a plain problem+json body, not an SSE stream) was piped straight into
+   * readCoachStream, which silently failed and left the coach's bubble
+   * permanently blank with no explanation to the student. */
+  onUnlockRequired?: (retry: () => Promise<void>) => void;
+  onSetupRequired?: () => void;
 }
 
 export interface UsePuzzleCoachChatResult {
@@ -88,14 +96,32 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
         if (controller.signal.aborted) return;
         throw error;
       }
-      if (!response.body) {
-        inFlightRef.current.delete(controller);
-        return;
-      }
 
       const assistantId = crypto.randomUUID();
       let assistantText = '';
       setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', text: '' }]);
+
+      // Same "must check response.ok before treating the body as an SSE
+      // stream" contract as useCoachChat's own postTurn — a thrown error
+      // (no AI set up, or a locked setup) never reaches the stream at all.
+      if (!response.ok) {
+        inFlightRef.current.delete(controller);
+        const reason = await readProblemDetailTitle(response);
+        setMessages((prev) => prev.map((message) => (message.id === assistantId ? { ...message, text: reason } : message)));
+        if (response.status === 400 && /set up your ai/i.test(reason)) {
+          options.onSetupRequired?.();
+        } else if (response.status === 400 && /unlock your ai setup/i.test(reason)) {
+          options.onUnlockRequired?.(async () => {
+            setMessages((prev) => prev.filter((message) => message.id !== assistantId));
+            await postTurn(body);
+          });
+        }
+        return;
+      }
+      if (!response.body) {
+        inFlightRef.current.delete(controller);
+        return;
+      }
 
       try {
         await readCoachStream(response.body, {

@@ -90,6 +90,17 @@
   margin-left: 16px;
 }
 
+/* Takes the checkbox's place once that row's own bulk-import request has
+ * settled — the visual "checking off" that shows the batch progressing
+ * game by game instead of the whole list sitting frozen until it's done. */
+.remote-game-picker__imported {
+  margin-left: 16px;
+  width: 16px;
+  text-align: center;
+  color: var(--color-success);
+  font-weight: 700;
+}
+
 .remote-game-picker button {
   flex: 1;
   min-width: 0;
@@ -103,7 +114,8 @@
   text-align: left;
 }
 
-.remote-game-picker li input[type='checkbox'] + button {
+.remote-game-picker li input[type='checkbox'] + button,
+.remote-game-picker li .remote-game-picker__imported + button {
   padding-left: 0;
 }
 

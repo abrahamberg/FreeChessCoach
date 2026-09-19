@@ -61,12 +61,25 @@ const PLAY_MODE_GAME = {
   reviewTier: 'coach'
 };
 
-function renderGamesPage(games: unknown[] = GAMES_RESPONSE, { deleteStatus = 204 }: { deleteStatus?: number } = {}) {
+function renderGamesPage(
+  games: unknown[] = GAMES_RESPONSE,
+  { deleteStatus = 204, practiceAssignments = [] as unknown[] }: { deleteStatus?: number; practiceAssignments?: unknown[] } = {}
+) {
   let currentGames = games;
   const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
     if (path === '/api/games') {
       return Promise.resolve(
         new Response(JSON.stringify(currentGames), { status: 200, headers: { 'content-type': 'application/json' } })
+      );
+    }
+    if (path === '/api/games/import-quota') {
+      return Promise.resolve(
+        new Response(JSON.stringify({ used: 3, limit: 10 }), { status: 200, headers: { 'content-type': 'application/json' } })
+      );
+    }
+    if (path === '/api/puzzle-assignments') {
+      return Promise.resolve(
+        new Response(JSON.stringify(practiceAssignments), { status: 200, headers: { 'content-type': 'application/json' } })
       );
     }
     if (path === '/api/sessions') {
@@ -122,6 +135,7 @@ function renderGamesPage(games: unknown[] = GAMES_RESPONSE, { deleteStatus = 204
           <Route path="/session/:id" element={<div>session-page-marker</div>} />
           <Route path="/bot-session/:id" element={<div>bot-session-page-marker</div>} />
           <Route path="/review/:gameId" element={<div>review-page-marker</div>} />
+          <Route path="/practice/:assignmentId" element={<div>practice-page-marker</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -153,13 +167,25 @@ describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source
     expect(screen.getByText('Marta')).toBeInTheDocument();
   });
 
-  test('the "Add games" CTA navigates to Import', async () => {
+  test('the "Import games" section shows every import path and each shortcut navigates to its Import tab', async () => {
     const user = userEvent.setup();
     renderGamesPage();
     await screen.findByText('daniel');
 
-    await user.click(screen.getByRole('link', { name: /add games/i }));
+    const importSection = screen.getByRole('region', { name: /import games/i });
+    for (const label of [/lichess/i, /chess\.com/i, /paste pgn/i, /upload pgn/i]) {
+      expect(within(importSection).getByRole('link', { name: label })).toBeInTheDocument();
+    }
+
+    await user.click(within(importSection).getByRole('link', { name: /lichess/i }));
     expect(await screen.findByText('import-page-marker')).toBeInTheDocument();
+  });
+
+  test('the "Import games" section shows how much of today\'s import quota has been used', async () => {
+    renderGamesPage();
+    await screen.findByText('daniel');
+
+    expect(await screen.findByText(/3 of 10 imported today/i)).toBeInTheDocument();
   });
 
   test('the "Review" action on a ready game navigates to its Review page without touching sessions', async () => {
@@ -249,6 +275,37 @@ describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source
     renderGamesPage();
     await screen.findByText('daniel');
     expect(screen.queryByRole('heading', { name: 'Continue' })).not.toBeInTheDocument();
+  });
+
+  test('an open practice assignment shows under "Continue", linking to the practice session', async () => {
+    const user = userEvent.setup();
+    renderGamesPage(GAMES_RESPONSE, {
+      practiceAssignments: [
+        {
+          id: 'assignment-1',
+          userId: 'u1',
+          diagnosisCode: 'TA-07',
+          reason: 'You missed several knight forks recently.',
+          items: [
+            { puzzleId: 'p1', fen: 'fen-1', moves: ['e2e4'], rating: 1500, themes: ['fork'], result: 'solved' },
+            { puzzleId: 'p2', fen: 'fen-2', moves: ['e2e4'], rating: 1500, themes: ['fork'], result: 'pending' }
+          ],
+          status: 'in_progress',
+          createdAt: '2026-08-01T00:00:00.000Z',
+          startedAt: '2026-08-01T00:00:00.000Z',
+          completedAt: null
+        }
+      ]
+    });
+    await screen.findByText('daniel');
+
+    const continueSection = screen.getByRole('region', { name: 'Continue' });
+    expect(continueSection).toHaveTextContent('You missed several knight forks recently.');
+    expect(continueSection).toHaveTextContent('1 of 2 puzzles');
+
+    await user.click(within(continueSection).getByRole('button', { name: 'Continue' }));
+
+    expect(await screen.findByText('practice-page-marker')).toBeInTheDocument();
   });
 
   test('shows a friendly empty state with no games and no dummy data', async () => {

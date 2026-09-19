@@ -1,13 +1,21 @@
-import { GameListResponseSchema, PromoteGameResponseSchema, isTopReviewTier, type GameListItem } from '@freechesscoach/shared';
+import {
+  GameListResponseSchema,
+  ImportQuotaResponseSchema,
+  PromoteGameResponseSchema,
+  isTopReviewTier,
+  type GameListItem
+} from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiDelete, apiGet, apiPost } from '../../api/client.js';
-import { PlusIcon } from '../../components/Icon.js';
 import { useActiveAnalyses } from '../../hooks/useActiveAnalyses.js';
+import { usePracticeAssignments } from '../dashboard/usePracticeAssignments.js';
 import { ContinueSessionCard } from './ContinueSessionCard.js';
 import { GameRow, sourceGroupFor, type SourceGroup } from './GameRow.js';
+import { ImportShortcuts } from './ImportShortcuts.js';
+import { PracticeContinueCard } from './PracticeContinueCard.js';
 import './GamesPage.css';
 
 const SessionSummarySchema = z.object({ id: z.string() });
@@ -28,15 +36,17 @@ const SOURCE_TABS: { key: SourceTab; label: string }[] = [
   { key: 'coached', label: 'Coached' }
 ];
 
-/** design.md §4.1: Games (home) — a single "Add games" CTA, an in-progress
- * "Continue" section, the game list, and a no-dummy-data empty state. Owns
- * fetching (AGENTS.md rule 7); GameRow/ContinueSessionCard are
- * presentational. One filter row, not two: a second row filtering by status
- * (Ready/Analyzing/…) used to sit under the source tabs, but with a status
- * badge already on every card and most students' lists small enough to just
- * scan, stacking a second segmented control under the first read as chrome
- * for its own sake — the exact "tabs as primary IA" clutter this redesign
- * was meant to remove. */
+/** design.md §4.1: Games (home) — an "Import games" section (every import
+ * path, one click away, replacing the old single "Add games" button as the
+ * page's primary CTA), an in-progress "Continue" section, the game list,
+ * and a no-dummy-data empty state. Owns fetching (AGENTS.md rule 7);
+ * GameRow/ContinueSessionCard/ImportShortcuts are presentational. One
+ * filter row, not two: a second row filtering by status (Ready/Analyzing/…)
+ * used to sit under the source tabs, but with a status badge already on
+ * every card and most students' lists small enough to just scan, stacking
+ * a second segmented control under the first read as chrome for its own
+ * sake — the exact "tabs as primary IA" clutter this redesign was meant to
+ * remove. */
 export function GamesPage(): ReactNode {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -47,6 +57,24 @@ export function GamesPage(): ReactNode {
     queryFn: ({ signal }) => apiGet('/api/games', GameListResponseSchema, signal)
   });
   const games = gamesQuery.data ?? [];
+
+  // Coach-assigned focused-practice sets (Task 59.3's background job) are
+  // exactly the kind of unfinished thing the "Continue" section below
+  // already exists for — previously only ever surfaced on the dashboard's
+  // own PracticeCard, leaving a student who came back to Games with no way
+  // to see a practice set still open ("Practice ready" showing nowhere near
+  // where they actually landed).
+  const practiceAssignmentsQuery = usePracticeAssignments();
+  const practiceAssignments = practiceAssignmentsQuery.data ?? [];
+
+  // Feeds ImportShortcuts' "N of 10 imported today" — a separate query
+  // (not derived from `games` above) since the rolling-24h count the
+  // backend enforces isn't just "games with today's date" and shouldn't be
+  // reimplemented client-side (see game-import.ts's getDailyImportUsage).
+  const importQuotaQuery = useQuery({
+    queryKey: ['import-quota'],
+    queryFn: ({ signal }) => apiGet('/api/games/import-quota', ImportQuotaResponseSchema, signal)
+  });
 
   // A row stuck on "Analyzing…" used to only ever clear on a manual reload
   // or a window-focus refetch — nothing on this page ever learned that a
@@ -143,6 +171,7 @@ export function GamesPage(): ReactNode {
 
   const inProgressGames = games.filter((game) => game.sessionId !== null);
   const visibleGames = games.filter((game) => tab === 'all' || sourceGroupFor(game.source) === tab);
+  const hasContinueItems = inProgressGames.length > 0 || practiceAssignments.length > 0;
 
   return (
     <div className="page games-page">
@@ -151,13 +180,9 @@ export function GamesPage(): ReactNode {
           <h1>Games</h1>
           <p className="games-page__description">Review your games and continue coaching sessions.</p>
         </div>
-        <div className="games-page__header-actions">
-          <Link to="/import" className="btn-primary">
-            <PlusIcon width={16} height={16} />
-            Add games
-          </Link>
-        </div>
       </header>
+
+      <ImportShortcuts quota={importQuotaQuery.data} />
 
       {gamesQuery.isLoading && <p>Loading…</p>}
       {gamesQuery.isError && <p>Could not load your games.</p>}
@@ -174,10 +199,17 @@ export function GamesPage(): ReactNode {
       {copyPgnMutation.isError && <p>Could not copy the PGN — try again.</p>}
       {coachMutation.isError && <p>Could not start a coaching session — try again.</p>}
 
-      {inProgressGames.length > 0 && (
+      {hasContinueItems && (
         <section aria-label="Continue">
           <h2 className="games-page__section-heading">Continue</h2>
           <div className="games-page__list">
+            {practiceAssignments.map((assignment) => (
+              <PracticeContinueCard
+                key={assignment.id}
+                assignment={assignment}
+                onContinue={(assignmentId) => navigate(`/practice/${assignmentId}`)}
+              />
+            ))}
             {inProgressGames.map((game) => (
               <ContinueSessionCard key={game.id} game={game} onContinue={handleContinue} />
             ))}

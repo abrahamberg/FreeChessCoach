@@ -33,6 +33,11 @@
   white-space: nowrap;
 }
 
+.continue-session-card__meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
 .continue-session-card button {
   flex: none;
 }

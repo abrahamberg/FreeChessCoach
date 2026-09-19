@@ -26,7 +26,7 @@ export interface RemoteImportPanelProps {
   onStatBankModeChange: (enabled: boolean) => void;
   lichess: RemoteSourceState<LichessRecentGame>;
   chesscom: RemoteSourceState<ChesscomRecentGame>;
-  onSelect: (pgn: string) => void;
+  onSelect: (pgn: string, playedAt: string | null) => void;
   bulkSelection: RemoteGamePickerBulkSelection;
   bulkResult?: BulkResult;
 }

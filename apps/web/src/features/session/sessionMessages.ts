@@ -6,6 +6,12 @@ import type { SessionMessageSchema } from './sessionPageSchemas.js';
 
 export const SESSION_START_MARKER = '[session_start]';
 
+/** Matches bot-undo.ts's `UNDO_NOTICE_PREFIX` — a self-serve Undo's note to
+ * the coach (board position + FEN), hidden here for the same reason
+ * SESSION_START_MARKER is: the student never typed it, it exists only so
+ * the coach's next turn reads it back. */
+const UNDO_NOTICE_PREFIX = '[undo]';
+
 /** A persisted message's `content` is either the AI SDK's parts array or (for
  * plain user turns, e.g. the synthesized session-start marker) a bare string. */
 export function extractText(content: unknown): string {
@@ -70,7 +76,7 @@ export function toCoachMessages(
       const role = message.role as 'user' | 'assistant';
       const text = extractText(message.content);
       const entries: CoachMessage[] = [];
-      if (text.trim() !== '' && text !== SESSION_START_MARKER) {
+      if (text.trim() !== '' && text !== SESSION_START_MARKER && !text.startsWith(UNDO_NOTICE_PREFIX)) {
         entries.push({ id: message.id, role, text });
       }
       if (role === 'assistant') {

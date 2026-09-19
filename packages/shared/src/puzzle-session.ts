@@ -94,8 +94,20 @@ export const AttemptPuzzleMoveResponseSchema = z.object({
   fen: z.string(),
   currentPly: z.number().int().nonnegative(),
   /** True once `currentPly` has reached the end of the item's solution
-   * line — informational only, `advance_puzzle` (the coach's own tool
-   * call) still decides when to actually leave this item. */
+   * line. The coach's own `advance_puzzle` tool call can still move the
+   * session on at any point (e.g. discussing the win before leaving), but
+   * once this is true the client also offers a "next puzzle" action
+   * (`POST /api/puzzle-sessions/:id/advance-item`) so the student is never
+   * stuck waiting on the coach's own turn to progress. */
   lineComplete: z.boolean()
 });
 export type AttemptPuzzleMoveResponse = z.infer<typeof AttemptPuzzleMoveResponseSchema>;
+
+/** Response for `POST /api/puzzle-sessions/:id/advance-item` — the same
+ * shape the coach's `advance_puzzle` tool result carries
+ * (PuzzleItemAdvanceResult, apps/api/src/services/puzzle-item-advance.ts). */
+export const AdvancePuzzleItemResponseSchema = z.object({
+  itemIndex: z.number().int().nonnegative(),
+  isLastItem: z.boolean()
+});
+export type AdvancePuzzleItemResponse = z.infer<typeof AdvancePuzzleItemResponseSchema>;

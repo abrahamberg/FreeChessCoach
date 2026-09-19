@@ -92,3 +92,18 @@ async function dispatchChunk(
     handlers.onError(String(chunk.errorText ?? 'An error occurred.'));
   }
 }
+
+/** A thrown error (e.g. "set up your AI") never reaches the SSE stream at
+ * all — it's a plain problem+json response instead (the coaching route
+ * awaits `startTurn`/`startPuzzleTurn` before `reply.hijack()`s the
+ * response). Shared by useCoachChat and usePuzzleCoachChat, whose `postTurn`
+ * both need to read this instead of trying to parse the error body as an
+ * SSE frame. */
+export async function readProblemDetailTitle(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as { title?: string };
+    return body.title || 'Something went wrong sending that message.';
+  } catch {
+    return 'Something went wrong sending that message.';
+  }
+}

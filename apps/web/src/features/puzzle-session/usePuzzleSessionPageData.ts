@@ -1,9 +1,16 @@
 import { applySanSequence, applyUciSequence } from '@freechesscoach/chess-analysis';
-import { PuzzleSessionDetailSchema, PuzzleSessionSchema, type PuzzleSessionDetail } from '@freechesscoach/shared';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import {
+  AdvancePuzzleItemResponseSchema,
+  PuzzleSessionDetailSchema,
+  PuzzleSessionSchema,
+  type PuzzleSessionDetail
+} from '@freechesscoach/shared';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiGet, apiPost } from '../../api/client.js';
 import type { CoachToolCall } from '../../hooks/useCoachChat.js';
+import { useUnlockLlmSetup } from '../../hooks/useUnlockLlmSetup.js';
 import { useAnnotationLayer, type AnnotationState } from '../board/AnnotationLayer.js';
 import type { LocalMoveInfo } from '../board/CoachBoard.js';
 import { useHintMoves } from '../board/useHintMoves.js';
@@ -118,8 +125,16 @@ export function usePuzzleSessionPageData(assignmentId: string) {
   // whether it was active at the moment a real attempt is submitted.
   const hint = useHintMoves(boardFen);
 
-  function handleMoveAttemptResult(result: { accepted: boolean; fen: string; currentPly: number }): void {
+  // True once attempt-move reports the current item's line fully played out
+  // — drives the "next puzzle" action (advanceItem below), a deterministic
+  // way to move on that doesn't depend on the coach's own advance_puzzle
+  // tool call ever firing. Reset the moment the item itself changes (a fresh
+  // item is never already complete).
+  const [lineComplete, setLineComplete] = useState(false);
+
+  function handleMoveAttemptResult(result: { accepted: boolean; fen: string; currentPly: number; lineComplete: boolean }): void {
     setPreviewFen(null);
+    if (result.accepted) setLineComplete(result.lineComplete);
     if (!result.accepted || sessionId === undefined) return;
     queryClient.setQueryData<PuzzleSessionDetail>(['puzzle-session', sessionId], (old) =>
       old ? { ...old, currentFen: result.fen, currentPly: result.currentPly } : old
@@ -127,6 +142,23 @@ export function usePuzzleSessionPageData(assignmentId: string) {
   }
 
   const moveAttempt = usePuzzleMoveAttempt(sessionId ?? '', (content) => void chat.sendMessage(content), handleMoveAttemptResult);
+
+  const advanceItemMutation = useMutation({
+    mutationFn: () => apiPost(`/api/puzzle-sessions/${sessionId}/advance-item`, {}, AdvancePuzzleItemResponseSchema),
+    onSuccess: () => {
+      setLineComplete(false);
+      if (sessionId !== undefined) void queryClient.invalidateQueries({ queryKey: ['puzzle-session', sessionId] });
+    },
+    // A 409 here means the coach's own advance_puzzle tool call already won
+    // the race (advancePuzzleItem's idempotency guard rejects a second
+    // advance past the same item) — refetch to pick up wherever it actually
+    // landed instead of leaving the button spinning on a request that will
+    // never succeed as sent.
+    onError: () => {
+      setLineComplete(false);
+      if (sessionId !== undefined) void queryClient.invalidateQueries({ queryKey: ['puzzle-session', sessionId] });
+    }
+  });
 
   /** Disjoint tool ownership, same discipline useSessionPageData's
    * handleCoachToolCall uses: annotate_board and show_position are handled
@@ -152,15 +184,64 @@ export function usePuzzleSessionPageData(assignmentId: string) {
     annotations.clear();
     setBoardMode('answer');
     setViewedPly(null);
+    setLineComplete(false);
     void queryClient.invalidateQueries({ queryKey: ['puzzle-session', sessionId] });
   }
+
+  // Same setup-required/unlock-required popups as the real coach session
+  // (useSessionPageData.ts) — this hook previously had neither wired up at
+  // all, so a student with no AI configured got a permanently blank coach
+  // bubble and no way to know why (see usePuzzleCoachChat.ts).
+  const navigate = useNavigate();
+  const unlock = useUnlockLlmSetup();
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const pendingRetryRef = useRef<(() => Promise<void>) | null>(null);
+  const handleUnlockRequired = useCallback((retry: () => Promise<void>) => {
+    pendingRetryRef.current = retry;
+    setShowUnlockModal(true);
+  }, []);
+
+  const [showSetupRequiredModal, setShowSetupRequiredModal] = useState(false);
+  const handleSetupRequired = useCallback(() => {
+    setShowSetupRequiredModal(true);
+  }, []);
+
+  const setupRequiredModal = {
+    isOpen: showSetupRequiredModal,
+    onClose: () => setShowSetupRequiredModal(false),
+    onGoToSettings: () => {
+      setShowSetupRequiredModal(false);
+      void navigate('/settings#settings-api-keys');
+    }
+  };
 
   const initialMessages = data ? toPuzzleCoachMessages(data.messages) : undefined;
   const chat = usePuzzleCoachChat(sessionId ?? '', {
     onToolCall: handleCoachToolCall,
     onServerToolResult: handleServerToolResult,
+    onUnlockRequired: handleUnlockRequired,
+    onSetupRequired: handleSetupRequired,
     initialMessages
   });
+
+  const unlockModal = {
+    isOpen: showUnlockModal,
+    isPending: unlock.isPending,
+    isSuccess: unlock.isSuccess,
+    errorMessage: unlock.errorMessage,
+    onUnlock: unlock.unlock,
+    onClose: () => {
+      setShowUnlockModal(false);
+      unlock.reset();
+    },
+    onUnlocked: () => {
+      setShowUnlockModal(false);
+      unlock.reset();
+      const retry = pendingRetryRef.current;
+      pendingRetryRef.current = null;
+      void retry?.();
+    }
+  };
 
   function handleUserMove(san: string, fen: string, uci: string): void {
     if (!data) return;
@@ -243,6 +324,13 @@ export function usePuzzleSessionPageData(assignmentId: string) {
     historyPositions,
     currentPly: data?.currentPly ?? 0,
     viewedPly,
-    selectHistoryPly
+    selectHistoryPly,
+    items: data?.assignment.items ?? [],
+    currentItemIndex: data?.currentItemIndex ?? 0,
+    lineComplete,
+    isAdvancingItem: advanceItemMutation.isPending,
+    advanceToNextItem: () => advanceItemMutation.mutate(),
+    setupRequiredModal,
+    unlockModal
   };
 }

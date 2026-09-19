@@ -1,5 +1,6 @@
-import { parsePgn } from '@freechesscoach/chess-analysis';
+import { parsePgn, plyToMoveRef } from '@freechesscoach/chess-analysis';
 import * as gamesRepo from '../../db/repositories/games.js';
+import * as sessionMessagesRepo from '../../db/repositories/session-messages.js';
 import * as sessionsRepo from '../../db/repositories/sessions.js';
 import type { SessionRow } from '../../db/repositories/sessions.js';
 import { NotFoundError } from '../../lib/errors.js';
@@ -8,6 +9,43 @@ import { undoLastMove, type PlayMovesDependencies } from '../play-moves.js';
 export interface UndoBotTurnResult {
   fen: string;
   ply: number;
+}
+
+/** Matched by apps/web's sessionMessages.ts to hide this note from the
+ * visible transcript, same convention as coach-agent-session.ts's
+ * `[session_start]`. */
+export const UNDO_NOTICE_PREFIX = '[undo]';
+
+/**
+ * The self-serve Undo button (routes/sessions.ts's /undo-move) runs outside
+ * any coach turn — unlike the `undo_last_move` tool, which the coach calls
+ * itself mid-turn and so already knows about, this leaves the coach with no
+ * chance to react in the moment. Without this note, the next turn's
+ * `currentEpisode` (lib/episodes.ts) scan finds the transcript's tail still
+ * tagged at the pre-undo ply and starts a silent, unexplained fresh episode
+ * — the coach just resumes as if the position had always been this way, with
+ * no idea the student changed their mind. Inserting this at `newPly` (a
+ * plain `session_messages` append, never touching the removed ply's own
+ * rows — see play-moves.ts's undoLastMove doc comment on why those stay
+ * untouched) makes it the first thing the coach reads once the conversation
+ * picks back up, in the same 'user'-role, ply-tagged shape every other
+ * synthetic marker in this transcript already uses.
+ *
+ * `game.annotatedPgn`/`pgn` and `session_move_notes` are already corrected
+ * by `undoLastMove` itself for every popped ply — this note exists purely to
+ * surface the *event* in the conversation the coach replays, not to fix any
+ * stale board/analysis data.
+ */
+function undoNoticeContent(newPly: number, fen: string): string {
+  if (newPly === 0) {
+    return `${UNDO_NOTICE_PREFIX} The student took back their move. The game is back to the starting position. FEN: ${fen}`;
+  }
+  const { moveNumber, color } = plyToMoveRef(newPly);
+  const nextMover = color === 'white' ? 'Black' : 'White';
+  return (
+    `${UNDO_NOTICE_PREFIX} The student took back their last move. The game is back to the position right after ` +
+    `${color}'s move ${moveNumber}. It's ${nextMover} to move. FEN: ${fen}`
+  );
 }
 
 /**
@@ -55,6 +93,11 @@ export async function undoLastBotTurn(
   const newPly = result.removedPly - 1;
 
   await sessionsRepo.updateSubjectAndCurrentPly(deps.db, session.id, newPly);
+  // play_bot has no coach to inform (BotSessionPage is chat-less — see its
+  // own doc comment); only 'play' replays a transcript a coach reads back.
+  if (session.mode === 'play') {
+    await sessionMessagesRepo.insert(deps.db, session.id, 'user', undoNoticeContent(newPly, result.fen), newPly);
+  }
   return { fen: result.fen, ply: newPly };
 }
 

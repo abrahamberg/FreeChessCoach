@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import type { Database } from '../db/schema.js';
 import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js';
+import * as puzzleSessionsRepo from '../db/repositories/puzzle-sessions.js';
 import * as usersRepo from '../db/repositories/users.js';
 import { buildPuzzleSessionTools, type PuzzleSessionToolsContext } from './puzzle-session-tools.js';
 
@@ -46,11 +47,12 @@ describe('puzzle-session-tools (Task 59.4)', () => {
         }
       ]
     });
-    return { userId: user.id, assignment };
+    const session = await puzzleSessionsRepo.insertSession(db, { assignmentId: assignment.id, userId: user.id });
+    return { userId: user.id, assignment, session };
   }
 
   test('the tool set has show_position but no check_position, recall_move, or record_move_note', () => {
-    const tools = buildPuzzleSessionTools({ userId: 'u1', assignmentId: 'a1', currentItemIndex: 0 }, { db });
+    const tools = buildPuzzleSessionTools({ userId: 'u1', assignmentId: 'a1', sessionId: 's1', currentItemIndex: 0 }, { db });
     expect(Object.keys(tools).sort()).toEqual([
       'advance_puzzle',
       'annotate_board',
@@ -62,7 +64,7 @@ describe('puzzle-session-tools (Task 59.4)', () => {
   });
 
   test('check_moves answers from the board alone, so the coach never judges a student\'s proposed move from memory', async () => {
-    const tools = buildPuzzleSessionTools({ userId: 'u1', assignmentId: 'a1', currentItemIndex: 0 }, { db });
+    const tools = buildPuzzleSessionTools({ userId: 'u1', assignmentId: 'a1', sessionId: 's1', currentItemIndex: 0 }, { db });
 
     const result = await tools.check_moves?.execute?.(
       { fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', moves: ['Nf6'] },
@@ -73,15 +75,15 @@ describe('puzzle-session-tools (Task 59.4)', () => {
   });
 
   test('annotate_board, expect_move, hypothetical_line are client tools with no execute', () => {
-    const tools = buildPuzzleSessionTools({ userId: 'u1', assignmentId: 'a1', currentItemIndex: 0 }, { db });
+    const tools = buildPuzzleSessionTools({ userId: 'u1', assignmentId: 'a1', sessionId: 's1', currentItemIndex: 0 }, { db });
     expect(tools.annotate_board?.execute).toBeUndefined();
     expect(tools.expect_move?.execute).toBeUndefined();
     expect(tools.hypothetical_line?.execute).toBeUndefined();
   });
 
   test('advance_puzzle records the result on the current item and reports isLastItem: false when more remain', async () => {
-    const { userId, assignment } = await makeAssignment();
-    const ctx: PuzzleSessionToolsContext = { userId, assignmentId: assignment.id, currentItemIndex: 0 };
+    const { userId, assignment, session } = await makeAssignment();
+    const ctx: PuzzleSessionToolsContext = { userId, assignmentId: assignment.id, sessionId: session.id, currentItemIndex: 0 };
     const tools = buildPuzzleSessionTools(ctx, { db });
 
     const result = await tools.advance_puzzle?.execute?.({ result: 'solved' }, TOOL_OPTIONS);
@@ -93,8 +95,9 @@ describe('puzzle-session-tools (Task 59.4)', () => {
   });
 
   test('advance_puzzle reports isLastItem: true on the final item', async () => {
-    const { userId, assignment } = await makeAssignment();
-    const ctx: PuzzleSessionToolsContext = { userId, assignmentId: assignment.id, currentItemIndex: 1 };
+    const { userId, assignment, session } = await makeAssignment();
+    await puzzleSessionsRepo.advanceItemIndex(db, session.id, 1);
+    const ctx: PuzzleSessionToolsContext = { userId, assignmentId: assignment.id, sessionId: session.id, currentItemIndex: 1 };
     const tools = buildPuzzleSessionTools(ctx, { db });
 
     const result = await tools.advance_puzzle?.execute?.({ result: 'failed' }, TOOL_OPTIONS);
@@ -103,7 +106,12 @@ describe('puzzle-session-tools (Task 59.4)', () => {
   });
 
   test('advance_puzzle throws for an unknown assignment id', async () => {
-    const ctx: PuzzleSessionToolsContext = { userId: 'u1', assignmentId: crypto.randomUUID(), currentItemIndex: 0 };
+    const ctx: PuzzleSessionToolsContext = {
+      userId: 'u1',
+      assignmentId: crypto.randomUUID(),
+      sessionId: 's1',
+      currentItemIndex: 0
+    };
     const tools = buildPuzzleSessionTools(ctx, { db });
 
     await expect(tools.advance_puzzle?.execute?.({ result: 'skipped' }, TOOL_OPTIONS)).rejects.toThrow();

@@ -28,7 +28,9 @@ function renderAt(path: string) {
 describe('AppRoutes', () => {
   test.each([
     ['/import', /import/i],
-    ['/games', /games/i],
+    // Not /games/i alone: GamesPage's own "Import games" section heading
+    // matches that too, and would match ambiguously.
+    ['/games', /^games$/i],
     // Not /play/i alone: PlayPage's own destination cards ("Play with
     // Coach", "Play a Bot") are headings too, and would match ambiguously.
     ['/play', /^play$/i]
@@ -52,6 +54,6 @@ describe('AppRoutes', () => {
 
   test('redirects the root path to /games', () => {
     renderAt('/');
-    expect(screen.getByRole('heading', { name: /games/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^games$/i })).toBeInTheDocument();
   });
 });

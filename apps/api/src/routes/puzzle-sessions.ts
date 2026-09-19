@@ -1,4 +1,5 @@
 import {
+  AdvancePuzzleItemResponseSchema,
   AttemptPuzzleMoveRequestSchema,
   AttemptPuzzleMoveResponseSchema,
   CreatePuzzleSessionRequestSchema,
@@ -12,6 +13,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../lib/errors.js'
 import { pipeCoachStreamToResponse } from '../llm/stream-response.js';
 import { getPuzzleSessionDetail, resumeOrCreatePuzzleSession } from '../services/puzzle-session.js';
 import { commitPuzzleMoveAttempt } from '../services/puzzle-move-commit.js';
+import { advancePuzzleItem } from '../services/puzzle-item-advance.js';
 import { startPuzzleTurn, type PuzzleTurnDependencies } from '../services/puzzle-session-turn.js';
 import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js';
 import * as puzzleSessionsRepo from '../db/repositories/puzzle-sessions.js';
@@ -66,6 +68,30 @@ export function registerPuzzleSessionsRoutes(app: FastifyInstance, db: Kysely<Da
 
     const result = await commitPuzzleMoveAttempt(db, session, assignment, parsed.data.uci);
     return AttemptPuzzleMoveResponseSchema.parse(result);
+  });
+
+  // Deterministic, LLM-free "move on" action: the client offers this once
+  // /attempt-move reports lineComplete, so a student is never stuck waiting
+  // on the coach's own advance_puzzle tool call. Only ever records "solved"
+  // (this is a completion action, not a way to skip a puzzle early) and only
+  // once the line is actually complete server-side — never trusts the client
+  // on that fact. advancePuzzleItem's own idempotency guard makes this safe
+  // to call even if the coach's tool call already moved the session on.
+  app.post<{ Params: { id: string } }>('/api/puzzle-sessions/:id/advance-item', async (request) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    const session = await puzzleSessionsRepo.findSessionByIdForUser(db, request.params.id, user.id);
+    if (!session) throw new NotFoundError('Puzzle session not found');
+    if (session.status !== 'active') throw new ConflictError('This session is not active');
+
+    const assignment = await puzzleAssignmentsRepo.findById(db, session.assignmentId);
+    if (!assignment) throw new NotFoundError('Assignment not found');
+
+    const item = assignment.items[session.currentItemIndex];
+    if (!item) throw new ConflictError('This session has no current puzzle — it may already be complete');
+    if (session.currentPly < item.moves.length) throw new ConflictError('This puzzle is not solved yet');
+
+    const result = await advancePuzzleItem(db, assignment, session, session.currentItemIndex, 'solved');
+    return AdvancePuzzleItemResponseSchema.parse(result);
   });
 
   app.post<{ Params: { id: string } }>('/api/puzzle-sessions/:id/messages', async (request, reply) => {

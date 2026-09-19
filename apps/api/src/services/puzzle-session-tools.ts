@@ -11,13 +11,16 @@ import { inspectMoves } from '@freechesscoach/chess-analysis';
 import type { Kysely } from 'kysely';
 import { tool, type ToolSet } from '../llm/tools.js';
 import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js';
+import * as puzzleSessionsRepo from '../db/repositories/puzzle-sessions.js';
 import type { Database } from '../db/schema.js';
 import { NotFoundError } from '../lib/errors.js';
 import { createTurnGuardState, withTurnGuards } from './coach-tool-guards.js';
+import { advancePuzzleItem, type PuzzleItemAdvanceResult } from './puzzle-item-advance.js';
 
 export interface PuzzleSessionToolsContext {
   userId: string;
   assignmentId: string;
+  sessionId: string;
   /** The item this turn started on — fixed for the whole turn, same
    * "buildCoachTools called once per turn" contract coach-tools.ts uses for
    * gameId/sessionId. advance_puzzle records its result against exactly
@@ -111,11 +114,14 @@ interface AdvancePuzzleArgs {
   result: AdvancePuzzleResult;
 }
 
-export interface AdvancePuzzleToolResult {
-  itemIndex: number;
-  isLastItem: boolean;
-}
+export type AdvancePuzzleToolResult = PuzzleItemAdvanceResult;
 
+/** Advances synchronously inside tool execution — not deferred to the
+ * turn's `onFinish` (as it used to be) — so the assignment/session write is
+ * already committed by the time this tool's result streams to the client;
+ * a client that refetches the instant it sees that result (usePuzzleSession
+ * PageData's handleServerToolResult) is guaranteed to read the new state,
+ * not race an async write that hasn't landed yet. */
 async function advancePuzzleTool(
   deps: PuzzleSessionToolsDependencies,
   ctx: PuzzleSessionToolsContext,
@@ -123,9 +129,8 @@ async function advancePuzzleTool(
 ): Promise<AdvancePuzzleToolResult> {
   const assignment = await puzzleAssignmentsRepo.findById(deps.db, ctx.assignmentId);
   if (!assignment) throw new NotFoundError('Assignment not found');
+  const session = await puzzleSessionsRepo.findSessionById(deps.db, ctx.sessionId);
+  if (!session) throw new NotFoundError('Puzzle session not found');
 
-  const items = assignment.items.map((item, index) => (index === ctx.currentItemIndex ? { ...item, result: args.result } : item));
-  await puzzleAssignmentsRepo.updateItems(deps.db, ctx.assignmentId, items);
-
-  return { itemIndex: ctx.currentItemIndex, isLastItem: ctx.currentItemIndex >= items.length - 1 };
+  return advancePuzzleItem(deps.db, assignment, session, ctx.currentItemIndex, args.result);
 }

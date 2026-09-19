@@ -357,6 +357,46 @@ describe('POST/GET /api/games', () => {
     expect((game.moveTimes as unknown[]).length).toBeGreaterThan(0);
   });
 
+  test('falls back to the client-supplied playedAt when the PGN carries no Date/UTCDate header', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('ann-client-date@example.com', 'Ann');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white', playedAt: '2026-08-01T00:00:00.000Z' }
+    });
+
+    expect(response.statusCode).toBe(200);
+    const game = await db
+      .selectFrom('games')
+      .selectAll()
+      .where('id', '=', response.json().gameId)
+      .executeTakeFirstOrThrow();
+    expect(game.playedAt?.toISOString()).toBe('2026-08-01T00:00:00.000Z');
+  });
+
+  test('prefers the PGN\'s own Date header over a client-supplied playedAt when both are present', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('ann-header-wins@example.com', 'Ann');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: LICHESS_ANNOTATED_PGN, source: 'paste', userColor: 'white', playedAt: '2020-01-01T00:00:00.000Z' }
+    });
+
+    expect(response.statusCode).toBe(200);
+    const game = await db
+      .selectFrom('games')
+      .selectAll()
+      .where('id', '=', response.json().gameId)
+      .executeTakeFirstOrThrow();
+    expect(game.playedAt?.toISOString()).toBe('2026-08-12T00:00:00.000Z');
+  });
+
   test('rejects an illegal PGN as 400 problem+json', async () => {
     const app = buildTestApp();
     const headers = headersFor('illegal@example.com', 'Illegal');
@@ -524,6 +564,29 @@ describe('POST/GET /api/games', () => {
     const eleventh = await importOnce(10);
     expect(eleventh.statusCode).toBe(429);
     expect(eleventh.headers['content-type']).toContain('application/problem+json');
+  });
+
+  test('GET /api/games/import-quota reports how much of the rolling 10/day limit has been used', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('quota@example.com', 'Quota');
+
+    const before = await app.inject({ method: 'GET', url: '/api/games/import-quota', headers });
+    expect(before.statusCode).toBe(200);
+    expect(before.json()).toEqual({ used: 0, limit: 10 });
+
+    for (let i = 0; i < 3; i++) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/games',
+        headers,
+        payload: { pgn: VALID_PGN.replace('[Event "Test"]', `[Event "Test"]\n[Round "${i}"]`), source: 'paste', userColor: 'white' }
+      });
+      expect(response.statusCode).toBe(200);
+    }
+
+    const after = await app.inject({ method: 'GET', url: '/api/games/import-quota', headers });
+    expect(after.statusCode).toBe(200);
+    expect(after.json()).toEqual({ used: 3, limit: 10 });
   });
 
   test('GET /api/games lists only the current user\'s games; GET /api/games/:id returns one with analysis status', async () => {

@@ -45,6 +45,11 @@ interface Fixture {
   currentPly?: number;
   currentFen?: string;
   messages?: Array<{ id: string; role: 'user' | 'assistant' | 'tool'; content: unknown; itemIndex: number | null }>;
+  /** Forces attempt-move's response to report the line as fully played out
+   * on an accepted move, regardless of how many moves the fixture's LINE
+   * actually has — isolates the "next puzzle" UI from needing a realistic
+   * multi-move solve in every test that exercises it. */
+  lineCompleteOnAccept?: boolean;
 }
 
 function assignment() {
@@ -107,10 +112,13 @@ function mockFetch(fixture: Fixture = {}, streamParts: string[] = textFrames('He
       return Promise.resolve(
         jsonResponse(
           accepted
-            ? { accepted: true, fen: AFTER_E4_E5_NF3, currentPly: 3, lineComplete: false }
+            ? { accepted: true, fen: AFTER_E4_E5_NF3, currentPly: 3, lineComplete: fixture.lineCompleteOnAccept ?? false }
             : { accepted: false, fen: AFTER_E4, currentPly: 1, lineComplete: false }
         )
       );
+    }
+    if (path === '/api/puzzle-sessions/ps-1/advance-item' && init?.method === 'POST') {
+      return Promise.resolve(jsonResponse({ itemIndex: fixture.currentItemIndex ?? 0, isLastItem: false }));
     }
     if (path === '/api/puzzle-sessions/ps-1/messages' && init?.method === 'POST') {
       return Promise.resolve(streamResponse(streamParts));
@@ -196,7 +204,7 @@ describe('PuzzleSessionPage (Task 59.6)', () => {
     expect(await screen.findByText("Let's look at this fork.")).toBeInTheDocument();
   });
 
-  test('shows a completion state and a way back to the dashboard once the session is completed', async () => {
+  test('shows a completion popup naming the assigned focus area, with a way back to the dashboard', async () => {
     vi.stubGlobal(
       'fetch',
       mockFetch({
@@ -206,7 +214,8 @@ describe('PuzzleSessionPage (Task 59.6)', () => {
     );
     renderPage();
 
-    expect(await screen.findByText(/finished this practice set/i)).toBeInTheDocument();
+    expect(await screen.findByText(/you did it/i)).toBeInTheDocument();
+    expect(screen.getByText(/knight forks in your last few games/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /back to progress/i })).toBeInTheDocument();
   });
 
@@ -291,5 +300,33 @@ describe('PuzzleSessionPage (Task 59.6)', () => {
 
     await waitFor(() => expect(capturedOptions.at(-1)?.position).not.toBe(AFTER_E4));
     expect(fetchMock.mock.calls.some((call) => call[0] === '/api/puzzle-sessions/ps-1/attempt-move')).toBe(false);
+  });
+
+  test('shows a numbered status for each assigned puzzle, current one highlighted', async () => {
+    vi.stubGlobal('fetch', mockFetch({ messages: [] }));
+    renderPage();
+
+    await screen.findByTestId('mock-chessboard');
+    const first = screen.getByTitle(/puzzle 1 —/i);
+    const second = screen.getByTitle(/puzzle 2 —/i);
+    expect(first).toHaveAttribute('aria-current', 'true');
+    expect(second).not.toHaveAttribute('aria-current');
+  });
+
+  test('a "next puzzle" action appears once the line is complete, and does not depend on the coach calling advance_puzzle', async () => {
+    const fetchMock = mockFetch({ messages: [], lineCompleteOnAccept: true });
+    vi.stubGlobal('fetch', fetchMock);
+    renderPage();
+    await screen.findByTestId('mock-chessboard');
+    await waitFor(() => expect(capturedOptions.at(-1)?.position).toBe(AFTER_E4));
+
+    dropPiece('e7', 'e5');
+
+    const nextButton = await screen.findByRole('button', { name: /next puzzle/i });
+    act(() => nextButton.click());
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/puzzle-sessions/ps-1/advance-item', expect.objectContaining({ method: 'POST' }))
+    );
   });
 });

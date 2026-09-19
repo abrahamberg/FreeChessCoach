@@ -60,7 +60,14 @@ export const ImportGameRequestSchema = z.object({
    * job at import time, so bulk-importing games for the stats dashboard
    * doesn't force a full coaching session's worth of engine work per game.
    * Defaults to `false` — every existing call site is unaffected. */
-  deferAnalysis: z.boolean().optional()
+  deferAnalysis: z.boolean().optional(),
+  /** The date the game was actually played, as already known by the client
+   * (e.g. a Lichess/Chess.com API's own `createdAt`, surfaced on
+   * `LichessRecentGame`/`ChesscomRecentGame`) — used only as a fallback when
+   * the PGN text itself carries no (or a partial) `Date`/`UTCDate` header, so
+   * a remote-picked game doesn't lose its date just because the export
+   * omitted it. A PGN header always wins when both are present. */
+  playedAt: z.string().nullable().optional()
 });
 export type ImportGameRequest = z.infer<typeof ImportGameRequestSchema>;
 
@@ -71,6 +78,16 @@ export const ImportGameResponseSchema = z.object({
   analysisId: z.string().min(1).nullable()
 });
 export type ImportGameResponse = z.infer<typeof ImportGameResponseSchema>;
+
+/** GET /api/games/import-quota: the rolling-24h import limit (game-import.ts's
+ * `assertUnderDailyLimit`) surfaced for display — e.g. Games page's "3 of 10
+ * imported today" — rather than only ever showing up as a 429 on the 11th
+ * attempt. */
+export const ImportQuotaResponseSchema = z.object({
+  used: z.number().int().nonnegative(),
+  limit: z.number().int().positive()
+});
+export type ImportQuotaResponse = z.infer<typeof ImportQuotaResponseSchema>;
 
 /** design.md §4.2: "From Lichess" picker row — same shape ImportGameRequestSchema
  * needs (pgn, source: 'lichess') plus display fields for the row itself. */

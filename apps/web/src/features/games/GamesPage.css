@@ -15,12 +15,6 @@
   color: var(--color-text-secondary);
 }
 
-.games-page__header-actions {
-  display: flex;
-  gap: var(--space-2);
-  flex: 0 0 auto;
-}
-
 /* One segmented pill row (Daniel: "[All] [Imported] [Bot]", not a browser-
  * style underlined tab strip) — source is metadata riding along on each
  * card already, so this filter is a light touch, not a second navigation
@@ -80,10 +74,6 @@
 @media (max-width: 639px) {
   .games-page__header {
     flex-direction: column;
-  }
-
-  .games-page__header-actions a {
-    width: 100%;
   }
 
   /* Four source tabs don't fit a phone width unwrapped, and the page has no

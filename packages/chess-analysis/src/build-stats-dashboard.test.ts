@@ -170,5 +170,27 @@ describe('buildStatsDashboard', () => {
     expect(dashboard.endgame.byStanding).toEqual([]);
     expect(dashboard.endgame.byTheme).toEqual([]);
     expect(dashboard.tactics.fork).toEqual({ opportunities: 0, found: 0 });
+    expect(dashboard.rating).toEqual({ gamesWithEstimate: 0, points: [] });
+  });
+
+  test('feeds the dashboard\'s rating trend with one point per game, in date order', () => {
+    const entries: StatsEntry[] = [
+      entry({
+        gameReport: buildGameReport({ white: { estimatedRating: { value: 1620, range: [1370, 1870], confidence: 'medium' } } }),
+        playedAt: new Date('2026-08-12T00:00:00Z')
+      }),
+      entry({
+        gameReport: buildGameReport({ white: { estimatedRating: { value: 1250, range: [1000, 1500], confidence: 'medium' } } }),
+        playedAt: new Date('2026-08-01T00:00:00Z')
+      })
+    ];
+
+    const rating = buildStatsDashboard(entries).rating;
+
+    expect(rating.gamesWithEstimate).toBe(2);
+    expect(rating.points).toEqual([
+      { playedAt: '2026-08-01T00:00:00.000Z', estimatedRating: 1250 },
+      { playedAt: '2026-08-12T00:00:00.000Z', estimatedRating: 1620 }
+    ]);
   });
 });

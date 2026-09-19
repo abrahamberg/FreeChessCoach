@@ -1,6 +1,6 @@
 import { moveRefToPly } from '@freechesscoach/chess-analysis';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { readCoachStream } from './coachStream.js';
+import { readCoachStream, readProblemDetailTitle } from './coachStream.js';
 import { encodeDivergedLineStart } from '../features/chat/divergedLine.js';
 import { encodeAnnotationNote, encodePositionDivider, sanForPly, type AnnotationNoteState } from '../features/chat/positionDivider.js';
 
@@ -79,21 +79,6 @@ const SERVER_TOOL_RESULT_NAMES = new Set(['play_coach_move', 'undo_last_move']);
  * informational — the coach uses it to decide, nothing to render. */
 function isServerToolResultName(toolName: string): boolean {
   return SERVER_TOOL_RESULT_NAMES.has(toolName);
-}
-
-/** A non-ok POST /api/sessions/:id/messages response is the fastify
- * error-mapper's problem+json body (`{ title, status }`) — `title` is always
- * written to be read by a user (e.g. "Unlock your AI setup..."), same
- * convention the import flow's AnalysisProgress error surfacing already
- * relies on. Falls back to a generic message if the body isn't JSON at all
- * (a network-level failure never reaching the API). */
-async function readProblemDetailTitle(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { title?: string };
-    return body.title || 'Something went wrong sending that message.';
-  } catch {
-    return 'Something went wrong sending that message.';
-  }
 }
 
 /** Drives POST /api/sessions/:id/messages (architecture §7.2). Reads the

@@ -63,11 +63,32 @@ export const EndgameStatsSchema = z.object({
 });
 export type EndgameStats = z.infer<typeof EndgameStatsSchema>;
 
+/** One game's estimated rating (docs/algorith.md §8), placed on the
+ * estimated-rating trend by when it was actually played — explicitly a
+ * per-game point, never a day/period average. */
+export const RatingHistoryPointSchema = z.object({
+  playedAt: z.string(),
+  estimatedRating: z.number().int()
+});
+export type RatingHistoryPoint = z.infer<typeof RatingHistoryPointSchema>;
+
+export const RatingStatsSchema = z.object({
+  /** Of the games in the requested range/speed, how many actually landed a
+   * plotted point — a game is left out of `points` (not silently averaged
+   * into one) when it has no estimate at all (docs/algorith.md §8.5: fewer
+   * than 12 non-book moves) or no known `playedAt` to place it by. */
+  gamesWithEstimate: z.number().int().nonnegative(),
+  /** Chronological, oldest first. */
+  points: z.array(RatingHistoryPointSchema)
+});
+export type RatingStats = z.infer<typeof RatingStatsSchema>;
+
 export const StatsDashboardSchema = z.object({
   gamesAnalyzed: z.number().int().nonnegative(),
   opening: OpeningStatsSchema,
   tactics: TacticMotifCountsSchema,
   strategy: StrategyStatsSchema,
-  endgame: EndgameStatsSchema
+  endgame: EndgameStatsSchema,
+  rating: RatingStatsSchema
 });
 export type StatsDashboard = z.infer<typeof StatsDashboardSchema>;

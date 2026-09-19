@@ -97,7 +97,7 @@ export async function importGame(
     result: parsed.headers['Result'] ?? null,
     timeControl,
     eco: parsed.headers['ECO'] ?? null,
-    playedAt: parsePlayedAt(parsed.headers),
+    playedAt: parsePlayedAt(parsed.headers) ?? parseClientPlayedAt(request.playedAt),
     whiteElo: headerMetadata.whiteElo,
     blackElo: headerMetadata.blackElo,
     ratingsProvisional: headerMetadata.ratingsProvisional,
@@ -164,11 +164,21 @@ function detectPlatform(
   return null;
 }
 
-async function assertUnderDailyLimit(db: Kysely<Database>, userId: string): Promise<void> {
+/** GET /api/games/import-quota: how much of the rolling-24h import limit a
+ * student has used, surfaced on the Games page so the limit shows up as a
+ * running count ("3 of 10 imported today") instead of only ever appearing
+ * as a 429 on the 11th attempt. Shares its count query with
+ * `assertUnderDailyLimit` below so the two can never drift apart. */
+export async function getDailyImportUsage(db: Kysely<Database>, userId: string): Promise<{ used: number; limit: number }> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const count = await gamesRepo.countImportsSince(db, userId, since);
-  if (count >= DAILY_IMPORT_LIMIT) {
-    throw new RateLimitError('Import limit reached (10 games/day)');
+  const used = await gamesRepo.countImportsSince(db, userId, since);
+  return { used, limit: DAILY_IMPORT_LIMIT };
+}
+
+async function assertUnderDailyLimit(db: Kysely<Database>, userId: string): Promise<void> {
+  const { used, limit } = await getDailyImportUsage(db, userId);
+  if (used >= limit) {
+    throw new RateLimitError(`Import limit reached (${limit} games/day)`);
   }
 }
 
@@ -179,5 +189,15 @@ function parsePlayedAt(headers: Record<string, string>): Date | null {
   if (!raw || !/^\d{4}\.\d{2}\.\d{2}$/.test(raw)) return null;
   const iso = raw.replaceAll('.', '-');
   const date = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** `request.playedAt`'s fallback half of `parsePlayedAt(parsed.headers) ??
+ * parseClientPlayedAt(...)` above — an ISO string the client already
+ * resolved from a remote API, so this only needs to guard against a missing
+ * or malformed value, not parse a chess-PGN date format. */
+function parseClientPlayedAt(raw: string | null | undefined): Date | null {
+  if (!raw) return null;
+  const date = new Date(raw);
   return Number.isNaN(date.getTime()) ? null : date;
 }

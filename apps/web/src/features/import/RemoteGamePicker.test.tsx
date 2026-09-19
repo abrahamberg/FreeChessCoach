@@ -15,7 +15,7 @@ const GAMES = [
 ];
 
 describe('RemoteGamePicker', () => {
-  test('renders a row per game (same format as the games list) and selecting it calls onSelect with its pgn', async () => {
+  test('renders a row per game (same format as the games list) and selecting it calls onSelect with its pgn and playedAt', async () => {
     const onSelect = vi.fn();
     const user = userEvent.setup();
     render(<RemoteGamePicker games={GAMES} isLoading={false} isLinked={true} linkPrompt="Link your account." onSelect={onSelect} />);
@@ -24,7 +24,7 @@ describe('RemoteGamePicker', () => {
     expect(screen.getByText(/marta/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /daniel.*marta/is }));
-    expect(onSelect).toHaveBeenCalledWith(GAMES[0]!.pgn);
+    expect(onSelect).toHaveBeenCalledWith(GAMES[0]!.pgn, GAMES[0]!.playedAt);
   });
 
   test('shows the given link-account prompt when the user has no linked username', () => {
@@ -113,7 +113,30 @@ describe('RemoteGamePicker', () => {
       );
 
       await user.click(screen.getByRole('button', { name: /daniel.*marta/is }));
-      expect(onSelect).toHaveBeenCalledWith(GAMES[0]!.pgn);
+      expect(onSelect).toHaveBeenCalledWith(GAMES[0]!.pgn, GAMES[0]!.playedAt);
+    });
+
+    test('a settled importedId shows a checkmark in place of its checkbox and the button reports progress', () => {
+      render(
+        <RemoteGamePicker
+          games={GAMES}
+          isLoading={false}
+          isLinked={true}
+          linkPrompt="Link your account."
+          onSelect={vi.fn()}
+          bulkSelection={{
+            selectedIds: new Set(['abcd1234']),
+            onToggle: vi.fn(),
+            onImportSelected: vi.fn(),
+            isImporting: true,
+            importedIds: new Set(['abcd1234'])
+          }}
+        />
+      );
+
+      expect(screen.getByLabelText('Imported')).toBeInTheDocument();
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Importing 1 of 1…' })).toBeInTheDocument();
     });
 
     test('the "Import N for stat bank" button is disabled with no selection and calls onImportSelected when clicked', async () => {
