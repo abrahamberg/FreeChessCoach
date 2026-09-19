@@ -273,10 +273,19 @@ export interface PuzzleSessionMessagesTable {
   createdAt: Generated<Date>;
 }
 
+/** 0041_game_import_events.ts — append-only import ledger the daily/weekly
+ * limits count. No link to `games` on purpose. */
+export interface GameImportEventsTable {
+  id: Generated<string>;
+  userId: string;
+  createdAt: Date;
+}
+
 export interface Database {
   users: UsersTable;
   userLlmSetups: UserLlmSetupsTable;
   games: GamesTable;
+  gameImportEvents: GameImportEventsTable;
   analyses: AnalysesTable;
   sessions: SessionsTable;
   sessionMessages: SessionMessagesTable;

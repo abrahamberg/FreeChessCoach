@@ -39,6 +39,7 @@ import * as candidateMoments from './migrations/0037_candidate_moments.js';
 import * as pausedAnalysisStatus from './migrations/0038_paused_analysis_status.js';
 import * as focusAreaPrimary from './migrations/0039_focus_area_primary.js';
 import * as puzzleSessionPly from './migrations/0040_puzzle_session_ply.js';
+import * as gameImportEvents from './migrations/0041_game_import_events.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -82,7 +83,8 @@ const provider: MigrationProvider = {
       '0037_candidate_moments': candidateMoments,
       '0038_paused_analysis_status': pausedAnalysisStatus,
       '0039_focus_area_primary': focusAreaPrimary,
-      '0040_puzzle_session_ply': puzzleSessionPly
+      '0040_puzzle_session_ply': puzzleSessionPly,
+      '0041_game_import_events': gameImportEvents
     })
 };
 

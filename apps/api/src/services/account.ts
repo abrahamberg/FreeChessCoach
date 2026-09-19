@@ -2,6 +2,7 @@ import type { Kysely } from 'kysely';
 import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
+import * as gameImportEventsRepo from '../db/repositories/game-import-events.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as llmSetupsRepo from '../db/repositories/llm-setups.js';
 import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js';
@@ -13,8 +14,8 @@ import { cascadeDeleteGame } from './games.js';
 /** Permanently deletes a user and everything that hangs off their account:
  * every game via the same `cascadeDeleteGame` `deleteGameForUser` uses,
  * plus the account-scoped rows no game cascade reaches — puzzle
- * assignments/sessions/messages, focus areas, diagnostic profiles, any
- * finding left without a `gameId`, and the LLM setup (which also carries
+ * assignments/sessions/messages, focus areas, diagnostic profiles, the
+ * import ledger, any finding left without a `gameId`, and the LLM setup (which also carries
  * its own DB-level `ON DELETE CASCADE`, see 0036_passphrase_llm_setup.ts,
  * but is deleted explicitly here to match this cascade's own discipline).
  * Wrapped in one transaction so a mid-cascade failure can't leave a
@@ -36,6 +37,7 @@ export async function deleteAccount(db: Kysely<Database>, userId: string): Promi
     await findingsRepo.deleteByUserId(trx, userId);
     await focusAreasRepo.deleteByUserId(trx, userId);
     await diagnosticProfilesRepo.deleteByUserId(trx, userId);
+    await gameImportEventsRepo.deleteByUserId(trx, userId);
     await llmSetupsRepo.remove(trx, userId);
 
     await usersRepo.remove(trx, userId);

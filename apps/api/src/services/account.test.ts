@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
+import * as gameImportEventsRepo from '../db/repositories/game-import-events.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as llmSetupsRepo from '../db/repositories/llm-setups.js';
 import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js';
@@ -97,6 +98,8 @@ describe('account service', () => {
     const puzzleSession = await puzzleSessionsRepo.insertSession(db, { assignmentId: assignment.id, userId: user.id });
     await puzzleSessionsRepo.insertMessage(db, puzzleSession.id, 'user', { text: 'hi' });
 
+    await gameImportEventsRepo.record(db, user.id, new Date());
+
     await llmSetupsRepo.upsert(db, user.id, Buffer.from('cipher'), Buffer.from('iv'), Buffer.from('salt'));
 
     return { userId: user.id, gameId: game.id, sessionId: session.id, puzzleSessionId: puzzleSession.id, assignmentId: assignment.id };
@@ -131,6 +134,9 @@ describe('account service', () => {
       puzzleSessionsRepo.listMessagesBySession(db, seeded.puzzleSessionId)
     ).resolves.toHaveLength(0);
     expect(await llmSetupsRepo.findByUser(db, seeded.userId)).toBeUndefined();
+    await expect(
+      db.selectFrom('gameImportEvents').selectAll().where('userId', '=', seeded.userId).execute()
+    ).resolves.toHaveLength(0);
   });
 
   test('leaves other users\' data intact', async () => {
