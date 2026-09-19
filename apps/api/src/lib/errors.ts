@@ -1,3 +1,5 @@
+import type { ImportLimitKind } from '@freechesscoach/shared';
+
 export abstract class HttpError extends Error {
   abstract readonly status: number;
 }
@@ -20,6 +22,18 @@ export class ConflictError extends HttpError {
 
 export class RateLimitError extends HttpError {
   readonly status = 429;
+}
+
+/** An import blocked by one of the import limits; `limit` says which, so the
+ * client can show the right advice (wait a day, wait a week, or finish
+ * analyzing what's already imported). */
+export class ImportLimitError extends RateLimitError {
+  constructor(
+    message: string,
+    readonly limit: ImportLimitKind
+  ) {
+    super(message);
+  }
 }
 
 /** Thrown when the resolved engine backend cannot serve a request right now

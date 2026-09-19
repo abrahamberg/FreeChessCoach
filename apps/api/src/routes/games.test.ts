@@ -1,5 +1,14 @@
 import { buildAnnotatedPgn } from '@freechesscoach/chess-analysis';
-import { BOT_ROSTER, TACTIC_MOTIF_TYPES, type CoachingPlan, type GameReport } from '@freechesscoach/shared';
+import {
+  BOT_ROSTER,
+  DAILY_IMPORT_LIMIT,
+  MAX_IN_FLIGHT_IMPORTS,
+  MAX_LIBRARY_GAMES,
+  TACTIC_MOTIF_TYPES,
+  WEEKLY_IMPORT_LIMIT,
+  type CoachingPlan,
+  type GameReport
+} from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildApp } from '../app.js';
@@ -540,14 +549,11 @@ describe('POST/GET /api/games', () => {
     expect(response.json().missing).toBe('userColor');
   });
 
-  test('rate limits at 10 imports/day, returning 429 on the 11th', async () => {
+  test('an import blocked by a limit is a 429 problem+json naming which limit', async () => {
     const app = buildTestApp();
     const headers = headersFor('prolific@example.com', 'Prolific');
-    // Distinct PGN text per call (a varying Round header) — the dedup guard
-    // (findByUserAndPgn) would otherwise resolve every repeat of the same
-    // exact PGN to the same existing game rather than counting toward the
-    // limit, which is exactly the behavior under test here: 11 genuinely
-    // different games.
+    // Distinct PGN text per call (a varying Round header): the dedup guard
+    // would otherwise resolve a repeat of the same PGN to the existing game.
     const importOnce = (round: number) =>
       app.inject({
         method: 'POST',
@@ -556,23 +562,30 @@ describe('POST/GET /api/games', () => {
         payload: { pgn: VALID_PGN.replace('[Event "Test"]', `[Event "Test"]\n[Round "${round}"]`), source: 'paste', userColor: 'white' }
       });
 
-    for (let i = 0; i < 10; i++) {
-      const response = await importOnce(i);
-      expect(response.statusCode).toBe(200);
+    // Every import queues an analysis (nothing runs it here), so the
+    // in-flight cap is the first limit the 11th import hits.
+    for (let i = 0; i < MAX_IN_FLIGHT_IMPORTS; i++) {
+      expect((await importOnce(i)).statusCode).toBe(200);
     }
 
-    const eleventh = await importOnce(10);
-    expect(eleventh.statusCode).toBe(429);
-    expect(eleventh.headers['content-type']).toContain('application/problem+json');
+    const blocked = await importOnce(MAX_IN_FLIGHT_IMPORTS);
+    expect(blocked.statusCode).toBe(429);
+    expect(blocked.headers['content-type']).toContain('application/problem+json');
+    expect(blocked.json().limit).toBe('in_flight');
   });
 
-  test('GET /api/games/import-quota reports how much of the rolling 10/day limit has been used', async () => {
+  test('GET /api/games/import-quota reports every limit and how much of it is used', async () => {
     const app = buildTestApp();
     const headers = headersFor('quota@example.com', 'Quota');
 
     const before = await app.inject({ method: 'GET', url: '/api/games/import-quota', headers });
     expect(before.statusCode).toBe(200);
-    expect(before.json()).toEqual({ used: 0, limit: 10 });
+    expect(before.json()).toEqual({
+      daily: { used: 0, limit: DAILY_IMPORT_LIMIT },
+      weekly: { used: 0, limit: WEEKLY_IMPORT_LIMIT },
+      inFlight: { used: 0, limit: MAX_IN_FLIGHT_IMPORTS },
+      library: { used: 0, limit: MAX_LIBRARY_GAMES, autoDeleteCount: 0 }
+    });
 
     for (let i = 0; i < 3; i++) {
       const response = await app.inject({
@@ -586,7 +599,12 @@ describe('POST/GET /api/games', () => {
 
     const after = await app.inject({ method: 'GET', url: '/api/games/import-quota', headers });
     expect(after.statusCode).toBe(200);
-    expect(after.json()).toEqual({ used: 3, limit: 10 });
+    expect(after.json()).toEqual({
+      daily: { used: 3, limit: DAILY_IMPORT_LIMIT },
+      weekly: { used: 3, limit: WEEKLY_IMPORT_LIMIT },
+      inFlight: { used: 3, limit: MAX_IN_FLIGHT_IMPORTS },
+      library: { used: 3, limit: MAX_LIBRARY_GAMES, autoDeleteCount: 0 }
+    });
   });
 
   test('GET /api/games lists only the current user\'s games; GET /api/games/:id returns one with analysis status', async () => {

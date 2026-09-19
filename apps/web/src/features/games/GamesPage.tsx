@@ -46,7 +46,7 @@ export function GamesPage(): ReactNode {
 
   return (
     <div className="page games-page">
-      <ImportShortcuts quota={importQuotaQuery.data} />
+      <ImportShortcuts quota={importQuotaQuery.data?.daily} />
 
       {recentQuery.isLoading && <p>Loading…</p>}
       {recentQuery.isError && <p>Could not load your games.</p>}

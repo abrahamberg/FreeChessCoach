@@ -9,11 +9,12 @@ import {
 import type { ImportGameRequest, PlayerColor } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
+import * as gameImportEventsRepo from '../db/repositories/game-import-events.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
-import { RateLimitError } from '../lib/errors.js';
 import type { JobQueue } from '../jobs/queue.js';
+import { assertCanImport } from './import-quota.js';
 
 export { InvalidPgnError } from '@freechesscoach/chess-analysis';
 
@@ -22,8 +23,6 @@ export class MissingUserColorError extends Error {
     super('Could not determine which side is the user; pass userColor explicitly.');
   }
 }
-
-const DAILY_IMPORT_LIMIT = 10;
 
 export interface ImportGameResult {
   gameId: string;
@@ -76,7 +75,10 @@ export async function importGame(
   const duplicate = await gamesRepo.findByUserAndPgn(db, userId, request.pgn);
   if (duplicate) return resultForExistingGame(db, jobQueue, duplicate.id, request.deferAnalysis);
 
-  await assertUnderDailyLimit(db, userId);
+  // Soft cap: two concurrent imports from separate tabs can each pass the
+  // in-flight check and land at 11. The client imports sequentially, and a
+  // hard cap would need a per-user advisory lock — deliberately not done.
+  await assertCanImport(db, userId);
 
   const parsed = parsePgn(request.pgn);
   const userColor = request.userColor ?? detectUserColor(parsed.headers, usernames) ?? undefined;
@@ -84,20 +86,35 @@ export async function importGame(
 
   await learnPlatformUsername(db, userId, request.source, parsed.headers, usernames, userColor);
 
-  const timeControl = parsed.headers['TimeControl'] ?? null;
-  const headerMetadata = parseGameHeaders(parsed.headers);
-  const moveTimes = extractPgnMoveComments(request.pgn);
-  const game = await gamesRepo.insert(db, {
+  const game = await recordImportedGame(db, buildGameValues(userId, request, parsed.headers, userColor));
+
+  if (request.deferAnalysis) {
+    return { gameId: game.id, analysisId: null };
+  }
+
+  const { analysisId } = await startAnalysis(db, jobQueue, game.id);
+  return { gameId: game.id, analysisId };
+}
+
+function buildGameValues(
+  userId: string,
+  request: ImportGameRequest,
+  headers: Record<string, string>,
+  userColor: PlayerColor
+): Parameters<typeof gamesRepo.insert>[1] {
+  const timeControl = headers['TimeControl'] ?? null;
+  const headerMetadata = parseGameHeaders(headers);
+  return {
     userId,
     pgn: request.pgn,
     source: request.source,
     userColor,
-    whiteName: parsed.headers['White'] ?? null,
-    blackName: parsed.headers['Black'] ?? null,
-    result: parsed.headers['Result'] ?? null,
+    whiteName: headers['White'] ?? null,
+    blackName: headers['Black'] ?? null,
+    result: headers['Result'] ?? null,
     timeControl,
-    eco: parsed.headers['ECO'] ?? null,
-    playedAt: parsePlayedAt(parsed.headers) ?? parseClientPlayedAt(request.playedAt),
+    eco: headers['ECO'] ?? null,
+    playedAt: parsePlayedAt(headers) ?? parseClientPlayedAt(request.playedAt),
     whiteElo: headerMetadata.whiteElo,
     blackElo: headerMetadata.blackElo,
     ratingsProvisional: headerMetadata.ratingsProvisional,
@@ -110,15 +127,19 @@ export async function importGame(
     // "not yet processed by this metadata pipeline" (see
     // gamesRepo.findBatchMissingMoveTimes's doc comment), and this pipeline
     // just ran, right here.
-    moveTimes
+    moveTimes: extractPgnMoveComments(request.pgn)
+  };
+}
+
+/** Inserts the game and its import-ledger row in one transaction, so a failed
+ * insert never burns quota and a ledger row never exists without its game
+ * (deleting the game later leaves the row — that is the point). */
+function recordImportedGame(db: Kysely<Database>, values: Parameters<typeof gamesRepo.insert>[1]) {
+  return db.transaction().execute(async (trx) => {
+    const game = await gamesRepo.insert(trx, values);
+    await gameImportEventsRepo.record(trx, values.userId, new Date());
+    return game;
   });
-
-  if (request.deferAnalysis) {
-    return { gameId: game.id, analysisId: null };
-  }
-
-  const { analysisId } = await startAnalysis(db, jobQueue, game.id);
-  return { gameId: game.id, analysisId };
 }
 
 /** Once a game's side is known, remembers the student's username on whichever
@@ -162,24 +183,6 @@ function detectPlatform(
   if (site.includes('lichess.org')) return 'lichess';
   if (site.includes('chess.com')) return 'chesscom';
   return null;
-}
-
-/** GET /api/games/import-quota: how much of the rolling-24h import limit a
- * student has used, surfaced on the Games page so the limit shows up as a
- * running count ("3 of 10 imported today") instead of only ever appearing
- * as a 429 on the 11th attempt. Shares its count query with
- * `assertUnderDailyLimit` below so the two can never drift apart. */
-export async function getDailyImportUsage(db: Kysely<Database>, userId: string): Promise<{ used: number; limit: number }> {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const used = await gamesRepo.countImportsSince(db, userId, since);
-  return { used, limit: DAILY_IMPORT_LIMIT };
-}
-
-async function assertUnderDailyLimit(db: Kysely<Database>, userId: string): Promise<void> {
-  const { used, limit } = await getDailyImportUsage(db, userId);
-  if (used >= limit) {
-    throw new RateLimitError(`Import limit reached (${limit} games/day)`);
-  }
 }
 
 /** Parses a PGN `Date`/`UTCDate` header (strict "YYYY.MM.DD"); anything else

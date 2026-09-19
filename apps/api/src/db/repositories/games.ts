@@ -400,16 +400,15 @@ export function remove(db: Kysely<Database>, id: string): Promise<void> {
   return db.deleteFrom('games').where('id', '=', id).execute().then(() => undefined);
 }
 
-export async function countImportsSince(
-  db: Kysely<Database>,
-  userId: string,
-  since: Date
-): Promise<number> {
+/** The user's imported-source games — what the library cap counts. Bot and
+ * coach-play games are excluded, same scoping as `listEarliestImportedIds`,
+ * the set the auto-delete draws from. */
+export async function countImportableForUser(db: Kysely<Database>, userId: string): Promise<number> {
   const result = await db
     .selectFrom('games')
     .select((eb) => eb.fn.countAll<number>().as('count'))
     .where('userId', '=', userId)
-    .where('createdAt', '>=', since)
+    .where('source', 'in', ImportableGameSourceSchema.options)
     .executeTakeFirstOrThrow();
   return Number(result.count);
 }

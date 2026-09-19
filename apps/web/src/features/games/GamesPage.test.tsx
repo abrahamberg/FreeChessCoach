@@ -27,6 +27,13 @@ class MockEventSource {
   }
 }
 
+const IMPORT_QUOTA = {
+  daily: { used: 3, limit: 30 },
+  weekly: { used: 3, limit: 150 },
+  inFlight: { used: 0, limit: 10 },
+  library: { used: 3, limit: 1000, autoDeleteCount: 0 }
+};
+
 const RECENT_GAME = {
   id: 'g1',
   source: 'paste',
@@ -99,7 +106,7 @@ function renderGamesPage({
   const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
     if (path === '/api/games/imported?limit=15') return Promise.resolve(jsonResponse({ items: currentRecent, hasMore: false }));
     if (path === '/api/games/in-progress') return Promise.resolve(jsonResponse(currentInProgress));
-    if (path === '/api/games/import-quota') return Promise.resolve(jsonResponse({ used: 3, limit: 10 }));
+    if (path === '/api/games/import-quota') return Promise.resolve(jsonResponse(IMPORT_QUOTA));
     if (path === '/api/puzzle-assignments') return Promise.resolve(jsonResponse(practiceAssignments));
     if (path === '/api/users/me/llm-setup') {
       return Promise.resolve(jsonResponse({ configured: llmConfigured, unlocked: llmConfigured, voiceAvailable: false }));
@@ -193,7 +200,7 @@ describe('GamesPage (rails: Practice, Continue, Recently imported)', () => {
 
   test('the "Import games" section shows how much of today\'s import quota has been used', async () => {
     renderGamesPage();
-    expect(await screen.findByText(/3 of 10 imported today/i)).toBeInTheDocument();
+    expect(await screen.findByText(/3 of 30 imported today/i)).toBeInTheDocument();
   });
 
   test('a card\'s "Review" icon button navigates to the Review page without touching sessions', async () => {

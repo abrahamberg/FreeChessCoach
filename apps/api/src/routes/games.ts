@@ -11,10 +11,11 @@ import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
-import { NotFoundError, ValidationError } from '../lib/errors.js';
+import { ImportLimitError, NotFoundError, ValidationError } from '../lib/errors.js';
 import { pgnFilename } from '../lib/pgn-filename.js';
 import { composeGameReport } from '../services/game-report.js';
-import { getDailyImportUsage, importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
+import { importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
+import { getImportQuota } from '../services/import-quota.js';
 import {
   deleteEarliestImportedGames,
   deleteGameForUser,
@@ -81,7 +82,7 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
   // route below regardless of registration order.
   app.get('/api/games/import-quota', async (request) => {
     const user = await userProfileService.getOrCreate(db, request.user);
-    return getDailyImportUsage(db, user.id);
+    return getImportQuota(db, user.id);
   });
 
   app.get<{ Params: { id: string } }>('/api/games/:id', async (request) => {
@@ -225,6 +226,14 @@ function handleImportError(reply: FastifyReply, error: unknown): FastifyReply | 
       title: error.message,
       status: 422,
       missing: 'userColor'
+    });
+  }
+  if (error instanceof ImportLimitError) {
+    return reply.code(error.status).type('application/problem+json').send({
+      type: 'about:blank',
+      title: error.message,
+      status: error.status,
+      limit: error.limit
     });
   }
   throw error;
