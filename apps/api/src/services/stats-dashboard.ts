@@ -14,20 +14,8 @@ import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import type { Database } from '../db/schema.js';
 import { resultForColour } from './build-game-report.js';
+import { sinceFor } from '../lib/range-since.js';
 import { composeGameReport } from './game-report.js';
-
-const RANGE_DAYS: Record<Exclude<StatsRange, 'all'>, number> = {
-  last7: 7,
-  last30: 30,
-  last365: 365
-};
-
-function sinceFor(range: StatsRange, now: Date): Date | null {
-  if (range === 'all') return null;
-  const since = new Date(now);
-  since.setDate(since.getDate() - RANGE_DAYS[range]);
-  return since;
-}
 
 /**
  * The historical stats dashboard (Phase 29): resolves the requested

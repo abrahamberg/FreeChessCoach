@@ -143,7 +143,7 @@ function renderSessionPage() {
         <Routes>
           <Route path="/session/:id" element={<SessionPage />} />
           <Route path="/games" element={<div>games-page-marker</div>} />
-          <Route path="/dashboard" element={<div>dashboard-page-marker</div>} />
+          <Route path="/progress" element={<div>progress-page-marker</div>} />
           <Route path="/settings" element={<div>settings-page-marker</div>} />
           <Route path="/review/:gameId" element={<div>review-page-marker</div>} />
         </Routes>

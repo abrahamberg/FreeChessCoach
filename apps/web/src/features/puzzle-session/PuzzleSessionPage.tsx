@@ -93,13 +93,13 @@ export function PuzzleSessionPage(): ReactNode {
   if (session.status === 'completed') {
     const completedCount = session.assignment.items.filter((item) => item.result !== 'pending').length;
     return (
-      <Modal title="You did it!" onClose={() => navigate('/dashboard')}>
+      <Modal title="You did it!" onClose={() => navigate('/progress')}>
         <div className="puzzle-session-complete">
           <p>You've finished the focus session your coach assigned you: {session.assignment.reason}</p>
           <p>
             {completedCount} of {session.assignment.items.length} puzzles complete.
           </p>
-          <button type="button" className="btn-primary" onClick={() => navigate('/dashboard')}>
+          <button type="button" className="btn-primary" onClick={() => navigate('/progress')}>
             Back to Progress
           </button>
         </div>
@@ -111,7 +111,7 @@ export function PuzzleSessionPage(): ReactNode {
     return (
       <div className="session-summary-card">
         <p>This practice session was ended.</p>
-        <button type="button" onClick={() => navigate('/dashboard')}>
+        <button type="button" onClick={() => navigate('/progress')}>
           Back to Progress
         </button>
       </div>
@@ -201,7 +201,7 @@ export function PuzzleSessionPage(): ReactNode {
         <AiSetupRequiredModal onClose={setupRequiredModal.onClose} onGoToSettings={setupRequiredModal.onGoToSettings} />
       )}
       <header className="puzzle-session-page__header">
-        <button type="button" onClick={() => navigate('/dashboard')}>
+        <button type="button" onClick={() => navigate('/progress')}>
           ← Progress
         </button>
         <span className="puzzle-session-page__progress">

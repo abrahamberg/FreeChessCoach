@@ -4,11 +4,6 @@
   min-width: 0;
 }
 
-.stats-page__description {
-  margin: 0;
-  color: var(--color-text-secondary);
-}
-
 .stats-page__filters {
   display: flex;
   flex-wrap: wrap;
@@ -49,6 +44,10 @@
   .stats-page__sections {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+.stats-page__sections > .stats-section--wide {
+  grid-column: 1 / -1;
 }
 
 .stats-section h3 {
@@ -186,10 +185,13 @@
   text-align: right;
 }
 
+.rating-chart-container {
+  width: 100%;
+}
+
 .rating-chart {
   display: block;
-  width: 100%;
-  height: auto;
+  max-width: 100%;
 }
 
 .rating-chart__border {

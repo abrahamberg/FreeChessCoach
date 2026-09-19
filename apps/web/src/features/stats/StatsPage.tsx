@@ -59,7 +59,6 @@ export function StatsPage(): ReactNode {
     <div className="page stats-page">
       <header className="stats-page__header">
         <h1>Stats</h1>
-        <p className="stats-page__description">See how you're actually playing, across every analyzed game.</p>
       </header>
 
       {filters}

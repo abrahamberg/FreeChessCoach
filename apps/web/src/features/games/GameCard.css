@@ -1,0 +1,112 @@
+.game-card__players {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.game-card__players > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-card__you {
+  font-weight: 700;
+}
+
+.game-card__vs {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.game-card__result {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.game-card__result--win {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.game-card__result--loss,
+.game-card__result--draw {
+  background: var(--color-surface-strong);
+  color: var(--color-text-secondary);
+}
+
+.game-card__status {
+  font-size: 11px;
+}
+
+.game-card__status[data-animate='true'] {
+  animation: game-card-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes game-card-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-card__status[data-animate='true'] {
+    animation: none;
+  }
+}
+
+.game-card__spacer {
+  flex: 1 1 auto;
+}
+
+.game-card__icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.game-card__icon-action:hover {
+  background: var(--color-surface-subtle);
+}
+
+.game-card__icon-action--primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.game-card__icon-action--primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.game-card__text-action {
+  flex: 0 1 auto;
+  height: 34px;
+  padding: 0 var(--space-3);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+@media (max-width: 639px) {
+  /* design-improvements.md: minimum 44x44px mobile touch targets. */
+  .game-card__icon-action {
+    width: 44px;
+    height: 44px;
+  }
+}

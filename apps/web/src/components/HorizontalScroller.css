@@ -1,0 +1,64 @@
+.h-scroller {
+  position: relative;
+  min-width: 0;
+}
+
+/* One row that slides sideways; the scrollbar is hidden (swipe, trackpad and
+ * the arrows are the affordances) and cards snap to the row's start edge. */
+.h-scroller__track {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* Room for the card shadow, which overflow-x would otherwise clip. */
+  padding: 2px 2px var(--space-2);
+}
+
+.h-scroller__track::-webkit-scrollbar {
+  display: none;
+}
+
+.h-scroller__track > * {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.h-scroller__arrow {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.h-scroller__arrow:disabled {
+  display: none;
+}
+
+.h-scroller__arrow--back {
+  left: -12px;
+}
+
+.h-scroller__arrow--forward {
+  right: -12px;
+}
+
+/* Touch devices swipe; arrows are for mouse users. */
+@media (hover: hover) and (pointer: fine) {
+  .h-scroller__arrow:not(:disabled) {
+    display: inline-flex;
+  }
+}

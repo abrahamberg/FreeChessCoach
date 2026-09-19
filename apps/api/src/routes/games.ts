@@ -1,5 +1,10 @@
 import { InvalidPgnError, parseAnnotatedPgn } from '@freechesscoach/chess-analysis';
-import { ImportGameRequestSchema, PromoteGameRequestSchema } from '@freechesscoach/shared';
+import {
+  DeleteEarliestImportedRequestSchema,
+  ImportedGamesQuerySchema,
+  ImportGameRequestSchema,
+  PromoteGameRequestSchema
+} from '@freechesscoach/shared';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
@@ -10,7 +15,14 @@ import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { pgnFilename } from '../lib/pgn-filename.js';
 import { composeGameReport } from '../services/game-report.js';
 import { getDailyImportUsage, importGame, MissingUserColorError, startAnalysis } from '../services/game-import.js';
-import { deleteGameForUser, listGamesForUser, promoteGame } from '../services/games.js';
+import {
+  deleteEarliestImportedGames,
+  deleteGameForUser,
+  listGamesForUser,
+  listImportedGamesForUser,
+  listInProgressGamesForUser,
+  promoteGame
+} from '../services/games.js';
 import { getGameTacticBaselineNote } from '../services/stats-dashboard.js';
 import * as userProfileService from '../services/user-profile.js';
 
@@ -38,6 +50,30 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
   app.get('/api/games', async (request) => {
     const user = await userProfileService.getOrCreate(db, request.user);
     return listGamesForUser(db, user.id);
+  });
+
+  // Games page's "Recently imported" strip and Find games list. Static paths,
+  // so Fastify's radix router matches them ahead of /:id.
+  app.get('/api/games/imported', async (request) => {
+    const query = ImportedGamesQuerySchema.safeParse(request.query);
+    if (!query.success) throw new ValidationError(query.error.issues.map((issue) => issue.message).join('; '));
+
+    const user = await userProfileService.getOrCreate(db, request.user);
+    return listImportedGamesForUser(db, user.id, query.data);
+  });
+
+  // Games page's "Continue" section: live coach/bot sessions only.
+  app.get('/api/games/in-progress', async (request) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    return listInProgressGamesForUser(db, user.id);
+  });
+
+  app.post('/api/games/imported/delete-earliest', async (request) => {
+    const parsed = DeleteEarliestImportedRequestSchema.safeParse(request.body);
+    if (!parsed.success) throw new ValidationError(parsed.error.issues.map((issue) => issue.message).join('; '));
+
+    const user = await userProfileService.getOrCreate(db, request.user);
+    return deleteEarliestImportedGames(db, user.id, parsed.data.count);
   });
 
   // Games page's "Import games" section (Task: quota indicator) — a static

@@ -2,8 +2,10 @@
  * so the "nice" axis-tick rounding (the fiddly part) is unit-testable
  * without rendering, and the component itself stays presentational. */
 
+/** Fallback width before the container has been measured (and in jsdom, which
+ * has no layout); the real chart is drawn 1:1 at its container's width. */
 export const CHART_WIDTH = 560;
-export const CHART_HEIGHT = 220;
+export const CHART_HEIGHT = 180;
 export const CHART_MARGIN = { top: 16, right: 16, bottom: 28, left: 48 };
 
 export const PLOT_WIDTH = CHART_WIDTH - CHART_MARGIN.left - CHART_MARGIN.right;
@@ -47,9 +49,13 @@ export function ratingTicks(minRating: number, maxRating: number, targetTicks = 
   return ticks;
 }
 
-export function xFor(index: number, pointCount: number): number {
-  if (pointCount <= 1) return CHART_MARGIN.left + PLOT_WIDTH / 2;
-  return CHART_MARGIN.left + (index / (pointCount - 1)) * PLOT_WIDTH;
+export function plotWidthFor(chartWidth: number): number {
+  return Math.max(chartWidth - CHART_MARGIN.left - CHART_MARGIN.right, 1);
+}
+
+export function xFor(index: number, pointCount: number, plotWidth = PLOT_WIDTH): number {
+  if (pointCount <= 1) return CHART_MARGIN.left + plotWidth / 2;
+  return CHART_MARGIN.left + (index / (pointCount - 1)) * plotWidth;
 }
 
 export function yForRating(rating: number, domainMin: number, domainMax: number): number {

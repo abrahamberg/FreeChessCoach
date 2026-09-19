@@ -140,7 +140,7 @@ function renderPage() {
       <MemoryRouter initialEntries={['/practice/assignment-1']}>
         <Routes>
           <Route path="/practice/:assignmentId" element={<PuzzleSessionPage />} />
-          <Route path="/dashboard" element={<div>dashboard-page-marker</div>} />
+          <Route path="/progress" element={<div>progress-page-marker</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>

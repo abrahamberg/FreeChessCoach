@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest';
 import { RatingStatsSection } from './RatingStatsSection.js';
 
 describe('RatingStatsSection', () => {
-  test('renders the games-with-estimate headline and a line connecting every game in date order', () => {
+  test('renders the games-with-estimate heading and a line connecting every game in date order', () => {
     const stats: RatingStats = {
       gamesWithEstimate: 3,
       points: [
@@ -16,7 +16,7 @@ describe('RatingStatsSection', () => {
 
     render(<RatingStatsSection stats={stats} />);
 
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Estimated rating (3 games)' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /estimated rating across 3 games, from 1250 to 1650/i })).toBeInTheDocument();
     expect(document.querySelectorAll('.rating-chart__point')).toHaveLength(3);
     expect(document.querySelector('.rating-chart__line')).not.toBeNull();

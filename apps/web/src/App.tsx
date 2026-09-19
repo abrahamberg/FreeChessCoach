@@ -3,13 +3,14 @@ import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { shouldRetryQuery } from './api/client.js';
 import { AppShell } from './components/AppShell.js';
-import { DashboardPage } from './features/dashboard/DashboardPage.js';
+import { FindGamesPage } from './features/games/FindGamesPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
 import { ImportPage } from './features/import/ImportPage.js';
 import { PlayPage } from './features/play/PlayPage.js';
 import { PlayStartPage } from './features/play/PlayStartPage.js';
 import { PlayBotStartPage } from './features/play-bot/PlayBotStartPage.js';
 import { PuzzleSessionPage } from './features/puzzle-session/PuzzleSessionPage.js';
+import { ProgressPage } from './features/progress/ProgressPage.js';
 import { GameReviewPage } from './features/review/GameReviewPage.js';
 import { BotSessionPage } from './features/session/BotSessionPage.js';
 import { SessionPage } from './features/session/SessionPage.js';
@@ -77,11 +78,13 @@ export function AppRoutes(): ReactNode {
         <Route path="/play/new" element={<PlayStartPage />} />
         <Route path="/play-bot/new" element={<PlayBotStartPage />} />
         <Route path="/games" element={<GamesPage />} />
+        <Route path="/games/find" element={<FindGamesPage />} />
         <Route path="/session/:id" element={<SessionRoute />} />
         <Route path="/bot-session/:id" element={<BotSessionRoute />} />
         <Route path="/review/:gameId" element={<GameReviewRoute />} />
         <Route path="/practice/:assignmentId" element={<PracticeRoute />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/progress" element={<ProgressPage />} />
+        <Route path="/dashboard" element={<Navigate to="/progress" replace />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>

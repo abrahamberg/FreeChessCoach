@@ -1,4 +1,4 @@
-import type { Kysely } from 'kysely';
+import { sql, type Kysely } from 'kysely';
 import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
 import {
   defaultReviewTierForSource,
@@ -235,6 +235,118 @@ export function listByUserWithStatus(db: Kysely<Database>, userId: string): Prom
     .where('games.userId', '=', userId)
     .orderBy('games.createdAt', 'desc')
     .execute();
+}
+
+/** Games-page filter for `listImportedPage`: every field null = unfiltered.
+ * Rating bounds apply to the user's own side's estimated rating. */
+export interface ImportedGamesFilter {
+  since: Date | null;
+  minRating: number | null;
+  maxRating: number | null;
+}
+
+export interface ImportedGameListRow extends GameListRow {
+  estimatedRating: number | null;
+}
+
+/** The user's own colour's `estimatedRating.value` out of the stored Game
+ * Report jsonb — null while there's no report yet or the estimate itself is
+ * null. Picking the side in SQL keeps the rating filter and its pagination
+ * in one query instead of post-filtering pages in JS. */
+const USER_ESTIMATED_RATING = sql<number | null>`(case when games.user_color = 'white'
+  then analyses.game_report #>> '{players,white,estimatedRating,value}'
+  else analyses.game_report #>> '{players,black,estimatedRating,value}' end)::int`;
+
+/** One page of the Games page's imported-games list, newest import first
+ * (`createdAt`, with `id` as a stable tie-break so offset pages never
+ * overlap). Only importable sources — `coach_play`/`vs_bot` games have their
+ * own Continue flow — and metadata columns only, like `listByUserWithStatus`.
+ * Fetches `limit + 1` rows so the caller can tell whether another page
+ * exists without a second count query. */
+export async function listImportedPage(
+  db: Kysely<Database>,
+  userId: string,
+  filter: ImportedGamesFilter,
+  page: { limit: number; offset: number }
+): Promise<{ rows: ImportedGameListRow[]; hasMore: boolean }> {
+  let query = db
+    .selectFrom('games')
+    .leftJoin('analyses', 'analyses.gameId', 'games.id')
+    .select([
+      'games.id',
+      'games.source',
+      'games.userColor',
+      'games.whiteName',
+      'games.blackName',
+      'games.result',
+      'games.timeControl',
+      'games.playedAt',
+      'games.createdAt',
+      'games.botId',
+      'games.reviewTier',
+      'analyses.status as analysisStatus'
+    ])
+    .select(USER_ESTIMATED_RATING.as('estimatedRating'))
+    .where('games.userId', '=', userId)
+    .where('games.source', 'in', ImportableGameSourceSchema.options);
+
+  if (filter.since) {
+    const since = filter.since;
+    query = query.where(sql<boolean>`coalesce(games.played_at, games.created_at) >= ${since}`);
+  }
+  if (filter.minRating !== null) query = query.where(sql<boolean>`${USER_ESTIMATED_RATING} >= ${filter.minRating}`);
+  if (filter.maxRating !== null) query = query.where(sql<boolean>`${USER_ESTIMATED_RATING} <= ${filter.maxRating}`);
+
+  const fetched = await query
+    .orderBy('games.createdAt', 'desc')
+    .orderBy('games.id', 'desc')
+    .limit(page.limit + 1)
+    .offset(page.offset)
+    .execute();
+  return { rows: fetched.slice(0, page.limit), hasMore: fetched.length > page.limit };
+}
+
+/** The Games page's "Continue" section: play-mode games only (a game with a
+ * live session is always `coach_play`/`vs_bot`), newest first. Which of
+ * these actually still has an active session is resolved by the service,
+ * same as the full list. */
+export function listPlayModeByUser(db: Kysely<Database>, userId: string): Promise<GameListRow[]> {
+  return db
+    .selectFrom('games')
+    .leftJoin('analyses', 'analyses.gameId', 'games.id')
+    .select([
+      'games.id',
+      'games.source',
+      'games.userColor',
+      'games.whiteName',
+      'games.blackName',
+      'games.result',
+      'games.timeControl',
+      'games.playedAt',
+      'games.createdAt',
+      'games.botId',
+      'games.reviewTier',
+      'analyses.status as analysisStatus'
+    ])
+    .where('games.userId', '=', userId)
+    .where('games.source', 'in', ['coach_play', 'vs_bot'])
+    .orderBy('games.createdAt', 'desc')
+    .execute();
+}
+
+/** Ids of the user's `count` earliest-imported importable games — the
+ * "delete earliest 50" action's target set. */
+export async function listEarliestImportedIds(db: Kysely<Database>, userId: string, count: number): Promise<string[]> {
+  const rows = await db
+    .selectFrom('games')
+    .select('id')
+    .where('userId', '=', userId)
+    .where('source', 'in', ImportableGameSourceSchema.options)
+    .orderBy('createdAt', 'asc')
+    .orderBy('id', 'asc')
+    .limit(count)
+    .execute();
+  return rows.map((row) => row.id);
 }
 
 /** No user scoping — for worker/job code, which runs outside a request context. */

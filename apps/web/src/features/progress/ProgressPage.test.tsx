@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { DashboardPage } from './DashboardPage.js';
+import { ProgressPage } from './ProgressPage.js';
 
 const DASHBOARD_RESPONSE = {
   focusAreas: {
@@ -76,22 +76,19 @@ function jsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
 }
 
-function renderDashboard() {
+function renderProgress() {
   const fetchMock = vi.fn((input: RequestInfo | URL) => {
     const url = typeof input === 'string' ? input : input.toString();
     if (url.startsWith('/api/users/me/diagnostics')) return Promise.resolve(jsonResponse(DIAGNOSTICS_RESPONSE));
-    // PracticeCard (Task 59.6) fetches this on its own — no open assignments
-    // in this suite's fixtures, so the card renders nothing.
-    if (url.startsWith('/api/puzzle-assignments')) return Promise.resolve(jsonResponse([]));
     return Promise.resolve(jsonResponse(DASHBOARD_RESPONSE));
   });
   vi.stubGlobal('fetch', fetchMock);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/dashboard']}>
+      <MemoryRouter initialEntries={['/progress']}>
         <Routes>
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/progress" element={<ProgressPage />} />
           <Route path="/session/:id" element={<div>session-page-marker</div>} />
         </Routes>
       </MemoryRouter>
@@ -100,13 +97,13 @@ function renderDashboard() {
   return fetchMock;
 }
 
-describe('DashboardPage', () => {
+describe('ProgressPage', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   test('fetches the dashboard and renders focus areas, trends, and session history', async () => {
-    const fetchMock = renderDashboard();
+    const fetchMock = renderProgress();
 
     await screen.findByRole('heading', { level: 3, name: /opponent-check scan omission/i });
     expect(fetchMock).toHaveBeenCalledWith('/api/users/me/dashboard', expect.anything());
@@ -114,7 +111,7 @@ describe('DashboardPage', () => {
   });
 
   test('the top active focus area appears as this week\'s focus', async () => {
-    renderDashboard();
+    renderProgress();
     await screen.findByRole('heading', { level: 3, name: /opponent-check scan omission/i });
     expect(screen.getByText(/this week's focus/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /opponent-check scan omission/i })).toBeInTheDocument();
@@ -122,7 +119,7 @@ describe('DashboardPage', () => {
 
   test('resolved focus areas start collapsed behind a "Resolved" accordion', async () => {
     const user = userEvent.setup();
-    renderDashboard();
+    renderProgress();
     await screen.findByRole('heading', { level: 3, name: /opponent-check scan omission/i });
 
     expect(screen.queryByText(/single-candidate search/i)).not.toBeInTheDocument();
@@ -132,7 +129,7 @@ describe('DashboardPage', () => {
 
   test('tapping a session history row navigates to the session', async () => {
     const user = userEvent.setup();
-    renderDashboard();
+    renderProgress();
     await screen.findByText(/worked on king safety today/i);
 
     await user.click(screen.getByText(/worked on king safety today/i));
@@ -140,7 +137,7 @@ describe('DashboardPage', () => {
   });
 
   test('renders a "Measured diagnoses" section from the diagnostics endpoint, alongside focus areas', async () => {
-    renderDashboard();
+    renderProgress();
 
     expect(await screen.findByRole('heading', { name: /measured diagnoses/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Actual-threat identification failure' })).toBeInTheDocument();
@@ -148,7 +145,7 @@ describe('DashboardPage', () => {
 
   test('a focus area\'s "View evidence" opens the evidence modal for its diagnosisCode', async () => {
     const user = userEvent.setup();
-    const fetchMock = renderDashboard();
+    const fetchMock = renderProgress();
     await screen.findByRole('heading', { level: 3, name: /opponent-check scan omission/i });
 
     await user.click(screen.getAllByRole('button', { name: /view evidence/i })[0]!);
@@ -159,7 +156,7 @@ describe('DashboardPage', () => {
 
   test('a diagnosis card\'s "View evidence" opens the evidence modal for its own code', async () => {
     const user = userEvent.setup();
-    const fetchMock = renderDashboard();
+    const fetchMock = renderProgress();
     await screen.findByRole('heading', { name: 'Actual-threat identification failure' });
 
     // Focus areas render first (DOM order), so the diagnosis card's own
@@ -173,7 +170,7 @@ describe('DashboardPage', () => {
 
   test('clicking a trend bar opens evidence for the highest-ranked diagnosis in that category', async () => {
     const user = userEvent.setup();
-    const fetchMock = renderDashboard();
+    const fetchMock = renderProgress();
     await screen.findByRole('heading', { name: /measured diagnoses/i });
 
     await user.click(screen.getByRole('button', { name: /king safety: 4/i }));

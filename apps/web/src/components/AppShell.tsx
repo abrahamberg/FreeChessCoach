@@ -19,7 +19,7 @@ export interface AppShellProps {
 const NAV_DESTINATIONS = [
   { to: '/games', label: 'Games', Icon: BoardIcon },
   { to: '/play', label: 'Play', Icon: PlayCircleIcon },
-  { to: '/dashboard', label: 'Progress', Icon: TrendingUpIcon },
+  { to: '/progress', label: 'Progress', Icon: TrendingUpIcon },
   { to: '/stats', label: 'Stats', Icon: BarChartIcon }
 ];
 

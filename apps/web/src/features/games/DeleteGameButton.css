@@ -1,0 +1,36 @@
+.delete-game-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-danger);
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.delete-game-button:hover {
+  background: var(--color-danger-soft);
+}
+
+.delete-game-button--icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-color: transparent;
+}
+
+@media (max-width: 639px) {
+  /* design-improvements.md: minimum 44x44px mobile touch targets. */
+  .delete-game-button {
+    min-height: 44px;
+  }
+
+  .delete-game-button--icon {
+    min-width: 44px;
+  }
+}

@@ -125,7 +125,7 @@ export function SessionPage(): ReactNode {
         summary={session.summary ?? ''}
         homework={session.homework}
         onBackToGames={() => navigate('/games')}
-        onViewProgress={() => navigate('/dashboard')}
+        onViewProgress={() => navigate('/progress')}
       />
     ) : null;
 

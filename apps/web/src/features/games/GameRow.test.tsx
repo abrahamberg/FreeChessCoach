@@ -53,9 +53,14 @@ describe('GameRow (one consistent card, Daniel\'s IA feedback)', () => {
     expect(screen.getByTitle('win')).toBeInTheDocument();
   });
 
-  test('shows the source group as metadata alongside the date', () => {
-    renderRow({ analysisStatus: 'ready', source: 'paste' });
-    expect(screen.getByText('Imported')).toBeInTheDocument();
+  test('shows where the game came from as metadata alongside the date', () => {
+    renderRow({ analysisStatus: 'ready', source: 'lichess' });
+    expect(screen.getByText('Lichess')).toBeInTheDocument();
+  });
+
+  test('shows the estimated rating when the imported-list item carries one', () => {
+    renderRow({ analysisStatus: 'ready', estimatedRating: 1432 } as never);
+    expect(screen.getByText(/~1432/)).toBeInTheDocument();
   });
 
   test('shows an "Analyzing…" status while queued, with no action button', () => {
@@ -199,23 +204,27 @@ describe('GameRow (one consistent card, Daniel\'s IA feedback)', () => {
     expect(screen.queryByRole('menuitem', { name: /move to/i })).not.toBeInTheDocument();
   });
 
-  test('delete lives in the overflow menu for every row, failed or not', async () => {
-    renderRow({ analysisStatus: 'failed' });
-    const user = await openOverflowMenu();
-    expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
-    await user.keyboard('{Escape}');
+  test('the overflow menu offers PGN export only — delete is its own red button', async () => {
+    renderRow({ analysisStatus: 'ready' });
+    await openOverflowMenu();
+    expect(screen.getByRole('menuitem', { name: 'Download PGN' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Delete' })).not.toBeInTheDocument();
   });
 
-  test('choosing Delete opens a confirmation dialog naming the game, and confirming calls onDelete', async () => {
+  test('a Delete button is present for every row, failed or not', () => {
+    renderRow({ analysisStatus: 'failed' });
+    expect(screen.getByRole('button', { name: /delete daniel vs\. marta/i })).toBeInTheDocument();
+  });
+
+  test('clicking Delete opens a confirmation dialog naming the game, and confirming calls onDelete', async () => {
+    const user = userEvent.setup();
     const onReview = vi.fn();
     const onDelete = vi.fn();
-    const user = await (async () => {
-      renderRow({ analysisStatus: 'ready' }, { onReview, onDelete });
-      return openOverflowMenu();
-    })();
+    renderRow({ analysisStatus: 'ready' }, { onReview, onDelete });
 
-    await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: /delete daniel vs\. marta/i }));
     expect(screen.getByRole('dialog')).toHaveTextContent(/daniel vs\. marta/i);
+    expect(onDelete).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: 'Delete game' }));
 
@@ -224,11 +233,11 @@ describe('GameRow (one consistent card, Daniel\'s IA feedback)', () => {
   });
 
   test('canceling the confirmation dialog does not delete the game', async () => {
+    const user = userEvent.setup();
     const onDelete = vi.fn();
     renderRow({ analysisStatus: 'ready' }, { onDelete });
-    const user = await openOverflowMenu();
 
-    await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: /delete daniel vs\. marta/i }));
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(onDelete).not.toHaveBeenCalled();

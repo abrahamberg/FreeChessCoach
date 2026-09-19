@@ -1,4 +1,11 @@
-import { canPromoteGameReviewTier, type GameListResponse, type GameReviewTier } from '@freechesscoach/shared';
+import {
+  canPromoteGameReviewTier,
+  type DeleteEarliestImportedResponse,
+  type GameListResponse,
+  type GameReviewTier,
+  type ImportedGamesPage,
+  type ImportedGamesQuery
+} from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
@@ -10,6 +17,7 @@ import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js'
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
+import { sinceFor } from '../lib/range-since.js';
 
 /** design.md §4.1 / architecture §14: Games (home) list — one row per game
  * with its analysis status for the status chip, or (for a play-mode game)
@@ -20,6 +28,51 @@ import { NotFoundError, ValidationError } from '../lib/errors.js';
 export async function listGamesForUser(db: Kysely<Database>, userId: string): Promise<GameListResponse> {
   const rows = await gamesRepo.listByUserWithStatus(db, userId);
   return Promise.all(rows.map((row) => toListItem(db, userId, row)));
+}
+
+/** Games page: "Recently imported" (first 15) and Find games (20 at a time)
+ * — imported games only, newest import first, optionally narrowed by time
+ * range and the user's own per-game estimated rating. */
+export async function listImportedGamesForUser(
+  db: Kysely<Database>,
+  userId: string,
+  query: ImportedGamesQuery
+): Promise<ImportedGamesPage> {
+  const filter = {
+    since: sinceFor(query.range, new Date()),
+    minRating: query.minRating ?? null,
+    maxRating: query.maxRating ?? null
+  };
+  const { rows, hasMore } = await gamesRepo.listImportedPage(db, userId, filter, {
+    limit: query.limit,
+    offset: query.offset
+  });
+  const items = await Promise.all(
+    rows.map(async (row) => ({ ...(await toListItem(db, userId, row)), estimatedRating: row.estimatedRating }))
+  );
+  return { items, hasMore };
+}
+
+/** Games page "Continue": play-mode games that still have a live session. */
+export async function listInProgressGamesForUser(db: Kysely<Database>, userId: string): Promise<GameListResponse> {
+  const rows = await gamesRepo.listPlayModeByUser(db, userId);
+  const items = await Promise.all(rows.map((row) => toListItem(db, userId, row)));
+  return items.filter((item) => item.sessionId !== null);
+}
+
+/** "Delete earliest 50": removes the user's `count` earliest-imported games
+ * (and everything hanging off them) in one transaction — all or nothing, so
+ * a mid-cascade failure can't leave a half-deleted batch. */
+export async function deleteEarliestImportedGames(
+  db: Kysely<Database>,
+  userId: string,
+  count: number
+): Promise<DeleteEarliestImportedResponse> {
+  return db.transaction().execute(async (trx) => {
+    const gameIds = await gamesRepo.listEarliestImportedIds(trx, userId, count);
+    for (const gameId of gameIds) await cascadeDeleteGame(trx, gameId);
+    return { deleted: gameIds.length };
+  });
 }
 
 /** The per-game delete cascade — none of the foreign keys involved are ON

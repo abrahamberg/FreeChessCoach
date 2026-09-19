@@ -113,7 +113,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
         summary={session.summary ?? 'Game over.'}
         homework={session.homework}
         onBackToGames={() => navigate('/games')}
-        onViewProgress={() => navigate('/dashboard')}
+        onViewProgress={() => navigate('/progress')}
       />
     );
   }

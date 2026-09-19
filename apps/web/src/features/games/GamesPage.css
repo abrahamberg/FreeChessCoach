@@ -1,51 +1,3 @@
-.games-page__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
-}
-
-.games-page__heading h1 {
-  margin-bottom: 4px;
-}
-
-.games-page__description {
-  margin: 0;
-  color: var(--color-text-secondary);
-}
-
-/* One segmented pill row (Daniel: "[All] [Imported] [Bot]", not a browser-
- * style underlined tab strip) — source is metadata riding along on each
- * card already, so this filter is a light touch, not a second navigation
- * layer. */
-.games-page__tabs {
-  display: flex;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
-}
-
-.games-page__tab {
-  height: 36px;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.games-page__tab:hover {
-  background: var(--color-surface-subtle);
-}
-
-.games-page__tab.active {
-  background: var(--color-text);
-  color: var(--color-on-primary);
-  border-color: var(--color-text);
-}
-
 /* One card per game (GameRow.css owns each card's own border/shadow/radius)
  * with breathing room between them, rather than one bordered list of flush
  * rows. */
@@ -58,49 +10,35 @@
   gap: var(--space-3);
 }
 
-.games-page__section-heading {
-  margin: var(--space-6) 0 var(--space-3);
+.games-page__section {
+  margin-top: var(--space-6);
+  min-width: 0;
 }
 
-.games-page__section-heading:first-child {
-  margin-top: 0;
+.games-page__section-heading {
+  margin: 0 0 var(--space-3);
+}
+
+.games-page__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.games-page__section-header .games-page__section-heading {
+  margin: 0;
+}
+
+.games-page__find {
+  min-height: 36px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  text-decoration: none;
 }
 
 .games-page__empty {
   color: var(--color-text-secondary);
   padding: var(--space-6) 0;
-}
-
-@media (max-width: 639px) {
-  .games-page__header {
-    flex-direction: column;
-  }
-
-  /* Four source tabs don't fit a phone width unwrapped, and the page has no
-   * horizontal scrollbar to reveal what wrapping or clipping hid. A
-   * horizontal scroller (nowrap + its own overflow-x) keeps every tab
-   * reachable with a swipe, edge-to-edge like a native segmented control,
-   * instead of a label breaking across two lines or the last chip running
-   * off the edge of the screen entirely. */
-  .games-page__tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    /* A soft fade hints there's more to scroll to without a visible
-     * scrollbar; harmless no-op in browsers that don't support mask-image. */
-    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
-  }
-
-  .games-page__tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .games-page__tab {
-    flex: 0 0 auto;
-    white-space: nowrap;
-    /* design-improvements.md: minimum 44x44px mobile touch targets. */
-    min-height: 44px;
-  }
 }

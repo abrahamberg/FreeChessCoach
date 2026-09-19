@@ -59,7 +59,7 @@ Socratically while tracking their progress over time. The initial build
   (business logic, incl. the coach agent) → db/repositories (all SQL,
   Kysely). `llm/` is the only place allowed to call LLM provider SDKs.
 - `apps/web` — React 19 + Vite SPA, feature-folder pattern
-  (`features/{board,chat,dashboard,games,import,session,settings}`).
+  (`features/{board,chat,progress,games,import,session,settings}`).
 - `packages/shared` — zod schemas + inferred types; single source of truth
   for API/DB shapes.
 - `packages/chess-analysis` — pure chess logic (PGN parsing, move

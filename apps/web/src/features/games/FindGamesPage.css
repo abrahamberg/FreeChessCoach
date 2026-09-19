@@ -1,0 +1,111 @@
+.find-games-page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--space-3);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.find-games-page__back:hover {
+  color: var(--color-text);
+}
+
+.find-games-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.find-games-page__header h1 {
+  margin: 0;
+}
+
+.find-games-page__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.find-games-page__toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  padding: 3px;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-pill);
+  gap: 2px;
+}
+
+.find-games-page__toggle button {
+  border: none;
+  background: none;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-4);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.find-games-page__toggle button[aria-pressed='true'] {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-xs);
+}
+
+.find-games-page__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+/* Reserves the sentinel's spot so the observer has something to watch even
+ * while no loader is showing. */
+.find-games-page__sentinel {
+  min-height: 1px;
+}
+
+.find-games-page__loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+  color: var(--color-text-secondary);
+}
+
+.find-games-page__spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  animation: find-games-spin 0.8s linear infinite;
+}
+
+@keyframes find-games-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .find-games-page__spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+@media (max-width: 639px) {
+  .find-games-page__header {
+    flex-wrap: wrap;
+  }
+}

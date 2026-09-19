@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AnalysisStatusSchema } from './analysis.js';
+import { StatsRangeSchema } from './stats-dashboard.js';
 
 export const GameSourceSchema = z.enum(['paste', 'upload', 'lichess', 'coach_play', 'vs_bot', 'chesscom']);
 export type GameSource = z.infer<typeof GameSourceSchema>;
@@ -159,6 +160,48 @@ export type GameListItem = z.infer<typeof GameListItemSchema>;
 
 export const GameListResponseSchema = z.array(GameListItemSchema);
 export type GameListResponse = z.infer<typeof GameListResponseSchema>;
+
+/** GET /api/games/imported — the Games page's "Recently imported" strip
+ * (`limit: 15`) and Find games' infinite-scrolling list (`limit: 20`) share
+ * this one endpoint. `range` filters on `playedAt ?? createdAt` (same date
+ * the row displays); `minRating`/`maxRating` bound the *user's own* per-game
+ * estimated rating, so a game without an estimate is excluded once either
+ * bound is set. */
+export const IMPORTED_GAMES_STRIP_SIZE = 15;
+export const IMPORTED_GAMES_PAGE_SIZE = 20;
+export const ImportedGamesQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(IMPORTED_GAMES_PAGE_SIZE),
+  offset: z.coerce.number().int().min(0).default(0),
+  range: StatsRangeSchema.default('all'),
+  minRating: z.coerce.number().int().optional(),
+  maxRating: z.coerce.number().int().optional()
+});
+export type ImportedGamesQuery = z.infer<typeof ImportedGamesQuerySchema>;
+
+export const ImportedGameItemSchema = GameListItemSchema.extend({
+  /** The user's own side's estimated rating for this game (Game Report), or
+   * null when the game has no ready report / no estimate. */
+  estimatedRating: z.number().int().nullable()
+});
+export type ImportedGameItem = z.infer<typeof ImportedGameItemSchema>;
+
+export const ImportedGamesPageSchema = z.object({
+  items: z.array(ImportedGameItemSchema),
+  hasMore: z.boolean()
+});
+export type ImportedGamesPage = z.infer<typeof ImportedGamesPageSchema>;
+
+/** POST /api/games/imported/delete-earliest — removes the N earliest-
+ * *imported* (by `createdAt`) games, cascading exactly like a single
+ * delete. Capped so a stray request can't wipe a whole library. */
+export const MAX_DELETE_EARLIEST_IMPORTED = 50;
+export const DeleteEarliestImportedRequestSchema = z.object({
+  count: z.number().int().min(1).max(MAX_DELETE_EARLIEST_IMPORTED)
+});
+export type DeleteEarliestImportedRequest = z.infer<typeof DeleteEarliestImportedRequestSchema>;
+
+export const DeleteEarliestImportedResponseSchema = z.object({ deleted: z.number().int().nonnegative() });
+export type DeleteEarliestImportedResponse = z.infer<typeof DeleteEarliestImportedResponseSchema>;
 
 /** POST /api/games/:id/promote — moves a game one or more rungs up the
  * stack (see canPromoteGameReviewTier). `imported`/`bot` are never valid

@@ -7,11 +7,10 @@ import { TrendingUpIcon } from '../../components/Icon.js';
 import { DiagnosisCard } from './DiagnosisCard.js';
 import { EvidenceModal } from './EvidenceModal.js';
 import { FocusAreaCard } from './FocusAreaCard.js';
-import { PracticeCard } from './PracticeCard.js';
 import { SessionHistory } from './SessionHistory.js';
 import { TrendChart, type TrendRange } from './TrendChart.js';
 import { useDiagnostics } from './useDiagnostics.js';
-import './DashboardPage.css';
+import './ProgressPage.css';
 
 interface EvidenceTarget {
   code: DiagnosisCodeId;
@@ -21,7 +20,7 @@ interface EvidenceTarget {
 /** design.md §4.3: Progress dashboard — focus areas, code-level diagnoses,
  * mistake trends, session history. Owns fetching (AGENTS.md rule 7); every
  * child is presentational. */
-export function DashboardPage(): ReactNode {
+export function ProgressPage(): ReactNode {
   const navigate = useNavigate();
   const [range, setRange] = useState<TrendRange>('last20');
   const [resolvedOpen, setResolvedOpen] = useState(false);
@@ -51,16 +50,16 @@ export function DashboardPage(): ReactNode {
   }
 
   return (
-    <div className="page dashboard-page">
-      <header className="dashboard-page__header">
+    <div className="page progress-page">
+      <header className="progress-page__header">
         <h1>Progress</h1>
-        <p className="dashboard-page__description">See what to work on and how it's trending.</p>
+        <p className="progress-page__description">See what to work on and how it's trending.</p>
       </header>
 
       {weeklyFocus && (
-        <section aria-label="This week's focus" className="card dashboard-page__hero">
+        <section aria-label="This week's focus" className="card progress-page__hero">
           <svg
-            className="dashboard-page__hero-decoration"
+            className="progress-page__hero-decoration"
             width="220"
             height="140"
             viewBox="0 0 220 140"
@@ -74,8 +73,8 @@ export function DashboardPage(): ReactNode {
             <polyline points="10 110 55 80 90 95 130 55 165 65 205 25" opacity={0.5} />
             <polyline points="10 130 55 118 90 122 130 100 165 105 205 78" opacity={0.25} />
           </svg>
-          <div className="dashboard-page__hero-body">
-            <span className="dashboard-page__hero-eyebrow">
+          <div className="progress-page__hero-body">
+            <span className="progress-page__hero-eyebrow">
               <TrendingUpIcon width={13} height={13} strokeWidth={2.4} />
               This week's focus
             </span>
@@ -85,7 +84,6 @@ export function DashboardPage(): ReactNode {
         </section>
       )}
 
-      <PracticeCard />
 
       <section aria-label="Focus areas" className="card">
         <h2>Focus areas</h2>
@@ -101,7 +99,7 @@ export function DashboardPage(): ReactNode {
           ))
         )}
         {focusAreas.resolved.length > 0 && (
-          <div className="dashboard-page__resolved">
+          <div className="progress-page__resolved">
             <button type="button" onClick={() => setResolvedOpen((open) => !open)}>
               Resolved ✓ ({focusAreas.resolved.length})
             </button>

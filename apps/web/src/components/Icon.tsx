@@ -343,3 +343,24 @@ export function KnightIcon(props: IconProps): ReactNode {
     </svg>
   );
 }
+
+export function TrashIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <polyline points="3.5 6 20.5 6" />
+      <path d="M8.5 6V4a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v2" />
+      <path d="M5.5 6l1 14a1.5 1.5 0 0 0 1.5 1.5h8a1.5 1.5 0 0 0 1.5-1.5l1-14" />
+      <line x1="10" y1="10.5" x2="10" y2="17" />
+      <line x1="14" y1="10.5" x2="14" y2="17" />
+    </svg>
+  );
+}
+
+export function SearchIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <circle cx="11" cy="11" r="6.5" />
+      <line x1="20.5" y1="20.5" x2="15.8" y2="15.8" />
+    </svg>
+  );
+}

@@ -27,23 +27,22 @@ class MockEventSource {
   }
 }
 
-const GAMES_RESPONSE = [
-  {
-    id: 'g1',
-    source: 'paste',
-    userColor: 'white',
-    whiteName: 'daniel',
-    blackName: 'Marta',
-    result: '1-0',
-    timeControl: '10+0',
-    playedAt: '2026-07-20T10:00:00.000Z',
-    createdAt: '2026-07-20T10:05:00.000Z',
-    analysisStatus: 'ready',
-    sessionId: null,
-    botId: null,
-    reviewTier: 'imported'
-  }
-];
+const RECENT_GAME = {
+  id: 'g1',
+  source: 'paste',
+  userColor: 'white',
+  whiteName: 'daniel',
+  blackName: 'Marta',
+  result: '1-0',
+  timeControl: '10+0',
+  playedAt: '2026-07-20T10:00:00.000Z',
+  createdAt: '2026-07-20T10:05:00.000Z',
+  analysisStatus: 'ready',
+  sessionId: null,
+  botId: null,
+  reviewTier: 'imported',
+  estimatedRating: 1432
+};
 
 const PLAY_MODE_GAME = {
   id: 'g2',
@@ -61,66 +60,67 @@ const PLAY_MODE_GAME = {
   reviewTier: 'coach'
 };
 
-function renderGamesPage(
-  games: unknown[] = GAMES_RESPONSE,
-  { deleteStatus = 204, practiceAssignments = [] as unknown[] }: { deleteStatus?: number; practiceAssignments?: unknown[] } = {}
-) {
-  let currentGames = games;
+const PRACTICE_ASSIGNMENT = {
+  id: 'assignment-1',
+  userId: 'u1',
+  diagnosisCode: 'TA-07',
+  reason: 'You missed several knight forks recently.',
+  items: [
+    { puzzleId: 'p1', fen: 'fen-1', moves: ['e2e4'], rating: 1500, themes: ['fork'], result: 'solved' },
+    { puzzleId: 'p2', fen: 'fen-2', moves: ['e2e4'], rating: 1500, themes: ['fork'], result: 'pending' }
+  ],
+  status: 'in_progress',
+  createdAt: '2026-08-01T00:00:00.000Z',
+  startedAt: '2026-08-01T00:00:00.000Z',
+  completedAt: null
+};
+
+interface RenderOptions {
+  recent?: unknown[];
+  inProgress?: unknown[];
+  practiceAssignments?: unknown[];
+  deleteStatus?: number;
+  llmConfigured?: boolean;
+}
+
+function jsonResponse(body: unknown): Response {
+  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+}
+
+function renderGamesPage({
+  recent = [RECENT_GAME],
+  inProgress = [],
+  practiceAssignments = [],
+  deleteStatus = 204,
+  llmConfigured = true
+}: RenderOptions = {}) {
+  let currentRecent = recent;
+  let currentInProgress = inProgress;
   const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
-    if (path === '/api/games') {
-      return Promise.resolve(
-        new Response(JSON.stringify(currentGames), { status: 200, headers: { 'content-type': 'application/json' } })
-      );
+    if (path === '/api/games/imported?limit=15') return Promise.resolve(jsonResponse({ items: currentRecent, hasMore: false }));
+    if (path === '/api/games/in-progress') return Promise.resolve(jsonResponse(currentInProgress));
+    if (path === '/api/games/import-quota') return Promise.resolve(jsonResponse({ used: 3, limit: 10 }));
+    if (path === '/api/puzzle-assignments') return Promise.resolve(jsonResponse(practiceAssignments));
+    if (path === '/api/users/me/llm-setup') {
+      return Promise.resolve(jsonResponse({ configured: llmConfigured, unlocked: llmConfigured, voiceAvailable: false }));
     }
-    if (path === '/api/games/import-quota') {
-      return Promise.resolve(
-        new Response(JSON.stringify({ used: 3, limit: 10 }), { status: 200, headers: { 'content-type': 'application/json' } })
-      );
-    }
-    if (path === '/api/puzzle-assignments') {
-      return Promise.resolve(
-        new Response(JSON.stringify(practiceAssignments), { status: 200, headers: { 'content-type': 'application/json' } })
-      );
-    }
-    if (path === '/api/sessions') {
-      return Promise.resolve(
-        new Response(JSON.stringify({ id: 'session-1' }), {
-          status: 200,
-          headers: { 'content-type': 'application/json' }
-        })
-      );
-    }
+    if (path === '/api/sessions') return Promise.resolve(jsonResponse({ id: 'session-1' }));
     if (typeof path === 'string' && path.startsWith('/api/games/') && init?.method === 'DELETE') {
-      if (deleteStatus === 204) {
-        currentGames = currentGames.filter((game) => (game as { id: string }).id !== path.split('/').pop());
-        return Promise.resolve(new Response(null, { status: 204 }));
-      }
-      return Promise.resolve(new Response(null, { status: deleteStatus }));
-    }
-    if (typeof path === 'string' && path.endsWith('/pgn') && (init === undefined || init.method === undefined)) {
-      return Promise.resolve(new Response('1. e4 e5 *', { status: 200, headers: { 'content-type': 'application/x-chess-pgn' } }));
+      if (deleteStatus !== 204) return Promise.resolve(new Response(null, { status: deleteStatus }));
+      const gameId = path.split('/').pop();
+      currentRecent = currentRecent.filter((game) => (game as { id: string }).id !== gameId);
+      currentInProgress = currentInProgress.filter((game) => (game as { id: string }).id !== gameId);
+      return Promise.resolve(new Response(null, { status: 204 }));
     }
     if (typeof path === 'string' && path.endsWith('/analyze') && init?.method === 'POST') {
       const gameId = path.split('/')[3];
-      currentGames = currentGames.map((game) =>
+      currentRecent = currentRecent.map((game) =>
         (game as { id: string }).id === gameId ? { ...(game as object), analysisStatus: 'queued' } : game
       );
-      return Promise.resolve(
-        new Response(JSON.stringify({ analysisId: 'analysis-1' }), {
-          status: 200,
-          headers: { 'content-type': 'application/json' }
-        })
-      );
+      return Promise.resolve(jsonResponse({ analysisId: 'analysis-1' }));
     }
     if (typeof path === 'string' && path.endsWith('/promote') && init?.method === 'POST') {
-      const gameId = path.split('/')[3];
-      const { tier } = JSON.parse(init.body as string) as { tier: string };
-      currentGames = currentGames.map((game) =>
-        (game as { id: string }).id === gameId ? { ...(game as object), reviewTier: tier } : game
-      );
-      return Promise.resolve(
-        new Response(JSON.stringify({ reviewTier: tier }), { status: 200, headers: { 'content-type': 'application/json' } })
-      );
+      return Promise.resolve(jsonResponse({ reviewTier: 'coach' }));
     }
     throw new Error(`unexpected fetch: ${path}`);
   });
@@ -131,7 +131,9 @@ function renderGamesPage(
       <MemoryRouter initialEntries={['/games']}>
         <Routes>
           <Route path="/games" element={<GamesPage />} />
+          <Route path="/games/find" element={<div>find-page-marker</div>} />
           <Route path="/import" element={<div>import-page-marker</div>} />
+          <Route path="/settings" element={<div>settings-page-marker</div>} />
           <Route path="/session/:id" element={<div>session-page-marker</div>} />
           <Route path="/bot-session/:id" element={<div>bot-session-page-marker</div>} />
           <Route path="/review/:gameId" element={<div>review-page-marker</div>} />
@@ -143,14 +145,7 @@ function renderGamesPage(
   return fetchMock;
 }
 
-async function deleteFirstGame(): Promise<void> {
-  const user = userEvent.setup();
-  await user.click(screen.getByRole('button', { name: /more actions/i }));
-  await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
-  await user.click(screen.getByRole('button', { name: 'Delete game' }));
-}
-
-describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source is metadata)', () => {
+describe('GamesPage (rails: Practice, Continue, Recently imported)', () => {
   beforeEach(() => {
     MockEventSource.instances = [];
     vi.stubGlobal('EventSource', MockEventSource);
@@ -161,16 +156,31 @@ describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source
     vi.restoreAllMocks();
   });
 
-  test('fetches and lists the user\'s games', async () => {
+  test('lists the recently imported games on their own rail, with no source tabs', async () => {
     renderGamesPage();
-    expect(await screen.findByText('daniel')).toBeInTheDocument();
-    expect(screen.getByText('Marta')).toBeInTheDocument();
+    const recent = await screen.findByRole('region', { name: 'Recently imported' });
+
+    expect(within(recent).getByText('daniel')).toBeInTheDocument();
+    expect(within(recent).getByText('Marta')).toBeInTheDocument();
+    expect(within(recent).getByText(/~1432/)).toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Your games' })).not.toBeInTheDocument();
+  });
+
+  test('the "Find game" button opens the full list', async () => {
+    const user = userEvent.setup();
+    renderGamesPage();
+    await screen.findByText('Marta');
+
+    await user.click(screen.getByRole('link', { name: /find game/i }));
+
+    expect(await screen.findByText('find-page-marker')).toBeInTheDocument();
   });
 
   test('the "Import games" section shows every import path and each shortcut navigates to its Import tab', async () => {
     const user = userEvent.setup();
     renderGamesPage();
-    await screen.findByText('daniel');
+    await screen.findByText('Marta');
 
     const importSection = screen.getByRole('region', { name: /import games/i });
     for (const label of [/lichess/i, /chess\.com/i, /paste pgn/i, /upload pgn/i]) {
@@ -183,15 +193,13 @@ describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source
 
   test('the "Import games" section shows how much of today\'s import quota has been used', async () => {
     renderGamesPage();
-    await screen.findByText('daniel');
-
     expect(await screen.findByText(/3 of 10 imported today/i)).toBeInTheDocument();
   });
 
-  test('the "Review" action on a ready game navigates to its Review page without touching sessions', async () => {
+  test('a card\'s "Review" icon button navigates to the Review page without touching sessions', async () => {
     const user = userEvent.setup();
     const fetchMock = renderGamesPage();
-    await screen.findByText('daniel');
+    await screen.findByText('Marta');
 
     await user.click(screen.getByRole('button', { name: 'Review' }));
 
@@ -199,13 +207,19 @@ describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source
     expect(fetchMock).not.toHaveBeenCalledWith('/api/sessions', expect.anything());
   });
 
-  // A ready game not yet at the coach tier promotes it first, then starts
-  // (or resumes) its coaching session — Review and Coach are always shown
-  // together, so there's no tab to switch to first.
-  test('the "Coach" action on a ready, unpromoted game promotes it and starts a session', async () => {
+  test('every card action is an icon button with a tooltip', async () => {
+    renderGamesPage();
+    await screen.findByText('Marta');
+
+    expect(screen.getByRole('button', { name: 'Review' })).toHaveAttribute('title', 'Review');
+    expect(screen.getByRole('button', { name: 'Coach' })).toHaveAttribute('title', 'Coach');
+    expect(screen.getByRole('button', { name: /delete daniel vs\. marta/i })).toHaveAttribute('title', 'Delete game');
+  });
+
+  test('"Coach" on a ready, unpromoted game promotes it and starts a session', async () => {
     const user = userEvent.setup();
     const fetchMock = renderGamesPage();
-    await screen.findByText('daniel');
+    await screen.findByText('Marta');
 
     await user.click(screen.getByRole('button', { name: 'Coach' }));
 
@@ -219,106 +233,128 @@ describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source
     expect(await screen.findByText('session-page-marker')).toBeInTheDocument();
   });
 
-  // A game already at the coach tier skips the (now redundant) promote call
-  // and goes straight to finding-or-creating its session.
-  test('the "Coach" action on a game already at the coach tier skips promoting and opens the session directly', async () => {
+  test('"Coach" on a game already at the coach tier skips promoting and opens the session directly', async () => {
     const user = userEvent.setup();
-    const fetchMock = renderGamesPage([{ ...GAMES_RESPONSE[0], reviewTier: 'coach' }]);
-    await screen.findByText('daniel');
+    const fetchMock = renderGamesPage({ recent: [{ ...RECENT_GAME, reviewTier: 'coach' }] });
+    await screen.findByText('Marta');
 
     await user.click(screen.getByRole('button', { name: 'Coach' }));
 
     expect(await screen.findByText('session-page-marker')).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith('/api/games/g1/promote', expect.anything());
-    expect(fetchMock).toHaveBeenCalledWith('/api/sessions', expect.objectContaining({ body: JSON.stringify({ gameId: 'g1' }) }));
   });
 
-  test('tabs filter games by source, defaulting to All', async () => {
+  // BYOK gate: no saved AI key means the coach can't answer, so Coach shows
+  // the same "AI setup needed" popup a keyless coaching turn already shows,
+  // instead of opening a session that can't work.
+  test('"Coach" without an AI key shows the setup popup and does not start a session', async () => {
     const user = userEvent.setup();
-    renderGamesPage([GAMES_RESPONSE[0], { ...GAMES_RESPONSE[0], id: 'g3', whiteName: 'bottest', source: 'vs_bot', reviewTier: 'bot' }]);
+    const fetchMock = renderGamesPage({ llmConfigured: false });
+    await screen.findByText('Marta');
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/users/me/llm-setup', expect.anything()));
 
-    expect(await screen.findByText('daniel')).toBeInTheDocument();
-    expect(screen.getByText('bottest')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Coach' }));
 
-    await user.click(screen.getByRole('tab', { name: 'Bot' }));
-    expect(await screen.findByText('bottest')).toBeInTheDocument();
-    expect(screen.queryByText('daniel')).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: 'Imported' }));
-    expect(await screen.findByText('daniel')).toBeInTheDocument();
-    expect(screen.queryByText('bottest')).not.toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: /ai setup needed/i })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/sessions', expect.anything());
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/games/g1/promote', expect.anything());
   });
 
-  // architecture §14: a coach_play/vs_bot row with a live session surfaces
-  // above the source-filtered list, not just inside whichever tab it falls
-  // under — this is the thing the student most likely came back to finish.
-  test('an in-progress play-mode game shows in a "Continue" section, and its action navigates straight to its session', async () => {
+  test('the setup popup can send the student to Settings', async () => {
     const user = userEvent.setup();
-    const fetchMock = renderGamesPage([GAMES_RESPONSE[0], PLAY_MODE_GAME]);
-    // Both fixtures have 'daniel' as White — wait on the unique name instead.
+    renderGamesPage({ llmConfigured: false });
+    await screen.findByText('Marta');
+    await user.click(screen.getByRole('button', { name: 'Coach' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Go to Settings' }));
+
+    expect(await screen.findByText('settings-page-marker')).toBeInTheDocument();
+  });
+
+  test('the setup popup can fall back to the free Review of that game', async () => {
+    const user = userEvent.setup();
+    renderGamesPage({ llmConfigured: false });
+    await screen.findByText('Marta');
+    await user.click(screen.getByRole('button', { name: 'Coach' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Analyze without AI' }));
+
+    expect(await screen.findByText('review-page-marker')).toBeInTheDocument();
+  });
+
+  test('"Review" is never gated on an AI key', async () => {
+    const user = userEvent.setup();
+    renderGamesPage({ llmConfigured: false });
     await screen.findByText('Marta');
 
-    expect(screen.getByRole('heading', { name: 'Continue' })).toBeInTheDocument();
-    const continueSection = screen.getByRole('region', { name: 'Continue' });
+    await user.click(screen.getByRole('button', { name: 'Review' }));
+
+    expect(await screen.findByText('review-page-marker')).toBeInTheDocument();
+  });
+
+  test('an in-progress play-mode game shows on the Continue rail, and Continue navigates straight to its session', async () => {
+    const user = userEvent.setup();
+    const fetchMock = renderGamesPage({ inProgress: [PLAY_MODE_GAME] });
+    const continueSection = await screen.findByRole('region', { name: 'Continue' });
     expect(continueSection).toHaveTextContent('daniel vs Coach');
 
-    // The same in-progress game may also appear as a row further down the
-    // source-filtered list — scope to the "Continue" section itself so the
-    // click is unambiguous.
     await user.click(within(continueSection).getByRole('button', { name: 'Continue' }));
 
     expect(await screen.findByText('session-page-marker')).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith('/api/sessions', expect.anything());
   });
 
-  test('no "Continue" section when nothing is in progress', async () => {
-    renderGamesPage();
-    await screen.findByText('daniel');
-    expect(screen.queryByRole('heading', { name: 'Continue' })).not.toBeInTheDocument();
+  test('a Continue card\'s red trash can confirms before deleting the game', async () => {
+    const user = userEvent.setup();
+    const fetchMock = renderGamesPage({ recent: [], inProgress: [PLAY_MODE_GAME] });
+    const continueSection = await screen.findByRole('region', { name: 'Continue' });
+
+    await user.click(within(continueSection).getByRole('button', { name: /delete daniel vs\. coach/i }));
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/games/g2', expect.objectContaining({ method: 'DELETE' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent(/daniel vs\. coach/i);
+
+    await user.click(screen.getByRole('button', { name: 'Delete game' }));
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/games/g2', expect.objectContaining({ method: 'DELETE' }));
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Continue' })).not.toBeInTheDocument());
   });
 
-  test('an open practice assignment shows under "Continue", linking to the practice session', async () => {
+  test('no Continue or Practice section when nothing is in progress or assigned', async () => {
+    renderGamesPage();
+    await screen.findByText('Marta');
+    expect(screen.queryByRole('region', { name: 'Continue' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Practice' })).not.toBeInTheDocument();
+  });
+
+  test('an open practice assignment gets its own Practice section above Continue, linking to the practice session', async () => {
     const user = userEvent.setup();
-    renderGamesPage(GAMES_RESPONSE, {
-      practiceAssignments: [
-        {
-          id: 'assignment-1',
-          userId: 'u1',
-          diagnosisCode: 'TA-07',
-          reason: 'You missed several knight forks recently.',
-          items: [
-            { puzzleId: 'p1', fen: 'fen-1', moves: ['e2e4'], rating: 1500, themes: ['fork'], result: 'solved' },
-            { puzzleId: 'p2', fen: 'fen-2', moves: ['e2e4'], rating: 1500, themes: ['fork'], result: 'pending' }
-          ],
-          status: 'in_progress',
-          createdAt: '2026-08-01T00:00:00.000Z',
-          startedAt: '2026-08-01T00:00:00.000Z',
-          completedAt: null
-        }
-      ]
-    });
-    await screen.findByText('daniel');
+    renderGamesPage({ inProgress: [PLAY_MODE_GAME], practiceAssignments: [PRACTICE_ASSIGNMENT] });
+    const practiceSection = await screen.findByRole('region', { name: 'Practice' });
+    const continueSection = await screen.findByRole('region', { name: 'Continue' });
 
-    const continueSection = screen.getByRole('region', { name: 'Continue' });
-    expect(continueSection).toHaveTextContent('You missed several knight forks recently.');
-    expect(continueSection).toHaveTextContent('1 of 2 puzzles');
+    expect(practiceSection.compareDocumentPosition(continueSection) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(practiceSection).toHaveTextContent('You missed several knight forks recently.');
+    expect(practiceSection).toHaveTextContent('1 of 2 puzzles');
+    expect(continueSection).not.toHaveTextContent('knight forks');
 
-    await user.click(within(continueSection).getByRole('button', { name: 'Continue' }));
+    await user.click(within(practiceSection).getByRole('button', { name: 'Continue' }));
 
     expect(await screen.findByText('practice-page-marker')).toBeInTheDocument();
   });
 
   test('shows a friendly empty state with no games and no dummy data', async () => {
-    renderGamesPage([]);
+    renderGamesPage({ recent: [] });
     expect(await screen.findByText(/no games yet|add your first game/i)).toBeInTheDocument();
-    expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Recently imported' })).not.toBeInTheDocument();
   });
 
-  test('deleting a game confirms, calls DELETE, and removes it from the list', async () => {
+  test('deleting a recently imported game confirms, calls DELETE, and removes it', async () => {
+    const user = userEvent.setup();
     const fetchMock = renderGamesPage();
-    await screen.findByText('daniel');
+    await screen.findByText('Marta');
 
-    await deleteFirstGame();
+    await user.click(screen.getByRole('button', { name: /delete daniel vs\. marta/i }));
+    await user.click(screen.getByRole('button', { name: 'Delete game' }));
 
     expect(fetchMock).toHaveBeenCalledWith('/api/games/g1', expect.objectContaining({ method: 'DELETE' }));
     expect(await screen.findByText(/no games yet|add your first game/i)).toBeInTheDocument();
@@ -327,47 +363,34 @@ describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source
   test('canceling the confirmation dialog does not delete the game', async () => {
     const user = userEvent.setup();
     const fetchMock = renderGamesPage();
-    await screen.findByText('daniel');
+    await screen.findByText('Marta');
 
-    await user.click(screen.getByRole('button', { name: /more actions/i }));
-    await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: /delete daniel vs\. marta/i }));
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(fetchMock).not.toHaveBeenCalledWith('/api/games/g1', expect.objectContaining({ method: 'DELETE' }));
-    expect(screen.getByText('daniel')).toBeInTheDocument();
-  });
-
-  test('"Copy PGN" fetches the game\'s PGN and writes it to the clipboard', async () => {
-    const user = userEvent.setup();
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
-    const fetchMock = renderGamesPage();
-    await screen.findByText('daniel');
-
-    await user.click(screen.getByRole('button', { name: /more actions/i }));
-    await user.click(screen.getByRole('menuitem', { name: 'Copy PGN' }));
-
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith('1. e4 e5 *'));
-    expect(fetchMock).toHaveBeenCalledWith('/api/games/g1/pgn', expect.objectContaining({ credentials: 'include' }));
+    expect(screen.getByText('Marta')).toBeInTheDocument();
   });
 
   test('shows an error message if deleting a game fails', async () => {
-    renderGamesPage(GAMES_RESPONSE, { deleteStatus: 500 });
-    await screen.findByText('daniel');
+    const user = userEvent.setup();
+    renderGamesPage({ deleteStatus: 500 });
+    await screen.findByText('Marta');
 
-    await deleteFirstGame();
+    await user.click(screen.getByRole('button', { name: /delete daniel vs\. marta/i }));
+    await user.click(screen.getByRole('button', { name: 'Delete game' }));
 
     expect(await screen.findByText(/could not delete/i)).toBeInTheDocument();
-    expect(screen.getByText('daniel')).toBeInTheDocument();
+    expect(screen.getByText('Marta')).toBeInTheDocument();
   });
 
   // Phase 31 stat-bank import: a deferAnalysis-imported game with no
   // `analyses` row yet gets a "Not analyzed" status and a "Get coach
-  // analysis" action that starts analysis without leaving the Games list.
-  test('clicking "Get coach analysis" on a not-analyzed game starts analysis and flips its status', async () => {
+  // analysis" action that starts analysis without leaving the Games page.
+  test('"Get coach analysis" on a not-analyzed game starts analysis and flips its status', async () => {
     const user = userEvent.setup();
-    const fetchMock = renderGamesPage([{ ...GAMES_RESPONSE[0], analysisStatus: null }]);
-    await screen.findByText('daniel');
+    const fetchMock = renderGamesPage({ recent: [{ ...RECENT_GAME, analysisStatus: null }] });
+    await screen.findByText('Marta');
 
     expect(screen.getByText('Not analyzed', { selector: 'span' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Get coach analysis' }));
@@ -376,23 +399,18 @@ describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source
     expect(await screen.findByText('Analyzing…')).toBeInTheDocument();
   });
 
-  // The bug this session's SSE fix addresses: a row used to stay on
-  // "Analyzing…" forever once the initial fetch landed — nothing on this
-  // page ever learned the background job had finished short of a manual
-  // reload or a window-focus refetch. GET /api/analyses/active (the same SSE
-  // stream the topbar engine indicator already watches) reports every
-  // in-progress analysis; the moment a gameId drops out of that stream is
-  // the signal used here to refetch ['games'] and pick up the real,
+  // A card used to stay on "Analyzing…" forever once the initial fetch
+  // landed. GET /api/analyses/active (the SSE stream the topbar engine
+  // indicator watches) reports every in-progress analysis; the moment a
+  // gameId drops out of it, the games queries refetch and pick up the real,
   // now-terminal status.
-  test('a row updates itself once its background analysis finishes, via the active-analyses SSE stream', async () => {
-    let currentGames: unknown[] = [{ ...GAMES_RESPONSE[0], analysisStatus: 'engine_running' }];
+  test('a card updates itself once its background analysis finishes, via the active-analyses SSE stream', async () => {
+    let currentRecent: unknown[] = [{ ...RECENT_GAME, analysisStatus: 'engine_running' }];
     const fetchMock = vi.fn().mockImplementation((path: string) => {
-      if (path === '/api/games') {
-        return Promise.resolve(
-          new Response(JSON.stringify(currentGames), { status: 200, headers: { 'content-type': 'application/json' } })
-        );
-      }
-      throw new Error(`unexpected fetch: ${path}`);
+      if (path === '/api/games/imported?limit=15') return Promise.resolve(jsonResponse({ items: currentRecent, hasMore: false }));
+      if (path === '/api/games/in-progress') return Promise.resolve(jsonResponse([]));
+      if (path === '/api/users/me/llm-setup') return Promise.resolve(jsonResponse({ configured: true, unlocked: true, voiceAvailable: false }));
+      return Promise.resolve(jsonResponse([]));
     });
     vi.stubGlobal('fetch', fetchMock);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -410,7 +428,6 @@ describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source
     expect(MockEventSource.instances).toHaveLength(1);
     expect(MockEventSource.instances[0]?.url).toBe('/api/analyses/active');
 
-    // Still running — reported in the active-analyses frame.
     act(() => {
       MockEventSource.instances[0]?.emit({
         engineMode: 'native',
@@ -419,22 +436,21 @@ describe('GamesPage (Daniel\'s IA feedback: games are all the same thing, source
     });
     expect(screen.getByText('Analyzing…')).toBeInTheDocument();
 
-    // Finishes server-side; the next frame simply no longer mentions it.
-    currentGames = [{ ...GAMES_RESPONSE[0], analysisStatus: 'ready' }];
+    currentRecent = [{ ...RECENT_GAME, analysisStatus: 'ready' }];
     act(() => {
       MockEventSource.instances[0]?.emit({ engineMode: 'native', analyses: [] });
     });
 
-    expect(await screen.findByText('Ready')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Review' })).toBeInTheDocument();
     expect(screen.queryByText('Analyzing…')).not.toBeInTheDocument();
   });
 
-  test('a failed-to-analyse game has no action button, and can still be deleted from the overflow menu', async () => {
-    renderGamesPage([{ ...GAMES_RESPONSE[0], analysisStatus: 'failed' }]);
-    await screen.findByText('daniel');
+  test('a failed-to-analyse game has no Review/Coach buttons, and can still be deleted', async () => {
+    renderGamesPage({ recent: [{ ...RECENT_GAME, analysisStatus: 'failed' }] });
+    await screen.findByText('Marta');
 
     expect(screen.getByText('Failed')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /review|coach/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /more actions/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^(review|coach)$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /delete daniel vs\. marta/i })).toBeInTheDocument();
   });
 });

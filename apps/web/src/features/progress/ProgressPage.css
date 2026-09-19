@@ -1,30 +1,30 @@
-.dashboard-page {
+.progress-page {
   display: grid;
   gap: var(--space-6);
   min-width: 0;
 }
 
-.dashboard-page section {
+.progress-page section {
   min-width: 0;
 }
 
-.dashboard-page__header {
+.progress-page__header {
   grid-column: 1 / -1;
 }
 
-.dashboard-page__description {
+.progress-page__description {
   margin: 0;
   color: var(--color-text-secondary);
 }
 
-.dashboard-page__hero {
+.progress-page__hero {
   position: relative;
   grid-column: 1 / -1;
   overflow: hidden;
   background: radial-gradient(120% 160% at 100% 0%, var(--color-primary-soft) 0%, var(--color-primary-tint) 55%, var(--color-bg) 100%);
 }
 
-.dashboard-page__hero-decoration {
+.progress-page__hero-decoration {
   position: absolute;
   right: 0;
   bottom: -10px;
@@ -32,12 +32,12 @@
   pointer-events: none;
 }
 
-.dashboard-page__hero-body {
+.progress-page__hero-body {
   position: relative;
   max-width: 520px;
 }
 
-.dashboard-page__hero-eyebrow {
+.progress-page__hero-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -49,17 +49,17 @@
   margin-bottom: var(--space-2);
 }
 
-.dashboard-page__hero h2 {
+.progress-page__hero h2 {
   margin-bottom: var(--space-2);
 }
 
-.dashboard-page__hero p {
+.progress-page__hero p {
   margin: 0;
   color: var(--color-text-secondary);
   line-height: var(--line-height-reading);
 }
 
-.dashboard-page__resolved button {
+.progress-page__resolved button {
   background: transparent;
   border: none;
   color: var(--color-text-secondary);
@@ -106,38 +106,6 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-}
-
-.practice-card h2 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.practice-card__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
-}
-
-.practice-card__row + .practice-card__row {
-  border-top: 1px solid var(--color-border);
-}
-
-.practice-card__details {
-  min-width: 0;
-}
-
-.practice-card__reason {
-  margin: 0;
-}
-
-.practice-card__progress {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
 }
 
 .trend-chart__toggle {
@@ -295,18 +263,18 @@
 }
 
 @media (min-width: 1080px) {
-  .dashboard-page {
+  .progress-page {
     grid-template-columns: 1fr 1fr;
   }
 
-  .dashboard-page section[aria-label='Focus areas'] {
+  .progress-page section[aria-label='Focus areas'] {
     grid-column: 1;
     grid-row: span 2;
   }
 
-  .dashboard-page section[aria-label='Diagnoses'],
-  .dashboard-page section[aria-label='Mistake trends'],
-  .dashboard-page section[aria-label='Session history'] {
+  .progress-page section[aria-label='Diagnoses'],
+  .progress-page section[aria-label='Mistake trends'],
+  .progress-page section[aria-label='Session history'] {
     grid-column: 2;
   }
 }
