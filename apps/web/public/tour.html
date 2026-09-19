@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tour — every FreeChessCoach screen, no sign-in needed</title>
+    <meta
+      name="description"
+      content="See what is inside FreeChessCoach before you sign in: game import, free stats, game review and human-like bots, plus the AI coach, diagnosis, trends and play-with-coach."
+    />
+    <link rel="canonical" href="https://freechesscoach.org/tour" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://freechesscoach.org/tour" />
+    <meta property="og:title" content="Tour — every FreeChessCoach screen" />
+    <meta property="og:description" content="See every screen with sample data before you sign in." />
+    <meta property="og:image" content="https://freechesscoach.org/shots/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
+    <meta name="theme-color" content="#3d6b48" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/"><img src="/brand/logo.png" alt="" width="28" height="28" />FreeChessCoach</a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="/tour" aria-current="page">Take the tour</a>
+          <a href="/guide">User guide</a>
+          <a href="/openai-key">Set up the AI</a>
+          <a href="/oauth2/start?rd=/games">Sign in</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap narrow">
+          <p class="eyebrow">Tour</p>
+          <h1 style="font-size: 36px; line-height: 1.2; margin: 0 0 16px">Every screen, before you sign in.</h1>
+          <p class="sub" style="color: var(--text-muted); font-size: 18px; margin: 0">
+            Look around at your own pace. The screenshots use sample data from a made-up player
+            called Sam, so you can see what a full year looks like and what a first six weeks
+            looks like. Nothing here comes from a real person.
+          </p>
+          <div class="callout">
+            <p><strong class="title">A note on the numbers</strong></p>
+            <p>Sam's climb from 450 to 2130 in a year is a demo of a very dedicated player, not a promise. Your progress depends on how much you play and practise.</p>
+          </div>
+          <div class="callout">
+            <p><strong class="title">Would you rather click than read?</strong></p>
+            <p>Open the real app running on Sam's sample data. Browse the stats, review a game, and open the coaching conversation. The coach's replies are pre-written, so you can press send and see how a session feels without an AI key. Nothing you do there is saved.</p>
+            <p class="try-demo"><a href="/demo/games">Open the live demo</a></p>
+          </div>
+          <p class="demo-note"><a href="#free">Free, no AI</a> · <a href="#ai">With the AI coach</a> · <a href="#story">Sam's year</a></p>
+        </div>
+      </section>
+
+      <section class="section" id="free">
+        <div class="wrap">
+          <span class="tag tag-free">Free, works straight away</span>
+          <h2>Four things that work the moment you sign in</h2>
+          <p class="lead">No key, no card, nothing to set up. These run on the engine and on your own games.</p>
+
+          <div class="feature">
+            <div class="feature-copy">
+              <h3>1. Bring your games in</h3>
+              <p>Pull your recent games from Lichess or Chess.com by username, paste a PGN, or upload a file. The import page also warns you before the library limit would ever delete an old game.</p>
+              <ul>
+                <li>Up to 30 imports a day and 150 a week, 10 analysing at a time.</li>
+                <li>Your library holds 1,000 games. Older games can be deleted without losing your stats, because they are kept in a weekly archive.</li>
+                <li>After a batch import, the app recommends the most tactical game to coach.</li>
+              </ul>
+              <p class="try-demo"><a href="/demo/import">Try the import page in the live demo →</a></p>
+            </div>
+            <figure class="shot">
+              <img src="/shots/import.png" alt="The import page listing recent Lichess games, each with an Analyze button and a Get coaching session button." width="1440" height="900" loading="lazy" />
+            </figure>
+          </div>
+
+          <div class="feature">
+            <div class="feature-copy">
+              <h3>2. Stats that build up over time</h3>
+              <p>Every analysed game feeds a set of statistics that grow with you: an estimated rating for each game, how you do in each opening, which tactics you find and which you stop, how you handle pawn structure, space and defence, and how you convert endgames.</p>
+              <ul>
+                <li>An estimated-rating trend placed on the day each game was played.</li>
+                <li>Performance by opening, with win rate and accuracy.</li>
+                <li>Tactics you found, and tactics you prevented.</li>
+                <li>Strategy scores and endgame results by material type.</li>
+              </ul>
+              <p class="demo-note">Sample data: 3,420 games over a year.</p>
+              <p class="try-demo"><a href="/demo/stats">Explore these stats in the live demo →</a></p>
+            </div>
+            <figure class="shot">
+              <img src="/shots/stats-rating.png" alt="Estimated rating chart over a year, rising steeply at first and then flattening as the player approaches 2130." width="1148" height="292" loading="lazy" />
+            </figure>
+          </div>
+          <div class="two-col" style="margin-bottom: 28px">
+            <figure class="shot">
+              <img src="/shots/stats-openings-tactics.png" alt="Opening performance table and the tactics card showing how often forks, pins and other tactics were found." width="1148" height="495" loading="lazy" />
+              <figcaption>Openings and tactics: where you score, and which patterns you find.</figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="/shots/stats-strategy-endgame.png" alt="Strategy scores for pawn structure, space, piece activity, attacking and defending, and endgame results by material." width="1148" height="504" loading="lazy" />
+              <figcaption>Strategy and endgames: the strong and weak sides of your game.</figcaption>
+            </figure>
+          </div>
+
+          <div class="feature">
+            <div class="feature-copy">
+              <h3>3. Game review, step by step</h3>
+              <p>Go through any game one move at a time. Each move is labelled, an evaluation graph shows where the game turned, and tactics are explained in plain language: what you missed, what you allowed, and what the better move was.</p>
+              <ul>
+                <li>Available for every game you import, with no daily cap on reviews.</li>
+                <li>Try alternative moves on the board and see how the position changes.</li>
+                <li>One click from a game to a coaching session, if you have connected an AI key.</li>
+              </ul>
+              <p class="try-demo"><a href="/demo/games">Open a game review in the live demo →</a></p>
+            </div>
+            <figure class="shot">
+              <img src="/shots/review.png" alt="Game review at a missed move: the board with a highlighted line, the labelled move list, an evaluation graph and the coach's notes on the miss." width="1440" height="900" loading="lazy" />
+            </figure>
+          </div>
+
+          <div class="feature">
+            <div class="feature-copy">
+              <h3>4. Bots that lose the way people lose</h3>
+              <p>Thirty bots across five levels, from a newcomer rated around 300 to an expert around 2300. Instead of a strong engine with its power turned down, each bot plays good moves most of the time and then slips the way a person of that level does, with its own blind spots and personality.</p>
+              <ul>
+                <li>Practise against realistic mistakes: hung pieces, missed forks, forgotten threats.</li>
+                <li>Choose a time control, take moves back, and review the game afterwards like any other.</li>
+                <li>No AI key needed.</li>
+              </ul>
+              <p class="try-demo"><a href="/demo/play-bot/new">See the bot picker in the live demo →</a></p>
+            </div>
+            <figure class="shot">
+              <img src="/shots/bots.png" alt="The bot picker showing bots grouped by level from Beginner to Expert, each with a portrait, a rating and a personality." width="1440" height="900" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="ai">
+        <div class="wrap">
+          <span class="tag tag-ai">Free coach, you plug in the AI</span>
+          <h2>What the AI coach adds</h2>
+          <p class="lead">
+            The coach is free from us. The AI it thinks with is a separate thing you connect
+            yourself, like your own internet subscription: you pick the provider, and you decide
+            what to spend, which can be nothing on a free plan. We add nothing on top.
+            <a href="/keys">Read how keys are handled</a>
+            or <a href="/guide#key">follow the setup steps</a>.
+          </p>
+
+          <div class="feature">
+            <div class="feature-copy">
+              <h3>1. A coaching session on your own game</h3>
+              <p>Pick a game you imported and the coach walks through it with you. It asks before it tells, so you learn to see the position yourself, and every claim it makes about a position is grounded in the engine's analysis instead of guessed.</p>
+              <ul>
+                <li>Moves on the board follow the conversation.</li>
+                <li>A choice of coach personalities, from patient to demanding, with the same method and honesty.</li>
+                <li>Optional spoken delivery.</li>
+              </ul>
+              <p class="try-demo"><a href="/demo/coach">Try a coaching session in the live demo (the reply is pre-written) →</a></p>
+            </div>
+            <figure class="shot">
+              <img src="/shots/coach-session.png" alt="A coaching session: the move list and board on the left and a conversation on the right in which the coach asks what the last capture changed." width="1440" height="1250" loading="lazy" />
+            </figure>
+          </div>
+
+          <div class="feature">
+            <div class="feature-copy">
+              <h3>2. A diagnosis, not a slogan</h3>
+              <p>The coach looks for <em>why</em> you keep making the same mistake, and turns it into a focus area you can act on. Up to three are active at a time, so you are never handed a list of twenty things to fix.</p>
+              <ul>
+                <li>Measured diagnoses, worked out from your analysed games, show how often each pattern fails and how sure the app is. The coach explains them and works on them with you.</li>
+                <li>Focus areas move from needs attention to improving to resolved as you change.</li>
+                <li>Each note ends in one thing to do, not a lecture.</li>
+              </ul>
+              <p class="try-demo"><a href="/demo/progress">See a diagnosis in the live demo →</a></p>
+            </div>
+            <figure class="shot">
+              <img src="/shots/progress-focus.png" alt="The Progress page with this week's focus, three focus areas with coach notes, and measured diagnoses." width="1440" height="900" loading="lazy" />
+            </figure>
+          </div>
+          <blockquote class="interview" style="margin-bottom: 28px">
+            <p class="q">Is "Fails to run CCT" a good diagnosis?</p>
+            <p>No. It is a terrible diagnosis. "Failing to run CCT" is not a diagnosis; it is a symptom. It is the coaching equivalent of a doctor saying, "My diagnosis is that you failed to stay healthy."</p>
+            <p>Telling a student "You need to check for Checks, Captures, and Threats" is useless because every 800-rated player already knows they should do it. They aren't failing because they lack the knowledge of CCT; they are failing because a psychological or mechanical barrier prevents them from executing it.</p>
+            <cite>From an interview with our coach</cite>
+          </blockquote>
+
+          <div class="feature">
+            <div class="feature-copy">
+              <h3>3. Trends across your games</h3>
+              <p>One game is an anecdote. Across many, the coach can see what keeps coming back and whether it is fading. The Progress page shows your mistake trends over your last five and twenty games, and a history of recent lessons with the homework the coach set.</p>
+              <ul>
+                <li>See which mistake types are rising or falling.</li>
+                <li>Each lesson keeps its date, the game it covered and a one-line summary.</li>
+                <li>Practice puzzle sets are picked to match your strongest diagnoses.</li>
+              </ul>
+              <p class="demo-note">Sample data: a player six weeks in, rated in the 800s.</p>
+              <p class="try-demo"><a href="/demo/progress">See the trends in the live demo →</a></p>
+            </div>
+            <figure class="shot">
+              <img src="/shots/progress-lessons.png" alt="Mistake trends over the last 5 and 20 games and a list of recent lessons with dates, summaries and homework." width="578" height="900" loading="lazy" />
+            </figure>
+          </div>
+
+          <div class="feature">
+            <div class="feature-copy">
+              <h3>4. Play with the coach</h3>
+              <p>This is not a game for fun. It is a lesson you play: you move, and the coach talks about most of them, asks what you saw, and helps you understand each position as it happens. Three to seven of these a week is the pace the app is built for.</p>
+              <ul>
+                <li>The coach plays the other side and explains as you go.</li>
+                <li>Take a move back when you see a mistake.</li>
+                <li>Finished games join your history like any other.</li>
+              </ul>
+              <p class="try-demo"><a href="/demo/play/new">See the play-with-coach start screen in the live demo →</a></p>
+            </div>
+            <figure class="shot">
+              <img src="/shots/play-coach.png" alt="Starting a game with the coach: choose to play as White or as Black." width="1212" height="282" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="story">
+        <div class="wrap">
+          <p class="eyebrow">Sam's year</p>
+          <h2>What a year of steady work can look like</h2>
+          <p class="lead">
+            Sam is a made-up player who started at about 450. The curve is deliberately not a
+            straight line: fast to 1000, slower to 1600, then a long grind with a plateau and a
+            small setback along the way.
+          </p>
+          <figure class="shot">
+            <img src="/shots/hero-stats.png" alt="Sam's estimated rating over one year, rising from about 450 to 2130." width="1440" height="900" loading="lazy" />
+            <figcaption>Sample data. Results vary; this is one dedicated player's demo year.</figcaption>
+          </figure>
+          <div class="cta-row">
+            <a class="google-btn" href="/oauth2/start?rd=/games">
+              <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.9-2.26 5.36-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+              </svg>
+              <span>Sign in with Google</span>
+            </a>
+            <a class="btn btn-primary" href="/demo/games">Try the live demo</a>
+            <a class="btn btn-secondary" href="/guide">Read the user guide</a>
+          </div>
+          <ul class="assurances">
+            <li>No credit card</li>
+            <li>Only your email and name from Google</li>
+            <li>The AI key is optional</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <nav aria-label="Footer">
+          <a href="/">Home</a>
+          <a href="/guide">User guide</a>
+          <a href="/keys">Your AI key</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms of Service</a>
+          <a href="https://github.com/abrahamberg/FreeChessCoach">Source code</a>
+        </nav>
+        &copy; FreeChessCoach. An independent, free project.
+      </div>
+    </footer>
+  </body>
+</html>

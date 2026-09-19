@@ -23,6 +23,13 @@ Socratically while tracking their progress over time. The initial build
 - `docs/algorith.md` — the spec behind the *shipped* Game Report (accuracy,
   scores, classification, estimated rating, opening book). Same rule: only
   open the one subsection a task's "Read:" line names, never cold.
+- `docs/marketing-demo.md` — the public marketing pages (`/tour`, `/guide`,
+  `/keys`, `/openai-key`), the seeded demo players, how the screenshots
+  are captured, and the offline live demo at `/demo` (`apps/web/src/demo/`, a
+  fake `fetch` over recorded fixtures with a scripted coach). Read it before
+  touching `apps/web/public/*.html`, `apps/web/src/demo/`, `seed-demo.ts`,
+  `scripts/capture-marketing-shots.mjs` or `scripts/record-demo-fixtures.mjs`;
+  irrelevant otherwise.
 - `docs/tactics-rework.md` — why Game Review's tactic sentences misfired, what
   was measured, and the layered rebuild that shipped. Read it before touching
   `tactic-detectors/`, `classify-tactic-motif.ts`, the `verify-tactic-*`

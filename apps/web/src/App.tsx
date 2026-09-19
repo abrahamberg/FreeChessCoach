@@ -16,6 +16,9 @@ import { BotSessionPage } from './features/session/BotSessionPage.js';
 import { SessionPage } from './features/session/SessionPage.js';
 import { SettingsPage } from './features/settings/SettingsPage.js';
 import { StatsPage } from './features/stats/StatsPage.js';
+import { DemoCoachRedirect } from './demo/DemoCoachRedirect.js';
+import { DEMO_BASENAME } from './demo/demoMode.js';
+import { getDemoRuntime } from './demo/demoRuntime.js';
 import { useEngineTunnelActivation } from './hooks/useEngineTunnelActivation.js';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: shouldRetryQuery } } });
@@ -59,18 +62,24 @@ function GameReviewRoute(): ReactNode {
 export function App(): ReactNode {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename={getDemoRuntime() ? DEMO_BASENAME : undefined}>
         <AppRoutes />
       </BrowserRouter>
     </QueryClientProvider>
   );
 }
 
-export function AppRoutes(): ReactNode {
+/** Mounted once at the app root; the demo has no engine tunnel to keep open. */
+function EngineTunnel(): null {
   useEngineTunnelActivation();
+  return null;
+}
+
+export function AppRoutes(): ReactNode {
 
   return (
     <AppShell>
+      {!getDemoRuntime() && <EngineTunnel />}
       <Routes>
         <Route path="/" element={<Navigate to="/games" replace />} />
         <Route path="/import" element={<ImportPage />} />
@@ -87,6 +96,7 @@ export function AppRoutes(): ReactNode {
         <Route path="/dashboard" element={<Navigate to="/progress" replace />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        {getDemoRuntime() && <Route path="/coach" element={<DemoCoachRedirect />} />}
       </Routes>
     </AppShell>
   );

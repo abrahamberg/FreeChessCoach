@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { DemoBanner } from '../demo/DemoBanner.js';
+import { getDemoRuntime } from '../demo/demoRuntime.js';
 import { useEngineActivityIndicator } from '../hooks/useEngineActivityIndicator.js';
 import { useIsDesktop } from '../hooks/useIsDesktop.js';
 import { EngineActivityIndicator } from './EngineActivityIndicator.js';
@@ -53,7 +55,9 @@ export function AppShell({ children }: AppShellProps): ReactNode {
       {/* Fixed overlay, not gated by showGlobalNav — a board route (session/
        * bot-session/review) hides the top bar but still wants the nudge
        * toward full screen, arguably more than any other page. */}
-      <FullscreenPrompt />
+      {/* An install nudge for an app the demo visitor has not signed into would only cover the demo notice. */}
+      {!getDemoRuntime() && <FullscreenPrompt />}
+      <DemoBanner />
       {showGlobalNav && <TopBar isDesktop={isDesktop} />}
       <main className="app-shell__content">{children}</main>
       {showBottomTabBar && <BottomTabBar />}
@@ -75,6 +79,8 @@ function TopBar({ isDesktop }: { isDesktop: boolean }): ReactNode {
   // individually) so desktop and mobile share a single useActiveAnalyses
   // SSE subscription instead of opening one each.
   const engineActivity = useEngineActivityIndicator();
+  // The demo has no engine, and a red "Engine" dot would only look like a fault.
+  const showEngineStatus = getDemoRuntime() === null;
 
   return (
     <header className="app-shell__topbar">
@@ -91,8 +97,8 @@ function TopBar({ isDesktop }: { isDesktop: boolean }): ReactNode {
           </nav>
         )}
         <div className="app-shell__topbar-end">
-          {isDesktop && <EngineActivityIndicator state={engineActivity} />}
-          <UserMenu engineActivity={isDesktop ? undefined : engineActivity} />
+          {isDesktop && showEngineStatus && <EngineActivityIndicator state={engineActivity} />}
+          <UserMenu engineActivity={isDesktop || !showEngineStatus ? undefined : engineActivity} />
         </div>
       </div>
     </header>

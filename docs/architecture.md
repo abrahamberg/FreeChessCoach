@@ -33,10 +33,14 @@ Five deployables: `web`, `api`, `worker`, `engine`, plus `oauth2-proxy` and
 `postgresql` from upstream charts.
 
 Everything behind the ingress requires an authenticated oauth2-proxy session,
-with two exceptions carved out via `--skip-auth-route`: `/` (the public
-landing page, `apps/web/public/landing.html`) and `/robots.txt`, so
-logged-out visitors and search-engine crawlers can reach the site before
-signing in.
+with a few exceptions carved out via `--skip-auth-route`: `/` (the public
+landing page, `apps/web/public/landing.html`), the marketing pages (`/tour`,
+`/guide`, `/keys`, `/openai-key`, their `site.css`, `shots/` and
+`sitemap.xml`; see `docs/marketing-demo.md`), the live demo (`/demo/*` and the
+SPA bundle in `/assets/`; the demo runs on recorded data and makes no `/api` call), the
+privacy/terms pages and
+`/robots.txt`, so logged-out visitors and search-engine crawlers can look
+around the site before signing in.
 
 # Architectural Principles
 

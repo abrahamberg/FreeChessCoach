@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User guide — your first week with FreeChessCoach</title>
+    <meta
+      name="description"
+      content="How to get started: sign in, import your games, review them for free, connect an AI key for coaching, and the weekly routine FreeChessCoach is built around."
+    />
+    <link rel="canonical" href="https://freechesscoach.org/guide" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://freechesscoach.org/guide" />
+    <meta property="og:title" content="User guide — your first week with FreeChessCoach" />
+    <meta property="og:description" content="Sign in, import, review, coach. A step-by-step guide with screenshots." />
+    <meta property="og:image" content="https://freechesscoach.org/shots/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
+    <meta name="theme-color" content="#3d6b48" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/"><img src="/brand/logo.png" alt="" width="28" height="28" />FreeChessCoach</a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="/tour">Take the tour</a>
+          <a href="/guide" aria-current="page">User guide</a>
+          <a href="/openai-key">Set up the AI</a>
+          <a href="/oauth2/start?rd=/games">Sign in</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap narrow">
+          <p class="eyebrow">User guide</p>
+          <h1 style="font-size: 36px; line-height: 1.2; margin: 0 0 16px">Your first week with FreeChessCoach.</h1>
+          <p style="color: var(--text-muted); font-size: 18px; margin: 0">
+            Everything here is free from us. Up to step 6 you need no AI at all; steps 7 to 9 add the coach, which runs on an AI service you connect yourself.
+            Screenshots use sample data from a made-up player.
+          </p>
+          <p class="demo-note">
+            <a href="#signin">1 Sign in</a> · <a href="#link">2 Link accounts</a> · <a href="#import">3 Import</a> ·
+            <a href="#review">4 Review</a> · <a href="#stats">5 Stats</a> · <a href="#bots">6 Bots</a> ·
+            <a href="#key">7 AI key</a> · <a href="#coach">8 Coaching</a> · <a href="#progress">9 Progress</a> ·
+            <a href="#routine">The weekly routine</a>
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap narrow">
+          <ol class="steps">
+            <li id="signin">
+              <h3>Sign in with Google</h3>
+              <p>Choose <a href="/oauth2/start?rd=/games">Sign in with Google</a>. There is no separate account form and no credit card. From Google we receive your email address and the name on your profile, and never your password. You need to be at least 16 to use the service (see the <a href="/terms">Terms</a>).</p>
+              <p>You land on <strong>Games</strong>, which starts empty. The top bar has four places: <strong>Games</strong>, <strong>Play</strong>, <strong>Progress</strong> and <strong>Stats</strong>. Once you have games, this page shows the ones you imported, your practice sets and any coaching in progress.</p>
+              <p class="try-demo"><a href="/demo/games">See the Games page in the live demo →</a></p>
+              <figure class="shot">
+                <img src="/shots/games-library.png" alt="The Games page: import options, practice sets and recently imported games." width="1440" height="900" loading="lazy" />
+                <figcaption class="demo-note">Sample data, a few weeks in.</figcaption>
+              </figure>
+            </li>
+
+            <li id="link">
+              <h3>Link your Lichess or Chess.com account</h3>
+              <p>Open <strong>Settings</strong> and find <strong>Linked accounts</strong>. Enter your Lichess and/or Chess.com username. This lets the import page list your recent games without you pasting anything. You only ever enter a public username, never a password for those sites.</p>
+            </li>
+
+            <li id="import">
+              <h3>Import your games</h3>
+              <p>Open <strong>Import a game</strong>. Choose a source: <strong>From Lichess</strong>, <strong>From Chess.com</strong>, paste a PGN, or upload a file.</p>
+              <p>For a single game you pick one of two buttons:</p>
+              <ul>
+                <li><strong>Analyze</strong> is the free move-by-move review. No AI needed.</li>
+                <li><strong>Get coaching session</strong> starts a session with the AI coach. This one needs an AI key (step 7).</li>
+              </ul>
+              <p>To bring in many games at once, select several from your Lichess or Chess.com list. You can import 30 a day and 150 a week, with up to 10 analysing at a time, and the app shows what is left. When a batch finishes, it points out the game with the most tactics as the best one to coach.</p>
+              <p class="try-demo"><a href="/demo/import">Try the import page in the live demo →</a></p>
+              <figure class="shot">
+                <img src="/shots/import.png" alt="The Import a game page." width="1440" height="900" loading="lazy" />
+              </figure>
+            </li>
+
+            <li id="review">
+              <h3>Review a game, move by move</h3>
+              <p>When analysis finishes, open the game from <strong>Games</strong> and choose <strong>Review</strong>. Step through the moves on the board. Each move is labelled, the graph shows where the evaluation swung, and the notes explain missed and allowed tactics in plain words. Try a different move on the board to see what would have happened.</p>
+              <p>Review is free for every game you import.</p>
+              <p class="try-demo"><a href="/demo/games">Open a game review in the live demo →</a></p>
+              <figure class="shot">
+                <img src="/shots/review.png" alt="Game review with board, evaluation graph and move notes." width="1440" height="900" loading="lazy" />
+              </figure>
+            </li>
+
+            <li id="stats">
+              <h3>Watch your stats build up</h3>
+              <p>Every analysed game feeds <strong>Stats</strong>: estimated rating over time, openings, tactics found and prevented, strategy and endgames. Use the range buttons (last 7 days, 30 days, year, all time) and switch between <strong>Rapid</strong> and <strong>All formats</strong>. The numbers get more meaningful after a few dozen games.</p>
+              <p>Your library holds up to 1,000 games. If you delete old ones, or the app makes room, your stats stay, because deleted games are folded into a weekly archive first.</p>
+              <p class="try-demo"><a href="/demo/stats">Explore the stats in the live demo →</a></p>
+              <figure class="shot">
+                <img src="/shots/stats-openings-tactics.png" alt="Stats: opening performance and tactics." width="1148" height="495" loading="lazy" />
+              </figure>
+            </li>
+
+            <li id="bots">
+              <h3>Play a bot that makes human mistakes</h3>
+              <p>Open <strong>Play</strong>, then <strong>Play a bot</strong>. Filter by skill tier, pick a bot, choose a time control and start. Bots play like people of their level, so you practise against realistic mistakes. Finished games are reviewed like any imported game. No AI key needed.</p>
+              <p class="try-demo"><a href="/demo/play-bot/new">See the bot picker in the live demo →</a></p>
+              <figure class="shot">
+                <img src="/shots/bots.png" alt="The bot picker." width="1440" height="900" loading="lazy" />
+              </figure>
+            </li>
+
+            <li id="key">
+              <h3>Optional: connect your AI key</h3>
+              <p>The coach runs on a key you bring. Before you do, read <a href="/keys">how the key is handled</a>. Then follow <a href="/openai-key">the OpenAI walkthrough</a>: create an account, set a small spending limit, make a key just for this app, and paste it into <strong>Settings → AI setup</strong>.</p>
+              <div class="callout warn">
+                <p><strong>Use a key with a small monthly limit</strong>, about $5 to begin with, and adjust it to what you actually use.</p>
+              </div>
+              <p class="try-demo"><a href="/demo/settings">See the AI setup section in the live demo →</a></p>
+              <figure class="shot">
+                <img src="/shots/settings-ai.png" alt="Settings, AI setup section." width="1148" height="691" loading="lazy" />
+              </figure>
+            </li>
+
+            <li id="coach">
+              <h3>Have your first coaching session</h3>
+              <p>Pick a game you care about, ideally a serious one with tactics in it, and choose <strong>Get coaching session</strong> (or <strong>Coach</strong> on a game you already imported). Enter your unlock phrase when asked.</p>
+              <p>The coach asks before it tells. Answer in your own words, and use the board to show what you saw. You can end the session whenever you like, and pick it up later.</p>
+              <p>To play a learning game instead, open <strong>Play</strong> and choose <strong>Play the coach</strong>, then <strong>Play as White</strong> or <strong>Play as Black</strong>. The coach follows the game live.</p>
+              <p class="try-demo"><a href="/demo/coach">Try a coaching session in the live demo (the reply is pre-written) →</a></p>
+              <figure class="shot">
+                <img src="/shots/coach-session.png" alt="A coaching session." width="1440" height="1250" loading="lazy" />
+              </figure>
+            </li>
+
+            <li id="progress">
+              <h3>Follow your focus areas on Progress</h3>
+              <p><strong>Progress</strong> shows this week's focus, your active focus areas with the coach's notes, measured diagnoses, mistake trends, and a list of recent lessons with their homework. Aim for one thing at a time: fix the primary focus area and the rest follows.</p>
+              <p class="try-demo"><a href="/demo/progress">See the Progress page in the live demo →</a></p>
+              <figure class="shot">
+                <img src="/shots/progress-focus.png" alt="The Progress page." width="1440" height="900" loading="lazy" />
+              </figure>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section" id="routine">
+        <div class="wrap">
+          <p class="eyebrow">The routine</p>
+          <h2>What a good week looks like</h2>
+          <p class="lead">This is the pattern FreeChessCoach is designed around. You don't have to follow it exactly, but it is what we would do.</p>
+          <div class="week">
+            <div class="card"><div class="big">~10</div><h3>games a day</h3><p>Ten-minute rapid on Lichess or Chess.com, against real people.</p></div>
+            <div class="card"><div class="big">1</div><h3>coached game</h3><p>Import the day's games, then coach the serious one with the most tactical moments.</p></div>
+            <div class="card"><div class="big">20</div><h3>minutes of puzzles</h3><p>On Lichess, using the theme your coach recommends, or a mix if it has none yet.</p></div>
+            <div class="card"><div class="big">3–7</div><h3>games with the coach</h3><p>Learning games where most moves are discussed, spread across the week.</p></div>
+          </div>
+          <div class="callout">
+            <p>Ten-minute rapid gives you time to think, which is what makes a game worth reviewing. Blitz produces many games but few worth coaching.</p>
+          </div>
+          <div class="cta-row">
+            <a class="google-btn" href="/oauth2/start?rd=/games">
+              <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.9-2.26 5.36-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+              </svg>
+              <span>Sign in with Google</span>
+            </a>
+            <a class="btn btn-primary" href="/demo/games">Try the live demo</a>
+            <a class="btn btn-secondary" href="/tour">See the tour</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <nav aria-label="Footer">
+          <a href="/">Home</a>
+          <a href="/tour">Tour</a>
+          <a href="/keys">Your AI key</a>
+          <a href="/openai-key">OpenAI walkthrough</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms of Service</a>
+        </nav>
+        &copy; FreeChessCoach. An independent, free project.
+      </div>
+    </footer>
+  </body>
+</html>

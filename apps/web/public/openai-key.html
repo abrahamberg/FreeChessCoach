@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Get an OpenAI API key for FreeChessCoach, step by step</title>
+    <meta
+      name="description"
+      content="A calm, step-by-step walkthrough: create an OpenAI Platform account, set a small spending limit, make an API key and paste it into FreeChessCoach."
+    />
+    <link rel="canonical" href="https://freechesscoach.org/openai-key" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://freechesscoach.org/openai-key" />
+    <meta property="og:title" content="Get an OpenAI API key for FreeChessCoach" />
+    <meta property="og:description" content="Account, spending limit, key, and where to paste it. About ten minutes." />
+    <meta property="og:image" content="https://freechesscoach.org/shots/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
+    <meta name="theme-color" content="#3d6b48" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/"><img src="/brand/logo.png" alt="" width="28" height="28" />FreeChessCoach</a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="/tour">Take the tour</a>
+          <a href="/guide">User guide</a>
+          <a href="/keys" aria-current="page">Your AI key</a>
+          <a href="/oauth2/start?rd=/games">Sign in</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap narrow">
+          <p class="eyebrow">Walkthrough</p>
+          <h1 style="font-size: 36px; line-height: 1.2; margin: 0 0 16px">Get an OpenAI API key for FreeChessCoach.</h1>
+          <p style="color: var(--text-muted); font-size: 18px; margin: 0">
+            About ten minutes, once. You will create an OpenAI Platform account, set a small
+            spending limit, make a key just for this app, and paste it into FreeChessCoach.
+          </p>
+          <div class="callout">
+            <strong class="title">Before you start</strong>
+            <p>Read <a href="/keys">how FreeChessCoach handles your key</a> first if you haven't. The two rules are: use a key made only for this app, and give it a small monthly limit.</p>
+            <p>The AI coach is optional. Import, stats, game review and the bots work without any of this.</p>
+          </div>
+          <div class="callout">
+            <strong class="title">Want to pay nothing?</strong>
+            <p>Follow the steps below, then read <a href="#free">the free usage step</a>. OpenAI can give free daily tokens if you let it use your chats to improve its models. It is your choice, and the catch is explained there.</p>
+          </div>
+          <div class="callout">
+            <strong class="title">The OpenAI website changes</strong>
+            <p>The names below match OpenAI's console as we last saw it. If a menu has moved, look for the same words nearby.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap narrow">
+          <ol class="steps">
+            <li>
+              <h3>Create an OpenAI Platform account</h3>
+              <p>Go to <a href="https://platform.openai.com/">platform.openai.com</a> and sign up, or log in if you already have one. The Platform (for the API) is a separate thing from ChatGPT: a ChatGPT subscription does not include API credit, and API usage is billed on its own.</p>
+            </li>
+            <li>
+              <h3>Add a little credit</h3>
+              <p>In the left menu open <strong>Billing</strong>, add a payment method, and buy a small amount of prepaid credit. <strong>$5</strong> is a sensible start. OpenAI's <strong>Limits</strong> page also shows that purchasing about $5 moves you up from the free tier to <strong>Tier 1</strong>, which raises your rate limits.</p>
+              <p>You choose the amount, and you can stop any time. We never see your payment details, since they are entered on OpenAI's site.</p>
+            </li>
+            <li>
+              <h3>Set a spending limit (the most important step)</h3>
+              <p>Open <strong>Limits</strong> in the left menu. Under <strong>Spend</strong> you will see the <strong>Organization spend limit</strong>. Choose <strong>Edit spend limit</strong> and set it to a small monthly amount, for example <strong>$5</strong>.</p>
+              <p>While you are there, use <strong>Add alert</strong> under <strong>Spend alerts</strong> to get an email at 80% and at 100% of that limit. OpenAI notes that your actual costs may exceed a limit depending on usage, so keep it small.</p>
+              <p>After a couple of weeks, check <strong>Usage</strong> and adjust the limit to what you really use.</p>
+            </li>
+            <li>
+              <h3>Optional: make a project just for FreeChessCoach</h3>
+              <p>Open <strong>Projects</strong> and create one named <em>FreeChessCoach</em>. Keeping this app in its own project makes its usage easy to see and its key easy to remove, without touching anything else you run.</p>
+            </li>
+            <li>
+              <h3>Create a key only for this app</h3>
+              <p>Open <strong>API keys</strong> and choose <strong>Create new secret key</strong>. In the box that opens:</p>
+              <ul>
+                <li><strong>Owned by:</strong> leave it on <em>You</em>.</li>
+                <li><strong>Name:</strong> something like <code>FreeChessCoach</code>, so you remember what it is for.</li>
+                <li><strong>Project:</strong> the FreeChessCoach project from the last step, if you made one.</li>
+                <li><strong>Expiration:</strong> pick a date a few months away if it offers one. A key that expires on its own is a key you will rotate.</li>
+              </ul>
+              <p>Then choose <strong>Create secret key</strong>. OpenAI shows the key <strong>once</strong>. Copy it now. If you lose it, you simply make another.</p>
+              <div class="callout warn">
+                <p><strong>Treat the key like a password.</strong> Never post it in a chat, screenshot or public repository. If it is ever exposed, delete it in <strong>API keys</strong> (the bin icon beside it) and make a new one.</p>
+              </div>
+            </li>
+            <li>
+              <h3>Paste it into FreeChessCoach</h3>
+              <p>Sign in to FreeChessCoach and open <strong>Settings</strong>, then the AI setup section. It is a short two-step wizard.</p>
+              <p><strong>Step 1: Connect your AI.</strong></p>
+              <ul>
+                <li><strong>API URL:</strong> leave <code>https://api.openai.com/v1</code>.</li>
+                <li><strong>API key:</strong> paste your key.</li>
+                <li><strong>Low model / High model / Voice model:</strong> the form is pre-filled with the defaults the app recommends. Leave them unless you know you want something else. The voice model is optional.</li>
+                <li><strong>Use OpenAI Flex processing:</strong> about half the token price, but responses are slower and can occasionally be unavailable. Ticked by default for a new setup; untick it if you prefer speed.</li>
+              </ul>
+              <p>Choose <strong>Test connection</strong>. The app makes a tiny test call for each model and shows what it found. If it passes, choose <strong>Proceed</strong>.</p>
+              <p><strong>Step 2: Set an unlock phrase.</strong> Pick a phrase of at least 8 characters that you don't use anywhere else, then <strong>Save</strong>. Your key is encrypted with it, and we can't recover it if you forget it.</p>
+              <p>Later, <strong>Enter unlock phrase</strong> unlocks the setup for a coaching session, <strong>Lock now</strong> removes the decrypted copy from our server straight away, <strong>Replace setup</strong> is how you rotate to a new key, and <strong>Delete setup</strong> removes it.</p>
+            </li>
+            <li id="free">
+              <h3>Optional: complimentary daily tokens, and what they cost you in privacy</h3>
+              <p>OpenAI has a data-sharing setting that can make some usage free. You can see it at <a href="https://platform.openai.com/settings/organization/data-controls/sharing">Settings → Data controls → Sharing</a>, under <strong>Share inputs and outputs with OpenAI</strong>. When it is on, OpenAI's console tells you that you are <em>enrolled for complimentary daily tokens</em>.</p>
+              <p>Please read what this means before you turn it on. OpenAI says the traffic you send once it is enabled is shared to help it develop and improve its services, including training its models. For FreeChessCoach, that traffic is your games and your conversations with the coach.</p>
+              <p>It is your choice, and you can change it at any time. If you do enable it, consider <strong>Enabled for selected projects</strong> and pick only the FreeChessCoach project, so nothing else you run with OpenAI is included. Check OpenAI's own page for the current terms and the amount of free tokens, since we don't control them.</p>
+            </li>
+            <li>
+              <h3>Rotate it every so often</h3>
+              <p>Every month or two, or when the key expires: make a new key as above, use <strong>Replace setup</strong> in FreeChessCoach, then delete the old key in <strong>API keys</strong>. That is the whole routine.</p>
+            </li>
+          </ol>
+          <div class="cta-row">
+            <a class="google-btn" href="/oauth2/start?rd=/settings">
+              <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.9-2.26 5.36-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+              </svg>
+              <span>Sign in and open Settings</span>
+            </a>
+            <a class="btn btn-secondary" href="/keys">Back to key safety</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <nav aria-label="Footer">
+          <a href="/">Home</a>
+          <a href="/tour">Tour</a>
+          <a href="/guide">User guide</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms of Service</a>
+        </nav>
+        &copy; FreeChessCoach. An independent, free project. Not affiliated with OpenAI.
+      </div>
+    </footer>
+  </body>
+</html>

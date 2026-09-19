@@ -3,264 +3,329 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FreeChessCoach — free chess coaching, bring your own AI key</title>
+    <title>FreeChessCoach — a free chess coach that reads your games</title>
     <meta
       name="description"
-      content="A free, forever chess coach. Import your games and connect your own AI API key for personalized, engine-backed coaching that helps you actually improve."
+      content="Free stats, game review, human-like bots and an AI coach that reads your Lichess and Chess.com games. Everything from us is free. Try the live demo before you sign in."
     />
     <link rel="canonical" href="https://freechesscoach.org/" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://freechesscoach.org/" />
-    <meta property="og:title" content="FreeChessCoach" />
+    <meta property="og:title" content="FreeChessCoach — a free chess coach that reads your games" />
     <meta
       property="og:description"
-      content="Free, forever. Bring your own AI API key. Personalized, engine-backed chess coaching."
+      content="Free stats, game review, human-like bots and an AI coach. Everything from us is free; you plug in your own AI. No credit card, and you can look around before you sign in."
     />
-    <meta property="og:image" content="https://freechesscoach.org/brand/icon-512.png" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="FreeChessCoach" />
+    <meta property="og:image" content="https://freechesscoach.org/shots/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FreeChessCoach — a free chess coach that reads your games" />
     <meta
       name="twitter:description"
-      content="Free, forever. Bring your own AI API key. Personalized, engine-backed chess coaching."
+      content="Free stats, game review, human-like bots and an AI coach. Everything from us is free; you plug in your own AI."
     />
-    <meta name="twitter:image" content="https://freechesscoach.org/brand/icon-512.png" />
+    <meta name="twitter:image" content="https://freechesscoach.org/shots/og.png" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/brand/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
     <link rel="manifest" href="/brand/site.webmanifest" />
     <meta name="theme-color" content="#3d6b48" />
-    <style>
-      /* Mirrors apps/web/src/styles/tokens.css — this page is static and
-         can't reach the SPA's hashed, auth-gated bundle, so the palette is
-         duplicated here. Keep these two in sync if the palette changes. */
-      :root {
-        --bg: #faf9f7;
-        --surface: #ffffff;
-        --text: #26241e;
-        --text-muted: #6f6a5e;
-        --accent: #3d6b48;
-        --accent-contrast: #ffffff;
-        --board-light: #ede2c8;
-        --board-dark: #8ba173;
-        --border: rgb(0 0 0 / 12%);
+    <link rel="stylesheet" href="/site.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "FreeChessCoach",
+        "url": "https://freechesscoach.org/",
+        "description": "A free chess coach that reads your Lichess and Chess.com games: stats, game review, human-like bots and an AI coach.",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Any (web browser)",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       }
-
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #15140f;
-          --surface: #1e1c16;
-          --text: #e8e5dd;
-          --text-muted: #9a948a;
-          --accent: #7fb08a;
-          --accent-contrast: #15140f;
-          --board-light: #bfb294;
-          --board-dark: #6e8258;
-          --border: rgb(255 255 255 / 14%);
-        }
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-        font-size: 16px;
-        line-height: 1.6;
-        -webkit-font-smoothing: antialiased;
-      }
-
-      main.page {
-        max-width: 1080px;
-        margin: 0 auto;
-        padding: 24px 16px 48px;
-      }
-
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 600;
-        font-size: 18px;
-        padding: 16px 0 40px;
-      }
-
-      .brand img {
-        width: 28px;
-        height: 28px;
-      }
-
-      .hero {
-        display: flex;
-        align-items: center;
-        gap: 48px;
-        flex-wrap: wrap-reverse;
-      }
-
-      .hero__copy {
-        flex: 1 1 360px;
-        min-width: 280px;
-      }
-
-      .hero__copy h1 {
-        font-size: 34px;
-        line-height: 1.25;
-        margin: 0 0 16px;
-        font-weight: 600;
-      }
-
-      .hero__copy p {
-        color: var(--text-muted);
-        font-size: 17px;
-        margin: 0 0 28px;
-        max-width: 46ch;
-      }
-
-      .hero__board {
-        flex: 0 0 auto;
-        width: 280px;
-        height: 280px;
-        max-width: 60vw;
-        max-height: 60vw;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        background-image: conic-gradient(
-          var(--board-dark) 90deg,
-          var(--board-light) 90deg 180deg,
-          var(--board-dark) 180deg 270deg,
-          var(--board-light) 270deg
-        );
-        background-size: 35px 35px;
-        display: grid;
-        place-items: center;
-        overflow: hidden;
-      }
-
-      .hero__board img {
-        width: 60%;
-        height: 60%;
-        filter: drop-shadow(0 2px 3px rgb(0 0 0 / 25%));
-      }
-
-      /* "Sign in with Google" button — follows Google's identity branding
-         guidelines (white surface, colored G mark, neutral-grey border). */
-      .google-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 12px;
-        height: 44px;
-        padding: 0 16px 0 12px;
-        background: #fff;
-        color: #1f1f1f;
-        border: 1px solid #747775;
-        border-radius: 8px;
-        font-family: Roboto, -apple-system, 'Segoe UI', sans-serif;
-        font-size: 15px;
-        font-weight: 500;
-        text-decoration: none;
-        transition: box-shadow 0.15s ease;
-      }
-
-      .google-btn:hover {
-        box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .google-btn {
-          background: #1f1f1f;
-          color: #e3e3e3;
-          border-color: #8e918f;
-        }
-      }
-
-      .tagline {
-        display: inline-block;
-        margin-top: 20px;
-        font-size: 13px;
-        color: var(--text-muted);
-      }
-
-      footer {
-        margin-top: 64px;
-        color: var(--text-muted);
-        font-size: 13px;
-      }
-
-      footer a {
-        color: var(--text-muted);
-      }
-
-      footer nav {
-        margin-bottom: 8px;
-      }
-
-      footer nav a {
-        margin-right: 16px;
-      }
-    </style>
+    </script>
   </head>
   <body>
-    <main class="page">
-      <div class="brand"><img src="/brand/logo.png" alt="" width="28" height="28" />FreeChessCoach</div>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/"><img src="/brand/logo.png" alt="" width="28" height="28" />FreeChessCoach</a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="/tour">Take the tour</a>
+          <a href="/guide">User guide</a>
+          <a href="/openai-key">Set up the AI</a>
+          <a href="/oauth2/start?rd=/games">Sign in</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
       <section class="hero">
-        <div class="hero__board" aria-hidden="true"><img src="/brand/logo.png" alt="" /></div>
-        <div class="hero__copy">
-          <h1>A personal chess coach. Free, forever.</h1>
-          <p>
-            Import your games and connect your own AI API key. Get
-            personalized, engine-backed coaching that walks through your
-            games with you and tracks your progress over time &mdash; no
-            subscription, ever.
-          </p>
-          <a class="google-btn" href="/oauth2/start?rd=/games">
-            <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
-              <path
-                fill="#EA4335"
-                d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-              />
-              <path
-                fill="#4285F4"
-                d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.9-2.26 5.36-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-              />
-              <path
-                fill="#34A853"
-                d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-              />
-            </svg>
-            <span>Sign in with Google</span>
-          </a>
-          <br />
-          <span class="tagline">Free, forever. Bring your own AI API key.</span>
+        <div class="wrap hero-grid">
+          <div>
+            <h1>A chess coach that actually reads your games. Free.</h1>
+            <p class="sub">
+              Import your games from Lichess or Chess.com and get stats, step-by-step game review,
+              bots that make human mistakes and a coach that walks through your games with you.
+              Everything we build is free. The AI behind the coach is a separate thing you plug in
+              yourself, like your own internet plan.
+            </p>
+            <div class="cta-row">
+              <a class="google-btn" href="/oauth2/start?rd=/games">
+                <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.9-2.26 5.36-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                </svg>
+                <span>Sign in with Google</span>
+              </a>
+              <a class="btn btn-primary" href="/demo/games">Try the live demo</a>
+              <a class="btn btn-secondary" href="/tour">Take the tour</a>
+            </div>
+            <ul class="assurances">
+              <li>No credit card, ever</li>
+              <li>Only your email and name from Google</li>
+              <li>Everything from us is free</li>
+            </ul>
+          </div>
+          <figure class="shot">
+            <img
+              src="/shots/hero-stats.png"
+              alt="The Stats page: an estimated-rating chart climbing from about 450 to 2130 over a year, with opening and tactics breakdowns below."
+              width="1440"
+              height="900"
+              fetchpriority="high"
+            />
+            <figcaption class="demo-note">Sample data: a demo player's year of 3,420 games.</figcaption>
+          </figure>
         </div>
       </section>
-      <footer>
-        <nav>
+
+      <section class="section" id="trust">
+        <div class="wrap">
+          <p class="eyebrow">Not sure about signing in?</p>
+          <h2>Fair. Here is exactly what happens.</h2>
+          <p class="lead">
+            Most people don't trust a login on a site they have just met. You shouldn't have to
+            decide blind, so everything below is open to read before you sign in.
+          </p>
+          <div class="cards">
+            <div class="card">
+              <h3>What we take from Google</h3>
+              <p>Your email address and the name on your Google profile. We never see your Google password. The full list is in the <a href="/privacy">privacy policy</a>.</p>
+            </div>
+            <div class="card">
+              <h3>No credit card</h3>
+              <p>There is nothing to buy and no paid tier. We don't sell your data or show ads. <a href="#mission">Why we do it</a>.</p>
+            </div>
+            <div class="card">
+              <h3>The AI is your own choice</h3>
+              <p>We don't sell or resell AI. The coach runs on an AI service you connect yourself, like your internet plan, and some services have free plans. <a href="/keys">How we handle your key</a>.</p>
+            </div>
+            <div class="card">
+              <h3>You can read the code</h3>
+              <p>The whole project is open source on <a href="https://github.com/abrahamberg/FreeChessCoach">GitHub</a>. Judge how keys and data are handled for yourself.</p>
+            </div>
+          </div>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="/demo/games">Try the live demo</a>
+            <a class="btn btn-secondary" href="/tour">See every screen</a>
+            <a class="btn btn-secondary" href="/guide">Read the user guide</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="features">
+        <div class="wrap">
+          <p class="eyebrow">What you get</p>
+          <h2>All of it is free from us. The AI is yours to plug in.</h2>
+          <p class="lead">
+            We charge nothing for either half. The first half works the moment you sign in. The
+            second half, the coach, talks to an AI service that you connect yourself, the same way
+            you sort out your own internet subscription: which provider, and what you spend, is up
+            to you. That can be nothing, if you pick a free plan.
+          </p>
+          <div class="two-col">
+            <div class="card tinted">
+              <span class="tag tag-free">Free, works straight away</span>
+              <h3>Your games, analysed</h3>
+              <ul>
+                <li><strong>Import</strong> from Lichess, Chess.com, pasted PGN or a file.</li>
+                <li><strong>Stats over time</strong> for openings, tactics, strategy, endgames and estimated rating.</li>
+                <li><strong>Game review</strong>: go through a game move by move with feedback, on every game.</li>
+                <li><strong>Bots that play like people</strong>: they make human mistakes instead of being a weakened engine.</li>
+              </ul>
+            </div>
+            <div class="card tinted">
+              <span class="tag tag-ai">Free coach, you plug in the AI</span>
+              <h3>A coach who remembers you</h3>
+              <ul>
+                <li><strong>Coaching sessions</strong> on the games you imported.</li>
+                <li><strong>Diagnosis</strong>: the coach names why you lose material and sets focus areas.</li>
+                <li><strong>Trends</strong> across your games, and what to do about them.</li>
+                <li><strong>Play with the coach</strong>: a game meant for learning, where most moves are discussed.</li>
+              </ul>
+              <p class="card-note">The coach is ours. The AI it thinks with is yours: <a href="/keys">how to connect one</a>.</p>
+            </div>
+          </div>
+          <div class="callout" id="free-ai">
+            <strong class="title">Want the coach without paying anything?</strong>
+            <p>
+              Some AI providers give free usage. OpenAI, for example, offers free daily tokens if
+              you let it use your chats to improve its models. Whether that trade is worth it is
+              your call, and our step-by-step guide shows how it works with the catch spelled out.
+            </p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="/openai-key">Set up the AI, step by step</a>
+              <a class="btn btn-secondary" href="/openai-key#free">See the free option</a>
+            </div>
+          </div>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="/demo/games">Try the live demo</a>
+            <a class="btn btn-secondary" href="/tour">Take the full tour with screenshots</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="mission">
+        <div class="wrap narrow">
+          <p class="eyebrow">What is in it for us?</p>
+          <h2>Nothing, on purpose.</h2>
+          <p class="lead">
+            You may be wondering what the catch is. There isn't one. We don't sell your data, we
+            don't show ads, and from Google we only ask for your email and name.
+          </p>
+          <p>
+            We love chess, and we believe everyone deserves free access to digital coaching. Lichess
+            does a wonderful job giving the world a free place to play and learn. What was missing
+            was a tool that reads <em>your</em> games and tells you why you keep losing them, so we
+            built that. Human coaches do wonderful work and always will; this doesn't replace them,
+            it just means good feedback on your own games doesn't depend on what you can pay for.
+          </p>
+          <div class="callout">
+            <strong class="title">Chess belongs to everyone.</strong>
+            <p>
+              Chess began in India and grew up in Persia, today's Iran, before it travelled the
+              world. Even the word "checkmate" comes from Persian. A game that old is part of human
+              heritage, and we believe the game itself should stay open to everyone.
+            </p>
+            <p>
+              Keeping digital chess coaching free, and belonging to everyone, for as many people as
+              we can reach: that is the whole mission.
+            </p>
+          </div>
+          <div class="cta-row">
+            <a class="btn btn-secondary" href="/privacy">Read the privacy policy</a>
+            <a class="btn btn-secondary" href="https://github.com/abrahamberg/FreeChessCoach">Read the code</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="diagnosis">
+        <div class="wrap narrow">
+          <p class="eyebrow">Why it is built this way</p>
+          <h2>"You forgot to check for threats" is not a diagnosis.</h2>
+          <p class="lead">We asked our coach whether "Fails to run CCT" (checks, captures, threats) is a good diagnosis.</p>
+          <blockquote class="interview">
+            <p class="q">Is "Fails to run CCT" a good diagnosis?</p>
+            <p>No. It is a terrible diagnosis.</p>
+            <p>"Failing to run CCT" is not a diagnosis; it is a symptom. It is the coaching equivalent of a doctor saying, "My diagnosis is that you failed to stay healthy."</p>
+            <p>Telling a student "You need to check for Checks, Captures, and Threats" is useless because every 800-rated player already knows they should do it. They aren't failing because they lack the knowledge of CCT; they are failing because a psychological or mechanical barrier prevents them from executing it.</p>
+            <cite>From an interview with our coach</cite>
+          </blockquote>
+          <p>
+            So FreeChessCoach looks for the mechanism behind a mistake: a habit of planning around
+            the board as it was one move ago, or of never checking where a knight can jump. Then it
+            gives you one thing to practise.
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="routine">
+        <div class="wrap">
+          <p class="eyebrow">How people use it</p>
+          <h2>A simple week that works.</h2>
+          <p class="lead">You don't need a plan. This is the routine FreeChessCoach is designed around.</p>
+          <div class="week">
+            <div class="card"><div class="big">~10</div><h3>games a day</h3><p>Ten-minute rapid on Lichess or Chess.com, against real people.</p></div>
+            <div class="card"><div class="big">1</div><h3>coached game</h3><p>Import the day's games and pick the serious one with the most tactics for a coaching session.</p></div>
+            <div class="card"><div class="big">20</div><h3>minutes of puzzles</h3><p>On Lichess, on the theme your coach recommends, or a mix if it has none yet.</p></div>
+            <div class="card"><div class="big">3–7</div><h3>coach games a week</h3><p>Play a learning game with the coach and watch your rating move.</p></div>
+          </div>
+          <div class="cta-row">
+            <a class="btn btn-secondary" href="/guide">Full walkthrough in the user guide</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="faq">
+        <div class="wrap narrow">
+          <h2>Quick answers</h2>
+          <details class="faq">
+            <summary>Is it really free?</summary>
+            <p>Yes. Everything from us is free: no subscription, no paid tier, no credit card. The coach's AI is a separate thing that you connect yourself, like your own internet subscription. What it costs, if anything, is between you and the provider. Some have free plans, and on a paid key you can set a monthly spending limit.</p>
+          </details>
+          <details class="faq">
+            <summary>Do I need an AI to use it?</summary>
+            <p>Only for the coach. Importing, stats, game review and the bots work without one. To chat with the coach you connect an AI service of your choice. We are not in that business and add nothing on top. <a href="/openai-key">Here is one way to set it up</a>, including how some free usage works and what it costs in privacy.</p>
+          </details>
+          <details class="faq">
+            <summary>Is it safe to paste my key?</summary>
+            <p>We encrypt it with a phrase only you know, and we ask you to use a key with a small monthly limit. <a href="/keys">The key page</a> explains what we do, what we cannot promise, and how to set up a limited key in a few minutes.</p>
+          </details>
+          <details class="faq">
+            <summary>Can I look around without signing in?</summary>
+            <p>Yes. The <a href="/tour">tour</a> shows every screen with sample data, and the <a href="/guide">guide</a> walks through a first session.</p>
+          </details>
+          <details class="faq">
+            <summary>Who is behind this, and what do they get?</summary>
+            <p>One person, not a company, and nothing in return: no ads, no data sales. The AI is bring-your-own so the project can stay free for everyone without a business model that needs you to keep paying. <a href="#mission">Here is why we do it</a>. The code is <a href="https://github.com/abrahamberg/FreeChessCoach">open source</a>.</p>
+          </details>
+          <div class="cta-row">
+            <a class="google-btn" href="/oauth2/start?rd=/games">
+              <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.9-2.26 5.36-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+              </svg>
+              <span>Sign in with Google</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <nav aria-label="Footer">
+          <a href="/tour">Tour</a>
+          <a href="/guide">User guide</a>
+          <a href="/keys">Your AI key</a>
           <a href="/privacy">Privacy Policy</a>
           <a href="/terms">Terms of Service</a>
+          <a href="https://github.com/abrahamberg/FreeChessCoach">Source code</a>
         </nav>
-        &copy; FreeChessCoach
-      </footer>
-    </main>
+        &copy; FreeChessCoach. An independent, free project.
+      </div>
+    </footer>
+
     <script>
       // Already-signed-in visitors hitting "/" directly should land in the
       // app, same as today's SPA behavior. A 200 from /api/users/me means an
       // oauth2-proxy session cookie is present; an opaque redirect means
       // oauth2-proxy would bounce them to Google, i.e. logged out.
-      fetch('/api/users/me', { redirect: 'manual' })
-        .then(function (res) {
-          if (res.type !== 'opaqueredirect' && res.ok) {
-            location.replace('/games');
-          }
-        })
-        .catch(function () {});
+      // "/?stay" skips it, so a signed-in visitor (or the always-signed-in dev
+      // stub) can still look at this page.
+      if (!/[?&]stay(&|=|$)/.test(location.search)) {
+        fetch('/api/users/me', { redirect: 'manual' })
+          .then(function (res) {
+            if (res.type !== 'opaqueredirect' && res.ok) {
+              location.replace('/games');
+            }
+          })
+          .catch(function () {});
+      }
     </script>
   </body>
 </html>

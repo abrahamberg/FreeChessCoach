@@ -39,6 +39,8 @@ export interface NewSession {
   userId: string;
   /** Defaults to 'analyze' (today's only mode) when omitted. */
   mode?: SessionMode;
+  /** Defaults to now; only demo seeding (scripts/demo) dates a session in the past. */
+  startedAt?: Date;
 }
 
 export function insert(db: Kysely<Database>, values: NewSession): Promise<SessionRow> {

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your AI key — how it works and how to keep it safe · FreeChessCoach</title>
+    <meta
+      name="description"
+      content="FreeChessCoach uses your own AI key. Here is how it is encrypted, what we cannot promise, and how to use a small, limited key so the worst case is a few dollars."
+    />
+    <link rel="canonical" href="https://freechesscoach.org/keys" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://freechesscoach.org/keys" />
+    <meta property="og:title" content="Your AI key — how it works and how to keep it safe" />
+    <meta property="og:description" content="How FreeChessCoach handles a bring-your-own AI key, honestly, and how to limit your risk." />
+    <meta property="og:image" content="https://freechesscoach.org/shots/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
+    <meta name="theme-color" content="#3d6b48" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/"><img src="/brand/logo.png" alt="" width="28" height="28" />FreeChessCoach</a>
+        <nav class="site-nav" aria-label="Main">
+          <a href="/tour">Take the tour</a>
+          <a href="/guide">User guide</a>
+          <a href="/keys" aria-current="page">Your AI key</a>
+          <a href="/oauth2/start?rd=/games">Sign in</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap narrow">
+          <p class="eyebrow">Bring your own key</p>
+          <h1 style="font-size: 36px; line-height: 1.2; margin: 0 0 16px">Your AI key: how it works, and how to keep it safe.</h1>
+          <p style="color: var(--text-muted); font-size: 18px; margin: 0">
+            The AI coach runs on a key you bring yourself. This page says plainly what we do with
+            it, what we cannot promise, and how to set things up so that even the worst case is
+            small. There is nothing here to panic about, and a few things worth doing.
+          </p>
+
+          <div class="callout">
+            <strong class="title">The short version</strong>
+            <p>Make a key just for FreeChessCoach, cap it at a small monthly amount (for example $5), and rotate it now and then. That is the whole safety plan. The rest of this page explains why.</p>
+          </div>
+          <p class="demo-note">
+            Jump to: <a href="#why">Why we ask for your key</a> · <a href="#protect">What we do to protect it</a> ·
+            <a href="#limits">What we cannot promise</a> · <a href="#recipe">Your safety checklist</a> ·
+            <a href="#faq">Questions</a>
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="why">
+        <div class="wrap narrow">
+          <h2>Why we ask you to bring a key</h2>
+          <p>
+            Everything we build is free, but an AI answering you costs real money to run. Most
+            products cover that with a subscription and add a mark-up. FreeChessCoach is a free
+            project run by an individual, not a company, so it treats the AI like your internet
+            connection: a separate service you choose yourself. Your key talks to your AI provider
+            and you pay them directly at their price, which can be nothing if you pick a free plan.
+            Nothing is added and nothing is metered by us.
+          </p>
+          <p>
+            The free features (import, stats, game review, bots) never touch a key. You only need one
+            if you want the AI coach.
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="protect">
+        <div class="wrap narrow">
+          <h2>What we do to protect your key</h2>
+          <div class="cards" style="grid-template-columns: 1fr">
+            <div class="card">
+              <h3>It is stored encrypted, with a phrase only you know</h3>
+              <p>When you save your setup you choose an unlock phrase (at least 8 characters). Your key is encrypted with AES-256-GCM using a key derived from that phrase. The server has no master key for it, so a copy of our database alone cannot decrypt anyone's key, and the phrase itself is never stored.</p>
+            </div>
+            <div class="card">
+              <h3>Using the coach means unlocking it, briefly</h3>
+              <p>When you enter your phrase, the decrypted setup is held in a short-lived cache on our server, encrypted again with a server-side key. By default it expires after 15 minutes without use, and each coaching request refreshes that clock. You can press <strong>Lock now</strong> in Settings at any time to remove it immediately.</p>
+            </div>
+            <div class="card">
+              <h3>You can delete it whenever you want</h3>
+              <p><strong>Delete setup</strong> in Settings removes the stored key. If you forget your phrase we cannot recover the key, and you simply connect a new one.</p>
+            </div>
+            <div class="card">
+              <h3>The key goes to your provider and nowhere else</h3>
+              <p>Requests are sent to the AI endpoint you configure (OpenAI by default), under your own account with them, so you can see every call in your provider's usage page.</p>
+            </div>
+            <div class="card">
+              <h3>You can check all of this yourself</h3>
+              <p>The code is open source. The encryption lives in <a href="https://github.com/abrahamberg/FreeChessCoach/blob/main/apps/api/src/llm/key-vault.ts"><code>key-vault.ts</code></a> and the unlock cache in <a href="https://github.com/abrahamberg/FreeChessCoach/blob/main/apps/api/src/llm/unlock-store.ts"><code>unlock-store.ts</code></a>. Please read them and decide for yourself.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="limits">
+        <div class="wrap narrow">
+          <h2>What we cannot promise</h2>
+          <div class="callout warn">
+            <strong class="title">Encryption protects a stolen database. It cannot protect a key that is in use.</strong>
+            <p>While your setup is unlocked (up to 15 minutes after your last coaching request), a decrypted copy exists in our server's cache. If someone broke into the running system at that moment and also got the server's own secrets, they could read the keys of people who were unlocked then.</p>
+            <p>We have done our best to make that hard, and it is the reason we ask you to use a <strong>limited key</strong>. With a small monthly cap, a leaked key is worth at most that cap, and you can revoke it in seconds.</p>
+          </div>
+          <p>
+            We are also not a company, and this is a free project. We can't accept liability for
+            charges, losses or damages, so please use the coach at your own risk and read the
+            <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>. We would rather tell you this
+            now than have you find out later.
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="recipe">
+        <div class="wrap narrow">
+          <h2>Your safety checklist</h2>
+          <p class="lead">Five small habits. Together they turn "what if" into "at most a few dollars".</p>
+          <ol class="steps">
+            <li>
+              <h3>Make a key only for this app</h3>
+              <p>Create a new key (in its own project, if your provider supports projects) and use it nowhere else. If anything ever looks wrong, you can delete it without breaking anything else you run.</p>
+            </li>
+            <li>
+              <h3>Put a small monthly limit on it</h3>
+              <p>Start with about <strong>$5 a month</strong>. Use the coach for a couple of weeks, look at your provider's usage page, and adjust the limit to what you really use. Keep it tight rather than generous.</p>
+            </li>
+            <li>
+              <h3>Rotate it from time to time</h3>
+              <p>Every month or two, create a fresh key, replace it in Settings, and delete the old one in your provider's dashboard. A key that keeps changing is a key that is hard to misuse.</p>
+            </li>
+            <li>
+              <h3>Lock it when you are done, if you like</h3>
+              <p>Press <strong>Lock now</strong> after a session and the decrypted copy is gone from our server straight away. If you prefer, delete the setup entirely after every session and paste it again next time.</p>
+            </li>
+            <li>
+              <h3>Choose a strong unlock phrase you do not reuse</h3>
+              <p>The phrase is what protects the stored key. Use something long that you don't use anywhere else.</p>
+            </li>
+          </ol>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="/openai-key">Set up an OpenAI key, step by step</a>
+            <a class="btn btn-secondary" href="/guide">Back to the user guide</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="faq">
+        <div class="wrap narrow">
+          <h2>Questions</h2>
+          <details class="faq">
+            <summary>Can I use a provider other than OpenAI?</summary>
+            <p>The setup form accepts an endpoint that speaks the OpenAI Chat or Responses format, or Anthropic's Messages format, and it tests the connection before saving. The step-by-step guide covers OpenAI because it is the default.</p>
+          </details>
+          <details class="faq">
+            <summary>What happens when my monthly limit runs out?</summary>
+            <p>Your provider stops answering requests, so the coach can't respond. Nothing is lost. Raise the limit in your provider's dashboard, or wait for the next month. The free features keep working.</p>
+          </details>
+          <details class="faq">
+            <summary>Does the coach see my Google account or password?</summary>
+            <p>No. Google only tells us your email address and name when you sign in, and we never see your password. Your AI provider sees only what the coach sends it: the game and conversation it is working on.</p>
+          </details>
+          <details class="faq">
+            <summary>What if I think my key was exposed?</summary>
+            <p>Delete it in your provider's dashboard first, since that stops any use at once. Then press <strong>Delete setup</strong> in FreeChessCoach and connect a new key.</p>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <nav aria-label="Footer">
+          <a href="/">Home</a>
+          <a href="/tour">Tour</a>
+          <a href="/guide">User guide</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms of Service</a>
+          <a href="https://github.com/abrahamberg/FreeChessCoach">Source code</a>
+        </nav>
+        &copy; FreeChessCoach. An independent, free project.
+      </div>
+    </footer>
+  </body>
+</html>

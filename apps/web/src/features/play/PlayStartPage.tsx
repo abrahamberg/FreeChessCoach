@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import type { PlayerColor } from '@freechesscoach/shared';
 import { apiPost } from '../../api/client.js';
+import { startFailureMessage } from './startFailureMessage.js';
 import './PlayStartPage.css';
 
 const PlaySessionSchema = z.object({ id: z.string() });
@@ -39,7 +40,7 @@ export function PlayStartPage(): ReactNode {
       </div>
       {startMutation.isError && (
         <p role="alert" className="play-start-page__error">
-          Could not start a game. Please try again.
+          {startFailureMessage(startMutation.error)}
         </p>
       )}
     </div>

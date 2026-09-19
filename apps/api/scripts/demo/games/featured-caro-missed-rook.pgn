@@ -1,0 +1,13 @@
+[Event "Rated Rapid game"]
+[Site "https://lichess.org/"]
+[Date "2026.09.12"]
+[Round "?"]
+[White "rook_lifter"]
+[Black "sam_climbs"]
+[Result "1-0"]
+[WhiteElo "811"]
+[BlackElo "842"]
+[TimeControl "600+0"]
+[Termination "Normal"]
+
+1. e4 c6 2. d4 d5 3. Nc3 dxe4 4. Nxe4 Bf5 5. Ng3 Bg6 6. h4 h6 7. Bf4 Nd7 8. Bd3 Qa5+ 9. c3 Bxd3 10. Qxd3 e6 11. a3 Ne7 12. Ne4 Nf5 13. h5 Nf6 14. b4 Qd5 15. Nxf6+ gxf6 16. Nf3 Rg8 17. g3 b5 18. a4 Bd6 19. axb5 cxb5 20. Bxd6 Qxd6 21. Nd2 Kf8 22. Ne4 Qd5 23. Rf1 Kg7 24. Qf3 a5 25. Rxa5 Rxa5 26. bxa5 Ra8 27. Ke2 Qa2+ 28. Nd2 Qxa5 29. Rc1 Rd8 30. Qg4+ Kf8 31. Kf1 Qa3 32. Ne4 Nxg3+ 33. Kg2 Nxe4 34. Rf1 Qxc3 35. Qf4 Qxd4 36. f3 Qd2+ 37. Qxd2 Ng5 38. Qxd8+ Kg7 39. Rg1 Kh7 40. Ra1 Nh3 41. Ra8 b4 42. Qg8# 1-0

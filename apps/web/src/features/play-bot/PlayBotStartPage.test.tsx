@@ -34,6 +34,15 @@ describe('PlayBotStartPage ("Play vs Bot" plan)', () => {
     expect(screen.queryByRole('button', { name: /play as white/i })).not.toBeInTheDocument();
   });
 
+  test('lists the bots from weakest to strongest, within each tier and across the page', () => {
+    vi.stubGlobal('fetch', vi.fn());
+    const { container } = renderPlayBotStartPage();
+
+    const ratings = [...container.querySelectorAll('.bot-card__elo')].map((element) => Number(element.textContent));
+    expect(ratings.length).toBeGreaterThan(1);
+    expect(ratings).toEqual([...ratings].sort((a, b) => a - b));
+  });
+
   test('picking a bot then a color POSTs /api/sessions/play-bot with both, and navigates to the fresh session', async () => {
     const fetchMock = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/sessions/play-bot') {

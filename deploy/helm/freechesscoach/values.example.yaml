@@ -152,6 +152,17 @@ oauth2-proxy:
     - --skip-auth-route=^/privacy$
     - --skip-auth-route=^/terms$
     - --skip-auth-route=^/legal\.css$
+    # Public marketing pages + their assets (see values.yaml for the full note).
+    - --skip-auth-route=^/tour$
+    - --skip-auth-route=^/guide$
+    - --skip-auth-route=^/keys$
+    - --skip-auth-route=^/openai-key$
+    - --skip-auth-route=^/site\.css$
+    - --skip-auth-route=^/shots/
+    - --skip-auth-route=^/sitemap\.xml$
+    # The live demo and the SPA bundle it runs from (see values.yaml for the full note).
+    - --skip-auth-route=^/demo(/.*)?$
+    - --skip-auth-route=^/assets/
     - --redirect-url=https://freechesscoach.org/oauth2/callback
   service:
     portNumber: 80

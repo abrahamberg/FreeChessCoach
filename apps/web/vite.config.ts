@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
+import { publicPages } from './vite.public-pages.js';
 
 // Dev-only: the SPA calls same-origin `/api/...` paths (see api/client.ts), so
 // the Vite dev server needs to forward them to the real API instead of
@@ -9,7 +10,7 @@ import { defineConfig } from 'vitest/config';
 const apiProxyTarget = process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:3000';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), publicPages()],
   // kokoro-js (apps/web/src/tts/kokoro-worker.ts) pulls in transformers.js,
   // which uses dynamic import() internally to load its WASM backends — Vite's
   // default worker output (iife) can't inline those, so the worker needs the

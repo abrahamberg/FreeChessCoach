@@ -323,6 +323,24 @@ oauth2-proxy:
     # as the set grows — just drop new shared assets in that directory).
     - --skip-auth-route=^/favicon\.ico$
     - --skip-auth-route=^/brand/
+    # Public marketing pages (apps/web/public/{tour,guide,keys,openai-key}.html),
+    # their stylesheet, the screenshots they show (public/shots/) and the
+    # sitemap — so people can look around, and search engines can index them,
+    # before deciding to sign in. Screenshots are sample data only.
+    - --skip-auth-route=^/tour$
+    - --skip-auth-route=^/guide$
+    - --skip-auth-route=^/keys$
+    - --skip-auth-route=^/openai-key$
+    - --skip-auth-route=^/site\.css$
+    - --skip-auth-route=^/shots/
+    - --skip-auth-route=^/sitemap\.xml$
+    # The live demo: the SPA at /demo/* running on recorded sample data (no
+    # /api call is made — apps/web/src/demo). It needs the app's own bundle,
+    # /assets/ (hashed JS/CSS, including the lazily loaded sample-data chunk).
+    # The bundle is the open-source SPA; nothing in it is per-user. Every real
+    # /api path stays behind the proxy.
+    - --skip-auth-route=^/demo(/.*)?$
+    - --skip-auth-route=^/assets/
   service:
     portNumber: 80
   # Our own templates/ingress.yaml owns the public route.

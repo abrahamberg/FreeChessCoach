@@ -10,5 +10,5 @@
     "allowImportingTsExtensions": false,
     "noEmit": false
   },
-  "include": ["src", "test", "vite.config.ts"]
+  "include": ["src", "src/demo/fixtures.json", "test", "vite.config.ts", "vite.public-pages.ts", "vite.public-pages.test.ts"]
 }

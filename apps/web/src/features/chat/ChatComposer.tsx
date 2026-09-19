@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { ArrowRef } from './arrowToken.js';
 import { ArrowRightIcon } from '../../components/Icon.js';
+import { DemoComposer } from '../../demo/DemoComposer.js';
+import { getDemoRuntime } from '../../demo/demoRuntime.js';
 import { ChipReplyInput } from './ChipReplyInput.js';
 import { createEmptyDraft, isDraftEmpty, reconcileArrowChips, serializeDraft, type DraftPart } from './composerDraft.js';
 
@@ -26,7 +28,13 @@ export interface ChatComposerProps {
  * since that's not how any chat app anyone already uses actually works, and
  * a plain unfocused text field doesn't summon the keyboard on its own
  * anyway (only focusing it does, which stays a deliberate tap). */
-export function ChatComposer({ onSend, boardArrows = NO_ARROWS, hasPendingLine = false }: ChatComposerProps): ReactNode {
+export function ChatComposer(props: ChatComposerProps): ReactNode {
+  const demo = getDemoRuntime();
+  if (demo) return <DemoComposer conversation={demo.conversation} onSend={props.onSend} />;
+  return <LiveChatComposer {...props} />;
+}
+
+function LiveChatComposer({ onSend, boardArrows = NO_ARROWS, hasPendingLine = false }: ChatComposerProps): ReactNode {
   const [parts, setParts] = useState<DraftPart[]>(createEmptyDraft);
   const prevArrowsRef = useRef<ArrowRef[]>([]);
 

@@ -7,3 +7,5 @@ Disallow: /session
 Disallow: /import
 Disallow: /play
 Disallow: /api
+
+Sitemap: https://freechesscoach.org/sitemap.xml

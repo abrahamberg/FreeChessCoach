@@ -4,11 +4,13 @@ import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiPost } from '../../api/client.js';
+import { startFailureMessage } from '../play/startFailureMessage.js';
 import { BotAvatar } from '../../components/BotAvatar.js';
 import { UserIcon } from '../../components/Icon.js';
 import { Modal } from '../../components/Modal.js';
 import '../play/PlayStartPage.css';
 import { BOT_TIERS, tierForElo, type BotTierId } from './botTiers.js';
+import { getDemoRuntime } from '../../demo/demoRuntime.js';
 import { LiteEngineCheck } from './LiteEngineCheck.js';
 import './PlayBotStartPage.css';
 
@@ -28,7 +30,7 @@ const TIME_CONTROLS: { label: string; clock: BotClockConfig | null }[] = [
 
 const ROSTER_BY_TIER: { tier: (typeof BOT_TIERS)[number]; bots: BotConfig[] }[] = BOT_TIERS.map((tier) => ({
   tier,
-  bots: BOT_ROSTER.filter((bot) => tierForElo(bot.elo) === tier.id)
+  bots: BOT_ROSTER.filter((bot) => tierForElo(bot.elo) === tier.id).sort((a, b) => a.elo - b.elo)
 }));
 
 /**
@@ -163,7 +165,8 @@ export function PlayBotStartPage(): ReactNode {
               </span>
             </div>
 
-            <LiteEngineCheck />
+            {/* The demo has no engine, so this status could only look like a fault. */}
+            {!getDemoRuntime() && <LiteEngineCheck />}
 
             <div className="play-bot-start-page__time-controls" role="radiogroup" aria-label="Time control">
               {TIME_CONTROLS.map((option, index) => (
@@ -211,7 +214,7 @@ export function PlayBotStartPage(): ReactNode {
 
             {startMutation.isError && (
               <p role="alert" className="play-start-page__error">
-                Could not start a game. Please try again.
+                {startFailureMessage(startMutation.error)}
               </p>
             )}
           </div>

@@ -133,6 +133,11 @@ PROXY="$RENDER_DIR/proxy.yaml"
 render "$PROXY" --set oauth2-proxy.enabled=true --show-only charts/oauth2-proxy/templates/deployment.yaml
 assert_contains "oauth2-proxy skips auth for /healthz" "--skip-auth-route=^/healthz$" "$PROXY"
 assert_contains "oauth2-proxy skips auth for /readyz" "--skip-auth-route=^/readyz$" "$PROXY"
+# Public marketing pages and the live demo (/demo runs the app on recorded sample data), so
+# people can look around before signing in.
+for route in '^/tour$' '^/guide$' '^/keys$' '^/openai-key$' '^/site\.css$' '^/shots/' '^/sitemap\.xml$' '^/demo(/.*)?$' '^/assets/'; do
+  assert_contains "oauth2-proxy skips auth for public page $route" "--skip-auth-route=$route" "$PROXY"
+done
 assert_contains "oauth2-proxy forwards identity headers" "--set-xauthrequest=true" "$PROXY"
 
 # ---------------------------------------------------------------------------
