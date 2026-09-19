@@ -1,7 +1,9 @@
 import { TACTIC_MOTIF_TYPES, type GameReport, type PlayerReport, type TacticMotifCounts } from '@freechesscoach/shared';
-import { describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Kysely } from 'kysely';
+import { emptyStatsBucket } from '@freechesscoach/chess-analysis';
 import * as analysesRepo from '../db/repositories/analyses.js';
+import * as statsArchiveRepo from '../db/repositories/stats-archive.js';
 import type { Database } from '../db/schema.js';
 import { getGameTacticBaselineNote } from './stats-dashboard.js';
 
@@ -68,6 +70,10 @@ function row(gameId: string, fork: { opportunities: number; found: number }) {
 describe('getGameTacticBaselineNote', () => {
   const db = {} as Kysely<Database>;
 
+  beforeEach(() => {
+    vi.spyOn(statsArchiveRepo, 'listForUser').mockResolvedValue([]);
+  });
+
   test('measures the game against the player\'s other games, with this one excluded', async () => {
     // Nine earlier games at nine forks found from ten, and this game at none
     // of two. Leaving this game in the aggregate would let it soften its own
@@ -92,5 +98,23 @@ describe('getGameTacticBaselineNote', () => {
     vi.spyOn(analysesRepo, 'listReadyReportsForUser').mockResolvedValue([]);
 
     expect(await getGameTacticBaselineNote(db, 'user-1', 'this-game', { players: null }, 'white')).toBeNull();
+  });
+
+  test('counts games that were deleted and archived as history, so deleting old games does not hide the note', async () => {
+    // Only two live games remain — too little history on its own — but nine
+    // more were archived when deleted, at nine forks found from ten.
+    const archived = emptyStatsBucket();
+    archived.games = 9;
+    archived.tactics.fork = { opportunities: 10, found: 9 };
+    vi.spyOn(statsArchiveRepo, 'listForUser').mockResolvedValue([{ weekStart: '2026-03-02', speed: 'rapid', bucket: archived }]);
+    vi.spyOn(analysesRepo, 'listReadyReportsForUser').mockResolvedValue([
+      row('other-0', { opportunities: 0, found: 0 }),
+      row('this-game', { opportunities: 2, found: 0 })
+    ]);
+
+    const note = await getGameTacticBaselineNote(db, 'user-1', 'this-game', reportWith({ opportunities: 2, found: 0 }), 'white');
+
+    expect(note).toMatchObject({ motif: 'fork', kind: 'missed', baselineGames: 10 });
+    expect(note?.baselineRate).toBeCloseTo(0.1);
   });
 });

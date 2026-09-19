@@ -1,17 +1,21 @@
-import { buildStatsDashboard, headlineTacticBaselineNote, type StatsEntry } from '@freechesscoach/chess-analysis';
+import {
+  buildStatsDashboard,
+  headlineTacticBaselineNote,
+  mergeStatsBuckets,
+  statsBucketOf,
+  type StatsEntry
+} from '@freechesscoach/chess-analysis';
 import {
   StoredGameReportSchema,
-  TACTIC_MOTIF_TYPES,
   type PlayerColor,
   type GameSpeedFilter,
   type StatsDashboard,
   type StatsRange,
-  type TacticBaselineNoteDto,
-  type TacticMotifCounts,
-  type TacticMotifType
+  type TacticBaselineNoteDto
 } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
+import * as statsArchiveRepo from '../db/repositories/stats-archive.js';
 import type { Database } from '../db/schema.js';
 import { sinceFor } from '../lib/range-since.js';
 import { toStatsEntry } from './stats-entry.js';
@@ -22,6 +26,12 @@ import { toStatsEntry } from './stats-entry.js';
  * the pure `chess-analysis` aggregator pre-resolved `StatsEntry` rows — the
  * DB read and `classifyTimeControl` call stay here so the aggregator itself
  * remains pure/I/O-free (AGENTS rule 5).
+ *
+ * Games the user has since deleted are still counted: each deletion folded
+ * the game into `stats_archive_weeks` (`bankGameStats`), and those weeks are
+ * merged in here. Archived data is week-granular, so `last7`/`last30` can
+ * include a whole archived week that only partly overlaps the range;
+ * deletions target the *earliest* games, so that is rare and accepted.
  */
 export async function getStatsDashboard(
   db: Kysely<Database>,
@@ -30,14 +40,17 @@ export async function getStatsDashboard(
   speedFilter: GameSpeedFilter
 ): Promise<StatsDashboard> {
   const since = sinceFor(range, new Date());
-  const rows = await analysesRepo.listReadyReportsForUser(db, userId, since);
+  const [rows, archivedWeeks] = await Promise.all([
+    analysesRepo.listReadyReportsForUser(db, userId, since),
+    statsArchiveRepo.listForUser(db, userId, { since, speed: speedFilter })
+  ]);
 
   const entries: StatsEntry[] = rows
     .map((row) => toStatsEntry(row))
     .filter((entry): entry is StatsEntry => entry !== null)
     .filter((entry) => speedFilter === 'all' || entry.speed === speedFilter);
 
-  return buildStatsDashboard(entries);
+  return buildStatsDashboard(entries, archivedWeeks);
 }
 
 /**
@@ -63,36 +76,22 @@ export async function getGameTacticBaselineNote(
   const parsed = StoredGameReportSchema.safeParse(gameReport);
   if (!parsed.success) return null;
 
-  const rows = await analysesRepo.listReadyReportsForUser(db, userId, null);
+  const [rows, archivedWeeks] = await Promise.all([
+    analysesRepo.listReadyReportsForUser(db, userId, null),
+    statsArchiveRepo.listForUser(db, userId, { since: null, speed: 'all' })
+  ]);
   const others = rows
     .filter((row) => row.gameId !== gameId)
     .map((row) => toStatsEntry(row))
     .filter((entry): entry is StatsEntry => entry !== null);
 
+  // Deleted games still count as history: without the archive, deleting old
+  // games would shrink (or erase) the baseline this game is measured against.
+  const history = archivedWeeks.reduce((total, week) => mergeStatsBuckets(total, week.bucket), statsBucketOf(others));
+
   return headlineTacticBaselineNote({
     game: parsed.data.players[userColor].tacticMotifs,
-    history: sumTacticMotifs(others),
-    historyGames: others.length
+    history: history.tactics,
+    historyGames: history.games
   });
-}
-
-/** The same fold `buildStatsDashboard` does for the dashboard's own tactics
- * section, kept separate here because the baseline needs the sum over a
- * *filtered* set of games rather than the whole dashboard. */
-function sumTacticMotifs(entries: StatsEntry[]): TacticMotifCounts {
-  const totals = Object.fromEntries(
-    TACTIC_MOTIF_TYPES.map((type) => [type, { opportunities: 0, found: 0 }] as const)
-  ) as Record<TacticMotifType, { opportunities: number; found: number; preventable?: number; prevented?: number }>;
-
-  for (const entry of entries) {
-    const motifs = entry.gameReport.players[entry.userColor].tacticMotifs;
-    for (const type of TACTIC_MOTIF_TYPES) {
-      const row = totals[type];
-      row.opportunities += motifs[type].opportunities;
-      row.found += motifs[type].found;
-      if (motifs[type].preventable !== undefined) row.preventable = (row.preventable ?? 0) + motifs[type].preventable;
-      if (motifs[type].prevented !== undefined) row.prevented = (row.prevented ?? 0) + motifs[type].prevented;
-    }
-  }
-  return totals as TacticMotifCounts;
 }
