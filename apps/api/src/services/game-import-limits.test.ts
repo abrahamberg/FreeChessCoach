@@ -22,6 +22,10 @@ const PGN = `[Event "Test"]
 const HOUR_MS = 3_600_000;
 const USERNAMES = { displayName: 'Ann' };
 
+/** The daily/weekly tests make 30–150 sequential writes; the default 5s is too
+ * tight when the whole suite shares the machine. */
+const SLOW_TEST_MS = 60000;
+
 describe('importGame — quota enforcement', () => {
   let testDb: TestDb;
   let db: Kysely<Database>;
@@ -74,7 +78,7 @@ describe('importGame — quota enforcement', () => {
     for (let i = 0; i < DAILY_IMPORT_LIMIT; i++) await importDeferred(user.id);
 
     await expectBlockedBy(user.id, 'daily');
-  });
+  }, SLOW_TEST_MS);
 
   test('the weekly limit blocks when the daily window is clear but 150 imports fall in 7 days', async () => {
     const user = await newUser();
@@ -82,7 +86,7 @@ describe('importGame — quota enforcement', () => {
     for (let i = 0; i < WEEKLY_IMPORT_LIMIT; i++) await gameImportEventsRepo.record(db, user.id, twoDaysAgo);
 
     await expectBlockedBy(user.id, 'weekly');
-  });
+  }, SLOW_TEST_MS);
 
   test('deleting a game does not reopen quota', async () => {
     const user = await newUser();
@@ -92,7 +96,7 @@ describe('importGame — quota enforcement', () => {
     await deleteGameForUser(db, first.gameId, user.id);
 
     await expectBlockedBy(user.id, 'daily');
-  });
+  }, SLOW_TEST_MS);
 
   test('the in-flight cap blocks the 11th while 10 analyses are queued, and clears once one is ready', async () => {
     const user = await newUser();
@@ -134,7 +138,7 @@ describe('importGame — quota enforcement', () => {
 
     expect(again.gameId).toBe(first.gameId);
     expect(await gameImportEventsRepo.countSince(db, user.id, new Date(Date.now() - 24 * HOUR_MS))).toBe(before);
-  });
+  }, SLOW_TEST_MS);
 
   test('an import that fails after the quota check does not burn quota', async () => {
     const user = await newUser();
