@@ -281,11 +281,22 @@ export interface GameImportEventsTable {
   createdAt: Date;
 }
 
+/** 0042_stats_archive_weeks.ts — a deleted game's stats, merged per (user,
+ * week, speed). `weekStart` is written as a `YYYY-MM-DD` string. */
+export interface StatsArchiveWeeksTable {
+  userId: string;
+  weekStart: string;
+  speed: GameSpeed;
+  bucket: Jsonb<unknown>;
+  updatedAt: Generated<Date>;
+}
+
 export interface Database {
   users: UsersTable;
   userLlmSetups: UserLlmSetupsTable;
   games: GamesTable;
   gameImportEvents: GameImportEventsTable;
+  statsArchiveWeeks: StatsArchiveWeeksTable;
   analyses: AnalysesTable;
   sessions: SessionsTable;
   sessionMessages: SessionMessagesTable;
