@@ -8,10 +8,10 @@
   border: 2px solid var(--color-surface);
   border-radius: 50%;
   background-color: var(--color-surface-strong);
-  background-image: url('/brand/bots.png');
+  background-image: url('/brand/bots.png'), var(--avatar-backdrop);
   background-repeat: no-repeat;
-  background-size: var(--bot-avatar-size-x) var(--bot-avatar-size-y);
-  background-position: var(--bot-avatar-x) var(--bot-avatar-y);
+  background-size: var(--bot-avatar-size-x) var(--bot-avatar-size-y), 100% 100%;
+  background-position: var(--bot-avatar-x) var(--bot-avatar-y), 0 0;
   box-shadow: 0 1px 3px rgb(18 28 22 / 18%), 0 0 0 1px rgb(18 28 22 / 8%);
   vertical-align: middle;
 }

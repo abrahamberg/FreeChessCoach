@@ -15,6 +15,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
 import { useUnlockLlmSetup } from '../../hooks/useUnlockLlmSetup.js';
 import { BandSelect } from './BandSelect.js';
+import { AiSetupHelp } from './AiSetupHelp.js';
 import { LlmSetupForm } from './LlmSetupForm.js';
 import { CoachPersonaSelect } from './CoachPersonaSelect.js';
 import { EngineModeSelect } from './EngineModeSelect.js';
@@ -225,6 +226,7 @@ export function SettingsPage(): ReactNode {
       <section id="settings-api-keys" aria-label="API keys" className="card">
         <h2>AI setup</h2>
         <p>Your endpoint and API key are tested, encrypted with your unlock phrase, and kept available only while you are active. We never show the key again.</p>
+        <AiSetupHelp />
         <LlmSetupForm
           key={`${llmSetup.configured}-${llmSetup.unlocked}-${llmSetup.protocol ?? 'none'}`}
           status={llmSetup}

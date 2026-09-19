@@ -22,6 +22,11 @@
   --color-primary-tint: #f3f8f2;
   --color-on-primary: #ffffff;
 
+  /* The gradient behind a coach or bot portrait. The sheets are cut-outs with a
+   * light sticker outline, which looks wrong on anything but a pale backdrop, so
+   * this stays light in the dark theme too. */
+  --avatar-backdrop: linear-gradient(155deg, #f3f8ef 0%, #fbf1dc 100%);
+
   --color-gold: #b9852f;
   --color-gold-soft: #f7eedd;
 

@@ -51,6 +51,18 @@ describe('SettingsPage', () => {
     expect(screen.getByLabelText('Voice model (optional)')).toHaveValue('gpt-4o-mini-tts');
   });
 
+  test('points the AI setup at the step-by-step guide, the free option and the key-safety page, in a new tab', async () => {
+    const fetchMock = vi.fn((path: string, init?: RequestInit) => defaultFetch(path, init) ?? (() => { throw new Error(`unexpected fetch: ${path}`); })());
+    renderSettings(fetchMock);
+    await screen.findByRole('heading', { name: 'Settings', level: 1 });
+    const setup = screen.getByRole('region', { name: 'API keys' });
+    const guide = within(setup).getByRole('link', { name: /step-by-step/i });
+    expect(guide).toHaveAttribute('href', '/openai-key');
+    expect(guide).toHaveAttribute('target', '_blank');
+    expect(within(setup).getByRole('link', { name: /free usage/i })).toHaveAttribute('href', '/openai-key#free');
+    expect(within(setup).getByRole('link', { name: /keeps? your key safe|how we handle/i })).toHaveAttribute('href', '/keys');
+  });
+
   test('saves the endpoint, models, key and unlock phrase as one setup, gated by a passing test, across the connect-then-unlock-phrase wizard', async () => {
     const testResponse = {
       protocol: 'openai-chat',

@@ -25,6 +25,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Without this a plain link is the browser's #0000ee (#551a8b once visited),
+ * which cannot be read on the dark theme. Links with a class of their own (buttons,
+ * nav items) set their colour and win over this element rule. */
+a,
+a:visited {
+  color: var(--color-primary);
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+}
+
 h1,
 h2,
 h3 {
