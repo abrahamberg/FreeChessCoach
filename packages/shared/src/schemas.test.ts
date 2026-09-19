@@ -10,7 +10,7 @@ import {
 import { CoachingPlanSchema, type CoachingPlan } from './coaching-plan.js';
 import { DashboardResponseSchema } from './dashboard.js';
 import { FindingSchema } from './finding.js';
-import { ImportGameRequestSchema, ImportGameResponseSchema, ImportQuotaResponseSchema } from './game.js';
+import { ImportGameRequestSchema, ImportGameResponseSchema } from './game.js';
 import { LlmProviderSchema, LlmSetupSchema, SaveLlmSetupRequestSchema, LlmSetupStatusSchema } from './llm.js';
 import {
   CreateSessionRequestSchema,
@@ -400,17 +400,6 @@ describe('ImportGameResponseSchema', () => {
   });
   test('rejects a missing analysisId', () => {
     expect(ImportGameResponseSchema.safeParse({ gameId: 'g1' }).success).toBe(false);
-  });
-});
-
-describe('ImportQuotaResponseSchema', () => {
-  test('accepts a used/limit pair, including used at 0 or at the limit', () => {
-    expect(ImportQuotaResponseSchema.safeParse({ used: 0, limit: 10 }).success).toBe(true);
-    expect(ImportQuotaResponseSchema.safeParse({ used: 10, limit: 10 }).success).toBe(true);
-  });
-  test('rejects a negative used count or a non-positive limit', () => {
-    expect(ImportQuotaResponseSchema.safeParse({ used: -1, limit: 10 }).success).toBe(false);
-    expect(ImportQuotaResponseSchema.safeParse({ used: 0, limit: 0 }).success).toBe(false);
   });
 });
 

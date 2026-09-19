@@ -80,16 +80,6 @@ export const ImportGameResponseSchema = z.object({
 });
 export type ImportGameResponse = z.infer<typeof ImportGameResponseSchema>;
 
-/** GET /api/games/import-quota: the rolling-24h import limit (game-import.ts's
- * `assertUnderDailyLimit`) surfaced for display — e.g. Games page's "3 of 10
- * imported today" — rather than only ever showing up as a 429 on the 11th
- * attempt. */
-export const ImportQuotaResponseSchema = z.object({
-  used: z.number().int().nonnegative(),
-  limit: z.number().int().positive()
-});
-export type ImportQuotaResponse = z.infer<typeof ImportQuotaResponseSchema>;
-
 /** design.md §4.2: "From Lichess" picker row — same shape ImportGameRequestSchema
  * needs (pgn, source: 'lichess') plus display fields for the row itself. */
 export const LichessRecentGameSchema = z.object({

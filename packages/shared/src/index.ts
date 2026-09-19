@@ -10,6 +10,7 @@ export * from './diagnosis/index.js';
 export * from './finding.js';
 export * from './game.js';
 export * from './game-report.js';
+export * from './import-limits.js';
 export * from './interpolate.js';
 export * from './llm.js';
 export * from './puzzle-session.js';
