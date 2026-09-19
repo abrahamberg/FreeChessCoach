@@ -18,6 +18,7 @@ import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { sinceFor } from '../lib/range-since.js';
+import { bankGameStats } from './stats-archive.js';
 
 /** design.md §4.1 / architecture §14: Games (home) list — one row per game
  * with its analysis status for the status chip, or (for a play-mode game)
@@ -70,7 +71,7 @@ export async function deleteEarliestImportedGames(
 ): Promise<DeleteEarliestImportedResponse> {
   return db.transaction().execute(async (trx) => {
     const gameIds = await gamesRepo.listEarliestImportedIds(trx, userId, count);
-    for (const gameId of gameIds) await cascadeDeleteGame(trx, gameId);
+    for (const gameId of gameIds) await deleteGameKeepingStats(trx, userId, gameId);
     return { deleted: gameIds.length };
   });
 }
@@ -97,14 +98,24 @@ export async function cascadeDeleteGame(db: Kysely<Database>, gameId: string): P
   await gamesRepo.remove(db, gameId);
 }
 
-/** Deletes a game and everything that hangs off it (`cascadeDeleteGame`),
+/** Deletes a game after folding its stats into the weekly archive
+ * (`bankGameStats`), so the Stats page does not change. Every deletion of an
+ * imported game must go through this; only account deletion — which removes
+ * the archive too — calls bare `cascadeDeleteGame`. The caller owns the
+ * transaction. */
+export async function deleteGameKeepingStats(db: Kysely<Database>, userId: string, gameId: string): Promise<void> {
+  await bankGameStats(db, userId, gameId);
+  await cascadeDeleteGame(db, gameId);
+}
+
+/** Deletes a game and everything that hangs off it (`deleteGameKeepingStats`),
  * wrapped in a transaction so a mid-cascade failure can't leave orphaned
  * rows. */
 export async function deleteGameForUser(db: Kysely<Database>, gameId: string, userId: string): Promise<void> {
   const game = await gamesRepo.findByIdForUser(db, gameId, userId);
   if (!game) throw new NotFoundError('Game not found');
 
-  await db.transaction().execute((trx) => cascadeDeleteGame(trx, gameId));
+  await db.transaction().execute((trx) => deleteGameKeepingStats(trx, userId, gameId));
 }
 
 /** The still-live session mode a `coach_play`/`vs_bot` game's row links back

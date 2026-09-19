@@ -59,6 +59,7 @@ function row(gameId: string, fork: { opportunities: number; found: number }) {
     pgnResult: '1-0',
     userColor: 'white' as const,
     playedAt: null,
+    createdAt: new Date('2026-03-01T00:00:00Z'),
     timeControl: null,
     annotatedPgn: null
   };

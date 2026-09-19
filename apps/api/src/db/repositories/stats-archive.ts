@@ -47,6 +47,21 @@ export async function upsert(
   `.execute(db);
 }
 
+/** Creates the row (with `bucket`) only if the key is new — lets the caller
+ * `findForUpdate` a row that is guaranteed to exist and so is guaranteed to
+ * be lockable. */
+export async function insertIfMissing(
+  db: Kysely<Database>,
+  values: { userId: string; weekStart: string; speed: GameSpeed; bucket: StatsBucket }
+): Promise<void> {
+  const bucket = JSON.stringify(StatsBucketSchema.parse(values.bucket));
+  await sql`
+    INSERT INTO stats_archive_weeks (user_id, week_start, speed, bucket)
+    VALUES (${values.userId}, ${values.weekStart}::date, ${values.speed}, ${bucket}::jsonb)
+    ON CONFLICT (user_id, week_start, speed) DO NOTHING
+  `.execute(db);
+}
+
 /** Archived weeks that overlap `since` (a week overlaps if it ends after it:
  * `week_start + 7 days > since`), or every week for `since: null`; only one
  * speed unless `speed` is `'all'`. Oldest first. */

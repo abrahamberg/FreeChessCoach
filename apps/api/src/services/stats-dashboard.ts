@@ -1,4 +1,4 @@
-import { buildStatsDashboard, classifyTimeControl, headlineTacticBaselineNote, type StatsEntry } from '@freechesscoach/chess-analysis';
+import { buildStatsDashboard, headlineTacticBaselineNote, type StatsEntry } from '@freechesscoach/chess-analysis';
 import {
   StoredGameReportSchema,
   TACTIC_MOTIF_TYPES,
@@ -13,9 +13,8 @@ import {
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import type { Database } from '../db/schema.js';
-import { resultForColour } from './build-game-report.js';
 import { sinceFor } from '../lib/range-since.js';
-import { composeGameReport } from './game-report.js';
+import { toStatsEntry } from './stats-entry.js';
 
 /**
  * The historical stats dashboard (Phase 29): resolves the requested
@@ -39,30 +38,6 @@ export async function getStatsDashboard(
     .filter((entry) => speedFilter === 'all' || entry.speed === speedFilter);
 
   return buildStatsDashboard(entries);
-}
-
-/**
- * `gameReport` is jsonb with no migration (see `game-report.ts`'s own
- * comments on `tacticMotifs`/`strategySubScores`/`endgame`) — a report
- * stored before those fields existed fails `StoredGameReportSchema` and is
- * skipped here rather than crashing the whole dashboard. The user can pick
- * these back up by re-analyzing the game. `StoredGameReportSchema` (not
- * `GameReportSchema`) since `analyses.game_report` no longer stores `moves`
- * (0032_annotated_pgn.ts) — `composeGameReport` adds `.moves` back from
- * `row.annotatedPgn` (`aggregate-opening-stats.ts`'s `openingMistakeCount`
- * genuinely needs per-move data; the rest of this file's aggregators don't,
- * but `StatsEntry` is one shared shape for both).
- */
-function toStatsEntry(row: analysesRepo.StatsSourceRow): StatsEntry | null {
-  const parsed = StoredGameReportSchema.safeParse(row.gameReport);
-  if (!parsed.success) return null;
-  return {
-    gameReport: composeGameReport(parsed.data, row),
-    result: resultForColour(row.pgnResult, row.userColor),
-    userColor: row.userColor,
-    playedAt: row.playedAt,
-    speed: classifyTimeControl(row.timeControl)
-  };
 }
 
 /**
