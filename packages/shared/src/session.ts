@@ -67,7 +67,10 @@ const CommittedBotMoveSchema = z.object({
   fen: z.string(),
   san: z.string(),
   ply: z.number().int().nonnegative(),
-  quality: MoveQualitySchema,
+  /** Null when the move could not be rated in time: a bot turn never waits on
+   * an engine call for a live label (the post-game analysis rates every move),
+   * so a slow or failed eval leaves the move unrated instead. */
+  quality: MoveQualitySchema.nullable(),
   elapsedMs: z.number().int().nonnegative()
 });
 

@@ -4,6 +4,7 @@ import { CoachCard } from '../../components/CoachCard.js';
 import { FlagIcon } from '../../components/Icon.js';
 import { useLiteEngineHint } from '../../hooks/useLiteEngineHint.js';
 import { describeGameOver, type BotGameOverInfo } from './botGameOver.js';
+import { BotThinkingPanel } from './BotThinkingPanel.js';
 import { ClockDisplay } from './ClockDisplay.js';
 import './BotStatusPanel.css';
 
@@ -44,6 +45,10 @@ export interface BotStatusPanelProps {
    * omitted (no readout at all) rather than defaulted, since a caller that
    * doesn't track a live fen shouldn't silently get a stale/empty hint. */
   fen?: string;
+  /** The bot game's session, for the Thinking log (what the bot is doing and
+   * how long each step took, for the current and past moves). Omitted, the
+   * log is not shown. */
+  sessionId?: string;
   /** 'panel' (default): the full-height, centered layout for a dedicated
    * column of its own (desktop's side-by-side layout — SessionPage.css's
    * `.session-body.desktop .bot-status-panel`). 'card': the shared
@@ -97,6 +102,7 @@ export function BotStatusPanel({
   activeColor,
   onClockExpire,
   fen,
+  sessionId,
   variant = 'panel'
 }: BotStatusPanelProps): ReactNode {
   const [expanded, setExpanded] = useState(false);
@@ -135,6 +141,7 @@ export function BotStatusPanel({
         </button>
       )}
       {fen && !gameOver && <LiteHintReadout fen={fen} />}
+      {sessionId && <BotThinkingPanel sessionId={sessionId} isBotTurn={!isPlayerTurn || isBotThinking} />}
     </>
   );
 

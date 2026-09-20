@@ -204,6 +204,27 @@ describe('SharedEngineWorker', () => {
     }
   });
 
+  test('a capped search that never answers is given up on a few seconds after its cap, not after 45 s', async () => {
+    vi.useFakeTimers();
+    try {
+      const stuckWorker = fakeWorker();
+      const client = new SharedEngineWorker({ createWorker: () => stuckWorker });
+
+      const stuck = client.analyze({ fen: START_FEN, depth: 8, multiPv: 6, movetimeMs: 3000 });
+      const stuckAssertion = expect(stuck).rejects.toThrow(/timed out after 7000ms/);
+      stuckWorker.emit('uciok');
+      stuckWorker.emit('readyok');
+
+      await vi.advanceTimersByTimeAsync(6_999);
+      expect(stuckWorker.terminate).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      await stuckAssertion;
+      expect(stuckWorker.terminate).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test('a stuck search also rejects whatever else was queued behind it', async () => {
     vi.useFakeTimers();
     try {

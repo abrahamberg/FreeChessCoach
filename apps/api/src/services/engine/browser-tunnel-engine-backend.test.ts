@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
 import { ENGINE_DEFAULT_DEPTH, ENGINE_MULTI_PV, ENGINE_TUNNEL_PER_POSITION_MS } from '@freechesscoach/shared';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
-import { BrowserTunnelEngineBackend } from './browser-tunnel-engine-backend.js';
+import { BrowserTunnelEngineBackend, TUNNEL_MOVETIME_GRACE_MS } from './browser-tunnel-engine-backend.js';
 
 const VALID_ANALYSIS = {
   fen: 'f',
@@ -65,8 +65,18 @@ describe('BrowserTunnelEngineBackend', () => {
     expect(transport.request).toHaveBeenCalledWith(
       'user-1',
       { kind: 'analyze-position', fen: 'f', depth: 8, multiPv: 6, engine: 'main', movetimeMs: 3000 },
-      8000 + ENGINE_TUNNEL_PER_POSITION_MS
+      // A search with its own wall-clock cap is waited for that long plus a short
+      // grace — never the 30 s per-position allowance an uncapped search needs.
+      3000 + TUNNEL_MOVETIME_GRACE_MS
     );
+  });
+
+  test('a search without a movetime cap still gets the full per-position allowance', async () => {
+    const transport = fakeTransport(VALID_ANALYSIS);
+
+    await new BrowserTunnelEngineBackend(transport, 'user-1', 8000).analyzePosition('f', { depth: 16, multiPv: 3 });
+
+    expect(transport.request).toHaveBeenCalledWith('user-1', expect.anything(), 8000 + ENGINE_TUNNEL_PER_POSITION_MS);
   });
 
   test('analyzeGame sends a correlated request and returns the validated result array', async () => {

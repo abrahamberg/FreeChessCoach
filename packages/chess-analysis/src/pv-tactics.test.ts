@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { annotatePvTactics } from './pv-tactics.js';
+import { annotatePvTactics, pvForkInPlies } from './pv-tactics.js';
 
 // Same fork setup as candidate-moves.test.ts: white knight f4-d5 forks the
 // black rook on b6 and knight on f6.
@@ -60,5 +60,25 @@ describe('annotatePvTactics', () => {
     const annotation = annotatePvTactics(FORK_SETUP_FEN, ['Nd5']);
 
     expect(annotation.steps[0]?.motif).toBe('fork');
+  });
+});
+
+describe('pvForkInPlies', () => {
+  const CASES: [string, string[]][] = [
+    [FORK_SETUP_FEN, ['Nd5']],
+    [FORK_SETUP_FEN, ['Kh2', 'Ke7', 'Nd5']],
+    [FORK_SETUP_FEN, ['Kg2']],
+    [FORK_SETUP_FEN, ['Kh2', 'Ke7', 'Kg1', 'Ke8', 'Kh2', 'Ke7', 'Nd5']],
+    [FORK_SETUP_FEN, ['Nd5', 'Zz9']],
+    [FORK_SETUP_FEN, ['Kh2', 'Zz9', 'Nd5']],
+    [FORK_SETUP_FEN, []]
+  ];
+
+  test.each(CASES)('agrees with annotatePvTactics on %s / %j', (fen, pv) => {
+    expect(pvForkInPlies(fen, pv)).toBe(annotatePvTactics(fen, pv).forkInPlies);
+  });
+
+  test('finds the ply-3 fork without classifying any tactic', () => {
+    expect(pvForkInPlies(FORK_SETUP_FEN, ['Kh2', 'Ke7', 'Nd5'])).toBe(3);
   });
 });

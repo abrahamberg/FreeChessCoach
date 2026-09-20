@@ -1,6 +1,8 @@
 import { describe, expect, test, vi } from 'vitest';
 import { computePositionFeatures } from '@freechesscoach/chess-analysis';
 import type { PositionAnalysis, PositionAnalysisLine } from '@freechesscoach/shared';
+import { createBotMoveTrace } from '../bot/bot-move-trace.js';
+import { newBotMoveDebugCollector } from './bot-move-debug.js';
 import type { EngineBackend } from './engine-backend.js';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
 import { LiteSupplementedEngineBackend } from './lite-supplemented-engine-backend.js';
@@ -50,6 +52,19 @@ describe('LiteSupplementedEngineBackend', () => {
     expect(result.lines.map((l) => l.moveSan)).toEqual(['e4', 'd4']);
   });
 
+  test('once the light engine fails, later short results are returned as they are, without asking it again', async () => {
+    const main = fakeMain(analysisWithLines([line('e4', 30)]));
+    const transport = { request: vi.fn().mockRejectedValue(new Error('Tunnel request timeout')) };
+    const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
+
+    const first = await backend.analyzePosition(START_FEN, { multiPv: 5 });
+    const second = await backend.analyzePosition(START_FEN, { multiPv: 5 });
+
+    expect(transport.request).toHaveBeenCalledTimes(1);
+    expect(first.lines.map((l) => l.moveSan)).toEqual(['e4']);
+    expect(second.lines.map((l) => l.moveSan)).toEqual(['e4']);
+  });
+
   test('supplements from the lite engine when main falls short, keeping main line 1 and appending non-duplicate lite lines when the top move agrees', async () => {
     const main = fakeMain(analysisWithLines([line('e4', 30)]));
     const liteResult = analysisWithLines([line('e4', 28), line('d4', 20), line('c4', 15)]);
@@ -66,8 +81,8 @@ describe('LiteSupplementedEngineBackend', () => {
     expect(result.lines.map((l) => l.moveSan)).toEqual(['e4', 'd4', 'c4']);
   });
 
-  // Regression: the bot asks `main` for depth 18 / multiPv 40
-  // (BOT_SEARCH_DEPTH/BOT_CANDIDATE_BREADTH), and this decorator used to
+  // Regression: the bot used to ask `main` for depth 18 / multiPv 40, and
+  // this decorator used to
   // forward that same depth/multiPv straight through to the lite tunnel
   // request too — a depth-18, 40-line search on a single-threaded WASM
   // build in someone's browser tab measured 24-38s per bot move in
@@ -214,5 +229,60 @@ describe('LiteSupplementedEngineBackend', () => {
 
       expect(result[0]?.lines.map((l) => l.moveSan)).toEqual(['Nd6+']);
     });
+  });
+});
+
+describe('LiteSupplementedEngineBackend Thinking-log steps', () => {
+  function tracedDebug() {
+    const trace = createBotMoveTrace({ now: Date.now, source: 'turn', ply: 2 });
+    return { trace, debug: newBotMoveDebugCollector(trace) };
+  }
+
+  test('records the main engine call as a step named after where it runs', async () => {
+    const main = fakeMain(analysisWithLines([line('e4', 30), line('d4', 25)]));
+    const backend = new LiteSupplementedEngineBackend(main, fakeTransport(null), 'user-1', { timeoutMs: 8000, mainBucket: 'external' });
+    const { trace, debug } = tracedDebug();
+
+    await backend.analyzePosition(START_FEN, { multiPv: 2, debug });
+
+    const steps = trace.snapshot().steps;
+    expect(steps).toHaveLength(1);
+    expect(steps[0]).toMatchObject({ label: 'Main engine call (chess-api.com)', status: 'done', detail: '2 lines returned' });
+  });
+
+  test('adds a light-supplement step, with what it returned, only when main fell short', async () => {
+    const main = fakeMain(analysisWithLines([line('e4', 30)]));
+    const transport = fakeTransport(analysisWithLines([line('e4', 28), line('d4', 20)]));
+    const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
+    const { trace, debug } = tracedDebug();
+
+    await backend.analyzePosition(START_FEN, { multiPv: 5, debug });
+
+    expect(trace.snapshot().steps.map((step) => [step.label, step.status])).toEqual([
+      ['Main engine call (server Stockfish)', 'done'],
+      ['Light browser engine supplement', 'done']
+    ]);
+    expect(trace.snapshot().steps[1]?.detail).toContain('2 lines returned');
+  });
+
+  test('marks the supplement failed, with the reason, when the tunnel is not there', async () => {
+    const main = fakeMain(analysisWithLines([line('e4', 30)]));
+    const transport: EngineTunnelTransport = { request: vi.fn().mockRejectedValue(new Error('no browser tab connected')) };
+    const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
+    const { trace, debug } = tracedDebug();
+
+    const result = await backend.analyzePosition(START_FEN, { multiPv: 5, debug });
+
+    expect(result.lines.map((l) => l.moveSan)).toEqual(['e4']);
+    expect(trace.snapshot().steps[1]).toMatchObject({ status: 'failed', detail: 'no browser tab connected' });
+  });
+
+  test('a main engine that throws leaves its step failed and still rethrows', async () => {
+    const main: EngineBackend = { analyzePosition: vi.fn().mockRejectedValue(new Error('engine down')), analyzeGame: vi.fn() };
+    const backend = new LiteSupplementedEngineBackend(main, fakeTransport(null), 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
+    const { trace, debug } = tracedDebug();
+
+    await expect(backend.analyzePosition(START_FEN, { multiPv: 2, debug })).rejects.toThrow('engine down');
+    expect(trace.snapshot().steps[0]).toMatchObject({ status: 'failed', detail: 'engine down' });
   });
 });

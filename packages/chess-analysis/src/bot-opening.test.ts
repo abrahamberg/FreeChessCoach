@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import { bookBreadthForElo, type BotConfig } from '@freechesscoach/shared';
 import { bookMovesForFen } from './opening-book.js';
-import { selectBookMove } from './bot-opening.js';
+import { GUARANTEED_BOOK_MOVES, selectBookMove } from './bot-opening.js';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+// After 1.e4 e5 2.Nf3 Nc6: still in book, four plies in — past the guaranteed moves.
+const FOURTH_PLY_BOOK_FEN = 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3';
 const OFF_BOOK_FEN = '8/8/8/4k3/8/8/4K3/8 w - - 0 50';
 
 function baseBot(overrides: Partial<BotConfig> = {}): BotConfig {
@@ -45,14 +47,35 @@ describe('selectBookMove', () => {
 
   test('a mistake-chance roll below bookMistakeChance defers to the engine path (null)', () => {
     const bot = baseBot({ bookMistakeChance: 0.5 });
-    const result = selectBookMove(START_FEN, 0, bot, () => 0.1);
+    const result = selectBookMove(FOURTH_PLY_BOOK_FEN, 4, bot, () => 0.1);
     expect(result).toBeNull();
   });
 
   test('a mistake-chance roll at/above bookMistakeChance still follows book', () => {
     const bot = baseBot({ bookMistakeChance: 0.5 });
-    const result = selectBookMove(START_FEN, 0, bot, () => 0.99);
+    const result = selectBookMove(FOURTH_PLY_BOOK_FEN, 4, bot, () => 0.99);
     expect(result).not.toBeNull();
+  });
+
+  test('every bot plays its first two moves from book, whatever its own book settings say', () => {
+    const weakest = baseBot({ bookPlies: 0, bookMistakeChance: 1 });
+
+    expect(GUARANTEED_BOOK_MOVES).toBe(2);
+    // As White the bot moves at plies 0 and 2; as Black at plies 1 and 3.
+    expect(selectBookMove(START_FEN, 0, weakest, () => 0)).not.toBeNull();
+    expect(selectBookMove('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1', 1, weakest, () => 0)).not.toBeNull();
+    expect(selectBookMove('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2', 2, weakest, () => 0)).not.toBeNull();
+    expect(selectBookMove('r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3', 3, weakest, () => 0)).not.toBeNull();
+  });
+
+  test('past the guaranteed moves a weak bot follows its own settings again', () => {
+    const weakest = baseBot({ bookPlies: 0, bookMistakeChance: 1 });
+
+    expect(selectBookMove(FOURTH_PLY_BOOK_FEN, 4, weakest, () => 0)).toBeNull();
+  });
+
+  test('a guaranteed book move still leaves book when the student already did — there is nothing to play', () => {
+    expect(selectBookMove(OFF_BOOK_FEN, 1, baseBot({ bookPlies: 0 }), () => 0)).toBeNull();
   });
 
   test('bookMistakeChance 0 never defers regardless of random()', () => {

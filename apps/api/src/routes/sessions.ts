@@ -1,4 +1,5 @@
 import {
+  BotThinkingLogSchema,
   CommitBotMoveResponseSchema,
   CommitPlayerMoveRequestSchema,
   CreateBotSessionRequestSchema,
@@ -13,7 +14,7 @@ import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
-import type { CoachAgentBaseDependencies } from '../bootstrap.js';
+import { parsePositiveInt, type CoachAgentBaseDependencies } from '../bootstrap.js';
 import { ConflictError, NotFoundError, ValidationError } from '../lib/errors.js';
 import { getModelForUser } from '../llm/gateway.js';
 import { generateProse } from '../llm/text.js';
@@ -23,6 +24,10 @@ import { commitPlayerMoveAndAdvance } from '../services/play-move-commit.js';
 import { createPlaySession } from '../services/play-session.js';
 import { createBotSession } from '../services/bot/bot-session.js';
 import { commitBotTurn, requestBotMove, type BotMoveCommitDependencies } from '../services/bot/bot-move-commit.js';
+import type { RatingEvalStore } from '../services/bot/bot-rating-evals.js';
+import { lightEngineCooldownFor, verifyWithLightFirst } from '../services/bot/bot-verify.js';
+import { createLiteAnalyzer } from '../services/engine/lite-supplemented-engine-backend.js';
+import { botThinkingRegistry, type BotThinkingRegistry } from '../services/bot/bot-thinking-registry.js';
 import { claimBotGameTimeout } from '../services/bot/bot-claim-timeout.js';
 import { resignBotGame } from '../services/bot/bot-resign.js';
 import { undoLastBotTurn } from '../services/bot/bot-undo.js';
@@ -31,15 +36,26 @@ import type { CoachAgentDependencies } from '../services/coach-agent.js';
 import {
   resolveEngineBackend,
   resolveRawEngineBackend,
+  DEFAULT_BOT_SEARCH_TIMEOUT_MS,
+  withBotSearchTimeout,
   type ResolveEngineBackendOptions
 } from '../services/engine/resolve-engine-backend.js';
+
+/** State a bot game keeps outside the process, shared by every API pod (see
+ * bootstrap.ts). Both default to process-local behaviour when omitted. */
+export interface SharedBotState {
+  ratingEvals?: RatingEvalStore;
+  thinkingLog?: BotThinkingRegistry;
+}
 
 export function registerSessionsRoutes(
   app: FastifyInstance,
   db: Kysely<Database>,
   baseDeps: CoachAgentBaseDependencies,
-  engineBackendOptions: ResolveEngineBackendOptions
+  engineBackendOptions: ResolveEngineBackendOptions,
+  shared: SharedBotState = {}
 ): void {
+  const { ratingEvals, thinkingLog = botThinkingRegistry } = shared;
   app.post('/api/sessions', async (request) => {
     const parsed = CreateSessionRequestSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -85,7 +101,7 @@ export function registerSessionsRoutes(
     // Only actually used when studentColor is 'black' (the bot's forced
     // opening move as White) — built unconditionally anyway since it's cheap
     // until a search is actually run.
-    const botDeps = await buildBotMoveCommitDeps(baseDeps, engineBackendOptions, user.id);
+    const botDeps = await buildBotMoveCommitDeps(baseDeps, engineBackendOptions, user.id, { ratingEvals, thinkingLog });
     return createBotSession(botDeps, user.id, parsed.data.studentColor, bot, parsed.data.clock);
   });
 
@@ -144,7 +160,7 @@ export function registerSessionsRoutes(
       const bot = game?.botConfigSnapshot;
       if (!bot) throw new NotFoundError('Bot game is missing its bot configuration');
 
-      const botDeps = await buildBotMoveCommitDeps(baseDeps, engineBackendOptions, user.id);
+      const botDeps = await buildBotMoveCommitDeps(baseDeps, engineBackendOptions, user.id, { ratingEvals, thinkingLog });
       const result = await commitBotTurn(botDeps, session, bot, parsed.data.san);
       if ('error' in result) return sendIllegalMoveError(reply, result.error);
       return CommitBotMoveResponseSchema.parse(result);
@@ -154,6 +170,17 @@ export function registerSessionsRoutes(
     const result = await commitPlayerMoveAndAdvance(agentDeps, session, parsed.data.san);
     if ('error' in result) return sendIllegalMoveError(reply, result.error);
     return result;
+  });
+
+  // Live Thinking log for a bot game (bot-thinking-registry.ts): what the bot
+  // is doing right now and what it did for earlier moves, with real start/end
+  // times. Polled by the bot status panel while the bot is thinking.
+  app.get<{ Params: { id: string } }>('/api/sessions/:id/bot-thinking', async (request) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    const session = await sessionsRepo.findByIdForUser(db, request.params.id, user.id);
+    if (!session) throw new NotFoundError('Session not found');
+    if (session.mode !== 'play_bot') throw new ConflictError('Session is not a play_bot session');
+    return BotThinkingLogSchema.parse(await thinkingLog.readLog(session.id));
   });
 
   // Failover for a bot reply that never landed (commitBotTurn's botPending,
@@ -180,7 +207,7 @@ export function registerSessionsRoutes(
     const bot = game?.botConfigSnapshot;
     if (!bot) throw new NotFoundError('Bot game is missing its bot configuration');
 
-    const botDeps = await buildBotMoveCommitDeps(baseDeps, engineBackendOptions, user.id);
+    const botDeps = await buildBotMoveCommitDeps(baseDeps, engineBackendOptions, user.id, { ratingEvals, thinkingLog });
     const result = await requestBotMove(botDeps, session, bot);
     if ('error' in result) return sendIllegalMoveError(reply, result.error);
     return CommitBotMoveResponseSchema.parse(result);
@@ -286,10 +313,17 @@ async function buildRequestScopedAgentDeps(
 async function buildBotMoveCommitDeps(
   base: CoachAgentBaseDependencies,
   engineBackendOptions: ResolveEngineBackendOptions,
-  userId: string
+  userId: string,
+  { ratingEvals, thinkingLog }: Required<Pick<SharedBotState, 'thinkingLog'>> & SharedBotState
 ): Promise<BotMoveCommitDependencies> {
   const cachedBackend = await resolveEngineBackend(engineBackendOptions, userId);
-  const rawBackend = await resolveRawEngineBackend(engineBackendOptions, userId);
+  const rawBackend = await resolveRawEngineBackend(
+    withBotSearchTimeout(engineBackendOptions, parsePositiveInt('BOT_SEARCH_TIMEOUT_MS', DEFAULT_BOT_SEARCH_TIMEOUT_MS)),
+    userId,
+    { supplementBreadth: false }
+  );
+
+  const analyzeLight = createLiteAnalyzer(engineBackendOptions.tunnelTransport, userId, engineBackendOptions.tunnelTimeoutMs);
 
   return {
     db: base.db,
@@ -301,7 +335,19 @@ async function buildBotMoveCommitDeps(
     // same-game deepen-analysis pass (or another user's import) queued on
     // the shared native engine pool. See EnginePrioritySchema's doc comment.
     analyzeBotPosition: (fen, opts) => rawBackend.analyzePosition(fen, { ...opts, priority: 'interactive' }),
-    random: Math.random
+    random: Math.random,
+    thinkingLog,
+    // Live labels for the student's moves come from the light engine, in the
+    // background, never from the real pipeline that picks the bot's move.
+    ratingEvals,
+    analyzeLight,
+    // Checking that a mistake really is one: the light engine when a tab is
+    // connected, otherwise a small search on the bot's own engine.
+    verifyBotPosition: verifyWithLightFirst(
+      analyzeLight,
+      (fen) => rawBackend.analyzePosition(fen, { depth: 12, multiPv: 1, movetimeMs: 1500, priority: 'interactive' }),
+      { cooldown: lightEngineCooldownFor(userId) }
+    )
   };
 }
 

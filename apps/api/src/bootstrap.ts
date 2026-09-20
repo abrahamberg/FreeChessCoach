@@ -5,6 +5,9 @@ import type { Database } from './db/schema.js';
 import type { JobQueue } from './jobs/queue.js';
 import type { GatewayConfig } from './llm/gateway.js';
 import { DEFAULT_MODEL_TUNING, type ModelTuning } from './llm/model-options.js';
+import { createRedisBotThinkingMirror } from './services/bot/bot-thinking-mirror.js';
+import { createBotThinkingRegistry, type BotThinkingRegistry } from './services/bot/bot-thinking-registry.js';
+import { createMemoryRatingEvalStore, createRedisRatingEvalStore, type RatingEvalStore } from './services/bot/bot-rating-evals.js';
 import { createMemoryLlmUnlockStore, createRedisLlmUnlockStore, type LlmUnlockStore } from './llm/unlock-store.js';
 import type { CoachAgentDependencies } from './services/coach-agent.js';
 import type { TtsConfig } from './services/tts.js';
@@ -38,6 +41,23 @@ export function buildLlmUnlockStoreFromEnv(): LlmUnlockStore {
   if (process.env.REDIS_URL) return createRedisLlmUnlockStore(process.env.REDIS_URL, config);
   console.warn('REDIS_URL is unset; using a process-local LLM unlock cache');
   return createMemoryLlmUnlockStore(config);
+}
+
+/** Redis in any deployment that has it (the API runs as several pods, and the
+ * eval a reply schedules must be readable by whichever pod gets the student's
+ * next move); a process-local map otherwise, which is only correct for a single
+ * process. */
+export function buildRatingEvalStoreFromEnv(): RatingEvalStore {
+  if (process.env.REDIS_URL) return createRedisRatingEvalStore(process.env.REDIS_URL);
+  console.warn('REDIS_URL is unset; using a process-local rating eval store');
+  return createMemoryRatingEvalStore();
+}
+
+/** The Thinking log of bot moves, mirrored through Redis when there is one so
+ * a poll landing on any API pod sees every pod's moves. */
+export function buildBotThinkingRegistryFromEnv(): BotThinkingRegistry {
+  if (process.env.REDIS_URL) return createBotThinkingRegistry({ mirror: createRedisBotThinkingMirror(process.env.REDIS_URL) });
+  return createBotThinkingRegistry();
 }
 
 /** How each tier is called. All optional with working defaults — a deployment

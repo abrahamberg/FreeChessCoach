@@ -6,6 +6,7 @@ export * from './aggregate-opening-stats.js';
 export * from './aggregate-rating-stats.js';
 export * from './assert-eval-sign.js';
 export * from './bot-candidate-weighting.js';
+export * from './bot-mistake-judge.js';
 export * from './bot-mistake-pool.js';
 export * from './bot-move-pick.js';
 export * from './bot-opening.js';

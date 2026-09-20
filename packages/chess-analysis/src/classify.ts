@@ -78,6 +78,9 @@ export function classifyLiveMove(input: {
   evalAfter: EngineEval | undefined;
   userColor: 'white' | 'black';
   brilliantSoundness?: boolean;
+  /** A move the opening book knows — labelled 'book' whatever the engine
+   * thinks. Live play has no per-ply book walk, so the caller says. */
+  isBookMove?: boolean;
 }): ClassifiedMove {
   const chess = new Chess(input.fenBefore);
   const applied = chess.move(input.moveSan);
@@ -108,7 +111,7 @@ export function classifyLiveMove(input: {
       newHangingPieces: featuresAfter.hangingPieces,
       mobilityDelta: featuresAfter.availableMoves.length - featuresBefore.availableMoves.length
     },
-    isBookMove: false,
+    isBookMove: input.isBookMove ?? false,
     opening: null,
     brilliantSoundness: input.brilliantSoundness,
     isRecapture: false

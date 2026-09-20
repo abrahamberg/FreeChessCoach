@@ -5,6 +5,7 @@ import {
   decodeMoveComment,
   encodeMoveComment,
   parseAnnotatedPgn,
+  replaceLastMoveAnnotation,
   type AnnotatedMoveData
 } from './annotated-pgn.js';
 import { removeLastMoveFromPgn } from './pgn-mutation.js';
@@ -193,5 +194,56 @@ describe('buildAnnotatedPgn', () => {
     const movesAsBlack = parseAnnotatedPgn(annotated, 'black');
     expect(movesAsBlack[0]).toMatchObject({ mover: 'black', isUserMove: true });
     expect(movesAsBlack[1]).toMatchObject({ mover: 'white', isUserMove: false });
+  });
+});
+
+describe('replaceLastMoveAnnotation', () => {
+  function pgnWithTwoMoves(): string {
+    const first = appendAnnotatedMove(HEADERS, 'e4', SAMPLE_DATA, { elapsedMs: 1500 });
+    if ('error' in first) throw new Error(first.error);
+    const second = appendAnnotatedMove(first.pgn, 'e5', null, { elapsedMs: 900 });
+    if ('error' in second) throw new Error(second.error);
+    return second.pgn;
+  }
+
+  test('adds an annotation to a move that was appended unrated, keeping its clock tag', () => {
+    const result = replaceLastMoveAnnotation(pgnWithTwoMoves(), 'e5', { ...SAMPLE_DATA, quality: 'best' });
+    if ('error' in result) throw new Error(result.error);
+
+    const moves = parseAnnotatedPgn(result.pgn, 'white');
+    expect(moves.map((move) => [move.moveSan, move.quality])).toEqual([
+      ['e4', 'good'],
+      ['e5', 'best']
+    ]);
+    expect(result.pgn).toContain('[%clk 0:00:01]');
+  });
+
+  test('replaces an existing annotation instead of adding a second one', () => {
+    const rated = replaceLastMoveAnnotation(pgnWithTwoMoves(), 'e5', { ...SAMPLE_DATA, quality: 'best' });
+    if ('error' in rated) throw new Error(rated.error);
+
+    const rerated = replaceLastMoveAnnotation(rated.pgn, 'e5', { ...SAMPLE_DATA, quality: 'blunder' });
+    if ('error' in rerated) throw new Error(rerated.error);
+
+    expect(rerated.pgn.match(/\[%fcc /g)).toHaveLength(2);
+    expect(parseAnnotatedPgn(rerated.pgn, 'white').at(-1)?.quality).toBe('blunder');
+  });
+
+  test('leaves every earlier move untouched', () => {
+    const before = parseAnnotatedPgn(pgnWithTwoMoves(), 'white')[0];
+    const result = replaceLastMoveAnnotation(pgnWithTwoMoves(), 'e5', SAMPLE_DATA);
+    if ('error' in result) throw new Error(result.error);
+
+    expect(parseAnnotatedPgn(result.pgn, 'white')[0]).toEqual(before);
+  });
+
+  test('refuses when the last move is not the one being rated (e.g. an undo raced it)', () => {
+    expect(replaceLastMoveAnnotation(pgnWithTwoMoves(), 'Nf3', SAMPLE_DATA)).toEqual({
+      error: 'Last move is e5, not Nf3'
+    });
+  });
+
+  test('refuses an empty game', () => {
+    expect(replaceLastMoveAnnotation(HEADERS, 'e4', SAMPLE_DATA)).toEqual({ error: 'No moves to annotate' });
   });
 });

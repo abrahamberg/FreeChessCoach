@@ -4,7 +4,8 @@ import {
   appendMoveToPgn,
   parsePgn,
   removeLastMoveFromPgn,
-  toAnnotatedMoveData
+  toAnnotatedMoveData,
+  type EvalScore
 } from '@freechesscoach/chess-analysis';
 import type { MoveQuality, PositionAnalysis } from '@freechesscoach/shared';
 import * as gamesRepo from '../db/repositories/games.js';
@@ -26,6 +27,18 @@ import { classifyPlayMove } from './play-move-quality.js';
  * coach-agent-turn.ts already relies on. */
 const gameLock = createKeyedLock();
 
+/** Runs `fn` while holding `gameId`'s lock — for the sibling module that
+ * rates a move after committing it (play-moves-rated.ts), which must
+ * serialize against every other PGN read-modify-write on the same game. */
+export async function withGameLock<T>(gameId: string, fn: () => Promise<T>): Promise<T> {
+  const release = await gameLock.acquire(gameId);
+  try {
+    return await fn();
+  } finally {
+    release();
+  }
+}
+
 export interface PlayMovesDependencies {
   db: Kysely<Database>;
   analyzePosition: (fen: string) => Promise<PositionAnalysis>;
@@ -43,6 +56,9 @@ export interface CommitMoveOptions {
    * since their previous move on this game. Omitted for ordinary play-mode
    * moves, which stay untimed exactly as before. */
   elapsedMs?: number;
+  /** The engine's eval of the position AFTER this move (White-perspective),
+   * saved in its PGN `[%eval]` comment — see `AppendMoveOptions.evalAfter`. */
+  evalAfter?: EvalScore;
 }
 
 /**

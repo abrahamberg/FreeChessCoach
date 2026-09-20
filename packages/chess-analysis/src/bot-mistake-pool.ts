@@ -1,20 +1,14 @@
-import { Chess } from 'chess.js';
+import { Chess, type Square } from 'chess.js';
 import type { BotPersonality, DiagnosisCodeId } from '@freechesscoach/shared';
 import type { BotCandidate } from './bot-candidate-weighting.js';
 import { pickPersonalityWeightedMove } from './bot-candidate-weighting.js';
 import { analyzeChecksCapturesThreats } from './checks-captures-threats.js';
-
-/** Cap on the TTC-ranked candidate pool before sampling down further — see
- * `buildTtcPool`'s doc comment. */
-const POOL_SIZE = 10;
-
-/** How many of `buildTtcPool`'s top-ranked candidates a personality-weighted
- * sample is drawn from before the final tactical-mistake/blunder pick. */
-const SAMPLE_SIZE = 5;
+import { CONFIG } from './config.js';
+import { parsePgn } from './pgn.js';
 
 const PIECE_VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
-/** Priority bonus for a candidate that's one of the position's own
+/** Priority bonus for a move that is one of the position's own
  * checks/captures/threats (offensive TTC) — set above the maximum single
  * piece value (queen = 9) so this pool is dominated by "plausible to
  * consider" (a human always notices "I can check/capture/threaten" first),
@@ -22,175 +16,176 @@ const PIECE_VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 
  * candidates rather than ever displacing offensive relevance outright. */
 const OFFENSIVE_TTC_PRIORITY = 10;
 
-/** A candidate's net "score" for ranking purposes, treating a live mate as
- * saturating far past any material cp value — used both to find the
- * strongest fallback pick (pickTacticalMistake) and the weakest one
- * (pickBlunder) within a sample. */
-function candidateScore(candidate: BotCandidate): number {
-  if (candidate.mateIn !== null) return candidate.mateIn > 0 ? 100_000 : -100_000;
-  return candidate.cp ?? 0;
+/** Bonus for a move that happens near the square the student just moved to —
+ * the reflexes a weaker player really has: recapture right there, chase the
+ * piece that just moved, answer the last move without weighing the rest of the
+ * board. Below OFFENSIVE_TTC_PRIORITY, so a nearby quiet move never outranks a
+ * check or capture elsewhere. */
+const NEAR_LAST_MOVE_PRIORITY = 6;
+
+export interface LastMove {
+  from: string;
+  to: string;
 }
 
-/** How many cp worse than the engine's own best move (`candidates[0]`)
- * `candidate` actually is — the TTC pool ranks by tactical plausibility
- * only (offensive/defensive), never by eval, so nothing about it guarantees
- * a "plausible" pick is actually worse than best; this is the real check
- * against the engine that both pickTacticalMistake and pickBlunder need
- * before calling something a mistake or a blunder. */
-function cpLossFromBest(best: BotCandidate, candidate: BotCandidate): number {
-  return candidateScore(best) - candidateScore(candidate);
+export interface MistakeBatcherInput {
+  fen: string;
+  /** One candidate per legal move — no engine score is needed to screen them. */
+  candidates: BotCandidate[];
+  /** The student's move that led here, when known. */
+  lastMove: LastMove | null;
+  personality: BotPersonality;
+  /** This bot's documented weaknesses: a candidate that exhibits one is tried
+   * before the others in its batch. */
+  diagnosisCodes: readonly DiagnosisCodeId[];
+  random: () => number;
 }
 
-/** Below this cp loss from the engine's own best move, a TTC-plausible
- * candidate is still "between good moves" — a fine alternative, not a real
- * tactical mistake. Roughly: gives away a meaningful chunk of an
- * advantage, short of losing real material outright. */
-const TACTICAL_MISTAKE_MIN_CP_LOSS = 80;
+export interface MistakeBatcher {
+  /** The next batch of plausible mistakes, in the order to try them, or null
+   * once `CONFIG.botMistake.batches` batches (or the legal moves) are used up. */
+  next(): BotCandidate[] | null;
+}
 
-/** Below this cp loss, a candidate isn't a real blunder yet — roughly "at
- * least gives up a minor piece for nothing," not just a slightly
- * suboptimal move. */
-const BLUNDER_MIN_CP_LOSS = 250;
+interface MoveGeometry {
+  from: string;
+  to: string;
+}
 
-/** Applies `moveSan` to `fenBefore` and returns the resulting FEN, or null
- * for an illegal/unparseable SAN (chess.js throws rather than returning
- * null for one) — defensive only; every `moveSan` here comes from the
- * engine's own candidate list for this exact position, so this should
- * never actually miss in production. */
-function fenAfterMove(fenBefore: string, moveSan: string): string | null {
+/**
+ * Screens a position for the mistakes a bot of this personality would plausibly
+ * make, without asking the engine anything: legal moves ranked by tactical
+ * plausibility (a check, capture or threat the position offers, plus how much
+ * the move leaves the opponent to capture) and by nearness to what the student
+ * just played, then handed out `batchSize` at a time. The engine only ever sees
+ * the one candidate the caller picks from a batch (bot-mistake-search.ts).
+ *
+ * Cheap ranking (checks/captures/threats and nearness) picks the pool first;
+ * the per-move "what could the opponent capture after this" scan — a board
+ * replay each — runs only on that pool, not on every legal move.
+ */
+export function createMistakeBatcher(input: MistakeBatcherInput): MistakeBatcher {
+  const { fen, candidates, lastMove, personality, diagnosisCodes, random } = input;
+  const { batchSize, batches, nearDistance } = CONFIG.botMistake;
+  const geometry = moveGeometry(fen);
+  const offensive = offensiveMoves(fen);
+
+  const cheap = candidates
+    .map((candidate) => ({
+      candidate,
+      tiebreak: random(),
+      priority:
+        (offensive.has(candidate.moveSan) ? OFFENSIVE_TTC_PRIORITY : 0) +
+        (isNear(geometry.get(candidate.moveSan), lastMove, nearDistance) ? NEAR_LAST_MOVE_PRIORITY : 0)
+    }))
+    .sort((a, b) => b.priority - a.priority || a.tiebreak - b.tiebreak)
+    .slice(0, batchSize * batches);
+
+  const ranked = cheap
+    .map((entry) => ({ ...entry, priority: entry.priority + defensiveExposure(fen, entry.candidate.moveSan) }))
+    .sort((a, b) => b.priority - a.priority || a.tiebreak - b.tiebreak)
+    .map((entry) => entry.candidate);
+
+  let handedOut = 0;
+  return {
+    next() {
+      if (handedOut >= batches || handedOut * batchSize >= ranked.length) return null;
+      const batch = ranked.slice(handedOut * batchSize, (handedOut + 1) * batchSize);
+      handedOut += 1;
+      return orderBatch(batch, personality, diagnosisCodes, random);
+    }
+  };
+}
+
+/** Weakness-matching candidates first, each group personality-weighted. */
+function orderBatch(
+  batch: BotCandidate[],
+  personality: BotPersonality,
+  diagnosisCodes: readonly DiagnosisCodeId[],
+  random: () => number
+): BotCandidate[] {
+  const remaining = [...batch];
+  const ordered: BotCandidate[] = [];
+  while (remaining.length > 0) {
+    const manifesting = remaining.filter((candidate) => candidate.diagnosisCodes.some((code) => diagnosisCodes.includes(code)));
+    const picked = pickPersonalityWeightedMove(manifesting.length > 0 ? manifesting : remaining, personality, random);
+    ordered.push(picked);
+    remaining.splice(remaining.indexOf(picked), 1);
+  }
+  return ordered;
+}
+
+function moveGeometry(fen: string): Map<string, MoveGeometry> {
+  const geometry = new Map<string, MoveGeometry>();
+  for (const move of new Chess(fen).moves({ verbose: true })) geometry.set(move.san, { from: move.from, to: move.to });
+  return geometry;
+}
+
+function offensiveMoves(fen: string): Set<string> {
+  const cct = analyzeChecksCapturesThreats(fen);
+  return new Set([
+    ...cct.checks.moves.map((move) => move.moveSan),
+    ...cct.captures.moves.map((move) => move.moveSan),
+    ...cct.threats.moves.map((move) => move.moveSan)
+  ]);
+}
+
+function isNear(move: MoveGeometry | undefined, lastMove: LastMove | null, distance: number): boolean {
+  if (!move || !lastMove) return false;
+  return squareDistance(move.to, lastMove.to) <= distance || squareDistance(move.from, lastMove.to) <= distance;
+}
+
+/** Chebyshev (king-move) distance between two squares. */
+function squareDistance(a: string, b: string): number {
+  return Math.max(Math.abs(a.charCodeAt(0) - b.charCodeAt(0)), Math.abs(Number(a[1]) - Number(b[1])));
+}
+
+/** Total material value of everything the opponent could capture immediately
+ * after `moveSan` — the "defensive TTC" half of plausibility: how much the move
+ * leaves hanging. 0 for a SAN that does not parse or a move that leaves nothing
+ * capturable. */
+function defensiveExposure(fen: string, moveSan: string): number {
+  let after: string;
   try {
-    const chess = new Chess(fenBefore);
+    const chess = new Chess(fen);
     chess.move(moveSan);
+    after = chess.fen();
+  } catch {
+    return 0;
+  }
+  return analyzeChecksCapturesThreats(after).captures.moves.reduce((sum, move) => sum + (PIECE_VALUES[move.capturedPiece] ?? 0), 0);
+}
+
+/** The squares a move went between, as a `LastMove` — from the position before
+ * it and its SAN. Null when the SAN is not legal there. */
+export function lastMoveOf(fenBefore: string, san: string): LastMove | null {
+  try {
+    const move = new Chess(fenBefore).move(san);
+    return { from: move.from as Square, to: move.to as Square };
+  } catch {
+    return null;
+  }
+}
+
+/** Every legal move at `fen`, in SAN. */
+export function legalSanMoves(fen: string): string[] {
+  return new Chess(fen).moves();
+}
+
+/** The position after `san` is played from `fen`, or null when it is not legal. */
+export function fenAfterSan(fen: string, san: string): string | null {
+  try {
+    const chess = new Chess(fen);
+    chess.move(san);
     return chess.fen();
   } catch {
     return null;
   }
 }
 
-/** Total material value of everything the opponent could capture from us
- * immediately after playing `candidate` — the "defensive TTC" half of the
- * spec (what the opponent's own checks/captures/threats look like against
- * the position this candidate leaves behind), reusing
- * `analyzeChecksCapturesThreats` on the after-position rather than
- * inventing a second exposure metric. 0 for a candidate whose SAN doesn't
- * parse (see fenAfterMove) or that leaves nothing capturable. */
-function defensiveExposure(fenBefore: string, candidate: BotCandidate): number {
-  const after = fenAfterMove(fenBefore, candidate.moveSan);
-  if (!after) return 0;
-  const opponentCct = analyzeChecksCapturesThreats(after);
-  return opponentCct.captures.moves.reduce((sum, move) => sum + (PIECE_VALUES[move.capturedPiece] ?? 0), 0);
-}
-
-/**
- * Ranks all legal `candidates` by TTC plausibility — offensive presence
- * (this candidate is one of our own checks/captures/threats,
- * `analyzeChecksCapturesThreats(fenBefore)`, the same primitive
- * `buildPlausibleMoveShortlist` used before this file existed) plus
- * defensive severity (how much this candidate exposes us to the opponent's
- * own checks/captures/threats afterward, `defensiveExposure`) — caps to the
- * top `POOL_SIZE`, then samples down to `SAMPLE_SIZE` via personality
- * weighting. This is the shared shape both pickTacticalMistake and
- * pickBlunder draw their final pick from; only the final selection differs
- * between the two.
- */
-function sampleTtcPool(candidates: BotCandidate[], fenBefore: string, personality: BotPersonality, random: () => number): BotCandidate[] {
-  const offensive = analyzeChecksCapturesThreats(fenBefore);
-  const offensiveSans = new Set([
-    ...offensive.checks.moves.map((move) => move.moveSan),
-    ...offensive.captures.moves.map((move) => move.moveSan),
-    ...offensive.threats.moves.map((move) => move.moveSan)
-  ]);
-
-  const ranked = candidates
-    .map((candidate) => ({
-      candidate,
-      priority: (offensiveSans.has(candidate.moveSan) ? OFFENSIVE_TTC_PRIORITY : 0) + defensiveExposure(fenBefore, candidate)
-    }))
-    .sort((a, b) => b.priority - a.priority)
-    .slice(0, POOL_SIZE)
-    .map((entry) => entry.candidate);
-
-  if (ranked.length <= SAMPLE_SIZE) return ranked;
-
-  const sample: BotCandidate[] = [];
-  const remaining = [...ranked];
-  for (let i = 0; i < SAMPLE_SIZE && remaining.length > 0; i++) {
-    const picked = pickPersonalityWeightedMove(remaining, personality, random);
-    sample.push(picked);
-    remaining.splice(remaining.indexOf(picked), 1);
-  }
-  return sample;
-}
-
-/**
- * The %A-miss / %C-miss branch: a tactical mistake rather than a blunder.
- * Samples the TTC pool (`sampleTtcPool` — tactical plausibility only, never
- * engine eval), then checks each sampled candidate against the engine
- * (`cpLossFromBest`) so the final pick is never "between good moves": only
- * candidates that actually lose at least TACTICAL_MISTAKE_MIN_CP_LOSS
- * relative to the engine's own best move (`candidates[0]`) are eligible.
- * Among those, prefers whichever exhibits one of this bot's own documented
- * `diagnosisCodes` (mirrors the old `diagnosisManifestChance` matching
- * logic, now unconditional within this branch rather than a separate
- * roll); with no diagnosis match, falls back to the mildest genuine mistake
- * available (least cp loss that still clears the floor) rather than the
- * single strongest candidate in the sample — picking the strongest is
- * exactly what let a "mistake" occasionally turn out to be a perfectly
- * good move. If nothing in the sample clears the floor at all (rare — a
- * position where even every TTC-plausible move is still fine), falls back
- * to the sample's own worst-scoring candidate as a last resort rather than
- * failing outright.
- */
-export function pickTacticalMistake(
-  candidates: BotCandidate[],
-  fenBefore: string,
-  personality: BotPersonality,
-  diagnosisCodes: readonly DiagnosisCodeId[],
-  random: () => number,
-  /** Dev-log hook only (bot-move-selector.ts) — receives the final 5-move
-   * sample this pick was drawn from, purely as data, so this function stays
-   * pure otherwise. */
-  onSample?: (sample: BotCandidate[]) => void
-): BotCandidate {
-  const sample = sampleTtcPool(candidates, fenBefore, personality, random);
-  onSample?.(sample);
-  const best = candidates[0] ?? sample[0]!;
-
-  const realMistakes = sample.filter((candidate) => cpLossFromBest(best, candidate) >= TACTICAL_MISTAKE_MIN_CP_LOSS);
-  if (realMistakes.length === 0) {
-    return sample.reduce((worst, candidate) => (candidateScore(candidate) < candidateScore(worst) ? candidate : worst));
-  }
-
-  const manifesting = realMistakes.filter((candidate) => candidate.diagnosisCodes.some((code) => diagnosisCodes.includes(code)));
-  if (manifesting.length > 0) return pickPersonalityWeightedMove(manifesting, personality, random);
-
-  return realMistakes.reduce((mildest, candidate) => (candidateScore(candidate) > candidateScore(mildest) ? candidate : mildest));
-}
-
-/**
- * The %C-hit branch: a real blunder. Same TTC pool construction as
- * pickTacticalMistake, but checks each sampled candidate against the
- * engine's own best move (`cpLossFromBest`) for a real, meaningful cp drop
- * — at least BLUNDER_MIN_CP_LOSS, roughly "gives up a piece for nothing" —
- * before picking the worst-scoring one among those that qualify. Without
- * this check, "worst of the TTC sample" could still just be a merely
- * suboptimal move on a position where nothing TTC-plausible is actually
- * bad. Falls back to the sample's own worst-scoring candidate if nothing
- * clears the floor (rare).
- */
-export function pickBlunder(
-  candidates: BotCandidate[],
-  fenBefore: string,
-  personality: BotPersonality,
-  random: () => number,
-  /** Same dev-log hook as pickTacticalMistake's own — see its doc comment. */
-  onSample?: (sample: BotCandidate[]) => void
-): BotCandidate {
-  const sample = sampleTtcPool(candidates, fenBefore, personality, random);
-  onSample?.(sample);
-  const best = candidates[0] ?? sample[0]!;
-
-  const realBlunders = sample.filter((candidate) => cpLossFromBest(best, candidate) >= BLUNDER_MIN_CP_LOSS);
-  const pool = realBlunders.length > 0 ? realBlunders : sample;
-  return pool.reduce((worst, candidate) => (candidateScore(candidate) < candidateScore(worst) ? candidate : worst));
+/** The last move played in a game's PGN, as the squares it went between — null
+ * for a game with no moves yet. */
+export function lastMoveOfPgn(pgn: string): LastMove | null {
+  const uci = parsePgn(pgn).positions.at(-1)?.moveUci;
+  return uci && uci.length >= 4 ? { from: uci.slice(0, 2), to: uci.slice(2, 4) } : null;
 }

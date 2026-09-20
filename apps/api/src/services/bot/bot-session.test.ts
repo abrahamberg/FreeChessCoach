@@ -7,6 +7,8 @@ import * as sessionMessagesRepo from '../../db/repositories/session-messages.js'
 import * as sessionsRepo from '../../db/repositories/sessions.js';
 import type { Database } from '../../db/schema.js';
 import * as usersRepo from '../../db/repositories/users.js';
+import { parseAnnotatedPgn } from '@freechesscoach/chess-analysis';
+import { createMemoryRatingEvalStore } from './bot-rating-evals.js';
 import { createBotSession, type CreateBotSessionDependencies } from './bot-session.js';
 
 const TEST_BOT: BotConfig = {
@@ -79,6 +81,9 @@ describe('createBotSession', () => {
         .fn()
         .mockResolvedValue(botLines({ moveUci: 'e2e4', moveSan: 'e4', pvSan: ['e4'], cp: 20, mateIn: null })),
       random: () => 0,
+      // The opening book takes over a bot's first moves; these tests are about the
+      // engine path, so it is switched off unless a test passes its own.
+      selectBook: () => null,
       ...overrides
     };
   }
@@ -124,5 +129,21 @@ describe('createBotSession', () => {
     expect(session.subjectPly).toBe(1);
     const persistedSession = await sessionsRepo.findById(db, session.id);
     expect(persistedSession?.currentPly).toBe(1);
+  });
+
+  test('the bot\'s opening move makes no grading call: it is rated from its own search, and the light engine is asked about the position the student moves from', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Bo' });
+    const analyzePosition = vi.fn();
+    const analyzeLight = vi.fn().mockResolvedValue(botLines({ moveUci: 'e7e5', moveSan: 'e5', pvSan: ['e5'], cp: 20, mateIn: null }));
+    const ratingEvals = createMemoryRatingEvalStore();
+
+    const session = await createBotSession(deps({ analyzePosition, analyzeLight, ratingEvals }), user.id, 'black', TEST_BOT);
+
+    expect(analyzePosition).not.toHaveBeenCalled();
+    const game = await gamesRepo.findById(db, session.gameId);
+    expect(parseAnnotatedPgn(game!.annotatedPgn!, 'white').map((move) => move.moveSan)).toEqual(['e4']);
+    const afterE4 = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
+    await vi.waitFor(async () => expect(await ratingEvals.get(afterE4)).toBeDefined());
+    expect(analyzeLight).toHaveBeenCalledWith(afterE4);
   });
 });

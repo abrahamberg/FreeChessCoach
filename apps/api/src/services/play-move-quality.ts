@@ -32,6 +32,9 @@ export interface ClassifyPlayMoveArgs {
    * see a strictly weaker signal for them, so only the bot path opts in
    * (bot-move-commit.ts via play-moves.ts's commitBotMove). */
   computeDiagnosisCodes?: boolean;
+  /** The opening book knows this move: it is labelled 'book' (an eval is not
+   * needed for that, and is used only when there is one). */
+  isBookMove?: boolean;
 }
 
 /**
@@ -53,14 +56,35 @@ export async function classifyPlayMove(
     analyzePosition(args.fenAfter)
   ]);
 
+  return classifyPlayMoveWithEvals(
+    args,
+    toEngineEval(args.fenBefore, analysisBefore),
+    toEngineEval(args.fenAfter, analysisAfter)
+  );
+}
+
+/**
+ * The classification half of `classifyPlayMove`, for a caller that already
+ * holds both evals — a bot turn rates the moves from its own search instead of
+ * paying for fresh engine calls (`services/bot/bot-move-grading.ts`).
+ * `evalBefore` needs the lines at `fenBefore` (was the move the best one?);
+ * `evalAfter` only its first line's score. Either may be missing for a book
+ * move, which is labelled without the engine.
+ */
+export function classifyPlayMoveWithEvals(
+  args: ClassifyPlayMoveArgs,
+  evalBefore: EngineEval | undefined,
+  evalAfter: EngineEval | undefined
+): ClassifiedLiveMove {
   const classified = classifyLiveMove({
     ply: args.ply,
     moveSan: args.moveSan,
     mover: args.mover,
     fenBefore: args.fenBefore,
-    evalBefore: toEngineEval(args.fenBefore, analysisBefore),
-    evalAfter: toEngineEval(args.fenAfter, analysisAfter),
-    userColor: args.userColor
+    evalBefore,
+    evalAfter,
+    userColor: args.userColor,
+    ...(args.isBookMove ? { isBookMove: true } : {})
   });
 
   return { ...classified, diagnosisCodes: args.computeDiagnosisCodes ? diagnosisCodesFor(classified) : [] };
@@ -87,7 +111,7 @@ function diagnosisCodesFor(classified: ClassifiedMove): DiagnosisCodeId[] {
 
 /** classifyLiveMove only reads `.lines` off the eval it's given — `ply` is
  * set to 0 since nothing downstream reads it here. */
-function toEngineEval(fen: string, analysis: PositionAnalysis): EngineEval {
+export function toEngineEval(fen: string, analysis: PositionAnalysis): EngineEval {
   return {
     ply: 0,
     fen,

@@ -88,7 +88,9 @@ const CommittedBotMoveSchema = z.object({
   fen: z.string(),
   san: z.string(),
   ply: z.number().int().nonnegative(),
-  quality: MoveQualitySchema,
+  /** Null when the server could not rate the move in time (see the shared
+   * CommittedBotMoveSchema). */
+  quality: MoveQualitySchema.nullable(),
   elapsedMs: z.number().int().nonnegative()
 });
 

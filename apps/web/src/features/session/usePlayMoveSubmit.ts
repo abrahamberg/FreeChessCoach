@@ -10,6 +10,12 @@ export interface CommittedPlayMove {
   quality: MoveQuality;
 }
 
+/** What a move-committed handler actually needs, in either play mode: where the
+ * move landed. Both handlers (useSessionPageData, useBotSessionPageData) read
+ * nothing else — in particular not `quality`, which a bot turn may report as
+ * null when it could not be rated in time. */
+export type CommittedMoveRef = Pick<CommittedPlayMove, 'fen' | 'san' | 'ply'>;
+
 export interface UsePlayMoveSubmitResult {
   /** Belt-and-suspenders 422 message (see submit's doc comment), or null
    * once a submission succeeds/hasn't been tried yet. */
@@ -53,7 +59,7 @@ function describePlayMoveError(error: unknown): string {
 export function usePlayMoveSubmit(
   sessionId: string,
   sendMessage: (content: string) => void,
-  onPlayMoveCommitted?: (result: CommittedPlayMove, uci: string) => void
+  onPlayMoveCommitted?: (result: CommittedMoveRef, uci: string) => void
 ): UsePlayMoveSubmitResult {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

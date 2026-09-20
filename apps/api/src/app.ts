@@ -16,6 +16,8 @@ import { registerPositionAnalysisRoutes } from './routes/positions.js';
 import { registerPuzzleAssignmentsRoutes } from './routes/puzzle-assignments.js';
 import { registerPuzzleSessionsRoutes } from './routes/puzzle-sessions.js';
 import { registerSessionsRoutes } from './routes/sessions.js';
+import type { RatingEvalStore } from './services/bot/bot-rating-evals.js';
+import type { BotThinkingRegistry } from './services/bot/bot-thinking-registry.js';
 import { registerStatsRoutes } from './routes/stats.js';
 import { registerTtsRoutes } from './routes/tts.js';
 import { authHeadersPlugin, type AuthHeadersOptions } from './plugins/auth-headers.js';
@@ -45,6 +47,10 @@ export interface BuildAppOptions {
   /** Required to register /api/sessions/* routes. */
   coachAgentBaseDeps?: CoachAgentBaseDependencies;
   engineBackendOptions?: ResolveEngineBackendOptions;
+  /** Shared (Redis) store for the light-engine evals that rate a student's live bot-game moves — must be shared across API pods. */
+  botRatingEvals?: RatingEvalStore;
+  /** Live Thinking log of bot moves, mirrored across API pods — see bot-thinking-registry.ts. */
+  botThinkingLog?: BotThinkingRegistry;
   lichessClient?: LichessClient;
   chesscomClient?: ChesscomClient;
   /** Required to register POST /api/tts/speak (the OpenAI coach-voice backend,
@@ -101,7 +107,10 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       registerLlmSetupRoutes(app, options.db, options.llmSetupVault, options.llmUnlockStore);
     }
     if (options.coachAgentBaseDeps && options.engineBackendOptions) {
-      registerSessionsRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions);
+      registerSessionsRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions, {
+        ratingEvals: options.botRatingEvals,
+        thinkingLog: options.botThinkingLog
+      });
       registerPositionAnalysisRoutes(app, options.db, options.engineBackendOptions);
     }
     // No engine backend needed — a puzzle session's tool set has no

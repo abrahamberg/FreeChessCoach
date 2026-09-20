@@ -179,6 +179,16 @@ interface QueuedAnalysis {
  * for a search that's actually never coming back. */
 const SEARCH_TIMEOUT_MS = 45_000;
 
+/** A search with its own wall-clock cap (`movetimeMs`) cannot honestly take
+ * longer than that, so a worker that has not answered this long after it is
+ * wedged: waiting SEARCH_TIMEOUT_MS instead left a dead light engine blocking
+ * every later request for 45 s before it was reset. */
+const MOVETIME_GRACE_MS = 4_000;
+
+function searchTimeoutMs(request: AnalyzeRequest): number {
+  return request.movetimeMs === undefined ? SEARCH_TIMEOUT_MS : Math.min(SEARCH_TIMEOUT_MS, request.movetimeMs + MOVETIME_GRACE_MS);
+}
+
 /** Owns the single WASM Stockfish Worker driving browser-mode tunnel
  * fulfillment, so only one engine process ever runs client-side for it.
  * Serializes analyze() calls: a WASM engine can only run one search at a
@@ -390,10 +400,11 @@ export class SharedEngineWorker {
     this.notifyActivity();
 
     const lines = new Map<number, RawEngineLine>();
+    const timeoutMs = searchTimeoutMs(request);
     const timeoutId = setTimeout(() => {
-      reject(new Error(`Engine search timed out after ${SEARCH_TIMEOUT_MS}ms`));
+      reject(new Error(`Engine search timed out after ${timeoutMs}ms`));
       this.resetStuckWorker('Engine reset after a stuck search');
-    }, SEARCH_TIMEOUT_MS);
+    }, timeoutMs);
     worker.onmessage = (event) => {
       const line = event.data;
       if (line.startsWith('bestmove')) {

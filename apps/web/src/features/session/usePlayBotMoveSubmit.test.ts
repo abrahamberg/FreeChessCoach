@@ -14,6 +14,28 @@ describe('usePlayBotMoveSubmit ("Play vs Bot" plan)', () => {
     vi.unstubAllGlobals();
   });
 
+  test('a turn whose moves could not be rated in time (quality null) still applies both moves', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        player: { fen: AFTER_E4_FEN, san: 'e4', ply: 1, quality: null, elapsedMs: 1200 },
+        bot: { fen: START_FEN, san: 'e5', ply: 2, quality: null, elapsedMs: 900 },
+        gameOver: null,
+        whiteRemainingMs: null,
+        blackRemainingMs: null
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const onPlayMoveCommitted = vi.fn();
+
+    const { result } = renderHook(() => usePlayBotMoveSubmit('session-1', onPlayMoveCommitted, vi.fn()));
+    await act(async () => {
+      await result.current.submit('e4', 'e2e4');
+    });
+
+    expect(result.current.error).toBeNull();
+    expect(onPlayMoveCommitted).toHaveBeenCalledTimes(2);
+  });
+
   test('a normal turn applies the player move then the bot move, and never calls onGameOver', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({

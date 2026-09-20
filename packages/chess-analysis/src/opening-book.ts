@@ -139,6 +139,13 @@ export function bookMovesForFen(fen: string): BookMoveOption[] {
   return findBookEntries(fen);
 }
 
+/** Is `san` a known book move from `fen`? The live-play equivalent of the
+ * per-ply book walk: a move the opening book knows is labelled 'book' whatever
+ * the engine thinks of it. */
+export function isBookMoveFrom(fen: string, san: string): boolean {
+  return findBookEntries(fen).some((entry) => entry.san === san);
+}
+
 function isBookMove(position: BookPosition, entries: BookEntry[]): position is BookPosition & {
   mover: BookColour;
   moveSan: string;

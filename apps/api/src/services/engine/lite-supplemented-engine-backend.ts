@@ -3,6 +3,7 @@ import { ENGINE_MULTI_PV } from '../engine-client.js';
 import { formatMs, type EngineLineDebugInfo } from './bot-move-debug.js';
 import { BrowserTunnelEngineBackend } from './browser-tunnel-engine-backend.js';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';
+import { traceLiteSupplement, traceMainEngineCall } from './lite-supplement-trace.js';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
 import type { EngineEval, PositionAnalysis, PositionAnalysisLine } from '@freechesscoach/shared';
 
@@ -20,9 +21,9 @@ export interface LiteSupplementedEngineBackendOptions {
 
 /** The lite tunnel request always asks for this depth/multiPv, regardless
  * of what the caller requested from `main` — deliberately NOT `opts.depth`/
- * `opts.multiPv` (the bot asks main for depth 18 / 40 lines,
- * BOT_SEARCH_DEPTH/BOT_CANDIDATE_BREADTH in bot-candidates.ts). A depth-18,
- * 40-line multiPv search on a single-threaded WASM build in someone's
+ * `opts.multiPv` (the bot used to ask main for depth 18 / 40 lines; it now asks
+ * for 1-5, BOT_SEARCH_DEPTH in bot-candidates.ts, but a caller may still
+ * ask for a wide search). A depth-18, 40-line multiPv search on a single-threaded WASM build in someone's
  * browser tab measured 24-38s per bot move in production — right at (and
  * often past) the tunnel's own 40s timeout budget (BrowserTunnelEngineBackend's
  * `timeoutMs + ENGINE_TUNNEL_PER_POSITION_MS`), which is sized for the app's
@@ -48,6 +49,21 @@ export interface LiteSupplementedEngineBackendOptions {
 const LITE_SUPPLEMENT_DEPTH = 8;
 const LITE_SUPPLEMENT_MULTI_PV = 6;
 const LITE_SUPPLEMENT_MOVETIME_MS = 3000;
+
+/** The light engine on its own, for callers that want a quick shallow eval and
+ * nothing else (rating the student's live moves — bot-rating-evals.ts). Same
+ * depth/lines/time ceiling as the supplement above, and it throws when no
+ * browser tab is connected, so callers decide what "no eval" means. */
+export function createLiteAnalyzer(transport: EngineTunnelTransport, userId: string, timeoutMs: number): (fen: string) => Promise<PositionAnalysis> {
+  const lite = new BrowserTunnelEngineBackend(transport, userId, timeoutMs);
+  return (fen) =>
+    lite.analyzePosition(fen, {
+      depth: LITE_SUPPLEMENT_DEPTH,
+      multiPv: LITE_SUPPLEMENT_MULTI_PV,
+      movetimeMs: LITE_SUPPLEMENT_MOVETIME_MS,
+      engine: 'lite'
+    });
+}
 
 /**
  * How many lite requests one instance of this decorator will ever make.
@@ -115,14 +131,20 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
     if (opts?.debug) opts.debug.mode = this.mainBucket;
 
     const mainStart = Date.now();
-    const mainResult = await this.main.analyzePosition(fen, opts);
+    const mainResult = await traceMainEngineCall(opts?.debug, this.mainBucket, () => this.main.analyzePosition(fen, opts));
     if (opts?.debug) {
       opts.debug[this.mainBucket] = { moves: toLineDebug(mainResult.lines), time: formatMs(Date.now() - mainStart) };
     }
     if (!needsSupplement(fen, mainResult.lines.length, opts?.multiPv)) return mainResult;
 
     const liteStart = Date.now();
+    const finishStep = traceLiteSupplement(
+      opts?.debug,
+      mainResult.lines.length,
+      `depth ${LITE_SUPPLEMENT_DEPTH}, ${LITE_SUPPLEMENT_MULTI_PV} lines, ${LITE_SUPPLEMENT_MOVETIME_MS}ms cap`
+    );
     const { lines: liteLines, error: liteError } = await this.tryLiteLines(fen, opts);
+    finishStep({ lineCount: liteLines.length, ...(liteError ? { error: liteError } : {}) });
     if (opts?.debug) {
       opts.debug.lightBrowser = {
         moves: toLineDebug(liteLines),
@@ -180,6 +202,9 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
       });
       return { lines: liteResult.lines };
     } catch (error) {
+      // A dead light engine stays dead for the rest of this instance's life
+      // (one game review, one bot move): asking again only repeats the wait.
+      this.remainingLiteRequests = 0;
       // No tunnel connected, or the lite request itself failed — this
       // decorator only ever tries to do better than `main`, it never turns
       // a working `main` result into a failure. The error message is kept

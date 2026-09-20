@@ -1,6 +1,17 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { PositionAnalysis } from '@freechesscoach/shared';
-import { buildBotCandidates, BOT_CANDIDATE_BREADTH, BOT_SEARCH_DEPTH, BOT_SEARCH_MOVETIME_MS } from './bot-candidates.js';
+import { annotateCandidateMoves, pvForkInPlies } from '@freechesscoach/chess-analysis';
+import { buildBotCandidates, legalMoveCandidates, BOT_SEARCH_DEPTH, BOT_SEARCH_MOVETIME_MS } from './bot-candidates.js';
+
+// Pass-through spies: the real annotation still runs, the tests only count it.
+vi.mock('@freechesscoach/chess-analysis', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@freechesscoach/chess-analysis')>();
+  return {
+    ...actual,
+    annotateCandidateMoves: vi.fn(actual.annotateCandidateMoves),
+    pvForkInPlies: vi.fn(actual.pvForkInPlies)
+  };
+});
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 // Black to move, after 1.e4 e5 2.Qh5 (threatens Qxe5+ forking king/pieces is
@@ -29,7 +40,7 @@ describe('buildBotCandidates', () => {
 
     expect(analyzeBotPosition).toHaveBeenCalledWith(START_FEN, {
       depth: BOT_SEARCH_DEPTH,
-      multiPv: BOT_CANDIDATE_BREADTH,
+      multiPv: 5,
       movetimeMs: BOT_SEARCH_MOVETIME_MS
     });
     expect(candidates).toHaveLength(2);
@@ -79,7 +90,7 @@ describe('buildBotCandidates', () => {
     });
   });
 
-  test('forkInPlies is populated from the candidate line\'s own PV via annotatePvTactics', async () => {
+  test('forkInPlies is populated from the candidate line\'s own PV via pvForkInPlies', async () => {
     // Ne4 heading a PV where the knight forks king+rook two of the bot's own
     // moves later — exact tactical realism isn't the point here (that's
     // pv-tactics.test.ts's job); this just proves the field is wired through.
@@ -152,5 +163,85 @@ describe('buildBotCandidates', () => {
     const candidates = await buildBotCandidates({ analyzeBotPosition }, START_FEN);
 
     expect(candidates[0]).toMatchObject({ motif: null, diagnosisCodes: [] });
+  });
+
+  describe('annotation is on demand', () => {
+    const analysis: PositionAnalysis = {
+      fen: START_FEN,
+      depth: BOT_SEARCH_DEPTH,
+      multiPv: 3,
+      bestMove: 'e4',
+      eval: { cp: 20, mateIn: null },
+      lines: [
+        { moveUci: 'e2e4', moveSan: 'e4', pvSan: ['e4', 'e5'], cp: 20, mateIn: null },
+        { moveUci: 'd2d4', moveSan: 'd4', pvSan: ['d4', 'd5'], cp: 15, mateIn: null },
+        { moveUci: 'g1f3', moveSan: 'Nf3', pvSan: ['Nf3', 'd5'], cp: 10, mateIn: null }
+      ],
+      features: {} as PositionAnalysis['features']
+    };
+
+    test('building candidates annotates nothing; scores and move names need no annotation', async () => {
+      vi.mocked(annotateCandidateMoves).mockClear();
+      vi.mocked(pvForkInPlies).mockClear();
+
+      const candidates = await buildBotCandidates({ analyzeBotPosition: vi.fn().mockResolvedValue(analysis) }, START_FEN);
+
+      expect(candidates.map((candidate) => [candidate.moveSan, candidate.cp])).toEqual([['e4', 20], ['d4', 15], ['Nf3', 10]]);
+      expect(annotateCandidateMoves).not.toHaveBeenCalled();
+      expect(pvForkInPlies).not.toHaveBeenCalled();
+    });
+
+    test('reading an annotation field annotates only that candidate, and only once', async () => {
+      const candidates = await buildBotCandidates({ analyzeBotPosition: vi.fn().mockResolvedValue(analysis) }, START_FEN);
+      vi.mocked(annotateCandidateMoves).mockClear();
+      vi.mocked(pvForkInPlies).mockClear();
+
+      void candidates[1]!.createsFork;
+      void candidates[1]!.diagnosisCodes;
+      void candidates[1]!.motif;
+
+      expect(annotateCandidateMoves).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(annotateCandidateMoves).mock.calls[0]?.[1]).toEqual(['d4']);
+      expect(pvForkInPlies).toHaveBeenCalledTimes(1);
+    });
+
+    test('an on-demand candidate still carries every annotation field when copied or logged', async () => {
+      const [first] = await buildBotCandidates({ analyzeBotPosition: vi.fn().mockResolvedValue(analysis) }, START_FEN);
+
+      expect(Object.keys({ ...first })).toEqual(
+        expect.arrayContaining(['moveSan', 'cp', 'mateIn', 'createsFork', 'createsOpponentHangingPiece', 'createsUnderDefendedPiece', 'mobilityDelta', 'forkInPlies', 'motif', 'diagnosisCodes'])
+      );
+    });
+  });
+
+  test('asks the engine for exactly as many lines as the branch needs', async () => {
+    const analysis = { fen: START_FEN, depth: BOT_SEARCH_DEPTH, multiPv: 1, bestMove: 'e4', eval: { cp: 20, mateIn: null }, lines: [], features: {} } as unknown as PositionAnalysis;
+    const analyzeBotPosition = vi.fn().mockResolvedValue(analysis);
+
+    await buildBotCandidates({ analyzeBotPosition }, START_FEN, undefined, undefined, 1);
+
+    expect(analyzeBotPosition).toHaveBeenCalledWith(START_FEN, expect.objectContaining({ multiPv: 1 }));
+  });
+});
+
+describe('legalMoveCandidates', () => {
+  test('is one candidate per legal move with no engine score, and nothing annotated until it is read', () => {
+    vi.mocked(annotateCandidateMoves).mockClear();
+
+    const candidates = legalMoveCandidates(START_FEN);
+
+    expect(candidates).toHaveLength(20);
+    expect(candidates.every((candidate) => candidate.cp === null && candidate.mateIn === null)).toBe(true);
+    expect(annotateCandidateMoves).not.toHaveBeenCalled();
+  });
+
+  test('reading one annotates just that move, from the position alone', () => {
+    vi.mocked(annotateCandidateMoves).mockClear();
+    const candidates = legalMoveCandidates(FORK_PV_FEN);
+
+    void candidates[0]!.createsFork;
+
+    expect(annotateCandidateMoves).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(annotateCandidateMoves).mock.calls[0]?.[1]).toEqual([candidates[0]!.moveSan]);
   });
 });

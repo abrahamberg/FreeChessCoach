@@ -307,6 +307,62 @@ tactics the opponent had that the player did not defuse
 (`chess-analysis/src/coaching-candidate.ts`, weights in `CONFIG`). No AI is
 involved; absent `preventable`/`prevented` (old reports) count as 0.
 
+## Bot Thinking log
+
+A bot move is one synchronous round trip (`commitBotTurn` /
+`requestBotMove`, `apps/api/src/services/bot/bot-move-commit.ts`). To see what
+a slow or stuck move is doing, each move records a *trace*
+(`bot-move-trace.ts`): timed steps — saving the player's move, book lookup,
+each engine attempt and retry wait, the main engine and light-supplement
+calls, the choice (with the branch and rolls, and the on-demand annotation of
+the few candidates it weighs), the think-time padding, saving. Traces are kept
+in memory (`bot-thinking-registry.ts`: last 60 moves per session, 200 sessions) and, in a
+multi-pod deployment, are mirrored to Redis (`bot-thinking-mirror.ts`) so a poll
+landing on any pod sees every pod's moves; entries expire after an hour and a
+restart shows less history — it is a diagnostic view, not game data. `GET /api/sessions/:id/bot-thinking` returns them
+(`BotThinkingLogSchema`, `packages/shared/src/bot-thinking.ts`), and the bot's
+status panel polls it while the bot is thinking (`BotThinkingPanel`). It
+records timing and move names, never raw engine evaluations. The console-side
+`DEBUG_LOG=bot_move` line is separate and only prints after a move is chosen.
+
+### Bot move selection
+
+A bot move is decided from three rolls drawn before the engine is asked
+(`bot-move-pick.ts`), so the one real-engine search is sized to the branch: five
+lines for a top-moves branch (the best move, or another of the five), one line
+for a miss. A miss is chosen without the engine — plausible mistakes near what
+the student just played (`bot-mistake-pool.ts`) — and then checked with it, one
+candidate at a time (`bot-mistake-search.ts`: the light engine, else a small
+search on the bot's own engine), until one really is as bad as wanted, judged in
+win percentage (`bot-mistake-judge.ts`) — or in centipawns when the bot is far
+ahead, where the win percentage has flattened. A far-behind bot plays its best
+move. Anything that decides the bot's move uses the real engine
+pipeline; the light engine is only for the quick check and for rating.
+
+Every bot plays its first two moves from the opening book (while the game is
+in it), and moves the book knows are labelled `book` without an eval.
+
+Each move is saved with the engine's eval of the position it leaves, in its PGN
+`[%eval]` comment, so returning to a position (undo, a resumed game) never needs
+the engine again.
+
+### Rating a bot turn
+
+Both moves of a bot turn are saved **unrated** first (`commitMoveUnrated`,
+`services/play-moves-rated.ts`), so neither the bot's reply nor the session
+pointer waits on an engine call for a label. Ratings are filled in afterwards
+by `rateLastMove` (it only ever edits the game's last move, under the game
+lock) and make **no engine call**: the student's move uses the bot's own search
+for its "after" eval and a light-engine eval of the position it was played from
+for "before"; the bot's move uses the same search alone. That light-engine eval
+is computed in the background after each bot reply and kept in a shared
+`RatingEvalStore` (`bot-rating-evals.ts`) — Redis in deployments (the API runs
+as several pods, so a per-process map would miss), never the
+`position_evaluations` cache, whose rows are trusted at any depth. When an eval
+is missing (first move, no browser tab, book reply) the move is unrated
+(`quality: null` in the response); post-game analysis still rates every move at
+standard depth.
+
 ---
 
 # Coaching Flow

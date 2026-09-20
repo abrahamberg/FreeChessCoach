@@ -12,10 +12,16 @@ Socratically while tracking their progress over time. The initial build
 
 - `docs/architecture.md` — how it fits together (layout, DB, agent, K8s). Always relevant.
 - `docs/plan.md` — the implementation plan for whatever is being built next.
-  Currently empty: the last plan (import limits, stat archive, guided import;
-  Phases 67–72) shipped and is described in `docs/architecture.md`. When it
-  holds a plan, open it, find the one Phase/Task being worked on, and read
-  only that task's **Read:** files.
+  Currently Phase 73, bot latency diagnosis (instrumentation + a benchmark to
+  find out why bot moves are slow or hang; no behaviour changes). The
+  in-app Thinking log (Tasks 73.1–73.2) has shipped and is described in
+  `docs/architecture.md` ("Bot Thinking log"); 73.3–73.6 are open. Phase 74
+  (same file) reworks how a bot turn spends time: rating off the critical
+  path (74.1–74.6 shipped: branch-first engine requests, mistake-first move
+  choice, saved evals). The last
+  shipped plan (import limits, stat archive, guided import; Phases 67–72) is
+  described in `docs/architecture.md`. Open the plan, find the one
+  Phase/Task being worked on, and read only that task's **Read:** files.
 - `docs/diagnose.md` — the spec behind the *shipped* programmatic coach
   diagnostics (code taxonomy, opportunity/episode counting, confidence,
   data-quality gates, focus selection). Long; never open it cold or read it

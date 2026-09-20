@@ -4,7 +4,7 @@ import { ENGINE_TUNNEL_PER_POSITION_MS } from '@freechesscoach/shared';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import * as usersRepo from '../../db/repositories/users.js';
 import type { Database } from '../../db/schema.js';
-import { resolveEngineBackend, resolveRawEngineBackend, type ResolveEngineBackendOptions } from './resolve-engine-backend.js';
+import { resolveEngineBackend, resolveRawEngineBackend, withBotSearchTimeout, type ResolveEngineBackendOptions } from './resolve-engine-backend.js';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
 import type { LichessEvalReader } from './lichess-eval-index.js';
 
@@ -396,5 +396,19 @@ describe('resolveEngineBackend', () => {
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('externalEngine=1'));
       logSpy.mockRestore();
     });
+  });
+});
+
+describe('withBotSearchTimeout', () => {
+  const base = { chessApiTimeoutMs: 15000, tunnelTimeoutMs: 40000 } as ResolveEngineBackendOptions;
+
+  test('shortens the chess-api timeout for the bot and leaves every other option alone', () => {
+    const result = withBotSearchTimeout(base, 5000);
+
+    expect(result).toEqual({ ...base, chessApiTimeoutMs: 5000 });
+  });
+
+  test('never lengthens a timeout that is already shorter', () => {
+    expect(withBotSearchTimeout({ ...base, chessApiTimeoutMs: 3000 }, 5000).chessApiTimeoutMs).toBe(3000);
   });
 });

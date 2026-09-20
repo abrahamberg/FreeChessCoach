@@ -3,7 +3,7 @@ import type { ClassifiedMoveDto, DiagnosisCodeId } from '@freechesscoach/shared'
 import { plyToMoveRef } from './move-ref.js';
 import { commentTextByPlyOf } from './pgn-move-comments.js';
 import { parsePgn } from './pgn.js';
-import { formatClock, tryMove, type AppendMoveOptions, type AppendedMove } from './pgn-mutation.js';
+import { buildMoveCommentParts, tryMove, type AppendMoveOptions, type AppendedMove } from './pgn-mutation.js';
 
 /**
  * Everything a `ClassifiedMoveDto` carries that isn't already reconstructible
@@ -91,7 +91,7 @@ export function appendAnnotatedMove(
   const move = tryMove(chess, san);
   if (!move) return { error: `Illegal move: ${san}` };
 
-  const comment = buildCommentText(data, options?.elapsedMs);
+  const comment = buildCommentText(data, options);
   if (comment) chess.setComment(comment);
 
   return {
@@ -101,6 +101,36 @@ export function appendAnnotatedMove(
     uci: `${move.from}${move.to}${move.promotion ?? ''}`,
     ply: chess.history().length
   };
+}
+
+/**
+ * Sets (or replaces) the `[%fcc ...]` annotation on the game's LAST move,
+ * keeping whatever else that move's comment carries (its `[%clk]` tag). This
+ * is how a bot turn rates a move after the fact: the move is appended unrated
+ * first (`appendAnnotatedMove` with `data: null`, so the position and the
+ * session pointer never wait on an engine), then rated once the numbers exist.
+ *
+ * Only the last move can be rated this way, by design — the caller passes the
+ * SAN it expects to be last, and a mismatch (an undo raced the rating) is an
+ * error result rather than annotating the wrong move.
+ */
+export function replaceLastMoveAnnotation(
+  pgn: string,
+  expectedSan: string,
+  data: AnnotatedMoveData
+): { pgn: string; ply: number } | { error: string } {
+  const chess = new Chess();
+  chess.loadPgn(pgn);
+
+  const history = chess.history();
+  const last = history.at(-1);
+  if (last === undefined) return { error: 'No moves to annotate' };
+  if (last !== expectedSan) return { error: `Last move is ${last}, not ${expectedSan}` };
+
+  const keptComment = (chess.getComment() ?? '').replace(ANNOTATION_TAG, '').trim();
+  chess.setComment([keptComment, encodeMoveComment(data)].filter(Boolean).join(' '));
+
+  return { pgn: chess.pgn(), ply: history.length };
 }
 
 /**
@@ -188,9 +218,8 @@ export function parseAnnotatedPgn(pgn: string, userColor: 'white' | 'black'): Cl
     .filter((move): move is ClassifiedMoveDto => move !== null);
 }
 
-function buildCommentText(data: AnnotatedMoveData | null, elapsedMs: number | undefined): string | null {
-  const parts: string[] = [];
-  if (elapsedMs !== undefined) parts.push(`[%clk ${formatClock(elapsedMs)}]`);
+function buildCommentText(data: AnnotatedMoveData | null, options: AppendMoveOptions | undefined): string | null {
+  const parts = buildMoveCommentParts(options);
   if (data) parts.push(encodeMoveComment(data));
   return parts.length > 0 ? parts.join(' ') : null;
 }

@@ -11,6 +11,11 @@ import { ENGINE_MULTI_PV } from '../engine-client.js';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';
 import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
 
+/** How long past a search's own `movetimeMs` cap the server waits for the
+ * browser's answer (worker round trip, PV conversion) before treating the
+ * engine as dead. */
+export const TUNNEL_MOVETIME_GRACE_MS = 5000;
+
 const EngineEvalArraySchema = z.array(EngineEvalSchema);
 
 /**
@@ -44,8 +49,12 @@ export class BrowserTunnelEngineBackend implements EngineBackend {
       },
       // Same reasoning as analyzeGame below: a single position can be one of
       // the slow ones (see ENGINE_TUNNEL_PER_POSITION_MS's doc), so this needs
-      // the same per-position allowance on top of the base, not the base alone.
-      this.timeoutMs + ENGINE_TUNNEL_PER_POSITION_MS
+      // the same per-position allowance on top of the base, not the base alone —
+      // unless the search has a wall-clock cap (`movetimeMs`): then it cannot
+      // legitimately take longer than that, and a browser that has not answered
+      // a little after it is dead, not slow. Waiting the full allowance (40 s)
+      // for a wedged light engine is what stalled a bot move.
+      opts?.movetimeMs !== undefined ? opts.movetimeMs + TUNNEL_MOVETIME_GRACE_MS : this.timeoutMs + ENGINE_TUNNEL_PER_POSITION_MS
     );
     return PositionAnalysisSchema.parse(raw);
   }

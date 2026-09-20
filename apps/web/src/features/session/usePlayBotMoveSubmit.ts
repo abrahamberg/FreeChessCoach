@@ -4,12 +4,13 @@ import { useRef, useState } from 'react';
 import { apiPost, ApiError } from '../../api/client.js';
 import type { BotGameOverInfo } from './botGameOver.js';
 import { CommitBotMoveResponseSchema } from './sessionPageSchemas.js';
+import type { CommittedMoveRef } from './usePlayMoveSubmit.js';
 
 export interface CommittedBotTurnMove {
   fen: string;
   san: string;
   ply: number;
-  quality: MoveQuality;
+  quality: MoveQuality | null;
   elapsedMs: number;
 }
 
@@ -51,7 +52,7 @@ function describePlayMoveError(error: unknown): string {
  */
 export function usePlayBotMoveSubmit(
   sessionId: string,
-  onPlayMoveCommitted?: (result: CommittedBotTurnMove, uci: string) => void,
+  onPlayMoveCommitted?: (result: CommittedMoveRef, uci: string) => void,
   onGameOver?: (gameOver: BotGameOverInfo) => void,
   /** The clock phase's own hook — fires once per submit with the
    * post-exchange remaining time for each side (null/null for an untimed

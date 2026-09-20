@@ -89,6 +89,28 @@ export function annotatePvTactics(fenBefore: string, pvSan: string[], maxPlies =
 }
 
 /**
+ * Just `annotatePvTactics(...).forkInPlies`, without the per-step tactic
+ * classification (`classifyCandidateClaims`) that makes that function cost
+ * roughly 40 ms a ply — measured at about 5× the whole one-ply annotation of a
+ * candidate. The bot reads nothing but this number from a PV, and a fork is a
+ * pure feature diff, so it needs only the walk, the features and their diff.
+ */
+export function pvForkInPlies(fenBefore: string, pvSan: string[], maxPlies = 6): number | null {
+  const applied = applySanSequence(fenBefore, pvSan.slice(0, maxPlies));
+
+  let previousFeatures = computePositionFeatures(fenBefore);
+  for (const [index, move] of applied.moves.entries()) {
+    const features = computePositionFeatures(move.fen);
+    const ply = index + 1;
+    // Odd plies are the mover's own moves — a fork the opponent makes is not
+    // "I get a fork in N moves".
+    if (ply % 2 === 1 && diffPositionFeatures(previousFeatures, features).newForks.length > 0) return ply;
+    previousFeatures = features;
+  }
+  return null;
+}
+
+/**
  * An applied PV move in the shape the detectors want as history.
  *
  * `applySanSequence` reports each move as SAN plus UCI plus the resulting

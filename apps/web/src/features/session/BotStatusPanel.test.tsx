@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { resetSharedLiteEngineWorkerForTests } from '../../engine/shared-engine-worker-instance.js';
@@ -33,6 +34,48 @@ describe('BotStatusPanel', () => {
       />
     );
     expect(screen.queryByText(/light engine not loaded/)).not.toBeInTheDocument();
+  });
+
+  describe('thinking log', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    function renderWithQueries(ui: React.ReactElement) {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ moves: [] }), { status: 200 })));
+      return render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{ui}</QueryClientProvider>);
+    }
+
+    test('no sessionId: no thinking log', () => {
+      renderWithQueries(<BotStatusPanel botName="Trappy Tom" isPlayerTurn gameOver={null} userColor="white" />);
+      expect(screen.queryByText('Thinking log')).not.toBeInTheDocument();
+    });
+
+    test('with a sessionId: the thinking log is shown next to the resign button', () => {
+      renderWithQueries(
+        <BotStatusPanel botName="Trappy Tom" isPlayerTurn gameOver={null} userColor="white" sessionId="s1" onResign={() => undefined} />
+      );
+      expect(screen.getByText('Thinking log')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /resign/i })).toBeInTheDocument();
+    });
+
+    test('still shown after the game is over, so the last moves can be read back', () => {
+      renderWithQueries(
+        <BotStatusPanel botName="Trappy Tom" isPlayerTurn={false} gameOver={{ result: '1-0', reason: 'checkmate' }} userColor="black" sessionId="s1" />
+      );
+      expect(screen.getByText('Thinking log')).toBeInTheDocument();
+    });
+
+    test('polls while the bot is thinking', async () => {
+      const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ moves: [] }), { status: 200 })));
+      vi.stubGlobal('fetch', fetchMock);
+      render(
+        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+          <BotStatusPanel botName="Trappy Tom" isPlayerTurn isBotThinking gameOver={null} userColor="white" sessionId="s1" />
+        </QueryClientProvider>
+      );
+
+      expect(await screen.findByText(/no bot moves yet/i)).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledWith('/api/sessions/s1/bot-thinking', expect.anything());
+    });
   });
 
   test('shows "Your move" when it is the player\'s turn', () => {
