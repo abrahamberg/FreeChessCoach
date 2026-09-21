@@ -78,7 +78,7 @@ describe('commitBotTurn', () => {
     await testDb.cleanup();
   });
 
-  async function setupBotGame(userColor: 'white' | 'black' = 'white', pgn = '') {
+  async function setupBotGame(userColor: 'white' | 'black' = 'white', pgn = '', options: { thinkingLog?: boolean } = {}) {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
     const game = await gamesRepo.insert(db, {
       userId: user.id,
@@ -94,7 +94,12 @@ describe('commitBotTurn', () => {
       botId: 'test-bot',
       botConfigSnapshot: baseBot()
     });
-    const session = await createSessionForGame(db, { gameId: game.id, userId: user.id, mode: 'play_bot' });
+    const session = await createSessionForGame(db, {
+      gameId: game.id,
+      userId: user.id,
+      mode: 'play_bot',
+      botThinkingLog: options.thinkingLog ?? false
+    });
     return { user, game, session };
   }
 
@@ -418,8 +423,10 @@ describe('commitBotTurn', () => {
   describe('thinking log', () => {
     const E5_REPLY = botLines({ moveUci: 'e7e5', moveSan: 'e5', pvSan: ['e5'], cp: -10, mateIn: null });
 
+    // The Thinking log is opt-in per session (0043_bot_thinking_log.ts) —
+    // these tests enable it; the default-off behaviour has its own test below.
     test('records the whole turn: saving, book lookup, engine search, annotation, choice, rating, saving', async () => {
-      const { session } = await setupBotGame();
+      const { session } = await setupBotGame('white', '', { thinkingLog: true });
       const thinkingLog = createBotThinkingRegistry();
 
       await commitBotTurn(deps({ thinkingLog, analyzeBotPosition: vi.fn().mockResolvedValue(E5_REPLY) }), session, baseBot(), 'e4');
@@ -442,7 +449,7 @@ describe('commitBotTurn', () => {
     });
 
     test('pads a too-fast reply up to the minimum think time and shows it as its own step', async () => {
-      const { session } = await setupBotGame();
+      const { session } = await setupBotGame('white', '', { thinkingLog: true });
       const thinkingLog = createBotThinkingRegistry();
 
       // A frozen clock means the reply always looks instant, so the padding step
@@ -460,7 +467,7 @@ describe('commitBotTurn', () => {
     });
 
     test('a bot that fails on every retry leaves a failed move whose last step says why', async () => {
-      const { session } = await setupBotGame();
+      const { session } = await setupBotGame('white', '', { thinkingLog: true });
       const thinkingLog = createBotThinkingRegistry();
 
       const result = await commitBotTurn(
@@ -478,7 +485,7 @@ describe('commitBotTurn', () => {
     }, 10000);
 
     test('an illegal student move leaves nothing behind in the log', async () => {
-      const { session } = await setupBotGame();
+      const { session } = await setupBotGame('white', '', { thinkingLog: true });
       const thinkingLog = createBotThinkingRegistry();
 
       const result = await commitBotTurn(deps({ thinkingLog }), session, baseBot(), 'e5');
@@ -488,7 +495,7 @@ describe('commitBotTurn', () => {
     });
 
     test('a student move that ends the game leaves nothing behind in the log', async () => {
-      const { session } = await setupBotGame('black', buildPgnThroughFoolsMateSetup());
+      const { session } = await setupBotGame('black', buildPgnThroughFoolsMateSetup(), { thinkingLog: true });
       const thinkingLog = createBotThinkingRegistry();
 
       await commitBotTurn(deps({ thinkingLog }), session, baseBot(), 'Qh4#');
@@ -496,9 +503,21 @@ describe('commitBotTurn', () => {
       expect(thinkingLog.getLog(session.id).moves).toEqual([]);
     });
 
+    test('a session with the log off records nothing at all', async () => {
+      const { session } = await setupBotGame();
+      const thinkingLog = createBotThinkingRegistry();
+
+      await commitBotTurn(deps({ thinkingLog, analyzeBotPosition: vi.fn().mockResolvedValue(E5_REPLY) }), session, baseBot(), 'e4');
+
+      expect(thinkingLog.getLog(session.id).moves).toEqual([]);
+    });
+
     test('requestBotMove records its own move, marked as the failover', async () => {
       const { session } = await setupBotGame();
       await commitBotTurn(deps({ analyzeBotPosition: vi.fn().mockRejectedValue(new Error('engine down')) }), session, baseBot(), 'e4');
+      // Mid-game opt-in, as the ⋯ menu does it — requestBotMove re-reads the
+      // session row, so the flip takes effect from the next failover move on.
+      await sessionsRepo.setBotThinkingLog(db, session.id, true);
       const thinkingLog = createBotThinkingRegistry();
 
       await requestBotMove(deps({ thinkingLog, analyzeBotPosition: vi.fn().mockResolvedValue(E5_REPLY) }), session, baseBot());

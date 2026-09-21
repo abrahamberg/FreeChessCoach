@@ -27,6 +27,10 @@ export const SessionDetailSchema = z.object({
   subjectPly: z.number(),
   summary: z.string().nullable(),
   homework: z.string().nullable(),
+  /** The Thinking log's opt-in flag (0043_bot_thinking_log.ts) — off by
+   * default, toggled from the bot session's header overflow menu. .default
+   * keeps older fixtures/responses without the field parsing. */
+  botThinkingLog: z.boolean().default(false),
   messages: z.array(SessionMessageSchema)
 });
 

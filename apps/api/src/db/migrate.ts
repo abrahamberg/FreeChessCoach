@@ -41,6 +41,7 @@ import * as focusAreaPrimary from './migrations/0039_focus_area_primary.js';
 import * as puzzleSessionPly from './migrations/0040_puzzle_session_ply.js';
 import * as gameImportEvents from './migrations/0041_game_import_events.js';
 import * as statsArchiveWeeks from './migrations/0042_stats_archive_weeks.js';
+import * as botThinkingLog from './migrations/0043_bot_thinking_log.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -86,7 +87,8 @@ const provider: MigrationProvider = {
       '0039_focus_area_primary': focusAreaPrimary,
       '0040_puzzle_session_ply': puzzleSessionPly,
       '0041_game_import_events': gameImportEvents,
-      '0042_stats_archive_weeks': statsArchiveWeeks
+      '0042_stats_archive_weeks': statsArchiveWeeks,
+      '0043_bot_thinking_log': botThinkingLog
     })
 };
 

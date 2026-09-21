@@ -41,3 +41,17 @@ export const BotThinkingLogSchema = z.object({
   moves: z.array(BotThinkingMoveSchema)
 });
 export type BotThinkingLog = z.infer<typeof BotThinkingLogSchema>;
+
+/** POST /api/sessions/:id/bot-thinking-log body and response — the session's
+ * opt-in flag for recording the Thinking log at all (0043_bot_thinking_log.ts).
+ * Off by default: while it is off the bot's commit paths never start a trace,
+ * so the diagnostic costs nothing. */
+export const BotThinkingLogEnabledRequestSchema = z.object({
+  enabled: z.boolean()
+});
+export type BotThinkingLogEnabledRequest = z.infer<typeof BotThinkingLogEnabledRequestSchema>;
+
+export const BotThinkingLogEnabledResponseSchema = z.object({
+  enabled: z.boolean()
+});
+export type BotThinkingLogEnabledResponse = z.infer<typeof BotThinkingLogEnabledResponseSchema>;

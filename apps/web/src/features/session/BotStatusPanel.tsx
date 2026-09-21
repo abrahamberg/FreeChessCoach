@@ -47,8 +47,13 @@ export interface BotStatusPanelProps {
   fen?: string;
   /** The bot game's session, for the Thinking log (what the bot is doing and
    * how long each step took, for the current and past moves). Omitted, the
-   * log is not shown. */
+   * log is not shown. The log itself is opt-in (0043_bot_thinking_log.ts):
+   * `thinkingLogEnabled` is the session's own flag, read off the session
+   * detail, so a disabled session renders no log AND records nothing
+   * server-side. */
   sessionId?: string;
+  /** Whether that session records the Thinking log — see the sessionId prop. */
+  thinkingLogEnabled?: boolean;
   /** 'panel' (default): the full-height, centered layout for a dedicated
    * column of its own (desktop's side-by-side layout — SessionPage.css's
    * `.session-body.desktop .bot-status-panel`). 'card': the shared
@@ -103,6 +108,7 @@ export function BotStatusPanel({
   onClockExpire,
   fen,
   sessionId,
+  thinkingLogEnabled = false,
   variant = 'panel'
 }: BotStatusPanelProps): ReactNode {
   const [expanded, setExpanded] = useState(false);
@@ -141,7 +147,9 @@ export function BotStatusPanel({
         </button>
       )}
       {fen && !gameOver && <LiteHintReadout fen={fen} />}
-      {sessionId && <BotThinkingPanel sessionId={sessionId} isBotTurn={!isPlayerTurn || isBotThinking} />}
+      {sessionId && thinkingLogEnabled && (
+        <BotThinkingPanel sessionId={sessionId} isBotTurn={!isPlayerTurn || isBotThinking} />
+      )}
     </>
   );
 

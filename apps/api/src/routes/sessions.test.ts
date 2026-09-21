@@ -1038,19 +1038,77 @@ describe('sessions routes', () => {
       expect(response.json()).toEqual({ moves: [] });
     });
 
-    test('GET /api/sessions/:id/bot-thinking shows what the bot did for a move it has made', async () => {
+    test('GET /api/sessions/:id/bot-thinking stays empty while the log is off, even after moves', async () => {
+      const { user, app, sessionId } = await setupBotSession('botthinkoff@example.com');
+      await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/play-move`, headers: headersFor(user), payload: { san: 'e4' } });
+
+      const response = await app.inject({ method: 'GET', url: `/api/sessions/${sessionId}/bot-thinking`, headers: headersFor(user) });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ moves: [] });
+    }, 15000);
+
+    test('POST /api/sessions/:id/bot-thinking-log opts a session in, and its moves are then recorded', async () => {
       const { user, app, sessionId } = await setupBotSession('botthinklog@example.com');
       await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/play-move`, headers: headersFor(user), payload: { san: 'e4' } });
+      const off = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/bot-thinking-log`, headers: headersFor(user), payload: { enabled: true } });
+      expect(off.statusCode).toBe(200);
+      expect(off.json()).toEqual({ enabled: true });
+
+      await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/play-move`, headers: headersFor(user), payload: { san: 'Nf3' } });
 
       const response = await app.inject({ method: 'GET', url: `/api/sessions/${sessionId}/bot-thinking`, headers: headersFor(user) });
 
       expect(response.statusCode).toBe(200);
       const { moves } = response.json();
       expect(moves).toHaveLength(1);
-      expect(moves[0]).toMatchObject({ source: 'turn', status: 'done', ply: 2 });
+      expect(moves[0]).toMatchObject({ source: 'turn', status: 'done', ply: 4 });
       expect(moves[0].path).toEqual(expect.any(String));
       expect(moves[0].steps.map((step: { label: string }) => step.label)).toContain('Opening book lookup');
     }, 15000);
+
+    test('POST /api/sessions/:id/bot-thinking-log opts back out: the log serves empty again', async () => {
+      const { user, app, sessionId } = await setupBotSession('botthinkrelog@example.com');
+      await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/bot-thinking-log`, headers: headersFor(user), payload: { enabled: true } });
+      await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/play-move`, headers: headersFor(user), payload: { san: 'e4' } });
+      await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/bot-thinking-log`, headers: headersFor(user), payload: { enabled: false } });
+
+      const response = await app.inject({ method: 'GET', url: `/api/sessions/${sessionId}/bot-thinking`, headers: headersFor(user) });
+
+      expect(response.json()).toEqual({ moves: [] });
+      const session = await sessionsRepo.findById(db, sessionId);
+      expect(session?.botThinkingLog).toBe(false);
+    }, 15000);
+
+    test('POST /api/sessions/:id/bot-thinking-log rejects a non-boolean body', async () => {
+      const { user, app, sessionId } = await setupBotSession('botthinkbad@example.com');
+
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/bot-thinking-log`, headers: headersFor(user), payload: { enabled: 'yes' } });
+
+      expect(response.statusCode).toBe(400);
+      const session = await sessionsRepo.findById(db, sessionId);
+      expect(session?.botThinkingLog).toBe(false);
+    });
+
+    test('POST /api/sessions/:id/bot-thinking-log 409s for a non-play_bot session', async () => {
+      const { user, game } = await setupReadyGame('botthinkanalyze@example.com');
+      const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
+      const created = await app.inject({ method: 'POST', url: '/api/sessions', headers: headersFor(user), payload: { gameId: game.id } });
+      const sessionId = (created.json() as { id: string }).id;
+
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/bot-thinking-log`, headers: headersFor(user), payload: { enabled: true } });
+
+      expect(response.statusCode).toBe(409);
+    });
+
+    test("POST /api/sessions/:id/bot-thinking-log 404s for someone else's session", async () => {
+      const { app, sessionId } = await setupBotSession('botthinklogowner@example.com');
+      const stranger = await usersRepo.insert(db, { email: 'botthinklogstranger@example.com', displayName: 'Stranger' });
+
+      const response = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/bot-thinking-log`, headers: headersFor(stranger), payload: { enabled: true } });
+
+      expect(response.statusCode).toBe(404);
+    });
 
     test("GET /api/sessions/:id/bot-thinking 404s for someone else's session", async () => {
       const { app, sessionId } = await setupBotSession('botthinkowner@example.com');

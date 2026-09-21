@@ -136,6 +136,11 @@ export interface SessionsTable {
   debugSnapshot: ColumnType<unknown, string | null | undefined, string | null>;
   summary: string | null;
   homework: string | null;
+  /** 0043_bot_thinking_log.ts — whether this play_bot session records bot-move
+   * traces for the Thinking log (bot-thinking-registry.ts). Off by default:
+   * when false the commit paths never start a trace, so the default game
+   * pays nothing for the diagnostic view. */
+  botThinkingLog: Generated<boolean>;
   startedAt: Generated<Date>;
   endedAt: Date | null;
 }

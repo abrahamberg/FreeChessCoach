@@ -309,6 +309,14 @@ involved; absent `preventable`/`prevented` (old reports) count as 0.
 
 ## Bot Thinking log
 
+The log is opt-in per session (0043_bot_thinking_log.ts): a play_bot session
+records traces only while its `bot_thinking_log` flag is on — off by default,
+toggled from the bot session page's header overflow menu ("Show/Hide thinking
+log", POST /api/sessions/:id/bot-thinking-log). While off, the bot's commit
+paths never start a trace, so no registry entry, no Redis mirror write and no
+client polling happen at all; the GET route serves an empty log. Enabling
+takes effect from the next move on (nothing is recorded retroactively).
+
 A bot move is one synchronous round trip (`commitBotTurn` /
 `requestBotMove`, `apps/api/src/services/bot/bot-move-commit.ts`). To see what
 a slow or stuck move is doing, each move records a *trace*

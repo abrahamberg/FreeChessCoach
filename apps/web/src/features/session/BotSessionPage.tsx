@@ -78,7 +78,8 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
     isResigning,
     clock,
     onClockUpdate,
-    claimTimeout
+    claimTimeout,
+    setBotThinkingLog
   } = useBotSessionPageData(sessionId);
 
   // "Explore on your own" (BoardActionBar's eye toggle) — same ownership
@@ -178,6 +179,10 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
 
   // Shared between desktop's full panel and mobile's compact card — same
   // status, just re-homed (BotStatusPanel's `variant` prop) for each layout.
+  // The Thinking log is opt-in per session (0043_bot_thinking_log.ts, its
+  // ⋯-menu item below): a disabled session renders no log and records no
+  // traces server-side, which is the default for every new bot game.
+  const thinkingLogEnabled = session.botThinkingLog;
   const statusPanelProps = {
     botName,
     botAvatarIndex: bot?.avatarIndex,
@@ -191,7 +196,8 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
     activeColor,
     onClockExpire: claimTimeout,
     fen,
-    sessionId
+    sessionId,
+    thinkingLogEnabled
   };
   const statusPanel = showStatusBar && <BotStatusPanel {...statusPanelProps} />;
   const statusCard = showStatusBar && <BotStatusPanel {...statusPanelProps} variant="card" />;
@@ -202,6 +208,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   const engineBadge = engineActivity.engineMode ? ENGINE_MODE_BADGE[engineActivity.engineMode] : 'Engine';
   const headerExtraItems: OverflowMenuItem[] = [
     { label: showStatusBar ? 'Hide status bar' : 'Show status bar', onSelect: () => setShowStatusBar(!showStatusBar) },
+    { label: thinkingLogEnabled ? 'Hide thinking log' : 'Show thinking log', onSelect: () => setBotThinkingLog(!thinkingLogEnabled) },
     { label: `Engine: ${engineBadge}`, onSelect: () => navigate('/settings#settings-engine') },
     { label: 'Settings', onSelect: () => navigate('/settings') }
   ];

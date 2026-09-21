@@ -130,7 +130,9 @@ export async function commitBotTurn(
   bot: BotConfig,
   playerSan: string
 ): Promise<CommitBotTurnResult | { error: string }> {
-  const trace = deps.thinkingLog?.start(session.id, { source: 'turn', ply: null });
+  // Opt-in (0043_bot_thinking_log.ts): off, no trace exists at all — no
+  // registry entry, no mirror writes, nothing for the GET route to serve.
+  const trace = session.botThinkingLog ? deps.thinkingLog?.start(session.id, { source: 'turn', ply: null }) : undefined;
   try {
     return await commitBotTurnTraced(deps, session, bot, playerSan, trace);
   } catch (error) {
@@ -369,7 +371,10 @@ export async function requestBotMove(
   let trace: BotMoveTrace | undefined;
   try {
     return await requestBotMoveTraced(deps, session, bot, (freshSession) => {
-      trace = deps.thinkingLog?.start(freshSession.id, { source: 'failover', ply: freshSession.currentPly + 1 });
+      // Same opt-in gate as commitBotTurn's — see it there.
+      trace = freshSession.botThinkingLog
+        ? deps.thinkingLog?.start(freshSession.id, { source: 'failover', ply: freshSession.currentPly + 1 })
+        : undefined;
       return trace;
     });
   } catch (error) {

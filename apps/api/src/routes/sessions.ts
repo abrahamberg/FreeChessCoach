@@ -1,4 +1,6 @@
 import {
+  BotThinkingLogEnabledRequestSchema,
+  BotThinkingLogEnabledResponseSchema,
   BotThinkingLogSchema,
   CommitBotMoveResponseSchema,
   CommitPlayerMoveRequestSchema,
@@ -174,13 +176,37 @@ export function registerSessionsRoutes(
 
   // Live Thinking log for a bot game (bot-thinking-registry.ts): what the bot
   // is doing right now and what it did for earlier moves, with real start/end
-  // times. Polled by the bot status panel while the bot is thinking.
+  // times. Polled by the bot status panel while the bot is thinking. Opt-in
+  // (see the route below): while the session's flag is off, nothing is
+  // recorded anywhere, so an empty log is served rather than whatever a
+  // previous enabled stretch may have left in this pod's memory.
   app.get<{ Params: { id: string } }>('/api/sessions/:id/bot-thinking', async (request) => {
     const user = await userProfileService.getOrCreate(db, request.user);
     const session = await sessionsRepo.findByIdForUser(db, request.params.id, user.id);
     if (!session) throw new NotFoundError('Session not found');
     if (session.mode !== 'play_bot') throw new ConflictError('Session is not a play_bot session');
+    if (!session.botThinkingLog) return BotThinkingLogSchema.parse({ moves: [] });
     return BotThinkingLogSchema.parse(await thinkingLog.readLog(session.id));
+  });
+
+  // The Thinking log's opt-in switch (0043_bot_thinking_log.ts) — the bot
+  // session page's header overflow menu is its only caller. While off, the
+  // commit paths never start a trace (bot-move-commit.ts), so the default
+  // bot game does no Thinking-log work at all; enabling it takes effect from
+  // the next move on (nothing is recorded retroactively).
+  app.post<{ Params: { id: string } }>('/api/sessions/:id/bot-thinking-log', async (request) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    const session = await sessionsRepo.findByIdForUser(db, request.params.id, user.id);
+    if (!session) throw new NotFoundError('Session not found');
+    if (session.mode !== 'play_bot') throw new ConflictError('Session is not a play_bot session');
+
+    const parsed = BotThinkingLogEnabledRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      throw new ValidationError(parsed.error.issues.map((issue) => issue.message).join('; '));
+    }
+
+    await sessionsRepo.setBotThinkingLog(db, session.id, parsed.data.enabled);
+    return BotThinkingLogEnabledResponseSchema.parse({ enabled: parsed.data.enabled });
   });
 
   // Failover for a bot reply that never landed (commitBotTurn's botPending,

@@ -1,4 +1,6 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
+import type { BotThinkingLogEnabledResponse } from '@freechesscoach/shared';
+import { BotThinkingLogEnabledResponseSchema } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../api/client.js';
@@ -189,6 +191,17 @@ export function useBotSessionPageData(sessionId: string) {
     onSuccess: (result) => handleGameOver({ result: result.result, reason: 'resignation' })
   });
 
+  // The Thinking log's opt-in switch (the bot session header's ⋯ menu) —
+  // refetching the session is what flips BotStatusPanel's own gating, same
+  // pattern as every other session-field change here.
+  const thinkingLogMutation = useMutation({
+    mutationFn: (enabled: boolean): Promise<BotThinkingLogEnabledResponse> =>
+      apiPost(`/api/sessions/${sessionId}/bot-thinking-log`, { enabled }, BotThinkingLogEnabledResponseSchema),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+    }
+  });
+
   return {
     sessionQuery,
     gameQuery,
@@ -208,6 +221,7 @@ export function useBotSessionPageData(sessionId: string) {
     canUndo: sanMoves.length > 0 && !undoMutation.isPending,
     resign: () => resignMutation.mutate(),
     isResigning: resignMutation.isPending,
+    setBotThinkingLog: (enabled: boolean) => thinkingLogMutation.mutate(enabled),
     clock,
     onClockUpdate: handleClockUpdate,
     claimTimeout: () => claimTimeoutMutation.mutate()

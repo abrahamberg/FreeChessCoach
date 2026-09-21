@@ -16,6 +16,9 @@ export interface SessionRow {
   subjectPly: number;
   summary: string | null;
   homework: string | null;
+  /** Whether bot-move traces are recorded for the Thinking log — see
+   * schema.ts's SessionsTable. */
+  botThinkingLog: boolean;
   startedAt: Date;
   endedAt: Date | null;
 }
@@ -30,6 +33,7 @@ const BASE_COLUMNS = [
   'subjectPly',
   'summary',
   'homework',
+  'botThinkingLog',
   'startedAt',
   'endedAt'
 ] as const;
@@ -39,6 +43,9 @@ export interface NewSession {
   userId: string;
   /** Defaults to 'analyze' (today's only mode) when omitted. */
   mode?: SessionMode;
+  /** Defaults to false (0043_bot_thinking_log.ts) — the Thinking log is
+   * opt-in per session. */
+  botThinkingLog?: boolean;
   /** Defaults to now; only demo seeding (scripts/demo) dates a session in the past. */
   startedAt?: Date;
 }
@@ -178,6 +185,17 @@ export function storeSummary(
   return db
     .updateTable('sessions')
     .set({ summary, homework })
+    .where('id', '=', id)
+    .execute()
+    .then(() => undefined);
+}
+
+/** Turns the session's Thinking log on or off (POST /api/sessions/:id/
+ * bot-thinking-log). No guard on mode/status: the route owns those checks. */
+export function setBotThinkingLog(db: Kysely<Database>, id: string, enabled: boolean): Promise<void> {
+  return db
+    .updateTable('sessions')
+    .set({ botThinkingLog: enabled })
     .where('id', '=', id)
     .execute()
     .then(() => undefined);
