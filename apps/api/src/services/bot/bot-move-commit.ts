@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import { gameOutcomeFromPgn, type GameOutcome } from '@freechesscoach/chess-analysis';
+import { gameOutcomeFromPgn, lastMoveOf, lastMoveOfPgn, type GameOutcome, type LastMove } from '@freechesscoach/chess-analysis';
 import type { BotConfig, MoveQuality } from '@freechesscoach/shared';
 import * as gamesRepo from '../../db/repositories/games.js';
 import type { GameRow } from '../../db/repositories/games.js';
@@ -11,27 +11,37 @@ import { NotFoundError } from '../../lib/errors.js';
 import type { JobQueue } from '../../jobs/queue.js';
 import { currentEpisode } from '../../lib/episodes.js';
 import { closeEpisodeIfNeeded, type CoachContextDependencies } from '../coach-context.js';
-import { commitBotMove, commitPlayerMove, currentFen, type PlayMovesDependencies } from '../play-moves.js';
+import { commitMoveUnrated } from '../play-moves-rated.js';
+import { currentFen, type PlayMovesDependencies } from '../play-moves.js';
 import { moverToMoveNext } from './bot-claim-timeout.js';
 import { finalizeBotGame } from './bot-finalize.js';
 import { BotSelectionError, selectBotMove, type BotMoveSelectorDependencies } from './bot-move-selector.js';
+import { runTraced, type BotMoveTrace } from './bot-move-trace.js';
+import type { BotThinkingRegistry } from './bot-thinking-registry.js';
+import { scheduleRatingEval, type RatingEvalDependencies } from './bot-rating-evals.js';
+import { playerMoveToRate, ratePlayerMove, rateBotMove, type PlayerMoveToRate, type RatingContext } from './bot-turn-rating.js';
 
 /** A fast shallow-depth bot reply is deliberately padded up to this floor so
  * it doesn't feel instant/robotic — see the "Play vs Bot" plan. Overridable
  * per-call via `minThinkMs` (tests set it to 0 to avoid real delays). */
 export const MIN_BOT_THINK_MS = 900;
 
-export interface BotMoveCommitDependencies extends PlayMovesDependencies, BotMoveSelectorDependencies, CoachContextDependencies {
+export interface BotMoveCommitDependencies extends PlayMovesDependencies, BotMoveSelectorDependencies, CoachContextDependencies, RatingEvalDependencies {
   jobQueue: JobQueue;
   now?: () => number;
   minThinkMs?: number;
+  /** Where each bot move's live Thinking log is kept (see
+   * bot-thinking-registry.ts) — omitted, nothing is recorded. */
+  thinkingLog?: BotThinkingRegistry;
 }
 
 export interface CommittedTurnMove {
   fen: string;
   san: string;
   ply: number;
-  quality: MoveQuality;
+  /** Null when the move could not be rated in time (see bot-turn-rating.ts) —
+   * post-game analysis rates every move regardless. */
+  quality: MoveQuality | null;
   elapsedMs: number;
 }
 
@@ -120,6 +130,22 @@ export async function commitBotTurn(
   bot: BotConfig,
   playerSan: string
 ): Promise<CommitBotTurnResult | { error: string }> {
+  const trace = deps.thinkingLog?.start(session.id, { source: 'turn', ply: null });
+  try {
+    return await commitBotTurnTraced(deps, session, bot, playerSan, trace);
+  } catch (error) {
+    trace?.fail(describeError(error));
+    throw error;
+  }
+}
+
+async function commitBotTurnTraced(
+  deps: BotMoveCommitDependencies,
+  session: SessionRow,
+  bot: BotConfig,
+  playerSan: string,
+  trace: BotMoveTrace | undefined
+): Promise<CommitBotTurnResult | { error: string }> {
   const now = deps.now ?? Date.now;
   const minThinkMs = deps.minThinkMs ?? MIN_BOT_THINK_MS;
 
@@ -137,9 +163,24 @@ export async function commitBotTurn(
   const previousTimestamp = gameBefore.lastMoveAt ?? session.startedAt;
   const playerElapsedMs = now() - previousTimestamp.getTime();
 
-  const playerResult = await commitPlayerMove(deps, session.gameId, playerSan, { elapsedMs: playerElapsedMs });
-  if ('error' in playerResult) return playerResult;
-  const player: CommittedTurnMove = { ...playerResult, elapsedMs: playerElapsedMs };
+  const playerResult = await runTraced(
+    trace,
+    'Saving your move',
+    () => commitMoveUnrated(deps.db, session.gameId, playerSan, { elapsedMs: playerElapsedMs }),
+    { describeResult: (result) => ('error' in result ? `rejected: ${result.error}` : 'saved') }
+  );
+  if ('error' in playerResult) {
+    discardTrace(deps, session, trace);
+    return playerResult;
+  }
+  trace?.setPly(playerResult.ply + 1);
+  const player: CommittedTurnMove = {
+    fen: playerResult.fen,
+    san: playerResult.san,
+    ply: playerResult.ply,
+    quality: null,
+    elapsedMs: playerElapsedMs
+  };
 
   if (clock.isTimed) {
     const moverColor = player.ply % 2 === 1 ? 'white' : 'black';
@@ -168,14 +209,19 @@ export async function commitBotTurn(
 
   const gameOverAfterPlayer = gameOverInfo(gameOutcomeFromPgn((await requireGame(deps.db, session.gameId)).pgn));
   if (gameOverAfterPlayer) {
+    discardTrace(deps, session, trace);
     await finalizeBotGame(deps, session, player.ply, gameOverAfterPlayer.result);
     return { player, bot: null, gameOver: gameOverAfterPlayer, whiteRemainingMs: clock.whiteRemainingMs, blackRemainingMs: clock.blackRemainingMs };
   }
 
+  const playerToRate = playerMoveToRate(playerResult);
+
   try {
-    const reply = await commitBotReply(deps, session, bot, player.ply, player.fen, clock, now, minThinkMs);
-    return { player, ...reply };
+    const { playerQuality, ...reply } = await commitBotReply(deps, session, bot, player.ply, player.fen, clock, now, minThinkMs, lastMoveOf(playerResult.fenBefore, playerResult.san), trace, playerToRate);
+    trace?.complete();
+    return { player: { ...player, quality: playerQuality }, ...reply };
   } catch (error) {
+    trace?.fail(describeError(error));
     // A BotSelectionError means the engine call itself succeeded but
     // selection produced something unusable (no candidates, an illegal
     // move) — a deterministic bug that will fail identically on every
@@ -210,26 +256,78 @@ async function commitBotReply(
   fen: string,
   clock: ClockState,
   now: () => number,
-  minThinkMs: number
-): Promise<{
+  minThinkMs: number,
+  lastMove: LastMove | null,
+  trace?: BotMoveTrace,
+  playerToRate?: PlayerMoveToRate
+): Promise<BotReplyResult & { playerQuality: MoveQuality | null }> {
+  const rating = ratingContext(deps, session.gameId);
+  const thinkStart = now();
+  const selected = await selectBotMove(deps, fen, afterPly, bot, trace, lastMove);
+
+  // The student's move is rated from the search that just finished (plus the
+  // eval already in flight) while the think-time floor runs. It must finish
+  // BEFORE the bot's move is saved: rating edits the game's last move.
+  const playerRating = playerToRate
+    ? runTraced(trace, 'Rating your move', () => ratePlayerMove(rating, playerToRate, selected))
+    : Promise.resolve(null);
+  const elapsedSoFar = now() - thinkStart;
+  if (elapsedSoFar < minThinkMs) {
+    const paddingMs = minThinkMs - elapsedSoFar;
+    await runTraced(trace, 'Padding to the minimum think time', () => sleep(paddingMs), { detail: `${paddingMs}ms so the reply does not feel instant` });
+  }
+  const botElapsedMs = now() - thinkStart;
+  const playerQuality = await playerRating;
+
+  const botResult = await runTraced(
+    trace,
+    "Saving the bot's move",
+    () => commitMoveUnrated(deps.db, session.gameId, selected.san, { elapsedMs: botElapsedMs, ...(selected.evalAfter ? { evalAfter: selected.evalAfter } : {}) }),
+    { describeResult: (result) => ('error' in result ? `rejected: ${result.error}` : `saved ${selected.san}`) }
+  );
+  if ('error' in botResult) {
+    throw new BotSelectionError(`commitBotReply: bot selected an illegal move "${selected.san}" (${botResult.error})`);
+  }
+  const botQuality = await runTraced(trace, "Rating the bot's move", () => rateBotMove(rating, botResult, selected));
+  const botMove: CommittedTurnMove = {
+    fen: botResult.fen,
+    san: botResult.san,
+    ply: botResult.ply,
+    quality: botQuality,
+    elapsedMs: botElapsedMs
+  };
+
+  const finished = await runTraced(trace, 'Finishing up (clock, game state, session position)', () =>
+    finishBotReply(deps, session, botMove, afterPly, clock)
+  );
+  // The student is about to move from here: get the light engine's eval of it
+  // ready for rating that move, without holding this reply for it.
+  if (!finished.gameOver) scheduleRatingEval(deps, botMove.fen);
+  return { ...finished, playerQuality };
+}
+
+function ratingContext(deps: BotMoveCommitDependencies, gameId: string): RatingContext {
+  return { deps, gameId };
+}
+
+interface BotReplyResult {
   bot: CommittedTurnMove;
   gameOver: CommitBotTurnResult['gameOver'];
   whiteRemainingMs: number | null;
   blackRemainingMs: number | null;
-}> {
+}
+
+/** Everything after the bot's move is committed: tick the clock, detect the
+ * end of the game, and advance the session's ply pointer. */
+async function finishBotReply(
+  deps: BotMoveCommitDependencies,
+  session: SessionRow,
+  botMove: CommittedTurnMove,
+  afterPly: number,
+  clock: ClockState
+): Promise<BotReplyResult> {
   let { whiteRemainingMs, blackRemainingMs } = clock;
-
-  const thinkStart = now();
-  const selected = await selectBotMove(deps, fen, afterPly, bot);
-  const elapsedSoFar = now() - thinkStart;
-  if (elapsedSoFar < minThinkMs) await sleep(minThinkMs - elapsedSoFar);
-  const botElapsedMs = now() - thinkStart;
-
-  const botResult = await commitBotMove(deps, session.gameId, selected.san, { elapsedMs: botElapsedMs });
-  if ('error' in botResult) {
-    throw new BotSelectionError(`commitBotReply: bot selected an illegal move "${selected.san}" (${botResult.error})`);
-  }
-  const botMove: CommittedTurnMove = { ...botResult, elapsedMs: botElapsedMs };
+  const botElapsedMs = botMove.elapsedMs;
 
   if (clock.isTimed) {
     const moverColor = botMove.ply % 2 === 1 ? 'white' : 'black';
@@ -268,6 +366,24 @@ export async function requestBotMove(
   session: SessionRow,
   bot: BotConfig
 ): Promise<RequestBotMoveResult | { error: string }> {
+  let trace: BotMoveTrace | undefined;
+  try {
+    return await requestBotMoveTraced(deps, session, bot, (freshSession) => {
+      trace = deps.thinkingLog?.start(freshSession.id, { source: 'failover', ply: freshSession.currentPly + 1 });
+      return trace;
+    });
+  } catch (error) {
+    trace?.fail(describeError(error));
+    throw error;
+  }
+}
+
+async function requestBotMoveTraced(
+  deps: BotMoveCommitDependencies,
+  session: SessionRow,
+  bot: BotConfig,
+  startTrace: (freshSession: SessionRow) => BotMoveTrace | undefined
+): Promise<RequestBotMoveResult | { error: string }> {
   // Re-read rather than trusting the caller's `session` — this function
   // exists specifically to recover from a state where the client's view is
   // stale, so the whose-turn check has to run against the current row, not
@@ -281,6 +397,9 @@ export async function requestBotMove(
     return { error: 'It is not the bot\'s turn to move' };
   }
 
+  // Started only now, after the "is it really the bot's turn" checks above:
+  // a no-op poll must not leave an empty move in the Thinking log.
+  const trace = startTrace(freshSession);
   const now = deps.now ?? Date.now;
   const minThinkMs = deps.minThinkMs ?? MIN_BOT_THINK_MS;
   const clock: ClockState = {
@@ -291,9 +410,22 @@ export async function requestBotMove(
   };
 
   try {
-    const reply = await commitBotReply(deps, freshSession, bot, freshSession.currentPly, currentFen(game.pgn), clock, now, minThinkMs);
+    const { playerQuality: _noStudentMoveThisTime, ...reply } = await commitBotReply(
+      deps,
+      freshSession,
+      bot,
+      freshSession.currentPly,
+      currentFen(game.pgn),
+      clock,
+      now,
+      minThinkMs,
+      lastMoveOfPgn(game.pgn),
+      trace
+    );
+    trace?.complete();
     return { player: null, ...reply };
   } catch (error) {
+    trace?.fail(describeError(error));
     // See commitBotTurn's identical guard: a selection-logic bug should
     // surface, not loop forever as an indefinitely-retried botPending.
     if (error instanceof BotSelectionError) throw error;
@@ -326,4 +458,15 @@ function gameOverInfo(outcome: GameOutcome): CommitBotTurnResult['gameOver'] {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** A trace for a turn that turned out not to involve the bot at all (the
+ * student's move was rejected, or it ended the game) is dropped rather than
+ * left in the Thinking log as a move that never happened. */
+function discardTrace(deps: BotMoveCommitDependencies, session: SessionRow, trace: BotMoveTrace | undefined): void {
+  if (trace) deps.thinkingLog?.discard(session.id, trace);
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

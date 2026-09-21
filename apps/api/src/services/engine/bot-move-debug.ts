@@ -1,3 +1,5 @@
+import type { BotMoveStepTrace } from '../bot/bot-move-trace.js';
+
 /**
  * Per-bot-move debug data collector — one instance per selectBotMove call,
  * threaded through EngineBackendAnalyzeOptions.debug so
@@ -58,10 +60,15 @@ export interface BotMoveDebugCollector {
    * result came back short, regardless of whether a tunnel was actually
    * connected to answer it (see EngineCallDebugInfo.error). */
   lightBrowser: EngineCallDebugInfo | null;
+  /** The move's live Thinking log, when one is being kept — the engine
+   * backends use it to record each real call (main engine, light supplement)
+   * as a timed step while it runs, which the after-the-fact buckets above
+   * cannot show for a call that never returns. Null when nobody is watching. */
+  trace: BotMoveStepTrace | null;
 }
 
-export function newBotMoveDebugCollector(): BotMoveDebugCollector {
-  return { mode: null, internal: null, external: null, browser: null, lightBrowser: null };
+export function newBotMoveDebugCollector(trace: BotMoveStepTrace | null = null): BotMoveDebugCollector {
+  return { mode: null, internal: null, external: null, browser: null, lightBrowser: null, trace };
 }
 
 /** Clamped at 0 — real wall-clock time never goes backward, but a test

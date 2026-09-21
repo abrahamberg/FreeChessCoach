@@ -15,7 +15,7 @@ import { useHintMoves } from '../board/useHintMoves.js';
 import type { ArrowRef } from '../chat/arrowToken.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
 import type { BotGameOverInfo } from './botGameOver.js';
-import type { CommittedPlayMove } from './usePlayMoveSubmit.js';
+import type { CommittedMoveRef } from './usePlayMoveSubmit.js';
 import { usePlayMoveSubmit } from './usePlayMoveSubmit.js';
 import { usePlayBotMoveSubmit } from './usePlayBotMoveSubmit.js';
 import type { useDivergedLine } from './useDivergedLine.js';
@@ -54,7 +54,7 @@ export interface SessionBoardColumnProps {
    * useBotSessionPageData), since positions/boardState live above this
    * component. Required in play/play_bot mode; in play_bot mode this fires
    * once for the student's move and again for the bot's. */
-  onPlayMoveCommitted?: (result: CommittedPlayMove, uci: string) => void;
+  onPlayMoveCommitted?: (result: CommittedMoveRef, uci: string) => void;
   /** play_bot only: fires once when a play-move response reports the game
    * ended, with who won/drew and why, so the caller can refetch session
    * status and show the result (GameOverDialog/BotStatusPanel). */

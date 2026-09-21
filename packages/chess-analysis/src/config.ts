@@ -49,6 +49,30 @@ export const CONFIG = {
     deadDrawCpAbs: 30
   },
 
+  /** How a bot goes looking for a mistake to play (bot-mistake-pool.ts): it
+   * screens `batchSize` plausible moves at a time from the moves nearest what
+   * the student just played, up to `batches` batches, and verifies at most
+   * `maxVerifications` of them with the engine (within `budgetMs`). What counts as a mistake or a
+   * blunder is `severity` above (the same win% drops the move labels use), and
+   * "decided" is `severity.dampingHighWin`/`dampingLowWin`. Untuned starting
+   * points — adjust from real Thinking logs. */
+  botMistake: {
+    batchSize: 5,
+    batches: 3,
+    maxVerifications: 5,
+    /** Stop verifying once a search for a mistake has taken this long, however
+     * many tries are left — the student is waiting on the reply. */
+    budgetMs: 6000,
+    /** A candidate this close (in squares) to the student's last move counts as
+     * "near what changed". */
+    nearDistance: 2,
+    /** When the bot is far ahead the win percentage has flattened, so a move is
+     * judged by the centipawns it gave away instead: a pawn is a mistake, a
+     * piece a blunder. */
+    decidedMistakeCpLoss: 100,
+    decidedBlunderCpLoss: 250
+  },
+
   /** Shared win% banding used by §5's Great/Miss materiality checks. */
   resultBand: {
     losingMax: 10,

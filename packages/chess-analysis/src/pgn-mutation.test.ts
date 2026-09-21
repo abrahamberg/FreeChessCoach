@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { appendMoveToPgn, removeLastMoveFromPgn } from './pgn-mutation.js';
+import { appendMoveToPgn, formatEvalTag, removeLastMoveFromPgn, setLastMoveEval } from './pgn-mutation.js';
+import { extractPgnMoveComments } from './pgn-move-comments.js';
 
 const EMPTY_PGN = `[Event "Test"]
 [White "Alice"]
@@ -133,5 +134,62 @@ describe('removeLastMoveFromPgn', () => {
     expect('error' in result).toBe(false);
     if ('error' in result) return;
     expect(result.fen).toBe('r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4');
+  });
+});
+
+describe('saving the eval with a move', () => {
+  test('formats pawns for a score and #N for a mate, White-perspective', () => {
+    expect(formatEvalTag({ cp: 25, mateIn: null })).toBe('[%eval 0.25]');
+    expect(formatEvalTag({ cp: -130, mateIn: null })).toBe('[%eval -1.30]');
+    expect(formatEvalTag({ cp: null, mateIn: 3 })).toBe('[%eval #3]');
+    expect(formatEvalTag({ cp: null, mateIn: -2 })).toBe('[%eval #-2]');
+  });
+
+  test('a move appended with an eval reads back through the existing [%eval] reader, next to its clock', () => {
+    const result = appendMoveToPgn(EMPTY_PGN, 'e4', { elapsedMs: 5000, evalAfter: { cp: 32, mateIn: null } });
+    if ('error' in result) throw new Error(result.error);
+
+    expect(extractPgnMoveComments(result.pgn)).toEqual([{ ply: 1, clockMs: 5000, evalCp: 32, timeSpentMs: null }]);
+  });
+
+  test('setLastMoveEval adds an eval to a move saved without one, keeping its clock', () => {
+    const saved = appendMoveToPgn(EMPTY_PGN, 'e4', { elapsedMs: 5000 });
+    if ('error' in saved) throw new Error(saved.error);
+
+    const result = setLastMoveEval(saved.pgn, 'e4', { cp: 20, mateIn: null });
+    if ('error' in result) throw new Error(result.error);
+
+    expect(extractPgnMoveComments(result.pgn)).toEqual([{ ply: 1, clockMs: 5000, evalCp: 20, timeSpentMs: null }]);
+  });
+
+  test('setLastMoveEval replaces an earlier eval instead of stacking a second tag', () => {
+    const saved = appendMoveToPgn(EMPTY_PGN, 'e4', { evalAfter: { cp: 10, mateIn: null } });
+    if ('error' in saved) throw new Error(saved.error);
+
+    const result = setLastMoveEval(saved.pgn, 'e4', { cp: 40, mateIn: null });
+    if ('error' in result) throw new Error(result.error);
+
+    expect(result.pgn.match(/\[%eval/g)).toHaveLength(1);
+    expect(extractPgnMoveComments(result.pgn)[0]?.evalCp).toBe(40);
+  });
+
+  test('setLastMoveEval refuses when the last move is not the one the caller expects', () => {
+    const saved = appendMoveToPgn(EMPTY_PGN, 'e4');
+    if ('error' in saved) throw new Error(saved.error);
+
+    expect(setLastMoveEval(saved.pgn, 'd4', { cp: 0, mateIn: null })).toEqual({ error: 'Last move is e4, not d4' });
+    expect(setLastMoveEval(EMPTY_PGN, 'e4', { cp: 0, mateIn: null })).toEqual({ error: 'No moves to evaluate' });
+  });
+
+  test('undoing a move leaves the earlier moves\' evals in place', () => {
+    const first = appendMoveToPgn(EMPTY_PGN, 'e4', { evalAfter: { cp: 30, mateIn: null } });
+    if ('error' in first) throw new Error(first.error);
+    const second = appendMoveToPgn(first.pgn, 'e5', { evalAfter: { cp: 10, mateIn: null } });
+    if ('error' in second) throw new Error(second.error);
+
+    const undone = removeLastMoveFromPgn(second.pgn);
+    if ('error' in undone) throw new Error(undone.error);
+
+    expect(extractPgnMoveComments(undone.pgn).map((comment) => [comment.ply, comment.evalCp])).toEqual([[1, 30]]);
   });
 });

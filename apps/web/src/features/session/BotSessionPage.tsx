@@ -190,7 +190,8 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
     clock,
     activeColor,
     onClockExpire: claimTimeout,
-    fen
+    fen,
+    sessionId
   };
   const statusPanel = showStatusBar && <BotStatusPanel {...statusPanelProps} />;
   const statusCard = showStatusBar && <BotStatusPanel {...statusPanelProps} variant="card" />;

@@ -3,11 +3,14 @@ import type { BotClockConfig, BotConfig, PlayerColor } from '@freechesscoach/sha
 import * as gamesRepo from '../../db/repositories/games.js';
 import * as sessionsRepo from '../../db/repositories/sessions.js';
 import type { SessionRow } from '../../db/repositories/sessions.js';
-import { commitBotMove, type PlayMovesDependencies } from '../play-moves.js';
+import { commitMoveUnrated } from '../play-moves-rated.js';
+import type { PlayMovesDependencies } from '../play-moves.js';
 import { createSessionForGame } from '../coach-agent-session.js';
 import { selectBotMove, type BotMoveSelectorDependencies } from './bot-move-selector.js';
+import { scheduleRatingEval, type RatingEvalDependencies } from './bot-rating-evals.js';
+import { rateBotMove } from './bot-turn-rating.js';
 
-export type CreateBotSessionDependencies = PlayMovesDependencies & BotMoveSelectorDependencies;
+export type CreateBotSessionDependencies = PlayMovesDependencies & BotMoveSelectorDependencies & RatingEvalDependencies;
 
 /** "5+0" style label for games.timeControl (display only — the columns that
  * actually drive clock logic are clockInitialMs/clockIncrementMs). */
@@ -57,16 +60,21 @@ export async function createBotSession(
   });
 
   const session = await createSessionForGame(deps.db, { gameId: game.id, userId, mode: 'play_bot' });
-  if (studentColor !== 'black') return session;
 
   const startFen = parsePgn(game.pgn).positions[0]?.fen;
   if (!startFen) throw new Error('createBotSession: parsePgn returned no starting position for an empty pgn');
+  if (studentColor !== 'black') return session;
 
   const selected = await selectBotMove(deps, startFen, 0, bot);
-  const committed = await commitBotMove(deps, game.id, selected.san);
+  // Same as a mid-game bot reply (bot-move-commit.ts): saved with no engine
+  // call, rated from the search that chose it, and the light engine is asked —
+  // in the background — for the position the student moves from first.
+  const committed = await commitMoveUnrated(deps.db, game.id, selected.san, selected.evalAfter ? { evalAfter: selected.evalAfter } : undefined);
   if ('error' in committed) {
     throw new Error(`createBotSession: bot selected an illegal opening move "${selected.san}" (${committed.error})`);
   }
+  await rateBotMove({ deps, gameId: game.id }, committed, selected);
+  scheduleRatingEval(deps, committed.fen);
 
   await sessionsRepo.updateSubjectAndCurrentPly(deps.db, session.id, committed.ply);
   return { ...session, currentPly: committed.ply, subjectPly: committed.ply };

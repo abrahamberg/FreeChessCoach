@@ -7,7 +7,9 @@ import {
   buildTtsConfigFromEnv,
   openLichessEvalIndexFromEnv,
   requireEnv,
-  buildLlmUnlockStoreFromEnv
+  buildLlmUnlockStoreFromEnv,
+  buildRatingEvalStoreFromEnv,
+  buildBotThinkingRegistryFromEnv
 } from './bootstrap.js';
 import { createDb } from './db/index.js';
 import { createGraphileJobQueue } from './jobs/queue.js';
@@ -47,6 +49,8 @@ async function main(): Promise<void> {
     llmUnlockStore,
     coachAgentBaseDeps,
     engineBackendOptions,
+    botRatingEvals: buildRatingEvalStoreFromEnv(),
+    botThinkingLog: buildBotThinkingRegistryFromEnv(),
     engineTunnelRegistry,
     internalToken: requireEnv('ENGINE_TUNNEL_INTERNAL_TOKEN'),
     ttsConfig

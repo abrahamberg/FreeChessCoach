@@ -2,9 +2,54 @@
 
 Instructions for AI coding agents. Follow these exactly; when a rule here conflicts with your general habits, this file wins.
 
-## Project Overview
-- **Core**: A personal AI chess coach. Users import games; a Stockfish+LLM pipeline analyzes them, and a tool-calling agent guides the user through the game.
-- **Current Status**: Phases 0–9 are complete.
+## What this project is
+
+A personal AI chess coach: users import their games, a Stockfish+LLM pipeline
+analyzes them, and a tool-calling coach agent walks the user through the game
+Socratically while tracking their progress over time. The initial build
+(Phases 0–9) is complete and merged — read before coding:
+
+- `docs/architecture.md` — how it fits together (layout, DB, agent, K8s). Always relevant.
+- `docs/plan.md` — the implementation plan for whatever is being built next.
+  Currently Phase 73, bot latency diagnosis (instrumentation + a benchmark to
+  find out why bot moves are slow or hang; no behaviour changes). The
+  in-app Thinking log (Tasks 73.1–73.2) has shipped and is described in
+  `docs/architecture.md` ("Bot Thinking log"); 73.3–73.6 are open. Phase 74
+  (same file) reworks how a bot turn spends time: rating off the critical
+  path (74.1–74.6 shipped: branch-first engine requests, mistake-first move
+  choice, saved evals). The last
+  shipped plan (import limits, stat archive, guided import; Phases 67–72) is
+  described in `docs/architecture.md`. Open the plan, find the one
+  Phase/Task being worked on, and read only that task's **Read:** files.
+- `docs/diagnose.md` — the spec behind the *shipped* programmatic coach
+  diagnostics (code taxonomy, opportunity/episode counting, confidence,
+  data-quality gates, focus selection). Long; never open it cold or read it
+  end-to-end — only the one section a task explicitly points you at.
+- `docs/algorith.md` — the spec behind the *shipped* Game Report (accuracy,
+  scores, classification, estimated rating, opening book). Same rule: only
+  open the one subsection a task's "Read:" line names, never cold.
+- `docs/marketing-demo.md` — the public marketing pages (`/tour`, `/guide`,
+  `/keys`, `/openai-key`), the seeded demo players, how the screenshots
+  are captured, and the offline live demo at `/demo` (`apps/web/src/demo/`, a
+  fake `fetch` over recorded fixtures with a scripted coach). Read it before
+  touching `apps/web/public/*.html`, `apps/web/src/demo/`, `seed-demo.ts`,
+  `scripts/capture-marketing-shots.mjs` or `scripts/record-demo-fixtures.mjs`;
+  irrelevant otherwise.
+- `docs/tactics-rework.md` — why Game Review's tactic sentences misfired, what
+  was measured, and the layered rebuild that shipped. Read it before touching
+  `tactic-detectors/`, `classify-tactic-motif.ts`, the `verify-tactic-*`
+  files, `tactic-reason-text.ts`, `tactic-card-order.ts`,
+  `played-tactic-alternative.ts`, `tactic-allowed.ts`, or the
+  tactic-prevention path; irrelevant to everything else. §9 is the second
+  review pass (which sentence leads, what a move handed over, an equally good
+  move of the player's own, the vocabulary for a trade) and records one gate
+  that was tried and reverted — read it before re-trying that one. Its §1 cards are pinned as fixtures in
+  `packages/chess-analysis/src/tactic-review-cases.ts`,
+  `tactic-precision.test.ts` holds the false-positive ceilings and
+  `tactic-detectors/lichess-puzzle-validation.test.ts` the recall floors — a
+  detector change is expected to move all three, the ceilings only go down and
+  the floors only go up. `tactic-detectors/README.md` is the how-to for adding
+  a motif and is the shorter read when that is all you need.
 
 ## Key Documentation (Read only as needed)
 - `docs/architecture.md`: System layout, DB, agent, K8s. (Always relevant for high-level context).

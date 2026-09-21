@@ -5,6 +5,10 @@ export interface SelectedBookMove {
   san: string;
 }
 
+/** How many of its own first moves every bot plays from book (when the
+ * position is in it), regardless of `bookPlies` or `bookMistakeChance`. */
+export const GUARANTEED_BOOK_MOVES = 2;
+
 /**
  * A bot's opening-book decision for one position: follow known theory,
  * "slip" out of book early, or defer to the normal engine+scoring path.
@@ -12,8 +16,10 @@ export interface SelectedBookMove {
  * source, same convention as bot-move-pick.ts's pickBotMove.
  *
  * `plyCount` is halfmoves played so far (i.e. the ply the position is AT,
- * before this bot's move) — compared against `bot.bookPlies * 2` since
- * bookPlies counts the bot's OWN moves, not halfmoves.
+ * before this bot's move) — compared against `bot.bookPlies * 2` (at least
+ * `GUARANTEED_BOOK_MOVES * 2`) since bookPlies counts the bot's OWN moves, not
+ * halfmoves. A position the student has left book in simply has no entries, so
+ * the bot leaves book with them.
  *
  * A "mistake" is deliberately not fabricated here: book entries carry no
  * frequency/weight data to pick a plausible-but-inferior one from, so a
@@ -33,12 +39,17 @@ export function selectBookMove(
   bot: BotConfig,
   random: () => number
 ): SelectedBookMove | null {
-  if (plyCount >= bot.bookPlies * 2) return null;
+  if (plyCount >= Math.max(bot.bookPlies, GUARANTEED_BOOK_MOVES) * 2) return null;
 
   const entries = bookMovesForFen(fen).slice(0, bookBreadthForElo(bot.elo));
   if (entries.length === 0) return null;
 
-  if (random() < bot.bookMistakeChance) return null;
+  // Every bot, however weak, plays its first GUARANTEED_BOOK_MOVES moves from
+  // book while the game is still in it — a move-one blunder from a bot whose
+  // "book mistake" roll came up is not how anyone starts a game. Past those,
+  // its own bookMistakeChance decides.
+  const guaranteed = plyCount < GUARANTEED_BOOK_MOVES * 2;
+  if (!guaranteed && random() < bot.bookMistakeChance) return null;
 
   const index = Math.floor(random() * entries.length);
   const entry = entries[Math.min(index, entries.length - 1)];

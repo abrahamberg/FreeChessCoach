@@ -2,6 +2,7 @@ export * from './constants.js';
 
 export * from './analysis.js';
 export * from './bot.js';
+export * from './bot-thinking.js';
 export * from './bot-roster.js';
 export * from './bot-roster-presets.js';
 export * from './coaching-candidate.js';

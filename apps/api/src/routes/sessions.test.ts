@@ -1029,6 +1029,38 @@ describe('sessions routes', () => {
       expect(session?.currentPly).toBe(0);
     });
 
+    test('GET /api/sessions/:id/bot-thinking is empty before the bot has moved', async () => {
+      const { user, app, sessionId } = await setupBotSession('botthinkempty@example.com');
+
+      const response = await app.inject({ method: 'GET', url: `/api/sessions/${sessionId}/bot-thinking`, headers: headersFor(user) });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ moves: [] });
+    });
+
+    test('GET /api/sessions/:id/bot-thinking shows what the bot did for a move it has made', async () => {
+      const { user, app, sessionId } = await setupBotSession('botthinklog@example.com');
+      await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/play-move`, headers: headersFor(user), payload: { san: 'e4' } });
+
+      const response = await app.inject({ method: 'GET', url: `/api/sessions/${sessionId}/bot-thinking`, headers: headersFor(user) });
+
+      expect(response.statusCode).toBe(200);
+      const { moves } = response.json();
+      expect(moves).toHaveLength(1);
+      expect(moves[0]).toMatchObject({ source: 'turn', status: 'done', ply: 2 });
+      expect(moves[0].path).toEqual(expect.any(String));
+      expect(moves[0].steps.map((step: { label: string }) => step.label)).toContain('Opening book lookup');
+    }, 15000);
+
+    test("GET /api/sessions/:id/bot-thinking 404s for someone else's session", async () => {
+      const { app, sessionId } = await setupBotSession('botthinkowner@example.com');
+      const stranger = await usersRepo.insert(db, { email: 'botthinkstranger@example.com', displayName: 'Stranger' });
+
+      const response = await app.inject({ method: 'GET', url: `/api/sessions/${sessionId}/bot-thinking`, headers: headersFor(stranger) });
+
+      expect(response.statusCode).toBe(404);
+    });
+
     test('a timed game reports remaining time on each move and seeds it on creation', async () => {
       const { user, app, sessionId, gameId } = await setupBotSession('botclock@example.com', 'nate-brooks', {
         initialMs: 300000,

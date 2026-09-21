@@ -35,6 +35,23 @@ export interface ResolveEngineBackendOptions {
   backgroundJob: boolean;
 }
 
+/** How long a bot's own search waits on chess-api.com (through the browser
+ * tunnel) before the native fallback takes over — see `withBotSearchTimeout`. */
+export const DEFAULT_BOT_SEARCH_TIMEOUT_MS = 5000;
+
+/**
+ * Options for the bot's own engine search: the same as everyone else's except
+ * that a chess-api.com call gives up after `botSearchTimeoutMs` (never longer
+ * than the general `chessApiTimeoutMs`). The student is watching a live "your
+ * move" round trip, and the fallback (native Stockfish) answers in a few
+ * seconds — waiting the general 15 s first, when a stalled tunnel never answers
+ * at all, cost a bot 19 s of a 29 s turn. Background jobs and analysis keep the
+ * longer timeout: nobody is waiting on them.
+ */
+export function withBotSearchTimeout(options: ResolveEngineBackendOptions, botSearchTimeoutMs: number): ResolveEngineBackendOptions {
+  return { ...options, chessApiTimeoutMs: Math.min(options.chessApiTimeoutMs, botSearchTimeoutMs) };
+}
+
 /**
  * Reads the user's engineMode and returns the right EngineBackend, wrapped
  * in CachingEngineBackend so every caller gets caching uniformly, and — when
@@ -57,10 +74,17 @@ export async function resolveEngineBackend(options: ResolveEngineBackendOptions,
  * depth/multiPv than official analysis, so sharing that FEN-only cache would
  * be incorrect. The source priority remains identical: Lichess first,
  * selected user method next, then the configured fallback/supplement stages.
+ * `supplementBreadth: false` leaves out the light-engine top-up: the bot asks
+ * for at most five lines and checks its mistakes separately, so waiting on a
+ * browser tab to widen a short result is all cost.
  */
-export async function resolveRawEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
+export async function resolveRawEngineBackend(
+  options: ResolveEngineBackendOptions,
+  userId: string,
+  { supplementBreadth = true }: { supplementBreadth?: boolean } = {}
+): Promise<EngineBackend> {
   const { raw, mode } = await resolveRawBackendForUser(options, userId);
-  return buildEnginePipeline(options, userId, raw, mode, { cache: false, supplementBreadth: true });
+  return buildEnginePipeline(options, userId, raw, mode, { cache: false, supplementBreadth });
 }
 
 interface EnginePipelineOptions {

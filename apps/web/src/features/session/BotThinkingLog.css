@@ -1,0 +1,126 @@
+/* Left-aligned, scrollable: the panel this sits in (BotStatusPanel.css's
+ * --panel variant) centers everything else, which would make a timeline
+ * unreadable. */
+.bot-thinking-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 320px;
+  overflow-y: auto;
+  text-align: left;
+  font-size: 12.5px;
+}
+
+.bot-thinking-log__empty {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.bot-thinking-log__move {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.bot-thinking-log__move[data-status='thinking'] {
+  border-color: var(--color-primary);
+}
+
+.bot-thinking-log__move[data-status='failed'] {
+  border-color: var(--color-danger);
+}
+
+.bot-thinking-log__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.bot-thinking-log__heading {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.bot-thinking-log__picked {
+  font-weight: 600;
+}
+
+.bot-thinking-log__steps {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bot-thinking-log__step {
+  display: grid;
+  grid-template-columns: 62px 1fr auto;
+  gap: 2px 8px;
+  align-items: baseline;
+  color: var(--color-text-secondary);
+}
+
+.bot-thinking-log__offset,
+.bot-thinking-log__duration {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.bot-thinking-log__duration {
+  text-align: right;
+}
+
+.bot-thinking-log__detail {
+  grid-column: 2 / -1;
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+}
+
+.bot-thinking-log__step[data-status='running'] .bot-thinking-log__label,
+.bot-thinking-log__step[data-status='running'] .bot-thinking-log__duration {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.bot-thinking-log__step[data-status='failed'] .bot-thinking-log__label,
+.bot-thinking-log__step[data-status='failed'] .bot-thinking-log__detail {
+  color: var(--color-danger);
+}
+
+.bot-thinking-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  text-align: left;
+}
+
+.bot-thinking-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.bot-thinking-panel__toggle,
+.bot-thinking-panel__copy {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.bot-thinking-panel__copy {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
