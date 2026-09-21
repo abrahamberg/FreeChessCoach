@@ -25,7 +25,14 @@ export function registerUsersRoutes(app: FastifyInstance, db: Kysely<Database>):
 
   app.delete('/api/users/me', async (request, reply) => {
     const user = await userProfileService.getOrCreate(db, request.user);
-    await deleteAccount(db, user.id);
-    return reply.code(204).send();
+    request.log.info({ userId: user.id }, 'Deleting account');
+    try {
+      await deleteAccount(db, user.id);
+      request.log.info({ userId: user.id }, 'Account deleted');
+      return reply.code(204).send();
+    } catch (err) {
+      request.log.error({ userId: user.id, err }, 'Failed to delete account');
+      throw err;
+    }
   });
 }

@@ -1,15 +1,7 @@
-import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
+import type { EngineEval, EngineSource, PositionAnalysis } from '@freechesscoach/shared';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';
 
-/**
- * Which tier actually served a position: the pre-built Lichess community
- * eval index (`lichessIndex`), this server's own engine — native process or
- * chess-api.com, both trusted/run server-side (`internalEngine`) — or a
- * user's browser-tunnel engine (`externalEngine`). Mirrors the
- * `isExternalSource`/`allowExternal` split already used by
- * `CachingEngineBackend`, just surfaced for analytics rather than trust.
- */
-export type EngineSource = 'lichessIndex' | 'internalEngine' | 'externalEngine';
+export type { EngineSource };
 
 /**
  * One line per successful analyzePosition/analyzeGame call, logging how many
@@ -52,6 +44,33 @@ export class EngineSourceLoggingBackend implements EngineBackend {
   async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
     const result = await this.inner.analyzeGame(fens, opts);
     logEngineSourceUsage(this.userId, { [this.source]: fens.length });
+    return result;
+  }
+}
+
+/** Wraps a fully-built pipeline for callers that need to know which tier
+ * actually served each result (the settings engine-ping test — see
+ * resolve-engine-backend.ts's ResolveEngineBackendCallOptions). Distinct
+ * from EngineSourceLoggingBackend, which labels the selected-engine tier
+ * inside the pipeline for log analytics: this one wraps the whole thing and
+ * reports through a callback instead. For analyzeGame the single source
+ * value describes the whole batch. */
+export class EngineSourceObservingBackend implements EngineBackend {
+  constructor(
+    private readonly inner: EngineBackend,
+    private readonly source: EngineSource,
+    private readonly onEngineSource: (source: EngineSource) => void
+  ) {}
+
+  async analyzePosition(fen: string, opts?: EngineBackendAnalyzeOptions): Promise<PositionAnalysis> {
+    const result = await this.inner.analyzePosition(fen, opts);
+    this.onEngineSource(this.source);
+    return result;
+  }
+
+  async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
+    const result = await this.inner.analyzeGame(fens, opts);
+    this.onEngineSource(this.source);
     return result;
   }
 }

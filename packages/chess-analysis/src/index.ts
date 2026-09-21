@@ -33,6 +33,7 @@ export * from './game-accuracy.js';
 export * from './game-outcome.js';
 export * from './game-tactic-motifs.js';
 export * from './inspect-moves.js';
+export * from './is-legal-fen.js';
 export * from './move-ref.js';
 export * from './move-metrics.js';
 export * from './checks-captures-threats.js';

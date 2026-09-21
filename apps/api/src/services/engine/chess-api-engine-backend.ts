@@ -2,7 +2,7 @@ import { computePositionFeatures, pvUciToSan } from '@freechesscoach/chess-analy
 import { ENGINE_DEFAULT_DEPTH, type EngineEval, type PositionAnalysis } from '@freechesscoach/shared';
 import { ENGINE_MULTI_PV } from '../engine-client.js';
 import { EngineUnavailableError } from '../../lib/errors.js';
-import { toLeanEval } from './caching-engine-backend.js';
+import { toLeanEval } from './engine-conversions.js';
 import {
   ChessApiError,
   ChessApiMalformedResponseError,

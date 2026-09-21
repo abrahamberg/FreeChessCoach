@@ -1,7 +1,6 @@
 import type { Task } from 'graphile-worker';
 import type { Kysely } from 'kysely';
 import * as gamesRepo from '../db/repositories/games.js';
-import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { resolveEngineBackend, type ResolveEngineBackendOptions } from '../services/engine/resolve-engine-backend.js';
 import { runDeepenAnalysisJob, type DeepenAnalysisJobDependencies } from '../services/deepen-analysis.js';
@@ -24,13 +23,10 @@ export function createDeepenAnalysisTask(options: DeepenAnalysisTaskOptions): Ta
     const { gameId } = payload as DeepenAnalysisJobPayload;
     const game = await gamesRepo.findById(options.db, gameId);
     if (!game) throw new Error(`Game ${gameId} not found`);
-    const user = await usersRepo.findById(options.db, game.userId);
-    if (!user) throw new Error(`User ${game.userId} not found`);
 
     const backend = await resolveEngineBackend(options.engineBackendOptions, game.userId);
     const deps: DeepenAnalysisJobDependencies = {
-      analyzePosition: (fen) => backend.analyzePosition(fen),
-      isExternalSource: user.engineMode === 'browser'
+      analyzePosition: (fen) => backend.analyzePosition(fen)
     };
     await runDeepenAnalysisJob(options.db, deps, gameId);
   };

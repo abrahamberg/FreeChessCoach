@@ -1,0 +1,76 @@
+.engine-ping {
+  margin-top: 12px;
+  border-top: 1px solid var(--color-surface-subtle);
+  padding-top: 10px;
+}
+
+.engine-ping__summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.engine-ping__hint {
+  margin: 8px 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.engine-ping__row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.engine-ping__fen {
+  flex: 1;
+  min-width: 0;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.engine-ping__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.engine-ping__spinner {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-surface-subtle);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .engine-ping__spinner {
+    animation: engine-ping-spin 700ms linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .engine-ping__spinner {
+    border-color: var(--color-primary);
+  }
+}
+
+@keyframes engine-ping-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.engine-ping__result {
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+.engine-ping__error {
+  margin: 8px 0 0;
+  color: var(--color-danger, #c0392b);
+  font-size: 14px;
+}

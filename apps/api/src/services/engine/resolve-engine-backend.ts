@@ -4,7 +4,6 @@ import * as usersRepo from '../../db/repositories/users.js';
 import type { Database } from '../../db/schema.js';
 import { EngineUnavailableError } from '../../lib/errors.js';
 import { BrowserTunnelEngineBackend } from './browser-tunnel-engine-backend.js';
-import { CachingEngineBackend } from './caching-engine-backend.js';
 import { ChessApiEngineBackend } from './chess-api-engine-backend.js';
 import type { EngineBackend } from './engine-backend.js';
 import { EngineSourceLoggingBackend, logEngineSourceUsage, type EngineSource } from './engine-source-usage.js';
@@ -14,6 +13,7 @@ import { LichessEvalEngineBackend } from './lichess-eval-engine-backend.js';
 import type { LichessEvalReader } from './lichess-eval-index.js';
 import { LiteSupplementedEngineBackend } from './lite-supplemented-engine-backend.js';
 import { NativeEngineBackend } from './native-engine-backend.js';
+import { EngineSourceObservingBackend } from './engine-source-usage.js';
 import { createTunnelFetch } from './tunnel-fetch.js';
 
 export interface ResolveEngineBackendOptions {
@@ -52,31 +52,44 @@ export function withBotSearchTimeout(options: ResolveEngineBackendOptions, botSe
   return { ...options, chessApiTimeoutMs: Math.min(options.chessApiTimeoutMs, botSearchTimeoutMs) };
 }
 
+/** Per-call options for resolveEngineBackend (as opposed to the per-process
+ * ResolveEngineBackendOptions). */
+export interface ResolveEngineBackendCallOptions {
+  /** Settings engine-ping test only: observes which pipeline tier actually
+   * served the call — Lichess bin vs the selected engine. Fired exactly once
+   * per successful analyzePosition/analyzeGame, after the result exists (a
+   * failed call fires nothing). resolveEngineBackend is a single-position
+   * API, so the value is never ambiguous; analyzeGame callers passing this
+   * get one tier for the whole batch. */
+  onEngineSource?: (source: EngineSource) => void;
+}
+
 /**
  * Reads the user's engineMode and returns the right EngineBackend, wrapped
- * in CachingEngineBackend so every caller gets caching uniformly, and — when
- * configured — wrapped again in LichessEvalEngineBackend so a position the
- * Lichess community has already evaluated is served from the read-only
- * index instead of ever reaching the raw engine or position_evaluations.
- * Applied uniformly across every engineMode, ahead of the mode-specific
- * backend, so every user benefits regardless of their engine setting.
- * Replaces bootstrap-time wiring — call this fresh per session/job/request
+ * in LichessEvalEngineBackend so a position the Lichess community has already
+ * evaluated is served from the read-only index instead of ever reaching the
+ * raw engine. Applied uniformly across every engineMode, ahead of the
+ * mode-specific backend, so every user benefits regardless of their engine
+ * setting. Replaces bootstrap-time wiring — call this fresh per session/job/request
  * rather than once at process start (design spec §3).
  */
-export async function resolveEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
+export async function resolveEngineBackend(
+  options: ResolveEngineBackendOptions,
+  userId: string,
+  call: ResolveEngineBackendCallOptions = {}
+): Promise<EngineBackend> {
   const { raw, mode } = await resolveRawBackendForUser(options, userId);
-  return buildEnginePipeline(options, userId, raw, mode, { cache: true, supplementBreadth: true });
+  return buildEnginePipeline(options, userId, raw, mode, {
+    supplementBreadth: true,
+    onEngineSource: call.onEngineSource
+  });
 }
 
 /**
  * Resolves the same engine pipeline as resolveEngineBackend, but without the
- * standard position_evaluations cache. Bot searches request a different
- * depth/multiPv than official analysis, so sharing that FEN-only cache would
- * be incorrect. The source priority remains identical: Lichess first,
- * selected user method next, then the configured fallback/supplement stages.
- * `supplementBreadth: false` leaves out the light-engine top-up: the bot asks
- * for at most five lines and checks its mistakes separately, so waiting on a
- * browser tab to widen a short result is all cost.
+ * light-engine breadth supplement. Bot searches request a different
+ * depth/multiPv than official analysis. The source priority remains identical:
+ * Lichess first, selected user method next, then the configured fallback.
  */
 export async function resolveRawEngineBackend(
   options: ResolveEngineBackendOptions,
@@ -84,12 +97,14 @@ export async function resolveRawEngineBackend(
   { supplementBreadth = true }: { supplementBreadth?: boolean } = {}
 ): Promise<EngineBackend> {
   const { raw, mode } = await resolveRawBackendForUser(options, userId);
-  return buildEnginePipeline(options, userId, raw, mode, { cache: false, supplementBreadth });
+  return buildEnginePipeline(options, userId, raw, mode, { supplementBreadth });
 }
 
 interface EnginePipelineOptions {
-  cache: boolean;
   supplementBreadth: boolean;
+  /** See ResolveEngineBackendCallOptions — threaded through so the observing
+   * decorators below can report which tier served the result. */
+  onEngineSource?: (source: EngineSource) => void;
 }
 
 /**
@@ -99,7 +114,7 @@ interface EnginePipelineOptions {
  *   Lichess index -> selected user method -> fallback/supplement stages
  *
  * Lichess is the outermost decorator intentionally. A successful lookup
- * returns immediately and cannot invoke a selected engine or browser-lite.
+ * returns immediately and cannot invoke the selected engine or browser-lite.
  * Browser-lite is inside the Lichess decorator, so it can only widen a result
  * after the selected method was actually needed and returned too few lines.
  */
@@ -116,7 +131,6 @@ function buildEnginePipeline(
     : 'internalEngine';
 
   let backend = selectedBackend;
-  if (pipeline.cache) backend = new CachingEngineBackend(options.db, backend, { isExternalSource });
   if (pipeline.supplementBreadth) {
     backend = new LiteSupplementedEngineBackend(backend, options.tunnelTransport, userId, {
       timeoutMs: options.tunnelTimeoutMs,
@@ -124,10 +138,18 @@ function buildEnginePipeline(
     });
   }
 
-  if (!options.lichessEvalIndex) return new EngineSourceLoggingBackend(backend, userId, fallbackSource);
+  if (!options.lichessEvalIndex) {
+    const logged = new EngineSourceLoggingBackend(backend, userId, fallbackSource);
+    return pipeline.onEngineSource
+      ? new EngineSourceObservingBackend(logged, fallbackSource, pipeline.onEngineSource)
+      : logged;
+  }
 
   return new LichessEvalEngineBackend(options.lichessEvalIndex, backend, {
-    onLookup: ({ hits, misses }) => logEngineSourceUsage(userId, { lichessIndex: hits, [fallbackSource]: misses })
+    onLookup: ({ hits, misses }) => {
+      logEngineSourceUsage(userId, { lichessIndex: hits, [fallbackSource]: misses });
+      pipeline.onEngineSource?.(hits > 0 ? 'lichessIndex' : fallbackSource);
+    }
   });
 }
 
@@ -175,8 +197,7 @@ async function resolveRawBackendForUser(
 
 /**
  * Game review uses the same source-order contract as every other caller:
- * cache policy is added around the user's selected method, Lichess remains
- * first, reliable fallback remains next, and browser-lite fills a candidate
+ * Lichess first, reliable fallback next, and browser-lite fills a candidate
  * shortfall when more paths are needed.
  *
  * Review goes through `analyzeGame`, which the lite decorator used to
@@ -187,18 +208,11 @@ async function resolveRawBackendForUser(
  * whatever line count the community stored, so on many positions there was
  * nothing to verify against.
  *
- * The decorator sits **outside** the cache on purpose. Everything inside it
- * still reads and writes `position_evaluations` exactly as before, and the
- * widened lines never get written back — they are not the trusted official
- * evaluation, they live for the length of the job that asked for them, and
- * that job stores what it concluded from them (the verified claims) rather
- * than the lines themselves.
- *
  * This resolver is called by the background analysis worker. The lite pass
  * is bounded per pipeline instance, and a user with no tab connected simply
  * gets the selected/fallback result unchanged.
  */
 export async function resolveReviewEngineBackend(options: ResolveEngineBackendOptions, userId: string): Promise<EngineBackend> {
   const { raw, mode } = await resolveRawBackendForUser(options, userId);
-  return buildEnginePipeline(options, userId, raw, mode, { cache: true, supplementBreadth: true });
+  return buildEnginePipeline(options, userId, raw, mode, { supplementBreadth: true });
 }

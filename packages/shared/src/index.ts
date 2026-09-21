@@ -9,6 +9,7 @@ export * from './coaching-candidate.js';
 export * from './coaching-plan.js';
 export * from './dashboard.js';
 export * from './diagnosis/index.js';
+export * from './engine-ping.js';
 export * from './finding.js';
 export * from './game.js';
 export * from './game-report.js';

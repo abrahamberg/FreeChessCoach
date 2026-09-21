@@ -6,6 +6,7 @@ import * as analysesRepo from '../db/repositories/analyses.js';
 import type { Database } from '../db/schema.js';
 import { NotFoundError } from '../lib/errors.js';
 import * as userProfileService from '../services/user-profile.js';
+import * as usersRepo from '../db/repositories/users.js';
 
 export function registerAnalysesRoutes(
   app: FastifyInstance,
@@ -48,6 +49,11 @@ export function registerAnalysesRoutes(
 }
 
 interface ActiveAnalysisFrame {
+  /** The account's *current* engineMode — re-read from the users row on
+   * every poll tick, not baked in at connect time: the stream outlives
+   * settings changes (PATCH /api/users/me from this or another tab), and a
+   * stale value here is what the topbar engine pill displays (see
+   * useActiveAnalyses.ts / useEngineActivityIndicator.ts). */
   engineMode: EngineMode;
   analyses: Array<{
     analysisId: string;
@@ -69,7 +75,10 @@ function positionCountOf(pgn: string): number {
   }
 }
 
-function streamActiveAnalyses(
+/** `engineMode` seeds the first frame only — every tick re-reads the user
+ * row so a settings change reaches an already-open stream (see the
+ * ActiveAnalysisFrame comment). Exported for tests. */
+export function streamActiveAnalyses(
   db: Kysely<Database>,
   userId: string,
   engineMode: EngineMode,
@@ -90,8 +99,12 @@ function streamActiveAnalyses(
 
     const tick = async () => {
       if (stopped) return;
-      const rows = await analysesRepo.findActiveForUser(db, userId);
-      if (stopped) return; // client disconnected while the query above was in flight
+      const [rows, user] = await Promise.all([
+        analysesRepo.findActiveForUser(db, userId),
+        usersRepo.findById(db, userId)
+      ]);
+      if (stopped) return; // client disconnected while the queries above were in flight
+      if (user) engineMode = user.engineMode;
       const frame: ActiveAnalysisFrame = {
         engineMode,
         analyses: rows.map((row) => ({

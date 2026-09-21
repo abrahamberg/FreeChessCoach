@@ -1,6 +1,6 @@
 import { computePositionFeatures, pvUciToSan } from '@freechesscoach/chess-analysis';
 import type { EngineEval, PositionAnalysis, PositionAnalysisLine } from '@freechesscoach/shared';
-import { toLeanEval } from './caching-engine-backend.js';
+import { toLeanEval } from './engine-conversions.js';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';
 import type { LichessEvalLookupResult, LichessEvalReader } from './lichess-eval-index.js';
 

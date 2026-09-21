@@ -13,6 +13,7 @@ import { registerGamesRoutes } from './routes/games.js';
 import { registerLichessRoutes } from './routes/lichess.js';
 import { registerLlmSetupRoutes } from './routes/llm-setup.js';
 import { registerPositionAnalysisRoutes } from './routes/positions.js';
+import { registerEnginePingRoutes } from './routes/engine-ping.js';
 import { registerPuzzleAssignmentsRoutes } from './routes/puzzle-assignments.js';
 import { registerPuzzleSessionsRoutes } from './routes/puzzle-sessions.js';
 import { registerSessionsRoutes } from './routes/sessions.js';
@@ -112,6 +113,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         thinkingLog: options.botThinkingLog
       });
       registerPositionAnalysisRoutes(app, options.db, options.engineBackendOptions);
+      registerEnginePingRoutes(app, options.db, options.engineBackendOptions);
     }
     // No engine backend needed — a puzzle session's tool set has no
     // get_engine_analysis-equivalent (the coach reasons from the puzzle's

@@ -19,6 +19,7 @@ import { AiSetupHelp } from './AiSetupHelp.js';
 import { LlmSetupForm } from './LlmSetupForm.js';
 import { CoachPersonaSelect } from './CoachPersonaSelect.js';
 import { EngineModeSelect } from './EngineModeSelect.js';
+import { EnginePingTest } from './EnginePingTest.js';
 import { NicknameForm } from './NicknameForm.js';
 import { PlatformUsernameForm } from './PlatformUsernameForm.js';
 import { TtsSection, type TtsProfilePatch } from './TtsSection.js';
@@ -221,6 +222,7 @@ export function SettingsPage(): ReactNode {
       <section id="settings-engine" aria-label="Engine" className="card">
         <h2>Engine</h2>
         <EngineModeSelect value={profile.engineMode} onChange={(mode) => engineModeMutation.mutate(mode)} />
+        <EnginePingTest engineMode={profile.engineMode} />
       </section>
 
       <section id="settings-api-keys" aria-label="API keys" className="card">

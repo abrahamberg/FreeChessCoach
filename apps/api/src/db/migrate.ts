@@ -6,11 +6,9 @@ import * as sessionAbandonedStatus from './migrations/0004_session_abandoned_sta
 import * as sessionDebugSnapshot from './migrations/0005_session_debug_snapshot.js';
 import * as episodeContext from './migrations/0006_episode_context.js';
 import * as showEngineAnalysis from './migrations/0007_show_engine_analysis.js';
-import * as positionEvaluations from './migrations/0008_position_evaluations.js';
 import * as removeShowEngineAnalysis from './migrations/0009_remove_show_engine_analysis.js';
 import * as playMode from './migrations/0010_play_mode.js';
 import * as engineMode from './migrations/0011_engine_mode.js';
-import * as positionEvaluationsTrust from './migrations/0012_position_evaluations_trust.js';
 import * as subjectPly from './migrations/0013_subject_ply.js';
 import * as coachPersona from './migrations/0014_coach_persona.js';
 import * as bookReport from './migrations/0015_book_report.js';
@@ -53,11 +51,9 @@ const provider: MigrationProvider = {
       '0005_session_debug_snapshot': sessionDebugSnapshot,
       '0006_episode_context': episodeContext,
       '0007_show_engine_analysis': showEngineAnalysis,
-      '0008_position_evaluations': positionEvaluations,
       '0009_remove_show_engine_analysis': removeShowEngineAnalysis,
       '0010_play_mode': playMode,
       '0011_engine_mode': engineMode,
-      '0012_position_evaluations_trust': positionEvaluationsTrust,
       '0013_subject_ply': subjectPly,
       '0014_coach_persona': coachPersona,
       '0015_book_report': bookReport,
