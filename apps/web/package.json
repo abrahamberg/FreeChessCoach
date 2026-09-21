@@ -8,7 +8,9 @@
     "dev": "vite",
     "prebuild": "node scripts/copy-stockfish-assets.mjs",
     "build": "tsc -b && vite build",
-    "test": "vitest run"
+    "test": "vitest run --reporter=/home/daniel/projects/chess-ai-coach/fail-only-reporter.ts",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc -b"
   },
   "dependencies": {
     "@freechesscoach/chess-analysis": "0.0.1",

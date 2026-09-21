@@ -1,257 +1,92 @@
 # AGENTS.md — Working in this repository
 
-Instructions for AI coding agents (and humans). Follow these exactly; when a rule
-here conflicts with your general habits, this file wins.
+Instructions for AI coding agents. Follow these exactly; when a rule here conflicts with your general habits, this file wins.
 
-## What this project is
+## Project Overview
+- **Core**: A personal AI chess coach. Users import games; a Stockfish+LLM pipeline analyzes them, and a tool-calling agent guides the user through the game.
+- **Current Status**: Phases 0–9 are complete.
 
-A personal AI chess coach: users import their games, a Stockfish+LLM pipeline
-analyzes them, and a tool-calling coach agent walks the user through the game
-Socratically while tracking their progress over time. The initial build
-(Phases 0–9) is complete and merged — read before coding:
-
-- `docs/architecture.md` — how it fits together (layout, DB, agent, K8s). Always relevant.
-- `docs/plan.md` — the implementation plan for whatever is being built next.
-  Currently empty: the last plan (import limits, stat archive, guided import;
-  Phases 67–72) shipped and is described in `docs/architecture.md`. When it
-  holds a plan, open it, find the one Phase/Task being worked on, and read
-  only that task's **Read:** files.
-- `docs/diagnose.md` — the spec behind the *shipped* programmatic coach
-  diagnostics (code taxonomy, opportunity/episode counting, confidence,
-  data-quality gates, focus selection). Long; never open it cold or read it
-  end-to-end — only the one section a task explicitly points you at.
-- `docs/algorith.md` — the spec behind the *shipped* Game Report (accuracy,
-  scores, classification, estimated rating, opening book). Same rule: only
-  open the one subsection a task's "Read:" line names, never cold.
-- `docs/marketing-demo.md` — the public marketing pages (`/tour`, `/guide`,
-  `/keys`, `/openai-key`), the seeded demo players, how the screenshots
-  are captured, and the offline live demo at `/demo` (`apps/web/src/demo/`, a
-  fake `fetch` over recorded fixtures with a scripted coach). Read it before
-  touching `apps/web/public/*.html`, `apps/web/src/demo/`, `seed-demo.ts`,
-  `scripts/capture-marketing-shots.mjs` or `scripts/record-demo-fixtures.mjs`;
-  irrelevant otherwise.
-- `docs/tactics-rework.md` — why Game Review's tactic sentences misfired, what
-  was measured, and the layered rebuild that shipped. Read it before touching
-  `tactic-detectors/`, `classify-tactic-motif.ts`, the `verify-tactic-*`
-  files, `tactic-reason-text.ts`, `tactic-card-order.ts`,
-  `played-tactic-alternative.ts`, `tactic-allowed.ts`, or the
-  tactic-prevention path; irrelevant to everything else. §9 is the second
-  review pass (which sentence leads, what a move handed over, an equally good
-  move of the player's own, the vocabulary for a trade) and records one gate
-  that was tried and reverted — read it before re-trying that one. Its §1 cards are pinned as fixtures in
-  `packages/chess-analysis/src/tactic-review-cases.ts`,
-  `tactic-precision.test.ts` holds the false-positive ceilings and
-  `tactic-detectors/lichess-puzzle-validation.test.ts` the recall floors — a
-  detector change is expected to move all three, the ceilings only go down and
-  the floors only go up. `tactic-detectors/README.md` is the how-to for adding
-  a motif and is the shorter read when that is all you need.
-
+## Key Documentation (Read only as needed)
+- `docs/architecture.md`: System layout, DB, agent, K8s. (Always relevant for high-level context).
+- `docs/plan.md`: The implementation plan for the current work. Only read the specific Phase/Task being worked on.
+- `docs/diagnose.md`: Spec for programmatic coach diagnostics. Read only the specific section requested by a task.
+- `docs/algorith.md`: Spec for the Game Report. Read only the relevant subsection requested by a task.
+- `docs/marketing-demo.md`: Public marketing pages, demo data, and capture scripts. Read before touching `apps/web/public/` or demo scripts.
+- `docs/tactics-rework.md`: Tactic detection rebuild details. Read before touching `tactic-detectors/` or related logic.
 
 ## Commands
+- `npm run verify`: Full lint + typecheck + test (run before claiming any task done).
+- `npm run verify:changed`: **Fast path** — only lint/typecheck/test packages with git changes.
+- `npm run test:changed`: Only test changed packages.
+- `npm run lint:changed`: Only lint changed packages.
+- `npm run typecheck:changed`: Only typecheck changed packages.
+- `npm run dev`: Full local stack (Docker).
+- `npm run dev -w apps/api`: API only.
+- `npm run dev:worker -w apps/api`: Worker only.
+- `npm run dev -w apps/web`: Vite (web) only.
+- `npm run dev -w services/engine`: Stockfish HTTP service.
+- `npm run migrate -w apps/api`: Run DB migrations.
+- `npm run build:images`: Build Docker images.
+- `npm run build-book -w @freechesscoach/chess-analysis`: Regenerate opening-book index.
 
-- `npm run lint && npm run typecheck && npm test` — root-level, covers every
-  workspace; run before claiming any task done.
-- `npm run dev` — full local stack via docker compose (postgres, engine, api,
-  worker, web-dev); `npm run dev:down` to stop.
-- Single-workspace dev servers (bypass docker): `npm run dev -w apps/api`
-  (API), `npm run dev:worker -w apps/api` (worker), `npm run dev -w apps/web`
-  (Vite), `npm run dev -w services/engine` (Stockfish HTTP service).
-- `npm run migrate -w apps/api` — run DB migrations directly.
-- `npm run build:images` — build all Docker images (`scripts/build-images.sh`).
-- `npm run build-book -w @freechesscoach/chess-analysis` — regenerate the checked-in
-  opening-book index only after refreshing `packages/chess-analysis/data/openings.tsv`.
+## Per-package commands (use when working in a single package)
+- `npm run test -w <pkg>`: Run tests for one package.
+- `npm run lint -w <pkg>`: Lint one package.
+- `npm run typecheck -w <pkg>`: Typecheck one package.
+  - Package names: `@freechesscoach/chess-analysis`, `@freechesscoach/shared`, `@freechesscoach/prompts`, `@freechesscoach/api`, `@freechesscoach/web`, `@freechesscoach/engine`
 
-## Directory map
+## Directory Map
+- `apps/api`: Fastify 5 API + worker. Routes → Services → DB Repositories. `llm/` owns LLM provider SDKs.
+- `apps/web`: React 19 + Vite SPA. Feature-folder pattern (`features/`).
+- `packages/shared`: Zod schemas + inferred types (Single source of truth).
+- `packages/chess-analysis`: Pure chess logic (PGN parsing, etc.). No I/O.
+- `packages/prompts`: LLM prompt templates. `docs/prompts.md` is auto-generated.
+- `services/engine`: Stockfish/UCI HTTP microservice.
+- `deploy/helm`: K8s Helm charts.
 
-- `apps/api` — Fastify 5 API + worker: routes (thin adapters) → services
-  (business logic, incl. the coach agent) → db/repositories (all SQL,
-  Kysely). `llm/` is the only place allowed to call LLM provider SDKs.
-- `apps/web` — React 19 + Vite SPA, feature-folder pattern
-  (`features/{board,chat,progress,games,import,session,settings}`).
-- `packages/shared` — zod schemas + inferred types; single source of truth
-  for API/DB shapes.
-- `packages/chess-analysis` — pure chess logic (PGN parsing, move
-  classification, position features); no I/O.
-- `packages/prompts` — LLM prompt templates/builders, the single source of
-  truth for prompt text. `docs/prompts.md` is *generated* from it (`npm run
-  docs:prompts`) — never hand-edit that file.
-- `services/engine` — standalone Stockfish/UCI HTTP microservice.
-- `deploy/helm` — Kubernetes Helm chart for deploy.
-- `docs/` — see the reading list above.
+## Golden Rules
+1. **Small named functions**: Extract `if/else` chains into named functions with early returns.
+2. **One responsibility per file**: Target < 200 lines. Split files at ~250 lines.
+3. **Strict Layering**: `route/tool → service → repository → DB`. SQL only in `db/repositories/`.
+4. **Zod Schemas**: Types must come from `packages/shared`. Use `z.infer<>`.
+5. **Pure Logic**: `packages/chess-analysis` contains pure logic (no I/O).
+6. **LLM Isolation**: Only `apps/api/src/llm/` may import `ai` or `@ai-sdk/*`.
+7. **React**: Components/hooks are small. Data fetching in hooks (TanStack Query).
+8. **Agent Runtime**: Cache-stable prompts, append-only messages, bounded context, tool budgets.
+9. **Prompt Convention**: `packages/prompts/src/` uses `buildXPrompt`/`buildXMessages`. Use `[...].filter(Boolean).join('\n\n')`.
 
-## Golden rules
+## TypeScript Rules
+- `strict: true`. No `any`, no non-null `!` (except tests). No `enum`.
+- Errors: Throw typed errors from `apps/api/src/lib/errors.ts`.
+- Async: No floating promises.
+- Naming: `kebab-case.ts` files, verb functions, predicate booleans.
 
-1. **Small named functions over nested conditionals.** If you are writing an
-   `if/else` chain or nesting deeper than 2 levels, extract each branch's meaning
-   into a named function and use early returns. The name documents the intent.
-
-   ```ts
-   // BAD
-   if (analysis.status === 'ready') { if (session) { ... } else { ... } } else { ... }
-
-   // GOOD
-   if (!isAnalysisReady(analysis)) return respondAnalysisPending(reply, analysis);
-   if (hasActiveSession(game)) return resumeSession(reply, game);
-   return createSession(reply, game, user);
-   ```
-
-2. **One responsibility per file.** Target < 200 lines. A file named
-   `game-import.ts` that also enqueues analysis jobs is wrong. When a file
-   grows past ~250 lines, split it as part of your change.
-
-3. **Layering is strict.** `route/tool → service → repository → DB`.
-   - SQL (kysely) exists **only** in `apps/api/src/db/repositories/`.
-   - Services own invariants (max-3-active focus areas, enum checks, dedup).
-   - Routes and agent tools are thin adapters: parse/validate → call service →
-     shape response. If you're writing a query anywhere else, stop and move it.
-
-4. **Types come from `packages/shared` zod schemas.** Never hand-write an
-   interface that duplicates a schema; use `z.infer<>`. Every API body and jsonb
-   column has a schema there. New data shape → new schema first.
-
-5. **Pure logic goes in `packages/chess-analysis`** (no I/O, no imports from
-   apps). If a function could be tested with plain inputs/outputs, it belongs
-   there or in a `lib/` folder — not inline in a service.
-
-6. **Nothing outside `apps/api/src/llm/` may import `ai` or `@ai-sdk/*`.** That
-   directory owns the whole provider surface: `gateway.ts` (BYOK resolution,
-   tier→model mapping), `model-options.ts` (reasoning
-   effort, OpenAI service tier), `chat.ts`/`text.ts` (the only `streamText`/
-   `generateText`/`generateObject` calls), `messages.ts`, `tools.ts`,
-   `stream-response.ts`, `usage.ts`. Services take app-owned types
-   (`ChatMessage`, `TurnUsage`, `CoachTurnStream`) and never see SDK ones.
-   `apps/web` gets exactly one exception, `hooks/coachStream.ts`, for reading
-   the wire format. Check it:
-
-   ```sh
-   grep -rn "from 'ai'\|@ai-sdk/" apps/api/src packages services --include=*.ts | grep -v "apps/api/src/llm/"
-   ```
-
-   This is what keeps the next SDK major a handful of files instead of thirty.
-   Prompt text lives only in `packages/prompts`. `docs/prompts.md` is
-   generated from it (`npm run docs:prompts`), not hand-maintained —
-   `packages/prompts/scripts/generate-doc.test.ts` fails `npm test` if the
-   checked-in doc drifts from a fresh generation, so run that script after
-   any prompt-text change instead of hand-editing the doc.
-
-7. **React: components + hooks, small.** Presentational components in
-   `components/` take props and render — no fetching. Data fetching lives in
-   hooks (`hooks/`, TanStack Query). Feature folders compose them. A component
-   over ~120 lines gets split. No prop-drilling deeper than 2 levels — restructure
-   or use context.
-
-8. **The coach agent's runtime discipline is code-review material**
-   (architecture §7.4): cache-stable prompt segments, append-only messages,
-   bounded replay context with digest, per-turn tool budgets and loop breakers,
-   and light-tier subagents for anything mechanical. If a tool result would put
-   raw engine lines, JSON rows, or >~120 words of non-conversational data into
-   the coach's context, digest it with a light subagent first. Breaking
-   cache-friendliness is a bug even if the output looks correct.
-
-9. **Prompt files follow one convention** (`packages/prompts/src/`) — this is
-   what keeps a large prompt-text rewrite from turning into copy-paste
-   spaghetti. Every prompt builder file:
-   - Exports one `buildXPrompt`/`buildXMessages` (or `renderX`) function per
-     concern — one file per prompt in the inventory (see docs/prompts.md).
-   - Gives each logical section its own named constant or small function
-     (`coach-system.ts`'s `WHO_YOU_ARE`, `FORMATTING`, `howYouRunTheSession()`,
-     ...) — never inline string-builds a section inside the assembler.
-   - Assembles sections with `[...].filter(Boolean).join('\n\n')` so an
-     optional section (e.g. a persona's voice block, `''` for `general`)
-     drops out cleanly instead of leaving a blank line or a conditional.
-   - Factors any fragment reused by more than one variant into a helper
-     (`coach-persona.ts`'s `voiceGuardrail()`, `BOARD_DISCIPLINE_REMINDER`)
-     instead of copy-pasting it per variant.
-   - Puts data-shaped/dynamic rendering (lists, tables) in `render.ts`-style
-     pure functions, unit-tested directly with edge cases (empty list, etc.)
-     — never built inline with string concatenation in the assembler.
-   - Adds a full-text case to `coach-system.snapshot.test.ts` (or the
-     equivalent for a new prompt builder) so an edit's actual blast radius
-     shows up as a snapshot diff, not just the structural `.toContain`
-     assertions. When two blocks reference each other in the prompt's own
-     prose ("see 'X' above"), add the pair to `coach-system.refs.test.ts` —
-     these can't be compiler-checked (the model reads the prose, not an ID),
-     so a test asserting the referenced text still exists verbatim is the
-     guardrail against a silent rename/reword breaking the reference.
-
-## TypeScript rules
-
-- `strict: true`, no `any` (use `unknown` + narrowing), no non-null `!` except in
-  tests. No `enum` — use union types / `as const` arrays (they align with zod).
-- Errors: services throw typed errors from `apps/api/src/lib/errors.ts`
-  (`NotFoundError`, `ValidationError`, `ForbiddenError`, ...); the
-  Fastify error-mapper plugin converts them to problem+json. Never `catch` and
-  swallow; never return `null` to signal an error.
-- Async: no floating promises (`@typescript-eslint/no-floating-promises` is on).
-- Naming: files `kebab-case.ts`; functions are verbs (`classifyMove`,
-  `buildCoachSystemPrompt`); booleans read as predicates (`isAnalysisReady`);
-  no abbreviations (`analysis`, not `anls`).
-
-## Testing (TDD — non-negotiable)
-
-- Write the failing test first, watch it fail, implement, watch it pass. Every
-  plan task in `docs/plan.md` is structured this way — follow the steps.
-- Vitest everywhere. Unit tests live next to the code (`foo.test.ts`).
-- `packages/chess-analysis` and `packages/prompts`: pure unit tests, exhaustive
-  edge cases (illegal PGN, mate scores, 0-move games).
-- API integration tests: real Postgres via Testcontainers
-  (`apps/api/test/helpers/db.ts` gives a migrated throwaway DB per suite). Mock
-  the LLM gateway and engine HTTP — never call real providers in tests.
-- Agent tests: mock model via AI SDK's `MockLanguageModel`; assert tool-call
-  sequences and that tool wrappers enforce budgets.
-- Run before claiming done: `npm run lint && npm run typecheck && npm test`
-  locally, in full — regardless of what CI itself runs (below).
-- Before adding a new test, check whether an existing catalog/aggregate-level
-  test already covers the assertion (e.g. `packages/shared/src/diagnosis/
-  index.test.ts` checks every family's count, global id uniqueness, and
-  schema validation across the *whole* catalog in one pass — a per-family
-  file re-asserting its own slice of that is redundant, not extra safety).
-  Prefer strengthening a shared/aggregate test over adding a narrower
-  duplicate of it next to each new module.
-
-### CI runs affected tests, not everything, every time
-
-`npm test` runs the whole workspace and is what you run locally and what
-CI's full-suite mode uses — it is not itself the "reduced" set. CI
-(`.github/workflows/ci.yml`) chooses one of two modes:
-
-- **Affected-only** (PR pushes, branch pushes): `vitest run --changed
-  origin/<base-branch>`. Vitest walks the real import graph from every
-  changed file to the test files that could exercise it — exact for
-  anything reached through an import, not a hand-maintained path map, so it
-  doesn't go stale as the tree grows. A push with no affected tests exits 0
-  with nothing run.
-- **Full suite** (pushes to `main`, a nightly cron, or `workflow_dispatch`
-  with `full: true`): plain `npm test`. This is the safety net for the one
-  thing affected-only can't see: a test that reads a fixture at runtime
-  (`readFileSync` on `data/*.csv`/`data/*.tsv`) has no static import edge to
-  that file, so regenerating the fixture alone won't re-trigger it under
-  `--changed`. **If you touch a `data/` fixture without also touching the
-  code that reads it in the same change, run that package's tests locally**
-  (`npm run test -w @freechesscoach/chess-analysis`, etc.) rather than
-  relying on the next push to catch it.
-
-This is also why some deliberately expensive guardrail suites are still
-worth keeping at all: `tactic-precision.test.ts` and
-`tactic-detectors/{registry-coverage,lichess-puzzle-validation}.test.ts`
-(see the tactics-rework pointer above) each scan hundreds of real
-positions and cost 1-4 minutes apiece, but affected-only mode only pays
-that cost on a push that actually touches the tactic-detector import
-graph — everything else skips them for free instead of needing them
-deleted or manually excluded.
+## Testing Strategy
+- **Approach**: Light TDD for critical paths only. Write tests for core logic (pure functions, domain invariants, regression cases).
+- **Scope**: ~120 test files across 6 packages (down from 1000+). Focus on:
+  - `packages/chess-analysis`: Pure chess logic, diagnostics, game report
+  - `packages/shared`: Zod schemas, diagnosis types
+  - `packages/prompts`: Prompt rendering, coach system
+  - `apps/api`: Core services (coach-agent, analysis, game-import, engine-client), DB repos, routes
+  - `apps/web`: Engine cache, coach hooks
+  - `services/engine`: UCI parser, engine pool, analyze
+- **Workflow**:
+  1. Write failing test for new critical behavior
+  2. Make it pass
+  3. Run `npm run verify:changed` before committing
+  4. Full `npm run verify` before PR/merge
+- **Mocking**: Mock LLM (`apps/api/test/helpers/mock-model.ts`) and Engine HTTP in integration tests.
+- **No**: Snapshot tests for UI, granular component tests, per-detector tactic tests (covered by registry + corpus).
+- **Philosophy**: Full TDD generated ~1000 low-value tests that slowed development. We keep TDD only for critical paths (pure logic, regressions). For UI, integrations, and glue code — write tests after or skip; rely on type safety and manual verification.
 
 ## Git
+- Small commits, conventional messages.
+- No secrets or large fixtures (>50 KB).
 
-- Small commits, one logical change each, after each plan task's test passes.
-- Conventional commits: `feat:`, `fix:`, `test:`, `chore:`, `docs:`.
-- Never commit secrets, `.env` files, or generated PGN test fixtures over 50 KB.
-
-## Things you must never do
-
-- Put SQL outside `db/repositories/`.
-- Call an LLM provider SDK outside `llm/`.
-- Show raw engine evaluations in coach-facing UI copy (the coach translates).
-- Hardcode model ids, prices, depths, or budgets — they are env/config.
-- Add a dependency without checking an existing one covers it.
-- Edit stored `session_messages` (append-only; caching depends on it).
-- Let the LLM's output touch the DB without zod validation + closed-enum checks.
+## Never Do
+- SQL outside `db/repositories/`.
+- LLM SDKs outside `llm/`.
+- Raw engine evals in UI.
+- Hardcode model IDs/prices/budgets.
+- Edit `session_messages` (append-only).
+- DB updates without Zod validation.

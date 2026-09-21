@@ -9,7 +9,9 @@
   "types": "./src/index.ts",
   "scripts": {
     "docs:prompts": "tsx scripts/generate-doc.ts",
-    "test": "vitest run"
+    "test": "vitest run --reporter=/home/daniel/projects/chess-ai-coach/fail-only-reporter.ts",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@freechesscoach/chess-analysis": "0.0.1",

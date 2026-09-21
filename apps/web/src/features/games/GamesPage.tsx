@@ -40,6 +40,7 @@ export function GamesPage(): ReactNode {
 
   return (
     <div className="page games-page">
+      <h1 className="visually-hidden">Games</h1>
       <ImportShortcuts quota={importQuotaQuery.data?.daily} />
 
       {recentQuery.isLoading && <p>Loading…</p>}

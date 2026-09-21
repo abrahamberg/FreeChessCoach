@@ -2,6 +2,9 @@ import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 
+// Cap DOM output on query failures to keep agent context window clean
+process.env.DEBUG_PRINT_LIMIT ??= '1000';
+
 // jsdom doesn't implement Element.prototype.scrollTo.
 if (!Element.prototype.scrollTo) {
   Element.prototype.scrollTo = function scrollTo() {

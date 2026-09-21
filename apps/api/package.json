@@ -16,7 +16,9 @@
     "find-lichess-eval-fen": "tsx scripts/find-lichess-eval-fen.mjs",
     "build-puzzle-pool": "tsx scripts/build-puzzle-pool.mjs",
     "select-puzzles": "tsx scripts/select-puzzles.mjs",
-    "test": "vitest run"
+    "test": "vitest run --reporter=/home/daniel/projects/chess-ai-coach/fail-only-reporter.ts",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.29",

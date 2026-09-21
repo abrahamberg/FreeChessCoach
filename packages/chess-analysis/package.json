@@ -12,7 +12,10 @@
   "scripts": {
     "build-book": "tsx scripts/build-opening-book.mjs",
     "build-puzzle-fixture": "tsx scripts/build-lichess-puzzle-fixture.mjs",
-    "test": "vitest run"
+    "test": "vitest run --reporter=/home/daniel/projects/chess-ai-coach/fail-only-reporter.ts",
+    "test:corpus": "RUN_CORPUS_TESTS=true vitest run --reporter=basic src/tactic-precision.test.ts src/tactic-detectors/registry-coverage.test.ts src/tactic-detectors/lichess-puzzle-validation.test.ts",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@freechesscoach/shared": "0.0.1",
