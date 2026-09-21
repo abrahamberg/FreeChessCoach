@@ -32,9 +32,10 @@ const NAV_DESTINATIONS = [
 // than a second nav layer, and turns the brand/primary-nav links into an
 // easy accidental tap away from a live game.
 const BOARD_ROUTE_PREFIXES = ['/session/', '/bot-session/', '/practice/', '/review/'];
+const DEMO_BOARD_ROUTE_PREFIXES = ['/demo/session/', '/demo/bot-session/', '/demo/practice/', '/demo/review/'];
 
 function isBoardRoute(pathname: string): boolean {
-  return BOARD_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  return [...BOARD_ROUTE_PREFIXES, ...DEMO_BOARD_ROUTE_PREFIXES].some((prefix) => pathname.startsWith(prefix));
 }
 
 /** design-improvements.md (redesign, 2026-08-24): a sticky top bar — logo,

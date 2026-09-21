@@ -38,12 +38,13 @@
 /* Collapsed, this is supplementary, not a view in its own right — a tiny
  * ribbon ("Game Report" + chevron, .game-report-summary__header, which
  * already toggles on click) is all that should show, not the headline
- * cards/expand-toggle GameReportSummary also renders while collapsed
+ * cards/expand-toggle/baseline GameReportSummary also renders while collapsed
  * everywhere else it's used (the desktop explorer column has room to
  * spare for those; this bottom sheet is fighting the board for space on a
  * phone). Expanding reveals both again, along with the full body. */
 .board-bottom-bar--report .game-report-summary:not(.game-report-summary--expanded) .game-report-summary__headline,
-.board-bottom-bar--report .game-report-summary:not(.game-report-summary--expanded) .game-report-summary__expand-toggle {
+.board-bottom-bar--report .game-report-summary:not(.game-report-summary--expanded) .game-report-summary__expand-toggle,
+.board-bottom-bar--report .game-report-summary:not(.game-report-summary--expanded) .game-report-summary__baseline {
   display: none;
 }
 
