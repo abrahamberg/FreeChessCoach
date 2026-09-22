@@ -20,7 +20,7 @@ import type { BotMoveTrace } from './bot-move-trace.js';
  * the only engine actually available to a user is a fixed-depth external
  * one (chess-api.com caps at 18 regardless of what's requested), asking for
  * anything shallower than that stopped being a real lever anyway. */
-export const BOT_SEARCH_DEPTH = 18;
+export const BOT_SEARCH_DEPTH = 12;
 
 /** Wall-clock cap on top of BOT_SEARCH_DEPTH and the requested line count — only
  * BrowserTunnelEngineBackend acts on it (EngineBackendAnalyzeOptions'

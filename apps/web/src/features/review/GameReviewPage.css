@@ -176,10 +176,17 @@
  * space below it inside the card; a long one scrolls internally via
  * .move-note-card__body's own overflow-y: auto. The desktop notes column
  * ignores this entirely — it fills the column instead, see
- * .game-review-notes-column below. */
+ * .game-review-notes-column below.
+ *
+ * min-height is the collapsed card's own content height (avatar header +
+ * slot minimum + padding), not 0: on a phone-height viewport (a real
+ * iPhone 15 in Safari is ~664px tall with the address bar up) flex-shrink
+ * otherwise crushes the box below its content, which then overflows and
+ * paints under the board column — the same failure SessionPage.css's
+ * stacked card used to hit, fixed there with the same floor. */
 .game-review-body.mobile .move-note-card {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 10.5rem;
   max-height: none;
 }
 
@@ -195,6 +202,10 @@
  * width) actually needs, rather than stretching to fill whatever's left
  * and centering the board inside that extra room — that stretch-then-center
  * was exactly what read as "dead space" bracketing the board. */
+.game-review-body.mobile .session-board-row {
+  justify-content: center;
+}
+
 .game-review-body.mobile .session-board-column {
   flex: 0 0 auto;
   margin: 0 calc(-1 * var(--space-4));
@@ -212,6 +223,17 @@
  * against both edges rather than inset with margin around it. */
 .game-review-body.mobile .session-board-column .coach-board-frame {
   border-radius: 0;
+  /* Height cap on the board square, same as SessionPage.css's stacked rule
+   * (see it there for the full reasoning): on a phone-height viewport the
+   * square no longer fits under the header + note card + nav strip + report
+   * ribbon, and the note card was the only thing that could give way. The
+   * budget here differs from the session's (no composer reserve, but the
+   * nav strip and the report ribbon take its place). justify-content on
+   * the row centers the eval-bar+board pair whenever the cap leaves the
+   * frame narrower than the row; a no-op at full width. */
+  flex: 0 1 auto;
+  width: min(calc(100% - 2rem), max(8rem, calc(100vh - 27.5rem)));
+  width: min(calc(100% - 2rem), max(8rem, calc(100svh - 27.5rem)));
 }
 
 /* Game Report as a bottom sheet ("a layer on top of the board with a button

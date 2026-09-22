@@ -37,6 +37,21 @@
   min-width: 0;
 }
 
+/* The nav's position label ("move 32 (white), after Ne4") is secondary
+ * info and otherwise forces this header to wrap on a phone — beside the
+ * 70px avatar, inside a user message's own 16px indent (PagedMessageCard),
+ * there isn't room for it at full length below ~400px, and a wrapped
+ * header roughly doubles the collapsed card's height, spilling its slot
+ * past the card's own floor (SessionPage.css's .coach-card min-height) and
+ * back over the board. Ellipsize instead — the full text is still one tap
+ * away in the expanded card, and the desktop explorer column (no
+ * .coach-card__header wrapper) keeps the label at full length. */
+.coach-card__header .move-explorer__position {
+  max-width: 10ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Small and inline, at the head of the card's own content — not a
  * full-height column beside it. Works regardless of which avatar component
  * (CoachAvatar/BotAvatar/UserAvatar) is passed in: all three are plain
@@ -70,6 +85,8 @@
  * min-height alone decides it. */
 .coach-card__slot {
   position: relative;
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 4.5rem;
   /* Relays .coach-card's own border-left-color (the plain default, or a
@@ -113,7 +130,14 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  /* flex (not `height: 100%` of the slot) — a percentage height against a
+   * flex-grown slot is the link Safari on a real iPhone resolves as auto
+   * (the slot's flexed height isn't definite to it), which un-clips
+   * .coach-card__text: the message stops scrolling internally, spills out
+   * of the card, and paints under the board. flex: 1 1 auto + min-height: 0
+   * carries no percentage, so the internal scroll engages on every engine. */
+  flex: 1 1 auto;
+  min-height: 0;
   padding-bottom: 20px;
 }
 
@@ -196,7 +220,12 @@
   right: calc(-1 * var(--space-4));
   z-index: 21;
   height: auto;
+  /* svh (viewport with browser UI fully expanded, like SessionPage.css's
+   * desktop board column) keeps the overlay's reach stable on phones, where
+   * plain vh grows/shrinks as the address bar collapses — an expanded card
+   * that keeps growing under a collapsing bar reads as the page jumping. */
   max-height: min(75vh, 760px);
+  max-height: min(75svh, 760px);
   padding: 0 var(--space-4) var(--space-3);
   background: var(--color-surface);
   /* Continues the card's own colored left accent (plain, or a caller's

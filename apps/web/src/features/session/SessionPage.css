@@ -211,12 +211,19 @@
  * header and the board instead of sitting at CoachCard's own min-height
  * floor (4.5rem) — covers PagedMessageCard and BotStatusPanel's card
  * variant alike, since both render as StackedSessionBody's `card` slot.
- * min-height: 0 lets the flex item shrink below its content size so the
- * card's own internal overflow-y: auto (CoachCard.css) does the scrolling,
- * not this container. */
+ * The floor is NOT 0: on a phone-height viewport (a real iPhone 15 in
+ * Safari is only ~664px tall with the address bar up) flex-shrink used to
+ * crush this box to a sliver (~24px) while its content — held open by the
+ * slot's own 4.5rem min-height — overflowed the box and painted underneath
+ * the board column (later sibling, opaque): message unreadable, expand
+ * toggle invisible under the board. The floor is the collapsed card's own
+ * content height (avatar header + slot minimum + card padding) plus slack,
+ * so the box always contains the collapsed card; a longer message scrolls
+ * inside it (CoachCard.css), and a stack taller than the screen scrolls
+ * the stack itself (overflow-y: auto above). */
 .session-body.mobile.stacked > .coach-card {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 10.5rem;
 }
 
 .session-body.mobile.stacked .session-board-column {
@@ -232,10 +239,35 @@
  * own edge-to-edge trick. */
 .session-body.mobile.stacked .session-board-column > .session-board-row {
   margin: 0 calc(-1 * var(--space-2));
+  /* Centers the eval-bar+board pair when the frame's height cap below
+   * leaves it narrower than the (full-bleed) row; a no-op at the natural
+   * size, where there is no free space to center. */
+  justify-content: center;
 }
 
 .session-body.mobile.stacked .session-board-column .coach-board-frame {
   border-radius: 0;
+  /* The frame is a square sized from its width (aspect-ratio: 1, see
+   * CoachBoard.css). On a phone-height viewport that square plus everything
+   * stacked around it (header, coach card, pills, pinned composer) no
+   * longer fits, and with the column at flex: 0 0 auto the coach card was
+   * the only thing that could give way — flex-shrink crushed it to a
+   * sliver (see .coach-card above). Cap the frame by viewport height
+   * instead, so the board is the one that yields and the whole stack stays
+   * inside the screen: the cap reserves what the fixed chrome (header +
+   * card floor + pills + composer reserve) needs, and the card's flex-grow
+   * absorbs any surplus when the address bar is collapsed (innerHeight
+   * grows, the board doesn't move). svh for the same reason the desktop
+   * column's width uses it above — a board that resizes as the bar
+   * collapses reads as the page jumping; the vh line is the fallback for
+   * engines without svh, where correct-but-jumpy beats overflowing the
+   * screen. The width term keeps the natural full-width board on tall or
+   * narrow windows; the inner max() keeps the calc from going negative on
+   * landscape-short viewports (there the stack scrolls, the safety net
+   * above). */
+  flex: 0 1 auto;
+  width: min(calc(100% - 2rem), max(8rem, calc(100vh - 28rem)));
+  width: min(calc(100% - 2rem), max(8rem, calc(100svh - 28rem)));
 }
 
 /* Pinned to the screen's bottom edge, not the end of the (scrollable)

@@ -160,7 +160,7 @@ export type TtsBackend = (typeof TTS_BACKENDS)[number];
  * evaluations in a single cache. It previously did — services/engine defaulted
  * to 16 while the browser tunnel client hardcoded 15.
  */
-export const ENGINE_DEFAULT_DEPTH = 16;
+export const ENGINE_DEFAULT_DEPTH = 12;
 
 /**
  * Per-position allowance added to the tunnel timeout, for both a single
