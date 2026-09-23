@@ -46,6 +46,31 @@ export function scaleTimeoutsForFlex(timeouts: StreamTimeouts, usesFlex: boolean
   };
 }
 
+/** Time limits for a local LLM reached through the user's browser tab. */
+export interface LocalLlmTimeouts {
+  /** A whole non-streamed answer, counted once the call leaves the queue. */
+  requestTimeoutMs: number;
+  /** Longest silence between streamed frames (thinking frames count). */
+  streamIdleMs: number;
+}
+
+export const DEFAULT_LOCAL_LLM_TIMEOUTS: LocalLlmTimeouts = {
+  requestTimeoutMs: 600_000,
+  streamIdleMs: 180_000
+};
+
+/** A local model's thinking level when the user has not picked one: off.
+ * Consumer hardware thinks slowly, and a thinking model left at its own
+ * default can spend minutes (or its whole token budget) before answering. */
+export const LOCAL_DEFAULT_REASONING: ReasoningEffort = 'none';
+
+/** The SDK's own stall guard for a local stream. The tunnel's idle timer
+ * (LocalLlmTimeouts.streamIdleMs) is the real guard there, so the first-chunk
+ * wait covers reading a long prompt on slow hardware. */
+export function localStreamTimeouts(local: LocalLlmTimeouts): StreamTimeouts {
+  return { firstChunkMs: local.requestTimeoutMs, chunkMs: local.streamIdleMs };
+}
+
 export const DEFAULT_MODEL_TUNING: ModelTuning = {
   // The coach reasons about chess positions and its own Socratic strategy, so
   // it earns real thinking budget; light-tier subagents only reformat text
@@ -71,15 +96,18 @@ export function callOptionsFor(
   tuning: ModelTuning,
   provider: LlmProvider,
   tier: Tier,
-  useFlex = false
+  useFlex = false,
+  /** The user's own thinking level for this tier (Settings → Advanced), or
+   * the local-model default; the deployment's tuning applies when absent. */
+  reasoningOverride?: ReasoningEffort
 ): ModelCallOptions {
   return {
-    reasoning: tuning.reasoning[tier],
+    reasoning: reasoningOverride ?? tuning.reasoning[tier],
     providerOptions: providerOptionsFor(tuning, provider, useFlex)
   };
 }
 
-function providerOptionsFor(
+export function providerOptionsFor(
   tuning: ModelTuning,
   provider: LlmProvider,
   useFlex: boolean

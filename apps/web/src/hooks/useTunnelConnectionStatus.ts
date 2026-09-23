@@ -5,8 +5,8 @@ import {
   type TunnelConnectionStatus
 } from '../engine/tunnel-connection-status.js';
 
-/** Tracks the single `/api/engine-tunnel` WebSocket's own open/closed state
- * (see useEngineTunnelClient, which is what actually owns the socket and
+/** Tracks the single `/api/tunnel` WebSocket's own open/closed state
+ * (see useUnifiedTunnelClient, which is what actually owns the socket and
  * reports into this module-level store). Distinct from useEngineStatus /
  * useLiteEngineStatus, which track whether a given worker's WASM has
  * finished loading — the socket can be open with neither worker downloaded

@@ -34,6 +34,7 @@ export interface SpeakParams {
  * other BYOK call. */
 export async function speak(config: TtsConfig, setup: StoredLlmSetup, params: SpeakParams): Promise<Buffer> {
   if (!config.enabled || !setup.voiceModel) throw new Error('Voice is not configured');
+  if (!setup.apiKey) throw new Error('Voice requires an API key (not available for local LLM protocol)');
   return synthesizeSpeech({
     apiKey: setup.apiKey,
     endpoint: setup.endpoint,

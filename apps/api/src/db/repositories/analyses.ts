@@ -270,7 +270,7 @@ export function markFailed(db: Kysely<Database>, id: string, error: string): Pro
 
 /** jobs/analyze-game.ts's engine-unavailable branch — unlike markFailed,
  * leaves `completedAt` unset: this isn't done, it's retryable once the
- * user's browser tunnel reconnects (routes/engine-tunnel.ts), and
+ * user's browser tunnel reconnects (routes/unified-tunnel.ts), and
  * `evalsComputed` (already persisted per chunk by analyzeInChunks) is left
  * as-is so the resumed run's cache hits pick up right where this left off. */
 export function markPaused(db: Kysely<Database>, id: string, error: string): Promise<void> {
@@ -283,7 +283,7 @@ export function markPaused(db: Kysely<Database>, id: string, error: string): Pro
 }
 
 /** Every game belonging to `userId` whose analysis is 'paused' — for
- * routes/engine-tunnel.ts, the moment that user's tunnel reconnects, to
+ * routes/unified-tunnel.ts, the moment that user's tunnel reconnects, to
  * re-enqueue exactly the games that were waiting on it (jobs/analyze-game.ts
  * re-running is safe and cheap even for the positions it already finished:
  * they're already in position_evaluations). */

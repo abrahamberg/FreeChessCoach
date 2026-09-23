@@ -5,7 +5,8 @@ import './LiteEngineCheck.css';
 const STATUS_TEXT = {
   green: 'Light engine ready',
   yellow: 'Light engine connecting…',
-  red: 'Light engine not connected — the bot will pick from a narrower move pool'
+  red: 'Light engine not connected — the bot will pick from a narrower move pool',
+  grey: 'Light engine inactive in this tab — another of your tabs is handling it until you use this one'
 } as const;
 
 /**

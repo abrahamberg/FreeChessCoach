@@ -1,15 +1,21 @@
-import type { LlmProvider, StoredLlmSetup } from '@freechesscoach/shared';
+import type { LlmProtocol, LlmProvider, ReasoningEffort, StoredLlmSetup } from '@freechesscoach/shared';
 import type { LanguageModel } from 'ai';
 import type { Kysely } from 'kysely';
 import * as llmSetupsRepo from '../db/repositories/llm-setups.js';
 import type { Database } from '../db/schema.js';
 import { ValidationError } from '../lib/errors.js';
+import type { LlmTunnelTransport } from '../services/engine/llm-tunnel-transport.js';
 import { anthropicModel } from './anthropic.js';
 import { buildFakeModel } from './fake.js';
+import { createLocalModel } from './local-model.js';
 import {
   callOptionsFor,
+  DEFAULT_LOCAL_LLM_TIMEOUTS,
   DEFAULT_MODEL_TUNING,
+  LOCAL_DEFAULT_REASONING,
+  localStreamTimeouts,
   scaleTimeoutsForFlex,
+  type LocalLlmTimeouts,
   type ModelCallOptions,
   type ModelTuning,
   type Tier
@@ -21,6 +27,11 @@ export type { Tier };
 
 export interface GatewayConfig {
   unlockStore?: LlmUnlockStore;
+  /** Reaches a local LLM (LM Studio / Ollama) through the user's browser tab.
+   * Without it, a local setup fails with a clear error. */
+  llmTunnelTransport?: LlmTunnelTransport;
+  /** Time limits for local LLM calls; defaults when unset. */
+  localLlm?: LocalLlmTimeouts;
   /** How each tier is called (reasoning effort, OpenAI service tier, stream
    * timeouts) — see model-options.ts. Defaults when unset. */
   tuning?: ModelTuning;
@@ -38,6 +49,9 @@ export interface ModelResolution {
   /** True when this call goes out on OpenAI's flex tier — slower, so callers
    * pass it to `streamTimeoutsFor` to avoid aborting a queued response. */
   usesFlex: boolean;
+  /** True for a local LLM (LM Studio / Ollama) behind the browser tunnel —
+   * also slow to start, see `streamTimeoutsFor`. */
+  isLocal?: boolean;
 }
 
 /** Resolves the model to use for a user's call from the setup currently held
@@ -74,15 +88,21 @@ export async function getModelForUser(
     }
     throw new ValidationError('Unlock your AI setup in Settings with your unlock phrase before coaching.');
   }
-  const provider = providerForProtocol(setup.protocol);
+  const protocol = resolveTierProtocol(setup, tier);
+  const provider = providerForProtocol(protocol);
   const modelId = tier === 'standard' ? setup.highModel : setup.lowModel;
-  const usesFlex = provider === 'openai' && setup.useFlex === true;
+  const isLocal = protocol === 'local';
+  const usesFlex = !isLocal && provider === 'openai' && setup.useFlex === true;
+  const callOptions = resolveCallOptions(config, provider, tier, usesFlex, reasoningFor(setup, tier, isLocal));
   return {
-    model: buildModel(setup, modelId),
+    model: buildModel(config, setup, protocol, modelId, userId),
     provider,
     modelId,
-    callOptions: resolveCallOptions(config, provider, tier, usesFlex),
-    usesFlex
+    // A local server ignores OpenAI's provider options (service tier,
+    // reasoning summary); only the portable `reasoning` reaches it.
+    callOptions: isLocal ? { reasoning: callOptions.reasoning } : callOptions,
+    usesFlex,
+    isLocal
   };
 }
 
@@ -90,21 +110,63 @@ export function resolveCallOptions(
   config: GatewayConfig,
   provider: LlmProvider,
   tier: Tier,
-  useFlex = false
+  useFlex = false,
+  reasoningOverride?: ReasoningEffort
 ): ModelCallOptions {
-  return callOptionsFor(config.tuning ?? DEFAULT_MODEL_TUNING, provider, tier, useFlex);
+  return callOptionsFor(config.tuning ?? DEFAULT_MODEL_TUNING, provider, tier, useFlex, reasoningOverride);
 }
 
-export function streamTimeoutsFor(config: GatewayConfig, usesFlex = false): ModelTuning['streamTimeouts'] {
-  return scaleTimeoutsForFlex((config.tuning ?? DEFAULT_MODEL_TUNING).streamTimeouts, usesFlex);
+export function streamTimeoutsFor(
+  config: GatewayConfig,
+  resolution: Pick<ModelResolution, 'usesFlex' | 'isLocal'>
+): ModelTuning['streamTimeouts'] {
+  if (resolution.isLocal) return localStreamTimeouts(config.localLlm ?? DEFAULT_LOCAL_LLM_TIMEOUTS);
+  return scaleTimeoutsForFlex((config.tuning ?? DEFAULT_MODEL_TUNING).streamTimeouts, resolution.usesFlex);
 }
 
-export function buildModel(setup: StoredLlmSetup, modelId: string): LanguageModel {
-  return setup.protocol === 'anthropic'
-    ? anthropicModel(setup.apiKey, modelId, setup.endpoint)
-    : openaiModel(setup.apiKey, modelId, setup.endpoint, setup.protocol);
+/** Each model's own detected format; setups saved before per-model
+ * detection have one `protocol` for both. */
+export function resolveTierProtocol(setup: StoredLlmSetup, tier: Tier): LlmProtocol {
+  const own = tier === 'standard' ? setup.highProtocol : setup.lowProtocol;
+  return own ?? setup.protocol;
 }
 
-function providerForProtocol(protocol: StoredLlmSetup['protocol']): LlmProvider {
+/** The user's thinking level for this tier, else Off for a local model, else
+ * undefined (the deployment's tuning decides). */
+function reasoningFor(setup: StoredLlmSetup, tier: Tier, isLocal: boolean): ReasoningEffort | undefined {
+  const chosen = setup.reasoning?.[tier];
+  if (chosen) return chosen;
+  return isLocal ? LOCAL_DEFAULT_REASONING : undefined;
+}
+
+export function buildModel(
+  config: GatewayConfig,
+  setup: StoredLlmSetup,
+  protocol: LlmProtocol,
+  modelId: string,
+  userId: string
+): LanguageModel {
+  if (protocol === 'local') {
+    if (!config.llmTunnelTransport) throw new ValidationError('Local AI is not available in this process.');
+    return createLocalModel({
+      transport: config.llmTunnelTransport,
+      timeouts: config.localLlm ?? DEFAULT_LOCAL_LLM_TIMEOUTS,
+      userId,
+      modelId,
+      baseUrl: setup.endpoint,
+      token: setup.localToken
+    });
+  }
+  if (!setup.apiKey) throw new ValidationError('Your AI setup has no API key. Replace it in Settings.');
+  if (protocol === 'anthropic') return anthropicModel(setup.apiKey, modelId, setup.endpoint);
+  return openaiModel(setup.apiKey, modelId, setup.endpoint, protocol);
+}
+
+// 'local' deliberately maps to 'openai': its OpenAI-compatible wire format
+// takes the same reasoning-knob branch in resolveCallOptions. This makes
+// ModelResolution.provider === 'openai' true for local sessions too — code
+// that needs to know whether a resolution is actually local must check
+// `isLocal`, not compare `provider`.
+function providerForProtocol(protocol: LlmProtocol): LlmProvider {
   return protocol === 'anthropic' ? 'anthropic' : 'openai';
 }

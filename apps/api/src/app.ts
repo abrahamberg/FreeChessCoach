@@ -7,8 +7,8 @@ import { registerAnalysesRoutes } from './routes/analyses.js';
 import { registerChesscomRoutes } from './routes/chesscom.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerDiagnosticsRoutes } from './routes/diagnostics.js';
-import { registerEngineTunnelRoutes } from './routes/engine-tunnel.js';
 import { registerEngineTunnelInternalRoutes } from './routes/engine-tunnel-internal.js';
+import { registerUnifiedTunnelRoutes } from './routes/unified-tunnel.js';
 import { registerGamesRoutes } from './routes/games.js';
 import { registerLichessRoutes } from './routes/lichess.js';
 import { registerLlmSetupRoutes } from './routes/llm-setup.js';
@@ -30,7 +30,7 @@ import type { LlmUnlockStore } from './llm/unlock-store.js';
 import { createChesscomClient, type ChesscomClient } from './services/chesscom.js';
 import { createLichessClient, type LichessClient } from './services/lichess.js';
 import type { CoachAgentBaseDependencies } from './bootstrap.js';
-import type { EngineTunnelRegistry } from './services/engine/engine-tunnel-registry.js';
+import type { BrowserTunnel } from './services/engine/browser-tunnel.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
 import type { TtsConfig } from './services/tts.js';
 
@@ -57,9 +57,10 @@ export interface BuildAppOptions {
   /** Required to register POST /api/tts/speak (the OpenAI coach-voice backend,
    *  resolved per-request against the user's BYOK OpenAI key). */
   ttsConfig?: TtsConfig;
-  /** Required to register the browser-facing GET /api/engine-tunnel WS route. */
-  engineTunnelRegistry?: EngineTunnelRegistry;
-  /** Required (alongside engineTunnelRegistry) to register the worker-facing
+  /** Required to register the browser-facing GET /api/tunnel WS route, the
+   * local-LLM model list and local-LLM setup tests. */
+  tunnel?: BrowserTunnel;
+  /** Required (alongside tunnel) to register the worker-facing
    * POST /internal/engine-tunnel/:userId relay route. */
   internalToken?: string;
 }
@@ -105,7 +106,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       options.analysesPollIntervalMs ?? DEFAULT_ANALYSES_POLL_INTERVAL_MS
     );
     if (options.llmSetupVault && options.llmUnlockStore) {
-      registerLlmSetupRoutes(app, options.db, options.llmSetupVault, options.llmUnlockStore);
+      registerLlmSetupRoutes(app, options.db, options.llmSetupVault, options.llmUnlockStore, options.tunnel?.llmTransport);
     }
     if (options.coachAgentBaseDeps && options.engineBackendOptions) {
       registerSessionsRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions, {
@@ -124,9 +125,9 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     if (options.ttsConfig && options.llmUnlockStore) {
       registerTtsRoutes(app, options.db, options.llmUnlockStore, options.ttsConfig);
     }
-    if (options.engineTunnelRegistry) {
+    if (options.tunnel) {
       const db = options.db;
-      const registry = options.engineTunnelRegistry;
+      const tunnel = options.tunnel;
       // MUST stay inside app.after(). @fastify/websocket only turns a
       // `{ websocket: true }` route into a real WebSocket handler via an `onRoute`
       // hook it installs when the plugin finishes loading — and `app.register()`
@@ -138,7 +139,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       // off what is actually a Reply blows up with a 500 on every connect.
       // app.after() defers to just after the plugin above has loaded.
       app.after(() => {
-        registerEngineTunnelRoutes(app, db, registry, options.jobQueue ?? noopJobQueue);
+        registerUnifiedTunnelRoutes(app, db, tunnel.registry, options.jobQueue ?? noopJobQueue);
       });
     }
   }
@@ -148,8 +149,12 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   // relay route only touches the in-memory registry, not the database, and
   // the worker process that calls it (Task 12) has no reason to require db
   // wiring on the api side to do so.
-  if (options.engineTunnelRegistry && options.internalToken) {
-    registerEngineTunnelInternalRoutes(app, { registry: options.engineTunnelRegistry, internalToken: options.internalToken });
+  if (options.tunnel && options.internalToken) {
+    registerEngineTunnelInternalRoutes(app, {
+      engineTransport: options.tunnel.engineTransport,
+      llmTransport: options.tunnel.llmTransport,
+      internalToken: options.internalToken
+    });
   }
 
   return app;

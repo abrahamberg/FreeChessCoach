@@ -62,7 +62,12 @@ export async function startTurn(
     // so nothing downstream could ever remove it. Doing this first keeps the
     // insert the last thing that can fail, so a retry with the original body
     // is always safe.
-    const { staticPart, dynamicPart, studentColor } = await buildSystemPromptForSession(deps.db, deps.gatewayConfig, session);
+    const { staticPart, dynamicPart, studentColor } = await buildSystemPromptForSession(
+      deps.db,
+      deps.gatewayConfig,
+      session,
+      resolution.isLocal ?? false
+    );
 
     // currentPly: what the board/analysis shows. subjectPly: what the
     // conversation is actually about, and what this turn's messages get
@@ -104,7 +109,8 @@ export async function startTurn(
       staticPart,
       dynamicPart,
       studentColor,
-      analyzePosition: deps.analyzePosition
+      analyzePosition: deps.analyzePosition,
+      isLocal: resolution.isLocal ?? false
     });
 
     const tools = buildCoachTools(
@@ -124,7 +130,7 @@ export async function startTurn(
       instructions,
       messages,
       tools,
-      timeouts: streamTimeoutsFor(deps.gatewayConfig, resolution.usesFlex),
+      timeouts: streamTimeoutsFor(deps.gatewayConfig, resolution),
       stopOnToolNames,
       onFinish: async (completion) => {
         // The response has already been piped to the client by the time this
@@ -137,7 +143,7 @@ export async function startTurn(
           // written first so a failure further down never hides it.
           await sessionsRepo.updateDebugSnapshot(deps.db, session.id, {
             request: {
-              provider: resolution.provider,
+              provider: resolution.isLocal ? 'local' : resolution.provider,
               model: resolution.modelId,
               instructions,
               messages,

@@ -4,13 +4,14 @@ import type { Kysely } from 'kysely';
 import type { Database } from './db/schema.js';
 import type { JobQueue } from './jobs/queue.js';
 import type { GatewayConfig } from './llm/gateway.js';
-import { DEFAULT_MODEL_TUNING, type ModelTuning } from './llm/model-options.js';
+import { DEFAULT_LOCAL_LLM_TIMEOUTS, DEFAULT_MODEL_TUNING, type LocalLlmTimeouts, type ModelTuning } from './llm/model-options.js';
 import { createRedisBotThinkingMirror } from './services/bot/bot-thinking-mirror.js';
 import { createBotThinkingRegistry, type BotThinkingRegistry } from './services/bot/bot-thinking-registry.js';
 import { createMemoryRatingEvalStore, createRedisRatingEvalStore, type RatingEvalStore } from './services/bot/bot-rating-evals.js';
 import { createMemoryLlmUnlockStore, createRedisLlmUnlockStore, type LlmUnlockStore } from './llm/unlock-store.js';
 import type { CoachAgentDependencies } from './services/coach-agent.js';
 import type { TtsConfig } from './services/tts.js';
+import type { LlmTunnelTransport } from './services/engine/llm-tunnel-transport.js';
 import type { EngineTunnelTransport } from './services/engine/engine-tunnel-transport.js';
 import { LichessEvalIndex, LichessEvalIndexFormatError } from './services/engine/lichess-eval-index.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
@@ -24,9 +25,11 @@ export function requireEnv(name: string): string {
 /** Reads the deployment-only LLM knobs. User endpoint, models and API key are
  * supplied through the encrypted setup route. `LLM_FAKE=1` short-circuits
  * every model call in getModelForUser for smoke tests. */
-export function buildGatewayConfigFromEnv(unlockStore: LlmUnlockStore): GatewayConfig {
+export function buildGatewayConfigFromEnv(unlockStore: LlmUnlockStore, llmTunnelTransport?: LlmTunnelTransport): GatewayConfig {
   return {
     unlockStore,
+    llmTunnelTransport,
+    localLlm: buildLocalLlmTimeoutsFromEnv(),
     tuning: buildModelTuningFromEnv(),
     fake: process.env.LLM_FAKE === '1'
   };
@@ -58,6 +61,17 @@ export function buildRatingEvalStoreFromEnv(): RatingEvalStore {
 export function buildBotThinkingRegistryFromEnv(): BotThinkingRegistry {
   if (process.env.REDIS_URL) return createBotThinkingRegistry({ mirror: createRedisBotThinkingMirror(process.env.REDIS_URL) });
   return createBotThinkingRegistry();
+}
+
+/** Local LLM (LM Studio / Ollama through the browser tunnel) time limits.
+ * A local model on consumer hardware can take minutes to read a long coach
+ * prompt before its first token, so these are far looser than the cloud
+ * stream guards. */
+export function buildLocalLlmTimeoutsFromEnv(): LocalLlmTimeouts {
+  return {
+    requestTimeoutMs: parsePositiveInt('LOCAL_LLM_TIMEOUT_MS', DEFAULT_LOCAL_LLM_TIMEOUTS.requestTimeoutMs),
+    streamIdleMs: parsePositiveInt('LOCAL_LLM_STREAM_IDLE_MS', DEFAULT_LOCAL_LLM_TIMEOUTS.streamIdleMs)
+  };
 }
 
 /** How each tier is called. All optional with working defaults — a deployment

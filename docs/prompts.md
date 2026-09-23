@@ -250,7 +250,7 @@ LR-18 — Persistent nonresponse
 
 ## This game
 
-- Ann vs Bob, 1-0, 10+0. Your student played white.
+- Ann vs Bob, 1-0, 10+0. Your student played white. Your student won this game.
 - Goal your preparation proposes for this session: Castle before starting play on the flank — the same king-safety habit as last session. It came from the student's standing evidence, so start there — change it only if the session gives you a real reason (see "What the session is for").
 - Preparation summary: summary
 - Opening note: opening

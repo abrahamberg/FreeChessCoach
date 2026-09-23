@@ -16,9 +16,10 @@ type SystemPromptResult = { staticPart: string; dynamicPart: string; studentColo
 export async function buildSystemPromptForSession(
   db: Kysely<Database>,
   gatewayConfig: GatewayConfig,
-  session: SessionRow
+  session: SessionRow,
+  isLocal = false
 ): Promise<SystemPromptResult> {
-  if (session.mode === 'play') return buildPlayModeSystemPrompt(db, session);
+  if (session.mode === 'play') return buildPlayModeSystemPrompt(db, session, isLocal);
 
   const [user, game, plan, profileSummary, sessionCount] = await Promise.all([
     usersRepo.findById(db, session.userId),
@@ -45,7 +46,8 @@ export async function buildSystemPromptForSession(
     },
     plan,
     focusAreas: profileSummary.focusAreas,
-    recentFindings: profileSummary.recentFindings
+    recentFindings: profileSummary.recentFindings,
+    isLocal
   });
   return { ...prompt, studentColor: game.userColor };
 }
@@ -54,7 +56,7 @@ export async function buildSystemPromptForSession(
  * gets an `analyses` row (there's no pre-game batch pipeline to produce
  * one), so `plan` is always null here rather than a lookup that would
  * always miss. */
-async function buildPlayModeSystemPrompt(db: Kysely<Database>, session: SessionRow): Promise<SystemPromptResult> {
+async function buildPlayModeSystemPrompt(db: Kysely<Database>, session: SessionRow, isLocal: boolean): Promise<SystemPromptResult> {
   const [user, game, profileSummary, sessionCount] = await Promise.all([
     usersRepo.findById(db, session.userId),
     gamesRepo.findById(db, session.gameId),
@@ -79,7 +81,8 @@ async function buildPlayModeSystemPrompt(db: Kysely<Database>, session: SessionR
     },
     plan: null,
     focusAreas: profileSummary.focusAreas,
-    recentFindings: profileSummary.recentFindings
+    recentFindings: profileSummary.recentFindings,
+    isLocal
   });
   return { ...prompt, studentColor: game.userColor };
 }

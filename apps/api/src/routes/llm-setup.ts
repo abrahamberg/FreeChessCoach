@@ -1,7 +1,9 @@
 import {
   LlmSetupSchema,
+  LocalModelsRequestSchema,
   SaveLlmSetupRequestSchema,
   UnlockLlmSetupRequestSchema,
+  type LlmModelsResponse,
   type LlmSetup,
   type LlmSetupTestResponse,
   type StoredLlmSetup
@@ -12,15 +14,18 @@ import * as llmSetupsRepo from '../db/repositories/llm-setups.js';
 import type { Database } from '../db/schema.js';
 import type { UserSetupVault } from '../llm/key-vault.js';
 import { testLlmSetup } from '../llm/compatibility-test.js';
+import { fetchLocalModels } from '../llm/local-compatibility-test.js';
 import type { LlmUnlockStore } from '../llm/unlock-store.js';
 import { ValidationError } from '../lib/errors.js';
 import * as userProfileService from '../services/user-profile.js';
+import type { LlmTunnelTransport } from '../services/engine/llm-tunnel-transport.js';
 
 export function registerLlmSetupRoutes(
   app: FastifyInstance,
   db: Kysely<Database>,
   vault: UserSetupVault,
-  unlockStore: LlmUnlockStore
+  unlockStore: LlmUnlockStore,
+  llmTunnelTransport?: LlmTunnelTransport
 ): void {
   app.get('/api/users/me/llm-setup', async (request) => {
     const user = await userProfileService.getOrCreate(db, request.user);
@@ -31,7 +36,22 @@ export function registerLlmSetupRoutes(
 
   app.post('/api/users/me/llm-setup/test', async (request) => {
     const setup = parseSetup(request.body);
-    return testLlmSetup(setup);
+    const user = await userProfileService.getOrCreate(db, request.user);
+    return testLlmSetup(setup, llmTunnelTransport, user.id);
+  });
+
+  // POST, not GET: a local server's token travels in the body, never the URL.
+  app.post('/api/users/me/llm-setup/models', async (request): Promise<LlmModelsResponse> => {
+    const parsed = LocalModelsRequestSchema.safeParse(request.body);
+    if (!parsed.success) throw new ValidationError(formatIssues(parsed.error.issues));
+    const empty = { models: [], loadedModel: null, contextLength: null };
+    if (!llmTunnelTransport) return { ...empty, error: 'Local AI is not available on this server.' };
+    const user = await userProfileService.getOrCreate(db, request.user);
+    try {
+      return await fetchLocalModels(llmTunnelTransport, user.id, parsed.data.endpoint, parsed.data.token);
+    } catch (error) {
+      return { ...empty, error: error instanceof Error ? error.message : String(error) };
+    }
   });
 
   app.put('/api/users/me/llm-setup', async (request) => {
@@ -39,11 +59,16 @@ export function registerLlmSetupRoutes(
     if (!parsed.success) throw new ValidationError(formatIssues(parsed.error.issues));
 
     const { unlockPhrase, ...setup } = parsed.data;
-    const tests = await testLlmSetup(setup);
-    assertTestsPassed(tests);
-    const storedSetup: StoredLlmSetup = { ...setup, protocol: tests.protocol };
-    const encrypted = vault.encrypt(storedSetup, unlockPhrase);
     const user = await userProfileService.getOrCreate(db, request.user);
+    const tests = await testLlmSetup(setup, llmTunnelTransport, user.id);
+    assertTestsPassed(tests);
+    const storedSetup: StoredLlmSetup = {
+      ...setup,
+      protocol: tests.protocol,
+      lowProtocol: tests.low.protocol,
+      highProtocol: tests.high.protocol
+    };
+    const encrypted = vault.encrypt(storedSetup, unlockPhrase);
     await unlockStore.lock(user.id);
     await llmSetupsRepo.upsert(db, user.id, encrypted.ciphertext, encrypted.iv, encrypted.salt);
     await unlockStore.unlock(user.id, storedSetup);
@@ -109,10 +134,14 @@ function statusFor(configured: boolean, setup: StoredLlmSetup | null): object {
       ? {
           endpoint: setup.endpoint,
           protocol: setup.protocol,
+          ...(setup.lowProtocol ? { lowProtocol: setup.lowProtocol } : {}),
+          ...(setup.highProtocol ? { highProtocol: setup.highProtocol } : {}),
+          ...(setup.localType ? { localType: setup.localType } : {}),
           lowModel: setup.lowModel,
           highModel: setup.highModel,
           ...(setup.voiceModel ? { voiceModel: setup.voiceModel } : {}),
-          ...(setup.useFlex !== undefined ? { useFlex: setup.useFlex } : {})
+          ...(setup.useFlex !== undefined ? { useFlex: setup.useFlex } : {}),
+          ...(setup.reasoning ? { reasoning: setup.reasoning } : {})
         }
       : {}),
     voiceAvailable: setup?.voiceModel !== undefined

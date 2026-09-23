@@ -431,4 +431,74 @@ describe('buildCoachSystemPrompt', () => {
       expect(staticPart).toContain('get_candidate_moves');
     });
   });
+
+  // A small local model has been observed losing track of who actually won
+  // the game — the raw PGN result token ("1-0") sits deep inside a dense
+  // metadata line with nothing spelling out what it means. This states it
+  // in plain English for every model, cloud or local, since it's cheap and
+  // never wrong to be unambiguous here.
+  describe('result sentence', () => {
+    test('student played white and won (1-0)', () => {
+      const { dynamicPart } = buildCoachSystemPrompt(
+        baseInput({ game: { ...baseInput().game, userColor: 'white', result: '1-0' } })
+      );
+      expect(dynamicPart).toContain('Your student won this game.');
+    });
+
+    test('student played black and white won (1-0): a loss, not a win', () => {
+      const { dynamicPart } = buildCoachSystemPrompt(
+        baseInput({ game: { ...baseInput().game, userColor: 'black', result: '1-0' } })
+      );
+      expect(dynamicPart).toContain('Your student lost this game.');
+    });
+
+    test('student played black and black won (0-1)', () => {
+      const { dynamicPart } = buildCoachSystemPrompt(
+        baseInput({ game: { ...baseInput().game, userColor: 'black', result: '0-1' } })
+      );
+      expect(dynamicPart).toContain('Your student won this game.');
+    });
+
+    test('draw', () => {
+      const { dynamicPart } = buildCoachSystemPrompt(
+        baseInput({ game: { ...baseInput().game, result: '1/2-1/2' } })
+      );
+      expect(dynamicPart).toContain('This game ended in a draw.');
+    });
+
+    test('no recorded result', () => {
+      const { dynamicPart } = buildCoachSystemPrompt(baseInput({ game: { ...baseInput().game, result: '*' } }));
+      expect(dynamicPart).toContain('This game has no recorded result.');
+    });
+  });
+
+  // isLocal (a local LM Studio/Ollama model reading this same prompt with a
+  // fraction of a cloud model's context) trims yourToolsAndWhenToUseThem's
+  // per-tool prose, which otherwise repeats — verbatim — text the model
+  // already receives via each tool's own function-calling schema
+  // description (tools.ts's COACH_TOOL_SPECS doc comment).
+  describe('isLocal', () => {
+    test('defaults to the full cloud tool prose when omitted', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput());
+      expect(staticPart).toContain('Wait for the result before you say anything about the move');
+    });
+
+    test('shortens the tool prose without dropping any tool name (still callable, still cross-referenceable)', () => {
+      const full = buildCoachSystemPrompt(baseInput());
+      const local = buildCoachSystemPrompt(baseInput({ isLocal: true }));
+
+      expect(local.staticPart.length).toBeLessThan(full.staticPart.length);
+      expect(local.staticPart).toContain('show_position');
+      expect(local.staticPart).toContain('record_move_note');
+      // The full per-tool explanation collapses to a short cue — this exact
+      // sentence should no longer appear verbatim.
+      expect(local.staticPart).not.toContain('Wait for the result before you say anything about the move');
+    });
+
+    test('does not touch dynamicPart — isLocal only shapes the static tool section', () => {
+      const full = buildCoachSystemPrompt(baseInput());
+      const local = buildCoachSystemPrompt(baseInput({ isLocal: true }));
+      expect(local.dynamicPart).toBe(full.dynamicPart);
+    });
+  });
 });

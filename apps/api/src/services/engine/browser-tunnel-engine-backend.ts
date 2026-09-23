@@ -40,7 +40,8 @@ export class BrowserTunnelEngineBackend implements EngineBackend {
       // fall back to a constant of its own when it isn't, which is how it ended
       // up searching a ply shallower than the native backend.
       {
-        kind: 'analyze-position',
+        kind: 'engine',
+        subKind: 'analyze-position',
         fen,
         depth: opts?.depth ?? ENGINE_DEFAULT_DEPTH,
         multiPv: opts?.multiPv ?? ENGINE_MULTI_PV,
@@ -63,7 +64,8 @@ export class BrowserTunnelEngineBackend implements EngineBackend {
     const raw = await this.transport.request(
       this.userId,
       {
-        kind: 'analyze-game',
+        kind: 'engine',
+        subKind: 'analyze-game',
         fens,
         depth: opts?.depth ?? ENGINE_DEFAULT_DEPTH,
         multiPv: opts?.multiPv ?? ENGINE_MULTI_PV,

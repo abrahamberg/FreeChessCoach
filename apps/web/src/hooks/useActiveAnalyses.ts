@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { EngineMode } from '@freechesscoach/shared';
+import { apiGet } from '../api/client.js';
+import { UserProfileSchema } from '@freechesscoach/shared';
 
 export interface ActiveAnalysis {
   analysisId: string;
@@ -29,6 +31,16 @@ export function useActiveAnalyses(): ActiveAnalysesResult {
   const [result, setResult] = useState<ActiveAnalysesResult>({ engineMode: null, analyses: [] });
 
   useEffect(() => {
+    // Fetch profile immediately as fallback for engineMode — ensures the
+    // badge shows the correct engine type even before the SSE stream delivers
+    // its first frame (or if the SSE connection is slow/failing).
+    let cancelled = false;
+    apiGet('/api/users/me', UserProfileSchema)
+      .then((user) => {
+        if (!cancelled) setResult((prev) => ({ ...prev, engineMode: user.engineMode }));
+      })
+      .catch(() => {});
+
     // Mounted unconditionally at the app root (AppShell), unlike
     // useAnalysisStatus's per-page, opt-in SSE connection — so a test
     // environment lacking EventSource (jsdom has no native implementation)
@@ -40,7 +52,10 @@ export function useActiveAnalyses(): ActiveAnalysesResult {
     source.onmessage = (event) => {
       setResult(JSON.parse(event.data) as ActiveAnalysesResult);
     };
-    return () => source.close();
+    return () => {
+      cancelled = true;
+      source.close();
+    };
   }, []);
 
   return result;

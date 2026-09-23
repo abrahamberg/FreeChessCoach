@@ -17,7 +17,8 @@ Socratically while tracking their progress over time. The initial build
   `docs/architecture.md` ("Bot Thinking log"); 73.3–73.6 are open. Phase 74
   (same file) reworks how a bot turn spends time: rating off the critical
   path (74.1–74.6 shipped: branch-first engine requests, mistake-first move
-  choice, saved evals). The last
+  choice, saved evals). Phase 75 (same file) is the review and fix list
+  for the unified tunnel and local LLM work (75.1–75.10 implemented, uncommitted; live verification open). The last
   shipped plan (import limits, stat archive, guided import; Phases 67–72) is
   described in `docs/architecture.md`. Open the plan, find the one
   Phase/Task being worked on, and read only that task's **Read:** files.

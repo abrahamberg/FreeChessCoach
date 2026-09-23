@@ -1,7 +1,9 @@
-export type TunnelConnectionStatus = 'connected' | 'disconnected';
+/** `inactive`: connected, but another of the user's tabs was used more
+ * recently and gets the server's new requests (the server's `role` frame). */
+export type TunnelConnectionStatus = 'connected' | 'inactive' | 'disconnected' | 'connecting' | 'error';
 
 /** Module-level (not React state) because the socket lives in
- * useEngineTunnelClient, mounted once at the app root (App.tsx), while the
+ * useUnifiedTunnelClient, mounted once at the app root (App.tsx), while the
  * status dots render in AppShell's topbar — a sibling branch, not a
  * descendant, of where the hook runs. A subscribe/notify singleton (same
  * shape as SharedEngineWorker's own status listeners) lets both sides agree

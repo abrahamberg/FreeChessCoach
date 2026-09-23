@@ -39,7 +39,9 @@ export async function createGraphileJobQueue(connectionString: string): Promise<
   return {
     queue: {
       enqueueAnalyzeGame: async (gameId: string) => {
-        await workerUtils.addJob('analyze-game', { gameId });
+        // jobKey dedupes concurrent/duplicate enqueues for the same game
+        // (e.g. several tabs resuming paused analyses at once) into one job.
+        await workerUtils.addJob('analyze-game', { gameId }, { jobKey: `analyze-game:${gameId}` });
       },
       enqueueSummarizeSession: async (sessionId: string) => {
         await workerUtils.addJob('summarize-session', { sessionId });

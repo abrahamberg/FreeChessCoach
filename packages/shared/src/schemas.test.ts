@@ -11,7 +11,7 @@ import { CoachingPlanSchema, type CoachingPlan } from './coaching-plan.js';
 import { DashboardResponseSchema } from './dashboard.js';
 import { FindingSchema } from './finding.js';
 import { ImportGameRequestSchema, ImportGameResponseSchema } from './game.js';
-import { LlmProviderSchema, LlmSetupSchema, SaveLlmSetupRequestSchema, LlmSetupStatusSchema } from './llm.js';
+import { LlmProviderSchema, LlmSetupSchema, SaveLlmSetupRequestSchema, LlmSetupStatusSchema, StoredLlmSetupSchema } from './llm.js';
 import {
   CreateSessionRequestSchema,
   PostSessionMessageRequestSchema,
@@ -479,6 +479,29 @@ describe('LLM setup schemas', () => {
   });
   test('requires a complete status shape', () => {
     expect(LlmSetupStatusSchema.safeParse({ configured: false, unlocked: false, voiceAvailable: false }).success).toBe(true);
+  });
+  test('leaves thinking level unset unless the user chose one', () => {
+    const parsed = LlmSetupSchema.parse({ endpoint: 'https://api.example/v1', apiKey: 'secret', lowModel: 'luna', highModel: 'terra' });
+    expect(parsed.reasoning).toBeUndefined();
+  });
+  test('a local setup needs a server type but no API key', () => {
+    const local = { protocol: 'local', endpoint: 'http://localhost:1234/v1', lowModel: 'qwen', highModel: 'qwen' };
+    expect(LlmSetupSchema.safeParse(local).success).toBe(false);
+    expect(LlmSetupSchema.safeParse({ ...local, localType: 'lm-studio' }).success).toBe(true);
+  });
+  test('a cloud setup needs an API key', () => {
+    expect(LlmSetupSchema.safeParse({ endpoint: 'https://api.example/v1', lowModel: 'luna', highModel: 'terra' }).success).toBe(false);
+  });
+  test('a stored setup from a pre-release build with a string reasoning still parses', () => {
+    const stored = StoredLlmSetupSchema.parse({
+      protocol: 'local',
+      localType: 'ollama',
+      endpoint: 'http://localhost:11434/v1',
+      lowModel: 'qwen',
+      highModel: 'qwen',
+      reasoning: 'provider-default'
+    });
+    expect(stored.reasoning).toBeUndefined();
   });
 });
 

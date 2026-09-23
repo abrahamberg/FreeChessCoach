@@ -535,7 +535,7 @@ describe('runAnalyzeGameJob', () => {
     expect(row.evalsComputed).toBe(3);
   });
 
-  // 'native' mode has no tunnel to reconnect to, so routes/engine-tunnel.ts
+  // 'native' mode has no tunnel to reconnect to, so routes/unified-tunnel.ts
   // would never resume a paused 'native' analysis — it must keep today's
   // 'failed' instead of getting stuck forever.
   test('engine unavailable for a native-mode user -> still failed, since nothing would ever resume it', async () => {

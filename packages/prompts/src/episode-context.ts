@@ -30,18 +30,36 @@ export type AnnotatedMoveLike = Pick<
   'ply' | 'moveSan' | 'quality' | 'cpLoss' | 'bestLineSan' | 'evalAfterCp' | 'reasons'
 >;
 
-export function renderAnnotatedPgn(moves: AnnotatedMoveLike[]): string {
-  const body = moves.length === 0 ? '(no moves)' : moves.map(renderAnnotatedMove).join(' ');
+/**
+ * `simple` (a local/small model — see coach-context.ts's `isLocal`) drops
+ * the chess.com/lichess NAG glyphs and the stacked per-move commentary in
+ * favor of plain SAN with a bare English quality word on the moves that
+ * cost something. The full version packs a mate/check mark, a quality
+ * glyph and up to four semicolon-joined tactic clauses onto a single token
+ * (e.g. "Qh6#★" or "Nxd5?? (lost ~277cp, best Nb4; Leaves knight on d5
+ * attacked 2× and defended 1×; ...)") — dense enough that a small quantized
+ * model has been observed losing track of who won or what was actually
+ * played reading it. The per-move detail that drops out here isn't lost:
+ * it's exactly what "## Current position"'s analysis section (see
+ * renderAnalysisSection below) delivers on its own, one move at a time,
+ * when the coach actually shows that position — the one place a small
+ * model needs it, not up front in one dense wall of text for the whole
+ * game.
+ */
+export function renderAnnotatedPgn(moves: AnnotatedMoveLike[], simple = false): string {
+  const body = moves.length === 0 ? '(no moves)' : moves.map((move) => renderAnnotatedMove(move, simple)).join(' ');
   return `## This game (annotated)\n\n${body}`;
 }
 
-export function renderAnnotatedMove(move: AnnotatedMoveLike): string {
+export function renderAnnotatedMove(move: AnnotatedMoveLike, simple = false): string {
+  const base = `${movePrefix(move.ply)}${move.moveSan}`;
+  if (simple) return isSoundQuality(move.quality) ? base : `${base} (${move.quality})`;
   const symbol = MOVE_QUALITY_SYMBOLS[move.quality];
-  const base = `${movePrefix(move.ply)}${move.moveSan}${symbol}`;
-  if (isSoundQuality(move.quality)) return base;
+  const annotated = `${base}${symbol}`;
+  if (isSoundQuality(move.quality)) return annotated;
   const bestLine = move.bestLineSan[0] ? `, best ${move.bestLineSan[0]}` : '';
   const reasons = move.reasons && move.reasons.length > 0 ? `; ${move.reasons.join('; ')}` : '';
-  return `${base} (lost ~${move.cpLoss}cp${bestLine}${reasons})`;
+  return `${annotated} (lost ~${move.cpLoss}cp${bestLine}${reasons})`;
 }
 
 /**
@@ -90,8 +108,8 @@ function tacticMotifLines(
  * known upfront the way an already-finished imported game's can — they're
  * only known move by move, as the game_move_qualities table grows.
  */
-export function renderGameSoFarInline(moves: AnnotatedMoveLike[]): string {
-  return moves.length === 0 ? '(no moves played yet)' : moves.map(renderAnnotatedMove).join(' ');
+export function renderGameSoFarInline(moves: AnnotatedMoveLike[], simple = false): string {
+  return moves.length === 0 ? '(no moves played yet)' : moves.map((move) => renderAnnotatedMove(move, simple)).join(' ');
 }
 
 /** "N." before White's move, nothing before Black's — matches how a human

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { shouldRetryQuery } from './api/client.js';
 import { AppShell } from './components/AppShell.js';
+import { TunnelTakeoverGate } from './components/TunnelTakeoverGate.js';
 import { FindGamesPage } from './features/games/FindGamesPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
 import { ImportPage } from './features/import/ImportPage.js';
@@ -19,7 +20,7 @@ import { StatsPage } from './features/stats/StatsPage.js';
 import { DemoCoachRedirect } from './demo/DemoCoachRedirect.js';
 import { DEMO_BASENAME } from './demo/demoMode.js';
 import { getDemoRuntime } from './demo/demoRuntime.js';
-import { useEngineTunnelActivation } from './hooks/useEngineTunnelActivation.js';
+import { useUnifiedTunnelActivation } from './hooks/useUnifiedTunnelActivation.js';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: shouldRetryQuery } } });
 
@@ -69,9 +70,9 @@ export function App(): ReactNode {
   );
 }
 
-/** Mounted once at the app root; the demo has no engine tunnel to keep open. */
-function EngineTunnel(): null {
-  useEngineTunnelActivation();
+/** Mounted once at the app root; the demo has no tunnel to keep open. */
+function UnifiedTunnel(): null {
+  useUnifiedTunnelActivation();
   return null;
 }
 
@@ -79,25 +80,27 @@ export function AppRoutes(): ReactNode {
 
   return (
     <AppShell>
-      {!getDemoRuntime() && <EngineTunnel />}
-      <Routes>
-        <Route path="/" element={<Navigate to="/games" replace />} />
-        <Route path="/import" element={<ImportPage />} />
-        <Route path="/play" element={<PlayPage />} />
-        <Route path="/play/new" element={<PlayStartPage />} />
-        <Route path="/play-bot/new" element={<PlayBotStartPage />} />
-        <Route path="/games" element={<GamesPage />} />
-        <Route path="/games/find" element={<FindGamesPage />} />
-        <Route path="/session/:id" element={<SessionRoute />} />
-        <Route path="/bot-session/:id" element={<BotSessionRoute />} />
-        <Route path="/review/:gameId" element={<GameReviewRoute />} />
-        <Route path="/practice/:assignmentId" element={<PracticeRoute />} />
-        <Route path="/progress" element={<ProgressPage />} />
-        <Route path="/dashboard" element={<Navigate to="/progress" replace />} />
-        <Route path="/stats" element={<StatsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        {getDemoRuntime() && <Route path="/coach" element={<DemoCoachRedirect />} />}
-      </Routes>
+      {!getDemoRuntime() && <UnifiedTunnel />}
+      <TunnelTakeoverGate>
+        <Routes>
+          <Route path="/" element={<Navigate to="/games" replace />} />
+          <Route path="/import" element={<ImportPage />} />
+          <Route path="/play" element={<PlayPage />} />
+          <Route path="/play/new" element={<PlayStartPage />} />
+          <Route path="/play-bot/new" element={<PlayBotStartPage />} />
+          <Route path="/games" element={<GamesPage />} />
+          <Route path="/games/find" element={<FindGamesPage />} />
+          <Route path="/session/:id" element={<SessionRoute />} />
+          <Route path="/bot-session/:id" element={<BotSessionRoute />} />
+          <Route path="/review/:gameId" element={<GameReviewRoute />} />
+          <Route path="/practice/:assignmentId" element={<PracticeRoute />} />
+          <Route path="/progress" element={<ProgressPage />} />
+          <Route path="/dashboard" element={<Navigate to="/progress" replace />} />
+          <Route path="/stats" element={<StatsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          {getDemoRuntime() && <Route path="/coach" element={<DemoCoachRedirect />} />}
+        </Routes>
+      </TunnelTakeoverGate>
     </AppShell>
   );
 }

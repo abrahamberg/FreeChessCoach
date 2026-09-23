@@ -94,7 +94,7 @@ describe('resolveEngineBackend', () => {
 
     expect(tunnelTransport.request).toHaveBeenCalledWith(
       user.id,
-      expect.objectContaining({ kind: 'http-fetch', url: 'https://chess-api.com/v1', method: 'POST' }),
+      expect.objectContaining({ kind: 'fetch', url: 'https://chess-api.com/v1', method: 'POST' }),
       expect.any(Number)
     );
     expect(fetchMock).not.toHaveBeenCalledWith('https://chess-api.com/v1', expect.anything());
@@ -202,7 +202,7 @@ describe('resolveEngineBackend', () => {
 
     expect(tunnelTransport.request).toHaveBeenCalledWith(
       user.id,
-      expect.objectContaining({ kind: 'analyze-position' }),
+      expect.objectContaining({ kind: 'engine', subKind: 'analyze-position' }),
       8000 + ENGINE_TUNNEL_PER_POSITION_MS
     );
     expect(fetchMock).not.toHaveBeenCalled();

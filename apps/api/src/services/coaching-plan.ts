@@ -10,6 +10,7 @@ import { NotFoundError } from '../lib/errors.js';
 import { getModelForUser, type GatewayConfig } from '../llm/gateway.js';
 import { generateStructured } from '../llm/text.js';
 import { composeGameReport } from './game-report.js';
+import { buildLocalCoachingPlan } from './local-coaching-plan.js';
 import { getPlayerStatsText } from './coach-player-stats.js';
 import * as userProfileService from './user-profile.js';
 
@@ -68,6 +69,7 @@ export async function ensureCoachingPlan(
   };
 
   const resolution = await getModelForUser(db, gatewayConfig, userId, 'light');
+  if (resolution.isLocal) return buildLocalCoachingPlan(gameReport.moves, candidateMoments ?? []);
   const messages = buildPlannerMessages(plannerInput);
   const result = await generateStructured({
     resolution,

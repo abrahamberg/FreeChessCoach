@@ -1,202 +1,60 @@
-import type { LlmModelTestResult, LlmProtocol, LlmSetup, LlmSetupTestResponse } from '@freechesscoach/shared';
-
-const PROBE_PROMPT = 'Reply with exactly OK.';
-const REQUEST_TIMEOUT_MS = 15_000;
-/** A flex probe can queue behind standard traffic, so it gets far longer. */
-const FLEX_REQUEST_TIMEOUT_MS = 60_000;
+import {
+  REMOTE_PROTOCOL_ORDER,
+  type LlmModelTestResult,
+  type LlmSetup,
+  type LlmSetupTestResponse,
+  type RemoteLlmProtocol
+} from '@freechesscoach/shared';
+import type { LlmTunnelTransport } from '../services/engine/llm-tunnel-transport.js';
+import { probeRemoteModel, testVoice } from './compatibility-probe.js';
+import { testLocalLlmSetup } from './local-compatibility-test.js';
 
 /** OpenAI's gpt-5.4+ reasoning models reject function tools combined with
  * reasoning_effort over /v1/chat/completions outright ("use /v1/responses
- * instead"), even though a tool-free probe passes fine on both formats. A
- * live probe race between the two can't detect that reliably — a single
- * flaky /responses request falls back to a chat-completions "pass" that then
- * breaks every real coaching turn, since those always use tools. Deciding
- * from the model name instead makes the choice deterministic. Anything not
- * shaped like a numbered OpenAI model (OpenRouter's gpt-compatible aliases,
- * local proxies, etc.) is assumed compatible with chat completions, which is
- * the more widely supported format among those. */
+ * instead"), so they never fall back to chat completions: a flaky Responses
+ * probe must fail the test rather than save a format that breaks every
+ * coaching turn. */
 export function requiresOpenAiResponsesApi(model: string): boolean {
-  const match = /^gpt-(\d+)(?:\.(\d+))?/.exec(model.trim());
+  const match = /^(?:openai\/)?gpt-(\d+)(?:\.(\d+))?/.exec(model.trim());
   if (!match) return false;
   const major = Number(match[1]);
   const minor = match[2] ? Number(match[2]) : 0;
   return major > 5 || (major === 5 && minor >= 4);
 }
 
-/** Tests each configured model with a tiny request. A successful pair selects
- * the wire format used later by the gateway; a voice probe is independent and
- * therefore never makes text coaching unavailable. */
-export async function testLlmSetup(setup: LlmSetup): Promise<LlmSetupTestResponse> {
-  const candidates: ProtocolTest[] = [];
-  const needsResponses = requiresOpenAiResponsesApi(setup.lowModel) || requiresOpenAiResponsesApi(setup.highModel);
-  // Chat completions can never work for a gpt-5.4+ pairing, so it's left out
-  // of the order entirely rather than risked as a fallback (see
-  // requiresOpenAiResponsesApi). Everything else tries chat first since it's
-  // the more universally supported format, falling back to Responses only if
-  // the endpoint rejects chat outright.
-  const protocolOrder: readonly LlmProtocol[] = needsResponses
-    ? ['openai-responses', 'anthropic']
-    : ['openai-chat', 'openai-responses', 'anthropic'];
-  for (const protocol of protocolOrder) {
-    const candidate = await testProtocol(setup, protocol);
-    candidates.push(candidate);
-    if (candidate.low.ok && candidate.high.ok) break;
-  }
-  const selected = candidates.find((candidate) => candidate.low.ok && candidate.high.ok);
-  if (candidates.length === 0) throw new Error('No LLM compatibility protocols were tested');
+/** Tests a setup before it is saved. Remote endpoints: each text model is
+ * probed on its own in the order Responses → Anthropic Messages → Chat
+ * Completions, and keeps the first format it answers in — so one endpoint
+ * (e.g. OpenRouter) can serve a Claude model and a GPT model side by side.
+ * Local setups are tested through the user's browser tab. A voice probe is
+ * independent and never makes text coaching unavailable. */
+export async function testLlmSetup(
+  setup: LlmSetup,
+  llmTunnelTransport?: LlmTunnelTransport,
+  userId?: string
+): Promise<LlmSetupTestResponse> {
+  if (setup.protocol === 'local') return testLocalLlmSetup(setup, llmTunnelTransport, userId);
+
+  const [low, high] =
+    setup.lowModel === setup.highModel
+      ? await detectModel(setup, setup.lowModel).then((result) => [result, result] as const)
+      : await Promise.all([detectModel(setup, setup.lowModel), detectModel(setup, setup.highModel)]);
   const voice = setup.voiceModel ? await testVoice(setup) : null;
-
-  return {
-    protocol: selected?.protocol ?? null,
-    low: selected?.low ?? bestModelResult(candidates, 'low', setup.lowModel),
-    high: selected?.high ?? bestModelResult(candidates, 'high', setup.highModel),
-    voice
-  };
+  return { protocol: low.ok && high.ok ? (high.protocol ?? null) : null, low, high, voice };
 }
 
-interface ProtocolTest {
-  protocol: LlmProtocol;
-  low: LlmModelTestResult;
-  high: LlmModelTestResult;
-}
-
-function bestModelResult(
-  candidates: readonly ProtocolTest[],
-  tier: 'low' | 'high',
-  model: string
-): LlmModelTestResult {
-  const passing = candidates.find((candidate) => candidate[tier].ok);
-  if (passing) return passing[tier];
-  return {
-    model,
-    ok: false,
-    error: candidates
-      .map((candidate) => `${candidate.protocol}: ${candidate[tier].error ?? 'test failed'}`)
-      .join(' | ')
-  };
-}
-
-async function testProtocol(setup: LlmSetup, protocol: LlmProtocol): Promise<ProtocolTest> {
-  const [low, high] = await Promise.all([
-    testTextModel(setup, protocol, setup.lowModel),
-    testTextModel(setup, protocol, setup.highModel)
-  ]);
-  return { protocol, low, high };
-}
-
-async function testTextModel(setup: LlmSetup, protocol: LlmProtocol, model: string): Promise<LlmModelTestResult> {
-  try {
-    const response = await fetchForProtocol(setup, protocol, model);
-    if (!response.ok) return { model, ok: false, error: await providerError(response, setup.apiKey) };
-    const body: unknown = await response.json();
-    if (!hasTextResponse(body, protocol)) {
-      return { model, ok: false, error: 'The endpoint returned an invalid text response' };
-    }
-    return { model, ok: true };
-  } catch (error) {
-    return { model, ok: false, error: requestError(error) };
+async function detectModel(setup: LlmSetup, model: string): Promise<LlmModelTestResult> {
+  const failures: string[] = [];
+  for (const protocol of protocolOrderFor(model)) {
+    const result = await probeRemoteModel(setup, protocol, model);
+    if (result.ok) return result;
+    failures.push(`${protocol}: ${result.error ?? 'test failed'}`);
   }
+  return { model, ok: false, error: failures.join(' | ') };
 }
 
-async function fetchForProtocol(setup: LlmSetup, protocol: LlmProtocol, model: string): Promise<Response> {
-  const headers = {
-    authorization: `Bearer ${setup.apiKey}`,
-    'api-key': setup.apiKey,
-    'content-type': 'application/json'
-  };
-  if (protocol === 'anthropic') {
-    return fetchAt(setup.endpoint, '/messages', {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${setup.apiKey}`,
-        'x-api-key': setup.apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({ model, max_tokens: 8, messages: [{ role: 'user', content: PROBE_PROMPT }] })
-    });
-  }
-  // Probing on the flex tier proves the chosen model actually supports it —
-  // OpenAI rejects service_tier=flex for models that don't — so a bad pairing
-  // fails the test instead of every later coaching turn.
-  const flex = setup.useFlex ? { service_tier: 'flex' } : {};
-  const timeoutMs = setup.useFlex ? FLEX_REQUEST_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
-  if (protocol === 'openai-responses') {
-    return fetchAt(setup.endpoint, '/responses', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ model, input: PROBE_PROMPT, ...flex })
-    }, timeoutMs);
-  }
-  return fetchAt(setup.endpoint, '/chat/completions', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ model, messages: [{ role: 'user', content: PROBE_PROMPT }], ...flex })
-  }, timeoutMs);
-}
-
-async function testVoice(setup: LlmSetup): Promise<LlmModelTestResult> {
-  const model = setup.voiceModel ?? '';
-  try {
-    const response = await fetchAt(setup.endpoint, '/audio/speech', {
-      method: 'POST',
-      headers: { authorization: `Bearer ${setup.apiKey}`, 'api-key': setup.apiKey, 'content-type': 'application/json' },
-      body: JSON.stringify({ model, voice: 'alloy', input: 'OK', response_format: 'mp3' })
-    });
-    if (!response.ok) return { model, ok: false, error: await providerError(response, setup.apiKey) };
-    const contentType = response.headers.get('content-type') ?? '';
-    return contentType.includes('audio')
-      ? { model, ok: true }
-      : { model, ok: false, error: 'The endpoint did not return audio data' };
-  } catch (error) {
-    return { model, ok: false, error: requestError(error) };
-  }
-}
-
-function fetchAt(endpoint: string, path: string, init: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
-  const endpointUrl = new URL(endpoint);
-  endpointUrl.pathname = `${endpointUrl.pathname.replace(/\/$/, '')}/${path.slice(1)}`;
-  endpointUrl.hash = '';
-  return fetch(endpointUrl, { ...init, signal: AbortSignal.timeout(timeoutMs) });
-}
-
-function hasTextResponse(body: unknown, protocol: LlmProtocol): boolean {
-  if (typeof body !== 'object' || body === null) return false;
-  if (protocol === 'anthropic') {
-    const content = (body as { content?: unknown }).content;
-    return Array.isArray(content) && content.length > 0;
-  }
-  if (protocol === 'openai-responses') return Array.isArray((body as { output?: unknown }).output);
-  const choices = (body as { choices?: unknown }).choices;
-  return Array.isArray(choices) && choices.length > 0;
-}
-
-async function providerError(response: Response, apiKey: string): Promise<string> {
-  const body = (await response.text().catch(() => '')).replaceAll(apiKey, '[redacted]');
-  const message = extractErrorMessage(body) ?? body.slice(0, 200);
-  return message ? `Provider rejected this model (${response.status}): ${message}` : `Provider rejected this model (${response.status})`;
-}
-
-/** Providers wrap their error text differently ({ error: { message } } for
- * OpenAI, { error: { type, message } } for Anthropic) — pull just the
- * human-readable message out so the UI never has to show a raw JSON body. */
-function extractErrorMessage(body: string): string | null {
-  try {
-    const parsed: unknown = JSON.parse(body);
-    if (typeof parsed !== 'object' || parsed === null) return null;
-    const error = (parsed as { error?: unknown }).error;
-    if (typeof error === 'string') return error;
-    if (typeof error === 'object' && error !== null) {
-      const message = (error as { message?: unknown }).message;
-      if (typeof message === 'string') return message;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function requestError(error: unknown): string {
-  if (error instanceof DOMException && error.name === 'TimeoutError') return 'The provider timed out during the test';
-  return error instanceof Error ? `Could not reach the endpoint: ${error.message}` : 'Could not reach the endpoint';
+function protocolOrderFor(model: string): readonly RemoteLlmProtocol[] {
+  return requiresOpenAiResponsesApi(model)
+    ? REMOTE_PROTOCOL_ORDER.filter((protocol) => protocol !== 'openai-chat')
+    : REMOTE_PROTOCOL_ORDER;
 }

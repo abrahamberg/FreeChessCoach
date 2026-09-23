@@ -17,6 +17,7 @@ import { PLAY_SESSION_FLOW, SESSION_FLOW } from './coach-session-flow.js';
 import {
   ACTIVE_DIAGNOSIS_CODES,
   MISTAKE_CATEGORIES_BLOCK,
+  briefToolCue,
   renderCoachingPlanBlock,
   renderFocusAreasBlock,
   renderRecentFindingsBlock,
@@ -61,6 +62,17 @@ export interface CoachPromptInput {
   recentFindings: RecentFinding[];
   /** Injected for deterministic relative-date rendering; defaults to `new Date()`. */
   now?: Date;
+  /** A local (LM Studio/Ollama) model is reading this same prompt with a
+   * fraction of a cloud model's context budget and no reliable reasoning
+   * pass over it — see architecture.md's "Local LLM" section. Trims the
+   * one section of the STATIC part that's pure duplication for such a
+   * model (yourToolsAndWhenToUseThem's tool prose already rides along
+   * verbatim in every tool's own function-calling schema — see
+   * tools.ts's COACH_TOOL_SPECS doc comment) down to a one-line-per-tool
+   * index instead of repeating each tool's full description a second
+   * time. Defaults to false so every existing (cloud) caller is
+   * byte-for-byte unchanged. */
+  isLocal?: boolean;
 }
 
 export interface CoachSystemPrompt {
@@ -79,7 +91,7 @@ export interface CoachSystemPrompt {
  */
 export function buildCoachSystemPrompt(input: CoachPromptInput): CoachSystemPrompt {
   return {
-    staticPart: buildStaticPart(input.band, input.mode, input.persona),
+    staticPart: buildStaticPart(input.band, input.mode, input.persona, input.isLocal ?? false),
     dynamicPart: buildDynamicPart(input)
   };
 }
@@ -97,7 +109,7 @@ export function buildCoachSystemPrompt(input: CoachPromptInput): CoachSystemProm
  * claim about a position), then method, then what the session is for, then
  * the mechanics.
  */
-function buildStaticPart(band: RatingBand, mode: SessionMode, persona: CoachPersona): string {
+function buildStaticPart(band: RatingBand, mode: SessionMode, persona: CoachPersona, isLocal: boolean): string {
   const calibration = CALIBRATION[band];
   return [
     PERSONA_VOICE[persona],
@@ -108,7 +120,7 @@ function buildStaticPart(band: RatingBand, mode: SessionMode, persona: CoachPers
     FOCUS_AREA_LIFECYCLE,
     HOMEWORK_OPTIONS,
     FORMATTING,
-    yourToolsAndWhenToUseThem(mode),
+    yourToolsAndWhenToUseThem(mode, isLocal),
     CONVERSATION_THREADING,
     mode === 'play' ? PLAY_SESSION_FLOW : SESSION_FLOW,
     ENGINE_VISIBILITY,
@@ -176,7 +188,7 @@ This profile, get_diagnostic_profile and get_player_stats are what the session's
 function thisGame(game: GameMeta, plan: CoachingPlan): string {
   return `## This game
 
-- ${game.whiteName} vs ${game.blackName}, ${game.result}, ${game.timeControl}. Your student played ${game.userColor}.${suggestedGoalLine(plan)}
+- ${game.whiteName} vs ${game.blackName}, ${game.result}, ${game.timeControl}. Your student played ${game.userColor}. ${resultSentence(game)}${suggestedGoalLine(plan)}
 - Preparation summary: ${plan.gameSummary}
 - Opening note: ${plan.openingNote}
 - Connection to the student's history: ${plan.connectionToHistory}
@@ -184,6 +196,22 @@ function thisGame(game: GameMeta, plan: CoachingPlan): string {
 ${renderCoachingPlanBlock(plan)}
 
 The preparation notes list the moments worth stopping at, with a suggested opening question and the key line for each. They were selected using the student's standing progress and this game's evidence. Treat them as your lesson plan, not a script — spend your time on the moments that serve the session's goal, follow the conversation where it needs to go, and return to the plan when it makes sense.`;
+}
+
+/** The raw PGN result token ("1-0"/"0-1"/"1/2-1/2"/"*") is unambiguous to a
+ * human coach but is exactly the kind of thing a small local model has been
+ * observed to misread or skip past entirely inside a dense line of game
+ * metadata — the one fact the whole session's framing depends on (was this
+ * a game to fix, or one to reinforce?) then has to be inferred instead of
+ * read. Spelling it out in plain English costs one short sentence and never
+ * needs a per-move mate symbol or engine eval to be decoded correctly first. */
+function resultSentence(game: GameMeta): string {
+  const userWon = game.userColor === 'white' ? game.result === '1-0' : game.result === '0-1';
+  const userLost = game.userColor === 'white' ? game.result === '0-1' : game.result === '1-0';
+  if (userWon) return 'Your student won this game.';
+  if (userLost) return 'Your student lost this game.';
+  if (game.result === '1/2-1/2') return 'This game ended in a draw.';
+  return 'This game has no recorded result.';
 }
 
 /** The goal your preparation already proposed (CoachingPlanSchema's
@@ -206,9 +234,18 @@ function thisPlayModeGame(game: GameMeta): string {
 You are playing a live game WITH your student — they are ${game.userColor}, you are ${yourColor}. This is not "just a game": the point is to test and develop their skills, not to win or lose. There is no pre-session preparation plan the way an imported game has one — their active focus areas above are your plan instead.`;
 }
 
-function yourToolsAndWhenToUseThem(mode: SessionMode): string {
+function yourToolsAndWhenToUseThem(mode: SessionMode, isLocal: boolean): string {
   const specs = mode === 'play' ? PLAY_COACH_TOOL_SPECS : COACH_TOOL_SPECS;
-  const toolBullets = specs.map((spec) => `- ${spec.name}: ${spec.description}`).join('\n');
+  // A local model's own tool-calling schema already carries each tool's
+  // full description verbatim (tools.ts's COACH_TOOL_SPECS doc comment) —
+  // repeating all of it again here doubles the token cost of tool
+  // documentation for a model with the least context to spare. It still
+  // gets an index of every tool and a one-line cue for when each fires;
+  // the full "how" lives in the schema it already reads to call the tool
+  // at all. Cloud sessions keep the full prose unchanged.
+  const toolBullets = isLocal
+    ? specs.map((spec) => `- ${spec.name}: ${briefToolCue(spec.description)}`).join('\n')
+    : specs.map((spec) => `- ${spec.name}: ${spec.description}`).join('\n');
   return `## Your tools and when to use them
 
 ${toolBullets}

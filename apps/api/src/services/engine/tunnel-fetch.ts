@@ -9,7 +9,7 @@ interface TunnelHttpFetchResult {
 /**
  * Wraps a browser tunnel connection as a `fetch`-compatible function, for
  * ChessApiEngineBackend's `fetchImpl` — reaches chess-api.com through the
- * user's own connected tab (see useEngineTunnelClient.ts's 'http-fetch'
+ * user's own connected tab (see engine/tunnel-engine-handlers.ts's 'fetch'
  * handler) instead of this server, so requests land on chess-api.com from
  * each user's own IP rather than piling onto the server's, which is what a
  * shared free-tier third party actually rate-limits on.
@@ -33,7 +33,7 @@ export function createTunnelFetch(transport: EngineTunnelTransport, userId: stri
     const body = typeof init?.body === 'string' ? init.body : undefined;
 
     try {
-      const raw = await transport.request(userId, { kind: 'http-fetch', url, method, body }, timeoutMs);
+      const raw = await transport.request(userId, { kind: 'fetch', url, method, body }, timeoutMs);
       const { status, body: responseBody } = raw as TunnelHttpFetchResult;
       return new Response(responseBody, { status });
     } catch (error) {

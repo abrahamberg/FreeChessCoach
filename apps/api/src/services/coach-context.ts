@@ -153,6 +153,14 @@ export interface BuildEpisodeContextInput extends CoachContextDependencies {
    * to populate the "## Current position" analysis; engine visibility is a
    * universal default, not a per-student opt-in. */
   analyzePosition: (fen: string) => Promise<PositionAnalysis>;
+  /** Same local-model signal as coach-system.ts's `CoachPromptInput.isLocal`
+   * — switches the game-so-far/annotated-PGN block to its plain-SAN
+   * rendering (renderAnnotatedPgn's `simple`) instead of the NAG-glyph one,
+   * for the same reason: a small local model has been observed losing
+   * track of the game's own facts (who won, what was actually played)
+   * inside that block's dense notation. Optional so every existing (cloud)
+   * caller and test fixture is unaffected; defaults to false. */
+  isLocal?: boolean;
 }
 
 /** Assembles the five-layer request in place of the old whole-transcript
@@ -186,8 +194,11 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
   // report stored before tacticMotifs existed) renders as '' and adds
   // nothing to the block.
   const tacticMotifsSummary = gameReport ? renderTacticMotifsSummary(gameReport.players[input.studentColor].tacticMotifs) : '';
-  const annotatedPgn = isPlayMode ? null : [renderAnnotatedPgn(moveQualities), tacticMotifsSummary].filter(Boolean).join('\n\n');
-  const gameSoFar = isPlayMode ? renderGameSoFarInline(moveQualities) : undefined;
+  const isLocal = input.isLocal ?? false;
+  const annotatedPgn = isPlayMode
+    ? null
+    : [renderAnnotatedPgn(moveQualities, isLocal), tacticMotifsSummary].filter(Boolean).join('\n\n');
+  const gameSoFar = isPlayMode ? renderGameSoFarInline(moveQualities, isLocal) : undefined;
   const otherMovesSummary = renderOtherMovesSummary(otherNotes, moveQualities);
   // The engine's "top choice here" / "best line" analysis is always about
   // the position BEFORE the move under discussion — analyzePosition is

@@ -27,3 +27,12 @@
 .tunnel-status-dot--red {
   background: var(--color-danger);
 }
+
+.tunnel-status-dot--grey {
+  background: var(--color-text-secondary);
+}
+
+.tunnel-status-dots__label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}

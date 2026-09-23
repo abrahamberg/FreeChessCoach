@@ -5,47 +5,51 @@ import * as analysesRepo from '../db/repositories/analyses.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
 import * as userProfileService from '../services/user-profile.js';
-import type { EngineTunnelRegistry, TunnelConnection } from '../services/engine/engine-tunnel-registry.js';
+import type { TunnelConnection, UnifiedTunnelRegistry } from '../services/engine/unified-tunnel-registry.js';
 
 /**
- * The browser-facing leg of the tunnel — the api process only, since this is
- * the only process that ever holds the connection (see the design plan's
- * header notes on the api/worker split). One connection per user; a second
- * tab replaces the first (EngineTunnelRegistry.registerConnection()).
+ * The browser-facing leg of the unified tunnel (engine, fetch and local-LLM
+ * requests share this one socket) — the api process only, since this is the
+ * only process that ever holds the connection. Every open tab registers; new
+ * requests go to the one the user used most recently, and the next one takes
+ * over when it closes (UnifiedTunnelRegistry.registerConnection()).
  *
- * NOTE: this wires against the *actual* EngineTunnelRegistry as implemented
- * in Task 6 (registerConnection/unregisterConnection, registry-owned
- * `connection.onmessage`), which differs from the register/unregister/
- * isConnected/resolveResponse/rejectResponse API described in the original
- * plan text for this task. Per the "no changes to services/engine itself"
- * constraint, the route adapts to the registry rather than the other way
- * around. The registry sets `connection.onmessage` itself (to route
- * correlated responses back to pending requests); this route's only job is
- * to forward each raw WebSocket message into that callback and to forward
- * outbound sends onto the real socket.
+ * The connection is always registered under the authenticated user's own id.
+ * Never accept a user id from the client (query string, message, header): a
+ * registered socket receives that user's coach prompts and answers their
+ * engine requests, so a client-chosen id would let any signed-in user take
+ * over someone else's tunnel.
  */
-export function registerEngineTunnelRoutes(
+export function registerUnifiedTunnelRoutes(
   app: FastifyInstance,
   db: Kysely<Database>,
-  registry: EngineTunnelRegistry,
+  registry: UnifiedTunnelRegistry,
   jobQueue: JobQueue
 ): void {
-  app.get('/api/engine-tunnel', { websocket: true }, async (socket, request) => {
+  app.get('/api/tunnel', { websocket: true }, async (socket, request) => {
     const user = await userProfileService.getOrCreate(db, request.user);
     const connection: TunnelConnection = {
       send: (message: string) => socket.send(message),
       onmessage: null
     };
+    // Only the tab that brings the user from zero connections to one counts
+    // as "the tunnel connected" — without this, several tabs open (or
+    // reconnecting together after a network blip) each fire their own
+    // resume, duplicating the lookup and the enqueue per extra tab.
+    const isFirstConnection = !registry.isConnected(user.id);
     registry.registerConnection(user.id, connection);
-    void resumePausedAnalyses(db, jobQueue, user.id);
+    if (isFirstConnection) void resumePausedAnalyses(db, jobQueue, user.id);
 
     socket.on('message', (raw: RawData) => {
       connection.onmessage?.({ data: rawDataToString(raw) });
     });
 
-    // Pass `connection` so a late 'close' from a tab this one already replaced
-    // can't evict the live connection (see EngineTunnelRegistry.unregisterConnection).
-    socket.on('close', () => registry.unregisterConnection(user.id, connection));
+    // Pass `connection` so only this tab is dropped; the user's other tabs stay.
+    socket.on('close', (code: number) => {
+      console.log(`[Unified Tunnel] closed for user ${user.id} (code ${code})`);
+      registry.unregisterConnection(user.id, connection);
+    });
+    console.log(`[Unified Tunnel] connected for user ${user.id}`);
   });
 }
 
@@ -56,9 +60,8 @@ export function registerEngineTunnelRoutes(
  * jobs/analyze-game.ts from the top is safe and cheap even for the positions
  * it already finished before pausing: they're already in
  * position_evaluations, so only the genuinely unanalyzed rest costs a real
- * engine call. Fire-and-forget with its own error log, same as every other
- * best-effort side effect on this route — a lookup/enqueue failure must
- * never fail the WebSocket handshake itself. */
+ * engine call. Fire-and-forget with its own error log — a lookup/enqueue
+ * failure must never fail the WebSocket handshake itself. */
 async function resumePausedAnalyses(db: Kysely<Database>, jobQueue: JobQueue, userId: string): Promise<void> {
   try {
     const gameIds = await analysesRepo.findPausedGameIdsForUser(db, userId);

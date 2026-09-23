@@ -75,7 +75,7 @@ describe('LiteSupplementedEngineBackend', () => {
 
     expect(transport.request).toHaveBeenCalledWith(
       'user-1',
-      expect.objectContaining({ kind: 'analyze-position', fen: START_FEN, engine: 'lite' }),
+      expect.objectContaining({ kind: 'engine', subKind: 'analyze-position', fen: START_FEN, engine: 'lite' }),
       expect.any(Number)
     );
     expect(result.lines.map((l) => l.moveSan)).toEqual(['e4', 'd4', 'c4']);
@@ -102,7 +102,7 @@ describe('LiteSupplementedEngineBackend', () => {
 
     expect(transport.request).toHaveBeenCalledWith(
       'user-1',
-      expect.objectContaining({ kind: 'analyze-position', fen: START_FEN, engine: 'lite', depth: 8, multiPv: 6, movetimeMs: 3000 }),
+      expect.objectContaining({ kind: 'engine', subKind: 'analyze-position', fen: START_FEN, engine: 'lite', depth: 8, multiPv: 6, movetimeMs: 3000 }),
       expect.any(Number)
     );
   });

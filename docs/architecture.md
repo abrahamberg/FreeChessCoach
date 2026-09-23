@@ -113,6 +113,32 @@ Responsibilities:
 
 Browser Stockfish is UX-only and never authoritative.
 
+### Browser tunnel
+
+Every signed-in tab keeps one WebSocket open to `GET /api/tunnel`
+(`useUnifiedTunnelActivation`, whatever the engine mode or AI setup). The
+server sends it requests with a `requestId`, and the tab answers. There are
+three kinds, with message shapes in `packages/shared/src/tunnel.ts`:
+
+- `engine`: WASM Stockfish in the tab. That is the lite supplement for every
+  engine mode, plus Browser mode's main engine.
+- `fetch`: chess-api.com calls made from the user's IP (chess_api mode).
+- `llm`: calls to a local LLM server (see "Local LLM").
+
+The route registers the socket under the **authenticated** user only, never
+an id the client supplies. A registered socket receives that user's prompts
+and answers their engine requests. Every open tab stays registered, background
+tabs included. New requests go to the tab the user used most recently: a tab
+sends `active` with its last-used time on connect and whenever the user loads
+a page in it, switches to it, clicks or types (`engine/tunnel-tab-usage.ts`),
+because a tab left in the background can be throttled or frozen and never
+answer. A request already sent stays with its tab. When a tab closes, only its own requests fail, and the
+next most recently active tab takes over. On connect, the route re-enqueues the user's paused analyses. The registry
+(`services/engine/unified-tunnel-registry.ts`) lives in the api process; the
+worker reaches it through `POST /internal/engine-tunnel/:userId`. The topbar
+dots next to the engine pill show the tunnel's health (red down, yellow
+connecting/loading, green ready), plus a "Local AI" dot for local setups.
+
 ## API
 
 Responsibilities:
@@ -421,11 +447,23 @@ The coaching agent is the product's core capability.
 ### User-supplied LLM setup
 
 The app is bring-your-own-key and accepts one complete JSON setup: endpoint,
-API key, low model, high model, and optional voice model. On save, the API
-makes tiny independent probes for the OpenAI Chat/Responses and Anthropic
-Messages formats, then stores the setup as AES-256-GCM ciphertext. The key is
-derived from the user's unlock phrase with scrypt; neither the phrase nor the
-plaintext setup is stored in PostgreSQL.
+API key, low model, high model, optional voice model, and (Advanced) a
+thinking level per tier. Before saving, the API probes each text model on its
+own (`llm/compatibility-test.ts`), trying OpenAI Responses, then Anthropic
+Messages, then Chat Completions, and keeps the first format that answers. Each
+probe carries one trivial function tool, because a format that passes a plain
+prompt can still reject tools, and every coaching turn sends tools. gpt-5.4+
+models never fall back to Chat Completions. The two models may end up with
+different formats (e.g. a Claude and a GPT model through OpenRouter): the
+stored setup has `lowProtocol`/`highProtocol`, and `protocol` (the high
+model's) is what setups saved before per-model detection use for both
+(`gateway.ts` `resolveTierProtocol`). The setup is stored as AES-256-GCM
+ciphertext. The key is derived from the user's unlock phrase with scrypt;
+neither the phrase nor the plaintext setup is stored in PostgreSQL.
+
+Thinking level: unset means the deployment tuning (`model-options.ts`,
+`standard: medium`, `light: none`); a user's level for a tier replaces it for
+that tier only.
 
 An unlock places the plaintext setup in a short-lived Redis cache under an
 HMAC-derived user name. The cache value is encrypted with a deployment cache
@@ -433,6 +471,64 @@ key and expires after inactivity, so a database or Redis dump alone does not
 recover a provider key. API and worker share this cache for active background
 jobs; users can also lock it immediately from Settings. Omitting the voice
 model disables cloud voice while leaving browser voice available.
+
+### Local LLM (LM Studio / Ollama)
+
+A setup with `protocol: 'local'` points at an OpenAI-compatible server on the
+user's own machine. The server can't reach the user's localhost, so every call
+goes through their browser tab: API → tunnel → tab `fetch` → local server →
+back (`llm/local-model.ts`, `apps/web/src/engine/tunnel-llm-handlers.ts`).
+The local server must allow the site's origin (LM Studio: "Enable CORS";
+Ollama: `OLLAMA_ORIGINS`).
+
+- **Streaming.** The coach's `doStream` streams for real: the tab forwards
+  each SSE `data:` payload as a tunnel frame, and `llm/local-stream.ts` maps
+  them to AI SDK parts, including thinking (`reasoning_content` or an inline
+  `<think>` block) as reasoning deltas. `doGenerate` (structured output,
+  summaries) waits for the whole answer and sends the JSON schema as
+  `response_format`.
+- **One call at a time.** A local server answers one request at a time, so
+  `LlmCallQueue` (`services/engine/llm-call-queue.ts`) serializes a user's
+  local calls in the api process. Streams (the coach) go ahead of queued
+  whole-answer calls (summaries). Worker calls come over the internal relay
+  (`RelayLlmTunnelTransport`) and join the same queue.
+- **Thinking off by default.** Unless the user picks a level, local calls send
+  `reasoning_effort: 'none'` plus `chat_template_kwargs.enable_thinking: false`.
+  A server that rejects those fields gets requests without them from then on.
+- **No planner call.** For a local setup the coaching plan is built from the
+  engine review (`services/local-coaching-plan.ts`) and not stored, so the
+  coach's first reply is the session's first LLM call. Its `sessionGoal` is
+  a short, deterministic sentence derived from the picked moments' `kind`
+  (never blank) — a real planner call gives a cloud setup a richer,
+  evidence-specific one instead. Restated every turn via `suggestedGoalLine`
+  (`packages/prompts/src/coach-system.ts`), it's the one durable anchor a
+  small model has for what the session is actually working on, since it
+  otherwise has to both invent a goal itself and remember its own earlier
+  statement of it with nothing to check itself against.
+- **Lighter prompt.** `CoachPromptInput.isLocal` (threaded from the standard-
+  tier model resolution, `coach-agent-turn.ts`) shapes two parts of the
+  per-turn prompt for a local model, which reads the same prompt as a cloud
+  model but with a fraction of the context and no reliable reasoning pass
+  over it: `yourToolsAndWhenToUseThem` collapses each tool's full prose
+  description — already sent verbatim as that tool's own function-calling
+  schema description — to a one-line cue (`render.ts`'s `briefToolCue`),
+  cutting the static system prompt by roughly a third; and the annotated-PGN
+  block (`episode-context.ts`'s `renderAnnotatedPgn`/`renderGameSoFarInline`,
+  `simple: true`) drops the NAG-glyph/cp-loss/stacked-reasons annotation
+  (e.g. "Nxd5?? (lost ~277cp, best Nb4; ...; ...)") for plain SAN with a bare
+  English quality word on the moves that cost something — the dropped detail
+  is exactly what "## Current position" already gives the coach, one move at
+  a time, when it actually shows that position. Both were observed
+  confusing a small quantized local model into losing track of basic game
+  facts (who won, what was actually played). The game's own result is also
+  spelled out in plain English for every setup, local or cloud
+  (`coach-system.ts`'s `resultSentence`) — the raw PGN token ("1-0") alone
+  was part of the same failure.
+- **Limits.** `LOCAL_LLM_TIMEOUT_MS` (whole answer, default 10 min) and
+  `LOCAL_LLM_STREAM_IDLE_MS` (silence between stream frames, default 3 min).
+  The setup test reads the loaded model's context window where the server
+  reports it and warns below 16k tokens, which is about what the coach's
+  prompt and tools need.
 
 ### Tool constraints
 

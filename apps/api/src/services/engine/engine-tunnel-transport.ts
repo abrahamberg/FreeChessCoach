@@ -1,3 +1,7 @@
+import type { EngineTunnelPayload, FetchTunnelPayload } from '@freechesscoach/shared';
+import { EngineUnavailableError } from '../../lib/errors.js';
+import { TunnelError, type UnifiedTunnelRegistry } from './unified-tunnel-registry.js';
+
 /**
  * EngineTunnelTransport sends correlated requests over a WebSocket tunnel
  * to browser-connected clients and waits for matched responses.
@@ -21,5 +25,24 @@ export interface EngineTunnelTransport {
    * @returns Promise resolving to the response result field, or rejecting with EngineUnavailableError
    * @throws EngineUnavailableError if userId has no connection, timeout expires, or error field is present
    */
-  request(userId: string, payload: unknown, timeoutMs: number): Promise<unknown>;
+  request(userId: string, payload: EngineTunnelTransportPayload, timeoutMs: number): Promise<unknown>;
+}
+
+/** Engine analysis, or a chess-api.com call proxied through the tab (tunnel-fetch.ts). */
+export type EngineTunnelTransportPayload = EngineTunnelPayload | FetchTunnelPayload;
+
+/** The api process's transport: straight to the in-memory registry, with
+ * tunnel failures reported as EngineUnavailableError so engine fallbacks
+ * treat a missing tab like any other unavailable engine. */
+export class EngineTunnelAdapter implements EngineTunnelTransport {
+  constructor(private readonly registry: UnifiedTunnelRegistry) {}
+
+  async request(userId: string, payload: EngineTunnelTransportPayload, timeoutMs: number): Promise<unknown> {
+    try {
+      return await this.registry.request(userId, payload, timeoutMs);
+    } catch (error) {
+      if (error instanceof TunnelError) throw new EngineUnavailableError(error.message);
+      throw error;
+    }
+  }
 }

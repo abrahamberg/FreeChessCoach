@@ -1,5 +1,5 @@
 import { EngineUnavailableError } from '../../lib/errors.js';
-import type { EngineTunnelTransport } from './engine-tunnel-transport.js';
+import type { EngineTunnelTransport, EngineTunnelTransportPayload } from './engine-tunnel-transport.js';
 
 export interface RelayEngineTunnelTransportOptions {
   apiInternalUrl: string;
@@ -8,18 +8,18 @@ export interface RelayEngineTunnelTransportOptions {
 
 /** worker.ts's EngineTunnelTransport (Task 12, not this task): the worker
  * process never holds a browser WebSocket itself, so it reaches the api
- * process's EngineTunnelRegistry over HTTP via the internal relay route
+ * process's UnifiedTunnelRegistry over HTTP via the internal relay route
  * (routes/engine-tunnel-internal.ts) instead of talking to a registry
  * in-process. Matches EngineTunnelTransport's request() signature exactly —
  * no generic type parameter, since the interface returns Promise<unknown>. */
 export class RelayEngineTunnelTransport implements EngineTunnelTransport {
   constructor(private readonly options: RelayEngineTunnelTransportOptions) {}
 
-  async request(userId: string, payload: unknown, timeoutMs: number): Promise<unknown> {
+  async request(userId: string, payload: EngineTunnelTransportPayload, timeoutMs: number): Promise<unknown> {
     const response = await fetch(`${this.options.apiInternalUrl}/internal/engine-tunnel/${userId}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-internal-token': this.options.internalToken },
-      body: JSON.stringify({ ...(payload as Record<string, unknown>), timeoutMs })
+      body: JSON.stringify({ ...payload, timeoutMs })
     });
 
     if (response.status === 503) {

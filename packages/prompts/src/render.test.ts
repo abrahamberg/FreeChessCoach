@@ -5,6 +5,7 @@ import {
   ACTIVE_DIAGNOSIS_CODES,
   ACTIVE_DIALOGUE_CODES,
   MISTAKE_CATEGORIES_BLOCK,
+  briefToolCue,
   relativeDate,
   renderCoachingPlanBlock,
   renderFocusAreasBlock,
@@ -13,6 +14,7 @@ import {
   describeMoveRef,
   renderThreadsBlock
 } from './render.js';
+import { COACH_TOOL_SPECS } from './tools.js';
 import type { DiagnosisCodeId, Thread } from '@freechesscoach/shared';
 
 describe('MISTAKE_CATEGORIES_BLOCK', () => {
@@ -307,5 +309,23 @@ describe('ACTIVE_DIAGNOSIS_CODES', () => {
     expect(ACTIVE_DIAGNOSIS_CODES.size).toBe(ACTIVE_DETECTOR_CODES.size + ACTIVE_DIALOGUE_CODES.size);
     for (const id of ACTIVE_DETECTOR_CODES) expect(ACTIVE_DIAGNOSIS_CODES.has(id)).toBe(true);
     for (const id of ACTIVE_DIALOGUE_CODES) expect(ACTIVE_DIAGNOSIS_CODES.has(id)).toBe(true);
+  });
+});
+
+describe('briefToolCue', () => {
+  test('cuts at the first em dash', () => {
+    expect(briefToolCue('Draw a shape — a piece route, a weak square.')).toBe('Draw a shape.');
+  });
+
+  test('cuts at the first sentence when there is no em dash first', () => {
+    expect(briefToolCue('Read the profile. Call it whenever a mistake feels familiar.')).toBe('Read the profile.');
+  });
+
+  test('every real tool description yields a cue much shorter than the description, never empty', () => {
+    for (const spec of COACH_TOOL_SPECS) {
+      const cue = briefToolCue(spec.description);
+      expect(cue.length).toBeGreaterThan(0);
+      expect(cue.length).toBeLessThan(spec.description.length);
+    }
   });
 });

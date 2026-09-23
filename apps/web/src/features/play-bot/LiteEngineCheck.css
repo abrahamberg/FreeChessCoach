@@ -28,3 +28,7 @@
 .lite-engine-check--red .lite-engine-check__dot {
   background: var(--color-danger);
 }
+
+.lite-engine-check--grey .lite-engine-check__dot {
+  background: var(--color-text-secondary);
+}

@@ -184,3 +184,22 @@ function renderThreadLine(thread: Thread): string {
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
+
+/** Derived, not hand-maintained: cuts a tool's full description (tools.ts's
+ * COACH_TOOL_SPECS — the same text sent verbatim as that tool's own
+ * function-calling schema description) down to its first clause, for the
+ * terser local-model tool index (coach-system.ts's yourToolsAndWhenToUseThem).
+ * Splitting at the first em dash or period keeps this a pure function of the
+ * one description every tool already has — a second, hand-written short
+ * blurb per tool would just be a new place for the two to drift apart, which
+ * is the exact bug COACH_TOOL_SPECS's own doc comment says it was created to
+ * end. Every description in that file opens with a self-contained clause
+ * naming what the tool does, so the cut point is always sensible even
+ * though this function knows nothing about chess. */
+export function briefToolCue(description: string): string {
+  const emDash = description.indexOf(' — ');
+  const period = description.indexOf('. ');
+  const candidates = [emDash, period].filter((index) => index !== -1);
+  const cut = candidates.length > 0 ? Math.min(...candidates) : description.length;
+  return `${description.slice(0, cut).replace(/[.,;:]$/, '')}.`;
+}

@@ -543,3 +543,482 @@ eval (the background light eval still gives the next move its "before").
 - [ ] Update the `docs/plan.md` bullet in `AGENTS.md`.
 
 Commit: `docs: bot move selection — branch first, mistake first, rating off the critical path`
+
+---
+
+# Phase 75 — Unified tunnel and local LLM: review fixes
+
+**Source:** the owner's review request of 2026-09-23 plus a code review of the
+uncommitted working tree on `main` (the "unified tunnel + local LLM" change).
+No separate spec file. Do **not** open `docs/diagnose.md`, `docs/algorith.md`
+or `docs/tactics-rework.md`. Independent of Phases 73/74. Task 75.1 (the tunnel
+takeover) is fixed in the working tree. Every `file:line` below was checked on
+2026-09-23 against the working tree, not assumed; the new files are
+untracked, so lines move as soon as a task edits them.
+
+## Status (2026-09-23)
+
+Tasks 75.1–75.10 are implemented in the working tree and not committed.
+Typecheck, lint and the touched tests pass. The live checks under
+"Verification" have **not** been run: no LM Studio/Ollama or OpenRouter
+session was available. Where the implementation differs from the task text:
+
+- 75.3: the relay path keeps its name, `/internal/engine-tunnel/:userId`
+  (Helm network policy and worker config use it). It now also carries `llm`
+  requests.
+- 75.5: the local default is thinking **Off for both tiers**, not `low` for
+  the coach. `low` still let Qwen3-style models think at length, which was
+  the reported failure. Users raise it in Advanced.
+- 75.6: the JSON extraction fallback lives in `llm/local-response.ts` (used
+  when `responseFormat` is JSON), not in `llm/text.ts`. A server that rejects
+  `reasoning_effort` / `chat_template_kwargs` is retried once without them and
+  remembered for the process's lifetime.
+- 75.8: the planner is replaced for local setups by a plan built from the
+  engine review (`services/local-coaching-plan.ts`). It is never stored, so a
+  later cloud setup still gets the LLM planner. The worker reaches the local
+  LLM through the relay and shares the api's per-user queue.
+- 75.4: OpenRouter's `/responses` and `/messages` support was **not**
+  checked against its docs. With the requested order (Responses first), a
+  Claude model on an endpoint that also serves it over `/responses` is
+  detected as Responses. That is correct behaviour for that order, but not
+  literally "Anthropic".
+- Found in live testing (after 75.10): with two tabs open, the registry
+  kept only the last-connected tab. When that tab reloaded or closed, the
+  other, still-open tab was never re-registered, so local-LLM calls failed
+  with "Connection unregistered" / "No tunnel connection" and never reached
+  LM Studio. The thinking level was not the cause: LM Studio accepts
+  `reasoning_effort: "low"`. Fixed. Every tab now stays registered, and new
+  requests go to the most recently *used* tab: the tab sends `active` with its
+  last-used time on connect, page loads, switching to it, clicks and keys
+  (`engine/tunnel-tab-usage.ts`). The server answers each tab with a `role`
+  frame, and inactive tabs show grey dots and the word "inactive". Closing a
+  tab fails only its own requests.
+
+## What the branch does
+
+One browser WebSocket (`GET /api/tunnel`, `routes/unified-tunnel.ts`)
+replaces `/api/engine-tunnel` and carries three request kinds, each with a
+server-generated `requestId` (`services/engine/unified-tunnel-registry.ts`):
+
+- `engine` (`subKind` `analyze-position` / `analyze-game`): the browser WASM
+  Stockfish workers — Browser mode's main engine and the lite supplement.
+- `fetch`: chess-api.com calls proxied through the tab (`tunnel-fetch.ts`,
+  only caller `resolve-engine-backend.ts:189`, chess_api mode).
+- `llm` (`subKind` `chat` / `fetch-models`): a local LM Studio / Ollama
+  server, reached by the tab's `fetch` (`apps/web/src/hooks/useUnifiedTunnelClient.ts`)
+  and wrapped server-side as an AI SDK `LanguageModelV4` (`apps/api/src/llm/local.ts`).
+
+**Game imports do not use the tunnel.** Chess.com and Lichess are fetched
+server-side (`services/chesscom.ts:58`, `services/lichess.ts:32`). If imports
+should come from the user's IP, that is new work (not in this phase).
+
+## Review findings (verified)
+
+Critical:
+
+1. **Any signed-in user can take over another user's tunnel.**
+   `routes/unified-tunnel.ts:15-19` takes `userId` from the query string and
+   only falls back to `request.user`. `GET /api/tunnel?userId=<victim>`
+   registers the attacker's socket for the victim (last-connection-wins,
+   `unified-tunnel-registry.ts:95-155`). The attacker then receives the
+   victim's coach prompts (full LLM `messages`) and answers them, and answers
+   the victim's engine requests with fake evals that get stored.
+2. **The tunnel is off for Internal-engine users.**
+   `useUnifiedTunnelActivation.ts:27-30` connects only for `browser` /
+   `chess_api` / local-LLM users. The replaced `useEngineTunnelActivation.ts:37-41`
+   connected for everyone because the lite supplement serves every engine
+   mode (its doc comment explains why gating it was a bug before). So in
+   Internal mode the lite dot never goes green and the lite supplement is
+   unreachable. **This is the badge bug.**
+3. **Paused analyses no longer resume on reconnect.** The old route called
+   `resumePausedAnalyses` on every connect (`git show HEAD:apps/api/src/routes/engine-tunnel.ts`);
+   the new route does not, and `app.ts` stopped passing `jobQueue`. The UI
+   still says they resume (`apps/web/src/features/import/AnalysisProgress.tsx:161-163`).
+4. **Remote reasoning regression for every user.** `LlmSetupBaseSchema`
+   sets `reasoning: ReasoningEffortSchema.default('provider-default')`
+   (`packages/shared/src/llm.ts:62`), so `setupReasoning ?? …`
+   (`llm/gateway.ts:107`) always wins. The deployment tuning (`standard:
+   'medium'`, `light: 'none'`, `model-options.ts` `DEFAULT_MODEL_TUNING`) is
+   ignored, including for setups saved before this branch. The `'none'`
+   fallback meant for local models is unreachable.
+
+Why the local LLM never answers (all in `llm/local.ts`):
+
+5. **Reasoning is never sent.** The SDK passes effort as `options.reasoning`
+   (`LanguageModelV4CallOptions.reasoning`); `local.ts:110` reads
+   `providerOptions.openai.reasoningEffort`, which `model-options.ts`
+   deliberately never sets. So the model always thinks at its own default.
+6. **Structured output is ignored.** The first LLM call of a coach session is
+   the planner (`coaching-plan.ts:70-76`, `generateStructured` →
+   `generateObject`, `llm/text.ts:41`). That call sends
+   `options.responseFormat` with a JSON schema; `local.ts` never forwards it
+   as `response_format`, so the model answers in prose (or thinks), and parsing
+   fails. **This is the failing "episodes" call.**
+7. **Thinking output is not handled.** `reasoning_content` and inline
+   `<think>…</think>` are not separated from `message.content`, and with a
+   token cap the thinking can use up all of it, leaving `content: null`.
+8. **Fake streaming trips the stall guard.** `doStream` (`local.ts:159-181`)
+   waits for the whole completion before emitting. The coach runs under
+   `firstChunkMs` 120 s (`model-options.ts`, `llm/chat.ts:111`); a thinking
+   local model often goes past that, so the turn aborts.
+9. **Tool history is corrupted.** `convertPromptToMessages`
+   (`local.ts:185-208`) drops assistant `tool-call` parts, merges every tool
+   result into one `tool` message with only the first `tool_call_id`, and
+   `convertToolChoice` (`local.ts:210-215`) returns a bare tool name, which the
+   OpenAI format rejects (it expects `{type:'function', function:{name}}`).
+10. **The worker cannot use a local LLM.** `worker.ts:18` builds the gateway
+    without `llmTunnelTransport`, so worker jobs that call the LLM (e.g.
+    `jobs/summarize-session.ts`) throw "LLM tunnel transport is not configured"
+    (`gateway.ts`). The internal relay (`routes/engine-tunnel-internal.ts`)
+    forces `kind: 'engine'`.
+11. **The setup test passes for models that will fail.**
+    `compatibility-test.ts:153` caps the probe at `max_tokens: 8`. It only checks
+    that `choices` exists (`:166`), not that it has any text. It runs low and
+    high in parallel (`:126`) against a server that handles one request at a
+    time. The voice branch (`:131`, `setup.protocol !== 'local'` inside the local
+    path) is dead code.
+
+Remote protocol detection:
+
+12. The provider dropdown (`LlmSetupForm.tsx:225-228`) is cosmetic.
+    `testLlmSetup` ignores `setup.protocol` for remote setups and tries
+    chat → responses → anthropic, choosing **one** protocol for both models
+    (`compatibility-test.ts` `testLlmSetup`; `StoredLlmSetup.protocol` is a
+    single field). A Sonnet high model and a gpt-5.6 low model on OpenRouter
+    therefore cannot both work.
+13. `llm/openai-compatible.ts` probes with `model: 'probe'` (`:35`, `:45`),
+    which any real provider rejects, so both flags come back false and it
+    falls back to chat. Nothing produces `'openai-compatible'` (the test never
+    returns it), so `gateway.ts:132` is dead code.
+
+Local setup form (`apps/web/src/features/settings/LlmSetupForm.tsx`):
+
+14. Picking LM Studio or Ollama does not change the port (`localType` is not an
+    effect dependency). The `[protocol]` effect (`:79-94`) also runs on mount,
+    which overwrites a saved setup's endpoint and models with the defaults.
+    Two effects both call `fetchModels` (`:86`, `:99`), and it reads state from
+    a stale closure.
+15. `:185` has a template literal with literal braces, so the page prints
+    `· Flex: {status.useFlex ? 'on' : 'off'}` as text. `:460` renders
+    "local (local)".
+16. The CORS advice is backwards (`useUnifiedTunnelClient.ts:194-196`,
+    `LlmSetupForm.tsx:232,258,344`). A page on another origin can only read
+    `http://localhost:1234` if the local server **allows** that origin: LM
+    Studio needs "Enable CORS" turned **on**, and Ollama needs
+    `OLLAMA_ORIGINS` to include the site's origin. Chrome may also show a
+    local-network-access permission prompt the first time.
+17. The local token goes in a GET query string (`routes/llm-models.ts:14`),
+    so it ends up in proxy access logs. "Current model" is just `models[0]`
+    (`useUnifiedTunnelClient.ts:221`), not the model that is actually loaded.
+
+Hygiene:
+
+18. The server logs the first 200 chars of every tunnel message, including
+    LLM output (`routes/unified-tunnel.ts:39`). The client logs every message.
+    The client also answers the server's `{type:'pong'}` as an "Invalid
+    request kind" error every 20 s (`useUnifiedTunnelClient.ts:270-277`).
+    `socket.on('message')` uses `data.toString()` instead of the old
+    `rawDataToString` (fragmented frames).
+19. The client preloads the ~108 MB full-net worker for **every** user on
+    connect (`useUnifiedTunnelClient.ts:52-55,345`). The old hook preloaded it
+    only in Browser mode.
+20. Dead or duplicate code: `routes/engine-tunnel.ts` (unregistered),
+    `engine-tunnel-registry.ts` (deprecated wrapper, no users), two
+    `EngineTunnelAdapter`s (`engine-tunnel-transport.ts`,
+    `unified-tunnel-registry.ts`), two `LlmTunnelAdapter`s
+    (`llm-tunnel-transport.ts`, `unified-tunnel-registry.ts`), the old
+    `useEngineTunnelClient.ts` / `useEngineTunnelActivation.ts`, the unused
+    `engine/llm-tunnel-connection-status.ts`, and `UnifiedTunnelActivator()`
+    called as a function inside `App.tsx`. `app.ts:110` uses
+    `options.unifiedTunnelRegistry!`, and `local.ts:8` reads `process.env`
+    directly, which breaks the `bootstrap.ts` rule.
+
+Typecheck (api, web) and the engine/llm Vitest suites pass on the current
+tree. None of the above is covered by a test.
+
+## Decisions (owner, 2026-09-23 — do not relitigate)
+
+- One tunnel, three kinds, stays. It is always connected for signed-in users
+  (not demo).
+- The engine badge's dot shows **tunnel health**, not "Browser mode is on".
+- Remote protocol is **detected per model** during setup, in the order
+  **Responses → Anthropic Messages → Chat Completions**. There is no provider
+  dropdown for remote endpoints.
+- The local dropdown (LM Studio / Ollama / Other) sets the default port.
+- Advanced mode gets a **thinking level** per tier.
+- Local LLMs get a simpler call pattern because the server runs one request at
+  a time on one model (Task 75.8).
+
+## Layering
+
+Provider SDK code and wire-format mapping stay in `apps/api/src/llm/`
+(AGENTS.md rule 6). The tunnel registry and transports stay in
+`services/engine/` (no `ai` imports there). Zod schemas go in
+`packages/shared/src/llm.ts`. New timeouts and knobs are env vars parsed in
+`bootstrap.ts` with `parsePositiveInt`. Keep `local.ts` under ~200 lines by
+splitting the request mapping, the response mapping and the stream into
+separate files.
+
+---
+
+### Task 75.1 — Close the tunnel takeover and restore resume-on-connect (DONE, uncommitted)
+
+**Read:** `apps/api/src/routes/unified-tunnel.ts`, `git show HEAD:apps/api/src/routes/engine-tunnel.ts`,
+`apps/api/src/app.ts:100-145`.
+**Files:** `routes/unified-tunnel.ts` (+ new `routes/unified-tunnel.test.ts`), `app.ts`.
+
+- [x] Failing test: a WS connect with `?userId=<other>` registers under the
+  authenticated user's own id, never the query value.
+- [x] Remove the `Querystring` generic and `request.query.userId`. The user
+  comes only from `userProfileService.getOrCreate(db, request.user)`, imported
+  statically (no dynamic `import()`).
+- [x] Bring back `resumePausedAnalyses` and `rawDataToString` from the old
+  route. Pass `options.jobQueue ?? noopJobQueue` again from `app.ts`, and
+  delete `routes/engine-tunnel.ts`.
+- [x] Remove the per-message `console.log` calls in the route and the registry
+  (keep error logs, with no payload content).
+- [x] Lint, typecheck, and run the new test.
+
+Commit: `fix(tunnel): bind tunnel to the authenticated user and resume paused analyses`
+
+### Task 75.2 — Tunnel always on; badge shows tunnel health (DONE, uncommitted)
+
+**Read:** `git show HEAD:apps/web/src/hooks/useEngineTunnelActivation.ts`,
+`apps/web/src/hooks/useUnifiedTunnelActivation.ts`,
+`apps/web/src/hooks/useEngineTunnelStatusDots.ts`,
+`apps/web/src/components/TunnelStatusDots.tsx`.
+**Files:** those four, `useUnifiedTunnelClient.ts`, `App.tsx`.
+
+- [x] Connect whenever the user is signed in, as the old hook did. Drop the
+  `engineEnabled/llmEnabled/fetchEnabled` options.
+- [x] Always preload lite. Preload the main worker only when
+  `engineMode === 'browser'`; restore `useMainEnginePreload`.
+- [x] Ignore `{type:'pong'}` in `handleTunnelRequest` before the kind check.
+  Remove the per-message console logs.
+- [x] Set `connecting` before `new WebSocket`, so the status type's
+  `connecting` value is actually used.
+- [x] Dot rule (unit test `useEngineTunnelStatusDots`):
+  - red: socket not open
+  - yellow: `connecting`, or open but the lite worker is still loading
+  - green: open and lite ready
+
+  The Browser-engine dot is unchanged. When the setup is local, add a
+  "Local AI" dot: green after the last `fetch-models` / `chat` call through
+  the tunnel succeeded, yellow before any call, red after a failure (a tiny
+  module store like `tunnel-connection-status.ts`). Delete
+  `engine/llm-tunnel-connection-status.ts` if it is not used for that.
+- [x] `App.tsx`: render `<UnifiedTunnelActivator />` (or call the hook inside
+  `UnifiedTunnel`), not both.
+- [x] Manual check: Internal mode, reload → lite dot yellow then green.
+
+Commit: `fix(web): keep the tunnel connected for every engine mode and show its health`
+
+### Task 75.3 — Remove dead and duplicate tunnel code (DONE, uncommitted)
+
+**Read:** finding 20.
+**Files:** `engine-tunnel-registry.ts` (delete), `engine-tunnel-transport.ts`,
+`llm-tunnel-transport.ts`, `unified-tunnel-registry.ts`, `bootstrap.ts`,
+`app.ts`, `apps/web/src/hooks/useEngineTunnelClient.ts` +
+`useEngineTunnelActivation.ts` (delete), comments that name
+`/api/engine-tunnel` (`useTunnelConnectionStatus.ts`,
+`useEngineTunnelStatusDots.ts`, `TunnelStatusDots.tsx`,
+`AnalysisProgress.tsx`, `deploy/helm/.../networkpolicy-api.yaml`).
+
+- [x] Keep exactly one `EngineTunnelAdapter` and one `LlmTunnelAdapter`, each
+  next to its transport interface. Build them once in `server.ts`. `app.ts`
+  receives the `LlmTunnelTransport` as an option; no `!`.
+- [x] Typed request unions in the registry
+  (`{kind:'engine', subKind, …} | {kind:'fetch', …} | {kind:'llm', subKind, …}`),
+  used by the web client too. Put them in `packages/shared` so both sides
+  share one definition.
+- [x] `grep -rn "engine-tunnel'" --exclude-dir=dist` shows only the internal relay.
+
+Commit: `refactor(tunnel): one registry, one adapter per kind, shared message types`
+
+### Task 75.4 — Per-model protocol detection (remote) (DONE, uncommitted)
+
+**Read:** `apps/api/src/llm/compatibility-test.ts`, `llm/gateway.ts`,
+`packages/shared/src/llm.ts`, finding 12–13.
+**Files:** those three, `llm/openai-compatible.ts` (delete),
+`LlmSetupForm.tsx`, `compatibility-test.test.ts` (new).
+
+- [x] Schema: add `lowProtocol` and `highProtocol` (`LlmProtocol`) to
+  `StoredLlmSetupSchema`. Keep `protocol` = high's value for old readers.
+  Setups stored before this change have neither field, so a small
+  `resolveTierProtocol(setup, tier)` falls back to `protocol`.
+  Remove `'openai-compatible'` from `LlmProtocolSchema`. `LlmSetupTestResponse`
+  reports a protocol per model.
+- [x] Failing tests (mock `fetch`): (a) high `claude-sonnet-5` → responses
+  fails, anthropic passes; low `gpt-5.6-luna` → responses passes; both saved
+  with their own protocol. (b) Order is responses → anthropic → chat and stops
+  at the first pass per model. (c) A `gpt-5.4+` model never falls back to chat
+  (keep `requiresOpenAiResponsesApi`). (d) Low and high with the same model
+  are probed once.
+- [x] The probe must prove what coaching needs. Send one trivial function tool
+  with `tool_choice: auto` plus the "Reply with exactly OK." text. Pass means
+  2xx and a well-formed text or tool-call body in that wire format. A
+  tool-less pass is what let chat "work" and then break real turns (see the
+  `requiresOpenAiResponsesApi` comment).
+- [x] Gateway: `buildModel` uses the tier's protocol. Delete
+  `openai-compatible.ts` and its branch.
+- [x] UI: replace the four-way Provider select with **Cloud / API endpoint**
+  vs **Local (LM Studio / Ollama)**. The result screen shows the detected
+  format per model.
+- [x] Before coding, check OpenRouter's current docs for its Anthropic-style
+  `/messages` and `/responses` paths under `https://openrouter.ai/api/v1`, and
+  write down in the test file which ones exist.
+
+Commit: `feat(llm): detect Responses/Anthropic/Chat per model during setup`
+
+### Task 75.5 — Thinking level: fix the regression, add the advanced setting (DONE, uncommitted)
+
+**Read:** `llm/model-options.ts`, `llm/gateway.ts:95-112`, finding 4.
+**Files:** `packages/shared/src/llm.ts`, `gateway.ts`, `LlmSetupForm.tsx`, `gateway.test.ts`.
+
+- [x] Failing test: a stored setup with no reasoning field gives
+  `standard → 'medium'` and `light → 'none'` (deployment tuning).
+- [x] Replace the single `reasoning` field with optional
+  `reasoning: { standard?: ReasoningEffort; light?: ReasoningEffort }`, with
+  **no Zod default**. Resolution order: the user's tier value, then local
+  default (`light: 'none'`, `standard: 'low'`), then `tuning.reasoning[tier]`.
+  Keep the logic in `callOptionsFor` (the one place it is decided, per its doc
+  comment); `resolveCallOptions` passes the setup through.
+- [x] Advanced section (cloud and local): a "Thinking level" select per model
+  with Default / Off / Low / Medium / High, plus a hint that local models often
+  ignore it (see 75.6).
+
+Commit: `fix(llm): restore tuned reasoning defaults; add per-tier thinking level`
+
+### Task 75.6 — Make the local model adapter correct (DONE, uncommitted)
+
+**Read:** `apps/api/src/llm/local.ts`, `node_modules/@ai-sdk/provider/dist/index.d.ts`
+(`LanguageModelV4CallOptions`: `reasoning`, `responseFormat`, `toolChoice`),
+findings 5–9.
+**Files:** split `local.ts` into `local-model.ts`, `local-request.ts`,
+`local-response.ts` (+ tests for the last two; pure functions).
+
+- [x] Request mapping tests first:
+  - `options.reasoning` → `reasoning_effort` (omit it for `provider-default`).
+    For `none`, also add `chat_template_kwargs: { enable_thinking: false }`,
+    which llama.cpp-based servers read and others ignore.
+  - `responseFormat {type:'json', schema}` →
+    `response_format: {type:'json_schema', json_schema:{name, schema, strict:true}}`.
+  - Assistant `tool-call` parts → `tool_calls` with stringified arguments.
+  - One `tool` message per `tool-result` with its own `tool_call_id`.
+  - `toolChoice {type:'tool'}` → `{type:'function', function:{name}}`.
+  - `maxOutputTokens` → `max_tokens`. Do not default `temperature` to 0.7;
+    omit it when unset.
+- [x] Response mapping tests:
+  - `reasoning_content` (or `reasoning`) → a V4 `reasoning` content part.
+  - A leading `<think>…</think>` in content is moved into reasoning.
+  - Tool-call `arguments` pass through as a string.
+  - `content: null` with `finish_reason: 'length'` → a typed error whose
+    message says the model spent its budget thinking.
+  - `usage` mapped as today.
+- [x] Planner fallback: if `generateStructured` gets non-JSON from a local
+  model, extract the first `{…}` block once before failing (in `llm/text.ts`,
+  local provider only).
+- [x] Timeouts from `bootstrap.ts` (`LOCAL_LLM_TIMEOUT_MS`), passed in
+  through `GatewayConfig`, not read from `process.env` in `llm/`.
+
+Commit: `fix(llm): local adapter sends reasoning, JSON schema and tool history correctly`
+
+### Task 75.7 — Real streaming over the tunnel (DONE, uncommitted)
+
+**Read:** `unified-tunnel-registry.ts`, `useUnifiedTunnelClient.ts` `handleChatCompletion`,
+`llm/chat.ts:95-125`.
+**Files:** registry (+ test), client, `local-model.ts`.
+
+- [x] Registry: `requestStream(userId, payload, {idleTimeoutMs})` returns an
+  async iterable. Frames carry `{requestId, chunk}` and then
+  `{requestId, done:true}` or `{requestId, error}`. Every frame resets the idle
+  timer. Test it with a fake connection.
+- [x] Browser: `stream:true`, read the SSE body, forward each `data:` event
+  as it arrives, and stop on `[DONE]`. Abort the local fetch when the server
+  sends `{type:'cancel', requestId}`, which is sent when the SDK aborts.
+- [x] `doStream` maps deltas to `reasoning-delta` / `text-delta` /
+  `tool-input-*` parts as they arrive. Reasoning deltas count as chunks for
+  `firstChunkMs`, so a thinking model is not treated as stalled. The UI can
+  show "thinking…" from `reasoning-start`.
+
+Commit: `feat(llm): stream local LLM output through the tunnel`
+
+### Task 75.8 — Local LLMs: one request at a time, one model, fewer calls (DONE, uncommitted)
+
+**Read:** `coaching-plan.ts`, `coach-agent-system-prompt.ts:16-30`, `worker.ts`,
+`routes/engine-tunnel-internal.ts`, findings 10–11.
+**Files:** new `llm/local-queue.ts` (+ test), `gateway.ts`, `coaching-plan.ts`,
+`worker.ts`, internal relay route.
+
+- [x] Per-user FIFO for `llm` tunnel requests, concurrency 1. Interactive coach
+  turns go ahead of background calls such as the summarizer and move notes.
+  Tests: two calls never overlap, and interactive jumps the queue. This also
+  keeps one prompt prefix warm in the local server's KV cache instead of
+  alternating between planner and coach prompts.
+- [x] Basic local mode is one model for both tiers. In Advanced mode, if low
+  ≠ high, show the hint that LM Studio/Ollama will swap models between calls
+  (slow on one GPU).
+- [x] Planner for local: skip the LLM planner and build the plan from the
+  programmatic candidate moments (`candidateMoments` already passed to
+  `buildPlannerMessages`). Use fixed wording for `socraticQuestion` / `whatHappened`
+  and put no LLM text in `gameSummary` / `openingNote`. The coach turn then
+  becomes the session's **first and only** LLM call. First check that
+  `buildCoachSystemPrompt` renders fine with that plan, and whether a
+  plan-less prompt is simpler. Pick whichever needs less code and say why in
+  the commit.
+- [x] Context size: during setup, read the loaded model's context length
+  (LM Studio's REST `/api/v0/models` has `loaded_context_length`; Ollama's
+  `/api/show` has the model's context length; check both against current docs).
+  Refuse or warn when it is below the coach prompt size, measured with the
+  existing token count of the static prompt.
+- [x] Worker: send `llm` requests through the internal relay (add a `kind`
+  field instead of forcing `'engine'`) and give `worker.ts` a relay
+  `LlmTunnelTransport`, or keep LLM-calling jobs off the worker for local
+  setups. Choose one and test it.
+- [x] Setup test for local: run models one after another, `max_tokens` large
+  enough for a thinking model (≥ 256) with thinking `none`, and require
+  non-empty text. Remove the dead voice branch.
+
+Commit: `feat(llm): serialize local LLM calls and drop the planner call for local setups`
+
+### Task 75.9 — Local setup form (DONE, uncommitted)
+
+**Read:** `LlmSetupForm.tsx`, findings 14–17.
+**Files:** `LlmSetupForm.tsx` (split: `LocalLlmFields.tsx`, `useLocalModels.ts`),
+`routes/llm-models.ts`, `useUnifiedTunnelClient.ts`.
+
+- [x] `DEFAULT_LOCAL_ENDPOINTS = { 'lm-studio': 'http://localhost:1234/v1', ollama: 'http://localhost:11434/v1' }`.
+  Changing `localType` changes the endpoint only while it still equals the
+  previous type's default. `other` keeps whatever is typed.
+- [x] No reset on mount: initialise from `status` and reset only from the
+  change handlers, not from effects. `useLocalModels(endpoint)` is a TanStack
+  Query keyed on the endpoint, debounced.
+- [x] `models` endpoint becomes `POST` with `{endpoint, token}` in the body.
+  "Current model" comes from the backend's loaded state where it exists (see
+  75.8); otherwise leave it empty.
+- [x] Correct the CORS copy (finding 16) and give specific instructions per
+  type. For a `TypeError` fetch failure, show "Couldn't reach <endpoint> from
+  this browser — is LM Studio running with CORS enabled?" instead of guessing.
+- [x] Fix `:185` (Flex literal) and the "local (local)" label.
+
+Commit: `fix(web): local LLM setup — port per type, keep saved values, correct CORS help`
+
+### Task 75.10 — Docs (DONE, uncommitted)
+
+**Files:** `docs/architecture.md` (tunnel section: one socket, kinds, auth,
+resume; local LLM section: queue, streaming, planner skip), `AGENTS.md`
+plan pointer.
+
+Commit: `docs: unified tunnel and local LLM`
+
+## Verification (end of phase)
+
+- Two browsers signed in as different users; `?userId=` tampering has no
+  effect.
+- Internal mode: the dot goes green after load with no Browser mode.
+- OpenRouter with high `anthropic/claude-sonnet-5`, low `openai/gpt-5.6-luna`:
+  setup saves two different protocols, and a coach session runs both tiers.
+- LM Studio with a thinking model (e.g. a Qwen3 build): setup passes, the first
+  coach message streams within `firstChunkMs`, and the dev log shows one LLM
+  call before the first reply.
+- `npm run verify:changed`.

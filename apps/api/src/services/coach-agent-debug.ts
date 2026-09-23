@@ -14,7 +14,10 @@ import type { TurnUsage } from '../llm/usage.js';
  * (unlike an in-memory Map) consistent across pods and process restarts. */
 export interface TurnDebugSnapshot {
   request: {
-    provider: LlmProvider;
+    // 'local' isn't part of LlmProvider (model-options.ts only needs that
+    // type to distinguish the OpenAI/Anthropic reasoning knobs) — added here
+    // so a local session's debug snapshot doesn't mislabel itself 'openai'.
+    provider: LlmProvider | 'local';
     model: string;
     /** The cached system layers, sent in the provider's system slot. */
     instructions: SystemChatMessage[];

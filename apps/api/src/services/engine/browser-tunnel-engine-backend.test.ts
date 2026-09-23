@@ -48,7 +48,7 @@ describe('BrowserTunnelEngineBackend', () => {
       // Explicit depth, not undefined: left blank, the browser client falls
       // back to its own constant and can search shallower than the native
       // backend, mixing depths in the fen-keyed eval cache.
-      { kind: 'analyze-position', fen: 'f', depth: ENGINE_DEFAULT_DEPTH, multiPv: ENGINE_MULTI_PV, engine: 'main' },
+      { kind: 'engine', subKind: 'analyze-position', fen: 'f', depth: ENGINE_DEFAULT_DEPTH, multiPv: ENGINE_MULTI_PV, engine: 'main' },
       // A single position can still be one of the slow ones — same
       // per-position allowance analyzeGame gets, just for one position.
       8000 + ENGINE_TUNNEL_PER_POSITION_MS
@@ -64,7 +64,7 @@ describe('BrowserTunnelEngineBackend', () => {
 
     expect(transport.request).toHaveBeenCalledWith(
       'user-1',
-      { kind: 'analyze-position', fen: 'f', depth: 8, multiPv: 6, engine: 'main', movetimeMs: 3000 },
+      { kind: 'engine', subKind: 'analyze-position', fen: 'f', depth: 8, multiPv: 6, engine: 'main', movetimeMs: 3000 },
       // A search with its own wall-clock cap is waited for that long plus a short
       // grace — never the 30 s per-position allowance an uncapped search needs.
       3000 + TUNNEL_MOVETIME_GRACE_MS
@@ -90,7 +90,7 @@ describe('BrowserTunnelEngineBackend', () => {
     // held to the single-position budget.
     expect(transport.request).toHaveBeenCalledWith(
       'user-1',
-      { kind: 'analyze-game', fens: ['f'], depth: ENGINE_DEFAULT_DEPTH, multiPv: ENGINE_MULTI_PV, engine: 'main' },
+      { kind: 'engine', subKind: 'analyze-game', fens: ['f'], depth: ENGINE_DEFAULT_DEPTH, multiPv: ENGINE_MULTI_PV, engine: 'main' },
       8000 + ENGINE_TUNNEL_PER_POSITION_MS
     );
     expect(result).toEqual(evals);

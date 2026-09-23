@@ -367,3 +367,17 @@
 .settings-page__legal a {
   color: var(--color-text-secondary);
 }
+
+.llm-setup-form select {
+  width: 100%;
+}
+
+.llm-setup-form__error {
+  color: var(--color-danger);
+}
+
+.llm-setup-form__kind {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}

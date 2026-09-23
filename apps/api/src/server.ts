@@ -14,8 +14,8 @@ import {
 import { createDb } from './db/index.js';
 import { createGraphileJobQueue } from './jobs/queue.js';
 import { createUserSetupVault } from './llm/key-vault.js';
-import { EngineTunnelRegistry } from './services/engine/engine-tunnel-registry.js';
 import { openPuzzlePoolFromEnv } from './services/puzzle-pool.js';
+import { buildBrowserTunnel } from './services/engine/browser-tunnel.js';
 
 const isMainModule =
   process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
@@ -31,14 +31,14 @@ async function main(): Promise<void> {
   const connectionString = requireEnv('DATABASE_URL');
   const db = createDb(connectionString);
   const llmUnlockStore = buildLlmUnlockStoreFromEnv();
-  const gatewayConfig = buildGatewayConfigFromEnv(llmUnlockStore);
   const engineUrl = requireEnv('ENGINE_URL');
 
   const { queue: jobQueue } = await createGraphileJobQueue(connectionString);
-  const engineTunnelRegistry = new EngineTunnelRegistry();
+  const tunnel = buildBrowserTunnel();
   const lichessEvalIndex = await openLichessEvalIndexFromEnv();
-  const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, engineTunnelRegistry, lichessEvalIndex);
+  const engineBackendOptions = buildResolveEngineBackendOptions(db, engineUrl, tunnel.engineTransport, lichessEvalIndex);
   const puzzlePool = await openPuzzlePoolFromEnv();
+  const gatewayConfig = buildGatewayConfigFromEnv(llmUnlockStore, tunnel.llmTransport);
   const coachAgentBaseDeps = buildCoachAgentBaseDependencies(db, jobQueue, gatewayConfig, puzzlePool?.all() ?? null);
   const ttsConfig = buildTtsConfigFromEnv();
 
@@ -51,7 +51,7 @@ async function main(): Promise<void> {
     engineBackendOptions,
     botRatingEvals: buildRatingEvalStoreFromEnv(),
     botThinkingLog: buildBotThinkingRegistryFromEnv(),
-    engineTunnelRegistry,
+    tunnel,
     internalToken: requireEnv('ENGINE_TUNNEL_INTERNAL_TOKEN'),
     ttsConfig
   });
