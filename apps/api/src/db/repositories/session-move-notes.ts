@@ -6,6 +6,7 @@ export interface SessionMoveNoteRow {
   sessionId: string;
   ply: number;
   note: string;
+  detail: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +27,31 @@ export function upsert(
     .onConflict((oc) => oc.columns(['sessionId', 'ply']).doUpdateSet({ note, updatedAt: new Date() }))
     .returningAll()
     .executeTakeFirstOrThrow();
+}
+
+/** Stores `detail` as the session's one long-form "latest episode" summary:
+ * clears it from every other ply, then sets it on `ply` (creating the row,
+ * with a truncated `detail` as its short note, if the episode has none). */
+export async function setLatestDetail(
+  db: Kysely<Database>,
+  sessionId: string,
+  ply: number,
+  detail: string
+): Promise<void> {
+  await db.transaction().execute(async (trx) => {
+    await trx
+      .updateTable('sessionMoveNotes')
+      .set({ detail: null })
+      .where('sessionId', '=', sessionId)
+      .where('ply', '!=', ply)
+      .where('detail', 'is not', null)
+      .execute();
+    await trx
+      .insertInto('sessionMoveNotes')
+      .values({ sessionId, ply, note: detail.slice(0, 300), detail })
+      .onConflict((oc) => oc.columns(['sessionId', 'ply']).doUpdateSet({ detail }))
+      .execute();
+  });
 }
 
 /** Play-mode undo (architecture.md §14): removes the note for a ply whose

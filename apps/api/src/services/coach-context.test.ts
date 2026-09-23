@@ -15,6 +15,7 @@ import {
   buildEpisodeContext,
   buildEpisodeMessages,
   closeEpisodeIfNeeded,
+  detailWordBudget,
   resolvePositionContextJump
 } from './coach-context.js';
 
@@ -267,6 +268,44 @@ describe('coach-context', () => {
       expect(note).toBeUndefined();
     });
 
+    test('a short episode is kept verbatim as the latest detail; no model call is made for the detail', async () => {
+      const { session } = await seedSession();
+      await sessionMoveNotesRepo.upsert(db, session.id, 2, 'coach note');
+      const closed = [
+        await sessionMessagesRepo.insert(db, session.id, 'user', 'I thought Nf3 was fine', 2),
+        await sessionMessagesRepo.insert(db, session.id, 'assistant', 'What about ...Nxe4 then?', 2)
+      ];
+      const callLightModel = vi.fn().mockResolvedValue('short note');
+
+      await closeEpisodeIfNeeded(deps(callLightModel), session.id, closed, 2);
+
+      expect(callLightModel).toHaveBeenCalledOnce(); // only the short note; the detail is verbatim
+      const note = await sessionMoveNotesRepo.findByPly(db, session.id, 2);
+      expect(note?.detail).toContain('Student: I thought Nf3 was fine\nCoach: What about ...Nxe4 then?');
+    });
+
+    test('a long episode is summarized with a word budget that grows with its length, and replaces the previous episode\'s detail', async () => {
+      const { session } = await seedSession();
+      await sessionMoveNotesRepo.upsert(db, session.id, 1, 'older');
+      await sessionMoveNotesRepo.setLatestDetail(db, session.id, 1, 'older detail');
+      const closed = [await sessionMessagesRepo.insert(db, session.id, 'assistant', 'y'.repeat(6000), 2)];
+      const callLightModel = vi.fn().mockResolvedValue('the summary');
+
+      await closeEpisodeIfNeeded(deps(callLightModel), session.id, closed, 2);
+
+      const detailCalls = callLightModel.mock.calls.filter(([p]) => (p as { system: string }).system.includes('about '));
+      expect(detailCalls).toHaveLength(1);
+      expect((detailCalls[0]?.[0] as { system: string }).system).toContain(`about ${detailWordBudget(6016)} words`);
+      expect((await sessionMoveNotesRepo.findByPly(db, session.id, 2))?.detail).toBe('the summary');
+      expect((await sessionMoveNotesRepo.findByPly(db, session.id, 1))?.detail).toBeNull();
+    });
+
+    test('detailWordBudget scales with length within its bounds', () => {
+      expect(detailWordBudget(100)).toBe(120);
+      expect(detailWordBudget(4000)).toBe(250);
+      expect(detailWordBudget(100000)).toBe(300);
+    });
+
     test('final review #7: a record_move_note call that ERRORED does not suppress the auto-fallback', async () => {
       const { session } = await seedSession();
       const call = await sessionMessagesRepo.insert(
@@ -304,8 +343,9 @@ describe('coach-context', () => {
 
       await expect(closeEpisodeIfNeeded(deps(callLightModel), session.id, [closed], 2)).resolves.toBeUndefined();
 
+      // The short auto-note failed, but the (verbatim, no-model) detail still landed.
       const note = await sessionMoveNotesRepo.findByPly(db, session.id, 2);
-      expect(note).toBeUndefined();
+      expect(note?.detail).toContain('Coach: Discussing move 2.');
     });
 
     test('final review #6: a revisited ply seeds the auto-fold from its own earlier closing note', async () => {

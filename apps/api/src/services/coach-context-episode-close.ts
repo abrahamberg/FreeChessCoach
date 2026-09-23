@@ -1,10 +1,22 @@
-import { EPISODE_FOLD_SYSTEM_PROMPT } from '@freechesscoach/prompts';
+import { episodeDetailSystemPrompt, EPISODE_FOLD_SYSTEM_PROMPT } from '@freechesscoach/prompts';
 import { moveRefToPly } from '@freechesscoach/chess-analysis';
 import type { SessionMessageRow } from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
-import { compact } from './session-context.js';
+import { compact, type StoredMessage } from './session-context.js';
 import { type CoachContextDependencies, toStoredMessages } from './coach-context-replay.js';
 import { isToolCallPart, isToolResultPart, toolCallId, toolCallInput, toolResultValue } from '../lib/tool-parts.js';
+
+/** The sweet spot between keeping a conversation as-is and summarizing it: an
+ * episode whose spoken text fits under this many characters (~600 tokens) is
+ * handed to the next episode verbatim as a text transcript — a summary of
+ * something that short would only lose information (and cost a model call).
+ * Longer ones are summarized, to a length that grows with the transcript
+ * (1 word per DETAIL_CHARS_PER_WORD chars) within [MIN, MAX] words. */
+const DETAIL_VERBATIM_MAX_CHARS = 2400;
+const DETAIL_CHARS_PER_WORD = 16;
+const DETAIL_MIN_WORDS = 120;
+const DETAIL_MAX_WORDS = 300;
+const DETAIL_MAX_CHARS = 2500;
 
 /**
  * Design doc §3: when an episode closes (the coach or the student moves on
@@ -27,25 +39,75 @@ export async function closeEpisodeIfNeeded(
   closedPly: number
 ): Promise<void> {
   if (closedEpisodeMessages.length === 0) return;
-  if (hasSuccessfulRecordMoveNoteCall(closedEpisodeMessages, closedPly)) return;
 
-  try {
-    // final review #6: seed from this ply's own earlier closing note (e.g.
-    // a previous visit's fold), never a hardcoded null — otherwise a
-    // revisit's close would silently discard what the first visit already
-    // established about this move.
-    const existingNote = await sessionMoveNotesRepo.findByPly(deps.db, sessionId, closedPly);
-    const note = await compact(
-      toStoredMessages(closedEpisodeMessages),
-      existingNote?.note ?? null,
-      deps.callLightModel,
-      EPISODE_FOLD_SYSTEM_PROMPT,
-      { appendOpenThreads: false }
-    );
-    await sessionMoveNotesRepo.upsert(deps.db, sessionId, closedPly, note);
-  } catch (error) {
-    console.error(`closeEpisodeIfNeeded: failed to auto-fold episode (session ${sessionId}, ply ${closedPly}):`, error);
+  const stored = toStoredMessages(closedEpisodeMessages);
+  // final review #6: seed from this ply's own earlier closing note (e.g. a
+  // previous visit's fold), never a hardcoded null — otherwise a revisit's
+  // close would silently discard what the first visit already established.
+  const existingNote = (await sessionMoveNotesRepo.findByPly(deps.db, sessionId, closedPly))?.note ?? null;
+  const needsShortNote = !hasSuccessfulRecordMoveNoteCall(closedEpisodeMessages, closedPly);
+  const fold = { appendOpenThreads: false } as const;
+
+  // Two independent light-model calls, run together so the close (which sits
+  // in the turn's critical path) costs one call's latency, not two.
+  await Promise.all([
+    needsShortNote ? foldShortNote() : Promise.resolve(),
+    foldDetail()
+  ]);
+
+  async function foldShortNote(): Promise<void> {
+    try {
+      const note = await compact(stored, existingNote, deps.callLightModel, EPISODE_FOLD_SYSTEM_PROMPT, fold);
+      await sessionMoveNotesRepo.upsert(deps.db, sessionId, closedPly, note);
+    } catch (error) {
+      console.error(`closeEpisodeIfNeeded: failed to auto-fold episode (session ${sessionId}, ply ${closedPly}):`, error);
+    }
   }
+
+  // The long-form summary of the episode that just ended: replaces whatever
+  // the previous episode's was, so the coach always has the last conversation
+  // in detail (hypothetical lines and all) without replaying it raw.
+  async function foldDetail(): Promise<void> {
+    try {
+      const transcript = renderSpokenTranscript(stored);
+      if (transcript === '') return;
+      const earlier = existingNote ? `Earlier note on this same move (from a previous visit): ${existingNote}\n\n` : '';
+      const detail =
+        transcript.length <= DETAIL_VERBATIM_MAX_CHARS
+          ? `${earlier}${transcript}`
+          : await deps.callLightModel({
+              system: episodeDetailSystemPrompt(detailWordBudget(transcript.length)),
+              user: `${earlier}CONVERSATION TO SUMMARIZE\n${transcript}`
+            });
+      await sessionMoveNotesRepo.setLatestDetail(deps.db, sessionId, closedPly, detail.trim().slice(0, DETAIL_MAX_CHARS));
+    } catch (error) {
+      console.error(`closeEpisodeIfNeeded: failed to record episode detail (session ${sessionId}, ply ${closedPly}):`, error);
+    }
+  }
+}
+
+export function detailWordBudget(transcriptChars: number): number {
+  return Math.min(DETAIL_MAX_WORDS, Math.max(DETAIL_MIN_WORDS, Math.round(transcriptChars / DETAIL_CHARS_PER_WORD)));
+}
+
+/** What was actually said, as "Student:"/"Coach:" lines — tool calls and
+ * their (often large) JSON results are left out, they aren't conversation. */
+export function renderSpokenTranscript(messages: StoredMessage[]): string {
+  const lines: string[] = [];
+  for (const message of messages) {
+    if (message.role === 'tool') continue;
+    const text = spokenText(message.content).trim();
+    if (text) lines.push(`${message.role === 'user' ? 'Student' : 'Coach'}: ${text}`);
+  }
+  return lines.join('\n');
+}
+
+function spokenText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content
+    .map((part) => (typeof part === 'object' && part !== null && (part as { type?: unknown }).type === 'text' ? String((part as { text?: unknown }).text ?? '') : ''))
+    .join('');
 }
 
 /**

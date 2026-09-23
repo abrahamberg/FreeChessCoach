@@ -31,7 +31,7 @@ import { getPositionAtPly } from './game-positions.js';
 import { includeOrphanedToolCall } from './coach-context-orphan-boundary.js';
 import { resolveEpisodeReplay, type CoachContextDependencies } from './coach-context-replay.js';
 
-export { closeEpisodeIfNeeded } from './coach-context-episode-close.js';
+export { closeEpisodeIfNeeded, detailWordBudget } from './coach-context-episode-close.js';
 export type { CoachContextDependencies } from './coach-context-replay.js';
 
 const POSITION_CONTEXT_PATTERN = /^\[position_context\] Back at move (\d+) \((white|black)\),/;

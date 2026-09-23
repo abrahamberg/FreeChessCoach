@@ -489,7 +489,7 @@ describe('coach-agent startTurn concurrency', () => {
     expect(currentPositionMessage?.content).toContain('The move actually played here was e4');
   }, 20000);
 
-  test('a jump back to an earlier move closes the old episode into a note and the new turn\'s request excludes that episode\'s raw messages', async () => {
+  test('a jump back to an earlier move closes the old episode into a note and the new turn\'s request carries it only as text in the other-moves section, not as raw messages', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
     const game = await gamesRepo.insert(db, {
       userId: user.id,
@@ -528,7 +528,8 @@ describe('coach-agent startTurn concurrency', () => {
     const snapshot = await coachAgent.getLastTurnDebugSnapshot(db, session.id);
     const requestMessages = JSON.stringify([...(snapshot?.request.instructions ?? []), ...(snapshot?.request.messages ?? [])]);
 
-    expect(requestMessages).not.toContain('Talking about move 2.');
+    expect(requestMessages).toContain('Talking about move 2.');
+    expect(snapshot?.request.messages.map((m) => JSON.stringify(m)).join()).not.toContain('Talking about move 2.');
     expect(requestMessages).toContain('different opening');
 
     const note = await db

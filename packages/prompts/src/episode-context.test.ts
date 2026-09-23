@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { renderAnnotatedMove, renderAnnotatedPgn, renderGameSoFarInline, type AnnotatedMoveLike } from './episode-context.js';
+import { renderAnnotatedMove, renderAnnotatedPgn, renderGameSoFarInline, renderOtherMovesSummary, type AnnotatedMoveLike } from './episode-context.js';
 
 function moveLike(overrides: Partial<AnnotatedMoveLike> & { ply: number; moveSan: string }): AnnotatedMoveLike {
   return { quality: 'good', cpLoss: 0, bestLineSan: [], evalAfterCp: 0, reasons: [], ...overrides };
@@ -56,5 +56,21 @@ describe('renderAnnotatedPgn / renderGameSoFarInline simple mode', () => {
 
   test('renderGameSoFarInline mirrors the same simple rendering', () => {
     expect(renderGameSoFarInline(moves, true)).toBe('1.e4 e5 2.Qh5 (blunder)');
+  });
+});
+
+describe('renderOtherMovesSummary: latest conversation in detail', () => {
+  test('keeps one-line notes and appends the detailed summary of the latest episode at the end', () => {
+    const text = renderOtherMovesSummary(
+      [
+        { ply: 4, note: 'older short note' },
+        { ply: 14, note: 'short', detail: 'Student thought Nxd5 was safe. We explored 7...Nb4 8.e4 Nd3+.' }
+      ],
+      []
+    );
+    expect(text).toContain('older short note');
+    expect(text.indexOf('older short note')).toBeLessThan(text.indexOf('Most recent conversation'));
+    expect(text).toContain('Student thought Nxd5 was safe.');
+    expect(text).toContain('do not greet the student again');
   });
 });

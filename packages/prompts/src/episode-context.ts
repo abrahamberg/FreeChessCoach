@@ -121,6 +121,8 @@ function movePrefix(ply: number): string {
 export interface MoveNoteEntry {
   ply: number;
   note: string;
+  /** Long-form summary of the most recently closed episode (at most one entry has it). */
+  detail?: string | null;
 }
 
 export interface MoveQualityEntry {
@@ -137,11 +139,16 @@ export interface MoveQualityEntry {
  */
 export function renderOtherMovesSummary(notes: MoveNoteEntry[], qualities: MoveQualityEntry[]): string {
   const qualityByPly = new Map(qualities.map((entry) => [entry.ply, entry.quality]));
+  const latest = notes.find((entry) => entry.detail);
   const body =
     notes.length === 0
       ? '(nothing discussed yet outside the current move)'
       : notes.map((entry) => renderOtherMoveLine(entry, qualityByPly)).join('\n');
-  return `## Other moves discussed\n\n${body}`;
+  const latestQuality = latest ? qualityByPly.get(latest.ply) : undefined;
+  const latestSection = latest
+    ? `\n\n### Most recent conversation: ${describeMoveRef(latest.ply)}${latestQuality ? ` (${latestQuality})` : ''}, in detail\n\nThis conversation just ended. Continue from it — do not greet the student again, restart the session, or re-explain or re-ask what it already settled.\n\n${latest.detail}`
+    : '';
+  return `## Other moves discussed\n\n${body}${latestSection}`;
 }
 
 function renderOtherMoveLine(entry: MoveNoteEntry, qualityByPly: Map<number, MoveQuality>): string {

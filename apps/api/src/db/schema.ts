@@ -159,6 +159,8 @@ export interface SessionMoveNotesTable {
   sessionId: string;
   ply: number;
   note: string;
+  /** Long-form summary of the most recently closed episode; null on every other row. */
+  detail: string | null;
   createdAt: Generated<Date>;
   updatedAt: Generated<Date>;
 }
