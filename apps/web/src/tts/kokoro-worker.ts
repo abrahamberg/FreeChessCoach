@@ -1,4 +1,5 @@
 import { KokoroTTS, TextSplitterStream } from 'kokoro-js';
+import { trimmedWav } from './trim-silence.js';
 import type { KokoroVoiceId } from './persona-voices.js';
 import type { TtsSpeakMessage, TtsWorkerMessage } from './shared-tts-worker.js';
 
@@ -81,7 +82,7 @@ async function handleSpeak(id: string, text: string, voice: KokoroVoiceId): Prom
     let index = 0;
     for await (const { text: chunkText, audio } of tts.stream(splitter, { voice })) {
       log('chunk ready', { index, chunkText, durationSec: audio.audio.length / audio.sampling_rate });
-      const wav = audio.toWav();
+      const wav = trimmedWav(audio.audio, audio.sampling_rate);
       ctx.postMessage({ type: 'chunk', id, index, audio: wav }, [wav]);
       index += 1;
     }

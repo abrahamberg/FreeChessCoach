@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
 import { useCoachVoice } from '../../hooks/useCoachVoice.js';
+import { useLlmSetupStatus } from '../../hooks/useLlmSetupStatus.js';
+import { isOpenAiVoiceAvailable } from '../../tts/openai-voice-available.js';
 import { ENGINE_MODE_BADGE, useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
@@ -97,7 +99,9 @@ export function SessionPage(): ReactNode {
   const messagePaging = useMessagePaging(chat.messages);
   const persona = profileQuery.data?.coachPersona ?? 'general';
   const ttsEnabled = profileQuery.data?.ttsEnabled ?? false;
-  const ttsBackend = profileQuery.data?.ttsBackend ?? 'openai';
+  const llmSetupQuery = useLlmSetupStatus();
+  const savedTtsBackend = profileQuery.data?.ttsBackend ?? 'openai';
+  const ttsBackend = savedTtsBackend === 'openai' && !isOpenAiVoiceAvailable(llmSetupQuery.data) ? 'browser' : savedTtsBackend;
   const coachVoice = useCoachVoice({
     messages: chat.messages,
     isStreaming: chat.isStreaming,

@@ -11,6 +11,7 @@ import type { LlmTunnelTransport } from '../services/engine/llm-tunnel-transport
 import { buildLocalChatBody } from './local-request.js';
 import { parseLocalCompletion } from './local-response.js';
 import { LocalStreamMapper } from './local-stream.js';
+import { thinkingBudgetChars } from './local-thinking-budget.js';
 import type { LocalLlmTimeouts } from './model-options.js';
 
 export interface LocalModelOptions {
@@ -46,10 +47,11 @@ const THINKING_CONTROL_ERROR = /reasoning_effort|chat_template_kwargs/i;
  */
 export function createLocalModel(options: LocalModelOptions): LanguageModelV4 {
   const serverKey = `${options.userId}|${options.baseUrl}|${options.modelId}`;
-  const bodyFor = (callOptions: LanguageModelV4CallOptions, stream: boolean): Record<string, unknown> =>
+  const bodyFor = (callOptions: LanguageModelV4CallOptions, stream: boolean, forceThinkingOff = false): Record<string, unknown> =>
     buildLocalChatBody(options.modelId, callOptions, {
       stream,
-      sendThinkingControls: !serversWithoutThinkingControls.has(serverKey)
+      sendThinkingControls: !serversWithoutThinkingControls.has(serverKey),
+      forceThinkingOff
     });
   const payloadFor = (body: Record<string, unknown>, stream: boolean): LlmTunnelPayload => ({
     kind: 'llm',
@@ -83,16 +85,17 @@ export function createLocalModel(options: LocalModelOptions): LanguageModelV4 {
   async function stream(callOptions: LanguageModelV4CallOptions): Promise<LanguageModelV4StreamResult> {
     const abort = new AbortController();
     const signal = callOptions.abortSignal ? AbortSignal.any([callOptions.abortSignal, abort.signal]) : abort.signal;
-    const openChunks = (): AsyncIterable<string> =>
-      options.transport.stream(options.userId, payloadFor(bodyFor(callOptions, true), true), {
+    const openChunks = (thinkingOff: boolean, attemptSignal: AbortSignal): AsyncIterable<string> =>
+      options.transport.stream(options.userId, payloadFor(bodyFor(callOptions, true, thinkingOff), true), {
         timeoutMs: options.timeouts.streamIdleMs,
         priority: 'interactive',
-        signal
+        signal: AbortSignal.any([signal, attemptSignal])
       });
+    const budgetChars = thinkingBudgetChars(callOptions.reasoning);
     return {
       stream: new ReadableStream<LanguageModelV4StreamPart>({
         start(controller) {
-          void pump(controller, openChunks, serverKey);
+          void pump(controller, openChunks, serverKey, budgetChars);
         },
         cancel() {
           abort.abort();
@@ -112,10 +115,13 @@ export function createLocalModel(options: LocalModelOptions): LanguageModelV4 {
   };
 }
 
+type OpenChunks = (thinkingOff: boolean, signal: AbortSignal) => AsyncIterable<string>;
+
 async function pump(
   controller: ReadableStreamDefaultController<LanguageModelV4StreamPart>,
-  openChunks: () => AsyncIterable<string>,
-  serverKey: string
+  openChunks: OpenChunks,
+  serverKey: string,
+  budgetChars: number | undefined
 ): Promise<void> {
   // Once the consumer cancels, enqueue/close throw; there is no one left to tell.
   const emit = (part: LanguageModelV4StreamPart): void => {
@@ -126,16 +132,10 @@ async function pump(
     }
   };
   emit({ type: 'stream-start', warnings: [] });
-  const mapper = new LocalStreamMapper();
-  let emitted = false;
   try {
-    for await (const chunk of readWithRetry(openChunks, serverKey, () => emitted)) {
-      for (const part of mapper.push(chunk)) {
-        emitted = true;
-        emit(part);
-      }
-    }
-    mapper.finish().forEach(emit);
+    const overran = await pumpAttempt(emit, openChunks, serverKey, new LocalStreamMapper(), false, budgetChars);
+    // The model thought past its budget: ask again with thinking off.
+    if (overran) await pumpAttempt(emit, openChunks, serverKey, new LocalStreamMapper('reasoning-1'), true, undefined);
   } catch (error) {
     emit({ type: 'error', error });
   }
@@ -146,19 +146,51 @@ async function pump(
   }
 }
 
+/** Runs one request to the end. Returns true when it was cut short because
+ * its thinking passed `budgetChars` before any answer or tool call began. */
+async function pumpAttempt(
+  emit: (part: LanguageModelV4StreamPart) => void,
+  openChunks: OpenChunks,
+  serverKey: string,
+  mapper: LocalStreamMapper,
+  thinkingOff: boolean,
+  budgetChars: number | undefined
+): Promise<boolean> {
+  const attempt = new AbortController();
+  let emitted = false;
+  let thinkingChars = 0;
+  let answering = false;
+  const open = (): AsyncIterable<string> => openChunks(thinkingOff, attempt.signal);
+  for await (const chunk of readWithRetry(open, serverKey, () => emitted)) {
+    for (const part of mapper.push(chunk)) {
+      emitted = true;
+      emit(part);
+      if (part.type === 'reasoning-delta') thinkingChars += part.delta.length;
+      else if (part.type === 'text-start' || part.type === 'tool-input-start') answering = true;
+    }
+    if (budgetChars !== undefined && !answering && thinkingChars > budgetChars) {
+      attempt.abort();
+      mapper.abandonThinking().forEach(emit);
+      return true;
+    }
+  }
+  mapper.finish().forEach(emit);
+  return false;
+}
+
 /** Streams chunks; if the server rejects the thinking fields before any
  * output, retries once without them. */
 async function* readWithRetry(
-  openChunks: () => AsyncIterable<string>,
+  open: () => AsyncIterable<string>,
   serverKey: string,
   hasEmitted: () => boolean
 ): AsyncGenerator<string> {
   try {
-    yield* openChunks();
+    yield* open();
   } catch (error) {
     if (hasEmitted() || serversWithoutThinkingControls.has(serverKey) || !isThinkingControlRejection(error)) throw error;
     serversWithoutThinkingControls.add(serverKey);
-    yield* openChunks();
+    yield* open();
   }
 }
 

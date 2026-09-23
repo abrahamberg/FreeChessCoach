@@ -22,6 +22,7 @@ import { EngineModeSelect } from './EngineModeSelect.js';
 import { EnginePingTest } from './EnginePingTest.js';
 import { NicknameForm } from './NicknameForm.js';
 import { PlatformUsernameForm } from './PlatformUsernameForm.js';
+import { isOpenAiVoiceAvailable } from '../../tts/openai-voice-available.js';
 import { TtsSection, type TtsProfilePatch } from './TtsSection.js';
 import { UnlockPhraseModal } from './UnlockPhraseModal.js';
 import './SettingsPage.css';
@@ -182,6 +183,7 @@ export function SettingsPage(): ReactNode {
         <TtsSection
           enabled={profile.ttsEnabled}
           backend={profile.ttsBackend}
+          openaiAvailable={isOpenAiVoiceAvailable(llmSetupQuery.data)}
           onChange={(patch) => ttsMutation.mutate(patch)}
         />
       </section>

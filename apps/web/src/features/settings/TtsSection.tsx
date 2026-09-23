@@ -12,6 +12,9 @@ export interface TtsProfilePatch {
 export interface TtsSectionProps {
   enabled: boolean;
   backend: TtsBackend;
+  /** False when no OpenAI voice model is set up: the OpenAI option is
+   * disabled and the browser voice is used instead. */
+  openaiAvailable: boolean;
   onChange: (patch: TtsProfilePatch) => void;
 }
 
@@ -35,7 +38,10 @@ const BACKEND_WARNING: Record<TtsBackend, string> = {
  * choice's tradeoff (your own OpenAI key's usage vs. local speed) — cancelling leaves `enabled`/
  * `backend` untouched, which is the "undo". Turning the switch off never
  * needs confirmation; there's no downside to applying it immediately. */
-export function TtsSection({ enabled, backend, onChange }: TtsSectionProps): ReactNode {
+export function TtsSection({ enabled, backend: savedBackend, openaiAvailable, onChange }: TtsSectionProps): ReactNode {
+  // A saved 'openai' choice (the DB default) is shown and acted on as
+  // 'browser' while OpenAI isn't set up.
+  const backend: TtsBackend = !openaiAvailable && savedBackend === 'openai' ? 'browser' : savedBackend;
   const [pending, setPending] = useState<{ enabled: boolean; backend: TtsBackend } | null>(null);
 
   function handleToggleEnabled(next: boolean): void {
@@ -55,7 +61,7 @@ export function TtsSection({ enabled, backend, onChange }: TtsSectionProps): Rea
     if (!pending) return;
     const patch: TtsProfilePatch = {};
     if (pending.enabled !== enabled) patch.ttsEnabled = pending.enabled;
-    if (pending.backend !== backend) patch.ttsBackend = pending.backend;
+    if (pending.backend !== savedBackend) patch.ttsBackend = pending.backend;
     onChange(patch);
     setPending(null);
   }
@@ -80,9 +86,11 @@ export function TtsSection({ enabled, backend, onChange }: TtsSectionProps): Rea
                 type="radio"
                 name="tts-backend"
                 checked={backend === option}
+                disabled={option === 'openai' && !openaiAvailable}
                 onChange={() => handleSelectBackend(option)}
               />
               {BACKEND_LABEL[option]}
+              {option === 'openai' && !openaiAvailable && ' — set up an OpenAI voice model in AI setup to use this'}
             </label>
           ))}
         </div>

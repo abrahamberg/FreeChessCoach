@@ -23,7 +23,6 @@ interface PendingToolCall {
 const OPEN_TAG = '<think>';
 const CLOSE_TAG = '</think>';
 const TEXT_ID = 'text-0';
-const REASONING_ID = 'reasoning-0';
 
 /**
  * Turns a local server's streamed Chat Completions chunks (one SSE `data:`
@@ -33,6 +32,8 @@ const REASONING_ID = 'reasoning-0';
  * followed by a complete `tool-call` when the stream ends.
  */
 export class LocalStreamMapper {
+  constructor(private readonly reasoningId = 'reasoning-0') {}
+
   private textOpen = false;
   private textEverOpened = false;
   private reasoningOpen = false;
@@ -57,6 +58,12 @@ export class LocalStreamMapper {
       ...this.content(asString(delta.content)),
       ...this.tools(delta.tool_calls ?? [])
     ];
+  }
+
+  /** Ends the open thinking block when the caller gives up on this stream
+   * (its thinking ran past the budget) so the retry can start a new one. */
+  abandonThinking(): LanguageModelV4StreamPart[] {
+    return this.closeReasoning();
   }
 
   finish(): LanguageModelV4StreamPart[] {
@@ -127,16 +134,16 @@ export class LocalStreamMapper {
     const parts: LanguageModelV4StreamPart[] = [];
     if (!this.reasoningOpen) {
       this.reasoningOpen = true;
-      parts.push({ type: 'reasoning-start', id: REASONING_ID });
+      parts.push({ type: 'reasoning-start', id: this.reasoningId });
     }
-    parts.push({ type: 'reasoning-delta', id: REASONING_ID, delta });
+    parts.push({ type: 'reasoning-delta', id: this.reasoningId, delta });
     return parts;
   }
 
   private closeReasoning(): LanguageModelV4StreamPart[] {
     if (!this.reasoningOpen) return [];
     this.reasoningOpen = false;
-    return [{ type: 'reasoning-end', id: REASONING_ID }];
+    return [{ type: 'reasoning-end', id: this.reasoningId }];
   }
 
   private text(delta: string): LanguageModelV4StreamPart[] {

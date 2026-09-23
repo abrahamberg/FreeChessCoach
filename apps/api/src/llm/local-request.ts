@@ -22,6 +22,9 @@ export interface LocalChatBodyOptions {
   /** False once a server has rejected `reasoning_effort` /
    * `chat_template_kwargs`; the thinking level is then left to the model. */
   sendThinkingControls: boolean;
+  /** Turns thinking off whatever the call asked for: the retry after a
+   * model ran past its thinking budget. */
+  forceThinkingOff?: boolean;
 }
 
 /** Builds the OpenAI Chat Completions request a local server receives for
@@ -47,7 +50,7 @@ export function buildLocalChatBody(
     seed: options.seed,
     presence_penalty: options.presencePenalty,
     frequency_penalty: options.frequencyPenalty,
-    ...(bodyOptions.sendThinkingControls ? thinkingControls(options.reasoning) : {}),
+    ...(bodyOptions.sendThinkingControls ? thinkingControls(bodyOptions.forceThinkingOff ? 'none' : options.reasoning) : {}),
     stream: bodyOptions.stream,
     stream_options: bodyOptions.stream ? { include_usage: true } : undefined
   });
