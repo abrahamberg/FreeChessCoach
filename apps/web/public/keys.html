@@ -93,7 +93,7 @@
             </div>
             <div class="card">
               <h3>The key goes to your provider and nowhere else</h3>
-              <p>Requests are sent to the AI endpoint you configure (OpenAI by default), under your own account with them, so you can see every call in your provider's usage page.</p>
+              <p>Requests are sent to the AI endpoint you configure (OpenAI by default), under your own account with them, so you can see every call in your provider's usage page. If you choose a local model instead, there is no key and no provider: requests go from your browser tab to the server on your own computer.</p>
             </div>
             <div class="card">
               <h3>You can check all of this yourself</h3>
@@ -159,6 +159,10 @@
           <details class="faq">
             <summary>Can I use a provider other than OpenAI?</summary>
             <p>The setup form accepts an endpoint that speaks the OpenAI Chat or Responses format, or Anthropic's Messages format, and it tests the connection before saving. The step-by-step guide covers OpenAI because it is the default.</p>
+          </details>
+          <details class="faq">
+            <summary>Can I run the coach on a local model?</summary>
+            <p>Yes. In <strong>Settings → AI setup</strong> choose <strong>On my computer (LM Studio / Ollama)</strong>. Calls are relayed through your open browser tab to the server on your machine, so keep the tab open while you coach, and the local server must allow this site (CORS). Small models can be slower or less reliable than a cloud one. <a href="/openai-key#local">See the local setup steps</a>.</p>
           </details>
           <details class="faq">
             <summary>What happens when my monthly limit runs out?</summary>

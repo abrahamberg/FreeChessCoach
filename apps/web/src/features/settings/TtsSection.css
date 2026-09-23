@@ -25,3 +25,49 @@
   gap: 8px;
   margin-top: 16px;
 }
+
+.local-voice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-left: var(--space-6);
+}
+
+.local-voice__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.local-voice__test {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font-size: 14px;
+}
+
+.local-voice__error {
+  color: var(--color-danger);
+}
+
+.local-voice__intro {
+  margin: 0;
+  font-size: 14px;
+}
+
+.local-voice__advanced {
+  font-size: 14px;
+}
+
+.local-voice__advanced summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+
+.local-voice__advanced > * {
+  margin-top: var(--space-2);
+}

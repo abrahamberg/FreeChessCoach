@@ -1,6 +1,7 @@
 import { TTS_BACKENDS, type TtsBackend } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { Modal } from '../../components/Modal.js';
+import { LocalVoiceSetup } from './LocalVoiceSetup.js';
 import '../../components/RadioCard.css';
 import './TtsSection.css';
 
@@ -20,7 +21,20 @@ export interface TtsSectionProps {
 
 const BACKEND_LABEL: Record<TtsBackend, string> = {
   openai: 'OpenAI voice (default)',
-  browser: 'Browser voice — Beta (free, runs on your device)'
+  browser: 'Browser voice — Slow, Beta (free, runs on your device)',
+  local: 'Local voice server (free, fast, needs a small install)'
+};
+
+const BACKEND_CONFIRM_TITLE: Record<TtsBackend, string> = {
+  openai: 'Use OpenAI voice?',
+  browser: 'Use browser voice?',
+  local: 'Use local voice server?'
+};
+
+const BACKEND_CONFIRM_BUTTON: Record<TtsBackend, string> = {
+  openai: 'Use OpenAI voice',
+  browser: 'Use browser voice (Beta)',
+  local: 'Use local voice server'
 };
 
 const BACKEND_WARNING: Record<TtsBackend, string> = {
@@ -29,7 +43,11 @@ const BACKEND_WARNING: Record<TtsBackend, string> = {
   browser:
     'Browser voice runs entirely on your device — it never leaves your machine, and it’s free. Speed ' +
     'depends on your hardware and is generally much slower than the cloud option; keep this tab open while it ' +
-    'speaks. It’s in beta.'
+    'speaks. It’s in beta.',
+  local:
+    'The local voice server is a free voice program you run on your own computer, next to LM Studio. ' +
+    'It sounds natural, starts quickly and costs nothing. Nothing is sent to us or to any cloud. ' +
+    'It needs a one-time setup — after you confirm, the steps appear right below the voice options.'
 };
 
 /** Coach voice (TTS): a master on/off switch, default off, plus which
@@ -96,9 +114,11 @@ export function TtsSection({ enabled, backend: savedBackend, openaiAvailable, on
         </div>
       )}
 
+      {enabled && backend === 'local' && <LocalVoiceSetup />}
+
       {pending && (
         <Modal
-          title={pending.backend === 'openai' ? 'Use OpenAI voice?' : 'Use browser voice?'}
+          title={BACKEND_CONFIRM_TITLE[pending.backend]}
           onClose={() => setPending(null)}
         >
           <p>{BACKEND_WARNING[pending.backend]}</p>
@@ -107,7 +127,7 @@ export function TtsSection({ enabled, backend: savedBackend, openaiAvailable, on
               Cancel
             </button>
             <button type="button" className="btn-primary" onClick={confirmPending}>
-              {pending.backend === 'openai' ? 'Use OpenAI voice' : 'Use browser voice (Beta)'}
+              {BACKEND_CONFIRM_BUTTON[pending.backend]}
             </button>
           </div>
         </Modal>

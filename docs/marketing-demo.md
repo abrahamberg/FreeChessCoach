@@ -28,6 +28,12 @@ phrase, no server master key), the unlock cache and its sliding TTL (default 900
 `LLM_UNLOCK_TTL_SECONDS`) are `apps/api/src/llm/unlock-store.ts`. Re-check those
 files before changing the page.
 
+Step 10 of `guide.html` (`#voice`, the local Kokoro voice server) is checked
+against Kokoro-FastAPI's own README and start scripts, not this repo: image
+`ghcr.io/remsky/kokoro-fastapi-cpu` (about 5 GB), default port 8880, `PORT`
+honored by the Mac/Linux scripts but hard-coded in `start-cpu.ps1`. The app side
+is `apps/web/src/features/settings/LocalVoiceSetup.tsx`, which links to it.
+
 ## The live demo (`/demo`)
 
 The real SPA, running at `/demo/*` on **recorded sample data**. Nothing reaches the API,

@@ -472,6 +472,30 @@ recover a provider key. API and worker share this cache for active background
 jobs; users can also lock it immediately from Settings. Omitting the voice
 model disables cloud voice while leaving browser voice available.
 
+### Coach voice (TTS)
+
+`users.tts_enabled` (off by default) plus `users.tts_backend`, one of three
+clients behind `apps/web/src/tts/resolve-tts-client.ts`:
+
+- `openai`: the browser calls `POST /api/tts/speak`; the API synthesizes with
+  the user's own OpenAI key (`llm/openai-tts.ts`).
+- `browser`: Kokoro on WASM in a worker (`kokoro-worker.ts`). Free but runs
+  slower than real time on most CPUs, so sentences arrive with gaps.
+- `local`: the browser calls a Kokoro-FastAPI server the user runs on their own
+  machine (`local-tts-client.ts`, `POST <address>/v1/audio/speech`, one request
+  per sentence). It never touches this app's API, so it works when the app is
+  hosted too. The server is always `http://localhost:<port>`; the port (default
+  8880) is per-device (`localStorage`, `local-tts-settings.ts`) and set under a
+  collapsed "Advanced" section in `features/settings/LocalVoiceSetup.tsx`, which
+  also links to the one-time setup steps in the user guide (`/guide#voice`,
+  Docker and terminal, Windows and Mac). Only Kokoro-FastAPI is documented:
+  it enables CORS for all origins by default, which a direct browser call needs.
+
+Microsoft's unofficial Edge voices were evaluated and not shipped. Their
+WebSocket endpoint only accepts a User-Agent containing `Edg/`, which a browser
+page can't set on a WebSocket (Chrome/Firefox get 403), and the local
+`openai-edge-tts` wrapper sends no CORS headers.
+
 ### Local LLM (LM Studio / Ollama)
 
 A setup with `protocol: 'local'` points at an OpenAI-compatible server on the

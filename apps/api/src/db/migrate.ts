@@ -1,10 +1,12 @@
 import { Migrator, type Kysely, type MigrationProvider } from 'kysely';
 import * as consolidated from './migrations/0000_consolidated_initial.js';
+import * as ttsBackendLocal from './migrations/0001_tts_backend_local.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
     Promise.resolve({
-      '0000_consolidated_initial': consolidated
+      '0000_consolidated_initial': consolidated,
+      '0001_tts_backend_local': ttsBackendLocal
     })
 };
 

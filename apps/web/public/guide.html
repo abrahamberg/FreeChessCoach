@@ -40,14 +40,14 @@
           <p class="eyebrow">User guide</p>
           <h1 style="font-size: 36px; line-height: 1.2; margin: 0 0 16px">Your first week with FreeChessCoach.</h1>
           <p style="color: var(--text-muted); font-size: 18px; margin: 0">
-            Everything here is free from us. Up to step 6 you need no AI at all; steps 7 to 9 add the coach, which runs on an AI service you connect yourself.
+            Everything here is free from us. Up to step 6 you need no AI at all; steps 7 to 9 add the coach, which runs on an AI service you connect yourself. Step 10 is an optional voice for the coach, with three ways to set it up.
             Screenshots use sample data from a made-up player.
           </p>
           <p class="demo-note">
             <a href="#signin">1 Sign in</a> · <a href="#link">2 Link accounts</a> · <a href="#import">3 Import</a> ·
             <a href="#review">4 Review</a> · <a href="#stats">5 Stats</a> · <a href="#bots">6 Bots</a> ·
             <a href="#key">7 AI key</a> · <a href="#coach">8 Coaching</a> · <a href="#progress">9 Progress</a> ·
-            <a href="#routine">The weekly routine</a>
+            <a href="#voice">10 Voice</a> · <a href="#routine">The weekly routine</a>
           </p>
         </div>
       </section>
@@ -117,7 +117,7 @@
 
             <li id="key">
               <h3>Optional: connect your AI key</h3>
-              <p>The coach runs on a key you bring. Before you do, read <a href="/keys">how the key is handled</a>. Then follow <a href="/openai-key">the OpenAI walkthrough</a>: create an account, set a small spending limit, make a key just for this app, and paste it into <strong>Settings → AI setup</strong>.</p>
+              <p>The coach runs on an AI you bring: either a cloud key, or a model running on your own computer (LM Studio or Ollama). For a cloud key, before you do, read <a href="/keys">how the key is handled</a>. Then follow <a href="/openai-key">the OpenAI walkthrough</a>: create an account, set a small spending limit, make a key just for this app, and paste it into <strong>Settings → AI setup</strong>. To use a local model instead, choose <strong>On my computer (LM Studio / Ollama)</strong> there and follow <a href="/openai-key#local">the local walkthrough</a>.</p>
               <div class="callout warn">
                 <p><strong>Use a key with a small monthly limit</strong>, about $5 to begin with, and adjust it to what you actually use.</p>
               </div>
@@ -145,6 +145,93 @@
               <figure class="shot">
                 <img src="/shots/progress-focus.png" alt="The Progress page." width="1440" height="900" loading="lazy" />
               </figure>
+            </li>
+
+<li id="voice">
+              <h3>Optional: give the coach a voice</h3>
+              <p>The coach can read its replies aloud. There are three ways to do it. Each one is folded away below; open only the one you want. The voice is off until you switch it on in <strong>Settings → Coach voice</strong>, and each coach has its own voice on every option.</p>
+
+              <details class="faq">
+                <summary>Option 1: OpenAI voice (easiest, uses your own OpenAI key)</summary>
+                <p>If your AI setup uses OpenAI and you added a voice model there, choose <strong>OpenAI voice</strong> in <strong>Settings → Coach voice</strong>. It is fast and needs nothing installed. It is billed to your own OpenAI account, the same way the coach is. If you did not set up a voice model in AI setup, this option is greyed out.</p>
+              </details>
+
+              <details class="faq">
+                <summary>Option 2: Browser voice (free, nothing to install, but slow)</summary>
+                <p>Choose <strong>Browser voice</strong> in <strong>Settings → Coach voice</strong>. The voice runs entirely inside your browser, so nothing leaves your computer and it costs nothing. The first use downloads a voice model. It is <strong>slow</strong>: how slow depends on your computer, and it is generally much slower than the other options. Keep the tab open while it speaks. It is still in beta.</p>
+              </details>
+
+              <details class="faq">
+                                <summary>Option 3: Local voice server (free and fast, advanced one-time install)</summary>
+                <p>This is the most technical option, and you can skip it. It is a small voice program called <strong>Kokoro</strong> that you run on your own computer, next to LM Studio. It sounds natural, costs nothing, and nothing is sent to us or to any cloud. It needs about 10 minutes of setup once; after that it is a single switch in <strong>Settings</strong>. If commands and terminals are unfamiliar, use Option 1 or 2 instead.</p>
+                <p>Pick <strong>one</strong> of the two ways below. Docker is easier; the terminal way avoids a large download.</p>
+
+                <h4>Way 1: Docker (Windows and Mac, easiest)</h4>
+                <ol>
+                <li>Install <a href="https://www.docker.com/products/docker-desktop/" target="_blank" rel="noreferrer">Docker Desktop</a> for Windows or Mac and open it. Wait until it says it is running.</li>
+                <li>Open a terminal: <strong>PowerShell</strong> on Windows, <strong>Terminal</strong> on Mac. Paste this and press Enter:</li>
+                </ol>
+                <pre><code>docker run -d --name kokoro --restart unless-stopped -p 8880:8880 ghcr.io/remsky/kokoro-fastapi-cpu:latest</code></pre>
+                <p>The first run downloads about <strong>5 GB</strong>, then needs a minute to start. That is the one-time part. From then on it starts by itself whenever Docker Desktop is running. To stop or start it by hand: <code>docker stop kokoro</code> and <code>docker start kokoro</code>.</p>
+
+              
+
+                <h4>Way 2: The terminal, no Docker</h4>
+                <p><strong>Windows (PowerShell):</strong></p>
+                <ol>
+                <li>Install <a href="https://git-scm.com/download/win" target="_blank" rel="noreferrer">Git</a>, then <a href="https://github.com/espeak-ng/espeak-ng/releases" target="_blank" rel="noreferrer">eSpeak NG</a> (download the Windows <code>.msi</code> installer and keep the default install location).</li>
+                <li>Install <a href="https://docs.astral.sh/uv/" target="_blank" rel="noreferrer">uv</a> by running <code>winget install --id=astral-sh.uv -e</code>, then close and reopen PowerShell.</li>
+                <li>Download and start the voice server:</li>
+                </ol>
+                <pre><code>git clone https://github.com/remsky/Kokoro-FastAPI.git
+cd Kokoro-FastAPI
+powershell -ExecutionPolicy Bypass -File .\start-cpu.ps1</code></pre>
+                <p><strong>Mac with Apple silicon (M1 or newer):</strong></p>
+                <ol>
+                <li>Install <a href="https://brew.sh/" target="_blank" rel="noreferrer">Homebrew</a> if you don't have it, then run <code>brew install git uv espeak-ng</code>.</li>
+                <li>Download and start the voice server:</li>
+                </ol>
+                <pre><code>git clone https://github.com/remsky/Kokoro-FastAPI.git
+cd Kokoro-FastAPI
+./start-gpu_mac.sh</code></pre>
+                <p>On an Intel Mac, use Docker (Way 1) instead.</p>
+                <p>The first start downloads the packages and the voice model, which takes a few minutes. <strong>Leave the terminal window open</strong> while you use the coach, the same way you leave LM Studio running. Press <code>Ctrl+C</code> in the window to stop it, and run the last command again to start it another day.</p>
+
+              
+
+                <h4>Turn it on</h4>
+                <ol>
+                <li>Open <strong>Settings → Coach voice</strong> and switch on <strong>Enable coach voice</strong>.</li>
+                <li>Choose <strong>Local voice server</strong> and confirm.</li>
+                <li>Press <strong>Test voice</strong>. You should hear the coach say the server is connected. If you do, you are done.</li>
+                </ol>
+
+              
+
+                <details class="faq">
+                <summary>Advanced: use a different port</summary>
+                <p>The voice server normally listens on port <strong>8880</strong>. If something else on your computer already uses that port, start the server on another one, then tell the app.</p>
+                <p><strong>Docker:</strong> change the first number after <code>-p</code>. For port 9000, remove the old container with <code>docker rm -f kokoro</code> and run:</p>
+                <pre><code>docker run -d --name kokoro --restart unless-stopped -p 9000:8880 ghcr.io/remsky/kokoro-fastapi-cpu:latest</code></pre>
+                <p><strong>Mac terminal:</strong> put the port in front of the command: <code>PORT=9000 ./start-gpu_mac.sh</code></p>
+                <p><strong>Windows terminal:</strong> the start script always uses 8880. To use another port, use the Docker way.</p>
+                <p>Then open <strong>Settings → Coach voice</strong>, expand <strong>Advanced: use a different port</strong>, enter the same number and press <strong>Test voice</strong>. The port is remembered on this computer only.</p>
+                </details>
+
+              
+
+                <details class="faq">
+                <summary>Test voice says it can't reach the server</summary>
+                <p>Check that the server is running: for Docker, <code>docker ps</code> should list <code>kokoro</code> (open Docker Desktop if it doesn't); for the terminal way, the window must still be open. Give it a minute after starting, because it loads the voice model first. Make sure the port in Settings matches the one you started it on. If it still fails, some browsers (Safari in particular) may stop a website from talking to your own computer, so try Chrome, Edge or Firefox.</p>
+                </details>
+
+              
+
+                <div class="callout">
+                <p>Kokoro is separate open-source software from <a href="https://github.com/remsky/Kokoro-FastAPI" target="_blank" rel="noreferrer">its own project</a>, not something we run or support. On an ordinary computer without a graphics card it speaks at about the pace of natural speech, so a long reply may pause between sentences. The project also publishes faster versions for NVIDIA and AMD graphics cards; those share the card with LM Studio.</p>
+                </div>
+            
+              </details>
             </li>
           </ol>
         </div>

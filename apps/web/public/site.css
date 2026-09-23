@@ -147,6 +147,8 @@ details.faq { border-bottom: 1px solid var(--border); padding: 14px 0; }
 details.faq summary { cursor: pointer; font-weight: 600; list-style-position: outside; }
 details.faq p { color: var(--text-muted); margin: 10px 0 0; }
 
+pre { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.9em; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 0 0 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+pre code { background: none; border: 0; padding: 0; }
 code, kbd { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.9em; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; }
 
 .week { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }

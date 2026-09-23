@@ -97,6 +97,7 @@
             </li>
             <li>
               <h3>Paste it into FreeChessCoach</h3>
+              <p>Prefer not to use a cloud key? <a href="#local">Run a model on your own computer instead.</a></p>
               <p>Sign in to FreeChessCoach and open <strong>Settings</strong>, then the AI setup section. It is a short two-step wizard.</p>
               <p><strong>Step 1: Connect your AI.</strong></p>
               <ul>
@@ -118,6 +119,22 @@
             <li>
               <h3>Rotate it every so often</h3>
               <p>Every month or two, or when the key expires: make a new key as above, use <strong>Replace setup</strong> in FreeChessCoach, then delete the old key in <strong>API keys</strong>. That is the whole routine.</p>
+            </li>
+          </ol>
+          <h2 id="local" style="margin-top: 40px">Or run the AI on your own computer</h2>
+          <p>No account, no key and no cost per message. The coach can use a model served by <a href="https://lmstudio.ai/">LM Studio</a> or <a href="https://ollama.com/">Ollama</a> on your machine. Your computer needs to be able to run the model you pick, and small models can coach less reliably than a cloud one.</p>
+          <ol class="steps">
+            <li>
+              <h3>Start your local server</h3>
+              <p><strong>LM Studio:</strong> download a model, open the <strong>Developer</strong> tab, start the server and turn on <strong>Enable CORS</strong> in its server settings, so this site may call it. <strong>Ollama:</strong> set <code>OLLAMA_ORIGINS</code> to include this site's address and restart Ollama.</p>
+            </li>
+            <li>
+              <h3>Connect it in Settings</h3>
+              <p>Open <strong>Settings → AI setup</strong>, choose <strong>On my computer (LM Studio / Ollama)</strong>, pick your server type and check the <strong>Local API URL</strong>. Choose your model (the form lists what your server offers), then <strong>Test connection</strong>. The test also warns if the model's context window is under 16k tokens, which is about what the coach needs. A token is only needed if your server asks for one.</p>
+            </li>
+            <li>
+              <h3>Keep the tab open while you coach</h3>
+              <p>Our server cannot reach your computer directly, so each request goes through your open browser tab to your local server and back. If you close the tab or stop the server, the coach pauses. A local server answers one request at a time, so replies may take longer than from a cloud service.</p>
             </li>
           </ol>
           <div class="cta-row">
