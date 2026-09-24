@@ -43,6 +43,7 @@ async function main(): Promise<void> {
   const ttsConfig = buildTtsConfigFromEnv();
 
   const app = buildApp({
+    logger: true,
     db,
     jobQueue,
     llmSetupVault: createUserSetupVault(),

@@ -63,6 +63,10 @@ export interface BuildAppOptions {
   /** Required (alongside tunnel) to register the worker-facing
    * POST /internal/engine-tunnel/:userId relay route. */
   internalToken?: string;
+  /** Enables Fastify's pino logger (errors, `request.log`, `app.log`). Off by
+   * default so tests stay quiet; server.ts turns it on. Without it every
+   * `log.error` in the app is a silent no-op. */
+  logger?: boolean;
 }
 
 /** Builds the Fastify app: proxy-auth header decoration, problem+json error mapping,
@@ -71,7 +75,9 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   const authMode = options.authMode ?? defaultAuthMode();
   const checkReady = options.checkReady ?? defaultCheckReady(options.db);
 
-  const app = Fastify();
+  // Per-request access lines are off (probes would flood them); explicit
+  // log calls and the error handler's log.error still come through.
+  const app = Fastify({ logger: options.logger ?? false, disableRequestLogging: true });
 
   app.register(errorMapperPlugin);
   app.register(authHeadersPlugin, { authMode });
