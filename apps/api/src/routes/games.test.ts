@@ -840,6 +840,41 @@ describe('POST/GET /api/games', () => {
     expect(messages).toHaveLength(0);
   });
 
+  test('DELETE /api/games/:id clears a finding that points at the game\'s session but has no gameId (prod FK 500)', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('orphan-finding@example.com', 'OrphanFinding');
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/api/games',
+      headers,
+      payload: { pgn: VALID_PGN, source: 'paste', userColor: 'white' }
+    });
+    const { gameId, analysisId } = imported.json();
+    await analysesRepo.markReady(db, analysisId);
+    await analysesRepo.storeCoachingPlan(db, analysisId, PLAN);
+    const session = await app.inject({ method: 'POST', url: '/api/sessions', headers, payload: { gameId } });
+    const { id: sessionId } = session.json();
+    const session_ = await db.selectFrom('sessions').select('userId').where('id', '=', sessionId).executeTakeFirstOrThrow();
+    await db
+      .insertInto('findings')
+      .values({
+        userId: session_.userId,
+        sessionId,
+        gameId: null,
+        category: 'tactics',
+        severity: 'minor',
+        description: 'session-only finding',
+        isPositive: false
+      } as never)
+      .execute();
+
+    const del = await app.inject({ method: 'DELETE', url: `/api/games/${gameId}`, headers });
+
+    expect(del.statusCode).toBe(204);
+    const left = await db.selectFrom('findings').selectAll().where('sessionId', '=', sessionId).execute();
+    expect(left).toHaveLength(0);
+  });
+
   test('POST /api/games/:id/analyze starts analysis for a deferred (stat-bank) import', async () => {
     const app = buildTestApp();
     const headers = headersFor('analyze-defer@example.com', 'AnalyzeDefer');

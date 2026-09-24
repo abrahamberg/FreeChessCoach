@@ -1,4 +1,4 @@
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { LogController, type FastifyInstance } from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import type { Kysely } from 'kysely';
 import { pingDb } from './db/index.js';
@@ -77,7 +77,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
 
   // Per-request access lines are off (probes would flood them); explicit
   // log calls and the error handler's log.error still come through.
-  const app = Fastify({ logger: options.logger ?? false, disableRequestLogging: true });
+  const app = Fastify({ logger: options.logger ?? false, logController: new LogController({ disableRequestLogging: true }) });
 
   app.register(errorMapperPlugin);
   app.register(authHeadersPlugin, { authMode });

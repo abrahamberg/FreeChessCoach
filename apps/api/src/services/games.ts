@@ -88,7 +88,7 @@ export async function deleteEarliestImportedInTransaction(
 /** The per-game delete cascade — none of the foreign keys involved are ON
  * DELETE CASCADE (see migrations 0001/0006/0010/0025), so dependents must go
  * first: session_messages/session_move_notes for each of the game's
- * sessions, then sessions, then findings/analyses/diagnostic_observations,
+ * sessions, then sessions, then findings/analyses/diagnostic_observations (findings also by session),
  * then the game itself. `annotatedPgn` — where all of a game's per-move
  * analysis now lives (0032_annotated_pgn.ts) — needs no separate delete:
  * it's a column on the game row itself, gone the moment `gamesRepo.remove`
@@ -99,6 +99,9 @@ export async function cascadeDeleteGame(db: Kysely<Database>, gameId: string): P
   for (const sessionId of sessionIds) {
     await sessionMessagesRepo.deleteBySessionId(db, sessionId);
     await sessionMoveNotesRepo.deleteBySessionId(db, sessionId);
+    // Findings can point at the session without carrying this game's id, so
+    // deleteByGameId below would miss them and the session delete would fail.
+    await findingsRepo.deleteBySessionId(db, sessionId);
   }
   await sessionsRepo.deleteByGameId(db, gameId);
   await findingsRepo.deleteByGameId(db, gameId);

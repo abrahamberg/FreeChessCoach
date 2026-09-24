@@ -64,6 +64,13 @@ export async function existsForSessionCategoryPly(
   return row !== undefined;
 }
 
+/** A finding can reference a session of the game being deleted without
+ * carrying that game's id (null or another game's), so `deleteByGameId` alone
+ * leaves `findings_session_id_fkey` violated when the sessions go. */
+export function deleteBySessionId(db: Kysely<Database>, sessionId: string): Promise<void> {
+  return db.deleteFrom('findings').where('sessionId', '=', sessionId).execute().then(() => undefined);
+}
+
 export function deleteByGameId(db: Kysely<Database>, gameId: string): Promise<void> {
   return db.deleteFrom('findings').where('gameId', '=', gameId).execute().then(() => undefined);
 }
