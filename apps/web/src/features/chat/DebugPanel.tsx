@@ -5,14 +5,16 @@ import './DebugPanel.css';
 
 export interface DebugPanelProps {
   sessionId: string;
+  /** API collection the session lives under; practice sessions use '/api/puzzle-sessions'. */
+  basePath?: string;
   onClose: () => void;
 }
 
 /** "Debug last answer" popup: the literal request sent to the LLM and the
  * literal response it returned for the most recent coach turn, rendered as a
  * readable console/network-inspector-style view instead of raw JSON. */
-export function DebugPanel({ sessionId, onClose }: DebugPanelProps): ReactNode {
-  const state = useTurnDebugSnapshot(sessionId);
+export function DebugPanel({ sessionId, basePath, onClose }: DebugPanelProps): ReactNode {
+  const state = useTurnDebugSnapshot(sessionId, basePath);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {

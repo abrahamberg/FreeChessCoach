@@ -1,6 +1,7 @@
 import { TTS_BACKENDS, type TtsBackend } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { Modal } from '../../components/Modal.js';
+import { isNativeSpeechSupported } from '../../tts/native-speech.js';
 import { LocalVoiceSetup } from './LocalVoiceSetup.js';
 import '../../components/RadioCard.css';
 import './TtsSection.css';
@@ -22,19 +23,22 @@ export interface TtsSectionProps {
 const BACKEND_LABEL: Record<TtsBackend, string> = {
   openai: 'OpenAI voice (default)',
   browser: 'Browser voice — Slow, Beta (free, runs on your device)',
-  local: 'Local voice server (free, fast, needs a small install)'
+  local: 'Local voice server (free, fast, needs a small install)',
+  native: 'Device voice (free, instant — your phone’s or Chrome’s built-in voice)'
 };
 
 const BACKEND_CONFIRM_TITLE: Record<TtsBackend, string> = {
   openai: 'Use OpenAI voice?',
   browser: 'Use browser voice?',
-  local: 'Use local voice server?'
+  local: 'Use local voice server?',
+  native: 'Use device voice?'
 };
 
 const BACKEND_CONFIRM_BUTTON: Record<TtsBackend, string> = {
   openai: 'Use OpenAI voice',
   browser: 'Use browser voice (Beta)',
-  local: 'Use local voice server'
+  local: 'Use local voice server',
+  native: 'Use device voice'
 };
 
 const BACKEND_WARNING: Record<TtsBackend, string> = {
@@ -47,7 +51,11 @@ const BACKEND_WARNING: Record<TtsBackend, string> = {
   local:
     'The local voice server is a free voice program you run on your own computer, next to LM Studio. ' +
     'It sounds natural, starts quickly and costs nothing. Nothing is sent to us or to any cloud. ' +
-    'It needs a one-time setup — after you confirm, the steps appear right below the voice options.'
+    'It needs a one-time setup — after you confirm, the steps appear right below the voice options.',
+  native:
+    'Device voice uses the text-to-speech built into your phone or browser (mobile browsers and desktop Chrome). ' +
+    'It’s free, starts instantly and nothing leaves your device. Quality and available voices depend on your ' +
+    'device, and it’s usually more robotic than the other options.'
 };
 
 /** Coach voice (TTS): a master on/off switch, default off, plus which
@@ -60,6 +68,7 @@ export function TtsSection({ enabled, backend: savedBackend, openaiAvailable, on
   // A saved 'openai' choice (the DB default) is shown and acted on as
   // 'browser' while OpenAI isn't set up.
   const backend: TtsBackend = !openaiAvailable && savedBackend === 'openai' ? 'browser' : savedBackend;
+  const nativeSupported = isNativeSpeechSupported();
   const [pending, setPending] = useState<{ enabled: boolean; backend: TtsBackend } | null>(null);
 
   function handleToggleEnabled(next: boolean): void {
@@ -104,11 +113,12 @@ export function TtsSection({ enabled, backend: savedBackend, openaiAvailable, on
                 type="radio"
                 name="tts-backend"
                 checked={backend === option}
-                disabled={option === 'openai' && !openaiAvailable}
+                disabled={(option === 'openai' && !openaiAvailable) || (option === 'native' && !nativeSupported)}
                 onChange={() => handleSelectBackend(option)}
               />
               {BACKEND_LABEL[option]}
               {option === 'openai' && !openaiAvailable && ' — set up an OpenAI voice model in AI setup to use this'}
+              {option === 'native' && !nativeSupported && ' — not supported by this browser'}
             </label>
           ))}
         </div>

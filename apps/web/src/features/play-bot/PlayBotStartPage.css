@@ -394,3 +394,9 @@
     padding: var(--space-4);
   }
 }
+
+.play-bot-start-page__mode-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}

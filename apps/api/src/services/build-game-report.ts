@@ -1,10 +1,12 @@
 import {
-  buildGameReport as assembleGameReport,
+  buildGameReportWithVerdicts,
+  type BuildGameReportInput,
+  type GameReportWithVerdicts,
   type GameResultForColour,
   type ParsedGame
 } from '@freechesscoach/chess-analysis';
 import { ENGINE_DEFAULT_DEPTH } from '@freechesscoach/shared';
-import type { BookReport, ClassifiedMoveDto, EngineEval, GameReport, TacticMotifType } from '@freechesscoach/shared';
+import type { BookReport, ClassifiedMoveDto, EngineEval } from '@freechesscoach/shared';
 import { ENGINE_MULTI_PV } from './engine-client.js';
 
 const ENGINE_NAME = 'stockfish';
@@ -17,13 +19,12 @@ export interface BuildGameReportForAnalysisInput {
   /** The PGN `Result` header — `'1-0'`, `'0-1'`, `'1/2-1/2'`, or an
    * unfinished-game marker like `'*'`. */
   pgnResult: string | null;
-  /** From `computeTacticMotifPrevented` — optional since it's an
-   * engine-gated step the caller may skip or that may fail independently of
-   * the rest of this report (see tactic-prevention.ts). */
-  preventedCounts?: Record<'white' | 'black', Partial<Record<TacticMotifType, number>>>;
-  /** From the same `computeTacticMotifPrevented` call — the denominator
-   * `preventedCounts` is a subset of. */
-  preventableCounts?: Record<'white' | 'black', Partial<Record<TacticMotifType, number>>>;
+  /** `createPreventionScans` (tactic-prevention.ts): scanned lazily, only
+   * where a verdict still needs `defusedThreat`. Omitted: no defused-threat
+   * credits and no prevention counts. */
+  preventionScans?: BuildGameReportInput['preventionScans'];
+  /** The benchmark's counting deps. */
+  verdictDeps?: BuildGameReportInput['verdictDeps'];
   /** The game's own player (Task 5's userColor) and their numeric profile
    * rating (Task 51.5's users.rating), if known. Only the student's own
    * colour ever gets a real prior here — we don't have a stored profile
@@ -39,10 +40,11 @@ export interface BuildGameReportForAnalysisInput {
  *
  * `priorRating` feeds the student's own numeric rating (when known) into
  * §8.5's shrink; the opponent's side is always `null` — see this input's own
- * doc comment.
+ * doc comment. Returns the report and each move's tactical verdict, which
+ * the diagnostics are read off.
  */
-export function buildGameReportForAnalysis(input: BuildGameReportForAnalysisInput): GameReport {
-  return assembleGameReport({
+export function buildGameReportForAnalysis(input: BuildGameReportForAnalysisInput): GameReportWithVerdicts {
+  return buildGameReportWithVerdicts({
     game: input.game,
     evals: input.evals,
     moves: input.moves,
@@ -60,8 +62,8 @@ export function buildGameReportForAnalysis(input: BuildGameReportForAnalysisInpu
       white: resultForColour(input.pgnResult, 'white'),
       black: resultForColour(input.pgnResult, 'black')
     },
-    preventedCounts: input.preventedCounts,
-    preventableCounts: input.preventableCounts
+    preventionScans: input.preventionScans,
+    verdictDeps: input.verdictDeps
   });
 }
 

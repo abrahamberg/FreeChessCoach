@@ -26,6 +26,7 @@ import {
   listInProgressGamesForUser,
   promoteGame
 } from '../services/games.js';
+import { keepBotGame } from '../services/bot/bot-keep.js';
 import { getGameTacticBaselineNote } from '../services/stats-dashboard.js';
 import * as userProfileService from '../services/user-profile.js';
 
@@ -120,8 +121,10 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
     // commitBotTurn when the game ends) completes, a real Game Report —
     // unlike coach_play, which never gets one.
     if (game.source === 'vs_bot') {
-      const liveMoveQualities = movesFromAnnotatedPgn(game);
       const botAnalysis = await analysesRepo.findByGameId(db, game.id);
+      // A rated game shows no per-move feedback until it has been analysed
+      // (i.e. kept and reviewed after the game) — see CreateBotSessionRequest.rated.
+      const liveMoveQualities = game.rated === true && botAnalysis?.status !== 'ready' ? [] : movesFromAnnotatedPgn(game);
       const storedBotReport = await analysesRepo.findGameReportByGameId(db, game.id);
       const botGameReport = storedBotReport ? composeGameReport(storedBotReport, game) : null;
       return {
@@ -204,6 +207,13 @@ export function registerGamesRoutes(app: FastifyInstance, db: Kysely<Database>, 
     const user = await userProfileService.getOrCreate(db, request.user);
     const reviewTier = await promoteGame(db, user.id, request.params.id, parsed.data.tier);
     return { reviewTier };
+  });
+
+  // A finished bot game is only analysed (and only counts against the import
+  // limits and the library) if the student chooses to keep it — see keepBotGame.
+  app.post<{ Params: { id: string } }>('/api/games/:id/keep', async (request) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    return keepBotGame(db, jobQueue, user.id, request.params.id);
   });
 
   app.delete<{ Params: { id: string } }>('/api/games/:id', async (request, reply) => {

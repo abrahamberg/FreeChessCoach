@@ -108,7 +108,7 @@ function primaryProgress(
   primary: { analysisId: string; status: string; analyzedPositions: number; totalPositions: number },
   rateRef: ReturnType<typeof useRef<{ analysisId: string; startedAt: number; startedAtProgress: number } | null>>
 ): { percent: number | null; etaText: string | null; speedPerSec: number | null } {
-  const percent = primary.totalPositions > 0 ? Math.round((primary.analyzedPositions / primary.totalPositions) * 100) : null;
+  const percent = primary.totalPositions > 0 ? Math.min(100, Math.round((primary.analyzedPositions / primary.totalPositions) * 100)) : null;
 
   if (primary.status !== 'engine_running' || primary.totalPositions <= 0) return { percent, etaText: null, speedPerSec: null };
 

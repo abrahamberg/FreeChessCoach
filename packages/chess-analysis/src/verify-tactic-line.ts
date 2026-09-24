@@ -1,4 +1,4 @@
-import { Chess, type Square } from 'chess.js';
+import { Chess, type Color, type PieceSymbol, type Square } from 'chess.js';
 import type { TacticHorizon, TacticMotifType } from '@freechesscoach/shared';
 import { applySanSequence } from './apply-san-sequence.js';
 import { CONFIG } from './config.js';
@@ -49,7 +49,7 @@ export function verifyTacticClaimsAgainstLine(
     .filter((claim): claim is VerifiedTacticClaim => claim !== null);
 }
 
-interface LineStep {
+export interface MaterialLineStep {
   ply: number;
   /** The mover's material advantage after this ply, in pawns, relative to
    * what it was before the move. */
@@ -59,40 +59,59 @@ interface LineStep {
   /** Where that capture came from — a claim is also attributed when its own
    * actor is the piece doing the winning. */
   capturedFrom: Square | null;
+  /** The mover checkmated on this ply. */
   isMate: boolean;
+  /** Odd plies (1, 3, ...) are the mover's own; even ones are the reply. */
+  moverMoved: boolean;
+  /** The piece taken on this ply, by either side. */
+  capturedPiece: PieceSymbol | null;
+  /** Either side checkmated on this ply. */
+  isCheckmate: boolean;
 }
 
-function walkLine(context: TacticDetectionContext, pvSan: readonly string[]): LineStep[] | null {
+function walkLine(context: TacticDetectionContext, pvSan: readonly string[]): MaterialLineStep[] | null {
+  if (Math.min(pvSan.length, CONFIG.tacticVerification.maxLinePlies) < MIN_USABLE_PV_PLIES) return null;
+  const steps = walkMaterialLine(context.fenBefore, context.mover, pvSan);
+  return steps.length < MIN_USABLE_PV_PLIES ? null : steps;
+}
+
+/**
+ * The material walk behind the line test, on its own: replays `pvSan` from
+ * `fenBefore` (capped at `CONFIG.tacticVerification.maxLinePlies`, stopping
+ * at the first illegal move) and reports the mover's material after every
+ * ply. Pure; also read by `move-verdict/line-value.ts`.
+ */
+export function walkMaterialLine(fenBefore: string, mover: Color, pvSan: readonly string[]): MaterialLineStep[] {
   const walked = pvSan.slice(0, CONFIG.tacticVerification.maxLinePlies);
-  if (walked.length < MIN_USABLE_PV_PLIES) return null;
-
-  const applied = applySanSequence(context.fenBefore, [...walked]);
-  if (applied.moves.length < MIN_USABLE_PV_PLIES) return null;
-
-  const before = materialBalance(context.before, context.mover);
-  const steps: LineStep[] = [];
-  let previousFen = context.fenBefore;
+  const applied = applySanSequence(fenBefore, [...walked]);
+  const before = materialBalance(new Chess(fenBefore), mover);
+  const steps: MaterialLineStep[] = [];
+  let previousFen = fenBefore;
 
   applied.moves.forEach((move, index) => {
     const board = new Chess(move.fen);
-    // Odd plies (1, 3, ...) are the mover's own; even ones are the reply.
     const moverMoved = index % 2 === 0;
     const to = move.uci.slice(2, 4) as Square;
-    const captured = moverMoved && new Chess(previousFen).get(to) !== undefined;
+    const capturedPiece = new Chess(previousFen).get(to)?.type ?? null;
+    const captured = moverMoved && capturedPiece !== null;
+    const isCheckmate = board.isCheckmate();
 
     steps.push({
       ply: index + 1,
-      gain: materialBalance(board, context.mover) - before,
+      gain: materialBalance(board, mover) - before,
       capturedOn: captured ? to : null,
       capturedFrom: captured ? (move.uci.slice(0, 2) as Square) : null,
-      isMate: board.isCheckmate() && moverMoved
+      isMate: isCheckmate && moverMoved,
+      moverMoved,
+      capturedPiece,
+      isCheckmate
     });
     previousFen = move.fen;
   });
   return steps;
 }
 
-function verifyOne(claim: VerifiedTacticClaim, line: LineStep[]): VerifiedTacticClaim | null {
+function verifyOne(claim: VerifiedTacticClaim, line: MaterialLineStep[]): VerifiedTacticClaim | null {
   if (claim.gainKind !== 'material' && claim.gainKind !== 'mate') return claim;
 
   const paid = line.find((step) => (step.isMate || step.gain >= CONFIG.tacticVerification.minLineGainPawns) && attributes(claim, line, step));
@@ -113,7 +132,7 @@ function verifyOne(claim: VerifiedTacticClaim, line: LineStep[]): VerifiedTactic
  * that collected, either on a square it named or with the piece it named.
  * Mate is attributed unconditionally: a claim that leads to mate led to mate.
  */
-function attributes(claim: VerifiedTacticClaim, line: LineStep[], paid: LineStep): boolean {
+function attributes(claim: VerifiedTacticClaim, line: MaterialLineStep[], paid: MaterialLineStep): boolean {
   if (paid.isMate) return true;
   const squares = payoffSquares(claim);
 

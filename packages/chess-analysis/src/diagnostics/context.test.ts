@@ -93,4 +93,30 @@ describe('buildPlyDiagnosticContext', () => {
     expect(withTactics!.tacticDiagnostic).toBe(tacticDiagnostic);
     expect(withTactics!.tacticRankHits).toBe(tacticRankHits);
   });
+
+  test('carries the stored evals and the best-vs-played gap', () => {
+    const context = buildPlyDiagnosticContext(
+      baseMove({ cpBefore: 30, cpAfter: -300, winPctBefore: 52.8, winPctAfter: 24.9 })
+    );
+
+    expect(context!.cpBefore).toBe(30);
+    expect(context!.cpAfter).toBe(-300);
+    expect(context!.winPctBefore).toBe(52.8);
+    expect(context!.winPctAfter).toBe(24.9);
+    expect(context!.playedGap?.meaningful).toBe(true);
+  });
+
+  test('leaves playedGap null on a legacy move without cpBefore/cpAfter', () => {
+    expect(buildPlyDiagnosticContext(baseMove())!.playedGap).toBeNull();
+  });
+
+  test('takes the refutation from the very next ply only', () => {
+    const reply = baseMove({ ply: 2, moveSan: 'e5', mover: 'black', bestLinePvSan: ['d5', 'exd5'] });
+    const withReply = buildPlyDiagnosticContext(baseMove(), { nextMoves: [reply] });
+    const withLaterPly = buildPlyDiagnosticContext(baseMove(), { nextMoves: [{ ...reply, ply: 3 }] });
+
+    expect(withReply!.refutationPvSan).toEqual(['d5', 'exd5']);
+    expect(withLaterPly!.refutationPvSan).toBeUndefined();
+    expect(buildPlyDiagnosticContext(baseMove())!.refutationPvSan).toBeUndefined();
+  });
 });

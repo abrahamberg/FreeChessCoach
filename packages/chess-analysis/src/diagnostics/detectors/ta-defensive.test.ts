@@ -23,6 +23,8 @@ function playMove(overrides: Partial<ClassifiedMoveDto> = {}): ClassifiedMoveDto
     drop: 45,
     fenBefore: '4k3/8/8/8/8/8/8/4K3 w - - 0 1',
     fenAfter: '4k3/8/8/8/8/8/1K6/8 b - - 1 1',
+    cpBefore: 0,
+    cpAfter: -400,
     ...overrides
   };
 }
@@ -48,6 +50,36 @@ describe('TA_DEFENSIVE_DETECTORS', () => {
     expect(observation!.code).toBe('TA-14');
     expect(observation!.direction).toBe('D');
     expect(observation!.failed).toBe(true);
+  });
+
+  test('records failed: false when the motif stayed reachable but the eval lost nothing (e.g. a brilliant move)', () => {
+    const ctx = buildPlyDiagnosticContext(playMove({ cpAfter: 0, quality: 'brilliant', drop: 0 }), {
+      tacticDiagnostic: { type: 'freePiece', failed: true, detail: 'left the h8 piece en prise' }
+    })!;
+
+    const observation = detectorFor('TA-43').detect(ctx)!;
+
+    expect(observation.failed).toBe(false);
+    expect(observation.hwdl).toBe(0);
+  });
+
+  test('a failed diagnostic with an eval-confirmed loss takes hwdl and severity from the gap', () => {
+    const ctx = buildPlyDiagnosticContext(playMove(), {
+      tacticDiagnostic: { type: 'skewer', failed: true, detail: 'missed the skewer on the rook' }
+    })!;
+
+    const observation = detectorFor('TA-14').detect(ctx)!;
+
+    expect(observation.hwdl).toBeGreaterThan(0.3);
+    expect(observation.severity).toBe('decisive');
+  });
+
+  test('a legacy move without evals falls back to its quality', () => {
+    const ctx = buildPlyDiagnosticContext(playMove({ cpBefore: undefined, cpAfter: undefined }), {
+      tacticDiagnostic: { type: 'skewer', failed: true, detail: 'missed the skewer on the rook' }
+    })!;
+
+    expect(detectorFor('TA-14').detect(ctx)!.failed).toBe(true);
   });
 
   test('records failed: false when the mover defused the reachable motif', () => {

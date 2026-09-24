@@ -23,9 +23,10 @@ import {
   renderRecentFindingsBlock,
   showPositionParameters,
   updateThreadsParameters,
-  type DiagnosticReportItem
+  type DiagnosticReportItem,
+  type DiagnosticSampleContext
 } from '@freechesscoach/prompts';
-import { evaluateGates, inspectMoves, moveRefToPly, type DiagnosticProfileEntry, type PuzzleRecord } from '@freechesscoach/chess-analysis';
+import { CONFIG, evaluateGates, inspectMoves, moveRefToPly, type DiagnosticProfileEntry, type PuzzleRecord } from '@freechesscoach/chess-analysis';
 import type {
   DiagnosisCodeId,
   EmittableConfidenceLevel,
@@ -47,7 +48,8 @@ import type { JobQueue } from '../jobs/queue.js';
 import { buildPlayCoachTools } from './coach-tools-play.js';
 import { createTurnGuardState, withTurnGuards } from './coach-tool-guards.js';
 import { getPlayerStatsText } from './coach-player-stats.js';
-import { toGateWindowGame, windowByTimeControl } from './diagnostic-window.js';
+import { countWindowGames } from './diagnostic-readiness.js';
+import { normalizeTimeControl, toGateWindowGame, windowByTimeControl } from './diagnostic-window.js';
 import { getPositionAtPly } from './game-positions.js';
 import { recallMove, recordMoveNote, type MoveAddress } from './move-notes.js';
 import * as progressService from './progress.js';
@@ -312,14 +314,21 @@ function topDiagnoses(profile: readonly DiagnosticProfileEntry[]): DiagnosticPro
  */
 async function getDiagnosticProfileText(db: Kysely<Database>, ctx: CoachToolsContext): Promise<string> {
   const game = await gamesRepo.findById(db, ctx.gameId);
-  const timeControl = game?.timeControl ?? null;
+  const timeControl = game?.timeControl ? normalizeTimeControl(game.timeControl) : null;
   if (!timeControl) return renderDiagnosticProfileBlock([]);
+
+  const allGames = await gamesRepo.listByUser(db, ctx.userId);
+  const sample: DiagnosticSampleContext = {
+    ratedGames: countWindowGames(allGames, timeControl),
+    timeControl,
+    requiredGames: CONFIG.dataQualityGates.minRatedGames,
+    fullEvidenceGames: CONFIG.dataQualityGates.fullEvidenceRatedGames
+  };
 
   const profileRow = await diagnosticProfilesRepo.latestProfile(db, ctx.userId, timeControl);
   const top = topDiagnoses(profileRow?.profile ?? []);
-  if (top.length === 0) return renderDiagnosticProfileBlock([]);
+  if (top.length === 0) return renderDiagnosticProfileBlock([], sample);
 
-  const allGames = await gamesRepo.listByUser(db, ctx.userId);
   const windowGames = (windowByTimeControl(allGames).get(timeControl) ?? []).map((windowed) => toGateWindowGame(windowed.game));
 
   const items: DiagnosticReportItem[] = top.map((entry) => ({
@@ -335,7 +344,7 @@ async function getDiagnosticProfileText(db: Kysely<Database>, ctx: CoachToolsCon
     })
   }));
 
-  return renderDiagnosticProfileBlock(items);
+  return renderDiagnosticProfileBlock(items, sample);
 }
 
 async function recordFindingTool(

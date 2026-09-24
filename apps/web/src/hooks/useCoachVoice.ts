@@ -2,6 +2,7 @@ import type { CoachPersona, TtsBackend } from '@freechesscoach/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CoachMessage } from './useCoachChat.js';
 import { getSpeakableText } from '../tts/getSpeakableText.js';
+import { speakNative } from '../tts/native-speech.js';
 import { resolveTtsClient } from '../tts/resolve-tts-client.js';
 
 const AUTOPLAY_STORAGE_KEY = 'freechesscoach:coach-voice-autoplay';
@@ -119,6 +120,14 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
   const waitingForChunkRef = useRef(false);
   const wasStreamingRef = useRef(isStreaming);
   const handledIdsRef = useRef(new Set<string>());
+  // Cancels the in-flight native (speechSynthesis) read, if any. Native
+  // playback bypasses the chunk/<audio> machinery above entirely.
+  const cancelNativeRef = useRef<(() => void) | null>(null);
+
+  function cancelNative(): void {
+    cancelNativeRef.current?.();
+    cancelNativeRef.current = null;
+  }
 
   function getAudio(): HTMLAudioElement {
     if (!audioRef.current) {
@@ -189,6 +198,8 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
   }
 
   function ensureStream(messageId: string, text: string): MessageAudioState {
+    const backend = backendRef.current;
+    if (backend === 'native') throw new Error('native voice does not stream audio chunks');
     const cached = cacheRef.current.get(messageId);
     if (cached && !cached.errored) return cached;
 
@@ -196,7 +207,7 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
     cacheRef.current.set(messageId, state);
     setLoadingMessageId(messageId);
 
-    const client = resolveTtsClient(backendRef.current);
+    const client = resolveTtsClient(backend);
     const promise = client
       .speak({ text, persona: personaRef.current }, (index, audio) => {
         console.log(`[useCoachVoice] chunk ${index} received for ${messageId}`, { bytes: audio.byteLength });
@@ -224,9 +235,18 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
     return state;
   }
 
+  function playNative(messageId: string, text: string): void {
+    setPlayingMessageId(messageId);
+    cancelNativeRef.current = speakNative(text, finishMessage);
+  }
+
   function playNow(messageId: string, text: string): void {
     activeRef.current = true;
     currentMessageIdRef.current = messageId;
+    if (backendRef.current === 'native') {
+      playNative(messageId, text);
+      return;
+    }
     nextChunkIndexRef.current = 0;
     waitingForChunkRef.current = false;
     const state = ensureStream(messageId, text);
@@ -244,6 +264,7 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
     if (!enabledRef.current) return;
     queueRef.current = [];
     audioRef.current?.pause();
+    cancelNative();
     activeRef.current = false;
     waitingForChunkRef.current = false;
     currentMessageIdRef.current = null;
@@ -254,6 +275,7 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
   const stop = useCallback(() => {
     queueRef.current = [];
     audioRef.current?.pause();
+    cancelNative();
     activeRef.current = false;
     waitingForChunkRef.current = false;
     currentMessageIdRef.current = null;
@@ -292,6 +314,7 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
   useEffect(() => {
     return () => {
       audioRef.current?.pause();
+      cancelNativeRef.current?.();
       for (const state of cacheRef.current.values()) {
         for (const url of state.urls) URL.revokeObjectURL(url);
       }

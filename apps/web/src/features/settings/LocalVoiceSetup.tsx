@@ -1,16 +1,20 @@
 import { useState, type ReactNode } from 'react';
-import { synthesizeLocal } from '../../tts/local-tts-client.js';
+import { LocalTtsHttpError, synthesizeLocal } from '../../tts/local-tts-client.js';
 import {
-  DEFAULT_LOCAL_TTS_PORT,
-  localTtsBaseUrl,
-  parseLocalTtsPort,
-  readLocalTtsPort,
-  writeLocalTtsPort
+  DEFAULT_LOCAL_TTS_URL,
+  normalizeLocalTtsUrl,
+  readLocalTtsUrl,
+  writeLocalTtsUrl
 } from '../../tts/local-tts-settings.js';
 
 type TestState = { status: 'idle' } | { status: 'testing' } | { status: 'ok' } | { status: 'failed'; message: string };
 
 const GUIDE_URL = '/guide#voice';
+
+function describeFailure(error: unknown): string {
+  if (error instanceof LocalTtsHttpError) return `The voice server answered with an error (${error.status}).`;
+  return 'Couldn’t reach the voice server. Make sure it’s running (see the setup guide) and the address matches.';
+}
 
 async function playTestVoice(baseUrl: string): Promise<void> {
   const audio = await synthesizeLocal(baseUrl, 'Voice server connected. Ready to coach.', 'bm_daniel');
@@ -22,36 +26,46 @@ async function playTestVoice(baseUrl: string): Promise<void> {
 
 /** Shown under the coach-voice options while "Local voice server" is
  * selected: a pointer to the one-time setup in the guide, a "Test voice"
- * button, and — collapsed, since almost nobody needs it — the port override. */
+ * button, and — collapsed, since almost nobody needs it — the one address
+ * field for a server that isn't on the default `localhost:8880`. */
 export function LocalVoiceSetup(): ReactNode {
-  const [portText, setPortText] = useState(() => String(readLocalTtsPort()));
+  const [addressText, setAddressText] = useState(readLocalTtsUrl);
   const [test, setTest] = useState<TestState>({ status: 'idle' });
-  const parsedPort = parseLocalTtsPort(portText);
+  const address = normalizeLocalTtsUrl(addressText);
+  const invalid = addressText.trim() !== '' && address === null;
+  // Empty means "go back to the default", which is always valid.
+  const target = addressText.trim() === '' ? DEFAULT_LOCAL_TTS_URL : address;
 
-  function handlePortChange(next: string): void {
-    setPortText(next);
+  function handleAddressChange(next: string): void {
+    setAddressText(next);
     setTest({ status: 'idle' });
-    const port = parseLocalTtsPort(next);
-    if (port !== null) writeLocalTtsPort(port);
   }
 
-  // Leaving the field with something invalid puts back the port that is
-  // actually saved, so what's shown is always what will be used.
-  function handlePortBlur(): void {
-    if (parsedPort === null) setPortText(String(readLocalTtsPort()));
+  // Saved when you leave the field (or press Test), not per keystroke: while
+  // typing, half an address like "ftp" is a valid hostname and would be
+  // stored. An unusable address puts back what is actually saved, so what's
+  // shown is always what will be used; a usable one is shown cleaned up.
+  function commitAddress(): void {
+    if (addressText.trim() === '') {
+      writeLocalTtsUrl(null);
+      setAddressText(DEFAULT_LOCAL_TTS_URL);
+    } else if (address !== null) {
+      writeLocalTtsUrl(address);
+      setAddressText(address);
+    } else {
+      setAddressText(readLocalTtsUrl());
+    }
   }
 
   async function handleTest(): Promise<void> {
-    if (parsedPort === null) return;
+    if (target === null) return;
+    commitAddress();
     setTest({ status: 'testing' });
     try {
-      await playTestVoice(localTtsBaseUrl(parsedPort));
+      await playTestVoice(target);
       setTest({ status: 'ok' });
-    } catch {
-      setTest({
-        status: 'failed',
-        message: 'Couldn’t reach the voice server. Make sure it’s running (see the setup guide) and the port matches.'
-      });
+    } catch (error) {
+      setTest({ status: 'failed', message: describeFailure(error) });
     }
   }
 
@@ -68,7 +82,7 @@ export function LocalVoiceSetup(): ReactNode {
         <button
           type="button"
           className="btn-secondary"
-          disabled={test.status === 'testing' || parsedPort === null}
+          disabled={test.status === 'testing' || target === null}
           onClick={() => void handleTest()}
         >
           {test.status === 'testing' ? 'Testing…' : 'Test voice'}
@@ -82,26 +96,29 @@ export function LocalVoiceSetup(): ReactNode {
       </div>
 
       <details className="local-voice__advanced">
-        <summary>Advanced: use a different port</summary>
+        <summary>Advanced: use a different address or port</summary>
         <label className="local-voice__field">
-          <span>Voice server port (default {DEFAULT_LOCAL_TTS_PORT})</span>
+          <span>Voice server address</span>
           <input
             type="text"
-            inputMode="numeric"
-            value={portText}
-            aria-invalid={parsedPort === null}
-            onChange={(event) => handlePortChange(event.target.value)}
-            onBlur={handlePortBlur}
+            value={addressText}
+            placeholder={DEFAULT_LOCAL_TTS_URL}
+            spellCheck={false}
+            aria-invalid={invalid}
+            onChange={(event) => handleAddressChange(event.target.value)}
+            onBlur={commitAddress}
           />
         </label>
-        {parsedPort === null && (
+        {invalid && (
           <span role="alert" className="local-voice__error">
-            Enter a number from 1 to 65535.
+            Enter an address like localhost:9000 or http://192.168.1.5:8880.
           </span>
         )}
+        {target !== null && <p role="note">Using {target}</p>}
         <p>
-          Only change this if you started the voice server on another port because {DEFAULT_LOCAL_TTS_PORT} was already in use.
-          The number here must match the one you started it with. The setup guide shows how to pick a different port.
+          Leave this as it is unless you started the voice server on another port or another computer. A bare number
+          such as <code>9000</code> means <code>localhost:9000</code>. With no port, <code>localhost</code> uses 8880 and any
+          other computer uses port 80. Clear the field to go back to the default.
         </p>
       </details>
     </div>

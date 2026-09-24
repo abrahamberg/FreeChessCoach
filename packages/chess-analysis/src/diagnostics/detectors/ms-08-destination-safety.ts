@@ -1,28 +1,20 @@
-import { see } from '../../see.js';
 import type { PlyDiagnosticContext } from '../context.js';
 import type { DiagnosticDetector, DiagnosticObservation } from '../types.js';
-import { buildQualityObservation, destinationSquare, opponentOf } from './shared.js';
+import { detectDestinationSafety } from './destination-safety.js';
 
 /**
  * §II.D MS-08 "Final destination-safety omission" — does not complete a
- * final one-ply verification of the chosen move. Fires when a full static
- * exchange evaluation on the move's own destination square, computed for
- * the opponent (i.e. "can the opponent profitably capture what just landed
- * here"), is positive — the spec's "SEE < 0 on the destination square" from
- * the mover's perspective.
+ * final one-ply verification of the chosen move. An opportunity is the
+ * moved piece landing on a square the opponent attacks; a failure is the
+ * opponent actually winning it there (the spec's "SEE < 0 on the
+ * destination square" from the mover's side) with an eval-confirmed loss.
+ * See `detectDestinationSafety`.
  */
 export const ms08DestinationSafetyOmission: DiagnosticDetector = {
   code: 'MS-08',
   direction: 'N',
   priority: 180,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
-    const destination = destinationSquare(ctx.fenBefore, ctx.moveSan);
-    if (!destination) return null;
-
-    const seeForOpponent = see(ctx.fenAfter, destination, opponentOf(ctx.mover));
-    if (seeForOpponent <= 0) return null;
-
-    const detail = `landed on ${destination}, which the opponent can profitably capture (SEE ${seeForOpponent} for the opponent)`;
-    return buildQualityObservation(ctx, 'MS-08', 'N', detail);
+    return detectDestinationSafety(ctx, 'MS-08', 'N');
   }
 };

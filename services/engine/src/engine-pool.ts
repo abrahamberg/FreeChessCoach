@@ -6,7 +6,7 @@ import { UciEngine } from './uci.js';
  *
  * Two waiter queues, not one: a bot's live move-selection call
  * ('interactive') must never sit stuck behind a background batch job's
- * many-position walk (import analysis, deepen-analysis) just because that
+ * many-position walk (import analysis, game re-analysis) just because that
  * job happened to start first. `release()` always drains `interactiveWaiters`
  * before `backgroundWaiters`, so an interactive request only ever waits for
  * whichever single position is *currently* in flight, not the whole queue

@@ -1,0 +1,68 @@
+.batch-progress {
+  margin: var(--space-4) 0;
+}
+
+.batch-progress__summary {
+  margin: 0 0 var(--space-2);
+}
+
+.batch-progress__grid {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.batch-progress__card {
+  min-width: 0;
+}
+
+.batch-progress__name {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-progress__card .analysis-progress {
+  max-width: none;
+  margin: 0;
+}
+
+.batch-progress__card .analysis-progress__board {
+  margin-bottom: var(--space-2);
+}
+
+.batch-progress__status {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Shared by the import-request bar and the analysis bar. */
+.import-bar {
+  width: 100%;
+  height: 8px;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.import-bar::-webkit-progress-bar {
+  background: var(--color-surface-subtle);
+  border-radius: 4px;
+}
+
+.import-bar::-webkit-progress-value {
+  background: var(--color-primary);
+  border-radius: 4px;
+  transition: width 200ms ease-out;
+}
+
+.import-bar::-moz-progress-bar {
+  background: var(--color-primary);
+  border-radius: 4px;
+}

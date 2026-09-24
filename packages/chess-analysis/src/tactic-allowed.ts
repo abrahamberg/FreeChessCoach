@@ -1,4 +1,5 @@
 import { isImprovableQuality, type ClassifiedMoveDto } from '@freechesscoach/shared';
+import { playedMoveGap } from './eval-witness.js';
 
 /**
  * What a move handed the opponent.
@@ -28,6 +29,10 @@ export function computeTacticAllowed(
   // tactic was in the position, not in the move, and the opponent's own card
   // is where it belongs.
   if (!isImprovableQuality(move.quality)) return undefined;
+  // The same holds when the eval says the move gave nothing up, whatever its
+  // shape handed over: a sacrifice that lures the queen is already worth its
+  // piece in the engine's own line. Legacy moves (no stored evals) skip this.
+  if (playedMoveGap(move)?.meaningful === false) return undefined;
 
   const opportunity = next?.tacticOpportunity;
   if (!opportunity || !isHardGain(opportunity.gain)) return undefined;

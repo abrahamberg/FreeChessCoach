@@ -600,7 +600,8 @@ describe('buildCoachTools', () => {
 
       const result = await tools.get_diagnostic_profile?.execute?.({}, TOOL_OPTIONS);
 
-      expect(result).toContain('no confident diagnoses');
+      expect(result).toContain('No cross-game profile yet');
+      expect(result).toContain('only 0 of 15 rated games');
     });
 
     test('renders the top diagnoses, excluding insufficient confidence, with no failed gates in a healthy window', async () => {

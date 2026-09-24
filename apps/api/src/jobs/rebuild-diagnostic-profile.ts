@@ -22,6 +22,16 @@ import { gamePlayedAt, toGateWindowGame, windowByTimeControl } from '../services
 import { createPuzzleAssignmentsForProfile } from '../services/puzzle-assignment.js';
 import { syncProgrammaticFocusAreas } from '../services/progress.js';
 
+/** One queued rebuild per user (`jobKey`): a bulk import finishing 15
+ * analyses in a row collapses into a single rebuild instead of 15. The
+ * per-user `queueName` makes rebuilds for one user run strictly one at a
+ * time even with a concurrent worker — two at once would race on focus-area
+ * and puzzle creation. */
+export function rebuildDiagnosticProfileJobSpec(userId: string): { jobKey: string; queueName: string } {
+  const key = `rebuild-diagnostic-profile:${userId}`;
+  return { jobKey: key, queueName: key };
+}
+
 export interface RebuildDiagnosticProfileJobPayload {
   userId: string;
 }
@@ -191,8 +201,7 @@ export async function runRebuildDiagnosticProfileJob(
 }
 
 /** graphile-worker Task wrapper — enqueued by `jobs/analyze-game.ts` once an
- * analysis reaches `'ready'`, the same chaining idiom used there for
- * `deepen-analysis`, and independently triggerable via
+ * analysis reaches `'ready'`, and independently triggerable via
  * `JobQueue.enqueueRebuildDiagnosticProfile` (see `jobs/queue.ts`), the same
  * operator-triggered idiom `backfill-game-metadata` already established. */
 export function createRebuildDiagnosticProfileTask(options: RebuildDiagnosticProfileTaskOptions): Task {

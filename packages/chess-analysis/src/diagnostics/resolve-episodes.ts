@@ -1,5 +1,5 @@
 import { DIAGNOSIS_FAMILIES, type DiagnosisCodeId, type DiagnosisFamily } from '@freechesscoach/shared';
-import { CONFIG } from '../config.js';
+import { isCompletelyDecidedPosition } from './decided-position.js';
 import { DIAGNOSTIC_DETECTORS } from './registry.js';
 import type { DiagnosticObservation } from './types.js';
 
@@ -34,22 +34,9 @@ export interface Episode {
   plies: number[];
 }
 
-const { dampingHighWin: DAMPING_HIGH_WIN, dampingLowWin: DAMPING_LOW_WIN } = CONFIG.severity;
-
-/**
- * `DQ-09`: "incidents occurred only in completely lost or trivially won
- * positions" — both readings pinned at the same extreme (reusing
- * `CONFIG.severity`'s own damping thresholds, not new magic numbers).
- * Deliberately narrower than `hwdl.ts`'s `isAlreadyDecidedPosition`, which
- * also damps a technically-drawn quiet position — DQ-09 is only about
- * "lost" or "won", not "drawn".
- */
-export function isCompletelyDecidedPosition(winPctBefore: number, winPctAfter: number): boolean {
-  return (
-    (winPctBefore >= DAMPING_HIGH_WIN && winPctAfter >= DAMPING_HIGH_WIN) ||
-    (winPctBefore <= DAMPING_LOW_WIN && winPctAfter <= DAMPING_LOW_WIN)
-  );
-}
+// Lives in its own module so `eval-verdict.ts` (imported by detectors) can use
+// it without importing this file, which imports the detector registry.
+export { isCompletelyDecidedPosition };
 
 const REGISTRY_PRIORITY = new Map(DIAGNOSTIC_DETECTORS.map((detector) => [`${detector.code}:${detector.direction}`, detector.priority]));
 
@@ -100,6 +87,11 @@ function finalize(open: OpenEpisode): Episode {
  * over one already-ordered (ascending `ply`) sequence of per-ply
  * observations — this is what stops one blunder from being reported as
  * five independent weaknesses (Task 54.3).
+ *
+ * Since `docs/plan.md` Task 77.5 the analysis job hands this at most one
+ * observation per ply (the move's verdict's code, `build-diagnostics.ts`),
+ * so the precedence order only decides between plies of one `DQ-11`
+ * cascade; a ply with no observation still extends an open cascade.
  */
 export function resolveEpisodes(plies: readonly EpisodePly[]): Episode[] {
   const episodes: Episode[] = [];

@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import { gameOutcomeFromPgn, lastMoveOf, lastMoveOfPgn, type GameOutcome, type LastMove } from '@freechesscoach/chess-analysis';
+import { botThinkTimeMs, gameOutcomeFromPgn, lastMoveOf, lastMoveOfPgn, type GameOutcome, type LastMove } from '@freechesscoach/chess-analysis';
 import type { BotConfig, MoveQuality } from '@freechesscoach/shared';
 import * as gamesRepo from '../../db/repositories/games.js';
 import type { GameRow } from '../../db/repositories/games.js';
@@ -15,20 +15,17 @@ import { commitMoveUnrated } from '../play-moves-rated.js';
 import { currentFen, type PlayMovesDependencies } from '../play-moves.js';
 import { moverToMoveNext } from './bot-claim-timeout.js';
 import { finalizeBotGame } from './bot-finalize.js';
-import { BotSelectionError, selectBotMove, type BotMoveSelectorDependencies } from './bot-move-selector.js';
+import { BotSelectionError, selectBotMove, type BotMoveSelectorDependencies, type SelectedBotMove } from './bot-move-selector.js';
 import { runTraced, type BotMoveTrace } from './bot-move-trace.js';
 import type { BotThinkingRegistry } from './bot-thinking-registry.js';
 import { scheduleRatingEval, type RatingEvalDependencies } from './bot-rating-evals.js';
 import { playerMoveToRate, ratePlayerMove, rateBotMove, type PlayerMoveToRate, type RatingContext } from './bot-turn-rating.js';
 
-/** A fast shallow-depth bot reply is deliberately padded up to this floor so
- * it doesn't feel instant/robotic — see the "Play vs Bot" plan. Overridable
- * per-call via `minThinkMs` (tests set it to 0 to avoid real delays). */
-export const MIN_BOT_THINK_MS = 900;
-
 export interface BotMoveCommitDependencies extends PlayMovesDependencies, BotMoveSelectorDependencies, CoachContextDependencies, RatingEvalDependencies {
   jobQueue: JobQueue;
   now?: () => number;
+  /** Fixes the bot's think time instead of simulating a person's
+   * (`botThinkTimeMs`) — tests set it to 0 to avoid real delays. */
   minThinkMs?: number;
   /** Where each bot move's live Thinking log is kept (see
    * bot-thinking-registry.ts) — omitted, nothing is recorded. */
@@ -51,7 +48,7 @@ export interface CommitBotTurnResult {
   gameOver: { result: '1-0' | '0-1' | '1/2-1/2'; reason: string } | null;
   /** Post-move remaining time for each side — null/null for an untimed game
    * (games.clockInitialMs === null). The mover's own think time (including,
-   * for the bot, the artificial MIN_BOT_THINK_MS floor) is deducted and any
+   * for the bot, its simulated think time) is deducted and any
    * increment added after each of the two moves this call commits. */
   whiteRemainingMs: number | null;
   blackRemainingMs: number | null;
@@ -95,6 +92,7 @@ function applyClockTick(
 
 interface ClockState {
   isTimed: boolean;
+  initialMs: number;
   incrementMs: number;
   whiteRemainingMs: number | null;
   blackRemainingMs: number | null;
@@ -149,11 +147,12 @@ async function commitBotTurnTraced(
   trace: BotMoveTrace | undefined
 ): Promise<CommitBotTurnResult | { error: string }> {
   const now = deps.now ?? Date.now;
-  const minThinkMs = deps.minThinkMs ?? MIN_BOT_THINK_MS;
+  const minThinkMs = deps.minThinkMs;
 
   const gameBefore = await requireGame(deps.db, session.gameId);
   const clock: ClockState = {
     isTimed: gameBefore.clockInitialMs !== null,
+    initialMs: gameBefore.clockInitialMs ?? 0,
     incrementMs: gameBefore.clockIncrementMs ?? 0,
     whiteRemainingMs: gameBefore.whiteRemainingMs,
     blackRemainingMs: gameBefore.blackRemainingMs
@@ -258,7 +257,7 @@ async function commitBotReply(
   fen: string,
   clock: ClockState,
   now: () => number,
-  minThinkMs: number,
+  minThinkMs: number | undefined,
   lastMove: LastMove | null,
   trace?: BotMoveTrace,
   playerToRate?: PlayerMoveToRate
@@ -268,18 +267,19 @@ async function commitBotReply(
   const selected = await selectBotMove(deps, fen, afterPly, bot, trace, lastMove);
 
   // The student's move is rated from the search that just finished (plus the
-  // eval already in flight) while the think-time floor runs. It must finish
-  // BEFORE the bot's move is saved: rating edits the game's last move.
-  const playerRating = playerToRate
-    ? runTraced(trace, 'Rating your move', () => ratePlayerMove(rating, playerToRate, selected))
-    : Promise.resolve(null);
+  // eval already in flight). It must finish BEFORE the bot's move is saved:
+  // rating edits the game's last move. It is awaited before the think time
+  // is worked out too, since how good the student's move was is one input.
+  const playerQuality = playerToRate
+    ? await runTraced(trace, 'Rating your move', () => ratePlayerMove(rating, playerToRate, selected))
+    : null;
+  const targetMs = minThinkMs ?? simulatedThinkMs(deps, afterPly, fen, clock, selected, playerQuality);
   const elapsedSoFar = now() - thinkStart;
-  if (elapsedSoFar < minThinkMs) {
-    const paddingMs = minThinkMs - elapsedSoFar;
-    await runTraced(trace, 'Padding to the minimum think time', () => sleep(paddingMs), { detail: `${paddingMs}ms so the reply does not feel instant` });
+  if (elapsedSoFar < targetMs) {
+    const paddingMs = targetMs - elapsedSoFar;
+    await runTraced(trace, 'Thinking like a person at the clock', () => sleep(paddingMs), { detail: `${paddingMs}ms (aim ${targetMs}ms)` });
   }
   const botElapsedMs = now() - thinkStart;
-  const playerQuality = await playerRating;
 
   const botResult = await runTraced(
     trace,
@@ -306,6 +306,29 @@ async function commitBotReply(
   // ready for rating that move, without holding this reply for it.
   if (!finished.gameOver) scheduleRatingEval(deps, botMove.fen);
   return { ...finished, playerQuality };
+}
+
+/** How long a person in the bot's seat would take over this move — see
+ * `botThinkTimeMs`. The bot moves at ply `afterPly + 1`, so it is White when
+ * an even number of halfmoves have been played. */
+function simulatedThinkMs(
+  deps: BotMoveCommitDependencies,
+  afterPly: number,
+  fen: string,
+  clock: ClockState,
+  selected: SelectedBotMove,
+  playerQuality: MoveQuality | null
+): number {
+  const botRemainingMs = afterPly % 2 === 0 ? clock.whiteRemainingMs : clock.blackRemainingMs;
+  return botThinkTimeMs({
+    fen,
+    plyCount: afterPly,
+    usedBook: selected.usedBook,
+    analysis: selected.analysis,
+    playerQuality,
+    clock: clock.isTimed && botRemainingMs !== null ? { initialMs: clock.initialMs, incrementMs: clock.incrementMs, remainingMs: botRemainingMs } : null,
+    random: deps.random
+  });
 }
 
 function ratingContext(deps: BotMoveCommitDependencies, gameId: string): RatingContext {
@@ -406,9 +429,10 @@ async function requestBotMoveTraced(
   // a no-op poll must not leave an empty move in the Thinking log.
   const trace = startTrace(freshSession);
   const now = deps.now ?? Date.now;
-  const minThinkMs = deps.minThinkMs ?? MIN_BOT_THINK_MS;
+  const minThinkMs = deps.minThinkMs;
   const clock: ClockState = {
     isTimed: game.clockInitialMs !== null,
+    initialMs: game.clockInitialMs ?? 0,
     incrementMs: game.clockIncrementMs ?? 0,
     whiteRemainingMs: game.whiteRemainingMs,
     blackRemainingMs: game.blackRemainingMs

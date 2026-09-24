@@ -51,6 +51,55 @@ describe('diagnostics routes', () => {
     return { 'x-auth-request-email': email, 'x-auth-request-user': 'Ann' };
   }
 
+  describe('GET /api/users/me/diagnostics/readiness', () => {
+    async function seedGames(userId: string, timeControl: string, count: number, rated: boolean) {
+      for (let i = 0; i < count; i++) {
+        await gamesRepo.insert(db, {
+          userId,
+          pgn: '1. e4 e5',
+          source: 'paste',
+          userColor: 'white',
+          whiteName: null,
+          blackName: null,
+          result: null,
+          timeControl,
+          eco: null,
+          playedAt: new Date(2026, 0, i + 1),
+          rated
+        });
+      }
+    }
+
+    test('counts only rated games of the busiest time control toward the minimum', async () => {
+      const user = await seedUser('diag-readiness@example.com');
+      await seedGames(user.id, '600+0', 4, true);
+      await seedGames(user.id, '180+0', 2, true);
+      await seedGames(user.id, '600+0', 5, false);
+      const app = buildApp({ authMode: 'proxy', db });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/users/me/diagnostics/readiness',
+        headers: authHeaders(user.email)
+      });
+
+      expect(response.json()).toEqual({ required: 15, ratedGames: 4, timeControl: '600+0', ready: false });
+    });
+
+    test('a fresh user has zero games and is not ready', async () => {
+      const user = await seedUser('diag-readiness-fresh@example.com');
+      const app = buildApp({ authMode: 'proxy', db });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/users/me/diagnostics/readiness',
+        headers: authHeaders(user.email)
+      });
+
+      expect(response.json()).toEqual({ required: 15, ratedGames: 0, timeControl: null, ready: false });
+    });
+  });
+
   describe('GET /api/users/me/diagnostics', () => {
     test('a fresh user with no stored profile gets an empty response, not an error', async () => {
       const user = await seedUser('diag-fresh@example.com');
@@ -68,6 +117,7 @@ describe('diagnostics routes', () => {
         windowStart: null,
         windowEnd: null,
         computedAt: null,
+        windowGames: 0,
         entries: []
       });
     });
@@ -137,6 +187,7 @@ describe('diagnostics routes', () => {
         windowStart: null,
         windowEnd: null,
         computedAt: null,
+        windowGames: 0,
         entries: []
       });
     });

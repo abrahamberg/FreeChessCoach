@@ -2,10 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { PositionAnalysisSchema } from '@freechesscoach/shared';
 import { apiPost } from '../../api/client.js';
 
-/** Fetches the saved/cached engine analysis for a single position (the
- * inspector's data source, POST /api/positions/analyze) — cache-first
- * server-side against position_evaluations, so this is normally fast once
- * the background deepen-analysis pass has reached this position. */
+/** Fetches engine analysis for a single position (the inspector's data
+ * source, POST /api/positions/analyze) — a live call through the standard
+ * pipeline (Lichess eval index first, then the user's selected engine).
+ * TanStack Query caches the result client-side by `fen`, so re-opening the
+ * same position in this session is instant; there's no server-side cache. */
 export function usePositionAnalysis(fen: string | null) {
   return useQuery({
     queryKey: ['position-analysis', fen],

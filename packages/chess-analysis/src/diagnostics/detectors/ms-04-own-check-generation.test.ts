@@ -3,60 +3,99 @@ import { describe, expect, test } from 'vitest';
 import { analyzeChecksCapturesThreats } from '../../checks-captures-threats.js';
 import { buildPlyDiagnosticContext } from '../context.js';
 import { ms04OwnCheckGenerationOmission } from './ms-04-own-check-generation.js';
-import { ms05OwnCaptureGenerationOmission } from './ms-05-own-capture-generation.js';
 
-const OWN_HAS_CHECK_CAPTURE_THREAT_FEN = '4k3/8/1r6/8/6q1/8/8/3QK3 w - - 0 1';
-const OWN_HAS_CHECK_CAPTURE_THREAT_AFTER_FEN = '4k3/8/1r6/8/6q1/8/8/3Q1K2 b - - 1 1';
-const NO_OWN_OPPORTUNITIES_FEN = '8/8/4k3/8/8/4K3/8/8 w - - 0 1';
-const NO_OWN_OPPORTUNITIES_AFTER_FEN = '8/8/4k3/8/8/3K4/8/8 b - - 0 1';
+/** White's checks here are Qa4+, Qd7+, Qd8+ and Qe2+; Qxg4 is a non-check
+ * capture and Kf1 a quiet king move. Evals are White-perspective and
+ * hand-set per test. */
+const FEN_BEFORE = '4k3/8/1r6/8/6q1/8/8/3QK3 w - - 0 1';
+const FEN_AFTER: Record<string, string> = {
+  Kf1: '4k3/8/1r6/8/6q1/8/8/3Q1K2 b - - 1 1',
+  'Qe2+': '4k3/8/1r6/8/6q1/8/4Q3/4K3 b - - 1 1',
+  Qxg4: '4k3/8/1r6/8/6Q1/8/8/4K3 b - - 0 1'
+};
+const NO_CHECK_FEN = '8/8/4k3/8/8/4K3/8/8 w - - 0 1';
+const NO_CHECK_AFTER_FEN = '8/8/4k3/8/8/3K4/8/8 b - - 1 1';
 
-function playQuietMove(fenBefore: string, fenAfter: string, overrides: Partial<ClassifiedMoveDto> = {}): ClassifiedMoveDto {
+function line(san: string, cp: number) {
+  return { san, cp, winPct: 50 };
+}
+
+function play(moveSan: string, overrides: Partial<ClassifiedMoveDto> = {}): ClassifiedMoveDto {
   return {
     ply: 1,
-    moveSan: 'Kf1',
+    moveSan,
     mover: 'white',
     isUserMove: true,
-    cpLoss: 350,
-    quality: 'blunder',
-    bestLineSan: ['Kf1'],
-    evalAfterCp: -400,
+    cpLoss: 0,
+    quality: 'good',
+    bestLineSan: ['Qe2+'],
+    evalAfterCp: 0,
     hangsPiece: false,
-    drop: 40,
-    fenBefore,
-    fenAfter,
-    checksCapturesThreats: analyzeChecksCapturesThreats(fenBefore),
+    fenBefore: FEN_BEFORE,
+    fenAfter: FEN_AFTER[moveSan] ?? FEN_AFTER.Kf1,
+    checksCapturesThreats: analyzeChecksCapturesThreats(FEN_BEFORE),
+    bestMoveSan: 'Qe2+',
+    cpBefore: 300,
+    alternatives: [line('Qd4', 0), line('Kf1', -50)],
     ...overrides
   };
 }
 
+function detect(move: ClassifiedMoveDto) {
+  const ctx = buildPlyDiagnosticContext(move);
+  if (!ctx) throw new Error('fixture must carry both FENs');
+  return ms04OwnCheckGenerationOmission.detect(ctx);
+}
+
 describe('ms04OwnCheckGenerationOmission', () => {
-  test('fires when the mover had a check available and did not play it', () => {
-    const ctx = buildPlyDiagnosticContext(
-      playQuietMove(OWN_HAS_CHECK_CAPTURE_THREAT_FEN, OWN_HAS_CHECK_CAPTURE_THREAT_AFTER_FEN)
-    )!;
+  test('fails when a real check chance was missed and the eval confirms it', () => {
+    const observation = detect(play('Kf1', { cpAfter: -50, quality: 'mistake' }));
 
-    const observation = ms04OwnCheckGenerationOmission.detect(ctx);
-
-    expect(observation).not.toBeNull();
-    expect(observation!.code).toBe('MS-04');
-    expect(observation!.direction).toBe('O');
-    expect(observation!.failed).toBe(true);
+    expect(observation).toMatchObject({ code: 'MS-04', direction: 'O', failed: true });
+    expect(observation?.detail).toContain('Qe2+');
   });
 
-  test('does not fire when the mover had no check available', () => {
-    const ctx = buildPlyDiagnosticContext(
-      playQuietMove(NO_OWN_OPPORTUNITIES_FEN, NO_OWN_OPPORTUNITIES_AFTER_FEN, { moveSan: 'Kd3' })
-    )!;
+  test('succeeds when the check was played', () => {
+    const observation = detect(play('Qe2+', { cpAfter: 300, quality: 'best' }));
 
-    expect(ms04OwnCheckGenerationOmission.detect(ctx)).toBeNull();
+    expect(observation).toMatchObject({ code: 'MS-04', failed: false, hwdl: 0 });
   });
 
-  test('does not suppress MS-05 firing on the same ply', () => {
-    const ctx = buildPlyDiagnosticContext(
-      playQuietMove(OWN_HAS_CHECK_CAPTURE_THREAT_FEN, OWN_HAS_CHECK_CAPTURE_THREAT_AFTER_FEN)
-    )!;
+  test('no observation when no check is among the engine lines', () => {
+    const observation = detect(
+      play('Qxg4', { bestMoveSan: 'Qxg4', cpBefore: 900, cpAfter: 900, alternatives: [line('Qd4', 0)] })
+    );
 
-    expect(ms04OwnCheckGenerationOmission.detect(ctx)).not.toBeNull();
-    expect(ms05OwnCaptureGenerationOmission.detect(ctx)).not.toBeNull();
+    expect(observation).toBeNull();
+  });
+
+  test('no observation when the check is not meaningfully better than the best non-check line', () => {
+    const observation = detect(
+      play('Kf1', { bestMoveSan: 'Qxg4', cpBefore: 900, cpAfter: -50, alternatives: [line('Qe2+', 300)] })
+    );
+
+    expect(observation).toBeNull();
+  });
+
+  test('not failed when the played move kept the check\'s value (equal alternative)', () => {
+    const observation = detect(play('Kf1', { cpAfter: 290 }));
+
+    expect(observation).toMatchObject({ code: 'MS-04', failed: false });
+  });
+
+  test('no observation when the mover had no check at all', () => {
+    const observation = detect(
+      play('Kd3', {
+        fenBefore: NO_CHECK_FEN,
+        fenAfter: NO_CHECK_AFTER_FEN,
+        checksCapturesThreats: analyzeChecksCapturesThreats(NO_CHECK_FEN),
+        bestMoveSan: 'Kd3',
+        cpBefore: 0,
+        cpAfter: 0,
+        alternatives: []
+      })
+    );
+
+    expect(observation).toBeNull();
   });
 });

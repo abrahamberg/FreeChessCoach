@@ -68,6 +68,8 @@ export const GameDetailSchema = z.object({
    * `null` whenever there is nothing to say, which is the common case. */
   tacticBaseline: TacticBaselineNoteSchema.nullable().default(null),
   botId: z.string().nullable().default(null),
+  /** A rated bot game: no hints, undo, Explore or move feedback. */
+  rated: z.boolean().nullable().default(null),
   reviewTier: GameReviewTierSchema.default('imported'),
   /** Null for a coach_play game (never analyzed — architecture §14). Used by
    * GameReviewPage to gate "Continue with Coach": promoting requires a ready

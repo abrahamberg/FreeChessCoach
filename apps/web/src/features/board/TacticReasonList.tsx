@@ -7,7 +7,7 @@ import {
   type TacticCardKind
 } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
-import { hasTacticVisual, type TacticSelectionKey } from './tacticSelection.js';
+import { tacticVisualCount, type TacticSelectionKey } from './tacticSelection.js';
 import { CloseIcon } from '../../components/Icon.js';
 import './TacticReasonList.css';
 
@@ -71,10 +71,9 @@ export function TacticReasonList({ move, selection, onToggle }: TacticReasonList
     : null;
   if (!allowedText && !preventionText && !opportunityText) return null;
 
-  // Which sentence opens the card is a coaching decision, not a rendering
-  // one — orderTacticCards owns it (a missed queen leads a blunder; the
-  // consolation prize does not), and build-game-report.ts orders the same
-  // move's plain-text `reasons` by the same rule.
+  // A report built since Task 77.5 carries at most one of these (the move's
+  // one verdict); orderTacticCards only orders an older stored report's
+  // several, the same way build-game-report.ts orders `reasons`.
   const cards: Record<TacticCardKind, ReactNode> = {
     // Never "good": this is the card for what the move handed over.
     allowed: allowedText && move.tacticAllowed ? (
@@ -114,8 +113,8 @@ export function TacticReasonList({ move, selection, onToggle }: TacticReasonList
 
   return (
     <div className="tactic-reason-list">
-      {orderTacticCards(move).map((kind) => cards[kind])}
-      {hasTacticVisual(move) && (
+      {orderTacticCards().map((kind) => cards[kind])}
+      {tacticVisualCount(move) > 1 && (
         <button
           type="button"
           className={`tactic-reason-list__toggle-all${selection === 'all' ? ' tactic-reason-list__toggle-all--active' : ''}`}

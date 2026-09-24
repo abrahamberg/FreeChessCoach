@@ -1,15 +1,17 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Modal } from '../../components/Modal.js';
-import { UndoIcon } from '../../components/Icon.js';
+import { OverflowMenu, type OverflowMenuItem } from '../../components/OverflowMenu.js';
+import { useCoachVoice } from '../../hooks/useCoachVoice.js';
+import { useLlmSetupStatus } from '../../hooks/useLlmSetupStatus.js';
+import { isOpenAiVoiceAvailable } from '../../tts/openai-voice-available.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
-import { BoardActionBar } from '../board/BoardActionBar.js';
 import { CoachBoard } from '../board/CoachBoard.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
-import { useExploreFeedback } from '../board/useExploreFeedback.js';
 import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
 import { ChatPane } from '../chat/ChatPane.js';
+import { DebugPanel } from '../chat/DebugPanel.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
 import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
 import { UnlockPhraseModal } from '../settings/UnlockPhraseModal.js';
@@ -20,7 +22,9 @@ import './PuzzleSessionPage.css';
 
 /**
  * docs/plan.md Phase 59, Task 59.6 — a coach-guided focused-practice
- * session on one puzzle_assignments batch. Same three-column desktop
+ * session on one puzzle_assignments batch. Discuss-only: the board is turned
+ * to the student's side and locked; the coach sees the whole line and plays
+ * each move on the board once the student has established it. Same three-column desktop
  * layout as session/SessionPage.tsx (move list | board | chat, same
  * SessionPage.css classes) and the same CoachBoard/ChatPane/
  * DivergedLinePanel/MoveExplorer components — this used to be a bespoke,
@@ -29,6 +33,12 @@ import './PuzzleSessionPage.css';
  * usePuzzleSessionPageData.ts for the move-attempt/peek mechanics).
  */
 export function PuzzleSessionPage(): ReactNode {
+  // Bumped by "Reset session" so the whole body remounts on the fresh session.
+  const [generation, setGeneration] = useState(0);
+  return <PuzzleSessionBody key={generation} onSessionReset={() => setGeneration((value) => value + 1)} />;
+}
+
+function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): ReactNode {
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const navigate = useNavigate();
   const isSideBySide = useIsBoardSideBySide();
@@ -37,19 +47,13 @@ export function PuzzleSessionPage(): ReactNode {
   const {
     createQuery,
     detailQuery,
+    profileQuery,
     currentItem,
     divergedLine,
     annotations,
     chat,
     boardFen,
-    boardMode,
-    enterPeek,
-    exitPeek,
-    hint,
-    isMoveSubmitting,
-    moveAttemptError,
-    handleUserMove,
-    handleLocalMove,
+    orientation,
     sanMoves,
     historyPositions,
     currentPly,
@@ -61,28 +65,27 @@ export function PuzzleSessionPage(): ReactNode {
     isAdvancingItem,
     advanceToNextItem,
     setupRequiredModal,
-    unlockModal
-  } = usePuzzleSessionPageData(assignmentId ?? '');
+    unlockModal,
+    resetSession,
+    isResetting
+  } = usePuzzleSessionPageData(assignmentId ?? '', onSessionReset);
+  const [isDebugOpen, setIsDebugOpen] = useState(false);
 
-  // "Explore on your own" (BoardActionBar's eye toggle) — same ownership
-  // split SessionPage.tsx uses: isExploring lives here, not inside the data
-  // hook, since it's pure UI state with no bearing on what gets persisted.
-  const [isExploring, setIsExploring] = useState(false);
-  useEffect(() => {
-    if (boardMode !== 'peek') setIsExploring(false);
-  }, [boardMode]);
-  // No lastMove (null) — puzzle practice has nowhere to show the per-move
-  // coach-box note ExploreNoteCard gives analyze/play/play_bot, so this only
-  // drives the pill's own live eval word, not a move classification.
-  const exploreFeedback = useExploreFeedback({ enabled: isExploring, fen: boardFen, lastMove: null });
-  function openExplore(): void {
-    setIsExploring(true);
-    enterPeek();
-  }
-  function closeExplore(): void {
-    setIsExploring(false);
-    exitPeek();
-  }
+  // Coach voice — same wiring as the coach game (SessionPage.tsx): the
+  // persona picks the voice, and Settings' TTS switch/backend decide whether
+  // and how the coach's replies are spoken.
+  const persona = profileQuery.data?.coachPersona ?? 'general';
+  const ttsEnabled = profileQuery.data?.ttsEnabled ?? false;
+  const llmSetupQuery = useLlmSetupStatus();
+  const savedTtsBackend = profileQuery.data?.ttsBackend ?? 'openai';
+  const ttsBackend = savedTtsBackend === 'openai' && !isOpenAiVoiceAvailable(llmSetupQuery.data) ? 'browser' : savedTtsBackend;
+  const coachVoice = useCoachVoice({
+    messages: chat.messages,
+    isStreaming: chat.isStreaming,
+    persona,
+    enabled: ttsEnabled,
+    backend: ttsBackend
+  });
 
   if (createQuery.isError) return <p>Could not start this practice session.</p>;
   if (createQuery.isPending || detailQuery.isLoading) return <p>Loading…</p>;
@@ -97,7 +100,7 @@ export function PuzzleSessionPage(): ReactNode {
         <div className="puzzle-session-complete">
           <p>You've finished the focus session your coach assigned you: {session.assignment.reason}</p>
           <p>
-            {completedCount} of {session.assignment.items.length} puzzles complete.
+            {completedCount} of {session.assignment.items.length} practice positions complete.
           </p>
           <button type="button" className="btn-primary" onClick={() => navigate('/progress')}>
             Back to Progress
@@ -128,48 +131,53 @@ export function PuzzleSessionPage(): ReactNode {
     void chat.sendMessage(content);
   }
 
+  const hasCompletedTurn = chat.messages.some((message) => message.role === 'assistant' && message.text !== '');
+  const menuItems: OverflowMenuItem[] = [
+    ...(ttsEnabled
+      ? [
+          {
+            label: coachVoice.autoplayEnabled ? 'Turn off coach voice' : 'Turn on coach voice',
+            onSelect: () => coachVoice.setAutoplayEnabled(!coachVoice.autoplayEnabled)
+          }
+        ]
+      : []),
+    {
+      label: 'Reset session',
+      destructive: true,
+      disabled: isResetting,
+      onSelect: () => {
+        if (window.confirm('Reset this session? This ends the current conversation and starts a fresh one on this position.')) {
+          resetSession();
+        }
+      }
+    },
+    // Dev builds only, same as the coach game's menu.
+    ...(import.meta.env.DEV
+      ? [
+          {
+            label: 'Debug last answer',
+            onSelect: () => setIsDebugOpen(true),
+            disabled: !hasCompletedTurn
+          }
+        ]
+      : [])
+  ];
+
   const board = (
     <div className="session-board-column">
       <div className="session-board-row">
         <CoachBoard
           fen={boardFen}
-          orientation="white"
-          mode={boardMode}
-          isExploring={isExploring}
-          arrows={[...annotations.arrows, ...hint.arrows, ...exploreFeedback.arrows]}
-          highlights={[...annotations.highlights, ...hint.highlights, ...exploreFeedback.highlights]}
-          onUserMove={handleUserMove}
-          onLocalMove={handleLocalMove}
-          disabled={isMoveSubmitting}
+          orientation={orientation}
+          mode="peek"
+          arrows={annotations.arrows}
+          highlights={annotations.highlights}
+          disabled
         />
       </div>
-      {moveAttemptError && (
-        <p className="play-move-error" role="alert">
-          {moveAttemptError}
-        </p>
-      )}
-      {/* Same BoardActionBar every live-position board gets (see its own doc
-          comment) — no Undo here: an accepted real attempt just advances,
-          and a rejected one reverts on its own, so there's nothing to
-          self-serve undo the way play/play_bot's own last committed move. */}
-      {!divergedLine.line && (
-        <BoardActionBar
-          isExploring={isExploring}
-          onOpenExplore={openExplore}
-          onCloseExplore={closeExplore}
-          exploreStatus={exploreFeedback.status}
-          exploreEvaluation={exploreFeedback.evaluation}
-          hint={hint}
-        />
-      )}
-      {divergedLine.line && (
-        <p className="undo-pill">
-          <button type="button" onClick={divergedLine.undoLastMove}>
-            <UndoIcon width={13} height={13} />
-            undo last move
-          </button>
-        </p>
-      )}
+      <p className="puzzle-session-page__locked" role="note">
+        Discuss only — you can't move the pieces here. Tell your coach what you'd play; they'll move the board for you.
+      </p>
     </div>
   );
 
@@ -181,6 +189,13 @@ export function PuzzleSessionPage(): ReactNode {
       onSend={handleSendMessage}
       hasPendingLine={Boolean(divergedLine.line)}
       fen={boardFen}
+      coachPersona={persona}
+      autoplayEnabled={coachVoice.autoplayEnabled}
+      onToggleAutoplay={ttsEnabled ? coachVoice.setAutoplayEnabled : undefined}
+      onPlayMessage={ttsEnabled ? coachVoice.play : undefined}
+      onStopMessage={ttsEnabled ? coachVoice.stop : undefined}
+      playingMessageId={coachVoice.playingMessageId}
+      loadingMessageId={coachVoice.loadingMessageId}
     />
   );
 
@@ -204,10 +219,14 @@ export function PuzzleSessionPage(): ReactNode {
         <button type="button" onClick={() => navigate('/progress')}>
           ← Progress
         </button>
-        <span className="puzzle-session-page__progress">
-          Item {session.currentItemIndex + 1} of {session.assignment.items.length}
+        <span className="puzzle-session-page__actions">
+          <span className="puzzle-session-page__progress">
+            Practice {session.currentItemIndex + 1} of {session.assignment.items.length}
+          </span>
+          <OverflowMenu label="Session options" items={menuItems} />
         </span>
       </header>
+      {isDebugOpen && <DebugPanel sessionId={session.id} basePath="/api/puzzle-sessions" onClose={() => setIsDebugOpen(false)} />}
       <PuzzlePlanStrip
         items={items}
         currentItemIndex={currentItemIndex}

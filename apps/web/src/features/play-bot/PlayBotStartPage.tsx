@@ -1,4 +1,4 @@
-import { BOT_ROSTER, type BotClockConfig, type BotConfig, type PlayerColor } from '@freechesscoach/shared';
+import { BOT_ROSTER, RATED_BOT_CLOCK, type BotClockConfig, type BotConfig, type PlayerColor } from '@freechesscoach/shared';
 import { useMutation } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -45,10 +45,11 @@ export function PlayBotStartPage(): ReactNode {
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
   const [tierFilter, setTierFilter] = useState<BotTierId | 'all'>('all');
   const [timeControlIndex, setTimeControlIndex] = useState(0);
+  const [rated, setRated] = useState(false);
 
   const startMutation = useMutation({
-    mutationFn: ({ studentColor, botId, clock }: { studentColor: PlayerColor; botId: string; clock: BotClockConfig | null }) =>
-      apiPost('/api/sessions/play-bot', { studentColor, botId, clock }, PlaySessionSchema),
+    mutationFn: ({ studentColor, botId, clock, rated }: { studentColor: PlayerColor; botId: string; clock: BotClockConfig | null; rated: boolean }) =>
+      apiPost('/api/sessions/play-bot', { studentColor, botId, clock, rated }, PlaySessionSchema),
     onSuccess: (session) => navigate(`/bot-session/${session.id}`)
   });
 
@@ -57,7 +58,7 @@ export function PlayBotStartPage(): ReactNode {
   function handlePickColor(studentColor: PlayerColor): void {
     if (!selectedBotId) return;
     const clock = TIME_CONTROLS[timeControlIndex]?.clock ?? null;
-    startMutation.mutate({ studentColor, botId: selectedBotId, clock });
+    startMutation.mutate({ studentColor, botId: selectedBotId, clock: rated ? RATED_BOT_CLOCK : clock, rated });
   }
 
   function handleRandomColor(): void {
@@ -168,20 +169,36 @@ export function PlayBotStartPage(): ReactNode {
             {/* The demo has no engine, so this status could only look like a fault. */}
             {!getDemoRuntime() && <LiteEngineCheck />}
 
-            <div className="play-bot-start-page__time-controls" role="radiogroup" aria-label="Time control">
-              {TIME_CONTROLS.map((option, index) => (
-                <button
-                  key={option.label}
-                  type="button"
-                  role="radio"
-                  aria-checked={timeControlIndex === index}
-                  className={timeControlIndex === index ? 'is-selected' : undefined}
-                  onClick={() => setTimeControlIndex(index)}
-                >
-                  {option.label}
-                </button>
-              ))}
+            <div className="play-bot-start-page__time-controls" role="radiogroup" aria-label="Game type">
+              <button type="button" role="radio" aria-checked={!rated} className={!rated ? 'is-selected' : undefined} onClick={() => setRated(false)}>
+                Practice
+              </button>
+              <button type="button" role="radio" aria-checked={rated} className={rated ? 'is-selected' : undefined} onClick={() => setRated(true)}>
+                Rated
+              </button>
             </div>
+            <p className="play-bot-start-page__mode-note">
+              {rated
+                ? 'Rated: 10 minutes, no feedback on your moves, no hints, no undo and no Explore. Rated games are the only ones your coach uses to spot your patterns.'
+                : 'Practice: choose your own clock, and use hints, undo, Explore and move feedback. Practice games do not count toward your patterns.'}
+            </p>
+
+            {!rated && (
+              <div className="play-bot-start-page__time-controls" role="radiogroup" aria-label="Time control">
+                {TIME_CONTROLS.map((option, index) => (
+                  <button
+                    key={option.label}
+                    type="button"
+                    role="radio"
+                    aria-checked={timeControlIndex === index}
+                    className={timeControlIndex === index ? 'is-selected' : undefined}
+                    onClick={() => setTimeControlIndex(index)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="color-confirm">
               <div className="color-confirm__options">

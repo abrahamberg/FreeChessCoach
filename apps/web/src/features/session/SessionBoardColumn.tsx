@@ -97,6 +97,9 @@ export interface SessionBoardColumnProps {
   onOpenExplore?: () => void;
   onCloseExplore?: () => void;
   exploreFeedback?: UseExploreFeedbackResult;
+  /** play_bot only: a rated game — no hint, undo or Explore (the caller also
+   * withholds move feedback and eval). Defaults false. */
+  restricted?: boolean;
 }
 
 const IDLE_EXPLORE_FEEDBACK: UseExploreFeedbackResult = {
@@ -154,7 +157,8 @@ export function SessionBoardColumn({
   isExploring = false,
   onOpenExplore,
   onCloseExplore,
-  exploreFeedback = IDLE_EXPLORE_FEEDBACK
+  exploreFeedback = IDLE_EXPLORE_FEEDBACK,
+  restricted = false
 }: SessionBoardColumnProps): ReactNode {
   const [showLegalMoveDots] = useShowLegalMoveDots();
   const [pendingMove, setPendingMove] = useState<{ san: string; fen: string } | null>(null);
@@ -262,7 +266,7 @@ export function SessionBoardColumn({
 
   // Hint only makes sense where there's a live move to hint at — analyze
   // mode is reviewing an already-played game, nothing to suggest.
-  const showHint = sessionMode !== 'analyze';
+  const showHint = sessionMode !== 'analyze' && !restricted;
 
   // While exploring, the eval bar and the on-board move-quality icon track
   // the sandbox's own engine-pipeline feedback instead of the recorded
@@ -368,7 +372,7 @@ export function SessionBoardColumn({
           replaced with this single component. Mobile without an active
           diverged line, or desktop unconditionally (its own DivergedLinePanel
           lives in the sidebar, owned by the page, not this column). */}
-      {(isDesktop || !divergedLine.line) && (
+      {(isDesktop || !divergedLine.line) && !restricted && (
         <BoardActionBar
           isExploring={isExploring}
           onOpenExplore={() => onOpenExplore?.()}

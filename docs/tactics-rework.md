@@ -403,9 +403,11 @@ Its contract is:
    paths, with a hard cap of 24 positions per pipeline instance. The same rule
    applies to quiet and tactical positions, and fits the ~3s/position
    `LITE_SUPPLEMENT_MOVETIME_MS` budget.
-3. **Store widened lines separately.** `position_evaluations` is keyed by FEN
-   with no depth discrimination and lite results are explicitly untrusted for
-   it, so review-breadth lines need their own table/column.
+3. **Store widened lines separately.** The single-position cache that existed
+   at the time was keyed by FEN with no depth discrimination, and lite results
+   were explicitly untrusted for it, so review-breadth lines needed their own
+   table/column. (That cache has since been removed; see `docs/plan.md`
+   Phase 77.)
 
 Beyond "more alternatives to show": the current `found`/`missed` framing is
 binary against `lines[0]`. With 5–8 real lines the review can say *"the fork was
@@ -421,7 +423,7 @@ second-best at equal evaluation.
 | B ✅ | **Line verification** (claims → PV walk → material attribution), plus the static gates that carry every engine-free caller. Reuses `applySanSequence` and `see.ts`. | The noise change. Shipped behind A's ceilings so the drop is a CI number, not a claim. |
 | C ✅ | **Multi-label claims + ranked headline.** Detector signature change, `priority` demoted to tie-breaker. | Recovers the recall first-match was discarding; unifies sentence and arrow. Schema change in `packages/shared`. |
 | D ✅ | **Defensive + quiet vocabulary.** Thirty new detectors. | Retires "Nothing to flag" as the default answer. Nearly free once claims are objects — a defensive motif is an enemy claim that is gone. |
-| E ✅ | **Browser engine breadth for review**: `analyzeGame` on the lite decorator, budgeted to positions whose selected/fallback result is short of requested lines and capped at 24 of them, with the decorator outside the cache so `position_evaluations` still only ever sees `main`'s lines. | Independent of A–D. Feeds B: verification asks about the engine's *lines*, and review had none to ask about. |
+| E ✅ | **Browser engine breadth for review**: `analyzeGame` on the lite decorator, budgeted to positions whose selected/fallback result is short of requested lines and capped at 24 of them, with the decorator outside the single-position cache that existed at the time, so it still only ever saw `main`'s lines (that cache has since been removed; see `docs/plan.md` Phase 77). | Independent of A–D. Feeds B: verification asks about the engine's *lines*, and review had none to ask about. |
 | F ✅ | **Rebuild the prevention path on verified claims.** | Worth little until A–C made claims trustworthy; it was the loudest amplifier of their errors. |
 | G ✅ | **Baseline-relative game report.** Per-user motif rates from the existing cross-game aggregate, a deviation test, game-level cards that say "unusual for you" with a drill attached. Derived at read time on `GET /api/games/:id`, never stored — what counts as unusual changes with every game played after this one. | Depends on A–D producing rates worth comparing; the aggregation itself was already built. |
 
@@ -643,3 +645,186 @@ shape, wearing a defensive hat — is correct in isolation and makes the
 outranking phantom *offensive* claims on those plies, and removing it
 promotes them to the headline. Trading one wrong sentence for another is not
 a fix; the ranking or those offensive claims have to be dealt with first.
+
+---
+
+## 10. Eval witness on verdicts (Phase 76)
+
+A tactic card and a diagnostic failure both come down to a verdict: found,
+missed, allowed, or prevented. §5 layer 2 proposed an **eval** test for
+these, and `CONFIG.tacticVerification.minWinProbabilitySwing` was added for
+it, but nothing ever read that value. So verdicts were decided by shape and
+material alone. That gave false negatives in both directions:
+
+- Ignoring a threatened piece to play a mate threat read as a failure.
+- A sacrifice that lured the queen read as a loss.
+- A missed fork read as missed even when the played move was just as good.
+
+**What shipped.** `eval-witness.ts` exposes `evalGap(higherCpWhite,
+lowerCpWhite, mover)`. It answers one question: did this decision actually
+gain or lose anything?
+
+- **Compare against the best alternative, never the position before the
+  move.** A stored eval is already the value at the end of the engine's
+  line, so a sound sacrifice evaluates well at the move itself. There is
+  nothing to walk.
+- **A gap is meaningful** when any one of these holds:
+  - the win% gap is at least 10, the mistake boundary;
+  - the outcome band changes (winning ≥ 75%, balanced, losing ≤ 25%) and the
+    gap is at least 5;
+  - both evals are in the same winning or losing band and the cp gap is at
+    least 300. This covers saturation: dropping a queen at +15 still counts,
+    while mate-in-5 instead of mate-in-3 does not.
+
+**It acts on the verdict, not the claim.** Detectors and `verify-tactic-*`
+are unchanged, so §8's precision ceilings and recall floors did not move
+(`test:corpus` passes unchanged). The verdict layer changes:
+
+- **Missed / found** (`game-tactic-motifs.ts`, `tactic-opportunity-witness.ts`):
+  - A ply is an opportunity only when the motif's move beats the best line
+    carrying a different headline by a meaningful gap.
+  - It is not a miss when the played move lost nothing meaningful.
+- **Allowed** (`tactic-allowed.ts`): the move has to have cost a meaningful
+  gap. The card is read off the next ply's *pre-gate* chance
+  (`build-game-report.ts`). So 9…Qd7?? keeps its card even though 10.Bxf6
+  held enough value not to count as a miss.
+- **Prevented** (`realistic-threats.ts`, `apps/api/.../tactic-prevention.ts`):
+  - A threat counts only when it wins material or mates, in a line the side
+    to move would actually play (within a non-meaningful gap of its best
+    line).
+  - A threat left standing that cost nothing is *compensated*. It gets no
+    card, is not counted as preventable, and is not a diagnostic failure.
+
+**Diagnostics** (`diagnostics/README.md`) use the same witness:
+
+- An opportunity must be dangerous and real. A failure is the named
+  mechanism, carried out by the engine's refutation for a net material loss
+  against the position before the move, plus an eval-confirmed loss.
+  Completely decided plies (DQ-09) are skipped in both directions.
+- Measured on the test user's 19 games (398 diagnosable plies of 616).
+  Opportunities / failures, before → after:
+
+  | Code | Before | After |
+  |---|---|---|
+  | MS-03 D | 441 / 5 | 5 / 0 |
+  | MS-06 O | 429 / 0 | 31 / 2 |
+  | MS-01 D | 231 / 2 | 16 / 1 |
+  | MS-04 O | 225 / 0 | 10 / 2 |
+  | MS-02 D | 219 / 0 | 145 / 1 |
+  | BV-01 D | 163 / 16 | 118 / 10 |
+  | MS-05 O | 149 / 0 | 35 / 0 |
+  | MS-07 N | 3 / 3 | 18 / 0 |
+
+  The before-column false failures are gone: MS-07 on `best` moves, TA-43 D
+  on a brilliant `Bxh8`, MS-14 on an even trade, and BV-01 on the exchange
+  `cxd5 Nxd5`.
+- **Known limitation.** `MS-08 N` and `BV-15 B` share one rule, and episode
+  resolution keeps only the higher-precedence failure on a ply. So MS-08's
+  failures always fold into BV-15's, and MS-08 reads as never failing.
+
+## 11. One reason per move (Phase 77)
+
+§10 fixed *whether* a card was a real failure or credit; it did nothing about
+a move earning up to three cards at once, chosen by detector-family order
+rather than by which one actually explains the eval. Phase 77 replaces that
+with `decideMoveVerdict` (`packages/chess-analysis/src/move-verdict/`):
+`MoveVerdict = { kind: 'failure' | 'credit', reason, explainedCpWhite, card }`,
+or `null`.
+
+**The verdict states.** Every move ends in exactly one of three states:
+
+- **A failure** — `missedMate`, `allowedMate`, `missedTactic`, or
+  `allowedTactic`.
+- **A credit** — `foundMate`, `foundTactic`, or `defusedThreat`.
+- **None** — nothing was lost and nothing was at stake. No detector runs.
+
+**The free gate** (`gate.ts`) decides which branch, if any, from the stored
+evals alone: `playedMoveGap(move).meaningful` sends it to the failure branch;
+a played move at or near the best line with `evalGap(B, S).meaningful`
+(B = best line, S = second-best) sends it to the credit branch; otherwise the
+verdict is `null` before a single detector or PV scan runs.
+
+**Tiers.** A confirmed mate or material reason (tier 1) always beats a
+confirmed positional one (tier 2) — develops, tempo, king safety, the kind of
+"reason" that wins no material and changes no mate count. Tier 2 is checked
+only when no tier-1 reason confirms, and a tier-2 result never stops a
+tier-1 check still in flight. This is what stops "missed a chance to develop"
+from out-ranking a real hung piece on the same move.
+
+**Ceilings and early exit** (`ceilings.ts`). Before any reason is checked,
+each candidate gets a cap on how much of the eval gap it could possibly
+explain, computed from the stored lines alone (no detector, no PV walk):
+`allowedMate`/`missedMate` cap at the full gap, `missedTactic` at
+`gap(B, max(R, P))`, `allowedTactic` at `gap(min(R, B), P)`, `foundMate` at
+`gap(B, S)`, `foundTactic` at `gap(B, R)`, `defusedThreat` at the smaller of
+the threat's claimed gain and `gap(B, S)` (R = the best line whose headline
+motif differs from the best move's). Checks run strongest-ceiling first,
+tier 1 before tier 2, and the run **stops** the moment a confirmed value is
+at least as large as every remaining ceiling — the rest of that move's
+candidates are never checked at all.
+
+**Net material must agree with the eval.** Each check walks its own line
+(reusing `verify-tactic-line.ts`'s `materialBalance`, capped at
+`CONFIG.tacticVerification.maxLinePlies`) and returns net gained/lost
+material alongside the explained cp. A reason survives only when the net
+material points the same way as its eval gap (a loss needs net ≤ −1 or mate
+against; a gain needs net ≥ +1 or mate for) **and** the eval confirms it
+(`evalGap(...).meaningful`). This is what drops "won a rook" when the eval
+shows no gain — the rook was bait — and what turns "won a knight, but it
+cost the queen" into a queen-loss card, not a knight-win one: the primary
+reason is the largest confirmed value, ranked by `explainedCpWhite` with
+ties broken by `|net material|` (mate above any material), and the smaller
+event goes only into the card's `detail` (`detail.ts`, which also cancels
+like-for-like trades — a queen for a queen, a bishop for a knight — so they
+don't read as a "won" anything).
+
+**The hung-material fallback** (`reasons/hung-material.ts`) exists because
+the tactic verifier is deliberately conservative: it rejects, for example, a
+line where the "hanging" piece just retreats a move later (4.Nd5? Nxe4 5.Qd3
+Nf6 is not a free pawn — the knight escapes). `verify-tactic-*` staying out
+of scope for this phase meant `allowedTactic` needed its own, plainer check
+for "the opponent's reply just captures, and the material walk nets a loss
+the eval confirms" — a capture that is real but that no named motif claims.
+Without it, a hung piece with no matching tactic motif produced no card at
+all.
+
+**Per-game counts changed.** `computeTacticMotifCounts` now counts
+opportunities as `missedTactic` + `foundTactic` verdicts (found =
+`foundTactic`), plus mates counted separately under `checkmate`
+(`missedMate` is a checkmate opportunity, `foundMate` is both an opportunity
+and a find) — mates no longer inflate or deflate the tactic rate. Prevention
+counts (`move-verdict/prevention-counts.ts`) changed the other way:
+*preventable* is now `defusedThreat` plus **every** `allowedTactic` verdict,
+whether or not the threat was still standing before the move — previously
+only a threat that survived to be tested counted as preventable, so a
+threat that was answered by *some* move but not the best one silently
+dropped out of the denominator. *Prevented* stays `defusedThreat`.
+
+**Diagnostics keep at most one observation per ply**, chosen by the verdict
+(`build-diagnostics.ts`, `move-verdict/diagnostic-code.ts`): a `null`-verdict
+ply runs no detector (it still extends a DQ-11 cascade), and of whatever the
+verdict's matching detector returns — or a synthesized
+`buildEvalObservation` when it returns nothing — only the observation whose
+code matches the verdict's mapped code survives, `failed` set from
+`verdict.kind === 'failure'`. This ends the double counting where one
+attacked piece fed MS-02, BV-01, BV-15 and MS-08 all from the same event.
+
+**Before/after (`docs/plan.md` 77.1–77.5, the test user's 19 games, 1,165
+plies).** The 77.1 baseline (median of 3 runs, no engine calls) was
+951,856 ms total (classify 57,284, prevention 621,764, report 138,182,
+diagnostics 134,908). By 77.5 (`--runs 1`, lazy prevention now timed inside
+`report`): **121,332 ms total** (classify 37,502, prevention 1, report
+81,448, diagnostics 2,379) — about an 81% drop, peak heap 156 MB. Of the
+1,165 plies, **988 verdicted `null`** — no detector ran there at all.
+Detector-registry runs fell to 314 `classifyTacticChance` calls plus 92
+materiality witnesses (before: at least 2,330, every ply run twice); PV scans
+to 112 of 1,184 positions (before: every position, unconditionally);
+diagnostic detector runs to 52 (before: ~16,000, 41 detectors × ~398
+diagnosable plies).
+
+Per-code diagnostic opportunities/failures moved with the new counting rule
+(same 19 games): MS-02 D 145/1 → 9/4, BV-01 D 118/10 → 2/2, MS-06 O 31/2 →
+1/1, MS-01 D 16/1 → 0, with three new codes appearing for the first time
+because `allowedTactic` now reaches them — BV-15 B 7/5, BV-02 O 5/2, TA-10 D
+4/2 — for 38 total observations, 22 failed. `docs/plan.md` Task 77.5 has the
+full per-code table and a 10-verdict hand spot-check.

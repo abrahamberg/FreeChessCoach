@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
+import type { EngineEval } from '@freechesscoach/shared';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
@@ -23,18 +23,6 @@ async function makeEval(fen: string): Promise<EngineEval> {
   return { ply: 0, fen, depth: 10, lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 20, mateIn: null }] };
 }
 
-function fakeAnalyzePosition(): AnalysisJobDependencies['analyzePosition'] {
-  return vi.fn().mockResolvedValue({
-    fen: '',
-    depth: 10,
-    multiPv: 0,
-    bestMove: '',
-    eval: { cp: 0, mateIn: null },
-    lines: [],
-    features: {} as PositionAnalysis['features']
-  });
-}
-
 async function setupGame(db: Kysely<Database>): Promise<{ gameId: string; analysisId: string }> {
   const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
   const game = await gamesRepo.insert(db, {
@@ -55,8 +43,7 @@ async function setupGame(db: Kysely<Database>): Promise<{ gameId: string; analys
 
 function deps(): AnalysisJobDependencies {
   return {
-    analyzeGamePositions: vi.fn(async (fens: string[]) => Promise.all(fens.map((fen) => makeEval(fen)))),
-    analyzePosition: fakeAnalyzePosition()
+    analyzeGamePositions: vi.fn(async (fens: string[]) => Promise.all(fens.map((fen) => makeEval(fen))))
   };
 }
 

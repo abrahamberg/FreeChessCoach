@@ -17,14 +17,12 @@ export interface LichessEvalEngineBackendOptions {
 /**
  * Checks the pre-built, read-only Lichess evaluation index (~394M positions
  * the chess community has already analyzed — see lichess-eval-index.ts)
- * before ever calling `fallback`. A hit is returned directly and,
- * deliberately, never written to position_evaluations: that table exists to
- * cache *this app's own* engine calls, and duplicating data that's already
- * durably available in this read-only index would only cost storage for no
- * benefit. A miss falls straight through to `fallback` unchanged — normally
- * CachingEngineBackend(raw), so
- * its own caching/pruning behavior for genuinely Lichess-unseen positions is
- * untouched. Intended as the new outermost layer in resolveEngineBackend,
+ * before ever calling `fallback`. A hit is returned directly, with no engine
+ * call at all — nothing needs to be written anywhere, since the index is
+ * already durable. A miss falls straight through to `fallback` unchanged
+ * (the selected engine backend, plus the lite breadth supplement), so
+ * genuinely Lichess-unseen positions are handled exactly as if this class
+ * weren't there. Intended as the new outermost layer in resolveEngineBackend,
  * applied uniformly across every engineMode.
  */
 export class LichessEvalEngineBackend implements EngineBackend {
@@ -51,7 +49,7 @@ export class LichessEvalEngineBackend implements EngineBackend {
   }
 
   async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
-    const hits = await Promise.all(fens.map((fen) => this.lookupHit(fen)));
+    const hits = await Promise.all(fens.map((fen) => this.lookupLeanHit(fen)));
     const missedPlies = hits.flatMap((hit, ply) => (hit ? [] : [ply]));
 
     const computed =
@@ -59,13 +57,21 @@ export class LichessEvalEngineBackend implements EngineBackend {
     const computedByPly = new Map(missedPlies.map((ply, i) => [ply, computed[i]!]));
 
     this.onLookup?.({ hits: hits.length - missedPlies.length, misses: missedPlies.length });
-    return hits.map((hit, ply) => (hit ? { ...toLeanEval(hit), ply } : { ...computedByPly.get(ply)!, ply }));
+    return hits.map((hit, ply) => (hit ? { ...hit, ply } : { ...computedByPly.get(ply)!, ply }));
   }
 
   private async lookupHit(fen: string): Promise<PositionAnalysis | null> {
     const result = await this.index.lookup(fen);
     if (!result) return null;
-    return toPositionAnalysis(fen, result);
+    return { ...toAnalysisCore(fen, result), features: computePositionFeatures(fen) };
+  }
+
+  /** `lookupHit` without `computePositionFeatures`: `analyzeGame` keeps only
+   * `toLeanEval`'s fields, which never include the features (Task 77.3). */
+  private async lookupLeanHit(fen: string): Promise<EngineEval | null> {
+    const result = await this.index.lookup(fen);
+    if (!result) return null;
+    return toLeanEval(toAnalysisCore(fen, result));
   }
 }
 
@@ -77,8 +83,8 @@ export class LichessEvalEngineBackend implements EngineBackend {
  * continuation, not just its first move, so a v3 index hit carries the same
  * real multi-ply PV a native engine call would — a short/single-move
  * `pvUci` (a v2-era or short-source-pv line) still degrades gracefully to a
- * single-move `pvSan`. */
-function toPositionAnalysis(fen: string, result: LichessEvalLookupResult): PositionAnalysis {
+ * single-move `pvSan`. The caller adds `features` when it needs them. */
+function toAnalysisCore(fen: string, result: LichessEvalLookupResult): Omit<PositionAnalysis, 'features'> {
   const lines: PositionAnalysisLine[] = result.lines.map((line) => {
     const pvSan = pvUciToSan(fen, line.pvUci);
     const moveSan = pvSan[0] ?? '';
@@ -92,7 +98,6 @@ function toPositionAnalysis(fen: string, result: LichessEvalLookupResult): Posit
     multiPv: lines.length,
     bestMove: best?.moveSan ?? null,
     eval: { cp: best?.cp ?? null, mateIn: best?.mateIn ?? null },
-    lines,
-    features: computePositionFeatures(fen)
+    lines
   };
 }

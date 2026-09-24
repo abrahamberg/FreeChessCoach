@@ -11,6 +11,20 @@ export interface DiagnosticReportItem {
   firedGates: readonly FiredGate[];
 }
 
+/** How much evidence stands behind the profile — lets the coach say "early
+ * read" instead of presenting a 15-game lead as a settled pattern. */
+export interface DiagnosticSampleContext {
+  ratedGames: number;
+  timeControl: string | null;
+  /** Games needed before any profile exists. */
+  requiredGames: number;
+  /** Games above which the profile stops being an early read. */
+  fullEvidenceGames: number;
+}
+
+const CONFIDENCE_KEY =
+  'Confidence: "signal" = it has repeated in more than one game — a lead to check with the student, not yet their pattern; "probable" = repeated across several games and sittings — safe to name as their pattern.';
+
 const NO_DIAGNOSES_FALLBACK =
   '(no confident diagnoses yet for this time control — either too little evidence, or every candidate is currently gated by a data-quality issue)';
 
@@ -21,9 +35,29 @@ const NO_DIAGNOSES_FALLBACK =
  * confidence-then-recurrence ranked, capped at three) — this module only
  * renders, it doesn't select.
  */
-export function renderDiagnosticProfileBlock(items: readonly DiagnosticReportItem[]): string {
-  if (items.length === 0) return NO_DIAGNOSES_FALLBACK;
-  return items.map((item, index) => renderDiagnosisItem(item, index + 1)).join('\n\n');
+export function renderDiagnosticProfileBlock(
+  items: readonly DiagnosticReportItem[],
+  sample?: DiagnosticSampleContext
+): string {
+  if (items.length === 0) return renderNoDiagnoses(sample);
+  const body = items.map((item, index) => renderDiagnosisItem(item, index + 1)).join('\n\n');
+  return [sampleLine(sample), CONFIDENCE_KEY, body].filter(Boolean).join('\n\n');
+}
+
+function renderNoDiagnoses(sample: DiagnosticSampleContext | undefined): string {
+  if (!sample || sample.ratedGames >= sample.requiredGames) return NO_DIAGNOSES_FALLBACK;
+  return `No cross-game profile yet: only ${sample.ratedGames} of ${sample.requiredGames} rated games ${timeControlPhrase(sample)}. Work from this game and the student's own words; anything you notice is a hypothesis to test with them (record_finding), not a pattern to announce.`;
+}
+
+function sampleLine(sample: DiagnosticSampleContext | undefined): string | null {
+  if (!sample) return null;
+  const base = `Evidence base: ${sample.ratedGames} rated games ${timeControlPhrase(sample)}.`;
+  if (sample.ratedGames >= sample.fullEvidenceGames) return base;
+  return `${base} This is an early read — hold every item loosely and say so if you lean on one.`;
+}
+
+function timeControlPhrase(sample: DiagnosticSampleContext): string {
+  return sample.timeControl ? `at time control ${sample.timeControl}` : 'in one time control';
 }
 
 function renderDiagnosisItem(item: DiagnosticReportItem, rank: number): string {

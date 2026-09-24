@@ -150,9 +150,26 @@ async function createFocusAreaFromConversation(
   return { applied: true, focusArea };
 }
 
+/** Marks a note the rebuild wrote itself, so a later rebuild may rewrite it
+ * without clobbering a note the coach wrote in conversation. */
+const PROGRAMMATIC_NOTE_PREFIX = 'Selected automatically from measured play:';
+
 function defaultProgrammaticNote(entry: DiagnosticProfileEntry): string {
   const failurePercent = Math.round(entry.failureRate * 100);
-  return `Selected automatically from measured play: ${entry.episodes} episode(s), ${failurePercent}% failure rate, ${entry.confidence} confidence.`;
+  return `${PROGRAMMATIC_NOTE_PREFIX} ${entry.episodes} failure(s) in ${entry.opportunities} chance(s) across ${entry.spread.games} game(s) (${failurePercent}%), ${entry.confidence} confidence.`;
+}
+
+/** Keeps a tracked area's measured numbers in step with the latest profile,
+ * so "seen 2x, signal" doesn't stay frozen after ten more games. Resolved
+ * areas and coach-written notes are left alone. */
+async function refreshExistingFocusArea(
+  db: Kysely<Database>,
+  existing: focusAreasRepo.FocusAreaRow,
+  entry: DiagnosticProfileEntry
+): Promise<void> {
+  if (existing.status === 'resolved') return;
+  const note = existing.note.startsWith(PROGRAMMATIC_NOTE_PREFIX) ? defaultProgrammaticNote(entry) : existing.note;
+  await focusAreasRepo.refreshMeasuredEvidence(db, existing.id, note, entry.episodes);
 }
 
 /**
@@ -185,6 +202,11 @@ export async function syncProgrammaticFocusAreas(
   const picks = [selection.primary, ...selection.secondary].filter(
     (entry): entry is DiagnosticProfileEntry => entry !== null
   );
+
+  for (const { profile } of candidates) {
+    const tracked = await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, profile.code);
+    if (tracked) await refreshExistingFocusArea(db, tracked, profile);
+  }
 
   const created: focusAreasRepo.FocusAreaRow[] = [];
   for (const entry of picks) {

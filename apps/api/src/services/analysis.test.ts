@@ -5,7 +5,6 @@ import {
   BookReportSchema,
   GameReportSchema,
   type EngineEval,
-  type PositionAnalysis,
   type StoredGameReport
 } from '@freechesscoach/shared';
 import * as analysesRepo from '../db/repositories/analyses.js';
@@ -75,8 +74,8 @@ const PINNED_QUEEN_PGN = `[Event "Test"]
 // A textbook §5.5 brilliant: White's undefended bishop sacs onto e6 (only a
 // pawn recapture undoes it, no material comes back), a real alternative
 // (Kd2) exists 150cp worse, and the position is roughly balanced either way
-// — Task 50.3's cheap pre-filter should flag ply 1 as worth the one extra
-// analyzePosition call, and a "sound" reply should then classify it brilliant.
+// — Task 50.3's cheap pre-filter should flag ply 1 for the soundness check,
+// and a "sound" stored reply should then classify it brilliant.
 const BRILLIANT_SETUP_FEN = '4k3/3p1p2/8/8/2B5/8/8/4K3 w - - 0 1';
 const BRILLIANT_AFTER_FEN = '4k3/3p1p2/4B3/8/8/8/8/4K3 b - - 1 1';
 const BRILLIANT_PGN = `[Event "Test"]
@@ -88,18 +87,22 @@ const BRILLIANT_PGN = `[Event "Test"]
 
 1. Be6 *`;
 
-// A bare king-and-king endgame: no piece on the board can ever be sacrificed,
-// so the cheap pre-filter must reject every ply without needing to know
-// anything about the (irrelevant) engine eval.
-const KINGS_ONLY_FEN = '4k3/8/8/8/8/8/8/4K3 w - - 0 1';
-const NO_SACRIFICE_PGN = `[Event "Test"]
-[SetUp "1"]
-[FEN "${KINGS_ONLY_FEN}"]
+// 25 positions: chunks of 6 are [0-5] [6-11] [12-17] [18-23] [24].
+const LONG_PGN = `[Event "Test"]
 [White "Ann"]
 [Black "Bob"]
 [Result "*"]
 
-1. Kd2 Kd8 2. Ke3 Ke7 *`;
+1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6
+8. c3 O-O 9. h3 Nb8 10. d4 Nbd7 11. c4 c6 12. cxb5 axb5 *`;
+
+// 7 positions, 4 distinct: positions 4, 5, 6 repeat 0, 1, 2.
+const REPETITION_PGN = `[Event "Test"]
+[White "Ann"]
+[Black "Bob"]
+[Result "*"]
+
+1. Nf3 Nf6 2. Ng1 Ng8 3. Nf3 Nf6 *`;
 
 async function makeEval(fen: string): Promise<EngineEval> {
   return { ply: 0, fen, depth: 10, lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 20, mateIn: null }] };
@@ -141,28 +144,13 @@ describe('runAnalyzeGameJob', () => {
     return vi.fn(async (fens: string[]) => Promise.all(fens.map((fen) => makeEval(fen))));
   }
 
-  // Tactics-prevented's gated fallback (Step B) is exercised directly in
-  // tactic-prevention.test.ts — none of these job-level fixtures are sharp
-  // enough to trigger it, so a plain unused stub is all this level needs.
-  function fakeAnalyzePosition(): AnalysisJobDependencies['analyzePosition'] {
-    return vi.fn().mockResolvedValue({
-      fen: '',
-      depth: 10,
-      multiPv: 0,
-      bestMove: '',
-      eval: { cp: 0, mateIn: null },
-      lines: [],
-      features: {} as PositionAnalysis['features']
-    });
-  }
-
   // The whole point of this decoupling: import/analysis never touches the
   // AI or needs a BYOK unlock — candidateMoments is stored (pure, cheap) for
   // services/coaching-plan.ts's `ensureCoachingPlan` to consume later, but no
   // coachingPlan is ever generated here.
   test('a completed job reaches ready with stored evals and candidate moments, never a coaching plan', async () => {
     const { gameId, analysisId } = await setupGame();
-    const deps: AnalysisJobDependencies = { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition() };
+    const deps: AnalysisJobDependencies = { analyzeGamePositions: fakeEngine() };
 
     await runAnalyzeGameJob(db, deps, gameId);
 
@@ -186,7 +174,7 @@ describe('runAnalyzeGameJob', () => {
   test('persists the opening book report for a named opening', async () => {
     const { gameId, analysisId } = await setupGame(NAJDORF_PGN);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition() }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine() }, gameId);
 
     const row = await db
       .selectFrom('analyses')
@@ -213,7 +201,7 @@ describe('runAnalyzeGameJob', () => {
   test('assembles and persists a full, schema-valid game report', async () => {
     const { gameId, analysisId } = await setupGame(NAJDORF_PGN);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition() }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine() }, gameId);
 
     const row = await db
       .selectFrom('analyses')
@@ -238,7 +226,7 @@ describe('runAnalyzeGameJob', () => {
   test('persists per-move feature enrichment and move flags', async () => {
     const { gameId } = await setupGame(FORK_PGN);
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition: fakeAnalyzePosition() }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine() }, gameId);
 
     const game = await gamesRepo.findById(db, gameId);
     const move = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor)[0];
@@ -249,23 +237,34 @@ describe('runAnalyzeGameJob', () => {
     expect(move.featureDelta!.newForks.some((fork) => fork.square === 'd5')).toBe(true);
   });
 
-  // Task 40.3: the whole point of the free path is that this never needs the
-  // gated engine fallback — white's own pre-move analysis (evals[0], the
-  // starting FEN's eval) already lists the fork among its lines, so
-  // computeTacticMotifPrevented's Step A catches it without ever calling
-  // deps.analyzePosition.
-  test('tactics prevented: a defused opponent fork is credited via the free path, no gated engine call', async () => {
+  // Task 40.3: white's own pre-move analysis (evals[0], the starting FEN's
+  // eval) already lists the fork among its lines, so the prevention scan
+  // catches it from the stored evals alone. Task 77.5: Black's Rb8 is
+  // credited only because it mattered — the other line (Kd8) leaves the fork
+  // on — and the scan runs lazily, for that verdict.
+  test('tactics prevented: a defused opponent fork is credited from the stored evals', async () => {
     const { gameId, analysisId } = await setupGame(FORK_PREVENTED_PGN);
-    const analyzePosition = fakeAnalyzePosition();
     const analyzeGamePositions = vi.fn(async (fens: string[]) =>
-      fens.map((fen): EngineEval =>
-        fen === FORK_PREVENTED_FEN
-          ? { ply: 0, fen, depth: 10, lines: [{ moveUci: 'c4d6', moveSan: 'Nd6+', cp: 500, mateIn: null }] }
-          : { ply: 0, fen, depth: 10, lines: [{ moveUci: 'a1a2', moveSan: 'Ka2', cp: 0, mateIn: null }] }
-      )
+      fens.map((fen): EngineEval => {
+        if (fen === FORK_PREVENTED_FEN) {
+          return { ply: 0, fen, depth: 10, lines: [{ moveUci: 'c4d6', moveSan: 'Nd6+', cp: 500, mateIn: null }] };
+        }
+        if (fen.split(' ')[1] === 'b') {
+          return {
+            ply: 0,
+            fen,
+            depth: 10,
+            lines: [
+              { moveUci: 'b7b8', moveSan: 'Rb8', cp: 0, mateIn: null },
+              { moveUci: 'e8d8', moveSan: 'Kd8', cp: 500, mateIn: null }
+            ]
+          };
+        }
+        return { ply: 0, fen, depth: 10, lines: [{ moveUci: 'a2a1', moveSan: 'Ka1', cp: 0, mateIn: null }] };
+      })
     );
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions }, gameId);
 
     const row = await db
       .selectFrom('analyses')
@@ -276,7 +275,6 @@ describe('runAnalyzeGameJob', () => {
     const report = GameReportSchema.parse(composeGameReport(row.gameReport as StoredGameReport, game!));
 
     expect(report.players.black.tacticMotifs.fork.prevented).toBe(1);
-    expect(analyzePosition).not.toHaveBeenCalled();
   });
 
   // The regression 0032_annotated_pgn.ts introduced: the annotated PGN is the
@@ -309,11 +307,13 @@ describe('runAnalyzeGameJob', () => {
             ]
           };
         }
-        return { ply: 0, fen, depth: 16, lines: [{ moveUci: 'g7g6', moveSan: 'gxf6', cp: 560, mateIn: null, pvSan: ['gxf6'] }] };
+        // 10.Bxf6 gives most of the queen back: a meaningful drop from Bb5's
+        // +580, so the eval witness confirms White missed it (Task 76.5).
+        return { ply: 0, fen, depth: 16, lines: [{ moveUci: 'g7g6', moveSan: 'gxf6', cp: 150, mateIn: null, pvSan: ['gxf6'] }] };
       })
     );
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition() }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions }, gameId);
 
     const game = await gamesRepo.findById(db, gameId);
     const storedReport = await analysesRepo.findGameReportByGameId(db, game!.id);
@@ -334,11 +334,10 @@ describe('runAnalyzeGameJob', () => {
     expect(blunder?.phase).toBeDefined();
   });
 
-  // Task 50.3: checkBrilliantSoundness has no caller in the batch pipeline
-  // without this pre-pass, so 'brilliant' is unreachable from
-  // runAnalyzeGameJob today — isBrilliantMove always sees
-  // brilliantSoundness === undefined and fails closed at B6.
-  test('a known sound sacrifice is classified brilliant once B6 soundness is checked', async () => {
+  // Task 50.3 / 77.2: B6 soundness is read off the game's own eval of the
+  // position after the move (evals[1] here, Black to reply), so the brilliant
+  // verdict needs no engine call beyond the one pass.
+  test('a known sound sacrifice is classified brilliant from the stored reply eval', async () => {
     const { gameId } = await setupGame(BRILLIANT_PGN);
     const analyzeGamePositions = vi.fn(async (fens: string[]) =>
       fens.map((fen): EngineEval =>
@@ -355,35 +354,15 @@ describe('runAnalyzeGameJob', () => {
           : { ply: 0, fen, depth: 16, lines: [{ moveUci: 'd7e6', moveSan: 'dxe6', cp: 0, mateIn: null }] }
       )
     );
-    const analyzePosition = vi.fn().mockResolvedValue({
-      fen: BRILLIANT_AFTER_FEN,
-      depth: 16,
-      multiPv: 1,
-      bestMove: 'dxe6',
-      eval: { cp: 0, mateIn: null },
-      lines: [{ moveUci: 'd7e6', moveSan: 'dxe6', pvSan: ['dxe6'], cp: 0, mateIn: null }],
-      features: {} as PositionAnalysis['features']
-    });
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions }, gameId);
 
     const game = await gamesRepo.findById(db, gameId);
     const moves = parseAnnotatedPgn(game!.annotatedPgn!, game!.userColor);
-
     expect(moves.find((move) => move.ply === 1)?.quality).toBe('brilliant');
-    expect(analyzePosition).toHaveBeenCalledWith(BRILLIANT_AFTER_FEN);
-  });
-
-  // Verifies the gate ordering itself, not just the outcome: a game where no
-  // ply can possibly be a sacrifice (bare kings) must never reach the extra
-  // engine call the soundness check would otherwise cost.
-  test('a game with no possible sacrifice makes zero extra engine calls for brilliant soundness', async () => {
-    const { gameId } = await setupGame(NO_SACRIFICE_PGN);
-    const analyzePosition = fakeAnalyzePosition();
-
-    await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine(), analyzePosition }, gameId);
-
-    expect(analyzePosition).not.toHaveBeenCalled();
+    // One chunk (both positions), and nothing after it.
+    expect(analyzeGamePositions).toHaveBeenCalledTimes(1);
+    expect(analyzeGamePositions.mock.calls[0]?.[0]).toContain(BRILLIANT_AFTER_FEN);
   });
 
   // The planner's own HttpError-vs-generic-error handling moved with it to
@@ -408,7 +387,7 @@ describe('runAnalyzeGameJob', () => {
       return Promise.all(fens.map((fen) => makeEval(fen)));
     });
 
-    await runAnalyzeGameJob(db, { analyzeGamePositions, analyzePosition: fakeAnalyzePosition() }, gameId);
+    await runAnalyzeGameJob(db, { analyzeGamePositions }, gameId);
 
     // This PGN is 8 positions against a chunk size of 6.
     expect(chunkSizes.length).toBeGreaterThan(1);
@@ -425,6 +404,21 @@ describe('runAnalyzeGameJob', () => {
     expect(row.status).toBe('ready');
     // Every position still gets analyzed exactly once.
     expect(row.evalsComputed).toBe(chunkSizes.reduce((a, b) => a + b, 0));
+  });
+
+  // Regression: a rerun (worker killed mid-job, resume after a pause, a
+  // retry) walks the chunks from the start again. Progress used to be added
+  // to what the first run left behind and reached 131%.
+  test('a rerun does not push progress past the number of positions', async () => {
+    const { gameId, analysisId } = await setupGame();
+    await analysesRepo.setEvalsComputed(db, analysisId, 5);
+    const game = await gamesRepo.findById(db, gameId);
+    const fens = parsePgn(game!.pgn).positions.map((position) => position.fen);
+
+    await analyzeInChunks(db, { analyzeGamePositions: fakeEngine() }, analysisId, fens);
+
+    const row = await db.selectFrom('analyses').select('evalsComputed').where('id', '=', analysisId).executeTakeFirstOrThrow();
+    expect(row.evalsComputed).toBe(fens.length);
   });
 
   // Regression: the real EngineBackend numbers each EngineEval's `ply`
@@ -452,7 +446,7 @@ describe('runAnalyzeGameJob', () => {
 
     const evals = await analyzeInChunks(
       db,
-      { analyzeGamePositions, analyzePosition: fakeAnalyzePosition() },
+      { analyzeGamePositions },
       analysisId,
       fens
     );
@@ -484,7 +478,7 @@ describe('runAnalyzeGameJob', () => {
 
     const evals = await analyzeInChunks(
       db,
-      { analyzeGamePositions, analyzePosition: fakeAnalyzePosition() },
+      { analyzeGamePositions },
       analysisId,
       fens
     );
@@ -498,8 +492,7 @@ describe('runAnalyzeGameJob', () => {
   test('engine failure -> failed with a generic error, never the internal message', async () => {
     const { gameId, analysisId } = await setupGame();
     const deps: AnalysisJobDependencies = {
-      analyzeGamePositions: vi.fn().mockRejectedValue(new Error('engine 500')),
-      analyzePosition: fakeAnalyzePosition()
+      analyzeGamePositions: vi.fn().mockRejectedValue(new Error('engine 500'))
     };
 
     await runAnalyzeGameJob(db, deps, gameId);
@@ -516,10 +509,9 @@ describe('runAnalyzeGameJob', () => {
 
   test('engine unavailable for a chess_api-mode user (no browser tunnel connected) -> paused, not failed, keeping progress made so far', async () => {
     const { gameId, analysisId } = await setupGame(PGN, 'chess_api');
-    await analysesRepo.incrementEvalsComputed(db, analysisId, 3);
+    await analysesRepo.setEvalsComputed(db, analysisId, 3);
     const deps: AnalysisJobDependencies = {
-      analyzeGamePositions: vi.fn().mockRejectedValue(new EngineUnavailableError('No tunnel connection for user u1')),
-      analyzePosition: fakeAnalyzePosition()
+      analyzeGamePositions: vi.fn().mockRejectedValue(new EngineUnavailableError('No tunnel connection for user u1'))
     };
 
     await runAnalyzeGameJob(db, deps, gameId);
@@ -541,8 +533,7 @@ describe('runAnalyzeGameJob', () => {
   test('engine unavailable for a native-mode user -> still failed, since nothing would ever resume it', async () => {
     const { gameId, analysisId } = await setupGame(PGN, 'native');
     const deps: AnalysisJobDependencies = {
-      analyzeGamePositions: vi.fn().mockRejectedValue(new EngineUnavailableError('engine service unreachable')),
-      analyzePosition: fakeAnalyzePosition()
+      analyzeGamePositions: vi.fn().mockRejectedValue(new EngineUnavailableError('engine service unreachable'))
     };
 
     await runAnalyzeGameJob(db, deps, gameId);
@@ -550,5 +541,75 @@ describe('runAnalyzeGameJob', () => {
     const row = await db.selectFrom('analyses').select(['status', 'completedAt']).where('id', '=', analysisId).executeTakeFirstOrThrow();
     expect(row.status).toBe('failed');
     expect(row.completedAt).not.toBeNull();
+  });
+  describe('stored evals (Task 77.1)', () => {
+    async function fensOf(gameId: string): Promise<string[]> {
+      const game = await gamesRepo.findById(db, gameId);
+      return parsePgn(game!.pgn).positions.map((position) => position.fen);
+    }
+
+    function requestedFens(engine: ReturnType<typeof fakeEngine>): string[] {
+      return vi.mocked(engine).mock.calls.flatMap(([fens]) => fens);
+    }
+
+    test('a resume after a failure at chunk 3 requests only chunk 3 onward', async () => {
+      const { gameId, analysisId } = await setupGame(LONG_PGN);
+      const fens = await fensOf(gameId);
+      const failing = vi.fn(async (chunk: string[]) => {
+        if (failing.mock.calls.length === 3) throw new EngineUnavailableError('tunnel dropped');
+        return Promise.all(chunk.map((fen) => makeEval(fen)));
+      });
+      await expect(
+        analyzeInChunks(db, { analyzeGamePositions: failing }, analysisId, fens)
+      ).rejects.toThrow('tunnel dropped');
+
+      const resumed = fakeEngine();
+      const evals = await analyzeInChunks(db, { analyzeGamePositions: resumed }, analysisId, fens);
+
+      expect(requestedFens(resumed)).toEqual(fens.slice(12));
+      expect(vi.mocked(resumed).mock.calls.every(([chunk]) => chunk.length <= 6)).toBe(true);
+      expect(evals.map((e) => [e.ply, e.fen])).toEqual(fens.map((fen, i) => [i, fen]));
+      const row = await db.selectFrom('analyses').select('evalsComputed').where('id', '=', analysisId).executeTakeFirstOrThrow();
+      expect(row.evalsComputed).toBe(fens.length);
+    });
+
+    test('re-analysing a finished game makes zero engine calls', async () => {
+      const { gameId, analysisId } = await setupGame();
+      await runAnalyzeGameJob(db, { analyzeGamePositions: fakeEngine() }, gameId);
+
+      const deps: AnalysisJobDependencies = { analyzeGamePositions: fakeEngine() };
+      await runAnalyzeGameJob(db, deps, gameId);
+
+      expect(deps.analyzeGamePositions).not.toHaveBeenCalled();
+      const row = await db.selectFrom('analyses').select(['status', 'evalsComputed']).where('id', '=', analysisId).executeTakeFirstOrThrow();
+      expect(row).toEqual({ status: 'ready', evalsComputed: (await fensOf(gameId)).length });
+    });
+
+    // Task 77.2: 1.Nf3 Nf6 2.Ng1 Ng8 3.Nf3 Nf6 repeats three positions (the
+    // move counters differ, the position does not).
+    test('a repeated position is sent to the engine once and fanned back out to every index', async () => {
+      const { gameId, analysisId } = await setupGame(REPETITION_PGN);
+      const fens = await fensOf(gameId);
+      const engine = fakeEngine();
+
+      const evals = await analyzeInChunks(db, { analyzeGamePositions: engine }, analysisId, fens);
+
+      expect(requestedFens(engine)).toEqual(fens.slice(0, 4));
+      expect(evals.map((e) => [e.ply, e.fen])).toEqual(fens.map((fen, i) => [i, fen]));
+      expect(evals[5]?.lines).toEqual(evals[1]?.lines);
+    });
+
+    test('a stored eval whose fen no longer matches its index is requested again', async () => {
+      const { gameId, analysisId } = await setupGame();
+      const fens = await fensOf(gameId);
+      const stored = await analyzeInChunks(db, { analyzeGamePositions: fakeEngine() }, analysisId, fens);
+      await analysesRepo.storeEngineEvals(db, analysisId, stored.map((e) => (e.ply === 3 ? { ...e, fen: 'some other position' } : e)));
+
+      const engine = fakeEngine();
+      const evals = await analyzeInChunks(db, { analyzeGamePositions: engine }, analysisId, fens);
+
+      expect(requestedFens(engine)).toEqual([fens[3]]);
+      expect(evals[3]).toMatchObject({ ply: 3, fen: fens[3] });
+    });
   });
 });

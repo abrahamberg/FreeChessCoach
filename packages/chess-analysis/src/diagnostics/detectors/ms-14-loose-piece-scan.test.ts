@@ -1,131 +1,72 @@
-import type { ClassifiedMoveDto, PositionFeatures } from '@freechesscoach/shared';
+import { Chess } from 'chess.js';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { buildPlyDiagnosticContext } from '../context.js';
-import { ms08DestinationSafetyOmission } from './ms-08-destination-safety.js';
 import { ms14LoosePieceScanOmission } from './ms-14-loose-piece-scan.js';
+import { detectorContext } from './test-context.js';
 
-const EMPTY_FEATURES: PositionFeatures = {
-  turn: 'white',
-  boardState: 'none',
-  availableMoves: [],
-  mobility: { white: 0, black: 0 },
-  controlledSquares: [],
-  piecesUnderAttack: [],
-  hangingPieces: [],
-  underDefendedPieces: [],
-  overloadedDefenders: [],
-  centerControlScore: { white: 0, black: 0 },
-  openFiles: [],
-  semiOpenFiles: [],
-  doubledPawns: [],
-  isolatedPawns: [],
-  passedPawns: [],
-  targetsAttacked: [],
-  forks: [],
-  captureOpportunities: []
-};
+/** After Kh1, the c3 rook (attacked twice, defended once) is loose. */
+const LOOSE_ROOK_FEN = '4k3/8/8/3nn3/1b4b1/2R1P3/PP4P1/6K1 w - - 0 1';
+/** Nothing of White's is attacked. */
+const NOTHING_LOOSE_FEN = '4k3/8/8/8/8/8/8/3QK3 w - - 0 1';
 
-const FEN_BEFORE = 'r3k3/6p1/5Q2/8/8/8/8/R3K3 w - - 0 1';
-const FEN_AFTER = 'r3k3/6p1/5Q2/8/8/8/8/R3K3 b - - 1 1';
+const LOSS: Partial<ClassifiedMoveDto> = { quality: 'mistake', cpBefore: 0, cpAfter: -300 };
+const NO_LOSS: Partial<ClassifiedMoveDto> = { quality: 'mistake', cpBefore: 0, cpAfter: -10 };
 
-function playMove(overrides: Partial<ClassifiedMoveDto> = {}): ClassifiedMoveDto {
+function fenAfter(fenBefore: string, moveSan: string): string {
+  const chess = new Chess(fenBefore);
+  chess.move(moveSan);
+  return chess.fen();
+}
+
+/** The opponent's actual reply, played from this move's `fenAfter`. */
+function reply(fenBefore: string, moveSan: string): ClassifiedMoveDto {
   return {
-    ply: 1,
-    moveSan: 'Kd2',
-    mover: 'white',
-    isUserMove: true,
+    ply: 2,
+    moveSan,
+    mover: 'black',
+    isUserMove: false,
     cpLoss: 0,
-    quality: 'good',
-    bestLineSan: ['Kd2'],
+    quality: 'best',
+    bestLineSan: [moveSan],
+    bestLinePvSan: [moveSan],
     evalAfterCp: 0,
     hangsPiece: false,
-    fenBefore: FEN_BEFORE,
-    fenAfter: FEN_AFTER,
-    ...overrides
+    fenBefore
   };
 }
 
-const CAPTURES_A1: ClassifiedMoveDto = {
-  ply: 2,
-  moveSan: 'Rxa1',
-  mover: 'black',
-  isUserMove: false,
-  cpLoss: 0,
-  quality: 'best',
-  bestLineSan: ['Rxa1'],
-  evalAfterCp: -500,
-  hangsPiece: false,
-  fenBefore: 'r3k3/6p1/5Q2/8/8/8/8/R3K3 b - - 1 1'
-};
-
-const HARMLESS_KING_MOVE: ClassifiedMoveDto = {
-  ply: 2,
-  moveSan: 'Kf8',
-  mover: 'black',
-  isUserMove: false,
-  cpLoss: 0,
-  quality: 'best',
-  bestLineSan: ['Kf8'],
-  evalAfterCp: -500,
-  hangsPiece: false,
-  fenBefore: 'r3k3/6p1/5Q2/8/8/8/8/R3K3 b - - 1 1'
-};
+function contextFor(fenBefore: string, moveSan: string, overrides: Partial<ClassifiedMoveDto>, replySan?: string) {
+  const nextMoves = replySan ? [reply(fenAfter(fenBefore, moveSan), replySan)] : undefined;
+  return detectorContext(fenBefore, moveSan, overrides, { nextMoves });
+}
 
 describe('ms14LoosePieceScanOmission', () => {
-  test('fires (punished) when a loose own piece is captured within the next two plies', () => {
-    const featuresWithLoosePiece: PositionFeatures = {
-      ...EMPTY_FEATURES,
-      underDefendedPieces: [{ square: 'a1', piece: 'r', color: 'white', attackers: 1, defenders: 0 }]
-    };
-    const ctx = buildPlyDiagnosticContext(playMove({ features: featuresWithLoosePiece }), {
-      nextMoves: [CAPTURES_A1]
-    })!;
+  test('fails when the loose piece is captured within two plies and the eval confirms the loss', () => {
+    const observation = ms14LoosePieceScanOmission.detect(contextFor(LOOSE_ROOK_FEN, 'Kh1', LOSS, 'Nxc3'));
 
-    const observation = ms14LoosePieceScanOmission.detect(ctx);
-
-    expect(observation).not.toBeNull();
-    expect(observation!.code).toBe('MS-14');
-    expect(observation!.direction).toBe('N');
-    expect(observation!.failed).toBe(true);
+    expect(observation).toMatchObject({ code: 'MS-14', direction: 'N', failed: true });
+    expect(observation!.detail).toContain('loose piece on c3, captured within two plies');
   });
 
-  test('does not fire when the mover has no loose pieces', () => {
-    const ctx = buildPlyDiagnosticContext(playMove({ features: EMPTY_FEATURES }), {
-      nextMoves: [CAPTURES_A1]
-    })!;
+  test('an even trade on the loose square is not a failure', () => {
+    const observation = ms14LoosePieceScanOmission.detect(contextFor(LOOSE_ROOK_FEN, 'Kh1', NO_LOSS, 'Nxc3'));
 
-    expect(ms14LoosePieceScanOmission.detect(ctx)).toBeNull();
+    expect(observation).toMatchObject({ failed: false, hwdl: 0 });
+    expect(observation!.detail).toContain('without losing anything');
   });
 
-  test('reports not-punished (failed: false) when the loose piece is never captured, without suppressing itself as an opportunity', () => {
-    const featuresWithLoosePiece: PositionFeatures = {
-      ...EMPTY_FEATURES,
-      underDefendedPieces: [{ square: 'a1', piece: 'r', color: 'white', attackers: 1, defenders: 0 }]
-    };
-    const ctx = buildPlyDiagnosticContext(playMove({ features: featuresWithLoosePiece }), {
-      nextMoves: [HARMLESS_KING_MOVE]
-    })!;
+  test('not failed when the loose piece is never captured, even on a loss', () => {
+    const observation = ms14LoosePieceScanOmission.detect(contextFor(LOOSE_ROOK_FEN, 'Kh1', LOSS, 'Kd7'));
 
-    const observation = ms14LoosePieceScanOmission.detect(ctx);
-
-    expect(observation).not.toBeNull();
-    expect(observation!.failed).toBe(false);
+    expect(observation).toMatchObject({ failed: false });
+    expect(observation!.detail).toContain('not punished within two plies');
   });
 
-  test('does not suppress MS-08 firing on the same ply', () => {
-    const featuresWithLoosePiece: PositionFeatures = {
-      ...EMPTY_FEATURES,
-      underDefendedPieces: [{ square: 'a1', piece: 'r', color: 'white', attackers: 1, defenders: 0 }]
-    };
-    const move = playMove({
-      moveSan: 'Qf6',
-      fenBefore: '4k3/6p1/8/8/8/8/8/4KQ2 w - - 0 1',
-      fenAfter: '4k3/6p1/5Q2/8/8/8/8/4K3 b - - 1 1',
-      features: featuresWithLoosePiece
-    });
-    const ctx = buildPlyDiagnosticContext(move, { nextMoves: [CAPTURES_A1] })!;
+  test('no opportunity when the mover has no loose pieces', () => {
+    expect(ms14LoosePieceScanOmission.detect(contextFor(NOTHING_LOOSE_FEN, 'Qd4', LOSS, 'Kd7'))).toBeNull();
+  });
 
-    expect(ms14LoosePieceScanOmission.detect(ctx)).not.toBeNull();
-    expect(ms08DestinationSafetyOmission.detect(ctx)).not.toBeNull();
+  test('no opportunity without the following plies (unknown future)', () => {
+    expect(ms14LoosePieceScanOmission.detect(contextFor(LOOSE_ROOK_FEN, 'Kh1', LOSS))).toBeNull();
   });
 });

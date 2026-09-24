@@ -52,6 +52,23 @@ function boardStateClause(boardState: PositionInspection['boardState']): string 
   return `, ${boardState}`;
 }
 
+/**
+ * One line of verified facts about a single legal move — what it takes,
+ * whether it checks, what it leaves hanging, what it sets up. Used to annotate
+ * a known puzzle line so the coach reads the line from checked facts rather
+ * than guessing what each move does. Illegal moves render as a plain marker.
+ */
+export function renderMoveNote(move: MoveInspection): string {
+  if (!move.legal) return `${move.requested} (could not be read)`;
+  const facts = [`${move.color} ${pieceName(move.piece)} ${move.from}-${move.to}`];
+  if (move.captured) facts.push(`takes the ${pieceName(move.captured)}`);
+  if (move.gives === 'checkmate') facts.push('checkmate');
+  else if (move.gives === 'check') facts.push('check');
+  if (move.createsForks.length > 0) facts.push(`sets up: ${move.createsForks.map(describeFork).join(', ')}`);
+  if (move.leavesHanging.length > 0) facts.push(`leaves hanging: ${move.leavesHanging.map(describeAttackedPiece).join(', ')}`);
+  return `${move.san} — ${facts.join('; ')}`;
+}
+
 function renderMove(move: MoveInspection): string {
   if (!move.legal) return renderIllegalMove(move.requested, move.alternatives);
   return renderLegalMove(move);

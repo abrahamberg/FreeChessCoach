@@ -17,11 +17,12 @@ export const RATING_EVAL_LOG_TYPE = 'bot_rating';
  * (`createRedisRatingEvalStore`); the process-local store is for tests and a
  * local run without REDIS_URL.
  *
- * Deliberately NOT the position_evaluations cache: that table is keyed by
- * position alone and trusts whatever depth it holds, so a shallow light-engine
- * row there would silently replace standard-depth evals in game review. Both
- * calls never reject: a lost or unreachable entry just leaves one live label
- * unrated, and post-game analysis rates every move properly anyway.
+ * Deliberately its own store, not a shared position-keyed cache: a
+ * shallow light-engine eval must never silently stand in for a
+ * standard-depth eval elsewhere (e.g. `analyses.engine_evals` in game
+ * review). Both calls never reject: a lost or unreachable entry just leaves
+ * one live label unrated, and post-game analysis rates every move properly
+ * anyway.
  */
 export interface RatingEvalStore {
   get(fen: string): Promise<EngineEval | undefined>;

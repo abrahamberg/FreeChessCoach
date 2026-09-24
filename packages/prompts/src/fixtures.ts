@@ -141,11 +141,15 @@ export const investigatePositionFixture = {
 
 export function basePuzzleCoachInput(overrides: Partial<PuzzleCoachPromptInput> = {}): PuzzleCoachPromptInput {
   return {
+    persona: 'general',
+    displayName: 'Ann',
+    positionAnalysis: 'Best move: Nf6 (+0.3). Other options:\n- d5 (+0.2): d5 exd5',
     reason: 'You missed several knight forks in your last few games.',
     totalCount: 5,
     currentItem: {
       fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
       moves: ['e2e4', 'e7e5', 'g1f3', 'b8c6'],
+      themes: ['fork'],
       index: 2,
       currentPly: 1
     },

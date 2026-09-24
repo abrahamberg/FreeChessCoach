@@ -75,6 +75,18 @@ describe('computeTacticAllowed', () => {
     expect(computeTacticAllowed(move(), reply({ tacticOpportunity: undefined }))).toBeUndefined();
   });
 
+  test('says nothing about a sound sacrifice: the shape handed material over, the eval says it cost nothing', () => {
+    // A queen lure: the engine rates the move itself as well as its best
+    // line, so whatever the reply "wins" is paid back.
+    const sacrifice = move({ quality: 'mistake', cpBefore: -40, cpAfter: -30 });
+    expect(computeTacticAllowed(sacrifice, reply())).toBeUndefined();
+  });
+
+  test('still names what the move handed over when the eval confirms the loss', () => {
+    const blunder = move({ cpBefore: 20, cpAfter: 580 });
+    expect(computeTacticAllowed(blunder, reply())).toMatchObject({ type: 'trappedPiece', byMoveSan: 'Bb5' });
+  });
+
   test('names the reply the opponent actually found, when they found one of their own', () => {
     const found = reply({
       tacticOpportunity: {

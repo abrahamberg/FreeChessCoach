@@ -1,4 +1,4 @@
-import { computePositionFeatures } from '@freechesscoach/chess-analysis';
+import { legalSanMoves } from '@freechesscoach/chess-analysis';
 import { ENGINE_MULTI_PV } from '../engine-client.js';
 import { formatMs, type EngineLineDebugInfo } from './bot-move-debug.js';
 import { BrowserTunnelEngineBackend } from './browser-tunnel-engine-backend.js';
@@ -100,12 +100,11 @@ const LITE_SUPPLEMENT_MAX_REQUESTS = 24;
  * (native, or a position with few legal moves) never touches the tunnel at
  * all.
  *
- * Never caches, and must never be wrapped *by* CachingEngineBackend: the
- * lite engine's results are explicitly not the trusted, official evaluation
- * `position_evaluations` exists to serve. Sitting *outside* one is fine and
- * is how game review uses it (`resolveReviewEngineBackend`) — the cache
- * still only ever sees `main`'s own lines, and the widened ones live for the
- * length of the job that asked for them.
+ * Never caches or persists anything: the lite engine's widened lines are
+ * explicitly not the trusted, official evaluation the rest of the pipeline
+ * stores (e.g. `analyses.engine_evals` only ever holds `main`'s own lines).
+ * They live only for the length of the job that asked for them, which is how
+ * game review uses this class (`resolveReviewEngineBackend`).
  */
 export class LiteSupplementedEngineBackend implements EngineBackend {
   private readonly lite: BrowserTunnelEngineBackend;
@@ -247,7 +246,8 @@ function toLineDebug(lines: PositionAnalysisLine[]): EngineLineDebugInfo[] {
 function needsSupplement(fen: string, mainLineCount: number, requestedMultiPv: number | undefined): boolean {
   try {
     const requested = requestedMultiPv ?? ENGINE_MULTI_PV;
-    const available = computePositionFeatures(fen).availableMoves.length;
+    // `new Chess(fen).moves().length`: no feature scan needed to count them.
+    const available = legalSanMoves(fen).length;
     const target = Math.min(requested, available);
     return mainLineCount < target;
   } catch {

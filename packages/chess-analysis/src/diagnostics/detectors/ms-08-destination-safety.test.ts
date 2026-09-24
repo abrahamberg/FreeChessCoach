@@ -1,89 +1,48 @@
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { buildPlyDiagnosticContext } from '../context.js';
 import { ms08DestinationSafetyOmission } from './ms-08-destination-safety.js';
-import { ms14LoosePieceScanOmission } from './ms-14-loose-piece-scan.js';
+import { detectorContext } from './test-context.js';
 
-const FEN_BEFORE = '4k3/6p1/8/8/8/8/8/4KQ2 w - - 0 1';
+/** Qf1-f6 lands the queen where the g7 pawn takes it. */
+const QUEEN_INTO_PAWN_FEN = '4k3/6p1/8/8/8/8/8/4KQ2 w - - 0 1';
+/** f5-f6 is attacked by the g7 pawn but defended by e5: ...gxf6 exf6 is even. */
+const DEFENDED_PAWN_FEN = '4k3/6p1/8/4PP2/8/8/8/4K3 w - - 0 1';
 
-function playMove(moveSan: string, fenAfter: string, overrides: Partial<ClassifiedMoveDto> = {}): ClassifiedMoveDto {
-  return {
-    ply: 1,
-    moveSan,
-    mover: 'white',
-    isUserMove: true,
-    cpLoss: 900,
-    quality: 'blunder',
-    bestLineSan: [moveSan],
-    evalAfterCp: -900,
-    hangsPiece: true,
-    drop: 90,
-    fenBefore: FEN_BEFORE,
-    fenAfter,
-    ...overrides
-  };
+const LOSS: Partial<ClassifiedMoveDto> = { quality: 'blunder', cpBefore: 900, cpAfter: 0 };
+const NO_LOSS: Partial<ClassifiedMoveDto> = { quality: 'blunder', cpBefore: 900, cpAfter: 880 };
+
+function contextFor(fenBefore: string, moveSan: string, overrides: Partial<ClassifiedMoveDto>, refutation?: string[]) {
+  return detectorContext(fenBefore, moveSan, overrides, { refutation });
 }
 
 describe('ms08DestinationSafetyOmission', () => {
-  test('fires when the move lands on a square the opponent can profitably capture', () => {
-    const ctx = buildPlyDiagnosticContext(playMove('Qf6', '4k3/6p1/5Q2/8/8/8/8/4K3 b - - 1 1'))!;
+  test('fails when the refutation captures the piece on its destination', () => {
+    const observation = ms08DestinationSafetyOmission.detect(contextFor(QUEEN_INTO_PAWN_FEN, 'Qf6', LOSS, ['gxf6']));
 
-    const observation = ms08DestinationSafetyOmission.detect(ctx);
-
-    expect(observation).not.toBeNull();
-    expect(observation!.code).toBe('MS-08');
-    expect(observation!.direction).toBe('N');
-    expect(observation!.failed).toBe(true);
+    expect(observation).toMatchObject({ code: 'MS-08', direction: 'N', failed: true });
+    expect(observation!.detail).toContain('landed on f6, where the opponent won the piece (SEE 900');
   });
 
-  test('does not fire when the destination square is safe', () => {
-    const ctx = buildPlyDiagnosticContext(
-      playMove('Qf4', '4k3/6p1/8/8/5Q2/8/8/4K3 b - - 1 1', { quality: 'best', cpLoss: 0, drop: 0, hangsPiece: false })
-    )!;
-
-    expect(ms08DestinationSafetyOmission.detect(ctx)).toBeNull();
+  test('fails on the live path (no refutation) on the static SEE when the eval confirms the loss', () => {
+    expect(ms08DestinationSafetyOmission.detect(contextFor(QUEEN_INTO_PAWN_FEN, 'Qf6', LOSS))?.failed).toBe(true);
   });
 
-  test('does not suppress MS-14 firing on the same ply when a separate loose piece is also punished', () => {
-    const move = playMove('Qf6', '4k3/6p1/5Q2/8/8/8/8/4K3 b - - 1 1');
-    const ctx = buildPlyDiagnosticContext(move, {
-      nextMoves: [
-        {
-          ply: 2,
-          moveSan: 'Rxa1',
-          mover: 'black',
-          isUserMove: false,
-          cpLoss: 0,
-          quality: 'best',
-          bestLineSan: ['Rxa1'],
-          evalAfterCp: -900,
-          hangsPiece: false,
-          fenBefore: 'r3k3/6p1/5Q2/8/8/8/8/R3K3 b - - 1 1'
-        }
-      ]
-    })!;
-    ctx.features = {
-      turn: 'white',
-      boardState: 'none',
-      availableMoves: [],
-      mobility: { white: 0, black: 0 },
-      controlledSquares: [],
-      piecesUnderAttack: [],
-      hangingPieces: [],
-      underDefendedPieces: [{ square: 'a1', piece: 'r', color: 'white', attackers: 1, defenders: 0 }],
-      overloadedDefenders: [],
-      centerControlScore: { white: 0, black: 0 },
-      openFiles: [],
-      semiOpenFiles: [],
-      doubledPawns: [],
-      isolatedPawns: [],
-      passedPawns: [],
-      targetsAttacked: [],
-      forks: [],
-      captureOpportunities: []
-    };
+  test('not failed when the refutation never captures on the destination', () => {
+    expect(ms08DestinationSafetyOmission.detect(contextFor(QUEEN_INTO_PAWN_FEN, 'Qf6', LOSS, ['Kd7', 'Qxg7+']))?.failed).toBe(false);
+  });
 
-    expect(ms08DestinationSafetyOmission.detect(ctx)).not.toBeNull();
-    expect(ms14LoosePieceScanOmission.detect(ctx)).not.toBeNull();
+  test('compensated: landing en prise without an eval loss is not failed', () => {
+    expect(ms08DestinationSafetyOmission.detect(contextFor(QUEEN_INTO_PAWN_FEN, 'Qf6', NO_LOSS))).toMatchObject({ failed: false, hwdl: 0 });
+  });
+
+  test('an attacked but defended destination is an opportunity that does not fail, even on a loss', () => {
+    const observation = ms08DestinationSafetyOmission.detect(contextFor(DEFENDED_PAWN_FEN, 'f6', LOSS));
+
+    expect(observation).toMatchObject({ failed: false });
+    expect(observation!.detail).toContain('attacked by the opponent but safe');
+  });
+
+  test('no opportunity when the destination is not attacked', () => {
+    expect(ms08DestinationSafetyOmission.detect(contextFor(QUEEN_INTO_PAWN_FEN, 'Qa6', LOSS))).toBeNull();
   });
 });

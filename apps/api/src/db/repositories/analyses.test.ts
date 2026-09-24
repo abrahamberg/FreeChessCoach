@@ -1,7 +1,7 @@
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import type { CandidateMoment } from '@freechesscoach/chess-analysis';
-import { CoachingPlanSchema, type AnalysisStatus, type GameReport } from '@freechesscoach/shared';
+import { CoachingPlanSchema, type AnalysisStatus, type EngineEval, type GameReport } from '@freechesscoach/shared';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import type { Database } from '../schema.js';
 import * as analysesRepo from './analyses.js';
@@ -233,7 +233,7 @@ describe('analyses repository — markPaused / findPausedGameIdsForUser', () => 
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
     const { analysisId } = await makeGameForUser(user.id);
     await analysesRepo.updateStatus(db, analysisId, 'engine_running');
-    await analysesRepo.incrementEvalsComputed(db, analysisId, 4);
+    await analysesRepo.setEvalsComputed(db, analysisId, 4);
 
     await analysesRepo.markPaused(db, analysisId, 'chess-api.com timed out after 20000ms');
 
@@ -308,5 +308,61 @@ describe('analyses repository — countInFlightForUser', () => {
 
     expect(await analysesRepo.countInFlightForUser(db, user.id)).toBe(4);
     expect(await analysesRepo.countInFlightForUser(db, other.id)).toBe(1);
+  });
+});
+
+describe('analyses repository — storeEngineEvals / findEngineEvals (Task 77.1)', () => {
+  let testDb: TestDb;
+  let db: Kysely<Database>;
+
+  beforeAll(async () => {
+    testDb = await createTestDb();
+    db = testDb.db;
+  }, 60000);
+
+  afterAll(async () => {
+    await testDb.cleanup();
+  });
+
+  const EVALS: EngineEval[] = [
+    { ply: 0, fen: 'fen-0', depth: 12, lines: [{ moveUci: 'e2e4', moveSan: 'e4', cp: 20, mateIn: null, pvSan: ['e4', 'e5'] }] },
+    { ply: 1, fen: 'fen-1', depth: 12, lines: [] }
+  ];
+
+  async function makeAnalysisId(): Promise<string> {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Ann' });
+    const game = await gamesRepo.insert(db, {
+      userId: user.id,
+      pgn: '1. e4',
+      source: 'paste',
+      userColor: 'white',
+      whiteName: null,
+      blackName: null,
+      result: null,
+      timeControl: null,
+      eco: null,
+      playedAt: null
+    });
+    return (await analysesRepo.insertQueued(db, game.id)).id;
+  }
+
+  test('a fresh analysis has no stored evals', async () => {
+    expect(await analysesRepo.findEngineEvals(db, await makeAnalysisId())).toEqual([]);
+  });
+
+  test('round-trips the evals, overwriting what was stored before', async () => {
+    const analysisId = await makeAnalysisId();
+    await analysesRepo.storeEngineEvals(db, analysisId, [EVALS[0]!]);
+    await analysesRepo.storeEngineEvals(db, analysisId, EVALS);
+
+    expect(await analysesRepo.findEngineEvals(db, analysisId)).toEqual(EVALS);
+  });
+
+  test('rejects an invalid eval on write', async () => {
+    const analysisId = await makeAnalysisId();
+    const invalid = [{ ...EVALS[0]!, depth: 0 }];
+
+    await expect(analysesRepo.storeEngineEvals(db, analysisId, invalid)).rejects.toThrow();
+    expect(await analysesRepo.findEngineEvals(db, analysisId)).toEqual([]);
   });
 });

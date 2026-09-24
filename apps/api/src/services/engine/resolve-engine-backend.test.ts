@@ -40,11 +40,9 @@ describe('resolveEngineBackend', () => {
     };
   }
 
-  // Each test analyzes its own unique FEN: position_evaluations is keyed by fen
-  // alone (shared across users), and resolveEngineBackend wraps every backend in
-  // CachingEngineBackend — so reusing one FEN here would let whichever test ran
-  // first serve the other from cache, and the raw backend under test would never
-  // be called at all.
+  // Each test analyzes its own unique FEN, self-labelled by tier
+  // (native-/browser-), so a mock response's `fen` field unambiguously
+  // identifies which test produced it.
   const NATIVE_FEN = `native-${crypto.randomUUID()}`;
   const BROWSER_FEN = `browser-${crypto.randomUUID()}`;
   const CHESS_API_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -249,7 +247,7 @@ describe('resolveEngineBackend', () => {
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  test('resolveRawEngineBackend bypasses CachingEngineBackend — repeated calls for the same fen hit the raw backend every time', async () => {
+  test('resolveRawEngineBackend hits the raw backend on every call — no fen-keyed cache in the pipeline', async () => {
     const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Cam' });
     // A real FEN, not just a unique token — resolveRawEngineBackend's chain
     // now includes LiteSupplementedEngineBackend (Phase 63), whose
@@ -277,8 +275,8 @@ describe('resolveEngineBackend', () => {
     await backend.analyzePosition(fen);
     await backend.analyzePosition(fen);
 
-    // A CachingEngineBackend-wrapped backend would only ever hit fetch once
-    // (see the "native" test above) — the raw backend must be called every time.
+    // Nothing in the pipeline caches by fen, so two calls for the same
+    // position must reach the raw backend — and its fetch mock — twice.
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 

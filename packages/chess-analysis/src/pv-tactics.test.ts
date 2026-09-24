@@ -82,3 +82,30 @@ describe('pvForkInPlies', () => {
     expect(pvForkInPlies(FORK_SETUP_FEN, ['Kh2', 'Ke7', 'Nd5'])).toBe(3);
   });
 });
+
+describe('annotatePvTactics claimsOnly', () => {
+  // Two knights: every parity has captures, so the recapture gate's history
+  // (`previousMove`) matters on both.
+  const TWO_KNIGHTS_FEN = 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+  const CASES: [string, string[], number][] = [
+    [FORK_SETUP_FEN, ['Nd5'], 6],
+    [FORK_SETUP_FEN, ['Kh2', 'Ke7', 'Nd5'], 6],
+    [FORK_SETUP_FEN, ['Nd5', 'Zz9', 'Kg2'], 6],
+    [TWO_KNIGHTS_FEN, ['Ng5', 'd5', 'exd5', 'Nxd5', 'Nxf7', 'Kxf7', 'Qf3+'], 7],
+    [TWO_KNIGHTS_FEN, ['Ng5', 'd5', 'exd5', 'Na5', 'Bb5+', 'c6', 'dxc6'], 5]
+  ];
+
+  test.each(CASES)('gives the full mode\'s odd plies on %s / %j', (fen, pv, maxPlies) => {
+    const full = annotatePvTactics(fen, pv, maxPlies).steps.filter((step) => step.ply % 2 === 1);
+    const fast = annotatePvTactics(fen, pv, maxPlies, { claimsOnly: true }).steps;
+
+    const readFields = (step: (typeof fast)[number]) => ({
+      ply: step.ply,
+      moveSan: step.moveSan,
+      motif: step.motif,
+      claims: step.claims,
+      fenBefore: step.fenBefore
+    });
+    expect(fast.map(readFields)).toEqual(full.map(readFields));
+  });
+});

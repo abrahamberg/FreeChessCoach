@@ -1,5 +1,4 @@
 import { applyUciSequence } from '@freechesscoach/chess-analysis';
-import type { AttemptPuzzleMoveResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { PuzzleAssignmentRow } from '../db/repositories/puzzle-assignments.js';
 import * as puzzleSessionsRepo from '../db/repositories/puzzle-sessions.js';
@@ -8,58 +7,56 @@ import type { Database } from '../db/schema.js';
 import { ConflictError } from '../lib/errors.js';
 import { currentPuzzleFen } from './puzzle-session.js';
 
+export interface PlayedPuzzleMove {
+  /** The student's move from the known line, in SAN. */
+  san: string;
+  /** The opponent's forced reply the line names next (SAN), if any. */
+  replySan: string | null;
+  fen: string;
+  currentPly: number;
+  lineComplete: boolean;
+  /** Tells the coach what to do next — the model reads the tool result, so the
+   * "line is done, advance" step is stated there rather than left to inference. */
+  next: string;
+}
+
 /**
- * The deterministic half of the focused-session rework — whether an
- * attempted move is "real" (matches `item.moves[currentPly]`) is decided
- * here, synchronously, before any LLM turn exists to judge it in prose
- * (mirrors `check_moves`'s old purely-narrative role, which this replaces
- * for the accept/reject decision itself — `check_moves` stays available for
- * the coach to *explain* consequences of any move during discussion).
- *
- * Matching compares resulting positions, not raw UCI strings — deliberately
- * more permissive than exact-string equality (any move that reaches the
- * same square-for-square position as the known solution ply counts,
- * transpositions included) and sidesteps UCI encoding quirks
- * (castling notation, promotion case) that raw string comparison would trip
- * over. Nothing is persisted on rejection — the client already holds the
- * last-committed fen locally to revert to; this only needs to say "no."
+ * Practice sessions are discuss-only: the student never moves a piece. Once
+ * the coach and student have talked a move through, the coach's
+ * `play_next_move` tool calls this to put that move — and the opponent's
+ * forced reply, if the line has one — on the board. The line itself never
+ * changes, so this only advances `currentPly` (same "auto-apply the
+ * opponent's reply" rule as the item's own setup move). Nothing about the
+ * chat episode changes: messages stay tagged with the same item index.
  */
-export async function commitPuzzleMoveAttempt(
+export async function playNextPuzzleMove(
   db: Kysely<Database>,
   session: PuzzleSessionRow,
-  assignment: PuzzleAssignmentRow,
-  attemptedUci: string
-): Promise<AttemptPuzzleMoveResponse> {
+  assignment: PuzzleAssignmentRow
+): Promise<PlayedPuzzleMove> {
   const item = assignment.items[session.currentItemIndex];
   if (!item) throw new ConflictError('This session has no current puzzle — it may already be complete');
 
   const beforeFen = currentPuzzleFen(session, assignment);
   const expectedUci = item.moves[session.currentPly];
-  const lineAlreadyComplete = expectedUci === undefined;
+  if (expectedUci === undefined) throw new ConflictError('This puzzle line is already fully played out');
 
-  const matched = !lineAlreadyComplete && sameResultingPosition(beforeFen, attemptedUci, expectedUci);
-  if (!matched) {
-    return { accepted: false, fen: beforeFen, currentPly: session.currentPly, lineComplete: lineAlreadyComplete };
-  }
-
-  // The student's move, then any forced opponent reply the line names next
-  // — auto-applied the same way the item's own moves[0] setup move is (see
-  // insertSession/advanceItemIndex), no student decision involved either way.
-  let ply = session.currentPly + 1;
-  const opponentReply = item.moves[ply];
-  const toApply = opponentReply !== undefined ? [expectedUci, opponentReply] : [expectedUci];
-  if (opponentReply !== undefined) ply += 1;
-
+  const replyUci = item.moves[session.currentPly + 1];
+  const toApply = replyUci !== undefined ? [expectedUci, replyUci] : [expectedUci];
   const { moves, error } = applyUciSequence(beforeFen, toApply);
-  const fen = error ? beforeFen : (moves.at(-1)?.fen ?? beforeFen);
+  if (error || moves.length !== toApply.length) throw new ConflictError('The stored puzzle line could not be played');
 
+  const ply = session.currentPly + toApply.length;
   await puzzleSessionsRepo.advancePly(db, session.id, ply);
-  return { accepted: true, fen, currentPly: ply, lineComplete: ply >= item.moves.length };
-}
-
-function sameResultingPosition(beforeFen: string, attemptedUci: string, expectedUci: string): boolean {
-  const attempted = applyUciSequence(beforeFen, [attemptedUci]);
-  const expected = applyUciSequence(beforeFen, [expectedUci]);
-  if (attempted.error || expected.error) return false;
-  return attempted.moves[0]?.fen === expected.moves[0]?.fen;
+  return {
+    san: moves[0]!.san,
+    replySan: moves[1]?.san ?? null,
+    fen: moves.at(-1)!.fen,
+    currentPly: ply,
+    lineComplete: ply >= item.moves.length,
+    next:
+      ply >= item.moves.length
+        ? 'The line is fully played out. Say the one-sentence lesson now, then call advance_puzzle (solved, or failed if you had to reveal it) in this same reply to move the student to the next practice.'
+        : 'Ask the student for the next move of the line.'
+  };
 }

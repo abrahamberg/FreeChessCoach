@@ -154,7 +154,7 @@ describe('commitBotTurn', () => {
     expect(updatedGame?.result).toBe('0-1');
     const updatedSession = await sessionsRepo.findById(db, session.id);
     expect(updatedSession?.status).toBe('completed');
-    expect(d.jobQueue.enqueueAnalyzeGame).toHaveBeenCalledTimes(1);
+    expect(d.jobQueue.enqueueAnalyzeGame).not.toHaveBeenCalled(); // analysed only if the student keeps the game
   });
 
   test('when the bot\'s reply ends the game, both moves are recorded and the game is finalized', async () => {
@@ -184,7 +184,7 @@ describe('commitBotTurn', () => {
     const updatedSession = await sessionsRepo.findById(db, session.id);
     expect(updatedSession?.status).toBe('completed');
     expect(updatedSession?.currentPly).toBe(result.bot?.ply);
-    expect(d.jobQueue.enqueueAnalyzeGame).toHaveBeenCalledTimes(1);
+    expect(d.jobQueue.enqueueAnalyzeGame).not.toHaveBeenCalled(); // analysed only if the student keeps the game
   });
 
   // The engine-outage / failover path: see bot-move-commit.ts's doc comments
@@ -448,7 +448,7 @@ describe('commitBotTurn', () => {
       expect(moves[0]?.steps.every((step) => step.status === 'done')).toBe(true);
     });
 
-    test('pads a too-fast reply up to the minimum think time and shows it as its own step', async () => {
+    test('pads a too-fast reply up to the think time and shows it as its own step', async () => {
       const { session } = await setupBotGame('white', '', { thinkingLog: true });
       const thinkingLog = createBotThinkingRegistry();
 
@@ -463,7 +463,7 @@ describe('commitBotTurn', () => {
       );
 
       const labels = thinkingLog.getLog(session.id).moves[0]?.steps.map((step) => step.label);
-      expect(labels).toContain('Padding to the minimum think time');
+      expect(labels).toContain('Thinking like a person at the clock');
     });
 
     test('a bot that fails on every retry leaves a failed move whose last step says why', async () => {

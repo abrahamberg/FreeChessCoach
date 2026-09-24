@@ -20,10 +20,10 @@ const HINT_MOVE_COUNT = 3;
 
 /**
  * On-demand rich position analysis for the browser — resolves the requesting
- * user's own EngineBackend (native or browser-tunnel, per their engineMode),
- * wrapped in the same CachingEngineBackend the coach agent's
- * get_engine_analysis tool goes through (cache-first against
- * position_evaluations, live Stockfish on a miss). Available to any
+ * user's own EngineBackend (native or browser-tunnel, per their engineMode)
+ * through the same standard pipeline (Lichess eval index, then the selected
+ * engine) the coach agent's get_engine_analysis tool goes through. There is
+ * no position-level cache; every call is live. Available to any
  * authenticated user — backs the separate move-analysis inspector modal a
  * student opens explicitly.
  */

@@ -6,7 +6,7 @@ export type { EngineSource };
 /**
  * One line per successful analyzePosition/analyzeGame call, logging how many
  * of its positions came from each tier. Plain console.log by design (matches
- * deepen-analysis.ts's existing convention) — meant to be scraped from logs
+ * the `analysis-timing:` line's convention) — meant to be scraped from logs
  * for offline analytics (e.g. "what fraction of moves are served from the
  * bin vs a live engine call"), not queried live. A zero-total call (e.g. an
  * empty analyzeGame batch) is skipped rather than logged as noise.

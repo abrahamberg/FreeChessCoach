@@ -17,7 +17,7 @@ export type AnalysisStatus = z.infer<typeof AnalysisStatusSchema>;
 /** Queueing priority for the engine service's shared EnginePool (services/
  * engine/src/engine-pool.ts): 'interactive' jumps a freed engine ahead of any
  * already-waiting 'background' request. Exists because a bot's live move
- * selection and a background batch job (import analysis, deepen-analysis)
+ * selection and a background batch job (import analysis, game re-analysis)
  * can land on the pool at the same time — without this, a bot move queues
  * FIFO behind whatever background work got there first and can time out,
  * stranding the game (see commitBotTurn's botPending path). Defaults to
@@ -133,14 +133,14 @@ export type AnalyzePositionRequest = z.infer<typeof AnalyzePositionRequestSchema
 
 /** The bot session's hint feature ("top 3 moves"), fetched once when the
  * student first opens a hint — POST /api/positions/hint-moves. Deliberately
- * its own endpoint rather than
- * reusing /api/positions/analyze: that one always runs through
- * CachingEngineBackend, whose position_evaluations cache is keyed by `fen`
- * alone (no depth/multiPv discrimination — see ENGINE_DEFAULT_DEPTH's doc
- * comment), so a request-supplied multiPv there would silently poison the
- * standard-depth cache other callers share. This one runs uncached, at a
- * fixed hint-appropriate depth/multiPv the server controls, the same way
- * the bot's own move selection does (resolveRawEngineBackend). */
+ * its own endpoint rather than reusing /api/positions/analyze: that one
+ * always runs at the standard shared depth/multiPv (ENGINE_DEFAULT_DEPTH,
+ * ENGINE_MULTI_PV — see ENGINE_DEFAULT_DEPTH's doc comment), which every
+ * other caller of that route assumes, so a request-supplied multiPv there
+ * would silently change the shape of results other callers rely on. This
+ * one runs at a fixed hint-appropriate depth/multiPv the server controls
+ * instead, the same way the bot's own move selection does
+ * (resolveRawEngineBackend). */
 export const HintMovesRequestSchema = z.object({ fen: z.string() });
 export type HintMovesRequest = z.infer<typeof HintMovesRequestSchema>;
 

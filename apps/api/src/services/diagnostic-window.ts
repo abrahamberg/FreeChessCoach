@@ -24,23 +24,32 @@ export function gamePlayedAt(game: GameRow): Date {
   return game.playedAt ?? game.createdAt;
 }
 
+/** Chess.com writes "600", Lichess and the bots "600+0" — the same clock. */
+export function normalizeTimeControl(timeControl: string): string {
+  return /^\d+$/.test(timeControl) ? `${timeControl}+0` : timeControl;
+}
+
 /** Groups a user's rated games by exact `time_control` (§4.2: never pool
- * across time controls, never collapse to the coarser `speed` band),
- * keeping only the most recent `MAX_WINDOW_GAMES` per group and dropping
- * any group that doesn't clear `MIN_WINDOW_GAMES` — there's nothing to
- * diagnose yet, and the system is allowed to say so by simply not producing
- * a window for that time control. */
-export function windowByTimeControl(games: readonly GameRow[]): Map<string, WindowedGame[]> {
+ * across time controls, never collapse to the coarser `speed` band). */
+export function groupRatedByTimeControl(games: readonly GameRow[]): Map<string, WindowedGame[]> {
   const byTimeControl = new Map<string, WindowedGame[]>();
   for (const game of games) {
     if (game.rated !== true || !game.timeControl) continue;
-    const bucket = byTimeControl.get(game.timeControl) ?? [];
+    const key = normalizeTimeControl(game.timeControl);
+    const bucket = byTimeControl.get(key) ?? [];
     bucket.push({ game, playedAt: gamePlayedAt(game) });
-    byTimeControl.set(game.timeControl, bucket);
+    byTimeControl.set(key, bucket);
   }
+  return byTimeControl;
+}
 
+/** Keeps only the most recent `MAX_WINDOW_GAMES` per group and drops any
+ * group that doesn't clear `MIN_WINDOW_GAMES` — there's nothing to
+ * diagnose yet, and the system is allowed to say so by simply not producing
+ * a window for that time control. */
+export function windowByTimeControl(games: readonly GameRow[]): Map<string, WindowedGame[]> {
   const windows = new Map<string, WindowedGame[]>();
-  for (const [timeControl, bucket] of byTimeControl) {
+  for (const [timeControl, bucket] of groupRatedByTimeControl(games)) {
     const recent = [...bucket].sort((a, b) => b.playedAt.getTime() - a.playedAt.getTime()).slice(0, MAX_WINDOW_GAMES);
     if (recent.length >= MIN_WINDOW_GAMES) windows.set(timeControl, recent);
   }

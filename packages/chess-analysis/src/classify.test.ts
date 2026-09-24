@@ -507,6 +507,30 @@ describe('classifyMoves', () => {
     expect(whiteMove?.quality).not.toBe('brilliant');
   });
 
+  test('resolveBrilliantSoundness sees each first classification once and matches the precomputed-map result', () => {
+    const beforeFen = '3qk3/3p1p2/2R5/8/8/8/8/3Q2K1 w - - 0 1';
+    const afterFen = '3qk3/3p1p2/4R3/8/8/8/8/3Q2K1 b - - 1 1';
+    const game: ParsedGame = {
+      headers: {},
+      positions: [
+        { ply: 0, fen: beforeFen, moveSan: null, moveUci: null, mover: null },
+        { ply: 1, fen: afterFen, moveSan: 'Re6', moveUci: 'c6e6', mover: 'white' }
+      ]
+    };
+    const evals = [evalAt(beforeFen, 0), evalAt(afterFen, 0)];
+    const seen: Array<{ ply: number; quality: string }> = [];
+
+    const viaCallback = classifyMoves(game, evals, 'white', {
+      resolveBrilliantSoundness: (move) => {
+        seen.push({ ply: move.ply, quality: move.quality });
+        return true;
+      }
+    });
+
+    expect(seen).toEqual([{ ply: 1, quality: classifyMoves(game, evals, 'white')[0]?.quality }]);
+    expect(viaCallback).toEqual(classifyMoves(game, evals, 'white', { brilliantSoundnessByPly: new Map([[1, true]]) }));
+  });
+
   test('classifyMoves surfaces hangsPiece on the returned move', () => {
     const beforeFen = '4k3/3p1p2/8/8/2B5/8/8/4K3 w - - 0 1';
     const afterFen = '4k3/3p1p2/4B3/8/8/8/8/4K3 b - - 1 1';

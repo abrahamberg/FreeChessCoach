@@ -26,6 +26,8 @@ function playMove(overrides: Partial<ClassifiedMoveDto> = {}): ClassifiedMoveDto
     fenBefore: KNIGHT_FORK_FEN,
     fenAfter: '4k3/1r6/8/8/2N5/8/1K6/8 b - - 1 1',
     bestMoveSan: 'Nd6+',
+    cpBefore: 600,
+    cpAfter: -50,
     ...overrides
   };
 }
@@ -52,12 +54,48 @@ describe('TA_OFFENSIVE_DETECTORS', () => {
 
   test('records failed: false when the player played the opportunity move', () => {
     const ctx = buildPlyDiagnosticContext(
-      playMove({ tacticOpportunity: { type: 'checkmate', found: true, detail: null } })
+      playMove({ cpAfter: 600, quality: 'best', tacticOpportunity: { type: 'checkmate', found: true, detail: null } })
     )!;
 
     const observation = detectorFor('TA-01').detect(ctx);
 
     expect(observation!.failed).toBe(false);
+    expect(observation!.hwdl).toBe(0);
+  });
+
+  test('a missed motif with a meaningful eval loss takes hwdl and severity from the gap', () => {
+    const ctx = buildPlyDiagnosticContext(
+      playMove({ tacticOpportunity: { type: 'checkmate', found: false, detail: null } })
+    )!;
+
+    const observation = detectorFor('TA-01').detect(ctx)!;
+
+    expect(observation.failed).toBe(true);
+    expect(observation.hwdl).toBeGreaterThan(0.3);
+    expect(observation.severity).toBe('decisive');
+  });
+
+  test('records failed: false when the motif was missed but the played move kept the value (equal alternative)', () => {
+    const ctx = buildPlyDiagnosticContext(
+      playMove({ cpAfter: 580, quality: 'excellent', tacticOpportunity: { type: 'checkmate', found: false, detail: null } })
+    )!;
+
+    const observation = detectorFor('TA-01').detect(ctx)!;
+
+    expect(observation.failed).toBe(false);
+    expect(observation.hwdl).toBe(0);
+  });
+
+  test('a legacy move without evals falls back to its quality', () => {
+    const ctx = buildPlyDiagnosticContext(
+      playMove({
+        cpBefore: undefined,
+        cpAfter: undefined,
+        tacticOpportunity: { type: 'checkmate', found: false, detail: null }
+      })
+    )!;
+
+    expect(detectorFor('TA-01').detect(ctx)!.failed).toBe(true);
   });
 
   test('TA-07 fires only when the fork replay resolves to the knight sub-code', () => {

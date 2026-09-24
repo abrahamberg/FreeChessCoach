@@ -1,54 +1,19 @@
-import {
-  classifyMoves,
-  findCandidateMoments,
-  inBookWalk,
-  enrichPositions,
-  isBrilliantSoundnessCandidate,
-  OPENING_BOOK_SOURCE,
-  parsePgn,
-  positionKey,
-  repairEvalSignConvention,
-  resolveOpening,
-  tacticPreventionReason,
-  type ParsedPosition
-} from '@freechesscoach/chess-analysis';
-import type {
-  BookReport,
-  ClassifiedMoveDto,
-  EngineEval,
-  EngineMode,
-  PlayerBookReport,
-  PositionAnalysis,
-  TacticMotifType,
-  TacticVisualDto
-} from '@freechesscoach/shared';
+import { parsePgn } from '@freechesscoach/chess-analysis';
+import type { EngineMode } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
+import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
-import * as diagnosticObservationsRepo from '../db/repositories/diagnostic-observations.js';
 import { EngineUnavailableError, HttpError } from '../lib/errors.js';
-import { checkBrilliantSoundness } from './brilliant-soundness.js';
-import { buildDiagnosticObservations } from './build-diagnostics.js';
-import { buildGameReportForAnalysis } from './build-game-report.js';
-import { annotatedPgnForReport } from './game-report.js';
-import { computeTacticMotifPrevented, type TacticMotifPreventionResult } from './tactic-prevention.js';
+import { analyzeInChunks } from './analysis-chunks.js';
+import type { AnalysisJobDependencies } from './analysis-deps.js';
+import { runAnalysisSteps, type AnalysisStepsResult } from './analysis-steps.js';
+import { createStepTimer, formatTimings, type StepTimer } from './step-timer.js';
 
-/** Positions per engine call. Small enough that the progress percentage moves
- * often, large enough not to pay per-request overhead on every ply — and it
- * keeps each browser-mode tunnel request comfortably inside its timeout. */
-const ENGINE_CHUNK_POSITIONS = 6;
-
-export interface AnalysisJobDependencies {
-  /** Wraps `POST engine/analyze-game` (architecture §4). */
-  analyzeGamePositions: (fens: string[]) => Promise<EngineEval[]>;
-  /** Wraps a single-position analyze call — the same engine backend
-   * `analyzeGamePositions` is built from. Used only by the tactics-prevented
-   * gated fallback (`computeTacticMotifPrevented`'s Step B): one extra call
-   * per game at most on a normal position, never per-ply. */
-  analyzePosition: (fen: string) => Promise<PositionAnalysis>;
-}
+export { analyzeInChunks } from './analysis-chunks.js';
+export type { AnalysisJobDependencies } from './analysis-deps.js';
 
 /**
  * architecture §5 `analyze-game` job: engine_running -> (evals) -> planning ->
@@ -58,6 +23,9 @@ export interface AnalysisJobDependencies {
  * coaching plan is generated separately and lazily, the first time a user
  * actually starts a coaching session on this game (services/coaching-plan.ts's
  * `ensureCoachingPlan`), not here.
+ *
+ * Task 77.1: logs exactly one `analysis-timing:` line per game, whatever the
+ * outcome, with the engine-call count and the ms of each step that ran.
  */
 export async function runAnalyzeGameJob(
   db: Kysely<Database>,
@@ -67,6 +35,10 @@ export async function runAnalyzeGameJob(
   const analysis = await analysesRepo.findByGameId(db, gameId);
   if (!analysis) throw new Error(`No analysis row for game ${gameId}`);
 
+  const counted = countingEngine(deps);
+  const timer = createStepTimer();
+  const startedAt = performance.now();
+  let plies = 0;
   // Read in the try block below, but declared out here so the catch block can
   // retry an exhausted pipeline when a user's selected browser source later
   // reconnects. Unset (an engine failure before the user row was even read)
@@ -83,59 +55,28 @@ export async function runAnalyzeGameJob(
     engineMode = user.engineMode;
 
     const parsedGame = parsePgn(game.pgn);
+    plies = Math.max(0, parsedGame.positions.length - 1);
     const fens = parsedGame.positions.map((position) => position.fen);
-    const evals = await analyzeInChunks(db, deps, analysis.id, fens);
+    const evals = await timer.timed('engine', () => analyzeInChunks(db, counted.deps, analysis.id, fens));
     // Flipped here, not after the report/diagnostics build below: those
-    // steps are the slow part (tactic-prevention's per-ply PV scan alone
-    // can run tens of seconds) but report no countable progress, so the
-    // progress screen's indeterminate "planning" wave needs to start now —
-    // left until after them, the UI sits fully-lit and motionless for that
-    // whole stretch, reading as stalled rather than working.
+    // steps are the slow part but report no countable progress, so the
+    // progress screen's indeterminate "planning" wave needs to start now.
     await analysesRepo.updateStatus(db, analysis.id, 'planning');
 
-    const brilliantSoundnessByPly = await resolveBrilliantSoundness(
-      deps,
-      classifyMoves(parsedGame, evals, game.userColor),
-      inBookWalk(parsedGame.positions)
+    const result = await runAnalysisSteps(
+      {
+        gameId,
+        userId: game.userId,
+        userColor: game.userColor,
+        userRating: user.rating,
+        pgn: game.pgn,
+        pgnResult: game.result,
+        parsedGame,
+        evals
+      },
+      timer
     );
-    const unannotatedMoves = attachEnrichment(
-      classifyMoves(parsedGame, evals, game.userColor, { brilliantSoundnessByPly }),
-      enrichPositions(parsedGame.positions)
-    );
-    // Computed before the moves are annotated so its per-ply byPly map can
-    // be attached onto them — the move-list UI's per-ply "prevented"
-    // indicator reads it straight off ClassifiedMoveDto, the same way
-    // tacticOpportunity does.
-    const prevention = await computeTacticMotifPrevented(
-      { analyzePosition: deps.analyzePosition },
-      unannotatedMoves,
-      evals
-    );
-    const classifiedMoves = attachTacticPrevention(unannotatedMoves, prevention.byPly);
-    const bookReport = buildBookReport(parsedGame.positions);
-    await analysesRepo.storeBookReport(db, analysis.id, bookReport);
-    const gameReport = buildGameReportForAnalysis({
-      game: parsedGame,
-      evals,
-      moves: classifiedMoves,
-      book: bookReport,
-      pgnResult: game.result,
-      preventedCounts: { white: prevention.counts.white.prevented, black: prevention.counts.black.prevented },
-      preventableCounts: { white: prevention.counts.white.preventable, black: prevention.counts.black.preventable },
-      userColor: game.userColor,
-      userRating: user.rating
-    });
-    // Annotated from the report's own moves, not `classifiedMoves` — see
-    // `annotatedPgnForReport`. Written before storeGameReport so a reader
-    // never sees a stored report pointing at a PGN with no annotations yet.
-    await gamesRepo.updateAnnotatedPgn(db, gameId, annotatedPgnForReport(game.pgn, gameReport));
-    await analysesRepo.storeGameReport(db, analysis.id, gameReport);
-    await recordDiagnosticObservations(db, gameId, game.userId, game.userColor, game.pgn, gameReport.moves, evals, prevention.diagnosticByPly);
-
-    const candidateMoments = findCandidateMoments(gameReport.moves, evals);
-    await analysesRepo.storeCandidateMoments(db, analysis.id, candidateMoments);
-
-    await analysesRepo.markReady(db, analysis.id);
+    await persistAnalysis(db, analysis.id, gameId, result);
   } catch (error) {
     // markFailed only persists the message to `analyses.error` — without this,
     // the job queue still logs the job as completed (it caught its own
@@ -145,211 +86,60 @@ export async function runAnalyzeGameJob(
     // browser-backed stage reconnects. The same pipeline will still try its
     // reliable fallback stages before reaching this point.
     if (error instanceof EngineUnavailableError && engineMode !== undefined && engineMode !== 'native') {
-      // `evalsComputed` (persisted per chunk by analyzeInChunks, above) is
-      // untouched, so a resumed run's cache hits pick up where it stopped.
+      // `evalsComputed` is left as-is; a resumed run reuses the evals stored
+      // per chunk (analyzeInChunks) and only asks the engine for the rest.
       await analysesRepo.markPaused(db, analysis.id, describeError(error));
       return;
     }
     await analysesRepo.markFailed(db, analysis.id, describeError(error));
+  } finally {
+    logTimings(gameId, plies, counted.calls(), timer, performance.now() - startedAt);
   }
 }
 
-/** Task 56.3: runs the diagnostic detector registry + episode resolution and
- * persists the result. Isolated the same way `deepen-analysis` is isolated
- * from the fast pipeline — as a wholly separate concern that must never turn
- * a successful analysis into a failed one — except here the isolation is a
- * try/catch rather than a separate job, since the plan places this step
- * inline right after `buildGameReportForAnalysis`, not behind its own queue
- * entry. `buildDiagnosticObservations` also isolates each individual
- * detector, so one bad detector only loses its own finding, not the whole
- * game's diagnostics. */
+/** Writes the steps' results. The annotated PGN goes before the report so a
+ * reader never sees a stored report pointing at a PGN with no annotations. */
+async function persistAnalysis(db: Kysely<Database>, analysisId: string, gameId: string, result: AnalysisStepsResult): Promise<void> {
+  await analysesRepo.storeBookReport(db, analysisId, result.bookReport);
+  await gamesRepo.updateAnnotatedPgn(db, gameId, result.annotatedPgn);
+  await analysesRepo.storeGameReport(db, analysisId, result.gameReport);
+  if (result.observations) await recordDiagnosticObservations(db, gameId, result.observations);
+  await analysesRepo.storeCandidateMoments(db, analysisId, result.candidateMoments);
+  await analysesRepo.markReady(db, analysisId);
+}
+
+/** Task 56.3: persisting diagnostics must never turn a successful analysis
+ * into a failed one (building them is isolated in `runAnalysisSteps`). */
 async function recordDiagnosticObservations(
   db: Kysely<Database>,
   gameId: string,
-  userId: string,
-  userColor: 'white' | 'black',
-  pgn: string,
-  moves: ClassifiedMoveDto[],
-  evals: EngineEval[],
-  diagnosticByPly: TacticMotifPreventionResult['diagnosticByPly']
+  observations: NonNullable<AnalysisStepsResult['observations']>
 ): Promise<void> {
   try {
-    const observations = buildDiagnosticObservations({ gameId, userId, userColor, pgn, moves, evals, diagnosticByPly });
-    await diagnosticObservationsRepo.insertMany(db, observations);
+    await diagnosticObservationsRepo.replaceForGame(db, gameId, observations);
   } catch (error) {
-    console.error(`diagnostic observation build/persist failed for game ${gameId}:`, error);
+    console.error(`diagnostic observation persist failed for game ${gameId}:`, error);
   }
 }
 
-/** Task 50.3: `isBrilliantMove` sees `brilliantSoundness === undefined` (its
- * fail-closed default) unless we run this pre-pass. Cheap-gate candidates
- * (typically 0-2 per game) each cost one extra `analyzePosition` call to
- * evaluate §5.5's B6 — the opponent's best reply, at the batch's normal
- * depth, still leaves the mover close to their pre-sacrifice win%. */
-async function resolveBrilliantSoundness(
-  deps: AnalysisJobDependencies,
-  candidateMoves: ClassifiedMoveDto[],
-  bookWalk: ReturnType<typeof inBookWalk>
-): Promise<ReadonlyMap<number, boolean>> {
-  const soundnessByPly = new Map<number, boolean>();
-  for (const move of candidateMoves) {
-    const candidate = brilliantSoundnessCandidate(move, bookWalk);
-    if (!candidate) continue;
-    const sound = await checkBrilliantSoundness(
-      { analyzePosition: deps.analyzePosition },
-      candidate.fenAfter,
-      candidate.mover,
-      candidate.beforeWin
-    );
-    soundnessByPly.set(move.ply, sound);
-  }
-  return soundnessByPly;
-}
-
-function brilliantSoundnessCandidate(
-  move: ClassifiedMoveDto,
-  bookWalk: ReturnType<typeof inBookWalk>
-): { fenAfter: string; mover: 'white' | 'black'; beforeWin: number } | null {
-  const { fenBefore, fenAfter, drop, winPctBefore, moveFlags } = move;
-  if (fenBefore === undefined || fenAfter === undefined) return null;
-  if (drop === undefined || winPctBefore === undefined || !moveFlags) return null;
-  const isCandidate = isBrilliantSoundnessCandidate({
-    fenBefore,
-    fenAfter,
-    moveSan: move.moveSan,
-    mover: move.mover,
-    isBookMove: bookWalk[move.ply - 1]?.classification === 'book',
-    legalMoveCount: moveFlags.legalMoveCount,
-    isCapture: moveFlags.isCapture,
-    drop
-  });
-  return isCandidate ? { fenAfter, mover: move.mover, beforeWin: winPctBefore } : null;
-}
-
-function attachEnrichment(
-  moves: ReturnType<typeof classifyMoves>,
-  enrichment: ReturnType<typeof enrichPositions>
-): ReturnType<typeof classifyMoves> {
-  return moves.map((move) => {
-    const position = enrichment[move.ply];
-    if (!position?.moveFlags || !position.featureDelta) {
-      throw new Error(`Missing move enrichment for ply ${move.ply}`);
-    }
-    return {
-      ...move,
-      features: position.features,
-      moveFlags: position.moveFlags,
-      featureDelta: position.featureDelta
-    };
-  });
-}
-
-/** Attaches each ply's `computeTacticMotifPrevented`-derived byPly entry
- * (if any) onto its move — a ply with nothing reachable simply has no entry
- * and keeps `tacticPrevention` undefined, same as a quiet position never
- * gaining a `tacticOpportunity`. */
-function attachTacticPrevention(
-  moves: ClassifiedMoveDto[],
-  byPly: Map<number, { type: TacticMotifType; prevented: boolean; detail: string | null; visual: TacticVisualDto | null }>
-): ClassifiedMoveDto[] {
-  return moves.map((move) => {
-    const prevention = byPly.get(move.ply);
-    if (!prevention) return move;
-    return {
-      ...move,
-      tacticPrevention: prevention,
-      // Diagnostic-first (see the tactic-prevention over-firing investigation):
-      // spelling out which motif + whether it was defused, right in the same
-      // per-move notes the UI already shows, so a reviewer can eyeball
-      // false-positive detector hits without a DB query.
-      // Whose move this was decides the voice — "you stopped them" versus
-      // "their move stopped you" — and it lives on the move, not on the
-      // card, so an older stored report reads correctly too.
-      reasons: [...(move.reasons ?? []), tacticPreventionReason({ ...prevention, isUserMove: move.isUserMove })]
-    };
-  });
-}
-
-function buildBookReport(positions: ParsedPosition[]): BookReport {
-  const bookWalk = inBookWalk(positions);
-  const opening = resolveOpening(positions.map((position) => positionKey(position.fen)));
-  const lastBookPly = Math.max(bookWalk.lastBookPly.white, bookWalk.lastBookPly.black);
-
+/** Wraps `deps` so every engine call is counted. */
+function countingEngine(deps: AnalysisJobDependencies): { deps: AnalysisJobDependencies; calls: () => number } {
+  let calls = 0;
   return {
-    source: OPENING_BOOK_SOURCE,
-    eco: opening?.eco ?? null,
-    ecoVolume: opening?.ecoVolume ?? null,
-    name: opening?.name ?? null,
-    family: opening?.family ?? null,
-    variation: opening?.variation ?? null,
-    namedAtPly: opening?.ply ?? null,
-    lastBookPly,
-    players: {
-      white: buildPlayerBookReport('white', positions, bookWalk),
-      black: buildPlayerBookReport('black', positions, bookWalk)
-    }
+    deps: {
+      analyzeGamePositions: (fens) => {
+        calls += 1;
+        return deps.analyzeGamePositions(fens);
+      }
+    },
+    calls: () => calls
   };
 }
 
-function buildPlayerBookReport(
-  colour: 'white' | 'black',
-  positions: ParsedPosition[],
-  bookWalk: ReturnType<typeof inBookWalk>
-): PlayerBookReport {
-  const leftBook = bookWalk.find((result) => {
-    const position = positions[result.ply];
-    return result.leftBook !== undefined && position?.mover === colour;
-  })?.leftBook;
-
-  return {
-    lastBookPly: bookWalk.lastBookPly[colour],
-    leftBookPly: leftBook?.ply ?? null,
-    leftBookMove: leftBook?.played ?? null,
-    bookAlternatives: leftBook?.alternatives ?? []
-  };
-}
-
-/**
- * Analyzes the game a chunk at a time, persisting what's done after each one.
- *
- * The evals are identical either way — this exists so the wait is legible.
- * `engine_running` is by far the longest step (tens of seconds; longer still
- * in browser mode, where a real game measured ~42s), and analyzing in one
- * call meant nothing observable happened until all of it finished. Writing
- * each chunk lets GET /api/analyses/:id/status report how many positions are
- * done, which is what drives the percentage on the progress screen.
- *
- * Deliberately at this layer rather than in either EngineBackend, so native
- * and browser mode report progress the same way.
- */
-export async function analyzeInChunks(
-  db: Kysely<Database>,
-  deps: AnalysisJobDependencies,
-  analysisId: string,
-  fens: string[]
-): Promise<EngineEval[]> {
-  const evals: EngineEval[] = [];
-
-  for (let start = 0; start < fens.length; start += ENGINE_CHUNK_POSITIONS) {
-    const chunk = fens.slice(start, start + ENGINE_CHUNK_POSITIONS);
-    const chunkEvals = await deps.analyzeGamePositions(chunk);
-    // Each EngineEval's `ply` is chunk-relative (0..chunk.length-1) — the
-    // backend only ever sees this one chunk — so it has to be shifted by
-    // `start` to become the position's real index in the game.
-    // repairEvalSignConvention swaps a near-tied first/second line back into
-    // best-first order instead of the whole job dying over engine search
-    // noise (a real Stockfish multiPv quirk under time pressure, not corrupt
-    // data — see its doc comment).
-    const renumberedChunkEvals = chunkEvals.map((evalResult, i) => ({
-      ...evalResult,
-      ply: start + i,
-      lines: repairEvalSignConvention(evalResult.fen, evalResult.lines)
-    }));
-    evals.push(...renumberedChunkEvals);
-    await analysesRepo.incrementEvalsComputed(db, analysisId, chunk.length);
-  }
-
-  return evals;
+/** `total` is the whole job's wall clock, DB writes included. */
+function logTimings(gameId: string, plies: number, engineCalls: number, timer: StepTimer, totalMs: number): void {
+  const steps = formatTimings(timer.timings());
+  console.log(`analysis-timing: game=${gameId} plies=${plies} engineCalls=${engineCalls} ${steps} total=${Math.round(totalMs)}`);
 }
 
 /** `analyses.error` reaches the client verbatim (status SSE, AnalysisProgress).

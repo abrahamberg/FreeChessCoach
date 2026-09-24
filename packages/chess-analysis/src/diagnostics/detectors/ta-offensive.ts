@@ -1,5 +1,6 @@
 import type { DiagnosisCodeId } from '@freechesscoach/shared';
 import type { PlyDiagnosticContext } from '../context.js';
+import { buildEvalObservation, lossConfirmed } from '../eval-verdict.js';
 import { motifToCode } from '../motif-to-code.js';
 import type { DiagnosticDetector, DiagnosticObservation } from '../types.js';
 
@@ -53,22 +54,15 @@ function buildOffensiveDetector(code: DiagnosisCodeId, priority: number): Diagno
       const replay = embodying ? { fenBefore: ctx.fenBefore, moveSan: embodying } : undefined;
       if (motifToCode(opportunity.type, replay) !== code) return null;
 
-      const failed = !opportunity.found;
+      // Missing the motif is a failure only when the eval confirms the
+      // played move cost something; an equally good move is not a miss.
+      const failed = !opportunity.found && lossConfirmed(ctx);
       const rankHit = (ctx.tacticRankHits ?? []).find(
         (hit) => hit.motif === opportunity.type && hit.playedRank !== null
       );
+      const detail = opportunity.detail ?? `${opportunity.type} opportunity at this position`;
 
-      return {
-        code,
-        direction: 'O',
-        ply: ctx.ply,
-        failed,
-        hwdl: failed ? (ctx.drop ?? 0) / 100 : 0,
-        severity: failed ? 'meaningful' : 'minor',
-        reachability: 1,
-        detail: opportunity.detail ?? `${opportunity.type} opportunity at this position`,
-        rank: rankHit?.rank
-      };
+      return { ...buildEvalObservation(ctx, code, 'O', failed, detail), rank: rankHit?.rank };
     }
   };
 }

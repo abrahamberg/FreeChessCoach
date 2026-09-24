@@ -5,7 +5,7 @@ import type { EngineEval, PositionAnalysis, PositionAnalysisLine } from '@freech
  * headed it (the shape `analyzeGame`'s callers — classifyMoves, batch DB
  * storage — expect). `ply` is a placeholder; `analyzeGame` overwrites it
  * with the position's actual index in the caller's original `fens` array. */
-export function toLeanEval(analysis: PositionAnalysis): EngineEval {
+export function toLeanEval(analysis: Pick<PositionAnalysis, 'fen' | 'depth' | 'lines'>): EngineEval {
   return {
     ply: 0,
     fen: analysis.fen,

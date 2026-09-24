@@ -54,6 +54,33 @@ describe('diagnostic-observations repository (Task 56.2)', () => {
     };
   }
 
+  test('replaceForGame swaps a re-analysed game\'s rows and leaves other games alone', async () => {
+    const user = await makeUser();
+    const game = await makeGame(user.id);
+    const other = await makeGame(user.id);
+    await diagnosticObservationsRepo.insertMany(db, [
+      observation(user.id, game.id, { ply: 4 }),
+      observation(user.id, game.id, { ply: 6 }),
+      observation(user.id, other.id, { ply: 8 })
+    ]);
+
+    await diagnosticObservationsRepo.replaceForGame(db, game.id, [observation(user.id, game.id, { ply: 10, failed: false })]);
+
+    const rows = await diagnosticObservationsRepo.listForGame(db, game.id);
+    expect(rows.map((row) => [row.ply, row.failed])).toEqual([[10, false]]);
+    expect(await diagnosticObservationsRepo.listForGame(db, other.id)).toHaveLength(1);
+  });
+
+  test('replaceForGame with no rows clears the game', async () => {
+    const user = await makeUser();
+    const game = await makeGame(user.id);
+    await diagnosticObservationsRepo.insertMany(db, [observation(user.id, game.id)]);
+
+    await diagnosticObservationsRepo.replaceForGame(db, game.id, []);
+
+    expect(await diagnosticObservationsRepo.listForGame(db, game.id)).toEqual([]);
+  });
+
   test('insertMany persists observations retrievable by user and by game', async () => {
     const user = await makeUser();
     const game = await makeGame(user.id);

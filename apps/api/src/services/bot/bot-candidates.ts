@@ -35,8 +35,9 @@ export const BOT_SEARCH_MOVETIME_MS = 8000;
 
 export interface BotCandidatesDependencies {
   /** Bot-specific search from the shared engine pipeline. It deliberately
-   * avoids the standard position_evaluations cache because its requested
-   * depth/multiPv differ from official analysis. */
+   * runs through resolveRawEngineBackend, skipping the lite-engine breadth
+   * supplement, because its requested depth/multiPv differ from official
+   * analysis and are never compared against it. */
   analyzeBotPosition: (
     fen: string,
     opts: { depth: number; multiPv: number; movetimeMs: number; debug?: BotMoveDebugCollector }

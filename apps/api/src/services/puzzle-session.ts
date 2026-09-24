@@ -68,3 +68,19 @@ export async function getPuzzleSessionDetail(
   if (!assignment) return undefined;
   return { ...session, messages, assignment, currentFen: currentPuzzleFen(session, assignment) };
 }
+
+/** Student-initiated "start over" (same menu item as the coach game's Reset):
+ * abandons the current session and opens a fresh one — new conversation, on
+ * the item the student was on, with the line back at its setup position. */
+export async function resetPuzzleSession(db: Kysely<Database>, userId: string, sessionId: string): Promise<PuzzleSessionRow> {
+  const session = await puzzleSessionsRepo.findSessionByIdForUser(db, sessionId, userId);
+  if (!session) throw new NotFoundError('Puzzle session not found');
+  if (session.status !== 'active') throw new ConflictError('Session has already ended');
+
+  await puzzleSessionsRepo.markAbandoned(db, session.id);
+  return puzzleSessionsRepo.insertSession(db, {
+    assignmentId: session.assignmentId,
+    userId,
+    currentItemIndex: session.currentItemIndex
+  });
+}

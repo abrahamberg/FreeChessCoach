@@ -14,6 +14,7 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildApp } from '../app.js';
 import { buildResolveEngineBackendOptions, type CoachAgentBaseDependencies } from '../bootstrap.js';
 import * as analysesRepo from '../db/repositories/analyses.js';
+import * as gameImportEventsRepo from '../db/repositories/game-import-events.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
@@ -1096,5 +1097,82 @@ describe('POST/GET /api/games', () => {
       payload: { tier: 'review' }
     });
     expect(response.statusCode).toBe(404);
+  });
+  describe('POST /api/games/:id/keep (finished bot games)', () => {
+    async function seedBotGame(email: string, result: string | null) {
+      const app = buildTestApp();
+      const headers = headersFor(email, 'Keeper');
+      await app.inject({ method: 'GET', url: '/api/games', headers });
+      const user = await db.selectFrom('users').select('id').where('email', '=', email).executeTakeFirstOrThrow();
+      const game = await gamesRepo.insert(db, {
+        userId: user.id,
+        pgn: '1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7#',
+        source: 'vs_bot',
+        userColor: 'white',
+        whiteName: 'You',
+        blackName: 'Bot',
+        result,
+        timeControl: null,
+        eco: null,
+        playedAt: new Date(),
+        botId: BOT_ROSTER[0]!.id,
+        botConfigSnapshot: BOT_ROSTER[0]!
+      });
+      return { app, headers, userId: user.id, gameId: game.id };
+    }
+
+    test('a finished bot game is not analysed on its own and does not count toward the library', async () => {
+      const { userId, gameId } = await seedBotGame('keep-none@example.com', '1-0');
+      expect(await analysesRepo.findByGameId(db, gameId)).toBeUndefined();
+      expect(await gamesRepo.countImportableForUser(db, userId)).toBe(0);
+    });
+
+    test('keeping it analyses it, spends import quota and takes a library slot', async () => {
+      const { app, headers, userId, gameId } = await seedBotGame('keep-yes@example.com', '1-0');
+
+      const response = await app.inject({ method: 'POST', url: `/api/games/${gameId}/keep`, headers });
+
+      expect(response.statusCode).toBe(200);
+      expect(jobQueue.enqueueAnalyzeGame).toHaveBeenCalledWith(gameId);
+      expect((await analysesRepo.findByGameId(db, gameId))?.status).toBe('queued');
+      expect(await gamesRepo.countImportableForUser(db, userId)).toBe(1);
+      const ledger = await db.selectFrom('gameImportEvents').selectAll().where('userId', '=', userId).execute();
+      expect(ledger).toHaveLength(1);
+    });
+
+    test('keeping twice does not spend quota twice or queue a second analysis', async () => {
+      const { app, headers, userId, gameId } = await seedBotGame('keep-twice@example.com', '1-0');
+      const first = await app.inject({ method: 'POST', url: `/api/games/${gameId}/keep`, headers });
+      const second = await app.inject({ method: 'POST', url: `/api/games/${gameId}/keep`, headers });
+
+      expect(second.json().analysisId).toBe(first.json().analysisId);
+      expect(jobQueue.enqueueAnalyzeGame).toHaveBeenCalledTimes(1);
+      expect(await db.selectFrom('gameImportEvents').selectAll().where('userId', '=', userId).execute()).toHaveLength(1);
+    });
+
+    test('is refused with 429 once the daily import limit is used up', async () => {
+      const { app, headers, userId, gameId } = await seedBotGame('keep-limit@example.com', '1-0');
+      for (let i = 0; i < DAILY_IMPORT_LIMIT; i++) await gameImportEventsRepo.record(db, userId, new Date());
+
+      const response = await app.inject({ method: 'POST', url: `/api/games/${gameId}/keep`, headers });
+
+      expect(response.statusCode).toBe(429);
+      expect(await analysesRepo.findByGameId(db, gameId)).toBeUndefined();
+    });
+
+    test('a game still in progress cannot be kept', async () => {
+      const { app, headers, gameId } = await seedBotGame('keep-live@example.com', null);
+      const response = await app.inject({ method: 'POST', url: `/api/games/${gameId}/keep`, headers });
+      expect(response.statusCode).toBe(400);
+    });
+
+    test('deleting a finished bot game removes it and uses no quota', async () => {
+      const { app, headers, userId, gameId } = await seedBotGame('keep-delete@example.com', '1-0');
+      const response = await app.inject({ method: 'DELETE', url: `/api/games/${gameId}`, headers });
+
+      expect(response.statusCode).toBe(204);
+      expect(await gamesRepo.findById(db, gameId)).toBeUndefined();
+      expect(await db.selectFrom('gameImportEvents').selectAll().where('userId', '=', userId).execute()).toHaveLength(0);
+    });
   });
 });

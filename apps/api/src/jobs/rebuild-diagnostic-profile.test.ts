@@ -100,3 +100,10 @@ describe('windowByTimeControl (Task 56.4)', () => {
     expect(found?.playedAt).toEqual(noPlayedAt.createdAt);
   });
 });
+
+describe('windowByTimeControl time-control keys', () => {
+  test('a Chess.com "600" and a Lichess/bot "600+0" share one window', () => {
+    const windows = windowByTimeControl([...games(8, () => ({ timeControl: '600' })), ...games(7, () => ({ timeControl: '600+0' }))]);
+    expect(windows.get('600+0')).toHaveLength(15);
+  });
+});

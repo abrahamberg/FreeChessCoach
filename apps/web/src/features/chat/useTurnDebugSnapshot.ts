@@ -51,13 +51,13 @@ export type TurnDebugSnapshotState =
  * debug popup. DebugPanel still owns triggering this (mounted only while the
  * popup is open) — the fetch itself just lives in a hook per AGENTS.md's
  * "data fetching lives in hooks" rule. */
-export function useTurnDebugSnapshot(sessionId: string): TurnDebugSnapshotState {
+export function useTurnDebugSnapshot(sessionId: string, basePath = '/api/sessions'): TurnDebugSnapshotState {
   const [state, setState] = useState<TurnDebugSnapshotState>({ status: 'loading' });
 
   useEffect(() => {
     let cancelled = false;
     setState({ status: 'loading' });
-    apiGet(`/api/sessions/${sessionId}/debug/last-turn`, TurnDebugSnapshotSchema)
+    apiGet(`${basePath}/${sessionId}/debug/last-turn`, TurnDebugSnapshotSchema)
       .then((snapshot) => {
         if (!cancelled) setState({ status: 'ready', snapshot });
       })
@@ -72,7 +72,7 @@ export function useTurnDebugSnapshot(sessionId: string): TurnDebugSnapshotState 
     return () => {
       cancelled = true;
     };
-  }, [sessionId]);
+  }, [sessionId, basePath]);
 
   return state;
 }

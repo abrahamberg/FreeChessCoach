@@ -1,22 +1,19 @@
-import { computeCctOpportunities } from '../cct-opportunities.js';
 import type { PlyDiagnosticContext } from '../context.js';
 import type { DiagnosticDetector, DiagnosticObservation } from '../types.js';
-import { buildQualityObservation } from './shared.js';
+import { ownChanceObservation, ownCheckSans } from './own-chance.js';
 
 /**
  * §II.D MS-04 "Own-check generation omission" — misses useful checks
- * visible without deep calculation. The mover's own pre-move CCT scan had
- * at least one check the mover didn't play.
+ * visible without deep calculation. An opportunity only when one of the
+ * mover's own checks (the played one included) is a real chance by the
+ * engine's lines; a failure only when it was missed and the eval confirms
+ * the cost (`own-chance.ts`).
  */
 export const ms04OwnCheckGenerationOmission: DiagnosticDetector = {
   code: 'MS-04',
   direction: 'O',
   priority: 140,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
-    const { unplayedChecks } = computeCctOpportunities(ctx);
-    if (unplayedChecks.length === 0) return null;
-
-    const detail = `had ${unplayedChecks.length} check${unplayedChecks.length > 1 ? 's' : ''} available and did not play one: ${unplayedChecks.map((move) => move.moveSan).join(', ')}`;
-    return buildQualityObservation(ctx, 'MS-04', 'O', detail);
+    return ownChanceObservation(ctx, 'MS-04', ownCheckSans(ctx), 'the check');
   }
 };

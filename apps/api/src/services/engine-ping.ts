@@ -16,8 +16,8 @@ export const ENGINE_PING_MOVETIME_MS = 8000;
 
 /** One settings-page engine-ping test: analyzes the caller's FEN through the
  * exact same pipeline every other engine caller uses — resolveEngineBackend
- * (Lichess eval index → position_evaluations cache → the selected engine,
- * with the lite breadth supplement) — and reports what came back plus how
+ * (Lichess eval index → the selected engine, with the lite breadth
+ * supplement) — and reports what came back plus how
  * long the whole thing took. No special-casing of engines here on purpose:
  * the point of the test is to measure the app's real path, so a FEN the
  * Lichess community has already evaluated comes back from the bin in

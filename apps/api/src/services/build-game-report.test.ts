@@ -46,7 +46,7 @@ function buildFixture(userRating: number | null) {
     pgnResult: '*',
     userColor: 'white',
     userRating
-  });
+  }).report;
 }
 
 describe('buildGameReportForAnalysis', () => {

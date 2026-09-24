@@ -84,20 +84,33 @@ describe('selectBookMove', () => {
     expect(result).not.toBeNull();
   });
 
-  // Task 64.7: opening breadth scales with elo — a beginner only ever sees
-  // the book's first couple of entries for a position, even when theory
-  // documents many more. random() near 1 picks the last index of whatever
-  // slice is actually available, so a beginner's narrow cap (2 entries at
-  // elo 300) can only ever pick index 0 or 1, while a top-tier bot's much
-  // wider cap can reach a later entry in the same book list.
-  test('a beginner-tier bot never reaches a book entry a wider elo cap can reach', () => {
-    const beginnerEntries = bookMovesForFen(START_FEN).slice(0, bookBreadthForElo(300));
-    const topTierEntries = bookMovesForFen(START_FEN).slice(0, bookBreadthForElo(2300));
-    expect(beginnerEntries.length).toBeLessThan(topTierEntries.length);
+  // Opening variety: the guaranteed first moves come from every book reply,
+  // whatever the bot's elo, so even a beginner opens differently game to game.
+  test('a beginner bot\'s first move can be any book reply, not just the first few', () => {
+    const all = bookMovesForFen(START_FEN);
+    expect(all.length).toBeGreaterThan(bookBreadthForElo(300));
 
     const beginner = baseBot({ elo: 300, bookMistakeChance: 0 });
-    const result = selectBookMove(START_FEN, 0, beginner, () => 0.999999);
-    const reachedIndex = topTierEntries.findIndex((entry) => entry.san === result?.san);
-    expect(reachedIndex).toBeLessThan(beginnerEntries.length);
+    const first = selectBookMove(START_FEN, 0, beginner, () => 0);
+    const last = selectBookMove(START_FEN, 0, beginner, () => 0.999999);
+    expect(first?.san).toBe(all[0]?.san);
+    expect(last?.san).toBe(all[all.length - 1]?.san);
+  });
+
+  test('later book moves are a random sample of the elo-scaled breadth, not always the same few', () => {
+    const all = bookMovesForFen(FOURTH_PLY_BOOK_FEN).map((entry) => entry.san);
+    const beginner = baseBot({ elo: 300, bookMistakeChance: 0 });
+    // A fixed-seed stream so the two picks are reproducible.
+    const seeded = (values: number[]) => {
+      let i = 0;
+      return () => values[i++ % values.length] as number;
+    };
+    const picks = new Set<string>();
+    for (const seed of [[0.0, 0.0], [0.9, 0.0], [0.5, 0.5], [0.99, 0.99], [0.3, 0.7]]) {
+      const pick = selectBookMove(FOURTH_PLY_BOOK_FEN, 4, beginner, seeded(seed));
+      expect(all).toContain(pick?.san);
+      picks.add(pick?.san ?? '');
+    }
+    if (all.length > bookBreadthForElo(300)) expect(picks.size).toBeGreaterThan(1);
   });
 });

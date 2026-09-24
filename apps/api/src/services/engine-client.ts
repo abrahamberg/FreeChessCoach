@@ -3,13 +3,14 @@ import { ENGINE_MULTI_PV, type EngineEval, type EnginePriority, type PositionAna
 /**
  * Requests ENGINE_MULTI_PV principal variations (the engine's own default is
  * 2) so callers get real candidate moves, not just a single judged line.
- * Fixed across every caller (coach, deepen-analysis job) on purpose:
- * position_evaluations caches by `fen` alone, so a caller requesting a
- * different multiPv would otherwise silently get back whatever multiPv the
- * first writer happened to use. Re-exported from @freechesscoach/shared,
- * which is the canonical source (packages/chess-analysis needs the same
- * value and already depends on that package) — this re-export just keeps
- * every existing `from '../engine-client.js'` import working.
+ * Fixed across every caller (coach, analyze-game job) on purpose: downstream
+ * code (the move-verdict ranking, game report, diagnostics) reads specific
+ * line indices out of a stored `EngineEval`, so a caller requesting a
+ * different multiPv would silently hand the rest of the pipeline evals it
+ * can't compare. Re-exported from @freechesscoach/shared, which is the
+ * canonical source (packages/chess-analysis needs the same value and already
+ * depends on that package) — this re-export just keeps every existing
+ * `from '../engine-client.js'` import working.
  */
 export { ENGINE_MULTI_PV };
 
@@ -34,15 +35,16 @@ export async function analyzeGameViaEngine(
 }
 
 /** Wraps `POST engine/analyze-position` — the rich, single-position path
- * used by the coach's live analyzePosition dependency and the
- * deepen-analysis background job. `depth` is deliberately omitted by every
- * one of those callers (undefined lets the engine service fall back to its
- * own default) — position_evaluations caches by `fen` alone, so a caller
- * requesting a different depth would silently corrupt that cache for
- * everyone else. The one caller that does pass `depth` today is the "Play
- * vs Bot" plan's bot move-selection engine, which uses the same source
- * pipeline but bypasses only CachingEngineBackend, so this cache-correctness
- * concern doesn't apply to it. */
+ * used by the coach's live analyzePosition dependency and the settings-page
+ * engine-ping test. `depth` is deliberately omitted by every one of those
+ * callers (undefined lets the engine service fall back to
+ * `ENGINE_DEFAULT_DEPTH`, shared by every backend — see
+ * packages/shared/src/constants.ts), so a single-position call is evaluated
+ * at the same depth as official game analysis and the two stay comparable.
+ * The one caller that does pass `depth` today is the "Play vs Bot" plan's
+ * bot move-selection engine, which searches at its own bot-specific
+ * depth/multiPv and is never compared against official analysis, so this
+ * comparability concern doesn't apply to it. */
 export async function analyzePositionViaEngine(
   engineUrl: string,
   fen: string,

@@ -1,5 +1,5 @@
 import { Chess, type Square } from 'chess.js';
-import type { TacticMotifType } from '@freechesscoach/shared';
+import type { PositionFeatures, TacticMotifType } from '@freechesscoach/shared';
 import { applySanSequence } from './apply-san-sequence.js';
 import { fenActiveColor } from './attack-map.js';
 import { classifyCandidateClaims } from './classify-candidate-move.js';
@@ -40,6 +40,17 @@ export interface PvTacticAnnotation {
   forkInPlies: number | null;
 }
 
+export interface AnnotatePvTacticsOptions {
+  /** Classify only the odd plies (the mover's own moves) and skip the
+   * feature scans and diffs. Even plies are still replayed and still thread
+   * `previousMove`, so every odd ply's claims are exactly what the full mode
+   * gives. In this mode `steps` holds only odd plies, their `createsFork` /
+   * `createsHangingPiece` / `mobilityDelta` are `false` / `false` / `0`, and
+   * `forkInPlies` is `null` — use the full mode when any of those is read.
+   * `scanAvailableMotifs` reads only odd-ply claims, so it uses this. */
+  claimsOnly?: boolean;
+}
+
 /**
  * The multi-ply generalization of candidate-moves.ts's annotateCandidateMoves
  * (which only looks one ply ahead) — walks a candidate line's full principal
@@ -49,7 +60,13 @@ export interface PvTacticAnnotation {
  * throwing) if the PV runs out or contains an illegal move, mirroring
  * applySanSequence's own graceful degradation.
  */
-export function annotatePvTactics(fenBefore: string, pvSan: string[], maxPlies = 6): PvTacticAnnotation {
+export function annotatePvTactics(
+  fenBefore: string,
+  pvSan: string[],
+  maxPlies = 6,
+  options: AnnotatePvTacticsOptions = {}
+): PvTacticAnnotation {
+  const claimsOnly = options.claimsOnly === true;
   const walked = pvSan.slice(0, maxPlies);
   const moveSan = walked[0] ?? '';
   const applied = applySanSequence(fenBefore, walked);
@@ -57,28 +74,30 @@ export function annotatePvTactics(fenBefore: string, pvSan: string[], maxPlies =
   const steps: PvTacticStep[] = [];
   const initialMover = fenActiveColor(fenBefore);
   let previousFen = fenBefore;
-  let previousFeatures = computePositionFeatures(fenBefore);
+  let previousFeatures = claimsOnly ? null : computePositionFeatures(fenBefore);
 
   let previousMove: PreviousMove | null = null;
 
   applied.moves.forEach((move, index) => {
-    const features = computePositionFeatures(move.fen);
-    const delta = diffPositionFeatures(previousFeatures, features);
-    const stepMover = index % 2 === 0 ? initialMover : initialMover === 'white' ? 'black' : 'white';
-    // Inside a PV the previous move is known exactly, which is what lets the
-    // recapture gate work on an engine line the same way it works on a game.
-    const classification = classifyCandidateClaims(previousFen, move.san, stepMover, { previous: previousMove });
-    steps.push({
-      ply: index + 1,
-      moveSan: move.san,
-      createsFork: delta.newForks.length > 0,
-      createsHangingPiece: delta.newHangingPieces.length > 0,
-      mobilityDelta: delta.mobilityDelta,
-      motif: classification?.headline ?? null,
-      claims: classification?.claims ?? [],
-      fenBefore: previousFen
-    });
-    previousMove = appliedMoveAsPrevious(previousFen, move.uci);
+    const ply = index + 1;
+    const features = claimsOnly ? null : computePositionFeatures(move.fen);
+    if (!claimsOnly || ply % 2 === 1) {
+      const stepMover = index % 2 === 0 ? initialMover : initialMover === 'white' ? 'black' : 'white';
+      // Inside a PV the previous move is known exactly, which is what lets the
+      // recapture gate work on an engine line the same way it works on a game.
+      const classification = classifyCandidateClaims(previousFen, move.san, stepMover, { previous: previousMove });
+      steps.push({
+        ply,
+        moveSan: move.san,
+        ...featureFields(previousFeatures, features),
+        motif: classification?.headline ?? null,
+        claims: classification?.claims ?? [],
+        fenBefore: previousFen
+      });
+    }
+    // In claims-only mode the move after an odd ply is an even ply, which is
+    // never classified, so its history is never read.
+    previousMove = claimsOnly && ply % 2 === 1 ? null : appliedMoveAsPrevious(previousFen, move.uci);
     previousFen = move.fen;
     previousFeatures = features;
   });
@@ -86,6 +105,20 @@ export function annotatePvTactics(fenBefore: string, pvSan: string[], maxPlies =
   const forkStep = steps.find((step) => step.ply % 2 === 1 && step.createsFork);
 
   return { moveSan, steps, forkInPlies: forkStep?.ply ?? null };
+}
+
+type StepFeatureFields = Pick<PvTacticStep, 'createsFork' | 'createsHangingPiece' | 'mobilityDelta'>;
+
+/** A step's feature-diff fields; the claims-only placeholders when either
+ * side of the diff was not computed. */
+function featureFields(before: PositionFeatures | null, after: PositionFeatures | null): StepFeatureFields {
+  if (!before || !after) return { createsFork: false, createsHangingPiece: false, mobilityDelta: 0 };
+  const delta = diffPositionFeatures(before, after);
+  return {
+    createsFork: delta.newForks.length > 0,
+    createsHangingPiece: delta.newHangingPieces.length > 0,
+    mobilityDelta: delta.mobilityDelta
+  };
 }
 
 /**

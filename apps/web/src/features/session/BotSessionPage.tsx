@@ -78,6 +78,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
     isResigning,
     clock,
     onClockUpdate,
+    onBotTurnStart,
     claimTimeout,
     setBotThinkingLog
   } = useBotSessionPageData(sessionId);
@@ -91,6 +92,11 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   useEffect(() => {
     if (boardState.mode !== 'peek') setIsExploring(false);
   }, [boardState.mode]);
+  // The student's move has been sent: bank their clock and start the bot's.
+  const studentColor = gameQuery.data?.userColor;
+  useEffect(() => {
+    if (isBotThinking && studentColor) onBotTurnStart(studentColor);
+  }, [isBotThinking, studentColor, onBotTurnStart]);
   const exploreFeedback = useExploreFeedback({ enabled: isExploring, fen, lastMove: boardState.lastLocalMove });
   function openExplore(): void {
     setIsExploring(true);
@@ -131,12 +137,18 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   }
 
   const orientation = gameQuery.data?.userColor ?? 'white';
+  // A rated game: no move feedback, eval, hints, undo, Explore or thinking log.
+  const isRated = gameQuery.data?.rated === true;
+  const shownMoves = isRated ? null : classifiedMoves;
   const botName = (orientation === 'white' ? gameQuery.data?.blackName : gameQuery.data?.whiteName) ?? 'The bot';
   const bot = gameQuery.data?.botId ? findBotConfig(gameQuery.data.botId) : undefined;
   const isPlayerTurn = boardState.ply % 2 === (orientation === 'white' ? 0 : 1);
   // The clock cares about whose turn it REALLY is, not wherever boardState
   // happens to be peeking into history — currentRealPosition tracks that.
-  const activeColor: 'white' | 'black' = currentRealPosition.ply % 2 === 0 ? 'white' : 'black';
+  // While the student's move is still round-tripping, the bot's clock is the
+  // one running (the board only catches up when the bot's reply lands).
+  const botColor = orientation === 'white' ? 'black' : 'white';
+  const activeColor: 'white' | 'black' = isBotThinking ? botColor : currentRealPosition.ply % 2 === 0 ? 'white' : 'black';
 
   function handleResign(): void {
     if (window.confirm(`Resign this game against ${botName}?`)) resign();
@@ -150,7 +162,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       orientation={orientation}
       sanMoves={sanMoves}
       positions={positions}
-      classifiedMoves={classifiedMoves}
+      classifiedMoves={shownMoves}
       isDesktop={isDesktop}
       autoplayIntervalMs={autoplayIntervalMs}
       onChangeAutoplayInterval={setAutoplayIntervalMs}
@@ -161,10 +173,11 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
       onPlayMoveCommitted={handleBotMoveCommitted}
       onGameOver={handleGameOver}
       onBotThinkingChange={setIsBotThinking}
-      onUndoMove={undoLastMove}
+      onUndoMove={isRated ? undefined : undoLastMove}
+      restricted={isRated}
       undoDisabled={!canUndo || session.status !== 'active'}
       onClockUpdate={onClockUpdate}
-      showEvalIndicators={showStatusBar}
+      showEvalIndicators={showStatusBar && !isRated}
       // The game itself has no more moves to accept once it's over — without
       // this a resignation/timeout ending (unlike checkmate/stalemate, which
       // already has no legal moves) would otherwise leave a fully-playable-
@@ -182,7 +195,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   // The Thinking log is opt-in per session (0043_bot_thinking_log.ts, its
   // ⋯-menu item below): a disabled session renders no log and records no
   // traces server-side, which is the default for every new bot game.
-  const thinkingLogEnabled = session.botThinkingLog;
+  const thinkingLogEnabled = session.botThinkingLog && !isRated;
   const statusPanelProps = {
     botName,
     botAvatarIndex: bot?.avatarIndex,
@@ -208,7 +221,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   const engineBadge = engineActivity.engineMode ? ENGINE_MODE_BADGE[engineActivity.engineMode] : 'Engine';
   const headerExtraItems: OverflowMenuItem[] = [
     { label: showStatusBar ? 'Hide status bar' : 'Show status bar', onSelect: () => setShowStatusBar(!showStatusBar) },
-    { label: thinkingLogEnabled ? 'Hide thinking log' : 'Show thinking log', onSelect: () => setBotThinkingLog(!thinkingLogEnabled) },
+    ...(isRated ? [] : [{ label: thinkingLogEnabled ? 'Hide thinking log' : 'Show thinking log', onSelect: () => setBotThinkingLog(!thinkingLogEnabled) }]),
     { label: `Engine: ${engineBadge}`, onSelect: () => navigate('/settings#settings-engine') },
     { label: 'Settings', onSelect: () => navigate('/settings') }
   ];
@@ -226,7 +239,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
         <div className="session-body desktop">
           {isDesktop && (
             <div className="session-move-explorer-column">
-              <MoveExplorer sanMoves={sanMoves} classifiedMoves={classifiedMoves ?? []} positions={positions} currentPly={boardState.ply} onSelect={peekAt} />
+              <MoveExplorer sanMoves={sanMoves} classifiedMoves={shownMoves ?? []} positions={positions} currentPly={boardState.ply} onSelect={peekAt} />
               {gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} userColor={orientation} />}
             </div>
           )}
@@ -237,7 +250,14 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
         <StackedSessionBody card={statusCard} board={board} footer={reportFooter} footerKind="report" />
       )}
       {gameOverInfo && !dialogDismissed && (
-        <GameOverDialog gameOver={gameOverInfo} userColor={orientation} botName={botName} onContinue={() => setDialogDismissed(true)} />
+        <GameOverDialog
+          gameOver={gameOverInfo}
+          gameId={session.gameId}
+          userColor={orientation}
+          botName={botName}
+          onContinue={() => setDialogDismissed(true)}
+          onDone={() => navigate('/games')}
+        />
       )}
     </div>
   );

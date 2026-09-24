@@ -1,10 +1,12 @@
 import { interpolateAnchors, type PositionAnalysis } from '@freechesscoach/shared';
 
 export interface DiagnosticReachabilityDependencies {
-  /** Uncached, single-position engine search (see resolveRawEngineBackend)
-   * — runs at the depth `depthForRating` picks, deliberately never the
-   * shared position_evaluations cache (same reasoning as
-   * bot-candidates.ts's `analyzeBotPosition`). */
+  /** Single-position engine search (see resolveRawEngineBackend) — runs at
+   * the depth `depthForRating` picks, deliberately through
+   * resolveRawEngineBackend rather than resolveEngineBackend so it skips the
+   * lite-engine breadth supplement, which assumes the standard depth/multiPv
+   * rather than this call's own (same reasoning as bot-candidates.ts's
+   * `analyzeBotPosition`). */
   analyzeAtDepth: (fen: string, opts: { depth: number; multiPv: number }) => Promise<PositionAnalysis>;
 }
 

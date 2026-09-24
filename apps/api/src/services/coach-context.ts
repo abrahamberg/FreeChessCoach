@@ -217,10 +217,10 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
   // renderAnalysisSection), which is the only thing that reads it — the
   // isBestMove branch there collapses to one sentence and never touches
   // postMoveAnalysis, so fetching it in that case would be a wasted call.
-  // position.fen should already be warm in position_evaluations by the time
-  // a session is open — see deepen-analysis.ts's batching — so on the
-  // non-best-move path this is expected to be a cache hit, not a new
-  // live-latency source.
+  // This is always a genuine call through the standard pipeline (Lichess
+  // eval index first, then the user's selected engine) — there's no
+  // position-level cache to warm, so on the non-best-move path it is a real
+  // second engine round trip, not a saved one.
   const postMoveAnalysis = playedMove !== null && !isBestMove ? await input.analyzePosition(position.fen) : undefined;
   const featureDelta =
     playedMove !== null && !isBestMove ? computeFeatureDelta(analysis, preMoveFen, position.fen) : undefined;

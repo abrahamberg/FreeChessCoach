@@ -44,13 +44,20 @@ export const BotClockConfigSchema = z.object({
 });
 export type BotClockConfig = z.infer<typeof BotClockConfigSchema>;
 
+/** A rated bot game is always 10 minutes, no increment. */
+export const RATED_BOT_CLOCK: BotClockConfig = { initialMs: 10 * 60_000, incrementMs: 0 };
+
 /** Starts a fresh live game against a preset bot — no gameId (play_bot mode
  * creates its own `vs_bot` game, same as play mode does for `coach_play`),
  * plus which roster bot (packages/shared/src/bot-roster.ts) to play. */
 export const CreateBotSessionRequestSchema = z.object({
   studentColor: PlayerColorSchema,
   botId: z.string().min(1),
-  clock: BotClockConfigSchema.nullable().optional()
+  clock: BotClockConfigSchema.nullable().optional(),
+  /** A rated game: fixed 10-minute clock (`clock` is ignored), no move
+   * feedback, hints, undo or Explore — and the only kind of bot game the
+   * coach's pattern tracking counts. Omitted/false is a practice game. */
+  rated: z.boolean().optional()
 });
 export type CreateBotSessionRequest = z.infer<typeof CreateBotSessionRequestSchema>;
 

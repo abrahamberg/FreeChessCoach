@@ -2,13 +2,23 @@ import { Migrator, type Kysely, type MigrationProvider } from 'kysely';
 import * as consolidated from './migrations/0000_consolidated_initial.js';
 import * as ttsBackendLocal from './migrations/0001_tts_backend_local.js';
 import * as sessionMoveNoteDetail from './migrations/0002_session_move_note_detail.js';
+import * as ttsBackendNative from './migrations/0003_tts_backend_native.js';
+import * as ratedBackfill from './migrations/0004_rated_backfill.js';
+import * as puzzleSessionDebugSnapshot from './migrations/0005_puzzle_session_debug_snapshot.js';
+import * as analysisEngineEvals from './migrations/0006_analysis_engine_evals.js';
+import * as dropDeepenAnalysisJobs from './migrations/0007_drop_deepen_analysis_jobs.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
     Promise.resolve({
       '0000_consolidated_initial': consolidated,
       '0001_tts_backend_local': ttsBackendLocal,
-      '0002_session_move_note_detail': sessionMoveNoteDetail
+      '0002_session_move_note_detail': sessionMoveNoteDetail,
+      '0003_tts_backend_native': ttsBackendNative,
+      '0004_rated_backfill': ratedBackfill,
+      '0005_puzzle_session_debug_snapshot': puzzleSessionDebugSnapshot,
+      '0006_analysis_engine_evals': analysisEngineEvals,
+      '0007_drop_deepen_analysis_jobs': dropDeepenAnalysisJobs
     })
 };
 

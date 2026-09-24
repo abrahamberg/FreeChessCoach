@@ -43,18 +43,57 @@ function recapture(fenBefore: string, fenAfter: string, overrides: Partial<Class
   };
 }
 
+/** Black's rook just took on d5; White can recapture with Bxd5, or first
+ * check with Ra8+ / Rh8+ (the intermediate moves), or castle. */
+const CHECK_FIRST_FEN = '4k3/8/8/3r4/8/1B6/8/R3K2R w KQ - 0 1';
+const CHECK_FIRST_AFTER_FEN = '4k3/8/8/3B4/8/8/8/R3K2R b KQ - 0 1';
+
+function contextFor(overrides: Partial<ClassifiedMoveDto>) {
+  const ctx = buildPlyDiagnosticContext(recapture(CHECK_FIRST_FEN, CHECK_FIRST_AFTER_FEN, overrides), {
+    previousMove: previousCapture()
+  });
+  if (!ctx) throw new Error('fixture must carry both FENs');
+  return ctx;
+}
+
 describe('ms07AutomaticRecaptureReflex', () => {
-  test('fires when the mover recaptures on the just-captured square while a stronger intermediate move (a check) went unplayed', () => {
-    const fenBefore = '4k3/8/8/3r4/8/1B6/8/R3K2R w KQ - 0 1';
-    const fenAfter = '4k3/8/8/3B4/8/8/8/R3K2R b KQ - 0 1';
-    const ctx = buildPlyDiagnosticContext(recapture(fenBefore, fenAfter), { previousMove: previousCapture() })!;
+  test('fails when the engine\'s best move was the intermediate move and the recapture lost value', () => {
+    const observation = ms07AutomaticRecaptureReflex.detect(
+      contextFor({ bestMoveSan: 'Rh8+', cpBefore: 600, cpAfter: 0 })
+    );
 
-    const observation = ms07AutomaticRecaptureReflex.detect(ctx);
+    expect(observation).toMatchObject({ code: 'MS-07', direction: 'N', failed: true });
+    expect(observation?.detail).toContain('Rh8+');
+  });
 
-    expect(observation).not.toBeNull();
-    expect(observation!.code).toBe('MS-07');
-    expect(observation!.direction).toBe('N');
-    expect(observation!.failed).toBe(true);
+  test('not failed when the recapture itself was the best move (0.0 drop)', () => {
+    const observation = ms07AutomaticRecaptureReflex.detect(
+      contextFor({ bestMoveSan: 'Bxd5', cpBefore: 500, cpAfter: 500, quality: 'best', drop: 0 })
+    );
+
+    expect(observation).toMatchObject({ code: 'MS-07', failed: false, hwdl: 0 });
+  });
+
+  test('not failed when the intermediate move was best but the recapture is equally good', () => {
+    const observation = ms07AutomaticRecaptureReflex.detect(
+      contextFor({ bestMoveSan: 'Rh8+', cpBefore: 520, cpAfter: 500 })
+    );
+
+    expect(observation).toMatchObject({ code: 'MS-07', failed: false });
+  });
+
+  test('not failed when the loss came from something other than an intermediate move', () => {
+    const observation = ms07AutomaticRecaptureReflex.detect(
+      contextFor({ bestMoveSan: 'O-O', cpBefore: 600, cpAfter: 0 })
+    );
+
+    expect(observation).toMatchObject({ code: 'MS-07', failed: false });
+  });
+
+  test('legacy move without evals falls back to its quality', () => {
+    const observation = ms07AutomaticRecaptureReflex.detect(contextFor({ bestMoveSan: 'Rh8+', quality: 'mistake' }));
+
+    expect(observation?.failed).toBe(true);
   });
 
   test('does not fire when no stronger intermediate move existed', () => {
@@ -68,9 +107,7 @@ describe('ms07AutomaticRecaptureReflex', () => {
   });
 
   test('does not fire without a previousMove (unknown history)', () => {
-    const fenBefore = '4k3/8/8/3r4/8/1B6/8/R3K2R w KQ - 0 1';
-    const fenAfter = '4k3/8/8/3B4/8/8/8/R3K2R b KQ - 0 1';
-    const ctx = buildPlyDiagnosticContext(recapture(fenBefore, fenAfter))!;
+    const ctx = buildPlyDiagnosticContext(recapture(CHECK_FIRST_FEN, CHECK_FIRST_AFTER_FEN))!;
 
     expect(ms07AutomaticRecaptureReflex.detect(ctx)).toBeNull();
   });

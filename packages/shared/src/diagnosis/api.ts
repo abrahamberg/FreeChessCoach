@@ -67,9 +67,25 @@ export const DiagnosticsResponseSchema = z.object({
   windowStart: z.string().nullable(),
   windowEnd: z.string().nullable(),
   computedAt: z.string().nullable(),
+  /** Rated games the profile was built from, so the page can call a small
+   * one an early read. `0` when there is no profile (or an older recorded
+   * response that predates the field). */
+  windowGames: z.number().int().nonnegative().default(0),
   entries: z.array(DiagnosisEntryResponseSchema)
 });
 export type DiagnosticsResponse = z.infer<typeof DiagnosticsResponseSchema>;
+
+/** `GET /api/users/me/diagnostics/readiness` — how close the user is to the
+ * rated-game minimum the profile needs. `ratedGames` counts the single
+ * time control with the most rated games (the profile never pools across
+ * time controls), `null` `timeControl` when there are none. */
+export const DiagnosticReadinessResponseSchema = z.object({
+  required: z.number().int().positive(),
+  ratedGames: z.number().int().nonnegative(),
+  timeControl: z.string().nullable(),
+  ready: z.boolean()
+});
+export type DiagnosticReadinessResponse = z.infer<typeof DiagnosticReadinessResponseSchema>;
 
 export const DiagnosticEvidenceItemSchema = z.object({
   gameId: z.string(),

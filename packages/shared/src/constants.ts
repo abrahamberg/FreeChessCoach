@@ -46,7 +46,7 @@ export type RatingSource = (typeof RATING_SOURCES)[number];
 /**
  * 'chess_api' calls the free https://chess-api.com/v1 HTTP API from the
  * server — never exposed to the browser, so it's trusted the same as
- * 'native' for position_evaluations cache purposes (see
+ * 'native' for engine-source logging purposes (see
  * resolve-engine-backend.ts's isExternalSource). It's the default for new
  * users: it needs no shared local engine pool, so it sidesteps the
  * bot-vs-background-analysis contention 'native' can hit under load.
@@ -147,20 +147,24 @@ export const COACH_PERSONA_INFO: Record<
  * WASM locally on the user's device (free, but slow and depends on their
  * machine); 'local' has the browser call a Kokoro-FastAPI (OpenAI-compatible)
  * server the user runs on their own machine (free and fast, needs a small
- * install; never touches this app's server). Master toggle is `users.tts_enabled`, off by default; `ttsBackend`
+ * install; never touches this app's server); 'native' uses the device's built-in
+ * speechSynthesis voices (mobile browsers, desktop Chrome — free and instant,
+ * quality varies by device). Master toggle is `users.tts_enabled`, off by default; `ttsBackend`
  * only matters once that's on. SettingsPage confirms either choice with a
  * dialog before saving.
  */
-export const TTS_BACKENDS = ['openai', 'browser', 'local'] as const;
+export const TTS_BACKENDS = ['openai', 'browser', 'local', 'native'] as const;
 export type TtsBackend = (typeof TTS_BACKENDS)[number];
 
 /**
  * Search depth every backend analyzes at by default. Lives here, in the one
- * package all three of them depend on, because `position_evaluations` is keyed
- * by `fen` alone: a row written by one backend is served to callers using the
- * other, so a depth that differs per backend silently mixes non-comparable
- * evaluations in a single cache. It previously did — services/engine defaulted
- * to 16 while the browser tunnel client hardcoded 15.
+ * package all three of them depend on, because results from different
+ * backends must be comparable: a stored game's `analyses.engine_evals`,
+ * review, and the Lichess eval index all sit alongside whatever depth
+ * produced them, so a depth that differs per backend silently mixes
+ * non-comparable evaluations in the same game or comparison. It previously
+ * did — services/engine defaulted to 16 while the browser tunnel client
+ * hardcoded 15.
  */
 export const ENGINE_DEFAULT_DEPTH = 12;
 

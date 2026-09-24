@@ -193,13 +193,11 @@ selection and bot weakening are separate concerns.
 
 The index contains positions the Lichess community has already evaluated
 (~394M positions, published at https://database.lichess.org/#evals, CC0). A
-hit skips the live engine call entirely and is never written to
-`position_evaluations`: that table exists to cache the app's own
-selected/fallback engine calls, and duplicating data already durably available
-here would only cost storage for no benefit. A miss falls through to the next
-pipeline stage. Bot searches bypass only the FEN-only cache because their
-requested depth and candidate breadth differ; they do not bypass any
-source-priority stage.
+hit skips the live engine call entirely — nothing needs to be written
+anywhere, since the index is already durable. A miss falls through to the
+next pipeline stage. Bot searches skip straight to `resolveRawEngineBackend`
+because their requested depth and candidate breadth differ from official
+analysis; they do not bypass any source-priority stage.
 
 Deliberately **not** a database engine: the data is immutable at runtime
 (read-only lookups by FEN, no writes), so this is a single sorted,
@@ -256,6 +254,86 @@ Output:
 - Game report / diagnostics
 - Learning themes
 
+## Stored engine evals
+
+`runAnalyzeGameJob` (`apps/api/src/services/analysis.ts`) sends a game's
+positions to the engine in chunks of 6 (`analysis-chunks.ts`), and writes the
+evals gathered so far to `analyses.engine_evals` (jsonb, migration
+`0006_analysis_engine_evals.ts`) after every chunk. On entry it loads whatever
+is already stored: a position is reused when its stored `ply` index and `fen`
+both match, and only the rest are sent, still in chunks. This makes a resume
+after a failure pick up where it stopped, and makes re-analysing a finished
+game issue **zero** engine calls. Positions that repeat within the game (same
+`positionKey`: placement, side to move, castling, en passant) are sent once
+and the result fanned back out to every occurrence.
+
+There is no `deepen-analysis` job — it used to re-send every position and
+throw the results away, meant to fill a `position_evaluations` cache that no
+longer exists. It was removed (`docs/plan.md` Task 77.2); migration
+`0007_drop_deepen_analysis_jobs.ts` drops any of its jobs still pending in
+`graphile_worker.jobs`.
+
+Brilliant-move soundness (`services/brilliant-soundness.ts`) reads the
+opponent's best reply straight out of the stored `evals[move.ply]` instead of
+making its own engine call — the same position, at the same depth, that the
+rest of the game already analysed.
+
+Each `EngineBackend` built for a job carries its own circuit breaker rather
+than a shared one: `ChessApiEngineBackend` opens after
+`CIRCUIT_BREAKER_CONSECUTIVE_FAILURES` (3) consecutive failures and routes
+straight to its fallback for the rest of the job, and `FallbackEngineBackend`
+marks the selected method failed on its first exception so later chunks skip
+straight to the fallback too. Both reset per job/request, since
+`resolveEngineBackend` builds a fresh pipeline every time.
+
+## Timing and the replay benchmark
+
+`runAnalyzeGameJob` times each step (`step-timer.ts`) and logs exactly one
+line per game, whatever the outcome:
+`analysis-timing: game=<id> plies=<N> engineCalls=<n> engine=<ms> classify=<ms> prevention=<ms> report=<ms> diagnostics=<ms> candidateMoments=<ms> total=<ms>`.
+`engineCalls` counts calls through a wrapper around the engine dependency, not
+positions.
+
+`npm run bench:analysis -w apps/api -- --user <id> [--runs n] [--snapshot file]`
+(or `--game <id>` for one game) replays every step after the engine pass —
+classify, the prevention scan cache, report, diagnostics — using only stored
+evals, with no DB writes and no engine calls. It prints each step's median
+wall-clock ms and peak `heapUsed`, and `--snapshot` writes the annotated PGN,
+report and observations as JSON for byte-for-byte before/after comparisons
+(`docs/plan.md` Phase 77 records the numbers from successive runs of it).
+
+## One verdict per move
+
+Each move gets **at most one** tactical reason, decided by
+`decideMoveVerdict` (`packages/chess-analysis/src/move-verdict/`):
+
+1. **Gate** (`gate.ts`, free): from the stored evals alone, a move either
+   mattered enough to be a failure, mattered enough to be a credit, or is
+   `null` — and a `null` verdict runs no detector at all.
+2. **Ceilings** (`ceilings.ts`, free): each candidate reason gets an upper
+   bound on how much of the eval gap it could explain, from the stored lines
+   alone, before anything is checked.
+3. **Checks in descending ceiling order**, tier 1 (mate/material) before
+   tier 2 (positional, only when no tier-1 reason confirms): each reason's
+   check (`reasons/*.ts`, including the `reasons/hung-material.ts` fallback
+   for a plain hung capture the tactic verifier won't confirm as a motif)
+   reuses the existing detector/verification logic. The run **stops early**
+   once a confirmed reason's value is at least as large as any remaining
+   ceiling.
+4. The prevention PV scan (defused-threat candidates) and the materiality
+   witness (missed/found-tactic candidates) are both lazy: a per-position
+   cache (`tactic-prevention.ts`'s `createPreventionScans`) computes a scan
+   only the first time a verdict actually asks for it, not eagerly for every
+   move.
+
+`build-game-report.ts` sets at most one of `tacticOpportunity` /
+`tacticAllowed` / `tacticPrevention` per move from the verdict, and
+diagnostics (`build-diagnostics.ts`) keep **at most one observation per
+ply**: a `null`-verdict ply runs no detector, and of whatever the verdict's
+matching detector (or a synthesized `buildEvalObservation`) returns, only the
+one observation whose code matches the verdict survives. See
+`docs/tactics-rework.md` §11 for the reasoning and the before/after numbers.
+
 ---
 
 # Import Limits, Library Cap and the Stats Archive
@@ -288,6 +366,15 @@ with the web UI so copy can never disagree with the server:
   calculation the server enforces with (`services/import-quota.ts`,
   `assertCanImport`) and the picker caps selection with. A blocked import is a
   429 problem+json whose `limit` field is `daily` | `weekly` | `in_flight`.
+- **Bot games are kept by choice.** A finished bot game is not analysed
+  (`finalizeBotGame` only records the result). `GameOverDialog` asks the
+  student to *Analyse & keep* — `POST /api/games/:id/keep`
+  (`services/bot/bot-keep.ts`): clears `assertCanImport`, writes a ledger row,
+  makes room in the library, queues the full analysis; idempotent — or
+  *Delete game* (`DELETE /api/games/:id`, no quota used). A kept bot game
+  counts toward the library and can be auto-deleted with the earliest imports
+  (`inLibrary` in `db/repositories/games.ts`: imported sources plus `vs_bot`
+  games that have an analysis); an undecided one counts for nothing.
 - `GET /api/games/import-quota` returns all of it in one object, including
   `library.autoDeleteCount`.
 
@@ -333,6 +420,10 @@ tactics the opponent had that the player did not defuse
 (`chess-analysis/src/coaching-candidate.ts`, weights in `CONFIG`). No AI is
 involved; absent `preventable`/`prevented` (old reports) count as 0.
 
+## Practice sessions
+
+A practice session walks a student through an assigned batch of positions (`puzzle_assignments`). It is **discuss-only**: the board is turned to the student's side and locked, with no hint and no Explore. The coach sees the whole stored line, asks for one move at a time in chat, and once the student has established a move calls the server tool `play_next_move` (`services/puzzle-move-commit.ts`), which plays the line's next move and the opponent's forced reply and advances `puzzle_sessions.currentPly`. The line never changes and messages stay tagged with the same item index, so it is one chat episode per position. Each position really is its own episode: a turn replays only the messages tagged with the current item (opened with a synthesized "Begin practice N of M"), and the system prompt carries just a ledger of earlier positions' results. When the line is fully played out the coach calls `advance_puzzle`, or the student uses "Next practice" (`POST /api/puzzle-sessions/:id/advance-item`). Every turn the coach's prompt carries the student's persona voice, the engine's analysis of the live position (best move, lines, features — best-effort, and the coach can call `get_engine_analysis` for more), and the rest of the known line with a checked note per move (captures, checks, forks, what it leaves hanging, from `inspectMoves`). The coach is told to run `check_moves` on any move the student proposes off the line before commenting on it, so it never calls a move wrong or illegal from memory. The header menu has "Reset session" (`POST /api/puzzle-sessions/:id/reset`: abandons the session and opens a fresh conversation on the same item) and, in dev builds, "Debug last answer" (`GET /api/puzzle-sessions/:id/debug/last-turn`, backed by `puzzle_sessions.debug_snapshot`). The UI and coach call these "practice", not "puzzles".
+
 ## Bot Thinking log
 
 The log is opt-in per session (0043_bot_thinking_log.ts): a play_bot session
@@ -374,7 +465,41 @@ move. Anything that decides the bot's move uses the real engine
 pipeline; the light engine is only for the quick check and for rating.
 
 Every bot plays its first two moves from the opening book (while the game is
-in it), and moves the book knows are labelled `book` without an eval.
+in it), and moves the book knows are labelled `book` without an eval. Those
+first two moves are drawn from every book reply (`bot-opening.ts`), so a bot
+opens and answers differently each game; later book moves are a random sample
+of `bookBreadthForElo(elo)` replies rather than always the book's first few.
+
+### Rated and practice bot games
+
+The start page asks for a game type (`CreateBotSessionRequest.rated`). A
+**rated** game is a fixed 10-minute clock (`RATED_BOT_CLOCK`, whatever clock was
+sent), stored `games.rated = true`, `time_control = '600+0'`, and is the only
+bot game the diagnostic windows count. It gives no feedback while it is played:
+the server returns `quality: null` on both moves of `play-move` /
+`request-bot-move`, `GET /api/games/:id` sends empty `liveMoveQualities` until
+the game is analysed, `undo-move` and the thinking log answer 409, and
+`BotSessionPage` hides the eval bar/chart, move-quality icons, hint, undo and
+Explore (`restricted` on `SessionBoardColumn`). Ratings are still computed and
+saved, so the post-game analysis has them. Hints and Explore call the generic
+position-analysis endpoints, so they are hidden in the UI but not blocked
+server-side. A **practice** game has none of those limits and is stored
+`rated = false`.
+
+### Bot think time
+
+The bot spends its own clock like a person (`packages/chess-analysis/src/bot-think-time.ts`,
+`botThinkTimeMs`, called from `commitBotReply`): the even share of its remaining
+time plus most of the increment is the budget, scaled quick in the opening,
+longest in the middlegame and shorter in the endgame; longer for an only-move
+or after a strong student move, shorter for a forced move, several equal moves,
+a blunder to punish or a decided game; squeezed as the clock runs low and
+capped at a quarter of what is left (never below a 400ms safety margin, never
+above 25s — a bot move is one held-open request; untimed games cap at 6s);
+with a random spread and the odd long think or instant reply. The move is
+computed first and the reply then sleeps up to that target; the real elapsed
+time is what comes off the bot's clock. `minThinkMs` on the commit
+dependencies replaces the simulation with a fixed time (tests use 0).
 
 Each move is saved with the engine's eval of the position it leaves, in its PGN
 `[%eval]` comment, so returning to a position (undo, a resumed game) never needs
@@ -391,9 +516,10 @@ for its "after" eval and a light-engine eval of the position it was played from
 for "before"; the bot's move uses the same search alone. That light-engine eval
 is computed in the background after each bot reply and kept in a shared
 `RatingEvalStore` (`bot-rating-evals.ts`) — Redis in deployments (the API runs
-as several pods, so a per-process map would miss), never the
-`position_evaluations` cache, whose rows are trusted at any depth. When an eval
-is missing (first move, no browser tab, book reply) the move is unrated
+as several pods, so a per-process map would miss). It is its own store, not a
+shared position-keyed cache, so a shallow light-engine eval never silently
+stands in for a standard-depth one elsewhere. When an eval is missing (first
+move, no browser tab, book reply) the move is unrated
 (`quality: null` in the response); post-game analysis still rates every move at
 standard depth.
 
@@ -474,22 +600,35 @@ model disables cloud voice while leaving browser voice available.
 
 ### Coach voice (TTS)
 
-`users.tts_enabled` (off by default) plus `users.tts_backend`, one of three
-clients behind `apps/web/src/tts/resolve-tts-client.ts`:
+`users.tts_enabled` (off by default) plus `users.tts_backend`, one of four
+backends (three clients behind `apps/web/src/tts/resolve-tts-client.ts`, plus `native`):
 
 - `openai`: the browser calls `POST /api/tts/speak`; the API synthesizes with
   the user's own OpenAI key (`llm/openai-tts.ts`).
 - `browser`: Kokoro on WASM in a worker (`kokoro-worker.ts`). Free but runs
   slower than real time on most CPUs, so sentences arrive with gaps.
+- `native`: the device's built-in Web Speech voice (`speechSynthesis`; mobile
+  browsers and desktop Chrome). It returns no audio bytes, so `useCoachVoice`
+  drives it directly through `native-speech.ts` (one utterance per sentence,
+  since Chrome cuts long utterances off) instead of the blob/chunk pipeline.
+  Free and instant; the option is disabled where `speechSynthesis` is missing.
 - `local`: the browser calls a Kokoro-FastAPI server the user runs on their own
   machine (`local-tts-client.ts`, `POST <address>/v1/audio/speech`, one request
-  per sentence). It never touches this app's API, so it works when the app is
-  hosted too. The server is always `http://localhost:<port>`; the port (default
-  8880) is per-device (`localStorage`, `local-tts-settings.ts`) and set under a
-  collapsed "Advanced" section in `features/settings/LocalVoiceSetup.tsx`, which
-  also links to the one-time setup steps in the user guide (`/guide#voice`,
-  Docker and terminal, Windows and Mac). Only Kokoro-FastAPI is documented:
-  it enables CORS for all origins by default, which a direct browser call needs.
+  per sentence, no credentials). It never touches this app's API, so it works
+  when the app is hosted too. Settings has one address field under a collapsed
+  "Advanced" section (`features/settings/LocalVoiceSetup.tsx`), saved per device
+  in `localStorage` (`local-tts-settings.ts`, key `fcc.localTtsUrl`), default
+  `http://localhost:8880`. `normalizeLocalTtsUrl` fills the port: a bare number
+  is `localhost:<port>`, `localhost`/`127.0.0.1` with no port is 8880, any other
+  host with no port is the scheme's default (80 for http). The address is saved
+  on blur or Test, not per keystroke, because a half-typed `ftp` is a valid
+  hostname. The panel links to the one-time setup steps in the user guide
+  (`/guide#voice`, Docker and terminal, Windows and Mac). Only Kokoro-FastAPI is
+  documented: it enables CORS for all origins by default, which a direct browser
+  call needs. There is deliberately no API-key option: a server behind auth has
+  to answer the CORS preflight `OPTIONS` without credentials, which most
+  reverse-proxy auth setups don't, and it added a plain-text secret to
+  `localStorage`.
 
 Microsoft's unofficial Edge voices were evaluated and not shipped. Their
 WebSocket endpoint only accepts a User-Agent containing `Edg/`, which a browser

@@ -1,5 +1,5 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
-import type { BotClockConfig, BotConfig, PlayerColor } from '@freechesscoach/shared';
+import { RATED_BOT_CLOCK, type BotClockConfig, type BotConfig, type PlayerColor } from '@freechesscoach/shared';
 import * as gamesRepo from '../../db/repositories/games.js';
 import * as sessionsRepo from '../../db/repositories/sessions.js';
 import type { SessionRow } from '../../db/repositories/sessions.js';
@@ -15,7 +15,9 @@ export type CreateBotSessionDependencies = PlayMovesDependencies & BotMoveSelect
 /** "5+0" style label for games.timeControl (display only — the columns that
  * actually drive clock logic are clockInitialMs/clockIncrementMs). */
 function formatTimeControlLabel(clock: BotClockConfig): string {
-  return `${Math.round(clock.initialMs / 60000)}+${Math.round(clock.incrementMs / 1000)}`;
+  // Seconds, like an imported PGN's TimeControl, so bot and imported games at
+  // the same clock share one pattern-tracking window.
+  return `${Math.round(clock.initialMs / 1000)}+${Math.round(clock.incrementMs / 1000)}`;
 }
 
 /**
@@ -38,8 +40,11 @@ export async function createBotSession(
   userId: string,
   studentColor: PlayerColor,
   bot: BotConfig,
-  clock?: BotClockConfig | null
+  requestedClock?: BotClockConfig | null,
+  rated = false
 ): Promise<SessionRow> {
+  // A rated game is always the fixed 10-minute clock, whatever was asked for.
+  const clock = rated ? RATED_BOT_CLOCK : requestedClock;
   const game = await gamesRepo.insert(deps.db, {
     userId,
     pgn: '',
@@ -49,6 +54,8 @@ export async function createBotSession(
     blackName: studentColor === 'black' ? 'You' : bot.name,
     result: null,
     timeControl: clock ? formatTimeControlLabel(clock) : null,
+    // Only a rated game counts toward pattern tracking.
+    rated,
     eco: null,
     playedAt: new Date(),
     botId: bot.id,

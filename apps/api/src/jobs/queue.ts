@@ -1,4 +1,5 @@
 import { makeWorkerUtils, type WorkerUtils } from 'graphile-worker';
+import { rebuildDiagnosticProfileJobSpec } from './rebuild-diagnostic-profile.js';
 
 /** Job enqueueing, abstracted so routes don't depend on graphile-worker directly. */
 export interface JobQueue {
@@ -50,7 +51,7 @@ export async function createGraphileJobQueue(connectionString: string): Promise<
         await workerUtils.addJob('backfill-game-metadata', {});
       },
       enqueueRebuildDiagnosticProfile: async (userId: string) => {
-        await workerUtils.addJob('rebuild-diagnostic-profile', { userId });
+        await workerUtils.addJob('rebuild-diagnostic-profile', { userId }, rebuildDiagnosticProfileJobSpec(userId));
       }
     },
     close: async () => {

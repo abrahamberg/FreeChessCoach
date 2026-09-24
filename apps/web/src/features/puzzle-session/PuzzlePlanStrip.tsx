@@ -9,7 +9,7 @@ export interface PuzzlePlanStripProps {
    * (usePuzzleSessionPageData's lineComplete) — the item's stored `result`
    * only flips away from 'pending' once the session actually advances past
    * it, so this is what lets the strip show "solved" the instant it
-   * happens, and what shows the "Next puzzle" action. */
+   * happens, and what shows the "Next practice" action. */
   lineComplete: boolean;
   isAdvancing: boolean;
   onAdvance: () => void;
@@ -52,7 +52,7 @@ export function PuzzlePlanStrip({ items, currentItemIndex, lineComplete, isAdvan
               key={item.puzzleId}
               className={`puzzle-plan-strip__item puzzle-plan-strip__item--${status}`}
               aria-current={isCurrent ? 'true' : undefined}
-              title={`Puzzle ${index + 1} — ${STATUS_LABEL[status]}`}
+              title={`Practice ${index + 1} — ${STATUS_LABEL[status]}`}
             >
               {index + 1}
             </li>
@@ -61,7 +61,7 @@ export function PuzzlePlanStrip({ items, currentItemIndex, lineComplete, isAdvan
       </ol>
       {lineComplete && (
         <button type="button" className="btn-primary puzzle-plan-strip__next" onClick={onAdvance} disabled={isAdvancing}>
-          {isAdvancing ? 'Loading next puzzle…' : 'Next puzzle →'}
+          {isAdvancing ? 'Loading next practice…' : 'Next practice →'}
         </button>
       )}
     </div>

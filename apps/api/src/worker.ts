@@ -4,6 +4,7 @@ import {
   buildResolveEngineBackendOptions,
   openLichessEvalIndexFromEnv,
   requireEnv,
+  workerConcurrencyFromEnv,
   buildLlmUnlockStoreFromEnv
 } from './bootstrap.js';
 import { createDb } from './db/index.js';
@@ -36,7 +37,7 @@ async function main(): Promise<void> {
     puzzlePool: puzzlePool?.all() ?? null
   });
 
-  const runner = await run({ connectionString, taskList });
+  const runner = await run({ connectionString, taskList, concurrency: workerConcurrencyFromEnv() });
   await runner.promise;
 }
 

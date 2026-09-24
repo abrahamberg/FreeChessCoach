@@ -34,10 +34,10 @@ export interface BotMoveLogEntry {
   external: EngineCallDebugInfo | null;
   browser: EngineCallDebugInfo | null;
   lightBrowser: EngineCallDebugInfo | null;
-  /** Bot move selection always goes through resolveRawEngineBackend, which
-   * deliberately bypasses position_evaluations entirely (see its own doc
-   * comment) — always 'none', shown explicitly rather than omitted so it's
-   * clear this isn't a missing measurement. */
+  /** Bot move selection always goes through resolveRawEngineBackend, at its
+   * own bot-specific depth/multiPv, never a shared cache — always 'none',
+   * shown explicitly rather than omitted so it's clear this isn't a missing
+   * measurement. */
   cached: 'none';
   tactics: 'none' | { candidates: { move: string; cp: number | null; mateIn: number | null; tactic: string | null; selected: boolean }[]; time: string };
   picked: string;

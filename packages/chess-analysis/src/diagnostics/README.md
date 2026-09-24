@@ -28,6 +28,29 @@ on the same ply is resolved later, by Task 54.3, not by this registry.
    opportunities the student handled correctly — `failed: false` still
    counts toward `O` in Phase 55's `E`/`O` metrics; only the ply not being an
    opportunity at all justifies returning `null`.
+
+   What makes the numbers mean something (Phase 76 in `docs/plan.md`):
+   - **An opportunity must be dangerous and real.** A theme that is merely
+     legal does not count, for example "the opponent has a check" or "a
+     capture exists". On the defensive side, use `threat-inventory.ts`: only
+     threats that statically win material or mate count. On the offensive
+     side, use `chance-inventory.ts`: a chance counts only when it appears in
+     the engine's lines and is meaningfully better than the best line without
+     it.
+   - **A failure must be this mechanism plus an eval-confirmed loss.** The
+     named threat has to be realised in the engine's refutation, or the
+     named chance missed, and `lossConfirmed(ctx)` must hold (the eval
+     witness in `../eval-witness.ts`). "The move was a mistake" is not
+     enough. That rule made one blunder fail every code that happened to fire
+     on the ply. A static shape the eval does not confirm, such as a
+     sacrifice or a mate threat instead of saving a piece, is `failed: false`.
+     Build the row with `buildEvalObservation` (`eval-verdict.ts`).
+   - **Completely decided plies are never observed.** Both evals ≥ 90% or
+     both ≤ 10% is DQ-09. The callers skip them before any detector runs
+     (`isDiagnosticallyMeaningfulPly`), so neither successes nor failures are
+     counted there.
+   - **Degrade to static checks when data is missing.** The live-play path
+     has no `refutationPvSan`, and legacy moves have no `cpBefore`/`cpAfter`.
 3. Add the detector to the `DIAGNOSTIC_DETECTORS` array in `registry.ts`, at
    the priority reflecting §I.3 causal precedence relative to its neighbors
    (gaps of 10 are left between existing entries for exactly this — a more

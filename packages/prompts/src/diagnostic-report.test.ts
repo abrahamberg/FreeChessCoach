@@ -46,7 +46,7 @@ describe('renderDiagnosticProfileBlock', () => {
     const block = renderDiagnosticProfileBlock([item({ code: 'TA-07' }), item({ code: 'BV-01' })]);
     expect(block).toContain('1. TA-07.D');
     expect(block).toContain('2. BV-01.D');
-    expect(block.split('\n\n')).toHaveLength(2);
+    expect(block.split('\n\n').filter((part) => /^\d+\. /.test(part))).toHaveLength(2);
   });
 
   test('shows "no intact control skill on record" when controlSkill is null', () => {
@@ -65,5 +65,31 @@ describe('renderDiagnosticProfileBlock', () => {
   test('falls back to the raw code when the catalog has no label (defensive — every real code has one)', () => {
     const block = renderDiagnosticProfileBlock([item({ code: 'ZZ-99' })]);
     expect(block).toContain('1. ZZ-99.D — ZZ-99');
+  });
+
+  describe('sample context', () => {
+    const sample = { ratedGames: 16, timeControl: '600+0', requiredGames: 15, fullEvidenceGames: 30 };
+
+    test('a small window is called an early read and the confidence tiers are explained', () => {
+      const block = renderDiagnosticProfileBlock([item()], sample);
+      expect(block).toContain('Evidence base: 16 rated games at time control 600+0. This is an early read');
+      expect(block).toContain('"signal" = it has repeated in more than one game');
+    });
+
+    test('a full window is stated without the early-read caveat', () => {
+      const block = renderDiagnosticProfileBlock([item()], { ...sample, ratedGames: 40 });
+      expect(block).toContain('Evidence base: 40 rated games at time control 600+0.');
+      expect(block).not.toContain('early read');
+    });
+
+    test('under the minimum, an empty profile says how far away it is and tells the coach to hold patterns as hypotheses', () => {
+      const block = renderDiagnosticProfileBlock([], { ...sample, ratedGames: 6 });
+      expect(block).toContain('only 6 of 15 rated games at time control 600+0');
+      expect(block).toContain('hypothesis');
+    });
+
+    test('at the minimum an empty profile keeps the generic no-confident-diagnosis wording', () => {
+      expect(renderDiagnosticProfileBlock([], sample)).toMatch(/no confident diagnoses/);
+    });
   });
 });

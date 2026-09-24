@@ -98,6 +98,14 @@ export function RemoteGamePicker<TGame extends RemoteGamePickerRow>({
             : `Import ${bulkSelection.selectedIds.size} ${bulkSelection.selectedIds.size === 1 ? 'game' : 'games'}`}
         </button>
       )}
+      {bulkSelection?.isImporting && (
+        <progress
+          className="import-bar"
+          value={bulkSelection.importedIds?.size ?? 0}
+          max={bulkSelection.selectedIds.size}
+          aria-label="Importing games"
+        />
+      )}
       <ul className="remote-game-picker">
         {games.map((game) => (
           <li key={game.id}>

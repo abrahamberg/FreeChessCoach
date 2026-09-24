@@ -295,6 +295,42 @@ describe('progress service', () => {
       expect(await focusAreasRepo.countActiveByUser(db, userId)).toBe(1);
     });
 
+    test('refreshes the measured note and evidence of a tracked area it wrote itself', async () => {
+      const userId = await makeUser('sync-refresh@example.com');
+      await focusAreasRepo.insert(db, {
+        userId,
+        category: 'missed_tactic',
+        diagnosisCode: 'MS-01',
+        status: 'active',
+        note: 'Selected automatically from measured play: old numbers'
+      });
+
+      await syncProgrammaticFocusAreas(db, userId, [candidateFixture({ code: 'MS-01', episodes: 9, opportunities: 12 })]);
+
+      const row = await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, 'MS-01');
+      expect(row?.note).toContain('9 failure(s) in 12 chance(s)');
+      expect(row?.evidenceCount).toBeGreaterThanOrEqual(9);
+    });
+
+    test('leaves a coach-written note and a resolved area untouched', async () => {
+      const userId = await makeUser('sync-refresh-keep@example.com');
+      await focusAreasRepo.insert(db, { userId, category: 'missed_tactic', diagnosisCode: 'MS-01', status: 'active', note: 'coach wrote this' });
+      await focusAreasRepo.insert(db, {
+        userId,
+        category: 'missed_tactic',
+        diagnosisCode: 'BV-01',
+        status: 'resolved',
+        note: 'Selected automatically from measured play: done'
+      });
+
+      await syncProgrammaticFocusAreas(db, userId, [candidateFixture({ code: 'MS-01' }), candidateFixture({ code: 'BV-01' })]);
+
+      expect((await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, 'MS-01'))?.note).toBe('coach wrote this');
+      expect((await focusAreasRepo.findByUserAndDiagnosisCode(db, userId, 'BV-01'))?.note).toBe(
+        'Selected automatically from measured play: done'
+      );
+    });
+
     test('stops creating once the 3-active cap is already full from other codes', async () => {
       const userId = await makeUser('sync-cap-full@example.com');
       for (const code of ['MS-01', 'BV-01', 'TA-07'] as const) {

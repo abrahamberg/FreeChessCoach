@@ -11,9 +11,9 @@ import {
 } from '@freechesscoach/shared';
 import { classifyTacticClaims, classifyTacticMotif } from './classify-tactic-motif.js';
 import { CONFIG } from './config.js';
-import { moveFlags } from './move-flags.js';
 import { classifyPlayedTacticAlternative } from './played-tactic-alternative.js';
-import { previousMoveOf } from './previous-move-of.js';
+import type { MoveVerdict } from './move-verdict/types.js';
+import { checkmateFlag, isFalseMiss, isTacticImmaterial } from './tactic-opportunity-witness.js';
 import type { PreviousMove } from './tactic-detectors/context.js';
 import type { VerifiedTacticClaim } from './verify-tactic-claims.js';
 
@@ -56,9 +56,8 @@ export interface TacticMotifOpportunity {
 
 /**
  * The engine's best move at this single ply, classified — the "opportunity"
- * both `computeTacticMotifCounts` (aggregated below) and
- * `build-game-report.ts` (attached to the move itself, for the move-list
- * UI's per-ply tactic indicator) are built from. `null` when this ply isn't
+ * a missed/found verdict's card is built from (`move-verdict/`, via
+ * `classifyTacticChance` below). `null` when this ply isn't
  * a named-motif opportunity at all (no matching detector, or missing
  * fenBefore/eval data).
  *
@@ -67,6 +66,12 @@ export interface TacticMotifOpportunity {
  * that wins as much is not a miss, and the card then names their move's
  * tactic instead (`played-tactic-alternative.ts`). Which ply counts as an
  * opportunity is decided by the engine's move alone either way.
+ *
+ * The eval witnesses both verdicts (`tactic-opportunity-witness.ts`): the
+ * ply is no opportunity when the best other-motif line evaluates as well
+ * (the tactic decided nothing), and no verdict at all when the motif went
+ * unfound but the played move lost nothing meaningful. Moves stored without
+ * `cpBefore`/`cpAfter` keep the eval-blind verdict.
  *
  * The opportunity's own quality is only known precisely when the player
  * actually played it (reusing that move's already-computed classification,
@@ -77,6 +82,32 @@ export interface TacticMotifOpportunity {
  * candidates only — a real but accepted undercount of missed brilliancies.
  */
 export function classifyTacticMotifOpportunity(
+  move: ClassifiedMoveDto,
+  evals: EngineEval[],
+  previous: PreviousMove | null = null
+): TacticMotifOpportunity | null {
+  return withMissWitness(move, classifyTacticChance(move, evals, previous));
+}
+
+/**
+ * The no-false-miss half of the eval witness, on its own: a chance the
+ * player didn't take, on a move that kept the value, is no verdict at all.
+ */
+export function withMissWitness(
+  move: ClassifiedMoveDto,
+  chance: TacticMotifOpportunity | null
+): TacticMotifOpportunity | null {
+  return chance && isFalseMiss(move, chance.found) ? null : chance;
+}
+
+/**
+ * `classifyTacticMotifOpportunity` before the no-false-miss gate: whether the
+ * tactic was there and decided something, regardless of what the reply cost.
+ * What the *previous* move allowed is read off this (`build-game-report.ts`),
+ * since a reply that kept most of the prize doesn't make the prize any less
+ * handed over.
+ */
+export function classifyTacticChance(
   move: ClassifiedMoveDto,
   evals: EngineEval[],
   previous: PreviousMove | null = null
@@ -108,6 +139,9 @@ export function classifyTacticMotifOpportunity(
     pvSan: bestLine?.pvSan
   });
   if (!best.headline) return null;
+  // The eval witness (tactic-opportunity-witness.ts): a motif whose next-best
+  // other line evaluates as well decided nothing, so the ply is no chance.
+  if (isTacticImmaterial(move, evals[move.ply - 1]?.lines ?? [], best.headline)) return null;
 
   // The player may have reached the same payoff by another equally good
   // move; that is not a miss, and the card should name what they actually
@@ -143,40 +177,42 @@ function gainOf(claim: VerifiedTacticClaim): TacticGainDto {
 }
 
 /**
- * For each of the colour's moves, tags the motif of the engine's best move
- * at that position (the "opportunity") and credits "found" when the player
- * played that exact move with a best-or-better classification, or reached as
- * much through an equally good move of their own — see
- * `classifyTacticMotifOpportunity` above for the per-move logic this sums.
+ * One colour's per-motif tally, read off its moves' verdicts
+ * (`move-verdict/`, `docs/plan.md` Task 77.5):
+ * - opportunities = the `missedTactic` + `foundTactic` verdicts, by the
+ *   card's motif, plus every `missedMate` + `foundMate` verdict under
+ *   `checkmate` (whatever mating motif the card names);
+ * - found = the `foundTactic` verdicts by motif, plus `foundMate` under
+ *   `checkmate`.
  *
- * `allMoves` is both colours' moves, which is what the recapture gate needs:
- * the move before one of White's is one of Black's. It defaults to
- * `colourMoves` so a caller that only has one colour still works, at the cost
- * of the gate seeing no history.
+ * **Changed in Task 77.5.** This used to classify the engine's best move at
+ * every ply on its own (`classifyTacticMotifOpportunity`), so a ply counted
+ * as an opportunity whether or not the tactic was the reason the move
+ * mattered, and one move could feed this tally *and* the prevention tally.
+ * Now a ply counts only when its one verdict is a missed or found tactic or
+ * mate; a move whose stronger reason was a tactic it allowed or a threat it
+ * defused is counted in the prevention tally instead, and a `null` verdict
+ * counts nowhere.
  */
-export function computeTacticMotifCounts(
-  colourMoves: ClassifiedMoveDto[],
-  evals: EngineEval[],
-  allMoves: readonly ClassifiedMoveDto[] = colourMoves
-): TacticMotifCounts {
+export function computeTacticMotifCounts(verdicts: Iterable<MoveVerdict | null>): TacticMotifCounts {
   const counts = emptyCounts();
 
-  for (const move of colourMoves) {
-    const opportunity = classifyTacticMotifOpportunity(move, evals, previousMoveOf(allMoves, move.ply));
-    if (!opportunity) continue;
-
-    counts[opportunity.type].opportunities += 1;
-    if (opportunity.found) counts[opportunity.type].found += 1;
+  for (const verdict of verdicts) {
+    const counted = countedMotif(verdict);
+    if (!counted) continue;
+    counts[counted.type].opportunities += 1;
+    if (counted.found) counts[counted.type].found += 1;
   }
   return counts;
 }
 
-function checkmateFlag(fenBefore: string, moveSan: string): boolean | null {
-  try {
-    return moveFlags(fenBefore, moveSan).isCheckmate;
-  } catch {
-    return null;
+function countedMotif(verdict: MoveVerdict | null): { type: TacticMotifType; found: boolean } | null {
+  if (verdict?.reason === 'missedMate' || verdict?.reason === 'foundMate') {
+    return { type: 'checkmate', found: verdict.reason === 'foundMate' };
   }
+  if (verdict?.reason !== 'missedTactic' && verdict?.reason !== 'foundTactic') return null;
+  const opportunity = verdict.card.tacticOpportunity;
+  return opportunity ? { type: opportunity.type, found: verdict.reason === 'foundTactic' } : null;
 }
 
 export interface TacticMotifRankHit {
@@ -190,12 +226,10 @@ export interface TacticMotifRankHit {
 }
 
 /**
- * The richer, per-rank generalization of `computeTacticMotifCounts` above:
- * classifies every one of the top-`topN` engine lines at each ply (not just
- * `lines[0]`), reusing the exact same played-move quality/checkmate lookup
- * so that aggregating this function's `rank === 0` hits into
- * opportunities/found counts reproduces `computeTacticMotifCounts`'s output
- * exactly (see this file's test suite's superset-regression case).
+ * Classifies every one of the top-`topN` engine lines at each ply (not just
+ * `lines[0]`), with the same played-move quality/checkmate lookup as
+ * `classifyTacticChance` — the direction-`O` `TA-*` diagnostics' §4.5
+ * "found it at rank N" signal.
  *
  * Deliberately NOT called from `build-game-report.ts` in this phase —
  * `PlayerReportSchema`/`TacticMotifCountsSchema` stay unchanged, so this is

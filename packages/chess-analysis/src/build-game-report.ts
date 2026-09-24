@@ -47,12 +47,11 @@ import {
   movesPlayedExcludingForcedSequences
 } from './rating-estimate.js';
 import { computePositionFeatures } from './position-features.js';
+import { featuresBeforeOf } from './features-before.js';
 import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
-import { classifyTacticMotifOpportunity, computeTacticMotifCounts } from './game-tactic-motifs.js';
-import { previousMoveOf } from './previous-move-of.js';
-import { tacticAllowedReason, tacticOpportunityReason, tacticPreventionReason } from './tactic-reason-text.js';
-import { orderTacticCards, type TacticCardKind } from './tactic-card-order.js';
-import { computeTacticAllowed } from './tactic-allowed.js';
+import { computeTacticMotifCounts } from './game-tactic-motifs.js';
+import { computeTacticPreventionCounts, type MoveVerdict } from './move-verdict/index.js';
+import { attachTacticVerdicts, type TacticVerdictOptions } from './report-tactic-verdicts.js';
 import { CONFIG } from './config.js';
 
 type Colour = 'white' | 'black';
@@ -69,15 +68,20 @@ export interface BuildGameReportInput {
   engine: { name: string; depth: number; multiPv: number };
   priorRating: Record<Colour, number | null>;
   result: Record<Colour, GameResultForColour>;
-  /** Per-colour tally from `computeTacticMotifPrevented` (apps/api's
-   * tactic-prevention.ts) — optional since that step is engine-gated and
-   * lives outside this pure package; omitted entirely leaves every motif's
-   * `prevented`/`preventable` fields `undefined`, not 0 (see
-   * TacticMotifCountSchema). */
-  preventedCounts?: Record<Colour, Partial<Record<TacticMotifType, number>>>;
-  /** The denominator `preventedCounts` is a subset of — see
-   * TacticPreventionCounts.preventable in apps/api's tactic-prevention.ts. */
-  preventableCounts?: Record<Colour, Partial<Record<TacticMotifType, number>>>;
+  /** The lazy prevention scans (apps/api's tactic-prevention.ts) behind the
+   * `defusedThreat` verdict. Omitted: no move is credited with a defused
+   * threat, and every motif's `prevented`/`preventable` fields stay
+   * `undefined`, not 0 (see TacticMotifCountSchema). */
+  preventionScans?: TacticVerdictOptions['preventionScans'];
+  /** Counting deps for the benchmark (`countingVerdictDeps`). */
+  verdictDeps?: TacticVerdictOptions['verdictDeps'];
+}
+
+export interface GameReportWithVerdicts {
+  report: GameReport;
+  /** Each move's one tactical verdict by ply (`move-verdict/`), `null`
+   * included — the diagnostics are read off these. */
+  verdicts: Map<number, MoveVerdict | null>;
 }
 
 interface GameContext {
@@ -92,17 +96,26 @@ interface GameContext {
 
 /**
  * §9's final assembly step: resolves phase boundaries (§6), fills in each
- * move's `phase`/`isTacticalPosition` (§6, §7.2), then builds both players'
+ * move's `phase`/`isTacticalPosition` (§6, §7.2), decides each move's one
+ * tactical verdict (`report-tactic-verdicts.ts`), then builds both players'
  * accuracy/scores/counts/rating. Everything upstream of this (engine evals,
  * per-move classification) is assumed already computed.
  */
 export function buildGameReport(input: BuildGameReportInput): GameReport {
+  return buildGameReportWithVerdicts(input).report;
+}
+
+/** `buildGameReport`, plus the verdicts it decided — for a caller (the
+ * analysis job) whose diagnostics are read off them. */
+export function buildGameReportWithVerdicts(input: BuildGameReportInput): GameReportWithVerdicts {
   const boundaries = resolvePhaseBoundaries(input.game, input.book);
-  const enriched = input.moves.map((move) => enrichWithPhaseAndTactics(move, boundaries, input.evals, input.moves));
-  // Second pass: what a move allowed is read off the *next* ply's own
-  // opportunity, so every move has to be enriched before any of them can be
-  // told what it handed over.
-  const moves = enriched.map((move, index) => withAllowedTacticAndSentences(move, enriched[index + 1]));
+  const enriched = input.moves.map((move, index) => enrichWithPhase(move, boundaries, input.evals, input.moves[index - 1]));
+  // Every move needs its `isTacticalPosition` before any verdict: what a
+  // move allowed is read off the *next* ply's chance.
+  const { moves, verdicts } = attachTacticVerdicts(enriched, input.evals, {
+    preventionScans: input.preventionScans,
+    verdictDeps: input.verdictDeps
+  });
   const context: GameContext = {
     game: input.game,
     evals: input.evals,
@@ -110,36 +123,25 @@ export function buildGameReport(input: BuildGameReportInput): GameReport {
     boundaries,
     winPctSeriesWhite: input.evals.map((evalResult) => winPctWhite(toCpWhite(evalResult.lines[0] ?? EMPTY_SCORE)))
   };
+  const prevention = input.preventionScans ? computeTacticPreventionCounts(moves, verdicts) : undefined;
+  const playerReport = (colour: Colour): PlayerReport =>
+    buildPlayerReport(colour, moves, context, input.priorRating[colour], input.result[colour], {
+      motifs: computeTacticMotifCounts(moves.filter((move) => move.mover === colour).map((move) => verdicts.get(move.ply) ?? null)),
+      prevented: prevention?.[colour].prevented,
+      preventable: prevention?.[colour].preventable
+    });
 
-  return {
+  const report: GameReport = {
     engine: input.engine,
     book: input.book,
     // The book index is a bundled asset always present in this deployment —
     // 'heuristic' is reserved for a deployment with no book index at all
     // (§6.1), which never happens here, so this is never the fallback branch.
     phases: { ...boundaries, openingSource: 'book' },
-    players: {
-      white: buildPlayerReport(
-        'white',
-        moves,
-        context,
-        input.priorRating.white,
-        input.result.white,
-        input.preventedCounts?.white,
-        input.preventableCounts?.white
-      ),
-      black: buildPlayerReport(
-        'black',
-        moves,
-        context,
-        input.priorRating.black,
-        input.result.black,
-        input.preventedCounts?.black,
-        input.preventableCounts?.black
-      )
-    },
+    players: { white: playerReport('white'), black: playerReport('black') },
     moves
   };
+  return { report, verdicts };
 }
 
 function resolvePhaseBoundaries(game: ParsedGame, book: BookReport): PhaseBoundaries {
@@ -148,77 +150,26 @@ function resolvePhaseBoundaries(game: ParsedGame, book: BookReport): PhaseBounda
   return { openingEndPly: openingEndPlyValue, endgameStartPly: resolveEndgameStartPly(positions, openingEndPlyValue) };
 }
 
-function enrichWithPhaseAndTactics(
+function enrichWithPhase(
   move: ClassifiedMoveDto,
   boundaries: PhaseBoundaries,
   evals: EngineEval[],
-  allMoves: readonly ClassifiedMoveDto[]
+  previous: ClassifiedMoveDto | undefined
 ): ClassifiedMoveDto {
   const phase: MovePhase = phaseForPly(move.ply, boundaries);
-  const withPhase = { ...move, phase, isTacticalPosition: computeIsTacticalPosition(move, evals) };
-  // classifyTacticMotifOpportunity needs isTacticalPosition already set (it
-  // reads move.isTacticalPosition), so this runs against withPhase, not the
-  // raw input move — the move-list UI's per-ply tactic indicator.
-  const opportunity = classifyTacticMotifOpportunity(withPhase, evals, previousMoveOf(allMoves, move.ply));
-  if (!opportunity) return withPhase;
-  return { ...withPhase, tacticOpportunity: opportunity };
+  return { ...move, phase, isTacticalPosition: computeIsTacticalPosition(move, evals, previous) };
 }
 
-/**
- * The move's tactic sentences, all three of them, in `tactic-card-order.ts`'s
- * order.
- *
- * Diagnostic-first (see the tactic-prevention over-firing investigation):
- * spelling out which motif and what became of it, right in the same per-move
- * notes the UI already shows, so a reviewer can eyeball false-positive
- * detector hits without a DB query. They sit after `buildReasons`' own
- * MAX_REASONS truncation, so they are never crowded out.
- *
- * Rebuilt rather than appended to: the prevention sentence is written into
- * `reasons` by the API's `attachTacticPrevention` before this package ever
- * sees the move, so "append the others after it" would let the order be
- * decided by which layer ran first — which is exactly the bug
- * `tactic-card-order.ts` exists to fix. Each card is written to the person
- * whose review this is, so the narrator needs to know whose move it was;
- * `isUserMove` is passed rather than stored on the card so an older report
- * renders in the right voice too.
- */
-function withAllowedTacticAndSentences(move: ClassifiedMoveDto, next: ClassifiedMoveDto | undefined): ClassifiedMoveDto {
-  const allowed = computeTacticAllowed(move, next);
-  const withAllowed = allowed ? { ...move, tacticAllowed: allowed } : move;
-  const sentences = tacticSentencesOf(withAllowed);
-  if (sentences.size === 0) return withAllowed;
-
-  const written = new Set(sentences.values());
-  const base = (withAllowed.reasons ?? []).filter((reason) => !written.has(reason));
-  const ordered = orderTacticCards(withAllowed)
-    .map((kind) => sentences.get(kind))
-    .filter((sentence): sentence is string => sentence !== undefined);
-  return { ...withAllowed, reasons: [...base, ...ordered] };
-}
-
-function tacticSentencesOf(move: ClassifiedMoveDto): Map<TacticCardKind, string> {
-  const sentences = new Map<TacticCardKind, string>();
-  if (move.tacticAllowed) {
-    sentences.set('allowed', tacticAllowedReason({ ...move.tacticAllowed, isUserMove: move.isUserMove }));
-  }
-  if (move.tacticPrevention) {
-    sentences.set('prevention', tacticPreventionReason({ ...move.tacticPrevention, isUserMove: move.isUserMove }));
-  }
-  if (move.tacticOpportunity) {
-    sentences.set('opportunity', tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove: move.isUserMove }, move.bestMoveSan));
-  }
-  return sentences;
-}
-
-function computeIsTacticalPosition(move: ClassifiedMoveDto, evals: EngineEval[]): boolean {
+/** `previous` is the move before this one in the list; its `features` (of
+ * its `fenAfter`, this move's `fenBefore`) are reused when they match. */
+function computeIsTacticalPosition(move: ClassifiedMoveDto, evals: EngineEval[], previous: ClassifiedMoveDto | undefined): boolean {
   const evalBefore = evals[move.ply - 1];
   if (!move.fenBefore || !evalBefore) return false;
   return isTacticalPosition({
     mover: move.mover,
     fenBefore: move.fenBefore,
     evalBefore,
-    features: computePositionFeatures(move.fenBefore)
+    features: featuresBeforeOf(move.fenBefore, previous)
   });
 }
 
@@ -228,8 +179,7 @@ function buildPlayerReport(
   context: GameContext,
   prior: number | null,
   result: GameResultForColour,
-  preventedCounts?: Partial<Record<TacticMotifType, number>>,
-  preventableCounts?: Partial<Record<TacticMotifType, number>>
+  tactics: PlayerTacticCounts
 ): PlayerReport {
   const colourMoves = moves.filter((move) => move.mover === colour);
   const weights = volatilityWeights(context.winPctSeriesWhite, colourMoves.map((move) => move.ply));
@@ -265,11 +215,20 @@ function buildPlayerReport(
     acpl: round1(mean(colourMoves.map((move) => move.cpLoss))),
     estimatedRating: buildEstimatedRating(colourMoves, weights, accuracy, counts, prior),
     tacticMotifs: mergeMotifCounts(
-      mergeMotifCounts(computeTacticMotifCounts(colourMoves, context.evals, moves), 'preventable', preventableCounts ?? {}),
+      mergeMotifCounts(tactics.motifs, 'preventable', tactics.preventable ?? {}),
       'prevented',
-      preventedCounts ?? {}
+      tactics.prevented ?? {}
     )
   };
+}
+
+/** One colour's tallies, all read off the verdicts (see
+ * `computeTacticMotifCounts` and `computeTacticPreventionCounts` for how
+ * Task 77.5 changed what they count). */
+interface PlayerTacticCounts {
+  motifs: TacticMotifCounts;
+  prevented?: Partial<Record<TacticMotifType, number>>;
+  preventable?: Partial<Record<TacticMotifType, number>>;
 }
 
 /** Folds a `preventable`/`prevented` tally into `computeTacticMotifCounts`'s

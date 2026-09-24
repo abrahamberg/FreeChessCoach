@@ -18,6 +18,14 @@ const CONFIDENCE_BADGE_VARIANT: Record<EmittableConfidenceLevel, string> = {
   insufficient: 'badge--warning'
 };
 
+/** Plain-language reading of each tier, so a "Signal" badge isn't mistaken
+ * for a verdict — small samples are shown, but as leads. */
+const CONFIDENCE_HINT: Record<EmittableConfidenceLevel, string> = {
+  insufficient: 'Not enough evidence yet — just a first hint.',
+  signal: 'An early lead: it has repeated in more than one game, but it is not a settled pattern yet.',
+  probable: 'A likely pattern: it has repeated across several games and sittings.'
+};
+
 /** Task 58.2: the code-level counterpart to `FocusAreaCard` — `E/O`,
  * confidence and scope for one catalog diagnosis, plus any data-quality
  * caveats fired against the live window (`get_diagnostic_profile`'s own
@@ -32,6 +40,7 @@ export function DiagnosisCard({ entry, onViewEvidence }: DiagnosisCardProps): Re
         {CONFIDENCE_LEVEL_LABELS[entry.confidence]}
       </span>
       <h3>{entry.label}</h3>
+      <p className="focus-area-card__meta">{CONFIDENCE_HINT[entry.confidence]}</p>
       <p>
         {entry.episodes}/{entry.opportunities} failed ({failurePercent}%) &middot;{' '}
         {entry.scopeTags.map((tag) => SCOPE_TAG_LABELS[tag]).join(', ')}

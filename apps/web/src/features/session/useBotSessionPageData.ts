@@ -2,7 +2,7 @@ import { parsePgn } from '@freechesscoach/chess-analysis';
 import type { BotThinkingLogEnabledResponse } from '@freechesscoach/shared';
 import { BotThinkingLogEnabledResponseSchema } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiGet, apiPost } from '../../api/client.js';
 import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
 import type { BotGameOverInfo } from './botGameOver.js';
@@ -99,6 +99,22 @@ export function useBotSessionPageData(sessionId: string) {
     if (whiteRemainingMs === null || blackRemainingMs === null) return;
     setClock({ whiteRemainingMs, blackRemainingMs, anchoredAt: Date.now() });
   }
+
+  /** The student just moved: the board still shows their move as pending
+   * until the whole round trip (including the bot's think time) returns, so
+   * bank what their clock has run so far and re-anchor, letting the caller
+   * tick the bot's clock instead. The server's authoritative values replace
+   * these when the response lands (handleClockUpdate). */
+  const handleBotTurnStart = useCallback((studentColor: 'white' | 'black'): void => {
+    setClock((previous) => {
+      if (!previous) return previous;
+      const now = Date.now();
+      const spent = now - previous.anchoredAt;
+      return studentColor === 'white'
+        ? { ...previous, whiteRemainingMs: Math.max(0, previous.whiteRemainingMs - spent), anchoredAt: now }
+        : { ...previous, blackRemainingMs: Math.max(0, previous.blackRemainingMs - spent), anchoredAt: now };
+    });
+  }, []);
 
   // Set the moment any of the four ways a bot game can end reports one
   // (checkmate/draw via a play-move response, a recovered bot reply via
@@ -224,6 +240,7 @@ export function useBotSessionPageData(sessionId: string) {
     setBotThinkingLog: (enabled: boolean) => thinkingLogMutation.mutate(enabled),
     clock,
     onClockUpdate: handleClockUpdate,
+    onBotTurnStart: handleBotTurnStart,
     claimTimeout: () => claimTimeoutMutation.mutate()
   };
 }

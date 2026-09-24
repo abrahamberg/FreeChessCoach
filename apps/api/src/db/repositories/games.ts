@@ -1,4 +1,4 @@
-import { sql, type Kysely } from 'kysely';
+import { sql, type ExpressionBuilder, type Kysely } from 'kysely';
 import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
 import {
   defaultReviewTierForSource,
@@ -334,14 +334,28 @@ export function listPlayModeByUser(db: Kysely<Database>, userId: string): Promis
     .execute();
 }
 
-/** Ids of the user's `count` earliest-imported importable games — the
+/** Games that count toward the library: every imported-source game, plus a
+ * bot game the student chose to keep (one that has an analysis — `keepBotGame`
+ * is the only thing that gives a bot game one). An undecided or deleted bot
+ * game never counts. */
+function inLibrary(eb: ExpressionBuilder<Database, 'games'>) {
+  return eb.or([
+    eb('games.source', 'in', ImportableGameSourceSchema.options),
+    eb.and([
+      eb('games.source', '=', 'vs_bot'),
+      eb.exists(eb.selectFrom('analyses').select('analyses.id').whereRef('analyses.gameId', '=', 'games.id'))
+    ])
+  ]);
+}
+
+/** Ids of the user's `count` earliest-imported library games — the
  * "delete earliest 50" action's target set. */
 export async function listEarliestImportedIds(db: Kysely<Database>, userId: string, count: number): Promise<string[]> {
   const rows = await db
     .selectFrom('games')
     .select('id')
     .where('userId', '=', userId)
-    .where('source', 'in', ImportableGameSourceSchema.options)
+    .where(inLibrary)
     .orderBy('createdAt', 'asc')
     .orderBy('id', 'asc')
     .limit(count)
@@ -400,15 +414,15 @@ export function remove(db: Kysely<Database>, id: string): Promise<void> {
   return db.deleteFrom('games').where('id', '=', id).execute().then(() => undefined);
 }
 
-/** The user's imported-source games — what the library cap counts. Bot and
- * coach-play games are excluded, same scoping as `listEarliestImportedIds`,
- * the set the auto-delete draws from. */
+/** The user's library games — what the library cap counts: imported-source
+ * games plus kept bot games (see `inLibrary`), same scoping as
+ * `listEarliestImportedIds`, the set the auto-delete draws from. */
 export async function countImportableForUser(db: Kysely<Database>, userId: string): Promise<number> {
   const result = await db
     .selectFrom('games')
     .select((eb) => eb.fn.countAll<number>().as('count'))
     .where('userId', '=', userId)
-    .where('source', 'in', ImportableGameSourceSchema.options)
+    .where(inLibrary)
     .executeTakeFirstOrThrow();
   return Number(result.count);
 }

@@ -18,7 +18,13 @@ Socratically while tracking their progress over time. The initial build
   (same file) reworks how a bot turn spends time: rating off the critical
   path (74.1–74.6 shipped: branch-first engine requests, mistake-first move
   choice, saved evals). Phase 75 (same file) is the review and fix list
-  for the unified tunnel and local LLM work (75.1–75.10 implemented, uncommitted; live verification open). The last
+  for the unified tunnel and local LLM work (75.1–75.10 implemented, uncommitted; live verification open). Phase 76
+  (same file) makes every tactical verdict and diagnostic failure
+  eval-witnessed (`eval-witness.ts`) and redefines diagnostic
+  opportunities/failures so the Progress counts mean something. Phase 77
+  (same file) is leaner analysis: stored engine evals reused on re-analysis
+  and resume, and one tactical verdict per move (77.1–77.5 implemented,
+  uncommitted; 77.6 docs). The last
   shipped plan (import limits, stat archive, guided import; Phases 67–72) is
   described in `docs/architecture.md`. Open the plan, find the one
   Phase/Task being worked on, and read only that task's **Read:** files.

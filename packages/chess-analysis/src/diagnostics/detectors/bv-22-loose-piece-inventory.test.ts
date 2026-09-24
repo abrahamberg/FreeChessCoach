@@ -1,90 +1,42 @@
-import type { ClassifiedMoveDto, PositionFeatures } from '@freechesscoach/shared';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { buildPlyDiagnosticContext } from '../context.js';
-import { bv01OwnHangingPieceBlindness } from './bv-01-own-hanging-piece-blindness.js';
 import { bv22LoosePieceInventoryFailure } from './bv-22-loose-piece-inventory.js';
+import { detectorContext } from './test-context.js';
 
-const EMPTY_FEATURES: PositionFeatures = {
-  turn: 'black',
-  boardState: 'none',
-  availableMoves: [],
-  mobility: { white: 0, black: 0 },
-  controlledSquares: [],
-  piecesUnderAttack: [],
-  hangingPieces: [],
-  underDefendedPieces: [],
-  overloadedDefenders: [],
-  centerControlScore: { white: 0, black: 0 },
-  openFiles: [],
-  semiOpenFiles: [],
-  doubledPawns: [],
-  isolatedPawns: [],
-  passedPawns: [],
-  targetsAttacked: [],
-  forks: [],
-  captureOpportunities: []
-};
+/** After Kh1, the c3 rook and f3 knight are each attacked twice and
+ * defended once by a pawn: two simultaneous loose pieces. */
+const TWO_LOOSE_FEN = '4k3/8/8/3nn3/1b4b1/2R1PN2/PP4P1/6K1 w - - 0 1';
+/** The same without the f3 knight: only the c3 rook is loose. */
+const ONE_LOOSE_FEN = '4k3/8/8/3nn3/1b4b1/2R1P3/PP4P1/6K1 w - - 0 1';
 
-function playMove(features: PositionFeatures, overrides: Partial<ClassifiedMoveDto> = {}): ClassifiedMoveDto {
-  return {
-    ply: 1,
-    moveSan: 'Kf1',
-    mover: 'white',
-    isUserMove: true,
-    cpLoss: 350,
-    quality: 'blunder',
-    bestLineSan: ['Kf1'],
-    evalAfterCp: -400,
-    hangsPiece: false,
-    drop: 40,
-    fenBefore: '4k3/8/8/8/8/8/8/R3K3 w Q - 0 1',
-    fenAfter: '4k3/8/8/8/8/8/8/R4K2 b - - 1 1',
-    features,
-    ...overrides
-  };
+const LOSS: Partial<ClassifiedMoveDto> = { quality: 'mistake', cpBefore: 0, cpAfter: -300 };
+const NO_LOSS: Partial<ClassifiedMoveDto> = { quality: 'mistake', cpBefore: 0, cpAfter: -10 };
+
+function contextFor(fenBefore: string, overrides: Partial<ClassifiedMoveDto>, refutation?: string[]) {
+  return detectorContext(fenBefore, 'Kh1', overrides, { refutation });
 }
 
 describe('bv22LoosePieceInventoryFailure', () => {
-  test('fires when at least two of the mover\'s own pieces are simultaneously loose', () => {
-    const features: PositionFeatures = {
-      ...EMPTY_FEATURES,
-      underDefendedPieces: [
-        { square: 'b2', piece: 'p', color: 'white', attackers: 1, defenders: 0 },
-        { square: 'c2', piece: 'p', color: 'white', attackers: 1, defenders: 0 }
-      ]
-    };
-    const ctx = buildPlyDiagnosticContext(playMove(features))!;
+  test('fails when the refutation wins one of the loose pieces', () => {
+    const observation = bv22LoosePieceInventoryFailure.detect(contextFor(TWO_LOOSE_FEN, LOSS, ['Nxc3', 'bxc3', 'Bxc3']));
 
-    const observation = bv22LoosePieceInventoryFailure.detect(ctx);
-
-    expect(observation).not.toBeNull();
-    expect(observation!.code).toBe('BV-22');
-    expect(observation!.direction).toBe('B');
-    expect(observation!.failed).toBe(true);
+    expect(observation).toMatchObject({ code: 'BV-22', direction: 'B', failed: true });
+    expect(observation!.detail).toBe('left 2 simultaneous loose pieces: c3, f3; lost one to Nxc3 / Bxc3');
   });
 
-  test('does not fire with fewer than two simultaneous loose pieces', () => {
-    const features: PositionFeatures = {
-      ...EMPTY_FEATURES,
-      underDefendedPieces: [{ square: 'b2', piece: 'p', color: 'white', attackers: 1, defenders: 0 }]
-    };
-    const ctx = buildPlyDiagnosticContext(playMove(features))!;
-
-    expect(bv22LoosePieceInventoryFailure.detect(ctx)).toBeNull();
+  test('fails on the live path (no refutation) when the eval confirms the loss', () => {
+    expect(bv22LoosePieceInventoryFailure.detect(contextFor(TWO_LOOSE_FEN, LOSS))?.failed).toBe(true);
   });
 
-  test('does not suppress BV-01 firing on the same ply', () => {
-    const features: PositionFeatures = {
-      ...EMPTY_FEATURES,
-      hangingPieces: [{ square: 'a1', piece: 'r', color: 'white', attackers: 1, defenders: 0 }],
-      underDefendedPieces: [
-        { square: 'b2', piece: 'p', color: 'white', attackers: 1, defenders: 0 },
-        { square: 'c2', piece: 'p', color: 'white', attackers: 1, defenders: 0 }
-      ]
-    };
-    const ctx = buildPlyDiagnosticContext(playMove(features))!;
+  test('not failed when the refutation leaves the loose pieces alone', () => {
+    expect(bv22LoosePieceInventoryFailure.detect(contextFor(TWO_LOOSE_FEN, LOSS, ['Kd7', 'a3']))?.failed).toBe(false);
+  });
 
-    expect(bv22LoosePieceInventoryFailure.detect(ctx)).not.toBeNull();
-    expect(bv01OwnHangingPieceBlindness.detect(ctx)).not.toBeNull();
+  test('compensated: loose pieces without an eval loss are not failed', () => {
+    expect(bv22LoosePieceInventoryFailure.detect(contextFor(TWO_LOOSE_FEN, NO_LOSS))).toMatchObject({ failed: false, hwdl: 0 });
+  });
+
+  test('no opportunity with a single loose piece', () => {
+    expect(bv22LoosePieceInventoryFailure.detect(contextFor(ONE_LOOSE_FEN, LOSS))).toBeNull();
   });
 });

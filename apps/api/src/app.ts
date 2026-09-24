@@ -116,11 +116,10 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       registerPositionAnalysisRoutes(app, options.db, options.engineBackendOptions);
       registerEnginePingRoutes(app, options.db, options.engineBackendOptions);
     }
-    // No engine backend needed — a puzzle session's tool set has no
-    // get_engine_analysis-equivalent (the coach reasons from the puzzle's
-    // own known solution, not a live engine call).
+    // The engine is optional here: with it the coach gets the position's
+    // analysis and get_engine_analysis; without, it works from the line notes.
     if (options.coachAgentBaseDeps) {
-      registerPuzzleSessionsRoutes(app, options.db, options.coachAgentBaseDeps);
+      registerPuzzleSessionsRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions);
     }
     if (options.ttsConfig && options.llmUnlockStore) {
       registerTtsRoutes(app, options.db, options.llmUnlockStore, options.ttsConfig);

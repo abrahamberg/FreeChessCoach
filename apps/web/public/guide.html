@@ -209,20 +209,21 @@ cd Kokoro-FastAPI
               
 
                 <details class="faq">
-                <summary>Advanced: use a different port</summary>
-                <p>The voice server normally listens on port <strong>8880</strong>. If something else on your computer already uses that port, start the server on another one, then tell the app.</p>
+                <summary>Advanced: use a different address or port</summary>
+                <p>The voice server normally listens on port <strong>8880</strong>, which is what the app expects. If something else on your computer already uses that port, start the server on another one, then tell the app.</p>
                 <p><strong>Docker:</strong> change the first number after <code>-p</code>. For port 9000, remove the old container with <code>docker rm -f kokoro</code> and run:</p>
                 <pre><code>docker run -d --name kokoro --restart unless-stopped -p 9000:8880 ghcr.io/remsky/kokoro-fastapi-cpu:latest</code></pre>
                 <p><strong>Mac terminal:</strong> put the port in front of the command: <code>PORT=9000 ./start-gpu_mac.sh</code></p>
                 <p><strong>Windows terminal:</strong> the start script always uses 8880. To use another port, use the Docker way.</p>
-                <p>Then open <strong>Settings → Coach voice</strong>, expand <strong>Advanced: use a different port</strong>, enter the same number and press <strong>Test voice</strong>. The port is remembered on this computer only.</p>
-                </details>
+                <p>Then open <strong>Settings → Coach voice</strong>, expand <strong>Advanced: use a different address or port</strong>, type the new port (for port 9000, just <code>9000</code>) and press <strong>Test voice</strong>. The app shows the full address it will use. It is remembered on this device only.</p>
+                <p><strong>Another computer or a phone:</strong> the address is used by the browser you are in, so on a phone <code>localhost</code> means the phone itself. Run the voice server on a computer and type that computer's address instead, for example <code>192.168.1.20:8880</code>. Leave out the port and the app uses port 80 for any address other than <code>localhost</code>, which uses 8880. If the app is opened over https, the voice server address must be https too, or the browser will block it. Clear the field to go back to <code>http://localhost:8880</code>.</p>
+              </details>
 
               
 
                 <details class="faq">
                 <summary>Test voice says it can't reach the server</summary>
-                <p>Check that the server is running: for Docker, <code>docker ps</code> should list <code>kokoro</code> (open Docker Desktop if it doesn't); for the terminal way, the window must still be open. Give it a minute after starting, because it loads the voice model first. Make sure the port in Settings matches the one you started it on. If it still fails, some browsers (Safari in particular) may stop a website from talking to your own computer, so try Chrome, Edge or Firefox.</p>
+                <p>Check that the server is running: for Docker, <code>docker ps</code> should list <code>kokoro</code> (open Docker Desktop if it doesn't); for the terminal way, the window must still be open. Give it a minute after starting, because it loads the voice model first. Make sure the address in Settings matches where you started it. If it still fails, some browsers (Safari in particular) may stop a website from talking to your own computer, so try Chrome, Edge or Firefox.</p>
                 </details>
 
               

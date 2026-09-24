@@ -47,7 +47,7 @@ describe('EnginePool', () => {
 });
 
 /** A live bot move (priority 'interactive') must never queue FIFO behind a
- * background batch job (import analysis, deepen-analysis) that got to the
+ * background batch job (import analysis, game re-analysis) that got to the
  * pool first — see EnginePrioritySchema's doc comment. No real Stockfish
  * process needed here: this is purely about acquire/release queue ordering,
  * so a stub stands in for the engine value withEngine hands to its callback. */

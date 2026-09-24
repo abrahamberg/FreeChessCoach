@@ -78,31 +78,6 @@ export const PuzzleSessionDetailSchema = PuzzleSessionSchema.extend({
 });
 export type PuzzleSessionDetail = z.infer<typeof PuzzleSessionDetailSchema>;
 
-export const AttemptPuzzleMoveRequestSchema = z.object({
-  san: z.string(),
-  uci: z.string()
-});
-export type AttemptPuzzleMoveRequest = z.infer<typeof AttemptPuzzleMoveRequestSchema>;
-
-/** Response for `POST /api/puzzle-sessions/:id/attempt-move` — a fast,
- * deterministic check against the item's solution line, decoupled from the
- * coach's own turn (see puzzle-session-turn.ts / puzzle-move-commit.ts).
- * `accepted: false` means nothing was persisted — `fen` is just the
- * last-committed position, for the client to revert to immediately. */
-export const AttemptPuzzleMoveResponseSchema = z.object({
-  accepted: z.boolean(),
-  fen: z.string(),
-  currentPly: z.number().int().nonnegative(),
-  /** True once `currentPly` has reached the end of the item's solution
-   * line. The coach's own `advance_puzzle` tool call can still move the
-   * session on at any point (e.g. discussing the win before leaving), but
-   * once this is true the client also offers a "next puzzle" action
-   * (`POST /api/puzzle-sessions/:id/advance-item`) so the student is never
-   * stuck waiting on the coach's own turn to progress. */
-  lineComplete: z.boolean()
-});
-export type AttemptPuzzleMoveResponse = z.infer<typeof AttemptPuzzleMoveResponseSchema>;
-
 /** Response for `POST /api/puzzle-sessions/:id/advance-item` — the same
  * shape the coach's `advance_puzzle` tool result carries
  * (PuzzleItemAdvanceResult, apps/api/src/services/puzzle-item-advance.ts). */

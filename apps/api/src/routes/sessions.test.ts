@@ -1170,6 +1170,49 @@ describe('sessions routes', () => {
       expect(session?.currentPly).toBe(0);
     }, 15000);
 
+    test('a rated game is a fixed 10-minute clock, marked rated, and refuses undo and move feedback', async () => {
+      const user = await usersRepo.insert(db, { email: 'botrated@example.com', displayName: 'Ann' });
+      const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/sessions/play-bot',
+        headers: headersFor(user),
+        // The requested 3-minute clock is ignored for a rated game.
+        payload: { studentColor: 'white', botId: 'nate-brooks', rated: true, clock: { initialMs: 180000, incrementMs: 0 } }
+      });
+      const { id: sessionId, gameId } = created.json();
+
+      const game = await gamesRepo.findById(db, gameId);
+      expect(game?.rated).toBe(true);
+      expect(game?.clockInitialMs).toBe(600000);
+      expect(game?.clockIncrementMs).toBe(0);
+      expect(game?.timeControl).toBe('600+0');
+
+      const move = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/play-move`, headers: headersFor(user), payload: { san: 'e4' } });
+      expect(move.statusCode).toBe(200);
+      expect(move.json().player.quality).toBeNull();
+      expect(move.json().bot.quality).toBeNull();
+
+      const undo = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/undo-move`, headers: headersFor(user) });
+      expect(undo.statusCode).toBe(409);
+
+      const detail = await app.inject({ method: 'GET', url: `/api/games/${gameId}`, headers: headersFor(user) });
+      expect(detail.json().liveMoveQualities).toEqual([]);
+    }, 15000);
+
+    test('a practice game is not rated', async () => {
+      const user = await usersRepo.insert(db, { email: 'botpractice@example.com', displayName: 'Ann' });
+      const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/sessions/play-bot',
+        headers: headersFor(user),
+        payload: { studentColor: 'white', botId: 'nate-brooks', clock: { initialMs: 600000, incrementMs: 0 } }
+      });
+
+      expect((await gamesRepo.findById(db, created.json().gameId))?.rated).toBe(false);
+    });
+
     test('POST /api/sessions/:id/undo-move 422s when there is nothing to undo', async () => {
       const { user, app, sessionId } = await setupBotSession('botundoempty@example.com');
 

@@ -5,15 +5,15 @@ import { encodeAnnotationNote, type AnnotationNoteState } from '../chat/position
 import { encodeDivergedLineStart } from '../chat/divergedLine.js';
 
 export interface UsePuzzleCoachChatOptions {
-  /** Client tools (annotate_board, hypothetical_line, expect_move): return
+  /** Client tools (annotate_board, hypothetical_line): return
    * the tool result to round-trip it back to the coach. Return undefined for
    * advance_puzzle (a server tool — its result already arrived in this same
    * stream, see onServerToolResult). */
   onToolCall?: (toolCall: CoachToolCall) => unknown;
   initialMessages?: CoachMessage[];
-  /** advance_puzzle is the only server-executed tool in this session kind —
-   * fired once its result streams in, so the page can advance the board to
-   * the next item (or notice the session just completed). */
+  /** advance_puzzle and play_next_move are the server-executed tools in this
+   * session kind — fired once the result streams in, so the page can pick up
+   * the board's new position (or the next item / a completed session). */
   onServerToolResult?: (toolName: string, output: unknown) => void;
   /** Same contract as useCoachChat's own onUnlockRequired/onSetupRequired —
    * fires when a turn fails because the AI is locked, or was never set up at
@@ -36,7 +36,7 @@ export interface UsePuzzleCoachChatResult {
   kickoff: () => Promise<void>;
 }
 
-const SERVER_TOOL_RESULT_NAMES = new Set(['advance_puzzle']);
+const SERVER_TOOL_RESULT_NAMES = new Set(['advance_puzzle', 'play_next_move']);
 
 /**
  * docs/plan.md Phase 59, Task 59.6 — puzzle-session sibling of

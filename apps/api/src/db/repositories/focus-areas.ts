@@ -91,6 +91,27 @@ export function updateStatusAndNote(
     .executeTakeFirstOrThrow();
 }
 
+/** Rebuild-driven refresh of a programmatic area: new measured note and
+ * evidence total, never the status (that's the coach's/summariser's call).
+ * `evidenceCount` only ever grows — conversation updates bump it too. */
+export function refreshMeasuredEvidence(
+  db: Kysely<Database>,
+  id: string,
+  note: string,
+  episodes: number
+): Promise<FocusAreaRow> {
+  return db
+    .updateTable('focusAreas')
+    .set((eb) => ({
+      note,
+      lastSeenAt: new Date(),
+      evidenceCount: eb.fn('greatest', ['evidenceCount', eb.val(episodes)])
+    }))
+    .where('id', '=', id)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
 /** Active + improving areas — what the coach's system prompt and
  * get_user_profile show. Primary first (Task 64.2 — makes the persisted
  * rank actually visible instead of an incidental recency order), then most

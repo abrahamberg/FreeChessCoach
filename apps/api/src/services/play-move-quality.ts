@@ -2,6 +2,7 @@ import {
   buildPlyDiagnosticContext,
   classifyLiveMove,
   DIAGNOSTIC_DETECTORS,
+  isDiagnosticallyMeaningfulPly,
   type ClassifiedMove
 } from '@freechesscoach/chess-analysis';
 import type { DiagnosisCodeId, EngineEval, PositionAnalysis } from '@freechesscoach/shared';
@@ -99,11 +100,12 @@ export function classifyPlayMoveWithEvals(
  * always undefined here (this is one live move, no surrounding game
  * context), and all three already treat that as "cannot determine, don't
  * fire" rather than throwing, so they simply never contribute a code in
- * this call path.
+ * this call path. A ply that was completely decided either way (DQ-09)
+ * yields no codes at all.
  */
 function diagnosisCodesFor(classified: ClassifiedMove): DiagnosisCodeId[] {
   const context = buildPlyDiagnosticContext(classified);
-  if (!context) return [];
+  if (!context || !isDiagnosticallyMeaningfulPly(context)) return [];
   return DIAGNOSTIC_DETECTORS.map((detector) => detector.detect(context))
     .filter((observation): observation is NonNullable<typeof observation> => observation !== null && observation.failed)
     .map((observation) => observation.code);

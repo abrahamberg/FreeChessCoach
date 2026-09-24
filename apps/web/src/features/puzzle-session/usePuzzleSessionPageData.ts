@@ -1,9 +1,9 @@
-import { applySanSequence, applyUciSequence } from '@freechesscoach/chess-analysis';
+import { applyUciSequence } from '@freechesscoach/chess-analysis';
 import {
   AdvancePuzzleItemResponseSchema,
   PuzzleSessionDetailSchema,
   PuzzleSessionSchema,
-  type PuzzleSessionDetail
+  UserProfileSchema
 } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -12,15 +12,9 @@ import { apiGet, apiPost } from '../../api/client.js';
 import type { CoachToolCall } from '../../hooks/useCoachChat.js';
 import { useUnlockLlmSetup } from '../../hooks/useUnlockLlmSetup.js';
 import { useAnnotationLayer, type AnnotationState } from '../board/AnnotationLayer.js';
-import type { LocalMoveInfo } from '../board/CoachBoard.js';
-import { useHintMoves } from '../board/useHintMoves.js';
-import { encodeDivergedLine } from '../chat/divergedLine.js';
 import { useDivergedLine } from '../session/useDivergedLine.js';
 import { toPuzzleCoachMessages } from './puzzleSessionMessages.js';
 import { usePuzzleCoachChat } from './usePuzzleCoachChat.js';
-import { usePuzzleMoveAttempt } from './usePuzzleMoveAttempt.js';
-
-export type PuzzleBoardMode = 'answer' | 'peek';
 
 export interface PuzzleHistoryPosition {
   ply: number;
@@ -45,21 +39,17 @@ export interface PuzzleHistoryPosition {
  * query sidesteps that: React Query's own StrictMode handling for queries
  * (not just mutations) is the well-exercised path.
  *
- * Focused-session rework — a board move is now one of three things, decided
- * in this order (mirrors SessionBoardColumn's handleUserMove, but a puzzle
- * session has no play/play_bot split to sit alongside):
- *   1. The coach armed expect_move — send it immediately, same as before.
- *   2. A hypothetical is already open (student peeked and moved, or the
- *      coach called hypothetical_line) — extend it, never commit.
- *   3. Neither — this is a real attempt against the item's known line
- *      (usePuzzleMoveAttempt, POST /attempt-move). An accepted move adopts
- *      the server's new position; a rejected one reverts immediately (the
- *      optimistic preview this hook sets is simply cleared, letting the
- *      board fall back to the last-committed fen) and the coach discusses
- *      why — instead of the old behavior where every move silently became
- *      an ephemeral diverged line and nothing was ever actually committed.
+ * Practice is discuss-only: the board is locked, the student never moves a
+ * piece. The coach sees the whole line and walks the student through it in
+ * chat; once a move is established it calls the server tool play_next_move,
+ * which advances the stored ply (the student's move plus the opponent's
+ * forced reply). This hook just refetches on that tool result. The line
+ * itself never changes, so the chat episode (message itemIndex) doesn't
+ * either. The only board movement on this side is a coach-driven
+ * hypothetical_line (divergedLine), and a read-only look back through the
+ * moves already played (viewedPly).
  */
-export function usePuzzleSessionPageData(assignmentId: string) {
+export function usePuzzleSessionPageData(assignmentId: string, onSessionReset: () => void) {
   const queryClient = useQueryClient();
 
   const createQuery = useQuery({
@@ -82,31 +72,33 @@ export function usePuzzleSessionPageData(assignmentId: string) {
     enabled: sessionId !== undefined
   });
 
+  // "Reset session" (same menu item as the coach game): abandons this
+  // session and opens a fresh conversation on the same item. The create
+  // query is pointed at the fresh session and the page then remounts
+  // (onSessionReset) so no chat/board state from the old one lingers.
+  const resetMutation = useMutation({
+    mutationFn: () => apiPost(`/api/puzzle-sessions/${sessionId}/reset`, {}, PuzzleSessionSchema),
+    onSuccess: (fresh) => {
+      queryClient.setQueryData(['puzzle-session-create', assignmentId], fresh);
+      onSessionReset();
+    }
+  });
+
+  // Same query key the coach game and Settings share — the coach's persona
+  // and the account's voice (TTS) settings.
+  const profileQuery = useQuery({
+    queryKey: ['profile'],
+    queryFn: ({ signal }) => apiGet('/api/users/me', UserProfileSchema, signal)
+  });
+
   const divergedLine = useDivergedLine();
   const annotations = useAnnotationLayer();
   const data = detailQuery.data;
   const currentItem = data ? (data.assignment.items[data.currentItemIndex] ?? null) : null;
 
-  // The board's own interaction gate — 'peek' suspends real-attempt
-  // submission and routes moves into divergedLine instead (free
-  // exploration, never committed), the same "peek" concept SessionPage's
-  // board column has, exposed here as an explicit toggle since a puzzle
-  // session has no game history to passively peek back into. Exiting peek
-  // deliberately does NOT clear an in-progress divergedLine — the student
-  // may want to type a message about what they just explored (handled by
-  // PuzzleSessionPage's send path via encodeDivergedLine), and the coach
-  // can still discuss it or explicitly dismiss it (show_position).
-  const [boardMode, setBoardMode] = useState<PuzzleBoardMode>('answer');
-  // A just-dropped move's fen, shown immediately while an attempt is in
-  // flight — cleared once the round trip resolves either way
-  // (handleMoveAttemptResult). Only ever set for a move handleUserMove will
-  // also treat as a real attempt (handleLocalMove uses the same guard
-  // conditions), so it never lingers behind an unrelated hypothetical.
-  const [previewFen, setPreviewFen] = useState<string | null>(null);
   // Read-only "glance at an earlier point in this item's played-out line"
-  // (MoveExplorer's onSelect) — distinct from peek mode: no moves are
-  // possible while viewing history, it's purely a look-back. Reset by any
-  // real move, a fresh item, or the coach bringing the board back
+  // (MoveExplorer's onSelect) — no moves are possible, it's purely a
+  // look-back. Reset by a fresh item or the coach bringing the board back
   // (show_position).
   const [viewedPly, setViewedPly] = useState<number | null>(null);
 
@@ -118,35 +110,22 @@ export function usePuzzleSessionPageData(assignmentId: string) {
   ];
   const viewedFen = viewedPly !== null ? (historyPositions.find((position) => position.ply === viewedPly)?.fen ?? null) : null;
 
-  const boardFen = divergedLine.fen ?? viewedFen ?? previewFen ?? data?.currentFen ?? '';
-  const effectiveBoardMode: PuzzleBoardMode = viewedPly !== null ? 'peek' : boardMode;
-  // BoardActionBar's Hint button (same engine round trip play/play_bot use) —
-  // owned here, not the page component, so handleUserMove below can read
-  // whether it was active at the moment a real attempt is submitted.
-  const hint = useHintMoves(boardFen);
+  const boardFen = divergedLine.fen ?? viewedFen ?? data?.currentFen ?? '';
 
-  // True once attempt-move reports the current item's line fully played out
-  // — drives the "next puzzle" action (advanceItem below), a deterministic
-  // way to move on that doesn't depend on the coach's own advance_puzzle
-  // tool call ever firing. Reset the moment the item itself changes (a fresh
-  // item is never already complete).
-  const [lineComplete, setLineComplete] = useState(false);
+  // The student plays the side to move once the item's opponent setup move
+  // (moves[0]) is out of the way — i.e. the opposite of the raw item fen's
+  // side to move. Their board is turned to that side.
+  const orientation: 'white' | 'black' = currentItem?.fen.split(' ')[1] === 'w' ? 'black' : 'white';
 
-  function handleMoveAttemptResult(result: { accepted: boolean; fen: string; currentPly: number; lineComplete: boolean }): void {
-    setPreviewFen(null);
-    if (result.accepted) setLineComplete(result.lineComplete);
-    if (!result.accepted || sessionId === undefined) return;
-    queryClient.setQueryData<PuzzleSessionDetail>(['puzzle-session', sessionId], (old) =>
-      old ? { ...old, currentFen: result.fen, currentPly: result.currentPly } : old
-    );
-  }
-
-  const moveAttempt = usePuzzleMoveAttempt(sessionId ?? '', (content) => void chat.sendMessage(content), handleMoveAttemptResult);
+  // True once the coach has played the item's line all the way out — drives
+  // the "next practice" action (advanceItem below), a deterministic way to
+  // move on that doesn't depend on the coach's own advance_puzzle tool call.
+  // Derived from the stored ply, so it survives a reload.
+  const lineComplete = currentItem !== null && data !== undefined && data.currentPly >= currentItem.moves.length;
 
   const advanceItemMutation = useMutation({
     mutationFn: () => apiPost(`/api/puzzle-sessions/${sessionId}/advance-item`, {}, AdvancePuzzleItemResponseSchema),
     onSuccess: () => {
-      setLineComplete(false);
       if (sessionId !== undefined) void queryClient.invalidateQueries({ queryKey: ['puzzle-session', sessionId] });
     },
     // A 409 here means the coach's own advance_puzzle tool call already won
@@ -155,7 +134,6 @@ export function usePuzzleSessionPageData(assignmentId: string) {
     // landed instead of leaving the button spinning on a request that will
     // never succeed as sent.
     onError: () => {
-      setLineComplete(false);
       if (sessionId !== undefined) void queryClient.invalidateQueries({ queryKey: ['puzzle-session', sessionId] });
     }
   });
@@ -171,7 +149,6 @@ export function usePuzzleSessionPageData(assignmentId: string) {
       return { acknowledged: true };
     }
     if (toolCall.toolName === 'show_position') {
-      setBoardMode('answer');
       setViewedPly(null);
     }
     if (!data || !currentItem) return undefined;
@@ -179,12 +156,19 @@ export function usePuzzleSessionPageData(assignmentId: string) {
   }
 
   function handleServerToolResult(toolName: string): void {
-    if (toolName !== 'advance_puzzle' || sessionId === undefined) return;
+    if (sessionId === undefined) return;
+    if (toolName === 'play_next_move') {
+      // The coach put the next move on the board — pick up the new ply.
+      divergedLine.exit();
+      annotations.clear();
+      setViewedPly(null);
+      void queryClient.invalidateQueries({ queryKey: ['puzzle-session', sessionId] });
+      return;
+    }
+    if (toolName !== 'advance_puzzle') return;
     divergedLine.exit();
     annotations.clear();
-    setBoardMode('answer');
     setViewedPly(null);
-    setLineComplete(false);
     void queryClient.invalidateQueries({ queryKey: ['puzzle-session', sessionId] });
   }
 
@@ -243,43 +227,6 @@ export function usePuzzleSessionPageData(assignmentId: string) {
     }
   };
 
-  function handleUserMove(san: string, fen: string, uci: string): void {
-    if (!data) return;
-    const real = { ply: data.currentItemIndex, fen: data.currentFen };
-    if (divergedLine.expectingMove) {
-      divergedLine.consumeExpectingMove();
-      const message = divergedLine.line
-        ? encodeDivergedLine(divergedLine.appendMove({ san, fen, uci }, real), '')
-        : `[board_move] I played ${san} (position now: ${fen})`;
-      void chat.sendMessage(message);
-      return;
-    }
-    if (divergedLine.line) {
-      divergedLine.appendMove({ san, fen, uci }, real);
-      return;
-    }
-    void moveAttempt.submit(san, uci, hint.stage > 0);
-  }
-
-  /** Fires for every legal drop regardless of mode (CoachBoard's own
-   * contract) — in peek mode it's free exploration folded into
-   * divergedLine, same discipline SessionBoardColumn's own handleLocalMove
-   * uses; otherwise it's the optimistic preview for a move handleUserMove
-   * is about to treat as a real attempt (same guard conditions, so this
-   * never sets a preview behind a hypothetical or an expect_move send). */
-  function handleLocalMove(fen: string, move: LocalMoveInfo): void {
-    if (viewedPly !== null) return;
-    if (boardMode === 'peek') {
-      if (!data) return;
-      const applied = applySanSequence(move.fenBefore, [move.san]).moves[0];
-      if (!applied) return;
-      divergedLine.appendMove({ san: move.san, fen, uci: applied.uci }, { ply: data.currentItemIndex, fen: data.currentFen });
-      return;
-    }
-    if (divergedLine.line || divergedLine.expectingMove) return;
-    setPreviewFen(fen);
-  }
-
   function selectHistoryPly(ply: number): void {
     setViewedPly(ply === (data?.currentPly ?? 0) ? null : ply);
   }
@@ -307,19 +254,13 @@ export function usePuzzleSessionPageData(assignmentId: string) {
   return {
     createQuery,
     detailQuery,
+    profileQuery,
     currentItem,
     divergedLine,
     annotations,
     chat,
     boardFen,
-    boardMode: effectiveBoardMode,
-    enterPeek: () => setBoardMode('peek'),
-    exitPeek: () => setBoardMode('answer'),
-    hint,
-    isMoveSubmitting: moveAttempt.isSubmitting,
-    moveAttemptError: moveAttempt.error,
-    handleUserMove,
-    handleLocalMove,
+    orientation,
     sanMoves: committedLine?.moves.map((move) => move.san) ?? [],
     historyPositions,
     currentPly: data?.currentPly ?? 0,
@@ -331,6 +272,8 @@ export function usePuzzleSessionPageData(assignmentId: string) {
     isAdvancingItem: advanceItemMutation.isPending,
     advanceToNextItem: () => advanceItemMutation.mutate(),
     setupRequiredModal,
-    unlockModal
+    unlockModal,
+    resetSession: () => resetMutation.mutate(),
+    isResetting: resetMutation.isPending
   };
 }

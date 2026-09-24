@@ -1,229 +1,54 @@
-import {
-  BEST_OR_BETTER,
-  combineThreatOutcome,
-  flipActiveColorFen,
-  scanAvailableMotifs,
-  scanThreatOutcome,
-  type AvailableMotifScan,
-  type PvMotifSighting,
-  type ThreatOutcome
-} from '@freechesscoach/chess-analysis';
-import {
-  TACTIC_MOTIF_TYPES,
-  type ClassifiedMoveDto,
-  type EngineEval,
-  type EngineLine,
-  type TacticGainDto,
-  type TacticMotifType,
-  type TacticVisualDto
-} from '@freechesscoach/shared';
-import type { EngineBackend } from './engine/engine-backend.js';
+import type { PreventionScans } from '@freechesscoach/chess-analysis';
+import type { ClassifiedMoveDto, EngineEval } from '@freechesscoach/shared';
+import { cachedRealisticScan, type RealisticScanCache } from './tactic-prevention-scans.js';
 
-type PositionAnalyzer = Pick<EngineBackend, 'analyzePosition'>;
-type Colour = 'white' | 'black';
-
-export interface TacticPreventionCounts {
-  preventable: Partial<Record<TacticMotifType, number>>;
-  prevented: Partial<Record<TacticMotifType, number>>;
-}
-
-export interface TacticMotifPreventionResult {
-  counts: Record<Colour, TacticPreventionCounts>;
-  /** One entry per ply whose move faced a reachable opponent tactic — the
-   * move-list UI's per-ply "prevented" indicator. When more than one motif
-   * type was reachable, names only the highest-priority one (TACTIC_MOTIF_TYPES
-   * order, which mirrors tactic-detectors/registry.ts's precedence) — `counts`
-   * above remains the source of truth for "how many", this is only "what to
-   * show on this one move". */
-  byPly: Map<number, PreventionCard>;
-  /** docs/diagnose.md §4.4's unbiased O/E denominator (Task 50.4) — see this
-   * function's doc comment for why this is a second, additive map rather
-   * than a change to `byPly`/`counts` above. */
-  diagnosticByPly: Map<number, { type: TacticMotifType; failed: boolean; detail: string | null; visual: TacticVisualDto | null }>;
-}
-
-/** What the review shows for one move's defused (or still-standing) threat.
- * `gain` is what lets the card say what the threat would have won, so it can
- * read as the reader's own lost chance rather than as a log line about a
- * third party — docs/tactics-rework.md §3 rule 4. Whose move it was is not
- * stored here: it is already on the move itself, and the renderer passes it
- * so an older stored report gets the right voice too. */
-export interface PreventionCard {
-  type: TacticMotifType;
-  prevented: boolean;
-  detail: string | null;
-  visual: TacticVisualDto | null;
-  gain?: TacticGainDto;
-}
-
-/** The earliest-priority motif in `types` (TACTIC_MOTIF_TYPES order), or null
- * when `types` is empty. */
-function primaryMotif(types: readonly TacticMotifType[]): TacticMotifType | null {
-  return TACTIC_MOTIF_TYPES.find((type) => types.includes(type)) ?? null;
-}
-
-/** The concrete threat behind `type`'s reachability, from whichever
- * `sightings` entry first matches it. Every sighting carries the claim the
- * scan found it as, so the sentence, the arrow and the "what it would have
- * won" all come off one object — no second replay, and no chance of the card
- * describing a different instance of the motif than the one that was
- * actually defused. */
-function describeMotifSighting(
-  sightings: readonly PvMotifSighting[],
-  type: TacticMotifType
-): { detail: string | null; visual: TacticVisualDto | null; gain?: TacticGainDto } {
-  const sighting = sightings.find((candidate) => candidate.motif === type);
-  if (!sighting) return { detail: null, visual: null };
-  const claim = sighting.claim;
-  return {
-    detail: claim.detail,
-    visual: claim.evidence,
-    gain: { kind: claim.gainKind, pawns: claim.verifiedGain, prize: claim.prize }
-  };
-}
+/** Called once per PV scan that actually runs (a cache miss) — how the
+ * benchmark counts the scans the lazy path saved. */
+export type OnPreventionScan = (evalIndex: number) => void;
 
 /**
- * Per-game "tactics prevented" tally: for each move, checks which of the
- * opponent's tactic motif types were reachable right before their own last
- * turn and are no longer reachable right after the mover's reply — see
- * `findDefusedThreats`' doc comment (Phase 46) for the type-level
- * reachability semantics this now rests on. Cost-gated by design (direct
- * user instruction — see the plan):
+ * The prevention scans behind the `defusedThreat` verdict, built lazily
+ * (`docs/plan.md` Task 77.5). Nothing is scanned here: the returned function
+ * scans a move's two positions the first time a verdict asks for them, and
+ * `decideMoveVerdict` asks only when `defusedThreat` is still a candidate
+ * after the stronger reasons were checked. This replaces
+ * `computeTacticMotifPrevented`, which scanned both positions of every move
+ * up front; its counts now come from the verdicts
+ * (`computeTacticPreventionCounts`) and its `diagnosticByPly` from the
+ * verdict's diagnostic code (`build-diagnostics.ts`).
  *
- * - **Free path (always tried first)**: reuses each side's own
- *   already-computed batch eval — `evals[prior.ply - 1]` (exactly the eval
- *   at `prior.fenBefore`, genuinely opponent's turn there, no flip needed)
- *   and `evals[move.ply]` (exactly the eval at `move.fenAfter`, genuinely
- *   opponent's turn there too) — both real positions the engine actually
- *   analyzed, not one-ply-shifted/flipped stand-ins (Phase 47). Zero extra
- *   engine calls.
- * - **Gated fallback (only when the free path finds nothing AND the
- *   position is already flagged tactically sharp)**: one extra null-move
- *   engine call for the "before" probe only, mirroring
- *   `position-tactics.ts`'s `scanPositionTactics` "allowed" half — reused
- *   here from a different call site (batch, not live coach). The "after"
- *   side of the gated branch is free either way (`evals[move.ply]`).
+ * For a move and the opponent's move before it (`prior`), the two scans are
+ * each side's own batch eval — both real positions with the opponent to
+ * move, zero engine calls:
+ * - before: `evals[prior.ply - 1]` at `prior.fenBefore`;
+ * - after: `evals[move.ply]` at `move.fenAfter`.
  *
- * A move already classified best-or-better (`BEST_OR_BETTER`) is skipped for
- * `counts`/`byPly`, crediting neither `preventable` nor `prevented` for it: a
- * threat still reachable after the engine's own top choice isn't something
- * this player should have prevented at this moment — there was no better
- * reply, so it was never truly "preventable" for them here. That is a
- * deliberate, shipped product choice for the "Prevented" stats card and must
- * not change.
- *
- * As a docs/diagnose.md §4.4 opportunity/failure (`O`/`E`) denominator,
- * though, that skip is a bias: every ply where the player *did* prevent the
- * threat by finding the best move is excluded, systematically inflating the
- * apparent failure rate. `diagnosticByPly` is therefore a second, additive
- * output populated for every ply with a reachable opponent motif regardless
- * of move quality — do not "unify" it with `byPly`, the two intentionally
- * answer different questions (best-effort or not, both counters read
- * `outcome.preventable`, so it's always the same motif; only whether
- * BEST_OR_BETTER plies are counted differs). One asymmetry: a BEST_OR_BETTER
- * ply never pays for the gated engine fallback (only the free path runs), so
- * a tactically-sharp BEST_OR_BETTER ply whose threat the free path misses
- * simply has no `diagnosticByPly` entry — under-counting is preferred over
- * adding a new per-ply engine call the plan doesn't otherwise ask for.
+ * Each is `scanRealisticThreats`' (only threats that win material or mate,
+ * on a line the opponent would play), cached by eval index: ply p's
+ * "before" is ply (p-2)'s "after". `null` for the first move, a move whose
+ * prior is missing or the same colour, or a missing eval.
  */
-export async function computeTacticMotifPrevented(
-  engine: PositionAnalyzer,
-  allMoves: ClassifiedMoveDto[],
-  evals: EngineEval[]
-): Promise<TacticMotifPreventionResult> {
-  const counts: Record<Colour, TacticPreventionCounts> = {
-    white: { preventable: {}, prevented: {} },
-    black: { preventable: {}, prevented: {} }
-  };
-  const byPly = new Map<number, PreventionCard>();
-  const diagnosticByPly = new Map<number, { type: TacticMotifType; failed: boolean; detail: string | null; visual: TacticVisualDto | null }>();
+export function createPreventionScans(
+  allMoves: readonly ClassifiedMoveDto[],
+  evals: readonly EngineEval[],
+  onScan?: OnPreventionScan
+): (move: ClassifiedMoveDto) => PreventionScans | null {
   const movesByPly = new Map(allMoves.map((move) => [move.ply, move]));
-  // The free path's "before" eval (evals[prior.ply - 1]) and "after" eval
-  // (evals[move.ply]) are each the same position+lines as some other ply's
-  // other end, two plies apart — ply p's "before" is ply (p-2)'s "after".
-  // scanAvailableMotifs is a pure function of (fen, lines), so caching it by
-  // eval index halves the PV-rescanning that otherwise dominates this
-  // function's cost.
-  const motifScanCache = new Map<number, AvailableMotifScan>();
+  const cache: RealisticScanCache = new Map();
 
-  for (const move of allMoves) {
+  return (move) => {
     const prior = movesByPly.get(move.ply - 1);
-    if (!prior || prior.mover === move.mover) continue;
+    if (!prior || prior.mover === move.mover) return null;
 
-    const opponent = prior.mover;
-    // Best-or-better: no better reply existed, so nothing here was truly
-    // preventable for this player — see this function's own doc comment.
-    // Still eligible for the free (zero-cost) path below, for diagnosticByPly.
-    const isCountable = !BEST_OR_BETTER.has(move.quality);
-    const freely = findFreelyDefusedThreats(prior, move, evals, motifScanCache);
-    const outcome =
-      freely.preventable.length > 0 || !isCountable ? freely : await findGatedDefusedThreats(engine, move, opponent, evals);
+    const priorIndex = prior.ply - 1;
+    const afterIndex = move.ply;
+    const priorEval = evals[priorIndex];
+    const afterEval = evals[afterIndex];
+    if (!priorEval || !afterEval || !prior.fenBefore || !move.fenAfter) return null;
 
-    if (isCountable) {
-      for (const motif of outcome.preventable) {
-        counts[move.mover].preventable[motif] = (counts[move.mover].preventable[motif] ?? 0) + 1;
-      }
-      for (const motif of outcome.defused) {
-        counts[move.mover].prevented[motif] = (counts[move.mover].prevented[motif] ?? 0) + 1;
-      }
-    }
-
-    const primary = primaryMotif(outcome.preventable);
-    if (primary) {
-      const { detail, visual, gain } = describeMotifSighting(outcome.sightings, primary);
-      const prevented = outcome.defused.includes(primary);
-      if (isCountable) byPly.set(move.ply, { type: primary, prevented, detail, visual, gain });
-      diagnosticByPly.set(move.ply, { type: primary, failed: !prevented, detail, visual });
-    }
-  }
-
-  return { counts, byPly, diagnosticByPly };
-}
-
-const EMPTY_OUTCOME: ThreatOutcome = { preventable: [], defused: [], sightings: [], defusedSightings: [] };
-
-function findFreelyDefusedThreats(
-  prior: ClassifiedMoveDto,
-  move: ClassifiedMoveDto,
-  evals: EngineEval[],
-  motifScanCache: Map<number, AvailableMotifScan>
-): ThreatOutcome {
-  const priorIndex = prior.ply - 1;
-  const afterIndex = move.ply;
-  const priorEval = evals[priorIndex];
-  const afterEval = evals[afterIndex];
-  if (!priorEval || !afterEval || !prior.fenBefore || !move.fenAfter) return EMPTY_OUTCOME;
-
-  const before = cachedMotifScan(motifScanCache, priorIndex, prior.fenBefore, priorEval.lines);
-  const after = cachedMotifScan(motifScanCache, afterIndex, move.fenAfter, afterEval.lines);
-  return combineThreatOutcome(before, after);
-}
-
-function cachedMotifScan(
-  cache: Map<number, AvailableMotifScan>,
-  evalIndex: number,
-  fen: string,
-  lines: readonly EngineLine[]
-): AvailableMotifScan {
-  const cached = cache.get(evalIndex);
-  if (cached) return cached;
-  const scan = scanAvailableMotifs(fen, lines);
-  cache.set(evalIndex, scan);
-  return scan;
-}
-
-async function findGatedDefusedThreats(
-  engine: PositionAnalyzer,
-  move: ClassifiedMoveDto,
-  opponent: Colour,
-  evals: EngineEval[]
-): Promise<ThreatOutcome> {
-  if (!move.isTacticalPosition) return EMPTY_OUTCOME;
-
-  const flipped = move.fenBefore && flipActiveColorFen(move.fenBefore);
-  const afterEval = evals[move.ply];
-  if (!flipped || !afterEval || !move.fenAfter) return EMPTY_OUTCOME;
-
-  const threatAnalysis = await engine.analyzePosition(flipped);
-  return scanThreatOutcome(flipped, move.fenAfter, opponent, threatAnalysis.lines as EngineLine[], afterEval.lines);
+    return {
+      before: cachedRealisticScan(cache, priorIndex, prior.fenBefore, priorEval.lines, onScan),
+      after: cachedRealisticScan(cache, afterIndex, move.fenAfter, afterEval.lines, onScan)
+    };
+  };
 }

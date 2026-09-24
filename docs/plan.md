@@ -1022,3 +1022,1145 @@ Commit: `docs: unified tunnel and local LLM`
   coach message streams within `firstChunkMs`, and the dev log shows one LLM
   call before the first reply.
 - `npm run verify:changed`.
+
+---
+
+# Phase 76 — Eval-witnessed tactical verdicts and meaningful diagnostics
+
+**Source spec:** this request (no separate spec file). Diagnostics semantics
+come from `docs/diagnose.md` §4.4 (lines ~172-182) and §4.6. Read **only**
+those two subsections, never the whole file. Tactic-finder work also needs
+`docs/tactics-rework.md` §5 (layers) and §9 ("A gate that was tried and
+reverted"). Every `file:line` below was checked on 2026-09-24 against the
+working tree, not assumed.
+
+## The request
+
+The Progress page's "Measured diagnoses" are implausible for about 11 games.
+For example, "Opponent-direct-threat omission 4/387 failed", "Own hanging-piece
+blindness 15/145", "Opponent-check scan omission 2/216". The owner asked for
+three things:
+
+1. **Opportunities and failures must mean something.** A chance counts only
+   when the theme was real and mattered. A failure counts only when *that*
+   mechanism cost the student.
+2. **The tactic finder must use the eval as a check, both positive and
+   negative.** Examples: ignoring a piece in danger to play a move that
+   threatens mate is not a failure. Sacrificing a piece to lure the queen,
+   which then gets captured, is not a loss.
+3. **This covers every tactical verdict, not just material loss:** missed,
+   allowed, found, and prevented. In clearly won or lost positions the win%
+   barely moves, so the check must be saturation-aware.
+
+## Root causes (verified)
+
+- **The opportunity counts are inflated.** `diagnostics/cct-opportunities.ts`
+  returns every legal opponent check, capture and quiet threat unfiltered, so
+  `MS-01/02/03` fire on almost every ply. The same holds for the student's own
+  unplayed checks and threats (`MS-04/06`).
+- **"Failed" means "the move was bad" for any reason.** `detectors/shared.ts`
+  `buildQualityObservation` sets `failed = quality ∈ {mistake, blunder,
+  miss}`. One blunder therefore fails every code that happened to fire on that
+  ply, whether or not the named mechanism was involved.
+- **Some detectors fail regardless of the move.** `MS-07` is hard-coded
+  `failed: true`. `MS-14` fails on an even trade. `TA-* D` fails whenever a
+  threat is "still reachable", with no eval check. The DB shows failures on
+  `best` and `brilliant` moves with a 0.0 win% drop.
+- **Decided positions are counted one-sidedly.** `resolveEpisodes` drops
+  *failed* observations in completely decided positions (DQ-09,
+  `resolve-episodes.ts:47`). `build-diagnostics.ts:69` still stores the
+  *non-failed* ones, which biases rates downward. 187 of the test user's 616
+  plies start at |eval| ≥ 700 cp.
+- **The tactic verdicts have no eval check.**
+  - `classifyTacticMotifOpportunity` (`game-tactic-motifs.ts:77`) makes a ply
+    an opportunity whenever the engine's best move carries a motif, even when
+    the second line is as good. It marks "missed" even when the played move
+    lost nothing.
+  - `computeTacticAllowed` (`tactic-allowed.ts:26`) gates on quality only.
+  - `computeTacticMotifPrevented` (`apps/api/src/services/tactic-prevention.ts:129`)
+    counts any motif found at any odd ply of any of the opponent's top-5 lines
+    as a threat, including lines the opponent would never play. The
+    `minWinProbabilitySwing` config (`config.ts:257`) is defined but unused.
+- **Re-analysis would duplicate observations.** `recordDiagnosticObservations`
+  (`services/analysis.ts:168`) only inserts.
+
+## Design decisions (do not relitigate)
+
+- **The eval is a witness, and it acts at the verdict layer, not the claim
+  layer.** Detectors and `verify-tactic-*` are left alone, so the precision
+  ceilings and Lichess recall floors cannot move.
+- **The engine eval already is the end-of-line value.** A stored eval is the
+  engine's search result, so a queen-lure sacrifice already evaluates well at
+  ply 1. Compare evals directly. There is no need to "walk to the end of the
+  PV" for eval.
+- **Always compare against the best alternative.** A loss is best-line eval
+  (`cpBefore`) versus the played move's eval (`cpAfter`). Both are stored
+  White-perspective and clamped, with mate folded in as ±(2000 − 10·n)
+  (`win-probability.ts`). Never compare against "the position before the
+  move".
+- **"Meaningful gap" is one predicate used everywhere** (`evalGap` in Task
+  76.1). It is true when any of these holds:
+  - The win% gap is at least 10. This is the mistake boundary, so it keeps
+    parity with today for non-decided positions.
+  - The outcome band changed (winning ≥ 75%, balanced, losing ≤ 25%) and the
+    gap is at least 5.
+  - Both evals are in the same winning or losing band and the cp gap is at
+    least 300. This is the saturation case: dropping a queen at +15 still
+    counts.
+- **Diagnostics exclude completely decided plies in both directions.** A ply
+  is decided when best and played are both ≥ 90% or both ≤ 10% (the existing
+  `isCompletelyDecidedPosition`). This is DQ-09, applied at detection time.
+  Game Review cards keep the cp rule, so "you missed mate" at +15 still
+  prints.
+- **A "compensated" position is not a failure.** If the shape says negative
+  but the eval gap is not meaningful (a sacrifice, or a mate threat instead
+  of saving a piece), the verdict is dropped. In diagnostics it becomes
+  `failed: false`, and only when the ply was an opportunity anyway.
+- **Legacy moves fall back to today's behaviour.** When `cpBefore`/`cpAfter`
+  are missing, the witness returns `null` and callers use today's quality
+  rule.
+- **No new engine calls anywhere.**
+
+## What already exists and is reused as-is (verified)
+
+- `CONFIG.severity.dampingHighWin/LowWin` (90/10) and
+  `isCompletelyDecidedPosition` (`diagnostics/resolve-episodes.ts:47`).
+- `CONFIG.miss.opportunityWinPctMin` (75) sets the outcome band.
+- `winPctFor` and `toCpWhite` (`win-probability.ts`).
+- `ClassifiedMoveDto`: `cpBefore`/`cpAfter` (White-perspective; `cpBefore` is
+  the best line's eval), `winPctBefore`/`winPctAfter` (mover-perspective),
+  `alternatives[]` (`{san, cp (White), winPct}` for lines 2..N),
+  `bestMoveSan`, and `bestLinePvSan`. The next ply's `bestLinePvSan` is the
+  engine's refutation of this move (`classify.ts:137-213`).
+- `flipActiveColorFen` (`null-move-fen.ts:20`, returns `null` when in check)
+  and `analyzeChecksCapturesThreats(fen)`.
+- `see(fen, square, side)` returns centipawn-like units (details print "SEE
+  330"). Verify the units before relying on 100 = one pawn.
+- `attackersOf`, `defendersOf`, `enemyTargetsOf` and `materialBalance`
+  (`tactic-board-facts.ts`), `computePositionFeatures`, `applySanSequence`,
+  and `PIECE_VALUES` (`tactics.ts:9`).
+- The detector registry, `PlyDiagnosticContext` (`diagnostics/context.ts`) and
+  `buildDiagnosticObservations` (`apps/api/src/services/build-diagnostics.ts`).
+- The live path `play-move-quality.ts:103` `diagnosisCodesFor` runs the same
+  registry with no `nextMoves`. Every new rule must degrade to static checks
+  when the refutation line is absent.
+
+## Baseline (test user `6dcb1cee-9d82-4235-81fc-da01f650b911`, 19 games with observations, 554 diagnosed plies)
+
+Opportunities / failed, per code+direction, before this phase:
+
+| Code | Opp. / failed | Code | Opp. / failed |
+|---|---|---|---|
+| MS-03 D | 441 / 5 | TA-43 D | 62 / 2 |
+| MS-06 O | 429 / 0 | BV-15 B | 59 / 1 |
+| MS-01 D | 231 / 2 | MS-08 N | 58 / 0 |
+| MS-04 O | 225 / 0 | TA-14 D | 44 / 1 |
+| MS-02 D | 219 / 0 | MS-14 N | 26 / 4 |
+| BV-01 D | 163 / 16 | MS-07 N | 3 / 3 |
+| MS-05 O | 149 / 0 | | |
+| BV-02 O | 103 / 2 | | |
+
+Known false failures in that data:
+- `MS-07 N` on `Nxd4`/`Qxd4`, which were `best` with a 0.0 drop.
+- `TA-43 D` on `Bxh8`, a `brilliant` move.
+- `MS-14 N` on the even trade `exd5`.
+- Several `BV-01` failures where the mistake was something else, for example
+  the missed `Qh4+` at game `07eb…` ply 20.
+
+## Layering
+
+Everything in 76.1–76.4 is pure logic in `packages/chess-analysis` (no I/O).
+76.5 touches `packages/chess-analysis` plus `apps/api/src/services/tactic-prevention.ts`.
+76.6 touches `apps/api` services and repositories. SQL stays in `db/repositories/`.
+
+### Task 76.1 — The eval witness
+
+**Read:** `packages/chess-analysis/src/win-probability.ts`, `config.ts:14-50,110-113`,
+`diagnostics/resolve-episodes.ts:36-52`.
+**Files:** new `packages/chess-analysis/src/eval-witness.ts` (+ `eval-witness.test.ts`),
+`config.ts` (new `evalWitness` block), `index.ts` (export).
+
+API:
+
+```ts
+export interface EvalGap {
+  winPctGap: number;      // mover win%(higher) - mover win%(lower); negative when "higher" is actually lower
+  cpGap: number;          // mover-perspective cp difference on the clamped scale
+  outcomeChanged: boolean;// band differs: winning (>= outcomeWinPct) / balanced / losing (<= 100 - outcomeWinPct)
+  sameDecisiveBand: boolean; // both winning or both losing
+  meaningful: boolean;
+}
+/** `higherCpWhite` is the eval the mover should have had (best line / the chance),
+ * `lowerCpWhite` the one they got. Both White-perspective, as stored. */
+export function evalGap(higherCpWhite: number, lowerCpWhite: number, mover: 'white' | 'black'): EvalGap;
+/** Best vs played for a stored move; null when cpBefore/cpAfter are missing (legacy). */
+export function playedMoveGap(move: Pick<ClassifiedMoveDto, 'cpBefore' | 'cpAfter' | 'mover'>): EvalGap | null;
+```
+
+`CONFIG.evalWitness`: `minWinPctGap: 10`, `minOutcomeChangeWinPctGap: 5`,
+`outcomeWinPct: 75`, `decisiveBandMinCpGap: 300`. Comment each value with
+why it was chosen (mistake boundary, the miss band, and roughly a minor
+piece).
+
+- [x] Failing tests, covering every rule in "Design decisions":
+  - Equal position, +300 cp to 0: meaningful.
+  - +40 to −40: not meaningful (sign flip inside the balanced band).
+  - +1500 to +600: meaningful through the cp rule.
+  - +1500 to +1300: not meaningful.
+  - Mate-in-3 (1970) to +1200: meaningful.
+  - Mate-in-3 to mate-in-5: not meaningful.
+  - Played better than best (engine noise, negative gap): not meaningful.
+  - Black mover perspective.
+  - `playedMoveGap` returns null on legacy moves.
+- [x] Implement it and export it from `index.ts`. (`CONFIG.evalWitness` also
+  carries `minThreatSeeCp: 100`, which Tasks 76.2-76.4 use.)
+- [x] Lint, typecheck, and `npx vitest run src/eval-witness.test.ts` in the package.
+
+Commit: `feat(analysis): eval witness for tactical verdicts`
+
+### Task 76.2 — Diagnostics infrastructure: eval context, DQ-09 at detection, threat/chance inventories
+
+**Read:** `diagnostics/context.ts`, `diagnostics/detectors/shared.ts`,
+`diagnostics/cct-opportunities.ts`, `diagnostics/README.md`, `diagnose.md` §4.4,
+`apps/api/src/services/build-diagnostics.ts`, `apps/api/src/services/play-move-quality.ts:90-110`.
+**Files:**
+- `diagnostics/context.ts`
+- new `diagnostics/eval-verdict.ts`
+- new `diagnostics/threat-inventory.ts`
+- new `diagnostics/chance-inventory.ts`
+- tests for each new file
+- `diagnostics/index` exports (wherever `diagnostics/*` is exported from `src/index.ts`)
+- `build-diagnostics.ts`
+- `play-move-quality.ts`
+
+1. **Context.** Add these to `PlyDiagnosticContext`, and fill them in
+   `buildPlyDiagnosticContext`:
+   - `cpBefore?`, `cpAfter?`, `winPctBefore?`, `winPctAfter?`
+   - `playedGap: EvalGap | null`, set to `playedMoveGap(move)`
+   - `refutationPvSan?: string[]`: the `bestLinePvSan` of `options.nextMoves[0]`
+     when that move's `ply === move.ply + 1`, otherwise undefined. This is the
+     engine's best reply to the played move.
+2. **`eval-verdict.ts`:**
+   - `lossConfirmed(ctx): boolean` returns `ctx.playedGap.meaningful`, or falls
+     back to `qualityFailed(ctx.quality)` when `playedGap` is null.
+   - `isDiagnosticallyMeaningfulPly(ctx): boolean` is false when
+     `isCompletelyDecidedPosition(winPctBefore, winPctAfter)` and both are
+     defined.
+   - `buildEvalObservation(ctx, code, direction, failed, detail)` sets:
+     - `hwdl = failed ? max(0, playedGap.winPctGap) / 100 : 0` (fall back to
+       `ctx.drop` like today when there is no gap)
+     - severity from the gap: ≥ 30 → decisive, ≥ 20 → major, ≥ 10 →
+       meaningful, otherwise minor. Fall back to `severityFromQuality` when
+       there is no gap.
+     - `reachability: 1`.
+3. **`threat-inventory.ts`.** The opponent's *dangerous* forcing moves:
+   - `type ThreatKind = 'check' | 'capture' | 'threat'`
+   - `interface Threat { kind; moveSan; target: Square /* captured/attacked square; king square for checks */ }`
+   - `opponentThreatsBefore(ctx, kind)` uses `flipActiveColorFen(ctx.fenBefore)`
+     and returns `[]` when that returns null (mover in check).
+     `opponentThreatsAfter(ctx, kind)` uses `ctx.fenAfter` (opponent already
+     to move).
+   - "Dangerous" is defined per kind, all static:
+     - capture: `see(fen, to, opponent) >= CONFIG.evalWitness.minThreatSeeCp` (100).
+     - check: `isCheckmate`, or both of the following after replaying the
+       check: the checker's landing square is not a profitable capture for
+       the mover (`see ≤ 0`), and the checker attacks a mover piece worth ≥ 3
+       (`PIECE_VALUES`) that is undefended or worth more than the checker.
+     - quiet threat: after replaying the threat move, its landing square is
+       safe (`see` for the mover ≤ 0) and some `targetedPieces` square is a
+       profitable capture for the opponent (`see ≥ minThreatSeeCp`).
+   - `realizedThreats(ctx, threats)` keeps a threat only when
+     `lossConfirmed(ctx)` holds and the threat is attributed. With
+     `ctx.refutationPvSan`, attribution means one of:
+     - the refutation's first move equals `threat.moveSan`;
+     - the walked line (≤ `CONFIG.tacticVerification.maxLinePlies`) has the
+       opponent capturing on `threat.target`;
+     - for checks, the line mates.
+
+     With no refutation line (the live path), the static danger is enough.
+4. **`chance-inventory.ts`.** The student's own real chances:
+   - `lineCpFor(ctx, san)` returns `ctx.cpBefore` when `san ===
+     ctx.bestMoveSan`, the matching `alternatives[].cp`, or undefined.
+   - `realChance(ctx, chanceSans)` returns `{ san, cpWhite } | null`: the
+     best-evaluated chance that appears among the engine lines. A chance is
+     real only when `evalGap(chanceCp, referenceCp).meaningful`. Take the
+     reference from the first rule that applies:
+     - the best engine line whose SAN is not in `chanceSans`;
+     - otherwise, when the played move is not in `chanceSans`, `ctx.cpAfter`;
+     - otherwise there is no reference, and the chance counts as real (every
+       good move is a chance).
+
+     A chance that is not among the engine lines is never real. This is the
+     poisoned-capture filter.
+   - `missedChance(ctx, chanceSans, chance)`: `!chanceSans.includes(ctx.moveSan)`
+     and `evalGap(chance.cpWhite, ctx.cpAfter).meaningful`.
+5. **DQ-09 at detection.** In `buildDiagnosticObservations`, skip every
+   detector on a ply where `!isDiagnosticallyMeaningfulPly(ctx)`. That drops
+   both failed and non-failed observations. Do the same in
+   `play-move-quality.ts` `diagnosisCodesFor`.
+6. Unit tests use hand-built FENs, three to five per helper. Cover: a
+   hanging-queen capture as a dangerous threat, a defended piece that is not
+   dangerous, a mate threat, a poisoned capture that is not a real chance, the
+   in-check null-move case, and attribution with and without a refutation
+   line.
+
+- [x] Failing tests first, then implement.
+- [x] Existing detector tests still pass. No detector has changed yet.
+- [x] Lint, typecheck, and run the diagnostics tests plus
+  `apps/api` `build-diagnostics` / `play-move-quality` tests.
+
+Commit: `feat(diagnostics): eval context, detection-time DQ-09, threat and chance inventories`
+
+### Task 76.3 — Defensive and self-inflicted detectors: mechanism-specific, eval-confirmed
+
+**Read:** Task 76.2's three new files, every detector below and its test,
+`diagnose.md` §4.4.
+**Files:** `detectors/{ms-01,ms-02,ms-03,bv-01,bv-10,bv-04,bv-12,bv-15,bv-16,bv-22,ms-08,ms-14}-*.ts`
+and their tests.
+
+These detectors share one shape: an **opportunity** is "the theme was present
+and dangerous", and a **failure** is "that specific threat was realised and
+the eval confirms the loss". Use `buildEvalObservation`. Stop using
+`buildQualityObservation` in these files.
+
+| Code | Opportunity | Failed |
+|---|---|---|
+| MS-02 D | `opponentThreatsBefore(capture)` non-empty, **or** realised post-move captures non-empty | `realizedThreats(opponentThreatsAfter(capture))` non-empty |
+| MS-01 D | same with `check` | same with `check` |
+| MS-03 D | same with `threat` | same with `threat` |
+| BV-01 D | pre-move own hanging pieces (`computePositionFeatures(fenBefore).hangingPieces`, mover's colour) that are dangerous captures, **or** a realised capture on a post-move hanging own piece | realised capture whose target is a post-move own hanging piece |
+| BV-10 B | today's trigger (pieces newly hung by the opponent's last move) restricted to dangerous captures | realised capture on one of those squares |
+| MS-08 N and BV-15 B | the moved piece lands on a square the opponent attacks (`attackersOf(fenAfter, dest, opponent).length > 0`) | `see(fenAfter, dest, opponent) >= minThreatSeeCp`, `lossConfirmed`, and when a refutation exists, the line captures on `dest` |
+| BV-16 B / BV-12 B | today's trigger | `lossConfirmed`, and either the refutation's first move starts from the revealing piece's square, or the line captures on the revealed square. With no refutation: static SEE ≥ threshold on the revealed square, or the revealed piece is the king |
+| BV-04 B | today's trigger | `see(fenBefore, dest, mover) < 0` and `lossConfirmed` |
+| BV-22 B | today's trigger (≥ 2 own loose pieces) | a realised capture whose target is one of those loose squares |
+| MS-14 N | today's trigger | punished within two plies **and** `lossConfirmed` (an even trade is no longer a failure) |
+
+A threat that exists after the move but is not realised (compensated, or not
+real) does not fail. It still counts as a success when the pre-move
+opportunity existed.
+
+- [x] For each detector, first update its test file to the new semantics
+  (failing), then implement. Each test file needs:
+  - one realised failure;
+  - one compensated case: the same static shape where `cpAfter ≈ cpBefore`
+    gives `failed: false`, or no observation when there was no pre-move
+    opportunity;
+  - one no-opportunity case.
+- [x] Lint, typecheck, and `npx vitest run src/diagnostics`.
+
+Commit: `fix(diagnostics): defensive and self-inflicted codes count real threats and eval-confirmed losses`
+
+### Task 76.4 — Offensive and tactic detectors
+
+**Read:** `chance-inventory.ts`, `eval-verdict.ts`, the detectors below and
+their tests, `diagnostics/detectors/ta-offensive.ts`, `ta-defensive.ts`.
+**Files:** `detectors/{ms-04,ms-05,ms-06,bv-02,ms-07}-*.ts`, `ta-offensive.ts`,
+`ta-defensive.ts`, and their tests.
+
+| Code | Chance set (SANs at `fenBefore`, the played move included when it qualifies) | Opportunity | Failed |
+|---|---|---|---|
+| MS-05 O | own captures with `see(fenBefore, to, mover) >= minThreatSeeCp` | `realChance` not null | `missedChance` |
+| BV-02 O | own captures of enemy pieces in `computePositionFeatures(fenBefore).hangingPieces` | same | same |
+| MS-04 O | all own checks | same | same |
+| MS-06 O | all own quiet threats | same | same |
+| MS-07 N | today's trigger | unchanged | `lossConfirmed`, and `ctx.bestMoveSan` is one of the intermediate moves. Remove the hard-coded `true` |
+| TA-* O | `ctx.tacticOpportunity`. Task 76.5 makes it eval-gated at its source | unchanged | `!found && lossConfirmed` |
+| TA-* D | `ctx.tacticDiagnostic`. Task 76.5 makes it eval-aware at its source | unchanged | `diagnostic.failed && lossConfirmed` |
+
+`computeCctOpportunities` returns *unplayed* lists. Build each chance set from
+the own CCT scan on `ctx.checksCapturesThreats`, so the played move is
+included when it qualifies. For the TA rows, `hwdl` and `severity` come from
+`buildEvalObservation`'s rules. Keep `rank` on the TA offensive rows.
+
+- [x] Tests first. Each detector test covers:
+  - a real chance missed (failed);
+  - the chance taken (not failed);
+  - a chance absent from the engine lines, or not better than the best
+    non-chance line (no observation);
+  - the equal-alternative case: played move ≈ chance eval, so not failed.
+- [x] Lint, typecheck, and `npx vitest run src/diagnostics`.
+
+Commit: `fix(diagnostics): offensive codes need a real, eval-confirmed chance`
+
+### Task 76.5 — Tactic finder verdicts: found, missed, allowed, prevented
+
+**Read:** `docs/tactics-rework.md` §5 and §9 (only the "A gate that was tried
+and reverted" subsection), `game-tactic-motifs.ts`,
+`played-tactic-alternative.ts`, `tactic-allowed.ts`, `available-motifs-scan.ts`,
+`tactic-prevention-check.ts`, `apps/api/src/services/tactic-prevention.ts`.
+**Files:** those files, a new `realistic-threats.ts` in chess-analysis (+ test),
+their tests, and `tactic-allowed.test.ts`.
+
+1. **Missed and found** (`classifyTacticMotifOpportunity`). Skip both gates
+   when `cpBefore`/`cpAfter` are missing.
+   - **Materiality.** Find the first line in `evals[ply-1].lines[1..]` whose
+     static `classifyTacticMotif` headline differs from the best move's
+     headline. Use `quality: 'best'`, the `checkmateFlag` helper, and no
+     `pvSan`. When such a line exists and `!evalGap(bestCp,
+     thatLineCp).meaningful`, return `null`: the tactic did not decide
+     anything. When no such line exists (a single line, or every line has the
+     same motif), keep the opportunity.
+   - **No false miss.** When the final `found` is false and
+     `!playedMoveGap(move).meaningful`, return `null`. Their move kept the
+     value, so "missed" is false and "found" would be too.
+2. **Allowed** (`computeTacticAllowed`). Return `undefined` when
+   `playedMoveGap(move)` exists and is not meaningful. This is the sacrifice
+   and lure case.
+3. **Prevented** (`tactic-prevention.ts`):
+   - **Realistic threats.** Add a new pure function
+     `realisticThreatScan(scan, lines, fen)`. It keeps a sighting only when
+     both hold:
+     - its claim wins something: `gainKind === 'mate'`, or `'material'` with
+       `verifiedGain >= CONFIG.tacticVerification.minStaticGainPawns`;
+     - its line is one the side to move would actually play:
+       `!evalGap(lines[0] cp, lines[rank] cp, sideToMove).meaningful`.
+
+     It then recomputes `motifs`. Apply it to both the before and the after
+     scans, in the free path (cache the filtered scan) and in the gated path.
+   - **Compensated.** When a motif is not defused and
+     `playedMoveGap(move)?.meaningful === false`:
+     - do not count it as preventable;
+     - `diagnosticByPly` records `failed: false`;
+     - `byPly` gets no card when the primary motif is the undefused one.
+
+     Defused motifs still count as prevented.
+   - Leave the `BEST_OR_BETTER` skip exactly as it is. Its doc comment says
+     it must not change.
+4. Do **not** touch `tactic-detectors/*`, `verify-tactic-claims.ts` or
+   `verify-tactic-line.ts`. The precision and recall numbers must not move.
+   If a test there changes, stop and report it.
+
+- [x] Failing tests:
+  - An opportunity whose second line is as good gives `null`.
+  - A real fork missed, with a meaningful drop, gives `found: false`.
+  - A missed motif where the played move is equally good gives `null`.
+  - A missed mate while +15 still gives an opportunity (cp rule).
+  - `computeTacticAllowed` on a sound sacrifice gives `undefined`.
+  - `realisticThreatScan` drops a sighting that only appears in a losing
+    rank-4 line.
+  - Prevention compensated: an undefused threat with no eval loss gives
+    `diagnosticByPly.failed === false` and no `byPly` card.
+- [x] Run `npm run test -w @freechesscoach/chess-analysis` (this includes
+  `tactic-precision.test.ts`, `lichess-puzzle-validation.test.ts` and the
+  review-case tests; ceilings and floors must hold). Also run
+  `tactic-prevention` and `analysis` tests in `apps/api`, plus lint and
+  typecheck.
+
+Commit: `feat(tactics): eval-witnessed found/missed/allowed/prevented verdicts`
+
+### Task 76.6 — Idempotent re-analysis, measurement, docs
+
+**Read:** `apps/api/src/services/analysis.ts:160-182`,
+`apps/api/src/db/repositories/diagnostic-observations.ts`.
+**Files:** `diagnostic-observations.ts` (new `replaceForGame`),
+`services/analysis.ts`, `diagnostics/README.md`, `docs/tactics-rework.md`
+(new §10), `AGENTS.md` (plan pointer).
+
+- [x] Failing repository test: `replaceForGame(db, gameId, rows)` deletes the
+  game's rows and inserts the new ones in one transaction. Use it from
+  `recordDiagnosticObservations`.
+- [x] Re-analyse the test user's games. The local stack runs the worker from
+  source (`tsx watch`), so code changes are live:
+  ```sql
+  select graphile_worker.add_job('analyze-game', json_build_object('gameId', g.id), job_key := 'analyze-game:' || g.id)
+  from games g join analyses a on a.game_id = g.id
+  where g.user_id = '6dcb1cee-9d82-4235-81fc-da01f650b911' and a.status = 'ready';
+  ```
+  Then queue `rebuild-diagnostic-profile` for the user
+  (`job_key := 'rebuild-diagnostic-profile:<userId>'`, queue name the same).
+- [x] Re-run the per-code count against `diagnostic_observations` and add the
+  after-table next to the baseline above. Pass criteria:
+  - No code+direction has opportunities above ~30% of diagnosed plies.
+  - None of the known false failures listed in the baseline remain.
+  - Spot-check three failures per remaining code by hand: the named mechanism
+    must be the one that lost the eval.
+
+  **Only if** a code still exceeds 30%, add a stopgap in `confidenceTier`
+  (`build-profile.ts`): never above `'insufficient'` when opportunities /
+  diagnosed plies > 0.3. Record why.
+- [x] Docs:
+  - `diagnostics/README.md` step 2: an opportunity must be dangerous and
+    eval-real, a failure must be the mechanism plus an eval-confirmed loss, and
+    DQ-09 applies at detection.
+  - `docs/tactics-rework.md` §10 "Eval witness on verdicts": what changed, why
+    it sits at the verdict layer, the thresholds, and the before/after
+    numbers.
+  - Update the AGENTS.md plan pointer.
+
+Done 2026-09-24 (uncommitted). Where it went beyond the task:
+- **MS-03's pre-move side is direct threats only** (`opponentDirectThreatsBefore`):
+  a mate in one, or a surviving promotion if the mover passed. Quiet "threat
+  to make a threat" moves had kept MS-03 at 48% of diagnosable plies.
+- **A refutation capture counts only on a net material loss.** One ply after
+  the capture, the mover must be down against `fenBefore`
+  (`refutationWinsOn` / `refutationCostsMaterial` in `threat-inventory.ts`).
+  Without this, the exchange `cxd5 Nxd5` read as "left d5 hanging".
+- **The allowed card reads the next ply's pre-gate chance**
+  (`build-game-report.ts`), so a blunder keeps its card when the reply didn't
+  cash in fully. See `tactics-rework.md` §10.
+- **No confidence stopgap was added.** MS-02 (145/398 = 36%) and BV-01 (30%)
+  are real en-prise positions at ~500 rating, not artefacts.
+- **After-numbers** are in `docs/tactics-rework.md` §10.
+
+Commit: `fix(diagnostics): idempotent observations; docs for eval-witnessed verdicts`
+
+## Verification (end of phase)
+
+- `npm run verify:changed` is green.
+- `tactic-precision.test.ts` ceilings and Lichess recall floors are unchanged.
+- The test user's Progress page shows opportunity counts in the tens, not the
+  hundreds. Every "failed" card, when opened, points at a move whose eval
+  dropped for that card's reason.
+
+---
+
+# Phase 77 — Leaner analysis: one engine pass, one verdict per move, early exit
+
+**Source spec:** this request (no separate spec file). Everything cited here was
+checked on 2026-09-24 by a read-only code walk. Re-check the lines before you
+edit; Phase 76 is uncommitted in the same tree. Do **not** open
+`docs/diagnose.md` or `docs/algorith.md`. Task 77.5 must read
+`docs/tactics-rework.md` §9 and §10 first.
+
+## The request
+
+Make game analysis shorter and lighter on engine, CPU and RAM, without
+changing what it concludes:
+
+- Run the most valuable check first and **stop** once the answer is settled,
+  instead of running every check.
+- When one engine evaluation can answer a question, don't make a second
+  call.
+- Each move gets **exactly one** tactical reason:
+  - a failure (missed or allowed), **or**
+  - a credit (found a tactic, or defused a threat), **or**
+  - nothing.
+
+  Rank the candidate reasons by how much of the eval they could explain,
+  check the strongest first, and stop as soon as no unchecked reason could
+  beat the one already confirmed. If nothing settles it early, run every
+  check and pick the strongest.
+
+**Not in scope:** changing tactic detectors or `verify-tactic-*` (the precision
+ceilings and recall floors must not move), and the eval-witness thresholds.
+Owner decision, not in this phase: native evaluates at depth 18 (Helm
+`ENGINE_DEFAULT_DEPTH`) while the tunnel and chess-api use depth 12
+(`packages/shared/src/constants.ts:167`).
+
+## Where the cost goes today (verified; N plies, P = N + 1 positions)
+
+**Engine**
+- `analyzeInChunks` (`apps/api/src/services/analysis.ts:325`) sends all P
+  positions in chunks of 6, multiPV 5. Book positions and repeated positions
+  are included, and nothing is deduplicated.
+- **`deepen-analysis`** (`services/deepen-analysis.ts:44-50`, queued from
+  `jobs/analyze-game.ts:49`) sends all P positions **again** and throws the
+  results away. It was meant to fill the `position_evaluations` cache, which
+  was deleted in commit 2e13f78. **This is 100% waste.**
+- The brilliant-soundness check (`services/brilliant-soundness.ts`) calls
+  `analyzePosition(fenAfter)`. `evals[ply]` already is that position, at the
+  same depth, and "best reply keeps win% ≥ before − 3" is exactly
+  `winPctFor(mover, toCpWhite(evals[ply].lines[0]))`. **One avoidable call
+  per candidate.**
+- No position evaluations are stored (`EngineEval[]` is never persisted).
+  Re-analysing a game, or resuming a paused one, sends every position that
+  isn't in the Lichess index to the engine again. Doing the Phase 76
+  re-analysis twice exhausted chess-api.com's daily quota.
+- The chess-api circuit breaker (`chess-api-engine-backend.ts:161-162`)
+  resets on every 6-position chunk. When chess-api hangs, every chunk pays
+  up to 3 × 15 s again. `FallbackEngineBackend` also has no memory between
+  chunks.
+
+**CPU**
+- `classifyMoves` runs **twice** (`analysis.ts:98, 102`). Each run includes P
+  feature scans and N `analyzeChecksCapturesThreats` (CCT) scans. The first
+  run only feeds the brilliant gate.
+- `attachEnrichment(enrichPositions)` (`analysis.ts:101-104`) is a third P
+  feature scan, and it overwrites values that are already set.
+- `computeTacticMotifPrevented` runs a PV motif scan per position: 5 lines at
+  depths 7/5/3/1/1, i.e. 17 plies, each with the full detector registry plus
+  `computePositionFeatures`.
+  - Even plies are classified and then discarded
+    (`available-motifs-scan.ts:69`).
+  - Features and diffs are never read (`pv-tactics.ts:60-70`).
+  - Lines that `realisticThreatScan` later drops are scanned anyway.
+- `buildGameReport` runs 1–6 detector-registry passes per ply: the
+  opportunity itself, the materiality witness, and the played alternative.
+  Every ply goes through this, including moves that lost nothing and had
+  nothing at stake.
+- Diagnostics:
+  - `computeTacticMotifRankHits` classifies up to 5 lines per user ply, even
+    on plies that are then skipped as decided (`build-diagnostics.ts:53`
+    vs `:70`).
+  - `buildPlyDiagnosticContext` recomputes CCT(fenAfter), which is the next
+    ply's stored `checksCapturesThreats`.
+  - BV-01, MS-01 and MS-02 each run the same null-move CCT.
+  - BV-01 and BV-02 each recompute features for `fenBefore`.
+- **Dead path:** the gated prevention fallback (`tactic-prevention-scans.ts:55`)
+  never runs, because `isTacticalPosition` is only set later, in
+  `buildGameReport`. Remove it rather than "fixing" it into new engine calls.
+
+**No timing exists** for analysis. The only related output is the
+`engine-source:` log line.
+
+## Design decisions (do not relitigate)
+
+- **Measure first, then cut.** Task 77.1 adds per-step timings and a
+  replayable benchmark. Every later task reports before/after numbers from
+  it.
+- **One engine pass per game, stored.** Persist a game's `EngineEval[]`.
+  Re-analysis and resume reuse whatever is already stored and only request
+  what is missing.
+- **Identical output** for Tasks 77.2–77.4. Pin the annotated PGN, report and
+  observations of a fixture game before and after, byte for byte (the report
+  is already deterministic; see `build-game-report.test.ts`).
+- **Task 77.5 intentionally changes output:** at most one tactic reason per
+  move, which replaces today's up-to-three cards. It fixes Phase 76's known
+  weakness, where a move's diagnostic cause was chosen by family order
+  instead of by how much of the loss it explains.
+
+## Layering
+
+Pure decision logic lives in `packages/chess-analysis`. Persistence (a
+migration, `analyses` repository functions with Zod-validated writes) and job
+wiring live in `apps/api`. SQL only in `db/repositories/`.
+
+### Task 77.1 — Timings, stored evals, and a replay benchmark
+
+**Read:** `apps/api/src/services/analysis.ts:62-160,325-353`,
+`apps/api/src/db/repositories/analyses.ts`, `apps/api/src/db/schema.ts:95-110`,
+the newest file in `apps/api/src/db/migrations/`.
+**Files:**
+- `analysis.ts`
+- a new migration `analyses.engine_evals jsonb null`
+- `schema.ts`
+- `analyses.ts` (repository): `storeEngineEvals`, `findEngineEvals`
+- a new `apps/api/scripts/bench-analysis.ts`
+- a `package.json` script `bench:analysis`
+
+- [x] **Store evals.** After each chunk in `analyzeInChunks`, write the evals
+  gathered so far with `storeEngineEvals`, validated with
+  `EngineEvalSchema.array()`. On entry, load `findEngineEvals`: positions that
+  already have an eval at the same index **and** the same `fen` are reused,
+  and only the missing ones go to the engine. Test: resuming after a
+  simulated failure at chunk 3 requests only chunks 3+. Test: re-analysis of
+  a finished game makes zero engine calls.
+- [x] **Timings.** Wrap each step of `runAnalyzeGameJob` in a small `timed(label, fn)` helper:
+  - engine
+  - classify
+  - prevention
+  - report
+  - diagnostics
+  - candidate moments
+
+  Log one line per game: `analysis-timing: game=<id> plies=<N> engineCalls=<n> engine=<ms> classify=<ms> ...`.
+  Count engine calls with a counting wrapper around `deps`.
+- [x] **Benchmark.** `bench-analysis.ts --user <id>` or `--game <id>` loads
+  stored evals and PGNs and runs every pure step from `runAnalyzeGameJob`
+  (classify → prevention free path → report → diagnostics), with no DB writes
+  and no engine calls. It prints per-step milliseconds (median of 3 runs)
+  and peak `process.memoryUsage().heapUsed`, and writes a JSON snapshot of
+  the annotated PGN, report and observations for the identical-output
+  checks in 77.2–77.4.
+- [x] Fill the evals once with a re-analysis of the test user
+  (`6dcb1cee-9d82-4235-81fc-da01f650b911`). Record the baseline table (per
+  step, total, heap) in this task.
+
+  **Baseline (2026-09-24).** 19 games with stored evals, 1,165 plies, no
+  engine. Median of 3 runs. Snapshot:
+  `<scratchpad>/snap-77-1.json`.
+
+  | Step | Median ms | Peak heap MB |
+  |---|---|---|
+  | classify | 57,284 | 446.8 |
+  | prevention | 621,764 (65%) | 370.7 |
+  | report | 138,182 | 392.6 |
+  | diagnostics | 134,908 | 414.4 |
+  | candidateMoments | 2 | 414.4 |
+  | **total** | **951,856 (~50 s/game)** | **446.8** |
+
+  Live `analysis-timing:` lines from the fill run (local engine):
+  - engine: 20-220 s per game;
+  - classify spikes of 40-60 s, which are the brilliant-soundness engine
+    calls that 77.2 removes;
+  - prevention: 7-48 s per game.
+
+Commit: `perf(analysis): store engine evals, per-step timings, replay benchmark`
+
+### Task 77.2 — Engine waste
+
+**Read:** Task 77.1 output, `jobs/analyze-game.ts`, `services/deepen-analysis.ts`,
+`services/brilliant-soundness.ts`, `services/engine/chess-api-engine-backend.ts`,
+`services/engine/fallback-engine-backend.ts`, `services/tactic-prevention-scans.ts`.
+**Files:** those files, `jobs/index.ts` (task list), and their tests.
+
+- [x] **Stop queueing `deepen-analysis`.** Delete the job, its service and its
+  task registration, and drop pending jobs in the migration from 77.1 (or a
+  new one): `delete from graphile_worker.jobs where task_identifier = 'deepen-analysis'`.
+- [x] **Brilliant soundness from stored evals.** Make it a pure function of
+  `(evals[ply], mover, beforeWin)`, with no engine argument. Keep the same
+  threshold. Test: identical verdicts on the existing fixtures.
+- [x] **Deduplicate repeated positions** within a game by `positionKey(fen)`
+  before sending them, then fan the results back out.
+- [x] **Per-job circuit breakers.** Move chess-api's
+  `consecutiveFailures`/`circuitOpen` onto the backend instance (it is built
+  once per job, `jobs/analyze-game.ts:39`). Give `FallbackEngineBackend` a
+  sticky "primary failed" flag, so later chunks go straight to the fallback.
+  Test: after 3 failures, the next chunk makes no primary calls.
+- [x] **Delete the dead gated prevention fallback** and the `engine`
+  parameter it threads through `computeTacticMotifPrevented`.
+- [x] Re-run the benchmark and a real re-analysis of one game. Check that the
+  output is identical to 77.1's snapshot and that the logged engine-call
+  count drops. Record the numbers.
+  Real re-analysis of game `6dc75948` (33 plies):
+  - engine calls: 9 → **0**;
+  - engine: 20,756 → 8 ms;
+  - classify: 6,031 → 1,450 ms;
+  - total: 51,137 → 26,642 ms.
+
+  The migration also needs `DATABASE_URL` set when run from the host:
+  `DATABASE_URL=postgresql://chess_coach:chess_coach@localhost:5432/chess_coach npm run migrate -w apps/api`.
+
+  **Benchmark (2026-09-24), done.** `--runs 1` (the new flag) on the same 19
+  games and 1,165 plies: `snap-77-2.json` is byte-identical to
+  `snap-77-1.json` (same sha256). The pure steps are unchanged, as expected,
+  because the benchmark never made engine calls: classify 60,305 ms
+  (57,284 before), prevention 655,909 (621,764), report 145,677 (138,182),
+  diagnostics 140,697 (134,908), total 1,002,590 (951,856). The ~5% gap is
+  single-run noise against a median of 3. Peak heap 218 MB (447) reflects
+  one run, not a real saving. The savings are in live engine calls: no
+  `deepen-analysis` pass (P calls per game), no soundness call (the 40-60 s
+  classify spikes), and each repeated position sent once.
+  **Still open:** the real re-analysis of one game to see the drop in
+  `engineCalls` in the log line. It needs a queued analysis job, so the
+  implementer did not run it.
+
+Commit: `perf(analysis): one engine pass per game — drop deepen, reuse evals, sticky breakers`
+
+### Task 77.3 — Compute each thing once
+
+**Read:** `analysis.ts:95-110`, `packages/chess-analysis/src/classify.ts`,
+`position-enrichment.ts`, `build-game-report.ts:230-250`,
+`apps/api/src/services/build-diagnostics.ts`,
+`packages/chess-analysis/src/diagnostics/context.ts`, `threat-inventory.ts`,
+`detectors/bv-01-*.ts`, `detectors/own-chance.ts`,
+`services/engine/lichess-eval-engine-backend.ts`,
+`services/engine/lite-supplemented-engine-backend.ts:220-265`.
+
+- [x] **`classifyMoves` once.** Pick the brilliant candidates from the one
+  classification, re-classify **only** those plies with their soundness, and
+  splice them back in. Remove the redundant `attachEnrichment`/`enrichPositions`
+  if `classifyMoves` already sets the same fields (verify field by field
+  first; keep whichever is the single source).
+- [x] **Reuse features.** Pass the enrichment features into
+  `computeIsTacticalPosition` (`build-game-report.ts:240`).
+- [x] **Diagnostics sharing.** In `buildPlyDiagnosticContext`, take
+  `opponentChecksCapturesThreats` from the next ply's stored
+  `checksCapturesThreats`, falling back to computing it. Add `featuresBefore`
+  from `previousMove.features`, and compute a lazily memoised null-move CCT
+  once per context. Switch BV-01, MS-01, MS-02, MS-03 and BV-02 to these
+  fields.
+- [x] **Rank hits only where needed.** Compute rank hits only for plies that
+  pass `isDiagnosticallyMeaningfulPly`.
+- [x] **Engine-backend CPU.** The Lichess backend's `analyzeGame` path should
+  skip `computePositionFeatures` when `toLeanEval` discards it.
+  `needsSupplement` should count legal moves with
+  `new Chess(fen).moves().length`.
+- [x] Benchmark: identical snapshot, with per-step times recorded.
+
+  **Done (2026-09-24).**
+  - `classifyMoves` takes a `resolveBrilliantSoundness(move)` callback; only
+    the plies it answers are built a second time (`analysis-steps.ts`).
+    `attachEnrichment` is gone: `classifyMoves` already sets `features`,
+    `moveFlags` and `featureDelta` from the same `enrichPositions` call.
+  - `featuresBeforeOf` (`features-before.ts`) reuses the previous move's
+    `features` when its `fenAfter` is this `fenBefore`; used by
+    `computeIsTacticalPosition` and the diagnostic context's new
+    `featuresBefore` (BV-01, BV-02).
+  - `opponentChecksCapturesThreats` reuses the next ply's stored scan only
+    when `nextMoves[0]` is ply + 1 **and** its `fenBefore` is this
+    `fenAfter`. It is the same call on the same FEN: the stored scan's only
+    option, `featuresBefore`, feeds `captureOpportunities`, which is what the
+    call computes without it. The detector test fixture's fake reply now
+    carries its own scan instead of the original move's.
+  - Null-move CCT memoised per context (`diagnostics/null-move-scan.ts`,
+    WeakMap), shared by BV-01, MS-01 and MS-02. MS-03's "before" side is a
+    legal-move walk, not CCT; its "after" side uses the shared scan.
+  - Rank hits and contexts only for `isDiagnosticallyMeaningfulPly` plies.
+  - Lichess `analyzeGame` builds lean evals without features;
+    `needsSupplement` counts `legalSanMoves(fen).length`.
+
+  `--runs 1`, same 19 games / 1,165 plies: `snap-77-3.json` is
+  byte-identical (`cmp`) to `snap-77-1.json`. Noisy: 77.4 was being edited
+  at the same time, so its prevention change is in these numbers.
+
+  | Step | ms (77.2) | ms (77.3) | Peak heap MB |
+  |---|---|---|---|
+  | classify | 60,305 | 36,029 | 147.3 |
+  | prevention | 655,909 | 342,933 (77.4 in tree) | 186.4 |
+  | report | 145,677 | 144,886 | 169.0 |
+  | diagnostics | 140,697 | 105,730 | 193.6 |
+  | candidateMoments | — | 2 | 193.6 |
+  | **total** | **1,002,590** | **629,581** | **193.6** |
+
+Commit: `perf(analysis): compute classification, features and scans once`
+
+### Task 77.4 — Lighter PV motif scan
+
+**Read:** `pv-tactics.ts`, `available-motifs-scan.ts`, `realistic-threats.ts`,
+`apps/api/src/services/tactic-prevention*.ts`. Do not edit
+`tactic-detectors/` or `verify-tactic-*`.
+
+- [x] Give `annotatePvTactics` a `claimsOnly` option. It skips
+  `computePositionFeatures`, the feature diffs, and classification of even
+  plies, while still replaying them and threading `previousMove`.
+  `scanAvailableMotifs` uses it.
+  Every `scanAvailableMotifs` caller (`tactic-prevention-scans.ts`,
+  `tactic-prevention-check.ts`'s `scanThreatOutcome`,
+  `apps/api/src/services/position-tactics.ts`'s graduated mode) reads only
+  odd-ply claims, so all of them get the fast walk. `annotatePvTactics` keeps
+  the full mode by default; its only other callers are its tests.
+- [x] Apply `realisticThreatScan`'s playable-line filter *before* scanning a
+  rank. Only ranks whose line is playable get scanned.
+  New `scanRealisticThreats(fen, lines)` (`realistic-threats.ts`) passes the
+  line-eval half as `scanAvailableMotifs`' `shouldScanRank`; the claim-gain
+  half needs the claims, so it still runs after. The per-eval-index cache in
+  `tactic-prevention-scans.ts` is unchanged: it always held the filtered scan.
+  Tests: `pv-tactics.test.ts` (claims-only odd plies = full mode's) and
+  `realistic-threats.test.ts` (fast path = full-mode filter-after-scan,
+  including an unplayable rank).
+- [x] Benchmark: identical snapshot. Record the prevention step's time and
+  heap before and after.
+  **2026-09-24, `--runs 1`:** `snap-77-4.json` is byte-identical to
+  `snap-77-1.json` (same sha256). Prevention **655,909 → 346,665 ms** (−47%;
+  621,764 in the 77.1 median baseline), peak heap at that step 203.3 MB
+  (single run; 370.7 in the 3-run baseline). Total 674,949 ms. Task 77.3 was
+  being implemented and benchmarked at the same time, so the other steps'
+  times are noisy and not attributable to this task.
+
+Commit: `perf(tactics): scan only what the prevention path reads`
+
+### Task 77.5 — One verdict per move, strongest reason first, early exit
+
+**Read:** `docs/tactics-rework.md` §9-§10, `eval-witness.ts`,
+`tactic-opportunity-witness.ts`, `game-tactic-motifs.ts`,
+`played-tactic-alternative.ts`, `tactic-allowed.ts`, `realistic-threats.ts`,
+`tactic-card-order.ts`, `build-game-report.ts`,
+`apps/api/src/services/tactic-prevention.ts`,
+`diagnostics/resolve-episodes.ts`, `apps/api/src/services/build-diagnostics.ts`.
+**Files:**
+- new `packages/chess-analysis/src/move-verdict/`, with one reason per
+  file: `index.ts`, `ceilings.ts`, `reasons/*.ts`, plus tests
+- `build-game-report.ts`
+- `tactic-prevention.ts`
+- `resolve-episodes.ts`
+- `build-diagnostics.ts`
+- `game-tactic-motifs.ts` (counts)
+
+**The verdict.** `decideMoveVerdict(move, evals, context) → MoveVerdict | null`,
+where `MoveVerdict = { kind: 'failure' | 'credit', reason, explainedCpWhite, card }`.
+`reason` is one of:
+- failure: `missedMate`, `allowedMate`, `missedTactic`, `allowedTactic`
+- credit: `foundMate`, `foundTactic`, `defusedThreat`
+
+The notation below:
+- **B:** the best line's cp (`cpBefore`).
+- **P:** the played move's cp (`cpAfter`).
+- **R:** the best line whose headline motif differs from the best move's (the
+  materiality witness already finds it). R = B when the best move has no
+  motif.
+- **S:** the second-best line's cp.
+
+All values are White-perspective, and every comparison goes through
+`evalGap`.
+
+1. **Gate (free).**
+   - `playedMoveGap(move).meaningful` → failure branch.
+   - Else, when the move mattered (`evalGap(B, S).meaningful`, with the played
+     move at or near B) → credit branch.
+   - Else → `null`. **No detector runs at all.**
+2. **Ceilings (free, from stored evals only).**
+   - Failure branch:
+     - `allowedMate` (the opponent mates in `evals[ply].lines[0]`) = the
+       full gap;
+     - `missedMate` (the mover mates in `evals[ply-1].lines[0]`) = the full
+       gap;
+     - `missedTactic` = gap(B, max(R, P));
+     - `allowedTactic` = gap(min(R, B), P).
+   - Credit branch:
+     - `foundMate` = gap(B, S);
+     - `foundTactic` = gap(B, R);
+     - `defusedThreat` = the smaller of the threat's claimed gain (pawns →
+       cp, from the prevention scan's before-sighting) and gap(B, S).
+   - A ceiling that is not meaningful drops that reason unchecked.
+3. **Checks in descending ceiling order.** Each check is today's existing
+   logic, reused, not rewritten:
+   - `missed*` / `found*`: `classifyTacticChance` / `classifyPlayedTacticAlternative`.
+   - `allowed*`: the next ply's pre-gate chance (as `computeTacticAllowed`
+     reads it).
+   - `defusedThreat`: `realisticThreatScan` on the before and after scans.
+
+   A check returns the confirmed explained value, or `null`. **Stop** when a
+   confirmed reason's value ≥ the largest remaining ceiling. Otherwise run
+   the rest and keep the largest confirmed. Ties go to the fixed order mate >
+   tactic > threat.
+4. **Value lost and value gained (net) decides the one reason.** Every check
+   walks its own line and returns
+   `{ explainedCpWhite, gainedPawns, lostPawns, mateFor, mateAgainst }`. Reuse
+   the material walk in `verify-tactic-line.ts` (`materialBalance` per ply,
+   capped at `CONFIG.tacticVerification.maxLinePlies`); do not rewrite it.
+   Which line each check walks:
+   - missed: the best line;
+   - allowed: the refutation, `evals[ply].lines[0].pvSan` from `fenAfter`;
+   - found: the played move plus its continuation;
+   - defused: the before-sighting's line.
+
+   Rules:
+   - **The primary reason is the largest confirmed value.** Rank by
+     `explainedCpWhite`, and break ties by |net material| (mate above any
+     material). The smaller events on the same move go only into the card's
+     detail. Example: the move wins a knight (+3) but the refutation takes
+     the queen (−9), net −6. The reason is the queen loss, and the detail
+     reads "won a knight, but it cost the queen".
+   - **Material must agree with the eval.** Keep a reason only when both
+     hold:
+     - The net material points the same way as its eval gap. A loss needs
+       net ≤ −1 or mate against; a gain needs net ≥ +1 or mate for.
+     - The eval confirms it (`evalGap(...).meaningful`).
+
+     A material story the eval contradicts is dropped: "won a rook" with no
+     eval gain means the rook was bait. Keep Phase 76's positional rung: a
+     motif with gain kind `positional` needs no material, only the eval.
+   - **The credit side nets the same way.** `foundTactic` needs net > 0 on
+     the played line (winning a rook while handing back the queen is not a
+     find). `defusedThreat` is worth what the threat's line would have won.
+   - **Cheaper ceilings.** Tighten each eval ceiling with a material upper
+     bound read straight off the stored line: the most valuable piece the
+     line can capture, or mate. Once a mate or a queen-sized loss is
+     confirmed, nothing smaller can win, so stop there.
+5. **Laziness is the saving.**
+   - The prevention PV scan runs only when `defusedThreat` is still a
+     candidate at step 3. Build a lazy per-position scan cache in
+     `tactic-prevention.ts` instead of the eager loop over every move.
+   - The materiality witness runs only when `missedTactic` or `foundTactic`
+     is being checked.
+
+**Wiring.**
+- `build-game-report.ts` sets **at most one** of `tacticOpportunity` /
+  `tacticAllowed` / `tacticPrevention` per move, from the verdict. The web
+  UI already renders any subset (`apps/web/src/features/board/tacticSelection.ts`,
+  `TacticReasonList.tsx`), so check that it shows a single card cleanly.
+  `tactic-card-order.ts` becomes trivial; keep its export.
+- Per-game counts come from the verdicts:
+  - `computeTacticMotifCounts`: opportunities = verdicts `missedTactic` +
+    `foundTactic`; found = `foundTactic`.
+  - Prevention counts: preventable = `defusedThreat` + the unprevented
+    threats recorded under `allowedTactic`; prevented = `defusedThreat`.
+
+  Document this change in counting next to the functions.
+- **Diagnostics: at most one observation per ply**, and it comes from the
+  verdict. This applies to successes as well as failures (owner, 2026-09-24).
+  - The detectors still run, but only on plies whose verdict is not `null`.
+    A `null` verdict means nothing was lost and nothing was at stake, so it
+    is not a §4.4 opportunity. Skip every detector there.
+  - Of the observations the detectors return, keep only the one whose code
+    matches the verdict, `failed = (verdict.kind === 'failure')`. Drop the
+    rest, failed and non-failed alike. This ends the double counting where
+    one attacked piece fed MS-02, BV-01, BV-15 and MS-08 all at once.
+  - Write the verdict-to-code mapping in `move-verdict/diagnostic-code.ts`:
+    - TA codes via `motifToCode`;
+    - `allowedTactic` whose claim wins a piece that was already hanging → BV-01;
+    - one that wins the moved piece → BV-15;
+    - another capture → MS-02;
+    - a check → MS-01;
+    - a quiet threat → MS-03;
+    - a missed or found free capture → BV-02 (hanging) / MS-05;
+    - checks → MS-04;
+    - threats → MS-06;
+    - `defusedThreat` → the same code the matching `allowed` would have
+      used, as a success.
+
+    When the matching detector returned nothing, record the verdict's code
+    with `buildEvalObservation`. With one cause per ply, `resolveEpisodes`'
+    precedence only matters for DQ-11 cascades.
+  - Expected effect, to be measured and recorded here: MS-02 and BV-01
+    opportunities fall from ~145/118 to a fraction of that, and the
+    per-code rates become failure / (failure + handled-when-it-mattered).
+
+- [x] Failing tests first, one per branch:
+  - gate `null` (no detector call; spy on `classifyTacticClaims`);
+  - rescued the queen but missed mate → `missedMate`, with the allowed check
+    never run;
+  - hung a piece while the best move was quiet → `allowedTactic`;
+  - both present, with the missed part bigger → `missedTactic`, and the
+    reverse;
+  - found a fork → `foundTactic`;
+  - defused a mate threat → `defusedThreat`, with the scan run only for that
+    ply (spy);
+  - every top line equal → `null`.
+  - won a knight but the refutation takes the queen → one failure (queen
+    loss), with the knight in the detail;
+  - "won" a rook as bait while the eval drops → no `foundTactic`;
+  - a sound sacrifice (net −3, eval holds) → no failure;
+  - a queen loss is confirmed first, so the pawn-sized checks never run
+    (spy).
+- [x] Run `npm run test -w @freechesscoach/chess-analysis`,
+  `npm run test:corpus -w @freechesscoach/chess-analysis` (ceilings and floors
+  unchanged), and the apps/api analysis, prevention and build-game-report
+  tests.
+- [x] Benchmark: record the per-step times and how many detector-registry
+  runs and PV scans the early exit saved (add counters to the benchmark).
+  Spot-check 10 verdicts on the test user's games by hand, and list them in
+  this task.
+
+  **Wiring done (2026-09-24).**
+  - `report-tactic-verdicts.ts` (`attachTacticVerdicts`) decides one verdict
+    per move inside `buildGameReport` and sets at most one card from
+    `verdict.card`; the card's sentence and its `detail` (capitalised, as a
+    separate line) go into `reasons`, and any tactic card a caller attached
+    earlier is replaced. `buildGameReportWithVerdicts` also returns the
+    verdicts. `tactic-card-order.ts` is a fixed order (for old reports).
+  - Counts: `computeTacticMotifCounts(verdicts)` (opportunities =
+    `missedTactic` + `foundTactic`, found = `foundTactic`; plus mates under
+    `checkmate`, see the follow-up) and `move-verdict/prevention-counts.ts` (prevented = `defusedThreat`,
+    preventable = that + every `allowedTactic`, whether or not the threat stood before the move; `BEST_OR_BETTER` only guards the
+    unprevented side). Prevention counts are set only when scans are given.
+  - Prevention: `computeTacticMotifPrevented` is gone. `createPreventionScans`
+    (`tactic-prevention.ts`) returns a per-move, per-eval-index cached
+    provider; `decideMoveVerdict` calls it only for `defusedThreat`.
+    `attachTacticPrevention` is gone too. The step labelled `prevention` now
+    only builds the provider; its scans are timed under `report`.
+  - Diagnostics: `move-verdict/diagnostic-code.ts` holds the table.
+    `freePiece` goes by shape (BV-01/BV-02/MS-02/MS-05), not TA-43, since it
+    *is* the plan's "free capture" row. `build-diagnostics.ts` skips
+    null-verdict plies (they still extend a DQ-11 cascade), runs only the
+    verdict code's detector, and synthesises with `buildEvalObservation`
+    when it returns nothing. **`diagnosticByPly` is retired:**
+    `ctx.tacticDiagnostic` is now built from the verdict's allowed/defused
+    card; rank hits are computed only for a `TA-*` `O` target.
+  - Two core fixes found by the spot-check: a move that *delivers* mate read
+    as `missedMate` (the position after mate has no lines, so `cpAfter` = 0);
+    `gate.ts` now takes P as the mate (test in `gate.test.ts`). And
+    `detail.ts` cancels like-for-like trades ("won the queen, giving back a
+    queen and a pawn" was a queen trade).
+
+  **Follow-up (same day): tiers and mates.**
+  - Tier 1 is a mate or material reason; tier 2 is positional (develops,
+    tempo, safety). Tier 1 runs first, in both the ceiling order and the
+    final pick. A missed or found tactic whose line wins nothing is a tier-2
+    candidate, and a confirmed card's gain kind decides its tier. Tier 2 runs
+    only when no tier-1 reason confirmed, and never stops a tier-1 check.
+  - The verifier rejects 4.Nd5? Nxe4 5.Qd3 Nf6 as a free pawn: the knight
+    retreats, and `verify-tactic-*` is out of scope. So `allowedTactic` now
+    falls back to a plain capture card (`reasons/hung-material.ts`) when the
+    reply's first move captures and the walk nets a loss. The eval gap still
+    has to confirm it.
+  - `detail.ts` cancels equal-value trades (a bishop for a knight).
+  - Mates count again: `missedMate` is a `checkmate` opportunity, and
+    `foundMate` is an opportunity and a find.
+  - Nd5 re-checked: now `allowedTactic`, "They let you win a pawn through a
+    free piece with Nxe4". `166d607a` 4.g4 keeps the develops miss, because
+    it hangs nothing.
+
+  **Benchmark (`--runs 1`, 19 games, 1,165 plies, `snap-77-5b.json`).**
+
+  | Step | ms (77.4 clean) | ms (77.5) |
+  |---|---|---|
+  | classify | 36,097 | 37,502 |
+  | prevention | 337,097 | 1 (scans now lazy, inside report) |
+  | report | 145,179 | 81,448 |
+  | diagnostics | 106,090 | 2,379 |
+  | **total** | **624,465** | **121,332 (−81%)**, peak heap 156 MB |
+
+  Counters:
+  - verdicts: **988 of 1,165 plies `null`** (no detector ran there).
+    Failures: allowedTactic 58, missedTactic 29, allowedMate 18,
+    missedMate 10. Credits: defusedThreat 32, foundTactic 25, foundMate 5.
+  - checks run: missedMate 10, allowedMate 18, foundMate 5, missedTactic
+    110, allowedTactic 116, foundTactic 60, defusedThreat 58.
+  - detector-registry runs: `classifyTacticChance` 314 plus 92 materiality
+    witnesses. Before, at least 2 × 1,165: every ply in the report
+    enrichment and again in `computeTacticMotifCounts`.
+  - prevention: **112 PV scans of 1,184 positions**, before every position,
+    58 threat outcomes compared.
+  - diagnostic detector runs: **52**. Before, 41 detectors on each of ~398
+    diagnosable plies, about 16,000.
+  - checkmate motif stat: 17 opportunities, 7 found.
+
+  **Per-code diagnostic opportunities / failures** (the test user, observation
+  rows: episode primaries + successes):
+
+  | Code | Phase 76 (§10) | 77.5 |
+  |---|---|---|
+  | MS-02 D | 145 / 1 | 9 / 4 |
+  | BV-01 D | 118 / 10 | 2 / 2 |
+  | MS-05 O | 35 / 0 | 2 / 1 |
+  | MS-06 O | 31 / 2 | 1 / 1 |
+  | MS-07 N | 18 / 0 | 0 |
+  | MS-01 D | 16 / 1 | 0 |
+  | MS-04 O | 10 / 2 | 2 / 2 |
+  | MS-03 D | 5 / 0 | 0 |
+  | BV-15 B | — | 7 / 5 |
+  | BV-02 O | — | 5 / 2 |
+  | TA-10 D | — | 4 / 2 |
+  | TA-01 O | — | 2 / 1 |
+  | TA-07 D, TA-07 O | — | 1 / 0 each |
+  | TA-11 O, TA-14 O | — | 1 / 1 each |
+
+  38 observations in all, 22 failed.
+
+  **Spot-check (10 verdicts, from `snap-77-5.json`, before the follow-up):**
+  1. `1f9a4fd4` 9…Qd7?? allowedTactic: Bb5 pins and wins the queen; detail
+     "won a bishop, but it cost the queen". Correct.
+  2. `1f9a4fd4` 19.Qe6+ allowedTactic: …Bxe6 takes the queen. Correct.
+  3. `1f9a4fd4` 19…Kg5 allowedMate: f4+ mating net. Correct.
+  4. `57efe425` 19.Qa3+ missedMate: Bb4+ mated. Correct.
+  5. `166d607a` 45…Rf8 allowedMate: Bxf8. Correct (already lost; DQ-09
+     keeps it out of the diagnostics).
+  6. `166d607a` 10…dxc4 foundTactic, "broke the pin": d5 was pinned to d8,
+     and the capture wins the c4 bishop. Correct.
+  7. `166d607a` 23.Kxg3 foundTactic: the free bishop on g3. Correct.
+  8. `9dc058e9` 18…Ng4+ foundMate; detail "won the queen, giving back a
+     knight". Correct.
+  9. `5bb77172` 29…Rxb2 foundMate, "You forced mate": it kept a forced mate
+     but not the Qc4# mate in 1. Generous.
+  10. `07eb21d9` 4.Nd5? was "missed a chance to develop"; **fixed by the
+     follow-up**, see above.
+  Still doubtful: `166d607a` 11.Qxd8+ as defusedThreat, which is really a
+  queen trade.
+
+Commit: `feat(analysis): one tactical verdict per move, strongest reason first with early exit`
+
+### Task 77.6 — Docs
+
+- [x] `docs/architecture.md`, analysis pipeline:
+  - stored evals, and reuse on re-analysis and resume;
+  - there is no `deepen-analysis` job;
+  - the single-verdict pass;
+  - how to run the benchmark.
+
+  Deleted the comments that still claimed a `position_evaluations` cache
+  (`analysis.ts` was already clean; `routes/unified-tunnel.ts`,
+  `engine-client.ts`, `coach-context.ts`) and the `schema.ts`
+  declaration of the table that no longer exists. A repo-wide grep for
+  `position_evaluations`, `deepen-analysis`, `deepenAnalysis` and
+  `CachingEngineBackend` outside this file and the migrations turned up many
+  more stale comments than the four named above (across `packages/shared`,
+  several `apps/api/src/services/engine/*`, bot services, routes, a web
+  hook, tests, `services/engine`, and two spots in `docs/tactics-rework.md`
+  and `docs/architecture.md` itself) — all fixed.
+- [x] `docs/tactics-rework.md` §11: one reason per move, the ceiling table,
+  and the before/after benchmark.
+- [x] Update the AGENTS.md plan pointer.
+
+Commit: `docs: lean analysis pipeline and single-verdict tactics`
+
+## Verification (end of phase)
+
+- `npm run verify:changed` is green, and `test:corpus` is unchanged.
+- The benchmark on the test user shows each task's saving. The
+  identical-output snapshots hold through 77.4.
+- Re-analysing one finished game makes **0** engine calls.
+- In Game Review, each move shows at most one tactic sentence, and it names
+  the reason that explains the most of the eval loss.

@@ -31,6 +31,35 @@ function buildEvals(positions: readonly ParsedPosition[]): EngineEval[] {
   });
 }
 
+const FORK_PGN = `[White "Alice"]
+[Black "Bob"]
+[SetUp "1"]
+[FEN "4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1"]
+[Result "*"]
+
+1. Nd6+ Kd8`;
+
+/** Nd6+ forks the king and the rook, and the fork is the whole point: the
+ * next line (Ka2) is worth nothing, so the move mattered and gets a verdict
+ * (Task 77.5's credit gate needs a second line to compare against). */
+function forkEvals(positions: readonly ParsedPosition[]): EngineEval[] {
+  const [start, afterFork, afterKing] = positions;
+  if (!start || !afterFork || !afterKing) throw new Error('fork fixture needs three positions');
+  return [
+    {
+      ply: 0,
+      fen: start.fen,
+      depth: 16,
+      lines: [
+        { moveUci: 'c4d6', moveSan: 'Nd6+', cp: 500, mateIn: null },
+        { moveUci: 'a1a2', moveSan: 'Ka2', cp: 0, mateIn: null, pvSan: ['Ka2'] }
+      ]
+    },
+    { ply: 1, fen: afterFork.fen, depth: 16, lines: [{ moveUci: 'e8d8', moveSan: 'Kd8', cp: 500, mateIn: null, pvSan: ['Kd8', 'Nxb7+'] }] },
+    { ply: 2, fen: afterKing.fen, depth: 16, lines: [{ moveUci: 'd6b7', moveSan: 'Nxb7+', cp: 500, mateIn: null }] }
+  ];
+}
+
 function buildFixtureBook(): BookReport {
   return {
     source: 'test-fixture@1',
@@ -125,22 +154,15 @@ describe('buildGameReport', () => {
     // Same fork fixture as classify-tactic-motif.test.ts's FORK_FEN, reached
     // via a [FEN]/[SetUp] PGN header (chess.js honors either) instead of the
     // standard start position.
-    const forkPgn = `[White "Alice"]
-[Black "Bob"]
-[SetUp "1"]
-[FEN "4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1"]
-[Result "*"]
-
-1. Nd6+ Kd8`;
-    const game = parsePgn(forkPgn);
-    const evals = buildEvals(game.positions);
+    const game = parsePgn(FORK_PGN);
+    const evals = forkEvals(game.positions);
     const moves = classifyMoves(game, evals, 'white');
     const report = buildGameReport({
       game,
       evals,
       moves,
       book: buildFixtureBook(),
-      engine: { name: 'stockfish', depth: 16, multiPv: 1 },
+      engine: { name: 'stockfish', depth: 16, multiPv: 2 },
       priorRating: { white: null, black: null },
       result: { white: 'win', black: 'loss' }
     });
@@ -172,7 +194,7 @@ describe('buildGameReport', () => {
     expect(forkMove?.reasons).toContain('You won a rook through a fork — knight on d6 forks e8 and b7.');
   });
 
-  test('a move that hands over a queen says so, ahead of every other sentence on it', () => {
+  test('a move that hands over a queen says so, and that is its one tactic sentence', () => {
     // Dany_Abr vs hnpr24, the position before 9...Qd7: the queen steps onto
     // d7 and Bb5 pins it against the king on e8. The card for the move that
     // gave the queen away used to say only what the mover *should* have
@@ -215,30 +237,22 @@ describe('buildGameReport', () => {
       gain: { kind: 'material', prize: 'queen' },
       byMoveSan: 'Bb5'
     });
-    // First of the move's tactic sentences, ahead of the "they should have
-    // played Be7" one that used to be the whole card, and it names both the
-    // prize and the reply that collects it.
-    const reasons = blunder?.reasons ?? [];
-    const allowedAt = reasons.indexOf(
+    // Task 77.5: one reason per move. The queen explains the whole loss, so
+    // the "they should have played Be7" card that used to sit next to it is
+    // gone; the bishop the line took on the way goes into the detail.
+    expect(blunder?.tacticOpportunity).toBeUndefined();
+    expect(blunder?.reasons).toContain(
       'They let you win a queen through a pin two moves away with Bb5 — the queen on d7 is stuck in front of the king.'
     );
-    expect(allowedAt).toBeGreaterThanOrEqual(0);
-    expect(allowedAt).toBeLessThan(reasons.indexOf('They missed a chance to break the pin with Be7 — the knight on f6 is free to move again.'));
+    expect(blunder?.reasons).toContain('Won a bishop, but it cost the queen.');
+    expect(blunder?.reasons).not.toContain('They missed a chance to break the pin with Be7 — the knight on f6 is free to move again.');
   });
 
-  test('the tactic sentence worth more opens the note, ahead of the prevention sentence already on the move', () => {
-    // The prevention sentence is appended by the API's attachTacticPrevention
-    // *before* the report is built, so ordering the two is an insertion, not
-    // an append — see build-game-report.ts's withTacticSentence.
-    const forkPgn = `[White "Alice"]
-[Black "Bob"]
-[SetUp "1"]
-[FEN "4k3/1r6/8/8/2N5/8/8/K7 w - - 0 1"]
-[Result "*"]
-
-1. Nd6+ Kd8`;
-    const game = parsePgn(forkPgn);
-    const evals = buildEvals(game.positions);
+  test('the verdict\'s one card replaces a prevention card attached before the report', () => {
+    // An older caller attached a prevention card (and its sentence) before
+    // the report was built; the verdict decides the move's one card now.
+    const game = parsePgn(FORK_PGN);
+    const evals = forkEvals(game.positions);
     const prevention = {
       type: 'pin',
       prevented: true,
@@ -258,15 +272,23 @@ describe('buildGameReport', () => {
       evals,
       moves,
       book: buildFixtureBook(),
-      engine: { name: 'stockfish', depth: 16, multiPv: 1 },
+      engine: { name: 'stockfish', depth: 16, multiPv: 2 },
       priorRating: { white: null, black: null },
       result: { white: 'win', black: 'loss' }
     });
 
-    const reasons = report.moves.find((move) => move.moveSan === 'Nd6+')?.reasons ?? [];
-    const opportunityAt = reasons.indexOf('You won a rook through a fork — knight on d6 forks e8 and b7.');
-    expect(opportunityAt).toBeGreaterThanOrEqual(0);
-    expect(opportunityAt).toBeLessThan(reasons.indexOf(preventionText));
+    const fork = report.moves.find((move) => move.moveSan === 'Nd6+');
+    expect(fork?.tacticPrevention).toBeUndefined();
+    expect(fork?.reasons).toContain('You won a rook through a fork — knight on d6 forks e8 and b7.');
+    expect(fork?.reasons).not.toContain(preventionText);
+    // Counted from the verdict: one fork opportunity, found.
+    expect(report.players.white.tacticMotifs.fork).toMatchObject({ opportunities: 1, found: 1 });
   });
 
+  test('a flat game with nothing at stake gets no tactic card at all', () => {
+    const report = buildFixtureReport();
+    for (const move of report.moves) {
+      expect([move.tacticOpportunity, move.tacticAllowed, move.tacticPrevention].filter(Boolean)).toHaveLength(0);
+    }
+  });
 });

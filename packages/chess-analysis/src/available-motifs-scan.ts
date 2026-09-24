@@ -42,8 +42,7 @@ export function threatKey(claim: Pick<VerifiedTacticClaim, 'type' | 'victim' | '
 /**
  * The multi-ply generalization of `scanTacticsForLines`: walks each of
  * `lines`' PVs to a rank-dependent depth (the graduated schedule,
- * `scanDepthForRank`) via the existing `annotatePvTactics` — no changes to
- * `pv-tactics.ts` itself. Only odd plies (1, 3, 5, ...) are collected: those
+ * `scanDepthForRank`) via the existing `annotatePvTactics`. Only odd plies (1, 3, 5, ...) are collected: those
  * are the side-to-move's own moves; even plies are the engine's intervening
  * hypothetical reply, walked through only to reach the next real position,
  * never credited as a sighting.
@@ -55,16 +54,24 @@ export function threatKey(claim: Pick<VerifiedTacticClaim, 'type' | 'victim' | '
  * Graceful degradation is automatic: a missing/single-element `pvSan`
  * produces exactly one step and stops, identical to the ply-1-only behavior
  * this generalizes.
+ *
+ * The walk runs in `annotatePvTactics`' claims-only mode: only odd-ply claims
+ * are read here, so the feature scans and the even-ply classification are
+ * skipped (Task 77.4). `shouldScanRank`, when given, skips a rank's walk
+ * entirely — for a caller that would drop every sighting of that rank anyway
+ * (`scanRealisticThreats`). Ranks keep their index in `lines` either way.
  */
 export function scanAvailableMotifs(
   fenBefore: string,
   lines: readonly EngineLine[],
-  topN: number = ENGINE_MULTI_PV
+  topN: number = ENGINE_MULTI_PV,
+  shouldScanRank?: (rank: number) => boolean
 ): AvailableMotifScan {
   const sightings: PvMotifSighting[] = [];
   lines.slice(0, topN).forEach((line, rank) => {
+    if (shouldScanRank && !shouldScanRank(rank)) return;
     const pv = line.pvSan && line.pvSan.length > 0 ? line.pvSan : [line.moveSan];
-    const { steps } = annotatePvTactics(fenBefore, pv, scanDepthForRank(rank));
+    const { steps } = annotatePvTactics(fenBefore, pv, scanDepthForRank(rank), { claimsOnly: true });
     for (const step of steps) {
       if (step.ply % 2 === 0) continue;
       for (const claim of step.claims) {

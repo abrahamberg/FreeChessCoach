@@ -1,10 +1,12 @@
 import { sql, type Kysely } from 'kysely';
 import type { CandidateMoment } from '@freechesscoach/chess-analysis';
 import {
+  EngineEvalSchema,
   ImportableGameSourceSchema,
   type AnalysisStatus,
   type BookReport,
   type CoachingPlan,
+  type EngineEval,
   type GameReport,
   type PlayerColor,
   type StoredGameReport
@@ -110,14 +112,38 @@ export function updateStatus(
 
 /** Replaces `storeEngineEvals` (0032_annotated_pgn.ts): the batch job calls
  * this once per analyzed chunk instead of persisting the whole growing evals
- * array, which nothing ever read back once a game reached `ready`. */
-export function incrementEvalsComputed(db: Kysely<Database>, id: string, by: number): Promise<void> {
+ * array, which nothing ever read back once a game reached `ready`. Absolute,
+ * not additive: a rerun (resume after a pause, a crashed worker, a retry)
+ * walks the chunks from the start again, and adding to the count the first
+ * run left behind pushed the progress past 100%. */
+export function setEvalsComputed(db: Kysely<Database>, id: string, count: number): Promise<void> {
   return db
     .updateTable('analyses')
-    .set((eb) => ({ evalsComputed: eb('evalsComputed', '+', by) }))
+    .set({ evalsComputed: count })
     .where('id', '=', id)
     .execute()
     .then(() => undefined);
+}
+
+/** Task 77.1 (0006_analysis_engine_evals.ts): the evals gathered so far,
+ * replacing whatever was stored. Validated on write so a reader can trust it. */
+export async function storeEngineEvals(db: Kysely<Database>, id: string, evals: EngineEval[]): Promise<void> {
+  const validated = EngineEvalSchema.array().parse(evals);
+  await db
+    .updateTable('analyses')
+    .set({ engineEvals: JSON.stringify(validated) })
+    .where('id', '=', id)
+    .execute();
+}
+
+/** The stored evals, or `[]` when none are stored. A stored value that no
+ * longer parses is treated as absent — the caller re-requests those
+ * positions rather than failing the analysis. */
+export async function findEngineEvals(db: Kysely<Database>, id: string): Promise<EngineEval[]> {
+  const row = await db.selectFrom('analyses').select('engineEvals').where('id', '=', id).executeTakeFirst();
+  if (!row?.engineEvals) return [];
+  const parsed = EngineEvalSchema.array().safeParse(row.engineEvals);
+  return parsed.success ? parsed.data : [];
 }
 
 export function storeBookReport(
@@ -272,7 +298,9 @@ export function markFailed(db: Kysely<Database>, id: string, error: string): Pro
  * leaves `completedAt` unset: this isn't done, it's retryable once the
  * user's browser tunnel reconnects (routes/unified-tunnel.ts), and
  * `evalsComputed` (already persisted per chunk by analyzeInChunks) is left
- * as-is so the resumed run's cache hits pick up right where this left off. */
+ * as-is. The resumed run still walks every chunk from the start — positions
+ * already stored are cache hits, so they return quickly — and overwrites the
+ * count as it goes. */
 export function markPaused(db: Kysely<Database>, id: string, error: string): Promise<void> {
   return db
     .updateTable('analyses')
@@ -286,7 +314,7 @@ export function markPaused(db: Kysely<Database>, id: string, error: string): Pro
  * routes/unified-tunnel.ts, the moment that user's tunnel reconnects, to
  * re-enqueue exactly the games that were waiting on it (jobs/analyze-game.ts
  * re-running is safe and cheap even for the positions it already finished:
- * they're already in position_evaluations). */
+ * they're already stored in `analyses.engine_evals`, Task 77.1, and reused). */
 export async function findPausedGameIdsForUser(db: Kysely<Database>, userId: string): Promise<string[]> {
   const rows = await db
     .selectFrom('analyses')

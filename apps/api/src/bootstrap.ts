@@ -22,6 +22,17 @@ export function requireEnv(name: string): string {
   return value;
 }
 
+/** Jobs the worker runs at once. Two lets the next game's engine pass start
+ * while the previous game is still in its slower tactics/report step,
+ * instead of every import waiting behind it. The engine service's own pool
+ * (`ENGINE_POOL_SIZE`) still bounds real engine parallelism. */
+const DEFAULT_WORKER_CONCURRENCY = 2;
+
+export function workerConcurrencyFromEnv(value: string | undefined = process.env.WORKER_CONCURRENCY): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 1 ? parsed : DEFAULT_WORKER_CONCURRENCY;
+}
+
 /** Reads the deployment-only LLM knobs. User endpoint, models and API key are
  * supplied through the encrypted setup route. `LLM_FAKE=1` short-circuits
  * every model call in getModelForUser for smoke tests. */

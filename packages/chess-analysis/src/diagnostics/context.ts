@@ -8,17 +8,17 @@ import type {
   TacticMotifType
 } from '@freechesscoach/shared';
 import { analyzeChecksCapturesThreats } from '../checks-captures-threats.js';
+import { playedMoveGap, type EvalGap } from '../eval-witness.js';
+import { featuresBeforeOf } from '../features-before.js';
 import type { TacticMotifRankHit } from '../game-tactic-motifs.js';
 import type { PgnMoveComment } from '../pgn-move-comments.js';
 
 /**
- * Mirrors `apps/api/src/services/tactic-prevention.ts`'s
- * `TacticMotifPreventionResult['diagnosticByPly']` entry shape. Redeclared
- * here rather than imported — that module is a service (engine access,
- * batch/game-scoped), and `packages/chess-analysis` cannot depend on
- * `apps/api` (AGENTS.md layering). The service computes it once per game and
- * the caller resolves this ply's entry before calling
- * `buildPlyDiagnosticContext`, same pattern as `previousMove`/`nextMoves`.
+ * The opponent tactic a move allowed (`failed`) or defused (not failed) —
+ * built by the caller from the move's verdict (`move-verdict/`,
+ * `apps/api/src/services/build-diagnostics.ts`, Task 77.5), the same way it
+ * resolves `previousMove`/`nextMoves`. It used to mirror the prevention
+ * pass's `diagnosticByPly`, which the single-verdict pass retired.
  */
 export interface TacticDiagnosticEntry {
   type: TacticMotifType;
@@ -31,8 +31,9 @@ export interface TacticDiagnosticEntry {
  * from the already-stored `ClassifiedMoveDto` — no new engine calls. The one
  * thing not already sitting on the move is the opponent's CCT scan: the
  * stored `checksCapturesThreats` is the *mover's* pre-move scan (what they
- * had to find), so the opponent's post-move scan is computed fresh here from
- * `fenAfter`, which is a pure position analysis, not an engine call.
+ * had to find), so the opponent's post-move scan comes from the next ply's
+ * stored scan, or is computed here from `fenAfter` (a pure position
+ * analysis, not an engine call).
  */
 export interface PlyDiagnosticContext {
   ply: number;
@@ -46,18 +47,37 @@ export interface PlyDiagnosticContext {
   /** Win% drop for this move (0–100) — the hWDL proxy every failing
    * observation's `hwdl` derives from until Phase 54 computes it properly. */
   drop?: number;
+  /** Best line's eval at `fenBefore` and the played move's eval, both
+   * White-perspective and clamped as stored (`ClassifiedMoveDto`). */
+  cpBefore?: number;
+  cpAfter?: number;
+  /** Mover-perspective win% of the best line and of the played move —
+   * DQ-09's "completely decided" check reads these. */
+  winPctBefore?: number;
+  winPctAfter?: number;
+  /** Best line against the played move (`playedMoveGap`) — the eval witness
+   * every loss verdict consults. `null` on a legacy move without evals. */
+  playedGap: EvalGap | null;
+  /** The engine's best reply to the played move: the next ply's
+   * `bestLinePvSan`. Undefined when the next ply is not known (the live
+   * path, or the last move of a game). */
+  refutationPvSan?: string[];
   isTacticalPosition?: boolean;
   bestMoveSan?: string;
   bestLinePvSan?: string[];
   alternatives?: AlternativeMove[];
   features?: PositionFeatures;
+  /** The position features of `fenBefore`: `previousMove.features` when that
+   * move ended on `fenBefore`, computed otherwise (Task 77.3). */
+  featuresBefore: PositionFeatures;
   featureDelta?: FeatureDeltaDto;
   /** The mover's own pre-move CCT scan (§II.D's "what was available to
    * find"), read straight off the stored move. */
   checksCapturesThreats?: ChecksCapturesThreats;
   /** The opponent's CCT scan on `fenAfter` (§II.D's "what was left standing
-   * for the opponent to answer") — always computed, never read off the
-   * stored move, since no such field exists there. */
+   * for the opponent to answer"): the next ply's own stored
+   * `checksCapturesThreats` (the same scan of the same position) when the
+   * caller passed that ply, computed otherwise (Task 77.3). */
   opponentChecksCapturesThreats: ChecksCapturesThreats;
   tacticOpportunity?: ClassifiedMoveDto['tacticOpportunity'];
   tacticPrevention?: ClassifiedMoveDto['tacticPrevention'];
@@ -75,12 +95,8 @@ export interface PlyDiagnosticContext {
    * plies" check needs to look forward from this ply. Undefined for the
    * same reasons as `previousMove`. */
   nextMoves?: readonly ClassifiedMoveDto[];
-  /** §4.4's unbiased defensive-direction source (Task 50.4's
-   * `diagnosticByPly`, resolved to this ply by the caller) — the opponent
-   * motif reachable before this move, and whether the mover's move defused
-   * it, independent of `ClassifiedMoveDto.tacticPrevention`'s
-   * BEST_OR_BETTER skip (see that field's and `diagnosticByPly`'s doc
-   * comments for why the two must stay separate). `TA-*` direction-`D`
+  /** The verdict's allowed or defused opponent tactic, resolved to this ply
+   * by the caller (see `TacticDiagnosticEntry`). `TA-*` direction-`D`
    * detectors read this, not `tacticPrevention`. */
   tacticDiagnostic?: TacticDiagnosticEntry;
   /** This ply's `computeTacticMotifRankHits` entries (Task 53.5), resolved
@@ -121,14 +137,21 @@ export function buildPlyDiagnosticContext(
     quality: move.quality,
     cpLoss: move.cpLoss,
     drop: move.drop,
+    cpBefore: move.cpBefore,
+    cpAfter: move.cpAfter,
+    winPctBefore: move.winPctBefore,
+    winPctAfter: move.winPctAfter,
+    playedGap: playedMoveGap(move),
+    refutationPvSan: refutationFor(move, options.nextMoves),
     isTacticalPosition: move.isTacticalPosition,
     bestMoveSan: move.bestMoveSan,
     bestLinePvSan: move.bestLinePvSan,
     alternatives: move.alternatives,
     features: move.features,
+    featuresBefore: featuresBeforeOf(move.fenBefore, options.previousMove),
     featureDelta: move.featureDelta,
     checksCapturesThreats: move.checksCapturesThreats,
-    opponentChecksCapturesThreats: analyzeChecksCapturesThreats(move.fenAfter),
+    opponentChecksCapturesThreats: opponentScanFor(move.fenAfter, move.ply, options.nextMoves),
     tacticOpportunity: move.tacticOpportunity,
     tacticPrevention: move.tacticPrevention,
     moveTime: (options.moveTimes ?? []).find((entry) => entry.ply === move.ply),
@@ -137,4 +160,21 @@ export function buildPlyDiagnosticContext(
     tacticDiagnostic: options.tacticDiagnostic,
     tacticRankHits: options.tacticRankHits
   };
+}
+
+/**
+ * The next ply's stored pre-move scan is `analyzeChecksCapturesThreats` of
+ * its `fenBefore` (`classify.ts`, with that position's own features, which is
+ * what the scan computes without them), so when that `fenBefore` is this
+ * move's `fenAfter` it is exactly the scan this context needs.
+ */
+function opponentScanFor(fenAfter: string, ply: number, nextMoves: readonly ClassifiedMoveDto[] | undefined): ChecksCapturesThreats {
+  const reply = nextMoves?.[0];
+  const isSamePosition = reply?.ply === ply + 1 && reply.fenBefore === fenAfter;
+  return (isSamePosition ? reply.checksCapturesThreats : undefined) ?? analyzeChecksCapturesThreats(fenAfter);
+}
+
+function refutationFor(move: ClassifiedMoveDto, nextMoves: readonly ClassifiedMoveDto[] | undefined): string[] | undefined {
+  const reply = nextMoves?.[0];
+  return reply?.ply === move.ply + 1 ? reply.bestLinePvSan : undefined;
 }

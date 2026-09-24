@@ -10,7 +10,7 @@ export interface PracticeAssignmentCardProps {
 
 function progressLabel(assignment: PuzzleAssignment): string {
   const solved = assignment.items.filter((item) => item.result !== 'pending').length;
-  return `${solved} of ${assignment.items.length} puzzles`;
+  return `${solved} of ${assignment.items.length} positions`;
 }
 
 /** One coach-assigned practice set, on the Games page's own "Practice" rail

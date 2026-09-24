@@ -69,5 +69,12 @@ function colorOverlay(visual: { arrows: { from: string; to: string }[]; highligh
  * whether the "show tactic arrows" (ready-made-arrows) toggle even
  * appears, and whether a given sentence is clickable at all. */
 export function hasTacticVisual(move: ClassifiedMoveDto | undefined): boolean {
-  return Boolean(move?.tacticAllowed?.visual || move?.tacticOpportunity?.visual || move?.tacticPrevention?.visual);
+  return tacticVisualCount(move) > 0;
+}
+
+/** How many of the move's tactic sentences have arrows. A report built since
+ * Task 77.5 has at most one sentence, and then the "show all" toggle would
+ * only repeat what clicking that sentence already does. */
+export function tacticVisualCount(move: ClassifiedMoveDto | undefined): number {
+  return [move?.tacticAllowed?.visual, move?.tacticOpportunity?.visual, move?.tacticPrevention?.visual].filter(Boolean).length;
 }

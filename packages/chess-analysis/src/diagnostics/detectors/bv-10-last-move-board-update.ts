@@ -1,15 +1,19 @@
 import type { PlyDiagnosticContext } from '../context.js';
+import { buildEvalObservation } from '../eval-verdict.js';
+import { opponentThreatsAfter, realizedThreats, threatsOn, type Threat } from '../threat-inventory.js';
 import type { DiagnosticDetector, DiagnosticObservation } from '../types.js';
-import { buildQualityObservation } from './shared.js';
+import { ownSquares, postMoveFeatures } from './own-piece-squares.js';
 
 /**
  * §II.C BV-10 "Last-move board-update failure" — fails to update attacks
- * and defenses after the opponent moves. Fires when the opponent's
- * immediately preceding move (`ctx.previousMove.featureDelta.newHangingPieces`)
- * newly hung one of the mover's own pieces, and this move's resulting
- * position (`ctx.features.hangingPieces`) shows it is still hanging —
- * i.e. the mover's move didn't register or address the change the
- * opponent's last move made to the board.
+ * and defenses after the opponent moves.
+ *
+ * Opportunity: the opponent's immediately preceding move
+ * (`ctx.previousMove.featureDelta.newHangingPieces`) newly hung one of the
+ * mover's pieces, it is still hanging after this move, and the opponent
+ * can now win it outright (a dangerous capture on that square).
+ * Failure: the engine's refutation actually takes it there and the eval
+ * confirms the loss.
  *
  * Needs `ctx.previousMove` — undefined for the game's first ply or when the
  * caller only has this one move in hand, in which case this detector finds
@@ -20,16 +24,22 @@ export const bv10LastMoveBoardUpdateFailure: DiagnosticDetector = {
   direction: 'B',
   priority: 130,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
-    const newlyHangingFromOpponentsMove = (ctx.previousMove?.featureDelta?.newHangingPieces ?? []).filter(
-      (piece) => piece.color === ctx.mover
-    );
-    if (newlyHangingFromOpponentsMove.length === 0) return null;
+    const newlyHung = ownSquares(ctx.previousMove?.featureDelta?.newHangingPieces ?? [], ctx.mover);
+    if (newlyHung.length === 0) return null;
 
-    const stillHangingSquares = new Set((ctx.features?.hangingPieces ?? []).map((piece) => piece.square));
-    const unaddressed = newlyHangingFromOpponentsMove.filter((piece) => stillHangingSquares.has(piece.square));
-    if (unaddressed.length === 0) return null;
+    const stillHanging = new Set(ownSquares(postMoveFeatures(ctx).hangingPieces, ctx.mover));
+    const unaddressed = newlyHung.filter((square) => stillHanging.has(square));
+    const dangerous = threatsOn(opponentThreatsAfter(ctx, 'capture'), unaddressed);
+    if (dangerous.length === 0) return null;
 
-    const detail = `the opponent's last move newly hung ${unaddressed.map((p) => p.square).join(', ')}, still hanging after this move`;
-    return buildQualityObservation(ctx, 'BV-10', 'B', detail);
+    const realised = realizedThreats(ctx, dangerous);
+    return buildEvalObservation(ctx, 'BV-10', 'B', realised.length > 0, detailFor(dangerous, realised));
   }
 };
+
+function detailFor(dangerous: readonly Threat[], realised: readonly Threat[]): string {
+  const squares = [...new Set(dangerous.map((threat) => threat.target))].join(', ');
+  const base = `the opponent's last move newly hung ${squares}, still hanging after this move`;
+  if (realised.length === 0) return `${base}, but it was not lost`;
+  return `${base}, and it was lost to ${realised.map((threat) => threat.moveSan).join(' / ')}`;
+}

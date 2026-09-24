@@ -25,6 +25,10 @@ export type ClassifiedMove = ClassifiedMoveDto;
 export interface ClassifyMovesOptions {
   /** Results of the API-layer B6 engine check, keyed by move ply. */
   brilliantSoundnessByPly?: ReadonlyMap<number, boolean>;
+  /** The B6 check as a callback over the move's first classification: return
+   * a verdict for a Brilliant candidate, `undefined` otherwise. Only the plies
+   * it answers are classified a second time, with that verdict (Task 77.3). */
+  resolveBrilliantSoundness?: (move: ClassifiedMove) => boolean | undefined;
 }
 
 /** Classifies every move through the report's decision order. */
@@ -49,7 +53,7 @@ export function classifyMoves(
       throw new Error(`Missing move enrichment for ply ${position.ply}`);
     }
 
-    return buildClassifiedMove({
+    const moveInput: ClassifiedMoveInput = {
       position,
       beforeFen: before.fen,
       evalBefore: currentEval,
@@ -63,7 +67,10 @@ export function classifyMoves(
       opening,
       brilliantSoundness: options.brilliantSoundnessByPly?.get(position.ply),
       isRecapture: isRecapture(game.positions[index - 1], before, position)
-    });
+    };
+    const move = buildClassifiedMove(moveInput);
+    const brilliantSoundness = options.resolveBrilliantSoundness?.(move);
+    return brilliantSoundness === undefined ? move : buildClassifiedMove({ ...moveInput, brilliantSoundness });
   });
 }
 
@@ -118,7 +125,7 @@ export function classifyLiveMove(input: {
   });
 }
 
-function buildClassifiedMove(input: {
+interface ClassifiedMoveInput {
   position: ParsedGame['positions'][number];
   beforeFen: string;
   evalBefore: EngineEval;
@@ -132,7 +139,9 @@ function buildClassifiedMove(input: {
   opening: OpeningResolution | null;
   brilliantSoundness: boolean | undefined;
   isRecapture: boolean;
-}): ClassifiedMove {
+}
+
+function buildClassifiedMove(input: ClassifiedMoveInput): ClassifiedMove {
   const mover = input.position.mover ?? 'white';
   const cpBefore = toCpWhite(firstLine(input.evalBefore) ?? EMPTY_SCORE);
   const deliveredMate = input.position.moveSan?.endsWith('#') ?? false;

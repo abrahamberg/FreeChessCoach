@@ -21,6 +21,9 @@ export interface AnalysisProgressProps {
    * on the final position the whole time -- omit and it just falls back to
    * finalFen throughout, as before. */
   positions?: string[];
+  /** The rotating tips under the board. Off when several boards share a
+   * screen (the bulk-import grid), where one line per board would be noise. */
+  showTips?: boolean;
 }
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
@@ -41,7 +44,8 @@ const TOTAL_SQUARES = 64;
 const TIPS = [
   'The engine reviews every move, but you\'ll only talk about what matters once you start coaching.',
   'No engine numbers here — just the moments worth understanding.',
-  'This can take a few minutes, especially for longer games.'
+  'This can take a few minutes, especially for longer games.',
+  'The last stretch checks every move for tactics you could have played or stopped — it takes the longest.'
 ];
 
 const TIP_ROTATE_MS = 4000;
@@ -118,7 +122,7 @@ function describeProgress(status: AnalysisProgressProps['status'], enginePercent
   if (status === 'engine_running') {
     return enginePercent !== null ? `Reviewing your game — ${enginePercent}%` : 'Reviewing your game';
   }
-  if (status === 'planning') return 'Finishing up your analysis';
+  if (status === 'planning') return 'Looking for tactics and building your report';
   if (status === 'ready') return 'Analysis ready';
   return 'Reading your game';
 }
@@ -136,14 +140,16 @@ export function AnalysisProgress({
   error,
   analyzedPositions = 0,
   totalPositions = 0,
-  positions
+  positions,
+  showTips = true
 }: AnalysisProgressProps): ReactNode {
   const [tipIndex, setTipIndex] = useState(0);
 
   useEffect(() => {
+    if (!showTips) return;
     const interval = setInterval(() => setTipIndex((i) => (i + 1) % TIPS.length), TIP_ROTATE_MS);
     return () => clearInterval(interval);
-  }, []);
+  }, [showTips]);
 
   if (status === 'failed') {
     return (
@@ -188,9 +194,11 @@ export function AnalysisProgress({
       <p className="visually-hidden" role="status">
         {describeProgress(status, enginePercent)}
       </p>
-      <p className="analysis-progress__tip" data-testid="analysis-progress-tip">
-        {TIPS[tipIndex]}
-      </p>
+      {showTips && (
+        <p className="analysis-progress__tip" data-testid="analysis-progress-tip">
+          {TIPS[tipIndex]}
+        </p>
+      )}
     </div>
   );
 }

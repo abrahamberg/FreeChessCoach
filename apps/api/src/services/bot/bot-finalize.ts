@@ -1,5 +1,4 @@
 import type { Kysely } from 'kysely';
-import * as analysesRepo from '../../db/repositories/analyses.js';
 import * as gamesRepo from '../../db/repositories/games.js';
 import * as sessionsRepo from '../../db/repositories/sessions.js';
 import type { SessionRow } from '../../db/repositories/sessions.js';
@@ -14,19 +13,18 @@ export interface FinalizeBotGameDependencies {
 /**
  * Ends a play_bot game's session + game row the same way regardless of how
  * it ended (checkmate/stalemate/draw via commitBotTurn's own detection, a
- * resignation, or a clock flag) — marks the game's result, completes the
- * session, and enqueues the standard post-game analysis job (the same
- * insertQueued + enqueueAnalyzeGame pair game-import.ts uses), deliberately
- * at full depth rather than the bot's own shallow playing depth, since this
- * phase is about accurate review. Factored out of commitBotTurn so every
- * way a bot game can end shares one finish line.
+ * resignation, or a clock flag) — marks the game's result and completes the
+ * session. It deliberately does NOT queue analysis: the student is asked
+ * whether to keep the game, and only keeping it (`keepBotGame`) analyses it
+ * and spends import quota. Factored out of commitBotTurn so every way a bot
+ * game can end shares one finish line.
  *
  * A play_bot game can now reach this from two independent triggers racing
  * each other — a clock-timeout claim (claimBotGameTimeout) and a recovered
  * bot reply (requestBotMove, via useBotTurnFailover's poll) — so the session
  * completion is claimed atomically first (completeIfActive); a caller that
  * loses the race returns early instead of double-writing the result or
- * queuing a second analysis job for the same game.
+ * finalizing the same game twice.
  */
 export async function finalizeBotGame(
   deps: FinalizeBotGameDependencies,
@@ -39,6 +37,4 @@ export async function finalizeBotGame(
 
   await gamesRepo.updateResult(deps.db, session.gameId, result);
   await sessionsRepo.updateSubjectAndCurrentPly(deps.db, session.id, finalPly);
-  await analysesRepo.insertQueued(deps.db, session.gameId);
-  await deps.jobQueue.enqueueAnalyzeGame(session.gameId);
 }

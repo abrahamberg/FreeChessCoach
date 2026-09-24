@@ -104,6 +104,10 @@ export interface AnalysesTable {
    * a game reaches `ready`). Incremented per chunk instead of growing a
    * jsonb array nothing re-reads. */
   evalsComputed: Generated<number>;
+  /** 0006_analysis_engine_evals.ts — the game's `EngineEval[]` so far,
+   * written after every analysed chunk and read back on re-analysis/resume
+   * (services/analysis-chunks.ts). Null until the first chunk lands. */
+  engineEvals: Jsonb<unknown> | null;
   coachingPlan: Jsonb<unknown> | null;
   /** 0037_candidate_moments.ts — `findCandidateMoments`' output, persisted so
    * the lazily-generated coaching plan never needs raw per-position evals. */
@@ -194,16 +198,6 @@ export interface FocusAreasTable {
   isPrimary: Generated<boolean>;
 }
 
-export interface PositionEvaluationsTable {
-  fen: string;
-  depth: number;
-  multiPv: number;
-  analysis: Jsonb<unknown>;
-  isExternalEval: Generated<boolean>;
-  lastAccessedAt: Generated<Date>;
-  createdAt: Generated<Date>;
-}
-
 /** 0025_diagnostics.ts — one row per surviving `DiagnosticEntry`
  * (packages/chess-analysis/src/diagnostics/diagnostic-entry.ts). `detail`
  * carries the rest of that interface's context fields (opening, phase,
@@ -268,6 +262,8 @@ export interface PuzzleSessionsTable {
   currentPly: Generated<number>;
   startedAt: Generated<Date>;
   endedAt: Date | null;
+  /** Latest coach turn's request/response — see 0005_puzzle_session_debug_snapshot.ts. */
+  debugSnapshot: ColumnType<unknown, string | null | undefined, string | null>;
 }
 
 /** Mirrors SessionMessagesTable; `itemIndex` stands in for `ply`. */
@@ -310,7 +306,6 @@ export interface Database {
   sessionMoveNotes: SessionMoveNotesTable;
   findings: FindingsTable;
   focusAreas: FocusAreasTable;
-  positionEvaluations: PositionEvaluationsTable;
   diagnosticObservations: DiagnosticObservationsTable;
   diagnosticProfiles: DiagnosticProfilesTable;
   puzzleAssignments: PuzzleAssignmentsTable;

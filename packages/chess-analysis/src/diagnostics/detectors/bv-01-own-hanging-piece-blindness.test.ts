@@ -1,93 +1,64 @@
-import type { ClassifiedMoveDto, PositionFeatures } from '@freechesscoach/shared';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { buildPlyDiagnosticContext } from '../context.js';
 import { bv01OwnHangingPieceBlindness } from './bv-01-own-hanging-piece-blindness.js';
-import { bv22LoosePieceInventoryFailure } from './bv-22-loose-piece-inventory.js';
+import { detectorContext } from './test-context.js';
 
-const EMPTY_FEATURES: PositionFeatures = {
-  turn: 'black',
-  boardState: 'none',
-  availableMoves: [],
-  mobility: { white: 0, black: 0 },
-  controlledSquares: [],
-  piecesUnderAttack: [],
-  hangingPieces: [],
-  underDefendedPieces: [],
-  overloadedDefenders: [],
-  centerControlScore: { white: 0, black: 0 },
-  openFiles: [],
-  semiOpenFiles: [],
-  doubledPawns: [],
-  isolatedPawns: [],
-  passedPawns: [],
-  targetsAttacked: [],
-  forks: [],
-  captureOpportunities: []
-};
+/** Qd1-d5 hangs the queen to the e6 pawn. Nothing hung before. */
+const QUEEN_BLUNDER_FEN = '4k3/8/4p3/8/8/8/8/3QK3 w - - 0 1';
+/** The queen already hangs on d5 before White moves. */
+const QUEEN_ALREADY_HANGING_FEN = '4k3/8/4p3/3Q4/8/8/8/4K3 w - - 0 1';
+/** Nd5 is defended by c4, so nothing hangs after it. */
+const DEFENDED_KNIGHT_FEN = '4k3/8/5n2/8/2P5/2N5/8/4K3 w - - 0 1';
 
-function playMove(features: PositionFeatures, overrides: Partial<ClassifiedMoveDto> = {}): ClassifiedMoveDto {
-  return {
-    ply: 1,
-    moveSan: 'Kf1',
-    mover: 'white',
-    isUserMove: true,
-    cpLoss: 350,
-    quality: 'blunder',
-    bestLineSan: ['Kf1'],
-    evalAfterCp: -400,
-    hangsPiece: false,
-    drop: 40,
-    fenBefore: '4k3/8/8/8/8/8/8/R3K3 w Q - 0 1',
-    fenAfter: '4k3/8/8/8/8/8/8/R4K2 b - - 1 1',
-    features,
-    ...overrides
-  };
+const LOSS: Partial<ClassifiedMoveDto> = { quality: 'blunder', cpBefore: 900, cpAfter: 0 };
+const NO_LOSS: Partial<ClassifiedMoveDto> = { quality: 'blunder', cpBefore: 900, cpAfter: 880 };
+
+function contextFor(fenBefore: string, moveSan: string, overrides: Partial<ClassifiedMoveDto>, refutation?: string[]) {
+  return detectorContext(fenBefore, moveSan, overrides, { refutation });
 }
 
 describe('bv01OwnHangingPieceBlindness', () => {
-  test('fires when the mover leaves one of their own pieces hanging', () => {
-    const features: PositionFeatures = {
-      ...EMPTY_FEATURES,
-      hangingPieces: [{ square: 'a1', piece: 'r', color: 'white', attackers: 1, defenders: 0 }]
-    };
-    const ctx = buildPlyDiagnosticContext(playMove(features))!;
+  test('fails when the refutation takes the piece the move left hanging', () => {
+    const observation = bv01OwnHangingPieceBlindness.detect(contextFor(QUEEN_BLUNDER_FEN, 'Qd5', LOSS, ['exd5']));
 
-    const observation = bv01OwnHangingPieceBlindness.detect(ctx);
-
-    expect(observation).not.toBeNull();
-    expect(observation!.code).toBe('BV-01');
-    expect(observation!.direction).toBe('D');
-    expect(observation!.failed).toBe(true);
+    expect(observation).toMatchObject({ code: 'BV-01', direction: 'D', failed: true });
+    expect(observation!.detail).toBe('left d5 hanging and lost it to exd5');
   });
 
-  test('does not fire when no own piece is hanging', () => {
-    const ctx = buildPlyDiagnosticContext(playMove(EMPTY_FEATURES))!;
-
-    expect(bv01OwnHangingPieceBlindness.detect(ctx)).toBeNull();
+  test('fails on the live path (no refutation) when the eval confirms the loss', () => {
+    expect(bv01OwnHangingPieceBlindness.detect(contextFor(QUEEN_BLUNDER_FEN, 'Qd5', LOSS))?.failed).toBe(true);
   });
 
-  test('ignores hanging pieces of the opponent\'s color', () => {
-    const features: PositionFeatures = {
-      ...EMPTY_FEATURES,
-      hangingPieces: [{ square: 'e8', piece: 'k', color: 'black', attackers: 1, defenders: 0 }]
-    };
-    const ctx = buildPlyDiagnosticContext(playMove(features))!;
-
-    expect(bv01OwnHangingPieceBlindness.detect(ctx)).toBeNull();
+  test('no observation when the loss came from something other than the hanging piece', () => {
+    expect(bv01OwnHangingPieceBlindness.detect(contextFor(QUEEN_BLUNDER_FEN, 'Qd5', LOSS, ['Kf8', 'Ke2']))).toBeNull();
   });
 
-  test('does not suppress BV-22 firing on the same ply', () => {
-    const features: PositionFeatures = {
-      ...EMPTY_FEATURES,
-      hangingPieces: [{ square: 'a1', piece: 'r', color: 'white', attackers: 1, defenders: 0 }],
-      underDefendedPieces: [
-        { square: 'b2', piece: 'p', color: 'white', attackers: 1, defenders: 0 },
-        { square: 'c2', piece: 'p', color: 'white', attackers: 1, defenders: 0 }
-      ]
-    };
-    const ctx = buildPlyDiagnosticContext(playMove(features))!;
+  test('a pre-existing hanging piece is not failed when the loss was something else', () => {
+    const observation = bv01OwnHangingPieceBlindness.detect(contextFor(QUEEN_ALREADY_HANGING_FEN, 'Kd2', LOSS, ['Kf7', 'Qd3']));
 
-    expect(bv01OwnHangingPieceBlindness.detect(ctx)).not.toBeNull();
-    expect(bv22LoosePieceInventoryFailure.detect(ctx)).not.toBeNull();
+    expect(observation).toMatchObject({ failed: false, hwdl: 0 });
+  });
+
+  test('compensated: hanging with no eval loss is no observation when nothing hung before', () => {
+    expect(bv01OwnHangingPieceBlindness.detect(contextFor(QUEEN_BLUNDER_FEN, 'Qd5', NO_LOSS))).toBeNull();
+  });
+
+  test('compensated with a pre-move hanging piece: left hanging without an eval loss is a success', () => {
+    const observation = bv01OwnHangingPieceBlindness.detect(contextFor(QUEEN_ALREADY_HANGING_FEN, 'Kd2', NO_LOSS));
+
+    expect(observation).toMatchObject({ failed: false });
+    expect(observation!.detail).toBe('had d5 hanging before the move and did not lose it');
+  });
+
+  test('rescuing a pre-move hanging piece is a success', () => {
+    const observation = bv01OwnHangingPieceBlindness.detect(
+      contextFor(QUEEN_ALREADY_HANGING_FEN, 'Qd1', { quality: 'best', cpBefore: 900, cpAfter: 900 })
+    );
+
+    expect(observation?.failed).toBe(false);
+  });
+
+  test('no opportunity when nothing hangs, even on a blunder', () => {
+    expect(bv01OwnHangingPieceBlindness.detect(contextFor(DEFENDED_KNIGHT_FEN, 'Nd5', LOSS))).toBeNull();
   });
 });

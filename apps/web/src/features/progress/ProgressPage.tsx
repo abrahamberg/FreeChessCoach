@@ -1,4 +1,10 @@
-import { DashboardResponseSchema, DIAGNOSIS_CODES_BY_ID, type DiagnosisCodeId, type MistakeCategory } from '@freechesscoach/shared';
+import {
+  DashboardResponseSchema,
+  DIAGNOSIS_CODES_BY_ID,
+  type DiagnosisCodeId,
+  type DiagnosticReadinessResponse,
+  type MistakeCategory
+} from '@freechesscoach/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +15,7 @@ import { EvidenceModal } from './EvidenceModal.js';
 import { FocusAreaCard } from './FocusAreaCard.js';
 import { SessionHistory } from './SessionHistory.js';
 import { TrendChart, type TrendRange } from './TrendChart.js';
+import { useDiagnosticReadiness } from '../games/useDiagnosticReadiness.js';
 import { useDiagnostics } from './useDiagnostics.js';
 import './ProgressPage.css';
 
@@ -31,6 +38,7 @@ export function ProgressPage(): ReactNode {
     queryFn: ({ signal }) => apiGet('/api/users/me/dashboard', DashboardResponseSchema, signal)
   });
   const diagnosticsQuery = useDiagnostics();
+  const readiness = useDiagnosticReadiness().data;
 
   if (dashboardQuery.isLoading) return <p>Loading…</p>;
   if (dashboardQuery.isError || !dashboardQuery.data) return <p>Could not load your progress.</p>;
@@ -88,7 +96,7 @@ export function ProgressPage(): ReactNode {
       <section aria-label="Focus areas" className="card">
         <h2>Focus areas</h2>
         {focusAreas.active.length === 0 ? (
-          <p>No focus areas yet — they'll appear as the coach spots patterns.</p>
+          <p>{focusAreasEmptyText(readiness)}</p>
         ) : (
           focusAreas.active.map((area) => (
             <FocusAreaCard
@@ -118,6 +126,7 @@ export function ProgressPage(): ReactNode {
       {diagnosisEntries.length > 0 && (
         <section aria-label="Diagnoses" className="card">
           <h2>Measured diagnoses</h2>
+          <p className="progress-page__description">{sampleNote(diagnosticsQuery.data?.windowGames ?? 0)}</p>
           {diagnosisEntries.map((entry) => (
             <DiagnosisCard
               key={entry.code}
@@ -147,4 +156,21 @@ export function ProgressPage(): ReactNode {
       )}
     </div>
   );
+}
+
+/** Below this many rated games the profile is an early read (mirrors the
+ * backend's `fullEvidenceRatedGames`; presentation only, gates nothing). */
+const FULL_EVIDENCE_GAMES = 30;
+
+function sampleNote(windowGames: number): string {
+  if (windowGames === 0) return 'Measured from your analysed games.';
+  if (windowGames < FULL_EVIDENCE_GAMES) {
+    return `Early read — based on ${windowGames} rated games. These sharpen as you import and play more; treat "Signal" items as leads, not verdicts.`;
+  }
+  return `Based on your last ${windowGames} rated games.`;
+}
+
+function focusAreasEmptyText(readiness: DiagnosticReadinessResponse | undefined): string {
+  if (!readiness || readiness.ready) return "No focus areas yet — they'll appear as the coach spots patterns.";
+  return `No focus areas yet — import ${readiness.required - readiness.ratedGames} more rated games in one time control (${readiness.ratedGames} of ${readiness.required}) so the coach can spot patterns.`;
 }

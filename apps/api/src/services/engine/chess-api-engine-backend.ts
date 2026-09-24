@@ -30,13 +30,16 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// analyzeGame trips the circuit after this many *consecutive* positions each
-// needed the fallback — one bad position (still retried on its own, see
-// MALFORMED_RESPONSE_RETRY_DELAYS_MS) isn't evidence the service is down,
-// but this many in a row is. Once tripped, every remaining position in that
-// batch skips chess-api.com entirely and goes straight to native — without
+// The circuit trips after this many *consecutive* positions each needed the
+// fallback — one bad position (still retried on its own, see
+// MALFORMED_RESPONSE_RETRY_DELAYS_MS) isn't evidence the service is down, but
+// this many in a row is. Once tripped, every later position this instance is
+// asked for skips chess-api.com entirely and goes straight to native — without
 // this, a fully-down chess-api.com would pay a full retry-and-backoff cycle
-// (~1s+) for every single position in the game before falling back.
+// (up to 3 × the timeout) for every single position before falling back.
+// Task 77.2: the state lives on the instance, not per analyzeGame call, so it
+// survives the analysis job's 6-position chunks. resolve-engine-backend.ts
+// builds a fresh instance per job/request, so a trip never outlives one job.
 const CIRCUIT_BREAKER_CONSECUTIVE_FAILURES = 3;
 
 /**
@@ -46,7 +49,7 @@ const CIRCUIT_BREAKER_CONSECUTIVE_FAILURES = 3;
  * through the user's own connected browser tab, so it lands on chess-api.com
  * from each user's own IP rather than piling onto this server's. The result
  * always comes from the browser, so it's trusted at the same external tier
- * as 'browser' mode for position_evaluations cache purposes (see
+ * as 'browser' mode for engine-source logging purposes (see
  * resolve-engine-backend.ts's isExternalSource: true for 'chess_api').
  *
  * chess-api.com's `eval`/`mate` fields are already reported from White's
@@ -78,6 +81,9 @@ const CIRCUIT_BREAKER_CONSECUTIVE_FAILURES = 3;
  * analysis — deliberately silent, since both are already treated as equally
  * trustworthy for this purpose. */
 export class ChessApiEngineBackend implements EngineBackend {
+  private consecutiveFailures = 0;
+  private circuitOpen = false;
+
   constructor(
     private readonly timeoutMs: number,
     private readonly fetchImpl: typeof fetch = fetch,
@@ -86,14 +92,26 @@ export class ChessApiEngineBackend implements EngineBackend {
   ) {}
 
   async analyzePosition(fen: string, opts?: EngineBackendAnalyzeOptions): Promise<PositionAnalysis> {
-    return (await this.analyzePositionWithFailover(fen, opts)).analysis;
+    if (this.circuitOpen && this.fallback) return this.fallback.analyzePosition(fen, opts);
+    return this.analyzeCountingFailures(fen, opts);
   }
 
-  /** Same as analyzePosition, but also reports whether it had to fall back —
-   * analyzeGame uses that to run its circuit breaker (see
-   * CIRCUIT_BREAKER_CONSECUTIVE_FAILURES); a standalone caller (this class's
-   * own analyzePosition) has no "rest of the batch" to protect and doesn't
-   * need it. */
+  /** One chess-api.com attempt (fallback included) that feeds the circuit
+   * breaker — see CIRCUIT_BREAKER_CONSECUTIVE_FAILURES. */
+  private async analyzeCountingFailures(fen: string, opts?: EngineBackendAnalyzeOptions): Promise<PositionAnalysis> {
+    const { analysis, usedFallback } = await this.analyzePositionWithFailover(fen, opts);
+    this.consecutiveFailures = usedFallback ? this.consecutiveFailures + 1 : 0;
+    if (!this.circuitOpen && this.consecutiveFailures >= CIRCUIT_BREAKER_CONSECUTIVE_FAILURES) {
+      this.circuitOpen = true;
+      console.warn(
+        `ChessApiEngineBackend: ${this.consecutiveFailures} consecutive failures — treating chess-api.com as down ` +
+          'for the rest of this job, routing directly to native.'
+      );
+    }
+    return analysis;
+  }
+
+  /** Same as analyzePosition, but also reports whether it had to fall back. */
   private async analyzePositionWithFailover(
     fen: string,
     opts?: EngineBackendAnalyzeOptions
@@ -158,32 +176,17 @@ export class ChessApiEngineBackend implements EngineBackend {
 
   async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
     const evals: EngineEval[] = [];
-    let consecutiveFailures = 0;
-    let circuitOpen = false;
-
     for (const [ply, fen] of fens.entries()) {
       let analysis: PositionAnalysis;
-
-      if (circuitOpen && this.fallback) {
-        // Already established chess-api.com is down for this batch — go
+      if (this.circuitOpen && this.fallback) {
+        // Already established chess-api.com is down for this job — go
         // straight to native, no request, no retry delay, no pacing (native
         // isn't the thing being rate-limited).
         analysis = await this.fallback.analyzePosition(fen, opts);
       } else {
         if (ply > 0) await delay(this.requestDelayMs);
-        const result = await this.analyzePositionWithFailover(fen, opts);
-        analysis = result.analysis;
-        consecutiveFailures = result.usedFallback ? consecutiveFailures + 1 : 0;
-        if (consecutiveFailures >= CIRCUIT_BREAKER_CONSECUTIVE_FAILURES) {
-          circuitOpen = true;
-          const remaining = fens.length - ply - 1;
-          console.warn(
-            `ChessApiEngineBackend: ${consecutiveFailures} consecutive failures — treating chess-api.com as down ` +
-              `for the rest of this batch (${remaining} position${remaining === 1 ? '' : 's'} remaining), routing directly to native.`
-          );
-        }
+        analysis = await this.analyzeCountingFailures(fen, opts);
       }
-
       evals.push({ ...toLeanEval(analysis), ply });
     }
     return evals;

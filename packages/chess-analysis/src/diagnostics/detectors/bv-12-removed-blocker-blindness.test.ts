@@ -1,59 +1,49 @@
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { buildPlyDiagnosticContext } from '../context.js';
 import { bv12RemovedBlockerBlindness } from './bv-12-removed-blocker-blindness.js';
-import { bv16SelfExposureBlindness } from './bv-16-self-exposure-blindness.js';
+import { detectorContext } from './test-context.js';
 
-function playMove(fenBefore: string, moveSan: string, fenAfter: string, overrides: Partial<ClassifiedMoveDto> = {}): ClassifiedMoveDto {
-  return {
-    ply: 1,
-    moveSan,
-    mover: 'white',
-    isUserMove: true,
-    cpLoss: 200,
-    quality: 'mistake',
-    bestLineSan: [moveSan],
-    evalAfterCp: -200,
-    hangsPiece: false,
-    drop: 20,
-    fenBefore,
-    fenAfter,
-    ...overrides
-  };
+/** Nd4-b3 opens the long diagonal: the h8 bishop now hits the a1 rook
+ * (defended only by the knight, so ...Bxa1 Nxa1 still wins the exchange). */
+const ROOK_EXPOSED_FEN = '4k2b/8/8/8/3N4/8/8/R3K3 w - - 0 1';
+/** Nd4-b3 revealing only the b2 pawn, which the c1 king defends: not winnable. */
+const PAWN_EXPOSED_FEN = '4k2b/8/8/8/3N4/8/1P6/2K5 w - - 0 1';
+
+const LOSS: Partial<ClassifiedMoveDto> = { quality: 'mistake', cpBefore: 300, cpAfter: 100 };
+const NO_LOSS: Partial<ClassifiedMoveDto> = { quality: 'mistake', cpBefore: 300, cpAfter: 290 };
+
+function contextFor(fenBefore: string, moveSan: string, overrides: Partial<ClassifiedMoveDto>, refutation?: string[]) {
+  return detectorContext(fenBefore, moveSan, overrides, { refutation });
 }
 
 describe('bv12RemovedBlockerBlindness', () => {
-  test('fires when the move vacates a blocking square and exposes any mover piece to a newly-revealed attack', () => {
-    const ctx = buildPlyDiagnosticContext(
-      playMove('4k2b/8/8/8/3N4/8/8/R3K3 w - - 0 1', 'Nb3', '4k2b/8/8/8/8/1N6/8/R3K3 b - - 1 1')
-    )!;
+  test('fails when the refutation starts with the revealed piece', () => {
+    const observation = bv12RemovedBlockerBlindness.detect(contextFor(ROOK_EXPOSED_FEN, 'Nb3', LOSS, ['Bxa1', 'Nxa1']));
 
-    const observation = bv12RemovedBlockerBlindness.detect(ctx);
-
-    expect(observation).not.toBeNull();
-    expect(observation!.code).toBe('BV-12');
-    expect(observation!.direction).toBe('B');
-    expect(observation!.failed).toBe(true);
+    expect(observation).toMatchObject({ code: 'BV-12', direction: 'B', failed: true });
+    expect(observation!.detail).toContain("opponent's b on h8, newly attacking a1");
   });
 
-  test('does not fire when the move opens no new line for the opponent', () => {
-    const ctx = buildPlyDiagnosticContext(
-      playMove('4k2b/8/8/8/3N4/8/8/R3K3 w - - 0 1', 'Kd1', '4k2b/8/8/8/3N4/8/8/R2K4 b - - 1 1', {
-        quality: 'best',
-        cpLoss: 0,
-        drop: 0
-      })
-    )!;
-
-    expect(bv12RemovedBlockerBlindness.detect(ctx)).toBeNull();
+  test('not failed when the refutation neither moves the revealing piece nor captures on the revealed square', () => {
+    expect(bv12RemovedBlockerBlindness.detect(contextFor(ROOK_EXPOSED_FEN, 'Nb3', LOSS, ['Kd7', 'Kd2']))?.failed).toBe(false);
   });
 
-  test('does not suppress BV-16 firing on the same ply when the exposed piece is the queen', () => {
-    const ctx = buildPlyDiagnosticContext(
-      playMove('4k2b/8/8/8/3N4/8/8/Q3K3 w - - 0 1', 'Nb3', '4k2b/8/8/8/8/1N6/8/Q3K3 b - - 1 1')
-    )!;
+  test('without a refutation, a statically winnable revealed piece fails on an eval loss', () => {
+    expect(bv12RemovedBlockerBlindness.detect(contextFor(ROOK_EXPOSED_FEN, 'Nb3', LOSS))?.failed).toBe(true);
+  });
 
-    expect(bv12RemovedBlockerBlindness.detect(ctx)).not.toBeNull();
-    expect(bv16SelfExposureBlindness.detect(ctx)).not.toBeNull();
+  test('without a refutation, a revealed piece that cannot be won does not fail', () => {
+    expect(bv12RemovedBlockerBlindness.detect(contextFor(PAWN_EXPOSED_FEN, 'Nb3', LOSS))?.failed).toBe(false);
+  });
+
+  test('compensated: the same exposure without an eval loss is not failed', () => {
+    expect(bv12RemovedBlockerBlindness.detect(contextFor(ROOK_EXPOSED_FEN, 'Nb3', NO_LOSS, ['Bxa1', 'Nxa1']))).toMatchObject({
+      failed: false,
+      hwdl: 0
+    });
+  });
+
+  test('no opportunity when the move opens no new line for the opponent', () => {
+    expect(bv12RemovedBlockerBlindness.detect(contextFor(ROOK_EXPOSED_FEN, 'Kd1', LOSS))).toBeNull();
   });
 });

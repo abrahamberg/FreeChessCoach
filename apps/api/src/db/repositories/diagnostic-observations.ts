@@ -40,6 +40,21 @@ export function insertMany(db: Kysely<Database>, observations: readonly NewDiagn
   return db.insertInto('diagnosticObservations').values(observations).execute().then(() => undefined);
 }
 
+/** A re-analysed game's rows replace the ones its previous analysis wrote —
+ * `insertMany` alone appended a second copy of every observation on each
+ * re-run, doubling that game's opportunities and failures in the profile.
+ * One transaction, so a reader never sees the game with no rows at all. */
+export function replaceForGame(
+  db: Kysely<Database>,
+  gameId: string,
+  observations: readonly NewDiagnosticObservation[]
+): Promise<void> {
+  return db.transaction().execute(async (trx) => {
+    await trx.deleteFrom('diagnosticObservations').where('gameId', '=', gameId).execute();
+    if (observations.length > 0) await trx.insertInto('diagnosticObservations').values(observations).execute();
+  });
+}
+
 /** Every observation for `userId` from `since` onward — the profile
  * rebuild job's (Task 56.4) input to `buildDiagnosticProfile`. */
 export function listForUserSince(db: Kysely<Database>, userId: string, since: Date): Promise<DiagnosticObservationRow[]> {

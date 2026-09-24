@@ -5,9 +5,11 @@ import { SearchIcon } from '../../components/Icon.js';
 import { useImportQuota } from '../../hooks/useImportQuota.js';
 import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
 import { ContinueSessionCard } from './ContinueSessionCard.js';
+import { DiagnosticReadinessCard } from './DiagnosticReadinessCard.js';
 import { GameCard } from './GameCard.js';
 import { ImportShortcuts } from './ImportShortcuts.js';
 import { PracticeAssignmentCard } from './PracticeAssignmentCard.js';
+import { useDiagnosticReadiness } from './useDiagnosticReadiness.js';
 import { useGameActions } from './useGameActions.js';
 import { useInProgressGames, useRecentImportedGames, useRefreshGamesWhenAnalysisFinishes } from './useGamesQueries.js';
 import { usePracticeAssignments } from './usePracticeAssignments.js';
@@ -32,6 +34,7 @@ export function GamesPage(): ReactNode {
   // Feeds ImportShortcuts' "N of 30 imported today" — the rolling-24h count
   // the backend enforces, not "games with today's date".
   const importQuotaQuery = useImportQuota();
+  const readinessQuery = useDiagnosticReadiness();
 
   useRefreshGamesWhenAnalysisFinishes();
   const actions = useGameActions([...inProgressGames, ...recentGames]);
@@ -42,6 +45,7 @@ export function GamesPage(): ReactNode {
     <div className="page games-page">
       <h1 className="visually-hidden">Games</h1>
       <ImportShortcuts quota={importQuotaQuery.data?.daily} />
+      {readinessQuery.data && <DiagnosticReadinessCard readiness={readinessQuery.data} />}
 
       {recentQuery.isLoading && <p>Loading…</p>}
       {recentQuery.isError && <p>Could not load your games.</p>}

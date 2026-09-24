@@ -1,52 +1,64 @@
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { buildPlyDiagnosticContext } from '../context.js';
 import { ms02OpponentCaptureScanOmission } from './ms-02-opponent-capture-scan.js';
-import { ms03OpponentThreatScanOmission } from './ms-03-opponent-threat-scan.js';
+import { detectorContext } from './test-context.js';
 
-const OPPONENT_HAS_CHECK_CAPTURE_THREAT_FEN = '3qk3/8/8/6Q1/8/1R6/8/4K3 b - - 0 1';
-const NO_OPPONENT_OPPORTUNITIES_FEN = '8/8/4k3/8/8/3K4/8/8 b - - 0 1';
+/** Qd1-d5 puts the queen en prise to the e6 pawn. Nothing hung before. */
+const QUEEN_BLUNDER_FEN = '4k3/8/4p3/8/8/8/8/3QK3 w - - 0 1';
+/** The queen already stands en prise on d5 before White moves. */
+const QUEEN_ALREADY_HANGING_FEN = '4k3/8/4p3/3Q4/8/8/8/4K3 w - - 0 1';
+/** Nd5 is defended by c4: ...Nxd5 cxd5 is an even trade. */
+const DEFENDED_KNIGHT_FEN = '4k3/8/5n2/8/2P5/2N5/8/4K3 w - - 0 1';
 
-function moveTo(fenAfter: string, overrides: Partial<ClassifiedMoveDto> = {}): ClassifiedMoveDto {
-  return {
-    ply: 1,
-    moveSan: 'Kd1',
-    mover: 'white',
-    isUserMove: true,
-    cpLoss: 350,
-    quality: 'blunder',
-    bestLineSan: ['Kd1'],
-    evalAfterCp: -400,
-    hangsPiece: false,
-    drop: 40,
-    fenBefore: fenAfter,
-    fenAfter,
-    ...overrides
-  };
+const LOSS: Partial<ClassifiedMoveDto> = { quality: 'blunder', cpBefore: 900, cpAfter: 0 };
+const NO_LOSS: Partial<ClassifiedMoveDto> = { quality: 'blunder', cpBefore: 900, cpAfter: 880 };
+
+function contextFor(fenBefore: string, moveSan: string, overrides: Partial<ClassifiedMoveDto>, refutation?: string[]) {
+  return detectorContext(fenBefore, moveSan, overrides, { refutation });
 }
 
 describe('ms02OpponentCaptureScanOmission', () => {
-  test('fires when the opponent has a profitable capture available after the move', () => {
-    const ctx = buildPlyDiagnosticContext(moveTo(OPPONENT_HAS_CHECK_CAPTURE_THREAT_FEN))!;
+  test('fails when the refutation takes the piece left en prise', () => {
+    const observation = ms02OpponentCaptureScanOmission.detect(contextFor(QUEEN_BLUNDER_FEN, 'Qd5', LOSS, ['exd5']));
 
-    const observation = ms02OpponentCaptureScanOmission.detect(ctx);
-
-    expect(observation).not.toBeNull();
-    expect(observation!.code).toBe('MS-02');
-    expect(observation!.direction).toBe('D');
-    expect(observation!.failed).toBe(true);
+    expect(observation).toMatchObject({ code: 'MS-02', direction: 'D', failed: true, severity: 'decisive' });
+    expect(observation!.detail).toContain('exd5 (on d5)');
   });
 
-  test('does not fire when the opponent has no profitable capture available', () => {
-    const ctx = buildPlyDiagnosticContext(moveTo(NO_OPPONENT_OPPORTUNITIES_FEN, { quality: 'blunder', drop: 40 }))!;
-
-    expect(ms02OpponentCaptureScanOmission.detect(ctx)).toBeNull();
+  test('fails on the live path (no refutation) when the eval confirms the loss', () => {
+    expect(ms02OpponentCaptureScanOmission.detect(contextFor(QUEEN_BLUNDER_FEN, 'Qd5', LOSS))?.failed).toBe(true);
   });
 
-  test('does not suppress MS-03 firing on the same ply', () => {
-    const ctx = buildPlyDiagnosticContext(moveTo(OPPONENT_HAS_CHECK_CAPTURE_THREAT_FEN))!;
+  test('no observation when the refutation never takes the piece (the loss was something else)', () => {
+    expect(ms02OpponentCaptureScanOmission.detect(contextFor(QUEEN_BLUNDER_FEN, 'Qd5', LOSS, ['Kf8', 'Ke2']))).toBeNull();
+  });
 
-    expect(ms02OpponentCaptureScanOmission.detect(ctx)).not.toBeNull();
-    expect(ms03OpponentThreatScanOmission.detect(ctx)).not.toBeNull();
+  test('compensated: the same capture left standing without an eval loss is no observation (no pre-move threat)', () => {
+    expect(ms02OpponentCaptureScanOmission.detect(contextFor(QUEEN_BLUNDER_FEN, 'Qd5', NO_LOSS))).toBeNull();
+  });
+
+  test('compensated with a pre-move threat: left standing without an eval loss is a success', () => {
+    const observation = ms02OpponentCaptureScanOmission.detect(contextFor(QUEEN_ALREADY_HANGING_FEN, 'Kd2', NO_LOSS));
+
+    expect(observation).toMatchObject({ failed: false, hwdl: 0 });
+    expect(observation!.detail).toContain('exd5');
+  });
+
+  test('a pre-move threat the move answers is a success', () => {
+    const observation = ms02OpponentCaptureScanOmission.detect(
+      contextFor(QUEEN_ALREADY_HANGING_FEN, 'Qd1', { quality: 'best', cpBefore: 900, cpAfter: 900 })
+    );
+
+    expect(observation?.failed).toBe(false);
+  });
+
+  test('no opportunity for a capture that only trades, even on a blunder', () => {
+    expect(ms02OpponentCaptureScanOmission.detect(contextFor(DEFENDED_KNIGHT_FEN, 'Nd5', LOSS))).toBeNull();
+  });
+
+  test('a legacy move without evals falls back to its quality', () => {
+    const legacy = contextFor(QUEEN_BLUNDER_FEN, 'Qd5', { quality: 'blunder', drop: 40 });
+
+    expect(ms02OpponentCaptureScanOmission.detect(legacy)).toMatchObject({ failed: true, severity: 'decisive', hwdl: 0.4 });
   });
 });

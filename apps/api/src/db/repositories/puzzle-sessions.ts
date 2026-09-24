@@ -19,6 +19,8 @@ export interface PuzzleSessionRow {
 export interface NewPuzzleSession {
   assignmentId: string;
   userId: string;
+  /** Defaults to the first item; a reset restarts on the item the student was on. */
+  currentItemIndex?: number;
 }
 
 const BASE_COLUMNS = ['id', 'assignmentId', 'userId', 'status', 'currentItemIndex', 'currentPly', 'startedAt', 'endedAt'] as const;
@@ -147,4 +149,19 @@ export function deleteMessagesBySessionId(db: Kysely<Database>, puzzleSessionId:
     .where('puzzleSessionId', '=', puzzleSessionId)
     .execute()
     .then(() => undefined);
+}
+
+/** Latest-turn-only, overwritten each turn — same contract as sessionsRepo.updateDebugSnapshot. */
+export function updateDebugSnapshot(db: Kysely<Database>, id: string, snapshot: unknown): Promise<void> {
+  return db
+    .updateTable('puzzleSessions')
+    .set({ debugSnapshot: JSON.stringify(snapshot) })
+    .where('id', '=', id)
+    .execute()
+    .then(() => undefined);
+}
+
+export async function getDebugSnapshot(db: Kysely<Database>, id: string): Promise<unknown> {
+  const row = await db.selectFrom('puzzleSessions').select('debugSnapshot').where('id', '=', id).executeTakeFirst();
+  return row?.debugSnapshot ?? undefined;
 }

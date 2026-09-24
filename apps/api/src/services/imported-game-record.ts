@@ -30,7 +30,9 @@ export function buildGameValues(
     whiteElo: headerMetadata.whiteElo,
     blackElo: headerMetadata.blackElo,
     ratingsProvisional: headerMetadata.ratingsProvisional,
-    rated: headerMetadata.rated,
+    // Chess.com PGNs have no rated tag (header parse gives null), which kept
+    // every Chess.com import out of pattern tracking; treat them as rated.
+    rated: headerMetadata.rated ?? (request.source === 'chesscom' ? true : null),
     termination: headerMetadata.termination,
     variant: headerMetadata.variant,
     speed: classifyTimeControl(timeControl),
@@ -61,7 +63,7 @@ export function recordImportedGame(db: Kysely<Database>, values: NewGame) {
  * deleted (their stats are banked — `deleteGameKeepingStats`) before the new
  * one lands. Imported sources only; bot and coach games are never counted or
  * deleted. The UI warns first (`ImportQuotaResponse.library.autoDeleteCount`). */
-async function makeRoomInLibrary(trx: Kysely<Database>, userId: string): Promise<void> {
+export async function makeRoomInLibrary(trx: Kysely<Database>, userId: string): Promise<void> {
   const held = await gamesRepo.countImportableForUser(trx, userId);
   if (held < MAX_LIBRARY_GAMES) return;
   await deleteEarliestImportedInTransaction(trx, userId, AUTO_DELETE_BATCH);

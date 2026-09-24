@@ -23,6 +23,7 @@ const EMPTY_RESPONSE = (timeControl: string | null): DiagnosticsResponse => ({
   windowStart: null,
   windowEnd: null,
   computedAt: null,
+  windowGames: 0,
   entries: []
 });
 
@@ -57,6 +58,7 @@ export async function getDiagnosticsForUser(
     windowStart: row.windowStart.toISOString(),
     windowEnd: row.windowEnd.toISOString(),
     computedAt: row.computedAt.toISOString(),
+    windowGames: windowGames.length,
     entries
   };
 }

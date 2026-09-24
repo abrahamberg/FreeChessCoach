@@ -58,10 +58,11 @@ export function registerUnifiedTunnelRoutes(
  * now have a newly available selected source — instead of waiting on a poll,
  * since this is the one moment we know the tunnel is there. Re-running
  * jobs/analyze-game.ts from the top is safe and cheap even for the positions
- * it already finished before pausing: they're already in
- * position_evaluations, so only the genuinely unanalyzed rest costs a real
- * engine call. Fire-and-forget with its own error log — a lookup/enqueue
- * failure must never fail the WebSocket handshake itself. */
+ * it already finished before pausing: they're already stored in
+ * `analyses.engine_evals` (Task 77.1) and are reused instead of re-sent, so
+ * only the genuinely unanalyzed rest costs a real engine call. Fire-and-forget
+ * with its own error log — a lookup/enqueue failure must never fail the
+ * WebSocket handshake itself. */
 async function resumePausedAnalyses(db: Kysely<Database>, jobQueue: JobQueue, userId: string): Promise<void> {
   try {
     const gameIds = await analysesRepo.findPausedGameIdsForUser(db, userId);

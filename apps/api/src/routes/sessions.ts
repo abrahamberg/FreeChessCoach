@@ -104,7 +104,7 @@ export function registerSessionsRoutes(
     // opening move as White) — built unconditionally anyway since it's cheap
     // until a search is actually run.
     const botDeps = await buildBotMoveCommitDeps(baseDeps, engineBackendOptions, user.id, { ratingEvals, thinkingLog });
-    return createBotSession(botDeps, user.id, parsed.data.studentColor, bot, parsed.data.clock);
+    return createBotSession(botDeps, user.id, parsed.data.studentColor, bot, parsed.data.clock, parsed.data.rated === true);
   });
 
   app.get<{ Params: { id: string } }>('/api/sessions/:id', async (request) => {
@@ -165,7 +165,7 @@ export function registerSessionsRoutes(
       const botDeps = await buildBotMoveCommitDeps(baseDeps, engineBackendOptions, user.id, { ratingEvals, thinkingLog });
       const result = await commitBotTurn(botDeps, session, bot, parsed.data.san);
       if ('error' in result) return sendIllegalMoveError(reply, result.error);
-      return CommitBotMoveResponseSchema.parse(result);
+      return CommitBotMoveResponseSchema.parse(game?.rated === true ? withoutMoveFeedback(result) : result);
     }
 
     const agentDeps = await buildRequestScopedAgentDeps(baseDeps, engineBackendOptions, user.id);
@@ -205,6 +205,10 @@ export function registerSessionsRoutes(
       throw new ValidationError(parsed.error.issues.map((issue) => issue.message).join('; '));
     }
 
+    if (parsed.data.enabled && (await gamesRepo.findById(db, session.gameId))?.rated === true) {
+      throw new ConflictError('The thinking log is not available in a rated game');
+    }
+
     await sessionsRepo.setBotThinkingLog(db, session.id, parsed.data.enabled);
     return BotThinkingLogEnabledResponseSchema.parse({ enabled: parsed.data.enabled });
   });
@@ -236,7 +240,7 @@ export function registerSessionsRoutes(
     const botDeps = await buildBotMoveCommitDeps(baseDeps, engineBackendOptions, user.id, { ratingEvals, thinkingLog });
     const result = await requestBotMove(botDeps, session, bot);
     if ('error' in result) return sendIllegalMoveError(reply, result.error);
-    return CommitBotMoveResponseSchema.parse(result);
+    return CommitBotMoveResponseSchema.parse(game?.rated === true ? withoutMoveFeedback(result) : result);
   });
 
   // The student-initiated "Undo" button (BoardActionBar) for both live
@@ -254,6 +258,9 @@ export function registerSessionsRoutes(
       throw new ConflictError('Session is not a play-mode or play_bot-mode session');
     }
     if (session.status !== 'active') throw new ConflictError('Session is not active');
+    if ((await gamesRepo.findById(db, session.gameId))?.rated === true) {
+      throw new ConflictError('A rated game cannot be taken back');
+    }
 
     const agentDeps = await buildRequestScopedAgentDeps(baseDeps, engineBackendOptions, user.id);
     const result = await undoLastBotTurn(agentDeps, session);
@@ -357,9 +364,9 @@ async function buildBotMoveCommitDeps(
     callLightModel: buildCallLightModel(base, userId),
     analyzePosition: (fen) => cachedBackend.analyzePosition(fen),
     // 'interactive': a bot move is a live "your move" round trip the student
-    // is watching, not background batch work — it must jump ahead of a
-    // same-game deepen-analysis pass (or another user's import) queued on
-    // the shared native engine pool. See EnginePrioritySchema's doc comment.
+    // is watching, not background batch work — it must jump ahead of this
+    // game's own re-analysis (or another user's import) queued on the
+    // shared native engine pool. See EnginePrioritySchema's doc comment.
     analyzeBotPosition: (fen, opts) => rawBackend.analyzePosition(fen, { ...opts, priority: 'interactive' }),
     random: Math.random,
     thinkingLog,
@@ -385,4 +392,15 @@ function sendIllegalMoveError(reply: FastifyReply, message: string): FastifyRepl
     title: message,
     status: 422
   });
+}
+
+/** A rated game gives no feedback on moves while it is played: the ratings
+ * are still computed and saved (post-game analysis and pattern tracking use
+ * them), just never sent to the student. */
+function withoutMoveFeedback<T extends { player: { quality: unknown } | null; bot: { quality: unknown } | null }>(result: T): T {
+  return {
+    ...result,
+    player: result.player && { ...result.player, quality: null },
+    bot: result.bot && { ...result.bot, quality: null }
+  };
 }

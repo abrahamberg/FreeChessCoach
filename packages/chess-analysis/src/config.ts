@@ -112,6 +112,30 @@ export const CONFIG = {
     threwAwayDropMin: 15
   },
 
+  /** `eval-witness.ts` — when is the gap between the eval a move should have
+   * had and the eval it got real enough to back a tactical verdict (missed,
+   * allowed, found, prevented) or a diagnostic failure?
+   *
+   * - `minWinPctGap` is `severity.mistakeMaxDrop`'s lower edge: the same bar
+   *   `qualityFailed` (mistake/blunder/miss) held diagnostics to before the
+   *   witness existed, so non-decided positions keep parity.
+   * - `outcomeWinPct` is `miss.opportunityWinPctMin`'s band edge: crossing it
+   *   (winning → balanced, balanced → losing) changes what the game is, so a
+   *   smaller `minOutcomeChangeWinPctGap` suffices there.
+   * - `decisiveBandMinCpGap` is the saturation case: win% barely moves between
+   *   +15 and +6, so inside one winning (or losing) band the gap is read in
+   *   centipawns instead, at roughly a minor piece.
+   * - `minThreatSeeCp` is one pawn on `see.ts`'s scale: the smallest static
+   *   gain a diagnostics threat or chance has to promise to be considered at
+   *   all. */
+  evalWitness: {
+    minWinPctGap: 10,
+    minOutcomeChangeWinPctGap: 5,
+    outcomeWinPct: 75,
+    decisiveBandMinCpGap: 300,
+    minThreatSeeCp: 100
+  },
+
   /** §6.1-§6.3 — phase segmentation. */
   phaseSegmentation: {
     openingFallbackPly: 10,
@@ -352,16 +376,22 @@ export const CONFIG = {
   },
 
   /** §4.2/§II.A — data-quality gate thresholds (Task 55.2). `minRatedGames`
-   * is §4.2's own "start with 30 recent rated games" floor (before the
-   * spec's own 60-100 expansion, which is the caller's job when a code's
-   * opportunities are rare, not this gate's). `dominanceShareThreshold` and
+   * is 15 — half §4.2's own "start with 30 recent rated games" floor,
+   * lowered by the owner (2026-09-23) so a new user reaches a first profile
+   * sooner; the small sample is what `confidence` and DQ-02's opportunity
+   * floor are for (the spec's 60-100 expansion stays the caller's job when a
+   * code's opportunities are rare, not this gate's). `dominanceShareThreshold` and
    * `ratingSwingThreshold` have no spec-given number ("unusual session",
    * "rapidly changing") — picked as the least-arbitrary practical defaults
    * available until real data recalibrates them, same as
    * `ratingEstimate.mediumConfidenceMinMoves`'s precedent. DQ-05 reuses
    * `CONFIG.humanReachability.dq05Threshold` rather than duplicating it. */
   dataQualityGates: {
-    minRatedGames: 30,
+    minRatedGames: 15,
+    /** Below this many rated games in the window a profile is an early read
+     * (§4.2's own floor) — surfaced to the coach and the student as such,
+     * never used to gate anything. */
+    fullEvidenceRatedGames: 30,
     minOpportunities: 8,
     maxClockMissingRatio: 0.2,
     dominanceShareThreshold: 0.6,

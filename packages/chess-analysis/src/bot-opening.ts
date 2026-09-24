@@ -27,11 +27,13 @@ export const GUARANTEED_BOOK_MOVES = 2;
  * which for a shallow/low-level bot naturally produces an imperfect
  * opening move on its own — no separate "bad move" logic needed.
  *
- * The candidate pool is also truncated to `bookBreadthForElo(bot.elo)`
- * entries before the random pick — a low-rated bot only knows a couple of
- * "correct" replies for a given position even when theory documents many
- * more, widening toward the book's own real ceiling at the roster's top
- * tier (see bot-roster.ts's doc comment on that curve).
+ * Variety: a bot's first `GUARANTEED_BOOK_MOVES` moves are drawn from EVERY
+ * book reply, so it opens and answers with a different line each game (1.e4,
+ * 1.d4, 1.c4, ... and every defence to them). Later book moves are drawn from
+ * a random sample of `bookBreadthForElo(bot.elo)` replies — a low-rated bot
+ * still knows fewer of theory's replies than a strong one, but not always the
+ * same few. (Sampling is a shuffle over the book's list: there's no
+ * popularity/frequency data in the source to weight by.)
  */
 export function selectBookMove(
   fen: string,
@@ -41,8 +43,8 @@ export function selectBookMove(
 ): SelectedBookMove | null {
   if (plyCount >= Math.max(bot.bookPlies, GUARANTEED_BOOK_MOVES) * 2) return null;
 
-  const entries = bookMovesForFen(fen).slice(0, bookBreadthForElo(bot.elo));
-  if (entries.length === 0) return null;
+  const known = bookMovesForFen(fen);
+  if (known.length === 0) return null;
 
   // Every bot, however weak, plays its first GUARANTEED_BOOK_MOVES moves from
   // book while the game is still in it — a move-one blunder from a bot whose
@@ -51,8 +53,20 @@ export function selectBookMove(
   const guaranteed = plyCount < GUARANTEED_BOOK_MOVES * 2;
   if (!guaranteed && random() < bot.bookMistakeChance) return null;
 
+  const entries = guaranteed ? known : sample(known, bookBreadthForElo(bot.elo), random);
   const index = Math.floor(random() * entries.length);
   const entry = entries[Math.min(index, entries.length - 1)];
   if (!entry) return null;
   return { san: entry.san };
+}
+
+/** `count` entries chosen at random (a partial Fisher-Yates shuffle). */
+function sample<T>(items: readonly T[], count: number, random: () => number): T[] {
+  const pool = [...items];
+  const take = Math.min(count, pool.length);
+  for (let i = 0; i < take; i++) {
+    const j = i + Math.floor(random() * (pool.length - i));
+    [pool[i], pool[j]] = [pool[j] as T, pool[i] as T];
+  }
+  return pool.slice(0, take);
 }

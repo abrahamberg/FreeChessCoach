@@ -1,25 +1,19 @@
-import { computeCctOpportunities } from '../cct-opportunities.js';
 import type { PlyDiagnosticContext } from '../context.js';
 import type { DiagnosticDetector, DiagnosticObservation } from '../types.js';
-import { buildQualityObservation } from './shared.js';
+import { detectOpponentThreatScan } from './opponent-threat-scan.js';
 
 /**
  * §II.D MS-02 "Opponent-capture scan omission" — omits immediate profitable
- * captures the opponent has. Unlike `computeCctOpportunities`'
- * `opponentCaptures` (deliberately unfiltered — see its doc comment), this
- * detector applies the family's own `favorable` filter itself: MS-02 is
- * specifically about *profitable* captures, not every capture that exists.
+ * captures the opponent has. "Profitable" is a whole-exchange SEE of at
+ * least `CONFIG.evalWitness.minThreatSeeCp` (`threat-inventory.ts`); a
+ * failure is such a capture left standing, carried out by the engine's
+ * refutation, with an eval-confirmed loss. See `detectOpponentThreatScan`.
  */
 export const ms02OpponentCaptureScanOmission: DiagnosticDetector = {
   code: 'MS-02',
   direction: 'D',
   priority: 120,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
-    const { opponentCaptures } = computeCctOpportunities(ctx);
-    const profitable = opponentCaptures.filter((move) => move.favorable);
-    if (profitable.length === 0) return null;
-
-    const detail = `left the opponent ${profitable.length} profitable capture${profitable.length > 1 ? 's' : ''} available: ${profitable.map((move) => move.moveSan).join(', ')}`;
-    return buildQualityObservation(ctx, 'MS-02', 'D', detail);
+    return detectOpponentThreatScan(ctx, 'MS-02', 'capture');
   }
 };

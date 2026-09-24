@@ -1,30 +1,19 @@
 import { toCpWhite, winPctFor, type PlayerColor } from '@freechesscoach/chess-analysis';
-import type { PositionAnalysis } from '@freechesscoach/shared';
-import type { EngineBackend } from './engine/engine-backend.js';
+import type { EngineEval } from '@freechesscoach/shared';
 
-type PositionAnalyzer = Pick<EngineBackend, 'analyzePosition'>;
+/** How far below `beforeWin` (win%) the best reply may leave the mover and the
+ * sacrifice still counts as sound. */
+const SOUNDNESS_TOLERANCE_WIN_PCT = 3;
 
 /**
- * Applies §5.5 B6 to an already-qualified Brilliant candidate. The position
- * is the one after the candidate's move, so the engine's first line is the
- * opponent's best reply. Calling the same backend without overrides keeps the
- * reply search at the backend's normal analysis depth, matching the batch
- * analysis depth used to produce the candidate.
+ * Applies §5.5 B6 to an already-qualified Brilliant candidate. `evalAfterMove`
+ * is the game's own stored eval of the position after the candidate's move
+ * (`evals[move.ply]`), so its first line is the opponent's best reply, at the
+ * same depth as the rest of the game — no extra engine call (Task 77.2).
+ * No eval, or no reply line, fails closed.
  */
-export async function checkBrilliantSoundness(
-  engine: PositionAnalyzer,
-  fenAfterMove: string,
-  mover: PlayerColor,
-  beforeWin: number
-): Promise<boolean> {
-  const replyAnalysis = await engine.analyzePosition(fenAfterMove);
-  const bestReply = firstReply(replyAnalysis);
+export function isBrilliantSound(evalAfterMove: EngineEval | undefined, mover: PlayerColor, beforeWin: number): boolean {
+  const bestReply = evalAfterMove?.lines[0];
   if (!bestReply) return false;
-
-  const winAfterBestReply = winPctFor(mover, toCpWhite(bestReply));
-  return winAfterBestReply >= beforeWin - 3;
-}
-
-function firstReply(analysis: PositionAnalysis): PositionAnalysis['lines'][number] | undefined {
-  return analysis.lines[0];
+  return winPctFor(mover, toCpWhite(bestReply)) >= beforeWin - SOUNDNESS_TOLERANCE_WIN_PCT;
 }
