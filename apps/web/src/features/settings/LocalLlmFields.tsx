@@ -44,7 +44,7 @@ export function LocalLlmFields({ api }: { api: LlmSetupDraftApi }): ReactNode {
       <ModelField id="llm-high-model" label={draft.advanced ? 'High model (the coach)' : 'Model'} value={draft.highModel} models={models}
         onChange={(model) => (draft.advanced ? update({ highModel: model }) : setLocalModel(model))} />
       {draft.advanced && (
-        <ModelField id="llm-low-model" label="Low model (summaries)" value={draft.lowModel} models={models} onChange={(lowModel) => update({ lowModel })} />
+        <ModelField id="llm-low-model" label="Low model (optional, summaries)" value={draft.lowModel} models={models} optional onChange={(lowModel) => update({ lowModel })} />
       )}
       <ModelListStatus query={modelsQuery} onRetry={() => void modelsQuery.refetch()} />
       <ContextHint listed={listed} model={draft.highModel} />
@@ -55,7 +55,7 @@ export function LocalLlmFields({ api }: { api: LlmSetupDraftApi }): ReactNode {
       </label>
       {draft.advanced && (
         <>
-          {draft.lowModel !== draft.highModel && (
+          {draft.lowModel !== '' && draft.lowModel !== draft.highModel && (
             <p className="settings-page__hint">Two different models means your local server swaps between them, which is slow on one GPU. One model for both is usually better.</p>
           )}
           <label htmlFor="llm-local-token">Token (optional)</label>
@@ -68,13 +68,15 @@ export function LocalLlmFields({ api }: { api: LlmSetupDraftApi }): ReactNode {
   );
 }
 
-function ModelField({ id, label, value, models, onChange }: { id: string; label: string; value: string; models: string[]; onChange: (model: string) => void }): ReactNode {
+function ModelField({ id, label, value, models, onChange, optional = false }: { id: string; label: string; value: string; models: string[]; onChange: (model: string) => void; optional?: boolean }): ReactNode {
   return (
     <>
       <label htmlFor={id}>{label}</label>
       {models.length > 0 ? (
-        <select id={id} value={value} onChange={(event) => onChange(event.target.value)} required>
-          {!models.includes(value) && <option value={value}>{value || 'Choose a model'}</option>}
+        <select id={id} value={value} onChange={(event) => onChange(event.target.value)} required={!optional}>
+          {optional && <option value="">Same as the model above</option>}
+          {!optional && !models.includes(value) && <option value={value}>{value || 'Choose a model'}</option>}
+          {optional && value !== '' && !models.includes(value) && <option value={value}>{value}</option>}
           {models.map((model) => (
             <option key={model} value={model}>
               {model}
@@ -82,7 +84,7 @@ function ModelField({ id, label, value, models, onChange }: { id: string; label:
           ))}
         </select>
       ) : (
-        <input id={id} value={value} onChange={(event) => onChange(event.target.value)} placeholder="Model name" required />
+        <input id={id} value={value} onChange={(event) => onChange(event.target.value)} placeholder={optional ? 'Same as the model above' : 'Model name'} required={!optional} />
       )}
     </>
   );

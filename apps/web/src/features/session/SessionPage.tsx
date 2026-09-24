@@ -252,7 +252,7 @@ export function SessionPage(): ReactNode {
         result={gameQuery.data?.result ?? null}
         onBack={() => navigate('/games')}
         onReset={handleReset}
-        onDebug={import.meta.env.DEV ? () => setIsDebugOpen(true) : undefined}
+        onDebug={() => setIsDebugOpen(true)}
         debugDisabled={!hasCompletedTurn}
         extraItems={headerExtraItems}
       />

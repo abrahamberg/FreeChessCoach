@@ -71,7 +71,12 @@ const LlmSetupFieldsSchema = z.object({
     (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
     z.string().trim().max(4096, 'Token is too long').optional()
   ),
-  lowModel: ModelIdSchema,
+  /** Optional: the cheap model for summaries. Absent means the high model
+   * serves both tiers (see `lowModelOf`). */
+  lowModel: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+    ModelIdSchema.optional()
+  ),
   highModel: ModelIdSchema,
   voiceModel: z.preprocess(
     (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
@@ -100,6 +105,12 @@ const CREDENTIALS_MESSAGE = {
  * database or the temporary unlock cache. */
 export const LlmSetupSchema = LlmSetupFieldsSchema.refine(hasRequiredCredentials, CREDENTIALS_MESSAGE);
 export type LlmSetup = z.infer<typeof LlmSetupSchema>;
+
+/** The model for the light tier: the low model if one was chosen, else the
+ * high model. */
+export function lowModelOf(setup: { lowModel?: string | undefined; highModel: string }): string {
+  return setup.lowModel ?? setup.highModel;
+}
 
 /** What is stored after a passing test: `protocol` is the high model's
  * format (setups saved before per-model detection have only this one, used

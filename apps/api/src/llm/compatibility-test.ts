@@ -1,5 +1,6 @@
 import {
   REMOTE_PROTOCOL_ORDER,
+  lowModelOf,
   type LlmModelTestResult,
   type LlmSetup,
   type LlmSetupTestResponse,
@@ -35,10 +36,11 @@ export async function testLlmSetup(
 ): Promise<LlmSetupTestResponse> {
   if (setup.protocol === 'local') return testLocalLlmSetup(setup, llmTunnelTransport, userId);
 
+  const lowModel = lowModelOf(setup);
   const [low, high] =
-    setup.lowModel === setup.highModel
-      ? await detectModel(setup, setup.lowModel).then((result) => [result, result] as const)
-      : await Promise.all([detectModel(setup, setup.lowModel), detectModel(setup, setup.highModel)]);
+    lowModel === setup.highModel
+      ? await detectModel(setup, lowModel).then((result) => [result, result] as const)
+      : await Promise.all([detectModel(setup, lowModel), detectModel(setup, setup.highModel)]);
   const voice = setup.voiceModel ? await testVoice(setup) : null;
   return { protocol: low.ok && high.ok ? (high.protocol ?? null) : null, low, high, voice };
 }

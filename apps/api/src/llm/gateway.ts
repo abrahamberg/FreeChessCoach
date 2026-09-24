@@ -1,4 +1,4 @@
-import type { LlmProtocol, LlmProvider, ReasoningEffort, StoredLlmSetup } from '@freechesscoach/shared';
+import { lowModelOf, type LlmProtocol, type LlmProvider, type ReasoningEffort, type StoredLlmSetup } from '@freechesscoach/shared';
 import type { LanguageModel } from 'ai';
 import type { Kysely } from 'kysely';
 import * as llmSetupsRepo from '../db/repositories/llm-setups.js';
@@ -90,7 +90,7 @@ export async function getModelForUser(
   }
   const protocol = resolveTierProtocol(setup, tier);
   const provider = providerForProtocol(protocol);
-  const modelId = tier === 'standard' ? setup.highModel : setup.lowModel;
+  const modelId = tier === 'standard' ? setup.highModel : lowModelOf(setup);
   const isLocal = protocol === 'local';
   const usesFlex = !isLocal && provider === 'openai' && setup.useFlex === true;
   const callOptions = resolveCallOptions(config, provider, tier, usesFlex, reasoningFor(setup, tier, isLocal));

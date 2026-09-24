@@ -8,8 +8,9 @@ import {
 import { useMemo, useState } from 'react';
 
 export const DEFAULT_CLOUD_ENDPOINT = 'https://api.openai.com/v1';
-const DEFAULT_LOW_MODEL = 'gpt-5.6-luna';
-const DEFAULT_HIGH_MODEL = 'gpt-5.6-terra';
+/** Powerful enough for the coach and cheap enough for summaries, so one
+ * model serves both tiers and the low model is left blank. */
+const DEFAULT_MODEL = 'gpt-6-luna';
 const DEFAULT_VOICE_MODEL = 'gpt-4o-mini-tts';
 
 export type SetupKind = 'cloud' | 'local';
@@ -52,8 +53,9 @@ export function initialDraft(status: LlmSetupStatus): LlmSetupDraft {
   const kind: SetupKind = status.protocol === 'local' ? 'local' : 'cloud';
   const localType = status.localType ?? 'lm-studio';
   const fallbackEndpoint = kind === 'local' ? localEndpointFor(localType, DEFAULT_LOCAL_ENDPOINTS['lm-studio']) : DEFAULT_CLOUD_ENDPOINT;
-  const lowModel = status.lowModel ?? (kind === 'local' ? '' : DEFAULT_LOW_MODEL);
-  const highModel = status.highModel ?? (kind === 'local' ? '' : DEFAULT_HIGH_MODEL);
+  const highModel = status.highModel ?? (kind === 'local' ? '' : DEFAULT_MODEL);
+  // Blank means "same as the high model".
+  const lowModel = status.lowModel && status.lowModel !== highModel ? status.lowModel : '';
   return {
     kind,
     endpoint: status.endpoint ?? fallbackEndpoint,
@@ -65,7 +67,7 @@ export function initialDraft(status: LlmSetupStatus): LlmSetupDraft {
     useFlex: status.useFlex ?? !status.configured,
     localType,
     localToken: '',
-    advanced: lowModel !== highModel || status.reasoning !== undefined,
+    advanced: lowModel !== '' || status.reasoning !== undefined,
     reasoning: status.reasoning ?? {}
   };
 }
@@ -90,7 +92,7 @@ export function useLlmSetupDraft(status: LlmSetupStatus): LlmSetupDraftApi {
           // Only replace an endpoint the user hasn't typed themselves.
           endpoint: LOCAL_DEFAULTS.has(current.endpoint) || current.endpoint === '' ? localEndpointFor(localType, current.endpoint) : current.endpoint
         })),
-      setLocalModel: (model: string) => update({ lowModel: model, highModel: model })
+      setLocalModel: (model: string) => update({ lowModel: '', highModel: model })
     };
   }, []);
   return { draft, ...actions, toSetup: () => toSetup(draft) };
@@ -113,8 +115,8 @@ function switchKind(current: LlmSetupDraft, kind: SetupKind): LlmSetupDraft {
     ...current,
     kind,
     endpoint: LOCAL_DEFAULTS.has(current.endpoint) || current.endpoint === '' ? DEFAULT_CLOUD_ENDPOINT : current.endpoint,
-    lowModel: current.lowModel || DEFAULT_LOW_MODEL,
-    highModel: current.highModel || DEFAULT_HIGH_MODEL
+    lowModel: '',
+    highModel: current.highModel || DEFAULT_MODEL
   };
 }
 
@@ -126,7 +128,7 @@ function toSetup(draft: LlmSetupDraft): LlmSetup {
       localType: draft.localType,
       endpoint: draft.endpoint,
       localToken: draft.advanced && draft.localToken ? draft.localToken : undefined,
-      lowModel: draft.advanced ? draft.lowModel : draft.highModel,
+      lowModel: draft.advanced && draft.lowModel ? draft.lowModel : undefined,
       highModel: draft.highModel,
       reasoning
     };
@@ -134,7 +136,7 @@ function toSetup(draft: LlmSetupDraft): LlmSetup {
   return {
     endpoint: draft.endpoint,
     apiKey: draft.apiKey,
-    lowModel: draft.lowModel,
+    lowModel: draft.lowModel || undefined,
     highModel: draft.highModel,
     voiceModel: draft.voiceModel || undefined,
     useFlex: draft.useFlex,

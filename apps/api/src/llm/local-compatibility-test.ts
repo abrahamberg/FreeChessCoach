@@ -1,5 +1,6 @@
 import {
   LocalModelsResultSchema,
+  lowModelOf,
   type LlmModelTestResult,
   type LlmSetup,
   type LlmSetupTestResponse,
@@ -56,12 +57,13 @@ export async function testLocalLlmSetup(
   }
 
   const high = await probeLocalModel(setup, transport, userId, setup.highModel);
-  const low = setup.lowModel === setup.highModel ? high : await probeLocalModel(setup, transport, userId, setup.lowModel);
+  const lowModel = lowModelOf(setup);
+  const low = lowModel === setup.highModel ? high : await probeLocalModel(setup, transport, userId, lowModel);
   const warning = contextWarning(models, setup.highModel);
   const highWithWarning = warning && high.ok ? { ...high, warning } : high;
   return {
     protocol: low.ok && high.ok ? 'local' : null,
-    low: setup.lowModel === setup.highModel ? highWithWarning : low,
+    low: lowModel === setup.highModel ? highWithWarning : low,
     high: highWithWarning,
     voice: null
   };
@@ -108,7 +110,7 @@ function contextWarning(models: LocalModelsResult, model: string): string | unde
 function bothFailed(setup: LlmSetup, error: string): LlmSetupTestResponse {
   return {
     protocol: null,
-    low: { model: setup.lowModel, ok: false, error },
+    low: { model: lowModelOf(setup), ok: false, error },
     high: { model: setup.highModel, ok: false, error },
     voice: null
   };

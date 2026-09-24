@@ -151,16 +151,11 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
         }
       }
     },
-    // Dev builds only, same as the coach game's menu.
-    ...(import.meta.env.DEV
-      ? [
-          {
-            label: 'Debug last answer',
-            onSelect: () => setIsDebugOpen(true),
-            disabled: !hasCompletedTurn
-          }
-        ]
-      : [])
+    {
+      label: 'Debug last answer',
+      onSelect: () => setIsDebugOpen(true),
+      disabled: !hasCompletedTurn
+    }
   ];
 
   const board = (

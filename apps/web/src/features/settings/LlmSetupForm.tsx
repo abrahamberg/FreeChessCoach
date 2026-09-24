@@ -149,7 +149,7 @@ function SavedSetupSummary({ status, onUnlockClick, onLock, onDelete, onReplace 
         <>
           <p><strong>AI setup saved</strong> — {where}</p>
           <p className="settings-page__hint">
-            Low: {modelLine(status.lowModel, status.lowProtocol ?? status.protocol, status.reasoning?.light)} · High:{' '}
+            Low: {modelLine(status.lowModel ?? status.highModel, status.lowProtocol ?? status.protocol, status.reasoning?.light)} · High:{' '}
             {modelLine(status.highModel, status.highProtocol ?? status.protocol, status.reasoning?.standard)}
             {!isLocal && ` · Voice: ${status.voiceModel ?? 'not configured'} · Flex: ${status.useFlex ? 'on' : 'off'}`}
           </p>

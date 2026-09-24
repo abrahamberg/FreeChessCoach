@@ -13,12 +13,13 @@ export function CloudLlmFields({ api }: { api: LlmSetupDraftApi }): ReactNode {
       <label htmlFor="llm-api-key">API key</label>
       <input id="llm-api-key" type="password" value={draft.apiKey} onChange={(event) => update({ apiKey: event.target.value })} required />
 
-      <label htmlFor="llm-low-model">Low model</label>
-      <input id="llm-low-model" value={draft.lowModel} onChange={(event) => update({ lowModel: event.target.value })} required />
-      <label htmlFor="llm-high-model">High model</label>
+      <label htmlFor="llm-high-model">Model</label>
       <input id="llm-high-model" value={draft.highModel} onChange={(event) => update({ highModel: event.target.value })} required />
+      <label htmlFor="llm-low-model">Low model (optional)</label>
+      <input id="llm-low-model" value={draft.lowModel} placeholder="Leave empty to use the model above for everything"
+        onChange={(event) => update({ lowModel: event.target.value })} />
       <p className="settings-page__hint">
-        The test tries each model with the OpenAI Responses, Anthropic Messages and Chat Completions formats, in that order, and keeps the first that works — the two models may end up using different ones.
+        Only set a low model if you want a cheaper one for summaries. The test tries each model with the OpenAI Responses, Anthropic Messages and Chat Completions formats, in that order, and keeps the first that works — the two models may end up using different ones.
       </p>
 
       <label htmlFor="llm-voice-model">Voice model (optional)</label>
