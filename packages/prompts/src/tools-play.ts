@@ -32,7 +32,7 @@ export const PLAY_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'play_coach_move',
     description:
-      'Commit YOUR move to the live game as SAN (e.g. "Nf3") — this actually plays it and ends your turn; nothing you say after calling it reaches the student before their next message. Call get_candidate_moves first unless you already know exactly what you want to play. Only call this once you have decided — it is not for trying ideas (use hypothetical_line for that).'
+      'Commit YOUR move to the live game as SAN (e.g. "Nf3") — this actually plays it and ends your turn; nothing you say after calling it reaches the student before their next message. Call get_candidate_moves first unless you already know exactly what you want to play. Only call this once you have decided — it is not for trying ideas (use hypothetical_line for that). Every reply that follows a student move must end with this call: if you describe or intend a move, you have not played it until this tool has been called.'
   },
   {
     name: 'undo_last_move',

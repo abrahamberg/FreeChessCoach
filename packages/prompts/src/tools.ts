@@ -191,7 +191,7 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'expect_move',
     description:
-      "Call this right before asking a single 'what would you play here?' question, when you expect exactly one move as the answer — the student's next board move is sent to you immediately instead of them building a longer line first. Clears itself after that one move — call it again next time you want the same instant behavior."
+      "Call this right before asking a single 'what would you play here?' question, when you expect exactly one move as the answer — the student's next board move is sent to you immediately instead of them building a longer line first. In a finished game, use it only for a genuine exercise on the position BEFORE the move that was played (the board's current position is already after it) — never to ask what they 'would' play when they already played it. Clears itself after that one move — call it again next time you want the same instant behavior."
   },
   {
     name: 'hypothetical_line',

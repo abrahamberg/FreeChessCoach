@@ -345,7 +345,10 @@ export function renderCurrentMoveBlock(
   analysisContext?: CurrentMoveAnalysisContext,
   gameSoFar?: string
 ): string {
-  const playedMoveSentence = playedMove !== null ? ` The move actually played here was ${playedMove}.` : '';
+  // Analyze mode only (no live gameSoFar): the game is over, so the coach
+  // must speak of it in the past tense, not as if a move were still open.
+  const finishedGameNote = gameSoFar === undefined ? ' This game is already finished — refer to its moves in the past tense.' : '';
+  const playedMoveSentence = playedMove !== null ? ` The move actually played here was ${playedMove}.${finishedGameNote}` : '';
   const analysisBlock = analysisContext ? renderAnalysisSection(ply, playedMove, analysisContext) : '';
   const gameSoFarBlock = gameSoFar !== undefined ? `## Game so far\n\n${gameSoFar}\n\n` : '';
   return `${gameSoFarBlock}## Current position\n\nYou are now discussing ${describeMoveRef(ply)} — this is what's actively on the board. Your student is playing ${studentColor} in this game.${playedMoveSentence} FEN : ${fen}.\n\n${boardFacts(fen)}${analysisBlock}\n\n## Your thread ledger\n\n${threadsBlock}`;
