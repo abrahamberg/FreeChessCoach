@@ -46,7 +46,7 @@ import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
 import { buildPlayCoachTools } from './coach-tools-play.js';
-import { createTurnGuardState, withTurnGuards } from './coach-tool-guards.js';
+import { createTurnGuardState, withTurnGuards, type TurnGuardState } from './coach-tool-guards.js';
 import { getPlayerStatsText } from './coach-player-stats.js';
 import { countWindowGames } from './diagnostic-readiness.js';
 import { normalizeTimeControl, toGateWindowGame, windowByTimeControl } from './diagnostic-window.js';
@@ -87,12 +87,17 @@ export interface CoachToolsDependencies {
   puzzlePool?: readonly PuzzleRecord[] | null;
 }
 
-/** Fresh budget/repeat-call state per call — buildCoachTools is expected to be
- * called once per agent turn (architecture §8.3's guardrails are per-turn).
+/** Fresh budget/repeat-call state per call unless `guardState` carries the
+ * reply-so-far (coach-tool-guards.ts's replyInProgress) — buildCoachTools is
+ * called once per agent turn, and a client-tool round trip starts a new one.
  * `mode` (default 'analyze', architecture §14) spreads in play mode's 3
  * additional tools, sharing this same guard state, when set to 'play'. */
-export function buildCoachTools(ctx: CoachToolsContext, deps: CoachToolsDependencies, mode: SessionMode = 'analyze'): ToolSet {
-  const guardState = createTurnGuardState();
+export function buildCoachTools(
+  ctx: CoachToolsContext,
+  deps: CoachToolsDependencies,
+  mode: SessionMode = 'analyze',
+  guardState: TurnGuardState = createTurnGuardState()
+): ToolSet {
 
   const analyzeTools: ToolSet = {
     show_position: tool({

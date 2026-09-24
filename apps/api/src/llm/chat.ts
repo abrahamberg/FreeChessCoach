@@ -80,6 +80,10 @@ export interface RunCoachTurnArgs {
    * server tool. Omitted (undefined) for analyze-mode turns, leaving
    * behavior byte-for-byte unchanged. */
   stopOnToolNames?: string[];
+  /** Model steps this reply already took in earlier turns — a client tool
+   * result resumes the reply as a new turn (services/coach-tool-guards.ts's
+   * replyInProgress), and MAX_STEPS caps the whole reply, not each hop. */
+  priorSteps?: number;
   /** Runs once the turn is fully generated. Must never throw — by the time it
    * fires the HTTP response is already hijacked and streaming, so nothing
    * downstream can catch a rejection. */
@@ -92,6 +96,7 @@ export interface RunCoachTurnArgs {
 
 /** Wraps the streaming coach call. The only place `streamText` is invoked. */
 export function runCoachTurn(args: RunCoachTurnArgs): CoachTurnStream {
+  const stepBudget = Math.max(1, MAX_STEPS - (args.priorSteps ?? 0));
   const result = streamText({
     model: args.resolution.model,
     instructions: args.instructions,
@@ -104,8 +109,20 @@ export function runCoachTurn(args: RunCoachTurnArgs): CoachTurnStream {
     toolOrder: TOOL_ORDER,
     stopWhen:
       args.stopOnToolNames && args.stopOnToolNames.length > 0
-        ? [stepCountIs(MAX_STEPS), ...args.stopOnToolNames.map((name) => hasToolCall(name))]
-        : stepCountIs(MAX_STEPS),
+        ? [stepCountIs(stepBudget), ...args.stopOnToolNames.map((name) => hasToolCall(name))]
+        : stepCountIs(stepBudget),
+    // The reply's last step must speak: without this a model that keeps
+    // calling tools (a local model re-running get_engine_analysis +
+    // annotate_board on repeat) runs out of steps on a bare tool call and the
+    // student gets arrows and no words. Same guard as agent-text.ts's runBoundedToolLoop,
+    // except a turn that ends on a commit tool (play mode's move, a puzzle's
+    // advance) keeps just those — its last step may still need to commit.
+    prepareStep: ({ stepNumber }) => {
+      if (stepNumber < stepBudget - 1) return {};
+      return args.stopOnToolNames && args.stopOnToolNames.length > 0
+        ? { activeTools: args.stopOnToolNames }
+        : { toolChoice: 'none' as const };
+    },
     // Without these a provider that opens a stream and then stalls holds this
     // session's turn lock forever, wedging every later message in the session.
     timeout: { firstChunkMs: args.timeouts.firstChunkMs, chunkMs: args.timeouts.chunkMs },

@@ -16,7 +16,7 @@ import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js
 import * as puzzleSessionsRepo from '../db/repositories/puzzle-sessions.js';
 import type { Database } from '../db/schema.js';
 import { ConflictError, NotFoundError } from '../lib/errors.js';
-import { createTurnGuardState, withTurnGuards } from './coach-tool-guards.js';
+import { createTurnGuardState, withTurnGuards, type TurnGuardState } from './coach-tool-guards.js';
 import { advancePuzzleItem, type PuzzleItemAdvanceResult } from './puzzle-item-advance.js';
 import { playNextPuzzleMove, type PlayedPuzzleMove } from './puzzle-move-commit.js';
 
@@ -57,8 +57,11 @@ export interface PuzzleSessionToolsDependencies {
  * `show_position` already falls into client-side, letting the coach revert
  * a hypothetical the same way the student's own "peek" toggle does.
  */
-export function buildPuzzleSessionTools(ctx: PuzzleSessionToolsContext, deps: PuzzleSessionToolsDependencies): ToolSet {
-  const guardState = createTurnGuardState();
+export function buildPuzzleSessionTools(
+  ctx: PuzzleSessionToolsContext,
+  deps: PuzzleSessionToolsDependencies,
+  guardState: TurnGuardState = createTurnGuardState()
+): ToolSet {
 
   return {
     annotate_board: tool({

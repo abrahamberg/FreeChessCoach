@@ -211,7 +211,7 @@ describe('buildCoachTools', () => {
       );
 
       expect(typeof result).toBe('string');
-      expect(result).toContain('Best move: Bb5 (eval +0.35)');
+      expect(result).toContain('Best move: Bb5 (eval +0.35, about equal)');
       expect(result).toContain('Line: Bb5 a6 Ba4');
       // No raw JSON escape hatch — AGENTS.md golden rule 8 (digest, don't
       // dump); this tool needs no light-model round-trip since the shape is

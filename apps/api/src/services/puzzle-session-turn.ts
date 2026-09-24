@@ -14,6 +14,7 @@ import type { GatewayConfig, ModelResolution, Tier } from '../llm/gateway.js';
 import { getModelForUser, streamTimeoutsFor } from '../llm/gateway.js';
 import { cachedSystemMessage, systemMessage, type ChatMessage } from '../llm/messages.js';
 import { serializeTools, type TurnDebugSnapshot } from './coach-agent-debug.js';
+import { replyInProgress } from './coach-tool-guards.js';
 import { currentPuzzleFen } from './puzzle-session.js';
 import { buildPuzzleSessionTools } from './puzzle-session-tools.js';
 
@@ -138,9 +139,13 @@ export async function startPuzzleTurn(
         ? history
         : [{ role: 'user', content: openingTurnContent(currentItemIndex, assignment.items.length) }, ...history];
 
+    // Same reply-spanning guards as coach-agent-turn.ts: annotate_board's
+    // client round trip resumes the reply as a new turn.
+    const reply = replyInProgress(messages);
     const tools = buildPuzzleSessionTools(
       { userId: session.userId, assignmentId: session.assignmentId, sessionId: session.id, currentItemIndex },
-      { db: deps.db, analyzePosition: deps.analyzePosition }
+      { db: deps.db, analyzePosition: deps.analyzePosition },
+      reply.state
     );
 
     return runCoachTurn({
@@ -154,6 +159,7 @@ export async function startPuzzleTurn(
       // next, so the turn must end the instant it's called rather than
       // let the model keep talking against a puzzle it's already left.
       stopOnToolNames: ['advance_puzzle'],
+      priorSteps: reply.priorSteps,
       onFinish: async (completion) => {
         // Response already piped to the client by now (routes/puzzle-
         // sessions.ts's reply.hijack()) — same "must never throw" contract

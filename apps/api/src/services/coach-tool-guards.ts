@@ -2,6 +2,8 @@
  * by both coach-tools.ts (analyze mode's 17 tools) and coach-tools-play.ts
  * (play mode's 3 additional tools) — extracted here so both files can build
  * on the exact same guardrails without importing from one another. */
+import type { ChatMessage } from '../llm/messages.js';
+
 export const TOOL_BUDGETS: Partial<Record<string, number>> = {
   get_engine_analysis: 2,
   get_user_profile: 1,
@@ -46,6 +48,39 @@ export interface TurnGuardState {
  * one instance across both the analyze-mode and play-mode tool sets. */
 export function createTurnGuardState(): TurnGuardState {
   return { callCounts: new Map(), cache: new Map() };
+}
+
+export interface ReplyInProgress {
+  /** Guard state seeded with the tool calls this reply has already made. */
+  state: TurnGuardState;
+  /** Model steps (assistant messages) this reply has already taken. */
+  priorSteps: number;
+}
+
+/**
+ * A client tool (show_position, annotate_board, hypothetical_line, …) ends
+ * the server turn, and the browser posts its result back as a brand-new turn
+ * — so one coach reply to the student can span many turns, and guards that
+ * reset per turn never fire: a model alternating get_engine_analysis and
+ * annotate_board loops forever at two steps a turn. This reads the reply so
+ * far (the trailing assistant/tool messages after the student's last
+ * message) so the call budgets and llm/chat.ts's step cap count across the
+ * whole reply instead.
+ */
+export function replyInProgress(messages: readonly ChatMessage[]): ReplyInProgress {
+  const state = createTurnGuardState();
+  let priorSteps = 0;
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index];
+    if (message === undefined || message.role === 'user' || message.role === 'system') break;
+    if (message.role !== 'assistant') continue;
+    priorSteps++;
+    if (typeof message.content === 'string') continue;
+    for (const part of message.content) {
+      if (part.type === 'tool-call') state.callCounts.set(part.toolName, (state.callCounts.get(part.toolName) ?? 0) + 1);
+    }
+  }
+  return { state, priorSteps };
 }
 
 export function withTurnGuards<Args, Result>(

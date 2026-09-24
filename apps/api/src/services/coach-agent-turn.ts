@@ -7,6 +7,7 @@ import { createKeyedLock } from '../lib/keyedLock.js';
 import { currentEpisode } from '../lib/episodes.js';
 import { findSuccessfulToolResult } from '../lib/tool-parts.js';
 import { buildCoachTools, type CoachToolsDependencies } from './coach-tools.js';
+import { replyInProgress } from './coach-tool-guards.js';
 import * as coachContext from './coach-context.js';
 import { applyClientToolResult } from './coach-agent-client-tool-result.js';
 import { buildSystemPromptForSession } from './coach-agent-system-prompt.js';
@@ -113,10 +114,14 @@ export async function startTurn(
       isLocal: resolution.isLocal ?? false
     });
 
+    // A client-tool result resumes the coach's reply as a new turn — carry
+    // the reply's budgets and step count across the hop (replyInProgress).
+    const reply = replyInProgress(messages);
     const tools = buildCoachTools(
       { userId: session.userId, sessionId: session.id, gameId: session.gameId },
       buildTurnToolsDependencies(deps, session, callLightModel, resolveModel),
-      session.mode
+      session.mode,
+      reply.state
     );
     const requestTools = serializeTools(tools);
     // architecture §14: play mode ends its turn the instant its own move
@@ -132,6 +137,7 @@ export async function startTurn(
       tools,
       timeouts: streamTimeoutsFor(deps.gatewayConfig, resolution),
       stopOnToolNames,
+      priorSteps: reply.priorSteps,
       onFinish: async (completion) => {
         // The response has already been piped to the client by the time this
         // runs (see routes/sessions.ts's reply.hijack()), so nothing
