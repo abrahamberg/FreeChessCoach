@@ -15,11 +15,16 @@ export interface RouteRateLimit {
  * times the replica count — abuse control, not a billing meter. Every refusal
  * is logged with its route, so a cap real use hits shows up in the logs. */
 export const ROUTE_RATE_LIMITS = {
-  llmSetupProbe: { max: 30, windowMs: 60_000 },
+  // Each call makes ~6 outbound requests to the user's endpoint.
+  llmSetupProbe: { max: 15, windowMs: 60_000 },
+  // Debounced 500ms and cached 10s in the form: ~6/min while typing.
+  llmLocalModels: { max: 60, windowMs: 60_000 },
   llmSetupUnlock: { max: 10, windowMs: 5 * 60_000 },
-  engineInteractive: { max: 600, windowMs: 60_000 },
-  enginePing: { max: 30, windowMs: 60_000 },
-  remoteGameList: { max: 120, windowMs: 60_000 }
+  // Arrowing through a game's positions; results are cached per FEN.
+  engineInteractive: { max: 240, windowMs: 60_000 },
+  enginePing: { max: 15, windowMs: 60_000 },
+  // One request per page of a player's game history.
+  remoteGameList: { max: 60, windowMs: 60_000 }
 } as const satisfies Record<string, RouteRateLimit>;
 
 const MAX_TRACKED_KEYS = 10_000;
