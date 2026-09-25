@@ -42,8 +42,17 @@ spec:
               port: http
             initialDelaySeconds: 10
             periodSeconds: 20
+          # The root filesystem is read-only; nginx keeps its pid and temp
+          # files here (docker/nginx.conf).
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             {{- toYaml .Values.web.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
       {{- with .Values.web.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

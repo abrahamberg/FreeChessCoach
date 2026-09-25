@@ -39,7 +39,7 @@ web:
     tag: ""
   # architecture §11: 2 replicas.
   replicaCount: 2
-  # nginx-unprivileged listens on 8080.
+  # The dhi.io/nginx base listens on 8080 (docker/Dockerfile.web).
   containerPort: 8080
   service:
     port: 80
@@ -260,8 +260,12 @@ podSecurityContext:
   runAsGroup: 1000
   seccompProfile:
     type: RuntimeDefault
+## readOnlyRootFilesystem: nothing in the images writes at runtime except
+## nginx, whose pid/temp files docker/nginx.conf puts in /tmp — web mounts an
+## emptyDir there. scripts/smoke-images.sh runs every image this way.
 containerSecurityContext:
   allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
   capabilities:
     drop: ["ALL"]
 

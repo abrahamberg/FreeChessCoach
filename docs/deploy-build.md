@@ -136,16 +136,60 @@ Node never executes, so it has no architecture dependency at all.
 
 ## Why docker/Dockerfile.engine is different
 
-`docker/Dockerfile.engine` (Task 2.1) installs the `stockfish` OS package with
-`apt-get` **inside** the Dockerfile, and that is correct — there is no
-pre-buildable artifact to hoist onto the runner. Built through
+`docker/Dockerfile.engine` installs the `stockfish` OS package with `apt-get`
+**inside** the Dockerfile, and that is correct — there is no pre-buildable
+artifact to hoist onto the runner. Built through
 `docker buildx build --platform linux/arm64`, apt runs in an arm64 context and
 fetches the arm64 package from Debian's repositories, so the right binary lands in
-the image automatically. It does not need the "build outside Docker" treatment.
+the image automatically.
+
+It is two stages because the hardened runtime base (below) has no apt and no
+npm. `apt-get install stockfish` and the engine's `npm ci --omit=dev` run in
+`dhi.io/node:*-dev`; the runtime stage copies only `/usr/games/stockfish` and
+`node_modules`. Debian's Stockfish is a single binary with its NNUE nets
+embedded, linked only against libstdc++/libgcc_s/libm/libc, which the runtime
+image already ships for node. Installing it in the runtime stage — or expecting
+the runtime image to have it — is what breaks the engine on a hardened base.
 
 The engine application is bundled on the runner and runs with plain `node`; no
-npm install, TypeScript compilation, or `tsx` startup dependency is needed in
-the runtime image.
+TypeScript compilation or `tsx` startup dependency is needed in the runtime
+image.
+
+## Base images: Docker Hardened Images
+
+All three runtime images build `FROM dhi.io/...` (Docker Hardened Images:
+`dhi.io/node:24-debian13` for api and engine, `dhi.io/nginx:1.29` for web).
+Compared to `node:*-slim` / `nginx-unprivileged` they have no shell, no package
+manager and a much smaller CVE surface, and the web image no longer advertises
+its nginx version. Each `FROM` is pinned by digest; Dependabot refreshes the
+digests weekly (`.github/dependabot.yml`), and those PRs auto-merge once CI —
+including the image smoke test — passes.
+
+Pulling needs a Docker Hub login (`docker login dhi.io`). CI reads
+`DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (a Docker Hub access token with
+read-only scope) from **both** the Actions secrets and the Dependabot secrets —
+workflows started by a Dependabot PR only see the latter, and Dependabot itself
+uses them to look up new digests. The pushed images carry the base layers, so
+the cluster never pulls from `dhi.io`.
+
+With no shell in the images, `kubectl exec ... sh` does not work; use
+`kubectl debug` with an ephemeral container when you need to look inside a pod.
+
+## Test the images before deploying
+
+```bash
+scripts/build-images.sh --platform "" --tag smoke --restore-dev-deps
+scripts/smoke-images.sh --tag smoke
+```
+
+`scripts/smoke-images.sh` runs each image the way the chart does — uid 1000,
+read-only root filesystem, every capability dropped, `no-new-privileges`, and
+a writable `/tmp` for web only — next to a throwaway Postgres. It checks that
+migrations apply, the api reports `/readyz`, the worker stays up, the engine
+spawns Stockfish and returns an analysis, and nginx serves the SPA with its
+security headers; and that each image runs as uid 1000 with no shell. CI runs
+it on every PR (`images` job) and the publishing workflow runs it again before
+pushing anything.
 
 ## All three images run as uid 1000
 
@@ -160,15 +204,20 @@ is non-root"*. Both are admission-time failures that no local `docker run`,
 `helm template` or `kubeconform` run can see, so `deploy/helm/test.sh` asserts
 the chart side structurally for every Deployment and Job it renders.
 
-1000 is the `node` user's uid in `node:22-slim`. Nothing in the images needs to
-write outside `/tmp`: the copied `node_modules`, `dist-bundle`, static assets and
-`/usr/games/stockfish` are all world-readable, and nginx-unprivileged keeps its
-pid file and every `*_temp_path` in `/tmp`.
+1000 is the `node` user's uid in `dhi.io/node`. Nothing in the images writes at
+runtime except nginx, and `docker/nginx.conf` puts its pid file and every
+`*_temp_path` in `/tmp` and its logs on stdout/stderr. The copied
+`node_modules`, `dist-bundle`, static assets and `/usr/games/stockfish` are
+root-owned and world-readable, so uid 1000 can run them but not modify them.
+The chart therefore sets `readOnlyRootFilesystem: true` on every container and
+mounts an emptyDir at `/tmp` for web only.
 
 ## CI
 
-Task 9.2 owns the pipeline. The requirement it inherits from this document: set
-up buildx + QEMU as above, then call
+`.github/workflows/build-images.yml` publishes only after the CI workflow has
+passed for a push to `main`, and smoke-tests the images before its push. The
+requirement it inherits from this document: set up buildx + QEMU as above, log
+in to `dhi.io`, then call
 
 ```bash
 npm run build:images -- --registry <registry> --tag <tag> --push
