@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import { toolCallFrame, toolOutputFrame } from '../../test/helpers/uiMessageStream.js';
-import { readCoachStream } from './coachStream.js';
+import { readCoachStream, readProblemDetailTitle } from './coachStream.js';
 
 function streamOf(parts: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
@@ -60,5 +60,25 @@ describe('readCoachStream — tool-output-available forwarding', () => {
     await readCoachStream(stream, handlers({ onToolOutput }));
 
     expect(onToolOutput).toHaveBeenCalledWith({ toolCallId: 'call-3', toolName: '', output: { ok: true } });
+  });
+});
+
+describe('readProblemDetailTitle', () => {
+  test('shows the problem+json title', async () => {
+    const response = new Response(JSON.stringify({ title: 'Set up your AI first' }), { status: 400 });
+
+    expect(await readProblemDetailTitle(response)).toBe('Set up your AI first');
+  });
+
+  test('names a proxy timeout instead of the generic message', async () => {
+    const response = new Response('<html>502 Bad Gateway</html>', { status: 502 });
+
+    expect(await readProblemDetailTitle(response)).toBe('The coach took too long to start replying (HTTP 502). Please try again.');
+  });
+
+  test('falls back to the generic message for other non-JSON errors', async () => {
+    const response = new Response('oops', { status: 500 });
+
+    expect(await readProblemDetailTitle(response)).toBe('Something went wrong sending that message.');
   });
 });

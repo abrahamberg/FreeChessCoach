@@ -43,6 +43,10 @@ import {
   type ResolveEngineBackendOptions
 } from '../services/engine/resolve-engine-backend.js';
 
+/** Well under oauth2-proxy's and the ingress's cutoffs, so a turn nearing
+ * one shows up in the logs before it starts failing. */
+const SLOW_TURN_SETUP_MS = 15_000;
+
 /** State a bot game keeps outside the process, shared by every API pod (see
  * bootstrap.ts). Both default to process-local behaviour when omitted. */
 export interface SharedBotState {
@@ -130,7 +134,16 @@ export function registerSessionsRoutes(
     }
 
     const agentDeps = await buildRequestScopedAgentDeps(baseDeps, engineBackendOptions, user.id);
+    const setupStartedAt = Date.now();
     const turn = await coachAgent.startTurn(agentDeps, session, parsed.data);
+    // No bytes reach the client until startTurn returns, and the proxies in
+    // front (oauth2-proxy, ingress, Cloudflare) each give up on a silent
+    // upstream on their own — without this line such a cutoff leaves no
+    // trace here at all.
+    const setupMs = Date.now() - setupStartedAt;
+    if (setupMs > SLOW_TURN_SETUP_MS) {
+      console.warn(`coach turn setup took ${setupMs}ms for session ${session.id} (before any response bytes)`);
+    }
 
     reply.hijack();
     void pipeCoachStreamToResponse(reply.raw, turn);

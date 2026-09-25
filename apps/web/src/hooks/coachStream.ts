@@ -102,8 +102,18 @@ async function dispatchChunk(
 export async function readProblemDetailTitle(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { title?: string };
-    return body.title || 'Something went wrong sending that message.';
+    return body.title || fallbackMessage(response.status);
   } catch {
-    return 'Something went wrong sending that message.';
+    return fallbackMessage(response.status);
   }
+}
+
+/** A proxy in front of the api (oauth2-proxy's 502, the ingress's 504,
+ * Cloudflare's 524) answers with its own HTML page when the coach is slow to
+ * start replying — no problem+json title to show. */
+function fallbackMessage(status: number): string {
+  if (status === 502 || status === 504 || status === 524) {
+    return `The coach took too long to start replying (HTTP ${status}). Please try again.`;
+  }
+  return 'Something went wrong sending that message.';
 }
