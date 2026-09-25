@@ -14,7 +14,7 @@
 # runs on plain `node`, and every remaining production dependency is pure
 # JavaScript — no native binaries, no install scripts, no os/cpu constraints
 # (audited; see docs/deploy-build.md) — so the copied tree is portable.
-FROM node:22-slim AS runtime
+FROM node:25-slim AS runtime
 LABEL org.opencontainers.image.source="https://github.com/abrahamberg/FreeChessCoach"
 WORKDIR /app
 ENV NODE_ENV=production
