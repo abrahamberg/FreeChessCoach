@@ -13,6 +13,13 @@ import type { RemoteTab } from './RemoteImportPanel.js';
 
 const REMOTE_PAGE_SIZE = 20;
 
+/** A player's game history doesn't change minute to minute, and an infinite
+ * query refetches *every* loaded page on each window focus — switching tabs
+ * to watch an analysis with ten pages loaded was ten Lichess calls per
+ * switch, enough to hit the api's per-user cap. The username-change reset
+ * below still reloads immediately. */
+const REMOTE_LIST_STALE_MS = 5 * 60_000;
+
 function recentGamesUrl(platform: 'lichess' | 'chesscom', before: string): string {
   const base = `/api/${platform}/recent-games`;
   return before ? `${base}?before=${encodeURIComponent(before)}` : base;
@@ -53,6 +60,7 @@ export function useRemoteImport(tab: string) {
     queryFn: ({ pageParam, signal }) =>
       apiGet(recentGamesUrl('lichess', pageParam), LichessRecentGamesResponseSchema, signal),
     getNextPageParam: nextCursor,
+    staleTime: REMOTE_LIST_STALE_MS,
     enabled: tab === 'lichess'
   });
   const lichessGames = lichessQuery.data?.pages.flat() ?? [];
@@ -64,6 +72,7 @@ export function useRemoteImport(tab: string) {
     queryFn: ({ pageParam, signal }) =>
       apiGet(recentGamesUrl('chesscom', pageParam), ChesscomRecentGamesResponseSchema, signal),
     getNextPageParam: nextCursor,
+    staleTime: REMOTE_LIST_STALE_MS,
     enabled: tab === 'chesscom'
   });
   const chesscomGames = chesscomQuery.data?.pages.flat() ?? [];
