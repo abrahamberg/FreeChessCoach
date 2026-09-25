@@ -5,13 +5,14 @@ import * as gamesRepo from '../db/repositories/games.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
 import type { ChesscomClient } from '../services/chesscom.js';
 import * as userProfileService from '../services/user-profile.js';
+import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.js';
 
 export function registerChesscomRoutes(
   app: FastifyInstance,
   db: Kysely<Database>,
   chesscomClient: ChesscomClient
 ): void {
-  app.get<{ Querystring: { before?: string } }>('/api/chesscom/recent-games', async (request) => {
+  app.get<{ Querystring: { before?: string } }>('/api/chesscom/recent-games', rateLimitConfig(ROUTE_RATE_LIMITS.remoteGameList), async (request) => {
     const user = await userProfileService.getOrCreate(db, request.user);
     if (!user.chesscomUsername) {
       throw new NotFoundError('No linked Chess.com username');

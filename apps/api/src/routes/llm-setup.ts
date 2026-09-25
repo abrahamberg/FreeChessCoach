@@ -20,6 +20,7 @@ import type { LlmUnlockStore } from '../llm/unlock-store.js';
 import { ValidationError } from '../lib/errors.js';
 import * as userProfileService from '../services/user-profile.js';
 import type { LlmTunnelTransport } from '../services/engine/llm-tunnel-transport.js';
+import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.js';
 
 export function registerLlmSetupRoutes(
   app: FastifyInstance,
@@ -35,14 +36,14 @@ export function registerLlmSetupRoutes(
     return statusFor(row !== undefined, setup);
   });
 
-  app.post('/api/users/me/llm-setup/test', async (request) => {
+  app.post('/api/users/me/llm-setup/test', rateLimitConfig(ROUTE_RATE_LIMITS.llmSetupProbe), async (request) => {
     const setup = parseSetup(request.body);
     const user = await userProfileService.getOrCreate(db, request.user);
     return testLlmSetup(setup, llmTunnelTransport, user.id);
   });
 
   // POST, not GET: a local server's token travels in the body, never the URL.
-  app.post('/api/users/me/llm-setup/models', async (request): Promise<LlmModelsResponse> => {
+  app.post('/api/users/me/llm-setup/models', rateLimitConfig(ROUTE_RATE_LIMITS.llmSetupProbe), async (request): Promise<LlmModelsResponse> => {
     const parsed = LocalModelsRequestSchema.safeParse(request.body);
     if (!parsed.success) throw new ValidationError(formatIssues(parsed.error.issues));
     const empty = { models: [], loadedModel: null, contextLength: null };
@@ -55,7 +56,7 @@ export function registerLlmSetupRoutes(
     }
   });
 
-  app.put('/api/users/me/llm-setup', async (request) => {
+  app.put('/api/users/me/llm-setup', rateLimitConfig(ROUTE_RATE_LIMITS.llmSetupProbe), async (request) => {
     const parsed = SaveLlmSetupRequestSchema.safeParse(request.body);
     if (!parsed.success) throw new ValidationError(formatIssues(parsed.error.issues));
 
@@ -69,14 +70,14 @@ export function registerLlmSetupRoutes(
       lowProtocol: tests.low.protocol,
       highProtocol: tests.high.protocol
     };
-    const encrypted = vault.encrypt(storedSetup, unlockPhrase);
+    const encrypted = await vault.encrypt(storedSetup, unlockPhrase);
     await unlockStore.lock(user.id);
     await llmSetupsRepo.upsert(db, user.id, encrypted.ciphertext, encrypted.iv, encrypted.salt);
     await unlockStore.unlock(user.id, storedSetup);
     return statusFor(true, storedSetup);
   });
 
-  app.post('/api/users/me/llm-setup/unlock', async (request) => {
+  app.post('/api/users/me/llm-setup/unlock', rateLimitConfig(ROUTE_RATE_LIMITS.llmSetupUnlock), async (request) => {
     const parsed = UnlockLlmSetupRequestSchema.safeParse(request.body);
     if (!parsed.success) throw new ValidationError(formatIssues(parsed.error.issues));
     const user = await userProfileService.getOrCreate(db, request.user);
@@ -85,7 +86,7 @@ export function registerLlmSetupRoutes(
 
     let setup: StoredLlmSetup;
     try {
-      setup = vault.decrypt(
+      setup = await vault.decrypt(
         { ciphertext: row.setupCiphertext, iv: row.setupIv, salt: row.setupSalt },
         parsed.data.unlockPhrase
       );

@@ -9,6 +9,7 @@ import {
   type ResolveEngineBackendOptions
 } from '../services/engine/resolve-engine-backend.js';
 import * as userProfileService from '../services/user-profile.js';
+import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.js';
 
 /** Shallower than a full analysis and multiPv > 1 (see
  * HintMovesRequestSchema's doc comment for why this can't share the cached
@@ -32,7 +33,7 @@ export function registerPositionAnalysisRoutes(
   db: Kysely<Database>,
   engineBackendOptions: ResolveEngineBackendOptions
 ): void {
-  app.post('/api/positions/analyze', async (request) => {
+  app.post('/api/positions/analyze', rateLimitConfig(ROUTE_RATE_LIMITS.engineInteractive), async (request) => {
     const parsed = AnalyzePositionRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       throw new ValidationError(parsed.error.issues.map((issue) => issue.message).join('; '));
@@ -46,7 +47,7 @@ export function registerPositionAnalysisRoutes(
   // The bot session's hint feature — see HintMovesRequestSchema's doc
   // comment for why this is a separate, uncached endpoint rather than a
   // multiPv argument to /analyze above.
-  app.post('/api/positions/hint-moves', async (request) => {
+  app.post('/api/positions/hint-moves', rateLimitConfig(ROUTE_RATE_LIMITS.engineInteractive), async (request) => {
     const parsed = HintMovesRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       throw new ValidationError(parsed.error.issues.map((issue) => issue.message).join('; '));

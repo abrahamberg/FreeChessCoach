@@ -5,9 +5,10 @@ import * as gamesRepo from '../db/repositories/games.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
 import type { LichessClient } from '../services/lichess.js';
 import * as userProfileService from '../services/user-profile.js';
+import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.js';
 
 export function registerLichessRoutes(app: FastifyInstance, db: Kysely<Database>, lichessClient: LichessClient): void {
-  app.get<{ Querystring: { before?: string } }>('/api/lichess/recent-games', async (request) => {
+  app.get<{ Querystring: { before?: string } }>('/api/lichess/recent-games', rateLimitConfig(ROUTE_RATE_LIMITS.remoteGameList), async (request) => {
     const user = await userProfileService.getOrCreate(db, request.user);
     if (!user.lichessUsername) {
       throw new NotFoundError('No linked Lichess username');

@@ -7,6 +7,7 @@ import { ValidationError } from '../lib/errors.js';
 import { runEnginePing } from '../services/engine-ping.js';
 import type { ResolveEngineBackendOptions } from '../services/engine/resolve-engine-backend.js';
 import * as userProfileService from '../services/user-profile.js';
+import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.js';
 
 /** The settings page's engine ping test (Engine → "Engine ping test"): the
  * user types a FEN (the shared ENGINE_PING_FEN default is deliberately
@@ -19,7 +20,7 @@ export function registerEnginePingRoutes(
   db: Kysely<Database>,
   engineBackendOptions: ResolveEngineBackendOptions
 ): void {
-  app.post('/api/engine/ping', async (request) => {
+  app.post('/api/engine/ping', rateLimitConfig(ROUTE_RATE_LIMITS.enginePing), async (request) => {
     const parsed = EnginePingRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       throw new ValidationError(parsed.error.issues.map((issue) => issue.message).join('; '));

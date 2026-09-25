@@ -23,6 +23,7 @@ import type { BotThinkingRegistry } from './services/bot/bot-thinking-registry.j
 import { registerStatsRoutes } from './routes/stats.js';
 import { registerTtsRoutes } from './routes/tts.js';
 import { authHeadersPlugin, type AuthHeadersOptions } from './plugins/auth-headers.js';
+import { crossSiteGuardPlugin } from './plugins/cross-site-guard.js';
 import { errorMapperPlugin } from './plugins/error-mapper.js';
 import { registerUsersRoutes } from './routes/users.js';
 import { noopJobQueue, type JobQueue } from './jobs/queue.js';
@@ -82,7 +83,10 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
 
   app.register(errorMapperPlugin);
   app.register(authHeadersPlugin, { authMode });
-  app.register(fastifyWebsocket);
+  app.register(crossSiteGuardPlugin);
+  // ws defaults to 100 MiB frames; the largest real tunnel message (a whole
+  // game's engine lines) is well under 1 MiB.
+  app.register(fastifyWebsocket, { options: { maxPayload: 16 * 1024 * 1024 } });
 
   app.get('/healthz', async () => ({ status: 'ok' }));
 
