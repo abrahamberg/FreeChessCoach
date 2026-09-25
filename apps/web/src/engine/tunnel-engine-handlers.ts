@@ -110,7 +110,22 @@ async function analyzeGameForTunnel(fens: string[], depth: number, multiPv: numb
  * body is handed back as text, untouched — apps/api's own ChessApiEngineBackend
  * does the JSON parsing/validation it already does for a direct server
  * fetch, so nothing about that logic needs to know its fetch was tunneled. */
+/** The only host a `fetch` tunnel request exists for. The tab runs these on
+ * the server's behalf, so it refuses anything else: otherwise one forged
+ * tunnel message could make this tab call the app's own API with the user's
+ * cookies, or probe their local network, and hand back the answer. */
+const TUNNEL_FETCH_ORIGIN = 'https://chess-api.com';
+
+export function isAllowedTunnelFetchUrl(url: string): boolean {
+  try {
+    return new URL(url).origin === TUNNEL_FETCH_ORIGIN;
+  } catch {
+    return false;
+  }
+}
+
 async function fetchForTunnel(url: string, method: string, body: string | undefined) {
-  const response = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body });
+  if (!isAllowedTunnelFetchUrl(url)) throw new Error(`Refusing tunnel fetch to ${url}`);
+  const response = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body, credentials: 'omit' });
   return { status: response.status, body: await response.text() };
 }
