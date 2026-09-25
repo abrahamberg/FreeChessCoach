@@ -2,6 +2,8 @@ import { parsePgn } from '@freechesscoach/chess-analysis';
 import type { ChesscomRecentGame } from '@freechesscoach/shared';
 
 const RECENT_GAMES_LIMIT = 20;
+/** How many monthly archives one page may walk back through. */
+const MAX_ARCHIVE_MONTHS = 6;
 
 interface ChesscomApiGame {
   uuid?: string;
@@ -19,7 +21,9 @@ interface ChesscomArchiveResponse {
 }
 
 export interface ChesscomClient {
-  fetchRecentGames(username: string): Promise<ChesscomRecentGame[]>;
+  /** One page (newest first); `before` continues from where the previous
+   * page's oldest game ended. */
+  fetchRecentGames(username: string, before?: Date): Promise<Omit<ChesscomRecentGame, 'imported'>[]>;
 }
 
 export class ChesscomApiError extends Error {
@@ -36,12 +40,14 @@ export class ChesscomApiError extends Error {
  * API. */
 export function createChesscomClient(fetchImpl: typeof fetch = fetch): ChesscomClient {
   return {
-    async fetchRecentGames(username: string): Promise<ChesscomRecentGame[]> {
-      const now = new Date();
-      const games = await fetchArchive(fetchImpl, username, now);
-      if (games.length < RECENT_GAMES_LIMIT) {
-        const previousMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
-        games.push(...(await fetchArchive(fetchImpl, username, previousMonth)));
+    async fetchRecentGames(username: string, before?: Date): Promise<Omit<ChesscomRecentGame, 'imported'>[]> {
+      const cutoff = (before ?? new Date()).getTime() / 1000;
+      const start = before ?? new Date();
+      const games: ChesscomApiGame[] = [];
+      for (let back = 0; back < MAX_ARCHIVE_MONTHS && games.length < RECENT_GAMES_LIMIT; back++) {
+        const month = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() - back, 1));
+        const archive = await fetchArchive(fetchImpl, username, month, back === 0);
+        games.push(...archive.filter((game) => before === undefined || (game.end_time ?? 0) < cutoff));
       }
 
       return games
@@ -52,18 +58,29 @@ export function createChesscomClient(fetchImpl: typeof fetch = fetch): ChesscomC
   };
 }
 
-async function fetchArchive(fetchImpl: typeof fetch, username: string, month: Date): Promise<ChesscomApiGame[]> {
+/** A month the player never played in is a 404 — an empty month, not an
+ * error, except for the first month asked (which is how a mistyped username
+ * still surfaces). */
+async function fetchArchive(
+  fetchImpl: typeof fetch,
+  username: string,
+  month: Date,
+  strict: boolean
+): Promise<ChesscomApiGame[]> {
   const year = month.getUTCFullYear();
   const monthNumber = String(month.getUTCMonth() + 1).padStart(2, '0');
   const url = `https://api.chess.com/pub/player/${encodeURIComponent(username)}/games/${year}/${monthNumber}`;
   const response = await fetchImpl(url);
-  if (!response.ok) throw new ChesscomApiError(response.status);
+  if (!response.ok) {
+    if (!strict && response.status === 404) return [];
+    throw new ChesscomApiError(response.status);
+  }
 
   const body = (await response.json()) as ChesscomArchiveResponse;
   return body.games ?? [];
 }
 
-function toRecentGame(raw: ChesscomApiGame): ChesscomRecentGame {
+function toRecentGame(raw: ChesscomApiGame): Omit<ChesscomRecentGame, 'imported'> {
   const headers = raw.pgn ? parsePgn(raw.pgn).headers : {};
   return {
     id: raw.uuid ?? '',

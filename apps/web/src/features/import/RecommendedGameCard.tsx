@@ -1,6 +1,10 @@
 import { TACTIC_MOTIF_LABELS, type CoachingCandidateResponse, type ImportedGameItem } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import '../games/RailCard.css';
+import './RecommendedGameCard.css';
+import { ResultBadge } from '../../components/ResultBadge.js';
+import { EyeIcon, LightbulbIcon, MessageCircleIcon } from '../../components/Icon.js';
+import { opponentName, gameOutcome } from '../games/gameDisplay.js';
 
 type Candidate = NonNullable<CoachingCandidateResponse['candidate']>;
 
@@ -19,12 +23,24 @@ function reasonOf(row: Candidate['topMotifs'][number]): string {
 
 /** The batch's most tactical game, offered for a coaching session. Ranked
  * programmatically (no AI): tactics missed plus tactics allowed. */
-export function RecommendedGameCard({ game, candidate, onStartCoaching, onReview }: RecommendedGameCardProps): ReactNode {
+export function RecommendedGameCard({
+  game,
+  candidate,
+  onStartCoaching,
+  onReview
+}: RecommendedGameCardProps): ReactNode {
+  const outcome = gameOutcome(game);
   return (
     <section className="recommended-game card" aria-label="Recommended game">
-      <h2>Best game to coach on</h2>
+      <div className="recommended-game__head">
+        <span className="rail-card__chip">
+          <LightbulbIcon width={16} height={16} />
+          Best game to coach on
+        </span>
+      </div>
       <p className="recommended-game__players">
-        {game.whiteName ?? '?'} vs. {game.blackName ?? '?'} <span>{game.result ?? '*'}</span>
+        {outcome && <ResultBadge outcome={outcome} />}
+        <span>vs {opponentName(game)}</span>
       </p>
       {candidate.topMotifs.length > 0 && (
         <ul className="recommended-game__reasons">
@@ -35,12 +51,13 @@ export function RecommendedGameCard({ game, candidate, onStartCoaching, onReview
       )}
       <div className="recommended-game__actions">
         <button type="button" className="btn-primary" onClick={onStartCoaching}>
+          <MessageCircleIcon width={18} height={18} />
           Start coaching session
         </button>
         <button type="button" className="btn-secondary" onClick={onReview}>
+          <EyeIcon width={18} height={18} />
           Review it first
         </button>
-        <Link to="/games">Go to my games</Link>
       </div>
     </section>
   );

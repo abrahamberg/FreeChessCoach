@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { apiGet } from '../api/client.js';
+import { isEngineCached } from '../engine/engine-cache.js';
 import { getSharedEngineWorker, getSharedLiteEngineWorker } from '../engine/shared-engine-worker-instance.js';
 import { markTabUsed } from '../engine/tunnel-tab-usage.js';
 import { useUnifiedTunnelClient } from './useUnifiedTunnelClient.js';
@@ -17,8 +18,8 @@ import { useUnifiedTunnelClient } from './useUnifiedTunnelClient.js';
  *
  * Also preloads the lite engine's ~7MB WASM build straight away, so the
  * first bot move of a session doesn't pay for that download. The ~108MB
- * full-net build is preloaded only when engineMode is 'browser' — that
- * setting is the opt-in for the download; other modes never pay for it. */
+ * full-net build is warmed only when engineMode is 'browser' AND it is
+ * already downloaded; the first download is always started by the user. */
 export function useUnifiedTunnelActivation(): void {
   useUnifiedTunnelClient(true);
   useTabUsageTracking();
@@ -75,6 +76,11 @@ function useMainEnginePreload(): void {
 
   useEffect(() => {
     if (engineMode !== 'browser') return;
-    getSharedEngineWorker().preload();
+    // Only warm an engine that is already on this device (a quick start from
+    // the cache). A first download is never started here — the user starts it
+    // from the visible download button (BrowserEngineStatus).
+    void isEngineCached().then((cached) => {
+      if (cached) getSharedEngineWorker().preload();
+    });
   }, [engineMode]);
 }

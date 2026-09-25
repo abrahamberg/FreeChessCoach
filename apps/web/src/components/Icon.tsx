@@ -303,7 +303,7 @@ export function MaximizeIcon(props: IconProps): ReactNode {
   );
 }
 
-export function UploadIcon(props: IconProps): ReactNode {
+export function ImportIcon(props: IconProps): ReactNode {
   return (
     <svg {...iconProps(props)}>
       <path d="M12 16V4" />
@@ -361,6 +361,43 @@ export function SearchIcon(props: IconProps): ReactNode {
     <svg {...iconProps(props)}>
       <circle cx="11" cy="11" r="6.5" />
       <line x1="20.5" y1="20.5" x2="15.8" y2="15.8" />
+    </svg>
+  );
+}
+
+export function BugIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <rect x="8" y="8" width="8" height="12" rx="4" />
+      <path d="M9 8a3 3 0 0 1 6 0" />
+      <path d="M4 12h4M16 12h4M5 6l3 2M19 6l-3 2M5 19l3-2M19 19l-3-2M12 12v8" />
+    </svg>
+  );
+}
+
+export function PlugIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M9 3v5M15 3v5" />
+      <path d="M6 8h12v3a6 6 0 0 1-12 0Z" />
+      <path d="M12 17v4" />
+    </svg>
+  );
+}
+
+export function MinusIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
+export function EqualsIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <line x1="5" y1="9" x2="19" y2="9" />
+      <line x1="5" y1="15" x2="19" y2="15" />
     </svg>
   );
 }

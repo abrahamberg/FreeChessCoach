@@ -10,7 +10,7 @@ describe('defaultReviewTierForSource', () => {
     expect(defaultReviewTierForSource('coach_play')).toBe('coach');
   });
 
-  test.each(['paste', 'upload', 'lichess', 'chesscom'] as const)('%s starts at imported', (source) => {
+  test.each(['paste', 'file', 'lichess', 'chesscom'] as const)('%s starts at imported', (source) => {
     expect(defaultReviewTierForSource(source)).toBe('imported');
   });
 });

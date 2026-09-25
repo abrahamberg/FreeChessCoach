@@ -418,7 +418,8 @@ describe('UserProfileSchema', () => {
       engineMode: 'native',
       coachPersona: 'general',
       ttsEnabled: false,
-      ttsBackend: 'openai'
+      ttsBackend: 'openai',
+      onboarded: true
     };
     expect(UserProfileSchema.safeParse(profile).success).toBe(true);
   });

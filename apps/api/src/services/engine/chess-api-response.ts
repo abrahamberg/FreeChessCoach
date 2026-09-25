@@ -43,6 +43,22 @@ export class ChessApiRateLimitedError extends EngineUnavailableError {
   }
 }
 
+/** chess-api.com's "too many requests today for this IP / key" answer:
+ * `{ type: 'error', error: 'HIGH_USAGE', text }`. Unlike a 429 it is a daily
+ * quota, so retrying within the job is pointless — it is never retried, and
+ * the caller records it (see ChessApiEngineBackend's onHighUsage). Extends
+ * EngineUnavailableError so the native fallback picks the request up. */
+export class ChessApiHighUsageError extends EngineUnavailableError {
+  constructor() {
+    super('chess-api.com reported HIGH_USAGE (daily limit reached for this connection)');
+  }
+}
+
+export function isHighUsageBody(body: unknown): boolean {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) return false;
+  return (body as { type?: unknown }).type === 'error' && (body as { error?: unknown }).error === 'HIGH_USAGE';
+}
+
 // chess-api.com's free tier documents no rate limit, but 429s have been
 // observed in bursts of real traffic. Three retries with a growing backoff
 // (12s total) is long enough to typically ride out a short throttle window

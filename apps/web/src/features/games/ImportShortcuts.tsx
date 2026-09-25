@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardIcon, type IconProps, KnightIcon, PawnIcon, UploadIcon } from '../../components/Icon.js';
+import { ClipboardIcon, type IconProps, KnightIcon, PawnIcon, ImportIcon } from '../../components/Icon.js';
 import './ImportShortcuts.css';
 
 export interface ImportShortcutsProps {
@@ -11,7 +11,7 @@ export interface ImportShortcutsProps {
 }
 
 interface ImportSource {
-  tab: 'lichess' | 'chesscom' | 'paste' | 'upload';
+  tab: 'lichess' | 'chesscom' | 'paste' | 'file';
   label: string;
   icon: ComponentType<IconProps>;
 }
@@ -24,7 +24,7 @@ const IMPORT_SOURCES: ImportSource[] = [
   { tab: 'lichess', label: 'Lichess', icon: KnightIcon },
   { tab: 'chesscom', label: 'Chess.com', icon: PawnIcon },
   { tab: 'paste', label: 'Paste PGN', icon: ClipboardIcon },
-  { tab: 'upload', label: 'Upload PGN', icon: UploadIcon }
+  { tab: 'file', label: 'PGN file', icon: ImportIcon }
 ];
 
 /** The Games page's primary CTA (replaces the old lone "Add games" button):

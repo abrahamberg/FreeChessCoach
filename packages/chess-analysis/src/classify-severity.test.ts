@@ -3,9 +3,9 @@ import { classifySeverity } from './classify-severity.js';
 
 describe('classifySeverity', () => {
   test('uses the report drop thresholds', () => {
-    expect(classifySeverity({ drop: 1.99, beforeWin: 50, afterWin: 48, cpBefore: 0, cpAfter: -20 })).toBe('excellent');
-    expect(classifySeverity({ drop: 2, beforeWin: 50, afterWin: 48, cpBefore: 0, cpAfter: -20 })).toBe('good');
-    expect(classifySeverity({ drop: 5, beforeWin: 50, afterWin: 45, cpBefore: 0, cpAfter: -50 })).toBe('inaccuracy');
+    expect(classifySeverity({ drop: 0.99, beforeWin: 50, afterWin: 48, cpBefore: 0, cpAfter: -20 })).toBe('excellent');
+    expect(classifySeverity({ drop: 1, beforeWin: 50, afterWin: 48, cpBefore: 0, cpAfter: -20 })).toBe('good');
+    expect(classifySeverity({ drop: 4, beforeWin: 50, afterWin: 46, cpBefore: 0, cpAfter: -40 })).toBe('inaccuracy');
     expect(classifySeverity({ drop: 10, beforeWin: 50, afterWin: 40, cpBefore: 0, cpAfter: -100 })).toBe('mistake');
     expect(classifySeverity({ drop: 20, beforeWin: 50, afterWin: 30, cpBefore: 0, cpAfter: -200 })).toBe('blunder');
   });

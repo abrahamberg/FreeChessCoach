@@ -1,16 +1,41 @@
 import type { GameListItem, GameSource } from '@freechesscoach/shared';
+import type { ComponentType } from 'react';
+import {
+  BoardIcon,
+  ClipboardIcon,
+  type IconProps,
+  ImportIcon,
+  KnightIcon,
+  MessageCircleIcon,
+  PawnIcon
+} from '../../components/Icon.js';
 
 /** What a game's source is called on a card — the Games page only lists
  * importable games now, so the real origin (Lichess, Chess.com, ...) is more
  * useful than the old Imported/Bot/Coached grouping. */
 const SOURCE_LABELS: Record<GameSource, string> = {
   paste: 'Pasted',
-  upload: 'Uploaded',
+  file: 'From file',
   lichess: 'Lichess',
   chesscom: 'Chess.com',
   vs_bot: 'Bot',
   coach_play: 'Coached'
 };
+
+/** Same icon per import source as the import tabs, so a game's origin reads
+ * at a glance. */
+const SOURCE_ICONS: Record<GameSource, ComponentType<IconProps>> = {
+  paste: ClipboardIcon,
+  file: ImportIcon,
+  lichess: KnightIcon,
+  chesscom: PawnIcon,
+  vs_bot: BoardIcon,
+  coach_play: MessageCircleIcon
+};
+
+export function sourceIconFor(source: GameSource): ComponentType<IconProps> {
+  return SOURCE_ICONS[source];
+}
 
 export function sourceLabelFor(source: GameSource): string {
   return SOURCE_LABELS[source];
@@ -57,14 +82,21 @@ export function statusAndActionFor(game: GameListItem): StatusAndAction {
     // same ready/not-analyzed/analyzing handling below as a stat-bank import,
     // just skipping the "Completed" -> in-progress row above.
     if (game.analysisStatus === null) {
-      return { statusLabel: 'Completed', statusVariant: 'neutral', actionLabel: 'Get coach analysis', actionKind: 'analyze' };
+      return {
+        statusLabel: 'Completed',
+        statusVariant: 'neutral',
+        actionLabel: 'Get coach analysis',
+        actionKind: 'analyze'
+      };
     }
-    if (game.analysisStatus === 'ready') return { statusLabel: 'Completed', statusVariant: 'neutral', actionKind: 'reviewCoach' };
+    if (game.analysisStatus === 'ready')
+      return { statusLabel: 'Completed', statusVariant: 'neutral', actionKind: 'reviewCoach' };
     if (game.analysisStatus === 'failed') return { statusLabel: 'Completed', statusVariant: 'neutral' };
     if (game.analysisStatus === 'paused') return PAUSED_STATUS;
     return { statusLabel: 'Analyzing…', statusVariant: 'neutral', animateStatus: true };
   }
-  if (game.analysisStatus === 'ready') return { statusLabel: 'Ready', statusVariant: 'primary', actionKind: 'reviewCoach' };
+  if (game.analysisStatus === 'ready')
+    return { statusLabel: 'Ready', statusVariant: 'primary', actionKind: 'reviewCoach' };
   if (game.analysisStatus === 'failed') return { statusLabel: 'Failed', statusVariant: 'danger' };
   // Waiting on the user's own browser tunnel to reconnect (resolve-engine-
   // backend.ts's backgroundJob option, services/analysis.ts's markPaused) —
@@ -75,7 +107,12 @@ export function statusAndActionFor(game: GameListItem): StatusAndAction {
   // — distinct from every in-progress `analysisStatus` value below, which
   // falls through to the "Analyzing…" default.
   if (game.analysisStatus === null) {
-    return { statusLabel: 'Not analyzed', statusVariant: 'neutral', actionLabel: 'Get coach analysis', actionKind: 'analyze' };
+    return {
+      statusLabel: 'Not analyzed',
+      statusVariant: 'neutral',
+      actionLabel: 'Get coach analysis',
+      actionKind: 'analyze'
+    };
   }
   return { statusLabel: 'Analyzing…', statusVariant: 'neutral', animateStatus: true };
 }
@@ -90,4 +127,21 @@ export function userSideResult(game: GameListItem): { symbol: string; label: str
   if (game.result === '1/2-1/2') return info;
   const userWon = (userWasWhite && game.result === '1-0') || (!userWasWhite && game.result === '0-1');
   return userWon ? { symbol: info.symbol, label: 'win' } : { symbol: info.symbol, label: 'loss' };
+}
+
+/** The other player's name, from the student's side of the board. */
+export function opponentName(game: GameListItem): string {
+  return (game.userColor === 'white' ? game.blackName : game.whiteName) ?? '?';
+}
+
+/** "Mar 4", with the year only when it isn't this one. */
+export function shortDate(iso: string): string {
+  const date = new Date(iso);
+  const sameYear = date.getFullYear() === new Date().getFullYear();
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: sameYear ? undefined : 'numeric' });
+}
+
+/** win / loss / draw for a row, from the student's side; null when unknown. */
+export function gameOutcome(game: GameListItem): 'win' | 'loss' | 'draw' | null {
+  return (userSideResult(game)?.label as 'win' | 'loss' | 'draw' | undefined) ?? null;
 }

@@ -1,5 +1,6 @@
 import {
   buildGameReportWithVerdicts,
+  parseGameHeaders,
   type BuildGameReportInput,
   type GameReportWithVerdicts,
   type GameResultForColour,
@@ -39,11 +40,13 @@ export interface BuildGameReportForAnalysisInput {
  * analysis, and each colour's game outcome (from the PGN Result tag).
  *
  * `priorRating` feeds the student's own numeric rating (when known) into
- * §8.5's shrink; the opponent's side is always `null` — see this input's own
- * doc comment. Returns the report and each move's tactical verdict, which
+ * §8.5's shrink; the opponent's side is only known from the PGN's Elo tags. Returns the report and each move's tactical verdict, which
  * the diagnostics are read off.
  */
 export function buildGameReportForAnalysis(input: BuildGameReportForAnalysisInput): GameReportWithVerdicts {
+  // The game's own Elo tags (Chess.com/Lichess imports carry both sides') beat
+  // a profile rating that may be stale, and are the only prior the opponent gets.
+  const { whiteElo, blackElo } = parseGameHeaders(input.game.headers);
   return buildGameReportWithVerdicts({
     game: input.game,
     evals: input.evals,
@@ -55,8 +58,8 @@ export function buildGameReportForAnalysis(input: BuildGameReportForAnalysisInpu
       multiPv: ENGINE_MULTI_PV
     },
     priorRating: {
-      white: input.userColor === 'white' ? input.userRating : null,
-      black: input.userColor === 'black' ? input.userRating : null
+      white: whiteElo ?? (input.userColor === 'white' ? input.userRating : null),
+      black: blackElo ?? (input.userColor === 'black' ? input.userRating : null)
     },
     result: {
       white: resultForColour(input.pgnResult, 'white'),

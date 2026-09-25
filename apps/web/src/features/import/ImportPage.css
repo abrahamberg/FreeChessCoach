@@ -38,7 +38,7 @@
 }
 
 .pgn-paste-form .intent-buttons,
-.pgn-upload-form .intent-buttons {
+.pgn-file-form .intent-buttons {
   margin-top: 12px;
 }
 
@@ -49,21 +49,92 @@
   gap: 8px;
 }
 
-.pgn-upload-form label {
-  display: block;
-  margin-bottom: 6px;
+.pgn-dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 36px 16px;
+  border: 2px dashed var(--color-border-strong);
+  border-radius: 12px;
+  background: var(--color-surface-subtle);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.pgn-dropzone:hover,
+.pgn-dropzone:focus-within,
+.pgn-dropzone--active {
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+.pgn-dropzone__icon {
+  color: var(--color-primary);
+}
+
+.pgn-dropzone__title {
+  font-weight: 600;
+}
+
+.pgn-dropzone__hint {
   font-size: 14px;
   color: var(--color-text-secondary);
 }
 
-.pgn-upload-form input[type='file'] {
-  background: var(--color-surface-subtle);
-  border-radius: 8px;
-  padding: 10px 12px;
+/* The real input stays in the DOM (keyboard + screen readers) but the whole
+ * zone is the click target. */
+.pgn-dropzone input[type='file'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
   width: 100%;
+  padding: 0;
 }
 
-.pgn-upload-form [role='alert'] {
+.pgn-loaded {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.pgn-loaded__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.pgn-loaded__info span {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.pgn-loaded__remove {
+  border: none;
+  background: transparent;
+  padding: 6px;
+  color: var(--color-text-secondary);
+}
+
+.pgn-file-form__privacy {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.pgn-file-form [role='alert'] {
   color: var(--color-warning);
   font-size: 14px;
 }
@@ -83,10 +154,14 @@
   border: 1px solid var(--color-border);
 }
 
+/* One aligned grid per row: tick box | result | opponent + meta | buttons.
+ * Same on phones and desktop — nothing wraps into anything else. */
 .remote-game-picker li {
-  display: flex;
+  display: grid;
+  grid-template-columns: 28px 28px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  column-gap: 10px;
+  padding: 8px 12px;
   background: var(--color-surface);
 }
 
@@ -94,61 +169,53 @@
   border-top: 1px solid var(--color-border);
 }
 
+.remote-game-picker__select {
+  display: flex;
+  justify-content: center;
+}
+
 .remote-game-picker li input[type='checkbox'] {
-  margin-left: 16px;
+  margin: 0;
 }
 
 /* Takes the checkbox's place once that row's own bulk-import request has
- * settled — the visual "checking off" that shows the batch progressing
- * game by game instead of the whole list sitting frozen until it's done. */
+ * settled — the visual "checking off" that shows the batch progressing. */
 .remote-game-picker__imported {
-  margin-left: 16px;
-  width: 16px;
-  text-align: center;
   color: var(--color-success);
   font-weight: 700;
 }
 
-.remote-game-picker {
-  --row-gap: 12px;
-}
 
-/* Who played whom, the result and when. Not a button any more: a row offers
- * Analyze and Get coaching session (or a tick box, in bulk mode). */
+
+
 .remote-game-picker__game {
-  flex: 1;
   min-width: 0;
   display: flex;
-  justify-content: space-between;
-  gap: var(--row-gap);
-  min-height: 44px;
-  padding: 12px 16px;
-  align-items: center;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.remote-game-picker li input[type='checkbox'] + .remote-game-picker__game,
-.remote-game-picker li .remote-game-picker__imported + .remote-game-picker__game {
-  padding-left: 0;
+.remote-game-picker__opponent {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remote-game-picker__meta {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
 }
 
 .remote-game-picker .intent-buttons {
-  padding-right: 12px;
+  flex-wrap: nowrap;
 }
 
 .remote-game-picker .intent-buttons button {
   min-height: 36px;
-  padding: 6px 12px;
-  font-size: 14px;
-}
-
-@media (max-width: 600px) {
-  .remote-game-picker li {
-    flex-wrap: wrap;
-  }
-
-  .remote-game-picker .intent-buttons {
-    padding: 0 12px 12px;
-  }
+  padding: 6px 10px;
 }
 
 .import-page__bulk-toggle {
@@ -190,4 +257,164 @@
 
 .color-confirm__options button:hover {
   border-color: var(--color-primary);
+}
+
+.import-page [role='tablist'] button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.intent-buttons button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+}
+
+.remote-game-picker__more {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Loading state for the recent-games fetch: spinner, plain-language message
+ * and a shimmering placeholder list shaped like the real one. */
+.remote-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 0;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.remote-loader strong {
+  color: var(--color-text);
+}
+
+.remote-loader__spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  animation: remote-loader-spin 0.8s linear infinite;
+}
+
+.remote-game-picker__more .remote-loader__spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.remote-loader__skeleton {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.remote-loader__skeleton li {
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--color-surface-subtle) 25%, var(--color-border) 50%, var(--color-surface-subtle) 75%);
+  background-size: 200% 100%;
+  animation: remote-loader-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes remote-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes remote-loader-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .remote-loader__spinner {
+    animation-duration: 2.4s;
+  }
+
+  .remote-loader__skeleton li {
+    animation: none;
+  }
+}
+
+/* Phones: tabs shrink to icons (the label stays as the tooltip). */
+@media (max-width: 600px) {
+  .import-page__tab-label {
+    display: none;
+  }
+
+  .import-page [role='tablist'] button {
+    padding: 8px 14px;
+  }
+}
+
+.remote-game-picker__filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.remote-game-picker__filter button {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.remote-game-picker__filter button[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.remote-game-picker__none {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.remote-game-picker__speed {
+  text-transform: capitalize;
+}
+
+/* Games already in the library: quieter row, small "Imported" pill. */
+.remote-game-picker__row--imported .remote-game-picker__opponent {
+  color: var(--color-text-secondary);
+}
+
+.remote-game-picker__badge {
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+  color: var(--color-success);
+}
+
+.import-page__keep-open {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+}
+
+.remote-game-picker__empty p {
+  margin: 0 0 6px;
 }

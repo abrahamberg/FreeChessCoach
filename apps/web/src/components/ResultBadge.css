@@ -1,0 +1,26 @@
+.result-badge {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-strong);
+  color: var(--color-text-secondary);
+}
+
+.result-badge--win {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.result-badge--loss {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.result-badge--draw {
+  background: var(--color-surface-strong);
+  color: var(--color-text-secondary);
+}

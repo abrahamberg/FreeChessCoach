@@ -68,12 +68,12 @@
 
             <li id="link">
               <h3>Link your Lichess or Chess.com account</h3>
-              <p>Open <strong>Settings</strong> and find <strong>Linked accounts</strong>. Enter your Lichess and/or Chess.com username. This lets the import page list your recent games without you pasting anything. You only ever enter a public username, never a password for those sites.</p>
+              <p>Open <strong>Settings</strong> and find <strong>Linked accounts</strong>. Enter your Lichess and/or Chess.com username. On Lichess it is the name at the top right when you are logged in, and on Chess.com it is the end of your profile address (chess.com/member/<em>username</em>). This lets the import page list your recent games without you pasting anything. You only ever enter a public username, never a password for those sites.</p>
             </li>
 
             <li id="import">
               <h3>Import your games</h3>
-              <p>Open <strong>Import a game</strong>. Choose a source: <strong>From Lichess</strong>, <strong>From Chess.com</strong>, paste a PGN, or upload a file.</p>
+              <p>Open <strong>Import a game</strong>. Choose a source: <strong>From Lichess</strong>, <strong>From Chess.com</strong>, paste a PGN, or open a PGN file.</p>
               <p>For a single game you pick one of two buttons:</p>
               <ul>
                 <li><strong>Analyze</strong> is the free move-by-move review. No AI needed.</li>
@@ -117,7 +117,7 @@
 
             <li id="key">
               <h3>Optional: connect your AI key</h3>
-              <p>The coach runs on an AI you bring: either a cloud key, or a model running on your own computer (LM Studio or Ollama). For a cloud key, before you do, read <a href="/keys">how the key is handled</a>. Then follow <a href="/openai-key">the OpenAI walkthrough</a>: create an account, set a small spending limit, make a key just for this app, and paste it into <strong>Settings → AI setup</strong>. To use a local model instead, choose <strong>On my computer (LM Studio / Ollama)</strong> there and follow <a href="/openai-key#local">the local walkthrough</a>.</p>
+              <p>The coach runs on an AI you bring: either a cloud key, or a model running on your own computer (LM Studio or Ollama). For a cloud key, before you do, read <a href="/keys">how the key is handled</a>. Then follow <a href="/openai-key">the OpenAI walkthrough</a>: create an account, make a project just for this app, turn on data sharing for it (which gives free daily tokens, at a privacy cost the walkthrough explains), set a monthly limit with <strong>Enforce hard limit</strong>, make a key, and paste it into <strong>Settings → AI setup</strong>. The welcome guide shown after your first sign-in walks through the same steps. To use a local model instead, choose <strong>On my computer (LM Studio / Ollama)</strong> there and follow <a href="/openai-key#local">the local walkthrough</a>.</p>
               <div class="callout warn">
                 <p><strong>Use a key with a small monthly limit</strong>, about $5 to begin with, and adjust it to what you actually use.</p>
               </div>
@@ -149,7 +149,7 @@
 
 <li id="voice">
               <h3>Optional: give the coach a voice</h3>
-              <p>The coach can read its replies aloud. There are three ways to do it. Each one is folded away below; open only the one you want. The voice is off until you switch it on in <strong>Settings → Coach voice</strong>, and each coach has its own voice on every option.</p>
+              <p>The coach can read its replies aloud. There are three ways to do it. Each one is folded away below; open only the one you want. The voice is off until you switch it on in <strong>Settings → Coach voice</strong>. Each option there is described in plain words, and if you have no OpenAI voice model set up, the free <strong>Device voice</strong> is ticked for you, and each coach has its own voice on every option.</p>
 
               <details class="faq">
                 <summary>Option 1: OpenAI voice (easiest, uses your own OpenAI key)</summary>

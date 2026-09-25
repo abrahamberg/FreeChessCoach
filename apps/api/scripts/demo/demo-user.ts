@@ -25,7 +25,8 @@ export async function createFreshDemoUser(db: Kysely<Database>, email: string, r
     rating,
     ratingBand: deriveRatingBand(rating),
     ratingSource: 'estimated',
-    lichessUsername: DEMO_HANDLE
+    lichessUsername: DEMO_HANDLE,
+    onboardedAt: new Date()
   });
 }
 

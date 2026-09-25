@@ -11,19 +11,19 @@ import {
 describe('accuracyToElo', () => {
   test('reproduces the §8.2 anchor table exactly', () => {
     const table: [number, number][] = [
-      [40, 250],
-      [50, 450],
-      [60, 750],
-      [65, 950],
-      [70, 1150],
-      [75, 1380],
-      [80, 1620],
-      [84, 1870],
-      [88, 2120],
-      [91, 2360],
-      [94, 2620],
-      [97, 2900],
-      [99, 3100]
+      [40, 150],
+      [50, 300],
+      [60, 500],
+      [68, 700],
+      [74, 850],
+      [80, 1000],
+      [84, 1100],
+      [87, 1200],
+      [90, 1450],
+      [93, 1800],
+      [95, 2150],
+      [97, 2550],
+      [99, 3000]
     ];
     for (const [accuracy, elo] of table) {
       expect(accuracyToElo(accuracy)).toBe(elo);
@@ -31,17 +31,17 @@ describe('accuracyToElo', () => {
   });
 
   test('interpolates linearly between two anchors', () => {
-    // Halfway between 40->250 and 50->450 is 45 -> 350.
-    expect(accuracyToElo(45)).toBeCloseTo(350, 5);
+    // Halfway between 40->150 and 50->300 is 45 -> 225.
+    expect(accuracyToElo(45)).toBeCloseTo(225, 5);
   });
 
   test('flat extrapolation below the lowest anchor', () => {
-    expect(accuracyToElo(0)).toBe(250);
-    expect(accuracyToElo(20)).toBe(250);
+    expect(accuracyToElo(0)).toBe(150);
+    expect(accuracyToElo(20)).toBe(150);
   });
 
   test('flat extrapolation above the highest anchor', () => {
-    expect(accuracyToElo(100)).toBe(3100);
+    expect(accuracyToElo(100)).toBe(3000);
   });
 });
 

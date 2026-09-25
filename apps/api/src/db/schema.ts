@@ -20,6 +20,10 @@ export interface UsersTable {
   selfAssessment: string | null;
   ttsEnabled: Generated<boolean>;
   ttsBackend: Generated<TtsBackend>;
+  /** 0008_user_onboarding.ts — null until the welcome flow is finished or skipped. */
+  onboardedAt: Date | null;
+  /** 0011_chess_api_rate_limit.ts — when chess-api.com last answered HIGH_USAGE. */
+  chessApiRateLimitedAt: Date | null;
   createdAt: Generated<Date>;
 }
 
@@ -35,7 +39,7 @@ export interface GamesTable {
   id: Generated<string>;
   userId: string;
   pgn: string;
-  source: 'paste' | 'upload' | 'lichess' | 'coach_play' | 'vs_bot' | 'chesscom';
+  source: 'paste' | 'file' | 'lichess' | 'coach_play' | 'vs_bot' | 'chesscom';
   userColor: 'white' | 'black';
   whiteName: string | null;
   blackName: string | null;
@@ -284,6 +288,17 @@ export interface GameImportEventsTable {
   createdAt: Date;
 }
 
+/** 0009_bug_reports.ts — reports sent from the app menu (services/bug-reports.ts). */
+export interface BugReportsTable {
+  id: Generated<string>;
+  userId: string;
+  whatHappened: string;
+  whatExpected: string;
+  pagePath: string | null;
+  userAgent: string | null;
+  createdAt: Generated<Date>;
+}
+
 /** 0042_stats_archive_weeks.ts — a deleted game's stats, merged per (user,
  * week, speed). `weekStart` is written as a `YYYY-MM-DD` string. */
 export interface StatsArchiveWeeksTable {
@@ -299,6 +314,7 @@ export interface Database {
   userLlmSetups: UserLlmSetupsTable;
   games: GamesTable;
   gameImportEvents: GameImportEventsTable;
+  bugReports: BugReportsTable;
   statsArchiveWeeks: StatsArchiveWeeksTable;
   analyses: AnalysesTable;
   sessions: SessionsTable;

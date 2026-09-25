@@ -2,8 +2,10 @@ import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Modal } from '../../components/Modal.js';
 import { OverflowMenu, type OverflowMenuItem } from '../../components/OverflowMenu.js';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog.js';
 import { useCoachVoice } from '../../hooks/useCoachVoice.js';
 import { useLlmSetupStatus } from '../../hooks/useLlmSetupStatus.js';
+import { effectiveTtsBackend } from '../../tts/effective-tts-backend.js';
 import { isOpenAiVoiceAvailable } from '../../tts/openai-voice-available.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { CoachBoard } from '../board/CoachBoard.js';
@@ -70,6 +72,7 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
     isResetting
   } = usePuzzleSessionPageData(assignmentId ?? '', onSessionReset);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   // Coach voice — same wiring as the coach game (SessionPage.tsx): the
   // persona picks the voice, and Settings' TTS switch/backend decide whether
@@ -78,7 +81,7 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
   const ttsEnabled = profileQuery.data?.ttsEnabled ?? false;
   const llmSetupQuery = useLlmSetupStatus();
   const savedTtsBackend = profileQuery.data?.ttsBackend ?? 'openai';
-  const ttsBackend = savedTtsBackend === 'openai' && !isOpenAiVoiceAvailable(llmSetupQuery.data) ? 'browser' : savedTtsBackend;
+  const ttsBackend = effectiveTtsBackend(savedTtsBackend, isOpenAiVoiceAvailable(llmSetupQuery.data));
   const coachVoice = useCoachVoice({
     messages: chat.messages,
     isStreaming: chat.isStreaming,
@@ -146,9 +149,14 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
       destructive: true,
       disabled: isResetting,
       onSelect: () => {
-        if (window.confirm('Reset this session? This ends the current conversation and starts a fresh one on this position.')) {
-          resetSession();
-        }
+        confirm(
+          {
+            title: 'Reset this session?',
+            description: 'This ends the current conversation and starts a fresh one on this position.',
+            confirmLabel: 'Reset session'
+          },
+          resetSession
+        );
       }
     },
     {
@@ -196,6 +204,7 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
 
   return (
     <div className="session-page puzzle-session-page">
+      {confirmDialog}
       {unlockModal.isOpen && (
         <UnlockPhraseModal
           description="Your coach needs your AI setup unlocked to continue this session."

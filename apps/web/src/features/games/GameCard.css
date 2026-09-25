@@ -110,3 +110,15 @@
     height: 44px;
   }
 }
+
+
+
+
+.game-card__players {
+  font-weight: 600;
+}
+
+.game-card__source {
+  display: inline-flex;
+  align-items: center;
+}

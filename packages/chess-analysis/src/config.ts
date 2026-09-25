@@ -38,8 +38,8 @@ export const CONFIG = {
 
   /** §5.2/§5.3 — severity tiers and the dead-position damping guard. */
   severity: {
-    excellentMaxDrop: 2,
-    goodMaxDrop: 5,
+    excellentMaxDrop: 1,
+    goodMaxDrop: 4,
     inaccuracyMaxDrop: 10,
     mistakeMaxDrop: 20,
     dampingHighWin: 90,
@@ -213,19 +213,19 @@ export const CONFIG = {
     ratingMin: 100,
     ratingMax: 3200,
     accuracyEloAnchors: [
-      [40, 250],
-      [50, 450],
-      [60, 750],
-      [65, 950],
-      [70, 1150],
-      [75, 1380],
-      [80, 1620],
-      [84, 1870],
-      [88, 2120],
-      [91, 2360],
-      [94, 2620],
-      [97, 2900],
-      [99, 3100]
+      [40, 150],
+      [50, 300],
+      [60, 500],
+      [68, 700],
+      [74, 850],
+      [80, 1000],
+      [84, 1100],
+      [87, 1200],
+      [90, 1450],
+      [93, 1800],
+      [95, 2150],
+      [97, 2550],
+      [99, 3000]
     ] as ReadonlyArray<readonly [number, number]>,
     inaccuracyWeight: 26,
     mistakeWeight: 55,

@@ -1,5 +1,6 @@
 import { ENGINE_MODES, type EngineMode } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
+import { BrowserEngineStatus } from '../../components/BrowserEngineStatus.js';
 import { useEngineStatus } from '../../hooks/useEngineStatus.js';
 import '../../components/RadioCard.css';
 import './EngineModeSelect.css';
@@ -7,6 +8,8 @@ import './EngineModeSelect.css';
 export interface EngineModeSelectProps {
   value: EngineMode;
   onChange: (mode: EngineMode) => void;
+  /** ISO time the external engine is paused until after a rate limit, if it is. */
+  chessApiPausedUntil?: string | null;
 }
 
 const ENGINE_MODE_LABELS: Record<EngineMode, string> = {
@@ -15,45 +18,42 @@ const ENGINE_MODE_LABELS: Record<EngineMode, string> = {
   browser: 'Your device, performance  depends on your device'
 };
 
-const ENGINE_STATUS_TEXT = {
-  absent: 'Downloads the first time you analyze a game.',
-  installing: 'Downloading engine… this happens once, then it stays on this device.',
-  ready: 'Engine ready on this device.'
-} as const;
-
 /** design spec 2026-08-08 §9: lets a user opt into running the coach's
  * chess engine in their own browser tab instead of the server's.
  *
- * Browser mode also reports whether the engine is actually here yet. The
- * download is ~108MB, so "I picked browser mode and nothing seems to be
- * happening" is otherwise the normal first experience. Selecting browser mode
- * starts that download rather than deferring it to the first analysis, since
- * choosing it is the point at which the user expects the engine to arrive. */
-export function EngineModeSelect({ value, onChange }: EngineModeSelectProps): ReactNode {
-  const isBrowserMode = value === 'browser';
-  const { status: engineStatus, progress } = useEngineStatus({ preload: isBrowserMode });
-  const percent = progress ? Math.round(progress.percent * 100) : null;
+ * The on-device engine is a ~108MB download, so its state (not downloaded,
+ * downloading, downloaded) is always shown under the options and the download
+ * only ever starts from its button.
+ */
+export function EngineModeSelect({ value, onChange, chessApiPausedUntil }: EngineModeSelectProps): ReactNode {
+  const engine = useEngineStatus();
 
   return (
     <div role="radiogroup" aria-label="Engine mode" className="radio-card-group">
       {ENGINE_MODES.map((mode) => (
         <label key={mode} className="radio-card">
-          <input type="radio" name="engine-mode" checked={value === mode} onChange={() => onChange(mode)} />
+          <input
+            type="radio"
+            name="engine-mode"
+            checked={value === mode}
+            disabled={mode === 'chess_api' && isPaused(chessApiPausedUntil)}
+            onChange={() => onChange(mode)}
+          />
           {ENGINE_MODE_LABELS[mode]}
+          {mode === 'chess_api' && isPaused(chessApiPausedUntil) && (
+            <small> — switched off after hitting its daily limit; available again after {pausedUntilText(chessApiPausedUntil)}</small>
+          )}
         </label>
       ))}
-      {isBrowserMode && (
-        <p className={`engine-status engine-status--${engineStatus}`} role="status">
-          {engineStatus === 'installing' && <span className="engine-status__spinner" aria-hidden="true" />}
-          {ENGINE_STATUS_TEXT[engineStatus]}
-          {engineStatus === 'installing' && percent !== null && ` ${percent}%`}
-          {engineStatus === 'installing' && progress?.speedText && ` · ${progress.speedText}`}
-          {engineStatus === 'installing' && progress?.etaText && ` · ${progress.etaText} left`}
-        </p>
-      )}
-      {engineStatus === 'installing' && percent !== null && (
-        <progress className="engine-status__bar" value={percent} max={100} aria-label="Engine download progress" />
-      )}
+      <BrowserEngineStatus engine={engine} />
     </div>
   );
+}
+
+function isPaused(until: string | null | undefined): until is string {
+  return !!until && new Date(until) > new Date();
+}
+
+function pausedUntilText(until: string): string {
+  return new Date(until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }

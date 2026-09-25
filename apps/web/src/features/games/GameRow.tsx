@@ -1,9 +1,17 @@
 import type { GameListItem, ImportedGameItem } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
 import { CalendarIcon, EyeIcon, MessageCircleIcon } from '../../components/Icon.js';
+import { ResultBadge } from '../../components/ResultBadge.js';
 import { OverflowMenu } from '../../components/OverflowMenu.js';
 import { DeleteGameButton } from './DeleteGameButton.js';
-import { sourceLabelFor, statusAndActionFor, userSideResult } from './gameDisplay.js';
+import {
+  opponentName,
+  gameOutcome,
+  shortDate,
+  sourceIconFor,
+  sourceLabelFor,
+  statusAndActionFor
+} from './gameDisplay.js';
 import './GameRow.css';
 
 export interface GameRowProps {
@@ -34,28 +42,29 @@ export interface GameRowProps {
  * (Get coach analysis / nothing) — see statusAndActionFor. The red Delete
  * button is always present and confirms first (DeleteGameButton); PGN
  * export/copy live in the overflow menu. */
-export function GameRow({ game, onSelect, onReview, onCoach, onAnalyze, onExportPgn, onCopyPgn, onDelete }: GameRowProps): ReactNode {
+export function GameRow({
+  game,
+  onSelect,
+  onReview,
+  onCoach,
+  onAnalyze,
+  onExportPgn,
+  onCopyPgn,
+  onDelete
+}: GameRowProps): ReactNode {
   const status = statusAndActionFor(game);
-  const dot = userSideResult(game);
+  const outcome = gameOutcome(game);
   const date = game.playedAt ?? game.createdAt;
-  const [whiteName, blackName] = [game.whiteName ?? '?', game.blackName ?? '?'];
-  const userIsWhite = game.userColor === 'white';
+  const opponent = opponentName(game);
+  const SourceIcon = sourceIconFor(game.source);
 
   return (
     <li className="game-row">
       <div className="game-row__top">
-        <span className="game-row__players">
-          <span className={userIsWhite ? 'game-row__you' : undefined}>{whiteName}</span>
-          <span className="game-row__vs">vs</span>
-          <span className={!userIsWhite ? 'game-row__you' : undefined}>{blackName}</span>
-        </span>
-        {dot && (
-          <span className={`badge game-row__result game-row__result--${dot.label}`} title={dot.label}>
-            {dot.symbol}
-          </span>
-        )}
+        {outcome && <ResultBadge outcome={outcome} />}
+        <span className="game-row__players">{opponent}</span>
         <OverflowMenu
-          label={`More actions for ${whiteName} vs. ${blackName}`}
+          label={`More actions for the game against ${opponent}`}
           items={[
             { label: 'Download PGN', onSelect: () => onExportPgn(game.id) },
             { label: 'Copy PGN', onSelect: () => onCopyPgn(game.id) }
@@ -64,12 +73,19 @@ export function GameRow({ game, onSelect, onReview, onCoach, onAnalyze, onExport
       </div>
 
       <span className="game-row__meta">
-        {sourceLabelFor(game.source)}
-        <span aria-hidden="true">&middot;</span>
+        <span
+          className="game-row__source"
+          title={`From ${sourceLabelFor(game.source)}`}
+          role="img"
+          aria-label={`From ${sourceLabelFor(game.source)}`}
+        >
+          <SourceIcon width={14} height={14} />
+        </span>
         <CalendarIcon width={13} height={13} />
-        <time dateTime={date}>{new Date(date).toLocaleDateString()}</time>
-        {game.timeControl && <span>&middot; {game.timeControl}</span>}
-        {'estimatedRating' in game && game.estimatedRating !== null && <span>&middot; ~{game.estimatedRating}</span>}
+        <time dateTime={date}>{shortDate(date)}</time>
+        {'estimatedRating' in game && game.estimatedRating !== null && (
+          <span title="Your estimated rating in this game">&middot; ~{game.estimatedRating}</span>
+        )}
       </span>
 
       <div className="game-row__footer">

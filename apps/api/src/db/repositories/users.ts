@@ -16,6 +16,8 @@ export interface UserRow {
   selfAssessment: string | null;
   ttsEnabled: boolean;
   ttsBackend: TtsBackend;
+  onboardedAt: Date | null;
+  chessApiRateLimitedAt: Date | null;
   createdAt: Date;
 }
 
@@ -46,6 +48,7 @@ export interface UserPatch {
   selfAssessment?: string | null;
   ttsEnabled?: boolean;
   ttsBackend?: TtsBackend;
+  onboardedAt?: Date | null;
 }
 
 export function findByEmail(db: Kysely<Database>, email: string): Promise<UserRow | undefined> {
@@ -77,4 +80,9 @@ export function update(db: Kysely<Database>, id: string, patch: UserPatch): Prom
     .where('id', '=', id)
     .returningAll()
     .executeTakeFirstOrThrow();
+}
+
+/** Records that chess-api.com just answered HIGH_USAGE for this user. */
+export async function markChessApiRateLimited(db: Kysely<Database>, id: string, at: Date): Promise<void> {
+  await db.updateTable('users').set({ chessApiRateLimitedAt: at }).where('id', '=', id).execute();
 }

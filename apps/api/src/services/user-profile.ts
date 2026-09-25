@@ -5,7 +5,9 @@ import * as focusAreasRepo from '../db/repositories/focus-areas.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
+import { ValidationError } from '../lib/errors.js';
 import { looksLikeOpaqueId } from '../lib/display-name.js';
+import { chessApiPausedUntil } from './engine/chess-api-pause.js';
 
 const RECENT_FINDINGS_LIMIT = 15;
 const RECENT_GAMES_FOR_COUNTS = 20;
@@ -47,19 +49,35 @@ function healDisplayNameIfNeeded(
   return usersRepo.update(db, existing.id, { displayName: freshDisplayName });
 }
 
+/** The external engine can't be (re)selected while chess-api.com's rate-limit pause runs. */
+async function rejectPausedExternalEngine(
+  db: Kysely<Database>,
+  userId: string,
+  request: UpdateUserProfileRequest
+): Promise<void> {
+  if (request.engineMode !== 'chess_api') return;
+  const user = await usersRepo.findById(db, userId);
+  const until = chessApiPausedUntil(user?.chessApiRateLimitedAt ?? null);
+  if (until) throw new ValidationError(`The external engine is paused until ${until.toISOString()} after hitting its daily limit.`);
+}
+
 /** A numeric `rating` in the request is always self-reported (this is the
  * user's own profile edit — nothing else calls this with a rating): it's
  * stamped `ratingSource: 'self'` here rather than trusting a client-supplied
  * source, and re-derives `ratingBand` from it, taking priority over a
  * `ratingBand` also present in the same request (see deriveRatingBand). */
-export function updateProfile(
+export async function updateProfile(
   db: Kysely<Database>,
   userId: string,
-  patch: UpdateUserProfileRequest
+  request: UpdateUserProfileRequest
 ): Promise<usersRepo.UserRow> {
-  if (patch.rating === undefined) return usersRepo.update(db, userId, patch);
+  await rejectPausedExternalEngine(db, userId, request);
+  const { onboarded, ...patch } = request;
+  const withOnboarding: usersRepo.UserPatch =
+    onboarded === undefined ? patch : { ...patch, onboardedAt: onboarded ? new Date() : null };
+  if (patch.rating === undefined) return usersRepo.update(db, userId, withOnboarding);
   return usersRepo.update(db, userId, {
-    ...patch,
+    ...withOnboarding,
     rating: patch.rating,
     ratingSource: 'self',
     ratingBand: deriveRatingBand(patch.rating)
@@ -102,6 +120,8 @@ export async function toUserProfile(
     chesscomUsername: user.chesscomUsername,
     selfAssessment: user.selfAssessment,
     ttsEnabled: user.ttsEnabled,
-    ttsBackend: user.ttsBackend
+    ttsBackend: user.ttsBackend,
+    chessApiPausedUntil: chessApiPausedUntil(user.chessApiRateLimitedAt)?.toISOString() ?? null,
+    onboarded: user.onboardedAt !== null
   };
 }

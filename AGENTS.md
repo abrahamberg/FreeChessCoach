@@ -10,6 +10,7 @@ Socratically while tracking their progress over time. The initial build
 (Phases 0–9) is complete and merged — read before coding:
 
 - `docs/architecture.md` — how it fits together (layout, DB, agent, K8s). Always relevant.
+  It also describes the guided first-run flow ("Welcome flow", `/welcome`).
 - `docs/plan.md` — the implementation plan for whatever is being built next.
   Currently Phase 73, bot latency diagnosis (instrumentation + a benchmark to
   find out why bot moves are slow or hang; no behaviour changes). The

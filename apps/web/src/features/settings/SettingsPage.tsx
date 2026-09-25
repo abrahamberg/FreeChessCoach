@@ -1,30 +1,18 @@
-import {
-  LlmSetupStatusSchema,
-  LlmSetupTestResponseSchema,
-  type LlmSetup,
-  UserProfileSchema,
-  type CoachPersona,
-  type EngineMode,
-  type RatingBand
-} from '@freechesscoach/shared';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
-import { apiDelete, apiGet, apiPatch, apiPost, apiPostVoid, apiPut, describeApiError } from '../../api/client.js';
+import { Link, useLocation } from 'react-router-dom';
+import { apiDelete, describeApiError } from '../../api/client.js';
 import { ConfirmDialog } from '../../components/ConfirmDialog.js';
+import { useLlmSetupStatus } from '../../hooks/useLlmSetupStatus.js';
+import { useProfile, useUpdateProfile } from '../../hooks/useProfile.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
-import { useUnlockLlmSetup } from '../../hooks/useUnlockLlmSetup.js';
-import { BandSelect } from './BandSelect.js';
 import { AiSetupHelp } from './AiSetupHelp.js';
-import { LlmSetupForm } from './LlmSetupForm.js';
 import { CoachPersonaSelect } from './CoachPersonaSelect.js';
-import { EngineModeSelect } from './EngineModeSelect.js';
-import { EnginePingTest } from './EnginePingTest.js';
-import { NicknameForm } from './NicknameForm.js';
-import { PlatformUsernameForm } from './PlatformUsernameForm.js';
-import { isOpenAiVoiceAvailable } from '../../tts/openai-voice-available.js';
-import { TtsSection, type TtsProfilePatch } from './TtsSection.js';
-import { UnlockPhraseModal } from './UnlockPhraseModal.js';
+import { EngineFields } from './EngineFields.js';
+import { LinkedAccountsFields } from './LinkedAccountsFields.js';
+import { LlmSetupSection } from './LlmSetupSection.js';
+import { ProfileFields } from './ProfileFields.js';
+import { VoiceFields } from './VoiceFields.js';
 import './SettingsPage.css';
 
 type Theme = 'light' | 'dark';
@@ -37,13 +25,10 @@ function readStoredTheme(): Theme | null {
 /** design.md §4.4: Settings — Profile, API keys, Appearance, Account.
  * Owns fetching (AGENTS.md rule 7); every child below is presentational. */
 export function SettingsPage(): ReactNode {
-  const queryClient = useQueryClient();
   const [theme, setTheme] = useState<Theme | null>(() => readStoredTheme());
   const [showLegalMoveDots, setShowLegalMoveDots] = useShowLegalMoveDots();
   const { hash } = useLocation();
-  const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [confirmingDeleteAccount, setConfirmingDeleteAccount] = useState(false);
-  const unlock = useUnlockLlmSetup();
 
   useEffect(() => {
     if (theme) {
@@ -54,14 +39,9 @@ export function SettingsPage(): ReactNode {
     }
   }, [theme]);
 
-  const profileQuery = useQuery({
-    queryKey: ['profile'],
-    queryFn: ({ signal }) => apiGet('/api/users/me', UserProfileSchema, signal)
-  });
-  const llmSetupQuery = useQuery({
-    queryKey: ['llm-setup'],
-    queryFn: ({ signal }) => apiGet('/api/users/me/llm-setup', LlmSetupStatusSchema, signal)
-  });
+  const profileQuery = useProfile();
+  const llmSetupQuery = useLlmSetupStatus();
+  const updateProfile = useUpdateProfile();
 
   // Client-side route changes (e.g. the topbar engine indicator linking to
   // /settings#settings-engine) don't get the browser's native scroll-to-
@@ -72,63 +52,6 @@ export function SettingsPage(): ReactNode {
     if (!hash || !profileQuery.isSuccess) return;
     document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [hash, profileQuery.isSuccess]);
-
-  const displayNameMutation = useMutation({
-    mutationFn: (displayName: string) => apiPatch('/api/users/me', { displayName }, UserProfileSchema),
-    onSuccess: (profile) => queryClient.setQueryData(['profile'], profile)
-  });
-
-  const bandMutation = useMutation({
-    mutationFn: (ratingBand: RatingBand) => apiPatch('/api/users/me', { ratingBand }, UserProfileSchema),
-    onSuccess: (profile) => queryClient.setQueryData(['profile'], profile)
-  });
-
-  const engineModeMutation = useMutation({
-    mutationFn: (engineMode: EngineMode) => apiPatch('/api/users/me', { engineMode }, UserProfileSchema),
-    onSuccess: (profile) => queryClient.setQueryData(['profile'], profile)
-  });
-
-  const coachPersonaMutation = useMutation({
-    mutationFn: (coachPersona: CoachPersona) => apiPatch('/api/users/me', { coachPersona }, UserProfileSchema),
-    onSuccess: (profile) => queryClient.setQueryData(['profile'], profile)
-  });
-
-  const lichessUsernameMutation = useMutation({
-    mutationFn: (lichessUsername: string | null) =>
-      apiPatch('/api/users/me', { lichessUsername }, UserProfileSchema),
-    onSuccess: (profile) => queryClient.setQueryData(['profile'], profile)
-  });
-
-  const chesscomUsernameMutation = useMutation({
-    mutationFn: (chesscomUsername: string | null) =>
-      apiPatch('/api/users/me', { chesscomUsername }, UserProfileSchema),
-    onSuccess: (profile) => queryClient.setQueryData(['profile'], profile)
-  });
-
-  const ttsMutation = useMutation({
-    mutationFn: (patch: TtsProfilePatch) => apiPatch('/api/users/me', patch, UserProfileSchema),
-    onSuccess: (profile) => queryClient.setQueryData(['profile'], profile)
-  });
-
-  const testLlmSetupMutation = useMutation({
-    mutationFn: (setup: LlmSetup) => apiPost('/api/users/me/llm-setup/test', setup, LlmSetupTestResponseSchema)
-  });
-
-  const saveLlmSetupMutation = useMutation({
-    mutationFn: ({ setup, unlockPhrase }: { setup: LlmSetup; unlockPhrase: string }) =>
-      apiPut('/api/users/me/llm-setup', { ...setup, unlockPhrase }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['llm-setup'] })
-  });
-
-  const lockLlmSetupMutation = useMutation({
-    mutationFn: () => apiPostVoid('/api/users/me/llm-setup/lock'),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['llm-setup'] })
-  });
-
-  const deleteLlmSetupMutation = useMutation({
-    mutationFn: () => apiDelete('/api/users/me/llm-setup'),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['llm-setup'] })
-  });
 
   // Irreversible: wipes the account and everything under it server-side
   // (services/account.ts). Ends the oauth2-proxy session on success the
@@ -153,19 +76,14 @@ export function SettingsPage(): ReactNode {
     <div className="page settings-page">
       <header className="settings-page__header">
         <h1>Settings</h1>
-        <p className="settings-page__description">Manage your profile, coach, and account.</p>
+        <p className="settings-page__description">
+          Manage your profile, coach, and account. <Link to="/welcome">Run the welcome guide again</Link>.
+        </p>
       </header>
 
       <section aria-label="Profile" className="card">
         <h2>Profile</h2>
-        <div className="settings-page__profile-row">
-          <span className="settings-page__profile-avatar" aria-hidden="true">
-            {profile.displayName.trim()[0]?.toUpperCase() ?? '?'}
-          </span>
-          <NicknameForm value={profile.displayName} onSave={(displayName) => displayNameMutation.mutate(displayName)} />
-        </div>
-        <div className="settings-page__field-label">Playing level</div>
-        <BandSelect value={profile.ratingBand} onChange={(band) => bandMutation.mutate(band)} />
+        <ProfileFields profile={profile} />
       </section>
 
       <section aria-label="Coach" className="card">
@@ -173,19 +91,14 @@ export function SettingsPage(): ReactNode {
         <p>Pick who coaches you. It's cosmetic — every coach gives the same advice, just in a different voice.</p>
         <CoachPersonaSelect
           value={profile.coachPersona}
-          onChange={(coachPersona) => coachPersonaMutation.mutate(coachPersona)}
+          onChange={(coachPersona) => updateProfile.mutate({ coachPersona })}
         />
       </section>
 
       <section aria-label="Coach voice" className="card">
         <h2>Coach voice</h2>
         <p>Have the coach's replies read aloud. Off by default.</p>
-        <TtsSection
-          enabled={profile.ttsEnabled}
-          backend={profile.ttsBackend}
-          openaiAvailable={isOpenAiVoiceAvailable(llmSetupQuery.data)}
-          onChange={(patch) => ttsMutation.mutate(patch)}
-        />
+        <VoiceFields profile={profile} llmSetup={llmSetup} />
       </section>
 
       <section aria-label="Linked accounts" className="card">
@@ -194,20 +107,7 @@ export function SettingsPage(): ReactNode {
           Set these so we can tell which side you played when you import a game — you won&rsquo;t be asked
           again for games from that site.
         </p>
-        <PlatformUsernameForm
-          platform="lichess"
-          label="Lichess username"
-          value={profile.lichessUsername}
-          onSave={(username) => lichessUsernameMutation.mutate(username)}
-          onDelete={() => lichessUsernameMutation.mutate(null)}
-        />
-        <PlatformUsernameForm
-          platform="chesscom"
-          label="Chess.com username"
-          value={profile.chesscomUsername}
-          onSave={(username) => chesscomUsernameMutation.mutate(username)}
-          onDelete={() => chesscomUsernameMutation.mutate(null)}
-        />
+        <LinkedAccountsFields profile={profile} />
       </section>
 
       <section aria-label="Board" className="card">
@@ -223,51 +123,14 @@ export function SettingsPage(): ReactNode {
 
       <section id="settings-engine" aria-label="Engine" className="card">
         <h2>Engine</h2>
-        <EngineModeSelect value={profile.engineMode} onChange={(mode) => engineModeMutation.mutate(mode)} />
-        <EnginePingTest engineMode={profile.engineMode} />
+        <EngineFields profile={profile} />
       </section>
 
       <section id="settings-api-keys" aria-label="API keys" className="card">
         <h2>AI setup</h2>
         <p>Your endpoint and API key are tested, encrypted with your unlock phrase, and kept available only while you are active. We never show the key again.</p>
         <AiSetupHelp />
-        <LlmSetupForm
-          key={`${llmSetup.configured}-${llmSetup.unlocked}-${llmSetup.protocol ?? 'none'}`}
-          status={llmSetup}
-          onTest={(setup) => testLlmSetupMutation.mutate(setup)}
-          onSave={(setup, unlockPhrase) => saveLlmSetupMutation.mutate({ setup, unlockPhrase })}
-          onUnlockClick={() => setShowUnlockModal(true)}
-          onLock={() => lockLlmSetupMutation.mutate()}
-          onDelete={() => deleteLlmSetupMutation.mutate()}
-          onStartEditing={() => {
-            testLlmSetupMutation.reset();
-            saveLlmSetupMutation.reset();
-          }}
-          testResult={testLlmSetupMutation.data}
-          isTesting={testLlmSetupMutation.isPending}
-          testError={describeApiError(testLlmSetupMutation.error)}
-          // Keeps the loader up through the post-save refetch (the `key`
-          // above only changes once that lands), so the phrase form can't
-          // flash back on screen between "saved" and the summary view.
-          isSaving={saveLlmSetupMutation.isPending || (saveLlmSetupMutation.isSuccess && llmSetupQuery.isFetching)}
-          saveError={describeApiError(saveLlmSetupMutation.error)}
-        />
-        {showUnlockModal && (
-          <UnlockPhraseModal
-            onClose={() => {
-              setShowUnlockModal(false);
-              unlock.reset();
-            }}
-            onUnlock={unlock.unlock}
-            onUnlocked={() => {
-              setShowUnlockModal(false);
-              unlock.reset();
-            }}
-            isPending={unlock.isPending}
-            isSuccess={unlock.isSuccess}
-            errorMessage={unlock.errorMessage}
-          />
-        )}
+        <LlmSetupSection status={llmSetup} />
       </section>
 
       <section aria-label="Appearance" className="card">

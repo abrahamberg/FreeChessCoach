@@ -16,7 +16,13 @@ export const UserProfileSchema = z.object({
   chesscomUsername: z.string().nullable(),
   selfAssessment: z.string().nullable(),
   ttsEnabled: z.boolean(),
-  ttsBackend: z.enum(TTS_BACKENDS)
+  ttsBackend: z.enum(TTS_BACKENDS),
+  /** ISO time until which the external engine is paused because chess-api.com
+   * rate-limited this user (see CHESS_API_RATE_LIMIT_COOLDOWN_MS), or null
+   * when it is not paused. */
+  chessApiPausedUntil: z.string().datetime().nullable().default(null),
+  /** False until the guided welcome flow is finished or skipped. */
+  onboarded: z.boolean()
 });
 export type UserProfile = z.infer<typeof UserProfileSchema>;
 
@@ -34,7 +40,9 @@ export const UpdateUserProfileRequestSchema = z.object({
   chesscomUsername: z.string().nullable().optional(),
   selfAssessment: z.string().nullable().optional(),
   ttsEnabled: z.boolean().optional(),
-  ttsBackend: z.enum(TTS_BACKENDS).optional()
+  ttsBackend: z.enum(TTS_BACKENDS).optional(),
+  /** true stamps the welcome flow as done; false lets a user run it again. */
+  onboarded: z.boolean().optional()
 });
 export type UpdateUserProfileRequest = z.infer<typeof UpdateUserProfileRequestSchema>;
 

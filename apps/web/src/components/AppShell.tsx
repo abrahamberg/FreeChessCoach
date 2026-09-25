@@ -4,6 +4,7 @@ import { DemoBanner } from '../demo/DemoBanner.js';
 import { getDemoRuntime } from '../demo/demoRuntime.js';
 import { useEngineActivityIndicator } from '../hooks/useEngineActivityIndicator.js';
 import { useIsDesktop } from '../hooks/useIsDesktop.js';
+import { ChessApiPauseNotice } from './ChessApiPauseNotice.js';
 import { EngineActivityIndicator } from './EngineActivityIndicator.js';
 import { FullscreenPrompt } from './FullscreenPrompt.js';
 import { BarChartIcon, BoardIcon, PlayCircleIcon, TrendingUpIcon } from './Icon.js';
@@ -35,6 +36,8 @@ const BOARD_ROUTE_PREFIXES = ['/session/', '/bot-session/', '/practice/', '/revi
 const DEMO_BOARD_ROUTE_PREFIXES = ['/demo/session/', '/demo/bot-session/', '/demo/practice/', '/demo/review/'];
 
 function isBoardRoute(pathname: string): boolean {
+  // The welcome flow has its own Back/Next; a nav bar would let people wander off mid-setup.
+  if (pathname === '/welcome') return true;
   return [...BOARD_ROUTE_PREFIXES, ...DEMO_BOARD_ROUTE_PREFIXES].some((prefix) => pathname.startsWith(prefix));
 }
 
@@ -60,6 +63,7 @@ export function AppShell({ children }: AppShellProps): ReactNode {
       {!getDemoRuntime() && <FullscreenPrompt />}
       <DemoBanner />
       {showGlobalNav && <TopBar isDesktop={isDesktop} />}
+      <ChessApiPauseNotice />
       <main className="app-shell__content">{children}</main>
       {showBottomTabBar && <BottomTabBar />}
     </div>

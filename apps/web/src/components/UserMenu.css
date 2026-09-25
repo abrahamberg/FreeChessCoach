@@ -107,3 +107,13 @@
 .user-menu__item .tunnel-status-dots {
   margin-left: auto;
 }
+
+/* A menu row that is a button, not a link: same look as the links around it. */
+.user-menu__item--button {
+  width: 100%;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}

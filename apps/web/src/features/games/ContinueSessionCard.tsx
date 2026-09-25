@@ -1,8 +1,9 @@
 import type { GameListItem } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
-import { MessageCircleIcon, PlayCircleIcon } from '../../components/Icon.js';
+import { MessageCircleIcon, PlayCircleIcon, PlaySmallIcon } from '../../components/Icon.js';
 import { DeleteGameButton } from './DeleteGameButton.js';
-import './ContinueSessionCard.css';
+import { opponentName, shortDate } from './gameDisplay.js';
+import './GameCard.css';
 import './RailCard.css';
 
 export interface ContinueSessionCardProps {
@@ -21,27 +22,42 @@ const TYPE_LABEL: Record<'coach_play' | 'vs_bot', string> = {
 
 /** A compact "Continue" card: an in-progress play session (live coaching, or
  * a game against a bot) — small enough that several sit side by side on the
- * Continue rail. The red trash can (confirmed) abandons and deletes the
- * game. */
+ * Continue rail. Laid out like the Recently imported cards: who you play, a
+ * short date, an "In progress" tag, and icon buttons (Continue, and the red
+ * trash can, which confirms before abandoning and deleting the game). */
 export function ContinueSessionCard({ game, onContinue, onDelete }: ContinueSessionCardProps): ReactNode {
   const isCoach = game.source === 'coach_play';
   const Icon = isCoach ? MessageCircleIcon : PlayCircleIcon;
-  const [whiteName, blackName] = [game.whiteName ?? '?', game.blackName ?? '?'];
+  const label = TYPE_LABEL[isCoach ? 'coach_play' : 'vs_bot'];
+  const opponent = opponentName(game);
 
   return (
     <div className="card rail-card continue-session-card">
       <div className="rail-card__top">
-        <Icon width={18} height={18} className="rail-card__icon" />
-        <span className="rail-card__label">{TYPE_LABEL[isCoach ? 'coach_play' : 'vs_bot']}</span>
-        <DeleteGameButton game={game} onDelete={onDelete} />
+        <span className="rail-card__chip" title={label}>
+          <Icon width={16} height={16} />
+          {label}
+        </span>
       </div>
-      <span className="rail-card__title">
-        {whiteName} vs {blackName}
+      <span className="rail-card__title" title={opponent}>
+        vs {opponent}
+      </span>
+      <span className="rail-card__meta">
+        <time dateTime={game.createdAt}>Started {shortDate(game.createdAt)}</time>
       </span>
       <div className="rail-card__actions">
-        <button type="button" className="btn-primary" onClick={() => onContinue(game.id)}>
-          Continue
+        <span className="badge badge--primary game-card__status">In progress</span>
+        <span className="game-card__spacer" />
+        <button
+          type="button"
+          className="game-card__icon-action game-card__icon-action--primary"
+          title="Continue"
+          aria-label={`Continue: ${label} against ${opponent}`}
+          onClick={() => onContinue(game.id)}
+        >
+          <PlaySmallIcon width={16} height={16} />
         </button>
+        <DeleteGameButton game={game} onDelete={onDelete} />
       </div>
     </div>
   );

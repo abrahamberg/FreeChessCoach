@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely';
 import { createTestDb, type TestDb } from '../../../test/helpers/db.js';
 import * as usersRepo from './users.js';
 import type { Database } from '../schema.js';
+import * as userProfileService from '../../services/user-profile.js';
 
 describe('users repository', () => {
   let testDb: TestDb;
@@ -68,5 +69,16 @@ describe('users repository', () => {
 
     expect(updated.ttsEnabled).toBe(true);
     expect(updated.ttsBackend).toBe('browser');
+  });
+
+  test('a new user has not been onboarded, and updateProfile({ onboarded }) toggles it', async () => {
+    const user = await usersRepo.insert(db, { email: `${crypto.randomUUID()}@example.com`, displayName: 'Hana' });
+    expect(user.onboardedAt).toBeNull();
+
+    const done = await userProfileService.updateProfile(db, user.id, { onboarded: true });
+    expect((await userProfileService.toUserProfile(db, done)).onboarded).toBe(true);
+
+    const again = await userProfileService.updateProfile(db, user.id, { onboarded: false });
+    expect((await userProfileService.toUserProfile(db, again)).onboarded).toBe(false);
   });
 });

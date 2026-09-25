@@ -1,0 +1,5 @@
+.engine-dl { margin: 8px 0 0; font-size: 14px; color: var(--color-text-secondary); }
+.engine-dl p { margin: 0 0 6px; }
+.engine-dl progress { display: block; width: 100%; height: 8px; }
+.engine-dl--ready { color: var(--color-primary); font-weight: 600; }
+.engine-dl--missing p { color: var(--color-warning); font-weight: 500; }

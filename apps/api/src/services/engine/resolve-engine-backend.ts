@@ -4,6 +4,7 @@ import * as usersRepo from '../../db/repositories/users.js';
 import type { Database } from '../../db/schema.js';
 import { EngineUnavailableError } from '../../lib/errors.js';
 import { BrowserTunnelEngineBackend } from './browser-tunnel-engine-backend.js';
+import { chessApiPausedUntil } from './chess-api-pause.js';
 import { ChessApiEngineBackend } from './chess-api-engine-backend.js';
 import type { EngineBackend } from './engine-backend.js';
 import { EngineSourceLoggingBackend, logEngineSourceUsage, type EngineSource } from './engine-source-usage.js';
@@ -160,6 +161,10 @@ function buildEnginePipeline(
 async function engineModeForUser(options: ResolveEngineBackendOptions, userId: string): Promise<EngineMode> {
   const user = await usersRepo.findById(options.db, userId);
   if (!user) throw new EngineUnavailableError(`Unknown user ${userId}`);
+  // chess-api.com rate-limited this user recently: serve from our own engine
+  // for the cooldown (their saved engineMode is untouched — see the settings
+  // notice), so nothing keeps hammering an exhausted quota.
+  if (user.engineMode === 'chess_api' && chessApiPausedUntil(user.chessApiRateLimitedAt)) return 'native';
   return user.engineMode;
 }
 
@@ -188,7 +193,8 @@ async function resolveRawBackendForUser(
             options.chessApiTimeoutMs,
             createTunnelFetch(options.tunnelTransport, userId, options.chessApiTimeoutMs),
             options.chessApiRequestDelayMs,
-            nativeFallback
+            nativeFallback,
+            () => usersRepo.markChessApiRateLimited(options.db, userId, new Date())
           )
         : new NativeEngineBackend(options.engineUrl);
 

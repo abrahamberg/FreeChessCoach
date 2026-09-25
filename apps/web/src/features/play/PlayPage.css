@@ -53,3 +53,9 @@
   flex: none;
   color: var(--color-text-muted);
 }
+
+/* The coach's portrait stands in for an icon on "Play with Coach". */
+.play-page__destination .coach-avatar-image {
+  width: 56px;
+  margin: 0;
+}

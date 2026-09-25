@@ -7,6 +7,10 @@ import * as ratedBackfill from './migrations/0004_rated_backfill.js';
 import * as puzzleSessionDebugSnapshot from './migrations/0005_puzzle_session_debug_snapshot.js';
 import * as analysisEngineEvals from './migrations/0006_analysis_engine_evals.js';
 import * as dropDeepenAnalysisJobs from './migrations/0007_drop_deepen_analysis_jobs.js';
+import * as userOnboarding from './migrations/0008_user_onboarding.js';
+import * as bugReports from './migrations/0009_bug_reports.js';
+import * as gameSourceFile from './migrations/0010_game_source_file.js';
+import * as chessApiRateLimit from './migrations/0011_chess_api_rate_limit.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -18,7 +22,11 @@ const provider: MigrationProvider = {
       '0004_rated_backfill': ratedBackfill,
       '0005_puzzle_session_debug_snapshot': puzzleSessionDebugSnapshot,
       '0006_analysis_engine_evals': analysisEngineEvals,
-      '0007_drop_deepen_analysis_jobs': dropDeepenAnalysisJobs
+      '0007_drop_deepen_analysis_jobs': dropDeepenAnalysisJobs,
+      '0008_user_onboarding': userOnboarding,
+      '0009_bug_reports': bugReports,
+      '0010_game_source_file': gameSourceFile,
+      '0011_chess_api_rate_limit': chessApiRateLimit
     })
 };
 

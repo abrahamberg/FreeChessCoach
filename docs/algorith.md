@@ -262,8 +262,8 @@ Brilliant and Great are checked **before** Best because a brilliant move is almo
 ### 5.2 Base severity tiers 🟡
 
 ```
-drop <  2   → excellent
-drop <  5   → good
+drop < 1   → excellent
+drop < 4   → good
 drop < 10   → inaccuracy
 drop < 20   → mistake
 drop >= 20  → blunder
@@ -585,23 +585,23 @@ A single game estimates rating with a standard error of roughly **±250 Elo**. p
 
 ### 8.2 Step 1 — raw accuracy → Elo anchor
 
-Piecewise-linear interpolation over an anchor table. These anchors approximate observed mean accuracy by rating band in rapid/blitz:
+Piecewise-linear interpolation over an anchor table. Our accuracy runs roughly 6–7 points above popular chess sites' for the same game, so these anchors were recalibrated (Sept 2026) against a sample game they rated 950/1150 at our 79.6/87.3% accuracy. Treat them as provisional until Phase 21 calibrates on more data:
 
 | Accuracy | Elo |
 |---:|---:|
-| 40 | 250 |
-| 50 | 450 |
-| 60 | 750 |
-| 65 | 950 |
-| 70 | 1150 |
-| 75 | 1380 |
-| 80 | 1620 |
-| 84 | 1870 |
-| 88 | 2120 |
-| 91 | 2360 |
-| 94 | 2620 |
-| 97 | 2900 |
-| 99 | 3100 |
+| 40 | 150 |
+| 50 | 300 |
+| 60 | 500 |
+| 68 | 700 |
+| 74 | 850 |
+| 80 | 1000 |
+| 84 | 1100 |
+| 87 | 1200 |
+| 90 | 1450 |
+| 93 | 1800 |
+| 95 | 2150 |
+| 97 | 2550 |
+| 99 | 3000 |
 
 Clamp to `[100, 3200]`. Linear interpolation between anchors; flat extrapolation outside.
 

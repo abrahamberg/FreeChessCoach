@@ -2,14 +2,14 @@ import { z } from 'zod';
 import { AnalysisStatusSchema } from './analysis.js';
 import { StatsRangeSchema } from './stats-dashboard.js';
 
-export const GameSourceSchema = z.enum(['paste', 'upload', 'lichess', 'coach_play', 'vs_bot', 'chesscom']);
+export const GameSourceSchema = z.enum(['paste', 'file', 'lichess', 'coach_play', 'vs_bot', 'chesscom']);
 export type GameSource = z.infer<typeof GameSourceSchema>;
 
 /** architecture §14: 'coach_play' is set only by createPlaySession
  * (server-side, POST /api/sessions/play) — never a client-supplied import
  * source, so ImportGameRequestSchema below deliberately excludes it. Same
  * reasoning applies to 'vs_bot', set only by createBotSession. */
-export const ImportableGameSourceSchema = z.enum(['paste', 'upload', 'lichess', 'chesscom']);
+export const ImportableGameSourceSchema = z.enum(['paste', 'file', 'lichess', 'chesscom']);
 export type ImportableGameSource = z.infer<typeof ImportableGameSourceSchema>;
 
 export const PlayerColorSchema = z.enum(['white', 'black']);
@@ -53,8 +53,13 @@ export function defaultReviewTierForSource(source: GameSource): GameReviewTier {
   return 'imported';
 }
 
+/** Hard ceiling on one import's PGN text (characters). A real game is a few
+ * KB; this leaves room for long annotated ones while keeping the request body
+ * — and what the server parses — bounded. */
+export const MAX_PGN_LENGTH = 200_000;
+
 export const ImportGameRequestSchema = z.object({
-  pgn: z.string().min(1),
+  pgn: z.string().min(1).max(MAX_PGN_LENGTH),
   source: ImportableGameSourceSchema,
   userColor: PlayerColorSchema.optional(),
   /** Stat-bank import (Phase 31): skip queuing the standard-depth analysis
@@ -89,7 +94,12 @@ export const LichessRecentGameSchema = z.object({
   blackName: z.string().nullable(),
   result: z.string().nullable(),
   timeControl: z.string().nullable(),
-  playedAt: z.string().nullable()
+  playedAt: z.string().nullable(),
+  /** bullet / blitz / rapid / classical / daily — the same vocabulary as
+   * Chess.com's `timeClass`, so one filter serves both pickers. */
+  timeClass: z.string(),
+  /** The student already has this game (same PGN) in their library. */
+  imported: z.boolean().default(false)
 });
 export type LichessRecentGame = z.infer<typeof LichessRecentGameSchema>;
 
@@ -110,7 +120,8 @@ export const ChesscomRecentGameSchema = z.object({
   rated: z.boolean(),
   timeClass: z.string(),
   whiteRating: z.number().int().nullable(),
-  blackRating: z.number().int().nullable()
+  blackRating: z.number().int().nullable(),
+  imported: z.boolean().default(false)
 });
 export type ChesscomRecentGame = z.infer<typeof ChesscomRecentGameSchema>;
 

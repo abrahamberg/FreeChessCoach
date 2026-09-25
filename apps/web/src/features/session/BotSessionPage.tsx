@@ -2,6 +2,7 @@ import { findBotConfig } from '@freechesscoach/shared';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog.js';
 import { ENGINE_MODE_BADGE, useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
@@ -89,6 +90,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   // live for a chat-less page).
   const fen = divergedLine.fen ?? boardState.fen;
   const [isExploring, setIsExploring] = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   useEffect(() => {
     if (boardState.mode !== 'peek') setIsExploring(false);
   }, [boardState.mode]);
@@ -151,7 +153,10 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   const activeColor: 'white' | 'black' = isBotThinking ? botColor : currentRealPosition.ply % 2 === 0 ? 'white' : 'black';
 
   function handleResign(): void {
-    if (window.confirm(`Resign this game against ${botName}?`)) resign();
+    confirm(
+      { title: 'Resign this game?', description: `You will lose this game against ${botName}.`, confirmLabel: 'Resign' },
+      resign
+    );
   }
 
   const board = (
@@ -228,6 +233,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
 
   return (
     <div className="session-page">
+      {confirmDialog}
       <SessionHeader
         whiteName={gameQuery.data?.whiteName ?? null}
         blackName={gameQuery.data?.blackName ?? null}

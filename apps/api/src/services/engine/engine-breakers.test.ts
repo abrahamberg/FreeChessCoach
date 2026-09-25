@@ -117,3 +117,39 @@ describe('FallbackEngineBackend sticky failure', () => {
     expect(fallback.analyzeGame).not.toHaveBeenCalled();
   });
 });
+
+describe('ChessApiEngineBackend HIGH_USAGE', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const highUsage = { type: 'error', error: 'HIGH_USAGE', text: 'Too high daily usage for this IP address / api key.' };
+
+  test('records it once, skips chess-api at once and serves from the fallback without retrying', async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify(highUsage), { status: 200 }));
+    const onHighUsage = vi.fn(async () => undefined);
+    const fallback = fakeBackend();
+    const backend = new ChessApiEngineBackend(1000, fetchImpl, 0, fallback, onHighUsage);
+
+    const evals = await backend.analyzeGame(FENS);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(onHighUsage).toHaveBeenCalledTimes(1);
+    expect(fallback.analyzePosition).toHaveBeenCalledTimes(3);
+    expect(evals.map((e) => e.ply)).toEqual([0, 1, 2]);
+  });
+
+  test('still falls back when persisting the rate limit fails', async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify(highUsage), { status: 429 }));
+    const onHighUsage = vi.fn(async () => {
+      throw new Error('db down');
+    });
+    const backend = new ChessApiEngineBackend(1000, fetchImpl, 0, fakeBackend(), onHighUsage);
+
+    await expect(backend.analyzePosition(FENS[0]!)).resolves.toMatchObject({ fen: FENS[0] });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+});

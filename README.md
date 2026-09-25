@@ -40,7 +40,7 @@ model that needs you to keep paying whether you use it or not.
 ## How it works
 
 1. **Sign in** with Google — no account form, no credit card.
-2. **Import your games** from Lichess, or paste/upload a PGN.
+2. **Import your games** from Lichess, or paste or open a PGN file.
 3. **Analysis runs automatically** — Stockfish evaluates every position, and
    an LLM pass classifies moves (blunders, misses, brilliancies, best moves)
    and builds a per-game report: accuracy, phase-by-phase accuracy,
@@ -66,7 +66,7 @@ text-to-speech.
   endgame scoring, move classification counts, estimated rating.
 - **Persistent progress tracking** — focus areas and trends carry across
   sessions instead of resetting every game.
-- **Lichess import or PGN upload/paste** — bring games from wherever you play.
+- **Lichess import or PGN file/paste** — bring games from wherever you play.
 - **Seven coach personas** — same method and honesty, different voice.
 - **Voice coaching** — optional spoken delivery via in-browser TTS.
 - **BYOK privacy** — use any compatible provider; the setup is encrypted with

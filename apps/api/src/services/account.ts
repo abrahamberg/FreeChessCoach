@@ -1,4 +1,5 @@
 import type { Kysely } from 'kysely';
+import * as bugReportsRepo from '../db/repositories/bug-reports.js';
 import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
@@ -39,6 +40,7 @@ export async function deleteAccount(db: Kysely<Database>, userId: string): Promi
     await focusAreasRepo.deleteByUserId(trx, userId);
     await diagnosticProfilesRepo.deleteByUserId(trx, userId);
     await gameImportEventsRepo.deleteByUserId(trx, userId);
+    await bugReportsRepo.deleteByUserId(trx, userId);
     await statsArchiveRepo.deleteByUserId(trx, userId);
     await llmSetupsRepo.remove(trx, userId);
 

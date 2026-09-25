@@ -56,6 +56,11 @@ export type RatingSource = (typeof RATING_SOURCES)[number];
 export const ENGINE_MODES = ['chess_api', 'native', 'browser'] as const;
 export type EngineMode = (typeof ENGINE_MODES)[number];
 
+/** How long the external engine (chess-api.com) is left alone after it
+ * reports HIGH_USAGE for a user's IP. Its daily quota does not reset on a
+ * timer we can see, so this is a floor ("at least 30 minutes"), not a promise. */
+export const CHESS_API_RATE_LIMIT_COOLDOWN_MS = 30 * 60 * 1000;
+
 /**
  * Cosmetic coach personalities (coaches.md). `general` and `general_female`
  * are both the coach as it has always existed — byte-identical prompts (see

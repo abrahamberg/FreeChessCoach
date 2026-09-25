@@ -1,0 +1,35 @@
+.bug-report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: min(520px, 80vw);
+}
+
+.bug-report label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.bug-report textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+}
+
+.bug-report__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.bug-report__error {
+  margin: 0;
+  color: var(--color-danger);
+}
+
+.bug-report__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}

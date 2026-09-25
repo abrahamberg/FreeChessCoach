@@ -1,6 +1,7 @@
-import { TTS_BACKENDS, type TtsBackend } from '@freechesscoach/shared';
+import type { TtsBackend } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { Modal } from '../../components/Modal.js';
+import { effectiveTtsBackend } from '../../tts/effective-tts-backend.js';
 import { isNativeSpeechSupported } from '../../tts/native-speech.js';
 import { LocalVoiceSetup } from './LocalVoiceSetup.js';
 import '../../components/RadioCard.css';
@@ -20,11 +21,27 @@ export interface TtsSectionProps {
   onChange: (patch: TtsProfilePatch) => void;
 }
 
-const BACKEND_LABEL: Record<TtsBackend, string> = {
-  openai: 'OpenAI voice (default)',
-  browser: 'Browser voice — Slow, Beta (free, runs on your device)',
-  local: 'Local voice server (free, fast, needs a small install)',
-  native: 'Device voice (free, instant — your phone’s or Chrome’s built-in voice)'
+/** Device voice is second on purpose: it is what a person without an OpenAI
+ * voice model gets, and the free option worth trying first. */
+const BACKEND_ORDER: readonly TtsBackend[] = ['openai', 'native', 'browser', 'local'];
+
+const BACKEND_TITLE: Record<TtsBackend, string> = {
+  openai: 'OpenAI voice',
+  native: 'Device voice (free, instant)',
+  browser: 'Browser voice (free, slow, beta)',
+  local: 'Local voice server (free, fast, needs a small install)'
+};
+
+/** What each option is, what it costs, and the catch, in plain words. */
+const BACKEND_DESCRIPTION: Record<TtsBackend, string> = {
+  openai:
+    'The most natural voice, and it starts almost at once. It uses your own OpenAI key, so every message read aloud spends a little of your OpenAI credit. Needs a voice model in your AI setup.',
+  native:
+    'The voice already built into your phone or Chrome. Free, instant, and nothing leaves your device. It sounds more robotic than the others, and which voices you get depends on your device.',
+  browser:
+    'A voice model that downloads once and then runs inside this tab. Free and private, but slow on most computers, and the tab has to stay open while it speaks.',
+  local:
+    'A free voice program you install on your own computer, next to LM Studio. Natural and fast, and nothing goes to any cloud, but it needs about ten minutes of setup once.'
 };
 
 const BACKEND_CONFIRM_TITLE: Record<TtsBackend, string> = {
@@ -65,9 +82,9 @@ const BACKEND_WARNING: Record<TtsBackend, string> = {
  * `backend` untouched, which is the "undo". Turning the switch off never
  * needs confirmation; there's no downside to applying it immediately. */
 export function TtsSection({ enabled, backend: savedBackend, openaiAvailable, onChange }: TtsSectionProps): ReactNode {
-  // A saved 'openai' choice (the DB default) is shown and acted on as
-  // 'browser' while OpenAI isn't set up.
-  const backend: TtsBackend = !openaiAvailable && savedBackend === 'openai' ? 'browser' : savedBackend;
+  // A saved 'openai' choice (the DB default) is shown and acted on as the
+  // device voice while OpenAI isn't set up (see effectiveTtsBackend).
+  const backend = effectiveTtsBackend(savedBackend, openaiAvailable);
   const nativeSupported = isNativeSpeechSupported();
   const [pending, setPending] = useState<{ enabled: boolean; backend: TtsBackend } | null>(null);
 
@@ -80,7 +97,7 @@ export function TtsSection({ enabled, backend: savedBackend, openaiAvailable, on
   }
 
   function handleSelectBackend(next: TtsBackend): void {
-    if (next === backend) return;
+    if (enabled && next === backend) return;
     setPending({ enabled: true, backend: next });
   }
 
@@ -105,24 +122,31 @@ export function TtsSection({ enabled, backend: savedBackend, openaiAvailable, on
         />
       </label>
 
-      {enabled && (
-        <div className="tts-section__backends radio-card-group" role="radiogroup" aria-label="Coach voice backend">
-          {TTS_BACKENDS.map((option) => (
-            <label key={option} className="tts-section__backend-option radio-card">
-              <input
-                type="radio"
-                name="tts-backend"
-                checked={backend === option}
-                disabled={(option === 'openai' && !openaiAvailable) || (option === 'native' && !nativeSupported)}
-                onChange={() => handleSelectBackend(option)}
-              />
-              {BACKEND_LABEL[option]}
-              {option === 'openai' && !openaiAvailable && ' — set up an OpenAI voice model in AI setup to use this'}
-              {option === 'native' && !nativeSupported && ' — not supported by this browser'}
-            </label>
-          ))}
-        </div>
-      )}
+      {!enabled && <p className="settings-page__hint">Voice is off. Turn the switch on to have the coach read aloud with the option ticked below.</p>}
+
+      <div className="tts-section__backends radio-card-group" role="radiogroup" aria-label="Coach voice backend">
+        {BACKEND_ORDER.map((option) => (
+          <label key={option} className="tts-section__backend-option radio-card">
+            <input
+              type="radio"
+              name="tts-backend"
+              checked={backend === option}
+              disabled={(option === 'openai' && !openaiAvailable) || (option === 'native' && !nativeSupported)}
+              onChange={() => handleSelectBackend(option)}
+            />
+            <span className="tts-section__backend-text">
+              <strong>{BACKEND_TITLE[option]}</strong>
+              <span className="tts-section__backend-description">{BACKEND_DESCRIPTION[option]}</span>
+              {option === 'openai' && !openaiAvailable && (
+                <em className="tts-section__backend-note">Not available: set up an OpenAI voice model in AI setup to use this.</em>
+              )}
+              {option === 'native' && !nativeSupported && (
+                <em className="tts-section__backend-note">Not available: this browser has no built-in voice.</em>
+              )}
+            </span>
+          </label>
+        ))}
+      </div>
 
       {enabled && backend === 'local' && <LocalVoiceSetup />}
 

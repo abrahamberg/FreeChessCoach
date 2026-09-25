@@ -47,6 +47,7 @@
             <strong class="title">Before you start</strong>
             <p>Read <a href="/keys">how FreeChessCoach handles your key</a> first if you haven't. The two rules are: use a key made only for this app, and give it a small monthly limit.</p>
             <p>The AI coach is optional. Import, stats, game review and the bots work without any of this.</p>
+            <p>New here? The welcome guide you see after your first sign-in walks through the same steps, with your chosen coach as the guide. You can reopen it any time from <strong>Settings</strong>.</p>
           </div>
           <div class="callout">
             <strong class="title">Want to pay nothing?</strong>
@@ -72,25 +73,50 @@
               <p>You choose the amount, and you can stop any time. We never see your payment details, since they are entered on OpenAI's site.</p>
             </li>
             <li>
-              <h3>Set a spending limit (the most important step)</h3>
-              <p>Open <strong>Limits</strong> in the left menu. Under <strong>Spend</strong> you will see the <strong>Organization spend limit</strong>. Choose <strong>Edit spend limit</strong> and set it to a small monthly amount, for example <strong>$5</strong>.</p>
-              <p>While you are there, use <strong>Add alert</strong> under <strong>Spend alerts</strong> to get an email at 80% and at 100% of that limit. OpenAI notes that your actual costs may exceed a limit depending on usage, so keep it small.</p>
-              <p>After a couple of weeks, check <strong>Usage</strong> and adjust the limit to what you really use.</p>
+              <h3>Make a project just for FreeChessCoach</h3>
+              <p>Open <a href="https://platform.openai.com/settings/organization/projects">Settings → Projects</a> and choose <strong>Create</strong>. Name it <em>FreeChessCoach</em>. Keeping this app in its own project makes its usage easy to see, its limit and data sharing separate from anything else you run, and its key easy to remove.</p>
+              <figure class="shot">
+                <img src="/shots/openai-projects.jpg" alt="OpenAI's Projects list showing one project named freeChessCoach, with its id hidden." width="1464" height="812" loading="lazy" />
+                <figcaption>The Projects list after creating <em>FreeChessCoach</em>. Choose the project's name to open its settings and Limits tab.</figcaption>
+              </figure>
+            </li>
+            <li id="sharing">
+              <h3>Recommended: turn on data sharing for that project</h3>
+              <p>Open <a href="https://platform.openai.com/settings/organization/data-controls/sharing">Settings → Data controls → Sharing</a>. The third block, <strong>Share inputs and outputs with OpenAI</strong>, is the one that matters. Choose <strong>Enabled for selected projects</strong>, pick <em>FreeChessCoach</em>, and choose <strong>Save</strong>.</p>
+              <figure class="shot">
+                <img src="/shots/openai-sharing.png" alt="OpenAI's Data controls, Sharing tab. The third block, Share inputs and outputs with OpenAI, is switched on and shows the message You're enrolled for complimentary daily tokens." width="1002" height="878" loading="lazy" />
+                <figcaption>Sharing tab with the third block switched on: OpenAI confirms it with <em>You’re enrolled for complimentary daily tokens</em>. Everything starts on Disabled. Change only the third block. This test account chose <em>Enabled for all projects</em>; we suggest <em>Enabled for selected projects</em> with only FreeChessCoach ticked, so nothing else you run is shared.</figcaption>
+              </figure>
+              <p>This is what makes some usage free: OpenAI's console then says you are enrolled for complimentary daily tokens. The catch is real, so <a href="#free">read what it costs you in privacy</a> before you switch it on. It is your choice, and you can turn it off again at any time.</p>
             </li>
             <li>
-              <h3>Optional: make a project just for FreeChessCoach</h3>
-              <p>Open <strong>Projects</strong> and create one named <em>FreeChessCoach</em>. Keeping this app in its own project makes its usage easy to see and its key easy to remove, without touching anything else you run.</p>
+              <h3>Set a spending limit and enforce it (the most important step)</h3>
+              <p>Open your project's settings: <a href="https://platform.openai.com/settings/organization/projects">Settings → Projects</a>, then choose <em>FreeChessCoach</em>. The address becomes <code>platform.openai.com/settings/&lt;your project id&gt;/limits</code> once you open the <strong>Limits</strong> tab.</p>
+              <p>Set a small monthly budget there, for example <strong>$5</strong>, and choose <strong>Enforce hard limit</strong>. A hard limit makes OpenAI stop the project's requests when the budget is reached, instead of only warning you.</p>
+              <figure class="shot">
+                <img src="/shots/openai-project-limits.jpg" alt="OpenAI's Project Settings, Limits tab, showing Allow or block models and Rate limits." width="1464" height="812" loading="lazy" />
+                <figcaption>The project's Limits tab. Our test account has no billing set up, so this tab only shows model and rate limits and we could not capture the budget and hard-limit controls. Look for a monthly budget and the words Enforce hard limit on your own screen; if OpenAI has moved them, look for the same words nearby.</figcaption>
+              </figure>
+              <p>Also use <strong>Add alert</strong> under spend alerts, where OpenAI offers it, to get an email as you near the limit. After a couple of weeks, check <strong>Usage</strong> and adjust the limit to what you really use.</p>
             </li>
             <li>
               <h3>Create a key only for this app</h3>
-              <p>Open <strong>API keys</strong> and choose <strong>Create new secret key</strong>. In the box that opens:</p>
+              <p>Open <a href="https://platform.openai.com/settings/organization/api-keys">Settings → API keys</a> and choose <strong>Create new secret key</strong>. In the box that opens:</p>
               <ul>
                 <li><strong>Owned by:</strong> leave it on <em>You</em>.</li>
                 <li><strong>Name:</strong> something like <code>FreeChessCoach</code>, so you remember what it is for.</li>
-                <li><strong>Project:</strong> the FreeChessCoach project from the last step, if you made one.</li>
+                <li><strong>Project:</strong> <em>FreeChessCoach</em>, the project you made. This is what ties the key to that project's spending limit and data-sharing choice.</li>
                 <li><strong>Expiration:</strong> pick a date a few months away if it offers one. A key that expires on its own is a key you will rotate.</li>
               </ul>
+              <figure class="shot">
+                <img src="/shots/openai-api-key-form.png" alt="OpenAI's Create new secret key dialog: owned by You, a name, the freeChessCoach project, a 30 day expiration and All permissions." width="459" height="580" loading="lazy" />
+                <figcaption>The Create new secret key dialog, filled in. Keep <strong>Permissions</strong> on <strong>All</strong>, since the coach needs to make model requests. A 30 day expiration is a good start.</figcaption>
+              </figure>
               <p>Then choose <strong>Create secret key</strong>. OpenAI shows the key <strong>once</strong>. Copy it now. If you lose it, you simply make another.</p>
+              <figure class="shot">
+                <img src="/shots/openai-api-key-reveal.png" alt="OpenAI's Save your key dialog showing a secret key beginning sk-proj-, with a Copy button." width="459" height="397" loading="lazy" />
+                <figcaption>What a key looks like: it starts with <code>sk-proj-</code> and is long. This one is from a throwaway account and was deleted right after. Yours is shown once, so use <strong>Copy</strong> and paste it straight into FreeChessCoach.</figcaption>
+              </figure>
               <div class="callout warn">
                 <p><strong>Treat the key like a password.</strong> Never post it in a chat, screenshot or public repository. If it is ever exposed, delete it in <strong>API keys</strong> (the bin icon beside it) and make a new one.</p>
               </div>
@@ -111,10 +137,10 @@
               <p>Later, <strong>Enter unlock phrase</strong> unlocks the setup for a coaching session, <strong>Lock now</strong> removes the decrypted copy from our server straight away, <strong>Replace setup</strong> is how you rotate to a new key, and <strong>Delete setup</strong> removes it.</p>
             </li>
             <li id="free">
-              <h3>Optional: complimentary daily tokens, and what they cost you in privacy</h3>
-              <p>OpenAI has a data-sharing setting that can make some usage free. You can see it at <a href="https://platform.openai.com/settings/organization/data-controls/sharing">Settings → Data controls → Sharing</a>, under <strong>Share inputs and outputs with OpenAI</strong>. When it is on, OpenAI's console tells you that you are <em>enrolled for complimentary daily tokens</em>.</p>
+              <h3>Complimentary daily tokens, and what they cost you in privacy</h3>
+              <p>OpenAI has a data-sharing setting that can make some usage free, and it is the one we recommend (step above). You can see it at <a href="https://platform.openai.com/settings/organization/data-controls/sharing">Settings → Data controls → Sharing</a>, under <strong>Share inputs and outputs with OpenAI</strong>. When it is on, OpenAI's console tells you that you are <em>enrolled for complimentary daily tokens</em>.</p>
               <p>Please read what this means before you turn it on. OpenAI says the traffic you send once it is enabled is shared to help it develop and improve its services, including training its models. For FreeChessCoach, that traffic is your games and your conversations with the coach.</p>
-              <p>It is your choice, and you can change it at any time. If you do enable it, consider <strong>Enabled for selected projects</strong> and pick only the FreeChessCoach project, so nothing else you run with OpenAI is included. Check OpenAI's own page for the current terms and the amount of free tokens, since we don't control them.</p>
+              <p>It is your choice, and you can change it at any time. Enable it with <strong>Enabled for selected projects</strong> and pick only the FreeChessCoach project, so nothing else you run with OpenAI is included. Check OpenAI's own page for the current terms and the amount of free tokens, since we don't control them.</p>
             </li>
             <li>
               <h3>Rotate it every so often</h3>

@@ -390,7 +390,7 @@ function readyReportsQuery(db: Kysely<Database>) {
  * convention). `coach_play`/`vs_bot` games are excluded — the dashboard is
  * about performance against real opponents, not practice sessions against
  * the coach or a bot — by scoping to `ImportableGameSourceSchema`'s four
- * values (paste/upload/lichess/chesscom) rather than hand-duplicating that list here. */
+ * values (paste/file/lichess/chesscom) rather than hand-duplicating that list here. */
 export async function listReadyReportsForUser(
   db: Kysely<Database>,
   userId: string,

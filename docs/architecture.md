@@ -350,7 +350,7 @@ with the web UI so copy can never disagree with the server:
 | Daily | 30 | imports in the last 24h (rolling) |
 | Weekly | 150 | imports in the last 7×24h (rolling) |
 | In flight | 10 | analyses still `queued`/`engine_running`/`planning`/`paused` |
-| Library | 1000 | imported-source games (paste/upload/lichess/chesscom) |
+| Library | 1000 | imported-source games (paste/file/lichess/chesscom) |
 
 - **Daily/weekly count an append-only ledger**, `game_import_events`
   (`0041_game_import_events.ts`, `db/repositories/game-import-events.ts`): one
@@ -597,6 +597,44 @@ key and expires after inactivity, so a database or Redis dump alone does not
 recover a provider key. API and worker share this cache for active background
 jobs; users can also lock it immediately from Settings. Omitting the voice
 model disables cloud voice while leaving browser voice available.
+
+### Welcome flow (`/welcome`)
+
+A new account is sent to `/welcome` (`features/onboarding/`, gated by
+`OnboardingRedirect` in `App.tsx`) until `users.onboarded_at` is set (migration
+0008 stamped every existing user, so only new signups see it; the profile
+exposes it as `onboarded`, and `PATCH /api/users/me { onboarded }` sets or clears
+it). Steps, in order: name and level, coach, engine, linked accounts, tour, AI
+setup, voice, bugs (a new-platform and bug-reporting heads-up), habits (how the
+platform is meant to be used: daily games, 15+ imported, regular sessions), done. Each step renders the same component Settings does (`ProfileFields`,
+`CoachPersonaSelect`, `EngineFields` with its ping test, `LinkedAccountsFields`,
+`LlmSetupSection`, `VoiceFields`, all in `features/settings/`), so Settings and the
+flow cannot drift; add a setting there, not in `onboarding/`. Every choice saves as
+it is made with the same PATCH Settings uses (`useUpdateProfile`), so leaving halfway loses nothing; "Skip setup" or finishing only marks the
+flow done. The coach picked on step 2 narrates the later steps (`coach-lines.ts`:
+only the framing varies per persona, like the prompts). The tour is four
+cards (screenshot, description, "Try it live") linking to the offline `/demo/*`
+app with `?back=welcome`; the demo banner then shows "Back to setup"
+(`demo/demoReturn.ts`, kept in sessionStorage, only that one destination is ever
+honoured) which returns to `/welcome?step=tour`. The current step is in the URL
+(`?step=`) for that reason. The AI step uses the same
+`LlmSetupSection` as Settings and recommends OpenAI with a project-scoped data
+sharing setting, a hard spend limit and a project key (`OpenAiChecklist.tsx`,
+mirrored by `/openai-key`). Voice comes last so the OpenAI voice is only offered
+once an AI setup exists. Settings links back to the flow.
+
+### Bug reports
+
+"Report a bug" is an item in the account menu (`components/UserMenu.tsx`, not shown
+in the demo) that opens `features/bug-report/BugReportModal.tsx`: what happened, what
+was expected, plus the page path and user agent, sent to `POST /api/bug-reports`
+(`routes/bug-reports.ts` → `services/bug-reports.ts`). The API allows 5 reports per
+15 minutes and 20 per rolling 24 hours per user (`BUG_REPORT_LIMITS` in
+`packages/shared/src/bug-report.ts`, which the form's hint text also reads) and answers
+429 with a message naming the limit. Reports are rows in `bug_reports` (migration 0009),
+deleted with the account, and logged at info level with their id; there is no admin
+screen yet, so read them with SQL. The top bar, and so the menu, is hidden on board
+routes (session, review, practice), where there is no way to report.
 
 ### Coach voice (TTS)
 

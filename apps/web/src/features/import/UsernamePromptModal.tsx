@@ -7,6 +7,8 @@ export interface UsernamePromptModalProps {
   tab: RemoteTab;
   onSave: (username: string) => void;
   onClose: () => void;
+  /** Set when the student is correcting an existing name, not adding one. */
+  isChange?: boolean;
 }
 
 const PLATFORM_NAME: Record<RemoteTab, string> = {
@@ -20,12 +22,22 @@ const PLATFORM_NAME: Record<RemoteTab, string> = {
  * end. Reuses PlatformUsernameForm's own save form/flow (PATCH
  * /api/users/me via ImportPage's mutation) rather than a second,
  * import-page-only input. */
-export function UsernamePromptModal({ tab, onSave, onClose }: UsernamePromptModalProps): ReactNode {
+export function UsernamePromptModal({ tab, onSave, onClose, isChange = false }: UsernamePromptModalProps): ReactNode {
   const platformName = PLATFORM_NAME[tab];
   return (
-    <Modal title={`Set your ${platformName} username`} onClose={onClose}>
-      <p>We need your {platformName} username to show your recent games and tell which side you played.</p>
-      <PlatformUsernameForm platform={tab} label={`${platformName} username`} value={null} onSave={onSave} onDelete={() => {}} />
+    <Modal title={`${isChange ? 'Change' : 'Set'} your ${platformName} username`} onClose={onClose}>
+      <p>
+        {isChange
+          ? `Enter the exact ${platformName} username you play under.`
+          : `We need your ${platformName} username to show your recent games and tell which side you played.`}
+      </p>
+      <PlatformUsernameForm
+        platform={tab}
+        label={`${platformName} username`}
+        value={null}
+        onSave={onSave}
+        onDelete={() => {}}
+      />
     </Modal>
   );
 }

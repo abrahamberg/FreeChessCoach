@@ -1,6 +1,7 @@
 import { parsePgn } from '@freechesscoach/chess-analysis';
-import { useState, type ReactNode } from 'react';
+import { useState, type ComponentType, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { ClipboardIcon, type IconProps, KnightIcon, PawnIcon, ImportIcon } from '../../components/Icon.js';
 import { useImportQuota } from '../../hooks/useImportQuota.js';
 import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
 import { AnalysisProgress } from './AnalysisProgress.js';
@@ -10,7 +11,7 @@ import { ColorConfirm } from './ColorConfirm.js';
 import { selectionLimit } from './import-limit-copy.js';
 import { ImportErrorNotice } from './ImportErrorNotice.js';
 import { PgnPasteForm } from './PgnPasteForm.js';
-import { PgnUploadForm } from './PgnUploadForm.js';
+import { PgnFileForm } from './PgnFileForm.js';
 import { RemoteImportPanel, type RemoteTab } from './RemoteImportPanel.js';
 import { UsernamePromptModal } from './UsernamePromptModal.js';
 import { useRemoteImport } from './useRemoteImport.js';
@@ -32,12 +33,16 @@ function fensOf(pgn: string): string[] {
   }
 }
 
-type ImportTab = 'paste' | 'upload' | RemoteTab;
-const IMPORT_TABS: { tab: ImportTab; label: string }[] = [
-  { tab: 'paste', label: 'Paste' },
-  { tab: 'upload', label: 'Upload' },
-  { tab: 'lichess', label: 'From Lichess' },
-  { tab: 'chesscom', label: 'From Chess.com' }
+type ImportTab = 'paste' | 'file' | RemoteTab;
+const IMPORT_TABS: {
+  tab: ImportTab;
+  label: string;
+  icon: ComponentType<IconProps>;
+}[] = [
+  { tab: 'paste', label: 'Paste', icon: ClipboardIcon },
+  { tab: 'file', label: 'From file', icon: ImportIcon },
+  { tab: 'lichess', label: 'From Lichess', icon: KnightIcon },
+  { tab: 'chesscom', label: 'From Chess.com', icon: PawnIcon }
 ];
 
 /** Games page's "Import games" shortcuts link straight into a specific tab
@@ -57,7 +62,6 @@ function importTabFromSearchParams(params: URLSearchParams): ImportTab {
 export function ImportPage(): ReactNode {
   const [searchParams] = useSearchParams();
   const [tab, setTab] = useState<ImportTab>(() => importTabFromSearchParams(searchParams));
-  const [bulkMode, setBulkMode] = useState(false);
   const quotaQuery = useImportQuota();
   const autoDelete = useAutoDeleteNotice(quotaQuery.data);
   const single = useSingleImport();
@@ -78,6 +82,9 @@ export function ImportPage(): ReactNode {
     return (
       <div className="page import-page">
         <h1>Import a game</h1>
+        <p className="import-page__keep-open" role="note">
+          Don&apos;t close this tab while games are being imported and analyzed. You can switch to another tab.
+        </p>
         <AnalysisProgress
           status={single.progress.status}
           finalFen={positions.at(-1) ?? START_FEN}
@@ -104,45 +111,73 @@ export function ImportPage(): ReactNode {
   return (
     <div className="page import-page">
       <h1>Import a game</h1>
+      <p className="import-page__keep-open" role="note">
+        Don&apos;t close this tab while games are being imported and analyzed. You can switch to another tab.
+      </p>
       {single.needsColor ? (
         <ColorConfirm onConfirm={single.confirmColor} />
       ) : (
         <>
           {single.importError && <ImportErrorNotice error={single.importError} />}
           <div role="tablist">
-            {IMPORT_TABS.map(({ tab: candidate, label }) => (
-              <button key={candidate} type="button" aria-pressed={tab === candidate} onClick={() => switchTab(candidate)}>
-                {label}
+            {IMPORT_TABS.map(({ tab: candidate, label, icon: Icon }) => (
+              <button
+                key={candidate}
+                type="button"
+                title={label}
+                aria-pressed={tab === candidate}
+                onClick={() => switchTab(candidate)}
+              >
+                <Icon width={18} height={18} />
+                <span className="import-page__tab-label">{label}</span>
               </button>
             ))}
           </div>
           {tab === 'paste' && (
             <PgnPasteForm
-              onSubmit={(body, intent) => autoDelete.guard(1, () => single.start({ pgn: body.pgn, source: body.source, userColor: body.userColor }, intent))}
+              onSubmit={(body, intent) =>
+                autoDelete.guard(1, () =>
+                  single.start(
+                    {
+                      pgn: body.pgn,
+                      source: body.source,
+                      userColor: body.userColor
+                    },
+                    intent
+                  )
+                )
+              }
             />
           )}
-          {tab === 'upload' && (
-            <PgnUploadForm onSubmit={(body, intent) => autoDelete.guard(1, () => single.start({ pgn: body.pgn, source: body.source }, intent))} />
+          {tab === 'file' && (
+            <PgnFileForm
+              onSubmit={(body, intent) =>
+                autoDelete.guard(1, () => single.start({ pgn: body.pgn, source: body.source }, intent))
+              }
+            />
           )}
           {(tab === 'lichess' || tab === 'chesscom') && (
             <RemoteImportPanel
               tab={tab}
-              bulkMode={bulkMode}
-              onBulkModeChange={setBulkMode}
               lichess={remote.lichess}
               chesscom={remote.chesscom}
-              onSelect={(pgn, playedAt, intent) => autoDelete.guard(1, () => single.start({ pgn, source: tab, playedAt }, intent))}
+              onSelect={(pgn, playedAt, intent) =>
+                autoDelete.guard(1, () => single.start({ pgn, source: tab, playedAt }, intent))
+              }
               bulkSelection={{
                 ...remote.bulkSelection,
                 ...selectionLimit(quotaQuery.data),
-                onImportSelected: () => autoDelete.guard(remote.bulkSelection.selectedIds.size, remote.bulkSelection.onImportSelected)
+                onImportSelected: () =>
+                  autoDelete.guard(remote.bulkSelection.selectedIds.size, remote.bulkSelection.onImportSelected)
               }}
               bulkResult={remote.bulkResult}
+              onChangeUsername={remote.changeUsername}
             />
           )}
           {promptTab && (
             <UsernamePromptModal
               tab={promptTab}
+              isChange={remote.isChangingUsername}
               onSave={(username) => remote.saveUsernameForTab(promptTab, username)}
               onClose={() => remote.dismissUsernamePrompt(promptTab)}
             />

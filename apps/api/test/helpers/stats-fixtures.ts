@@ -55,7 +55,7 @@ export function gameReportFixture(options: { accuracy?: number; fork?: { opportu
 }
 
 export interface ReadyGameOptions {
-  source?: 'paste' | 'upload' | 'lichess' | 'chesscom';
+  source?: 'paste' | 'file' | 'lichess' | 'chesscom';
   timeControl?: string | null;
   playedAt?: Date | null;
   result?: string;

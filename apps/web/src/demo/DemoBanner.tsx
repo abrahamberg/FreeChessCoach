@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSyncExternalStore, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import type { DemoPersona } from './demoFetch.js';
+import { readDemoReturn } from './demoReturn.js';
 import { getDemoRuntime, type DemoRuntime } from './demoRuntime.js';
 import './demo.css';
 
@@ -10,7 +11,9 @@ import './demo.css';
  * only) switches between the two sample players. Null outside /demo. */
 export function DemoBanner(): ReactNode {
   const runtime = getDemoRuntime();
+  const { search } = useLocation();
   if (!runtime) return null;
+  const returnTo = readDemoReturn(search);
   return (
     <div className="demo-banner" role="region" aria-label="Demo notice">
       <p className="demo-banner__text">
@@ -19,15 +22,26 @@ export function DemoBanner(): ReactNode {
       </p>
       <StatsPersonaSwitch runtime={runtime} />
       <span className="demo-banner__links">
-        <a className="demo-banner__tour" href="/tour">
-          Back to the tour
-        </a>
+        {returnTo ? (
+          <a className="demo-banner__coach" href={returnTo}>
+            Back to setup
+          </a>
+        ) : (
+          <a className="demo-banner__tour" href="/tour">
+            Back to the tour
+          </a>
+        )}
         <a className="demo-banner__cta" href="/oauth2/start?rd=/games">
           <span className="demo-banner__long">Sign in to use your own games</span>
           <span className="demo-banner__short">Sign in</span>
         </a>
       </span>
       <RefusedNotice runtime={runtime} />
+      {returnTo && (
+        <a className="demo-back-button" href={returnTo}>
+          ← Back to setup
+        </a>
+      )}
     </div>
   );
 }

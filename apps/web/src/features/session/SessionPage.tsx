@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog.js';
 import { useCoachVoice } from '../../hooks/useCoachVoice.js';
 import { useLlmSetupStatus } from '../../hooks/useLlmSetupStatus.js';
+import { effectiveTtsBackend } from '../../tts/effective-tts-backend.js';
 import { isOpenAiVoiceAvailable } from '../../tts/openai-voice-available.js';
 import { ENGINE_MODE_BADGE, useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
@@ -76,6 +78,7 @@ export function SessionPage(): ReactNode {
   // to their common ancestor rather than owned inside either sibling.
   const fen = divergedLine.fen ?? boardState.fen;
   const [isExploring, setIsExploring] = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   // Leaving peek mode any other way (the peek pill's "back to coach", a new
   // coach show_position, the move strip) must collapse this too — otherwise
   // its pill/note stay stuck on screen even once the coach is watching
@@ -101,7 +104,7 @@ export function SessionPage(): ReactNode {
   const ttsEnabled = profileQuery.data?.ttsEnabled ?? false;
   const llmSetupQuery = useLlmSetupStatus();
   const savedTtsBackend = profileQuery.data?.ttsBackend ?? 'openai';
-  const ttsBackend = savedTtsBackend === 'openai' && !isOpenAiVoiceAvailable(llmSetupQuery.data) ? 'browser' : savedTtsBackend;
+  const ttsBackend = effectiveTtsBackend(savedTtsBackend, isOpenAiVoiceAvailable(llmSetupQuery.data));
   const coachVoice = useCoachVoice({
     messages: chat.messages,
     isStreaming: chat.isStreaming,
@@ -246,12 +249,22 @@ export function SessionPage(): ReactNode {
           onAnalyzeInstead={setupRequiredModal.onAnalyzeInstead}
         />
       )}
+      {confirmDialog}
       <SessionHeader
         whiteName={gameQuery.data?.whiteName ?? null}
         blackName={gameQuery.data?.blackName ?? null}
         result={gameQuery.data?.result ?? null}
         onBack={() => navigate('/games')}
-        onReset={handleReset}
+        onReset={() =>
+          confirm(
+            {
+              title: 'Reset this session?',
+              description: 'This ends the current conversation and starts a fresh one for this game.',
+              confirmLabel: 'Reset session'
+            },
+            handleReset
+          )
+        }
         onDebug={() => setIsDebugOpen(true)}
         debugDisabled={!hasCompletedTurn}
         extraItems={headerExtraItems}

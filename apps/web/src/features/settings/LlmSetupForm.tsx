@@ -3,10 +3,12 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { CloudLlmFields } from './CloudLlmFields.js';
 import { PROTOCOL_LABELS, TestResults } from './LlmTestResults.js';
 import { LocalLlmFields } from './LocalLlmFields.js';
-import { useLlmSetupDraft } from './useLlmSetupDraft.js';
+import { useLlmSetupDraft, type SetupKind } from './useLlmSetupDraft.js';
 
 export interface LlmSetupFormProps {
   status: LlmSetupStatus;
+  /** Which kind of AI a brand-new setup opens on (the welcome flow's choice). */
+  initialKind?: SetupKind;
   onTest: (setup: LlmSetup) => void;
   onSave: (setup: LlmSetup, unlockPhrase: string) => void;
   /** Opens the shared UnlockPhraseModal (SettingsPage owns the mutation) —
@@ -39,7 +41,7 @@ export function LlmSetupForm(props: LlmSetupFormProps): ReactNode {
   const [editing, setEditing] = useState(!status.configured);
   const [phase, setPhase] = useState<Phase>('connect');
   const [unlockPhrase, setUnlockPhrase] = useState('');
-  const api = useLlmSetupDraft(status);
+  const api = useLlmSetupDraft(status, props.initialKind);
 
   // Every finished test — pass or fail — lands on the result step; the form
   // only comes back if the user explicitly goes Back to edit it.

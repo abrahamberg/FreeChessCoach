@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRightIcon, CheckIcon, PlusIcon } from '../../components/Icon.js';
 import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
 import { useGameActions } from '../games/useGameActions.js';
 import { BatchAnalysisProgress } from './BatchAnalysisProgress.js';
@@ -22,16 +23,32 @@ export function BatchImportView({ result, onImportMore }: BatchImportViewProps):
   const batch = useBatchGames(gameIds);
   const candidateQuery = useCoachingCandidate(gameIds, batch.allFinished);
   const actions = useGameActions(batch.games);
+  const navigate = useNavigate();
 
   const candidate = candidateQuery.data?.candidate ?? null;
   // A game with nothing to coach on is not worth recommending.
-  const recommended = candidate && candidate.points > 0 ? batch.games.find((game) => game.id === candidate.gameId) : undefined;
+  const recommended =
+    candidate && candidate.points > 0 ? batch.games.find((game) => game.id === candidate.gameId) : undefined;
 
   return (
     <div className="page import-page">
       <h1>Import a game</h1>
+      {!batch.allFinished && (
+        <p className="import-page__keep-open" role="note">
+          Don&apos;t close this tab while your games are being analyzed. You can switch to another tab.
+        </p>
+      )}
       {result.succeeded < result.total && <BulkResultNotice result={result} />}
-      <BatchAnalysisProgress rows={result.games.map(({ gameId }) => ({ gameId, game: batch.games.find((game) => game.id === gameId) }))} />
+      {batch.allFinished ? (
+        <p className="batch-import__done" role="status">
+          <CheckIcon width={18} height={18} />
+          {result.games.length === 1 ? 'Your game is analyzed.' : `All ${result.games.length} games are analyzed.`}
+        </p>
+      ) : (
+        <BatchAnalysisProgress
+          rows={result.games.map(({ gameId }) => ({ gameId, game: batch.games.find((game) => game.id === gameId) }))}
+        />
+      )}
       {batch.allFinished && recommended && candidate && (
         <RecommendedGameCard
           game={recommended}
@@ -40,16 +57,22 @@ export function BatchImportView({ result, onImportMore }: BatchImportViewProps):
           onReview={() => actions.handleReview(recommended.id)}
         />
       )}
-      {batch.allFinished && !recommended && !candidateQuery.isPending && <p>No standout tactics to coach on in these games.</p>}
+      {batch.allFinished && !recommended && !candidateQuery.isPending && (
+        <p>No standout tactics to coach on in these games.</p>
+      )}
       {actions.errorMessages.map((message) => (
         <p key={message}>{message}</p>
       ))}
-      <p className="batch-import__links">
-        <Link to="/games">Go to my games</Link>
+      <div className="batch-import__actions">
         <button type="button" className="btn-secondary" onClick={onImportMore}>
+          <PlusIcon width={18} height={18} />
           Import more games
         </button>
-      </p>
+        <button type="button" className="btn-primary" onClick={() => navigate('/games')}>
+          Go to my games
+          <ArrowRightIcon width={18} height={18} />
+        </button>
+      </div>
       {actions.aiSetupPrompt && (
         <AiSetupRequiredModal
           onClose={actions.aiSetupPrompt.onClose}

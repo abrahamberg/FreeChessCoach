@@ -19,6 +19,22 @@
   margin-left: var(--space-6);
 }
 
+.tts-section__backend-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tts-section__backend-description {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.tts-section__backend-note {
+  font-size: 13px;
+  color: var(--color-warning);
+}
+
 .tts-section__confirm-actions {
   display: flex;
   justify-content: flex-end;

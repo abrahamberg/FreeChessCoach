@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRightIcon, MessageCircleIcon, PlayCircleIcon, type IconProps } from '../../components/Icon.js';
+import { CoachAvatar } from '../../components/CoachAvatar.js';
+import { ArrowRightIcon, PlayCircleIcon, type IconProps } from '../../components/Icon.js';
+import { useProfile } from '../../hooks/useProfile.js';
 import './PlayPage.css';
 
 interface PlayDestination {
   to: string;
-  Icon: (props: IconProps) => ReactNode;
+  /** Omitted for the coach destination, which shows the student's own coach. */
+  Icon?: (props: IconProps) => ReactNode;
   title: string;
   description: string;
 }
@@ -13,7 +16,6 @@ interface PlayDestination {
 const DESTINATIONS: PlayDestination[] = [
   {
     to: '/play/new',
-    Icon: MessageCircleIcon,
     title: 'Play with Coach',
     description: 'Get live guidance while you play, not just after the fact.'
   },
@@ -31,6 +33,7 @@ const DESTINATIONS: PlayDestination[] = [
  * spends its header on two giant CTAs that competed with the list itself
  * for space. */
 export function PlayPage(): ReactNode {
+  const persona = useProfile().data?.coachPersona;
   return (
     <div className="page play-page">
       <header className="play-page__header">
@@ -41,7 +44,11 @@ export function PlayPage(): ReactNode {
       <div className="play-page__destinations">
         {DESTINATIONS.map(({ to, Icon, title, description }) => (
           <Link key={to} to={to} className="card play-page__destination">
-            <Icon width={26} height={26} className="play-page__destination-icon" />
+            {Icon ? (
+              <Icon width={26} height={26} className="play-page__destination-icon" />
+            ) : (
+              <CoachAvatar persona={persona} size="chat" />
+            )}
             <div className="play-page__destination-body">
               <h2>{title}</h2>
               <p>{description}</p>

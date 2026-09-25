@@ -382,7 +382,7 @@ export function findByIdForUser(
 }
 
 /** game-import.ts's dedup guard: the PGN text a user already imported (from
- * any source — paste, upload, Lichess, or Chess.com) carries its own
+ * any source — paste, file, Lichess, or Chess.com) carries its own
  * headers (Site/Date/Round/players), so an exact match against another
  * import is, in practice, always the same real game, not a coincidence.
  * Re-selecting an already-imported game from the Lichess/Chess.com picker —
@@ -406,6 +406,20 @@ export function findByUserAndPgn(db: Kysely<Database>, userId: string, pgn: stri
     .where('pgn', '=', pgn)
     .where('source', 'in', ImportableGameSourceSchema.options)
     .executeTakeFirst();
+}
+
+/** Which of `pgns` the user already has as an imported game — the same exact
+ * match `findByUserAndPgn` uses for its duplicate check, in one query. */
+export async function findImportedPgns(db: Kysely<Database>, userId: string, pgns: string[]): Promise<Set<string>> {
+  if (pgns.length === 0) return new Set();
+  const rows = await db
+    .selectFrom('games')
+    .select('pgn')
+    .where('userId', '=', userId)
+    .where('pgn', 'in', pgns)
+    .where('source', 'in', ImportableGameSourceSchema.options)
+    .execute();
+  return new Set(rows.map((row) => row.pgn));
 }
 
 /** No user scoping — callers must confirm ownership (e.g. via findByIdForUser)

@@ -98,7 +98,7 @@ export async function importGame(
  * imports from that platform without the client falling back to ColorConfirm's
  * "which side were you" prompt. Only fills in a platform username that isn't
  * already on file; never overwrites one the student (or a prior scan) already
- * set, and never fires for a 'paste'/'upload' PGN with no recognizable
+ * set, and never fires for a 'paste'/'file' PGN with no recognizable
  * Lichess/Chess.com Site header. */
 async function learnPlatformUsername(
   db: Kysely<Database>,

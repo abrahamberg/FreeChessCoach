@@ -10,6 +10,10 @@ interface RemoteSourceState<TGame> {
   games: TGame[];
   isLoading: boolean;
   isLinked: boolean;
+  username: string | null;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  onLoadMore: () => void;
 }
 
 /** Canonical shape of a completed stat-bank bulk import — owned here (the
@@ -26,13 +30,12 @@ export interface BulkResult {
 
 export interface RemoteImportPanelProps {
   tab: RemoteTab;
-  bulkMode: boolean;
-  onBulkModeChange: (enabled: boolean) => void;
   lichess: RemoteSourceState<LichessRecentGame>;
   chesscom: RemoteSourceState<ChesscomRecentGame>;
   onSelect: (pgn: string, playedAt: string | null, intent: ImportIntent) => void;
   bulkSelection: RemoteGamePickerBulkSelection;
   bulkResult?: BulkResult;
+  onChangeUsername: (tab: RemoteTab) => void;
 }
 
 /** The "From Lichess" / "From Chess.com" tab contents: the stat-bank bulk-import
@@ -41,38 +44,42 @@ export interface RemoteImportPanelProps {
  * ImportPage owns the data fetching and passes it down (AGENTS.md rule 7). */
 export function RemoteImportPanel({
   tab,
-  bulkMode,
-  onBulkModeChange,
   lichess,
   chesscom,
   onSelect,
   bulkSelection,
-  bulkResult
+  bulkResult,
+  onChangeUsername
 }: RemoteImportPanelProps): ReactNode {
   return (
     <>
-      <label className="import-page__bulk-toggle">
-        <input type="checkbox" checked={bulkMode} onChange={(event) => onBulkModeChange(event.target.checked)} />
-        Select several games to import
-      </label>
       {tab === 'lichess' ? (
         <RemoteGamePicker
           games={lichess.games}
           isLoading={lichess.isLoading}
           isLinked={lichess.isLinked}
+          username={lichess.username}
+          onChangeUsername={() => onChangeUsername('lichess')}
+          hasMore={lichess.hasMore}
+          isLoadingMore={lichess.isLoadingMore}
+          onLoadMore={lichess.onLoadMore}
           linkPrompt="Link your Lichess account in Settings to import from Lichess."
           onSelect={onSelect}
-          bulkSelection={bulkMode ? bulkSelection : undefined}
+          bulkSelection={bulkSelection}
         />
       ) : (
         <RemoteGamePicker
           games={chesscom.games}
           isLoading={chesscom.isLoading}
           isLinked={chesscom.isLinked}
+          username={chesscom.username}
+          onChangeUsername={() => onChangeUsername('chesscom')}
+          hasMore={chesscom.hasMore}
+          isLoadingMore={chesscom.isLoadingMore}
+          onLoadMore={chesscom.onLoadMore}
           linkPrompt="Link your Chess.com account in Settings to import from Chess.com."
           onSelect={onSelect}
-          bulkSelection={bulkMode ? bulkSelection : undefined}
-          renderMeta={(game) => <span>{game.timeClass}</span>}
+          bulkSelection={bulkSelection}
         />
       )}
       {bulkResult && bulkResult.succeeded < bulkResult.total && <BulkResultNotice result={bulkResult} />}

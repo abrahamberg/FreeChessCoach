@@ -76,8 +76,11 @@ export function initialDraft(status: LlmSetupStatus): LlmSetupDraft {
  * (the endpoint on a kind or server-type change, the models on a kind
  * change) is applied in these handlers, never in an effect — so opening a
  * saved setup never overwrites it. */
-export function useLlmSetupDraft(status: LlmSetupStatus): LlmSetupDraftApi {
-  const [draft, setDraft] = useState<LlmSetupDraft>(() => initialDraft(status));
+export function useLlmSetupDraft(status: LlmSetupStatus, initialKind?: SetupKind): LlmSetupDraftApi {
+  const [draft, setDraft] = useState<LlmSetupDraft>(() => {
+    const saved = initialDraft(status);
+    return status.configured || !initialKind ? saved : switchKind(saved, initialKind);
+  });
   // Stable across renders (they only use the functional setState form), so
   // components can list them as effect dependencies.
   const actions = useMemo(() => {

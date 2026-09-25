@@ -1,0 +1,42 @@
+.recommended-game {
+  margin: var(--space-4) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.recommended-game__head {
+  display: flex;
+}
+
+.recommended-game__players {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.recommended-game__reasons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.recommended-game__reasons li {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+}
+
+.recommended-game__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

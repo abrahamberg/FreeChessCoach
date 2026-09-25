@@ -3,8 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { apiGet } from '../api/client.js';
+import { getDemoRuntime } from '../demo/demoRuntime.js';
+import { BugReportModal } from '../features/bug-report/BugReportModal.js';
 import { describeEngineActivity } from './EngineActivityIndicator.js';
-import { ChevronDownIcon, LogOutIcon, SettingsIcon } from './Icon.js';
+import { BugIcon, ChevronDownIcon, LogOutIcon, SettingsIcon } from './Icon.js';
 import { TunnelStatusDots } from './TunnelStatusDots.js';
 import type { EngineActivityIndicatorState } from '../hooks/useEngineActivityIndicator.js';
 import './UserMenu.css';
@@ -28,6 +30,7 @@ export interface UserMenuProps {
 
 export function UserMenu({ engineActivity }: UserMenuProps): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const profileQuery = useQuery({
@@ -91,6 +94,21 @@ export function UserMenu({ engineActivity }: UserMenuProps): ReactNode {
             <SettingsIcon width={17} height={17} />
             Settings
           </NavLink>
+          {/* The demo has no account to report from, and refuses every write. */}
+          {!getDemoRuntime() && (
+            <button
+              type="button"
+              role="menuitem"
+              className="user-menu__item user-menu__item--button"
+              onClick={() => {
+                setIsOpen(false);
+                setIsReporting(true);
+              }}
+            >
+              <BugIcon width={17} height={17} />
+              Report a bug
+            </button>
+          )}
           {/* Ends the oauth2-proxy session (architecture §11) and lands back
            * on the public landing page — not a fetch/mutation, so a plain
            * link, same as before (previously in SettingsPage directly). */}
@@ -100,6 +118,7 @@ export function UserMenu({ engineActivity }: UserMenuProps): ReactNode {
           </a>
         </div>
       )}
+      {isReporting && <BugReportModal onClose={() => setIsReporting(false)} />}
     </div>
   );
 }

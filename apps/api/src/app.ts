@@ -4,6 +4,7 @@ import type { Kysely } from 'kysely';
 import { pingDb } from './db/index.js';
 import type { Database } from './db/schema.js';
 import { registerAnalysesRoutes } from './routes/analyses.js';
+import { registerBugReportsRoutes } from './routes/bug-reports.js';
 import { registerChesscomRoutes } from './routes/chesscom.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerDiagnosticsRoutes } from './routes/diagnostics.js';
@@ -99,6 +100,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
 
   if (options.db) {
     registerUsersRoutes(app, options.db);
+    registerBugReportsRoutes(app, options.db);
     registerDashboardRoutes(app, options.db);
     registerDiagnosticsRoutes(app, options.db);
     registerPuzzleAssignmentsRoutes(app, options.db);

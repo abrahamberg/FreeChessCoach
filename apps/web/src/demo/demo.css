@@ -13,6 +13,8 @@
 .demo-banner__notice { flex-basis: 100%; margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--color-warning-soft); color: var(--color-warning); font-weight: 500; }
 .demo-banner__links { margin-left: auto; display: flex; gap: 16px; align-items: center; }
 .demo-banner__coach { display: inline-block; padding: 2px 12px; border-radius: 999px; background: var(--color-primary); color: var(--color-on-primary); font-weight: 600; text-decoration: none; }
+/* The global `a:visited` / `a:hover` colour rules are more specific than a bare class, and would paint green text on this green pill. */
+.demo-banner__coach:visited, .demo-banner__coach:hover { color: var(--color-on-primary); }
 .demo-banner__coach:hover { background: var(--color-primary-hover); }
 .demo-banner__cta { font-weight: 600; }
 .demo-banner__short { display: none; }
@@ -40,3 +42,40 @@
 .demo-composer__input input { cursor: default; opacity: 0.9; }
 .demo-composer__input[data-busy='true'] input { opacity: 0.5; }
 .demo-composer__hint { flex-basis: 100%; margin: 6px 0 0; font-size: 12.5px; color: var(--color-text-muted); }
+
+/* Big, always-visible way back to the welcome flow (see demoReturn.ts). Sits above the
+ * mobile bottom tab bar (z-index 10) and clear of the safe area. */
+.demo-back-button,
+.demo-back-button:visited,
+.demo-back-button:hover {
+  color: var(--color-on-primary);
+}
+.demo-back-button {
+  position: fixed;
+  left: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 20;
+  padding: 14px 24px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+}
+.demo-back-button:hover { background: var(--color-primary-hover); }
+@media (max-width: 899px) {
+  .demo-back-button { bottom: calc(76px + env(safe-area-inset-bottom)); left: 16px; }
+}
+
+/* A slow pulsing ring so the way back is hard to miss; still for people who ask for less motion. */
+@keyframes demo-back-pulse {
+  0% { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28), 0 0 0 0 rgba(47, 107, 69, 0.65); }
+  70% { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28), 0 0 0 16px rgba(47, 107, 69, 0); }
+  100% { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28), 0 0 0 0 rgba(47, 107, 69, 0); }
+}
+.demo-back-button { animation: demo-back-pulse 1.8s ease-out infinite; }
+.demo-back-button:hover { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .demo-back-button { animation: none; outline: 3px solid var(--color-gold, #c9a227); outline-offset: 3px; }
+}

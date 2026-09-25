@@ -17,7 +17,7 @@ through oauth2-proxy by `--skip-auth-route` entries in
 | `/tour` | `tour.html` |
 | `/guide` | `guide.html` |
 | `/keys` | `keys.html` (how BYOK keys are handled, what is not promised) |
-| `/openai-key` | `openai-key.html` (OpenAI account → key → Settings walkthrough) |
+| `/openai-key` | `openai-key.html` (OpenAI account → project → data sharing → hard limit → key → Settings walkthrough; mirrored by the in-app welcome flow's AI step) |
 | `/demo`, `/demo/*` | the live demo (see below); served by nginx's SPA fallback, so no nginx entry |
 | `/site.css`, `/shots/*`, `/sitemap.xml` | assets |
 | `/assets/*` | the SPA's hashed bundle, public because the demo runs from it |
@@ -33,6 +33,14 @@ against Kokoro-FastAPI's own README and start scripts, not this repo: image
 `ghcr.io/remsky/kokoro-fastapi-cpu` (about 5 GB), default port 8880, `PORT`
 honored by the Mac/Linux scripts but hard-coded in `start-cpu.ps1`. The app side
 is `apps/web/src/features/settings/LocalVoiceSetup.tsx`, which links to it.
+
+`openai-key.html` carries two screenshots of OpenAI's own console
+(`shots/openai-sharing.png`, `openai-api-key-*.png`, `openai-projects.jpg`, `openai-project-limits.jpg`), taken on
+2026-09-24 from a throwaway OpenAI account made for this, with the owner's explicit
+go-ahead. The API-key reveal deliberately shows a real key (the owner asked for it, so readers see what one looks like); that key was deleted afterwards. Nothing shows an email or project id. The account has no billing, so the
+project's monthly budget and **Enforce hard limit** controls were **not** seen
+and are described from the owner's instruction only, with the page saying so.
+Retake them if OpenAI's console changes.
 
 ## The live demo (`/demo`)
 

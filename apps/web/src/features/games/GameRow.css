@@ -139,3 +139,15 @@
     height: 44px;
   }
 }
+
+
+
+
+.game-row__players {
+  font-weight: 600;
+}
+
+.game-row__source {
+  display: inline-flex;
+  align-items: center;
+}

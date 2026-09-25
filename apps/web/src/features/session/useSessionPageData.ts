@@ -274,9 +274,7 @@ export function useSessionPageData(sessionId: string) {
   });
 
   function handleReset(): void {
-    if (window.confirm('Reset this session? This ends the current conversation and starts a fresh one for this game.')) {
-      resetMutation.mutate();
-    }
+    resetMutation.mutate();
   }
 
   // BoardActionBar's student-initiated Undo (play mode only — analyze mode

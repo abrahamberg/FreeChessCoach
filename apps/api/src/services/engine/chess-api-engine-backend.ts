@@ -5,8 +5,10 @@ import { EngineUnavailableError } from '../../lib/errors.js';
 import { toLeanEval } from './engine-conversions.js';
 import {
   ChessApiError,
+  ChessApiHighUsageError,
   ChessApiMalformedResponseError,
   ChessApiRateLimitedError,
+  isHighUsageBody,
   isUsableLine,
   MALFORMED_RESPONSE_RETRY_DELAYS_MS,
   normalizeChessApiLine,
@@ -88,7 +90,10 @@ export class ChessApiEngineBackend implements EngineBackend {
     private readonly timeoutMs: number,
     private readonly fetchImpl: typeof fetch = fetch,
     private readonly requestDelayMs: number = 100,
-    private readonly fallback?: EngineBackend
+    private readonly fallback?: EngineBackend,
+    /** Called once, the first time chess-api.com answers HIGH_USAGE — the
+     * caller persists it so the user is steered off the external engine. */
+    private readonly onHighUsage?: () => Promise<void>
   ) {}
 
   async analyzePosition(fen: string, opts?: EngineBackendAnalyzeOptions): Promise<PositionAnalysis> {
@@ -134,10 +139,24 @@ export class ChessApiEngineBackend implements EngineBackend {
     try {
       return { analysis: await this.analyzeViaChessApi(fen, depth, opts, features), usedFallback: false };
     } catch (error) {
+      if (error instanceof ChessApiHighUsageError) await this.recordHighUsage();
       if (!this.fallback) throw error;
       const message = error instanceof Error ? error.message : String(error);
       console.warn(`ChessApiEngineBackend: falling back to native for fen "${fen}" — ${message}`);
       return { analysis: await this.fallback.analyzePosition(fen, opts), usedFallback: true };
+    }
+  }
+
+  /** A daily quota won't clear mid-job: open the circuit at once and tell the
+   * caller, once. A failure to persist must never fail the analysis. */
+  private async recordHighUsage(): Promise<void> {
+    if (this.circuitOpen) return;
+    this.circuitOpen = true;
+    console.warn('ChessApiEngineBackend: chess-api.com reported HIGH_USAGE — routing directly to native.');
+    try {
+      await this.onHighUsage?.();
+    } catch (error) {
+      console.warn('ChessApiEngineBackend: could not record HIGH_USAGE', error);
     }
   }
 
@@ -251,15 +270,20 @@ export class ChessApiEngineBackend implements EngineBackend {
         body: JSON.stringify({ fen, depth, variants }),
         signal: controller.signal
       });
+      // HIGH_USAGE may arrive with any status (or 200), so read the body first.
+      const text = await response.text();
+      const body = parseJson(text);
+      if (isHighUsageBody(body)) throw new ChessApiHighUsageError();
       if (!response.ok) throw new ChessApiError(response.status);
+      if (body === undefined) throw new ChessApiMalformedResponseError('(unparseable body)', text.slice(0, 200));
 
-      const body = (await response.json()) as ChessApiLine | ChessApiLine[];
+      const payload = body as ChessApiLine | ChessApiLine[];
       // An empty array is itself a malformed-but-200 shape (same undocumented
       // throttle behavior chess-api-response.ts's isUsableLine guards
       // against) — returned as-is rather than thrown here so request()'s
       // retry/backoff loop covers it the same way it covers any other
       // unusable line, instead of failing on the very first attempt.
-      const lines = Array.isArray(body) ? body : [body];
+      const lines = Array.isArray(payload) ? payload : [payload];
       // Normalized before isUsableLine ever sees it — see
       // normalizeChessApiLine's own doc comment for why `mate` needs this.
       return lines.map(normalizeChessApiLine);
@@ -271,6 +295,14 @@ export class ChessApiEngineBackend implements EngineBackend {
     } finally {
       clearTimeout(timeout);
     }
+  }
+}
+
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
   }
 }
 
