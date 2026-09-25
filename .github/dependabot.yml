@@ -1,0 +1,22 @@
+# Weekly version updates (security alerts come regardless). Grouped so a week's
+# minor/patch bumps arrive as one PR per ecosystem rather than dozens.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+  - package-ecosystem: docker
+    directory: /docker
+    schedule:
+      interval: weekly
