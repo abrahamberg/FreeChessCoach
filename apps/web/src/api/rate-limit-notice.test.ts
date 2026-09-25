@@ -4,11 +4,9 @@ import { clearRateLimitNotice, noteRateLimit } from './rate-limit-notice.js';
 // Reads the module value through a subscriber, the way the hook does.
 async function currentUntil(): Promise<number | null> {
   const module = await import('./rate-limit-notice.js');
-  let value: number | null = null;
   const { renderHook } = await import('@testing-library/react');
   const { result } = renderHook(() => module.useRateLimitedUntil());
-  value = result.current;
-  return value;
+  return result.current;
 }
 
 describe('rate-limit notice store', () => {
