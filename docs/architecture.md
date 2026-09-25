@@ -7,7 +7,7 @@
                         ┌─────────────────────────────────────────────┐
  Internet ──► Ingress ──► oauth2-proxy (Google + Lichess OIDC/OAuth2) │
                         └───────────────┬─────────────────────────────┘
-                                        │ X-Auth-Request-* headers
+                                        │ X-Forwarded-Email/User headers
                        ┌────────────────┼──────────────────┐
                        ▼                ▼                   │
                   ┌─────────┐     ┌──────────┐              │

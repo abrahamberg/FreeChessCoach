@@ -144,7 +144,7 @@ describe('POST/GET /api/games', () => {
   });
 
   function headersFor(email: string, displayName: string) {
-    return { 'x-auth-request-email': email, 'x-auth-request-user': displayName };
+    return { 'x-forwarded-email': email, 'x-forwarded-user': displayName };
   }
 
   function buildTestApp() {

@@ -27,7 +27,7 @@ x-node-dev: &node-dev
     # file has not been built or cannot be read.
     LICHESS_EVAL_INDEX_PATH: ${LICHESS_EVAL_INDEX_PATH:-/app/apps/api/data/lichess-eval-index.bin}
     PUZZLE_POOL_PATH: ${PUZZLE_POOL_PATH:-/app/apps/api/data/puzzle-pool.bin}
-    ENGINE_TUNNEL_INTERNAL_TOKEN: ${ENGINE_TUNNEL_INTERNAL_TOKEN:-dev-internal-token}
+    ENGINE_TUNNEL_INTERNAL_TOKEN: ${ENGINE_TUNNEL_INTERNAL_TOKEN:-dev-internal-token-not-for-production-use}
     API_INTERNAL_URL: http://api:3000
     # Structured dev logging (see apps/api/src/lib/dev-log.ts) — comma-separated
     # event-type allowlist, e.g. DEBUG_LOG=bot_move, or DEBUG_LOG=* for
@@ -134,7 +134,9 @@ services:
       - --http-address=0.0.0.0:4180
       - --upstreams=http://api:3000
       - --email-domain=*
-      - --set-xauthrequest=true
+      - --pass-user-headers=true
+      - --skip-auth-strip-headers=true
+      - --cookie-samesite=lax
       - --skip-auth-route=^/healthz$
       - --skip-auth-route=^/readyz$
     # OAUTH2_PROXY_CLIENT_ID/_SECRET/_COOKIE_SECRET must be set in a .env file

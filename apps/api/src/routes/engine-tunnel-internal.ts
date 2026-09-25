@@ -3,6 +3,7 @@ import {
   FetchTunnelPayloadSchema,
   LlmTunnelPayloadSchema
 } from '@freechesscoach/shared';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { EngineUnavailableError, ValidationError } from '../lib/errors.js';
@@ -32,7 +33,7 @@ const RelayBodySchema = z.intersection(
  * headers the browser-facing routes use. */
 export function registerEngineTunnelInternalRoutes(app: FastifyInstance, options: EngineTunnelInternalOptions): void {
   app.post<{ Params: { userId: string } }>('/internal/engine-tunnel/:userId', async (request, reply) => {
-    if (request.headers['x-internal-token'] !== options.internalToken) {
+    if (!isInternalToken(request.headers['x-internal-token'], options.internalToken)) {
       return reply.code(401).type('application/problem+json').send({ type: 'about:blank', title: 'Unauthorized', status: 401 });
     }
     const parsed = RelayBodySchema.safeParse(request.body);
@@ -53,6 +54,15 @@ export function registerEngineTunnelInternalRoutes(app: FastifyInstance, options
       throw error;
     }
   });
+}
+
+/** Constant-time: a plain `!==` returns sooner the earlier the first wrong
+ * byte, which leaks the secret one byte at a time to a patient caller.
+ * Hashing first gives both sides the same length. */
+function isInternalToken(presented: string | string[] | undefined, expected: string): boolean {
+  if (typeof presented !== 'string') return false;
+  const digest = (value: string) => createHash('sha256').update(value).digest();
+  return timingSafeEqual(digest(presented), digest(expected));
 }
 
 function unavailable(reply: FastifyReply, title: string): FastifyReply {

@@ -4,6 +4,7 @@ import {
   buildResolveEngineBackendOptions,
   openLichessEvalIndexFromEnv,
   requireEnv,
+  requireInternalToken,
   workerConcurrencyFromEnv,
   buildLlmUnlockStoreFromEnv
 } from './bootstrap.js';
@@ -21,7 +22,7 @@ async function main(): Promise<void> {
 
   const relayOptions = {
     apiInternalUrl: requireEnv('API_INTERNAL_URL'),
-    internalToken: requireEnv('ENGINE_TUNNEL_INTERNAL_TOKEN')
+    internalToken: requireInternalToken()
   };
   const tunnelTransport = new RelayEngineTunnelTransport(relayOptions);
   // Local-LLM setups reach the user's tab through the api process too.

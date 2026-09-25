@@ -7,6 +7,7 @@ import {
   buildTtsConfigFromEnv,
   openLichessEvalIndexFromEnv,
   requireEnv,
+  requireInternalToken,
   buildLlmUnlockStoreFromEnv,
   buildRatingEvalStoreFromEnv,
   buildBotThinkingRegistryFromEnv
@@ -53,7 +54,7 @@ async function main(): Promise<void> {
     botRatingEvals: buildRatingEvalStoreFromEnv(),
     botThinkingLog: buildBotThinkingRegistryFromEnv(),
     tunnel,
-    internalToken: requireEnv('ENGINE_TUNNEL_INTERNAL_TOKEN'),
+    internalToken: requireInternalToken(),
     ttsConfig
   });
   const port = Number(process.env.PORT ?? 3000);

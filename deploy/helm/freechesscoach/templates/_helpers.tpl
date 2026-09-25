@@ -131,10 +131,28 @@ imagePullSecrets:
 {{- end }}
 {{- end -}}
 
+{{/* dev-stub makes the api treat every request as one fixed user, with no
+     proxy in front: never valid in a cluster. */}}
+{{- define "freechesscoach.authMode" -}}
+{{- if eq .Values.api.authMode "dev-stub" -}}
+{{- fail "api.authMode=dev-stub accepts every request as the same user; it is for local docker compose only" -}}
+{{- end -}}
+{{- .Values.api.authMode -}}
+{{- end -}}
+
 {{/* Everything apps/api/src/{server,worker}.ts read at boot beyond the DB. */}}
 {{- define "freechesscoach.env.app" -}}
 - name: AUTH_MODE
-  value: {{ .Values.api.authMode | quote }}
+  value: {{ include "freechesscoach.authMode" . | quote }}
+{{- if .Values.internalApi.existingSecret }}
+- name: ENGINE_TUNNEL_INTERNAL_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.internalApi.existingSecret }}
+      key: {{ .Values.internalApi.tokenKey }}
+- name: API_INTERNAL_URL
+  value: {{ printf "http://%s:%v" (include "freechesscoach.componentName" (dict "ctx" . "component" "api")) .Values.api.service.port | quote }}
+{{- end }}
 - name: ENGINE_URL
   value: {{ include "freechesscoach.engineUrl" . | quote }}
 - name: LLM_FAKE

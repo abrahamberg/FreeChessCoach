@@ -28,7 +28,7 @@ describe('probes', () => {
     expect(response.headers['content-type']).toContain('application/problem+json');
   });
 
-  // The k8s kubelet sends no X-Auth-Request-* headers, and the probes do not go
+  // The k8s kubelet sends no identity headers, and the probes do not go
   // through oauth2-proxy at all — so in the deployed posture (AUTH_MODE unset =>
   // 'proxy') an authenticated probe endpoint means pods never become Ready.
   // architecture.md §11 puts /healthz and /readyz in oauth2-proxy's
@@ -55,14 +55,14 @@ describe('proxy auth headers', () => {
     expect(response.headers['content-type']).toContain('application/problem+json');
   });
 
-  test('decorates request.user from X-Auth-Request-* headers and echoes it back', async () => {
+  test('decorates request.user from X-Forwarded-* headers and echoes it back', async () => {
     const app = buildApp({ authMode: 'proxy' });
     app.get('/test-route', async (request) => ({ user: request.user }));
 
     const response = await app.inject({
       method: 'GET',
       url: '/test-route',
-      headers: { 'x-auth-request-email': 'ann@example.com', 'x-auth-request-user': 'Ann' }
+      headers: { 'x-forwarded-email': 'ann@example.com', 'x-forwarded-user': 'Ann' }
     });
 
     expect(response.statusCode).toBe(200);
@@ -92,7 +92,7 @@ describe('proxy auth headers', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/test-route',
-      headers: { 'x-auth-request-email': 'ann@example.com', 'x-auth-request-user': 'Ann' }
+      headers: { 'x-forwarded-email': 'ann@example.com', 'x-forwarded-user': 'Ann' }
     });
 
     expect(response.json()).toEqual({ user: { email: 'ann@example.com', displayName: 'Ann' } });

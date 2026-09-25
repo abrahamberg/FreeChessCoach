@@ -23,7 +23,7 @@ export interface AuthHeadersOptions {
 const DEV_STUB_USER: AuthUser = { email: 'dev@local.test', displayName: 'dev@local.test' };
 
 // architecture.md §11/§12: oauth2-proxy is configured with `--skip-auth-route` for
-// each of these paths and never sets X-Auth-Request-* headers on them.
+// each of these paths and never sets identity headers on them.
 //   /healthz, /readyz — the k8s kubelet probes these directly, bypassing the proxy,
 //     with no headers of any kind; requiring auth here would keep every pod out of
 //     the Ready state (deploy/helm/freechesscoach api Deployment).
@@ -33,11 +33,14 @@ const DEV_STUB_USER: AuthUser = { email: 'dev@local.test', displayName: 'dev@loc
 //   x-internal-token header (routes/engine-tunnel-internal.ts).
 const AUTH_EXEMPT_PATHS = new Set(['/healthz', '/readyz']);
 
-/** Decorates `request.user` from oauth2-proxy identity headers. In reverse-proxy
- * mode (the default), oauth2-proxy v7.x passes `X-Forwarded-Email` and
- * `X-Forwarded-User` via `--pass-user-headers` (on by default). In auth_request
- * mode the older `X-Auth-Request-Email` / `X-Auth-Request-User` names are used
- * via `--set-xauthrequest`. We accept either convention. */
+/** Decorates `request.user` from oauth2-proxy identity headers.
+ *
+ * Only the `X-Forwarded-*` user headers are trusted. oauth2-proxy (reverse-proxy
+ * mode, `pass_user_headers`) deletes any client-sent copy of exactly these and
+ * sets them from the session. `X-Auth-Request-*` are *response* headers for
+ * nginx auth_request mode; oauth2-proxy never strips them from requests, so a
+ * signed-in user could send `X-Auth-Request-Email: someone@else` and it would
+ * reach this process untouched. Never read them here. */
 export const authHeadersPlugin: FastifyPluginAsync<AuthHeadersOptions> = fp(
   (app: FastifyInstance, opts: AuthHeadersOptions) => {
     app.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -64,20 +67,15 @@ export const authHeadersPlugin: FastifyPluginAsync<AuthHeadersOptions> = fp(
 );
 
 function userFromHeaders(request: FastifyRequest): AuthUser | null {
-  // X-Forwarded-* — oauth2-proxy v7.x reverse-proxy mode (--pass-user-headers, default)
-  const email =
-    request.headers['x-auth-request-email'] ?? request.headers['x-forwarded-email'];
-  if (typeof email !== 'string' || email.length === 0) return null;
+  const email = firstHeaderValue(request.headers['x-forwarded-email']);
+  if (!email) return null;
 
   // x-forwarded-preferred-username carries a real username claim when the
-  // provider sends one; x-auth-request-user/x-forwarded-user are the same
-  // legacy field under oauth2-proxy's two header conventions (see lib/display-name.ts
-  // for why that legacy field is untrustworthy on its own for Google logins).
+  // provider sends one; x-forwarded-user is the legacy field (see
+  // lib/display-name.ts for why it is untrustworthy on its own for Google logins).
   const displayName = resolveDisplayName({
     preferredUsername: firstHeaderValue(request.headers['x-forwarded-preferred-username']),
-    legacyUser:
-      firstHeaderValue(request.headers['x-auth-request-user']) ??
-      firstHeaderValue(request.headers['x-forwarded-user']),
+    legacyUser: firstHeaderValue(request.headers['x-forwarded-user']),
     email
   });
   return { email, displayName };

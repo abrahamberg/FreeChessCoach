@@ -8,6 +8,7 @@
 #   llm-unlock-secrets     pepper, cache-key (unlock/cache secrets)
 #   oauth-clients          client-id, client-secret, cookie-secret
 #   postgres-credentials   postgres-password, password, replication-password
+#   (optional) internalApi.existingSecret   token (api<->worker relay secret)
 #
 # See values.example.yaml for a filled-in deployment.
 
@@ -62,8 +63,8 @@ api:
   service:
     port: 3000
   # AUTH_MODE. "proxy" (the default posture) makes the API refuse requests that
-  # lack oauth2-proxy's identity headers. "dev-stub" is local-only — never set
-  # it in a cluster (§12).
+  # lack oauth2-proxy's identity headers. "dev-stub" is local-only; the chart
+  # refuses to render it (§12).
   authMode: proxy
   # architecture §11: HPA on CPU.
   autoscaling:
@@ -177,6 +178,15 @@ lichessEvalIndex:
   size: 64Gi
   # Mounted into api and worker at this path; becomes LICHESS_EVAL_INDEX_PATH.
   mountPath: /var/run/lichess-eval-index/lichess-eval-index.bin
+## Shared secret the worker presents to the api's /internal/engine-tunnel
+## relay (ENGINE_TUNNEL_INTERNAL_TOKEN, at least 32 characters:
+## `openssl rand -hex 32`). When existingSecret is set the chart wires the token
+## and API_INTERNAL_URL into api and worker; leave it empty only if you already
+## provide both through extraEnv.
+internalApi:
+  existingSecret: ""
+  tokenKey: token
+
 ## Extra env vars appended to the api and worker containers, as a raw k8s env
 ## list. Escape hatch for settings the chart doesn't model yet.
 extraEnv: []
@@ -302,7 +312,16 @@ oauth2-proxy:
     # skip-auth list goes stale).
     configFile: |-
       email_domains = [ "*" ]
-      set_xauthrequest = true
+      # Identity reaches the api only as X-Forwarded-{User,Email,Preferred-Username}.
+      # oauth2-proxy deletes client-sent copies of exactly these before setting
+      # them (skip_auth_strip_headers), so the api trusts nothing else — in
+      # particular not X-Auth-Request-*, which set_xauthrequest only adds to
+      # *responses* and which a client can send straight through.
+      pass_user_headers = true
+      skip_auth_strip_headers = true
+      # Explicit, because Firefox and Safari don't default to Lax: without it
+      # the session cookie rides along on cross-site POSTs and WebSockets.
+      cookie_samesite = "lax"
       {{- if .Values.global.publicUrl }}
       redirect_url = "{{ .Values.global.publicUrl }}/oauth2/callback"
       cookie_secure = true
@@ -314,8 +333,6 @@ oauth2-proxy:
   # A list (not a map) so --skip-auth-route can repeat.
   extraArgs:
     - --provider=google
-    # Forward the authenticated identity to the api as X-Auth-Request-* headers.
-    - --set-xauthrequest=true
     # architecture §11: the health/readiness probes bypass auth.
     - --skip-auth-route=^/healthz$
     - --skip-auth-route=^/readyz$

@@ -138,7 +138,16 @@ assert_contains "oauth2-proxy skips auth for /readyz" "--skip-auth-route=^/ready
 for route in '^/tour$' '^/guide$' '^/keys$' '^/openai-key$' '^/site\.css$' '^/shots/' '^/sitemap\.xml$' '^/demo(/.*)?$' '^/assets/'; do
   assert_contains "oauth2-proxy skips auth for public page $route" "--skip-auth-route=$route" "$PROXY"
 done
-assert_contains "oauth2-proxy forwards identity headers" "--set-xauthrequest=true" "$PROXY"
+# Identity must reach the api only via X-Forwarded-*, the headers oauth2-proxy
+# strips from client requests; X-Auth-Request-* are passed through unstripped.
+if grep -q -- "set-xauthrequest" "$PROXY"; then
+  fail "oauth2-proxy must not use --set-xauthrequest (the api trusts X-Forwarded-* only)"
+fi
+PROXY_CONFIG="$RENDER_DIR/proxy-config.yaml"
+render "$PROXY_CONFIG" --set oauth2-proxy.enabled=true --show-only charts/oauth2-proxy/templates/configmap.yaml
+assert_contains "oauth2-proxy forwards identity headers" "pass_user_headers = true" "$PROXY_CONFIG"
+assert_contains "oauth2-proxy strips client-sent identity headers" "skip_auth_strip_headers = true" "$PROXY_CONFIG"
+assert_contains "oauth2-proxy session cookie is SameSite=Lax" 'cookie_samesite = "lax"' "$PROXY_CONFIG"
 
 # ---------------------------------------------------------------------------
 # 4. No secret literals anywhere in the rendered output. Everything sensitive
@@ -307,6 +316,21 @@ else
   fail "every Deployment/Job was covered by the runAsUser check" \
     "only $WORKLOADS_CHECKED workload template(s) rendered; expected >= 5"
 fi
+
+# ---------------------------------------------------------------------------
+# 6b. Security guards: dev-stub never renders, pods get no API token, and the
+#     internal relay token comes from a Secret when one is named.
+# ---------------------------------------------------------------------------
+if helm template freechesscoach "$CHART_DIR" -f "$VALUES" -n "$NAMESPACE" --set api.authMode=dev-stub >/dev/null 2>&1; then
+  fail "api.authMode=dev-stub must fail to render"
+else
+  pass "api.authMode=dev-stub fails to render"
+fi
+GUARDS="$RENDER_DIR/guards.yaml"
+render "$GUARDS" --set internalApi.existingSecret=internal-api --show-only templates/api-deployment.yaml --show-only templates/worker-deployment.yaml
+assert_contains "pods don't automount a service account token" "automountServiceAccountToken: false" "$GUARDS"
+assert_contains "internal relay token comes from the named Secret" "name: internal-api" "$GUARDS"
+assert_contains "worker is told where the api's internal relay is" "name: API_INTERNAL_URL" "$GUARDS"
 
 # ---------------------------------------------------------------------------
 # 7. Schema validation (optional, only when kubeconform is installed).

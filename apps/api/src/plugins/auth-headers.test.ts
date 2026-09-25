@@ -90,9 +90,38 @@ describe('authHeadersPlugin', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/test-route',
-      headers: { 'x-auth-request-email': 'ann@example.com', 'x-auth-request-user': 'Ann' }
+      headers: { 'x-forwarded-email': 'ann@example.com', 'x-forwarded-user': 'Ann' }
     });
 
     expect(response.json()).toEqual({ user: { email: 'ann@example.com', displayName: 'Ann' } });
+  });
+
+  // oauth2-proxy strips client-sent X-Forwarded-* but passes X-Auth-Request-*
+  // through untouched, so trusting the latter let any signed-in user act as
+  // any other by naming their email.
+  test('a client-sent X-Auth-Request-Email alone is not an identity', async () => {
+    const app = buildApp({ authMode: 'proxy' });
+    app.get('/test-route', async (request) => ({ user: request.user }));
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/test-route',
+      headers: { 'x-auth-request-email': 'victim@example.com', 'x-auth-request-user': 'Victim' }
+    });
+
+    expect(response.statusCode).toBe(401);
+  });
+
+  test('X-Forwarded-Email wins over a spoofed X-Auth-Request-Email', async () => {
+    const app = buildApp({ authMode: 'proxy' });
+    app.get('/test-route', async (request) => ({ user: request.user }));
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/test-route',
+      headers: { 'x-forwarded-email': 'attacker@example.com', 'x-auth-request-email': 'victim@example.com' }
+    });
+
+    expect(response.json()).toEqual({ user: { email: 'attacker@example.com', displayName: 'attacker' } });
   });
 });

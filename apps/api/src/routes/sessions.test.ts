@@ -142,7 +142,7 @@ describe('sessions routes', () => {
   }
 
   function headersFor(user: { email: string; displayName: string }) {
-    return { 'x-auth-request-email': user.email, 'x-auth-request-user': user.displayName };
+    return { 'x-forwarded-email': user.email, 'x-forwarded-user': user.displayName };
   }
 
   function coachAgentBaseDeps(model: MockLanguageModelV4): CoachAgentBaseDependencies {

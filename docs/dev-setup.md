@@ -68,8 +68,9 @@ You'll need, in `.env`:
   `python3 -c "import secrets,base64;print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"`
 
 With the profile up, hit http://localhost:4180 instead of :3000 directly —
-oauth2-proxy forwards `X-Auth-Request-*` identity headers to `api` once you've
-signed in. None of this is needed for normal feature work.
+oauth2-proxy forwards `X-Forwarded-Email`/`-User`/`-Preferred-Username` to
+`api` once you've signed in (it strips client-sent copies of exactly those, so
+they are the only identity headers the api trusts). None of this is needed for normal feature work.
 
 ## `LLM_FAKE`: local dev / smoke testing without real LLM keys
 

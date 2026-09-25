@@ -1,6 +1,6 @@
 /** Google's oauth2-proxy integration has no `preferred_username` claim to draw on
  * for personal Gmail accounts (no Workspace domain), so its legacy "User" field —
- * sent as X-Auth-Request-User / X-Forwarded-User — falls back to the numeric
+ * sent as X-Forwarded-User — falls back to the numeric
  * Google account id (the OIDC `sub` claim), e.g. "108234821730984723". Surfacing
  * that verbatim is the "weird id as name" users saw after signing in with Google.
  *

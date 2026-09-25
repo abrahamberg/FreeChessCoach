@@ -22,6 +22,20 @@ export function requireEnv(name: string): string {
   return value;
 }
 
+const MIN_INTERNAL_TOKEN_LENGTH = 32;
+
+/** The shared secret the worker presents to /internal/engine-tunnel. Anyone
+ * holding it can push requests into any user's browser tab, so outside
+ * dev-stub a short (guessable, placeholder) value refuses to boot. Generate
+ * one with `openssl rand -hex 32`. */
+export function requireInternalToken(): string {
+  const token = requireEnv('ENGINE_TUNNEL_INTERNAL_TOKEN');
+  if (process.env.AUTH_MODE !== 'dev-stub' && token.length < MIN_INTERNAL_TOKEN_LENGTH) {
+    throw new Error(`ENGINE_TUNNEL_INTERNAL_TOKEN must be at least ${MIN_INTERNAL_TOKEN_LENGTH} characters`);
+  }
+  return token;
+}
+
 /** Jobs the worker runs at once. Two lets the next game's engine pass start
  * while the previous game is still in its slower tactics/report step,
  * instead of every import waiting behind it. The engine service's own pool

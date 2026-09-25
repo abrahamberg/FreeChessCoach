@@ -48,7 +48,7 @@ describe('diagnostics routes', () => {
   }
 
   function authHeaders(email: string) {
-    return { 'x-auth-request-email': email, 'x-auth-request-user': 'Ann' };
+    return { 'x-forwarded-email': email, 'x-forwarded-user': 'Ann' };
   }
 
   describe('GET /api/users/me/diagnostics/readiness', () => {
