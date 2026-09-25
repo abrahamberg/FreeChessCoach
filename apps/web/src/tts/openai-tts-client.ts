@@ -1,5 +1,6 @@
 import { splitIntoSentences } from './splitSentences.js';
 import type { TtsClient } from './tts-client.js';
+import { noteRateLimit } from '../api/rate-limit-notice.js';
 
 async function synthesizeSentence(text: string, persona: string): Promise<ArrayBuffer> {
   const response = await fetch('/api/tts/speak', {
@@ -8,6 +9,7 @@ async function synthesizeSentence(text: string, persona: string): Promise<ArrayB
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ text, persona })
   });
+  noteRateLimit(response);
   if (!response.ok) {
     throw new Error(`OpenAI TTS request failed with ${response.status}`);
   }

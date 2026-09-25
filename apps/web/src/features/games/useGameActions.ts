@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { apiDelete, apiPost } from '../../api/client.js';
 import { useLlmSetupStatus } from '../../hooks/useLlmSetupStatus.js';
+import { noteRateLimit } from '../../api/rate-limit-notice.js';
 
 const SessionSummarySchema = z.object({ id: z.string() });
 const AnalyzeResponseSchema = z.object({ analysisId: z.string() });
@@ -61,6 +62,7 @@ export function useGameActions(games: ActionableGame[]) {
   const copyPgnMutation = useMutation({
     mutationFn: async (gameId: string) => {
       const response = await fetch(`/api/games/${gameId}/pgn`, { credentials: 'include' });
+      noteRateLimit(response);
       if (!response.ok) throw new Error(`GET pgn failed with ${response.status}`);
       await navigator.clipboard.writeText(await response.text());
     }

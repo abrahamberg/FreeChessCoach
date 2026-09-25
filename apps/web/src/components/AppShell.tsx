@@ -7,6 +7,7 @@ import { useIsDesktop } from '../hooks/useIsDesktop.js';
 import { ChessApiPauseNotice } from './ChessApiPauseNotice.js';
 import { EngineActivityIndicator } from './EngineActivityIndicator.js';
 import { FullscreenPrompt } from './FullscreenPrompt.js';
+import { RateLimitNotice } from './RateLimitNotice.js';
 import { BarChartIcon, BoardIcon, PlayCircleIcon, TrendingUpIcon } from './Icon.js';
 import { UserMenu } from './UserMenu.js';
 import './AppShell.css';
@@ -64,6 +65,7 @@ export function AppShell({ children }: AppShellProps): ReactNode {
       <DemoBanner />
       {showGlobalNav && <TopBar isDesktop={isDesktop} />}
       <ChessApiPauseNotice />
+      <RateLimitNotice />
       <main className="app-shell__content">{children}</main>
       {showBottomTabBar && <BottomTabBar />}
     </div>

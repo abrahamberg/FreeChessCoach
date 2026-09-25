@@ -1,4 +1,5 @@
 import { ZodError, type ZodType, type output } from 'zod';
+import { noteRateLimit } from './rate-limit-notice.js';
 
 export class ApiError extends Error {
   constructor(
@@ -39,7 +40,7 @@ export function shouldRetryQuery(failureCount: number, error: unknown): boolean 
 export async function apiGet<S extends ZodType>(path: string, schema: S, signal?: AbortSignal): Promise<output<S>> {
   const response = await fetch(path, { credentials: 'include', signal });
   if (!response.ok) {
-    throw new ApiError(response.status, `GET ${path} failed with ${response.status}`, await safeJson(response));
+    throw await failedResponse('GET', path, response);
   }
   const body: unknown = await response.json();
   return schema.parse(body);
@@ -53,7 +54,7 @@ export async function apiPost<S extends ZodType>(path: string, payload: unknown,
     body: JSON.stringify(payload)
   });
   if (!response.ok) {
-    throw new ApiError(response.status, `POST ${path} failed with ${response.status}`, await safeJson(response));
+    throw await failedResponse('POST', path, response);
   }
   const body: unknown = await response.json();
   return schema.parse(body);
@@ -67,7 +68,7 @@ export async function apiPatch<S extends ZodType>(path: string, payload: unknown
     body: JSON.stringify(payload)
   });
   if (!response.ok) {
-    throw new ApiError(response.status, `PATCH ${path} failed with ${response.status}`, await safeJson(response));
+    throw await failedResponse('PATCH', path, response);
   }
   const body: unknown = await response.json();
   return schema.parse(body);
@@ -82,14 +83,14 @@ export async function apiPut(path: string, payload: unknown): Promise<void> {
     body: JSON.stringify(payload)
   });
   if (!response.ok) {
-    throw new ApiError(response.status, `PUT ${path} failed with ${response.status}`, await safeJson(response));
+    throw await failedResponse('PUT', path, response);
   }
 }
 
 export async function apiDelete(path: string): Promise<void> {
   const response = await fetch(path, { method: 'DELETE', credentials: 'include' });
   if (!response.ok) {
-    throw new ApiError(response.status, `DELETE ${path} failed with ${response.status}`, await safeJson(response));
+    throw await failedResponse('DELETE', path, response);
   }
 }
 
@@ -101,7 +102,14 @@ export async function apiPostVoid(path: string, payload?: unknown): Promise<void
       ? {}
       : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
   });
-  if (!response.ok) throw new ApiError(response.status, `POST ${path} failed with ${response.status}`, await safeJson(response));
+  if (!response.ok) throw await failedResponse('POST', path, response);
+}
+
+/** Every non-2xx api response becomes an ApiError here; a 429 also raises
+ * the app-wide "slow down" notice (rate-limit-notice.ts). */
+async function failedResponse(method: string, path: string, response: Response): Promise<ApiError> {
+  noteRateLimit(response);
+  return new ApiError(response.status, `${method} ${path} failed with ${response.status}`, await safeJson(response));
 }
 
 /** Problem+json error bodies (e.g. {missing: 'userColor'}) carry data callers

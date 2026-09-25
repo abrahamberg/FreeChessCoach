@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { readCoachStream, readProblemDetailTitle } from './coachStream.js';
 import { encodeDivergedLineStart } from '../features/chat/divergedLine.js';
 import { encodeAnnotationNote, encodePositionDivider, sanForPly, type AnnotationNoteState } from '../features/chat/positionDivider.js';
+import { noteRateLimit } from '../api/rate-limit-notice.js';
 
 export interface CoachMessage {
   id: string;
@@ -129,6 +130,7 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
       // Without this, the assistant bubble above stays permanently blank —
       // readCoachStream would otherwise try to parse the error body as an
       // SSE frame and only console.error it.
+      noteRateLimit(response);
       if (!response.ok) {
         const reason = await readProblemDetailTitle(response);
         setMessages((prev) =>

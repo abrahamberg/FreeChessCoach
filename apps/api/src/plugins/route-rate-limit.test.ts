@@ -24,4 +24,14 @@ describe('rateLimitConfig', () => {
       expect(response.statusCode).toBe(200);
     }
   });
+
+  test('a refusal carries Retry-After for the client to show', async () => {
+    const app = buildApp({ authMode: 'proxy' });
+    app.post('/limited', rateLimitConfig({ max: 1, windowMs: 60_000 }), async () => ({ ok: true }));
+    const as = { method: 'POST' as const, url: '/limited', headers: { 'x-forwarded-email': 'ann@example.com' } };
+    await app.inject(as);
+    const limited = await app.inject(as);
+    expect(limited.statusCode).toBe(429);
+    expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
+  });
 });

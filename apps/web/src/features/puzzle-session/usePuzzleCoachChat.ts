@@ -3,6 +3,7 @@ import type { CoachMessage, CoachToolCall } from '../../hooks/useCoachChat.js';
 import { readCoachStream, readProblemDetailTitle } from '../../hooks/coachStream.js';
 import { encodeAnnotationNote, type AnnotationNoteState } from '../chat/positionDivider.js';
 import { encodeDivergedLineStart } from '../chat/divergedLine.js';
+import { noteRateLimit } from '../../api/rate-limit-notice.js';
 
 export interface UsePuzzleCoachChatOptions {
   /** Client tools (annotate_board, hypothetical_line): return
@@ -104,6 +105,7 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
       // Same "must check response.ok before treating the body as an SSE
       // stream" contract as useCoachChat's own postTurn — a thrown error
       // (no AI set up, or a locked setup) never reaches the stream at all.
+      noteRateLimit(response);
       if (!response.ok) {
         inFlightRef.current.delete(controller);
         const reason = await readProblemDetailTitle(response);

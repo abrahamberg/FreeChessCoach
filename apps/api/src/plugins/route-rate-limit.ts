@@ -1,10 +1,8 @@
-import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
+import type { FastifyReply, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
 import { RateLimitError } from '../lib/errors.js';
+import { createFixedWindowCounter, type RateLimit } from '../lib/fixed-window-counter.js';
 
-export interface RouteRateLimit {
-  max: number;
-  windowMs: number;
-}
+export type RouteRateLimit = RateLimit;
 
 /** Per-user caps on routes that spend something shared: outbound calls to a
  * user-chosen endpoint, the Stockfish pool, scrypt CPU, or a third-party API
@@ -27,40 +25,28 @@ export const ROUTE_RATE_LIMITS = {
   remoteGameList: { max: 60, windowMs: 60_000 }
 } as const satisfies Record<string, RouteRateLimit>;
 
-const MAX_TRACKED_KEYS = 10_000;
-
 /** Route options adding a fixed-window limit keyed by the authenticated user.
  * A plain preHandler rather than @fastify/rate-limit: that plugin attaches
  * through an onRoute hook, which buildApp's synchronously registered routes
  * are added before, so its limits silently never applied. */
 export function rateLimitConfig(limit: RouteRateLimit): { preHandler: preHandlerAsyncHookHandler } {
-  const windows = new Map<string, { count: number; resetAt: number }>();
+  const counter = createFixedWindowCounter(limit);
   return {
-    preHandler: async (request: FastifyRequest) => {
-      const now = Date.now();
-      const key = request.user?.email ?? request.ip;
-      const current = windows.get(key);
-      if (!current || current.resetAt <= now) {
-        if (windows.size >= MAX_TRACKED_KEYS) pruneExpired(windows, now);
-        windows.set(key, { count: 1, resetAt: now + limit.windowMs });
-        return;
-      }
-      current.count += 1;
-      if (current.count > limit.max) {
-        request.log.warn({ route: request.routeOptions.url, limit: limit.max, windowMs: limit.windowMs }, 'rate limited');
-        throw new RateLimitError(`Too many requests; try again in ${Math.ceil((current.resetAt - now) / 1000)} seconds`);
-      }
+    preHandler: async (request: FastifyRequest, reply: FastifyReply) => {
+      const retryAfterSeconds = counter.hit(rateLimitKey(request));
+      if (retryAfterSeconds !== null) refuseRateLimited(request, reply, retryAfterSeconds, limit);
     }
   };
 }
 
-function pruneExpired(windows: Map<string, { resetAt: number }>, now: number): void {
-  for (const [key, window] of windows) {
-    if (window.resetAt <= now) windows.delete(key);
-  }
-  // Still full of live windows: drop the oldest rather than grow unbounded.
-  if (windows.size >= MAX_TRACKED_KEYS) {
-    const oldest = windows.keys().next();
-    if (!oldest.done) windows.delete(oldest.value);
-  }
+export function rateLimitKey(request: FastifyRequest): string {
+  return request.user?.email ?? request.ip;
+}
+
+/** Logs the refusal (so a cap real use reaches shows up) and answers 429
+ * with Retry-After, which the web client turns into a visible notice. */
+export function refuseRateLimited(request: FastifyRequest, reply: FastifyReply, retryAfterSeconds: number, limit: RateLimit): never {
+  request.log.warn({ route: request.routeOptions.url ?? request.url, limit: limit.max, windowMs: limit.windowMs }, 'rate limited');
+  void reply.header('retry-after', String(retryAfterSeconds));
+  throw new RateLimitError(`Too many requests; try again in ${retryAfterSeconds} seconds`);
 }

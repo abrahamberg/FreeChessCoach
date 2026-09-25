@@ -23,6 +23,8 @@ import type { BotThinkingRegistry } from './services/bot/bot-thinking-registry.j
 import { registerStatsRoutes } from './routes/stats.js';
 import { registerTtsRoutes } from './routes/tts.js';
 import { authHeadersPlugin, type AuthHeadersOptions } from './plugins/auth-headers.js';
+import { apiRateLimitPlugin } from './plugins/api-rate-limit.js';
+import type { RateLimit } from './lib/fixed-window-counter.js';
 import { crossSiteGuardPlugin } from './plugins/cross-site-guard.js';
 import { errorMapperPlugin } from './plugins/error-mapper.js';
 import { registerUsersRoutes } from './routes/users.js';
@@ -69,6 +71,8 @@ export interface BuildAppOptions {
    * default so tests stay quiet; server.ts turns it on. Without it every
    * `log.error` in the app is a silent no-op. */
   logger?: boolean;
+  /** Overrides the per-user cap on all /api routes (plugins/api-rate-limit.ts). */
+  apiRateLimit?: RateLimit;
 }
 
 /** Builds the Fastify app: proxy-auth header decoration, problem+json error mapping,
@@ -84,6 +88,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   app.register(errorMapperPlugin);
   app.register(authHeadersPlugin, { authMode });
   app.register(crossSiteGuardPlugin);
+  app.register(apiRateLimitPlugin, { limit: options.apiRateLimit });
   // ws defaults to 100 MiB frames; the largest real tunnel message (a whole
   // game's engine lines) is well under 1 MiB.
   app.register(fastifyWebsocket, { options: { maxPayload: 16 * 1024 * 1024 } });
