@@ -6,6 +6,7 @@ export * from './bug-report.js';
 export * from './bot-thinking.js';
 export * from './bot-roster.js';
 export * from './bot-roster-presets.js';
+export * from './coach-move-plan.js';
 export * from './coaching-candidate.js';
 export * from './coaching-plan.js';
 export * from './dashboard.js';

@@ -22,10 +22,12 @@ import { getModelForUser } from '../llm/gateway.js';
 import { generateProse } from '../llm/text.js';
 import { pipeCoachStreamToResponse } from '../llm/stream-response.js';
 import * as coachAgent from '../services/coach-agent.js';
+import { startCoachMovePlan } from '../services/coach-move-plan.js';
 import { commitPlayerMoveAndAdvance } from '../services/play-move-commit.js';
 import { createPlaySession } from '../services/play-session.js';
 import { createBotSession } from '../services/bot/bot-session.js';
 import { commitBotTurn, requestBotMove, type BotMoveCommitDependencies } from '../services/bot/bot-move-commit.js';
+import type { BotMoveSelectorDependencies } from '../services/bot/bot-move-selector.js';
 import type { RatingEvalStore } from '../services/bot/bot-rating-evals.js';
 import { lightEngineCooldownFor, verifyWithLightFirst } from '../services/bot/bot-verify.js';
 import { createLiteAnalyzer } from '../services/engine/lite-supplemented-engine-backend.js';
@@ -184,6 +186,11 @@ export function registerSessionsRoutes(
     const agentDeps = await buildRequestScopedAgentDeps(baseDeps, engineBackendOptions, user.id);
     const result = await commitPlayerMoveAndAdvance(agentDeps, session, parsed.data.san);
     if ('error' in result) return sendIllegalMoveError(reply, result.error);
+    // The coach's reply is a separate request the client sends next; picking
+    // its move starts now, so that turn finds it ready (coach-move-plan.ts).
+    if (agentDeps.coachMoveSelector) {
+      startCoachMovePlan({ db, selector: agentDeps.coachMoveSelector }, session.gameId, user.id);
+    }
     return result;
   });
 
@@ -347,7 +354,45 @@ async function buildRequestScopedAgentDeps(
   userId: string
 ): Promise<CoachAgentDependencies> {
   const backend = await resolveEngineBackend(engineBackendOptions, userId);
-  return { ...base, analyzePosition: (fen, opts) => backend.analyzePosition(fen, opts), callLightModel: buildCallLightModel(base, userId) };
+  return {
+    ...base,
+    analyzePosition: (fen, opts) => backend.analyzePosition(fen, opts),
+    callLightModel: buildCallLightModel(base, userId),
+    // A live coach game picks the coach's move the way a bot's is picked.
+    coachMoveSelector: (await buildBotSelectorDeps(engineBackendOptions, userId)).selector
+  };
+}
+
+/** The engine and randomness a bot-style move pick needs (selectBotMove):
+ * the bot's own uncached search, and a light-engine-first check that a
+ * mistake really is one. `analyzeLight` is returned too for bot turns, which
+ * also rate the student's moves with it. */
+async function buildBotSelectorDeps(
+  engineBackendOptions: ResolveEngineBackendOptions,
+  userId: string
+): Promise<{ selector: BotMoveSelectorDependencies; analyzeLight: ReturnType<typeof createLiteAnalyzer> }> {
+  const rawBackend = await resolveRawEngineBackend(
+    withBotSearchTimeout(engineBackendOptions, parsePositiveInt('BOT_SEARCH_TIMEOUT_MS', DEFAULT_BOT_SEARCH_TIMEOUT_MS)),
+    userId,
+    { supplementBreadth: false }
+  );
+  const analyzeLight = createLiteAnalyzer(engineBackendOptions.tunnelTransport, userId, engineBackendOptions.tunnelTimeoutMs);
+  const selector: BotMoveSelectorDependencies = {
+    // 'interactive': a bot move is a live "your move" round trip the student
+    // is watching, not background batch work — it must jump ahead of this
+    // game's own re-analysis (or another user's import) queued on the
+    // shared native engine pool. See EnginePrioritySchema's doc comment.
+    analyzeBotPosition: (fen, opts) => rawBackend.analyzePosition(fen, { ...opts, priority: 'interactive' }),
+    random: Math.random,
+    // Checking that a mistake really is one: the light engine when a tab is
+    // connected, otherwise a small search on the bot's own engine.
+    verifyBotPosition: verifyWithLightFirst(
+      analyzeLight,
+      (fen) => rawBackend.analyzePosition(fen, { depth: 12, multiPv: 1, movetimeMs: 1500, priority: 'interactive' }),
+      { cooldown: lightEngineCooldownFor(userId) }
+    )
+  };
+  return { selector, analyzeLight };
 }
 
 /** "Play vs Bot" plan: analyzePosition (cached, standard depth) grades move
@@ -363,37 +408,19 @@ async function buildBotMoveCommitDeps(
   { ratingEvals, thinkingLog }: Required<Pick<SharedBotState, 'thinkingLog'>> & SharedBotState
 ): Promise<BotMoveCommitDependencies> {
   const cachedBackend = await resolveEngineBackend(engineBackendOptions, userId);
-  const rawBackend = await resolveRawEngineBackend(
-    withBotSearchTimeout(engineBackendOptions, parsePositiveInt('BOT_SEARCH_TIMEOUT_MS', DEFAULT_BOT_SEARCH_TIMEOUT_MS)),
-    userId,
-    { supplementBreadth: false }
-  );
-
-  const analyzeLight = createLiteAnalyzer(engineBackendOptions.tunnelTransport, userId, engineBackendOptions.tunnelTimeoutMs);
+  const { selector, analyzeLight } = await buildBotSelectorDeps(engineBackendOptions, userId);
 
   return {
+    ...selector,
     db: base.db,
     jobQueue: base.jobQueue,
     callLightModel: buildCallLightModel(base, userId),
     analyzePosition: (fen, opts) => cachedBackend.analyzePosition(fen, opts),
-    // 'interactive': a bot move is a live "your move" round trip the student
-    // is watching, not background batch work — it must jump ahead of this
-    // game's own re-analysis (or another user's import) queued on the
-    // shared native engine pool. See EnginePrioritySchema's doc comment.
-    analyzeBotPosition: (fen, opts) => rawBackend.analyzePosition(fen, { ...opts, priority: 'interactive' }),
-    random: Math.random,
     thinkingLog,
     // Live labels for the student's moves come from the light engine, in the
     // background, never from the real pipeline that picks the bot's move.
     ratingEvals,
-    analyzeLight,
-    // Checking that a mistake really is one: the light engine when a tab is
-    // connected, otherwise a small search on the bot's own engine.
-    verifyBotPosition: verifyWithLightFirst(
-      analyzeLight,
-      (fen) => rawBackend.analyzePosition(fen, { depth: 12, multiPv: 1, movetimeMs: 1500, priority: 'interactive' }),
-      { cooldown: lightEngineCooldownFor(userId) }
-    )
+    analyzeLight
   };
 }
 

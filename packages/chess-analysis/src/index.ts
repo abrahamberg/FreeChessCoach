@@ -15,6 +15,8 @@ export * from './build-game-report.js';
 export * from './build-stats-dashboard.js';
 export * from './candidate-moves.js';
 export * from './classify-candidate-move.js';
+export * from './coach-bot-config.js';
+export * from './coach-level.js';
 export * from './classify.js';
 export * from './classify-brilliant.js';
 export * from './classify-tactic-motif.js';

@@ -9,6 +9,7 @@ import {
 } from '@freechesscoach/chess-analysis';
 import {
   renderAnnotatedPgn,
+  renderCoachMovePlan,
   renderCurrentMoveBlock,
   renderGameSoFarInline,
   renderOtherMovesSummary,
@@ -16,7 +17,7 @@ import {
   renderThreadsBlock,
   type AnnotatedMoveLike
 } from '@freechesscoach/prompts';
-import type { PositionAnalysis } from '@freechesscoach/shared';
+import type { CoachMovePlan, PositionAnalysis } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
@@ -252,6 +253,13 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
     },
     episodeMessages
   );
+}
+
+/** Play mode: appends the coach's planned move (coach-move-plan.ts) after
+ * every cached layer, so the cached prefix is untouched. No plan, no change. */
+export function withCoachMovePlan(context: EpisodeContext, plan: CoachMovePlan | null): EpisodeContext {
+  if (!plan) return context;
+  return { ...context, instructions: [...context.instructions, systemMessage(renderCoachMovePlan(plan))] };
 }
 
 /** architecture §14, updated by 0032_annotated_pgn.ts: analyze mode and play

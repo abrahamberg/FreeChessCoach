@@ -27,12 +27,12 @@ export const PLAY_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'get_candidate_moves',
     description:
-      "Get an informational briefing on the current position's sound reply candidates — each annotated with whether it would set up a fork, a hanging piece, an under-defended piece, or a mobility swing, cross-referenced against the student's active focus areas. This tool only INFORMS; it never decides for you. Use it to choose deliberately: sometimes the engine's best move, sometimes a good-but-not-best move that tests a specific skill the student is working on, or something else entirely you want to explore first via hypothetical_line. Pass the fen you got from show_position or check_position — never one you reconstructed yourself."
+      "Get an informational briefing on the current position's sound reply candidates — each annotated with whether it would set up a fork, a hanging piece, an under-defended piece, or a mobility swing, cross-referenced against the student's active focus areas. Not needed when the context already gives you a planned move — call it only to override that plan for a concrete teaching reason. This tool only INFORMS; it never decides for you. Use it to choose deliberately: sometimes the engine's best move, sometimes a good-but-not-best move that tests a specific skill the student is working on, or something else entirely you want to explore first via hypothetical_line. Pass the fen you got from show_position or check_position — never one you reconstructed yourself."
   },
   {
     name: 'play_coach_move',
     description:
-      'Commit YOUR move to the live game as SAN (e.g. "Nf3") — this actually plays it and ends your turn; nothing you say after calling it reaches the student before their next message. Call get_candidate_moves first unless you already know exactly what you want to play. Only call this once you have decided — it is not for trying ideas (use hypothetical_line for that). Every reply that follows a student move must end with this call: if you describe or intend a move, you have not played it until this tool has been called.'
+      'Commit YOUR move to the live game as SAN (e.g. "Nf3") — this actually plays it and ends your turn; nothing you say after calling it reaches the student before their next message. When the context gives you a planned move ("## Your move this turn"), play that one directly; otherwise call get_candidate_moves first unless you already know exactly what you want to play. Only call this once you have decided — it is not for trying ideas (use hypothetical_line for that). Every reply that follows a student move must end with this call: if you describe or intend a move, you have not played it until this tool has been called.'
   },
   {
     name: 'undo_last_move',

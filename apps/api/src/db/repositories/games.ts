@@ -306,6 +306,22 @@ export async function listImportedPage(
   return { rows: fetched.slice(0, page.limit), hasMore: fetched.length > page.limit };
 }
 
+/** The user's own estimated rating from their most recent analysed games
+ * (any source), newest first, games without one skipped — the coach's
+ * starting read of the student's level in a live game. */
+export async function listRecentEstimatedRatings(db: Kysely<Database>, userId: string, limit: number): Promise<number[]> {
+  const rows = await db
+    .selectFrom('games')
+    .innerJoin('analyses', 'analyses.gameId', 'games.id')
+    .select(USER_ESTIMATED_RATING.as('estimatedRating'))
+    .where('games.userId', '=', userId)
+    .where(sql<boolean>`${USER_ESTIMATED_RATING} is not null`)
+    .orderBy(sql`coalesce(games.played_at, games.created_at)`, 'desc')
+    .limit(limit)
+    .execute();
+  return rows.flatMap((row) => (row.estimatedRating === null ? [] : [row.estimatedRating]));
+}
+
 /** The Games page's "Continue" section: play-mode games only (a game with a
  * live session is always `coach_play`/`vs_bot`), newest first. Which of
  * these actually still has an active session is resolved by the service,

@@ -13,7 +13,9 @@ import { applyClientToolResult } from './coach-agent-client-tool-result.js';
 import { buildSystemPromptForSession } from './coach-agent-system-prompt.js';
 import { serializeTools, type TurnDebugSnapshot } from './coach-agent-debug.js';
 import { investigatePosition } from './position-investigator.js';
+import { planCoachMove } from './coach-move-plan.js';
 import type { CoachAgentDependencies, ModelResolver, StartTurnInput } from './coach-agent-types.js';
+import type { CoachMovePlan } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
 
@@ -99,8 +101,11 @@ export async function startTurn(
       subjectPly = applied.subjectPly;
     }
 
+    // Picked alongside the context build, not after it: the engine search
+    // overlaps the context's own DB reads and engine calls.
+    const plannedMove = planCoachMoveForTurn(deps, session);
     const historyAfterTurn = await sessionMessagesRepo.listBySession(deps.db, session.id);
-    const { instructions, messages } = await coachContext.buildEpisodeContext({
+    const episodeContext = await coachContext.buildEpisodeContext({
       db: deps.db,
       callLightModel,
       session,
@@ -113,6 +118,7 @@ export async function startTurn(
       analyzePosition: deps.analyzePosition,
       isLocal: resolution.isLocal ?? false
     });
+    const { instructions, messages } = coachContext.withCoachMovePlan(episodeContext, await plannedMove);
 
     // A client-tool result resumes the coach's reply as a new turn — carry
     // the reply's budgets and step count across the hop (replyInProgress).
@@ -224,6 +230,20 @@ function buildTurnToolsDependencies(
       ),
     puzzlePool: deps.puzzlePool
   };
+}
+
+/** Play mode's planned move for this turn, null when there is none (not the
+ * coach's move, no selector wired) or picking it failed — the coach then
+ * falls back to choosing via get_candidate_moves, so a failure here never
+ * fails the turn. */
+async function planCoachMoveForTurn(deps: CoachAgentDependencies, session: SessionRow): Promise<CoachMovePlan | null> {
+  if (session.mode !== 'play' || !deps.coachMoveSelector) return null;
+  try {
+    return await planCoachMove({ db: deps.db, selector: deps.coachMoveSelector }, session.gameId, session.userId);
+  } catch (error) {
+    console.error(`coach move plan failed for session ${session.id}:`, error);
+    return null;
+  }
 }
 
 interface PlayCoachMoveResult {

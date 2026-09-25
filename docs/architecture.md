@@ -470,6 +470,24 @@ first two moves are drawn from every book reply (`bot-opening.ts`), so a bot
 opens and answers differently each game; later book moves are a random sample
 of `bookBreadthForElo(elo)` replies rather than always the book's first few.
 
+### Coach move selection (live coach game)
+
+In a live game against the coach, the coach's move is picked in code before the
+coach model runs (`services/coach-move-plan.ts`), with the same selector the
+bots use (`selectBotMove`) and a bot config interpolated from the roster at a
+target strength (`coachBotConfig`). The target starts from the student's usual
+level (the median estimated rating of their last analysed games) and moves the
+other way from how they are playing this game (`coachLevel`,
+`packages/chess-analysis/src/coach-level.ts`): playing above themselves, the
+coach plays a little weaker; below, a little stronger. The student's last move
+is punished (the best move is forced) when it lost what a player at the target
+level reliably notices (`shouldPunish`), and a deliberate mistake is allowed
+only once per few coach moves (`mayMakeMistake`). The pick starts as soon as the
+student's move is committed and is cached per position, so the coach turn
+usually finds it ready; it reaches the model as an uncached "## Your move this
+turn" block (`renderCoachMovePlan`), and the model plays it in its first step
+instead of calling `get_candidate_moves` (still there for an override).
+
 ### Rated and practice bot games
 
 The start page asks for a game type (`CreateBotSessionRequest.rated`). A
