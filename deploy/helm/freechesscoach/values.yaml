@@ -243,7 +243,14 @@ ingress:
   backend:
     serviceName: ""
     servicePort: 0
-  annotations: {}
+  # A coach turn sends no bytes until its pre-stream setup (coaching plan,
+  # engine lookups, episode folds) finishes, which can pass ingress-nginx's
+  # 60s default read timeout. 120s sits above Cloudflare's own 100s
+  # first-byte limit, so Cloudflare stays the binding one. Maps merge, so a
+  # deployment's own annotations (e.g. cert-manager) add to these.
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
   # e.g. [{secretName: freechesscoach-tls, hosts: [coach.example.com]}]
   tls: []
 
@@ -326,6 +333,11 @@ oauth2-proxy:
       # Explicit, because Firefox and Safari don't default to Lax: without it
       # the session cookie rides along on cross-site POSTs and WebSockets.
       cookie_samesite = "lax"
+      # Time to wait for the upstream's response headers (default 30s). A
+      # coach turn's headers only go out after its pre-stream setup, which a
+      # long game can push past 30s — oauth2-proxy then answers 502 on its
+      # own. Matches the ingress timeout above.
+      upstream_timeout = "120s"
       {{- if .Values.global.publicUrl }}
       redirect_url = "{{ .Values.global.publicUrl }}/oauth2/callback"
       cookie_secure = true
