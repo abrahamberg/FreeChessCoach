@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // shared-engine-worker.ts's defaultCreateWorker() loads the browser WASM
-// engine via `new URL('stockfish/bin/stockfish-18-single.{js,wasm}',
+// engine via `new URL('stockfish/bin/stockfish-19-single.{js,wasm}',
 // import.meta.url)` — a literal, file-relative path Vite's static-asset
 // analysis resolves against disk (both in dev, serving straight from src/,
 // and at build time, when it copies+hashes the file into dist/assets). That
@@ -32,10 +32,10 @@ const stockfishPkgJson = require.resolve('stockfish/package.json');
 const srcDir = join(dirname(stockfishPkgJson), 'bin');
 const destDir = join(here, '..', 'src', 'engine', 'stockfish', 'bin');
 const FILES = [
-  'stockfish-18-single.js',
-  'stockfish-18-single.wasm',
-  'stockfish-18-lite-single.js',
-  'stockfish-18-lite-single.wasm'
+  'stockfish-19-single.js',
+  'stockfish-19-single.wasm',
+  'stockfish-19-lite-single.js',
+  'stockfish-19-lite-single.wasm'
 ];
 
 mkdirSync(destDir, { recursive: true });

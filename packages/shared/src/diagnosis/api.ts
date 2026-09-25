@@ -51,7 +51,7 @@ export const DiagnosisEntryResponseSchema = z.object({
   failureRate: z.number(),
   confidence: EmittableConfidenceLevelSchema,
   spread: DiagnosticProfileSpreadSchema,
-  severityMix: z.record(SeveritySchema, z.number()),
+  severityMix: z.partialRecord(SeveritySchema, z.number()),
   scopeTags: z.array(ScopeTagSchema),
   controlSkill: ControlSkillResponseSchema.nullable(),
   historyStatus: HistoryStatusSchema,

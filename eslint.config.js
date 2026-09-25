@@ -39,7 +39,7 @@ export default tseslint.config(
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
       parserOptions: {
-        projectService: { allowDefaultProject: ['vitest.workspace.ts'] },
+        projectService: { allowDefaultProject: ['vitest.config.ts', 'fail-only-reporter.ts'] },
         tsconfigRootDir: import.meta.dirname
       }
     },

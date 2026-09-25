@@ -75,7 +75,7 @@ export function buildTacticDetectionContext(
   const moverColor = toColor(mover);
 
   const after = new Chess(fenBefore);
-  let move: Move | null = null;
+  let move: Move | null;
   try {
     move = after.move(moveSan) ?? null;
   } catch {

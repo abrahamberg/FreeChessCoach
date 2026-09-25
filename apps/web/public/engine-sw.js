@@ -8,9 +8,9 @@
 // both send a matching ETag; Cache Storage has no such limit.
 //
 // Matches by filename rather than full path because the path differs
-// between the Vite dev server (/@fs/<abs-path>/stockfish-18-single.wasm)
+// between the Vite dev server (/@fs/<abs-path>/stockfish-19-single.wasm)
 // and the production build (content-hashed, e.g.
-// /assets/stockfish-18-single-<hash>.wasm) — the hashed prod filename
+// /assets/stockfish-19-single-<hash>.wasm) — the hashed prod filename
 // busts this cache automatically on a dependency bump, so only the dev
 // path needs the manual CACHE_NAME bump below.
 // v2: an earlier CACHE_NAME=v1 rollout landed before the dev server actually
@@ -20,7 +20,8 @@
 // the engine for anyone who loaded the app in that window, immune to any
 // later server-side fix since this cache never expires or revalidates on its
 // own. Bump this whenever that class of bad response might have been cached.
-const CACHE_NAME = 'stockfish-engine-v2'; // bump when the `stockfish` npm package version changes
+// v3: stockfish 18 -> 19 (evicts the orphaned v18 binary).
+const CACHE_NAME = 'stockfish-engine-v3'; // bump when the `stockfish` npm package version changes
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -40,7 +41,7 @@ self.addEventListener('activate', (event) => {
 });
 
 function isEngineAsset(url) {
-  return url.includes('stockfish-18-single') && (url.endsWith('.wasm') || url.endsWith('.js'));
+  return url.includes('stockfish-19-single') && (url.endsWith('.wasm') || url.endsWith('.js'));
 }
 
 // Guards against repeating the v1 incident: a dev-only misconfiguration

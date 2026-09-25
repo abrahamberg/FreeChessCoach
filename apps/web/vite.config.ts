@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import { publicPages } from './vite.public-pages.js';
 
 // Dev-only: the SPA calls same-origin `/api/...` paths (see api/client.ts), so
@@ -41,6 +41,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
+    exclude: [...configDefaults.exclude, '**/dist/**'],
     globals: false,
     cache: false,
   }

@@ -59,8 +59,8 @@ export const StatsBucketSchema = z.object({
   }),
   endgame: z.object({
     accuracy: SumCountSchema,
-    byStanding: z.record(EndgameStandingSchema, StandingBucketRowSchema),
-    byTheme: z.record(EndgameThemeSchema, ThemeBucketRowSchema)
+    byStanding: z.partialRecord(EndgameStandingSchema, StandingBucketRowSchema),
+    byTheme: z.partialRecord(EndgameThemeSchema, ThemeBucketRowSchema)
   }),
   /** Estimated rating (one per game with an estimate and a known date). */
   rating: SumCountSchema

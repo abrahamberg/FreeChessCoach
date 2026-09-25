@@ -116,12 +116,12 @@ function workerFromUrls(wasmUrl: URL, workerUrl: URL): EngineWorkerLike {
 // evaluations that get persisted and shown next to server-analyzed games
 // have to come from a comparable engine, which is why this is the default
 // variant and the only one tunnel 'main' fulfillment ever uses. `-single`
-// (rather than the threaded `stockfish-18.js`) keeps
+// (rather than the threaded `stockfish-19.js`) keeps
 // this working without serving the app cross-origin-isolated for
 // SharedArrayBuffer.
 function createFullWorker(): EngineWorkerLike {
-  const wasmUrl = new URL('stockfish/bin/stockfish-18-single.wasm', import.meta.url);
-  const workerUrl = new URL('stockfish/bin/stockfish-18-single.js', import.meta.url);
+  const wasmUrl = new URL('stockfish/bin/stockfish-19-single.wasm', import.meta.url);
+  const workerUrl = new URL('stockfish/bin/stockfish-19-single.js', import.meta.url);
   return workerFromUrls(wasmUrl, workerUrl);
 }
 
@@ -131,8 +131,8 @@ function createFullWorker(): EngineWorkerLike {
 // hints, both of which explicitly tolerate a less accurate engine in
 // exchange for speed and multiPv breadth.
 function createLiteWorker(): EngineWorkerLike {
-  const wasmUrl = new URL('stockfish/bin/stockfish-18-lite-single.wasm', import.meta.url);
-  const workerUrl = new URL('stockfish/bin/stockfish-18-lite-single.js', import.meta.url);
+  const wasmUrl = new URL('stockfish/bin/stockfish-19-lite-single.wasm', import.meta.url);
+  const workerUrl = new URL('stockfish/bin/stockfish-19-lite-single.js', import.meta.url);
   return workerFromUrls(wasmUrl, workerUrl);
 }
 

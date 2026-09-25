@@ -8,7 +8,7 @@ export async function isEngineCached(): Promise<boolean> {
   try {
     const cache = await caches.open(ENGINE_CACHE_NAME);
     const keys = await cache.keys();
-    return keys.some((request) => request.url.includes('stockfish-18-single') && request.url.endsWith('.wasm'));
+    return keys.some((request) => request.url.includes('stockfish-19-single') && request.url.endsWith('.wasm'));
   } catch {
     return false;
   }

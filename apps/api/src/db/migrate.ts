@@ -1,4 +1,5 @@
-import { Migrator, type Kysely, type MigrationProvider } from 'kysely';
+import type { Kysely } from 'kysely';
+import { Migrator, type MigrationProvider } from 'kysely/migration';
 import * as consolidated from './migrations/0000_consolidated_initial.js';
 import * as ttsBackendLocal from './migrations/0001_tts_backend_local.js';
 import * as sessionMoveNoteDetail from './migrations/0002_session_move_note_detail.js';

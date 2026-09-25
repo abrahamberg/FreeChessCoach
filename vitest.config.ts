@@ -2,7 +2,8 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    reporter: 'dot',
+    projects: ['packages/*', 'apps/*', 'services/*'],
+    reporters: ['dot'],
     silent: true,
   },
 });

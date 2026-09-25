@@ -1,29 +1,22 @@
-import type { Reporter, TaskResult } from 'vitest';
+import type { Reporter, TestModule } from 'vitest/node';
 
 class FailOnlyReporter implements Reporter {
-  onFinished(files: TaskResult[]): void {
-    const failed = files.filter(f => f.result?.state === 'fail');
-    if (failed.length > 0) {
-      console.log(`\n${failed.length} test file(s) failed:`);
-      for (const file of failed) {
-        console.log(`\n  File: ${file.name}`);
-        if (file.tasks) {
-          for (const task of file.tasks) {
-            if (task.result?.state === 'fail') {
-              console.log(`  FAIL: ${task.name}`);
-              const errors = (task.result as any).errors || (task.result as any).error || [];
-              const errArray = Array.isArray(errors) ? errors : [errors];
-              for (const err of errArray) {
-                if (err) console.error(`    ${err.stack || err.message || err}`);
-              }
-            }
-          }
-        }
-      }
-      process.exitCode = 1;
-    } else {
+  onTestRunEnd(testModules: ReadonlyArray<TestModule>): void {
+    const failed = testModules.filter((module) => module.state() === 'failed');
+    if (failed.length === 0) {
       console.log('All tests passed');
+      return;
     }
+    console.log(`\n${failed.length} test file(s) failed:`);
+    for (const module of failed) {
+      console.log(`\n  File: ${module.moduleId}`);
+      for (const error of module.errors()) console.error(`    ${error.stack ?? error.message}`);
+      for (const test of module.children.allTests('failed')) {
+        console.log(`  FAIL: ${test.fullName}`);
+        for (const error of test.result().errors ?? []) console.error(`    ${error.stack ?? error.message}`);
+      }
+    }
+    process.exitCode = 1;
   }
 }
 

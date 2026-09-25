@@ -1,4 +1,4 @@
-import { ZodError, type ZodType } from 'zod';
+import { ZodError, type ZodType, type output } from 'zod';
 
 export class ApiError extends Error {
   constructor(
@@ -33,13 +33,10 @@ export function shouldRetryQuery(failureCount: number, error: unknown): boolean 
  * (`({signal}) => apiGet(path, schema, signal)`) — otherwise React 18
  * StrictMode's dev-only double-mount cancels the first fetch without this
  * function ever seeing it, leaving the query stuck pending/paused forever. */
-// `any` in the Def/Input slots is load-bearing, not laziness: zod's `Input` type
-// for a schema with a `.default(...)` field (e.g. ClassifiedMoveSchema's
-// hangsPiece) makes that key optional, and pinning Input to T here would let
-// that optionality leak into the inferred T via property-position inference —
-// callers would see `hangsPiece?: boolean` instead of `hangsPiece: boolean`.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function apiGet<T>(path: string, schema: ZodType<T, any, any>, signal?: AbortSignal): Promise<T> {
+// Generic over the schema (not its output) and typed as `output<S>`: zod's
+// input type for a `.default(...)` field is optional, and inferring T through
+// a `ZodType<T, ...>` slot would leak that optionality into the result.
+export async function apiGet<S extends ZodType>(path: string, schema: S, signal?: AbortSignal): Promise<output<S>> {
   const response = await fetch(path, { credentials: 'include', signal });
   if (!response.ok) {
     throw new ApiError(response.status, `GET ${path} failed with ${response.status}`, await safeJson(response));
@@ -48,8 +45,7 @@ export async function apiGet<T>(path: string, schema: ZodType<T, any, any>, sign
   return schema.parse(body);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see apiGet above
-export async function apiPost<T>(path: string, payload: unknown, schema: ZodType<T, any, any>): Promise<T> {
+export async function apiPost<S extends ZodType>(path: string, payload: unknown, schema: S): Promise<output<S>> {
   const response = await fetch(path, {
     method: 'POST',
     credentials: 'include',
@@ -63,8 +59,7 @@ export async function apiPost<T>(path: string, payload: unknown, schema: ZodType
   return schema.parse(body);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see apiGet above
-export async function apiPatch<T>(path: string, payload: unknown, schema: ZodType<T, any, any>): Promise<T> {
+export async function apiPatch<S extends ZodType>(path: string, payload: unknown, schema: S): Promise<output<S>> {
   const response = await fetch(path, {
     method: 'PATCH',
     credentials: 'include',

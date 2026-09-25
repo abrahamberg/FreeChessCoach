@@ -19,6 +19,6 @@
   },
   "dependencies": {
     "@freechesscoach/shared": "0.0.1",
-    "chess.js": "^1.0.0"
+    "chess.js": "^1.4.0"
   }
 }
