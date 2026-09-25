@@ -65,7 +65,7 @@ await build({
   // only load if a package.json declaring `"type": "module"` sat next to it —
   // an easy thing to get wrong in a runtime image that ships nothing else.
   outExtension: { '.js': '.mjs' },
-  target: 'node22',
+  target: 'node24',
   external: collectExternalPackages(),
   sourcemap: true,
   logLevel: 'info'

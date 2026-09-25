@@ -6,7 +6,7 @@ all run via bind mount + a watch/dev-server process (`tsx watch` / Vite), so edi
 the host are picked up immediately — no image rebuild, no container restart.
 
 `engine`'s dev image (`docker/Dockerfile.engine.dev`) only installs Stockfish on
-top of `node:22-slim`; it does not COPY source or run the typecheck build gate,
+top of `node:24-slim`; it does not COPY source or run the typecheck build gate,
 so it builds in seconds and stays valid across code changes. The production
 image (`docker/Dockerfile.engine`, with the `tsc --build` typecheck gate) is
 unrelated to local dev — it's used by CI/deploy only.

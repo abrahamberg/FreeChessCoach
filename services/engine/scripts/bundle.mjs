@@ -9,7 +9,7 @@ await build({
   bundle: true,
   platform: 'node',
   format: 'esm',
-  target: 'node22',
+  target: 'node24',
   // Fastify is CommonJS and uses dynamic requires internally. Keep runtime
   // packages external; first-party TypeScript is still bundled by esbuild.
   external: ['fastify', 'fastify/*', 'chess.js', 'chess.js/*'],
