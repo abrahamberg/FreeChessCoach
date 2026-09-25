@@ -152,8 +152,8 @@ have tests or rendered-config assertions; commit hashes are on `main`.
 | R4 | Prompt injection via PGN comments/headers or model output | Tools act only on the requesting user's data, with per-turn budgets. Self-impact only. Revisit if any sharing feature ships. |
 | R5 | Redis may be unauthenticated in-cluster | Values are encrypted and names HMAC'd, so a Redis read alone yields nothing usable. Still recommended: Redis auth and a NetworkPolicy admitting only api and worker. |
 | R6 | `database.sslMode: disable` default | Fine for the in-cluster subchart; use `require` or stricter for a managed database (already documented in values). |
-| R7 | GitHub Actions are pinned by tag, not SHA | `build-images.yml` holds `contents: write` and `packages: write`. Pin third-party actions to commit SHAs (Dependabot now keeps them updated). |
-| R8 | TypeScript held at 6.0 | typescript-eslint doesn't yet support TS 7. `@types/node` is held at 22.x to match the `node:22` runtime. |
+| R7 | Supply chain: actions, base images, auto-merged updates | **Mitigated.** Actions are pinned to commit SHAs and base images (Docker Hardened Images) to digests; Dependabot bumps both. Minor/patch updates auto-merge only after the full CI suite and the image smoke test pass, with a 3-day release cooldown; majors wait for a human. Images publish only after CI passes on `main`. |
+| R8 | TypeScript held at 6.0 | typescript-eslint doesn't yet support TS 7 (peer range `<6.1.0`); Dependabot ignores TS majors until it does. `@types/node` is held at 24.x to match the Node 24 LTS runtime. |
 | R10 | Edge protection (Cloudflare) | App limits key on the signed-in user and so can't stop unauthenticated floods, which only oauth2-proxy sees. Cloudflare (free) handles volumetric DDoS and can add one IP-based rule; it only helps if the origin accepts traffic from Cloudflare alone (Cloudflare Tunnel, or ingress restricted to Cloudflare's IP ranges). |
 | R9 | Open sign-up | By design; it's why P2 is the primary attacker and why all per-user controls above are required. |
 
@@ -170,5 +170,8 @@ have tests or rendered-config assertions; commit hashes are on `main`.
 4. **COOP/COEP are live in production for the first time** (they only ever
    worked in the Vite dev server). The app has always run under them in dev,
    but watch for cross-origin resource breakage after the first deploy.
-5. **Node ≥ 22.19** (undici 8, graphile-worker 0.18). The `node:22` images
-   already meet this; update local toolchains.
+5. **Node 24 LTS** (`.nvmrc`; undici 8 and graphile-worker 0.18 need ≥ 22.19).
+   The images run `dhi.io/node:24`; update local toolchains.
+6. **Read-only root filesystem.** Every container now runs with
+   `readOnlyRootFilesystem: true` (web gets a `/tmp` emptyDir), and the images
+   have no shell — debug with `kubectl debug`, not `kubectl exec ... sh`.

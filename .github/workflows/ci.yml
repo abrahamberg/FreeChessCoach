@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: ['**']
+    # Other branches are covered by their pull_request run; pushing them too
+    # would run every PR (including Dependabot's) twice.
+    branches: [main]
   pull_request:
   schedule:
     # Full-suite safety net: --changed only sees files a test statically
@@ -17,28 +19,35 @@ on:
         type: boolean
         default: false
 
-# Read-only token: CI only checks out and tests.
+# Read-only token: CI only checks out, tests and builds images locally.
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Actions are pinned to commit SHAs (docs/threat-model.md R7); Dependabot keeps
+# the SHAs and the version comments current.
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Full history (all branches) so `vitest --changed` can diff
           # against the base branch below.
           fetch-depth: 0
+          persist-credentials: false
 
       # Matches the apt-installed path Dockerfile.engine and
       # services/engine/test/helpers/stockfish-path.ts both expect.
       - name: Install stockfish
         run: sudo apt-get update && sudo apt-get install -y stockfish
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci
@@ -47,20 +56,26 @@ jobs:
       - run: npm run typecheck
 
       # main only ever advances via a merged, already-CI-passed PR, so the
-      # full run here (plus the nightly cron above) is a backstop, not the
-      # primary gate — everyday PR/branch pushes run affected-only below.
+      # full run here (plus the nightly cron above) is a backstop. PRs run
+      # affected-only below, except dependency and toolchain changes: a
+      # lockfile bump has no import edge to any test, so `--changed` would run
+      # nothing for it, and Dependabot PRs are auto-merged on this result.
       - name: Decide test scope
         id: scope
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref_name }}
           FORCE_FULL: ${{ github.event.inputs.full }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
+          full=false
           if [ "$EVENT_NAME" = "schedule" ] || [ "$FORCE_FULL" = "true" ] || [ "$REF_NAME" = "main" ]; then
-            echo "full=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "full=false" >> "$GITHUB_OUTPUT"
+            full=true
+          elif git diff --name-only "origin/${BASE_REF:-main}...HEAD" \
+              | grep -qE '(^|/)package(-lock)?\.json$|^\.nvmrc$|^vitest\.config\.ts$|^tsconfig'; then
+            full=true
           fi
+          echo "full=$full" >> "$GITHUB_OUTPUT"
 
       # apps/api's suite spins up a real Postgres via Testcontainers; the
       # ubuntu-latest runner ships a working Docker daemon for that.
@@ -83,9 +98,11 @@ jobs:
   helm-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
 
       - name: Install kubeconform
         run: |
@@ -96,3 +113,52 @@ jobs:
       - run: helm lint deploy/helm/freechesscoach -f deploy/helm/freechesscoach/values.example.yaml
 
       - run: deploy/helm/test.sh
+
+  # Builds the real api/web/engine images for the runner's architecture and
+  # runs them the way the chart does (read-only, non-root, no capabilities)
+  # against a real Postgres. Catches base-image bumps that break the app —
+  # the unit tests never touch the images.
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Base images come from Docker Hardened Images. Dependabot PRs read these
+      # from the *Dependabot* secrets store, so they must be set in both.
+      - name: Log in to Docker Hardened Images
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: dhi.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build images for the runner's architecture
+        run: scripts/build-images.sh --platform "" --tag smoke
+
+      - name: Smoke-test the images
+        run: scripts/smoke-images.sh --tag smoke
+
+  # The one check branch protection requires, so adding or renaming a job
+  # above never needs a settings change.
+  ci-passed:
+    if: always()
+    needs: [test, helm-lint, images]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All CI jobs succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "job results: $RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = "success" ] || exit 1
+          done

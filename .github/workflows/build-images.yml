@@ -1,7 +1,12 @@
 name: Build and publish images
 
 on:
-  push:
+  # Publish only what CI has passed: a green CI run for a push to main. (A PR
+  # merged by the auto-merge bot pushes with GITHUB_TOKEN, which starts no
+  # workflows, so Dependabot merges ride along with the next human push.)
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -29,10 +34,16 @@ concurrency:
 
 jobs:
   images:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # The commit CI actually tested, not whatever main is by now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           # Git tags are the version of record and checkout fetches none by
           # default. fetch-tags alone doesn't do it: with the default shallow
           # fetch-depth, actions/checkout silently fetches no tags at all, so
@@ -60,25 +71,43 @@ jobs:
 
       - name: Log in to GitHub Container Registry
         if: steps.version.outputs.skip != 'true'
-        uses: docker/login-action@v3
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Base images come from Docker Hardened Images (see docker/Dockerfile.*).
+      - name: Log in to Docker Hardened Images
+        if: steps.version.outputs.skip != 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: dhi.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - if: steps.version.outputs.skip != 'true'
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
 
       - if: steps.version.outputs.skip != 'true'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - if: steps.version.outputs.skip != 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version-file: .nvmrc
           cache: npm
+
+      # Last gate before anything reaches the registry: build for the runner's
+      # own architecture and run the images the way the chart does. The
+      # multi-arch push below reuses these artifacts (--skip-artifacts).
+      - name: Build and smoke-test the images locally
+        if: steps.version.outputs.skip != 'true'
+        run: |
+          scripts/build-images.sh --platform "" --tag smoke
+          scripts/smoke-images.sh --tag smoke
 
       - name: Build and publish api, web, and engine images
         if: steps.version.outputs.skip != 'true'
@@ -102,6 +131,7 @@ jobs:
             "${tags[@]}" \
             --platform linux/amd64,linux/arm64 \
             --summary-file "$GITHUB_STEP_SUMMARY" \
+            --skip-artifacts \
             --push
           echo "::notice::Published $REGISTRY/freechesscoach api, web and engine images tagged: $published"
 

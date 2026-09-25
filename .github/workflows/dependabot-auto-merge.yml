@@ -1,0 +1,36 @@
+# Queues Dependabot's minor/patch PRs to merge themselves once the required CI
+# check (`ci-passed`) is green. Majors are left open for a human.
+#
+# `gh pr merge --auto` only queues the merge; the branch ruleset on main that
+# requires `ci-passed` is what actually makes it wait for CI. Without that rule
+# GitHub refuses to enable auto-merge, so a missing ruleset fails loudly here
+# rather than merging untested code.
+name: Dependabot auto-merge
+
+on: pull_request
+
+permissions: {}
+
+jobs:
+  auto-merge:
+    # Both: the PR is Dependabot's, and this run was triggered by Dependabot
+    # itself (not by someone pushing a commit onto its branch).
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+
+      - name: Queue minor and patch updates to merge when CI passes
+        if: steps.meta.outputs.update-type != 'version-update:semver-major'
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+          DEPENDENCIES: ${{ steps.meta.outputs.dependency-names }}
+        run: |
+          echo "Auto-merging ($UPDATE_TYPE): $DEPENDENCIES"
+          gh pr merge --auto --squash "$PR_URL"

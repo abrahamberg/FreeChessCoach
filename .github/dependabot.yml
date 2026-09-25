@@ -1,22 +1,66 @@
-# Weekly version updates (security alerts come regardless). Grouped so a week's
-# minor/patch bumps arrive as one PR per ecosystem rather than dozens.
+# Weekly version updates (security updates come regardless). Minor/patch bumps
+# are grouped into one PR per ecosystem and auto-merged once CI passes
+# (.github/workflows/dependabot-auto-merge.yml); majors arrive one PR each and
+# wait for a human.
+#
+# The cooldown holds back a release for a few days after it is published, so a
+# hijacked package version has time to be caught and yanked before it reaches an
+# auto-merged PR. Security updates ignore the cooldown.
 version: 2
+
+registries:
+  # Docker Hardened Images (docker/Dockerfile.*). Dependabot secrets, not
+  # Actions secrets: Settings → Secrets and variables → Dependabot.
+  dhi:
+    type: docker-registry
+    url: dhi.io
+    username: ${{secrets.DOCKERHUB_USERNAME}}
+    password: ${{secrets.DOCKERHUB_TOKEN}}
+
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    open-pull-requests-limit: 10
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
+    ignore:
+      # Types follow the Node runtime (.nvmrc, the dhi.io/node base images),
+      # which moves only to the next LTS, by hand.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # typescript-eslint supports TypeScript <6.1 only (docs/threat-model.md R8).
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 3
     groups:
-      actions:
-        patterns: ['*']
+      actions-minor-patch:
+        update-types: [minor, patch]
+
   - package-ecosystem: docker
     directory: /docker
+    registries: [dhi]
     schedule:
       interval: weekly
+    groups:
+      # Mostly digest refreshes of the same tag: the hardened images' CVE fixes.
+      # Keyed on patterns, not update-types: a digest-only bump has no semver
+      # update type. Majors are ignored below, so this is minor/patch/digest.
+      base-images:
+        patterns: ['*']
+    ignore:
+      # Node majors are LTS moves (odd majors are never LTS) and nginx majors are
+      # rare and deliberate; both are done by hand with .nvmrc and the chart.
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
