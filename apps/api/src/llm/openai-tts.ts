@@ -1,3 +1,5 @@
+import { endpointFetch } from './endpoint-fetch.js';
+
 /** OpenAI's TTS surface (POST /v1/audio/speech) isn't a chat/completion
  * call, so it doesn't go through the `ai`/@ai-sdk provider objects the rest
  * of this directory uses — a plain fetch against the REST endpoint is all it
@@ -18,7 +20,7 @@ export async function synthesizeSpeech({ apiKey, endpoint, modelId, voice, text 
   const endpointUrl = new URL(endpoint);
   endpointUrl.pathname = `${endpointUrl.pathname.replace(/\/$/, '')}/audio/speech`;
   endpointUrl.hash = '';
-  const response = await fetch(endpointUrl, {
+  const response = await endpointFetch()(endpointUrl, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${apiKey}`,

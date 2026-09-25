@@ -1,4 +1,5 @@
 import type { LlmModelTestResult, LlmSetup, RemoteLlmProtocol } from '@freechesscoach/shared';
+import { BlockedEndpointError, endpointFetch } from './endpoint-fetch.js';
 
 export const PROBE_PROMPT = 'Reply with exactly OK.';
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -102,7 +103,7 @@ function fetchAt(endpoint: string, path: string, init: RequestInit, timeoutMs = 
   const endpointUrl = new URL(endpoint);
   endpointUrl.pathname = `${endpointUrl.pathname.replace(/\/$/, '')}/${path.slice(1)}`;
   endpointUrl.hash = '';
-  return fetch(endpointUrl, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  return endpointFetch()(endpointUrl, { ...init, signal: AbortSignal.timeout(timeoutMs) });
 }
 
 function hasValidResponse(body: unknown, protocol: RemoteLlmProtocol): boolean {
@@ -144,5 +145,15 @@ function extractErrorMessage(body: string): string | null {
 
 function requestError(error: unknown): string {
   if (error instanceof DOMException && error.name === 'TimeoutError') return 'The provider timed out during the test';
+  const blocked = blockedEndpointOf(error);
+  if (blocked) return `Could not reach the endpoint: ${blocked.message}`;
   return error instanceof Error ? `Could not reach the endpoint: ${error.message}` : 'Could not reach the endpoint';
+}
+
+/** undici reports a refused connection as `TypeError('fetch failed')` with
+ * the real reason as its `cause`. */
+function blockedEndpointOf(error: unknown): BlockedEndpointError | null {
+  if (error instanceof BlockedEndpointError) return error;
+  const cause = error instanceof Error ? error.cause : undefined;
+  return cause instanceof BlockedEndpointError ? cause : null;
 }

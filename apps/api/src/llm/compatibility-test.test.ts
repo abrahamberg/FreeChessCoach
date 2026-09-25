@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { requiresOpenAiResponsesApi, testLlmSetup } from './compatibility-test.js';
 
+// These tests stub the global fetch; the public-address guard has its own tests.
+vi.mock('./endpoint-fetch.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./endpoint-fetch.js')>()),
+  endpointFetch: () => globalThis.fetch
+}));
+
 const OK_BODIES: Record<string, object> = {
   '/responses': { output: [] },
   '/messages': { content: [{ type: 'text', text: 'OK' }] },

@@ -35,7 +35,8 @@
     "graphile-worker": "^0.18.0",
     "kysely": "^0.29.6",
     "pg": "^8.23.0",
-    "redis": "^6.2.1"
+    "redis": "^6.2.1",
+    "undici": "^8.11.2"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^12.1.0",
