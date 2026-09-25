@@ -1,8 +1,10 @@
-import type { TtsBackend } from '@freechesscoach/shared';
+import type { CoachPersona, TtsBackend } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { Modal } from '../../components/Modal.js';
 import { effectiveTtsBackend } from '../../tts/effective-tts-backend.js';
 import { isNativeSpeechSupported } from '../../tts/native-speech.js';
+import { useVoicePreview } from '../../tts/useVoicePreview.js';
+import { coachPreviewLine } from '../onboarding/coach-lines.js';
 import { LocalVoiceSetup } from './LocalVoiceSetup.js';
 import '../../components/RadioCard.css';
 import './TtsSection.css';
@@ -19,6 +21,8 @@ export interface TtsSectionProps {
    * disabled and the browser voice is used instead. */
   openaiAvailable: boolean;
   onChange: (patch: TtsProfilePatch) => void;
+  /** Whose voice "Test voice" plays: the coach picked above. */
+  persona: CoachPersona;
 }
 
 /** Device voice is second on purpose: it is what a person without an OpenAI
@@ -42,6 +46,13 @@ const BACKEND_DESCRIPTION: Record<TtsBackend, string> = {
     'A voice model that downloads once and then runs inside this tab. Free and private, but slow on most computers, and the tab has to stay open while it speaks.',
   local:
     'A free voice program you install on your own computer, next to LM Studio. Natural and fast, and nothing goes to any cloud, but it needs about ten minutes of setup once.'
+};
+
+const TEST_FAILURE: Record<TtsBackend, string> = {
+  openai: 'Couldn’t play. Unlock your AI setup and try again.',
+  native: 'Couldn’t play on this device.',
+  browser: 'Couldn’t play. The voice model may still be downloading, try again in a moment.',
+  local: 'Couldn’t reach the voice server.'
 };
 
 const BACKEND_CONFIRM_TITLE: Record<TtsBackend, string> = {
@@ -81,12 +92,16 @@ const BACKEND_WARNING: Record<TtsBackend, string> = {
  * choice's tradeoff (your own OpenAI key's usage vs. local speed) — cancelling leaves `enabled`/
  * `backend` untouched, which is the "undo". Turning the switch off never
  * needs confirmation; there's no downside to applying it immediately. */
-export function TtsSection({ enabled, backend: savedBackend, openaiAvailable, onChange }: TtsSectionProps): ReactNode {
+export function TtsSection({ enabled, backend: savedBackend, openaiAvailable, onChange, persona }: TtsSectionProps): ReactNode {
   // A saved 'openai' choice (the DB default) is shown and acted on as the
   // device voice while OpenAI isn't set up (see effectiveTtsBackend).
   const backend = effectiveTtsBackend(savedBackend, openaiAvailable);
   const nativeSupported = isNativeSpeechSupported();
   const [pending, setPending] = useState<{ enabled: boolean; backend: TtsBackend } | null>(null);
+  const preview = useVoicePreview();
+  const testKey = `${backend}:${persona}`;
+  const testing = preview.loadingKey === testKey;
+  const testPlaying = preview.playingKey === testKey;
 
   function handleToggleEnabled(next: boolean): void {
     if (!next) {
@@ -148,7 +163,24 @@ export function TtsSection({ enabled, backend: savedBackend, openaiAvailable, on
         ))}
       </div>
 
-      {enabled && backend === 'local' && <LocalVoiceSetup />}
+      {enabled && backend === 'local' ? (
+        <LocalVoiceSetup persona={persona} />
+      ) : (
+        <div className="tts-section__test">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => preview.toggle(testKey, { persona, backend, text: coachPreviewLine(persona) })}
+          >
+            {testing ? (backend === 'browser' ? 'Loading voice…' : 'Loading…') : testPlaying ? 'Stop' : 'Test voice'}
+          </button>
+          {preview.failedKey === testKey && (
+            <span role="alert" className="local-voice__error">
+              {TEST_FAILURE[backend]}
+            </span>
+          )}
+        </div>
+      )}
 
       {pending && (
         <Modal

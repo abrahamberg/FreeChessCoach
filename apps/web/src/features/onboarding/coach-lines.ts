@@ -121,6 +121,12 @@ const BODIES: Record<OnboardingStep, (context: CoachLineContext) => string> = {
   done: () => 'Import your first game and we will go through it together.'
 };
 
+/** A short line in the coach's own character, for hearing a voice before
+ * picking it (the onboarding coach step and the Settings "hear" buttons). */
+export function coachPreviewLine(persona: CoachPersona): string {
+  return PERSONA_VOICES[persona].preview;
+}
+
 /** What the selected coach says on a step. The coach is picked on the
  * 'coach' step, so the step after it thanks them. */
 export function coachSays(step: OnboardingStep, context: CoachLineContext): string {

@@ -3,6 +3,9 @@ import type { CoachPersona } from '@freechesscoach/shared';
 export interface TtsSpeakRequest {
   text: string;
   persona: CoachPersona;
+  /** A Settings sample: lets the OpenAI route play it before voice is
+   * turned on or switched to OpenAI. */
+  preview?: boolean;
 }
 
 /** Common shape for both coach-voice backends (kokoro-tts-client.ts,

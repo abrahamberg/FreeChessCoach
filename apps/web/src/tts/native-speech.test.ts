@@ -24,7 +24,7 @@ describe('speakNative', () => {
 
   test('speaks one utterance per sentence and ends after the last one', () => {
     const onEnd = vi.fn();
-    speakNative('First point. Second point.', onEnd);
+    speakNative('First point. Second point.', 'general', onEnd);
     expect(spoken.map((u) => u.text)).toEqual(['First point.', 'Second point.']);
     spoken[0]?.onend?.();
     expect(onEnd).not.toHaveBeenCalled();
@@ -34,7 +34,7 @@ describe('speakNative', () => {
 
   test('never calls onEnd after cancel', () => {
     const onEnd = vi.fn();
-    const stop = speakNative('One. Two.', onEnd);
+    const stop = speakNative('One. Two.', 'general', onEnd);
     stop();
     spoken[1]?.onerror?.();
     spoken[1]?.onend?.();
@@ -43,7 +43,7 @@ describe('speakNative', () => {
 
   test('ends once when a sentence errors', () => {
     const onEnd = vi.fn();
-    speakNative('One. Two.', onEnd);
+    speakNative('One. Two.', 'general', onEnd);
     spoken[0]?.onerror?.();
     spoken[1]?.onend?.();
     expect(onEnd).toHaveBeenCalledTimes(1);

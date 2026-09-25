@@ -13,6 +13,7 @@ export function VoiceFields({ profile, llmSetup }: { profile: UserProfile; llmSe
       backend={profile.ttsBackend}
       openaiAvailable={isOpenAiVoiceAvailable(llmSetup)}
       onChange={(patch) => update.mutate(patch)}
+      persona={profile.coachPersona}
     />
   );
 }

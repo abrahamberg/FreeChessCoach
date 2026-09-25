@@ -2,12 +2,12 @@ import { splitIntoSentences } from './splitSentences.js';
 import type { TtsClient } from './tts-client.js';
 import { noteRateLimit } from '../api/rate-limit-notice.js';
 
-async function synthesizeSentence(text: string, persona: string): Promise<ArrayBuffer> {
+async function synthesizeSentence(text: string, persona: string, preview: boolean): Promise<ArrayBuffer> {
   const response = await fetch('/api/tts/speak', {
     method: 'POST',
     credentials: 'include',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ text, persona })
+    body: JSON.stringify(preview ? { text, persona, preview } : { text, persona })
   });
   noteRateLimit(response);
   if (!response.ok) {
@@ -36,7 +36,7 @@ export const openaiTtsClient: TtsClient = {
     const sentences = splitIntoSentences(request.text);
     const toSynthesize = sentences.length > 0 ? sentences : [request.text];
     for (const [index, sentence] of toSynthesize.entries()) {
-      const audio = await synthesizeSentence(sentence, request.persona);
+      const audio = await synthesizeSentence(sentence, request.persona, request.preview === true);
       onChunk(index, audio);
     }
   }

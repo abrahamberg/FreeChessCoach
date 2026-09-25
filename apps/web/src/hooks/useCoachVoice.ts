@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CoachMessage } from './useCoachChat.js';
 import { getSpeakableText } from '../tts/getSpeakableText.js';
 import { speakNative } from '../tts/native-speech.js';
+import { applyPlaybackRate, personaPlaybackRate } from '../tts/persona-voices.js';
 import { resolveTtsClient } from '../tts/resolve-tts-client.js';
 
 const AUTOPLAY_STORAGE_KEY = 'freechesscoach:coach-voice-autoplay';
@@ -33,6 +34,8 @@ interface QueueEntry {
  * received so far (in order), plus whether the stream is still in flight. */
 interface MessageAudioState {
   urls: string[];
+  /** Fixed when the stream starts, like the persona and backend it came from. */
+  playbackRate: number;
   complete: boolean;
   errored: boolean;
 }
@@ -166,6 +169,7 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
       waitingForChunkRef.current = false;
       const audio = getAudio();
       audio.src = state.urls[index] ?? '';
+      applyPlaybackRate(audio, state.playbackRate);
       audio.currentTime = 0;
       nextChunkIndexRef.current = index + 1;
       setPlayingMessageId(messageId);
@@ -203,7 +207,12 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
     const cached = cacheRef.current.get(messageId);
     if (cached && !cached.errored) return cached;
 
-    const state: MessageAudioState = { urls: [], complete: false, errored: false };
+    const state: MessageAudioState = {
+      urls: [],
+      playbackRate: personaPlaybackRate(personaRef.current, backend),
+      complete: false,
+      errored: false
+    };
     cacheRef.current.set(messageId, state);
     setLoadingMessageId(messageId);
 
@@ -237,7 +246,7 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
 
   function playNative(messageId: string, text: string): void {
     setPlayingMessageId(messageId);
-    cancelNativeRef.current = speakNative(text, finishMessage);
+    cancelNativeRef.current = speakNative(text, personaRef.current, finishMessage);
   }
 
   function playNow(messageId: string, text: string): void {

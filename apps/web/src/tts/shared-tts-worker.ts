@@ -12,6 +12,7 @@ export interface TtsSpeakMessage {
   id: string;
   text: string;
   voice: KokoroVoiceId;
+  speed: number;
 }
 
 /** Posted by kokoro-worker.ts as it lazily loads the model on the first
@@ -53,6 +54,7 @@ export type TtsInstallStatus = 'absent' | 'loading' | 'ready';
 export interface SpeakRequest {
   text: string;
   voice: KokoroVoiceId;
+  speed: number;
 }
 
 export interface SharedTtsWorkerOptions {
@@ -111,7 +113,7 @@ export class SharedTtsWorker {
   speak(request: SpeakRequest, onChunk: (index: number, audio: ArrayBuffer) => void): Promise<void> {
     return new Promise((resolve, reject) => {
       const id = crypto.randomUUID();
-      this.pending.push({ request: { type: 'speak', id, text: request.text, voice: request.voice }, onChunk, resolve, reject });
+      this.pending.push({ request: { type: 'speak', id, text: request.text, voice: request.voice, speed: request.speed }, onChunk, resolve, reject });
       this.ensureWorker();
       this.pump();
     });

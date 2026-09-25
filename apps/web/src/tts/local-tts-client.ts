@@ -1,4 +1,4 @@
-import { PERSONA_VOICES } from './persona-voices.js';
+import { kokoroSynthesisSpeed } from './persona-voices.js';
 import { readLocalTtsUrl } from './local-tts-settings.js';
 import { splitIntoSentences } from './splitSentences.js';
 import type { TtsClient } from './tts-client.js';
@@ -15,11 +15,11 @@ export class LocalTtsHttpError extends Error {
 /** POSTs one piece of text to a Kokoro-FastAPI server's OpenAI-style
  * `/v1/audio/speech` and returns the MP3 bytes. `voice` is a Kokoro voice id
  * — the same ids persona-voices.ts already maps personas to. */
-export async function synthesizeLocal(baseUrl: string, text: string, voice: string): Promise<ArrayBuffer> {
+export async function synthesizeLocal(baseUrl: string, text: string, voice: string, speed = 1): Promise<ArrayBuffer> {
   const response = await fetch(`${baseUrl}/v1/audio/speech`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ model: 'kokoro', input: text, voice, response_format: 'mp3' })
+    body: JSON.stringify({ model: 'kokoro', input: text, voice, speed, response_format: 'mp3' })
   });
   if (!response.ok) throw new LocalTtsHttpError(response.status);
   return response.arrayBuffer();
@@ -34,11 +34,11 @@ export const localTtsClient: TtsClient = {
   mimeType: 'audio/mpeg',
   async speak(request, onChunk) {
     const baseUrl = readLocalTtsUrl();
-    const voice = PERSONA_VOICES[request.persona];
+    const { voice, speed } = kokoroSynthesisSpeed(request.persona);
     const sentences = splitIntoSentences(request.text);
     const toSynthesize = sentences.length > 0 ? sentences : [request.text];
     for (const [index, sentence] of toSynthesize.entries()) {
-      onChunk(index, await synthesizeLocal(baseUrl, sentence, voice));
+      onChunk(index, await synthesizeLocal(baseUrl, sentence, voice, speed));
     }
   }
 };

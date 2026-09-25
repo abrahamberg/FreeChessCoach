@@ -142,7 +142,7 @@ export const COACH_PERSONA_INFO: Record<
     avatar: '🎲',
     tagline: 'Charismatic, fearless, roasts you',
     explicit: true,
-    voiceProfile: 'Male, 40s'
+    voiceProfile: 'Male, 50s'
   }
 };
 

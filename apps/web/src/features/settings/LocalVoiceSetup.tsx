@@ -1,5 +1,8 @@
+import type { CoachPersona } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { LocalTtsHttpError, synthesizeLocal } from '../../tts/local-tts-client.js';
+import { applyPlaybackRate, kokoroSynthesisSpeed, personaPlaybackRate } from '../../tts/persona-voices.js';
+import { coachPreviewLine } from '../onboarding/coach-lines.js';
 import {
   DEFAULT_LOCAL_TTS_URL,
   normalizeLocalTtsUrl,
@@ -16,10 +19,13 @@ function describeFailure(error: unknown): string {
   return 'Couldn’t reach the voice server. Make sure it’s running (see the setup guide) and the address matches.';
 }
 
-async function playTestVoice(baseUrl: string): Promise<void> {
-  const audio = await synthesizeLocal(baseUrl, 'Voice server connected. Ready to coach.', 'bm_daniel');
+/** Speaks as the chosen coach, so a passing test also previews their voice. */
+async function playTestVoice(baseUrl: string, persona: CoachPersona): Promise<void> {
+  const { voice, speed } = kokoroSynthesisSpeed(persona);
+  const audio = await synthesizeLocal(baseUrl, coachPreviewLine(persona), voice, speed);
   const url = URL.createObjectURL(new Blob([audio], { type: 'audio/mpeg' }));
   const player = new Audio(url);
+  applyPlaybackRate(player, personaPlaybackRate(persona, 'local'));
   player.addEventListener('ended', () => URL.revokeObjectURL(url));
   await player.play();
 }
@@ -28,7 +34,7 @@ async function playTestVoice(baseUrl: string): Promise<void> {
  * selected: a pointer to the one-time setup in the guide, a "Test voice"
  * button, and — collapsed, since almost nobody needs it — the one address
  * field for a server that isn't on the default `localhost:8880`. */
-export function LocalVoiceSetup(): ReactNode {
+export function LocalVoiceSetup({ persona }: { persona: CoachPersona }): ReactNode {
   const [addressText, setAddressText] = useState(readLocalTtsUrl);
   const [test, setTest] = useState<TestState>({ status: 'idle' });
   const address = normalizeLocalTtsUrl(addressText);
@@ -62,7 +68,7 @@ export function LocalVoiceSetup(): ReactNode {
     commitAddress();
     setTest({ status: 'testing' });
     try {
-      await playTestVoice(target);
+      await playTestVoice(target, persona);
       setTest({ status: 'ok' });
     } catch (error) {
       setTest({ status: 'failed', message: describeFailure(error) });

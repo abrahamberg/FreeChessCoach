@@ -10,14 +10,14 @@ const addressField = () => screen.getByRole('textbox') as HTMLInputElement;
 
 describe('LocalVoiceSetup', () => {
   test('links to the setup guide and keeps the address field collapsed', () => {
-    render(<LocalVoiceSetup />);
+    render(<LocalVoiceSetup persona="general" />);
     expect(screen.getByRole('link', { name: /setup guide/i }).getAttribute('href')).toBe('/guide#voice');
     const advanced = screen.getByText(/Advanced: use a different address or port/i).closest('details');
     expect(advanced?.open).toBe(false);
   });
 
   test('is a single field that defaults to localhost:8880', () => {
-    render(<LocalVoiceSetup />);
+    render(<LocalVoiceSetup persona="general" />);
     expect(screen.getAllByRole('textbox')).toHaveLength(1);
     expect(screen.queryByLabelText(/key|token/i)).toBeNull();
     expect(addressField().value).toBe('http://localhost:8880');
@@ -25,7 +25,7 @@ describe('LocalVoiceSetup', () => {
 
   test('saves when you leave the field, shows what will be used, and applies the default-port rule', async () => {
     const user = userEvent.setup();
-    render(<LocalVoiceSetup />);
+    render(<LocalVoiceSetup persona="general" />);
 
     await user.clear(addressField());
     await user.type(addressField(), '9000');
@@ -45,7 +45,7 @@ describe('LocalVoiceSetup', () => {
   test('blocks testing an unusable address and restores the saved one when you leave it', async () => {
     const user = userEvent.setup();
     window.localStorage.setItem('fcc.localTtsUrl', 'http://localhost:9000');
-    render(<LocalVoiceSetup />);
+    render(<LocalVoiceSetup persona="general" />);
 
     await user.clear(addressField());
     await user.type(addressField(), 'ftp://nope');
@@ -61,7 +61,7 @@ describe('LocalVoiceSetup', () => {
   test('clearing the field goes back to the default', async () => {
     const user = userEvent.setup();
     window.localStorage.setItem('fcc.localTtsUrl', 'http://192.168.1.5:9000');
-    render(<LocalVoiceSetup />);
+    render(<LocalVoiceSetup persona="general" />);
     await user.clear(addressField());
     expect(testButton().hasAttribute('disabled')).toBe(false);
     await user.tab();

@@ -20,7 +20,7 @@ export function registerTtsRoutes(
     if (!parsed.success) throw new ValidationError(parsed.error.issues.map((issue) => issue.message).join('; '));
 
     const user = await userProfileService.getOrCreate(db, request.user);
-    if (!user.ttsEnabled || user.ttsBackend !== 'openai') {
+    if (!parsed.data.preview && (!user.ttsEnabled || user.ttsBackend !== 'openai')) {
       throw new ForbiddenError('Coach voice is not enabled for this account');
     }
     const stored = await llmSetupsRepo.findByUser(db, user.id);

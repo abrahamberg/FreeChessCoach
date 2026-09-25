@@ -27,7 +27,23 @@ describe('localTtsClient', () => {
     expect(calls[0]?.[0]).toBe('http://localhost:8880/v1/audio/speech');
     const bodies = calls.map(([, init]) => JSON.parse(String(init.body)) as { input: string; voice: string });
     expect(bodies.map((body) => body.input)).toEqual(['Nice move.', 'Watch the knight.']);
-    expect(bodies[0]?.voice).toBe('bm_daniel');
+    expect(bodies[0]?.voice).toBe('am_michael');
+  });
+
+  test('sends the persona speed, so the older coaches speak slower', async () => {
+    const fetchMock = stubFetch();
+    await localTtsClient.speak({ text: 'Why does this move work?', persona: 'scholar' }, () => {});
+    const [, init] = callsOf(fetchMock)[0] ?? ['', {}];
+    expect(JSON.parse(String(init.body))).toMatchObject({ voice: 'bm_lewis', speed: 0.85 });
+  });
+
+  test('synthesizes a pitch-lowered persona faster, so its heard pace stays the same', async () => {
+    const fetchMock = stubFetch();
+    await localTtsClient.speak({ text: 'Place your bets.', persona: 'gambler' }, () => {});
+    const [, init] = callsOf(fetchMock)[0] ?? ['', {}];
+    const body = JSON.parse(String(init.body)) as { voice: string; speed: number };
+    expect(body.voice).toBe('am_fenrir');
+    expect(body.speed).toBeCloseTo(0.95 / 0.9);
   });
 
   test('uses the saved address and sends no Authorization header', async () => {

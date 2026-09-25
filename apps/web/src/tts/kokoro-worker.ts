@@ -72,7 +72,7 @@ function loadModel(): Promise<KokoroTTS> {
 // creates from the string is apparently never closed, so the generator just
 // waits for more input that never arrives. We already have the whole text
 // upfront, so push it once and close immediately.
-async function handleSpeak(id: string, text: string, voice: KokoroVoiceId): Promise<void> {
+async function handleSpeak(id: string, text: string, voice: KokoroVoiceId, speed: number): Promise<void> {
   log('handleSpeak start', { textLength: text.length, text });
   try {
     const tts = await loadModel();
@@ -80,7 +80,7 @@ async function handleSpeak(id: string, text: string, voice: KokoroVoiceId): Prom
     splitter.push(text);
     splitter.close();
     let index = 0;
-    for await (const { text: chunkText, audio } of tts.stream(splitter, { voice })) {
+    for await (const { text: chunkText, audio } of tts.stream(splitter, { voice, speed })) {
       log('chunk ready', { index, chunkText, durationSec: audio.audio.length / audio.sampling_rate });
       const wav = trimmedWav(audio.audio, audio.sampling_rate);
       ctx.postMessage({ type: 'chunk', id, index, audio: wav }, [wav]);
@@ -95,6 +95,6 @@ async function handleSpeak(id: string, text: string, voice: KokoroVoiceId): Prom
 }
 
 ctx.onmessage = (event) => {
-  const { id, text, voice } = event.data;
-  void handleSpeak(id, text, voice);
+  const { id, text, voice, speed } = event.data;
+  void handleSpeak(id, text, voice, speed);
 };
