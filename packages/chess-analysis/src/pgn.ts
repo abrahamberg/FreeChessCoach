@@ -143,7 +143,9 @@ function stripAnnotations(pgn: string): string {
 
 /** chess.js does not accept the common SAN suffixes `?!`, `!!`, or `??`. */
 function stripMoveAnnotations(pgn: string): string {
-  return pgn.replace(/([A-Za-z0-9+#=]+)[!?]+(?=\s|$)/g, '$1');
+  // Lookbehind (not a captured `[...]+` run) keeps this linear: a long run of
+  // move characters with no `!?` after it is not rescanned from every offset.
+  return pgn.replace(/(?<=[A-Za-z0-9+#=])[!?]+(?=\s|$)/g, '');
 }
 
 /**

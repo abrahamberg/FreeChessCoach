@@ -21,6 +21,10 @@ import {
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 export const outputPath = path.join(scriptDirectory, '../../../docs/prompts.md');
 
+function escapeTableCell(text: string): string {
+  return text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
+}
+
 function fence(text: string): string {
   return '```\n' + text + '\n```';
 }
@@ -157,7 +161,7 @@ ${fence(puzzleCoach.dynamicPart)}
 | Band | Label | revealDepthPlies | Description |
 |---|---|---|---|
 ${Object.entries(CALIBRATION)
-  .map(([band, c]) => `| ${band} | ${c.label} | ${c.revealDepthPlies} | ${c.description.replace(/\|/g, '\\|')} |`)
+  .map(([band, c]) => `| ${band} | ${c.label} | ${c.revealDepthPlies} | ${escapeTableCell(c.description)} |`)
   .join('\n')}
 `;
 }

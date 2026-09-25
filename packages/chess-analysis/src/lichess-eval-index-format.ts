@@ -181,10 +181,7 @@ export function unpackRecord(buffer: Buffer, offset = 0): LichessEvalRecord {
     const maxDepth = scanDepthForRank(rank);
     const pvUci: string[] = [];
     for (let i = 0; i < maxDepth; i++) {
-      const moveUci = buffer
-        .subarray(cursor, cursor + LICHESS_EVAL_MOVE_SIZE)
-        .toString('ascii')
-        .replace(/\0+$/, '');
+      const moveUci = stripNulPadding(buffer.subarray(cursor, cursor + LICHESS_EVAL_MOVE_SIZE).toString('ascii'));
       cursor += LICHESS_EVAL_MOVE_SIZE;
       if (!moveUci) break;
       pvUci.push(moveUci);
@@ -199,4 +196,11 @@ export function unpackRecord(buffer: Buffer, offset = 0): LichessEvalRecord {
 
 export function compareKeys(a: Buffer, b: Buffer): number {
   return Buffer.compare(a, b);
+}
+
+/** A move slot is NUL-padded ASCII; a UCI move never contains NUL, so the
+ * first one ends it (a linear cut, unlike a `\0+$` regex). */
+function stripNulPadding(slot: string): string {
+  const end = slot.indexOf('\0');
+  return end === -1 ? slot : slot.slice(0, end);
 }

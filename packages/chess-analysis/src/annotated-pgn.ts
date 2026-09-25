@@ -27,7 +27,9 @@ export type AnnotatedMoveData = Omit<
   diagnosisCodes?: DiagnosisCodeId[];
 };
 
-const ANNOTATION_TAG = /\[%fcc ([^\]]+)\]/;
+// The payload is encodeURIComponent output, so it never holds `[` either;
+// excluding it keeps the scan linear on a run of unterminated `[%fcc ` tags.
+const ANNOTATION_TAG = /\[%fcc ([^[\]]+)\]/;
 
 const DERIVABLE_FIELDS = ['ply', 'moveNumber', 'moveSan', 'uci', 'mover', 'isUserMove', 'fenBefore', 'fenAfter'] as const;
 

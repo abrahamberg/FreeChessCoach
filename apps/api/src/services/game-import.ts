@@ -130,8 +130,24 @@ function detectPlatform(
 ): 'lichess' | 'chesscom' | null {
   if (source === 'lichess') return 'lichess';
   if (source === 'chesscom') return 'chesscom';
-  const site = headers['Site']?.toLowerCase() ?? '';
-  if (site.includes('lichess.org')) return 'lichess';
-  if (site.includes('chess.com')) return 'chesscom';
+  const host = siteHost(headers['Site'] ?? '');
+  if (isHostOrSubdomain(host, 'lichess.org')) return 'lichess';
+  if (isHostOrSubdomain(host, 'chess.com')) return 'chesscom';
   return null;
+}
+
+/** A PGN `Site` is either a URL (`https://lichess.org/abc`) or a bare name
+ * (`Chess.com`); both reduce to a lowercase host. */
+function siteHost(site: string): string {
+  const trimmed = site.trim().toLowerCase();
+  if (!/^[a-z][a-z0-9+.-]*:\/\//.test(trimmed)) return trimmed;
+  try {
+    return new URL(trimmed).hostname;
+  } catch {
+    return '';
+  }
+}
+
+function isHostOrSubdomain(host: string, domain: string): boolean {
+  return host === domain || host.endsWith(`.${domain}`);
 }
