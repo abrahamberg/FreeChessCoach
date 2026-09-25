@@ -43,7 +43,10 @@ export function registerLlmSetupRoutes(
   });
 
   // POST, not GET: a local server's token travels in the body, never the URL.
-  app.post('/api/users/me/llm-setup/models', rateLimitConfig(ROUTE_RATE_LIMITS.llmSetupProbe), async (request): Promise<LlmModelsResponse> => {
+  // Unlimited on purpose: the listing runs in the user's own tab (tunnel ->
+  // their local server), so it costs this server nothing, and the settings
+  // form refetches it as the address is edited.
+  app.post('/api/users/me/llm-setup/models', async (request): Promise<LlmModelsResponse> => {
     const parsed = LocalModelsRequestSchema.safeParse(request.body);
     if (!parsed.success) throw new ValidationError(formatIssues(parsed.error.issues));
     const empty = { models: [], loadedModel: null, contextLength: null };
