@@ -1,8 +1,13 @@
-import { decodeAnnotationNote, decodePositionContext, decodePositionDivider } from '../features/chat/positionDivider.js';
+import {
+  decodeAnnotationNote,
+  decodePositionContext,
+  decodePositionDivider
+} from '../features/chat/positionDivider.js';
 import { decodeDivergedLine, decodeDivergedLineStart } from '../features/chat/divergedLine.js';
 import { BOARD_MOVE_PATTERN, PLAYER_MOVE_PATTERN } from '../features/chat/sentinels.js';
 import type { CoachMessage } from '../hooks/useCoachChat.js';
 import { translateChessNotationForSpeech } from './sanToSpokenText.js';
+import { completedSentences } from './streamingSentences.js';
 
 const ARROW_TOKEN_PATTERN = /\[([a-h][1-8])-([a-h][1-8])\]/g;
 const BOLD_PATTERN = /\*\*(.+?)\*\*/g;
@@ -42,8 +47,22 @@ function toSpokenText(text: string): string {
  * DivergedLineStart, DivergedLineMessage all render structured UI, not a
  * prose bubble). */
 export function getSpeakableText(message: CoachMessage): string | null {
-  if (message.role !== 'assistant') return null;
-  if (message.text.trim() === '') return null;
-  if (isSentinel(message.text)) return null;
+  if (!isSpeakableProse(message)) return null;
   return toSpokenText(message.text);
+}
+
+/** The spoken form of each sentence of a coach message that may still be
+ * streaming in: only the sentences already complete (streamingSentences.ts),
+ * plus the trailing one once `isFinal`. Split on the raw text first and
+ * translated per sentence, so a sentence's spoken form never changes as
+ * later text arrives. Empty for anything getSpeakableText wouldn't read. */
+export function getSpeakableSentences(message: CoachMessage, isFinal: boolean): string[] {
+  if (!isSpeakableProse(message)) return [];
+  return completedSentences(message.text, isFinal).map(toSpokenText);
+}
+
+/** Whether a message is coach prose that would be read aloud (not a user
+ * turn, not blank, not one of the structured sentinel shapes). */
+export function isSpeakableProse(message: CoachMessage): boolean {
+  return message.role === 'assistant' && message.text.trim() !== '' && !isSentinel(message.text);
 }

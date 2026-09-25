@@ -1,8 +1,9 @@
 import type { CoachPersona, TtsBackend } from '@freechesscoach/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CoachMessage } from './useCoachChat.js';
-import { getSpeakableText } from '../tts/getSpeakableText.js';
-import { speakNative } from '../tts/native-speech.js';
+import { getSpeakableSentences, isSpeakableProse } from '../tts/getSpeakableText.js';
+import { startMessageAudio, type MessageAudio, type MessageAudioState } from '../tts/message-audio.js';
+import { createNativeSpeechQueue, speakNative, type NativeSpeechQueue } from '../tts/native-speech.js';
 import { applyPlaybackRate, personaPlaybackRate } from '../tts/persona-voices.js';
 import { resolveTtsClient } from '../tts/resolve-tts-client.js';
 
@@ -25,19 +26,16 @@ function writeStoredAutoplay(enabled: boolean): void {
   }
 }
 
-interface QueueEntry {
-  messageId: string;
-  text: string;
-}
-
-/** One message's streamed audio: object URLs for each sentence chunk
- * received so far (in order), plus whether the stream is still in flight. */
-interface MessageAudioState {
-  urls: string[];
-  /** Fixed when the stream starts, like the persona and backend it came from. */
-  playbackRate: number;
-  complete: boolean;
-  errored: boolean;
+/** A coach message being read aloud while it is still streaming in: the
+ * spoken sentences handed to voice so far, and where they went — `audio`
+ * for the blob backends (synthesis starts the moment a sentence completes,
+ * even while an earlier message is still playing), `native` once the
+ * device voice has reached this message in the queue. */
+interface LiveMessage {
+  sentences: string[];
+  final: boolean;
+  audio: MessageAudio | null;
+  native: NativeSpeechQueue | null;
 }
 
 export interface UseCoachVoiceOptions {
@@ -66,23 +64,29 @@ export interface UseCoachVoiceResult {
   loadingMessageId: string | null;
 }
 
-/** Reads each finished coach turn aloud, voiced per the active persona, and
- * lets any message be replayed on demand. `enabled`/`backend` mirror the
- * Settings-page coach-voice toggle (users.tts_enabled/tts_backend): OpenAI
- * (openai-tts-client.ts) delivers one chunk per message; the browser backend
- * (kokoro-tts-client.ts, wrapping kokoro-worker.ts) synthesizes sentence by
- * sentence — either way, playback starts on the first chunk instead of
- * waiting for the whole (often multi-sentence) reply to finish generating,
- * then plays each later chunk as it arrives. Every chunk is cached per
- * message id, so replaying never re-synthesizes.
+/** Reads each coach reply aloud as it streams in, voiced per the active
+ * persona, and lets any message be replayed on demand. `enabled`/`backend`
+ * mirror the Settings-page coach-voice toggle (users.tts_enabled/
+ * tts_backend).
  *
- * Autoplay fires once per newly-finished turn: the `isStreaming` true→false
- * edge (useCoachChat resolves nested client-tool-result round-trips before
- * that flip, so it's genuinely "turn done", not "one chunk done"). Message
- * ids seen before the *first* edge — i.e. everything from session history —
- * are marked handled without queuing audio, so reopening an in-progress
+ * Autoplay speaks sentence by sentence while the turn is still generating:
+ * each sentence goes to voice as soon as the next one starts
+ * (getSpeakableSentences), so the first sentence is playing while the model
+ * is still writing the rest, and later sentences synthesize ahead of
+ * playback. A message is final once the turn ends (`isStreaming` goes
+ * false — useCoachChat resolves nested client-tool round-trips before that
+ * flip) or a later coach message has started, and only then is its last
+ * sentence spoken. Every chunk is cached per message id, so replaying never
+ * re-synthesizes. Message ids seen while nothing is streaming — session
+ * history — are marked handled without queuing audio, so reopening a
  * session doesn't autoplay its whole transcript. */
-export function useCoachVoice({ messages, isStreaming, persona, enabled, backend }: UseCoachVoiceOptions): UseCoachVoiceResult {
+export function useCoachVoice({
+  messages,
+  isStreaming,
+  persona,
+  enabled,
+  backend
+}: UseCoachVoiceOptions): UseCoachVoiceResult {
   const [autoplayEnabled, setAutoplayEnabledState] = useState(readStoredAutoplay);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [loadingMessageId, setLoadingMessageId] = useState<string | null>(null);
@@ -104,7 +108,8 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
 
   const cacheRef = useRef(new Map<string, MessageAudioState>());
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const queueRef = useRef<QueueEntry[]>([]);
+  const queueRef = useRef<string[]>([]);
+  const liveRef = useRef(new Map<string, LiveMessage>());
   const activeRef = useRef(false);
   // Which message the shared <audio> element is currently working through,
   // and its audio state — captured once per playNow() call and read by name
@@ -201,47 +206,37 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
     if (state) playNextChunk(messageId, state);
   }
 
-  function ensureStream(messageId: string, text: string): MessageAudioState {
+  function startAudio(messageId: string): MessageAudio {
     const backend = backendRef.current;
     if (backend === 'native') throw new Error('native voice does not stream audio chunks');
-    const cached = cacheRef.current.get(messageId);
-    if (cached && !cached.errored) return cached;
-
-    const state: MessageAudioState = {
-      urls: [],
-      playbackRate: personaPlaybackRate(personaRef.current, backend),
-      complete: false,
-      errored: false
-    };
-    cacheRef.current.set(messageId, state);
     setLoadingMessageId(messageId);
-
-    const client = resolveTtsClient(backend);
-    const promise = client
-      .speak({ text, persona: personaRef.current }, (index, audio) => {
-        console.log(`[useCoachVoice] chunk ${index} received for ${messageId}`, { bytes: audio.byteLength });
-        const isFirstChunk = state.urls.length === 0;
-        state.urls.push(URL.createObjectURL(new Blob([audio], { type: client.mimeType })));
+    const audio = startMessageAudio({
+      client: resolveTtsClient(backend),
+      persona: personaRef.current,
+      playbackRate: personaPlaybackRate(personaRef.current, backend),
+      onChunk: (state) => {
         // "Loading" means "nothing audible yet" — once the first chunk
         // lands there's real sound to play, even while later sentences are
         // still generating in the background.
-        if (isFirstChunk) setLoadingMessageId((current) => (current === messageId ? null : current));
+        if (state.urls.length === 1) setLoadingMessageId((current) => (current === messageId ? null : current));
         onChunkArrived(messageId);
-      })
-      .then(() => {
-        state.complete = true;
+      },
+      onSettled: (state) => {
+        if (state.errored) setLoadingMessageId((current) => (current === messageId ? null : current));
         onStreamSettled(messageId);
-      })
-      .catch((error: unknown) => {
-        state.errored = true;
-        setLoadingMessageId((current) => (current === messageId ? null : current));
-        onStreamSettled(messageId);
-        throw error;
-      });
-    // Failures are observed via state.errored (checked in playNextChunk);
-    // this just prevents an unhandled-rejection console warning.
-    promise.catch(() => {});
-    return state;
+      }
+    });
+    cacheRef.current.set(messageId, audio.state);
+    return audio;
+  }
+
+  function ensureStream(messageId: string, text: string): MessageAudioState {
+    const cached = cacheRef.current.get(messageId);
+    if (cached && !cached.errored) return cached;
+    const audio = startAudio(messageId);
+    audio.append(text);
+    audio.finish();
+    return audio.state;
   }
 
   function playNative(messageId: string, text: string): void {
@@ -249,16 +244,30 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
     cancelNativeRef.current = speakNative(text, personaRef.current, finishMessage);
   }
 
+  function playNativeLive(messageId: string, live: LiveMessage): void {
+    setPlayingMessageId(messageId);
+    const native = createNativeSpeechQueue(personaRef.current, finishMessage);
+    for (const sentence of live.sentences) native.append(sentence);
+    if (live.final) native.finish();
+    live.native = native;
+    cancelNativeRef.current = native.cancel;
+  }
+
   function playNow(messageId: string, text: string): void {
     activeRef.current = true;
     currentMessageIdRef.current = messageId;
+    const live = liveRef.current.get(messageId);
     if (backendRef.current === 'native') {
-      playNative(messageId, text);
+      if (live) playNativeLive(messageId, live);
+      else playNative(messageId, text);
       return;
     }
     nextChunkIndexRef.current = 0;
     waitingForChunkRef.current = false;
-    const state = ensureStream(messageId, text);
+    // Queued by autoplay (no text of its own): the live audio, as far as it
+    // got. A click on the play button passes the text, so an errored read
+    // is re-synthesized instead.
+    const state = text === '' && live?.audio ? live.audio.state : ensureStream(messageId, text);
     currentStateRef.current = state;
     playNextChunk(messageId, state);
   }
@@ -266,7 +275,31 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
   function advanceQueue(): void {
     if (activeRef.current) return;
     const next = queueRef.current.shift();
-    if (next) playNow(next.messageId, next.text);
+    if (next) playNow(next, '');
+  }
+
+  /** Hands a streaming message's newly completed sentences to voice,
+   * starting it (and queuing it for playback) on its first sentence. */
+  function feedLiveMessage(messageId: string, sentences: string[], isFinal: boolean): void {
+    let live = liveRef.current.get(messageId);
+    if (!live) {
+      if (sentences.length === 0) return;
+      const audio = backendRef.current === 'native' ? null : startAudio(messageId);
+      live = { sentences: [], final: false, audio, native: null };
+      liveRef.current.set(messageId, live);
+      queueRef.current.push(messageId);
+    }
+    for (const sentence of sentences.slice(live.sentences.length)) {
+      live.sentences.push(sentence);
+      live.audio?.append(sentence);
+      live.native?.append(sentence);
+    }
+    if (isFinal && !live.final) {
+      live.final = true;
+      live.audio?.finish();
+      live.native?.finish();
+    }
+    advanceQueue();
   }
 
   const play = useCallback((messageId: string, text: string) => {
@@ -300,35 +333,52 @@ export function useCoachVoice({ messages, isStreaming, persona, enabled, backend
   useEffect(() => {
     const wasStreaming = wasStreamingRef.current;
     wasStreamingRef.current = isStreaming;
-    // Mid-turn: leave newly-appended message ids out of `handled` so the
-    // turn-finished branch below can find them once the turn settles.
-    if (isStreaming) return;
-
     const handled = handledIdsRef.current;
-    const newMessages = messages.filter((message) => !handled.has(message.id));
-    for (const message of newMessages) handled.add(message.id);
-
-    if (!wasStreaming || !autoplayEnabled || !enabled) return;
-    for (const message of newMessages) {
-      const text = getSpeakableText(message);
-      if (text) queueRef.current.push({ messageId: message.id, text });
+    const turnActive = isStreaming || wasStreaming;
+    if (!turnActive || !autoplayEnabled || !enabled) {
+      // Mid-turn with voice off: leave newly-appended ids unhandled so
+      // turning autoplay on before the turn ends still reads them.
+      if (!isStreaming) for (const message of messages) handled.add(message.id);
+      return;
     }
-    advanceQueue();
-    // advanceQueue/playNow/ensureStream/getAudio are intentionally left out
-    // of the dep list: they close only over refs and stable setters, so
-    // every render's version is behaviorally identical — listing them would
-    // just re-run this effect on every render for no reason.
+    for (const [index, message] of messages.entries()) {
+      if (handled.has(message.id)) continue;
+      const isFinal = !isStreaming || hasLaterCoachText(messages, index);
+      feedLiveMessage(message.id, getSpeakableSentences(message, isFinal), isFinal);
+      if (isFinal) handled.add(message.id);
+    }
+    // feedLiveMessage/advanceQueue/playNow/startAudio/getAudio are
+    // intentionally left out of the dep list: they close only over refs and
+    // stable setters, so every render's version is behaviorally identical —
+    // listing them would just re-run this effect on every render for no
+    // reason.
   }, [isStreaming, messages, autoplayEnabled, enabled]);
 
   useEffect(() => {
     return () => {
       audioRef.current?.pause();
       cancelNativeRef.current?.();
+      for (const live of liveRef.current.values()) live.native?.cancel();
       for (const state of cacheRef.current.values()) {
         for (const url of state.urls) URL.revokeObjectURL(url);
       }
     };
   }, []);
 
-  return { autoplayEnabled, setAutoplayEnabled, play, stop, playingMessageId, loadingMessageId };
+  return {
+    autoplayEnabled,
+    setAutoplayEnabled,
+    play,
+    stop,
+    playingMessageId,
+    loadingMessageId
+  };
+}
+
+/** A later coach reply has started streaming prose, so the one at `index` is
+ * done even though the turn as a whole is still going. Structured messages
+ * (a board move, a position divider) don't count: they can land while the
+ * reply before them is still being written. */
+function hasLaterCoachText(messages: CoachMessage[], index: number): boolean {
+  return messages.slice(index + 1).some(isSpeakableProse);
 }

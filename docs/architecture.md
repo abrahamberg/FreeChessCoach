@@ -668,6 +668,16 @@ backends (three clients behind `apps/web/src/tts/resolve-tts-client.ts`, plus `n
   reverse-proxy auth setups don't, and it added a plain-text secret to
   `localStorage`.
 
+Autoplay (`hooks/useCoachVoice.ts`) reads a coach reply while it is still
+streaming in, in game and puzzle sessions alike: `tts/streamingSentences.ts`
+calls a sentence complete once the next one has started (a period after a
+digit is a move number, not an end), and each complete sentence goes straight
+to voice. Blob backends synthesize sentence by sentence in order
+(`tts/message-audio.ts`), ahead of playback; `native` appends utterances to one
+queue (`createNativeSpeechQueue`). A reply's last sentence is spoken once the
+turn ends or a later coach reply starts. History loaded while nothing streams
+is never autoplayed.
+
 Microsoft's unofficial Edge voices were evaluated and not shipped. Their
 WebSocket endpoint only accepts a User-Agent containing `Edg/`, which a browser
 page can't set on a WebSocket (Chrome/Firefox get 403), and the local
