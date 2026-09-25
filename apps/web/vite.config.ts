@@ -35,7 +35,11 @@ export default defineConfig({
       'Cross-Origin-Embedder-Policy': 'credentialless'
     },
     proxy: {
-      '/api': { target: apiProxyTarget, changeOrigin: true, ws: true }
+      // Host is passed through unchanged (no changeOrigin): the api's
+      // cross-site guard compares a request's Origin with its Host, and
+      // Chrome sends no Sec-Fetch-Site on WebSocket handshakes, so a
+      // rewritten Host would get the tunnel refused as cross-site.
+      '/api': { target: apiProxyTarget, ws: true }
     }
   },
   test: {
