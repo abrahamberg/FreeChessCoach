@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog.js';
@@ -17,12 +17,14 @@ import type { ArrowRef } from '../chat/arrowToken.js';
 import { ChatPane } from '../chat/ChatPane.js';
 import { DebugPanel } from '../chat/DebugPanel.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
+import { KickoffFactsContext } from '../chat/kickoff-facts-context.js';
 import type { HoverMove } from '../chat/MessageList.js';
 import { encodePositionContext, sanForPly } from '../chat/positionDivider.js';
 import { SessionSummaryCard } from '../chat/SessionSummaryCard.js';
 import { useMessagePaging } from '../chat/useMessagePaging.js';
 import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
 import { UnlockPhraseModal } from '../settings/UnlockPhraseModal.js';
+import { buildKickoffFacts } from './kickoff-facts.js';
 import { MobileCoachSessionBody } from './MobileCoachSessionBody.js';
 import { SessionBoardColumn } from './SessionBoardColumn.js';
 import { SessionHeader } from './SessionHeader.js';
@@ -103,6 +105,10 @@ export function SessionPage(): ReactNode {
   const persona = profileQuery.data?.coachPersona ?? 'general';
   const ttsEnabled = profileQuery.data?.ttsEnabled ?? false;
   const llmSetupQuery = useLlmSetupStatus();
+  const kickoffFacts = useMemo(
+    () => buildKickoffFacts(gameQuery.data?.gameReport, gameQuery.data?.userColor ?? 'white'),
+    [gameQuery.data]
+  );
   const savedTtsBackend = profileQuery.data?.ttsBackend ?? 'openai';
   const ttsBackend = effectiveTtsBackend(savedTtsBackend, isOpenAiVoiceAvailable(llmSetupQuery.data));
   const coachVoice = useCoachVoice({
@@ -229,7 +235,7 @@ export function SessionPage(): ReactNode {
     />
   );
 
-  return (
+  const page = (
     <div className="session-page">
       {unlockModal.isOpen && (
         <UnlockPhraseModal
@@ -322,4 +328,6 @@ export function SessionPage(): ReactNode {
       )}
     </div>
   );
+
+  return <KickoffFactsContext.Provider value={kickoffFacts}>{page}</KickoffFactsContext.Provider>;
 }
