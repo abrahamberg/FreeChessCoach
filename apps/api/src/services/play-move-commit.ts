@@ -1,5 +1,5 @@
 import type { Kysely } from 'kysely';
-import type { MoveQuality, PositionAnalysis } from '@freechesscoach/shared';
+import type { MoveQuality } from '@freechesscoach/shared';
 import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { SessionRow } from '../db/repositories/sessions.js';
@@ -7,10 +7,11 @@ import type { Database } from '../db/schema.js';
 import { currentEpisode } from '../lib/episodes.js';
 import { closeEpisodeIfNeeded, type CoachContextDependencies } from './coach-context.js';
 import { commitPlayerMove } from './play-moves.js';
+import type { AnalyzePosition } from './engine/engine-backend.js';
 
 export interface CommitPlayerMoveDependencies extends CoachContextDependencies {
   db: Kysely<Database>;
-  analyzePosition: (fen: string) => Promise<PositionAnalysis>;
+  analyzePosition: AnalyzePosition;
 }
 
 export interface CommittedPlayerMove {

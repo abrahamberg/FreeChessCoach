@@ -6,6 +6,7 @@ import {
   type ClassifiedMove
 } from '@freechesscoach/chess-analysis';
 import type { DiagnosisCodeId, EngineEval, PositionAnalysis } from '@freechesscoach/shared';
+import type { AnalyzePosition } from './engine/engine-backend.js';
 
 /** `classifyPlayMove`'s result: a `ClassifiedMove` widened with the one
  * field `ClassifiedMoveSchema` doesn't carry (see
@@ -49,12 +50,13 @@ export interface ClassifyPlayMoveArgs {
  * by folding it into the game's `annotatedPgn`.
  */
 export async function classifyPlayMove(
-  analyzePosition: (fen: string) => Promise<PositionAnalysis>,
+  analyzePosition: AnalyzePosition,
   args: ClassifyPlayMoveArgs
 ): Promise<ClassifiedLiveMove> {
   const [analysisBefore, analysisAfter] = await Promise.all([
     analyzePosition(args.fenBefore),
-    analyzePosition(args.fenAfter)
+    // Only its first line's score is read (classifyPlayMoveWithEvals).
+    analyzePosition(args.fenAfter, { multiPv: 1 })
   ]);
 
   return classifyPlayMoveWithEvals(

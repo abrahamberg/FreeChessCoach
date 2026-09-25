@@ -41,15 +41,49 @@ function fakeTransport(result: unknown): EngineTunnelTransport & { request: Retu
 }
 
 describe('LiteSupplementedEngineBackend', () => {
-  test('does not call the lite tunnel when main already meets the requested multiPv', async () => {
-    const main = fakeMain(analysisWithLines([line('e4', 30), line('d4', 25)]));
+  test('never asks the browser when only the best line is wanted', async () => {
+    const main = fakeMain(analysisWithLines([line('e4', 30)]));
     const transport = fakeTransport(null);
-    const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
+    const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'external' });
+
+    const result = await backend.analyzePosition(START_FEN, { multiPv: 1 });
+
+    expect(transport.request).not.toHaveBeenCalled();
+    expect(result.lines.map((l) => l.moveSan)).toEqual(['e4']);
+  });
+
+  test('starts the browser search before main has answered', async () => {
+    let answerMain: (analysis: PositionAnalysis) => void = () => undefined;
+    const main: EngineBackend = {
+      analyzePosition: vi.fn(() => new Promise<PositionAnalysis>((resolve) => (answerMain = resolve))),
+      analyzeGame: vi.fn()
+    };
+    const transport = fakeTransport(analysisWithLines([line('e4', 28), line('d4', 20)]));
+    const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'external' });
+
+    const pending = backend.analyzePosition(START_FEN, { multiPv: 5 });
+    expect(transport.request).toHaveBeenCalledTimes(1);
+
+    answerMain(analysisWithLines([line('e4', 30)]));
+    expect((await pending).lines.map((l) => l.moveSan)).toEqual(['e4', 'd4']);
+  });
+
+  test('leaves the early browser search unread when main already meets the requested multiPv', async () => {
+    const main = fakeMain(analysisWithLines([line('e4', 30), line('d4', 25)]));
+    const transport = fakeTransport(analysisWithLines([line('e4', 28), line('c4', 20)]));
+    const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'external' });
 
     const result = await backend.analyzePosition(START_FEN, { multiPv: 2 });
 
-    expect(transport.request).not.toHaveBeenCalled();
     expect(result.lines.map((l) => l.moveSan)).toEqual(['e4', 'd4']);
+  });
+
+  test('a main engine that throws still rethrows while the browser search is in flight', async () => {
+    const main: EngineBackend = { analyzePosition: vi.fn().mockRejectedValue(new Error('engine down')), analyzeGame: vi.fn() };
+    const transport = { request: vi.fn().mockRejectedValue(new Error('no browser tab connected')) };
+    const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'external' });
+
+    await expect(backend.analyzePosition(START_FEN, { multiPv: 5 })).rejects.toThrow('engine down');
   });
 
   test('once the light engine fails, later short results are returned as they are, without asking it again', async () => {
@@ -132,15 +166,15 @@ describe('LiteSupplementedEngineBackend', () => {
     expect(result.lines.map((l) => l.moveSan)).toEqual(['e4']);
   });
 
-  test('does not attempt a lite request when the requested multiPv exceeds the position\'s own legal-move count and main already covers it', async () => {
+  test('merges nothing when the requested multiPv exceeds the position\'s own legal-move count and main already covers it', async () => {
     const allMoveLines = Array.from({ length: START_FEN_LEGAL_MOVE_COUNT }, (_, i) => line(`m${i}`, 0));
     const main = fakeMain(analysisWithLines(allMoveLines));
-    const transport = fakeTransport(null);
+    const transport = fakeTransport(analysisWithLines([line('e4', 28)]));
     const backend = new LiteSupplementedEngineBackend(main, transport, 'user-1', { timeoutMs: 8000, mainBucket: 'internal' });
 
-    await backend.analyzePosition(START_FEN, { multiPv: START_FEN_LEGAL_MOVE_COUNT + 20 });
+    const result = await backend.analyzePosition(START_FEN, { multiPv: START_FEN_LEGAL_MOVE_COUNT + 20 });
 
-    expect(transport.request).not.toHaveBeenCalled();
+    expect(result.lines).toEqual(allMoveLines);
   });
 
   describe('analyzeGame — breadth for game review (docs/tactics-rework.md §7)', () => {

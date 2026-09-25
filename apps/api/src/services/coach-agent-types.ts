@@ -1,9 +1,10 @@
 import type { PuzzleRecord } from '@freechesscoach/chess-analysis';
-import type { ClientToolResult, PositionAnalysis } from '@freechesscoach/shared';
+import type { ClientToolResult } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
 import type { GatewayConfig, ModelResolution, Tier } from '../llm/gateway.js';
 import type { JobQueue } from '../jobs/queue.js';
+import type { AnalyzePosition } from './engine/engine-backend.js';
 
 export type ModelResolver = (
   db: Kysely<Database>,
@@ -16,7 +17,7 @@ export interface CoachAgentDependencies {
   db: Kysely<Database>;
   jobQueue: JobQueue;
   gatewayConfig: GatewayConfig;
-  analyzePosition: (fen: string) => Promise<PositionAnalysis>;
+  analyzePosition: AnalyzePosition;
   /** The light-tier subagent call, bound to the session's user — BYOK is the
    * only LLM path, so episode folds / move notes resolve the user's own key.
    * Built per-request in routes/sessions.ts's buildRequestScopedAgentDeps;

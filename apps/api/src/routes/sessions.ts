@@ -347,7 +347,7 @@ async function buildRequestScopedAgentDeps(
   userId: string
 ): Promise<CoachAgentDependencies> {
   const backend = await resolveEngineBackend(engineBackendOptions, userId);
-  return { ...base, analyzePosition: (fen) => backend.analyzePosition(fen), callLightModel: buildCallLightModel(base, userId) };
+  return { ...base, analyzePosition: (fen, opts) => backend.analyzePosition(fen, opts), callLightModel: buildCallLightModel(base, userId) };
 }
 
 /** "Play vs Bot" plan: analyzePosition (cached, standard depth) grades move
@@ -375,7 +375,7 @@ async function buildBotMoveCommitDeps(
     db: base.db,
     jobQueue: base.jobQueue,
     callLightModel: buildCallLightModel(base, userId),
-    analyzePosition: (fen) => cachedBackend.analyzePosition(fen),
+    analyzePosition: (fen, opts) => cachedBackend.analyzePosition(fen, opts),
     // 'interactive': a bot move is a live "your move" round trip the student
     // is watching, not background batch work — it must jump ahead of this
     // game's own re-analysis (or another user's import) queued on the

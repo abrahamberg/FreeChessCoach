@@ -89,16 +89,13 @@ export function createLiteAnalyzer(transport: EngineTunnelTransport, userId: str
 const LITE_SUPPLEMENT_MAX_REQUESTS = 24;
 
 /**
- * Decorator wrapping whichever raw backend `resolveRawBackendForUser`
- * already resolved (native / chess_api / browser-tunnel-heavy) — never a
- * mode of its own. Calls `main` first; only when `main`'s own result came
- * back with fewer alternatives than both requested *and* the position
- * actually has to offer does it reach for the lightweight browser worker
- * (`engine: 'lite'`) to fill the shortfall. This is what makes the lite
- * engine "compulsory to consult, optional to contribute": every mode gets
- * the same shortfall check, but a mode that already gives enough lines
- * (native, or a position with few legal moves) never touches the tunnel at
- * all.
+ * Decorator around the chess_api raw backend — the only engine mode that
+ * returns fewer lines than asked for (one, in practice); native and browser
+ * Stockfish always return what was requested, so buildEnginePipeline never
+ * wraps them. For a single position the lightweight browser worker
+ * (`engine: 'lite'`) runs alongside `main` whenever more than one line is
+ * wanted, and its lines are only merged in when `main` really did come back
+ * short of both what was requested *and* what the position has to offer.
  *
  * Never caches or persists anything: the lite engine's widened lines are
  * explicitly not the trusted, official evaluation the rest of the pipeline
@@ -129,20 +126,29 @@ export class LiteSupplementedEngineBackend implements EngineBackend {
     // comment in bot-move-debug.ts.
     if (opts?.debug) opts.debug.mode = this.mainBucket;
 
+    // Only chess-api.com gets this decorator (buildEnginePipeline), and it
+    // answers with a single line whatever it's asked for — so whenever more
+    // than one line is wanted, the shortfall is known before it answers and
+    // the browser search starts alongside it rather than after it. Never
+    // rejects (tryLiteLines), so an unused one can simply be dropped.
+    const liteStart = Date.now();
+    const pendingLite = needsSupplement(fen, 1, opts?.multiPv) ? this.tryLiteLines(fen, opts) : undefined;
+
     const mainStart = Date.now();
     const mainResult = await traceMainEngineCall(opts?.debug, this.mainBucket, () => this.main.analyzePosition(fen, opts));
     if (opts?.debug) {
       opts.debug[this.mainBucket] = { moves: toLineDebug(mainResult.lines), time: formatMs(Date.now() - mainStart) };
     }
-    if (!needsSupplement(fen, mainResult.lines.length, opts?.multiPv)) return mainResult;
+    // Enough lines after all (e.g. chess-api.com failed over to server
+    // Stockfish): the early browser search is left to finish unread.
+    if (!pendingLite || !needsSupplement(fen, mainResult.lines.length, opts?.multiPv)) return mainResult;
 
-    const liteStart = Date.now();
     const finishStep = traceLiteSupplement(
       opts?.debug,
       mainResult.lines.length,
       `depth ${LITE_SUPPLEMENT_DEPTH}, ${LITE_SUPPLEMENT_MULTI_PV} lines, ${LITE_SUPPLEMENT_MOVETIME_MS}ms cap`
     );
-    const { lines: liteLines, error: liteError } = await this.tryLiteLines(fen, opts);
+    const { lines: liteLines, error: liteError } = await pendingLite;
     finishStep({ lineCount: liteLines.length, ...(liteError ? { error: liteError } : {}) });
     if (opts?.debug) {
       opts.debug.lightBrowser = {

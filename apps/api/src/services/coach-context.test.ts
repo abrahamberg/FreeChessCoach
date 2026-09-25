@@ -515,6 +515,8 @@ describe('coach-context', () => {
 
       expect(analyzePosition).toHaveBeenCalledWith('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
       expect(analyzePosition).toHaveBeenCalledTimes(2);
+      // The played line only ever reads the post-move position's best line.
+      expect(analyzePosition.mock.calls[1]?.[1]).toEqual({ multiPv: 1 });
       const messages = [...context.instructions, ...context.messages];
       const serialized = JSON.stringify(messages);
       expect(serialized).not.toContain('Full engine analysis');

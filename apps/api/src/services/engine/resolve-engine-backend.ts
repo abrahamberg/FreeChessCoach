@@ -116,8 +116,8 @@ interface EnginePipelineOptions {
  *
  * Lichess is the outermost decorator intentionally. A successful lookup
  * returns immediately and cannot invoke the selected engine or browser-lite.
- * Browser-lite is inside the Lichess decorator, so it can only widen a result
- * after the selected method was actually needed and returned too few lines.
+ * Browser-lite is inside the Lichess decorator, and only for chess_api, so it
+ * can only run once the selected method is actually needed.
  */
 function buildEnginePipeline(
   options: ResolveEngineBackendOptions,
@@ -131,11 +131,13 @@ function buildEnginePipeline(
     ? 'externalEngine'
     : 'internalEngine';
 
+  // Native and browser Stockfish return every line asked for; only
+  // chess-api.com comes back short (see LiteSupplementedEngineBackend).
   let backend = selectedBackend;
-  if (pipeline.supplementBreadth) {
+  if (pipeline.supplementBreadth && mode === 'chess_api') {
     backend = new LiteSupplementedEngineBackend(backend, options.tunnelTransport, userId, {
       timeoutMs: options.tunnelTimeoutMs,
-      mainBucket: mainBucketFor(mode)
+      mainBucket: 'external'
     });
   }
 
@@ -154,10 +156,7 @@ function buildEnginePipeline(
   });
 }
 
-/** The user's own engineMode — the one thing the lite decorator's debug
- * bucket needs when the backend itself has already been built (see
- * `resolveReviewEngineBackend`), so asking for it never has to construct a
- * second, unused raw backend. */
+/** The user's own engineMode, with a chess-api.com cooldown applied. */
 async function engineModeForUser(options: ResolveEngineBackendOptions, userId: string): Promise<EngineMode> {
   const user = await usersRepo.findById(options.db, userId);
   if (!user) throw new EngineUnavailableError(`Unknown user ${userId}`);
@@ -166,13 +165,6 @@ async function engineModeForUser(options: ResolveEngineBackendOptions, userId: s
   // notice), so nothing keeps hammering an exhausted quota.
   if (user.engineMode === 'chess_api' && chessApiPausedUntil(user.chessApiRateLimitedAt)) return 'native';
   return user.engineMode;
-}
-
-/** Which BotMoveDebugCollector bucket a main call's own result belongs under
- * (see bot-move-debug.ts) — derived from the user's engineMode, and shared
- * by every caller that wraps a backend in LiteSupplementedEngineBackend. */
-function mainBucketFor(mode: EngineMode): 'internal' | 'external' | 'browser' {
-  return mode === 'native' ? 'internal' : mode === 'chess_api' ? 'external' : 'browser';
 }
 
 async function resolveRawBackendForUser(
@@ -203,8 +195,8 @@ async function resolveRawBackendForUser(
 
 /**
  * Game review uses the same source-order contract as every other caller:
- * Lichess first, reliable fallback next, and browser-lite fills a candidate
- * shortfall when more paths are needed.
+ * Lichess first, reliable fallback next, and (chess_api only) browser-lite
+ * fills a candidate shortfall when more paths are needed.
  *
  * Review goes through `analyzeGame`, which the lite decorator used to
  * delegate straight through — so review never touched the browser worker at

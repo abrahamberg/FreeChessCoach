@@ -7,13 +7,14 @@ import {
   toAnnotatedMoveData,
   type EvalScore
 } from '@freechesscoach/chess-analysis';
-import type { MoveQuality, PositionAnalysis } from '@freechesscoach/shared';
+import type { MoveQuality } from '@freechesscoach/shared';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import type { Database } from '../db/schema.js';
 import { NotFoundError } from '../lib/errors.js';
 import { createKeyedLock } from '../lib/keyedLock.js';
 import { classifyPlayMove } from './play-move-quality.js';
+import type { AnalyzePosition } from './engine/engine-backend.js';
 
 /** Serializes read-modify-write cycles against one game's `pgn`/
  * `annotatedPgn` columns. Without this, two commits that overlap in time
@@ -41,7 +42,7 @@ export async function withGameLock<T>(gameId: string, fn: () => Promise<T>): Pro
 
 export interface PlayMovesDependencies {
   db: Kysely<Database>;
-  analyzePosition: (fen: string) => Promise<PositionAnalysis>;
+  analyzePosition: AnalyzePosition;
 }
 
 export interface CommittedMove {

@@ -1,6 +1,12 @@
 import type { EngineEval, EnginePriority, PositionAnalysis } from '@freechesscoach/shared';
 import type { BotMoveDebugCollector } from './bot-move-debug.js';
 
+/** A user's resolved engine pipeline, reduced to what request-scoped callers
+ * pick: how many lines. A caller that reads only the best line passes
+ * `multiPv: 1`, so no engine searches (and chess-api.com is never topped up
+ * with) lines nobody reads. */
+export type AnalyzePosition = (fen: string, opts?: Pick<EngineBackendAnalyzeOptions, 'multiPv'>) => Promise<PositionAnalysis>;
+
 /**
  * Options for engine backend analysis methods.
  */

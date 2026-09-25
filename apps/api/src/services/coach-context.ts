@@ -30,6 +30,7 @@ import { currentEpisode } from '../lib/episodes.js';
 import { getPositionAtPly } from './game-positions.js';
 import { includeOrphanedToolCall } from './coach-context-orphan-boundary.js';
 import { resolveEpisodeReplay, type CoachContextDependencies } from './coach-context-replay.js';
+import type { AnalyzePosition } from './engine/engine-backend.js';
 
 export { closeEpisodeIfNeeded, detailWordBudget } from './coach-context-episode-close.js';
 export type { CoachContextDependencies } from './coach-context-replay.js';
@@ -152,7 +153,7 @@ export interface BuildEpisodeContextInput extends CoachContextDependencies {
   /** wraps `POST engine/analyze-position` (architecture §4) — always called
    * to populate the "## Current position" analysis; engine visibility is a
    * universal default, not a per-student opt-in. */
-  analyzePosition: (fen: string) => Promise<PositionAnalysis>;
+  analyzePosition: AnalyzePosition;
   /** Same local-model signal as coach-system.ts's `CoachPromptInput.isLocal`
    * — switches the game-so-far/annotated-PGN block to its plain-SAN
    * rendering (renderAnnotatedPgn's `simple`) instead of the NAG-glyph one,
@@ -221,7 +222,7 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
   // eval index first, then the user's selected engine) — there's no
   // position-level cache to warm, so on the non-best-move path it is a real
   // second engine round trip, not a saved one.
-  const postMoveAnalysis = playedMove !== null && !isBestMove ? await input.analyzePosition(position.fen) : undefined;
+  const postMoveAnalysis = playedMove !== null && !isBestMove ? await input.analyzePosition(position.fen, { multiPv: 1 }) : undefined;
   const featureDelta =
     playedMove !== null && !isBestMove ? computeFeatureDelta(analysis, preMoveFen, position.fen) : undefined;
   const classifiedMove = moveQualities.find((move) => move.ply === input.currentPly);
