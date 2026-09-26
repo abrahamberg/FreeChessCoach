@@ -11,9 +11,20 @@
   }
 }
 
-@media (max-width: 479px) {
+/* Phones: a single column of 152px portraits was ~2000px of scrolling for
+ * eight coaches. Keep two columns and shrink the portrait and padding. */
+@media (max-width: 639px) {
   .coach-persona-select {
-    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .coach-persona-select__option {
+    gap: 6px;
+    padding: var(--space-3) var(--space-2);
+  }
+
+  .coach-persona-select .coach-avatar-image--settings {
+    width: 72px;
   }
 }
 

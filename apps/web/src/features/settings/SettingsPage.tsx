@@ -82,103 +82,105 @@ export function SettingsPage(): ReactNode {
         </p>
       </header>
 
-      <SettingsSection label="Profile" title="Profile">
-        <ProfileFields profile={profile} />
-      </SettingsSection>
+      <div className="settings-page__sections">
+        <SettingsSection label="Profile" title="Profile">
+          <ProfileFields profile={profile} />
+        </SettingsSection>
 
-      <SettingsSection label="Coach" title="Coach">
-        <p>Pick who coaches you. It's cosmetic — every coach gives the same advice, just in a different voice.</p>
-        <CoachPersonaSelect
-          value={profile.coachPersona}
-          onChange={(coachPersona) => updateProfile.mutate({ coachPersona })}
-        />
-      </SettingsSection>
-
-      <SettingsSection label="Coach voice" title="Coach voice">
-        <p>Have the coach's replies read aloud. Off by default.</p>
-        <VoiceFields profile={profile} llmSetup={llmSetup} />
-      </SettingsSection>
-
-      <SettingsSection label="Linked accounts" title="Linked accounts">
-        <p>
-          Set these so we can tell which side you played when you import a game — you won&rsquo;t be asked
-          again for games from that site.
-        </p>
-        <LinkedAccountsFields profile={profile} />
-      </SettingsSection>
-
-      <SettingsSection label="Board" title="Board">
-        <p>Show dots on the squares a selected piece can legally move to.</p>
-        <button type="button" aria-pressed={showLegalMoveDots} onClick={() => setShowLegalMoveDots(true)}>
-          Show
-        </button>
-        <button type="button" aria-pressed={!showLegalMoveDots} onClick={() => setShowLegalMoveDots(false)}>
-          Hide
-        </button>
-      </SettingsSection>
-
-      <SettingsSection id="settings-engine" label="Engine" title="Engine">
-        <EngineFields profile={profile} />
-      </SettingsSection>
-
-      <SettingsSection id="settings-api-keys" label="API keys" title="AI setup">
-        <p>Your endpoint and API key are tested, encrypted with your unlock phrase, and kept available only while you are active. We never show the key again.</p>
-        <AiSetupHelp />
-        <LlmSetupSection status={llmSetup} />
-      </SettingsSection>
-
-      <SettingsSection label="Appearance" title="Appearance">
-        <button type="button" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>
-          Light
-        </button>
-        <button type="button" aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')}>
-          Dark
-        </button>
-      </SettingsSection>
-
-      <SettingsSection label="Account" title="Account">
-        <p>{profile.email}</p>
-        {/* Ends the oauth2-proxy session (architecture §11) and lands back on
-         * the public landing page — not a fetch/mutation, so a plain link. */}
-        <a className="btn-secondary" href="/oauth2/sign_out?rd=/">
-          Sign out
-        </a>
-
-        <div className="settings-page__danger-zone">
-          <h3>Delete account</h3>
-          <p>
-            Permanently deletes your account and everything in it — games, analyses, coaching sessions, and
-            progress. This cannot be undone.
-          </p>
-          <button
-            type="button"
-            className="btn-destructive"
-            onClick={() => setConfirmingDeleteAccount(true)}
-            disabled={deleteAccountMutation.isPending}
-          >
-            Delete account
-          </button>
-          {deleteAccountMutation.isError && <p role="alert">{describeApiError(deleteAccountMutation.error)}</p>}
-        </div>
-
-        {confirmingDeleteAccount && (
-          <ConfirmDialog
-            title="Delete your account?"
-            description={
-              <p>
-                This permanently deletes <strong>{profile.email}</strong> and every game, analysis, and coaching
-                session tied to it. This cannot be undone.
-              </p>
-            }
-            confirmLabel="Delete account"
-            onCancel={() => setConfirmingDeleteAccount(false)}
-            onConfirm={() => {
-              setConfirmingDeleteAccount(false);
-              deleteAccountMutation.mutate();
-            }}
+        <SettingsSection label="Coach" title="Coach">
+          <p>Pick who coaches you. It's cosmetic — every coach gives the same advice, just in a different voice.</p>
+          <CoachPersonaSelect
+            value={profile.coachPersona}
+            onChange={(coachPersona) => updateProfile.mutate({ coachPersona })}
           />
-        )}
-      </SettingsSection>
+        </SettingsSection>
+
+        <SettingsSection label="Coach voice" title="Coach voice">
+          <p>Have the coach's replies read aloud. Off by default.</p>
+          <VoiceFields profile={profile} llmSetup={llmSetup} />
+        </SettingsSection>
+
+        <SettingsSection label="Linked accounts" title="Linked accounts">
+          <p>
+            Set these so we can tell which side you played when you import a game — you won&rsquo;t be asked
+            again for games from that site.
+          </p>
+          <LinkedAccountsFields profile={profile} />
+        </SettingsSection>
+
+        <SettingsSection label="Board" title="Board">
+          <p>Show dots on the squares a selected piece can legally move to.</p>
+          <button type="button" aria-pressed={showLegalMoveDots} onClick={() => setShowLegalMoveDots(true)}>
+            Show
+          </button>
+          <button type="button" aria-pressed={!showLegalMoveDots} onClick={() => setShowLegalMoveDots(false)}>
+            Hide
+          </button>
+        </SettingsSection>
+
+        <SettingsSection id="settings-engine" label="Engine" title="Engine">
+          <EngineFields profile={profile} />
+        </SettingsSection>
+
+        <SettingsSection id="settings-api-keys" label="API keys" title="AI setup">
+          <p>Your endpoint and API key are tested, encrypted with your unlock phrase, and kept available only while you are active. We never show the key again.</p>
+          <AiSetupHelp />
+          <LlmSetupSection status={llmSetup} />
+        </SettingsSection>
+
+        <SettingsSection label="Appearance" title="Appearance">
+          <button type="button" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>
+            Light
+          </button>
+          <button type="button" aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')}>
+            Dark
+          </button>
+        </SettingsSection>
+
+        <SettingsSection label="Account" title="Account">
+          <p>{profile.email}</p>
+          {/* Ends the oauth2-proxy session (architecture §11) and lands back on
+           * the public landing page — not a fetch/mutation, so a plain link. */}
+          <a className="btn-secondary" href="/oauth2/sign_out?rd=/">
+            Sign out
+          </a>
+
+          <div className="settings-page__danger-zone">
+            <h3>Delete account</h3>
+            <p>
+              Permanently deletes your account and everything in it — games, analyses, coaching sessions, and
+              progress. This cannot be undone.
+            </p>
+            <button
+              type="button"
+              className="btn-destructive"
+              onClick={() => setConfirmingDeleteAccount(true)}
+              disabled={deleteAccountMutation.isPending}
+            >
+              Delete account
+            </button>
+            {deleteAccountMutation.isError && <p role="alert">{describeApiError(deleteAccountMutation.error)}</p>}
+          </div>
+
+          {confirmingDeleteAccount && (
+            <ConfirmDialog
+              title="Delete your account?"
+              description={
+                <p>
+                  This permanently deletes <strong>{profile.email}</strong> and every game, analysis, and coaching
+                  session tied to it. This cannot be undone.
+                </p>
+              }
+              confirmLabel="Delete account"
+              onCancel={() => setConfirmingDeleteAccount(false)}
+              onConfirm={() => {
+                setConfirmingDeleteAccount(false);
+                deleteAccountMutation.mutate();
+              }}
+            />
+          )}
+        </SettingsSection>
+      </div>
 
       <footer className="settings-page__legal">
         {/* /privacy and /terms are static, unauthenticated pages

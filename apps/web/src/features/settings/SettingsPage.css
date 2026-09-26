@@ -56,6 +56,64 @@
   margin-top: var(--space-3);
 }
 
+.settings-page__sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Phones: one grouped list like a native settings screen — rows joined in a
+ * single rounded container with hairline dividers, chevron pointing right
+ * while closed and down while open. */
+@media (max-width: 639px) {
+  .settings-page__sections {
+    gap: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .settings-page__sections > .settings-section {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .settings-page__sections > .settings-section + .settings-section {
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* The group clips overflow, so draw the deep-link highlight inside. */
+  .settings-page__sections > .settings-section:target {
+    outline-offset: -2px;
+  }
+
+  .settings-section__summary {
+    min-height: 52px;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .settings-section__summary h2 {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+  }
+
+  .settings-section__summary::after {
+    transform: rotate(-45deg);
+  }
+
+  .settings-section details[open] > .settings-section__summary::after {
+    transform: rotate(45deg);
+  }
+
+  .settings-section__body {
+    margin-top: 0;
+    padding: 0 var(--space-4) var(--space-4);
+  }
+}
+
 .settings-page__profile-row {
   display: flex;
   flex-wrap: wrap;
