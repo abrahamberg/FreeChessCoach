@@ -19,6 +19,17 @@
   box-shadow: 0 -2px 12px var(--color-border-strong);
 }
 
+/* Same iOS short-viewport strip as .bottom-tab-bar::after (AppShell.css). */
+.board-bottom-bar::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: inherit;
+}
+
 /* --report variant: a GameReportSummary as the bottom sheet — used by both
  * GameReviewPage (Review) and BotSessionPage (Play vs Bot, once its own
  * post-game report exists). "A layer on top of the board with a button to

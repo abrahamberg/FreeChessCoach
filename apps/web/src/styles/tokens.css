@@ -21,6 +21,7 @@
   --color-primary-soft: #e6f0e8;
   --color-primary-tint: #f3f8f2;
   --color-on-primary: #ffffff;
+  --brand-mark-backdrop: transparent;
 
   /* The gradient behind a coach or bot portrait. The sheets are cut-outs with a
    * light sticker outline, which looks wrong on anything but a pale backdrop, so
@@ -119,6 +120,9 @@
     --color-primary-soft: #24352a;
     --color-primary-tint: #1c2a21;
     --color-on-primary: #15140f;
+    /* The logo is a dark-green queen — nearly invisible on the dark
+     * surfaces, so it sits on a pale chip here (the same portrait backdrop). */
+    --brand-mark-backdrop: linear-gradient(155deg, #f3f8ef 0%, #fbf1dc 100%);
 
     --color-gold: #d9a857;
     --color-gold-soft: #362b18;
@@ -162,6 +166,7 @@
   --color-primary-soft: #e6f0e8;
   --color-primary-tint: #f3f8f2;
   --color-on-primary: #ffffff;
+  --brand-mark-backdrop: transparent;
 
   --color-gold: #b9852f;
   --color-gold-soft: #f7eedd;
@@ -204,6 +209,9 @@
   --color-primary-soft: #24352a;
   --color-primary-tint: #1c2a21;
   --color-on-primary: #15140f;
+  /* The logo is a dark-green queen — nearly invisible on the dark
+   * surfaces, so it sits on a pale chip here (the same portrait backdrop). */
+  --brand-mark-backdrop: linear-gradient(155deg, #f3f8ef 0%, #fbf1dc 100%);
 
   --color-gold: #d9a857;
   --color-gold-soft: #362b18;

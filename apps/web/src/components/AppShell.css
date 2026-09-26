@@ -77,6 +77,8 @@
   height: 30px;
   flex: none;
   object-fit: contain;
+  border-radius: 8px;
+  background: var(--brand-mark-backdrop);
 }
 
 .app-shell__wordmark {
@@ -140,13 +142,30 @@
   left: 0;
   right: 0;
   z-index: 10;
-  height: 60px;
+  /* The safe-area padding sits on top of the 60px of tabs, not inside it —
+   * with border-box a bare 60px left the tabs ~26px on a home-indicator
+   * iPhone, and they spilled into the inset. */
+  height: calc(60px + env(safe-area-inset-bottom));
   display: flex;
   background: color-mix(in srgb, var(--color-surface) 92%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-top: 1px solid var(--color-border);
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* iOS WebKit (Safari, Chrome, installed app) can leave the fixed layout
+ * viewport short of the physical screen edge, so a bottom:0 bar stops above
+ * it and the page background shows through below. Paint the bar's colour
+ * past its bottom edge to cover that strip; offscreen where there is none. */
+.bottom-tab-bar::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: inherit;
 }
 
 .bottom-tab-bar a {
