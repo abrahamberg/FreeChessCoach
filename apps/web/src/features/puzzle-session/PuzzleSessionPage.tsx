@@ -1,8 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Modal } from '../../components/Modal.js';
-import { OverflowMenu, type OverflowMenuItem } from '../../components/OverflowMenu.js';
+import { BoardMenu } from '../../components/BoardMenu.js';
+import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog.js';
+import { useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useCoachVoice } from '../../hooks/useCoachVoice.js';
 import { useLlmSetupStatus } from '../../hooks/useLlmSetupStatus.js';
 import { effectiveTtsBackend } from '../../tts/effective-tts-backend.js';
@@ -44,6 +46,7 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const navigate = useNavigate();
   const isSideBySide = useIsBoardSideBySide();
+  const engineActivity = useEngineActivityIndicator();
   const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(DEFAULT_AUTOPLAY_INTERVAL_MS);
 
   const {
@@ -227,7 +230,7 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
           <span className="puzzle-session-page__progress">
             Practice {session.currentItemIndex + 1} of {session.assignment.items.length}
           </span>
-          <OverflowMenu label="Session options" items={menuItems} />
+          <BoardMenu label="Session options" items={menuItems} engineActivity={engineActivity} />
         </span>
       </header>
       {isDebugOpen && <DebugPanel sessionId={session.id} basePath="/api/puzzle-sessions" onClose={() => setIsDebugOpen(false)} />}

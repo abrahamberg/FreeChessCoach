@@ -12,7 +12,11 @@ export interface OverflowMenuItem {
 
 export interface OverflowMenuProps {
   label: string;
-  items: OverflowMenuItem[];
+  items?: OverflowMenuItem[];
+  /** Replaces the plain item list with custom content (BoardMenu's account
+   * menu); `close` dismisses the dropdown. */
+  renderPanel?: (close: () => void) => ReactNode;
+  panelClassName?: string;
 }
 
 /** design-improvements.md §6: destructive actions belong behind an overflow
@@ -30,7 +34,7 @@ export interface OverflowMenuProps {
  * happens. Escaping to document.body sidesteps the whole class of "which
  * ancestor happens to establish a stacking context today" bugs, matching
  * Modal.tsx's own precedent for exactly this problem. */
-export function OverflowMenu({ label, items }: OverflowMenuProps): ReactNode {
+export function OverflowMenu({ label, items = [], renderPanel, panelClassName }: OverflowMenuProps): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -83,10 +87,11 @@ export function OverflowMenu({ label, items }: OverflowMenuProps): ReactNode {
         createPortal(
           <div
             ref={panelRef}
-            className="overflow-menu__items"
+            className={panelClassName ? `overflow-menu__items ${panelClassName}` : 'overflow-menu__items'}
             role="menu"
             style={{ top: position.top, right: position.right }}
           >
+            {renderPanel?.(() => setIsOpen(false))}
             {items.map((item) => (
               <button
                 key={item.label}

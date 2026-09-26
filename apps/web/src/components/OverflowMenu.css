@@ -55,3 +55,9 @@
 .overflow-menu__item--destructive:hover {
   background: var(--color-danger-soft);
 }
+
+/* BoardMenu: the account menu's own panel size (UserMenu.css .user-menu__panel). */
+.overflow-menu__items--account {
+  width: 246px;
+  padding: 8px;
+}

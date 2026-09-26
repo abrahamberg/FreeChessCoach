@@ -117,3 +117,20 @@
   text-align: left;
   cursor: pointer;
 }
+
+.user-menu__item--destructive {
+  color: var(--color-danger);
+}
+
+.user-menu__item--destructive:hover {
+  background: var(--color-danger-soft);
+}
+
+.user-menu__item--button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.user-menu__item--button:disabled:hover {
+  background: none;
+}

@@ -1,20 +1,12 @@
 import { UserProfileSchema } from '@freechesscoach/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
 import { apiGet } from '../api/client.js';
-import { getDemoRuntime } from '../demo/demoRuntime.js';
 import { BugReportModal } from '../features/bug-report/BugReportModal.js';
-import { describeEngineActivity } from './EngineActivityIndicator.js';
-import { BugIcon, ChevronDownIcon, LogOutIcon, SettingsIcon } from './Icon.js';
-import { TunnelStatusDots } from './TunnelStatusDots.js';
+import { AccountMenuSections, initialsFor } from './AccountMenuSections.js';
+import { ChevronDownIcon } from './Icon.js';
 import type { EngineActivityIndicatorState } from '../hooks/useEngineActivityIndicator.js';
 import './UserMenu.css';
-
-function initialsFor(displayName: string | undefined): string {
-  const trimmed = displayName?.trim();
-  return trimmed ? trimmed[0]!.toUpperCase() : '?';
-}
 
 /** design-improvements.md (redesign, 2026-08-24): account actions live
  * behind an avatar menu in the top bar — not stacked as an equal-weight nav
@@ -54,8 +46,6 @@ export function UserMenu({ engineActivity }: UserMenuProps): ReactNode {
     };
   }, [isOpen]);
 
-  const initials = initialsFor(profileQuery.data?.displayName);
-
   return (
     <div className="user-menu" ref={menuRef}>
       <button
@@ -67,72 +57,21 @@ export function UserMenu({ engineActivity }: UserMenuProps): ReactNode {
         onClick={() => setIsOpen((open) => !open)}
       >
         <span className="user-menu__avatar" aria-hidden="true">
-          {initials}
+          {initialsFor(profileQuery.data?.displayName)}
         </span>
         <ChevronDownIcon width={15} height={15} />
       </button>
 
       {isOpen && (
         <div className="user-menu__panel" role="menu">
-          <div className="user-menu__header">
-            <span className="user-menu__avatar user-menu__avatar--lg" aria-hidden="true">
-              {initials}
-            </span>
-            <span className="user-menu__identity">
-              <span className="user-menu__name">{profileQuery.data?.displayName ?? 'Account'}</span>
-              <span className="user-menu__email">{profileQuery.data?.email ?? ''}</span>
-            </span>
-          </div>
-          {engineActivity && (
-            <>
-              <div className="user-menu__divider" />
-              <EngineActivityMenuRow state={engineActivity} onNavigate={() => setIsOpen(false)} />
-            </>
-          )}
-          <div className="user-menu__divider" />
-          <NavLink to="/settings" role="menuitem" className="user-menu__item" onClick={() => setIsOpen(false)}>
-            <SettingsIcon width={17} height={17} />
-            Settings
-          </NavLink>
-          {/* The demo has no account to report from, and refuses every write. */}
-          {!getDemoRuntime() && (
-            <button
-              type="button"
-              role="menuitem"
-              className="user-menu__item user-menu__item--button"
-              onClick={() => {
-                setIsOpen(false);
-                setIsReporting(true);
-              }}
-            >
-              <BugIcon width={17} height={17} />
-              Report a bug
-            </button>
-          )}
-          {/* Ends the oauth2-proxy session (architecture §11) and lands back
-           * on the public landing page — not a fetch/mutation, so a plain
-           * link, same as before (previously in SettingsPage directly). */}
-          <a href="/oauth2/sign_out?rd=/" role="menuitem" className="user-menu__item user-menu__item--muted">
-            <LogOutIcon width={17} height={17} />
-            Sign out
-          </a>
+          <AccountMenuSections
+            engineActivity={engineActivity}
+            onClose={() => setIsOpen(false)}
+            onReportBug={() => setIsReporting(true)}
+          />
         </div>
       )}
       {isReporting && <BugReportModal onClose={() => setIsReporting(false)} />}
     </div>
-  );
-}
-
-/** Mobile-only stand-in for the desktop topbar's EngineActivityIndicator
- * pill — same describeEngineActivity() output (badge, activity detail,
- * queue bar), rendered as a menu row and linking to the same place. */
-function EngineActivityMenuRow({ state, onNavigate }: { state: EngineActivityIndicatorState; onNavigate: () => void }): ReactNode {
-  const info = describeEngineActivity(state);
-  return (
-    <NavLink to="/settings#settings-engine" role="menuitem" className="user-menu__item" title={info.title} onClick={onNavigate}>
-      <span className={`engine-activity-indicator__dot${state.kind === 'idle' ? ' engine-activity-indicator__dot--idle' : ''}`} aria-hidden="true" />
-      {info.label}
-      <TunnelStatusDots engineMode={state.engineMode} />
-    </NavLink>
   );
 }

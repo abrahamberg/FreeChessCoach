@@ -6,7 +6,7 @@ import { useCoachVoice } from '../../hooks/useCoachVoice.js';
 import { useLlmSetupStatus } from '../../hooks/useLlmSetupStatus.js';
 import { effectiveTtsBackend } from '../../tts/effective-tts-backend.js';
 import { isOpenAiVoiceAvailable } from '../../tts/openai-voice-available.js';
-import { ENGINE_MODE_BADGE, useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
+import { useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
@@ -207,9 +207,7 @@ export function SessionPage(): ReactNode {
             onSelect: () => coachVoice.setAutoplayEnabled(!coachVoice.autoplayEnabled)
           }
         ]
-      : []),
-    { label: `Engine: ${engineBadge}`, onSelect: () => navigate('/settings#settings-engine') },
-    { label: 'Settings', onSelect: () => navigate('/settings') }
+      : [])
   ];
 
   const chatPanel = (
@@ -274,6 +272,7 @@ export function SessionPage(): ReactNode {
         onDebug={() => setIsDebugOpen(true)}
         debugDisabled={!hasCompletedTurn}
         extraItems={headerExtraItems}
+        engineActivity={engineActivity}
       />
       {isDebugOpen && <DebugPanel sessionId={sessionId} onClose={() => setIsDebugOpen(false)} />}
       {completedBanner}

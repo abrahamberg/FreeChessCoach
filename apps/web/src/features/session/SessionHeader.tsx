@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { ArrowLeftIcon } from '../../components/Icon.js';
-import { OverflowMenu, type OverflowMenuItem } from '../../components/OverflowMenu.js';
+import { BoardMenu } from '../../components/BoardMenu.js';
+import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
+import type { EngineActivityIndicatorState } from '../../hooks/useEngineActivityIndicator.js';
 import './SessionHeader.css';
 
 export interface SessionHeaderProps {
@@ -23,6 +25,9 @@ export interface SessionHeaderProps {
    * status bar" display toggle, which has no meaning outside a play_bot
    * session so it doesn't belong as a dedicated prop here. */
   extraItems?: OverflowMenuItem[];
+  /** The engine row the topbar's UserMenu would show — board routes hide
+   * the topbar, so the session menu carries it instead. */
+  engineActivity?: EngineActivityIndicatorState;
 }
 
 /** design.md §5.1/§5.2: the session's persistent game-context header — back
@@ -40,7 +45,8 @@ export function SessionHeader({
   onReset,
   onDebug,
   debugDisabled,
-  extraItems
+  extraItems,
+  engineActivity
 }: SessionHeaderProps): ReactNode {
   const items: OverflowMenuItem[] = [];
   if (onReset) items.push({ label: 'Reset session', destructive: true, onSelect: onReset });
@@ -57,7 +63,7 @@ export function SessionHeader({
       </span>
       <span className="session-header__actions">
         {result && <span className="badge session-header__result">{result}</span>}
-        {items.length > 0 && <OverflowMenu label="Session options" items={items} />}
+        <BoardMenu label="Session options" items={items} engineActivity={engineActivity} />
       </span>
     </header>
   );

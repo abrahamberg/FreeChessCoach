@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { OverflowMenuItem } from '../../components/OverflowMenu.js';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog.js';
-import { ENGINE_MODE_BADGE, useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
+import { useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
 import { useShowStatusBar } from '../../hooks/useShowStatusBar.js';
@@ -223,12 +223,9 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
   // already shows once it exists (below) — absent while the game is still
   // in progress, same as desktop.
   const reportFooter = gameQuery.data?.gameReport && <GameReportSummary report={gameQuery.data.gameReport} userColor={orientation} />;
-  const engineBadge = engineActivity.engineMode ? ENGINE_MODE_BADGE[engineActivity.engineMode] : 'Engine';
   const headerExtraItems: OverflowMenuItem[] = [
     { label: showStatusBar ? 'Hide status bar' : 'Show status bar', onSelect: () => setShowStatusBar(!showStatusBar) },
-    ...(isRated ? [] : [{ label: thinkingLogEnabled ? 'Hide thinking log' : 'Show thinking log', onSelect: () => setBotThinkingLog(!thinkingLogEnabled) }]),
-    { label: `Engine: ${engineBadge}`, onSelect: () => navigate('/settings#settings-engine') },
-    { label: 'Settings', onSelect: () => navigate('/settings') }
+    ...(isRated ? [] : [{ label: thinkingLogEnabled ? 'Hide thinking log' : 'Show thinking log', onSelect: () => setBotThinkingLog(!thinkingLogEnabled) }])
   ];
 
   return (
@@ -240,6 +237,7 @@ export function BotSessionPage({ sessionId }: BotSessionPageProps): ReactNode {
         result={gameQuery.data?.result ?? null}
         onBack={() => navigate('/games')}
         extraItems={headerExtraItems}
+        engineActivity={engineActivity}
       />
       {isSideBySide ? (
         <div className="session-body desktop">
