@@ -2,6 +2,7 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { PhraseStrengthMeter } from './PhraseStrengthMeter.js';
 import { ErrorBox } from './SetupWizardParts.js';
 import { useUnlockPhraseStrength } from './useUnlockPhraseStrength.js';
+import { PhraseInput } from './PhraseInput.js';
 
 export interface ConfirmPhraseStepProps {
   onBack: () => void;
@@ -28,7 +29,7 @@ export function ConfirmPhraseStep({ onBack, onSave, saveError }: ConfirmPhraseSt
     <form onSubmit={submit}>
       <p className="settings-page__hint">Last step — enter your unlock phrase. It opens your saved setup and encrypts it again with the new models.</p>
       <label htmlFor="llm-edit-phrase">Current unlock phrase</label>
-      <input id="llm-edit-phrase" type="password" value={unlockPhrase} onChange={(event) => setUnlockPhrase(event.target.value)} required autoFocus />
+      <PhraseInput id="llm-edit-phrase" value={unlockPhrase} onChange={(event) => setUnlockPhrase(event.target.value)} required autoFocus />
       <label className="llm-setup-form__checkbox" htmlFor="llm-edit-change-phrase">
         <input id="llm-edit-change-phrase" type="checkbox" checked={changePhrase} onChange={(event) => setChangePhrase(event.target.checked)} />
         Also change my unlock phrase
@@ -36,7 +37,7 @@ export function ConfirmPhraseStep({ onBack, onSave, saveError }: ConfirmPhraseSt
       {changePhrase && (
         <>
           <label htmlFor="llm-edit-new-phrase">New unlock phrase (8+ characters)</label>
-          <input id="llm-edit-new-phrase" type="password" value={newUnlockPhrase} onChange={(event) => setNewUnlockPhrase(event.target.value)} minLength={8} required />
+          <PhraseInput id="llm-edit-new-phrase" value={newUnlockPhrase} onChange={(event) => setNewUnlockPhrase(event.target.value)} minLength={8} required />
           <PhraseStrengthMeter strength={newPhraseStrength} />
         </>
       )}

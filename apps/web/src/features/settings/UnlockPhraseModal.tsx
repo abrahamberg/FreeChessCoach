@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Modal } from '../../components/Modal.js';
 import './UnlockPhraseModal.css';
+import { PhraseInput } from './PhraseInput.js';
 
 export interface UnlockPhraseModalProps {
   onClose: () => void;
@@ -56,9 +57,8 @@ export function UnlockPhraseModal({
         </p>
         <form onSubmit={handleSubmit}>
           <label htmlFor="unlock-phrase-modal-input">Unlock phrase</label>
-          <input
+          <PhraseInput
             id="unlock-phrase-modal-input"
-            type="password"
             autoFocus
             value={phrase}
             onChange={(event) => setPhrase(event.target.value)}

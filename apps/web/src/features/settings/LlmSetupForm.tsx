@@ -8,6 +8,7 @@ import { PhraseStrengthMeter } from './PhraseStrengthMeter.js';
 import { ErrorBox, LoaderBlock, WizardSteps } from './SetupWizardParts.js';
 import { useLlmSetupDraft, type SetupKind } from './useLlmSetupDraft.js';
 import { useUnlockPhraseStrength } from './useUnlockPhraseStrength.js';
+import { PhraseInput } from './PhraseInput.js';
 
 export interface LlmSetupFormProps {
   status: LlmSetupStatus;
@@ -139,7 +140,7 @@ export function LlmSetupForm(props: LlmSetupFormProps): ReactNode {
               <form onSubmit={submitPhrase}>
                 <p className="settings-page__hint">Last step — pick a phrase to encrypt your setup with. You&rsquo;ll enter it again whenever your AI setup needs unlocking.</p>
                 <label htmlFor="llm-save-phrase">Unlock phrase (8+ characters)</label>
-                <input id="llm-save-phrase" type="password" value={unlockPhrase} onChange={(event) => setUnlockPhrase(event.target.value)} minLength={8} required autoFocus />
+                <PhraseInput id="llm-save-phrase" value={unlockPhrase} onChange={(event) => setUnlockPhrase(event.target.value)} minLength={8} required autoFocus />
                 <PhraseStrengthMeter strength={phraseStrength} />
                 <div className="llm-setup-form__actions">
                   <button type="button" className="btn-secondary" onClick={() => setPhase('result')}>Back</button>

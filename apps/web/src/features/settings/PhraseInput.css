@@ -1,0 +1,49 @@
+.phrase-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.phrase-input input {
+  width: 100%;
+  padding-right: 72px;
+}
+
+.phrase-input__toggle {
+  position: absolute;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  animation: phrase-input-blink 0.6s ease-in-out 0.3s 3;
+}
+
+.phrase-input__toggle:hover:not(:disabled) {
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.phrase-input__toggle:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+@keyframes phrase-input-blink {
+  50% {
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phrase-input__toggle {
+    animation: none;
+  }
+}
