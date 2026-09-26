@@ -127,14 +127,16 @@
               <p>Sign in to FreeChessCoach and open <strong>Settings</strong>, then the AI setup section. It is a short two-step wizard.</p>
               <p><strong>Step 1: Connect your AI.</strong></p>
               <ul>
-                <li><strong>API URL:</strong> leave <code>https://api.openai.com/v1</code>.</li>
-                <li><strong>API key:</strong> paste your key.</li>
-                <li><strong>Low model / High model / Voice model:</strong> the form is pre-filled with the defaults the app recommends. Leave them unless you know you want something else. The voice model is optional.</li>
+                <li><strong>Where your AI runs:</strong> leave <strong>Cloud / API endpoint</strong>.</li>
+                <li><strong>Provider:</strong> leave <strong>OpenAI</strong>. The API address is filled in for you.</li>
+                <li><strong>API key:</strong> paste your key. The app checks it straight away and shows <em>Key accepted</em> with the number of models your key can use. If it says the key was refused, check you copied all of it.</li>
+                <li><strong>Model (the coach) / Low model / Voice model:</strong> pre-filled with the models the app recommends, and each one is a list of the models your key can use. Leave them unless you know you want something else. The low model (for summaries) and the voice model are optional.</li>
                 <li><strong>Use OpenAI Flex processing:</strong> about half the token price, but responses are slower and can occasionally be unavailable. Ticked by default for a new setup; untick it if you prefer speed.</li>
               </ul>
               <p>Choose <strong>Test connection</strong>. The app makes a tiny test call for each model and shows what it found. If it passes, choose <strong>Proceed</strong>.</p>
-              <p><strong>Step 2: Set an unlock phrase.</strong> Pick a phrase of at least 8 characters that you don't use anywhere else, then <strong>Save</strong>. Your key is encrypted with it, and we can't recover it if you forget it.</p>
-              <p>Later, <strong>Enter unlock phrase</strong> unlocks the setup for a coaching session, <strong>Lock now</strong> removes the decrypted copy from our server straight away, <strong>Replace setup</strong> is how you rotate to a new key, and <strong>Delete setup</strong> removes it.</p>
+              <p><strong>Step 2: Set an unlock phrase.</strong> Your key is encrypted with it, and we can't recover it if you forget it. A meter under the field shows how easy the phrase is to guess, and <strong>Save</strong> only works once it says <strong>Strong</strong>: three or four unrelated words work well, while a common password, a keyboard run or your own name is refused. Don't use a phrase you use anywhere else.</p>
+              <p>Later, <strong>Enter unlock phrase</strong> unlocks the setup for a coaching session and <strong>Lock now</strong> removes the decrypted copy from our server straight away. While it is unlocked, <strong>Change models</strong> lets you pick other models with the same key: choose them, test them, and confirm with your phrase (you can set a new phrase there too). <strong>Replace setup</strong> is how you rotate to a new key or switch provider, and <strong>Delete setup</strong> removes it.</p>
+              <p>Already use Anthropic or OpenRouter? Choose it under <strong>Provider</strong> instead and paste that key; the app fills in its address and recommended models the same way. For anything else (Azure, a Bedrock gateway, your own proxy), choose <strong>Other</strong> and type the API URL and model names yourself.</p>
             </li>
             <li id="free">
               <h3>Complimentary daily tokens, and what they cost you in privacy</h3>
@@ -156,7 +158,7 @@
             </li>
             <li>
               <h3>Connect it in Settings</h3>
-              <p>Open <strong>Settings → AI setup</strong>, choose <strong>On my computer (LM Studio / Ollama)</strong>, pick your server type and check the <strong>Local API URL</strong>. Choose your model (the form lists what your server offers), then <strong>Test connection</strong>. The test also warns if the model's context window is under 16k tokens, which is about what the coach needs. A token is only needed if your server asks for one.</p>
+              <p>Open <strong>Settings → AI setup</strong>, choose <strong>On my computer (LM Studio / Ollama)</strong>, pick your server type and check the <strong>Local API URL</strong>. Choose your model (the form lists what your server offers), then <strong>Test connection</strong>. The test also warns if the model's context window is under 16k tokens, which is about what the coach needs. A token (under <strong>Advanced</strong>) is only needed if your server asks for one. Then set an unlock phrase, the same as for a cloud key.</p>
             </li>
             <li>
               <h3>Keep the tab open while you coach</h3>

@@ -21,12 +21,16 @@ Every LLM call costs someone money. Most "AI chess coach" products solve that
 by putting you behind a subscription and marking up the API cost. FreeChessCoach
 solves it differently: **you connect your own API-compatible provider**,
 FreeChessCoach talks to it directly on your behalf, and you pay the provider
-at cost — nothing added, nothing metered, nothing throttled. OpenAI Chat or
-Responses and Anthropic Messages endpoints work, including compatible gateways
-such as OpenRouter, Azure, Bedrock adapters, and self-hosted proxies.
+at cost — nothing added, nothing metered, nothing throttled. The setup form
+knows OpenAI, Anthropic and OpenRouter by name (pick one, paste the key, and it
+fills in the URL and lists the models the key can use); **Other** takes any
+OpenAI Chat/Responses or Anthropic Messages endpoint, such as Azure, Bedrock
+adapters, and self-hosted proxies. Or run the model on your own computer with
+LM Studio or Ollama, with no key at all.
 
 The complete endpoint/model/key setup is encrypted with an unlock phrase that
-only you know. The database never has enough information to decrypt it, and
+only you know (the form only accepts one that is hard to guess). Models can be
+changed later without re-entering the key. The database never has enough information to decrypt it, and
 the decrypted setup is kept only in a short-lived, encrypted Redis cache while
 you are active. Locking or expiring the cache removes the key from the server.
 

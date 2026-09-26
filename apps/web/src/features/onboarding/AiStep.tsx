@@ -26,7 +26,7 @@ function AiChoices({ onChoose }: { onChoose: (choice: AiChoice) => void }): Reac
     <div className="onboarding__choices">
       <article className="card onboarding__choice onboarding__choice--recommended">
         <h3>OpenAI <span className="onboarding__badge">Recommended</span></h3>
-        <p>The best coaching, and about ten minutes to set up once. Use your own key with a hard spending limit, and turn on data sharing to get free daily tokens (OpenAI may then use your chats to improve its models).</p>
+        <p>The best coaching, and about ten minutes to set up once. Use your own key with a hard spending limit, and turn on data sharing to get free daily tokens (OpenAI may then use your chats to improve its models). Already have an Anthropic or OpenRouter key? Pick it under Provider on the next screen.</p>
         <button type="button" className="btn-primary" onClick={() => onChoose('openai')}>Set up OpenAI</button>
       </article>
       <article className="card onboarding__choice">

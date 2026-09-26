@@ -81,7 +81,7 @@
           <div class="cards" style="grid-template-columns: 1fr">
             <div class="card">
               <h3>It is stored encrypted, with a phrase only you know</h3>
-              <p>When you save your setup you choose an unlock phrase (at least 8 characters). Your key is encrypted with AES-256-GCM using a key derived from that phrase. The server has no master key for it, so a copy of our database alone cannot decrypt anyone's key, and the phrase itself is never stored.</p>
+              <p>When you save your setup you choose an unlock phrase. The form refuses one that is easy to guess (a common or leaked password, a keyboard run, your own name or email), so it has to be strong before you can save. Your key is encrypted with AES-256-GCM using a key derived from that phrase. The server has no master key for it, so a copy of our database alone cannot decrypt anyone's key, and the phrase itself is never stored.</p>
             </div>
             <div class="card">
               <h3>Using the coach means unlocking it, briefly</h3>
@@ -135,7 +135,7 @@
             </li>
             <li>
               <h3>Rotate it from time to time</h3>
-              <p>Every month or two, create a fresh key, replace it in Settings, and delete the old one in your provider's dashboard. A key that keeps changing is a key that is hard to misuse.</p>
+              <p>Every month or two, create a fresh key, put it in with <strong>Replace setup</strong> in Settings, and delete the old one in your provider's dashboard. A key that keeps changing is a key that is hard to misuse.</p>
             </li>
             <li>
               <h3>Lock it when you are done, if you like</h3>
@@ -143,7 +143,7 @@
             </li>
             <li>
               <h3>Choose a strong unlock phrase you do not reuse</h3>
-              <p>The phrase is what protects the stored key. Use something long that you don't use anywhere else.</p>
+              <p>The phrase is what protects the stored key. The form shows how easy it is to guess and only saves a strong one; three or four unrelated words are easy to remember and hard to guess. Don't use it anywhere else.</p>
             </li>
           </ol>
           <div class="cta-row">
@@ -158,7 +158,7 @@
           <h2>Questions</h2>
           <details class="faq">
             <summary>Can I use a provider other than OpenAI?</summary>
-            <p>The setup form accepts an endpoint that speaks the OpenAI Chat or Responses format, or Anthropic's Messages format, and it tests the connection before saving. The step-by-step guide covers OpenAI because it is the default.</p>
+            <p>Yes. In <strong>Settings → AI setup</strong>, the <strong>Provider</strong> list has OpenAI, Anthropic and OpenRouter: pick one, paste its key, and the app fills in the address and lists the models your key can use. <strong>Other</strong> takes any API URL that speaks the OpenAI Chat or Responses format, or Anthropic's Messages format (Azure, Bedrock gateways, your own proxy). The connection is tested before anything is saved. Flex processing is OpenAI only, and a cloud voice model needs OpenAI or a compatible API under <strong>Other</strong>. The step-by-step guide covers OpenAI because it is the default.</p>
           </details>
           <details class="faq">
             <summary>Can I run the coach on a local model?</summary>

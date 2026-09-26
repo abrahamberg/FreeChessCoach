@@ -86,9 +86,12 @@ LLM_FAKE=1 docker compose up -d postgres engine migrate api worker
 ```
 
 This is what `scripts/smoke.sh` uses. To use real models instead, leave
-`LLM_FAKE` unset (or `0`), start Redis, and enter the provider URL, key,
-low/high model names, optional voice model, and your unlock phrase in Settings.
-The default OpenAI preset is `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-4o-mini-tts`.
+`LLM_FAKE` unset (or `0`), start Redis, and in Settings → AI setup pick a
+provider (OpenAI, Anthropic, OpenRouter, or Other with a hand-typed URL), paste
+the key, choose the models, and save with an unlock phrase that passes the
+strength check (zxcvbn score ≥ 3). The presets live in
+`packages/shared/src/llm-providers.ts` (OpenAI: `gpt-6-sol` coach, `gpt-6-luna`
+low, `gpt-4o-mini-tts` voice).
 
 ## Smoke test
 
