@@ -325,6 +325,13 @@ export function useCoachVoice({
     setPlayingMessageId(null);
   }, []);
 
+  // Readies the chosen backend once per page, so the first reply isn't also
+  // waiting on a model load or a cold local server.
+  useEffect(() => {
+    if (!enabled || backend === 'native') return;
+    resolveTtsClient(backend).warmUp?.(personaRef.current);
+  }, [enabled, backend]);
+
   const setAutoplayEnabled = useCallback((enabled: boolean) => {
     setAutoplayEnabledState(enabled);
     writeStoredAutoplay(enabled);

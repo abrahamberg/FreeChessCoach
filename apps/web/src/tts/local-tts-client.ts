@@ -40,5 +40,11 @@ export const localTtsClient: TtsClient = {
     for (const [index, sentence] of toSynthesize.entries()) {
       onChunk(index, await synthesizeLocal(baseUrl, sentence, voice, speed));
     }
+  },
+  // Kokoro-FastAPI's first request after it has been idle is several times
+  // slower than the next (measured on the CPU image: 12.6s vs 5.7s).
+  warmUp(persona) {
+    const { voice, speed } = kokoroSynthesisSpeed(persona);
+    synthesizeLocal(readLocalTtsUrl(), 'Ok.', voice, speed).catch(() => {});
   }
 };

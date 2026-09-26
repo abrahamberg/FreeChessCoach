@@ -22,4 +22,9 @@ export interface TtsClient {
    * doesn't stream (OpenAI) just delivers one chunk covering the whole
    * message. */
   speak(request: TtsSpeakRequest, onChunk: (index: number, audio: ArrayBuffer) => void): Promise<void>;
+  /** Gets the backend ready before the first reply needs it — loading the
+   * in-browser model, waking a local server — by synthesizing a throwaway
+   * word. Best-effort: failures are swallowed, a real speak() reports them.
+   * Absent where a warm-up would cost the user money (OpenAI). */
+  warmUp?(persona: CoachPersona): void;
 }

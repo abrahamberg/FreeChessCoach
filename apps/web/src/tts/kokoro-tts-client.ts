@@ -8,5 +8,12 @@ export const kokoroTtsClient: TtsClient = {
   mimeType: 'audio/wav',
   speak(request, onChunk) {
     return getSharedTtsWorker().speak({ text: request.text, ...kokoroSynthesisSpeed(request.persona) }, onChunk);
+  },
+  // The model loads on the first speak() (~1s even from the browser cache),
+  // and the first inference after that pays a one-time warm-up too.
+  warmUp(persona) {
+    getSharedTtsWorker()
+      .speak({ text: 'Ok.', ...kokoroSynthesisSpeed(persona) }, () => {})
+      .catch(() => {});
   }
 };
