@@ -1,9 +1,11 @@
 // A sentence ends at `.`/`!`/`?` (plus any closing quote, bracket or bold
 // marker) followed by whitespace and more text. Runs on the coach's *raw*
-// markdown, before sanToSpokenText.ts: a period straight after a digit is
-// left alone so a move number ("24. a4", "Play 12. Nf3") is never mistaken
-// for a sentence end mid-stream.
-const RAW_SENTENCE_END = /(?:[!?]|(?<!\d)\.)[.!?]*["')\]*]*(?=\s+\S)/g;
+// markdown, before sanToSpokenText.ts: the dots after a bare move number
+// ("24. a4", "Play (12. Nf3)", "26... c6") are left alone so one is never
+// mistaken for a sentence end mid-stream. Only a *bare* number counts — a
+// square ("…the knight on f3. Black's plan…") still ends its sentence, or a
+// reply whose sentences end on squares would wait for the whole turn.
+const RAW_SENTENCE_END = /(?:[!?]|(?<!(?:^|[\s(])\d+\.*)\.)[.!?]*["')\]*]*(?=\s+\S)/g;
 
 /**
  * The sentences of a coach reply that has only partly streamed in, so voice

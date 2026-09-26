@@ -23,6 +23,14 @@ describe('completedSentences', () => {
     ]);
   });
 
+  test("never splits on a black move number's dots", () => {
+    expect(completedSentences('After 26... c6 White is fine. Next', false)).toEqual(['After 26... c6 White is fine.']);
+  });
+
+  test('ends a sentence on a square', () => {
+    expect(completedSentences('It attacks the knight on f3. Black', false)).toEqual(['It attacks the knight on f3.']);
+  });
+
   test('keeps closing quotes and bold markers with their sentence', () => {
     expect(completedSentences('Try **Qh5!** Then "why?" Next', false)).toEqual(['Try **Qh5!**', 'Then "why?"']);
   });
