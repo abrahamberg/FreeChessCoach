@@ -3,10 +3,8 @@ import {
   LocalModelsRequestSchema,
   SaveLlmSetupRequestSchema,
   UnlockLlmSetupRequestSchema,
-  lowModelOf,
   type LlmModelsResponse,
   type LlmSetup,
-  type LlmSetupTestResponse,
   type StoredLlmSetup
 } from '@freechesscoach/shared';
 import type { FastifyInstance } from 'fastify';
@@ -21,6 +19,8 @@ import { ValidationError } from '../lib/errors.js';
 import * as userProfileService from '../services/user-profile.js';
 import type { LlmTunnelTransport } from '../services/engine/llm-tunnel-transport.js';
 import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.js';
+import { registerLlmSetupEditRoutes } from './llm-setup-edit.js';
+import { assertStrongUnlockPhrase, assertTestsPassed, formatIssues, statusFor, withDetectedProtocols } from './llm-setup-status.js';
 
 export function registerLlmSetupRoutes(
   app: FastifyInstance,
@@ -64,14 +64,10 @@ export function registerLlmSetupRoutes(
 
     const { unlockPhrase, ...setup } = parsed.data;
     const user = await userProfileService.getOrCreate(db, request.user);
+    await assertStrongUnlockPhrase(unlockPhrase, user);
     const tests = await testLlmSetup(setup, llmTunnelTransport, user.id);
     assertTestsPassed(tests);
-    const storedSetup: StoredLlmSetup = {
-      ...setup,
-      protocol: tests.protocol,
-      lowProtocol: tests.low.protocol,
-      highProtocol: tests.high.protocol
-    };
+    const storedSetup = withDetectedProtocols(setup, tests);
     const encrypted = await vault.encrypt(storedSetup, unlockPhrase);
     await unlockStore.lock(user.id);
     await llmSetupsRepo.upsert(db, user.id, encrypted.ciphertext, encrypted.iv, encrypted.salt);
@@ -111,6 +107,8 @@ export function registerLlmSetupRoutes(
     await llmSetupsRepo.remove(db, user.id);
     return reply.code(204).send();
   });
+
+  registerLlmSetupEditRoutes(app, db, vault, unlockStore, llmTunnelTransport);
 }
 
 function parseSetup(body: unknown): LlmSetup {
@@ -119,39 +117,3 @@ function parseSetup(body: unknown): LlmSetup {
   return parsed.data;
 }
 
-function assertTestsPassed(tests: LlmSetupTestResponse): asserts tests is LlmSetupTestResponse & { protocol: StoredLlmSetup['protocol']; low: { ok: true }; high: { ok: true } } {
-  const failures = [
-    tests.low.ok ? null : `low model: ${tests.low.error ?? 'test failed'}`,
-    tests.high.ok ? null : `high model: ${tests.high.error ?? 'test failed'}`,
-    tests.voice && !tests.voice.ok ? `voice model: ${tests.voice.error ?? 'test failed'}` : null
-  ].filter((failure): failure is string => failure !== null);
-  if (tests.protocol === null || failures.length > 0) {
-    throw new ValidationError(failures.join('; ') || 'The endpoint did not match an OpenAI or Anthropic API format.');
-  }
-}
-
-function statusFor(configured: boolean, setup: StoredLlmSetup | null): object {
-  return {
-    configured,
-    unlocked: setup !== null,
-    ...(setup
-      ? {
-          endpoint: setup.endpoint,
-          protocol: setup.protocol,
-          ...(setup.lowProtocol ? { lowProtocol: setup.lowProtocol } : {}),
-          ...(setup.highProtocol ? { highProtocol: setup.highProtocol } : {}),
-          ...(setup.localType ? { localType: setup.localType } : {}),
-          lowModel: lowModelOf(setup),
-          highModel: setup.highModel,
-          ...(setup.voiceModel ? { voiceModel: setup.voiceModel } : {}),
-          ...(setup.useFlex !== undefined ? { useFlex: setup.useFlex } : {}),
-          ...(setup.reasoning ? { reasoning: setup.reasoning } : {})
-        }
-      : {}),
-    voiceAvailable: setup?.voiceModel !== undefined
-  };
-}
-
-function formatIssues(issues: readonly { message: string }[]): string {
-  return issues.map((issue) => issue.message).join('; ');
-}

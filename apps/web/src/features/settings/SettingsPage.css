@@ -381,3 +381,70 @@
   flex-wrap: wrap;
   gap: 16px;
 }
+
+/* A failed test or save: boxed and tinted so it can't be missed. */
+.llm-setup-error {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  overflow-wrap: anywhere;
+}
+
+/* New unlock phrase: four bars plus a verdict, red until it passes. */
+.phrase-meter {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.phrase-meter__bars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-1);
+}
+
+.phrase-meter__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-border-strong);
+}
+
+.phrase-meter__label,
+.phrase-meter__reason {
+  margin: 0;
+}
+
+.phrase-meter__reason {
+  font-size: var(--font-size-sm, 13px);
+}
+
+.phrase-meter--weak {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.phrase-meter--weak .phrase-meter__bar.is-filled {
+  background: var(--color-danger);
+}
+
+.phrase-meter--ok {
+  border-color: var(--color-success);
+  background: var(--color-primary-soft);
+  color: var(--color-success);
+}
+
+.phrase-meter--ok .phrase-meter__bar.is-filled {
+  background: var(--color-success);
+}
+
+.phrase-meter--pending {
+  color: var(--color-text-secondary);
+}

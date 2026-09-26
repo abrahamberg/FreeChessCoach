@@ -1,5 +1,6 @@
 import type { LlmModelsResponse, LocalLlmType } from '@freechesscoach/shared';
 import { useEffect, type ReactNode } from 'react';
+import { ModelField } from './ModelField.js';
 import { ThinkingLevelFields } from './ThinkingLevelFields.js';
 import type { LlmSetupDraftApi } from './useLlmSetupDraft.js';
 import { useLocalModels } from './useLocalModels.js';
@@ -63,28 +64,6 @@ export function LocalLlmFields({ api }: { api: LlmSetupDraftApi }): ReactNode {
             placeholder="Only if your local server requires one" />
           <ThinkingLevelFields reasoning={draft.reasoning} onChange={(reasoning) => update({ reasoning })} isLocal />
         </>
-      )}
-    </>
-  );
-}
-
-function ModelField({ id, label, value, models, onChange, optional = false }: { id: string; label: string; value: string; models: string[]; onChange: (model: string) => void; optional?: boolean }): ReactNode {
-  return (
-    <>
-      <label htmlFor={id}>{label}</label>
-      {models.length > 0 ? (
-        <select id={id} value={value} onChange={(event) => onChange(event.target.value)} required={!optional}>
-          {optional && <option value="">Same as the model above</option>}
-          {!optional && !models.includes(value) && <option value={value}>{value || 'Choose a model'}</option>}
-          {optional && value !== '' && !models.includes(value) && <option value={value}>{value}</option>}
-          {models.map((model) => (
-            <option key={model} value={model}>
-              {model}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <input id={id} value={value} onChange={(event) => onChange(event.target.value)} placeholder={optional ? 'Same as the model above' : 'Model name'} required={!optional} />
       )}
     </>
   );

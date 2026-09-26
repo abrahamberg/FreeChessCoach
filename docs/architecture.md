@@ -604,6 +604,14 @@ model's) is what setups saved before per-model detection use for both
 (`gateway.ts` `resolveTierProtocol`). The setup is stored as AES-256-GCM
 ciphertext. The key is derived from the user's unlock phrase with scrypt;
 neither the phrase nor the plaintext setup is stored in PostgreSQL.
+A new phrase (first save, Replace setup, or the optional new phrase on
+Change models) must score at least 3/4 with zxcvbn-ts
+(`packages/shared/src/unlock-phrase-strength.ts`: leaked-password lists,
+English words, l33t swaps, keyboard runs, near-miss spellings, and site words
+like "chess"). The API enforces it and also counts the user's own name and
+email as guessable (`routes/llm-setup-status.ts`). The form runs the same check
+as you type; the dictionaries load as a separate chunk on first use. An
+existing phrase always unlocks, however weak.
 
 Thinking level: unset means the deployment tuning (`model-options.ts`,
 `standard: medium`, `light: none`); a user's level for a tier replaces it for
@@ -615,6 +623,29 @@ key and expires after inactivity, so a database or Redis dump alone does not
 recover a provider key. API and worker share this cache for active background
 jobs; users can also lock it immediately from Settings. Omitting the voice
 model disables cloud voice while leaving browser voice available.
+
+The cloud form has a provider picker (`packages/shared/src/llm-providers.ts`):
+OpenAI, Anthropic and OpenRouter fill a fixed API URL and default models
+(OpenAI `gpt-6-sol`/`gpt-6-luna`, OpenRouter the same with the `openai/`
+prefix, Anthropic `claude-sonnet-5`/`claude-haiku-4-5-20251001`), and their
+model dropdowns come from `POST /api/users/me/llm-setup/cloud-models`
+(`llm/cloud-models.ts`), which lists the provider's `/models` with the typed
+key and so doubles as the key check (OpenRouter's list is public, so its
+`/key` is called first). The URL comes from the preset, never the request.
+"Other" (Azure, Bedrock gateways, proxies) is typed in by hand. Flex is only
+offered for OpenAI; cloud voice only for OpenAI and "Other".
+
+"Change models" (Settings, while unlocked) is `PATCH /api/users/me/llm-setup`
+(`routes/llm-setup-edit.ts`): models, voice, Flex and thinking levels only —
+the body schema is `.strict()` and has no endpoint or key, so a hijacked
+session cannot point the saved key at another host. It takes the unlock
+phrase (and optionally a new one): it decrypts the database row with it,
+re-runs the setup test with the saved endpoint and key, and encrypts again
+under a fresh salt. Nothing that could re-encrypt the setup is kept while it
+is unlocked — the cache holds only the setup itself — so a wrong phrase is
+refused and the route shares the unlock rate limit. Its dropdowns use the
+saved key server-side (the cloud-models route falls back to it only when the
+saved endpoint is the same provider).
 
 ### Welcome flow (`/welcome`)
 

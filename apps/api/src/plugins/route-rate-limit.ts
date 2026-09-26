@@ -17,6 +17,8 @@ export const ROUTE_RATE_LIMITS = {
   llmSetupProbe: { max: 15, windowMs: 60_000 },
   // Debounced 500ms and cached 10s in the form: ~6/min while typing.
   llmLocalModels: { max: 60, windowMs: 60_000 },
+  // One or two calls to a fixed provider URL; the form debounces the key.
+  llmCloudModels: { max: 30, windowMs: 60_000 },
   llmSetupUnlock: { max: 10, windowMs: 5 * 60_000 },
   // Arrowing through a game's positions; results are cached per FEN.
   engineInteractive: { max: 240, windowMs: 60_000 },

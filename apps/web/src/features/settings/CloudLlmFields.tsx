@@ -1,34 +1,46 @@
+import { CLOUD_PROVIDER_PRESETS, CloudProviderSchema, type CloudProvider } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
-import type { LlmSetupDraftApi } from './useLlmSetupDraft.js';
+import { CloudKeyStatus, CloudModelFields } from './CloudModelFields.js';
 import { ThinkingLevelFields } from './ThinkingLevelFields.js';
+import { useCloudModels } from './useCloudModels.js';
+import type { LlmSetupDraftApi } from './useLlmSetupDraft.js';
 
-/** Any cloud endpoint (OpenAI, Anthropic, OpenRouter, …). The test detects
- * each model's API format on its own, so there is nothing to choose. */
+const PROVIDER_LABELS: Record<CloudProvider, string> = {
+  openai: CLOUD_PROVIDER_PRESETS.openai.label,
+  anthropic: CLOUD_PROVIDER_PRESETS.anthropic.label,
+  openrouter: CLOUD_PROVIDER_PRESETS.openrouter.label,
+  other: 'Other (Azure, Bedrock, any compatible API)'
+};
+
+/** A named provider fills its URL, checks the key as it is typed and offers
+ * its models in dropdowns; `other` is typed in by hand. Either way the test
+ * detects each model's API format on its own. */
 export function CloudLlmFields({ api }: { api: LlmSetupDraftApi }): ReactNode {
-  const { draft, update } = api;
+  const { draft, update, setProvider } = api;
+  const isNamed = draft.provider !== 'other';
+  const modelsQuery = useCloudModels(draft.provider === 'other' ? null : draft.provider, draft.apiKey);
   return (
     <>
-      <label htmlFor="llm-endpoint">API URL</label>
-      <input id="llm-endpoint" type="url" value={draft.endpoint} onChange={(event) => update({ endpoint: event.target.value })} required />
+      <label htmlFor="llm-provider">Provider</label>
+      <select id="llm-provider" value={draft.provider} onChange={(event) => setProvider(CloudProviderSchema.parse(event.target.value))}>
+        {CloudProviderSchema.options.map((provider) => (
+          <option key={provider} value={provider}>{PROVIDER_LABELS[provider]}</option>
+        ))}
+      </select>
+      {!isNamed && (
+        <>
+          <label htmlFor="llm-endpoint">API URL</label>
+          <input id="llm-endpoint" type="url" value={draft.endpoint} onChange={(event) => update({ endpoint: event.target.value })} required />
+        </>
+      )}
       <label htmlFor="llm-api-key">API key</label>
       <input id="llm-api-key" type="password" value={draft.apiKey} onChange={(event) => update({ apiKey: event.target.value })} required />
+      {isNamed && <CloudKeyStatus query={modelsQuery} />}
 
-      <label htmlFor="llm-high-model">Model</label>
-      <input id="llm-high-model" value={draft.highModel} onChange={(event) => update({ highModel: event.target.value })} required />
-      <label htmlFor="llm-low-model">Low model (optional)</label>
-      <input id="llm-low-model" value={draft.lowModel} placeholder="Leave empty to use the model above for everything"
-        onChange={(event) => update({ lowModel: event.target.value })} />
+      <CloudModelFields provider={draft.provider} listed={isNamed ? modelsQuery.data : undefined} value={draft} onChange={update} />
       <p className="settings-page__hint">
-        Only set a low model if you want a cheaper one for summaries. The test tries each model with the OpenAI Responses, Anthropic Messages and Chat Completions formats, in that order, and keeps the first that works — the two models may end up using different ones.
+        Only set a low model if you want a cheaper one for summaries. The test tries each model with the OpenAI Responses, Anthropic Messages and Chat Completions formats, in that order, and keeps the first that works.
       </p>
-
-      <label htmlFor="llm-voice-model">Voice model (optional)</label>
-      <input id="llm-voice-model" value={draft.voiceModel} onChange={(event) => update({ voiceModel: event.target.value })} />
-      <label className="llm-setup-form__checkbox" htmlFor="llm-use-flex">
-        <input id="llm-use-flex" type="checkbox" checked={draft.useFlex} onChange={(event) => update({ useFlex: event.target.checked })} />
-        Use OpenAI Flex processing
-      </label>
-      <p className="settings-page__hint">About half the token price, but responses are slower and can occasionally be unavailable. OpenAI models only — ignored for other formats.</p>
 
       <label className="llm-setup-form__checkbox" htmlFor="llm-advanced">
         <input id="llm-advanced" type="checkbox" checked={draft.advanced} onChange={(event) => update({ advanced: event.target.checked })} />

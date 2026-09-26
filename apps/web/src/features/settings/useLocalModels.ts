@@ -26,7 +26,7 @@ export function useLocalModels(endpoint: string, token: string, enabled: boolean
   });
 }
 
-function useDebounced<T>(value: T, delayMs: number): T {
+export function useDebounced<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const id = setTimeout(() => setDebounced(value), delayMs);

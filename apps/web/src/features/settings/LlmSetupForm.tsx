@@ -1,9 +1,13 @@
 import type { LlmProtocol, LlmSetup, LlmSetupStatus, LlmSetupTestResponse, ReasoningEffort } from '@freechesscoach/shared';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { CloudLlmFields } from './CloudLlmFields.js';
+import { EditModelsForm } from './EditModelsForm.js';
 import { PROTOCOL_LABELS, TestResults } from './LlmTestResults.js';
 import { LocalLlmFields } from './LocalLlmFields.js';
+import { PhraseStrengthMeter } from './PhraseStrengthMeter.js';
+import { ErrorBox, LoaderBlock, WizardSteps } from './SetupWizardParts.js';
 import { useLlmSetupDraft, type SetupKind } from './useLlmSetupDraft.js';
+import { useUnlockPhraseStrength } from './useUnlockPhraseStrength.js';
 
 export interface LlmSetupFormProps {
   status: LlmSetupStatus;
@@ -29,6 +33,8 @@ export interface LlmSetupFormProps {
 
 type Phase = 'connect' | 'result' | 'phrase';
 
+const STEP_LABELS = ['Connect your AI', 'Set an unlock phrase'] as const;
+
 const THINKING_LABELS: Partial<Record<ReasoningEffort, string>> = { none: 'off', low: 'low', medium: 'medium', high: 'high' };
 
 /** A controlled wizard, not a form with a spinner bolted on: while a test or
@@ -39,15 +45,23 @@ const THINKING_LABELS: Partial<Record<ReasoningEffort, string>> = { none: 'off',
 export function LlmSetupForm(props: LlmSetupFormProps): ReactNode {
   const { status, onTest, onSave, onStartEditing, testResult, isTesting, testError, isSaving, saveError } = props;
   const [editing, setEditing] = useState(!status.configured);
+  const [changingModels, setChangingModels] = useState(false);
   const [phase, setPhase] = useState<Phase>('connect');
   const [unlockPhrase, setUnlockPhrase] = useState('');
   const api = useLlmSetupDraft(status, props.initialKind);
+  const phraseStrength = useUnlockPhraseStrength(unlockPhrase);
 
   // Every finished test — pass or fail — lands on the result step; the form
   // only comes back if the user explicitly goes Back to edit it.
   useEffect(() => {
     if (testResult) setPhase('result');
   }, [testResult]);
+
+  if (status.configured && status.unlocked && changingModels) {
+    return (
+      <EditModelsForm status={status} onDone={() => setChangingModels(false)} />
+    );
+  }
 
   if (status.configured && !editing) {
     return (
@@ -58,6 +72,7 @@ export function LlmSetupForm(props: LlmSetupFormProps): ReactNode {
           setEditing(true);
           onStartEditing?.();
         }}
+        onChangeModelsClick={() => setChangingModels(true)}
       />
     );
   }
@@ -69,12 +84,13 @@ export function LlmSetupForm(props: LlmSetupFormProps): ReactNode {
 
   function submitPhrase(event: FormEvent): void {
     event.preventDefault();
+    if (!phraseStrength.verdict?.ok) return;
     onSave(api.toSetup(), unlockPhrase);
   }
 
   return (
     <div className="llm-setup-form llm-setup-wizard">
-      <WizardSteps phase={phase} />
+      <WizardSteps labels={STEP_LABELS} active={phase === 'phrase' ? 1 : 0} />
 
       {/* A fixed-footprint frame around whichever step is showing — a test
        * or save replaces its contents with a same-sized loader instead of
@@ -101,7 +117,7 @@ export function LlmSetupForm(props: LlmSetupFormProps): ReactNode {
                 <div className="llm-setup-form__actions">
                   <button type="submit" className="btn-primary">Test connection</button>
                 </div>
-                {testError && <p role="alert">{testError}</p>}
+                <ErrorBox title="The connection test could not run" message={testError} />
               </form>
             )}
 
@@ -124,11 +140,12 @@ export function LlmSetupForm(props: LlmSetupFormProps): ReactNode {
                 <p className="settings-page__hint">Last step — pick a phrase to encrypt your setup with. You&rsquo;ll enter it again whenever your AI setup needs unlocking.</p>
                 <label htmlFor="llm-save-phrase">Unlock phrase (8+ characters)</label>
                 <input id="llm-save-phrase" type="password" value={unlockPhrase} onChange={(event) => setUnlockPhrase(event.target.value)} minLength={8} required autoFocus />
+                <PhraseStrengthMeter strength={phraseStrength} />
                 <div className="llm-setup-form__actions">
                   <button type="button" className="btn-secondary" onClick={() => setPhase('result')}>Back</button>
-                  <button type="submit" className="btn-primary">Save</button>
+                  <button type="submit" className="btn-primary" disabled={!phraseStrength.verdict?.ok}>Save</button>
                 </div>
-                {saveError && <p role="alert">{saveError}</p>}
+                <ErrorBox title="Not saved" message={saveError} />
               </form>
             )}
           </>
@@ -142,7 +159,7 @@ export function LlmSetupForm(props: LlmSetupFormProps): ReactNode {
   );
 }
 
-function SavedSetupSummary({ status, onUnlockClick, onLock, onDelete, onReplace }: LlmSetupFormProps & { onReplace: () => void }): ReactNode {
+function SavedSetupSummary({ status, onUnlockClick, onLock, onDelete, onReplace, onChangeModelsClick }: LlmSetupFormProps & { onReplace: () => void; onChangeModelsClick: () => void }): ReactNode {
   const isLocal = status.protocol === 'local';
   const where = isLocal ? `on your computer (${status.localType === 'ollama' ? 'Ollama' : status.localType === 'other' ? 'local server' : 'LM Studio'})` : status.endpoint;
   return (
@@ -155,12 +172,13 @@ function SavedSetupSummary({ status, onUnlockClick, onLock, onDelete, onReplace 
             {modelLine(status.highModel, status.highProtocol ?? status.protocol, status.reasoning?.standard)}
             {!isLocal && ` · Voice: ${status.voiceModel ?? 'not configured'} · Flex: ${status.useFlex ? 'on' : 'off'}`}
           </p>
+          <button type="button" className="btn-primary" onClick={onChangeModelsClick}>Change models</button>
           <button type="button" className="btn-secondary" onClick={onLock}>Lock now</button>
         </>
       ) : (
         <>
           <p><strong>AI setup is locked</strong></p>
-          <p className="settings-page__hint">Enter your unlock phrase to use coaching and view the saved model details.</p>
+          <p className="settings-page__hint">Enter your unlock phrase to use coaching, view the saved model details or change the models.</p>
           <button type="button" className="btn-primary" onClick={onUnlockClick}>Enter unlock phrase</button>
         </>
       )}
@@ -174,28 +192,4 @@ function modelLine(model: string | undefined, protocol: LlmProtocol | undefined,
   const parts = [protocol && protocol !== 'local' ? PROTOCOL_LABELS[protocol] : null, thinking ? `thinking ${THINKING_LABELS[thinking] ?? thinking}` : null];
   const detail = parts.filter(Boolean).join(', ');
   return `${model ?? '—'}${detail ? ` (${detail})` : ''}`;
-}
-
-function WizardSteps({ phase }: { phase: Phase }): ReactNode {
-  return (
-    <ol className="llm-setup-wizard__steps" aria-label="Setup steps">
-      <li className={`llm-setup-wizard__step ${phase === 'phrase' ? 'is-done' : 'is-active'}`}>
-        <span className="llm-setup-wizard__step-number" aria-hidden="true">1</span>
-        Connect your AI
-      </li>
-      <li className={`llm-setup-wizard__step ${phase === 'phrase' ? 'is-active' : ''}`}>
-        <span className="llm-setup-wizard__step-number" aria-hidden="true">2</span>
-        Set an unlock phrase
-      </li>
-    </ol>
-  );
-}
-
-function LoaderBlock({ label }: { label: string }): ReactNode {
-  return (
-    <p className="llm-setup-form__loader" role="status">
-      <span className="llm-setup-form__spinner" aria-hidden="true" />
-      {label}
-    </p>
-  );
 }

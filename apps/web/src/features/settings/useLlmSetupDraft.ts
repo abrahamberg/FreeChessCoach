@@ -1,5 +1,8 @@
 import {
+  CLOUD_PROVIDER_PRESETS,
   DEFAULT_LOCAL_ENDPOINTS,
+  cloudProviderOf,
+  type CloudProvider,
   type LlmSetup,
   type LlmSetupStatus,
   type LocalLlmType,
@@ -7,16 +10,15 @@ import {
 } from '@freechesscoach/shared';
 import { useMemo, useState } from 'react';
 
-export const DEFAULT_CLOUD_ENDPOINT = 'https://api.openai.com/v1';
-/** Powerful enough for the coach and cheap enough for summaries, so one
- * model serves both tiers and the low model is left blank. */
-const DEFAULT_MODEL = 'gpt-6-luna';
-const DEFAULT_VOICE_MODEL = 'gpt-4o-mini-tts';
+const DEFAULT_PROVIDER = 'openai';
+export const DEFAULT_CLOUD_ENDPOINT = CLOUD_PROVIDER_PRESETS[DEFAULT_PROVIDER].endpoint;
 
 export type SetupKind = 'cloud' | 'local';
 
 export interface LlmSetupDraft {
   kind: SetupKind;
+  /** Which cloud provider; `other` is typed in by hand. */
+  provider: CloudProvider;
   endpoint: string;
   apiKey: string;
   lowModel: string;
@@ -34,6 +36,8 @@ export interface LlmSetupDraftApi {
   draft: LlmSetupDraft;
   update(patch: Partial<LlmSetupDraft>): void;
   setKind(kind: SetupKind): void;
+  /** Fills the provider's URL and default models. */
+  setProvider(provider: CloudProvider): void;
   setLocalType(localType: LocalLlmType): void;
   /** Basic local mode: one model for both tiers. */
   setLocalModel(model: string): void;
@@ -50,26 +54,78 @@ function localEndpointFor(localType: LocalLlmType, current: string): string {
 /** Starts from the saved setup, if any (an edit keeps what was saved; the
  * API key is never sent back, so it starts empty). */
 export function initialDraft(status: LlmSetupStatus): LlmSetupDraft {
+  if (!status.configured || status.highModel === undefined) return newCloudDraft();
   const kind: SetupKind = status.protocol === 'local' ? 'local' : 'cloud';
   const localType = status.localType ?? 'lm-studio';
   const fallbackEndpoint = kind === 'local' ? localEndpointFor(localType, DEFAULT_LOCAL_ENDPOINTS['lm-studio']) : DEFAULT_CLOUD_ENDPOINT;
-  const highModel = status.highModel ?? (kind === 'local' ? '' : DEFAULT_MODEL);
+  const highModel = status.highModel;
   // Blank means "same as the high model".
   const lowModel = status.lowModel && status.lowModel !== highModel ? status.lowModel : '';
+  const endpoint = status.endpoint ?? fallbackEndpoint;
   return {
     kind,
-    endpoint: status.endpoint ?? fallbackEndpoint,
+    provider: cloudProviderOf(endpoint),
+    endpoint,
     apiKey: '',
     lowModel,
     highModel,
-    voiceModel: status.voiceModel ?? (status.configured ? '' : DEFAULT_VOICE_MODEL),
-    // Pre-checked for a brand-new setup; a saved setup keeps whatever it had.
-    useFlex: status.useFlex ?? !status.configured,
+    voiceModel: status.voiceModel ?? '',
+    useFlex: status.useFlex ?? false,
     localType,
     localToken: '',
-    advanced: lowModel !== '' || status.reasoning !== undefined,
+    advanced: (kind === 'local' && lowModel !== '') || status.reasoning !== undefined,
     reasoning: status.reasoning ?? {}
   };
+}
+
+function newCloudDraft(): LlmSetupDraft {
+  return withProvider(
+    {
+      kind: 'cloud',
+      provider: DEFAULT_PROVIDER,
+      endpoint: '',
+      apiKey: '',
+      lowModel: '',
+      highModel: '',
+      voiceModel: '',
+      useFlex: false,
+      localType: 'lm-studio',
+      localToken: '',
+      advanced: false,
+      reasoning: {}
+    },
+    DEFAULT_PROVIDER
+  );
+}
+
+/** A named provider brings its URL, models, voice and (OpenAI only) Flex,
+ * pre-checked. `other` keeps what was typed, minus a named provider's URL. */
+export function withProvider(current: LlmSetupDraft, provider: CloudProvider): LlmSetupDraft {
+  if (provider === 'other') {
+    const wasPreset = cloudProviderOf(current.endpoint) !== 'other';
+    return { ...current, provider, endpoint: wasPreset ? '' : current.endpoint, useFlex: false };
+  }
+  const preset = CLOUD_PROVIDER_PRESETS[provider];
+  return {
+    ...current,
+    provider,
+    endpoint: preset.endpoint,
+    highModel: preset.highModel,
+    lowModel: preset.lowModel,
+    voiceModel: preset.voiceModel ?? '',
+    useFlex: preset.supportsFlex
+  };
+}
+
+/** Flex is an OpenAI service tier; no other provider has it. */
+export function supportsFlex(provider: CloudProvider): boolean {
+  return provider !== 'other' && CLOUD_PROVIDER_PRESETS[provider].supportsFlex;
+}
+
+/** Cloud voice needs OpenAI's speech API: offered for OpenAI and for a
+ * hand-typed endpoint (which may be OpenAI-compatible), not the others. */
+export function supportsVoice(provider: CloudProvider): boolean {
+  return provider === 'other' || CLOUD_PROVIDER_PRESETS[provider].voiceModel !== null;
 }
 
 /** The connect step's state. Every default that depends on another field
@@ -88,6 +144,7 @@ export function useLlmSetupDraft(status: LlmSetupStatus, initialKind?: SetupKind
     return {
       update,
       setKind: (kind: SetupKind) => setDraft((current) => switchKind(current, kind)),
+      setProvider: (provider: CloudProvider) => setDraft((current) => withProvider(current, provider)),
       setLocalType: (localType: LocalLlmType) =>
         setDraft((current) => ({
           ...current,
@@ -114,13 +171,8 @@ function switchKind(current: LlmSetupDraft, kind: SetupKind): LlmSetupDraft {
       highModel: ''
     };
   }
-  return {
-    ...current,
-    kind,
-    endpoint: LOCAL_DEFAULTS.has(current.endpoint) || current.endpoint === '' ? DEFAULT_CLOUD_ENDPOINT : current.endpoint,
-    lowModel: '',
-    highModel: current.highModel || DEFAULT_MODEL
-  };
+  if (LOCAL_DEFAULTS.has(current.endpoint) || current.endpoint === '') return withProvider({ ...current, kind }, current.provider === 'other' ? DEFAULT_PROVIDER : current.provider);
+  return { ...current, kind, provider: cloudProviderOf(current.endpoint) };
 }
 
 function toSetup(draft: LlmSetupDraft): LlmSetup {
@@ -141,8 +193,8 @@ function toSetup(draft: LlmSetupDraft): LlmSetup {
     apiKey: draft.apiKey,
     lowModel: draft.lowModel || undefined,
     highModel: draft.highModel,
-    voiceModel: draft.voiceModel || undefined,
-    useFlex: draft.useFlex,
+    voiceModel: supportsVoice(draft.provider) && draft.voiceModel ? draft.voiceModel : undefined,
+    useFlex: supportsFlex(draft.provider) && draft.useFlex,
     reasoning
   };
 }

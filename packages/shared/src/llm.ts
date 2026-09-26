@@ -127,6 +127,32 @@ export const SaveLlmSetupRequestSchema = LlmSetupFieldsSchema.extend({
 }).refine(hasRequiredCredentials, CREDENTIALS_MESSAGE);
 export type SaveLlmSetupRequest = z.infer<typeof SaveLlmSetupRequestSchema>;
 
+/** A change to the saved setup's models, Flex and thinking levels (body of
+ * POST /api/users/me/llm-setup/test-models). The endpoint and key are
+ * deliberately not in it — they stay as saved, so a hijacked session cannot
+ * point the saved key at another host. Absent optional fields clear that
+ * setting (same meaning as in a full save). */
+export const LlmModelsChangeSchema = LlmSetupFieldsSchema.pick({
+  lowModel: true,
+  highModel: true,
+  voiceModel: true,
+  useFlex: true,
+  reasoning: true
+}).strict();
+export type LlmModelsChange = z.infer<typeof LlmModelsChangeSchema>;
+
+/** Body of PATCH /api/users/me/llm-setup: the change plus the unlock phrase,
+ * which opens the saved setup and re-encrypts it; `newUnlockPhrase`
+ * optionally replaces it. */
+export const UpdateLlmModelsRequestSchema = LlmModelsChangeSchema.extend({
+  unlockPhrase: z.string().trim().min(1, 'Unlock phrase cannot be empty').max(256, 'Unlock phrase is too long'),
+  newUnlockPhrase: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+    z.string().trim().min(8, 'New unlock phrase must be at least 8 characters').max(256, 'Unlock phrase is too long').optional()
+  )
+}).strict();
+export type UpdateLlmModelsRequest = z.infer<typeof UpdateLlmModelsRequestSchema>;
+
 export const UnlockLlmSetupRequestSchema = z.object({
   unlockPhrase: z.string().trim().min(1, 'Unlock phrase cannot be empty').max(256, 'Unlock phrase is too long')
 });
