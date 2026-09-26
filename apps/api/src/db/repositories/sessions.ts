@@ -127,6 +127,19 @@ export function findLatestKeptByGameIdForUser(
     .executeTakeFirst();
 }
 
+/** When the user last started a session in `mode` (any status), or null
+ * if never — the coach nudge's "coached lately / played the coach lately"
+ * checks. */
+export async function latestStartedAtForUser(db: Kysely<Database>, userId: string, mode: SessionMode): Promise<Date | null> {
+  const row = await db
+    .selectFrom('sessions')
+    .select((eb) => eb.fn.max('startedAt').as('startedAt'))
+    .where('userId', '=', userId)
+    .where('mode', '=', mode)
+    .executeTakeFirst();
+  return row?.startedAt ?? null;
+}
+
 /** Game deletion cascade (services/games.ts deleteGameForUser): the session
  * ids to clear from session_messages/session_move_notes before the sessions
  * themselves (and the game) can be deleted. */

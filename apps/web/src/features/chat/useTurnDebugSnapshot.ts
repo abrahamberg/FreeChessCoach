@@ -35,7 +35,9 @@ const TurnDebugSnapshotSchema = z.object({
     messages: z.array(z.unknown()),
     finishReason: z.string(),
     usage: TurnUsageSchema,
-    providerMetadata: z.unknown()
+    /** Absent when the provider returns none (e.g. local models): the key is
+     * `undefined` server-side, so it never survives the jsonb round-trip. */
+    providerMetadata: z.unknown().optional()
   })
 });
 

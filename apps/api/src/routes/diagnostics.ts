@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
+import { getCoachNudge } from '../services/coach-nudge.js';
 import { getDiagnosticReadiness } from '../services/diagnostic-readiness.js';
 import { getDiagnosticsForUser, getEvidenceForCode } from '../services/diagnostics.js';
 import * as userProfileService from '../services/user-profile.js';
@@ -24,6 +25,12 @@ export function registerDiagnosticsRoutes(app: FastifyInstance, db: Kysely<Datab
   app.get('/api/users/me/diagnostics/readiness', async (request) => {
     const user = await userProfileService.getOrCreate(db, request.user);
     return getDiagnosticReadiness(db, user.id);
+  });
+
+  // The Games page's coach area: what the student's coach says to do next.
+  app.get('/api/users/me/coach-nudge', async (request) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    return getCoachNudge(db, user.id);
   });
 
   app.get<{ Params: { code: string } }>(

@@ -12,12 +12,23 @@ export interface PlayedPuzzleMove {
   san: string;
   /** The opponent's forced reply the line names next (SAN), if any. */
   replySan: string | null;
+  /** Every move this call put on the board, in order (SAN) — more than two
+   * only when `studentMoves` is more than 1. */
+  playedSans: string[];
   fen: string;
   currentPly: number;
   lineComplete: boolean;
   /** Tells the coach what to do next — the model reads the tool result, so the
    * "line is done, advance" step is stated there rather than left to inference. */
   next: string;
+}
+
+export interface PlayNextPuzzleMoveOptions {
+  /** How many of the student's moves to play, each with the opponent's forced
+   * reply (default 1) — more when the student already stated several moves of
+   * the line correctly, so they aren't made to repeat them. Stops at the end
+   * of the line. */
+  studentMoves?: number;
 }
 
 /**
@@ -32,17 +43,17 @@ export interface PlayedPuzzleMove {
 export async function playNextPuzzleMove(
   db: Kysely<Database>,
   session: PuzzleSessionRow,
-  assignment: PuzzleAssignmentRow
+  assignment: PuzzleAssignmentRow,
+  options: PlayNextPuzzleMoveOptions = {}
 ): Promise<PlayedPuzzleMove> {
   const item = assignment.items[session.currentItemIndex];
   if (!item) throw new ConflictError('This session has no current puzzle — it may already be complete');
 
   const beforeFen = currentPuzzleFen(session, assignment);
-  const expectedUci = item.moves[session.currentPly];
-  if (expectedUci === undefined) throw new ConflictError('This puzzle line is already fully played out');
+  if (session.currentPly >= item.moves.length) throw new ConflictError('This puzzle line is already fully played out');
 
-  const replyUci = item.moves[session.currentPly + 1];
-  const toApply = replyUci !== undefined ? [expectedUci, replyUci] : [expectedUci];
+  const studentMoves = Math.max(1, options.studentMoves ?? 1);
+  const toApply = item.moves.slice(session.currentPly, session.currentPly + studentMoves * 2);
   const { moves, error } = applyUciSequence(beforeFen, toApply);
   if (error || moves.length !== toApply.length) throw new ConflictError('The stored puzzle line could not be played');
 
@@ -51,12 +62,13 @@ export async function playNextPuzzleMove(
   return {
     san: moves[0]!.san,
     replySan: moves[1]?.san ?? null,
+    playedSans: moves.map((move) => move.san),
     fen: moves.at(-1)!.fen,
     currentPly: ply,
     lineComplete: ply >= item.moves.length,
     next:
       ply >= item.moves.length
-        ? 'The line is fully played out. Say the one-sentence lesson now, then call advance_puzzle (solved, or failed if you had to reveal it) in this same reply to move the student to the next practice.'
-        : 'Ask the student for the next move of the line.'
+        ? 'The line is fully played out. Stay on this position: say what you want to say about it, then ask whether they are ready to move on. Do not call advance_puzzle until they say yes.'
+        : 'Ask the student for the next move of the line — the point where their answer stopped, if they gave several.'
   };
 }

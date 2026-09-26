@@ -10,6 +10,10 @@ import { ExplorePanel } from '../board/ExplorePanel.js';
 import { GameEvalChart } from '../board/GameEvalChart.js';
 import type { UseExploreFeedbackResult } from '../board/useExploreFeedback.js';
 import type { UseDivergedLineResult } from '../session/useDivergedLine.js';
+// session-board-column/-row, peek-pill and undo-pill all live here; without
+// this import they were only styled if a session page had loaded it first
+// in the same tab (the unstyled "back to game" button was invisible in dark mode).
+import '../session/SessionPage.css';
 
 export interface GameReviewBoardColumnProps {
   fen: string;

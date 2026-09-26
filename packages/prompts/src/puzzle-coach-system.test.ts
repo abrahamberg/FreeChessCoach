@@ -44,10 +44,10 @@ describe('buildPuzzleCoachSystemPrompt', () => {
     expect(dynamicPart).toContain('#1 solved, #2 failed');
   });
 
-  test('tells the coach to advance when the line is already fully played out', () => {
+  test('once the line is played out, the coach asks before advancing rather than jumping to the next practice', () => {
     const { dynamicPart } = buildPuzzleCoachSystemPrompt(
       basePuzzleCoachInput({ currentItem: { ...basePuzzleCoachInput().currentItem, currentPly: 4 } })
     );
-    expect(dynamicPart).toContain('call advance_puzzle now');
+    expect(dynamicPart).toContain('ask whether they are ready to move on; call advance_puzzle once they agree');
   });
 });

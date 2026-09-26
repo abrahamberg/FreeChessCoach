@@ -9,6 +9,7 @@ import { apiGet, apiPatch, ApiError } from '../../api/client.js';
 import { useProfile } from '../../hooks/useProfile.js';
 import { IMPORT_QUOTA_QUERY_KEY } from '../../hooks/useImportQuota.js';
 import { importBatch } from './bulkImport.js';
+import { markRemoteGameImported } from './markRemoteImported.js';
 import type { RemoteTab } from './RemoteImportPanel.js';
 
 const REMOTE_PAGE_SIZE = 20;
@@ -153,7 +154,11 @@ export function useRemoteImport(tab: string) {
     bulkImportMutation.mutate({
       games: selected,
       source: tab as RemoteTab,
-      onGameSettled: (settledId) => setImportedIds((current) => new Set(current).add(settledId))
+      onGameSettled: (settledId, imported) => {
+        setImportedIds((current) => new Set(current).add(settledId));
+        const pgn = selected.find((game) => game.id === settledId)?.pgn;
+        if (imported && pgn) markRemoteGameImported(queryClient, pgn);
+      }
     });
   }
 

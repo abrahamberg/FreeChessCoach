@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Modal } from '../../components/Modal.js';
 import { BoardMenu } from '../../components/BoardMenu.js';
@@ -16,11 +16,14 @@ import { MoveExplorer } from '../board/MoveExplorer.js';
 import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
 import { ChatPane } from '../chat/ChatPane.js';
 import { DebugPanel } from '../chat/DebugPanel.js';
+import type { ArrowRef } from '../chat/arrowToken.js';
 import { encodeDivergedLine } from '../chat/divergedLine.js';
+import { KickoffFactsContext } from '../chat/kickoff-facts-context.js';
 import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
 import { UnlockPhraseModal } from '../settings/UnlockPhraseModal.js';
 import '../session/SessionPage.css';
 import { PuzzlePlanStrip } from './PuzzlePlanStrip.js';
+import { buildPuzzleKickoffFacts } from './puzzle-kickoff-facts.js';
 import { usePuzzleSessionPageData } from './usePuzzleSessionPageData.js';
 import './PuzzleSessionPage.css';
 
@@ -75,7 +78,11 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
     isResetting
   } = usePuzzleSessionPageData(assignmentId ?? '', onSessionReset);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
+  // Arrows the student draws on the (locked) board land in the reply box as
+  // chips, same as a game session — pointing is how they answer here.
+  const [boardArrows, setBoardArrows] = useState<ArrowRef[]>([]);
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
+  const kickoffFacts = useMemo(() => buildPuzzleKickoffFacts(detailQuery.data), [detailQuery.data]);
 
   // Coach voice — same wiring as the coach game (SessionPage.tsx): the
   // persona picks the voice, and Settings' TTS switch/backend decide whether
@@ -178,11 +185,13 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
           mode="peek"
           arrows={annotations.arrows}
           highlights={annotations.highlights}
+          onArrowsChange={setBoardArrows}
+          tapToDrawArrows
           disabled
         />
       </div>
       <p className="puzzle-session-page__locked" role="note">
-        Discuss only — you can't move the pieces here. Tell your coach what you'd play; they'll move the board for you.
+        Discuss only — you can't move the pieces here. Tell your coach what you'd play, or draw an arrow: tap a piece, then the square it goes to. They'll move the board for you.
       </p>
     </div>
   );
@@ -192,8 +201,10 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
       messages={chat.messages}
       activeToolName={chat.activeToolName}
       isThinking={chat.isThinking}
+      thinkingLabel={chat.thinkingLabel}
       onSend={handleSendMessage}
       hasPendingLine={Boolean(divergedLine.line)}
+      boardArrows={boardArrows}
       fen={boardFen}
       coachPersona={persona}
       autoplayEnabled={coachVoice.autoplayEnabled}
@@ -206,67 +217,69 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
   );
 
   return (
-    <div className="session-page puzzle-session-page">
-      {confirmDialog}
-      {unlockModal.isOpen && (
-        <UnlockPhraseModal
-          description="Your coach needs your AI setup unlocked to continue this session."
-          onClose={unlockModal.onClose}
-          onUnlock={unlockModal.onUnlock}
-          onUnlocked={unlockModal.onUnlocked}
-          isPending={unlockModal.isPending}
-          isSuccess={unlockModal.isSuccess}
-          errorMessage={unlockModal.errorMessage}
-        />
-      )}
-      {setupRequiredModal.isOpen && (
-        <AiSetupRequiredModal onClose={setupRequiredModal.onClose} onGoToSettings={setupRequiredModal.onGoToSettings} />
-      )}
-      <header className="puzzle-session-page__header">
-        <button type="button" onClick={() => navigate('/progress')}>
-          ← Progress
-        </button>
-        <span className="puzzle-session-page__actions">
-          <span className="puzzle-session-page__progress">
-            Practice {session.currentItemIndex + 1} of {session.assignment.items.length}
+    <KickoffFactsContext.Provider value={kickoffFacts}>
+      <div className="session-page puzzle-session-page">
+        {confirmDialog}
+        {unlockModal.isOpen && (
+          <UnlockPhraseModal
+            description="Your coach needs your AI setup unlocked to continue this session."
+            onClose={unlockModal.onClose}
+            onUnlock={unlockModal.onUnlock}
+            onUnlocked={unlockModal.onUnlocked}
+            isPending={unlockModal.isPending}
+            isSuccess={unlockModal.isSuccess}
+            errorMessage={unlockModal.errorMessage}
+          />
+        )}
+        {setupRequiredModal.isOpen && (
+          <AiSetupRequiredModal onClose={setupRequiredModal.onClose} onGoToSettings={setupRequiredModal.onGoToSettings} />
+        )}
+        <header className="puzzle-session-page__header">
+          <button type="button" onClick={() => navigate('/progress')}>
+            ← Progress
+          </button>
+          <span className="puzzle-session-page__actions">
+            <span className="puzzle-session-page__progress">
+              Practice {session.currentItemIndex + 1} of {session.assignment.items.length}
+            </span>
+            <BoardMenu label="Session options" items={menuItems} engineActivity={engineActivity} />
           </span>
-          <BoardMenu label="Session options" items={menuItems} engineActivity={engineActivity} />
-        </span>
-      </header>
-      {isDebugOpen && <DebugPanel sessionId={session.id} basePath="/api/puzzle-sessions" onClose={() => setIsDebugOpen(false)} />}
-      <PuzzlePlanStrip
-        items={items}
-        currentItemIndex={currentItemIndex}
-        lineComplete={lineComplete}
-        isAdvancing={isAdvancingItem}
-        onAdvance={advanceToNextItem}
-      />
-      <div className={isSideBySide ? 'session-body desktop' : 'session-body'}>
-        {isSideBySide &&
-          (divergedLine.line ? (
-            <DivergedLinePanel
-              line={divergedLine.line}
-              stepIndex={divergedLine.stepIndex}
-              onSelectStep={divergedLine.previewStep}
-              onExit={divergedLine.exit}
-              autoplayIntervalMs={autoplayIntervalMs}
-              onChangeAutoplayInterval={setAutoplayIntervalMs}
-            />
-          ) : (
-            <div className="session-move-explorer-column">
-              <MoveExplorer
-                sanMoves={sanMoves}
-                classifiedMoves={[]}
-                positions={historyPositions}
-                currentPly={viewedPly ?? currentPly}
-                onSelect={selectHistoryPly}
-                showNotes={false}
+        </header>
+        {isDebugOpen && <DebugPanel sessionId={session.id} basePath="/api/puzzle-sessions" onClose={() => setIsDebugOpen(false)} />}
+        <PuzzlePlanStrip
+          items={items}
+          currentItemIndex={currentItemIndex}
+          lineComplete={lineComplete}
+          isAdvancing={isAdvancingItem}
+          onAdvance={advanceToNextItem}
+        />
+        <div className={isSideBySide ? 'session-body desktop' : 'session-body'}>
+          {isSideBySide &&
+            (divergedLine.line ? (
+              <DivergedLinePanel
+                line={divergedLine.line}
+                stepIndex={divergedLine.stepIndex}
+                onSelectStep={divergedLine.previewStep}
+                onExit={divergedLine.exit}
+                autoplayIntervalMs={autoplayIntervalMs}
+                onChangeAutoplayInterval={setAutoplayIntervalMs}
               />
-            </div>
-          ))}
-        {board}
-        {chatPanel}
+            ) : (
+              <div className="session-move-explorer-column">
+                <MoveExplorer
+                  sanMoves={sanMoves}
+                  classifiedMoves={[]}
+                  positions={historyPositions}
+                  currentPly={viewedPly ?? currentPly}
+                  onSelect={selectHistoryPly}
+                  showNotes={false}
+                />
+              </div>
+            ))}
+          {board}
+          {chatPanel}
+        </div>
       </div>
-    </div>
+    </KickoffFactsContext.Provider>
   );
 }

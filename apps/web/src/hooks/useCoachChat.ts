@@ -96,12 +96,15 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
   // The session/game fetch (SessionPage) resolves after this hook's first
   // render, so initialMessages arrives on a later render, not at mount —
   // seed once when it shows up rather than via useState's lazy initializer.
+  // Never after a turn has started here (postTurn sets this too): a refetch
+  // landing mid-turn would otherwise swap the live transcript for a persisted
+  // one without the in-flight reply, dropping its text (see
+  // usePuzzleCoachChat's seededRef).
   const seededRef = useRef(false);
   useEffect(() => {
-    if (!seededRef.current && options.initialMessages && options.initialMessages.length > 0) {
-      seededRef.current = true;
-      setMessages(options.initialMessages);
-    }
+    if (seededRef.current || !options.initialMessages) return;
+    seededRef.current = true;
+    if (options.initialMessages.length > 0) setMessages(options.initialMessages);
   }, [options.initialMessages]);
 
   // A turn's stream outlives the render that started it: play mode's
@@ -110,6 +113,14 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
   // from before that move. Always dispatch to the latest handler.
   const onServerToolResultRef = useRef(options.onServerToolResult);
   onServerToolResultRef.current = options.onServerToolResult;
+  // Same reason for client tools, which bites harder: a client tool's
+  // result is posted back from inside this same postTurn closure, so every
+  // later step of the turn would otherwise still see the board and any open
+  // hypothetical as they were when the student hit send — a second
+  // hypothetical_line after a first one (or after a show_position) then
+  // replays its moves from the wrong position and comes back illegal.
+  const onToolCallRef = useRef(options.onToolCall);
+  onToolCallRef.current = options.onToolCall;
 
   const postTurn = useCallback(
     async (body: PostTurnBody) => {
@@ -120,6 +131,7 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
       // waiting for `fetch` to resolve here left the UI showing nothing at
       // all for however long that took — isThinking has nothing to key off
       // until this placeholder exists.
+      seededRef.current = true;
       const assistantId = crypto.randomUUID();
       let assistantText = '';
       setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', text: '' }]);
@@ -221,7 +233,7 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
                 ]);
               }
             }
-            const result = options.onToolCall?.(toolCall);
+            const result = onToolCallRef.current?.(toolCall);
             if (toolCall.toolName === 'hypothetical_line' && result !== undefined) {
               const hypothetical = result as { ok: boolean; basePly: number; moves: { san: string }[]; resultFen?: string };
               if (hypothetical.moves.length > 0) {

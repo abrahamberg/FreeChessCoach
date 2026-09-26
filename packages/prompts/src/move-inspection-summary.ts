@@ -22,7 +22,7 @@ const PIECE_NAMES: Record<string, string> = {
  * coach can correct itself in the same turn instead of asking again.
  */
 export function renderMoveInspection(inspection: PositionInspection): string {
-  if (inspection.error) return `Could not read that position: ${inspection.error}. Get a fen from show_position, check_position or hypothetical_line and try again.`;
+  if (inspection.error) return `Could not read that position: ${inspection.error}. Copy a fen exactly from a tool result or your prompt — never type one out yourself — and try again.`;
 
   return [renderPositionFacts(inspection), ...inspection.moves.map(renderMove)].join('\n\n');
 }

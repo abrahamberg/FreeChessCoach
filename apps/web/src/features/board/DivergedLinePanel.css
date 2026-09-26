@@ -34,6 +34,39 @@
   min-width: 24px;
 }
 
+/* Every button here is otherwise unstyled: base.css only makes buttons
+ * inherit the text colour, so in dark mode light text sat on the browser's
+ * default light-grey button face and the moves were invisible. Moves match
+ * MoveExplorer's list; the rest get a token-coloured chip. */
+.diverged-line-panel button {
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  padding: 4px 8px;
+}
+
+.diverged-line-panel__list button {
+  background: none;
+  border: none;
+  border-radius: 5px;
+  padding: 4px 7px;
+  font-size: 15px;
+}
+
+.diverged-line-panel__list button:hover {
+  background: var(--color-surface-strong);
+}
+
+.diverged-line-panel__list button[aria-current='true'] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.diverged-line-panel button:disabled {
+  opacity: 0.4;
+}
+
 .diverged-line-panel__autoplay {
   display: flex;
   align-items: center;

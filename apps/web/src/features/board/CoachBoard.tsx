@@ -1,6 +1,7 @@
 import { Chess, type PieceSymbol, type Square } from 'chess.js';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { MoveQuality } from '@freechesscoach/shared';
+import { arrowMoveSan } from '@freechesscoach/chess-analysis';
 import {
   Chessboard,
   type Arrow,
@@ -11,6 +12,7 @@ import {
 } from 'react-chessboard';
 import { MoveQualityBadgeOverlay } from './MoveQualityBadgeOverlay.js';
 import { PromotionPicker, type PromotionPiece } from './PromotionPicker.js';
+import { useTapArrows } from './useTapArrows.js';
 import './CoachBoard.css';
 
 const SELECTED_SQUARE_STYLE: CSSProperties = { backgroundColor: 'rgba(0, 140, 60, 0.65)' };
@@ -77,6 +79,9 @@ export interface BoardArrow {
   from: string;
   to: string;
   color: string;
+  /** Set on arrows the student draws: the move it makes on this position, if
+   * any ("Qe3+"), so chips can say that instead of two squares. */
+  san?: string;
 }
 
 export interface BoardHighlight {
@@ -149,6 +154,10 @@ export interface CoachBoardProps {
    * anything together — see useGameReviewPageData's own
    * moveQualityBadgeFor. */
   moveQualityBadge?: { square: string; quality: MoveQuality };
+  /** Tap one square, then another, to draw an arrow — how a phone draws
+   * arrows (useTapArrows). Only for a board whose taps would otherwise do
+   * nothing: it replaces tap-to-move. */
+  tapToDrawArrows?: boolean;
 }
 
 interface PendingPromotion {
@@ -172,9 +181,27 @@ export function CoachBoard({
   onArrowsChange,
   showLegalMoveDots = true,
   disabled = false,
-  moveQualityBadge
+  moveQualityBadge,
+  tapToDrawArrows = false
 }: CoachBoardProps): ReactNode {
   const justDroppedRef = useRef(false);
+  const tapArrows = useTapArrows(fen);
+  const [drawnArrows, setDrawnArrows] = useState<BoardArrow[]>([]);
+  // Reported together — right-click-drawn and tapped arrows are the same
+  // thing to the chat composer. A ref, so a parent passing a fresh callback
+  // each render doesn't re-fire this.
+  const onArrowsChangeRef = useRef(onArrowsChange);
+  onArrowsChangeRef.current = onArrowsChange;
+  useEffect(() => {
+    onArrowsChangeRef.current?.(
+      [...drawnArrows, ...tapArrows.arrows].map((arrow) => ({
+        ...arrow,
+        san: arrowMoveSan(fen, arrow.from, arrow.to) ?? undefined
+      }))
+    );
+    // fen deliberately left out: both arrow lists are cleared on a position
+    // change, which re-fires this anyway.
+  }, [drawnArrows, tapArrows.arrows]);
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   // Set instead of moving straight through when a drop/click would promote a
   // pawn — PromotionPicker asks which piece, and the move only actually
@@ -188,6 +215,9 @@ export function CoachBoard({
   useEffect(() => {
     setSelectedSquare(null);
     setPendingPromotion(null);
+    // react-chessboard clears its drawn arrows on a new position too
+    // (clearArrowsOnPositionChange).
+    setDrawnArrows([]);
   }, [fen]);
 
   const chess = safeChess(fen);
@@ -260,6 +290,10 @@ export function CoachBoard({
   const legalMovesFromSelection = selectedSquare ? chess.moves({ square: selectedSquare, verbose: true }) : [];
 
   function handleSquareClick(square: string): void {
+    if (tapToDrawArrows) {
+      tapArrows.tap(square);
+      return;
+    }
     if (justDroppedRef.current) {
       justDroppedRef.current = false;
       return;
@@ -310,11 +344,12 @@ export function CoachBoard({
     onPieceDrop: handlePieceDrop,
     onSquareClick: handleSquareClickOption,
     onPieceClick: handlePieceClickOption,
-    arrows: arrows.map((arrow) => ({ startSquare: arrow.from, endSquare: arrow.to, color: arrow.color })),
+    arrows: [...arrows, ...tapArrows.arrows].map((arrow) => ({ startSquare: arrow.from, endSquare: arrow.to, color: arrow.color })),
     squareStyles: mergeSquareStyles(
       Object.fromEntries(highlights.map((highlight) => [highlight.square, { backgroundColor: highlight.color }])),
       checkedKingSquare ? { [checkedKingSquare]: KING_IN_CHECK_STYLE } : {},
       selectedSquare ? { [selectedSquare]: SELECTED_SQUARE_STYLE } : {},
+      tapArrows.startSquare ? { [tapArrows.startSquare]: SELECTED_SQUARE_STYLE } : {},
       legalMoveSquareStyles
     ),
     // dnd-kit's default distance constraint is 1px — a real click/tap almost
@@ -328,7 +363,7 @@ export function CoachBoard({
     allowDrawingArrows: true,
     clearArrowsOnPositionChange: true,
     onArrowsChange: ({ arrows: drawn }: { arrows: Arrow[] }) => {
-      onArrowsChange?.(drawn.map((arrow) => ({ from: arrow.startSquare, to: arrow.endSquare, color: arrow.color })));
+      setDrawnArrows(drawn.map((arrow) => ({ from: arrow.startSquare, to: arrow.endSquare, color: arrow.color })));
     }
   };
 

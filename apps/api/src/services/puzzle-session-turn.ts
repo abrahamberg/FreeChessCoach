@@ -7,9 +7,11 @@ import * as usersRepo from '../db/repositories/users.js';
 import * as puzzleSessionsRepo from '../db/repositories/puzzle-sessions.js';
 import type { PuzzleSessionRow } from '../db/repositories/puzzle-sessions.js';
 import type { Database } from '../db/schema.js';
+import { isDevCommandsEnabled } from '../lib/dev-commands.js';
 import { ConflictError, NotFoundError } from '../lib/errors.js';
 import { createKeyedLock } from '../lib/keyedLock.js';
 import { MAX_STEPS, runCoachTurn, type CoachTurnStream } from '../llm/chat.js';
+import { answerUnansweredToolCalls } from '../llm/unanswered-tool-calls.js';
 import type { GatewayConfig, ModelResolution, Tier } from '../llm/gateway.js';
 import { getModelForUser, streamTimeoutsFor } from '../llm/gateway.js';
 import { cachedSystemMessage, systemMessage, type ChatMessage } from '../llm/messages.js';
@@ -59,7 +61,9 @@ const OPENING_TURN_CONTENT = 'Begin the puzzle session.';
  * next position opens on the last one's tool result and the coach carries on
  * as if it were still there. */
 function openingTurnContent(itemIndex: number, total: number): string {
-  return itemIndex === 0 ? OPENING_TURN_CONTENT : `Begin practice ${itemIndex + 1} of ${total}.`;
+  return itemIndex === 0
+    ? OPENING_TURN_CONTENT
+    : `Begin practice ${itemIndex + 1} of ${total}. The session is already under way — you greeted them and explained the set at the start — so no greeting and no name: go straight to this position and say which side they play.`;
 }
 
 /**
@@ -118,6 +122,7 @@ export async function startPuzzleTurn(
 
     const { staticPart, dynamicPart } = buildPuzzleCoachSystemPrompt({
       persona: user.coachPersona,
+      devCommands: isDevCommandsEnabled(),
       displayName: user.displayName,
       positionAnalysis,
       reason: assignment.reason,
@@ -130,7 +135,9 @@ export async function startPuzzleTurn(
     const historyRows = (await puzzleSessionsRepo.listMessagesBySession(deps.db, session.id)).filter(
       (row) => row.itemIndex === currentItemIndex
     );
-    const history = historyRows.map((row) => ({ role: row.role, content: row.content }) as ChatMessage);
+    const history = answerUnansweredToolCalls(
+      historyRows.map((row) => ({ role: row.role, content: row.content }) as ChatMessage)
+    );
     // The synthesized opening turn is never persisted, so an episode's stored
     // history starts with the coach's own reply — put the opening back in
     // front so the conversation always begins with a user turn.

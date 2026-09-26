@@ -13,6 +13,7 @@ import {
   howYouRunTheSession
 } from './coach-method.js';
 import { PERSONA_VOICE } from './coach-persona.js';
+import { DEV_COMMANDS } from './dev-commands.js';
 import { PLAY_SESSION_FLOW, SESSION_FLOW } from './coach-session-flow.js';
 import {
   ACTIVE_DIAGNOSIS_CODES,
@@ -73,6 +74,9 @@ export interface CoachPromptInput {
    * time. Defaults to false so every existing (cloud) caller is
    * byte-for-byte unchanged. */
   isLocal?: boolean;
+  /** Local dev stack only (see dev-commands.ts): leads the prompt with the
+   * /dev developer-override rule. Never set in production. */
+  devCommands?: boolean;
 }
 
 export interface CoachSystemPrompt {
@@ -91,7 +95,9 @@ export interface CoachSystemPrompt {
  */
 export function buildCoachSystemPrompt(input: CoachPromptInput): CoachSystemPrompt {
   return {
-    staticPart: buildStaticPart(input.band, input.mode, input.persona, input.isLocal ?? false),
+    staticPart: [input.devCommands ? DEV_COMMANDS : '', buildStaticPart(input.band, input.mode, input.persona, input.isLocal ?? false)]
+      .filter(Boolean)
+      .join('\n\n'),
     dynamicPart: buildDynamicPart(input)
   };
 }
@@ -249,7 +255,7 @@ function yourToolsAndWhenToUseThem(mode: SessionMode, isLocal: boolean): string 
   return `## Your tools and when to use them
 
 ${toolBullets}
-- The student can draw their own arrows on the board too. When their message contains a token like "[e2-e4]", that is an arrow they drew from e2 to e4 on the CURRENT position — read it as their proposed move or idea, exactly as if they had typed "what about e2-e4?" or pointed at the board and said "here". Respond to what they're pointing at, in the flow of the conversation — never mention the bracket syntax itself. Treat it like any other move you didn't get from a tool: check_moves before you tell them what it does.
+- The student can draw their own arrows on the board too. When their message contains a token like "[e2-e4]" or "[e2-e3 Qe3+]", that is an arrow they drew from e2 to e4 (or e2 to e3) on the CURRENT position, followed by the move it makes when a piece can legally make it — read it as their proposed move or idea, exactly as if they had typed "what about e2-e4?" or pointed at the board and said "here". Respond to what they're pointing at, in the flow of the conversation — never mention the bracket syntax itself. Treat it like any other move you didn't get from a tool: check_moves before you tell them what it does.
 
 Categories for findings and focus areas (use ONLY these):
 ${MISTAKE_CATEGORIES_BLOCK}`;

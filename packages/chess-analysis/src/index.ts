@@ -118,6 +118,7 @@ export * from './tactic-trapped.js';
 export * from './puzzle-selection.js';
 export * from './time-control.js';
 export * from './uci-move.js';
+export * from './arrow-move-san.js';
 export * from './eval-witness.js';
 export * from './move-verdict/index.js';
 export * from './win-probability.js';

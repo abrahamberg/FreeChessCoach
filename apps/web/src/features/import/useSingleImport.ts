@@ -7,6 +7,7 @@ import { useAnalysisStatus } from '../../hooks/useAnalysisStatus.js';
 import { IMPORT_QUOTA_QUERY_KEY } from '../../hooks/useImportQuota.js';
 import { useGameActions } from '../games/useGameActions.js';
 import type { ImportIntent } from './import-intent.js';
+import { markRemoteGameImported } from './markRemoteImported.js';
 import { useImportedGame } from './useImportedGame.js';
 
 /** One game the reader chose to import, kept whole so the "which colour were
@@ -33,9 +34,10 @@ export function useSingleImport() {
   const importMutation = useMutation({
     mutationFn: (request: SingleImportRequest) =>
       apiPost('/api/games', ImportGameRequestSchema.parse(request), ImportGameResponseSchema),
-    onSuccess: (data) => {
+    onSuccess: (data, request) => {
       handedOff.current = false;
       setImported(data);
+      markRemoteGameImported(queryClient, request.pgn);
       void queryClient.invalidateQueries({ queryKey: IMPORT_QUOTA_QUERY_KEY });
     }
   });

@@ -62,15 +62,17 @@ export function useBotSessionPageData(sessionId: string) {
   // A bot game's positions grow move-by-move, same as play mode — seed is
   // withheld (undefined) until gameQuery.data resolves, so useLivePositions
   // (which seeds itself exactly once) never gets permanently stranded on an
-  // empty starting position.
-  const livePositions = useLivePositions(gameQuery.data ? basePositions : undefined);
+  // empty starting position. Both seeds here also wait for this mount's
+  // own fetch: a cached copy from an earlier visit predates the moves played
+  // since (useSessionPageData has the full story).
+  const livePositions = useLivePositions(gameQuery.data && gameQuery.isFetchedAfterMount ? basePositions : undefined);
   const positions = livePositions.positions;
   const classifiedMoves = gameQuery.data?.liveMoveQualities
     ? toClassifiedMoves(gameQuery.data.liveMoveQualities)
     : (gameQuery.data?.classifiedMoves ?? null);
   const sanMoves = positions.filter((position) => position.moveSan !== null).map((position) => position.moveSan as string);
 
-  const initialPly = sessionQuery.data?.subjectPly;
+  const initialPly = sessionQuery.isFetchedAfterMount ? sessionQuery.data?.subjectPly : undefined;
   const boardState = useSessionBoardState(positions, initialPly);
   const divergedLine = useDivergedLine();
   const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(DEFAULT_AUTOPLAY_INTERVAL_MS);

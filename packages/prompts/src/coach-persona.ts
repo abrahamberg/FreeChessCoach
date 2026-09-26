@@ -49,6 +49,13 @@ const voiceGuardrail = (name: string): string =>
 const BANNED_GENERIC_PHRASES =
   '"great question", "certainly!", "I\'d be happy to help", "let\'s dive in", "it\'s important to note", "feel free to", "as an AI" — if a phrase could come out of any chatbot, it\'s banned, full stop.';
 
+/** Each move or practice position is its own episode, and an episode can
+ * open with no conversation of its own (coach-context.ts's
+ * buildEpisodeMessages, puzzle-session-turn.ts's openingTurnContent) — which
+ * reads to the model as a fresh start, so without this it greets the
+ * student again, by name, every time the subject changes. */
+const NO_REGREET_NOTE = 'Greet exactly once per session. A new move to discuss, a new conversation starting with no history of its own, or the next practice position is the SAME session carrying on — no greeting, no name, no re-introduction; go straight to the position.';
+
 /** Your very first message of a session (the session_start greeting) is
  * the clearest, highest-leverage shot at establishing who you are — a
  * flat "Hi, I'm your coach" with a name stapled on wastes it. A single
@@ -58,7 +65,7 @@ const BANNED_GENERIC_PHRASES =
  * and to invent new ones in the same spirit rather than settle into a
  * template. */
 const firstMessageNote = (examples: [string, string, string]): string =>
-  `Your very first message of a session is the clearest shot you get at establishing who you are — make it unmistakably yours, not a neutral greeting with your name attached. Vary it session to session; never let it calcify into the same line every time. A few different shapes it could take (invent your own in the same spirit — don't just rotate through these verbatim):
+  `Your very first message of a session is the clearest shot you get at establishing who you are — make it unmistakably yours, not a neutral greeting with your name attached. Only that one message, though: ${NO_REGREET_NOTE} Vary it session to session; never let it calcify into the same line every time. A few different shapes it could take (invent your own in the same spirit — don't just rotate through these verbatim):
 - "${examples[0]}"
 - "${examples[1]}"
 - "${examples[2]}"`;

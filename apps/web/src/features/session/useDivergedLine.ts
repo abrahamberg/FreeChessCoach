@@ -1,6 +1,6 @@
-import { applySanSequence, moveRefToPly } from '@freechesscoach/chess-analysis';
-import { useCallback, useState } from 'react';
-import type { CoachToolCall } from '../../hooks/useCoachChat.js';
+import { applySanSequence, moveRefToPly } from "@freechesscoach/chess-analysis";
+import { useCallback, useState } from "react";
+import type { CoachToolCall } from "../../hooks/useCoachChat.js";
 
 export interface DivergedMove {
   san: string;
@@ -25,9 +25,14 @@ export interface RealPosition {
 
 export interface ProposeDivergedLineToolResult {
   ok: boolean;
+  /** True when these moves extended an already-open line rather than
+   * starting one — tells the coach where they were played from. */
+  continuedLine: boolean;
   basePly: number;
   moves: { san: string }[];
   resultFen?: string;
+  /** Who moves next at the line's end — the side any extension starts with. */
+  nextToMove?: "white" | "black";
   error?: string;
 }
 
@@ -61,14 +66,18 @@ export interface UseDivergedLineResult {
    * resolves against) is only consulted for hypothetical_line's optional
    * `base` address — every other tool call ignores it, so callers that never
    * expect a `base` may omit it. */
-  handleToolCall: (toolCall: CoachToolCall, real: RealPosition, positions?: RealPosition[]) => unknown;
+  handleToolCall: (
+    toolCall: CoachToolCall,
+    real: RealPosition,
+    positions?: RealPosition[],
+  ) => unknown;
 }
 
 /** hypothetical_line's optional `base` — the same { moveNumber, color }
  * address show_position/check_position use. */
 interface HypotheticalBaseAddress {
   moveNumber: number;
-  color: 'white' | 'black' | null;
+  color: "white" | "black" | null;
 }
 
 /** Resolves `base` against the real game's own positions (moveRefToPly is
@@ -79,7 +88,7 @@ interface HypotheticalBaseAddress {
 function resolveHypotheticalBase(
   base: HypotheticalBaseAddress | undefined,
   positions: RealPosition[],
-  fallback: RealPosition
+  fallback: RealPosition,
 ): RealPosition {
   if (!base) return fallback;
   const ply = moveRefToPly(base.moveNumber, base.color);
@@ -101,7 +110,7 @@ export function useDivergedLine(): UseDivergedLineResult {
       setStepIndex(nextMoves.length);
       return nextLine;
     },
-    [line, stepIndex]
+    [line, stepIndex],
   );
 
   const previewStep = useCallback((index: number) => {
@@ -128,40 +137,83 @@ export function useDivergedLine(): UseDivergedLineResult {
   }, []);
 
   const handleToolCall = useCallback(
-    (toolCall: CoachToolCall, real: RealPosition, positions: RealPosition[] = []): unknown => {
-      if (toolCall.toolName === 'expect_move') {
+    (
+      toolCall: CoachToolCall,
+      real: RealPosition,
+      positions: RealPosition[] = [],
+    ): unknown => {
+      if (toolCall.toolName === "expect_move") {
         setExpectingMove(true);
         return { acknowledged: true };
       }
-      if (toolCall.toolName === 'hypothetical_line') {
-        const { moves: sanMoves, base } = toolCall.input as { moves: string[]; base?: HypotheticalBaseAddress };
-        // `base` only matters for a FRESH line — a line already in progress
-        // keeps its own basePly/baseFen regardless of what this call passes.
-        const effectiveReal = line ? real : resolveHypotheticalBase(base, positions, real);
-        const startFen = line?.moves.at(-1)?.fen ?? effectiveReal.fen;
+      if (toolCall.toolName === "hypothetical_line") {
+        const {
+          moves: sanMoves,
+          base,
+          newLine,
+        } = toolCall.input as {
+          moves: string[];
+          base?: HypotheticalBaseAddress;
+          newLine?: boolean;
+        };
+        // An open line is extended unless the coach asks for a separate one —
+        // explicitly, or implicitly by naming a base (meaningless for an
+        // extension, which continues from the line's own last move).
+        const continuing = line !== null && !newLine && !base;
+        const effectiveReal = continuing
+          ? real
+          : resolveHypotheticalBase(base, positions, real);
+        const startFen = continuing
+          ? (line.moves.at(-1)?.fen ?? line.baseFen)
+          : effectiveReal.fen;
         const applied = applySanSequence(startFen, sanMoves);
-        const basePly = line?.basePly ?? effectiveReal.ply;
+        const basePly = continuing ? line.basePly : effectiveReal.ply;
         if (applied.moves.length > 0) {
-          const lineBase = line ?? { basePly: effectiveReal.ply, baseFen: effectiveReal.fen, moves: [] };
+          const lineBase = continuing
+            ? line
+            : {
+                basePly: effectiveReal.ply,
+                baseFen: effectiveReal.fen,
+                moves: [],
+              };
           const nextMoves = [...lineBase.moves, ...applied.moves];
           setLine({ ...lineBase, moves: nextMoves });
           setStepIndex(nextMoves.length);
         }
-        const result: ProposeDivergedLineToolResult = applied.error
-          ? { ok: false, basePly, moves: applied.moves.map((m) => ({ san: m.san })), error: applied.error }
-          : { ok: true, basePly, moves: applied.moves.map((m) => ({ san: m.san })), resultFen: applied.moves.at(-1)?.fen };
+        const moves = applied.moves.map((m) => ({ san: m.san }));
+        const resultFen = applied.moves.at(-1)?.fen;
+        // A failed extension is the case a model gets stuck on: it meant a
+        // fresh line, so name the way out instead of just the illegal move.
+        const error =
+          applied.error && continuing && applied.moves.length === 0
+            ? `${applied.error} — this continued your open hypothetical from its last move; pass newLine: true to start a separate line instead`
+            : applied.error;
+        const result: ProposeDivergedLineToolResult = error
+          ? { ok: false, continuedLine: continuing, basePly, moves, error }
+          : {
+              ok: true,
+              continuedLine: continuing,
+              basePly,
+              moves,
+              resultFen,
+              nextToMove: resultFen?.split(" ")[1] === "b" ? "black" : "white",
+            };
         return result;
       }
-      if (toolCall.toolName === 'show_position') {
+      if (toolCall.toolName === "show_position") {
         exit();
         return undefined;
       }
       return undefined;
     },
-    [line, exit]
+    [line, exit],
   );
 
-  const fen = line ? (stepIndex === 0 ? line.baseFen : (line.moves[stepIndex - 1]?.fen ?? null)) : null;
+  const fen = line
+    ? stepIndex === 0
+      ? line.baseFen
+      : (line.moves[stepIndex - 1]?.fen ?? null)
+    : null;
 
   return {
     line,
@@ -173,6 +225,6 @@ export function useDivergedLine(): UseDivergedLineResult {
     undoLastMove,
     exit,
     consumeExpectingMove,
-    handleToolCall
+    handleToolCall,
   };
 }

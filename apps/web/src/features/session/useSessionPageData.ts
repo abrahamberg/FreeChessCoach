@@ -125,8 +125,12 @@ export function useSessionPageData(sessionId: string) {
   // Seed is withheld (undefined) until gameQuery.data actually resolves —
   // useLivePositions seeds itself exactly once, so passing `[]` while the
   // game is still loading would permanently strand the board with no
-  // starting position once the real one arrives.
-  const livePositions = useLivePositions(isPlayMode && gameQuery.data ? basePositions : undefined);
+  // starting position once the real one arrives. Likewise withheld until
+  // this mount's own fetch, not a cached copy from an earlier visit that
+  // predates the moves played since.
+  const livePositions = useLivePositions(
+    isPlayMode && gameQuery.data && gameQuery.isFetchedAfterMount ? basePositions : undefined
+  );
   const positions = isPlayMode ? livePositions.positions : basePositions;
   const classifiedMoves = gameQuery.data?.liveMoveQualities
     ? toClassifiedMoves(gameQuery.data.liveMoveQualities)
@@ -135,14 +139,20 @@ export function useSessionPageData(sessionId: string) {
 
   // subjectPly (not a scan for the last show_position, which could be a
   // trailing flashback) — see sessionPageSchemas.ts's SessionDetailSchema.
-  const initialPly = sessionQuery.data?.subjectPly;
+  // Both seeds below are consumed exactly once, so they wait for this
+  // mount's own fetch: coming back to a session renders the cached copy from
+  // the earlier visit first (staleTime 0 refetches in the background), and
+  // seeding from that left the board on its old subject — the start
+  // position, for a session first opened fresh — until a full reload.
+  const isSessionFresh = sessionQuery.isFetchedAfterMount;
+  const initialPly = isSessionFresh ? sessionQuery.data?.subjectPly : undefined;
   const boardState = useSessionBoardState(positions, initialPly);
   const divergedLine = useDivergedLine();
   const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(DEFAULT_AUTOPLAY_INTERVAL_MS);
   const currentRealPosition =
     positions.find((position) => position.ply === boardState.ply) ?? positions[0] ?? FALLBACK_POSITION;
   const initialMessages =
-    sessionQuery.data && gameQuery.data ? toCoachMessages(sessionQuery.data.messages, sanMoves) : undefined;
+    isSessionFresh && sessionQuery.data && gameQuery.data ? toCoachMessages(sessionQuery.data.messages, sanMoves) : undefined;
 
   // Disjoint tool ownership — divergedLine owns expect_move/hypothetical_line
   // and exits on a real show_position; boardState owns show_position/

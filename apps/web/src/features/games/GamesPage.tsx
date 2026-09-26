@@ -3,20 +3,26 @@ import { Link, useNavigate } from 'react-router-dom';
 import { HorizontalScroller } from '../../components/HorizontalScroller.js';
 import { SearchIcon } from '../../components/Icon.js';
 import { useImportQuota } from '../../hooks/useImportQuota.js';
+import { useProfile } from '../../hooks/useProfile.js';
 import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
+import { CoachNudgeCard } from './CoachNudgeCard.js';
 import { ContinueSessionCard } from './ContinueSessionCard.js';
-import { DiagnosticReadinessCard } from './DiagnosticReadinessCard.js';
 import { GameCard } from './GameCard.js';
 import { ImportShortcuts } from './ImportShortcuts.js';
 import { PracticeAssignmentCard } from './PracticeAssignmentCard.js';
-import { useDiagnosticReadiness } from './useDiagnosticReadiness.js';
 import { useGameActions } from './useGameActions.js';
-import { useInProgressGames, useRecentImportedGames, useRefreshGamesWhenAnalysisFinishes } from './useGamesQueries.js';
+import {
+  useCoachNudge,
+  useInProgressGames,
+  useRecentImportedGames,
+  useRefreshGamesWhenAnalysisFinishes
+} from './useGamesQueries.js';
 import { usePracticeAssignments } from './usePracticeAssignments.js';
 import './GamesPage.css';
 
-/** design.md §4.1: Games (home) — an "Import games" section, then up to three
- * single-row sliding rails: Practice (coach-assigned sets, only when there
+/** design.md §4.1: Games (home) — an "Import games" section, the coach area
+ * (CoachNudgeCard: the student's coach saying what to do next), then up to
+ * three single-row sliding rails: Practice (coach-assigned sets, only when there
  * are any), Continue (every open session — coaching on a game, a live
  * coach or bot game — most recently started first, with a count; only when
  * there are any) and Recently imported (the last 15 imports, with a "Find game" link
@@ -35,10 +41,13 @@ export function GamesPage(): ReactNode {
   // Feeds ImportShortcuts' "N of 30 imported today" — the rolling-24h count
   // the backend enforces, not "games with today's date".
   const importQuotaQuery = useImportQuota();
-  const readinessQuery = useDiagnosticReadiness();
+  const nudgeQuery = useCoachNudge();
+  const profileQuery = useProfile();
+  const nudge = nudgeQuery.data;
+  const offeredGame = nudge?.kind === 'first_coaching' || nudge?.kind === 'coach_game' ? nudge.game : null;
 
   useRefreshGamesWhenAnalysisFinishes();
-  const actions = useGameActions([...inProgressGames, ...recentGames]);
+  const actions = useGameActions([...inProgressGames, ...recentGames, ...(offeredGame ? [offeredGame] : [])]);
 
   const hasNoGames = recentQuery.isSuccess && recentGames.length === 0 && inProgressGames.length === 0;
 
@@ -46,7 +55,14 @@ export function GamesPage(): ReactNode {
     <div className="page games-page">
       <h1 className="visually-hidden">Games</h1>
       <ImportShortcuts quota={importQuotaQuery.data?.daily} />
-      {readinessQuery.data && <DiagnosticReadinessCard readiness={readinessQuery.data} />}
+      {nudge && (
+        <CoachNudgeCard
+          nudge={nudge}
+          persona={profileQuery.data?.coachPersona ?? 'general'}
+          onCoach={actions.handleCoach}
+          onReview={actions.handleReview}
+        />
+      )}
 
       {recentQuery.isLoading && <p>Loading…</p>}
       {recentQuery.isError && <p>Could not load your games.</p>}

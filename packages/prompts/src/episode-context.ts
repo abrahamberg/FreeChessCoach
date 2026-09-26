@@ -1,4 +1,4 @@
-import { inspectMoves, isSoundQuality, type ClassifiedMove, type FeatureDelta } from '@freechesscoach/chess-analysis';
+import { inspectMoves, isSoundQuality, plyToMoveRef, type ClassifiedMove, type FeatureDelta } from '@freechesscoach/chess-analysis';
 import {
   MOVE_QUALITY_SYMBOLS,
   TACTIC_MOTIF_LABELS,
@@ -310,6 +310,22 @@ function boardFacts(fen: string): string {
 }
 
 /**
+ * The board shows the position AFTER the played move, but every engine line
+ * in the analysis section is numbered from BEFORE it — and hypothetical_line
+ * branches off the board by default. Models (small local ones especially)
+ * kept copying a line's moves onto the post-move board and handing them to
+ * the wrong side ("Illegal move: dxc4" with White to move), so this spells
+ * out both starting points with the literal base address to pass, rather
+ * than leaving the model to derive "one ply before" itself.
+ */
+function renderLineOrientation(ply: number, fen: string, playedMove: string): string {
+  const toMove = fen.split(' ')[1] === 'b' ? 'Black' : 'White';
+  const before = plyToMoveRef(ply - 1);
+  const baseArg = `base: { moveNumber: ${before.moveNumber}, color: ${before.color === null ? 'null' : `"${before.color}"`} }`;
+  return `Which position is which: the board and FEN above already include ${playedMove} — it is ${toMove} to move. The engine lines below start one move earlier, BEFORE ${playedMove} (numbered ${describeMoveRef(ply)}). With hypothetical_line: to play out an alternative to ${playedMove}, pass ${baseArg} (the position before ${playedMove}) and start with that alternative move; to continue from the real game position above, leave base out and start with ${toMove}'s move. While a hypothetical is already open, moves alone extend it from its own last position instead.`;
+}
+
+/**
  * Design §5, layer 5: the one part of the prompt that changes every turn —
  * rides after every cache breakpoint instead of busting one. `previousPly`
  * (null for a session's very first episode) states where the coach or
@@ -350,6 +366,7 @@ export function renderCurrentMoveBlock(
   const finishedGameNote = gameSoFar === undefined ? ' This game is already finished — refer to its moves in the past tense.' : '';
   const playedMoveSentence = playedMove !== null ? ` The move actually played here was ${playedMove}.${finishedGameNote}` : '';
   const analysisBlock = analysisContext ? renderAnalysisSection(ply, playedMove, analysisContext) : '';
+  const orientation = playedMove !== null ? `\n\n${renderLineOrientation(ply, fen, playedMove)}` : '';
   const gameSoFarBlock = gameSoFar !== undefined ? `## Game so far\n\n${gameSoFar}\n\n` : '';
-  return `${gameSoFarBlock}## Current position\n\nYou are now discussing ${describeMoveRef(ply)} — this is what's actively on the board. Your student is playing ${studentColor} in this game.${playedMoveSentence} FEN : ${fen}.\n\n${boardFacts(fen)}${analysisBlock}\n\n## Your thread ledger\n\n${threadsBlock}`;
+  return `${gameSoFarBlock}## Current position\n\nYou are now discussing ${describeMoveRef(ply)} — this is what's actively on the board. Your student is playing ${studentColor} in this game.${playedMoveSentence} FEN : ${fen}.\n\n${boardFacts(fen)}${orientation}${analysisBlock}\n\n## Your thread ledger\n\n${threadsBlock}`;
 }

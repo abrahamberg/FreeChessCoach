@@ -26,7 +26,7 @@ export function ChipReplyInput({ parts, onChange }: ChipReplyInputProps): ReactN
       {parts.map((part) =>
         part.type === 'arrow' ? (
           <span key={part.id} data-part-id={part.id}>
-            <ArrowChip id={part.id} from={part.from} to={part.to} onRemove={() => onChange(removeChip(parts, part.id))} />
+            <ArrowChip id={part.id} from={part.from} to={part.to} san={part.san} onRemove={() => onChange(removeChip(parts, part.id))} />
           </span>
         ) : (
           <input

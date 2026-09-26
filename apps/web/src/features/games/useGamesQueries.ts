@@ -1,4 +1,5 @@
 import {
+  CoachNudgeSchema,
   GameListResponseSchema,
   IMPORTED_GAMES_STRIP_SIZE,
   ImportedGamesPageSchema
@@ -17,6 +18,16 @@ export function useInProgressGames() {
   return useQuery({
     queryKey: ['games', 'in-progress'],
     queryFn: ({ signal }) => apiGet('/api/games/in-progress', GameListResponseSchema, signal)
+  });
+}
+
+/** The coach area: what the student's coach says to do next. Under the
+ * ['games'] prefix so an import, a finished coaching session or a deleted
+ * game refreshes it along with the rails. */
+export function useCoachNudge() {
+  return useQuery({
+    queryKey: ['games', 'coach-nudge'],
+    queryFn: ({ signal }) => apiGet('/api/users/me/coach-nudge', CoachNudgeSchema, signal)
   });
 }
 

@@ -61,6 +61,29 @@ describe('playNextPuzzleMove', () => {
     expect(played).toMatchObject({ san: 'Nf6', replySan: null, currentPly: 2, lineComplete: true, next: expect.stringContaining('advance_puzzle') });
   });
 
+  test('studentMoves plays the moves the student already stated, with the replies between them', async () => {
+    const { assignment, session } = await seed(['e1e2', 'g8f6', 'e2e1', 'f6e4']);
+    const played = await playNextPuzzleMove(db, session, assignment, { studentMoves: 2 });
+
+    expect(played).toMatchObject({
+      san: 'Nf6',
+      replySan: 'Ke1',
+      playedSans: ['Nf6', 'Ke1', 'Nxe4'],
+      currentPly: 4,
+      lineComplete: true,
+      next: expect.stringContaining('advance_puzzle')
+    });
+    const after = await puzzleSessionsRepo.findSessionById(db, session.id);
+    expect(after?.currentPly).toBe(4);
+  });
+
+  test('studentMoves stops where the student stopped being right, with the line still open', async () => {
+    const { assignment, session } = await seed(['e1e2', 'g8f6', 'e2e1', 'f6e4', 'e1e2', 'e4f6']);
+    const played = await playNextPuzzleMove(db, session, assignment, { studentMoves: 2 });
+
+    expect(played).toMatchObject({ playedSans: ['Nf6', 'Ke1', 'Nxe4', 'Ke2'], currentPly: 5, lineComplete: false });
+  });
+
   test('refuses once the line is fully played out', async () => {
     const { assignment, session } = await seed(['e1e2', 'g8f6']);
     await playNextPuzzleMove(db, session, assignment);

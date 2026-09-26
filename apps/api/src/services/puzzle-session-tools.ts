@@ -19,6 +19,7 @@ import { ConflictError, NotFoundError } from '../lib/errors.js';
 import { createTurnGuardState, withTurnGuards, type TurnGuardState } from './coach-tool-guards.js';
 import { advancePuzzleItem, type PuzzleItemAdvanceResult } from './puzzle-item-advance.js';
 import { playNextPuzzleMove, type PlayedPuzzleMove } from './puzzle-move-commit.js';
+import { currentPuzzleFen } from './puzzle-session.js';
 
 export interface PuzzleSessionToolsContext {
   userId: string;
@@ -78,9 +79,9 @@ export function buildPuzzleSessionTools(
     }),
     check_moves: tool({
       description: PUZZLE_CHECK_MOVES_DESCRIPTION,
-      inputSchema: checkMovesParameters,
-      execute: withTurnGuards(guardState, 'check_moves', (args: { fen: string; moves: string[] }) =>
-        Promise.resolve(renderMoveInspection(inspectMoves(args.fen, args.moves)))
+      inputSchema: puzzleCheckMovesParameters,
+      execute: withTurnGuards(guardState, 'check_moves', async (args: PuzzleCheckMovesArgs) =>
+        renderMoveInspection(inspectMoves(args.fen ?? (await currentFenOf(deps, ctx)), args.moves))
       )
     }),
     ...(deps.analyzePosition
@@ -98,8 +99,10 @@ export function buildPuzzleSessionTools(
       : {}),
     play_next_move: tool({
       description: PLAY_NEXT_MOVE_DESCRIPTION,
-      inputSchema: z.object({}),
-      execute: withTurnGuards(guardState, 'play_next_move', () => playNextMoveTool(deps, ctx), { play_next_move: 1 })
+      inputSchema: playNextMoveParameters,
+      execute: withTurnGuards(guardState, 'play_next_move', (args: PlayNextMoveArgs) => playNextMoveTool(deps, ctx, args), {
+        play_next_move: 1
+      })
     }),
     advance_puzzle: tool({
       description: ADVANCE_PUZZLE_DESCRIPTION,
@@ -117,19 +120,38 @@ export function buildPuzzleSessionTools(
  * model's own board reading is where the coach invents pieces and
  * illegal moves. */
 const PUZZLE_CHECK_MOVES_DESCRIPTION =
-  'Check whether specific moves are actually legal in a position, and what they actually do — pure board reading, no engine, free and unbudgeted. Pass a fen (the puzzle\'s starting position from "This puzzle", or a resultFen hypothetical_line gave you) plus up to 6 moves in SAN. For each you get back: legal or NOT legal (and, when not, what that piece can really do here); what it captures, whether it gives check or mate; the fen it reaches; which of the mover\'s own pieces it leaves hanging; and any fork it creates. Use it before you judge any move the student proposes that is not in the known solution line — telling a student their move is illegal when it is not, or that it hangs a piece it does not, is worse than saying nothing.';
+  'Check whether specific moves are actually legal in a position, and what they actually do — pure board reading, no engine, free and unbudgeted. Pass up to 6 moves in SAN; leave fen out to check them in the current puzzle position (almost always what you want — never type a fen out yourself), or pass a resultFen hypothetical_line gave you. For each you get back: legal or NOT legal (and, when not, what that piece can really do here); what it captures, whether it gives check or mate; the fen it reaches; which of the mover\'s own pieces it leaves hanging; and any fork it creates. Use it before you judge any move the student proposes that is not in the known solution line — telling a student their move is illegal when it is not, or that it hangs a piece it does not, is worse than saying nothing.';
+
+/** fen optional here: a hand-copied fen is where the coach goes wrong (a
+ * rank one square short, and the check fails), and the real position is
+ * the one it almost always means. */
+const puzzleCheckMovesParameters = checkMovesParameters.extend({
+  fen: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('Leave out to check moves in the current puzzle position. Pass only a resultFen hypothetical_line gave you.')
+});
+type PuzzleCheckMovesArgs = z.infer<typeof puzzleCheckMovesParameters>;
+
+async function currentFenOf(deps: PuzzleSessionToolsDependencies, ctx: PuzzleSessionToolsContext): Promise<string> {
+  const assignment = await puzzleAssignmentsRepo.findById(deps.db, ctx.assignmentId);
+  const session = await puzzleSessionsRepo.findSessionById(deps.db, ctx.sessionId);
+  if (!assignment || !session) throw new NotFoundError('Puzzle session not found');
+  return currentPuzzleFen(session, assignment);
+}
 
 const PUZZLE_SHOW_POSITION_DESCRIPTION =
   "Bring the board back to the real, current position — call this once you're done showing a hypothetical you opened with hypothetical_line. Takes no arguments: there is only ever one real position in a focused session, so there's nothing to address. Harmless to call even when nothing is diverged.";
 
 const PUZZLE_HYPOTHETICAL_LINE_DESCRIPTION =
-  'Set up or continue a diverged line off the CURRENT puzzle position (the board already shows it — no need to call anything first) — e.g. exploring what happens if the student tries a different idea than the one you\'re walking through. Pass the SAN move(s) for the hypothetical; the client validates and applies them against real chess rules and reports back the resulting position, including its "resultFen" — never invent a resulting FEN yourself. Pass further moves to keep extending a hypothetical already in progress. This never touches the puzzle\'s own solution line.';
+  'Set up or continue a diverged line off the CURRENT puzzle position (the board already shows it — no need to call anything first) — e.g. exploring what happens if the student tries a different idea than the one you\'re walking through. Pass the SAN move(s) for the hypothetical; the client validates and applies them against real chess rules and reports back the resulting position, including its "resultFen" — never invent a resulting FEN yourself. While a line is open, further moves alone EXTEND it from its last move (the result says continuedLine: true); to show a different, separate line instead, pass newLine: true — that replaces the open line from the puzzle position, no need to call show_position first. This never touches the puzzle\'s own solution line.';
 
 const PLAY_NEXT_MOVE_DESCRIPTION =
-  "Put the next move of the known line on the board — the student's move, plus the opponent's forced reply if the line has one. Practice is discuss-only: the student cannot move pieces, so this is how the position advances. Call it only once the student has stated the move and you have talked through why it works (or you have walked them to it). Takes no arguments; at most once per turn. Returns the SAN played, the opponent's reply (or null), the new fen, whether the line is now fully played out, and what to do next (when it is played out: call advance_puzzle). Never call it to skip ahead of the student's understanding.";
+  "Put the next move of the known line on the board — the student's move, plus the opponent's forced reply if the line has one. Practice is discuss-only: the student cannot move pieces, so this is how the position advances. Call it once the student has named the move (or you have walked them to it). studentMoves (default 1): when their answer already gave several of their moves in a row correctly, pass that count so they aren't made to repeat them — it plays those moves with the replies between them and stops where their answer stopped being right. At most once per turn. Returns the SAN played (playedSans lists every move put on the board), the new fen, whether the line is now fully played out, and what to do next.";
 
 const ADVANCE_PUZZLE_DESCRIPTION =
-  'Call this once the student has solved the current puzzle, given up on it, or you\'ve decided to move past it — never mid-explanation, only when you\'re actually ready to leave this puzzle. "solved" means the student found (or was walked through and now understands) the winning idea; "failed" means they did not, even after your help; "skipped" is for the rare case you or the student choose to move on without resolving it. Ends your turn — the next message will be about the next puzzle in the set, or, if this was the last one, the session ending.';
+  'Moves the student to the next practice. Call it only once the current position is finished AND the student has said they are ready to move on (or asked to) — never in the same reply as your closing words on the position, never mid-explanation. "solved" means the student found (or was walked through and now understands) the winning idea; "failed" means you had to reveal it; "skipped" is for the rare case you both agree to move on without resolving it. Ends your turn — the next message will be about the next practice, or, if this was the last one, the session ending.';
 
 export type AdvancePuzzleResult = 'solved' | 'failed' | 'skipped';
 
@@ -146,13 +168,29 @@ export type AdvancePuzzleToolResult = PuzzleItemAdvanceResult;
 /** Reads the session fresh (not from the turn's start snapshot) so the ply
  * it advances is whatever the database says is current — same reasoning as
  * advancePuzzleTool below. */
-async function playNextMoveTool(deps: PuzzleSessionToolsDependencies, ctx: PuzzleSessionToolsContext): Promise<PlayedPuzzleMove> {
+const playNextMoveParameters = z.object({
+  studentMoves: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .describe(
+      "How many of the student's moves in a row to play, each with the opponent's forced reply (default 1). When their answer already gave several moves of the line correctly, pass that count — it stops where their answer stopped being right."
+    )
+});
+type PlayNextMoveArgs = z.infer<typeof playNextMoveParameters>;
+
+async function playNextMoveTool(
+  deps: PuzzleSessionToolsDependencies,
+  ctx: PuzzleSessionToolsContext,
+  args: PlayNextMoveArgs
+): Promise<PlayedPuzzleMove> {
   const assignment = await puzzleAssignmentsRepo.findById(deps.db, ctx.assignmentId);
   if (!assignment) throw new NotFoundError('Assignment not found');
   const session = await puzzleSessionsRepo.findSessionById(deps.db, ctx.sessionId);
   if (!session) throw new NotFoundError('Puzzle session not found');
   if (session.currentItemIndex !== ctx.currentItemIndex) throw new ConflictError('This puzzle has already been advanced');
-  return playNextPuzzleMove(deps.db, session, assignment);
+  return playNextPuzzleMove(deps.db, session, assignment, { studentMoves: args.studentMoves });
 }
 
 /** Advances synchronously inside tool execution — not deferred to the

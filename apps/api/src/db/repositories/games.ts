@@ -379,6 +379,62 @@ export function listWithActiveCoachingByUser(db: Kysely<Database>, userId: strin
     .execute();
 }
 
+/** The coach nudge (services/coach-nudge.ts): the user's `limit` newest
+ * imported games that are analyzed and have never had a coaching session —
+ * the pool the coach offers a game from. Newest import first. */
+export function listRecentUncoachedReady(db: Kysely<Database>, userId: string, limit: number): Promise<GameListRow[]> {
+  return db
+    .selectFrom('games')
+    .innerJoin('analyses', 'analyses.gameId', 'games.id')
+    .select([
+      'games.id',
+      'games.source',
+      'games.userColor',
+      'games.whiteName',
+      'games.blackName',
+      'games.result',
+      'games.timeControl',
+      'games.playedAt',
+      'games.createdAt',
+      'games.botId',
+      'games.reviewTier',
+      'analyses.status as analysisStatus'
+    ])
+    .where('games.userId', '=', userId)
+    .where('games.source', 'in', ImportableGameSourceSchema.options)
+    .where('analyses.status', '=', 'ready')
+    .where((eb) =>
+      eb.not(
+        eb.exists(
+          eb
+            .selectFrom('sessions')
+            .select('sessions.id')
+            .whereRef('sessions.gameId', '=', 'games.id')
+            .where('sessions.mode', '=', 'analyze')
+        )
+      )
+    )
+    .orderBy('games.createdAt', 'desc')
+    .orderBy('games.id', 'desc')
+    .limit(limit)
+    .execute();
+}
+
+/** How many games the user has imported, and when the newest arrived — the
+ * coach nudge's "new student" and "nothing imported lately" checks. */
+export async function importStatsForUser(
+  db: Kysely<Database>,
+  userId: string
+): Promise<{ count: number; lastImportedAt: Date | null }> {
+  const row = await db
+    .selectFrom('games')
+    .select((eb) => [eb.fn.countAll<string>().as('count'), eb.fn.max('games.createdAt').as('lastImportedAt')])
+    .where('games.userId', '=', userId)
+    .where('games.source', 'in', ImportableGameSourceSchema.options)
+    .executeTakeFirstOrThrow();
+  return { count: Number(row.count), lastImportedAt: row.lastImportedAt ?? null };
+}
+
 /** Games that count toward the library: every imported-source game, plus a
  * bot game the student chose to keep (one that has an analysis — `keepBotGame`
  * is the only thing that gives a bot game one). An undecided or deleted bot

@@ -31,6 +31,11 @@ export interface UsePuzzleCoachChatResult {
   isStreaming: boolean;
   activeToolName: string | null;
   isThinking: boolean;
+  /** Non-null while the coach is still preparing an item's opening turn
+   * (same contract as useCoachChat's `thinkingLabel`): the first token of a
+   * kickoff is the slowest of the session, so the UI swaps the plain dots
+   * for the KickoffProgress walk-through. */
+  thinkingLabel: string | null;
   sendMessage: (content: string) => Promise<void>;
   /** Resumes the turn on an empty body — how the coach opens a fresh puzzle
    * session (or the next puzzle) on its own, with no new user-role message. */
@@ -53,13 +58,20 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeToolName, setActiveToolName] = useState<string | null>(null);
+  const [isKickoffTurn, setIsKickoffTurn] = useState(false);
 
+  /** Seeds from the persisted history at most once — and never after a turn
+   * has started here (postTurn sets this too). A fresh session's history is
+   * empty at first; seeding on the first NON-empty copy used to fire when
+   * play_next_move's refetch landed mid-turn, swapping the live transcript
+   * for the persisted one (which doesn't have the in-flight reply yet) and
+   * dropping every text delta after it — the board moved, the coach "said"
+   * nothing. */
   const seededRef = useRef(false);
   useEffect(() => {
-    if (!seededRef.current && options.initialMessages && options.initialMessages.length > 0) {
-      seededRef.current = true;
-      setMessages(options.initialMessages);
-    }
+    if (seededRef.current || !options.initialMessages) return;
+    seededRef.current = true;
+    if (options.initialMessages.length > 0) setMessages(options.initialMessages);
   }, [options.initialMessages]);
 
   /** A turn this hook abandons mid-stream (StrictMode's dev-only double
@@ -70,6 +82,15 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
    * reader nobody drains any further doesn't reliably signal that close, so
    * every later turn on this session — this kickoff's own retry included —
    * queues behind the abandoned one forever. */
+  /** A turn's stream outlives the render that started it, and a client
+   * tool's result is posted back from inside the same closure — so later
+   * steps of the turn must dispatch to the latest handlers, or a second
+   * hypothetical_line still sees the board as it was before the first. */
+  const onToolCallRef = useRef(options.onToolCall);
+  onToolCallRef.current = options.onToolCall;
+  const onServerToolResultRef = useRef(options.onServerToolResult);
+  onServerToolResultRef.current = options.onServerToolResult;
+
   const inFlightRef = useRef<Set<AbortController>>(new Set());
   useEffect(
     () => () => {
@@ -81,6 +102,8 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
 
   const postTurn = useCallback(
     async (body: { content?: string } | { clientToolResult: { toolCallId: string; toolName: string; result: unknown } }) => {
+      // A live turn owns the transcript from here on (see seededRef).
+      seededRef.current = true;
       const controller = new AbortController();
       inFlightRef.current.add(controller);
       let response: Response;
@@ -139,7 +162,7 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
           },
           onToolOutput: (toolOutput) => {
             if (SERVER_TOOL_RESULT_NAMES.has(toolOutput.toolName)) {
-              options.onServerToolResult?.(toolOutput.toolName, toolOutput.output);
+              onServerToolResultRef.current?.(toolOutput.toolName, toolOutput.output);
             }
           },
           onToolCall: async (toolCall) => {
@@ -153,7 +176,7 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
                 ]);
               }
             }
-            const result = options.onToolCall?.(toolCall);
+            const result = onToolCallRef.current?.(toolCall);
             if (toolCall.toolName === 'hypothetical_line' && result !== undefined) {
               const hypothetical = result as { ok: boolean; basePly: number; moves: { san: string }[]; resultFen?: string };
               if (hypothetical.moves.length > 0) {
@@ -201,14 +224,17 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
 
   const kickoff = useCallback(async () => {
     setIsStreaming(true);
+    setIsKickoffTurn(true);
     try {
       await postTurn({});
     } finally {
       setIsStreaming(false);
+      setIsKickoffTurn(false);
     }
   }, [postTurn]);
 
   const isThinking = isStreaming && messages.at(-1)?.text === '';
+  const thinkingLabel = isThinking && isKickoffTurn ? 'Setting up your puzzle…' : null;
 
-  return { messages, isStreaming, activeToolName, isThinking, sendMessage, kickoff };
+  return { messages, isStreaming, activeToolName, isThinking, thinkingLabel, sendMessage, kickoff };
 }

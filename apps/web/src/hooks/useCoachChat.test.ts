@@ -393,6 +393,40 @@ describe('useCoachChat', () => {
     );
   });
 
+  test('a later client tool call in the same turn reaches the latest onToolCall, not the one captured at send', async () => {
+    // The page re-renders with fresh board/hypothetical state between steps;
+    // a handler captured at send time would replay the second
+    // hypothetical_line from the position before the first one.
+    const first = vi.fn().mockReturnValue({ ok: true, basePly: 4, moves: [{ san: 'a4' }], resultFen: 'f1' });
+    const second = vi.fn().mockReturnValue({ ok: true, basePly: 4, moves: [{ san: 'a5' }], resultFen: 'f2' });
+    let releaseSecondStep: (response: Response) => void = () => {};
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(streamResponse([toolCallFrame({ toolCallId: 'call-1', toolName: 'hypothetical_line', input: { moves: ['a4'] } })]))
+      .mockReturnValueOnce(new Promise<Response>((resolve) => (releaseSecondStep = resolve)))
+      .mockResolvedValueOnce(streamResponse([...textFrames('ok')]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result, rerender } = renderHook(({ onToolCall }) => useCoachChat('session-1', { onToolCall }), {
+      initialProps: { onToolCall: first }
+    });
+    let turn: Promise<void> = Promise.resolve();
+    act(() => {
+      turn = result.current.sendMessage('show me two lines');
+    });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    rerender({ onToolCall: second });
+    await act(async () => {
+      releaseSecondStep(
+        streamResponse([toolCallFrame({ toolCallId: 'call-2', toolName: 'hypothetical_line', input: { moves: ['a5'] } })])
+      );
+      await turn;
+    });
+
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(second).toHaveBeenCalledTimes(1);
+  });
+
   test('a hypothetical_line tool call that fails with no applied moves inserts no announcement', async () => {
     const onToolCall = vi.fn().mockReturnValue({ ok: false, basePly: 4, moves: [], error: 'Illegal move: Zz9' });
     const fetchMock = vi

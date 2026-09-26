@@ -16,7 +16,9 @@ export interface ApplySanSequenceResult {
  * hypothetical/diverged lines, unlike buildPositions (pgn.ts) which only
  * ever replays a game's actual mainline. Stops at the first illegal SAN
  * instead of throwing, returning everything applied up to that point plus
- * an error describing the failure.
+ * an error describing the failure. The error names the side to move: an LLM
+ * that skips the opponent's reply (e.g. sends Black's move from a
+ * White-to-move position) otherwise retries the same move blindly.
  */
 export function applySanSequence(startFen: string, sanMoves: string[]): ApplySanSequenceResult {
   const chess = new Chess(startFen);
@@ -24,7 +26,7 @@ export function applySanSequence(startFen: string, sanMoves: string[]): ApplySan
 
   for (const san of sanMoves) {
     const move = tryMove(chess, san);
-    if (!move) return { moves, error: `Illegal move: ${san}` };
+    if (!move) return { moves, error: `Illegal move: ${san} (${chess.turn() === 'w' ? 'White' : 'Black'} to move)` };
     moves.push({ san: move.san, fen: chess.fen(), uci: `${move.from}${move.to}${move.promotion ?? ''}` });
   }
 

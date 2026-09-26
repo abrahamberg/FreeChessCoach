@@ -1,9 +1,11 @@
 import type { DragEvent, ReactNode } from 'react';
+import { arrowLabel } from './arrowToken.js';
 
 export interface ArrowChipProps {
   id?: string;
   from: string;
   to: string;
+  san?: string;
   onRemove: () => void;
 }
 
@@ -11,7 +13,7 @@ export interface ArrowChipProps {
  * draggable object (not editable text) so the student can point at squares
  * and still say something around it, e.g. "I think [e2-e4] is a good
  * option" (design.md §5.7). */
-export function ArrowChip({ id, from, to, onRemove }: ArrowChipProps): ReactNode {
+export function ArrowChip({ id, from, to, san, onRemove }: ArrowChipProps): ReactNode {
   function handleDragStart(event: DragEvent<HTMLSpanElement>): void {
     event.dataTransfer.setData('text/plain', id ?? '');
     event.dataTransfer.effectAllowed = 'move';
@@ -19,10 +21,8 @@ export function ArrowChip({ id, from, to, onRemove }: ArrowChipProps): ReactNode
 
   return (
     <span className="arrow-chip" data-testid="arrow-chip" draggable onDragStart={handleDragStart}>
-      <code className="san">{from}</code>
-      {'→'}
-      <code className="san">{to}</code>
-      <button type="button" aria-label={`remove arrow ${from} to ${to}`} onClick={onRemove}>
+      <code className="san">{arrowLabel({ from, to, san })}</code>
+      <button type="button" aria-label={`remove arrow ${san ?? `${from} to ${to}`}`} onClick={onRemove}>
         ×
       </button>
     </span>

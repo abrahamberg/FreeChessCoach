@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { DiagnosisCodeIdSchema, FindingSchema, FocusAreaUpdateSchema, ThreadSchema } from '@freechesscoach/shared';
+import { DIAGNOSIS_CODE_PUZZLE_THEMES } from '@freechesscoach/chess-analysis';
+import { FindingSchema, FocusAreaUpdateSchema, ThreadSchema } from '@freechesscoach/shared';
 
 /** architecture §7.1 — parameter schemas for the coach agent's 18 tools. Pure
  * (no execute functions here); apps/api/src/services/coach-tools.ts binds
@@ -70,10 +71,16 @@ export const recordFindingParameters = FindingSchema;
 
 export const proposeFocusAreaUpdateParameters = FocusAreaUpdateSchema;
 
+/** Only the catalog codes that have practice material behind them
+ * (chess-analysis's theme map) — every other code can only ever come back
+ * assigned: false, and a model offered the whole catalog picked those
+ * (TA-34), then told the student a set was waiting on their dashboard. */
+const ASSIGNABLE_DIAGNOSIS_CODES = Object.keys(DIAGNOSIS_CODE_PUZZLE_THEMES) as [string, ...string[]];
+
 /** Task 66.2 — addressed by diagnosisCode alone, same catalog-anchored
  * discipline as everything else that names one (never free text). */
 export const assignFocusedSessionParameters = z.object({
-  diagnosisCode: DiagnosisCodeIdSchema
+  diagnosisCode: z.enum(ASSIGNABLE_DIAGNOSIS_CODES)
 });
 
 export const updateThreadsParameters = z.object({
@@ -116,15 +123,18 @@ export const expectMoveParameters = z.object({});
  * position for a move, never a pre-move one) — so without `base`, the
  * alternative move gets applied to the wrong side to move. `base` should
  * name the position one ply earlier (the position right before that move)
- * so it lands on the side who actually had the choice. Ignored once a line
- * is already active — a continuing hypothetical may be several moves past
- * any real-game move at all, so `moves` alone extends it. */
+ * so it lands on the side who actually had the choice. With a line already
+ * active, `moves` alone extends it (a continuing hypothetical may be several
+ * moves past any real-game move at all); `newLine: true` — or passing
+ * `base` — discards it and starts a fresh one instead, so the coach can
+ * show a second, separate line without first returning to the real game. */
 export const hypotheticalLineParameters = z.object({
   moves: z.array(z.string().min(1)).min(1).max(12),
   base: z
     .object(moveAddressShape)
     .refine(refineMoveAddress, { message: MOVE_ADDRESS_REFINEMENT_MESSAGE })
-    .optional()
+    .optional(),
+  newLine: z.boolean().optional()
 });
 
 /** Delegates an open-ended, potentially multi-position question to the
@@ -196,7 +206,7 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'hypothetical_line',
     description:
-      'Set up or continue a diverged line — e.g. "if Black had played a4 instead". Pass the SAN move(s); the client validates them against real chess rules and reports back the resulting position, including its "resultFen" — never invent a resulting fen yourself. Starting a FRESH line branches off the CURRENT position by default. To propose the move that should have replaced the one actually played at the moment on screen, pass base: { moveNumber, color } for the position ONE PLY BEFORE that move (addressed exactly like show_position) instead — the moment itself is already the position AFTER the move, so starting there hands your alternative to the wrong side to move. base is ignored once a line is already active; pass further moves alone to keep extending it. A hypothetical position is not part of the game, so nothing analyzes it for you: pass that resultFen to get_engine_analysis (how good it is) or check_moves (what is legal in it) before you judge it. This never touches the real game or its move list.'
+      'Set up or continue a diverged line — e.g. "if Black had played a4 instead". Pass the SAN move(s); the client validates them against real chess rules and reports back the resulting position, including its "resultFen" — never invent a resulting fen yourself. Starting a FRESH line branches off the CURRENT position by default. To propose the move that should have replaced the one actually played at the moment on screen, pass base: { moveNumber, color } for the position ONE PLY BEFORE that move (addressed exactly like show_position) instead — the moment itself is already the position AFTER the move, so starting there hands your alternative to the wrong side to move. While a line is open, moves alone EXTEND it from its last move (the result says continuedLine: true); to show a different, separate line instead, pass newLine: true (plus base if it branches from before the move on screen) — that replaces the open line, no need to return to the real game first. A hypothetical position is not part of the game, so nothing analyzes it for you: pass that resultFen to get_engine_analysis (how good it is) or check_moves (what is legal in it) before you judge it. This never touches the real game or its move list.'
   },
   {
     name: 'get_engine_analysis',
@@ -231,7 +241,7 @@ export const COACH_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'assign_focused_session',
     description:
-      "When a diagnosed weakness comes up in conversation and is worth deliberate practice beyond what you can do together right now, assign a focused practice set targeting that specific catalog diagnosisCode — it appears on the student's dashboard to work through on their own; mention it naturally rather than announcing a feature (\"I'm setting you up with some positions on this\" not \"I have created a focused session assignment\"). Never call \"puzzles\" out loud — this is a focused session, not a puzzle set. Check the result before saying anything: assigned: false means no practice material is available for that skill yet, so say so honestly instead of promising something that didn't happen; assigned: true with reason \"already assigned, not duplicated\" means one was already open for this code, so point the student at what's already there rather than announcing a new one."
+      "When a diagnosed weakness comes up in conversation and is worth deliberate practice beyond what you can do together right now, assign a focused practice set targeting that specific catalog diagnosisCode — it appears on the student's dashboard to work through on their own; mention it naturally rather than announcing a feature (\"I'm setting you up with some positions on this\" not \"I have created a focused session assignment\"). Usable at any point in the session, not only at the close. When the student asks for puzzles, practice or exercises, this IS that tool — call it right away rather than deferring or saying you can't: use the code of the weakness you are working on, else the top diagnosis from get_diagnostic_profile. The set is made of puzzles; you may call them that, but it is a focused set on one skill, not random puzzles. Check the result before saying anything: assigned: false means no practice material is available for that skill yet, so say so honestly instead of promising something that didn't happen; assigned: true with reason \"already assigned, not duplicated\" means one was already open for this code, so point the student at what's already there rather than announcing a new one. Only the listed codes have practice material: if the skill you have in mind isn't among them, pick the closest listed code and say which skill the set trains. An earlier assigned: false in this conversation doesn't carry over — when asked again, call the tool again rather than repeating the old answer."
   },
   {
     name: 'update_threads',

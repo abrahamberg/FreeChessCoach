@@ -1,0 +1,116 @@
+.coach-nudge {
+  margin-bottom: var(--space-6);
+}
+
+.coach-nudge__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.coach-nudge__header h2 {
+  margin: 0;
+}
+
+.coach-nudge__count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.coach-nudge__bar {
+  width: 100%;
+  height: 8px;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.coach-nudge__bar::-webkit-progress-bar {
+  background: var(--color-surface-subtle);
+  border-radius: 4px;
+}
+
+.coach-nudge__bar::-webkit-progress-value {
+  background: var(--color-primary);
+  border-radius: 4px;
+  transition: width 200ms ease-out;
+}
+
+.coach-nudge__bar::-moz-progress-bar {
+  background: var(--color-primary);
+  border-radius: 4px;
+}
+
+.coach-nudge__speech {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.coach-nudge__speech .coach-avatar-image {
+  margin: 0;
+}
+
+/* A speech bubble whose tail points back at the coach's face. */
+.coach-nudge__bubble {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.coach-nudge__bubble::before {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: -7px;
+  width: 12px;
+  height: 12px;
+  border-left: 1.5px solid var(--color-border);
+  border-bottom: 1.5px solid var(--color-border);
+  background: inherit;
+  transform: rotate(45deg);
+}
+
+.coach-nudge__bubble p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* The card has no heading except while importing, so the speech opens it. */
+.coach-nudge > .coach-nudge__speech:first-child {
+  margin-top: 0;
+}
+
+.coach-nudge__game {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.coach-nudge__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.coach-nudge__actions > :is(a, button) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  text-decoration: none;
+}

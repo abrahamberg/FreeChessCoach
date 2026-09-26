@@ -2,9 +2,15 @@
  * a dark override that follows prefers-color-scheme, plus a manual
  * [data-theme] toggle for Settings that wins over the media query in either
  * direction. Board/move/annotation colors are a separate domain (chess
- * semantics, not UI chrome) and intentionally keep their own names. */
+ * semantics, not UI chrome) and intentionally keep their own names.
+ *
+ * Each theme also sets `color-scheme`, so whatever the browser draws itself
+ * (an unstyled <button>, inputs, selects, scrollbars) follows the theme too:
+ * without it, dark mode kept the light native button face under light text,
+ * and any button a stylesheet forgot to style was invisible. */
 
 :root {
+  color-scheme: light;
   --color-bg: #f7f8f5;
   --color-surface: #ffffff;
   --color-surface-subtle: #f0f3ec;
@@ -104,6 +110,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    color-scheme: dark;
     --color-bg: #15140f;
     --color-surface: #1e1c16;
     --color-surface-subtle: #282520;
@@ -150,6 +157,7 @@
 }
 
 :root[data-theme='light'] {
+  color-scheme: light;
   --color-bg: #f7f8f5;
   --color-surface: #ffffff;
   --color-surface-subtle: #f0f3ec;
@@ -193,6 +201,7 @@
 }
 
 :root[data-theme='dark'] {
+  color-scheme: dark;
   --color-bg: #15140f;
   --color-surface: #1e1c16;
   --color-surface-subtle: #282520;

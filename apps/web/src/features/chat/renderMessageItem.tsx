@@ -54,7 +54,7 @@ function renderMessageText(
     segment.type === 'text' ? (
       <Fragment key={index}>{renderTextSegment(segment.value, currentFen, positions, onHoverMove, index)}</Fragment>
     ) : (
-      <ArrowToken key={index} from={segment.from} to={segment.to} />
+      <ArrowToken key={index} from={segment.from} to={segment.to} san={segment.san} />
     )
   );
 }

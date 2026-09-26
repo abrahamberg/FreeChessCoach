@@ -6,6 +6,7 @@ import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { SessionRow } from '../db/repositories/sessions.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
+import { isDevCommandsEnabled } from '../lib/dev-commands.js';
 import { NotFoundError } from '../lib/errors.js';
 import type { GatewayConfig } from '../llm/gateway.js';
 import { ensureCoachingPlan } from './coaching-plan.js';
@@ -47,7 +48,8 @@ export async function buildSystemPromptForSession(
     plan,
     focusAreas: profileSummary.focusAreas,
     recentFindings: profileSummary.recentFindings,
-    isLocal
+    isLocal,
+    devCommands: isDevCommandsEnabled()
   });
   return { ...prompt, studentColor: game.userColor };
 }
@@ -82,7 +84,8 @@ async function buildPlayModeSystemPrompt(db: Kysely<Database>, session: SessionR
     plan: null,
     focusAreas: profileSummary.focusAreas,
     recentFindings: profileSummary.recentFindings,
-    isLocal
+    isLocal,
+    devCommands: isDevCommandsEnabled()
   });
   return { ...prompt, studentColor: game.userColor };
 }

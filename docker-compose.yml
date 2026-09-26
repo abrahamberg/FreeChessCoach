@@ -36,6 +36,11 @@ x-node-dev: &node-dev
     # vars a service's `environment:` block references, so this has to be wired
     # in here — the container never sees your host shell's env otherwise).
     DEBUG_LOG: ${DEBUG_LOG:-}
+    # Coach prompts gain a rule: a chat message starting with /dev is the
+    # developer, and the coach does exactly what it asks (apps/api/src/lib/
+    # dev-commands.ts). Also requires AUTH_MODE=dev-stub, so it can never
+    # switch on in production. Set COACH_DEV_COMMANDS=0 to test the plain prompt.
+    COACH_DEV_COMMANDS: ${COACH_DEV_COMMANDS:-1}
 
 services:
   redis:

@@ -148,8 +148,13 @@ export function usePuzzleSessionPageData(assignmentId: string, onSessionReset: (
       annotations.setAnnotations(toolCall.input as AnnotationState);
       return { acknowledged: true };
     }
+    // A client tool must always get a result back: returning undefined here
+    // (divergedLine's show_position branch does) left the call unanswered,
+    // and every later turn of the session failed on the server.
     if (toolCall.toolName === 'show_position') {
       setViewedPly(null);
+      divergedLine.exit();
+      return { ok: true, fen: data?.currentFen ?? null };
     }
     if (!data || !currentItem) return undefined;
     return divergedLine.handleToolCall(toolCall, { ply: data.currentItemIndex, fen: data.currentFen });
@@ -199,7 +204,9 @@ export function usePuzzleSessionPageData(assignmentId: string, onSessionReset: (
     }
   };
 
-  const initialMessages = data ? toPuzzleCoachMessages(data.messages) : undefined;
+  // Seeded once, so it waits for this mount's own fetch rather than a
+  // cached copy from an earlier visit missing the turns since.
+  const initialMessages = data && detailQuery.isFetchedAfterMount ? toPuzzleCoachMessages(data.messages) : undefined;
   const chat = usePuzzleCoachChat(sessionId ?? '', {
     onToolCall: handleCoachToolCall,
     onServerToolResult: handleServerToolResult,

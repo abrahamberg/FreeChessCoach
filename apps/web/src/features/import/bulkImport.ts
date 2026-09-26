@@ -15,8 +15,9 @@ export interface BulkImportArgs {
   /** Fires right after each game's own request settles (success or failure)
    * — lets the picker check off rows one at a time as they land instead of
    * sitting on a single frozen "Importing…" label until the whole batch (up
-   * to 10 sequential requests) finishes. */
-  onGameSettled: (gameId: string) => void;
+   * to 10 sequential requests) finishes. `imported` says whether it made it
+   * into the library. */
+  onGameSettled: (gameId: string, imported: boolean) => void;
 }
 
 /** Bulk import (Task 31.4): imports each selected game, one request
@@ -35,14 +36,16 @@ export async function importBatch({ games, source, onGameSettled }: BulkImportAr
   const imported: BulkResult['games'] = [];
   let limit: ImportLimitKind | null = null;
   for (const game of games) {
+    let ok = false;
     try {
       const body = ImportGameRequestSchema.parse({ pgn: game.pgn, source, playedAt: game.playedAt });
       const response = await apiPost('/api/games', body, ImportGameResponseSchema);
       imported.push({ gameId: response.gameId, analysisId: response.analysisId });
+      ok = true;
     } catch (error) {
       limit = limitOf(error) ?? limit;
     }
-    onGameSettled(game.id);
+    onGameSettled(game.id, ok);
   }
   return { succeeded: imported.length, total: games.length, limit, games: imported };
 }

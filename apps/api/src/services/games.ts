@@ -172,7 +172,7 @@ async function sessionStateFor(
   return { session: undefined, coaching: 'done' };
 }
 
-async function toListItem(db: Kysely<Database>, userId: string, row: GameListRow) {
+export async function toListItem(db: Kysely<Database>, userId: string, row: GameListRow) {
   const { session, coaching } = await sessionStateFor(db, userId, row);
   return {
     id: row.id,

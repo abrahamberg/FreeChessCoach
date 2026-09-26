@@ -2164,3 +2164,312 @@ Commit: `docs: lean analysis pipeline and single-verdict tactics`
 - Re-analysing one finished game makes **0** engine calls.
 - In Game Review, each move shows at most one tactic sentence, and it names
   the reason that explains the most of the eval loss.
+
+---
+
+# Phase 78 — Practice sets: more skills, no repeats, honest results, follow-up
+
+**Source spec:** this request (no separate spec file). Every citation below was
+checked on 2026-09-26 by a read-only code walk; re-check the lines before you
+edit, the tree has uncommitted work (coach nudge, hypothetical lines). Do
+**not** open `docs/diagnose.md` or `docs/algorith.md`.
+
+## The request
+
+1. Add more kinds of practice (more diagnosis codes with puzzles behind them).
+2. Know which puzzles a student was already given, and whether they did them,
+   so the same puzzle is never assigned twice.
+3. When a student didn't do their practice, the coach tells them.
+
+## Root causes (verified)
+
+- **Only 24 of ~400 catalog codes can be assigned.** `DIAGNOSIS_CODE_PUZZLE_THEMES`
+  (`packages/chess-analysis/src/puzzle-selection.ts:38-68`) maps 14 TA, 8 MS and
+  2 BV codes. The coach's `assign_focused_session` schema was narrowed to those
+  keys on 2026-09-26 (`packages/prompts/src/tools.ts`, `ASSIGNABLE_DIAGNOSIS_CODES`)
+  after the coach picked `TA-34` and got `assigned: false`. The one unmapped code
+  the test user's diagnostics actually flag is `BV-15` (5 observations).
+- **The pool only holds the mapped themes, and the format is full.** The pool
+  file stores themes as a uint32 bitmask over `PUZZLE_POOL_THEMES`
+  (`packages/chess-analysis/src/puzzle-pool-format.ts:45-73`, 23 of 32 bits
+  used; a >32 check throws). `apps/api/scripts/build-puzzle-pool.mjs` keeps
+  only those themes (120 per theme per 200-point rating band). Live pool:
+  22,441 puzzles; every mapped code returns a full set.
+- **Selection is deterministic, so repeats are guaranteed.** `selectPuzzles`
+  (`puzzle-selection.ts:103-126`) sorts by rating distance and takes the top
+  `count`, with no exclusion. The same code at the same rating always yields
+  the same 5 puzzles (`DEFAULT_PUZZLE_COUNT = 5`,
+  `apps/api/src/services/puzzle-assignment.ts:17`). Only an *open* assignment
+  for the same code blocks a new one (`hasOpenAssignment` /
+  `findOpenAssignment`, `db/repositories/puzzle-assignments.ts:73-102`); once
+  completed, the next one is identical.
+- **Item results are not trustworthy.** Each item has
+  `result: 'pending' | 'solved' | 'failed' | 'skipped'`
+  (`puzzle-assignments.ts:5-18`). The coach sets it via `advance_puzzle`, whose
+  "solved" also covers "was walked through it"
+  (`services/puzzle-session-tools.ts:131-137`). The client's "next puzzle"
+  button (`routes/puzzle-sessions.ts:51-73`) **always** records `'solved'` once
+  the line is played out, even when the coach played every move for them.
+  The comment there refers to an `attempt-move` route that no longer exists;
+  the student never moves pieces, the coach plays each move with
+  `play_next_move` (`puzzle-session-tools.ts:128-129`).
+- **The coach never sees practice history.** `getProfileSummary`
+  (`services/user-profile.ts:87-104`) returns focus areas, findings, counts and
+  session count only. It feeds both `get_user_profile`
+  (`services/coach-tools.ts:271-285`) and the coaching plan
+  (`services/coaching-plan.ts:50-69`). Nothing about assignments reaches the
+  coach, so it cannot notice an unfinished set.
+
+## What already exists and is reused as-is (verified)
+
+- `puzzle_assignments` (status `pending`/`in_progress`/`completed`,
+  `created_at`/`started_at`/`completed_at`, `items` jsonb snapshot of each
+  puzzle with its `puzzleId`). `markStarted` fires when a puzzle session opens
+  (`services/puzzle-session.ts:30-33`); `markCompleted` when the last item is
+  advanced (`services/puzzle-item-advance.ts:42-45`). **No migration is needed
+  in this phase**: every new per-item field lives in the `items` jsonb and
+  must default when absent.
+- `advancePuzzleItem` (`puzzle-item-advance.ts`) is the single writer of item
+  results, shared by the coach tool and the button. Keep it that way.
+- `createPuzzleAssignmentsForProfile` (background, `puzzle-assignment.ts:55-86`)
+  and `assignFocusedSessionForCode` (live tool, `puzzle-assignment.ts:110-138`)
+  are the only two callers of `selectPuzzles`.
+- The dashboard nudge already offers an open set first (`services/coach-nudge.ts`,
+  uncommitted); nothing to change there.
+- `lichess-puzzle-validation.test.ts`
+  (`packages/chess-analysis/src/tactic-detectors/`) measures how often our
+  motif classifier agrees with Lichess tags for the validated TA mappings.
+
+## Design decisions (do not relitigate)
+
+- **Never repeat a puzzle the student has done; retry the ones they failed**
+  (owner decision, 2026-09-26). Exclude every `puzzleId` from the student's
+  assignments except those whose latest result is `failed` in a completed
+  set. The next set for the same code leads with up to 2 of those failed
+  puzzles (oldest first), then fills with fresh ones. A puzzle that is
+  `failed` again stays eligible. When a code runs out of fresh and failed
+  puzzles, say so (a named skip); never repeat a `solved`/`helped`/`skipped`
+  one.
+- **Results mean what they say.** Four outcomes: `solved` (found every
+  solver move themselves), `helped` (got there with the coach's help),
+  `failed`, `skipped`. The server derives `solved` vs `helped` from what the
+  coach reports per move; the button never claims `solved` on its own.
+- **"Did the job" is about the set, not a guess.** A set counts as *unfinished*
+  when it is open and older than `PRACTICE_OVERDUE_DAYS` (3). The coach
+  mentions it once, at the start of a session, without nagging; it never
+  blocks the session.
+- **At most 2 open sets per student.** A third assignment returns
+  `assigned: false` with a reason naming the open ones, so the coach points
+  the student at those instead of piling on.
+- **Only 1:1 theme matches.** New codes are added only where a Lichess tag
+  trains exactly that skill. No loose proxies for board-vision or endgame
+  technique codes.
+- **Old pool files keep working** until the new one is deployed: the reader
+  accepts both format versions.
+
+## Layering
+
+Pure selection and the pool format live in `packages/chess-analysis`. SQL only
+in `apps/api/src/db/repositories/`. All prompt text (blocks, tool descriptions,
+rules) lives in `packages/prompts`. Changing a tool description or a cached
+system layer costs one prompt-cache miss per session; that is accepted.
+
+### Task 78.1 — Honest per-puzzle results
+
+**Read:** `apps/api/src/services/puzzle-session-tools.ts:90-200`,
+`apps/api/src/services/puzzle-item-advance.ts`,
+`apps/api/src/services/puzzle-move-commit.ts`,
+`apps/api/src/routes/puzzle-sessions.ts:51-73`,
+`apps/api/src/db/repositories/puzzle-assignments.ts:1-40`.
+**Files:** those files, their tests, and the web types that mirror the item
+shape (`grep -rn "'skipped'" apps/web/src packages/shared/src`).
+
+- [ ] Failing tests first (puzzle-session-tools / puzzle-item-advance /
+  routes tests):
+  - `play_next_move({ found: true })` then the button on a fully played line
+    records `solved`; one `found: false` among the solver moves records
+    `helped`.
+  - `advance_puzzle({ result: 'solved' })` after any `found: false` on that
+    item is stored as `helped` (the server corrects an over-generous verdict,
+    never the other way round).
+  - An old row with no counters still parses and the button records `helped`.
+- [ ] `play_next_move` takes `{ found: boolean }`: did the student state this
+  move themselves, before being told it. Update `PLAY_NEXT_MOVE_DESCRIPTION`
+  to say so plainly.
+- [ ] Item gains `solverMovesFound: number` and `solverMovesPlayed: number`
+  (both default 0 when absent). `play_next_move` increments them.
+- [ ] `PuzzleAssignmentItemResult` gains `'helped'`. `advancePuzzleItem`
+  derives the final result: `failed`/`skipped` stay as given; otherwise
+  `solved` only when `solverMovesPlayed > 0 && solverMovesFound === solverMovesPlayed`,
+  else `helped`. The button calls it with `'solved'` and gets the same
+  correction; fix the stale `attempt-move` comment on the route.
+- [ ] `advance_puzzle`'s enum and description gain `helped` ("got there with
+  your help").
+
+Commit: `fix(puzzles): record whether the student found the moves or was helped`
+
+### Task 78.2 — Never assign the same puzzle twice
+
+**Read:** `packages/chess-analysis/src/puzzle-selection.ts:76-126`,
+`apps/api/src/services/puzzle-assignment.ts`,
+`apps/api/src/db/repositories/puzzle-assignments.ts`.
+**Files:** those three and their tests.
+
+- [ ] Failing tests:
+  - `selectPuzzles` with `excludePuzzleIds` never returns an excluded puzzle,
+    and still widens the rating window to fill `count`.
+  - Completing a set for `TA-07` with no failures and assigning `TA-07` again
+    gives 5 puzzles disjoint from the first set (both callers).
+  - Completing it with 3 `failed` items: the next set starts with the 2
+    oldest failed puzzles, then 3 fresh ones; no `solved`/`helped`/`skipped`
+    puzzle comes back.
+  - A retried puzzle that is `solved` the second time is never assigned again.
+  - With every matching puzzle excluded, the live tool returns
+    `assigned: false, reason: 'the student has already worked through every practice position for this skill'`
+    and the background job skips the code.
+- [ ] `SelectPuzzlesOptions.excludePuzzleIds?: ReadonlySet<string>`, applied
+  in the candidate filter.
+- [ ] Repository `listPuzzleHistory(db, userId)`: every item across all the
+  student's assignments with its `puzzleId`, assignment `diagnosisCode`,
+  status and `completedAt`, and item `result`. A pure helper turns it into
+  `{ exclude: Set<string>, retry: PuzzleAssignmentItem[] }`: a puzzle's
+  *latest* appearance decides, `retry` holds latest-`failed` items from
+  completed sets for the requested code, oldest first. Both callers load it
+  once, put up to `MAX_RETRIES_PER_SET = 2` retries first (reusing the stored
+  item snapshot, result reset to `pending` and counters to 0), and pass the
+  rest of the history as `excludePuzzleIds` for the fresh fill.
+
+Commit: `fix(puzzles): never assign a student the same puzzle twice`
+
+### Task 78.3 — The coach sees practice history
+
+**Read:** `apps/api/src/services/user-profile.ts:80-104`,
+`apps/api/src/services/coach-tools.ts:271-285`,
+`apps/api/src/services/coaching-plan.ts:45-70`, `packages/prompts/src/render.ts:100-140`,
+the planner prompt input type (`grep -n "interface PlannerPromptInput" -r packages/prompts/src`).
+**Files:** those, `puzzle-assignments.ts` (repository), a new
+`renderPracticeBlock` in `packages/prompts/src/render.ts`, tests, snapshots.
+
+- [ ] Failing tests for `renderPracticeBlock(practice, now)`:
+  - An open set older than 3 days renders as unfinished with its age and
+    progress, e.g. `TA-07 Fork (5 positions): not started, assigned 6 days ago — UNFINISHED`.
+  - An in-progress set shows `2 of 5 done (1 solved, 1 helped)`.
+  - A set completed in the last 30 days shows its tally, e.g.
+    `completed 2 days ago: 3 solved, 1 helped, 1 failed`.
+  - No sets renders `none assigned yet`.
+- [ ] Repository `listRecentForUser(db, userId, sinceDays = 30)`: every open
+  set plus sets completed in the window, newest first, at most 6.
+- [ ] `ProfileSummary.practice` (a small shaped summary, not raw rows: code,
+  label, status, item count, per-result counts, created/started/completed
+  dates). `get_user_profile` gains a `PRACTICE SETS` section; the planner
+  input gains `practice` so the preparation notes can connect to it.
+- [ ] `assign_focused_session`'s "already assigned" result also returns
+  `progress` (`{ done, total }`) and `assignedDaysAgo`.
+- [ ] Cap open sets at 2: a third returns `assigned: false` with
+  `reason: 'the student already has 2 unfinished practice sets'` and
+  `openSets: [{ diagnosisCode, label, done, total }]`.
+
+Commit: `feat(coach): the coach sees which practice sets were done`
+
+### Task 78.4 — The coach follows up
+
+**Read:** `packages/prompts/src/coach-session-flow.ts:13,30`,
+`packages/prompts/src/coach-method.ts:110-131`, the
+`assign_focused_session` description in `packages/prompts/src/tools.ts`.
+**Files:** those, `apps/api/src/services/puzzle-session-tools.ts` (the
+practice-session prompt, if it summarises past sets), snapshots.
+
+- [ ] Opening (analyze and play flows): when `PRACTICE SETS` shows an
+  UNFINISHED set, mention it once, briefly and without scolding, in the
+  greeting ("You still have the fork set from Tuesday waiting — worth ten
+  minutes before your next game"), then carry on with the session. Never
+  mention it again that session unless the student raises it.
+- [ ] Homework: before calling `assign_focused_session`, check
+  `PRACTICE SETS`; if a set is unfinished, point them at it instead of
+  assigning another. If a finished set shows mostly `helped`/`failed`, say
+  so honestly and assign the same skill again; the new set brings back the
+  puzzles they failed (Task 78.2), so tell them some will look familiar.
+- [ ] Tool description: the result's `progress`, `assignedDaysAgo` and
+  `openSets` fields, and what to say for each.
+- [ ] Update the prompt snapshots; read the diff and check it only contains
+  these rules.
+
+Commit: `feat(coach): follow up on unfinished practice sets`
+
+### Task 78.5 — More skills with practice
+
+**Read:** `packages/chess-analysis/src/puzzle-selection.ts:1-75`,
+`packages/chess-analysis/src/puzzle-pool-format.ts`,
+`apps/api/scripts/build-puzzle-pool.mjs`, `apps/api/scripts/deploy-puzzle-pool.sh`,
+`packages/chess-analysis/src/tactic-detectors/lichess-puzzle-validation.test.ts`.
+**Files:** those, `packages/prompts/src/tools.test.ts`.
+
+- [ ] Failing tests:
+  - A v2 pool round-trips puzzles tagged with themes at bit 31 and above.
+  - A v1 file (`PZLPOOL1`) still unpacks.
+  - `TA_CODES_WITH_VALIDATED_THEMES` is exactly the 14 codes validated today;
+    new TA codes are not in it.
+  - `assignFocusedSessionParameters` accepts `TA-05` and `BV-15`.
+- [ ] Pool format v2: magic `PZLPOOL2`, themes as a uint64 bitmask (two
+  uint32 BE). `unpackPuzzlePool` and `hasValidPuzzlePoolMagic` accept both;
+  `packPuzzlePool` writes v2. Raise the guard to 64.
+- [ ] Add to `PUZZLE_POOL_THEMES` (append only, never reorder):
+  `smotheredMate`, `xRayAttack`, `interference`, `clearance`,
+  `advancedPawn`, `underPromotion`, `anastasiaMate`, `arabianMate`,
+  `hookMate`, `bodenMate`, `dovetailMate`.
+- [ ] Add to `DIAGNOSIS_CODE_PUZZLE_THEMES`, in a new "1:1 Lichess tag,
+  not yet validated" group:
+
+  | Code | Themes |
+  |---|---|
+  | TA-02 | `mateIn2` |
+  | TA-05 | `smotheredMate` |
+  | TA-15 | `xRayAttack` |
+  | TA-20 | `deflection` |
+  | TA-21 | `attraction` |
+  | TA-22 | `interference` |
+  | TA-23, TA-24 | `clearance` |
+  | TA-27 | `intermezzo` |
+  | TA-30 | `promotion`, `advancedPawn` |
+  | TA-31 | `underPromotion` |
+  | TA-35 | `defensiveMove` |
+  | TA-36 | `quietMove` |
+  | TA-44 | `anastasiaMate`, `arabianMate`, `hookMate`, `bodenMate`, `dovetailMate`, `smotheredMate`, `backRankMate` |
+  | EG-16 | `zugzwang` |
+  | BV-15 | `hangingPiece` (the same proxy `MS-08` uses) |
+
+- [ ] Make `TA_CODES_WITH_VALIDATED_THEMES` an explicit list of today's 14
+  codes. It currently derives from every `TA-` key and would silently
+  include the new unvalidated ones.
+- [ ] Rebuild the pool **from a scratch copy of the repo, never the working
+  tree** (the dev stack shares `node_modules`; no `npm ci` here). Record the
+  per-theme counts the script prints and the new file size in this task.
+  Deploy with `deploy-puzzle-pool.sh`; the API loads the pool at start, so
+  restart it after.
+- [ ] Check every mapped code returns a full set against the new pool (a
+  throwaway `tsx` script over `openPuzzlePoolFromEnv` + `selectPuzzles`,
+  run in the API container; delete it after). Record the result here.
+
+Commit: `feat(puzzles): practice for 16 more skills, pool format v2`
+
+### Task 78.6 — Docs
+
+- [ ] `docs/architecture.md`, puzzle assignments: never-repeat rule, the four
+  results and how `solved`/`helped` are derived, the open-set cap, what the
+  coach sees, pool format v2.
+- [ ] Update the AGENTS.md plan pointer.
+
+Commit: `docs: practice sets — no repeats, honest results, follow-up`
+
+## Verification (end of phase)
+
+- Targeted tests for every file touched, plus lint and typecheck, are green.
+- Completing a set for a code and assigning it again gives new puzzles,
+  except up to 2 the student failed, which come back first.
+- A set the coach walked the student through is recorded `helped`, not
+  `solved`, whether it ended by `advance_puzzle` or the button.
+- A coaching session opened with a set assigned 4+ days ago and not
+  started: the coach mentions it once in the greeting.
+- A third assignment while 2 are open is refused, and the coach points at the
+  open ones.
+- The live pool serves `TA-05` and `BV-15`.

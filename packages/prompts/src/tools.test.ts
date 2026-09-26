@@ -85,6 +85,9 @@ describe('coach agent tool parameter schemas (architecture §7.1)', () => {
   test('assign_focused_session: { diagnosisCode }', () => {
     expect(assignFocusedSessionParameters.safeParse({ diagnosisCode: 'TA-07' }).success).toBe(true);
     expect(assignFocusedSessionParameters.safeParse({ diagnosisCode: 'not-a-code' }).success).toBe(false);
+    // A real catalog code with no practice material behind it can only ever
+    // come back assigned: false, so the schema never offers it.
+    expect(assignFocusedSessionParameters.safeParse({ diagnosisCode: 'TA-34' }).success).toBe(false);
     expect(assignFocusedSessionParameters.safeParse({}).success).toBe(false);
   });
 
@@ -127,6 +130,11 @@ describe('coach agent tool parameter schemas (architecture §7.1)', () => {
     expect(
       hypotheticalLineParameters.safeParse({ moves: ['a4'], base: { moveNumber: 0, color: 'white' } }).success
     ).toBe(false);
+  });
+
+  test('hypothetical_line: an optional newLine flag', () => {
+    expect(hypotheticalLineParameters.safeParse({ moves: ['a4'], newLine: true }).success).toBe(true);
+    expect(hypotheticalLineParameters.safeParse({ moves: ['a4'], newLine: 'yes' }).success).toBe(false);
   });
 
   test('investigate_position: { fen, moves?, question } — moves is optional and capped at 12', () => {
