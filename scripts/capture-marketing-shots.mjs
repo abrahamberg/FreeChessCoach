@@ -144,8 +144,9 @@ if (!featured) throw new Error('Featured lesson not found: has seed-demo.ts fini
   await close();
 }
 {
-  const { page, close } = await open(BEGINNER, '/settings', { tall: true });
-  await shootRegion(page, 'settings-ai', [page.getByRole('heading', { name: 'AI setup' }).locator('xpath=..')]);
+  // Settings cards start collapsed; the fragment opens the AI setup one.
+  const { page, close } = await open(BEGINNER, '/settings#settings-api-keys', { tall: true });
+  await shootRegion(page, 'settings-ai', [page.locator('#settings-api-keys')]);
   await close();
 }
 

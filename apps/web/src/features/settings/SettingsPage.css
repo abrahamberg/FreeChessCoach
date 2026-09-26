@@ -14,8 +14,46 @@
   color: var(--color-text-secondary);
 }
 
-.settings-page section > p {
+.settings-section__body > p {
   color: var(--color-text-secondary);
+}
+
+/* Each card starts collapsed (SettingsSection.tsx); the whole header row is
+ * the toggle, with a chevron that turns when the card is open. */
+.settings-section__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+.settings-section__summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-section__summary h2 {
+  margin: 0;
+}
+
+.settings-section__summary::after {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--color-text-muted);
+  border-bottom: 2px solid var(--color-text-muted);
+  transform: rotate(45deg);
+  transition: transform 150ms ease;
+}
+
+.settings-section details[open] > .settings-section__summary::after {
+  transform: rotate(-135deg);
+}
+
+.settings-section__body {
+  margin-top: var(--space-3);
 }
 
 .settings-page__profile-row {

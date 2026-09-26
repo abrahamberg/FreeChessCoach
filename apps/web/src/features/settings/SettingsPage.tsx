@@ -12,6 +12,7 @@ import { EngineFields } from './EngineFields.js';
 import { LinkedAccountsFields } from './LinkedAccountsFields.js';
 import { LlmSetupSection } from './LlmSetupSection.js';
 import { ProfileFields } from './ProfileFields.js';
+import { SettingsSection } from './SettingsSection.js';
 import { VoiceFields } from './VoiceFields.js';
 import './SettingsPage.css';
 
@@ -81,37 +82,32 @@ export function SettingsPage(): ReactNode {
         </p>
       </header>
 
-      <section aria-label="Profile" className="card">
-        <h2>Profile</h2>
+      <SettingsSection label="Profile" title="Profile">
         <ProfileFields profile={profile} />
-      </section>
+      </SettingsSection>
 
-      <section aria-label="Coach" className="card">
-        <h2>Coach</h2>
+      <SettingsSection label="Coach" title="Coach">
         <p>Pick who coaches you. It's cosmetic — every coach gives the same advice, just in a different voice.</p>
         <CoachPersonaSelect
           value={profile.coachPersona}
           onChange={(coachPersona) => updateProfile.mutate({ coachPersona })}
         />
-      </section>
+      </SettingsSection>
 
-      <section aria-label="Coach voice" className="card">
-        <h2>Coach voice</h2>
+      <SettingsSection label="Coach voice" title="Coach voice">
         <p>Have the coach's replies read aloud. Off by default.</p>
         <VoiceFields profile={profile} llmSetup={llmSetup} />
-      </section>
+      </SettingsSection>
 
-      <section aria-label="Linked accounts" className="card">
-        <h2>Linked accounts</h2>
+      <SettingsSection label="Linked accounts" title="Linked accounts">
         <p>
           Set these so we can tell which side you played when you import a game — you won&rsquo;t be asked
           again for games from that site.
         </p>
         <LinkedAccountsFields profile={profile} />
-      </section>
+      </SettingsSection>
 
-      <section aria-label="Board" className="card">
-        <h2>Board</h2>
+      <SettingsSection label="Board" title="Board">
         <p>Show dots on the squares a selected piece can legally move to.</p>
         <button type="button" aria-pressed={showLegalMoveDots} onClick={() => setShowLegalMoveDots(true)}>
           Show
@@ -119,32 +115,28 @@ export function SettingsPage(): ReactNode {
         <button type="button" aria-pressed={!showLegalMoveDots} onClick={() => setShowLegalMoveDots(false)}>
           Hide
         </button>
-      </section>
+      </SettingsSection>
 
-      <section id="settings-engine" aria-label="Engine" className="card">
-        <h2>Engine</h2>
+      <SettingsSection id="settings-engine" label="Engine" title="Engine">
         <EngineFields profile={profile} />
-      </section>
+      </SettingsSection>
 
-      <section id="settings-api-keys" aria-label="API keys" className="card">
-        <h2>AI setup</h2>
+      <SettingsSection id="settings-api-keys" label="API keys" title="AI setup">
         <p>Your endpoint and API key are tested, encrypted with your unlock phrase, and kept available only while you are active. We never show the key again.</p>
         <AiSetupHelp />
         <LlmSetupSection status={llmSetup} />
-      </section>
+      </SettingsSection>
 
-      <section aria-label="Appearance" className="card">
-        <h2>Appearance</h2>
+      <SettingsSection label="Appearance" title="Appearance">
         <button type="button" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>
           Light
         </button>
         <button type="button" aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')}>
           Dark
         </button>
-      </section>
+      </SettingsSection>
 
-      <section aria-label="Account" className="card">
-        <h2>Account</h2>
+      <SettingsSection label="Account" title="Account">
         <p>{profile.email}</p>
         {/* Ends the oauth2-proxy session (architecture §11) and lands back on
          * the public landing page — not a fetch/mutation, so a plain link. */}
@@ -186,7 +178,7 @@ export function SettingsPage(): ReactNode {
             }}
           />
         )}
-      </section>
+      </SettingsSection>
 
       <footer className="settings-page__legal">
         {/* /privacy and /terms are static, unauthenticated pages
