@@ -38,7 +38,7 @@ function describe(state: EngineActivityIndicatorState): { label: ReactNode; titl
       const pct = state.percent !== null ? ` ${state.percent}%` : '';
       return {
         label: `${badge} · downloading${pct}`,
-        title: 'The in-browser chess engine is downloading to this device (one-time, ~108MB).'
+        title: 'The in-browser chess engine is downloading to this device (one-time, ~95MB).'
       };
     }
     case 'searching':

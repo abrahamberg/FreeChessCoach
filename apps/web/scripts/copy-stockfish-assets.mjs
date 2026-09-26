@@ -5,7 +5,7 @@
 // analysis resolves against disk (both in dev, serving straight from src/,
 // and at build time, when it copies+hashes the file into dist/assets). That
 // path only works if the files actually exist under
-// apps/web/src/engine/stockfish/bin/ — but the ~108MB .wasm has no business
+// apps/web/src/engine/stockfish/bin/ — but the ~95MB .wasm has no business
 // being committed to git, so this script stages both files there from the
 // `stockfish` npm dependency (which already ships them, unhashed, under its
 // own bin/) on every install/dev/build. Without this step the worker 404s

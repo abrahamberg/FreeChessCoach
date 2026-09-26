@@ -6,7 +6,7 @@ import './BrowserEngineStatus.css';
 
 // The full-net WASM build (see engine/shared-engine-worker.ts); shown until the
 // download reports its real total.
-const ENGINE_DOWNLOAD_MB = 108;
+const ENGINE_DOWNLOAD_MB = 95;
 
 function formatMb(bytes: number): string {
   return `${Math.round(bytes / (1024 * 1024))} MB`;
@@ -20,7 +20,8 @@ export function BrowserEngineStatus({ engine }: { engine: UseEngineStatusResult 
   const stored = useEngineDownloaded(status);
   const size = progress && progress.total > 0 ? formatMb(progress.total) : `about ${ENGINE_DOWNLOAD_MB} MB`;
 
-  if (status === 'ready' || (stored && status !== 'installing')) {
+  // Stored on the device: starting it is a local load, not a download.
+  if (status === 'ready' || stored === true) {
     return <p className="engine-dl engine-dl--ready" role="status">✓ Downloaded on this device ({size}) — ready to use</p>;
   }
   if (status === 'installing') {
@@ -36,6 +37,8 @@ export function BrowserEngineStatus({ engine }: { engine: UseEngineStatusResult 
       </div>
     );
   }
+  // Still asking the cache — say nothing rather than a wrong "not downloaded".
+  if (stored === null) return null;
   return (
     <div className="engine-dl engine-dl--missing" role="status">
       <p>Not downloaded yet. To run on your device, the engine ({size}) must be downloaded once — it then stays on this device.</p>

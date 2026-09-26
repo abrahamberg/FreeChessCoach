@@ -66,7 +66,7 @@ export interface SharedEngineWorkerOptions {
 /**
  * Whether the WASM engine is usable yet.
  *
- * `installing` is not instant and not cosmetic: the full-net build is a ~108MB
+ * `installing` is not instant and not cosmetic: the full-net build is a ~95MB
  * download on first use, and until it lands browser-mode analysis cannot start
  * at all. Without something to render for this state the app looks idle while
  * it is in fact working.
@@ -109,7 +109,7 @@ function workerFromUrls(wasmUrl: URL, workerUrl: URL): EngineWorkerLike {
 }
 
 // The full-net build, NOT `-lite-single`. The lite net is ~7MB against this
-// one's ~108MB, and that gap changes the engine's actual conclusions rather
+// one's ~95MB, and that gap changes the engine's actual conclusions rather
 // than just its precision: on a sharp middlegame it played Qxc6 (+597) where
 // both this build (+695) and the native backend (+1003) play Qxf6 — at the
 // same depth 16, so it was never a search-depth difference. Browser-mode

@@ -17,7 +17,7 @@ import { useUnifiedTunnelClient } from './useUnifiedTunnelClient.js';
  * (App.tsx), not in the demo.
  *
  * Also preloads the lite engine's ~7MB WASM build straight away, so the
- * first bot move of a session doesn't pay for that download. The ~108MB
+ * first bot move of a session doesn't pay for that download. The ~95MB
  * full-net build is warmed only when engineMode is 'browser' AND it is
  * already downloaded; the first download is always started by the user. */
 export function useUnifiedTunnelActivation(): void {

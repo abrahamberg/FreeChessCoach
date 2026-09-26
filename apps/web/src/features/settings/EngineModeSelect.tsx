@@ -21,7 +21,7 @@ const ENGINE_MODE_LABELS: Record<EngineMode, string> = {
 /** design spec 2026-08-08 §9: lets a user opt into running the coach's
  * chess engine in their own browser tab instead of the server's.
  *
- * The on-device engine is a ~108MB download, so its state (not downloaded,
+ * The on-device engine is a ~95MB download, so its state (not downloaded,
  * downloading, downloaded) is always shown under the options and the download
  * only ever starts from its button.
  */

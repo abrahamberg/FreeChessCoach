@@ -28,7 +28,7 @@ export function ChessApiPauseNotice(): ReactNode {
   if (getDemoRuntime() || !profile) return null;
   const pausedUntil = profile.chessApiPausedUntil;
   const mustChoose = profile.engineMode === 'chess_api' && !!pausedUntil && new Date(pausedUntil) > new Date();
-  const needsDownload = pickedBrowser && !carryOn && engine.status !== 'ready' && !stored;
+  const needsDownload = pickedBrowser && !carryOn && engine.status !== 'ready' && stored === false;
 
   if (mustChoose) return <ChooseEngineDialog pausedUntil={pausedUntil} onPick={(mode) => {
     if (mode === 'browser') setPickedBrowser(true);

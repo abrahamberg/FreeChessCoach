@@ -1,6 +1,6 @@
 // Caches the WASM Stockfish binary (and its loader script) in the Cache
 // Storage API. Plain HTTP caching doesn't stick for the full-net build's
-// ~108MB .wasm: verified in a real tab that back-to-back fetch() calls for
+// ~95MB .wasm: verified in a real tab that back-to-back fetch() calls for
 // it both report the full transferSize (a genuine re-download), while the
 // same test against the ~7MB lite build gets served from the HTTP cache on
 // the second call (transferSize 300, a 304). The full build is over
