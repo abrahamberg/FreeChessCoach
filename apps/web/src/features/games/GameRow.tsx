@@ -113,15 +113,23 @@ export function GameRow({
               </button>
             </>
           ) : (
-            status.actionLabel && (
-              <button
-                type="button"
-                className="btn-primary game-row__action"
-                onClick={() => (status.actionKind === 'analyze' ? onAnalyze(game.id) : onSelect(game.id))}
-              >
-                {status.actionLabel}
-              </button>
-            )
+            <>
+              {status.canReview && (
+                <button type="button" className="btn-secondary game-row__action" onClick={() => onReview(game.id)}>
+                  <EyeIcon width={16} height={16} />
+                  Review
+                </button>
+              )}
+              {status.actionLabel && (
+                <button
+                  type="button"
+                  className="btn-primary game-row__action"
+                  onClick={() => (status.actionKind === 'analyze' ? onAnalyze(game.id) : onSelect(game.id))}
+                >
+                  {status.actionLabel}
+                </button>
+              )}
+            </>
           )}
           <DeleteGameButton game={game} onDelete={onDelete} variant="labeled" />
         </div>

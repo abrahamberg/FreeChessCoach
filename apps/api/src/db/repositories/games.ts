@@ -350,6 +350,35 @@ export function listPlayModeByUser(db: Kysely<Database>, userId: string): Promis
     .execute();
 }
 
+/** The Games page's "Continue" section, second half: games (of any source)
+ * with a coaching ('analyze') session still open. At most one per game —
+ * `resumeOrCreateSession` never opens a second while one is active. */
+export function listWithActiveCoachingByUser(db: Kysely<Database>, userId: string): Promise<GameListRow[]> {
+  return db
+    .selectFrom('games')
+    .innerJoin('sessions', 'sessions.gameId', 'games.id')
+    .leftJoin('analyses', 'analyses.gameId', 'games.id')
+    .select([
+      'games.id',
+      'games.source',
+      'games.userColor',
+      'games.whiteName',
+      'games.blackName',
+      'games.result',
+      'games.timeControl',
+      'games.playedAt',
+      'games.createdAt',
+      'games.botId',
+      'games.reviewTier',
+      'analyses.status as analysisStatus'
+    ])
+    .where('games.userId', '=', userId)
+    .where('sessions.userId', '=', userId)
+    .where('sessions.mode', '=', 'analyze')
+    .where('sessions.status', '=', 'active')
+    .execute();
+}
+
 /** Games that count toward the library: every imported-source game, plus a
  * bot game the student chose to keep (one that has an analysis — `keepBotGame`
  * is the only thing that gives a bot game one). An undecided or deleted bot

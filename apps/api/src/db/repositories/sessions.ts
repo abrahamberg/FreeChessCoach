@@ -103,6 +103,30 @@ export function findActiveByGameIdForUser(
     .executeTakeFirst();
 }
 
+/** The game's newest session in `mode` that wasn't reset — 'active' or
+ * 'completed', never 'abandoned'. A finished coaching session is reopened
+ * (chat intact) rather than replaced by an empty one, and the Games page
+ * reads coached / in progress off it. `resumeOrCreateSession` only ever
+ * creates a session when none is active, so an active one is always the
+ * newest. */
+export function findLatestKeptByGameIdForUser(
+  db: Kysely<Database>,
+  gameId: string,
+  userId: string,
+  mode: SessionMode
+): Promise<SessionRow | undefined> {
+  return db
+    .selectFrom('sessions')
+    .select(BASE_COLUMNS)
+    .where('gameId', '=', gameId)
+    .where('userId', '=', userId)
+    .where('mode', '=', mode)
+    .where('status', 'in', ['active', 'completed'])
+    .orderBy('startedAt', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+}
+
 /** Game deletion cascade (services/games.ts deleteGameForUser): the session
  * ids to clear from session_messages/session_move_notes before the sessions
  * themselves (and the game) can be deleted. */

@@ -128,6 +128,13 @@ export type ChesscomRecentGame = z.infer<typeof ChesscomRecentGameSchema>;
 export const ChesscomRecentGamesResponseSchema = z.array(ChesscomRecentGameSchema);
 export type ChesscomRecentGamesResponse = z.infer<typeof ChesscomRecentGamesResponseSchema>;
 
+/** Where a game stands with the coach: never coached, a coaching session
+ * still open, or coached to the end. A `coach_play` game is its own coaching
+ * session; any other game is coached in an 'analyze' session. A bot game
+ * still being played is 'none' — that is play, not coaching. */
+export const CoachingStateSchema = z.enum(['none', 'in_progress', 'done']);
+export type CoachingState = z.infer<typeof CoachingStateSchema>;
+
 /** design.md §4.1: Games (home) list row — enough to render players/result/status
  * chip without a follow-up request per row. */
 export const GameListItemSchema = z.object({
@@ -141,12 +148,15 @@ export const GameListItemSchema = z.object({
   playedAt: z.string().nullable(),
   createdAt: z.string(),
   analysisStatus: AnalysisStatusSchema.nullable(),
-  /** architecture §14: only ever set for source === 'coach_play' — the id of
-   * its still-resumable session, so the Games list can link straight back in
-   * without going through analyze mode's POST /api/sessions (which gates on
-   * an `analyses` row a play-mode game never has). Null once that session has
-   * ended (completed/abandoned) or, for analyze-mode games, always. */
+  /** The still-open session the row's Continue opens: a `coach_play` or
+   * live `vs_bot` game's own play session (architecture §14 — linking straight
+   * back in, without analyze mode's analysis-gated POST /api/sessions), or
+   * else the game's open coaching ('analyze') session — `coaching` says
+   * which. Null when nothing is open. */
   sessionId: z.string().nullable(),
+  /** When that session started — null whenever `sessionId` is. */
+  sessionStartedAt: z.string().nullable().default(null),
+  coaching: CoachingStateSchema.default('none'),
   /** Only ever set for source === 'vs_bot' — the BOT_ROSTER id the game was
    * played against, so the Games list can show which bot without a
    * follow-up request. Null for every other source. */

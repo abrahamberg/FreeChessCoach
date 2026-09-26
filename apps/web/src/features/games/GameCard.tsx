@@ -1,6 +1,6 @@
 import type { ImportedGameItem } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
-import { EyeIcon, MessageCircleIcon } from '../../components/Icon.js';
+import { BarChartIcon, EyeIcon, MessageCircleIcon, PlaySmallIcon } from '../../components/Icon.js';
 import { ResultBadge } from '../../components/ResultBadge.js';
 import { DeleteGameButton } from './DeleteGameButton.js';
 import {
@@ -24,9 +24,9 @@ export interface GameCardProps {
 }
 
 /** A compact card for the "Recently imported" rail. Too small for labelled
- * buttons, so Review / Coach / Delete are icon buttons — each with a
- * tooltip (`title`) and an accessible name. A game that isn't ready yet
- * shows its status badge and its one contextual action instead. */
+ * buttons, so every action — Review / Coach, or the one contextual action
+ * (Continue, Get coach analysis), and Delete — is an icon button with a
+ * tooltip (`title`) and an accessible name. */
 export function GameCard({ game, onSelect, onReview, onCoach, onAnalyze, onDelete }: GameCardProps): ReactNode {
   const status = statusAndActionFor(game);
   const outcome = gameOutcome(game);
@@ -89,13 +89,30 @@ export function GameCard({ game, onSelect, onReview, onCoach, onAnalyze, onDelet
           </>
         ) : (
           <>
+            {status.canReview && (
+              <button
+                type="button"
+                className="game-card__icon-action"
+                title="Review"
+                aria-label="Review"
+                onClick={() => onReview(game.id)}
+              >
+                <EyeIcon width={16} height={16} />
+              </button>
+            )}
             {status.actionLabel && (
               <button
                 type="button"
-                className="btn-primary game-card__text-action"
+                className="game-card__icon-action game-card__icon-action--primary"
+                title={status.actionLabel}
+                aria-label={status.actionLabel}
                 onClick={() => (status.actionKind === 'analyze' ? onAnalyze(game.id) : onSelect(game.id))}
               >
-                {status.actionLabel}
+                {status.actionKind === 'analyze' ? (
+                  <BarChartIcon width={16} height={16} />
+                ) : (
+                  <PlaySmallIcon width={16} height={16} />
+                )}
               </button>
             )}
           </>

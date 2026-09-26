@@ -111,3 +111,10 @@
 .rail-card__progress::-moz-progress-bar {
   background: var(--color-primary);
 }
+
+/* Coaching on one of the student's own games — set apart from live games
+ * (coach, bot) on the Continue rail. */
+.rail-card__chip--coaching {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}

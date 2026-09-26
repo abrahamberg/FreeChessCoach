@@ -17,8 +17,9 @@ import './GamesPage.css';
 
 /** design.md §4.1: Games (home) — an "Import games" section, then up to three
  * single-row sliding rails: Practice (coach-assigned sets, only when there
- * are any), Continue (in-progress coach/bot sessions, only when there are
- * any) and Recently imported (the last 15 imports, with a "Find game" link
+ * are any), Continue (every open session — coaching on a game, a live
+ * coach or bot game — most recently started first, with a count; only when
+ * there are any) and Recently imported (the last 15 imports, with a "Find game" link
  * to the full searchable list). Owns fetching (AGENTS.md rule 7); the cards
  * are presentational. */
 export function GamesPage(): ReactNode {
@@ -77,13 +78,19 @@ export function GamesPage(): ReactNode {
 
       {inProgressGames.length > 0 && (
         <section aria-label="Continue" className="games-page__section">
-          <h2 className="games-page__section-heading">Continue</h2>
+          <h2 className="games-page__section-heading">
+            Continue
+            <span className="games-page__count" aria-label={`${inProgressGames.length} active`}>
+              {inProgressGames.length}
+            </span>
+          </h2>
           <HorizontalScroller label="Games in progress">
             {inProgressGames.map((game) => (
               <ContinueSessionCard
                 key={game.id}
                 game={game}
                 onContinue={actions.handleContinue}
+                onFinish={actions.handleFinishCoaching}
                 onDelete={actions.handleDelete}
               />
             ))}

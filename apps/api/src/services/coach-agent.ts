@@ -1,6 +1,7 @@
 export type { CoachAgentDependencies, ModelResolver, StartTurnInput } from './coach-agent-types.js';
 export {
   createSession,
+  finishSession,
   getSessionDetail,
   resetSession,
   resumeOrCreateSession,

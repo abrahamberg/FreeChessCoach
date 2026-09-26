@@ -1,6 +1,6 @@
 import { parsePgn, resolveSanMove } from '@freechesscoach/chess-analysis';
 import { UserProfileSchema } from '@freechesscoach/shared';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiGet, apiPost } from '../../api/client.js';
@@ -95,6 +95,7 @@ function applyUndoLastMove(
  * SessionPage itself stays a presentational composer over this. */
 export function useSessionPageData(sessionId: string) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const sessionQuery = useQuery({
     queryKey: ['session', sessionId],
@@ -280,6 +281,21 @@ export function useSessionPageData(sessionId: string) {
     resetMutation.mutate();
   }
 
+  // The student's own end to a coaching session (analyze mode) — refetching
+  // the session shows its summary banner, and the games queries drop it
+  // from Continue.
+  const finishMutation = useMutation({
+    mutationFn: () => apiPost(`/api/sessions/${sessionId}/finish`, {}, ResetSessionResponseSchema),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+      void queryClient.invalidateQueries({ queryKey: ['games'] });
+    }
+  });
+
+  function handleFinish(): void {
+    finishMutation.mutate();
+  }
+
   // BoardActionBar's student-initiated Undo (play mode only — analyze mode
   // never passes onUndoMove to SessionBoardColumn, see SessionPage.tsx) —
   // useBotSessionPageData's own undoMutation is the play_bot sibling of this,
@@ -311,6 +327,7 @@ export function useSessionPageData(sessionId: string) {
     unlockModal,
     setupRequiredModal,
     handleReset,
+    handleFinish,
     handlePlayMoveCommitted,
     undoLastMove: () => undoMutation.mutate(),
     canUndo: isPlayMode && sanMoves.length > 0 && !undoMutation.isPending && sessionQuery.data?.status === 'active'

@@ -63,6 +63,7 @@ export function SessionPage(): ReactNode {
     unlockModal,
     setupRequiredModal,
     handleReset,
+    handleFinish,
     handlePlayMoveCommitted,
     undoLastMove,
     canUndo
@@ -198,8 +199,27 @@ export function SessionPage(): ReactNode {
     />
   );
 
-  const engineBadge = engineActivity.engineMode ? ENGINE_MODE_BADGE[engineActivity.engineMode] : 'Engine';
   const headerExtraItems: OverflowMenuItem[] = [
+    // A coaching session the student wants to close themselves — the coach
+    // normally ends it with its own summary (end_session). Play mode ends by
+    // playing the game out.
+    ...(session.mode === 'analyze' && session.status === 'active'
+      ? [
+          {
+            label: 'Finish coaching',
+            onSelect: () =>
+              confirm(
+                {
+                  title: 'Finish this coaching session?',
+                  description:
+                    'The game is marked as coached and leaves Continue. The chat is kept — Coach on this game reopens it.',
+                  confirmLabel: 'Finish coaching'
+                },
+                handleFinish
+              )
+          }
+        ]
+      : []),
     ...(ttsEnabled
       ? [
           {

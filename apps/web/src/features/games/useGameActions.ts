@@ -18,12 +18,13 @@ export interface AiSetupPrompt {
 }
 
 /** Every per-game action the Games page and Find games share — Review,
- * Coach, Continue, Analyze, Delete, PGN export/copy — so the two pages'
+ * Coach, Continue, Finish coaching, Analyze, Delete, PGN export/copy — so the two pages'
  * cards and rows behave identically. `games` is whatever the caller is
  * currently showing; handlers take a game id (the cards'/rows' own
  * callback shape) and look it up here. Owns the mutations (AGENTS.md rule
  * 7: fetching lives in hooks, not components). */
-export type ActionableGame = Pick<GameListItem, 'id' | 'reviewTier' | 'sessionId' | 'source'>;
+export type ActionableGame = Pick<GameListItem, 'id' | 'reviewTier' | 'sessionId' | 'source'> &
+  Partial<Pick<GameListItem, 'coaching'>>;
 
 export function useGameActions(games: ActionableGame[]) {
   const navigate = useNavigate();
@@ -48,6 +49,13 @@ export function useGameActions(games: ActionableGame[]) {
     onSuccess: (session) => navigate(`/session/${session.id}`)
   });
 
+  // Ends an open coaching session from the Continue rail — the same ending
+  // as the session menu's Finish coaching (POST /api/sessions/:id/finish).
+  const finishMutation = useMutation({
+    mutationFn: (sessionId: string) => apiPost(`/api/sessions/${sessionId}/finish`, {}, SessionSummarySchema),
+    onSuccess: refreshGames
+  });
+
   const deleteMutation = useMutation({ mutationFn: (gameId: string) => apiDelete(`/api/games/${gameId}`), onSuccess: refreshGames });
 
   // Starts analysis for a game imported with deferAnalysis; refreshing flips
@@ -70,12 +78,12 @@ export function useGameActions(games: ActionableGame[]) {
 
   // architecture §14: a coach_play/vs_bot game already has its own live
   // session — link straight back into it rather than through analyze mode's
-  // gated POST /api/sessions.
+  // gated POST /api/sessions. Any other open session is a coaching one.
   function handleContinue(gameId: string): void {
     const game = findGame(gameId);
     if (!game?.sessionId) return;
-    if (game.source === 'coach_play') void navigate(`/session/${game.sessionId}`);
-    if (game.source === 'vs_bot') void navigate(`/bot-session/${game.sessionId}`);
+    const isLiveBotGame = game.source === 'vs_bot' && game.coaching !== 'in_progress';
+    void navigate(isLiveBotGame ? `/bot-session/${game.sessionId}` : `/session/${game.sessionId}`);
   }
 
   // Coaching needs the student's own AI key: without one, explain that (and
@@ -106,12 +114,17 @@ export function useGameActions(games: ActionableGame[]) {
     deleteMutation.isError && 'Could not delete that game — try again.',
     analyzeMutation.isError && 'Could not start analysis — try again.',
     copyPgnMutation.isError && 'Could not copy the PGN — try again.',
-    coachMutation.isError && 'Could not start a coaching session — try again.'
+    coachMutation.isError && 'Could not start a coaching session — try again.',
+    finishMutation.isError && 'Could not finish that coaching session — try again.'
   ].filter((message): message is string => message !== false);
 
   return {
     handleContinue,
     handleCoach,
+    handleFinishCoaching: (gameId: string) => {
+      const sessionId = findGame(gameId)?.sessionId;
+      if (sessionId) finishMutation.mutate(sessionId);
+    },
     handleReview: (gameId: string) => navigate(`/review/${gameId}`),
     handleAnalyze: (gameId: string) => analyzeMutation.mutate(gameId),
     handleDelete: (gameId: string) => deleteMutation.mutate(gameId),

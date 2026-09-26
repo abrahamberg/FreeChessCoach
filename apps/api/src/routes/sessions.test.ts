@@ -303,7 +303,29 @@ describe('sessions routes', () => {
     expect(resumed.json().id).toBe(freshId);
   });
 
-  test('POST /api/sessions/:id/reset 409s on an already-completed session', async () => {
+  test('POST /api/sessions reopens a completed coaching session with its chat instead of starting over', async () => {
+    const { user, game } = await setupReadyGame('reopen-completed@example.com');
+    const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      headers: headersFor(user),
+      payload: { gameId: game.id }
+    });
+    const sessionId = created.json().id;
+    await sessionsRepo.markCompleted(db, sessionId);
+
+    const reopened = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      headers: headersFor(user),
+      payload: { gameId: game.id }
+    });
+
+    expect(reopened.json()).toMatchObject({ id: sessionId, status: 'completed' });
+  });
+
+  test('POST /api/sessions/:id/reset on a completed coaching session starts a fresh one and keeps the finished one', async () => {
     const { user, game } = await setupReadyGame('reset-completed@example.com');
     const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
     const created = await app.inject({
@@ -314,6 +336,51 @@ describe('sessions routes', () => {
     });
     const sessionId = created.json().id;
     await sessionsRepo.markCompleted(db, sessionId);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/sessions/${sessionId}/reset`,
+      headers: headersFor(user)
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().id).not.toBe(sessionId);
+    expect((await sessionsRepo.findById(db, sessionId))?.status).toBe('completed');
+  });
+
+  test('POST /api/sessions/:id/finish completes an open coaching session, which then leaves Continue', async () => {
+    const { user, game } = await setupReadyGame('finish-coaching@example.com');
+    const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      headers: headersFor(user),
+      payload: { gameId: game.id }
+    });
+    const sessionId = created.json().id;
+
+    const finished = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/finish`, headers: headersFor(user) });
+    expect(finished.statusCode).toBe(200);
+    expect((await sessionsRepo.findById(db, sessionId))?.status).toBe('completed');
+
+    const again = await app.inject({ method: 'POST', url: `/api/sessions/${sessionId}/finish`, headers: headersFor(user) });
+    expect(again.statusCode).toBe(200);
+
+    const inProgress = await app.inject({ method: 'GET', url: '/api/games/in-progress', headers: headersFor(user) });
+    expect(inProgress.json()).toEqual([]);
+  });
+
+  test('POST /api/sessions/:id/reset 409s on an abandoned session', async () => {
+    const { user, game } = await setupReadyGame('reset-abandoned@example.com');
+    const app = buildApp({ authMode: 'proxy', db, coachAgentBaseDeps: coachAgentBaseDeps(textStreamModel('x').model), engineBackendOptions: fakeEngineBackendOptions() });
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      headers: headersFor(user),
+      payload: { gameId: game.id }
+    });
+    const sessionId = created.json().id;
+    await sessionsRepo.markAbandoned(db, sessionId);
 
     const response = await app.inject({
       method: 'POST',

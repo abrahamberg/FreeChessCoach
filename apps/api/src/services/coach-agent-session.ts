@@ -6,7 +6,9 @@ import type { SessionMessageRow } from '../db/repositories/session-messages.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { NewSession, SessionRow } from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
+import type { JobQueue } from '../jobs/queue.js';
 import { ConflictError, NotFoundError } from '../lib/errors.js';
+import { completeSession } from './progress.js';
 
 const SESSION_START_CONTENT = '[session_start]';
 
@@ -39,22 +41,48 @@ export async function resumeOrCreateSession(
   userId: string,
   gameId: string
 ): Promise<SessionRow> {
-  const existing = await sessionsRepo.findActiveByGameIdForUser(db, gameId, userId, 'analyze');
+  // A completed session too: its chat is the coaching the student got, and
+  // the session page keeps a finished session's board and chat usable.
+  const existing = await sessionsRepo.findLatestKeptByGameIdForUser(db, gameId, userId, 'analyze');
   if (existing) return existing;
   return createSession(db, userId, gameId);
 }
 
-/** Student-initiated "start over": abandons the current session and opens a
- * fresh one for the same game. */
+/** Student-initiated "start over": opens a fresh session for the same game,
+ * abandoning the current one if it is still running. A completed one stays
+ * completed (the game still counts as coached); the new session is newer,
+ * so it is the one the game reopens from then on. */
 export async function resetSession(db: Kysely<Database>, userId: string, sessionId: string): Promise<SessionRow> {
   const session = await sessionsRepo.findByIdForUser(db, sessionId, userId);
   if (!session) throw new NotFoundError('Session not found');
-  if (session.status === 'completed' || session.status === 'abandoned') {
+  // A finished live game has no fresh start to offer; only a game's coaching can.
+  if (session.status === 'abandoned' || (session.status === 'completed' && session.mode !== 'analyze')) {
     throw new ConflictError('Session has already ended');
   }
 
-  await sessionsRepo.markAbandoned(db, session.id);
+  if (session.status === 'active') await sessionsRepo.markAbandoned(db, session.id);
   return createSession(db, userId, session.gameId);
+}
+
+/** Student-initiated end of a coaching session — what the coach's own
+ * end_session does (coach-tools.ts): mark it completed and queue the
+ * post-session summary. Coaching ('analyze') sessions only; a live game ends
+ * by being played out (or resigned). Finishing an already-finished session
+ * is a no-op. */
+export async function finishSession(
+  deps: { db: Kysely<Database>; jobQueue?: JobQueue },
+  userId: string,
+  sessionId: string
+): Promise<SessionRow> {
+  const session = await sessionsRepo.findByIdForUser(deps.db, sessionId, userId);
+  if (!session) throw new NotFoundError('Session not found');
+  if (session.mode !== 'analyze') throw new ConflictError('Only a coaching session can be finished');
+  if (session.status === 'abandoned') throw new ConflictError('Session has already ended');
+  if (session.status === 'completed') return session;
+
+  await completeSession(deps.db, session.id);
+  await deps.jobQueue?.enqueueSummarizeSession(session.id);
+  return { ...session, status: 'completed' };
 }
 
 export interface SessionDetail extends SessionRow {

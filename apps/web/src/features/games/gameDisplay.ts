@@ -49,7 +49,7 @@ const RESULT_LABEL: Record<string, { symbol: string; label: string }> = {
 
 export interface StatusAndAction {
   statusLabel: string;
-  statusVariant: 'primary' | 'warning' | 'danger' | 'neutral';
+  statusVariant: 'primary' | 'success' | 'warning' | 'danger' | 'neutral';
   animateStatus?: boolean;
   actionLabel?: string;
   /** Which callback the action button invokes — defaults to 'select'
@@ -59,6 +59,9 @@ export interface StatusAndAction {
    * renders both the Review and Coach buttons instead of one contextual
    * one — see GameRow's render. */
   actionKind?: 'select' | 'analyze' | 'reviewCoach';
+  /** Offer Review beside the single action (Continue) — a game still being
+   * coached can be looked over on its own too, once its analysis is ready. */
+  canReview?: boolean;
 }
 
 /** design-improvements.md §3.3: status (what state the game is in) and
@@ -70,6 +73,22 @@ export interface StatusAndAction {
  * falling into the stat-bank "not analyzed" branch below, which is only for
  * a real analyze-mode game that was imported with `deferAnalysis`. */
 export function statusAndActionFor(game: GameListItem): StatusAndAction {
+  // Coaching on any other game (an import, or a finished bot game): Review
+  // whenever the analysis is ready, beside Continue (a session is open) or
+  // Coach (none yet, or finished — Coach reopens that chat).
+  if (game.source !== 'coach_play') {
+    if (game.coaching === 'in_progress') {
+      return {
+        statusLabel: 'Coaching',
+        statusVariant: 'primary',
+        actionLabel: 'Continue',
+        canReview: game.analysisStatus === 'ready'
+      };
+    }
+    if (game.coaching === 'done' && game.analysisStatus === 'ready') {
+      return { statusLabel: 'Coached', statusVariant: 'success', actionKind: 'reviewCoach' };
+    }
+  }
   if (game.source === 'coach_play') {
     if (game.sessionId) return { statusLabel: 'In progress', statusVariant: 'primary', actionLabel: 'Continue' };
     return { statusLabel: 'Completed', statusVariant: 'neutral' };
@@ -96,7 +115,7 @@ export function statusAndActionFor(game: GameListItem): StatusAndAction {
     return { statusLabel: 'Analyzing…', statusVariant: 'neutral', animateStatus: true };
   }
   if (game.analysisStatus === 'ready')
-    return { statusLabel: 'Ready', statusVariant: 'primary', actionKind: 'reviewCoach' };
+    return { statusLabel: 'Not coached', statusVariant: 'neutral', actionKind: 'reviewCoach' };
   if (game.analysisStatus === 'failed') return { statusLabel: 'Failed', statusVariant: 'danger' };
   // Waiting on the user's own browser tunnel to reconnect (resolve-engine-
   // backend.ts's backgroundJob option, services/analysis.ts's markPaused) —

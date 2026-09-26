@@ -16,6 +16,7 @@ import { buildResolveEngineBackendOptions, type CoachAgentBaseDependencies } fro
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gameImportEventsRepo from '../db/repositories/game-import-events.js';
 import * as gamesRepo from '../db/repositories/games.js';
+import * as sessionsRepo from '../db/repositories/sessions.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
@@ -1065,13 +1066,13 @@ describe('POST/GET /api/games', () => {
   });
 
   // Promoting a finished vs_bot game to Coach creates a brand-new 'analyze'
-  // session for it (via POST /api/sessions, same as any other ready game) —
-  // the row's sessionId must stay null (not leak that analyze session's id)
-  // since findActiveByGameIdForUser is now mode-scoped: a vs_bot row only
-  // ever surfaces a still-active 'play_bot' session, and this game has none.
-  // Before that fix, GamesPage would have shown "Continue" and routed this
-  // row into /bot-session/:id — a finished game rendered as though the bot
-  // match were still live, polling for a bot reply that never comes.
+  // session for it (via POST /api/sessions, same as any other ready game).
+  // findActiveByGameIdForUser is mode-scoped, so the row never mistakes it
+  // for a live 'play_bot' session: it surfaces as coaching (`coaching:
+  // 'in_progress'`), which the Games page opens on /session/:id. Before that
+  // fix it would have routed into /bot-session/:id — a finished game rendered
+  // as though the bot match were still live, polling for a bot reply that
+  // never comes.
   test('promoting a finished vs_bot game to coach does not leak its new analyze session as a live bot session', async () => {
     const app = buildTestApp();
     const headers = headersFor('vsbot-promote@example.com', 'VsBotPromote');
@@ -1105,10 +1106,60 @@ describe('POST/GET /api/games', () => {
     const session = await app.inject({ method: 'POST', url: '/api/sessions', headers, payload: { gameId: game.id } });
     expect(session.statusCode).toBe(200);
 
+    // The row surfaces the analyze session as coaching — never as a live bot
+    // game, which the Games page would open on the bot board.
     const list = await app.inject({ method: 'GET', url: '/api/games', headers });
     expect(list.json()).toContainEqual(
-      expect.objectContaining({ id: game.id, source: 'vs_bot', reviewTier: 'coach', sessionId: null })
+      expect.objectContaining({
+        id: game.id,
+        source: 'vs_bot',
+        reviewTier: 'coach',
+        sessionId: session.json().id,
+        coaching: 'in_progress'
+      })
     );
+  });
+
+  test('coaching on an imported game shows in Continue, and the imported list marks coached / coaching / not coached', async () => {
+    const app = buildTestApp();
+    const headers = headersFor('coaching-state@example.com', 'CoachingState');
+    const owner = await usersRepo.insert(db, { email: 'coaching-state@example.com', displayName: 'CoachingState' });
+    const readyGame = async (whiteName: string) => {
+      const game = await gamesRepo.insert(db, {
+        userId: owner.id,
+        pgn: VALID_PGN.replace('[White "', `[White "${whiteName}`),
+        source: 'paste',
+        userColor: 'black',
+        whiteName,
+        blackName: 'Me',
+        result: '1-0',
+        timeControl: null,
+        eco: null,
+        playedAt: null
+      });
+      const analysis = await analysesRepo.insertQueued(db, game.id);
+      await analysesRepo.markReady(db, analysis.id);
+      await analysesRepo.storeCoachingPlan(db, analysis.id, PLAN);
+      return game;
+    };
+    const untouched = await readyGame('Untouched');
+    const coaching = await readyGame('Coaching');
+    const coached = await readyGame('Coached');
+    const open = await app.inject({ method: 'POST', url: '/api/sessions', headers, payload: { gameId: coaching.id } });
+    const done = await app.inject({ method: 'POST', url: '/api/sessions', headers, payload: { gameId: coached.id } });
+    await sessionsRepo.markCompleted(db, done.json().id);
+
+    const inProgress = await app.inject({ method: 'GET', url: '/api/games/in-progress', headers });
+    expect(inProgress.json()).toEqual([
+      expect.objectContaining({ id: coaching.id, sessionId: open.json().id, coaching: 'in_progress' })
+    ]);
+
+    const imported = await app.inject({ method: 'GET', url: '/api/games/imported', headers });
+    const stateOf = (id: string) =>
+      imported.json().items.find((item: { id: string }) => item.id === id);
+    expect(stateOf(untouched.id)).toMatchObject({ coaching: 'none', sessionId: null });
+    expect(stateOf(coaching.id)).toMatchObject({ coaching: 'in_progress', sessionId: open.json().id });
+    expect(stateOf(coached.id)).toMatchObject({ coaching: 'done', sessionId: null });
   });
 
   test('POST /api/games/:id/promote 404s for another user\'s game', async () => {

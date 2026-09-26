@@ -125,6 +125,13 @@ export function registerSessionsRoutes(
     return coachAgent.resetSession(db, user.id, request.params.id);
   });
 
+  // The student's own "Finish coaching" — the same ending as the coach's
+  // end_session, so the game counts as coached and leaves Continue.
+  app.post<{ Params: { id: string } }>('/api/sessions/:id/finish', async (request) => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    return coachAgent.finishSession({ db, jobQueue: baseDeps.jobQueue }, user.id, request.params.id);
+  });
+
   app.post<{ Params: { id: string } }>('/api/sessions/:id/messages', async (request, reply) => {
     const user = await userProfileService.getOrCreate(db, request.user);
     const session = await sessionsRepo.findByIdForUser(db, request.params.id, user.id);

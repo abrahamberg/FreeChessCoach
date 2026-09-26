@@ -16,7 +16,7 @@ export function SessionSummaryCard({
 }: SessionSummaryCardProps): ReactNode {
   return (
     <div className="session-summary-card">
-      <p>{summary}</p>
+      <p>{summary || 'This coaching session is finished. The chat stays here — you can still ask about the game.'}</p>
       {homework && (
         <p className="homework-chip">
           <span aria-hidden="true">☐</span> Homework: {homework}

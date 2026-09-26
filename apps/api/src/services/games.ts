@@ -1,5 +1,6 @@
 import {
   canPromoteGameReviewTier,
+  type CoachingState,
   type DeleteEarliestImportedResponse,
   type GameListResponse,
   type GameReviewTier,
@@ -15,6 +16,7 @@ import type { GameListRow } from '../db/repositories/games.js';
 import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
+import type { SessionRow } from '../db/repositories/sessions.js';
 import type { Database } from '../db/schema.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { sinceFor } from '../lib/range-since.js';
@@ -54,11 +56,19 @@ export async function listImportedGamesForUser(
   return { items, hasMore };
 }
 
-/** Games page "Continue": play-mode games that still have a live session. */
+/** Games page "Continue": every game with a session still open — live
+ * coach/bot games, and coaching sessions on any other game — most recently
+ * started first. */
 export async function listInProgressGamesForUser(db: Kysely<Database>, userId: string): Promise<GameListResponse> {
-  const rows = await gamesRepo.listPlayModeByUser(db, userId);
+  const [playRows, coachingRows] = await Promise.all([
+    gamesRepo.listPlayModeByUser(db, userId),
+    gamesRepo.listWithActiveCoachingByUser(db, userId)
+  ]);
+  const rows = [...new Map([...playRows, ...coachingRows].map((row) => [row.id, row])).values()];
   const items = await Promise.all(rows.map((row) => toListItem(db, userId, row)));
-  return items.filter((item) => item.sessionId !== null);
+  return items
+    .filter((item) => item.sessionId !== null)
+    .sort((a, b) => (b.sessionStartedAt ?? '').localeCompare(a.sessionStartedAt ?? ''));
 }
 
 /** "Delete earliest 50": removes the user's `count` earliest-imported games
@@ -143,11 +153,27 @@ function liveSessionModeFor(source: GameListRow['source']): 'play' | 'play_bot' 
   return null;
 }
 
-async function toListItem(db: Kysely<Database>, userId: string, row: GameListRow) {
+/** The session a row's Continue opens (if any) and where the game stands
+ * with the coach — see GameListItemSchema's `sessionId`/`coaching`. */
+async function sessionStateFor(
+  db: Kysely<Database>,
+  userId: string,
+  row: GameListRow
+): Promise<{ session: SessionRow | undefined; coaching: CoachingState }> {
   const liveSessionMode = liveSessionModeFor(row.source);
-  const sessionId = liveSessionMode
-    ? ((await sessionsRepo.findActiveByGameIdForUser(db, row.id, userId, liveSessionMode))?.id ?? null)
-    : null;
+  const live = liveSessionMode
+    ? await sessionsRepo.findActiveByGameIdForUser(db, row.id, userId, liveSessionMode)
+    : undefined;
+  if (row.source === 'coach_play') return { session: live, coaching: live ? 'in_progress' : 'done' };
+  if (live) return { session: live, coaching: 'none' };
+  const coachingSession = await sessionsRepo.findLatestKeptByGameIdForUser(db, row.id, userId, 'analyze');
+  if (!coachingSession) return { session: undefined, coaching: 'none' };
+  if (coachingSession.status === 'active') return { session: coachingSession, coaching: 'in_progress' };
+  return { session: undefined, coaching: 'done' };
+}
+
+async function toListItem(db: Kysely<Database>, userId: string, row: GameListRow) {
+  const { session, coaching } = await sessionStateFor(db, userId, row);
   return {
     id: row.id,
     source: row.source,
@@ -159,7 +185,9 @@ async function toListItem(db: Kysely<Database>, userId: string, row: GameListRow
     playedAt: row.playedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     analysisStatus: row.analysisStatus,
-    sessionId,
+    sessionId: session?.id ?? null,
+    sessionStartedAt: session?.startedAt.toISOString() ?? null,
+    coaching,
     botId: row.botId,
     reviewTier: row.reviewTier
   };
