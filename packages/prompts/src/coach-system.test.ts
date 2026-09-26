@@ -301,8 +301,23 @@ describe('buildCoachSystemPrompt', () => {
 
     test('play mode tells the coach to vary how it responds to a move instead of interrogating', () => {
       const { staticPart } = buildCoachSystemPrompt(baseInput({ mode: 'play', plan: null }));
-      expect(staticPart).toContain('Vary how, deliberately');
-      expect(staticPart).toContain('turns a game into an interrogation');
+      expect(staticPart).toContain('vary how, deliberately');
+    });
+
+    test('play mode asks only for focus, a miss, or a real goal — and then does not skip it', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput({ mode: 'play', plan: null }));
+      expect(staticPart).toContain("IT'S IN THEIR FOCUS");
+      expect(staticPart).toContain('THEY MISSED SOMETHING');
+      expect(staticPart).toContain("THERE'S A REAL GOAL");
+      expect(staticPart).toContain("If none is true, don't ask");
+      expect(staticPart).toContain('asking too little wastes the game as much as asking too much');
+    });
+
+    test('play mode has the coach either move first or stop and end on a question, never neither', () => {
+      const { staticPart } = buildCoachSystemPrompt(baseInput({ mode: 'play', plan: null }));
+      expect(staticPart).toContain('Call play_coach_move first, before any text');
+      expect(staticPart).toContain('"Ready for my move?"');
+      expect(staticPart).toContain('it either calls play_coach_move or ends with a question to the student');
     });
   });
 

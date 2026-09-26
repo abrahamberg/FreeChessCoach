@@ -154,7 +154,7 @@ export async function startPuzzleTurn(
       messages,
       tools,
       timeouts: streamTimeoutsFor(deps.gatewayConfig, resolution),
-      // Same shape as play mode's stopOnToolNames (coach-agent-turn.ts):
+      // Stops outright, unlike play mode's speakAfterToolNames:
       // advance_puzzle is a server tool whose result decides what happens
       // next, so the turn must end the instant it's called rather than
       // let the model keep talking against a puzzle it's already left.

@@ -32,12 +32,12 @@ export const PLAY_TOOL_SPECS: readonly CoachToolSpec[] = [
   {
     name: 'play_coach_move',
     description:
-      'Commit YOUR move to the live game as SAN (e.g. "Nf3") — this actually plays it and ends your turn; nothing you say after calling it reaches the student before their next message. When the context gives you a planned move ("## Your move this turn"), play that one directly; otherwise call get_candidate_moves first unless you already know exactly what you want to play. Only call this once you have decided — it is not for trying ideas (use hypothetical_line for that). Every reply that follows a student move must end with this call: if you describe or intend a move, you have not played it until this tool has been called.'
+      'Commit YOUR move to the live game as SAN (e.g. "Nf3") — this actually plays it and ends your turn. When you move, call it first, before any text: after it returns you get one more chance to speak (no further tools), or you may say nothing. When the context gives you a planned move ("## Your move this turn"), play that one directly; otherwise call get_candidate_moves first unless you already know exactly what you want to play. Only call this once you have decided — it is not for trying ideas (use hypothetical_line for that). On your turn, a reply that does not call this must end with a question to the student; if you describe or intend a move, you have not played it until this tool has been called.'
   },
   {
     name: 'undo_last_move',
     description:
-      "Reverts the game's last move — only call this after the student has explicitly agreed to an undo you offered (e.g. \"want to take that back?\" → \"yes\"). Never call it silently or preemptively. Ends your turn, same as play_coach_move."
+      "Reverts the game's last move — only call this after the student has explicitly agreed to an undo you offered (e.g. \"want to take that back?\" → \"yes\"). Never call it silently or preemptively. Ends your turn, same as play_coach_move: call it first, then you may say something."
   }
 ];
 

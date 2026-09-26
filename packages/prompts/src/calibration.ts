@@ -18,7 +18,7 @@ export const CALIBRATION: Record<RatingBand, BandCalibration> = {
   improving: {
     label: 'Improving',
     description:
-      "Around 900–1300 chess.com. Spots simple tactics but misses them in games; openings are memorized moves without plans. Emphasize asking 'what is my opponent threatening?' every move, and connect openings to simple plans. Standard chess terms are fine.",
+      "Around 900–1300 chess.com. Spots simple tactics but misses them in games; openings are memorized moves without plans. Build the habit of checking what the opponent's move threatens — ask 'what is my opponent threatening?' when a move actually threatens something, not after quiet moves — and connect openings to simple plans. Standard chess terms are fine.",
     revealDepthPlies: 4
   },
   club: {

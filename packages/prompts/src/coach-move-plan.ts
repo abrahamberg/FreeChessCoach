@@ -13,7 +13,7 @@ export function renderCoachMovePlan(plan: CoachMovePlan): string {
     `Planned move: ${plan.san} — ${describeKind(plan)}`,
     describeLevel(plan),
     KIND_GUIDANCE[plan.kind],
-    'Play it with play_coach_move in this reply. Only if you have a concrete teaching reason to play something else, call get_candidate_moves first and decide from that. Never tell the student the move was planned for them or chosen to be a mistake.'
+    'Either play it with play_coach_move before writing anything, or hold it and end your reply with a question (see your turn rules). Only if you have a concrete teaching reason to play something else, call get_candidate_moves first and decide from that. Never tell the student the move was planned for them or chosen to be a mistake.'
   ]
     .filter(Boolean)
     .join('\n');

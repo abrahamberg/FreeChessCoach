@@ -104,6 +104,13 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
     }
   }, [options.initialMessages]);
 
+  // A turn's stream outlives the render that started it: play mode's
+  // play_coach_move result arrives long after the student's own move was
+  // appended, and the handler captured at send time still sees the positions
+  // from before that move. Always dispatch to the latest handler.
+  const onServerToolResultRef = useRef(options.onServerToolResult);
+  onServerToolResultRef.current = options.onServerToolResult;
+
   const postTurn = useCallback(
     async (body: PostTurnBody) => {
       // Pushed before the request goes out, not after it resolves: on a
@@ -189,7 +196,7 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
           },
           onToolOutput: (toolOutput) => {
             if (isServerToolResultName(toolOutput.toolName)) {
-              options.onServerToolResult?.(toolOutput.toolName, toolOutput.output);
+              onServerToolResultRef.current?.(toolOutput.toolName, toolOutput.output);
             }
           },
           onToolCall: async (toolCall) => {

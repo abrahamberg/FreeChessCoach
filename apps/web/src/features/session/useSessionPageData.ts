@@ -48,14 +48,17 @@ function moverForPly(ply: number): 'white' | 'black' {
 /** architecture §14: the coach's own play_coach_move tool result — same
  * board-side consequences as the student's POST /play-move (see
  * SessionBoardColumn's handlePlayMove), but the response has no moveUci of
- * its own, so it's derived from the position right before this move. */
+ * its own, so it's derived from the position right before this move — looked
+ * up by ply, not taken from whatever the board shows, which may be a peeked
+ * or hypothetical position (and without a move's squares the board shows no
+ * last-move highlight for the coach's move). */
 function applyPlayCoachMove(
   boardState: UseSessionBoardStateResult,
   livePositions: ReturnType<typeof useLivePositions>,
-  fenBeforeMove: string,
   output: PlayCoachMoveOutput
 ): void {
-  const resolved = resolveSanMove(fenBeforeMove, output.san);
+  const before = livePositions.positions.find((position) => position.ply === output.ply - 1);
+  const resolved = before ? resolveSanMove(before.fen, output.san) : null;
   const moveUci = resolved ? `${resolved.from}${resolved.to}` : null;
   livePositions.append({
     ply: output.ply,
@@ -165,7 +168,7 @@ export function useSessionPageData(sessionId: string) {
         console.error('play_coach_move rejected:', (output as { error: string }).error);
         return;
       }
-      applyPlayCoachMove(boardState, livePositions, currentRealPosition.fen, output as PlayCoachMoveOutput);
+      applyPlayCoachMove(boardState, livePositions, output as PlayCoachMoveOutput);
       return;
     }
     if (toolName === 'undo_last_move' && !isErrorOutput(output)) {

@@ -130,11 +130,11 @@ export async function startTurn(
       reply.state
     );
     const requestTools = serializeTools(tools);
-    // architecture §14: play mode ends its turn the instant its own move
-    // (or an undo) is committed, via the SDK's hasToolCall stop condition —
-    // see llm/chat.ts's stopOnToolNames. Undefined for analyze mode, which
-    // keeps stepCountIs(MAX_STEPS) as its only stop condition, unchanged.
-    const stopOnToolNames = session.mode === 'play' ? ['play_coach_move', 'undo_last_move'] : undefined;
+    // architecture §14: play mode commits its move (or an undo) first and
+    // may say something after it in one tools-free step — see llm/chat.ts's
+    // speakAfterToolNames. Undefined for analyze mode, which keeps
+    // stepCountIs(MAX_STEPS) as its only stop condition, unchanged.
+    const speakAfterToolNames = session.mode === 'play' ? ['play_coach_move', 'undo_last_move'] : undefined;
 
     return runCoachTurn({
       resolution,
@@ -142,7 +142,7 @@ export async function startTurn(
       messages,
       tools,
       timeouts: streamTimeoutsFor(deps.gatewayConfig, resolution),
-      stopOnToolNames,
+      speakAfterToolNames,
       priorSteps: reply.priorSteps,
       onFinish: async (completion) => {
         // The response has already been piped to the client by the time this
