@@ -14,8 +14,11 @@ export type ResponseChatMessage = AssistantModelMessage | ToolModelMessage;
 /**
  * A system block the provider is asked to cache (design doc §5). Anthropic
  * bills a cache write once and reads it back at a fraction of the price on
- * every later turn; OpenAI ignores the option and caches prefixes
- * automatically, so the same call site is correct for both providers.
+ * every later turn. OpenAI (GPT-5.6 and later) needs its own explicit
+ * breakpoint: without one it places a single implicit breakpoint on the
+ * latest message, so the cache only ever holds whole prompts and any change
+ * inside a layer — a new move note, the current-move block — misses the
+ * entire prefix even though the leading layers are byte-identical.
  *
  * Anthropic allows at most FOUR cache breakpoints per request — see
  * `buildEpisodeMessages` in services/coach-context.ts, which spends all four.
@@ -26,7 +29,10 @@ export function cachedSystemMessage(content: string): SystemChatMessage {
   return {
     role: 'system',
     content,
-    providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } }
+    providerOptions: {
+      anthropic: { cacheControl: { type: 'ephemeral' } },
+      openai: { promptCacheBreakpoint: { mode: 'explicit' } }
+    }
   };
 }
 

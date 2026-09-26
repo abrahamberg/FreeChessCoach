@@ -97,7 +97,10 @@ describe('buildEpisodeMessages', () => {
       episodeMessages
     );
 
-    const cacheControl = { anthropic: { cacheControl: { type: 'ephemeral' } } };
+    const cacheControl = {
+      anthropic: { cacheControl: { type: 'ephemeral' } },
+      openai: { promptCacheBreakpoint: { mode: 'explicit' } }
+    };
     const { instructions, messages } = context;
     expect(instructions).toHaveLength(5);
     expect(instructions[0]).toEqual({ role: 'system', content: 'STATIC', providerOptions: cacheControl });
@@ -141,7 +144,10 @@ describe('buildEpisodeMessages', () => {
       episodeMessages
     );
 
-    const cacheControl = { anthropic: { cacheControl: { type: 'ephemeral' } } };
+    const cacheControl = {
+      anthropic: { cacheControl: { type: 'ephemeral' } },
+      openai: { promptCacheBreakpoint: { mode: 'explicit' } }
+    };
     const { instructions } = context;
     expect(instructions).toHaveLength(4);
     expect(instructions[0]).toEqual({ role: 'system', content: 'STATIC', providerOptions: cacheControl });

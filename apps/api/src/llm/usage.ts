@@ -2,9 +2,9 @@ import type { LanguageModelUsage } from 'ai';
 
 /** Provider-normalized token usage for one model call (coach debug mode
  * design doc, "Provider-specific usage"). `cacheWriteTokens` is `null` —
- * never `0` — when the provider has no cache-write concept at all (OpenAI's
- * prefix caching is automatic and free to populate), so the debug panel can
- * tell "no such thing" apart from "nothing was written". */
+ * never `0` — when the provider reports no cache writes at all (OpenAI
+ * models before GPT-5.6, whose prefix caching is free to populate), so the
+ * debug panel can tell "no such thing" apart from "nothing was written". */
 export interface TurnUsage {
   freshInputTokens: number;
   cacheReadTokens: number;
