@@ -3,6 +3,7 @@ import * as sessionsRepo from '../db/repositories/sessions.js';
 import type { SessionRow } from '../db/repositories/sessions.js';
 import { runCoachTurn, MAX_STEPS, type CoachTurnCompletion, type CoachTurnStream } from '../llm/chat.js';
 import { getModelForUser, streamTimeoutsFor } from '../llm/gateway.js';
+import { classifyLlmError } from '../llm/provider-error.js';
 import { createKeyedLock } from '../lib/keyedLock.js';
 import { currentEpisode } from '../lib/episodes.js';
 import { findSuccessfulToolResult } from '../lib/tool-parts.js';
@@ -189,7 +190,7 @@ export async function startTurn(
       // without this the lock above would never release and every future
       // message in this session would hang forever awaiting sessionLock.
       onError: (error) => {
-        console.error(`coach-agent stream error for session ${session.id}:`, error);
+        console.error(`coach-agent stream error for session ${session.id} [${classifyLlmError(error).logSummary}]:`, error);
         releaseOnce();
       },
       // Client hung up mid-stream: neither onFinish nor onError fires, and the

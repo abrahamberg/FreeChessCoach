@@ -1,6 +1,7 @@
 import type { ServerResponse } from 'node:http';
 import { pipeUIMessageStreamToResponse, toUIMessageStream } from 'ai';
 import type { CoachTurnStream } from './chat.js';
+import { classifyLlmError } from './provider-error.js';
 
 /**
  * Streams a coach turn to an already-hijacked Fastify raw response as
@@ -21,8 +22,12 @@ export async function pipeCoachStreamToResponse(response: ServerResponse, turn: 
       // the debug snapshot stores and the debug popup renders.
       sendReasoning: false,
       onError: (error) => {
-        console.error('coach stream error:', error);
-        return 'An error occurred.';
+        const classified = classifyLlmError(error);
+        console.error(`coach stream error [${classified.logSummary}]:`, error);
+        // This text reaches the student verbatim (coachStream.ts's onError,
+        // via the UI stream's `error` chunk) — it must say what to actually
+        // go do (billing page, Settings, wait it out), not just fail generically.
+        return classified.userMessage;
       }
     })
   });

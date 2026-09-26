@@ -15,6 +15,7 @@ import { answerUnansweredToolCalls } from '../llm/unanswered-tool-calls.js';
 import type { GatewayConfig, ModelResolution, Tier } from '../llm/gateway.js';
 import { getModelForUser, streamTimeoutsFor } from '../llm/gateway.js';
 import { cachedSystemMessage, systemMessage, type ChatMessage } from '../llm/messages.js';
+import { classifyLlmError } from '../llm/provider-error.js';
 import { serializeTools, type TurnDebugSnapshot } from './coach-agent-debug.js';
 import { replyInProgress } from './coach-tool-guards.js';
 import { currentPuzzleFen } from './puzzle-session.js';
@@ -209,7 +210,7 @@ export async function startPuzzleTurn(
         }
       },
       onError: (error) => {
-        console.error(`puzzle-session-turn stream error for session ${session.id}:`, error);
+        console.error(`puzzle-session-turn stream error for session ${session.id} [${classifyLlmError(error).logSummary}]:`, error);
         releaseOnce();
       },
       onAbort: () => {

@@ -159,6 +159,14 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
           },
           onError: (message) => {
             console.error('puzzle coach stream error:', message);
+            // Mirrors useCoachChat.ts's onError: without this, a mid-stream
+            // provider error (spend limit, rate limit, ...) left the
+            // placeholder pushed above permanently blank with no sign
+            // anything failed. `message` is the student-facing text the
+            // server already chose (see llm/provider-error.ts).
+            setMessages((prev) =>
+              prev.map((current) => (current.id === assistantId && current.text === '' ? { ...current, text: message } : current))
+            );
           },
           onToolOutput: (toolOutput) => {
             if (SERVER_TOOL_RESULT_NAMES.has(toolOutput.toolName)) {

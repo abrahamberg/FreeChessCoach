@@ -198,12 +198,11 @@ export function useCoachChat(sessionId: string, options: UseCoachChatOptions = {
             // this turn — without this, the placeholder pushed above stays
             // permanently blank (assistantText never received a delta) and
             // the session looks dead with no visible sign anything failed.
+            // `message` is already the student-facing text the server chose
+            // (see llm/provider-error.ts) — e.g. naming a hit spend limit or
+            // a rejected API key instead of a generic failure.
             setMessages((prev) =>
-              prev.map((current) =>
-                current.id === assistantId && current.text === ''
-                  ? { ...current, text: 'Something went wrong generating a reply. Try sending your message again.' }
-                  : current
-              )
+              prev.map((current) => (current.id === assistantId && current.text === '' ? { ...current, text: message } : current))
             );
           },
           onToolOutput: (toolOutput) => {
