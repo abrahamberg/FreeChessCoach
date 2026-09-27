@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { classifyLiveMove, toCpWhite, winPctFor } from '@freechesscoach/chess-analysis';
+import { classifyLiveMove, cpToWords, mateToWords, toCpWhite, winPctFor } from '@freechesscoach/chess-analysis';
 import { HintMovesResponseSchema, type ClassifiedMoveDto, type EngineEval, type EngineLine } from '@freechesscoach/shared';
 import { apiPost } from '../../api/client.js';
-import { cpToWords, mateToWords } from '../../engine/eval-words.js';
 import type { BoardArrow, BoardHighlight } from './CoachBoard.js';
 import { candidateMoveColor, candidateMoveHighlightFromColor } from './candidateMoveColors.js';
 

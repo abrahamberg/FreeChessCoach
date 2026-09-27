@@ -8,7 +8,7 @@ export interface ExplorePanelProps {
   onOpen: () => void;
   onClose: () => void;
   status: ExploreFeedbackStatus;
-  /** Word-based only, never a number — see useExploreFeedback/eval-words.ts. */
+  /** Word-based only, never a number — see useExploreFeedback and chess-analysis eval-words.ts. */
   evaluation: string | null;
 }
 

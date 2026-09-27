@@ -1,4 +1,4 @@
-import { BARE_SAN, MOVE_TOKEN } from '../features/chat/moveMention.js';
+import { BARE_SAN, MOVE_TOKEN } from '@freechesscoach/chess-analysis';
 
 const PIECE_NAMES: Record<string, string> = {
   K: 'King',

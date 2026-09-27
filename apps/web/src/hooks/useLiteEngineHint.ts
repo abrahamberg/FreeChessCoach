@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { cpToWords, mateToWords } from '../engine/eval-words.js';
+import { cpToWords, mateToWords } from '@freechesscoach/chess-analysis';
 import { getSharedLiteEngineWorker } from '../engine/shared-engine-worker-instance.js';
 import { useLiteEngineStatus } from './useLiteEngineStatus.js';
 
