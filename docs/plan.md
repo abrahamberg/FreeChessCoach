@@ -321,18 +321,41 @@ Commit: `feat(prompts): course voice per coach, sharing the chat word banks`
 
 ### Task 80.3 — Prompts and schemas
 
+Status: done 2026-09-28, commit 92b7912.
+Notes for the next task: build a `CoursePromptContext`
+(`packages/prompts/src/course/context.ts`: kind, persona, learnerSide,
+levelBand, direction, startFen, nodes, lines, dossier, skeleton, headers
+{white, black, event, year} — parse them from `courses.sourcePgn`), then
+`buildCourseOutlineMessages(context)` and, per episode,
+`buildCourseEpisodeMessages({context, outline, episodeId, creatorRequest?, retry?})`;
+both return `{system, user}` with the same `system` (cache-stable, tested).
+`retry` = `{previousOutput, problems}` for the §7 second attempt. Validate
+answers with `CourseOutlineSchema` / `EpisodeScriptSchema` (shared
+`course.ts`; nullable `answerNodeId`, `quiz`, `pauseMs` — map null to absent
+when merging into the document). Budgets: `courseBudget(kind, persona)` and
+`episodeWordBudget(budget, outline, episodeId)` (`course/budget.ts`); the
+latter is the verifier's `budget`. Clip lengths, words per second (2, scaled
+by `PERSONA_SPEECH_SPEED`, now in shared `constants.ts` and read by web
+`persona-voices.ts`) and pause live in `CONFIG.courses`. The episode dossier
+= its path + the node before + the quiz answer (`episodeDossier`). Test
+fixtures: `course/fixtures.ts` (prompts) and the new
+`@freechesscoach/chess-analysis/course-test-fixtures` subpath. The §6.4 outline
+validation (ids exist, roles legal per kind, required nodes covered) is not
+written yet — it belongs with the job in 80.4. `docs/prompts.md` §8 shows the
+rendered trap prompts.
+
 **Read:** `docs/courses.md` §6.
 **Files:** `packages/prompts/src/course/` (`shared.ts`, `playbooks.ts`,
 `outline.ts`, `episode.ts`), `packages/shared/src/course.ts`
 (`CourseOutlineSchema`, `EpisodeScriptSchema`), tests.
 
-- [ ] `buildCourseOutlineMessages` and `buildCourseEpisodeMessages` with the
+- [x] `buildCourseOutlineMessages` and `buildCourseEpisodeMessages` with the
   text of §6.1–§6.5; budgets computed from the clip length and the persona's
   Kokoro speed (`CONFIG.courses.wordsPerSecond × speed`).
-- [ ] Tests: the system prompt is identical across episode calls of one
+- [x] Tests: the system prompt is identical across episode calls of one
   course (cache-stable); each playbook fills every placeholder; the dossier
   for an episode contains only that episode's nodes plus the one before.
-- [ ] `npm run docs:prompts` so `docs/prompts.md` gets a course section.
+- [x] `npm run docs:prompts` so `docs/prompts.md` gets a course section.
 
 Commit: `feat(prompts): course outline and episode prompts per kind`
 
