@@ -125,16 +125,16 @@ export const CourseDocumentSchema = z.object({
 });
 export type CourseDocument = z.infer<typeof CourseDocumentSchema>;
 
-/** The `courses.generation` jsonb: the worker job's state (docs/courses.md §5.2). */
-export const CourseGenerationSchema = z.object({
-  status: z.enum(['queued', 'running', 'succeeded', 'failed']),
-  /** Short label of the current step, e.g. "outline" or "episode 3 of 7". */
-  step: z.string().nullable(),
-  done: z.number().int().nonnegative(),
-  total: z.number().int().nonnegative(),
-  error: z.string().nullable()
-});
-export type CourseGeneration = z.infer<typeof CourseGenerationSchema>;
+
+
+/** docs/courses.md §6.3: the episode roles each kind's playbook uses. */
+export const COURSE_ROLES: Record<CourseKind, readonly string[]> = {
+  trap: ['hook', 'setup', 'bait', 'quiz', 'punish', 'safety'],
+  opening_reel: ['hook', 'line', 'idea', 'remember'],
+  opening_course: ['line', 'deviation', 'trap', 'recap'],
+  tactics: ['concept', 'example', 'scan'],
+  master_game: ['intro', 'moves', 'moment']
+};
 
 /** The outline call's answer (docs/courses.md §6.4). Fields the model may
  * leave empty are nullable, not optional: structured output wants every key. */
@@ -166,3 +166,28 @@ export const EpisodeScriptSchema = z.object({
   quiz: CourseQuizSchema.nullable()
 });
 export type EpisodeScript = z.infer<typeof EpisodeScriptSchema>;
+
+/** A verifier problem kept on the draft (§7); `episodeId` null for the whole course. */
+export const CourseWarningSchema = z.object({
+  episodeId: z.string().nullable(),
+  code: z.string(),
+  nodeId: z.string().nullable(),
+  message: z.string()
+});
+export type CourseWarning = z.infer<typeof CourseWarningSchema>;
+
+/** The `courses.generation` jsonb: the worker job's state (docs/courses.md
+ * §5.2). The outline and the finished episodes let a stopped job resume and
+ * one episode be regenerated on its own. */
+export const CourseGenerationSchema = z.object({
+  status: z.enum(['queued', 'running', 'succeeded', 'failed']),
+  /** Short label of the current step, e.g. "Planning" or "Writing episode 3 of 7". */
+  step: z.string().nullable(),
+  done: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative(),
+  error: z.string().nullable(),
+  outline: CourseOutlineSchema.nullable(),
+  finishedEpisodeIds: z.array(z.string()),
+  warnings: z.array(CourseWarningSchema)
+});
+export type CourseGeneration = z.infer<typeof CourseGenerationSchema>;

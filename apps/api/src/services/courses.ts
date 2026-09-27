@@ -100,18 +100,18 @@ export async function buildSkeletonDraft(db: Kysely<Database>, ownerId: string, 
   return toCourseResponse(saved);
 }
 
-async function ownedCourse(db: Kysely<Database>, ownerId: string, id: string): Promise<coursesRepo.CourseRow> {
+export async function ownedCourse(db: Kysely<Database>, ownerId: string, id: string): Promise<coursesRepo.CourseRow> {
   const row = await coursesRepo.findByIdForOwner(db, id, ownerId);
   if (!row) throw new NotFoundError('Course not found');
   return row;
 }
 
-function storedDocument(row: coursesRepo.CourseRow): CourseDocument {
+export function storedDocument(row: coursesRepo.CourseRow): CourseDocument {
   if (!row.document) throw new NotFoundError('Course has no draft');
   return row.document;
 }
 
-function toCourseResponse(row: coursesRepo.CourseRow): CourseResponse {
+export function toCourseResponse(row: coursesRepo.CourseRow): CourseResponse {
   return {
     id: row.id,
     slug: row.slug,
@@ -120,6 +120,7 @@ function toCourseResponse(row: coursesRepo.CourseRow): CourseResponse {
     title: row.title,
     direction: row.direction,
     document: storedDocument(row),
+    generation: row.generation,
     updatedAt: row.updatedAt.toISOString()
   };
 }

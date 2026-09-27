@@ -1,18 +1,19 @@
-import { Chess } from 'chess.js';
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
-import type { CourseResponse, EngineEval } from '@freechesscoach/shared';
+import type { CourseResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build-app.js';
+import { ENGLUND, ENGLUND_INTAKE, englundDossier } from '../../test/helpers/course-fixtures.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
+import { mockResolution, multiStepGenerateModel } from '../../test/helpers/mock-model.js';
+import { noopJobQueue } from '../jobs/queue.js';
 import * as coursesRepo from '../db/repositories/courses.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
-import { buildCourseDossierFromEngine, type CourseDossierBuilder } from '../services/course-dossier.js';
 
-const ENGLUND = '1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 Bxc3 8. Qxc3 Qc1# *';
 const DEV_EMAIL = 'dev@local.test';
-const INTAKE = { pgn: ENGLUND, kind: 'trap', direction: 'Englund Gambit trap for beginners. Make them feel it.', coachPersona: 'commander' };
+const INTAKE = ENGLUND_INTAKE;
+const REGENERATED = { episodeId: 'e1', beats: [], notes: [{ nodeId: 'n11', text: 'It hits the queen.', arrows: [] }], quiz: null };
 
 let testDb: TestDb;
 let db: Kysely<Database>;
@@ -24,24 +25,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await testDb.cleanup();
 });
-
-/** Level everywhere, except Black is winning from 6.Bc3 on. */
-const englundDossier: CourseDossierBuilder = (tree, learnerSide) => {
-  const lost = new Set(tree.nodes.filter((node) => Number(node.id.slice(1)) >= 11).map((node) => node.fenAfter));
-  const analyzeGame = (fens: string[]): Promise<EngineEval[]> =>
-    Promise.resolve(
-      fens.map((fen, ply) => ({
-        ply,
-        fen,
-        depth: 20,
-        lines: new Chess(fen)
-          .moves({ verbose: true })
-          .slice(0, 2)
-          .map((move) => ({ moveSan: move.san, moveUci: `${move.from}${move.to}`, cp: lost.has(fen) ? -1000 : 0, mateIn: null }))
-      }))
-    );
-  return buildCourseDossierFromEngine(tree, learnerSide, { analyzeGame });
-};
 
 async function creatorApp() {
   const app = buildTestApp({ db, courseDossierBuilder: englundDossier });
@@ -139,6 +122,39 @@ describe('course routes', () => {
     expect(bait?.notes[0]?.text).toContain('Bc3 attacks the queen on b2');
     expect(episodes.find((episode) => episode.role === 'quiz')?.quiz?.answerNodeId).toBe('n12');
     expect(episodes.every((episode) => episode.beats.length === 0)).toBe(true);
+    await app.close();
+  });
+
+  test('generate: 202 and queued; a second start while running is 409; regenerate rewrites one episode with the instruction', async () => {
+    const jobQueue = { ...noopJobQueue, enqueueCourseGenerate: vi.fn().mockResolvedValue(undefined) };
+    const model = multiStepGenerateModel([{ text: JSON.stringify(REGENERATED), finishReason: 'stop' }]);
+    const app = buildTestApp({ db, courseDossierBuilder: englundDossier, jobQueue, courseModelResolver: () => Promise.resolve(mockResolution(model)) });
+    await app.ready();
+    await app.inject({ method: 'GET', url: '/api/users/me' });
+    await usersRepo.setCanCreateCourses(db, DEV_EMAIL, true);
+    const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
+
+    const started = await app.inject({ method: 'POST', url: `/api/courses/${course.id}/generate` });
+    expect(started.statusCode).toBe(202);
+    expect(started.json<CourseResponse>().generation?.status).toBe('queued');
+    expect(jobQueue.enqueueCourseGenerate).toHaveBeenCalledWith(course.id);
+    expect((await app.inject({ method: 'POST', url: `/api/courses/${course.id}/generate` })).statusCode).toBe(409);
+
+    const regenerateUrl = `/api/courses/${course.id}/episodes/e1/regenerate`;
+    expect((await app.inject({ method: 'POST', url: regenerateUrl, payload: { instruction: 'punchier' } })).statusCode).toBe(409);
+    const outline = {
+      title: 'Englund', promise: '', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'],
+      chapters: [{ title: 'The trap', lineId: 'l1', episodes: [{ id: 'e1', role: 'bait', focus: 'Bc3 looks natural.', startNodeId: 'n11', endNodeId: 'n11', narratedNodeIds: [], answerNodeId: null }] }]
+    };
+    await coursesRepo.setGeneration(db, course.id, { status: 'succeeded', step: null, done: 1, total: 1, error: null, outline, finishedEpisodeIds: ['e1'], warnings: [] });
+
+    const regenerated = await app.inject({ method: 'POST', url: regenerateUrl, payload: { instruction: 'punchier' } });
+    expect(regenerated.statusCode).toBe(200);
+    expect(regenerated.json<CourseResponse>().document.episodes).toEqual([
+      { id: 'e1', role: 'bait', focus: 'Bc3 looks natural.', startNodeId: 'n11', endNodeId: 'n11', beats: [], notes: [{ nodeId: 'n11', text: 'It hits the queen.', arrows: [] }], drillNodeIds: [] }
+    ]);
+    expect(JSON.stringify(model.doGenerateCalls[0]?.prompt)).toContain("CREATOR'S REQUEST FOR THIS EPISODE");
+    expect((await app.inject({ method: 'POST', url: `/api/courses/${course.id}/episodes/e9/regenerate`, payload: {} })).statusCode).toBe(404);
     await app.close();
   });
 });

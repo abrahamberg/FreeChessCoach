@@ -713,6 +713,7 @@ Learner side: Black
 Learner level: Novice — Around 500–900 chess.com. Knows the rules and basic tactics by name. Biggest wins come from board vision and a consistent blunder-check. Use plain language, no jargon beyond fork/pin/skewer. Show very short lines (a move or two) and always say the idea in words. Celebrate every good habit.
 Budgets: clip at most 60s, at most 114 spoken words in total, hook at
 most 12 words, 6 episodes.
+Episode roles: hook, setup, bait, quiz, punish, safety.
 
 LINES
 l1 (Line A): 1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 Bxc3 8. Qxc3 Qc1#

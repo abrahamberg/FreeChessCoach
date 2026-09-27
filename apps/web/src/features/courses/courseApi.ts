@@ -13,8 +13,20 @@ export function useCourses(): UseQueryResult<CourseListResponse> {
   return useQuery({ queryKey: ['courses'], queryFn: ({ signal }) => apiGet('/api/courses', CourseListResponseSchema, signal) });
 }
 
+const GENERATION_POLL_MS = 2000;
+
+/** Polls while the AI is writing the course (docs/courses.md §5.2). */
 export function useCourse(id: string): UseQueryResult<CourseResponse> {
-  return useQuery({ queryKey: ['course', id], queryFn: ({ signal }) => apiGet(`/api/courses/${id}`, CourseResponseSchema, signal) });
+  return useQuery({
+    queryKey: ['course', id],
+    queryFn: ({ signal }) => apiGet(`/api/courses/${id}`, CourseResponseSchema, signal),
+    refetchInterval: (query) => (isGenerating(query.state.data) ? GENERATION_POLL_MS : false)
+  });
+}
+
+export function isGenerating(course: CourseResponse | undefined): boolean {
+  const status = course?.generation?.status;
+  return status === 'queued' || status === 'running';
 }
 
 export function useCreateCourse(): UseMutationResult<CourseResponse, Error, CreateCourseRequest> {
@@ -44,6 +56,25 @@ export function useBuildCourseSkeleton(id: string): UseMutationResult<CourseResp
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => apiPost(`/api/courses/${id}/skeleton`, {}, CourseResponseSchema),
+    onSuccess: (course) => queryClient.setQueryData(['course', id], course)
+  });
+}
+
+/** "Write with AI": queues the job, or resumes a failed one. */
+export function useStartCourseGeneration(id: string): UseMutationResult<CourseResponse, Error, { restart: boolean }> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { restart: boolean }) => apiPost(`/api/courses/${id}/generate`, body, CourseResponseSchema),
+    onSuccess: (course) => queryClient.setQueryData(['course', id], course)
+  });
+}
+
+/** One episode again, with the creator's instruction (§6.5). */
+export function useRegenerateEpisode(id: string): UseMutationResult<CourseResponse, Error, { episodeId: string; instruction: string }> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ episodeId, instruction }: { episodeId: string; instruction: string }) =>
+      apiPost(`/api/courses/${id}/episodes/${episodeId}/regenerate`, { instruction }, CourseResponseSchema),
     onSuccess: (course) => queryClient.setQueryData(['course', id], course)
   });
 }

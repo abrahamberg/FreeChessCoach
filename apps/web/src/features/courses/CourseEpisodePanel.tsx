@@ -15,11 +15,13 @@ export interface CourseEpisodePanelProps {
   selectedNodeId: string | null;
   drawnArrows: BoardArrow[];
   onChange: (episode: CourseEpisode) => void;
+  /** The AI writer's warnings and "Regenerate", when the AI wrote the course. */
+  aiWriter?: ReactNode;
 }
 
 /** Right column: the selected episode's focus, the note on the selected
  * move (with its arrows), the quiz, and the clip beats. */
-export function CourseEpisodePanel({ document, episode, direction, nodeIds, selectedNodeId, drawnArrows, onChange }: CourseEpisodePanelProps): ReactNode {
+export function CourseEpisodePanel({ document, episode, direction, nodeIds, selectedNodeId, drawnArrows, onChange, aiWriter }: CourseEpisodePanelProps): ReactNode {
   const node = selectedNodeId ? document.nodes.find((candidate) => candidate.id === selectedNodeId) : undefined;
   const note = episode.notes.find((candidate) => candidate.nodeId === selectedNodeId);
   const noteArrows = note?.arrows ?? [];
@@ -32,6 +34,7 @@ export function CourseEpisodePanel({ document, episode, direction, nodeIds, sele
     <div className="course-panel">
       <p className="course-panel__role">{episode.role}</p>
       <CourseEpisodeWarnings document={document} episode={episode} direction={direction} />
+      {aiWriter}
       <label className="course-field">
         <span>Focus</span>
         <input value={episode.focus} onChange={(event) => onChange({ ...episode, focus: event.target.value })} />

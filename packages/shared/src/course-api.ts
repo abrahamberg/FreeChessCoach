@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
-import { CourseDocumentSchema, CourseKindSchema, CourseStatusSchema } from './course.js';
+import { CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseStatusSchema } from './course.js';
 
 /** The intake form (docs/courses.md §5.3). `learnerSide` null lets code
  * infer it (§3); the route refuses when it can't. */
@@ -22,6 +22,8 @@ export const CourseResponseSchema = z.object({
   title: z.string(),
   direction: z.string(),
   document: CourseDocumentSchema,
+  /** Null until AI generation is first started. */
+  generation: CourseGenerationSchema.nullable(),
   updatedAt: z.string()
 });
 export type CourseResponse = z.infer<typeof CourseResponseSchema>;
@@ -41,3 +43,11 @@ export type CourseListResponse = z.infer<typeof CourseListResponseSchema>;
 
 export const SaveCourseDraftRequestSchema = z.object({ document: CourseDocumentSchema });
 export type SaveCourseDraftRequest = z.infer<typeof SaveCourseDraftRequestSchema>;
+
+/** docs/courses.md §6.5: regenerate one episode with the creator's words. */
+export const RegenerateEpisodeRequestSchema = z.object({ instruction: z.string().trim().max(300).default('') });
+export type RegenerateEpisodeRequest = z.input<typeof RegenerateEpisodeRequestSchema>;
+
+/** Start (or resume) AI generation; `restart` drops a stuck or finished run. */
+export const StartCourseGenerationRequestSchema = z.object({ restart: z.boolean().default(false) });
+export type StartCourseGenerationRequest = z.input<typeof StartCourseGenerationRequestSchema>;

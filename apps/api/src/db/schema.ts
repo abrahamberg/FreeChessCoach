@@ -1,5 +1,5 @@
 import type { ColumnType, Generated } from 'kysely';
-import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
+import type { CourseDossier, GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
 import type { BotConfig, CoachPersona, CourseDocument, CourseGeneration, CourseKind, CourseStatus, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
@@ -315,6 +315,8 @@ export interface CoursesTable {
   publishedDocument: Jsonb<CourseDocument> | null;
   publishedAt: Date | null;
   generation: Jsonb<CourseGeneration> | null;
+  /** 0014_course_dossier.ts: the engine pass, kept for resume and regeneration. */
+  dossier: Jsonb<CourseDossier> | null;
   createdAt: Generated<Date>;
   updatedAt: Generated<Date>;
 }

@@ -7,7 +7,9 @@ import type { BoardArrow } from '../board/CoachBoard.js';
 import { useBuildCourseSkeleton, useCourse, useSaveCourseDraft } from './courseApi.js';
 import { episodeNodeIds, updateEpisode } from './courseEdits.js';
 import { CourseBoardPanel } from './CourseBoardPanel.js';
+import { CourseEpisodeAi } from './CourseEpisodeAi.js';
 import { CourseEpisodePanel } from './CourseEpisodePanel.js';
+import { CourseGenerationBar } from './CourseGenerationBar.js';
 import { CourseOutline } from './CourseOutline.js';
 import './CourseEditor.css';
 
@@ -82,6 +84,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
           </button>
         </div>
       </header>
+      <CourseGenerationBar course={course} dirty={dirty} />
       {error && (
         <p className="course-intake__errors" role="alert">
           {describeApiError(error) ?? 'Something went wrong.'}
@@ -106,6 +109,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
             selectedNodeId={nodeId}
             drawnArrows={drawnArrows}
             onChange={(next) => edit(updateEpisode(document, next.id, () => next))}
+            aiWriter={<CourseEpisodeAi courseId={course.id} episodeId={episode.id} generation={course.generation} dirty={dirty} />}
           />
         ) : (
           <div className="course-panel meta">Pick an episode on the left.</div>

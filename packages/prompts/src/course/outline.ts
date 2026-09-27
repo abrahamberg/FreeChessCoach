@@ -1,4 +1,5 @@
 import { renderCourseDossier, type CourseSkeleton } from '@freechesscoach/chess-analysis';
+import { COURSE_ROLES } from '@freechesscoach/shared';
 import { CALIBRATION } from '../calibration.js';
 import { courseBudget } from './budget.js';
 import { buildCourseSystemPrompt, capitalise, lineMovetext, nodeLabel, type CourseMessages, type CoursePromptContext } from './context.js';
@@ -15,8 +16,14 @@ export const COURSE_OUTLINE_JSON_SCHEMA = `{
   "takeaways": string[3]
 }`;
 
+/** The checks' problems with the previous outline (§6.4: sent back once). */
+export interface CourseOutlineRetry {
+  previousOutput: string;
+  problems: string[];
+}
+
 /** docs/courses.md §6.4: the outline call. */
-export function buildCourseOutlineMessages(context: CoursePromptContext): CourseMessages {
+export function buildCourseOutlineMessages(context: CoursePromptContext, retry: CourseOutlineRetry | null = null): CourseMessages {
   const budget = courseBudget(context.kind, context.persona);
   const calibration = CALIBRATION[context.levelBand];
   const user = `COURSE REQUEST
@@ -26,6 +33,7 @@ Learner side: ${capitalise(context.learnerSide)}
 Learner level: ${calibration.label} — ${calibration.description}
 Budgets: clip at most ${budget.seconds}s, at most ${budget.words} spoken words in total, hook at
 most ${budget.hookWords} words, ${episodeRange(context)} episodes.
+Episode roles: ${COURSE_ROLES[context.kind].join(', ')}.
 
 LINES
 ${context.lines.map((line) => `${line.id} (${line.name}): ${lineMovetext(context, line.leafNodeId)}`).join('\n')}
@@ -36,7 +44,7 @@ ${renderCandidates(context, context.skeleton)}
 DOSSIER
 ${renderCourseDossier(context.dossier)}
 
-OUTPUT SCHEMA
+${retry ? `YOUR PREVIOUS OUTLINE HAD THESE PROBLEMS — fix every one\n${retry.problems.map((problem) => `- ${problem}`).join('\n')}\n\nYour previous outline:\n${retry.previousOutput}\n\n` : ''}OUTPUT SCHEMA
 ${COURSE_OUTLINE_JSON_SCHEMA}`;
   return { system: buildCourseSystemPrompt(context), user };
 }

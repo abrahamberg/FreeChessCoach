@@ -1,4 +1,5 @@
-import { CourseDocumentSchema, type CourseDocument, type CourseKind, type CourseStatus } from '@freechesscoach/shared';
+import type { CourseDossier } from '@freechesscoach/chess-analysis';
+import { CourseDocumentSchema, CourseGenerationSchema, type CourseDocument, type CourseGeneration, type CourseKind, type CourseStatus } from '@freechesscoach/shared';
 import type { Kysely, Selectable } from 'kysely';
 import type { CoursesTable, Database } from '../schema.js';
 
@@ -36,6 +37,25 @@ export async function insert(db: Kysely<Database>, values: NewCourse): Promise<C
 
 export function findByIdForOwner(db: Kysely<Database>, id: string, ownerId: string): Promise<CourseRow | undefined> {
   return db.selectFrom('courses').selectAll().where('id', '=', id).where('ownerId', '=', ownerId).executeTakeFirst();
+}
+
+/** No owner check: the generation job, which runs for the owner. */
+export function findById(db: Kysely<Database>, id: string): Promise<CourseRow | undefined> {
+  return db.selectFrom('courses').selectAll().where('id', '=', id).executeTakeFirst();
+}
+
+/** The job's state; validated like the draft. Leaves `updatedAt` alone, so
+ * polling the progress doesn't look like an edit. */
+export async function setGeneration(db: Kysely<Database>, id: string, generation: CourseGeneration): Promise<void> {
+  await db
+    .updateTable('courses')
+    .set({ generation: JSON.stringify(CourseGenerationSchema.parse(generation)) })
+    .where('id', '=', id)
+    .execute();
+}
+
+export async function setDossier(db: Kysely<Database>, id: string, dossier: CourseDossier): Promise<void> {
+  await db.updateTable('courses').set({ dossier: JSON.stringify(dossier) }).where('id', '=', id).execute();
 }
 
 /** Validates the draft before it is written; the title column follows it. */

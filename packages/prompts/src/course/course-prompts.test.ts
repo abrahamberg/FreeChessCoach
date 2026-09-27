@@ -68,6 +68,13 @@ describe('course prompts', () => {
     expect(user).toContain('"mention the pin earlier"');
   });
 
+  test('an outline retry lists the problems and the previous outline, and names the roles', () => {
+    const { user } = buildCourseOutlineMessages(englundCourseContext(), { previousOutput: '{"title":"x"}', problems: ['there is no safety episode'] });
+
+    expect(user).toContain('Episode roles: hook, setup, bait, quiz, punish, safety.');
+    expect(user).toContain('- there is no safety episode\n\nYour previous outline:\n{"title":"x"}\n\nOUTPUT SCHEMA');
+  });
+
   test('a retry lists the verifier problems and the previous answer', () => {
     const retry = { previousOutput: '{"episodeId":"e3"}', problems: ['Nd5 in the note on n11 is not in the analysis'] };
     const { user } = buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e3', retry });

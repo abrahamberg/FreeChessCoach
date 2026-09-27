@@ -1,26 +1,41 @@
-import { CreateCourseRequestSchema, SaveCourseDraftRequestSchema, type CourseListResponse, type CourseResponse } from '@freechesscoach/shared';
+import {
+  CreateCourseRequestSchema,
+  RegenerateEpisodeRequestSchema,
+  SaveCourseDraftRequestSchema,
+  StartCourseGenerationRequestSchema,
+  type CourseListResponse,
+  type CourseResponse
+} from '@freechesscoach/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import { z } from 'zod';
 import type { Database } from '../db/schema.js';
 import { EngineUnavailableError, NotFoundError, ValidationError } from '../lib/errors.js';
+import type { JobQueue } from '../jobs/queue.js';
+import type { ModelResolution } from '../llm/gateway.js';
 import type { CourseDossierBuilder } from '../services/course-dossier.js';
+import * as courseGenerate from '../services/course-generate.js';
 import * as coursesService from '../services/courses.js';
 import { requireCourseCreator } from '../services/courses/require-course-creator.js';
 import * as userProfileService from '../services/user-profile.js';
 
 const CourseParamsSchema = z.object({ id: z.string().uuid() });
+const EpisodeParamsSchema = z.object({ id: z.string().uuid(), episodeId: z.string().min(1).max(40) });
+
+export interface CoursesRouteDeps {
+  /** Absent when the app has no engine; then building the skeleton is refused. */
+  buildDossier: CourseDossierBuilder | undefined;
+  jobQueue: JobQueue;
+  /** The creator's standard-tier model, for regenerating one episode in the request. */
+  resolveModel: ((userId: string) => Promise<ModelResolution>) | undefined;
+}
 
 /**
- * The creator's course editor (docs/courses.md §2, §10). Every route is
- * behind `requireCourseCreator`. `buildDossier` is absent when the app has
- * no engine; then only building the skeleton is refused.
+ * The creator's course editor (docs/courses.md §2, §5.2, §10). Every route
+ * is behind `requireCourseCreator`.
  */
-export function registerCoursesRoutes(
-  app: FastifyInstance,
-  db: Kysely<Database>,
-  buildDossier: CourseDossierBuilder | undefined
-): void {
+export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>, deps: CoursesRouteDeps): void {
+  const { buildDossier } = deps;
   const creatorId = async (request: FastifyRequest): Promise<string> => {
     const user = await userProfileService.getOrCreate(db, request.user);
     requireCourseCreator(user);
@@ -52,6 +67,24 @@ export function registerCoursesRoutes(
     const ownerId = await creatorId(request);
     if (!buildDossier) throw new EngineUnavailableError('No engine is configured');
     return coursesService.buildSkeletonDraft(db, ownerId, courseId(request), buildDossier);
+  });
+
+  /** 202: the worker writes the draft; the editor polls GET for progress. */
+  app.post('/api/courses/:id/generate', async (request, reply): Promise<CourseResponse> => {
+    const ownerId = await creatorId(request);
+    const { restart } = parseBody(StartCourseGenerationRequestSchema, request.body ?? {});
+    const course = await courseGenerate.startCourseGeneration(db, deps.jobQueue, ownerId, courseId(request), restart);
+    return reply.code(202).send(course);
+  });
+
+  app.post('/api/courses/:id/episodes/:episodeId/regenerate', async (request): Promise<CourseResponse> => {
+    const ownerId = await creatorId(request);
+    const params = EpisodeParamsSchema.safeParse(request.params);
+    if (!params.success) throw new NotFoundError('Episode not found');
+    if (!deps.resolveModel) throw new ValidationError('AI is not configured on this server');
+    const { instruction } = parseBody(RegenerateEpisodeRequestSchema, request.body ?? {});
+    const generateDeps = { db, buildDossier, resolveModel: deps.resolveModel };
+    return courseGenerate.regenerateCourseEpisode(generateDeps, ownerId, params.data.id, params.data.episodeId, instruction);
   });
 }
 

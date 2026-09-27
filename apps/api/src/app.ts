@@ -36,6 +36,7 @@ import { createChesscomClient, type ChesscomClient } from './services/chesscom.j
 import { createLichessClient, type LichessClient } from './services/lichess.js';
 import type { CoachAgentBaseDependencies } from './bootstrap.js';
 import type { BrowserTunnel } from './services/engine/browser-tunnel.js';
+import { getModelForUser, type GatewayConfig, type ModelResolution } from './llm/gateway.js';
 import { courseDossierBuilderFor, type CourseDossierBuilder } from './services/course-dossier.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
 import type { TtsConfig } from './services/tts.js';
@@ -57,6 +58,9 @@ export interface BuildAppOptions {
   /** The course skeleton's engine pass; defaults to one built from
    * `engineBackendOptions` (tests inject a fake). */
   courseDossierBuilder?: CourseDossierBuilder;
+  /** The creator's model for course writing; defaults to the gateway's
+   * standard tier (tests inject a mock). */
+  courseModelResolver?: (userId: string) => Promise<ModelResolution>;
   /** Shared (Redis) store for the light-engine evals that rate a student's live bot-game moves — must be shared across API pods. */
   botRatingEvals?: RatingEvalStore;
   /** Live Thinking log of bot moves, mirrored across API pods — see bot-thinking-registry.ts. */
@@ -115,11 +119,11 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (options.db) {
     registerUsersRoutes(app, options.db);
     registerBugReportsRoutes(app, options.db);
-    registerCoursesRoutes(
-      app,
-      options.db,
-      options.courseDossierBuilder ?? (options.engineBackendOptions ? courseDossierBuilderFor(options.engineBackendOptions) : undefined)
-    );
+    registerCoursesRoutes(app, options.db, {
+      buildDossier: options.courseDossierBuilder ?? (options.engineBackendOptions ? courseDossierBuilderFor(options.engineBackendOptions) : undefined),
+      jobQueue: options.jobQueue ?? noopJobQueue,
+      resolveModel: options.courseModelResolver ?? courseModelResolver(options.db, options.coachAgentBaseDeps?.gatewayConfig)
+    });
     registerDashboardRoutes(app, options.db);
     registerDiagnosticsRoutes(app, options.db);
     registerPuzzleAssignmentsRoutes(app, options.db);
@@ -193,4 +197,9 @@ function defaultAuthMode(): AuthHeadersOptions['authMode'] {
 function defaultCheckReady(db: Kysely<Database> | undefined): () => Promise<boolean> {
   if (!db) return () => Promise.resolve(true);
   return () => pingDb(db);
+}
+
+/** The creator's standard-tier model, when the app has an AI gateway. */
+function courseModelResolver(db: Kysely<Database>, gatewayConfig: GatewayConfig | undefined): ((userId: string) => Promise<ModelResolution>) | undefined {
+  return gatewayConfig ? (userId) => getModelForUser(db, gatewayConfig, userId, 'standard') : undefined;
 }

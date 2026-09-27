@@ -1,11 +1,13 @@
 import type { TaskList } from 'graphile-worker';
 import { createAnalyzeGameTask, type AnalyzeGameTaskOptions } from './analyze-game.js';
+import { createCourseGenerateTask, type CourseGenerateTaskOptions } from './course-generate.js';
 import { createBackfillGameMetadataTask, type BackfillGameMetadataTaskOptions } from './backfill-game-metadata.js';
 import { createRebuildDiagnosticProfileTask, type RebuildDiagnosticProfileTaskOptions } from './rebuild-diagnostic-profile.js';
 import { createSummarizeSessionTask, type SummarizeSessionTaskOptions } from './summarize-session.js';
 
 export type TaskListOptions = AnalyzeGameTaskOptions &
   BackfillGameMetadataTaskOptions &
+  CourseGenerateTaskOptions &
   RebuildDiagnosticProfileTaskOptions &
   SummarizeSessionTaskOptions;
 
@@ -13,6 +15,7 @@ export function createTaskList(options: TaskListOptions): TaskList {
   return {
     'analyze-game': createAnalyzeGameTask(options),
     'backfill-game-metadata': createBackfillGameMetadataTask(options),
+    'course-generate': createCourseGenerateTask(options),
     'rebuild-diagnostic-profile': createRebuildDiagnosticProfileTask(options),
     'summarize-session': createSummarizeSessionTask(options)
   };
@@ -20,6 +23,7 @@ export function createTaskList(options: TaskListOptions): TaskList {
 
 export * from './analyze-game.js';
 export * from './backfill-game-metadata.js';
+export * from './course-generate.js';
 export * from './queue.js';
 export * from './rebuild-diagnostic-profile.js';
 export * from './summarize-session.js';

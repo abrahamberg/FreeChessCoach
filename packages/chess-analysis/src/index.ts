@@ -32,6 +32,7 @@ export * from './course-dossier-text.js';
 export * from './course-learner-side.js';
 export * from './course-line-game.js';
 export * from './course-node-path.js';
+export * from './course-outline-check.js';
 export * from './course-skeleton.js';
 export * from './course-tree.js';
 export * from './course-verify.js';

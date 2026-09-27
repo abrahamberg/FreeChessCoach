@@ -256,3 +256,14 @@
   background: var(--color-warning-soft);
   font-size: 0.9rem;
 }
+
+.course-generation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.course-generation p {
+  margin: 0;
+}

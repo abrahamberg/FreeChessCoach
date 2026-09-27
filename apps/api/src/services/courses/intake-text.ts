@@ -27,3 +27,13 @@ export function resultHeader(pgn: string): string | null {
   const result = /\[Result\s+"([^"]*)"\]/.exec(pgn)?.[1];
   return result && result !== '*' ? result : null;
 }
+
+/** The first game's players, event and year for the master-game playbook;
+ * null where a tag is missing or unknown ("?", "????.??.??"). */
+export function courseHeaders(pgn: string): { white: string | null; black: string | null; event: string | null; year: string | null } {
+  const tag = (name: string): string | null => {
+    const value = new RegExp(`\\[${name}\\s+"([^"]*)"\\]`).exec(pgn)?.[1]?.trim();
+    return value && !/^[?.\s]*$/.test(value) ? value : null;
+  };
+  return { white: tag('White'), black: tag('Black'), event: tag('Event'), year: /^\d{4}/.exec(tag('Date') ?? '')?.[0] ?? null };
+}

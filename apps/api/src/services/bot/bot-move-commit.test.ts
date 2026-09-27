@@ -109,7 +109,7 @@ describe('commitBotTurn', () => {
       analyzePosition: vi.fn().mockResolvedValue(GENERIC_ANALYSIS),
       analyzeBotPosition: vi.fn().mockResolvedValue(botLines()),
       random: () => 0,
-      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn() },
+      jobQueue: { enqueueAnalyzeGame: vi.fn(), enqueueSummarizeSession: vi.fn(), enqueueBackfillGameMetadata: vi.fn(), enqueueRebuildDiagnosticProfile: vi.fn(), enqueueCourseGenerate: vi.fn() },
       callLightModel: vi.fn().mockResolvedValue('note'),
       minThinkMs: 0,
       // The opening book takes over a bot's first moves; these tests are about the
