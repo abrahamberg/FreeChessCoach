@@ -361,20 +361,49 @@ Commit: `feat(prompts): course outline and episode prompts per kind`
 
 ### Task 80.4 — The generation job
 
+Status: done 2026-09-28, commit 34bc3ec.
+Notes for the next task: `runCourseGeneration(deps, courseId)`
+(`apps/api/src/services/course-generate.ts`; deps = `{db, buildDossier,
+resolveModel}`, built by `courseGenerateDepsFor` in `jobs/course-generate.ts`)
+is the whole pipeline; the steps are `services/courses/generation-inputs.ts`
+(context from the row; the dossier is stored in the new `courses.dossier`
+column, migration 0014), `generate-outline.ts` (`planOutline`: check with
+`checkCourseOutline` from chess-analysis `course-outline-check.ts`, one retry,
+then the manual skeleton's episodes with the model's title/promise/hooks/
+takeaways and an `outline` warning) and `generate-episode.ts` (`writeEpisode`:
+call, `verifyCourseEpisode`, at most one repair). State lives in
+`courses.generation` (`CourseGenerationSchema` now carries `outline`,
+`finishedEpisodeIds`, `warnings`); `setGeneration` leaves `updatedAt` alone.
+A `ValidationError` (expired unlock) marks the run failed and is not
+rethrown; other errors are recorded and rethrown. The job is enqueued once
+(`maxAttempts: 1`, jobKey per course). Routes: `POST /api/courses/:id/generate`
+(202; body `{restart}`; a failed run with an outline resumes; 409 while
+queued/running) and `POST /api/courses/:id/episodes/:episodeId/regenerate`
+(`{instruction}`, runs in the request; model from `BuildAppOptions.courseModelResolver`,
+default the gateway's standard tier). `COURSE_ROLES` is in shared `course.ts`
+and the outline prompt names them. Web: `CourseGenerationBar` (Write with
+AI / Resume, progress, course-level warnings; `useCourse` polls every 2 s
+while running) and `CourseEpisodeAi` (stored warnings, Regenerate). The
+outline fallback replaces the whole outline, not only the failing part.
+The editor's live checks still run without the dossier (the dossier is not
+sent to the web). Not tried against a real model or in a browser.
+For 80.5: to run without a DB, call `loadGenerationInputs`-like code with an
+in-memory row, then `planOutline` and `writeEpisode` with a `CourseModelCall`.
+
 **Read:** `apps/api/src/services/coaching-plan.ts`, `apps/api/src/jobs/summarize-session.ts`,
 `apps/api/src/jobs/queue.ts`.
 **Files:** `apps/api/src/services/course-generate.ts`,
 `apps/api/src/jobs/course-generate.ts`, routes, tests with the mock model
 (`apps/api/test/helpers/mock-model.ts`).
 
-- [ ] Pipeline of §5.2: dossier → skeleton → outline (validate, one retry
+- [x] Pipeline of §5.2: dossier → skeleton → outline (validate, one retry
   with the listed problems, then skeleton fallback for the failing part) →
   one call per episode → verifier → one repair call per failing episode →
   save the draft with warnings. Progress written to `courses.generation`.
-- [ ] Finished episodes are saved as they complete; a resumed job skips them.
-- [ ] Route: start generation; regenerate one episode with a creator
+- [x] Finished episodes are saved as they complete; a resumed job skips them.
+- [x] Route: start generation; regenerate one episode with a creator
   instruction (§6.5).
-- [ ] Tests: invalid outline is retried once with the problems in the prompt;
+- [x] Tests: invalid outline is retried once with the problems in the prompt;
   a verifier failure triggers exactly one repair; an expired unlock stops the
   job with the unlock error and keeps finished episodes.
 
