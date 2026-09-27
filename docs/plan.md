@@ -216,13 +216,39 @@ Commit: `feat(courses): dossier and skeleton from the engine and chess-analysis`
 
 ### Task 79.6 — Editor (manual path)
 
+Status: done 2026-09-28, commit ea588d4. Routes (`routes/courses.ts`, each
+calls `requireCourseCreator`): `POST /api/courses` (intake →
+`CreateCourseRequestSchema`, 201 + `CourseResponse`), `GET /api/courses`
+(own list), `GET /api/courses/:id` (404 for non-owner or non-uuid),
+`PUT /api/courses/:id/draft` (`{document}`, 204 like every PUT here),
+`POST /api/courses/:id/skeleton` ("Build without AI", synchronous; 503 with
+no engine). Schemas in `packages/shared/src/course-api.ts`. Service
+`services/courses.ts`; the document is created at intake (nodes/lines,
+empty episodes), title = first sentence of the direction, slug =
+title + 6 hex. `draftProblem` (`services/courses/draft-checks.ts`) refuses
+a changed tree/kind/line leaves and any id that doesn't exist — compare
+field by field, jsonb reorders keys. At most `MAX_COURSE_NODES = 400`.
+Manual episodes (`services/courses/manual-*.ts`) use §6.3's roles per kind
+(trap: hook/setup/bait/quiz/punish/safety; reel: hook/line/idea/remember;
+course: line/deviation/trap/recap; tactics: concept/example/scan; master:
+intro/moves/moment), `focus` holds the role's prompt, beats are empty,
+notes are `noteText(facts)` plus the creator's PGN arrows. The engine pass is
+injected as `BuildAppOptions.courseDossierBuilder` (default
+`courseDossierBuilderFor(engineBackendOptions)`). Web:
+`features/courses/` (`/courses/new` intake + "Your courses" list,
+`/courses/:id/edit` editor), "Create course" in `AccountMenuSections`.
+Not done: Lichess study URL import (§5.3 — PGN paste only); the editor
+was not tried in a browser (no dev stack running) — only typecheck and
+unit tests. The skeleton call runs in the request; if long games time out,
+move it to the 80.x worker job.
+
 **Read:** `docs/courses.md` §3, §5.3, §10; `apps/web/src/features/board/CoachBoard.tsx`.
 **Files:** routes `apps/api/src/routes/courses.ts`, service
 `services/courses.ts`, `apps/web/src/features/courses/` (new), `App.tsx`.
 
-- [ ] Routes (all behind `requireCourseCreator`): create from intake, get,
+- [x] Routes (all behind `requireCourseCreator`): create from intake, get,
   save draft, build skeleton.
-- [ ] Web: "Create course" in the account menu only when `canCreateCourses`.
+- [x] Web: "Create course" in the account menu only when `canCreateCourses`.
   Intake form (§5.3). Editor: chapters and episodes on the left, board in the
   middle, the selected episode's beats/notes/quiz on the right; arrows drawn
   on the board with the existing tap-to-draw; "Build without AI" fills the
