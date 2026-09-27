@@ -1,0 +1,125 @@
+import {
+  buildCourseSkeleton,
+  inferLearnerSide,
+  parseCourseTree,
+  type CourseTree
+} from '@freechesscoach/chess-analysis';
+import {
+  CreateCourseRequestSchema,
+  type CourseDocument,
+  type CourseListResponse,
+  type CourseResponse
+} from '@freechesscoach/shared';
+import type { Kysely } from 'kysely';
+import type { z } from 'zod';
+import * as coursesRepo from '../db/repositories/courses.js';
+import type { Database } from '../db/schema.js';
+import { NotFoundError, ValidationError } from '../lib/errors.js';
+import type { CourseDossierBuilder } from './course-dossier.js';
+import { draftProblem } from './courses/draft-checks.js';
+import { buildManualEpisodes } from './courses/manual-episodes.js';
+import { courseSlug, courseTitle, resultHeader } from './courses/intake-text.js';
+
+/** Bounds the one engine batch the skeleton runs (a long master game with
+ * a few sidelines fits; a whole repertoire does not). */
+export const MAX_COURSE_NODES = 400;
+
+type Intake = z.output<typeof CreateCourseRequestSchema>;
+
+/** The intake form's PGN becomes the fixed move tree of a new draft. */
+export async function createCourse(db: Kysely<Database>, ownerId: string, intake: Intake): Promise<CourseResponse> {
+  const tree = parseCourseTree(intake.pgn);
+  if (tree.errors.length) throw new ValidationError(tree.errors.map((error) => error.message).join('; '));
+  if (!tree.nodes.length) throw new ValidationError('The PGN has no moves');
+  if (tree.nodes.length > MAX_COURSE_NODES) throw new ValidationError(`A course can have at most ${MAX_COURSE_NODES} moves`);
+  const learnerSide = intake.learnerSide ?? inferLearnerSide(intake.kind, tree, resultHeader(intake.pgn));
+  if (!learnerSide) throw new ValidationError('Pick the learner side: it cannot be told from this PGN');
+
+  const title = courseTitle(intake.direction);
+  const document: CourseDocument = {
+    version: 1,
+    kind: intake.kind,
+    title,
+    promise: '',
+    learnerSide,
+    levelBand: intake.levelBand,
+    coachPersona: intake.coachPersona,
+    startFen: tree.startFen,
+    nodes: tree.nodes,
+    lines: tree.lines,
+    chapters: [],
+    episodes: [],
+    takeaways: [],
+    hookOptions: [],
+    clipLinks: {}
+  };
+  const row = await coursesRepo.insert(db, {
+    ownerId,
+    slug: courseSlug(title),
+    kind: intake.kind,
+    title,
+    sourcePgn: intake.pgn,
+    direction: intake.direction,
+    document
+  });
+  return toCourseResponse(row);
+}
+
+export async function listCourses(db: Kysely<Database>, ownerId: string): Promise<CourseListResponse> {
+  const rows = await coursesRepo.listByOwner(db, ownerId);
+  return {
+    courses: rows.map((row) => ({ id: row.id, slug: row.slug, kind: row.kind, status: row.status, title: row.title, updatedAt: row.updatedAt.toISOString() }))
+  };
+}
+
+export async function getCourse(db: Kysely<Database>, ownerId: string, id: string): Promise<CourseResponse> {
+  return toCourseResponse(await ownedCourse(db, ownerId, id));
+}
+
+export async function saveDraft(db: Kysely<Database>, ownerId: string, id: string, document: CourseDocument): Promise<void> {
+  const row = await ownedCourse(db, ownerId, id);
+  const problem = draftProblem(storedDocument(row), document);
+  if (problem) throw new ValidationError(problem);
+  const saved = await coursesRepo.updateDraft(db, id, ownerId, document);
+  if (!saved) throw new NotFoundError('Course not found');
+}
+
+/** "Build without AI" (docs/courses.md §10): the skeleton's episodes with
+ * template text replace the draft's chapters and episodes. */
+export async function buildSkeletonDraft(db: Kysely<Database>, ownerId: string, id: string, buildDossier: CourseDossierBuilder): Promise<CourseResponse> {
+  const row = await ownedCourse(db, ownerId, id);
+  const document = storedDocument(row);
+  const tree: CourseTree = { startFen: document.startFen, nodes: document.nodes, lines: document.lines, errors: [] };
+  const { dossier, lines } = await buildDossier(tree, document.learnerSide, ownerId);
+  const lineGames = lines.map((analysis) => analysis.line);
+  const skeleton = buildCourseSkeleton({ kind: document.kind, tree, lines: lineGames, dossier });
+  if (!skeleton) throw new ValidationError('No trap found: no move by the other side loses ground on this line');
+  const { chapters, episodes } = buildManualEpisodes({ document, skeleton, dossier, lines: lineGames });
+  const saved = await coursesRepo.updateDraft(db, id, ownerId, { ...document, chapters, episodes });
+  if (!saved) throw new NotFoundError('Course not found');
+  return toCourseResponse(saved);
+}
+
+async function ownedCourse(db: Kysely<Database>, ownerId: string, id: string): Promise<coursesRepo.CourseRow> {
+  const row = await coursesRepo.findByIdForOwner(db, id, ownerId);
+  if (!row) throw new NotFoundError('Course not found');
+  return row;
+}
+
+function storedDocument(row: coursesRepo.CourseRow): CourseDocument {
+  if (!row.document) throw new NotFoundError('Course has no draft');
+  return row.document;
+}
+
+function toCourseResponse(row: coursesRepo.CourseRow): CourseResponse {
+  return {
+    id: row.id,
+    slug: row.slug,
+    kind: row.kind,
+    status: row.status,
+    title: row.title,
+    direction: row.direction,
+    document: storedDocument(row),
+    updatedAt: row.updatedAt.toISOString()
+  };
+}

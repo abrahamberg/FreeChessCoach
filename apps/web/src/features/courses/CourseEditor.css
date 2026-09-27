@@ -1,0 +1,246 @@
+.course-intake,
+.course-editor {
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+  color: var(--color-text);
+}
+
+.course-intake {
+  max-width: 760px;
+}
+
+.course-intake__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.course-intake__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.course-intake__errors {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  list-style: none;
+}
+
+.course-intake__list {
+  margin-top: 32px;
+}
+
+.course-intake__list ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.course-intake__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.course-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.course-field > span {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  text-transform: capitalize;
+}
+
+.course-field--grow {
+  flex: 1 1 240px;
+}
+
+.course-field--narrow {
+  max-width: 140px;
+}
+
+.course-editor__status {
+  padding: 24px 16px;
+  color: var(--color-text-secondary);
+}
+
+.course-editor__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.course-editor__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.course-editor__columns {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) minmax(280px, 1fr) minmax(280px, 420px);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .course-editor__columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.course-outline,
+.course-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+
+.course-outline__chapter h3 {
+  margin: 8px 0 4px;
+  font-size: 0.95rem;
+}
+
+.course-outline ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.course-outline__item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.course-outline__item:hover {
+  background: var(--color-surface-subtle);
+}
+
+.course-outline__item--selected {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.course-outline__role,
+.course-panel__role {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.course-panel__role {
+  margin: 0 0 8px;
+}
+
+.course-outline__focus {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.course-board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.course-board__nav {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.course-board__moves,
+.course-arrows {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.course-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.course-chip:hover {
+  background: var(--color-surface-subtle);
+}
+
+.course-chip--selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.course-chip--best {
+  border-color: var(--tactic-good);
+}
+
+.course-chip--threat {
+  border-color: var(--tactic-bad);
+}
+
+.course-chip--idea {
+  border-color: var(--annotate-1);
+}
+
+.course-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.course-panel__section h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.course-beats {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.course-beat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

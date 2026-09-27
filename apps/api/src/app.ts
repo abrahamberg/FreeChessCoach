@@ -6,6 +6,7 @@ import type { Database } from './db/schema.js';
 import { registerAnalysesRoutes } from './routes/analyses.js';
 import { registerBugReportsRoutes } from './routes/bug-reports.js';
 import { registerChesscomRoutes } from './routes/chesscom.js';
+import { registerCoursesRoutes } from './routes/courses.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerDiagnosticsRoutes } from './routes/diagnostics.js';
 import { registerEngineTunnelInternalRoutes } from './routes/engine-tunnel-internal.js';
@@ -35,6 +36,7 @@ import { createChesscomClient, type ChesscomClient } from './services/chesscom.j
 import { createLichessClient, type LichessClient } from './services/lichess.js';
 import type { CoachAgentBaseDependencies } from './bootstrap.js';
 import type { BrowserTunnel } from './services/engine/browser-tunnel.js';
+import { courseDossierBuilderFor, type CourseDossierBuilder } from './services/course-dossier.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
 import type { TtsConfig } from './services/tts.js';
 
@@ -52,6 +54,9 @@ export interface BuildAppOptions {
   /** Required to register /api/sessions/* routes. */
   coachAgentBaseDeps?: CoachAgentBaseDependencies;
   engineBackendOptions?: ResolveEngineBackendOptions;
+  /** The course skeleton's engine pass; defaults to one built from
+   * `engineBackendOptions` (tests inject a fake). */
+  courseDossierBuilder?: CourseDossierBuilder;
   /** Shared (Redis) store for the light-engine evals that rate a student's live bot-game moves — must be shared across API pods. */
   botRatingEvals?: RatingEvalStore;
   /** Live Thinking log of bot moves, mirrored across API pods — see bot-thinking-registry.ts. */
@@ -110,6 +115,11 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (options.db) {
     registerUsersRoutes(app, options.db);
     registerBugReportsRoutes(app, options.db);
+    registerCoursesRoutes(
+      app,
+      options.db,
+      options.courseDossierBuilder ?? (options.engineBackendOptions ? courseDossierBuilderFor(options.engineBackendOptions) : undefined)
+    );
     registerDashboardRoutes(app, options.db);
     registerDiagnosticsRoutes(app, options.db);
     registerPuzzleAssignmentsRoutes(app, options.db);

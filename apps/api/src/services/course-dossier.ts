@@ -9,6 +9,7 @@ import {
 import type { EngineEval } from '@freechesscoach/shared';
 import { runAnalysisSteps } from './analysis-steps.js';
 import type { EngineBackend } from './engine/engine-backend.js';
+import { resolveReviewEngineBackend, type ResolveEngineBackendOptions } from './engine/resolve-engine-backend.js';
 import { createStepTimer } from './step-timer.js';
 
 /** docs/courses.md §5.4: three engine lines per position, so a quiz can
@@ -18,6 +19,16 @@ const COURSE_MULTI_PV = 3;
 export interface CourseDossierResult {
   dossier: CourseDossier;
   lines: CourseLineAnalysis[];
+}
+
+/** Evaluates a tree as `userId`; injected into the course routes so their
+ * tests need no engine. */
+export type CourseDossierBuilder = (tree: CourseTree, learnerSide: 'white' | 'black', userId: string) => Promise<CourseDossierResult>;
+
+/** The app's builder: the same engine pipeline game review uses (Lichess
+ * eval index first, then the user's engine setting). */
+export function courseDossierBuilderFor(options: ResolveEngineBackendOptions): CourseDossierBuilder {
+  return async (tree, learnerSide, userId) => buildCourseDossierFromEngine(tree, learnerSide, await resolveReviewEngineBackend(options, userId));
 }
 
 /**
