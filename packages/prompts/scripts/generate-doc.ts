@@ -9,6 +9,9 @@ import { buildOnboardingProfilerMessages } from '../src/onboarding-profiler.js';
 import { INVESTIGATE_POSITION_SYSTEM_PROMPT, renderInvestigatePositionPrompt } from '../src/investigate-position.js';
 import { buildPuzzleCoachSystemPrompt } from '../src/puzzle-coach-system.js';
 import { CALIBRATION } from '../src/calibration.js';
+import { buildCourseEpisodeMessages } from '../src/course/episode.js';
+import { ENGLUND_OUTLINE, englundCourseContext } from '../src/course/fixtures.js';
+import { buildCourseOutlineMessages } from '../src/course/outline.js';
 import {
   baseCoachInput,
   basePlannerInput,
@@ -36,6 +39,8 @@ export function renderDoc(): string {
   const onboarding = buildOnboardingProfilerMessages(baseOnboardingInput());
   const investigate = renderInvestigatePositionPrompt(investigatePositionFixture.fen, investigatePositionFixture.question);
   const puzzleCoach = buildPuzzleCoachSystemPrompt(basePuzzleCoachInput());
+  const courseOutline = buildCourseOutlineMessages(englundCourseContext());
+  const courseEpisode = buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e3' });
 
   return `# Chess AI Coach — LLM Prompts
 
@@ -79,6 +84,8 @@ ${fence(MISTAKE_CATEGORIES.join(', '))}
 | Progress summarizer | light | worker, at session end | \`progress-summarizer.ts\`: \`buildSummarizerMessages\` |
 | Onboarding profiler | light | api, once at onboarding | \`onboarding-profiler.ts\`: \`buildOnboardingProfilerMessages\` |
 | Puzzle-session coach system prompt | standard | every puzzle-session turn | \`puzzle-coach-system.ts\`: \`buildPuzzleCoachSystemPrompt\` |
+| Course outline | standard | worker, once per course | \`course/outline.ts\`: \`buildCourseOutlineMessages\` |
+| Course episode | standard | worker, once per episode | \`course/episode.ts\`: \`buildCourseEpisodeMessages\` |
 
 ## 1. Coach agent system prompt
 
@@ -163,6 +170,30 @@ ${fence(puzzleCoach.dynamicPart)}
 ${Object.entries(CALIBRATION)
   .map(([band, c]) => `| ${band} | ${c.label} | ${c.revealDepthPlies} | ${escapeTableCell(c.description)} |`)
   .join('\n')}
+
+## 8. Course outline and episode calls
+
+docs/courses.md §6. Rendered for the §6.6 Englund trap (\`course/fixtures.ts\`:
+kind \`trap\`, the Commander, learner Black, novice). The system prompt is the
+shared block (§6.1), the kind's playbook (\`course/playbooks.ts\`, one per kind)
+and the course voice (\`course/course-voice.ts\`); it depends only on the
+course, so the outline call and every episode call share one cached copy.
+The episode call sees only its own nodes, the one before and its quiz answer.
+Every answer is checked by \`verifyCourseEpisode\` (chess-analysis
+\`course-verify.ts\`); problems go back once under "YOUR PREVIOUS ANSWER HAD
+THESE PROBLEMS".
+
+### system (outline and episodes)
+
+${fence(courseOutline.system)}
+
+### outline user (example)
+
+${fence(courseOutline.user)}
+
+### episode user (example, e3 = the bait and quiz)
+
+${fence(courseEpisode.user)}
 `;
 }
 

@@ -465,6 +465,16 @@ export const CONFIG = {
     maxArrowsPerBeat: 2,
     maxCaptionWords: 6,
     maxNoteSentences: 2,
-    maxCriticalNoteSentences: 4
+    maxCriticalNoteSentences: 4,
+    /** §6.3 clip budgets. Spoken words per second at Kokoro speed 1, with
+     * room left for silent moves, quiz pauses and the end card; scaled by
+     * the coach's `PERSONA_SPEECH_SPEED`. */
+    wordsPerSecond: 2,
+    clipSeconds: { trap: 60, opening_reel: 60, opening_course: 600, tactics: 180, master_game: 300 },
+    hookWords: 12,
+    maxWordsPerBeat: 30,
+    quizPauseSeconds: 3,
+    /** An opening reel narrates at most one move per this many seconds. */
+    secondsPerNarratedMove: 6
   }
 } as const;

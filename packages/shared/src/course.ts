@@ -135,3 +135,34 @@ export const CourseGenerationSchema = z.object({
   error: z.string().nullable()
 });
 export type CourseGeneration = z.infer<typeof CourseGenerationSchema>;
+
+/** The outline call's answer (docs/courses.md §6.4). Fields the model may
+ * leave empty are nullable, not optional: structured output wants every key. */
+export const CourseOutlineEpisodeSchema = z.object({
+  id: z.string().min(1),
+  role: z.string().min(1),
+  focus: z.string(),
+  startNodeId: NodeIdSchema,
+  endNodeId: NodeIdSchema,
+  narratedNodeIds: z.array(NodeIdSchema),
+  answerNodeId: NodeIdSchema.nullable()
+});
+export type CourseOutlineEpisode = z.infer<typeof CourseOutlineEpisodeSchema>;
+
+export const CourseOutlineSchema = z.object({
+  title: z.string().min(1).max(60),
+  promise: z.string(),
+  hookOptions: z.array(z.string()).min(3).max(3),
+  chapters: z.array(z.object({ title: z.string(), lineId: z.string().min(1), episodes: z.array(CourseOutlineEpisodeSchema).min(1) })).min(1),
+  takeaways: z.array(z.string()).min(3).max(3)
+});
+export type CourseOutline = z.infer<typeof CourseOutlineSchema>;
+
+/** The episode call's answer (§6.5); merged into a `CourseEpisode` by code. */
+export const EpisodeScriptSchema = z.object({
+  episodeId: z.string().min(1),
+  beats: z.array(CourseBeatSchema.extend({ pauseMs: z.number().int().nonnegative().nullable() })),
+  notes: z.array(CourseNoteSchema),
+  quiz: CourseQuizSchema.nullable()
+});
+export type EpisodeScript = z.infer<typeof EpisodeScriptSchema>;
