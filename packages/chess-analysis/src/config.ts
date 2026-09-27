@@ -452,5 +452,13 @@ export const CONFIG = {
     trainabilityWithoutControlWeight: 0.6,
     measurementFeasibilitySaturation: 8,
     improvingPriorityMultiplier: 0.5
+  },
+
+  /** docs/courses.md §5.4 — a course move is `quiz-eligible` when the
+   * mover's win% after the engine's best move beats the second-best by more
+   * than this many points: one move is clearly the answer. 20 matches the
+   * `severity.mistakeMaxDrop` scale, so the wrong answer would be a mistake. */
+  courses: {
+    onlyMoveGap: 20
   }
 } as const;

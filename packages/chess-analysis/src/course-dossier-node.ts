@@ -1,0 +1,116 @@
+import { Chess } from 'chess.js';
+import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
+import type { ClassifiedMove } from './classify.js';
+import { CONFIG } from './config.js';
+import { boardFacts, lineWords, positionWords } from './course-dossier-words.js';
+import type { CourseTreeNode } from './course-tree.js';
+import { isBookMoveFrom, resolveOpening } from './opening-book.js';
+import { positionKey } from './opening-book-key.js';
+import { tacticAllowedReason, tacticOpportunityReason, tacticPreventionReason } from './tactic-reason-text.js';
+import { toCpWhite, winPctFor } from './win-probability.js';
+
+const BEST_LINE_PLIES = 6;
+const MAX_TEMPTING = 4;
+
+export interface CourseNodeFacts {
+  nodeId: string;
+  san: string;
+  side: 'white' | 'black';
+  lineId: string;
+  moveNumber: number;
+  quality: MoveQuality;
+  /** The position before and after, in words. */
+  before: string;
+  after: string;
+  inBook: boolean;
+  openingName: string | null;
+  /** The engine's best move and line (at most 6 plies) when the course move is not it. */
+  bestInstead: { san: string; line: string[] } | null;
+  board: string[];
+  /** Checked tactic sentences (`tactic-reason-text.ts`), learner = "you". */
+  tactics: string[];
+  /** The motif the move plays, when the detectors found one. */
+  motif: TacticMotifType | null;
+  /** The engine's other top moves, in words. */
+  alternatives: { san: string; verdict: string }[];
+  /** Captures and checks the engine did not rank in its top lines. */
+  tempting: string[];
+  quizEligible: boolean;
+  critical: boolean;
+  creatorComment: string | null;
+  /** For the skeleton only, never rendered: the mover's win% drop and the game phase. */
+  winDrop: number;
+  phase: MovePhase | null;
+}
+
+export interface CourseNodeFactsInput {
+  node: CourseTreeNode;
+  move: ClassifiedMove;
+  fenBefore: string;
+  /** The line's positions from the start up to and including this node's. */
+  linePositionFens: string[];
+  evalsByFen: ReadonlyMap<string, EngineEval>;
+  critical: boolean;
+  learnerSide: 'white' | 'black';
+}
+
+export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFacts {
+  const { node, move, fenBefore, evalsByFen } = input;
+  const evalBefore = evalsByFen.get(fenBefore);
+  const side = move.mover;
+  const opening = resolveOpening(input.linePositionFens.map(positionKey));
+  return {
+    nodeId: node.id,
+    san: node.san,
+    side,
+    lineId: node.lineId,
+    moveNumber: Number(fenBefore.split(' ')[5] ?? 1),
+    quality: move.quality,
+    before: positionWords(fenBefore, evalBefore),
+    after: positionWords(node.fenAfter, evalsByFen.get(node.fenAfter)),
+    inBook: isBookMoveFrom(fenBefore, node.san),
+    openingName: opening?.name ?? null,
+    bestInstead: bestInstead(move, node.san),
+    board: boardFacts(fenBefore, node.san),
+    tactics: tacticSentences(move, side === input.learnerSide),
+    motif: move.tacticOpportunity?.found ? move.tacticOpportunity.type : null,
+    alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
+    tempting: temptingMoves(fenBefore, node.san, evalBefore),
+    quizEligible: isQuizEligible(evalBefore, node.san, side),
+    critical: input.critical,
+    creatorComment: node.comment,
+    winDrop: move.drop ?? 0,
+    phase: move.phase ?? null
+  };
+}
+
+function bestInstead(move: ClassifiedMove, san: string): CourseNodeFacts['bestInstead'] {
+  const best = move.bestMoveSan ?? move.bestLineSan[0];
+  if (!best || best === san) return null;
+  const line = move.bestLinePvSan?.length ? move.bestLinePvSan : move.bestLineSan;
+  return { san: best, line: line.slice(0, BEST_LINE_PLIES) };
+}
+
+function tacticSentences(move: ClassifiedMove, isUserMove: boolean): string[] {
+  const sentences: string[] = [];
+  if (move.tacticOpportunity) sentences.push(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove }, move.bestMoveSan));
+  if (move.tacticAllowed) sentences.push(tacticAllowedReason({ ...move.tacticAllowed, isUserMove }));
+  if (move.tacticPrevention) sentences.push(tacticPreventionReason({ ...move.tacticPrevention, isUserMove }));
+  return sentences;
+}
+
+function temptingMoves(fenBefore: string, san: string, evaluation: EngineEval | undefined): string[] {
+  const ranked = new Set((evaluation?.lines ?? []).map((line) => line.moveSan));
+  return new Chess(fenBefore)
+    .moves({ verbose: true })
+    .filter((candidate) => (candidate.captured || /[+#]$/.test(candidate.san)) && candidate.san !== san && !ranked.has(candidate.san))
+    .slice(0, MAX_TEMPTING)
+    .map((candidate) => candidate.san);
+}
+
+/** One move is clearly best, and it is the course move. */
+function isQuizEligible(evaluation: EngineEval | undefined, san: string, side: 'white' | 'black'): boolean {
+  const [first, second] = evaluation?.lines ?? [];
+  if (!first || !second || first.moveSan !== san) return false;
+  return winPctFor(side, toCpWhite(first)) - winPctFor(side, toCpWhite(second)) > CONFIG.courses.onlyMoveGap;
+}
