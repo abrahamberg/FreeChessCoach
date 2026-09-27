@@ -260,14 +260,38 @@ Commit: `feat(courses): course editor with a no-AI skeleton`
 
 ### Task 80.1 — Verifier
 
+Status: done 2026-09-28, commit 10830a0.
+Notes for the next task: `verifyCourseEpisode({episode, startFen, nodes,
+dossier, direction?, budget?})` in `packages/chess-analysis/src/course-verify.ts`
+(+ `-scope`, `-board`, `-text`) returns `{code, nodeId, message}[]`, codes
+`nodes|moves|tactic-words|numbers|arrows|lengths|quiz|phrases`. Allowed
+moves = lesson moves from the root to the episode's end (or the quiz answer)
+plus `bestInstead`/its line, `alternatives` and `tempting` of nodes inside the
+episode (path + quiz answer). A bare square ("on c3") is not a move unless it
+has a move number. A tactic word passes when the same word family appears in
+the inside nodes' motif noun, tactics, board facts, `after` or creator comment.
+Arrows: a move for either side (null-move flip) before or after the node.
+With `dossier: null` (hand-written, no engine pass) moves are checked for
+legality only and tactic words/quiz eligibility are skipped — that is what
+the editor runs live (`CourseEpisodeWarnings.tsx`); 80.4 should store the
+dossier (or the warnings) so the editor can pass it. `budget` is optional:
+80.3 computes it. Limits in `CONFIG.courses` (`maxArrowsPerBeat`,
+`maxCaptionWords`, `maxNoteSentences`, `maxCriticalNoteSentences`).
+`BANNED_GENERIC_PHRASES` is now a list in `packages/shared/src/banned-phrases.ts`;
+`coach-persona.ts` builds its sentence from it (snapshots unchanged). Fixed in
+the dossier (`course-dossier-words.ts`): a piece the move attacks that is
+pinned to its king says so ("attacks the bishop on c3, which is pinned to the
+king"); forks are only the moved piece's; "hanging" needs a legal capture.
+`analyseEnglund()` is in `course-test-fixtures.ts`.
+
 **Read:** `docs/courses.md` §7.
 **Files:** `packages/chess-analysis/src/course-verify.ts` + test.
 
-- [ ] Failing tests, one per check in §7, using the Englund dossier: a note
+- [x] Failing tests, one per check in §7, using the Englund dossier: a note
   naming `Nd5` (not in the analysis) fails `moves`; "fork" at `n11` fails
   `tactic-words`; `+1.3` fails `numbers`; an arrow `a1-h8` fails `arrows`; a
   hint containing `Bb4` fails `quiz`; the §6.6 example passes.
-- [ ] Runs on hand-written episodes too (the editor shows its warnings).
+- [x] Runs on hand-written episodes too (the editor shows its warnings).
 
 Commit: `feat(courses): verify every move, tactic word and number in a script`
 
