@@ -12,6 +12,7 @@ import * as userOnboarding from './migrations/0008_user_onboarding.js';
 import * as bugReports from './migrations/0009_bug_reports.js';
 import * as gameSourceFile from './migrations/0010_game_source_file.js';
 import * as chessApiRateLimit from './migrations/0011_chess_api_rate_limit.js';
+import * as courseCreators from './migrations/0012_course_creators.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -27,7 +28,8 @@ const provider: MigrationProvider = {
       '0008_user_onboarding': userOnboarding,
       '0009_bug_reports': bugReports,
       '0010_game_source_file': gameSourceFile,
-      '0011_chess_api_rate_limit': chessApiRateLimit
+      '0011_chess_api_rate_limit': chessApiRateLimit,
+      '0012_course_creators': courseCreators
     })
 };
 

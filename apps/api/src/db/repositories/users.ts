@@ -18,6 +18,7 @@ export interface UserRow {
   ttsBackend: TtsBackend;
   onboardedAt: Date | null;
   chessApiRateLimitedAt: Date | null;
+  canCreateCourses: boolean;
   createdAt: Date;
 }
 
@@ -85,4 +86,15 @@ export function update(db: Kysely<Database>, id: string, patch: UserPatch): Prom
 /** Records that chess-api.com just answered HIGH_USAGE for this user. */
 export async function markChessApiRateLimited(db: Kysely<Database>, id: string, at: Date): Promise<void> {
   await db.updateTable('users').set({ chessApiRateLimitedAt: at }).where('id', '=', id).execute();
+}
+
+/** scripts/course-creator.ts only — the flag is never in UserPatch, so no
+ * route can set it. Returns undefined when the email is unknown. */
+export function setCanCreateCourses(db: Kysely<Database>, email: string, value: boolean): Promise<UserRow | undefined> {
+  return db
+    .updateTable('users')
+    .set({ canCreateCourses: value })
+    .where('email', '=', email)
+    .returningAll()
+    .executeTakeFirst();
 }

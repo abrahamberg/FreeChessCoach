@@ -24,6 +24,8 @@ export interface UsersTable {
   onboardedAt: Date | null;
   /** 0011_chess_api_rate_limit.ts — when chess-api.com last answered HIGH_USAGE. */
   chessApiRateLimitedAt: Date | null;
+  /** 0012_course_creators.ts — set only by scripts/course-creator.ts. */
+  canCreateCourses: Generated<boolean>;
   createdAt: Generated<Date>;
 }
 

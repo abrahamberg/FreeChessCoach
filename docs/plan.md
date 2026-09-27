@@ -83,12 +83,19 @@ gets a `features/courses/` folder (editor, clip recorder, public player).
 **Files:** migration `0012_course_creators.ts`, those files, a new
 `apps/api/scripts/course-creator.ts`.
 
-- [ ] Migration: `users.can_create_courses boolean NOT NULL DEFAULT false`.
-- [ ] Expose `canCreateCourses` on the current-user response (read-only; no
+Open: code written, guard test green, lint and typecheck green. The users
+repository test (`users.test.ts`, new flag case) has NOT run: Docker was not
+running, and every API test needs Postgres via testcontainers. Run
+`npm run verify:changed` with Docker up, then write the Status line.
+Guard lives in `apps/api/src/services/courses/require-course-creator.ts`;
+the repo setter is `setCanCreateCourses(db, email, value)` (not in `UserPatch`).
+
+- [x] Migration: `users.can_create_courses boolean NOT NULL DEFAULT false`.
+- [x] Expose `canCreateCourses` on the current-user response (read-only; no
   route can set it).
-- [ ] `course-creator.ts grant|revoke <email>` sets the flag; prints the user
+- [x] `course-creator.ts grant|revoke <email>` sets the flag; prints the user
   and the new value; exits non-zero when the email is unknown.
-- [ ] A `requireCourseCreator(user)` guard throwing `ForbiddenError`, with a
+- [x] A `requireCourseCreator(user)` guard throwing `ForbiddenError`, with a
   test.
 
 Commit: `feat(courses): creator flag, set by script`
