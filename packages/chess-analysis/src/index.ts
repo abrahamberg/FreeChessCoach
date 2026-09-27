@@ -27,6 +27,7 @@ export * from './classify-move.js';
 export * from './classify-severity.js';
 export * from './config.js';
 export * from './compare-player-baseline.js';
+export * from './course-tree.js';
 export * from './critical-moments.js';
 export * from './diff-features.js';
 export * from './endgame-score.js';

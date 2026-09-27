@@ -83,10 +83,10 @@ gets a `features/courses/` folder (editor, clip recorder, public player).
 **Files:** migration `0012_course_creators.ts`, those files, a new
 `apps/api/scripts/course-creator.ts`.
 
-Open: code written, guard test green, lint and typecheck green. The users
-repository test (`users.test.ts`, new flag case) has NOT run: Docker was not
-running, and every API test needs Postgres via testcontainers. Run
-`npm run verify:changed` with Docker up, then write the Status line.
+Status: done 2026-09-27, commit c378ad8. verify:changed green except
+`llm/endpoint-fetch.test.ts` "resolves to loopback", which times out when DNS
+hangs on this machine (unrelated, untouched). The first cold API run times out
+a few DB tests; re-run.
 Guard lives in `apps/api/src/services/courses/require-course-creator.ts`;
 the repo setter is `setCanCreateCourses(db, email, value)` (not in `UserPatch`).
 
