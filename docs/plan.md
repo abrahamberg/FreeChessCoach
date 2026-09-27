@@ -132,12 +132,23 @@ schema style.
 **Files:** `packages/shared/src/course.ts`, migration `0013_courses.ts`,
 `apps/api/src/db/repositories/courses.ts`, tests.
 
-- [ ] `CourseDocumentSchema` as in §4 (Zod; types by `z.infer`).
-- [ ] Table `courses`: `id`, `owner_id`, `slug` (unique), `kind`, `status`
+Status: done 2026-09-27, commit 6696698. Deviations from the §4 sketch: nodes
+also carry the creator's PGN `comment` and `arrows` (straight from
+`parseCourseTree`); a draft allows 0–3 `takeaways`/`hookOptions`, so publish
+(82.x) must require exactly 3 takeaways; `role` is a free string, legal roles
+per kind are checked in code (80.x). Also exported: `COURSE_KINDS`,
+`COURSE_STATUSES`, `CourseGenerationSchema` ({status, step, done, total,
+error}). Repository `insert`/`updateDraft` validate and reject; `setStatus`
+has no owner check (callers check); account deletion now deletes courses.
+Open for the skeleton task: `parseCourseTree` reads only the first game, but
+the `tactics` kind takes several games or positions (§3).
+
+- [x] `CourseDocumentSchema` as in §4 (Zod; types by `z.infer`).
+- [x] Table `courses`: `id`, `owner_id`, `slug` (unique), `kind`, `status`
   (`draft|unlisted|public|removed`), `title`, `source_pgn`, `direction`,
   `document` jsonb (draft), `published_document` jsonb, `published_at`,
   `generation` jsonb (job status, progress, error), timestamps.
-- [ ] Repository: create, get by id for owner, update draft (validated by
+- [x] Repository: create, get by id for owner, update draft (validated by
   the schema before write), list by owner, set status.
 
 Commit: `feat(courses): course document schema and table`
