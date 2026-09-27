@@ -3,20 +3,10 @@ import { renderCourseDossier } from './course-dossier-text.js';
 import { inferLearnerSide } from './course-learner-side.js';
 import { courseLineGames } from './course-line-game.js';
 import { buildCourseSkeleton } from './course-skeleton.js';
-import { analyseCourse, ENGLUND_TRAP, fakeEvals, type FakeEval } from './course-test-fixtures.js';
+import { analyseCourse, analyseEnglund, ENGLUND_TRAP, fakeEvals, type FakeEval } from './course-test-fixtures.js';
 import { parseCourseTree, type CourseTree } from './course-tree.js';
 
-function englund() {
-  const tree = parseCourseTree(ENGLUND_TRAP);
-  const fenAfter = (id: string): string => tree.nodes.find((node) => node.id === id)?.fenAfter ?? '';
-  const lost = new Set(['n11', 'n12', 'n13', 'n14', 'n15'].map(fenAfter));
-  const overrides = new Map<string, FakeEval>([
-    [fenAfter('n10'), { cp: 30, moves: [{ san: 'Nc3', cp: 30 }, { san: 'Bc3', cp: -1000 }] }],
-    [fenAfter('n11'), { cp: -1000, moves: [{ san: 'Bb4', cp: -1000 }, { san: 'Qb6', cp: 0 }] }]
-  ]);
-  const evals = fakeEvals(tree, (fen) => (lost.has(fen) ? -1000 : 0), overrides);
-  return { tree, ...analyseCourse(tree, evals, 'black') };
-}
+const englund = analyseEnglund;
 
 const byId = (tree: CourseTree) => new Map(tree.nodes.map((node) => [node.id, node]));
 
@@ -43,6 +33,7 @@ describe('course dossier', () => {
     expect(bait?.bestInstead?.san).toBe('Nc3');
     expect(bait?.after).toBe('Black is winning');
     expect(facts.get('n12')?.quizEligible).toBe(true);
+    expect(facts.get('n12')?.board).toEqual(['attacks the bishop on c3, which is pinned to the king']);
     expect(facts.get('n5')?.quizEligible).toBe(false);
     expect(facts.get('n16')?.after).toBe('checkmate');
     expect(facts.get('n16')?.board).toContain('gives checkmate');

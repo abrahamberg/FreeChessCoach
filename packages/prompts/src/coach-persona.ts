@@ -1,4 +1,4 @@
-import type { CoachPersona } from '@freechesscoach/shared';
+import { BANNED_GENERIC_PHRASES as BANNED_GENERIC_PHRASE_LIST, type CoachPersona } from '@freechesscoach/shared';
 
 /**
  * coaches.md: 6 cosmetic personas layered on top of the one coach, plus a
@@ -46,8 +46,7 @@ const voiceGuardrail = (name: string): string =>
  * adjectives describe it. Naming it explicitly is what actually suppresses
  * it — an unnamed instinct to sound helpful and neutral beats an unnamed
  * instruction to sound like a character. */
-const BANNED_GENERIC_PHRASES =
-  '"great question", "certainly!", "I\'d be happy to help", "let\'s dive in", "it\'s important to note", "feel free to", "as an AI" — if a phrase could come out of any chatbot, it\'s banned, full stop.';
+const BANNED_GENERIC_PHRASES = `${BANNED_GENERIC_PHRASE_LIST.map((phrase) => `"${phrase}"`).join(', ')} — if a phrase could come out of any chatbot, it's banned, full stop.`;
 
 /** Each move or practice position is its own episode, and an episode can
  * open with no conversation of its own (coach-context.ts's

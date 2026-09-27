@@ -459,6 +459,12 @@ export const CONFIG = {
    * than this many points: one move is clearly the answer. 20 matches the
    * `severity.mistakeMaxDrop` scale, so the wrong answer would be a mistake. */
   courses: {
-    onlyMoveGap: 20
+    onlyMoveGap: 20,
+    /** §7 verifier limits: arrows per clip beat, words per caption, and
+     * sentences per course note (more at a critical node). */
+    maxArrowsPerBeat: 2,
+    maxCaptionWords: 6,
+    maxNoteSentences: 2,
+    maxCriticalNoteSentences: 4
   }
 } as const;

@@ -101,6 +101,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
           <CourseEpisodePanel
             document={document}
             episode={episode}
+            direction={course.direction}
             nodeIds={nodeIds}
             selectedNodeId={nodeId}
             drawnArrows={drawnArrows}

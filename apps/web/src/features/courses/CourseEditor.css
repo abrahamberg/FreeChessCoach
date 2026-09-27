@@ -244,3 +244,15 @@
   flex-direction: column;
   gap: 6px;
 }
+
+.course-warnings {
+  color: var(--color-warning);
+}
+
+.course-warnings ul {
+  margin: 0;
+  padding: 8px 8px 8px 24px;
+  border-radius: 6px;
+  background: var(--color-warning-soft);
+  font-size: 0.9rem;
+}

@@ -4,10 +4,13 @@ import type { BoardArrow } from '../board/CoachBoard.js';
 import { COURSE_ARROW_KINDS, fromDrawnArrows } from './courseArrows.js';
 import { moveLabel, setNote, withoutQuiz } from './courseEdits.js';
 import { CourseBeatsEditor } from './CourseBeatsEditor.js';
+import { CourseEpisodeWarnings } from './CourseEpisodeWarnings.js';
 
 export interface CourseEpisodePanelProps {
   document: CourseDocument;
   episode: CourseEpisode;
+  /** The creator's intake direction, for the verifier's percentage rule. */
+  direction: string;
   nodeIds: string[];
   selectedNodeId: string | null;
   drawnArrows: BoardArrow[];
@@ -16,7 +19,7 @@ export interface CourseEpisodePanelProps {
 
 /** Right column: the selected episode's focus, the note on the selected
  * move (with its arrows), the quiz, and the clip beats. */
-export function CourseEpisodePanel({ document, episode, nodeIds, selectedNodeId, drawnArrows, onChange }: CourseEpisodePanelProps): ReactNode {
+export function CourseEpisodePanel({ document, episode, direction, nodeIds, selectedNodeId, drawnArrows, onChange }: CourseEpisodePanelProps): ReactNode {
   const node = selectedNodeId ? document.nodes.find((candidate) => candidate.id === selectedNodeId) : undefined;
   const note = episode.notes.find((candidate) => candidate.nodeId === selectedNodeId);
   const noteArrows = note?.arrows ?? [];
@@ -28,6 +31,7 @@ export function CourseEpisodePanel({ document, episode, nodeIds, selectedNodeId,
   return (
     <div className="course-panel">
       <p className="course-panel__role">{episode.role}</p>
+      <CourseEpisodeWarnings document={document} episode={episode} direction={direction} />
       <label className="course-field">
         <span>Focus</span>
         <input value={episode.focus} onChange={(event) => onChange({ ...episode, focus: event.target.value })} />

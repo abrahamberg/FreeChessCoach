@@ -33,6 +33,7 @@ export * from './course-learner-side.js';
 export * from './course-line-game.js';
 export * from './course-skeleton.js';
 export * from './course-tree.js';
+export * from './course-verify.js';
 export * from './critical-moments.js';
 export * from './diff-features.js';
 export * from './endgame-score.js';

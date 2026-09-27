@@ -3,7 +3,7 @@ import type { EngineEval, EngineLine } from '@freechesscoach/shared';
 import { classifyMoves } from './classify.js';
 import { buildCourseDossier, type CourseDossier, type CourseLineAnalysis } from './course-dossier.js';
 import { courseLineGames, courseTreeFens } from './course-line-game.js';
-import type { CourseTree } from './course-tree.js';
+import { parseCourseTree, type CourseTree } from './course-tree.js';
 import { findCandidateMoments } from './critical-moments.js';
 
 /** docs/courses.md §6.6, nodes n1–n16; bait n11 = 6.Bc3, answer n12 = 6…Bb4. */
@@ -50,6 +50,20 @@ function defaultLines(fen: string, best: string | undefined, cp: number): Engine
 function engineLine(fen: string, san: string, cp: number): EngineLine {
   const move = new Chess(fen).move(san);
   return { moveSan: move.san, moveUci: `${move.from}${move.to}${move.promotion ?? ''}`, cp, mateIn: null };
+}
+
+/** The Englund trap with evals where 6.Bc3 is the blunder (Nc3 was safe)
+ * and 6…Bb4 is the only move; learner Black. */
+export function analyseEnglund(): { tree: CourseTree; lines: CourseLineAnalysis[]; dossier: CourseDossier } {
+  const tree = parseCourseTree(ENGLUND_TRAP);
+  const fenAfter = (id: string): string => tree.nodes.find((node) => node.id === id)?.fenAfter ?? '';
+  const lost = new Set(['n11', 'n12', 'n13', 'n14', 'n15'].map(fenAfter));
+  const overrides = new Map<string, FakeEval>([
+    [fenAfter('n10'), { cp: 30, moves: [{ san: 'Nc3', cp: 30 }, { san: 'Bc3', cp: -1000 }] }],
+    [fenAfter('n11'), { cp: -1000, moves: [{ san: 'Bb4', cp: -1000 }, { san: 'Qb6', cp: 0 }] }]
+  ]);
+  const evals = fakeEvals(tree, (fen) => (lost.has(fen) ? -1000 : 0), overrides);
+  return { tree, ...analyseCourse(tree, evals, 'black') };
 }
 
 /** What the API service does per line, without the engine or the report step. */
