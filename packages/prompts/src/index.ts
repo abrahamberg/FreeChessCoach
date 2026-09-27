@@ -3,6 +3,8 @@ export * from './calibration.js';
 export * from './candidate-briefing.js';
 export * from './coach-move-plan.js';
 export * from './coach-persona.js';
+export * from './course/course-voice.js';
+export * from './persona-words.js';
 export * from './coach-system.js';
 export * from './dev-commands.js';
 export * from './diagnostic-report.js';
