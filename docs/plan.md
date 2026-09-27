@@ -297,14 +297,24 @@ Commit: `feat(courses): verify every move, tactic word and number in a script`
 
 ### Task 80.2 — Course voice blocks
 
+Status: done 2026-09-28, commit 93847d4.
+Notes for the next task: `PERSONA_WORDS` (`packages/prompts/src/persona-words.ts`)
+holds name, identity and word bank for the six voiced personas;
+`coach-persona.ts` interpolates them (checked byte-identical against a dump
+of `PERSONA_VOICE` before the change; chat snapshots untouched).
+`buildCourseVoiceBlock(persona)` (`packages/prompts/src/course/course-voice.ts`,
+exported from the barrel) returns the 5-line §6.2 block; `general` and
+`general_female` get "You are a calm, clear club coach." Clip examples have no
+moves in them on purpose. Snapshots in `src/course/__snapshots__/`.
+
 **Read:** `packages/prompts/src/coach-persona.ts`, `coaches.md`.
 **Files:** `coach-persona.ts`, new `packages/prompts/src/course/course-voice.ts`,
 snapshots.
 
-- [ ] Move each persona's word bank and identity line into data used by both
+- [x] Move each persona's word bank and identity line into data used by both
   the chat block and the new course block. Chat prompt snapshots unchanged
   (byte-identical).
-- [ ] `buildCourseVoiceBlock(persona)` per §6.2, with two clip example lines
+- [x] `buildCourseVoiceBlock(persona)` per §6.2, with two clip example lines
   per persona; `general`/`general_female` get the neutral course voice.
 
 Commit: `feat(prompts): course voice per coach, sharing the chat word banks`
