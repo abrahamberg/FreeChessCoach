@@ -300,7 +300,7 @@ classify, the prevention scan cache, report, diagnostics — using only stored
 evals, with no DB writes and no engine calls. It prints each step's median
 wall-clock ms and peak `heapUsed`, and `--snapshot` writes the annotated PGN,
 report and observations as JSON for byte-for-byte before/after comparisons
-(`docs/plan.md` Phase 77 records the numbers from successive runs of it).
+(the git history of `docs/plan.md`, Phase 77, records the numbers from successive runs of it).
 
 ## One verdict per move
 

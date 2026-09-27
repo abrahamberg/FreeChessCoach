@@ -12,26 +12,13 @@ Socratically while tracking their progress over time. The initial build
 - `docs/architecture.md` — how it fits together (layout, DB, agent, K8s). Always relevant.
   It also describes the guided first-run flow ("Welcome flow", `/welcome`).
 - `docs/plan.md` — the implementation plan for whatever is being built next.
-  Currently Phase 73, bot latency diagnosis (instrumentation + a benchmark to
-  find out why bot moves are slow or hang; no behaviour changes). The
-  in-app Thinking log (Tasks 73.1–73.2) has shipped and is described in
-  `docs/architecture.md` ("Bot Thinking log"); 73.3–73.6 are open. Phase 74
-  (same file) reworks how a bot turn spends time: rating off the critical
-  path (74.1–74.6 shipped: branch-first engine requests, mistake-first move
-  choice, saved evals). Phase 75 (same file) is the review and fix list
-  for the unified tunnel and local LLM work (75.1–75.10 implemented, uncommitted; live verification open). Phase 76
-  (same file) makes every tactical verdict and diagnostic failure
-  eval-witnessed (`eval-witness.ts`) and redefines diagnostic
-  opportunities/failures so the Progress counts mean something. Phase 77
-  (same file) is leaner analysis: stored engine evals reused on re-analysis
-  and resume, and one tactical verdict per move (77.1–77.5 implemented,
-  uncommitted; 77.6 docs). Phases 79–83 (same file) are courses and clips:
-  creator-only course editor, AI course generation, browser-recorded clips,
-  public course pages and spaced review; their spec is `docs/courses.md`
-  (read only the section a task names). The last
-  shipped plan (import limits, stat archive, guided import; Phases 67–72) is
-  described in `docs/architecture.md`. Open the plan, find the one
-  Phase/Task being worked on, and read only that task's **Read:** files.
+  Currently Phases 79–83, courses and clips: a creator-only course editor
+  (moderator flag), AI course generation from a PGN and a short direction,
+  clips recorded in the browser with the course coach's voice, public course
+  pages and spaced review. Its spec is `docs/courses.md` (read only the
+  section a task names). Everything shipped before is described in
+  `docs/architecture.md`. Open the plan, find the one Phase/Task being worked
+  on, and read only that task's **Read:** files.
 - `docs/diagnose.md` — the spec behind the *shipped* programmatic coach
   diagnostics (code taxonomy, opportunity/episode counting, confidence,
   data-quality gates, focus selection). Long; never open it cold or read it
