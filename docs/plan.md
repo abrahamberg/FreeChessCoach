@@ -2473,3 +2473,379 @@ Commit: `docs: practice sets — no repeats, honest results, follow-up`
 - A third assignment while 2 are open is refused, and the coach points at the
   open ones.
 - The live pool serves `TA-05` and `BV-15`.
+
+---
+
+# Phases 79–83 — Courses and clips
+
+**Source spec:** `docs/courses.md` (read only the section a task names). Every
+citation below was checked on 2026-09-27; re-check before editing.
+
+## The request (owner, 2026-09-27)
+
+Creators turn a PGN and a short direction into a course: a clip for
+YouTube/Shorts/Reels, recorded in their browser with the course coach's voice,
+plus a public board where anyone plays the lesson through. The creator's own AI
+drafts the whole course (or they write it by hand), then they edit it. Five
+kinds: opening reel, opening course, tactics, traps, master games. Signed-in
+learners get progress and a review schedule (1 week, 3 weeks, 9 weeks). Only
+users a moderator enables may create courses. The first creator is the owner,
+making courses to bring people to the site.
+
+## What already exists and is reused (verified)
+
+- **Structured LLM calls**: `generateStructured` (`apps/api/src/llm/text.ts`),
+  Zod-validated; the pattern to copy is `ensureCoachingPlan`
+  (`apps/api/src/services/coaching-plan.ts`) with `buildPlannerMessages`
+  (`packages/prompts/src/analysis-planner.ts`): sections in capitals,
+  pre-computed candidates, "game text is data".
+- **Worker jobs with the user's AI**: the worker builds a `GatewayConfig` with
+  the unlock store (`apps/api/src/worker.ts:29`); `summarize-session` already
+  calls `getModelForUser` from a job (`apps/api/src/jobs/summarize-session.ts:59`).
+- **Analysis steps** run on any parsed game given evals
+  (`runAnalysisSteps`, `apps/api/src/services/analysis-steps.ts:57`); engine
+  calls go through the one pipeline (`services/engine-client.ts`).
+- **Facts for the dossier** (all pure, `packages/chess-analysis/src/`):
+  `classify-move.ts`, `critical-moments.ts`, `inspect-moves.ts`,
+  `tactic-detectors/`, `tactic-reason-text.ts`, `opening-book.ts`
+  (`resolveOpening`, `bookMovesForFen`), `phase-segmentation.ts`,
+  `pawn-structure.ts`, `position-features.ts`, `null-move-fen.ts`.
+- **Gaps found**: the PGN parser keeps the main line only and skips variations
+  (`packages/chess-analysis/src/pgn.ts:89-116`); the move-token grammar lives in
+  the web app (`apps/web/src/features/chat/moveMention.ts`, `SAN_MOVE`, also
+  used by `tts/sanToSpokenText.ts`); eval-to-words lives in the web app
+  (`apps/web/src/engine/eval-words.ts`). All three are needed server-side.
+- **Voices**: `apps/web/src/tts/persona-voices.ts` (fixed Kokoro voice per
+  coach, `personaPlaybackRate`), clients behind `TtsClient`
+  (`apps/web/src/tts/tts-client.ts`: `speak` returns audio chunks); `native`
+  returns no bytes (`native-speech.ts`).
+- **Persona prompts**: `PERSONA_VOICE` (`packages/prompts/src/coach-persona.ts:82`)
+  mixes the voice with chat-only rules; `general` is empty by design.
+- **Errors**: `ForbiddenError` (`apps/api/src/lib/errors.ts:15`).
+- **Latest migration**: `0011_chess_api_rate_limit.ts`.
+
+## Design decisions (do not relitigate)
+
+- **Creation is off by default**: `users.can_create_courses`, set by a script;
+  checked on the server for every creator route (`docs/courses.md` §2).
+- **Code decides the facts, the AI writes the words**; nodes by id only; one
+  outline call and one call per episode; a code verifier after every episode
+  with one repair call; leftover problems are editor warnings
+  (`docs/courses.md` §5–§7).
+- **Standard tier** for course generation; it runs as a worker job.
+- **Clips are made in the browser and never uploaded.** All audio is made
+  first, then the clip is recorded in one pass, 9:16 and 16:9. No `native`
+  voice for courses. Course-note audio is uploaded on publish
+  (`docs/courses.md` §8).
+- **Publish as unlisted by default**; `removed` is the moderator's status.
+- **Progress is keyed by position + move**, never by node id or episode.
+- **Review steps**: 1 week, 3 weeks, 9 weeks, mastered; a miss restarts, due
+  tomorrow.
+
+## Layering
+
+Pure logic (tree parsing, dossier assembly, skeleton, verifier, review
+scheduling) in `packages/chess-analysis`. Schemas in `packages/shared/src/course.ts`.
+All prompt text in `packages/prompts/src/course/`. SQL only in
+`apps/api/src/db/repositories/courses.ts` (+ `course-audio.ts`,
+`course-progress.ts`). LLM calls only through `apps/api/src/llm/`. The web app
+gets a `features/courses/` folder (editor, clip recorder, public player).
+
+## Phase 79 — Course foundation (creator only, no AI)
+
+### Task 79.1 — Creator flag
+
+**Read:** `apps/api/src/db/migrations/0011_chess_api_rate_limit.ts`,
+`apps/api/src/db/repositories/users.ts`, `packages/shared/src/user.ts`,
+`apps/api/src/routes/users.ts`.
+**Files:** migration `0012_course_creators.ts`, those files, a new
+`apps/api/scripts/course-creator.ts`.
+
+- [ ] Migration: `users.can_create_courses boolean NOT NULL DEFAULT false`.
+- [ ] Expose `canCreateCourses` on the current-user response (read-only; no
+  route can set it).
+- [ ] `course-creator.ts grant|revoke <email>` sets the flag; prints the user
+  and the new value; exits non-zero when the email is unknown.
+- [ ] A `requireCourseCreator(user)` guard throwing `ForbiddenError`, with a
+  test.
+
+Commit: `feat(courses): creator flag, set by script`
+
+### Task 79.2 — PGN with variations
+
+**Read:** `packages/chess-analysis/src/pgn.ts`, `pgn-move-comments.ts`.
+**Files:** a new `packages/chess-analysis/src/course-tree.ts` + test;
+`pgn.ts` untouched (game import keeps its main-line parser).
+
+- [ ] Failing tests: nested variations become a tree with ids `n1…` in
+  pre-order; comments stay on their node; `[%cal]`/`[%csl]` become creator
+  arrows; a `[FEN]` header sets the start; an illegal move reports its line
+  and move number; ids are stable when the same PGN is parsed twice.
+- [ ] `parseCourseTree(pgn)` returns nodes, lines (root → leaf, named from the
+  PGN or `Line A`, `B` …) and errors.
+
+Commit: `feat(courses): parse a PGN with variations into a move tree`
+
+### Task 79.3 — Course schema and storage
+
+**Read:** `docs/courses.md` §4, §9; `packages/shared/src/coaching-plan.ts` for
+schema style.
+**Files:** `packages/shared/src/course.ts`, migration `0013_courses.ts`,
+`apps/api/src/db/repositories/courses.ts`, tests.
+
+- [ ] `CourseDocumentSchema` as in §4 (Zod; types by `z.infer`).
+- [ ] Table `courses`: `id`, `owner_id`, `slug` (unique), `kind`, `status`
+  (`draft|unlisted|public|removed`), `title`, `source_pgn`, `direction`,
+  `document` jsonb (draft), `published_document` jsonb, `published_at`,
+  `generation` jsonb (job status, progress, error), timestamps.
+- [ ] Repository: create, get by id for owner, update draft (validated by
+  the schema before write), list by owner, set status.
+
+Commit: `feat(courses): course document schema and table`
+
+### Task 79.4 — Server-side helpers moved out of the web app
+
+**Read:** `apps/web/src/features/chat/moveMention.ts`,
+`apps/web/src/tts/sanToSpokenText.ts`, `apps/web/src/engine/eval-words.ts`.
+**Files:** those, new homes in `packages/chess-analysis/src/`
+(`san-token.ts`, `eval-words.ts`), tests.
+
+- [ ] Move `SAN_MOVE`/`MOVE_TOKEN`/`BARE_SAN` and `cpToWords`/`mateToWords`
+  to `chess-analysis`; the web files import them. No behaviour change
+  (existing tests stay green).
+
+Commit: `refactor: share the move-token grammar and eval words`
+
+### Task 79.5 — Dossier and skeleton
+
+**Read:** `docs/courses.md` §5.4, §5.5, §10; `apps/api/src/services/analysis-steps.ts:57-120`;
+`packages/chess-analysis/src/critical-moments.ts`.
+**Files:** `packages/chess-analysis/src/course-dossier.ts`,
+`course-skeleton.ts`, `apps/api/src/services/course-dossier.ts` (engine
+calls), tests.
+
+- [ ] Service: evaluate every tree position once (shared by FEN) through the
+  engine pipeline, multiPv 3; run the analysis steps per line.
+- [ ] Pure: per-node facts (§5.4), including `quiz-eligible`
+  (`CONFIG.courses.onlyMoveGap`, win-percentage gap) and `critical`; per-line
+  end features. A renderer to text with verdict words only (test: no digit
+  that looks like an eval appears).
+- [ ] Pure: skeleton per kind (§5.5). Tests on the Englund trap line
+  (`docs/courses.md` §6.6): bait `n11`, answer `n12`, learner side Black.
+- [ ] Learner-side inference (§3).
+
+Commit: `feat(courses): dossier and skeleton from the engine and chess-analysis`
+
+### Task 79.6 — Editor (manual path)
+
+**Read:** `docs/courses.md` §3, §5.3, §10; `apps/web/src/features/board/CoachBoard.tsx`.
+**Files:** routes `apps/api/src/routes/courses.ts`, service
+`services/courses.ts`, `apps/web/src/features/courses/` (new), `App.tsx`.
+
+- [ ] Routes (all behind `requireCourseCreator`): create from intake, get,
+  save draft, build skeleton.
+- [ ] Web: "Create course" in the account menu only when `canCreateCourses`.
+  Intake form (§5.3). Editor: chapters and episodes on the left, board in the
+  middle, the selected episode's beats/notes/quiz on the right; arrows drawn
+  on the board with the existing tap-to-draw; "Build without AI" fills the
+  skeleton with template text.
+
+Commit: `feat(courses): course editor with a no-AI skeleton`
+
+## Phase 80 — AI course generation
+
+### Task 80.1 — Verifier
+
+**Read:** `docs/courses.md` §7.
+**Files:** `packages/chess-analysis/src/course-verify.ts` + test.
+
+- [ ] Failing tests, one per check in §7, using the Englund dossier: a note
+  naming `Nd5` (not in the analysis) fails `moves`; "fork" at `n11` fails
+  `tactic-words`; `+1.3` fails `numbers`; an arrow `a1-h8` fails `arrows`; a
+  hint containing `Bb4` fails `quiz`; the §6.6 example passes.
+- [ ] Runs on hand-written episodes too (the editor shows its warnings).
+
+Commit: `feat(courses): verify every move, tactic word and number in a script`
+
+### Task 80.2 — Course voice blocks
+
+**Read:** `packages/prompts/src/coach-persona.ts`, `coaches.md`.
+**Files:** `coach-persona.ts`, new `packages/prompts/src/course/course-voice.ts`,
+snapshots.
+
+- [ ] Move each persona's word bank and identity line into data used by both
+  the chat block and the new course block. Chat prompt snapshots unchanged
+  (byte-identical).
+- [ ] `buildCourseVoiceBlock(persona)` per §6.2, with two clip example lines
+  per persona; `general`/`general_female` get the neutral course voice.
+
+Commit: `feat(prompts): course voice per coach, sharing the chat word banks`
+
+### Task 80.3 — Prompts and schemas
+
+**Read:** `docs/courses.md` §6.
+**Files:** `packages/prompts/src/course/` (`shared.ts`, `playbooks.ts`,
+`outline.ts`, `episode.ts`), `packages/shared/src/course.ts`
+(`CourseOutlineSchema`, `EpisodeScriptSchema`), tests.
+
+- [ ] `buildCourseOutlineMessages` and `buildCourseEpisodeMessages` with the
+  text of §6.1–§6.5; budgets computed from the clip length and the persona's
+  Kokoro speed (`CONFIG.courses.wordsPerSecond × speed`).
+- [ ] Tests: the system prompt is identical across episode calls of one
+  course (cache-stable); each playbook fills every placeholder; the dossier
+  for an episode contains only that episode's nodes plus the one before.
+- [ ] `npm run docs:prompts` so `docs/prompts.md` gets a course section.
+
+Commit: `feat(prompts): course outline and episode prompts per kind`
+
+### Task 80.4 — The generation job
+
+**Read:** `apps/api/src/services/coaching-plan.ts`, `apps/api/src/jobs/summarize-session.ts`,
+`apps/api/src/jobs/queue.ts`.
+**Files:** `apps/api/src/services/course-generate.ts`,
+`apps/api/src/jobs/course-generate.ts`, routes, tests with the mock model
+(`apps/api/test/helpers/mock-model.ts`).
+
+- [ ] Pipeline of §5.2: dossier → skeleton → outline (validate, one retry
+  with the listed problems, then skeleton fallback for the failing part) →
+  one call per episode → verifier → one repair call per failing episode →
+  save the draft with warnings. Progress written to `courses.generation`.
+- [ ] Finished episodes are saved as they complete; a resumed job skips them.
+- [ ] Route: start generation; regenerate one episode with a creator
+  instruction (§6.5).
+- [ ] Tests: invalid outline is retried once with the problems in the prompt;
+  a verifier failure triggers exactly one repair; an expired unlock stops the
+  job with the unlock error and keeps finished episodes.
+
+Commit: `feat(courses): generate a course draft with the creator's AI`
+
+### Task 80.5 — Quality harness
+
+**Read:** `docs/courses.md` §7 (last paragraph).
+**Files:** `apps/api/scripts/course-golden.ts`, `apps/api/test/fixtures/courses/`
+(one small PGN + direction per kind, each under 5 KB).
+
+- [ ] Runs the pipeline against the owner's configured model without writing
+  to the database; prints each episode, the verifier result and the call
+  count. Record the first run's findings in this task, then tune the prompts
+  on it.
+
+Commit: `chore(courses): golden set for judging course prompts`
+
+## Phase 81 — Voice and clips (browser)
+
+### Task 81.1 — Audio preparation
+
+**Read:** `docs/courses.md` §8; `apps/web/src/tts/tts-client.ts`,
+`resolve-tts-client.ts`, `persona-voices.ts`.
+**Files:** `apps/web/src/features/courses/clip/prepare-audio.ts`, tests.
+
+- [ ] Synthesise every beat and note with the course persona via the chosen
+  backend (browser Kokoro, local Kokoro, OpenAI; `native` refused with a
+  message). Progress callback. Cache by text hash + persona + backend in
+  IndexedDB (wrapped in try/catch, works without it).
+- [ ] Nothing is returned until every sentence exists.
+
+Commit: `feat(courses): prepare all coach audio before recording`
+
+### Task 81.2 — Clip renderer and recorder
+
+**Read:** `docs/courses.md` §8; `apps/web/src/features/board/EvalBar.tsx`,
+`MoveQualityBadge.tsx`.
+**Files:** `apps/web/src/features/courses/clip/` (`timeline.ts`,
+`draw-frame.ts`, `record-clip.ts`), tests for `timeline.ts`.
+
+- [ ] Pure timeline: beats → start/end times from audio durations, gaps and
+  quiz pauses (tested).
+- [ ] Canvas drawing for 1080×1920 and 1920×1080: board, arrows, captions,
+  coach avatar, end card with the course link.
+- [ ] Record canvas + Web Audio (persona playback rate applied) with
+  `MediaRecorder`; MP4 where the browser supports it, else WebM with a note.
+  Test on iPhone Safari and desktop Chrome before building further; record
+  the result in this task.
+
+Commit: `feat(courses): record reel and YouTube clips in the browser`
+
+## Phase 82 — Publishing and the public course page
+
+### Task 82.1 — Publish and audio upload
+
+**Read:** `docs/courses.md` §8, §9.
+**Files:** migration `0014_course_audio.ts`, `repositories/course-audio.ts`,
+routes, `services/courses.ts`.
+
+- [ ] Publish copies the draft to `published_document`, status `unlisted`
+  unless the creator picks `public`; blocked while verifier warnings are
+  unticked.
+- [ ] Upload course-note audio (type and size checked; cap per course in
+  `CONFIG.courses`), keyed by node id + text hash.
+- [ ] Creator pastes clip links (YouTube/Shorts/Instagram/TikTok URLs,
+  validated by host).
+
+Commit: `feat(courses): publish courses with their note audio`
+
+### Task 82.2 — Public page
+
+**Read:** `docs/marketing-demo.md` ("Public routes"), `docs/threat-model.md`.
+**Files:** `docker/nginx.web.conf`, `deploy/helm/freechesscoach/values.yaml`,
+`values.example.yaml`, `deploy/helm/test.sh`, `routes/public-courses.ts`,
+`apps/web/src/features/courses/player/`.
+
+- [ ] `/learn/:slug` and the two read-only endpoints public (all three
+  places); rate-limited; `removed` and `draft` return 404.
+- [ ] Player: embedded YouTube clip when linked; board play-through with
+  arrows and note audio; quizzes wait for a move; wrong moves answered with
+  the move-quality label and the checked tactic sentence; engine-equal
+  alternatives accepted (§11).
+- [ ] Threat-model entry for the new public endpoints.
+
+Commit: `feat(courses): public course page, no login`
+
+## Phase 83 — Learning progress and review
+
+### Task 83.1 — Drills and review schedule
+
+**Read:** `docs/courses.md` §11.
+**Files:** `packages/chess-analysis/src/course-review.ts` + test, migration
+`0015_course_progress.ts`, `repositories/course-progress.ts`, routes.
+
+- [ ] Pure schedule: correct → next step (1 w, 3 w, 9 w, mastered); miss →
+  step 0, due tomorrow (tests).
+- [ ] Progress keyed by normalised FEN + UCI; drill modes per kind.
+- [ ] Anonymous progress in the browser; moved to the account on sign-in.
+- [ ] "Due today" card on the Games page.
+
+Commit: `feat(courses): drills and spaced review`
+
+### Task 83.2 — Your own coach on a course
+
+**Read:** `apps/api/src/services/coach-agent-system-prompt.ts`.
+**Files:** the course player's "Ask my coach" panel and a course context
+block for the coach prompt.
+
+- [ ] The learner's own persona answers, with the course line and notes in
+  its context; distinct avatar from the course coach; engine wins over the
+  course when they disagree.
+
+Commit: `feat(courses): ask your own coach about a course move`
+
+### Task 83.3 — Docs
+
+- [ ] `docs/architecture.md`: courses (tables, job, public routes, clips).
+- [ ] Update the AGENTS.md plan pointer.
+
+Commit: `docs: courses and clips`
+
+## Verification (end of each phase)
+
+- Targeted tests, lint and typecheck green for every package touched.
+- 79: a user without the flag gets 403 on every creator route; the Englund
+  PGN becomes a course by hand with the skeleton's bait and quiz.
+- 80: the golden set runs; every episode either passes the verifier or shows
+  its warnings in the editor.
+- 81: one reel and one YouTube clip recorded with browser Kokoro, identical
+  timing on a second export.
+- 82: a logged-out browser plays an unlisted course by link; a removed course
+  is gone.
+- 83: a drilled move reappears after the schedule; a miss brings it back
+  tomorrow.

@@ -25,7 +25,10 @@ Socratically while tracking their progress over time. The initial build
   opportunities/failures so the Progress counts mean something. Phase 77
   (same file) is leaner analysis: stored engine evals reused on re-analysis
   and resume, and one tactical verdict per move (77.1–77.5 implemented,
-  uncommitted; 77.6 docs). The last
+  uncommitted; 77.6 docs). Phases 79–83 (same file) are courses and clips:
+  creator-only course editor, AI course generation, browser-recorded clips,
+  public course pages and spaced review; their spec is `docs/courses.md`
+  (read only the section a task names). The last
   shipped plan (import limits, stat archive, guided import; Phases 67–72) is
   described in `docs/architecture.md`. Open the plan, find the one
   Phase/Task being worked on, and read only that task's **Read:** files.
@@ -66,6 +69,7 @@ Socratically while tracking their progress over time. The initial build
 - `docs/algorith.md`: Spec for the Game Report. Read only the relevant subsection requested by a task.
 - `docs/marketing-demo.md`: Public marketing pages, demo data, and capture scripts. Read before touching `apps/web/public/` or demo scripts.
 - `docs/tactics-rework.md`: Tactic detection rebuild details. Read before touching `tactic-detectors/` or related logic.
+- `docs/courses.md`: Spec for courses and clips (Phases 79–83), including the course-generation prompts. Read only the section a task names.
 - `docs/threat-model.md`: Trust boundaries, security findings, accepted risks. Read before touching auth headers, the proxy/chart config, the tunnel, outbound calls to user endpoints, or rate limits.
 
 ## Commands
