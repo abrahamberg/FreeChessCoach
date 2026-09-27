@@ -106,11 +106,21 @@ Commit: `feat(courses): creator flag, set by script`
 **Files:** a new `packages/chess-analysis/src/course-tree.ts` + test;
 `pgn.ts` untouched (game import keeps its main-line parser).
 
-- [ ] Failing tests: nested variations become a tree with ids `n1…` in
+Status: done 2026-09-27, commit 76326f4. Decisions: pre-order visits the main
+continuation first, so the main line is `n1…nK`; line ids are `l1…` in leaf
+order and a node's `lineId` is the first line through it. A comment before the
+first move of a variation (or the game) names that line. `[%csl]` squares are
+arrows with `from === to`; colours G=best, R=threat, Y/B=idea. Errors carry
+`pgnLine` (the PGN text line), `moveNumber`, `side`, `san`; an illegal move
+skips the rest of its branch. A repeated variation reuses the node. Files:
+`course-tree.ts`, `course-tree-build.ts`, `course-pgn-tokens.ts`,
+`course-pgn-comment.ts`.
+
+- [x] Failing tests: nested variations become a tree with ids `n1…` in
   pre-order; comments stay on their node; `[%cal]`/`[%csl]` become creator
   arrows; a `[FEN]` header sets the start; an illegal move reports its line
   and move number; ids are stable when the same PGN is parsed twice.
-- [ ] `parseCourseTree(pgn)` returns nodes, lines (root → leaf, named from the
+- [x] `parseCourseTree(pgn)` returns nodes, lines (root → leaf, named from the
   PGN or `Line A`, `B` …) and errors.
 
 Commit: `feat(courses): parse a PGN with variations into a move tree`

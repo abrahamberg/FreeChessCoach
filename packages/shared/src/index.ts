@@ -10,6 +10,7 @@ export * from './coach-move-plan.js';
 export * from './coach-nudge.js';
 export * from './coaching-candidate.js';
 export * from './coaching-plan.js';
+export * from './course.js';
 export * from './dashboard.js';
 export * from './diagnosis/index.js';
 export * from './engine-ping.js';
