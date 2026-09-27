@@ -28,27 +28,39 @@ export async function loadGenerationInputs(
   document: CourseDocument,
   buildDossier: CourseDossierBuilder | undefined
 ): Promise<GenerationInputs> {
-  const tree: CourseTree = { startFen: document.startFen, nodes: document.nodes, lines: document.lines, errors: [] };
-  const lineGames = courseLineGames(tree);
   let dossier = row.dossier;
   if (!dossier) {
     if (!buildDossier) throw new Error('No engine is configured');
-    dossier = (await buildDossier(tree, document.learnerSide, row.ownerId)).dossier;
+    dossier = (await buildDossier(courseTreeOf(document), document.learnerSide, row.ownerId)).dossier;
     await coursesRepo.setDossier(db, row.id, dossier);
   }
+  return generationInputs({ document, dossier, direction: row.direction, sourcePgn: row.sourcePgn });
+}
+
+/** The draft's fixed tree, as chess-analysis reads it. */
+export function courseTreeOf(document: CourseDocument): CourseTree {
+  return { startFen: document.startFen, nodes: document.nodes, lines: document.lines, errors: [] };
+}
+
+/** Everything the calls need, from a draft and its dossier; no database
+ * (the golden-set script uses it directly). */
+export function generationInputs(input: { document: CourseDocument; dossier: CourseDossier; direction: string; sourcePgn: string }): GenerationInputs {
+  const { document, dossier } = input;
+  const tree = courseTreeOf(document);
+  const lineGames = courseLineGames(tree);
   const skeleton = buildCourseSkeleton({ kind: document.kind, tree, lines: lineGames, dossier });
   const context: CoursePromptContext = {
     kind: document.kind,
     persona: document.coachPersona,
     learnerSide: document.learnerSide,
     levelBand: document.levelBand,
-    direction: row.direction,
+    direction: input.direction,
     startFen: document.startFen,
     nodes: document.nodes,
     lines: document.lines,
     dossier,
     skeleton,
-    headers: courseHeaders(row.sourcePgn)
+    headers: courseHeaders(input.sourcePgn)
   };
   return { document, tree, lineGames, dossier, skeleton, context };
 }

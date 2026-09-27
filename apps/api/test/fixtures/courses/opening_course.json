@@ -1,0 +1,8 @@
+{
+  "kind": "opening_course",
+  "levelBand": "improving",
+  "coachPersona": "sunzi",
+  "learnerSide": "white",
+  "direction": "The London System for club players: the setup, and what to do when Black plays an early ...c5.",
+  "pgn": "[Event \"London System\"]\n\n{The setup} 1. d4 d5 2. Bf4 Nf6 3. e3 e6 ({Early c5} 3... c5 4. c3 Nc6 5. Nd2 Qb6 6. Qb3) 4. Nf3 Bd6 5. Bg3 O-O 6. Bd3 c5 7. c3 Nc6 8. Nbd2 *"
+}

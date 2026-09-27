@@ -1,0 +1,8 @@
+{
+  "kind": "tactics",
+  "levelBand": "novice",
+  "coachPersona": "huntress",
+  "learnerSide": "white",
+  "direction": "Two quick mates every beginner should see once, so they never fall for them.",
+  "pgn": "[Event \"Quick mates\"]\n\n{Legal's Mate} 1. e4 e5 2. Nf3 ({Scholar's Mate} 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#) 2... d6 3. Bc4 Bg4 4. Nc3 g6 5. Nxe5 Bxd1 6. Bxf7+ Ke7 7. Nd5# *"
+}

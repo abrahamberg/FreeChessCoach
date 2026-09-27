@@ -24,22 +24,37 @@ import { courseSlug, courseTitle, resultHeader } from './courses/intake-text.js'
  * a few sidelines fits; a whole repertoire does not). */
 export const MAX_COURSE_NODES = 400;
 
-type Intake = z.output<typeof CreateCourseRequestSchema>;
+export type CourseIntake = z.output<typeof CreateCourseRequestSchema>;
 
 /** The intake form's PGN becomes the fixed move tree of a new draft. */
-export async function createCourse(db: Kysely<Database>, ownerId: string, intake: Intake): Promise<CourseResponse> {
+export async function createCourse(db: Kysely<Database>, ownerId: string, intake: CourseIntake): Promise<CourseResponse> {
+  const document = draftFromIntake(intake);
+  const title = document.title;
+  const row = await coursesRepo.insert(db, {
+    ownerId,
+    slug: courseSlug(title),
+    kind: intake.kind,
+    title,
+    sourcePgn: intake.pgn,
+    direction: intake.direction,
+    document
+  });
+  return toCourseResponse(row);
+}
+
+/** The new draft for an intake: the tree, the learner side (inferred when
+ * not given) and empty episodes. Throws a `ValidationError` the creator can read. */
+export function draftFromIntake(intake: CourseIntake): CourseDocument {
   const tree = parseCourseTree(intake.pgn);
   if (tree.errors.length) throw new ValidationError(tree.errors.map((error) => error.message).join('; '));
   if (!tree.nodes.length) throw new ValidationError('The PGN has no moves');
   if (tree.nodes.length > MAX_COURSE_NODES) throw new ValidationError(`A course can have at most ${MAX_COURSE_NODES} moves`);
   const learnerSide = intake.learnerSide ?? inferLearnerSide(intake.kind, tree, resultHeader(intake.pgn));
   if (!learnerSide) throw new ValidationError('Pick the learner side: it cannot be told from this PGN');
-
-  const title = courseTitle(intake.direction);
-  const document: CourseDocument = {
+  return {
     version: 1,
     kind: intake.kind,
-    title,
+    title: courseTitle(intake.direction),
     promise: '',
     learnerSide,
     levelBand: intake.levelBand,
@@ -53,16 +68,6 @@ export async function createCourse(db: Kysely<Database>, ownerId: string, intake
     hookOptions: [],
     clipLinks: {}
   };
-  const row = await coursesRepo.insert(db, {
-    ownerId,
-    slug: courseSlug(title),
-    kind: intake.kind,
-    title,
-    sourcePgn: intake.pgn,
-    direction: intake.direction,
-    document
-  });
-  return toCourseResponse(row);
 }
 
 export async function listCourses(db: Kysely<Database>, ownerId: string): Promise<CourseListResponse> {

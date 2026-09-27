@@ -88,6 +88,12 @@ export async function getModelForUser(
     }
     throw new ValidationError('Unlock your AI setup in Settings with your unlock phrase before coaching.');
   }
+  return resolutionForSetup(config, setup, tier, userId);
+}
+
+/** The model for an unlocked setup at a tier: what `getModelForUser` returns
+ * once it has the setup (the course golden-set script calls it directly). */
+export function resolutionForSetup(config: GatewayConfig, setup: StoredLlmSetup, tier: Tier, userId: string): ModelResolution {
   const protocol = resolveTierProtocol(setup, tier);
   const provider = providerForProtocol(protocol);
   const modelId = tier === 'standard' ? setup.highModel : lowModelOf(setup);

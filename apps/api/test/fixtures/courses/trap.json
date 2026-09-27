@@ -1,0 +1,8 @@
+{
+  "kind": "trap",
+  "levelBand": "novice",
+  "coachPersona": "commander",
+  "learnerSide": null,
+  "direction": "Englund Gambit trap for beginners. Make the viewer feel they'd play 6.Bc3 too.",
+  "pgn": "[Event \"Englund Gambit trap\"]\n\n1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 Bxc3 8. Qxc3 Qc1# *"
+}
