@@ -174,21 +174,43 @@ Commit: `refactor: share the move-token grammar and eval words`
 
 ### Task 79.5 — Dossier and skeleton
 
+Status: done 2026-09-27, commit e493d70. Pure (chess-analysis):
+`courseLineGames`/`courseTreeFens` (`course-line-game.ts`),
+`buildCourseDossier` → `{learnerSide, nodes: CourseNodeFacts[], lines:
+CourseLineFacts[]}` (`course-dossier*.ts`), `renderCourseDossier`
+(`course-dossier-text.ts`), `buildCourseSkeleton({kind, tree, lines,
+dossier})` (`course-skeleton.ts`, returns null for a trap line with no
+victim move), `inferLearnerSide(kind, tree, resultHeader)` (null = ask).
+`CONFIG.courses.onlyMoveGap = 20`. Service:
+`buildCourseDossierFromEngine(tree, learnerSide, backend)` in
+`apps/api/src/services/course-dossier.ts` — one `analyzeGame` batch
+(multiPv 3) over distinct FENs, then `runAnalysisSteps` per line; the caller
+passes the backend (use `resolveReviewEngineBackend`, Lichess index first).
+Test fixtures (fake evals, `analyseCourse`) in
+`chess-analysis/src/course-test-fixtures.ts`. Deviations: §5.4's
+`positional-squares.ts` does not exist, so line end facts are
+`computePositionFeatures` files/pawns plus wing majorities and king
+placement; "tempting" moves outside the engine's top 3 are listed without a
+verdict (no eval for them); a node's facts come from its own `lineId`;
+`tactics` picks one example per *line* (the parser still reads one game).
+Verdict wording is `eval-words.ts`'s ("The position is roughly equal"),
+not §5.4's shorter examples.
+
 **Read:** `docs/courses.md` §5.4, §5.5, §10; `apps/api/src/services/analysis-steps.ts:57-120`;
 `packages/chess-analysis/src/critical-moments.ts`.
 **Files:** `packages/chess-analysis/src/course-dossier.ts`,
 `course-skeleton.ts`, `apps/api/src/services/course-dossier.ts` (engine
 calls), tests.
 
-- [ ] Service: evaluate every tree position once (shared by FEN) through the
+- [x] Service: evaluate every tree position once (shared by FEN) through the
   engine pipeline, multiPv 3; run the analysis steps per line.
-- [ ] Pure: per-node facts (§5.4), including `quiz-eligible`
+- [x] Pure: per-node facts (§5.4), including `quiz-eligible`
   (`CONFIG.courses.onlyMoveGap`, win-percentage gap) and `critical`; per-line
   end features. A renderer to text with verdict words only (test: no digit
   that looks like an eval appears).
-- [ ] Pure: skeleton per kind (§5.5). Tests on the Englund trap line
+- [x] Pure: skeleton per kind (§5.5). Tests on the Englund trap line
   (`docs/courses.md` §6.6): bait `n11`, answer `n12`, learner side Black.
-- [ ] Learner-side inference (§3).
+- [x] Learner-side inference (§3).
 
 Commit: `feat(courses): dossier and skeleton from the engine and chess-analysis`
 
