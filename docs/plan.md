@@ -155,12 +155,18 @@ Commit: `feat(courses): course document schema and table`
 
 ### Task 79.4 — Server-side helpers moved out of the web app
 
+Status: done 2026-09-27, commit a9fd116. `SAN_MOVE` (now exported too),
+`MOVE_TOKEN`, `BARE_SAN` live in `chess-analysis/src/san-token.ts`;
+`cpToWords`/`mateToWords` in `chess-analysis/src/eval-words.ts` (web copy
+deleted). Both are in the barrel. New tests: `san-token.test.ts`,
+`eval-words.test.ts`.
+
 **Read:** `apps/web/src/features/chat/moveMention.ts`,
 `apps/web/src/tts/sanToSpokenText.ts`, `apps/web/src/engine/eval-words.ts`.
 **Files:** those, new homes in `packages/chess-analysis/src/`
 (`san-token.ts`, `eval-words.ts`), tests.
 
-- [ ] Move `SAN_MOVE`/`MOVE_TOKEN`/`BARE_SAN` and `cpToWords`/`mateToWords`
+- [x] Move `SAN_MOVE`/`MOVE_TOKEN`/`BARE_SAN` and `cpToWords`/`mateToWords`
   to `chess-analysis`; the web files import them. No behaviour change
   (existing tests stay green).
 
