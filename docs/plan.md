@@ -411,6 +411,27 @@ Commit: `feat(courses): generate a course draft with the creator's AI`
 
 ### Task 80.5 — Quality harness
 
+Status: in progress — harness done 2026-09-28, commit 6a30b51; waiting for the
+owner's first run (Stop 4). Findings and prompt tuning are still to do, so the
+box stays open; on "continue" with the run's output, start here.
+Notes: `apps/api/scripts/course-golden.ts` (`npm run course:golden -w apps/api`)
+runs `draftFromIntake` → engine dossier (`NativeEngineBackend`, default
+`http://localhost:8081`) → `generationInputs` → `planOutline` → `writeEpisode`
+per episode, all in memory, and prints each course with
+`course-golden-print.ts` (beats, notes, quiz, ✓/✗ verifier, calls split into
+outline/episodes/repairs). Model: `--email` + `UNLOCK_PHRASE` decrypts the
+owner's saved setup (read only), or `GOLDEN_PROTOCOL`/`GOLDEN_MODEL`/
+`GOLDEN_API_KEY`[/`GOLDEN_ENDPOINT`]; `resolutionForSetup` (gateway.ts) builds
+the standard-tier model like the app. Local models are refused (they need the
+browser tunnel). Fixtures: `apps/api/test/fixtures/courses/*.json` (trap =
+Englund §6.6, opening_reel = Italian, opening_course = London with an early
+...c5 sideline, tactics = Legal's and Scholar's mate, master_game = Opera
+Game), loaded by `golden-set.ts`; `golden-set.test.ts` checks each parses,
+its learner side, and < 5 KB. Not yet run against a real model or engine
+here (no engine on :8081 and no network in this session).
+
+First run findings: (pending)
+
 **Read:** `docs/courses.md` §7 (last paragraph).
 **Files:** `apps/api/scripts/course-golden.ts`, `apps/api/test/fixtures/courses/`
 (one small PGN + direction per kind, each under 5 KB).
