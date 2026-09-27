@@ -104,39 +104,43 @@
       <section class="section" id="diagnosis">
         <div class="wrap">
           <p class="eyebrow">What makes it a coach</p>
-          <h2>"You forgot to check for threats" is not a diagnosis.</h2>
+          <h2>“You forgot to check for threats” is not a diagnosis.</h2>
           <p class="lead">
             Every player already knows to look for checks, captures and threats. Being told again
-            is like a doctor diagnosing you with "failed to stay healthy". FreeChessCoach looks
+            is like a doctor diagnosing you with “failed to stay healthy”. FreeChessCoach looks
             across your games for the reason you keep missing things, then gives you one thing to
             practise.
           </p>
-          <div class="cards">
-            <div class="card">
-              <h3>The engine says</h3>
-              <p>37…Ng5 was a blunder. 37…Rxd2+ would have kept you ahead.</p>
+          <div class="split">
+            <div>
+              <ul class="verdicts">
+                <li>
+                  <span class="who">The engine</span>
+                  <p class="said">37…Ng5 was a blunder. 37…Rxd2+ would have kept you ahead.</p>
+                </li>
+                <li>
+                  <span class="who">Most feedback</span>
+                  <p class="said">Always check for checks, captures and threats.</p>
+                </li>
+                <li class="coach">
+                  <span class="who">Your coach</span>
+                  <p class="said">“The same thing twice: the board changed and your picture of it did not.”</p>
+                  <p class="homework"><strong>Homework:</strong> after every capture, ask what it changed. Then look for the recapture first.</p>
+                </li>
+              </ul>
+              <p class="try-demo"><a href="/demo/coach">Open this session in the live demo →</a></p>
             </div>
-            <div class="card">
-              <h3>Most feedback says</h3>
-              <p>Always check for checks, captures and threats.</p>
-            </div>
-            <div class="card">
-              <h3>Your coach says</h3>
-              <p>The same thing twice: the board changed and your picture of it did not.</p>
-              <p class="card-note"><strong>Homework:</strong> after every capture, ask what it changed. Then look for the recapture first.</p>
-            </div>
+            <figure class="shot">
+              <img
+                src="/shots/coach-session.png"
+                alt="A finished coaching session: the coach's summary and homework above the board, and the conversation about move 37 beside it."
+                width="1440"
+                height="1250"
+                loading="lazy"
+              />
+              <figcaption class="demo-note">Sample data: the coaching session quoted here, from the live demo.</figcaption>
+            </figure>
           </div>
-          <figure class="shot">
-            <img
-              src="/shots/coach-session.png"
-              alt="A finished coaching session: the coach's summary and homework above the board, and the conversation about move 37 beside it."
-              width="1440"
-              height="1250"
-              loading="lazy"
-            />
-            <figcaption class="demo-note">Sample data: a coaching session from the live demo, on the game in the cards above.</figcaption>
-          </figure>
-          <p class="try-demo"><a href="/demo/coach">Try this coaching session in the live demo →</a></p>
         </div>
       </section>
 
@@ -150,6 +154,14 @@
           </p>
           <div class="two-col">
             <div class="card tinted">
+              <img
+                class="card-shot"
+                src="/shots/review.png"
+                alt="Game Review on move 37: the board, the move list and the verdict that 37…Ng5 missed 37…Rxd2+."
+                width="1440"
+                height="900"
+                loading="lazy"
+              />
               <span class="tag tag-free">Free, no AI needed</span>
               <h3>Your games, analysed</h3>
               <ul>
@@ -160,6 +172,14 @@
               </ul>
             </div>
             <div class="card tinted">
+              <img
+                class="card-shot"
+                src="/shots/progress-focus.png"
+                alt="The Progress page: this week's focus, last-move board-update failure, with focus areas and measured diagnoses below."
+                width="1440"
+                height="900"
+                loading="lazy"
+              />
               <span class="tag tag-ai">Free coach, you plug in the AI</span>
               <h3>A coach who remembers you</h3>
               <ul>
@@ -174,6 +194,7 @@
               </p>
             </div>
           </div>
+          <p class="demo-note">Screenshots show sample data from the live demo.</p>
           <div class="cta-row">
             <a class="btn btn-secondary" href="/openai-key">Set up the AI, step by step</a>
             <a class="btn btn-secondary" href="/tour">See every screen in the tour</a>
@@ -207,18 +228,20 @@
             you can pay. Lichess gives the world a free place to play; FreeChessCoach adds a coach
             that reads your games. Human coaches do wonderful work, and this doesn't replace them.
           </p>
-          <h3 id="trust">Before you sign in</h3>
-          <ul class="checklist">
-            <li>From Google we get your email address and name, nothing else, and never your password. <a href="/privacy">Privacy policy</a>.</li>
-            <li>No credit card, no paid tier, no ads, and we don't sell your data.</li>
-            <li>Your AI key is encrypted with a phrase only you know. <a href="/keys">How we handle it</a>.</li>
-            <li>All of the code is open source on <a href="https://github.com/abrahamberg/FreeChessCoach">GitHub</a>.</li>
-            <li>You can try the whole app on sample data in the <a href="/demo/games">live demo</a> first.</li>
-          </ul>
+          <div class="card" id="trust">
+            <h3>Before you sign in</h3>
+            <ul class="checklist">
+              <li>From Google we get your email address and name, nothing else, and never your password. <a href="/privacy">Privacy policy</a>.</li>
+              <li>No credit card, no paid tier, no ads, and we don't sell your data.</li>
+              <li>Your AI key is encrypted with a phrase only you know. <a href="/keys">How we handle it</a>.</li>
+              <li>All of the code is open source on <a href="https://github.com/abrahamberg/FreeChessCoach">GitHub</a>.</li>
+              <li>You can try the whole app on sample data in the <a href="/demo/games">live demo</a> first.</li>
+            </ul>
+          </div>
           <div class="callout">
             <strong class="title">Chess belongs to everyone.</strong>
             <p>
-              Chess began in India and grew up in Persia, today's Iran; even the word "checkmate"
+              Chess began in India and grew up in Persia, today's Iran; even the word “checkmate”
               comes from Persian. A game that old is part of human heritage, and learning it should
               stay open to everyone.
             </p>

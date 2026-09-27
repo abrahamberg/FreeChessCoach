@@ -119,7 +119,9 @@ Design notes:
 - **Lesson text about real games is written from the engine's own findings** (missed
   `Qxc1+` on move 32, no recapture `Rxd2+` on move 37). Re-analysis with a different
   engine version can change those; re-read the lessons if the fixtures are regenerated
-  (`generate-beginner-games.mjs`).
+  (`generate-beginner-games.mjs`). `landing.html`'s `#diagnosis` section quotes this
+  game word for word (37…Ng5 / 37…Rxd2+, the coach's summary line and homework), so
+  re-check it too.
 - **Dates are relative to the day you seed**, so a fresh run is never stale.
 - The seeded shallow games stop after the opening: they exist for the lists, stats
   and archive, not for review. Only the fixture games open in Game Review.

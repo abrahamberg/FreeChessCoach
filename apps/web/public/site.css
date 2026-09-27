@@ -151,6 +151,25 @@ pre { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.9em; 
 pre code { background: none; border: 0; padding: 0; }
 code, kbd { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.9em; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; }
 
+/* ---- Landing: what the engine, most feedback and the coach each say ---- */
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 36px; align-items: start; }
+@media (max-width: 820px) { .split { grid-template-columns: 1fr; } }
+.verdicts { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.verdicts li { border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; background: var(--surface); }
+.verdicts .who { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+.verdicts .said { margin: 0; color: var(--text-muted); }
+.verdicts .coach { border-color: var(--accent); border-left-width: 4px; background: var(--accent-soft); }
+.verdicts .coach .who { color: var(--accent); }
+.verdicts .coach .said { color: var(--text); font-size: 18px; font-weight: 600; line-height: 1.45; }
+.verdicts .homework { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: 15px; }
+
+/* A screenshot flush with the top of its card. */
+.card-shot { display: block; width: calc(100% + 40px); max-width: none; margin: -20px -20px 16px; border-bottom: 1px solid var(--border); border-radius: 12px 12px 0 0; }
+
+.checklist { list-style: none; padding: 0; margin: 0; }
+.checklist li { position: relative; padding: 5px 0 5px 28px; color: var(--text-muted); }
+.checklist li::before { content: '✓'; position: absolute; left: 4px; top: 5px; color: var(--accent); font-weight: 700; }
+
 .week { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
 .week .card .big { font-size: 30px; font-weight: 700; color: var(--accent); line-height: 1.1; margin-bottom: 4px; }
 
