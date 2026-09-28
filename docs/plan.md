@@ -1201,11 +1201,15 @@ knock, lower and softer), **check**, **bad** (a mistake or blunder) and
 **great** (a great or brilliant move, or one that turns the game).
 
 Decisions:
-- Recorded sounds, not synthesized: the owner found the first synthesized
-  set unnatural (2026-09-28). The files are Kenney's CC0 packs (Impact
-  Sounds, Interface Sounds), trimmed to 16-bit mono WAV in
-  `apps/web/public/sounds/` (its README names each original); Lichess's sets
-  are AGPL or non-commercial, so not used. Each sound is mixed once from its
+- Generated from a measured pattern: the owner found the first synthesized
+  set and then Kenney's CC0 recordings unnatural (2026-09-28), and picked
+  two reference sounds (a move and a capture). Their audio is not used:
+  `scripts/sounds/generate-board-sounds.py` holds only a coarse profile of
+  each (loudness every 2.5 ms, third-octave band levels early, mid and late)
+  and builds new sounds from fresh random resonances and noise following it,
+  shifted a few percent; check, bad and great add struck wooden bars. Six
+  sounds now: a capture has its own (`x` in the SAN, a check still wins).
+  The files are in `apps/web/public/sounds/`. Each sound is mixed once from its
   layers into an `AudioBuffer`, so the board and clips play the same thing.
   `/sounds/` is a skip-auth route (the public course page plays them).
   Settings > Board has a button per sound to hear them.

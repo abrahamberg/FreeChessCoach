@@ -8,24 +8,22 @@ const DUCKED = 1 / 3;
 /** The stinger (bad, great) after the knock. */
 export const STINGER_DELAY_MS = 120;
 
-/** Each sound from the recorded files in `public/sounds/` (Kenney, CC0; see
- * its README): the file, when it starts and how loud. Check is a brighter
- * knock with a glass ping just after it. The levels keep the opponent's
- * knock softer than the learner's and the stingers under the knocks. */
+/** Each sound's file in `public/sounds/` (made by
+ * scripts/sounds/generate-board-sounds.py; see its README) and its level:
+ * the opponent's knock softer than the learner's, the stingers under the
+ * knocks. */
 const LAYERS: Record<BoardSound, { file: string; delayMs?: number; gain: number }[]> = {
   move: [{ file: 'move', gain: 1 }],
-  opponent: [{ file: 'opponent', gain: 0.7 }],
-  check: [
-    { file: 'check-knock', gain: 1 },
-    { file: 'check-ping', delayMs: 30, gain: 0.45 }
-  ],
-  bad: [{ file: 'bad', gain: 0.6 }],
-  great: [{ file: 'great', gain: 0.4 }]
+  opponent: [{ file: 'opponent', gain: 0.75 }],
+  capture: [{ file: 'capture', gain: 1 }],
+  check: [{ file: 'check', gain: 0.9 }],
+  bad: [{ file: 'bad', gain: 0.45 }],
+  great: [{ file: 'great', gain: 0.5 }]
 };
 
-/** How long each sound lasts, in seconds (the files' lengths, the check's
- * ping included), for a voice that should wait for it and for clip timing. */
-const SECONDS: Record<BoardSound, number> = { move: 0.1, opponent: 0.18, check: 0.24, bad: 0.14, great: 0.29 };
+/** How long each sound lasts, in seconds (the files' lengths), for a voice
+ * that should wait for it and for clip timing. */
+const SECONDS: Record<BoardSound, number> = { move: 0.16, opponent: 0.16, capture: 0.23, check: 0.43, bad: 0.51, great: 0.5 };
 
 async function render(sound: BoardSound, files: Map<string, AudioBuffer>): Promise<AudioBuffer> {
   const context = new OfflineAudioContext(1, Math.ceil(SAMPLE_RATE * SECONDS[sound]) + 1024, SAMPLE_RATE);
@@ -42,7 +40,7 @@ async function render(sound: BoardSound, files: Map<string, AudioBuffer>): Promi
 
 let rendered: Promise<Record<BoardSound, AudioBuffer>> | null = null;
 
-/** The five sounds, loaded and mixed once; also scheduled into clips. */
+/** The six sounds, loaded and mixed once; also scheduled into clips. */
 export function boardSoundBuffers(): Promise<Record<BoardSound, AudioBuffer>> {
   rendered ??= (async () => {
     const decoder = new OfflineAudioContext(1, 1, SAMPLE_RATE);

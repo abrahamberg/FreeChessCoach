@@ -1,18 +1,17 @@
 # Board sounds
 
-Recorded sounds by Kenney (www.kenney.nl), released under Creative Commons
-Zero (CC0, public domain): free to use in personal, educational and
-commercial projects, credit not required. Converted to trimmed, normalized
-16-bit mono 44.1 kHz WAV (docs/plan.md Phase 88).
+Generated, not recorded: `scripts/sounds/generate-board-sounds.py` builds
+them from scratch (pure Python, deterministic), and re-running it rewrites
+these files. The knocks follow a coarse pattern (loudness every 2.5 ms and
+third-octave band levels) measured from two reference sounds the owner
+chose; no reference audio is used or included. Check, bad and great add
+struck wooden bars. 16-bit mono 44.1 kHz WAV (docs/plan.md Phase 88).
 
-| File | Kenney pack | Original |
-|---|---|---|
-| move.wav | Impact Sounds 1.0 | impactWood_light_001.ogg |
-| opponent.wav | Impact Sounds 1.0 | impactWood_medium_003.ogg |
-| check-knock.wav | Impact Sounds 1.0 | impactWood_light_000.ogg |
-| check-ping.wav | Interface Sounds 1.0 | glass_001.ogg |
-| bad.wav | Interface Sounds 1.0 | error_008.ogg |
-| great.wav | Interface Sounds 1.0 | confirmation_001.ogg |
-
-Sources: https://kenney.nl/assets/impact-sounds,
-https://kenney.nl/assets/interface-sounds
+| File | What |
+|---|---|
+| move.wav | the learner's piece landing |
+| opponent.wav | the other side's: lower and darker |
+| capture.wav | a capture: a brighter hit and a short rattle |
+| check.wav | a brighter knock with a high wood note |
+| bad.wav | two falling wood notes |
+| great.wav | three rising wood notes |

@@ -2,11 +2,14 @@ import { describe, expect, test } from 'vitest';
 import { moveSounds } from './move-sounds.js';
 
 describe('moveSounds', () => {
-  test('the learner’s move knocks, the opponent’s knocks softer, a check chimes instead', () => {
+  test('the learner’s move knocks, the opponent’s knocks softer, a capture hits, a check chimes', () => {
     expect(moveSounds({ san: 'e4', mover: 'white', learnerSide: 'white' })).toEqual({ base: 'move', stinger: null });
     expect(moveSounds({ san: 'e5', mover: 'black', learnerSide: 'white' })).toEqual({ base: 'opponent', stinger: null });
     expect(moveSounds({ san: 'Bb5+', mover: 'white', learnerSide: 'white' })).toEqual({ base: 'check', stinger: null });
     expect(moveSounds({ san: 'Qxf7#', mover: 'black', learnerSide: 'white' })).toEqual({ base: 'check', stinger: null });
+    // A capture has its own sound, whoever takes; a check still wins.
+    expect(moveSounds({ san: 'exd5', mover: 'white', learnerSide: 'white' })).toEqual({ base: 'capture', stinger: null });
+    expect(moveSounds({ san: 'Nxe4', mover: 'black', learnerSide: 'white' })).toEqual({ base: 'capture', stinger: null });
   });
 
   test('a live game has no quality, so no bad or great sound', () => {

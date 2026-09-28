@@ -41,7 +41,7 @@ describe('courseMoveSounds', () => {
     expect(courseMoveSounds(documentFrom(), evals, d4!)).toEqual({ base: 'opponent', stinger: null });
     expect(courseMoveSounds(documentFrom(), evals, e5!)).toEqual({ base: 'move', stinger: 'bad' });
     expect(courseMoveSounds(documentFrom(), evals, nc6!, 'great')).toEqual({ base: 'move', stinger: 'great' });
-    // No engine pass: just the knock.
-    expect(courseMoveSounds(documentFrom(), {}, dxe5!)).toEqual({ base: 'opponent', stinger: null });
+    // No engine pass: just the move's own sound (dxe5 is a capture).
+    expect(courseMoveSounds(documentFrom(), {}, dxe5!)).toEqual({ base: 'capture', stinger: null });
   });
 });

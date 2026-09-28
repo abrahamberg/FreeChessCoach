@@ -1,8 +1,8 @@
 import { expectedPoints } from '@freechesscoach/chess-analysis';
 import type { MoveQuality } from '@freechesscoach/shared';
 
-/** The board's five sounds (docs/plan.md Phase 88). */
-export type BoardSound = 'move' | 'opponent' | 'check' | 'bad' | 'great';
+/** The board's six sounds (docs/plan.md Phase 88). */
+export type BoardSound = 'move' | 'opponent' | 'capture' | 'check' | 'bad' | 'great';
 
 export interface MoveSoundInput {
   san: string;
@@ -17,9 +17,9 @@ export interface MoveSoundInput {
   cpAfter?: number;
 }
 
-/** The knock (or the check chime), and a stinger played just after it. */
+/** The knock (a capture's hit, or the check), and a stinger just after it. */
 export interface MoveSounds {
-  base: 'move' | 'opponent' | 'check';
+  base: 'move' | 'opponent' | 'capture' | 'check';
   stinger: 'bad' | 'great' | null;
 }
 
@@ -32,7 +32,7 @@ const TURNED = 0.4;
 /** What a move sounds like. Bad and great follow either side's move, and
  * only when the move was analyzed. */
 export function moveSounds(input: MoveSoundInput): MoveSounds {
-  const base = /[+#]$/.test(input.san) ? 'check' : input.mover === input.learnerSide ? 'move' : 'opponent';
+  const base = /[+#]$/.test(input.san) ? 'check' : input.san.includes('x') ? 'capture' : input.mover === input.learnerSide ? 'move' : 'opponent';
   return { base, stinger: input.quality ? stingerFor(input as MoveSoundInput & { quality: MoveQuality }) : null };
 }
 

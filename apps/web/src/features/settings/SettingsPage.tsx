@@ -31,6 +31,7 @@ function readStoredTheme(): Theme | null {
 const SOUND_SAMPLES: [BoardSound, string][] = [
   ['move', 'Your move'],
   ['opponent', 'Opponent'],
+  ['capture', 'Capture'],
   ['check', 'Check'],
   ['bad', 'Bad move'],
   ['great', 'Great move']
