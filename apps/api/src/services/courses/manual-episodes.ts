@@ -59,7 +59,7 @@ function trapChapters(skeleton: TrapSkeleton, lines: CourseLineGame[], learner: 
           quiz: { answerNodeId: answer, prompt: `${sideName(learner)} to move. Find the strongest move.`, hint: '', reveal: '' }
         })
       : []),
-    ...builder.add({ role: 'punish', focus: 'punish: one beat per forcing move', nodeIds: skeleton.punishNodeIds, drillNodeIds: learnerMoves(skeleton.punishNodeIds) }),
+    ...builder.add({ role: 'punish', focus: 'punish: what does each forcing move threaten?', nodeIds: skeleton.punishNodeIds, drillNodeIds: learnerMoves(skeleton.punishNodeIds) }),
     ...builder.add({
       role: 'safety',
       focus: 'safety: how does the victim stay safe?',

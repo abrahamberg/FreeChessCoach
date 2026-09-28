@@ -688,7 +688,7 @@ Use exactly these episodes, in order:
    the viewer should think "I'd play that too".
 4. quiz — "What does Black play here?" plus a hint at the target. The
    clip pauses 3s (the app adds the pause).
-5. punish — one beat per forcing move; captions carry the rhythm.
+5. punish — every forcing move speaks in the clip; captions carry the rhythm.
 6. safety — how the victim stays safe: Nc3, in one or two sentences.
 The end card and call to action are added by the app; don't write them.
 Notes: every node gets one. The bait and the safe move get the longest. The
