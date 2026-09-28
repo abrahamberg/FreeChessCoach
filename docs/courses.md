@@ -1105,7 +1105,7 @@ One idea. The planner picks the moment from code's candidates:
     mate;
   - `promo`: plays up to the moment before the climax and stops on the
     question; the CTA sends viewers to the video. Only when there is a
-    video Its lines are only on the moves before
+    video. Its lines are only on the moves before
     the climax (checked).
 
 Script (`document.reel`):
