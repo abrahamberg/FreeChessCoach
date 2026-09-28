@@ -1,4 +1,4 @@
-# FreeChessCoach — Courses and clips (Phases 79–83)
+# FreeChessCoach — Courses and clips (Phases 79–86)
 
 **Source spec:** `docs/courses.md` (read only the section a task names). Every
 citation below was checked on 2026-09-27; re-check before editing.
@@ -13,6 +13,18 @@ kinds: opening reel, opening course, tactics, traps, master games. Signed-in
 learners get progress and a review schedule (1 week, 3 weeks, 9 weeks). Only
 users a moderator enables may create courses. The first creator is the owner,
 making courses to bring people to the site.
+
+## The follow-up request (owner, 2026-09-28)
+
+Between the play-through and the drill there is a missing step: the learner
+first plays with arrows, then with fewer (some moves without), then drills, so
+it sticks. Until the last stage the learner plays only their own side; the
+opponent's correct moves are played for them. The last stage is a full drill
+of both sides. All of it works signed out; signed-in learners can leave and
+come back (the course shows in the Games page's Continue rail) and it counts
+as their learning. Play with Coach and Play a Bot move into the Games page,
+and the Play tab becomes a Courses page: the list of courses, the ones being
+learned, and the ones learned, in the app's style. Phases 84–86.
 
 ## What already exists and is reused (verified)
 
@@ -783,10 +795,202 @@ Commit: `feat(courses): ask your own coach about a course move`
 
 ### Task 83.3 — Docs
 
-- [ ] `docs/architecture.md`: courses (tables, job, public routes, clips).
+Moved to Task 86.4, so the docs describe Phases 84–86 too.
+
+## Phase 84 — The learning ladder
+
+Design decisions (owner, 2026-09-28; do not relitigate):
+
+- **Four stages per course, in order**: Play through (all arrows) → Practice
+  (the learner plays, arrows fade) → Drill (own side, no arrows) → Full drill
+  (both sides, no arrows). The stage is per course; the review schedule stays
+  per position + move (`course-review.ts`).
+- **Only the learner's own moves are asked until the full drill**; the
+  opponent's course moves are played for them, for every kind, trap included
+  (today a trap's drill asks both sides: `COURSE_DRILL_MODE.trap` in
+  `packages/chess-analysis/src/course-review.ts`).
+- **Only Drill and Full drill feed the review schedule** (first try counts, as
+  now). Practice never does.
+- **Everything works signed out**, kept in the browser; signing in moves it to
+  the account (the pattern of `importBrowserProgress`,
+  `apps/web/src/features/courses/player/course-progress.ts`).
+
+### Task 84.1 — Stages and hints as pure code
+
+**Read:** `docs/courses.md` §11;
+`packages/chess-analysis/src/course-review.ts` (`buildCourseDrill`,
+`COURSE_DRILL_MODE`) and its test.
+**Files:** a new `packages/chess-analysis/src/course-stages.ts` + test;
+`course-review.ts` (+ test).
+
+- [ ] Failing tests first: `COURSE_STAGES = ['play_through', 'practice',
+  'drill', 'full_drill']` and `nextCourseStage`.
+- [ ] `buildCourseDrill(document, states, today, sides)` with `sides:
+  'learner' | 'both'` replacing the per-kind `both_sides` mode. `learner`:
+  the drill moves of the side that plays them (the learner's side; for
+  tactics, the side to move at each example's drill move). `both`: every move
+  of the drill episodes. Keep `guess_move` scoring for master games.
+- [ ] Practice hints, pure: `practiceShowsArrow(key, practice)`. A move shows
+  its arrow until the learner has played it right without the arrow; a miss
+  turns it back on. The stage is done when every asked move has been played
+  right once without its arrow. The arrow is the note's arrows, else the
+  creator's, else one arrow for the move itself (from → to, kind `best`).
+- [ ] Tests for each: the first ask shows the arrow, a right answer hides it
+  next time, a miss shows it again, and when the stage is done.
+
+Commit: `feat(courses): the four learning stages and fading hints`
+
+### Task 84.2 — Practice and the stage bar in the player
+
+**Read:** `apps/web/src/features/courses/player/CoursePlayer.tsx`,
+`CourseDrill.tsx`, `CoursePlayer.css`; `apps/web/src/features/games/
+CourseReviewCard.tsx` (its `?drill=1` link).
+**Files:** those files, a new `player/CourseStageBar.tsx` + test,
+`CourseDrill.test.tsx`.
+
+- [ ] Failing tests first (mock `CoachBoard` as `CourseDrill.test.tsx`
+  does): practice shows the arrow on the first ask, not after a right answer,
+  again after a miss; the opponent's moves are played automatically in
+  practice and drill; the full drill asks both sides; practice records
+  nothing to the review schedule.
+- [ ] `CourseStageBar` replaces the "Play through / Drill" chips: four steps,
+  finished ones ticked, the next one highlighted; any stage can be opened.
+  Token colours only, every button styled (dark mode).
+- [ ] `CourseDrill` takes a `stage` prop (`practice | drill | full_drill`).
+  Finishing a stage offers the next ("Now without arrows", "Now both sides").
+- [ ] `?stage=<stage>` opens a stage; `?drill=1` stays as an alias. The Due
+  today card links with `?stage=drill`.
+- [ ] Manual check on `/learn/<slug>`: all four stages on the Englund trap.
+
+Commit: `feat(courses): practice with fading arrows, then drill, then both sides`
+
+## Phase 85 — My learning: keep the place, continue later
+
+### Task 85.1 — Enrollment storage
+
+**Read:** `apps/api/src/db/migrations/0020_course_progress.ts`,
+`apps/api/src/db/repositories/course-progress.ts`,
+`apps/api/src/routes/course-progress.ts`, `apps/api/src/services/account.ts`.
+**Files:** migration `0021_course_enrollments.ts` (+ `migrate.ts`,
+`schema.ts`), `repositories/course-enrollments.ts`, routes in
+`routes/course-progress.ts`, schemas in `packages/shared/src/course-api.ts`,
+`services/account.ts`, `player/course-progress.ts`.
+
+- [ ] Failing route tests first.
+- [ ] Table `course_enrollments (user_id → users ON DELETE CASCADE, course_id
+  → courses ON DELETE CASCADE, stage text, place jsonb {episode, step},
+  stages_done text[], started_at, updated_at, completed_at null, PRIMARY KEY
+  (user_id, course_id))`. `completed_at` is set when the full drill is
+  finished.
+- [ ] `PUT /api/course-enrollments/:slug` (stage, place, stagesDone; 204),
+  `GET /api/course-enrollments` (newest activity first, with title, kind,
+  stage, stages done, place, completed), `DELETE
+  /api/course-enrollments/:slug` ("remove from my learning"). The slug is
+  resolved to a published course on the server; a taken-down course drops
+  out of the list.
+- [ ] Signed out: the same record in `localStorage`, moved to the account by
+  the sign-in import (the newer copy wins), next to the review progress.
+- [ ] Account deletion deletes the rows (test).
+
+Commit: `feat(courses): keep each learner's stage and place in a course`
+
+### Task 85.2 — Resume in the player
+
+**Read:** `player/CoursePlayer.tsx`, `player/useCourseProgressStore.ts`.
+**Files:** those, a new `player/useCourseEnrollment.ts` + test.
+
+- [ ] Failing test first: a saved stage and place open the player there, with
+  "Continue where you left off: Drill, move 5 of 15" and "Start over".
+- [ ] Saves the place as the learner moves (debounced, about 1 s) and on each
+  finished stage; the editor's preview saves nothing.
+
+Commit: `feat(courses): pick a course up where you left it`
+
+### Task 85.3 — Courses in the Continue rail
+
+**Read:** `apps/web/src/features/games/GamesPage.tsx` (the Continue section),
+`ContinueSessionCard.tsx`, `RailCard.css`, `useGamesQueries.ts`
+(`useInProgressGames`).
+**Files:** a new `games/CourseContinueCard.tsx` + test, `GamesPage.tsx`.
+
+- [ ] Failing test first.
+- [ ] Unfinished courses join the Continue rail as rail cards: a "Course"
+  chip, the title, the stage and a progress bar, a play button to the course
+  at its saved place. Mixed with the game sessions by last activity; the
+  count includes them.
+
+Commit: `feat(games): unfinished courses in the Continue rail`
+
+## Phase 86 — Courses in the navigation
+
+### Task 86.1 — Play moves into the Games page
+
+**Read:** `apps/web/src/features/play/PlayPage.tsx` (its doc comment records
+the earlier choice to split playing from studying; the owner reversed it on
+2026-09-28), `apps/web/src/features/games/GamesPage.tsx`,
+`ImportShortcuts.tsx`, `apps/web/src/components/AppShell.tsx`
+(`NAV_DESTINATIONS`), `apps/web/src/components/Icon.tsx`.
+**Files:** those files; `App.tsx`.
+
+- [ ] A "Play" section on the Games page under Import games: Play with Coach
+  (the learner's coach avatar) and Play a Bot, the same two destinations as
+  `PlayPage`'s `DESTINATIONS`, in the Import games card style.
+- [ ] Navigation becomes Games, Courses, Progress, Stats, in both the top
+  pill nav and the bottom tab bar; a Courses icon in `Icon.tsx`'s stroke
+  style. `/play` redirects to `/games`; `/play/new` and `/play-bot/new` are
+  unchanged; `PlayPage` and its CSS go.
+- [ ] The `/demo` runtime still works (`getDemoRuntime()` routes).
+
+Commit: `feat(nav): play from the Games page, Courses in the navigation`
+
+### Task 86.2 — Course catalogue API
+
+**Read:** `apps/api/src/routes/public-courses.ts`,
+`apps/api/src/plugins/route-rate-limit.ts` (`publicCourse`),
+`apps/api/src/db/repositories/courses.ts` (`findPublishedBySlug`).
+**Files:** those, `packages/shared/src/course-api.ts`, tests.
+
+- [ ] Failing tests first: unlisted, draft and removed courses never appear.
+- [ ] `GET /api/public/courses?kind=` lists `public` courses only: slug,
+  title, promise, kind, level, coach, learner side, published date, episode
+  and move counts. Newest first, 50 a page with a cursor; cached 60 s.
+
+Commit: `feat(courses): the public course catalogue`
+
+### Task 86.3 — The Courses page
+
+**Read:** `apps/web/src/features/games/GamesPage.tsx` and `GamesPage.css` (the
+style to hold: section headings, `HorizontalScroller` rails, `rail-card`),
+`apps/web/src/features/courses/CoursesPage.tsx` (today the creator's list at
+`/courses`), `apps/web/src/components/AccountMenuSections.tsx` ("Your
+courses"), `App.tsx`.
+**Files:** a new `features/courses/learn/CoursesHomePage.tsx` + test and CSS;
+`App.tsx`; `AccountMenuSections.tsx`.
+
+- [ ] Failing test first: the three sections render from mocked queries,
+  with their empty states.
+- [ ] `/courses` becomes the learner's page: **Learning** (unfinished: stage,
+  progress, last activity), **Browse** (the catalogue, kind filter chips; a
+  badge on courses already learning or learned), **Learned** (finished, with
+  moves due for review).
+- [ ] The creator's pages move to `/studio`, `/studio/new`,
+  `/studio/:id/edit`, with redirects from the old creator paths; the account
+  menu item becomes "Course studio" (still creators only).
+- [ ] `/courses/:slug` shows the same `CoursePlayer` inside the app shell for
+  signed-in users; `/learn/:slug` stays the public page. The Courses page and
+  the Continue rail link to `/courses/:slug`.
+- [ ] "Remove from my learning" on a Learning card.
+
+Commit: `feat(courses): a Courses page for learning, browsing and learned courses`
+
+### Task 86.4 — Docs
+
+- [ ] `docs/architecture.md`: courses (tables, job, public routes, clips,
+  review, enrollments, catalogue, navigation).
+- [ ] `docs/courses.md` §11 (the four stages), §9 (the catalogue).
 - [ ] Update the AGENTS.md plan pointer.
 
-Commit: `docs: courses and clips`
+Commit: `docs: courses, learning and the Courses page`
 
 ## Verification (end of each phase)
 
@@ -801,3 +1005,12 @@ Commit: `docs: courses and clips`
   is gone.
 - 83: a drilled move reappears after the schedule; a miss brings it back
   tomorrow.
+- 84: on the Englund trap, practice shows the arrows and then fewer, the drill
+  asks only the learner's side, the full drill asks both; practice leaves the
+  review schedule alone.
+- 85: signed in, leave a course mid-drill; it is in the Continue rail and
+  opens at the same move. Signed out, the same works in that browser and moves
+  to the account on sign-in.
+- 86: the nav reads Games, Courses, Progress, Stats; Play with Coach and Play a
+  Bot start from the Games page; a public course is in Browse, an unlisted one
+  is not; a finished course is under Learned.
