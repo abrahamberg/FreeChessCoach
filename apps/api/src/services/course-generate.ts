@@ -1,5 +1,5 @@
-import { verifyCourseFrame, type CourseSkeleton } from '@freechesscoach/chess-analysis';
-import { REEL_WARNINGS, type CourseDebugResponse, type CourseDocument, type CourseEpisode, type CourseGeneration, type CourseOutline, type CourseResponse, type CourseWarning } from '@freechesscoach/shared';
+import { verifyCourseFrame, type CourseSkeleton, type ReelCandidate } from '@freechesscoach/chess-analysis';
+import { courseVideos, REEL_WARNINGS, type CourseDebugResponse, type CourseDocument, type CourseReel, type CourseEpisode, type CourseGeneration, type CourseOutline, type CourseResponse, type CourseWarning } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as coursesRepo from '../db/repositories/courses.js';
 import type { Database } from '../db/schema.js';
@@ -126,6 +126,39 @@ export async function regenerateCourseEpisode(deps: CourseGenerateDeps, ownerId:
   const next: CourseGeneration = { ...generation, warnings: withWarnings(generation.warnings, episodeId, written.warnings) };
   await coursesRepo.setGeneration(deps.db, id, next);
   return toCourseResponse(deps.db, { ...saved, generation: next });
+}
+
+/**
+ * docs/courses.md §13.1, "Add a reel" (or write it again): the reel call on
+ * its own, on the reel's span when it has one, else on code's first
+ * candidate. One model call, answered in the request like a regenerated
+ * episode; the course now makes a reel.
+ */
+export async function writeCourseReel(deps: CourseGenerateDeps, ownerId: string, id: string): Promise<CourseResponse> {
+  const row = await ownedCourse(deps.db, ownerId, id);
+  const generation = liveGeneration(row.generation);
+  if (generation && ACTIVE.has(generation.status)) throw new ConflictError('The course is still being written');
+  const document = storedDocument(row);
+  const inputs = await loadGenerationInputs(deps.db, row, document, deps.buildDossier);
+  const first = inputs.context.reelCandidates?.[0];
+  const frame = document.reel ?? (first && reelOnCandidate(document, first));
+  if (!frame) throw new ValidationError('Code found no moment in this course for a reel');
+  const written = await writeReel(inputs, document, frame, modelCall(deps, ownerId, id));
+  const saved = await saveDocument(deps.db, row, { ...document, videos: { ...courseVideos(document), reel: true }, reel: written.reel });
+  const next: CourseGeneration = {
+    ...(generation ?? { status: 'succeeded', step: null, done: 0, total: 0, error: null, outline: null, finishedEpisodeIds: [] }),
+    warnings: withWarnings(generation?.warnings ?? [], REEL_WARNINGS, written.warnings)
+  };
+  await coursesRepo.setGeneration(deps.db, id, next);
+  return toCourseResponse(deps.db, { ...saved, generation: next });
+}
+
+/** An empty reel on a candidate: a puzzle for a puzzle or tactics course
+ * where it fits, a highlight otherwise. */
+function reelOnCandidate(document: CourseDocument, candidate: ReelCandidate): CourseReel {
+  const puzzle = (document.kind === 'puzzle' || document.kind === 'tactics') && candidate.styles.includes('puzzle');
+  const { startNodeId, climaxNodeId, endNodeId } = candidate;
+  return { style: puzzle ? 'puzzle' : 'highlight', startNodeId, climaxNodeId, endNodeId, hook: '', topText: '', beats: [], payoff: '', cta: '', loop: '' };
 }
 
 /** Task 80.6: the AI calls of the course's latest run, for its owner. */

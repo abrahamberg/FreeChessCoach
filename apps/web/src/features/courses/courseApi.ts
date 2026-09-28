@@ -91,6 +91,15 @@ export function useRegenerateEpisode(id: string): UseMutationResult<CourseRespon
   });
 }
 
+/** docs/courses.md §13.1: the reel alone, written by the AI now. */
+export function useWriteReel(id: string): UseMutationResult<CourseResponse, Error, void> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiPost(`/api/courses/${id}/reel`, {}, CourseResponseSchema),
+    onSuccess: (course) => queryClient.setQueryData(['course', id], course)
+  });
+}
+
 /** docs/courses.md §9: the draft becomes the published copy. */
 export function usePublishCourse(id: string): UseMutationResult<CourseResponse, Error, PublishCourseRequest> {
   const queryClient = useQueryClient();

@@ -114,6 +114,13 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
     return reply.code(204).send();
   });
 
+  /** §13.1: the reel alone, written now (one model call). */
+  app.post('/api/courses/:id/reel', async (request): Promise<CourseResponse> => {
+    const ownerId = await creatorId(request);
+    if (!deps.resolveModel) throw new ValidationError('AI is not configured on this server');
+    return courseGenerate.writeCourseReel({ db, buildDossier, resolveModel: deps.resolveModel }, ownerId, courseId(request));
+  });
+
   app.post('/api/courses/:id/episodes/:episodeId/regenerate', async (request): Promise<CourseResponse> => {
     const ownerId = await creatorId(request);
     const params = EpisodeParamsSchema.safeParse(request.params);

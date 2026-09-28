@@ -10,7 +10,7 @@ import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
 import { noopJobQueue } from '../jobs/queue.js';
 import { ConflictError, ValidationError } from '../lib/errors.js';
-import { runCourseGeneration, startCourseGeneration, type CourseGenerateDeps } from './course-generate.js';
+import { runCourseGeneration, startCourseGeneration, writeCourseReel, type CourseGenerateDeps } from './course-generate.js';
 import { createCourse, GENERATION_STALE_MS, liveGeneration } from './courses.js';
 
 let testDb: TestDb;
@@ -143,6 +143,19 @@ describe('runCourseGeneration', () => {
     expect(row?.document?.video?.title).toBe('A greedy queen, mated in eight');
     expect(row?.generation).toMatchObject({ status: 'succeeded', done: 7, total: 7 });
     expect(row?.generation?.warnings.filter((warning) => warning.episodeId === 'reel')).toEqual([]);
+  });
+
+  test('"Add a reel": the reel call alone on code’s first candidate; the course now makes a reel', async () => {
+    const id = await newCourse('add-reel@example.com');
+    const script = { hook: 'The Englund Gambit trap that mates in eight.', topText: 'Black to play', beats: [], payoff: 'Mate in eight', cta: 'Follow for a trap a day.', loop: 'All from one greedy gambit.' };
+    const { deps } = depsWith([step(script)]);
+    const user = (await coursesRepo.findById(db, id))!.ownerId;
+
+    const course = await writeCourseReel(deps, user, id);
+
+    expect(course.document.videos).toEqual({ video: true, reel: true });
+    expect(course.document.reel).toMatchObject({ climaxNodeId: 'n16', hook: script.hook, style: 'highlight' });
+    expect(course.generation?.warnings.filter((warning) => warning.episodeId === 'reel')).toEqual([]);
   });
 
   test('no YouTube video: no video budget, no video ticks, whatever the model says', async () => {

@@ -1851,6 +1851,13 @@ Commit: `feat(courses): record the video and the reel`
 
 ### Task 95.1 — The editor
 
+Progress 2026-09-29: `POST /api/courses/:id/reel` writes the reel alone
+(one model call, on the reel's span or code's first candidate) and
+`useWriteReel` calls it; tested. Next: the Details column's video and reel
+cards, the tempting moves in the Moves tab. "Add a video" turns the video
+on and points to "Write it again with AI" (a video is an outline and every
+episode), with its packaging editable by hand.
+
 **Files:** `CourseDetails.tsx` (Videos ticks, "Add a reel"/"Add a video"),
 `CourseEpisodePanel.tsx` (Moves: course and video ticks, the video line,
 the tempting moves with their why), a Video tab (title, thumbnail text,
