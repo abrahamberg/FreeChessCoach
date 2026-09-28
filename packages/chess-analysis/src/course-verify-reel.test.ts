@@ -1,7 +1,7 @@
 import type { CourseDocument, CourseReel } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { analyseEnglund } from './course-test-fixtures.js';
-import { reelSeconds, verifyCourseFrame, verifyCourseReel } from './course-verify-reel.js';
+import { overusedOpeners, reelSeconds, sentenceOpeners, verifyCourseFrame, verifyCourseReel } from './course-verify-reel.js';
 
 function reel(edit: Partial<CourseReel> = {}): CourseReel {
   return {
@@ -54,6 +54,19 @@ describe('verifyCourseReel (§13.9)', () => {
     expect(verify(reel({ style: 'promo' }), false)[0]?.message).toBe('A promo reel sends viewers to the YouTube video, and this course has none');
     const long = Array.from({ length: 6 }, (_, index) => ({ nodeId: 'n12', say: `Line ${index} goes on and on and on with far too many words for one reel.`, caption: 'Long' }));
     expect(verify(reel({ beats: long, style: 'puzzle' })).map((problem) => problem.message)).toContainEqual(expect.stringMatching(/^The reel runs about \d+ s \(at most 45\): cut words$/));
+  });
+});
+
+describe('the promo and the openers', () => {
+  test('a promo stops before its climax: a line on it or after it never plays', () => {
+    const promo = reel({ style: 'promo', climaxNodeId: 'n16', endNodeId: 'n16' });
+    expect(verify(promo).map((problem) => problem.message)).toEqual(['The promo stops before n16, so the line on n16 never plays: keep lines before the climax']);
+  });
+
+  test('words earlier lines lean on, everyday and board words aside', () => {
+    const lines = ['Execute the pin.', "It's over. Execute.", "White's queen is lost. It's mate.", 'Secure the win.'];
+    expect(sentenceOpeners(lines)).toEqual(new Map([['execute', 2], ['secure', 1]]));
+    expect(overusedOpeners(lines)).toEqual(['execute']);
   });
 });
 

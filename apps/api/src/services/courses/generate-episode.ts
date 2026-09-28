@@ -1,4 +1,4 @@
-import { verifyCourseEpisode, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
+import { courseLines, overusedOpeners, verifyCourseEpisode, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
 import { buildCourseEpisodeMessages, courseBudget, episodeWordBudget } from '@freechesscoach/prompts';
 import { courseVideos, EpisodeScriptSchema, type CourseEpisode, type CourseTempting, type CourseOutline, type CourseOutlineEpisode, type CourseWarning, type EpisodeScript } from '@freechesscoach/shared';
 import { learnerNodes } from './generate-outline.js';
@@ -21,7 +21,7 @@ export async function writeEpisode(
   call: CourseModelCall,
   creatorRequest: string | null = null
 ): Promise<WrittenEpisode> {
-  const request = { context: inputs.context, outline, episodeId, creatorRequest };
+  const request = { context: inputs.context, outline, episodeId, creatorRequest, usedOpeners: overusedOpeners(courseLines(inputs.document, episodeId)) };
   const label = { step: 'episode', episodeId, repair: false } as const;
   const first = await call(buildCourseEpisodeMessages(request), EpisodeScriptSchema, label);
   let episode = toEpisode(inputs, outline, episodeId, first);

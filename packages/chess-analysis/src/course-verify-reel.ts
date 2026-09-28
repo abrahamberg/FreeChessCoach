@@ -61,6 +61,13 @@ export function verifyCourseReel(input: CourseReelVerifyInput): CourseVerifyProb
   if (!cta) problems.push({ code: 'reel', nodeId: null, message: 'The reel has no call to action' });
   for (const generic of GENERIC_CTAS) if (cta.includes(generic)) problems.push({ code: 'reel', nodeId: null, message: `"${generic}" is a generic call to action: say what the viewer gets` });
   if (reel.style === 'promo' && !input.hasVideo) problems.push({ code: 'reel', nodeId: null, message: 'A promo reel sends viewers to the YouTube video, and this course has none' });
+  if (reel.style === 'promo') {
+    // A promo stops before the climax: a line on it or after it never plays.
+    const climax = scope.path.indexOf(reel.climaxNodeId);
+    for (const beat of reel.beats) {
+      if (climax >= 0 && scope.path.indexOf(beat.nodeId) >= climax) problems.push({ code: 'reel', nodeId: beat.nodeId, message: `The promo stops before ${reel.climaxNodeId}, so the line on ${beat.nodeId} never plays: keep lines before the climax` });
+    }
+  }
   const seconds = reelSeconds(reel, scope.path.length);
   if (seconds > CONFIG.courses.reelSeconds.max) problems.push({ code: 'reel', nodeId: null, message: `The reel runs about ${Math.round(seconds)} s (at most ${CONFIG.courses.reelSeconds.max}): cut words` });
 
@@ -116,27 +123,46 @@ export function verifyCourseFrame(document: CourseDocument): CourseVerifyProblem
   return problems;
 }
 
-/** Board words any coach starts with; not a catchphrase. */
-const BOARD_WORDS = new Set(['white', 'black', 'the', 'this', 'that', 'your', 'their', 'king', 'queen', 'rook', 'bishop', 'knight', 'pawn']);
+/** Board and everyday words any coach starts with; not a catchphrase. */
+const COMMON_OPENERS = new Set([
+  'white', "white's", 'black', "black's", 'this', 'that', "that's", 'your', 'their', "it's", 'there', "there's", 'here', "here's", 'then', 'now',
+  'king', 'queen', 'rook', 'bishop', 'knight', 'pawn'
+]);
+const CATCHPHRASE_LINES = 3;
 
-/** A word the coach starts sentences with in 3 or more lines across the
- * course and the reel ("Execute." in five): a catchphrase, not a voice. */
-function catchphraseProblems(document: CourseDocument): CourseVerifyProblem[] {
-  const lines = [
-    ...document.episodes.flatMap((episode) => episode.plies.flatMap((ply) => [ply.course ? ply.text : '', ply.video && ply.say ? ply.say : ''])),
+/** Every spoken line of the course, the video and the reel; without one
+ * episode's, for the episode being written. */
+export function courseLines(document: CourseDocument, exceptEpisodeId: string | null = null): string[] {
+  return [
+    ...document.episodes.filter((episode) => episode.id !== exceptEpisodeId).flatMap((episode) => episode.plies.flatMap((ply) => [ply.course ? ply.text : '', ply.video && ply.say ? ply.say : ''])),
     ...(document.reel?.beats.map((beat) => beat.say) ?? [])
   ].filter((line) => line.trim());
+}
+
+/** How many lines start a sentence with each word, everyday words aside. */
+export function sentenceOpeners(lines: readonly string[]): Map<string, number> {
   const counts = new Map<string, number>();
   for (const line of lines) {
     // A SAN ("Bc3") starts with a capital too; only plain words count.
     const starts = new Set(line.split(/(?<=[.!?])\s+/).map((sentence) => normalised(sentence).split(/\s+/)[0] ?? '').filter((word) => /^[a-z']+[,;:]?$/.test(word)));
     for (const word of starts) {
       const plain = word.replace(/[,;:]$/, '');
-      if (plain.length > 3 && !BOARD_WORDS.has(plain)) counts.set(plain, (counts.get(plain) ?? 0) + 1);
+      if (plain.length > 3 && !COMMON_OPENERS.has(plain)) counts.set(plain, (counts.get(plain) ?? 0) + 1);
     }
   }
-  return [...counts]
-    .filter(([, count]) => count >= 3)
+  return counts;
+}
+
+/** Words earlier lines already lean on (2 or more), for the next call to avoid. */
+export function overusedOpeners(lines: readonly string[]): string[] {
+  return [...sentenceOpeners(lines)].filter(([, count]) => count >= CATCHPHRASE_LINES - 1).map(([word]) => word);
+}
+
+/** A word the coach starts sentences with in 3 or more lines across the
+ * course and the reel ("Execute." in five): a catchphrase, not a voice. */
+function catchphraseProblems(document: CourseDocument): CourseVerifyProblem[] {
+  return [...sentenceOpeners(courseLines(document))]
+    .filter(([, count]) => count >= CATCHPHRASE_LINES)
     .map(([word, count]) => ({ code: 'voice' as const, nodeId: null, message: `${count} lines start a sentence with "${word}" across the course: a catchphrase, vary it` }));
 }
 

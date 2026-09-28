@@ -1,7 +1,7 @@
 import { courseNodePath, renderCourseDossier } from '@freechesscoach/chess-analysis';
 import type { CourseReel } from '@freechesscoach/shared';
 import { buildCourseSystemPrompt, nodeLabel, type CourseMessages, type CoursePromptContext } from './context.js';
-import { episodeDossier } from './episode.js';
+import { episodeDossier, usedOpenersLine } from './episode.js';
 
 export const REEL_SCRIPT_JSON_SCHEMA = `{
   "hook": string (spoken in the first 2 seconds, at most 10 words, names the idea),
@@ -25,6 +25,8 @@ export interface CourseReelRequest {
   reel: CourseReel;
   /** The YouTube video's title, for a promo's call to action. */
   videoTitle: string | null;
+  /** Words the course's lines already start 2 or more sentences with. */
+  usedOpeners?: readonly string[];
   retry?: { previousOutput: string; problems: string[] } | null;
 }
 
@@ -46,10 +48,11 @@ ${moves}
 - Lines only on the moves that carry the idea; the rest play without a word.
 - The app plays the build-up fast, cuts the sound for half a second before the climax,
   then plays it slowly: the words at the climax can wait for it.
-- The call to action says what the viewer gets ("Follow for a daily mate-in-3"),
-  never "subscribe for more" or "like and subscribe".
+- The call to action says what the viewer gets from following, in this course's own
+  terms (its opening, its tactic, its level), never "subscribe for more" or
+  "like and subscribe".${promoLine(reel)}
 - The last line flows back into the first, so the reel loops.
-Every beat nodeId is one of: ${path.join(', ')}.`,
+Every beat nodeId is one of: ${promoBeats(reel, path).join(', ')}.${usedOpenersLine(request.usedOpeners)}`,
     `DOSSIER (the reel's moves only)\n${renderCourseDossier(episodeDossier(context, { startNodeId: reel.startNodeId, endNodeId: reel.endNodeId, answerNodeId: null }))}`,
     request.retry
       ? `YOUR PREVIOUS ANSWER HAD THESE PROBLEMS — fix every one\n${request.retry.problems.map((problem) => `- ${problem}`).join('\n')}\n\nYour previous answer:\n${request.retry.previousOutput}`
@@ -57,4 +60,14 @@ Every beat nodeId is one of: ${path.join(', ')}.`,
     `OUTPUT SCHEMA\n${REEL_SCRIPT_JSON_SCHEMA}`
   ];
   return { system: buildCourseSystemPrompt(context), user: sections.filter(Boolean).join('\n\n') };
+}
+
+/** A promo stops before its climax, so its lines are on the moves before it. */
+function promoBeats(reel: CourseReel, path: string[]): string[] {
+  const climax = path.indexOf(reel.climaxNodeId);
+  return reel.style === 'promo' && climax > 0 ? path.slice(0, climax) : path;
+}
+
+function promoLine(reel: CourseReel): string {
+  return reel.style === 'promo' ? '\n- A promo never shows the climax: no line on it or after it, and the payoff teases it.' : '';
 }

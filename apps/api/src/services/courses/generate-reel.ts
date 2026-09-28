@@ -1,4 +1,4 @@
-import { verifyCourseReel, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
+import { courseLines, overusedOpeners, verifyCourseReel, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
 import { buildCourseReelMessages } from '@freechesscoach/prompts';
 import { courseVideos, REEL_WARNINGS, ReelScriptSchema, type CourseDocument, type CourseReel, type CourseWarning } from '@freechesscoach/shared';
 import type { CourseModelCall, GenerationInputs } from './generation-inputs.js';
@@ -14,7 +14,7 @@ export interface WrittenReel {
  * kept, as warnings for the whole course.
  */
 export async function writeReel(inputs: GenerationInputs, document: CourseDocument, frame: CourseReel, call: CourseModelCall): Promise<WrittenReel> {
-  const request = { context: inputs.context, title: document.title, promise: document.promise, reel: frame, videoTitle: document.video?.title ?? null };
+  const request = { context: inputs.context, title: document.title, promise: document.promise, reel: frame, videoTitle: document.video?.title ?? null, usedOpeners: overusedOpeners(courseLines({ ...document, reel: undefined })) };
   const label = { step: 'reel', episodeId: null, repair: false } as const;
   const first = await call(buildCourseReelMessages(request), ReelScriptSchema, label);
   let reel: CourseReel = { ...frame, ...first };

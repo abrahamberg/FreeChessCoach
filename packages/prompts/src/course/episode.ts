@@ -20,6 +20,9 @@ export interface CourseEpisodeRequest {
   episodeId: string;
   /** From the editor's "regenerate": "punchier", "mention the pin earlier". */
   creatorRequest?: string | null;
+  /** Words earlier episodes already start 2 or more sentences with (§7's
+   * voice check is course-wide; this call cannot see those episodes). */
+  usedOpeners?: readonly string[];
   /** The verifier's problems with the previous answer (§7: sent back once). */
   retry?: { previousOutput: string; problems: string[] } | null;
 }
@@ -39,7 +42,7 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
   const sections = [
     `COURSE\nTitle: ${outline.title}\nPromise: ${outline.promise}`,
     `OUTLINE\n${renderOutline(outline, episodeId)}`,
-    `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nThe plan's key moves: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\n${ownNodesLine(context, episode)}\n${speakingLines(context, episode, words)}\nSay every line as the coach in VOICE would.`,
+    `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nThe plan's key moves: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\n${ownNodesLine(context, episode)}\n${speakingLines(context, episode, words)}\nSay every line as the coach in VOICE would.${usedOpenersLine(request.usedOpeners)}`,
     `DOSSIER (this episode only)\n${renderCourseDossier(episodeDossier(context, episode))}`,
     request.creatorRequest ? `CREATOR'S REQUEST FOR THIS EPISODE\n"${request.creatorRequest}"` : '',
     request.retry
@@ -48,6 +51,13 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
     `OUTPUT SCHEMA\n${EPISODE_SCRIPT_JSON_SCHEMA}`
   ];
   return { system: buildCourseSystemPrompt(context), user: sections.filter(Boolean).join('\n\n') };
+}
+
+/** The course-wide voice check, fed forward: without it the first real
+ * run started sentences with "Execute" in four episodes. */
+export function usedOpenersLine(words: readonly string[] | undefined): string {
+  if (!words?.length) return '';
+  return `\nEarlier lines already start sentences with: ${words.map((word) => `"${word.charAt(0).toUpperCase()}${word.slice(1)}"`).join(', ')}. Start yours another way.`;
 }
 
 /** Where the moves may be. The dossier also shows the move before the

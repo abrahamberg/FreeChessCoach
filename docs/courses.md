@@ -649,6 +649,12 @@ Output (`EpisodeScriptSchema`):
 }
 ```
 
+The voice check across the course (§7) is fed forward: the call is told
+which words earlier episodes already start two or more sentences with
+("Earlier lines already start sentences with: "Execute". Start yours
+another way.", `overusedOpeners`); the reel call too. The first
+three-product run started sentences with "Execute" in four episodes.
+
 Code merges it into the episode (`toEpisode`): with no video it strips the
 video ticks, lines and captions; it copies each tempting move's refutation
 from the dossier (`withRefutations`), so the model never writes engine lines.
@@ -1099,7 +1105,8 @@ One idea. The planner picks the moment from code's candidates:
     mate;
   - `promo`: plays up to the moment before the climax and stops on the
     question; the CTA sends viewers to the video. Only when there is a
-    video.
+    video Its lines are only on the moves before
+    the climax (checked)..
 
 Script (`document.reel`):
 

@@ -86,6 +86,9 @@ describe('course prompts', () => {
     expect(user).toContain('Speaking budget: at most 1 moves with "course": true, at most 1 with "video": true.');
     expect(user).toContain('Say every line as the coach in VOICE would.');
     expect(buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e2' }).user).toContain('Quiz: none in this episode, so "quiz" is null.');
+    // The course-wide voice check, fed forward to the next call.
+    expect(buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e2', usedOpeners: ['execute'] }).user).toContain('Earlier lines already start sentences with: "Execute". Start yours another way.');
+    expect(buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e2' }).user).not.toContain('Earlier lines');
     expect(user).toContain('"mention the pin earlier"');
   });
 
