@@ -565,8 +565,8 @@ a message the creator can read.
 | Tactic words | A motif word (fork, pin, skewer, discovered, double check, mate, trapped, deflection, …, from the detectors' vocabulary) appears only if the dossier lists that motif within the episode. |
 | Numbers | No eval-looking numbers (`+1.3`, `-0.8`, "centipawn", "eval"). No `N%` unless the creator's direction contains it. |
 | Arrows | Each arrow is a legal move for either side in that position (the opponent's via `null-move-fen.ts`) or a threat the dossier lists. At most 2 per beat. |
-| Lengths | Words per beat and per episode within budget; captions at most 6 words; notes at most 2 sentences (4 at critical nodes). |
-| Quiz | `answerNodeId` eligible; the reveal names the answer move; the hint does not. |
+| Lengths | Words per beat and per episode within budget; captions at most 6 words; notes at most 2 sentences (4 at critical nodes); no beat without both words and a caption. |
+| Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); the hint does not name it. |
 | Phrases | None of `BANNED_GENERIC_PHRASES`. |
 
 Failures go back to the model once, as a list, with the episode's previous

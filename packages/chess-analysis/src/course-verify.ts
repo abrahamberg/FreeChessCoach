@@ -61,6 +61,9 @@ function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: Cou
   const problems: CourseVerifyProblem[] = [];
   const { maxCaptionWords, maxNoteSentences, maxCriticalNoteSentences } = CONFIG.courses;
   episode.beats.forEach((beat, index) => {
+    if (!beat.say.trim() && !beat.caption.trim()) {
+      problems.push({ code: 'lengths', nodeId: beat.nodeId, message: `Beat ${index + 1} has no words and no caption; write one or drop the beat` });
+    }
     const captionWords = wordCount(beat.caption);
     if (captionWords > maxCaptionWords) {
       problems.push({ code: 'lengths', nodeId: beat.nodeId, message: `The caption of beat ${index + 1} has ${captionWords} words (at most ${maxCaptionWords})` });
@@ -96,6 +99,9 @@ function quizProblems(episode: CourseEpisode, scope: EpisodeScope, hasAnalysis: 
   }
   if (names(quiz.hint)) problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz hint names the answer ${label}` });
   if (!names(quiz.reveal)) problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz reveal does not name the answer ${label}` });
+  else if (wordCount(quiz.reveal) < CONFIG.courses.minRevealWords) {
+    problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz reveal only names ${label}; say in one sentence why it works` });
+  }
   return problems;
 }
 

@@ -131,8 +131,21 @@ describe('verifyCourseEpisode', () => {
     expect(codes(verify((episode) => (episode.quiz!.reveal = 'The bishop pins it.')))).toEqual(['quiz']);
   });
 
+  test('quiz: a reveal that only names the move', () => {
+    expect(verify((episode) => (episode.quiz!.reveal = '6... Bb4'))).toEqual([
+      { code: 'quiz', nodeId: 'n12', message: 'The quiz reveal only names 6…Bb4; say in one sentence why it works' }
+    ]);
+  });
+
+  test('lengths: a beat with no words and no caption; a caption-only beat is fine', () => {
+    expect(verify((episode) => episode.beats.push({ nodeId: 'n11', say: '', caption: ' ', arrows: [] }))).toEqual([
+      { code: 'lengths', nodeId: 'n11', message: 'Beat 3 has no words and no caption; write one or drop the beat' }
+    ]);
+    expect(verify((episode) => episode.beats.push({ nodeId: 'n11', say: '', caption: 'Silence', arrows: [] }))).toEqual([]);
+  });
+
   test('quiz: the answer has to be a clear only move', () => {
-    expect(codes(verify((episode) => (episode.quiz = { answerNodeId: 'n11', prompt: 'White to move.', hint: 'The queen.', reveal: 'Bc3 hits it.' })))).toEqual(['quiz']);
+    expect(codes(verify((episode) => (episode.quiz = { answerNodeId: 'n11', prompt: 'White to move.', hint: 'The queen.', reveal: 'Bc3 hits the queen and gains a tempo.' })))).toEqual(['quiz']);
   });
 
   test('phrases: stock chatbot phrases', () => {

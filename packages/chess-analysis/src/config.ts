@@ -466,6 +466,8 @@ export const CONFIG = {
     maxCaptionWords: 6,
     maxNoteSentences: 2,
     maxCriticalNoteSentences: 4,
+    /** A reveal says why the answer works, not just the move (gemma wrote "6... Bb4"). */
+    minRevealWords: 6,
     /** §6.3 clip budgets. Spoken words per second at Kokoro speed 1, with
      * room left for silent moves, quiz pauses and the end card; scaled by
      * the coach's `PERSONA_SPEECH_SPEED`. */
