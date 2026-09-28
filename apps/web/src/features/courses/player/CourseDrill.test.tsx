@@ -113,7 +113,8 @@ describe('CourseDrill', () => {
     // The log, newest on top: yours to play, the opponent's reply, your last move.
     expect(log()).toMatch(/You 2…Nc6.*Opponent 2\.dxe5.*You 1…e5/);
     await play('Nc6', nc6!.fenAfter, nc6!.uci);
-    expect(await screen.findByText('0 of 2 moves known.')).toBeTruthy();
+    expect(await screen.findByText('Round 1 of 3 done.')).toBeTruthy();
+    expect(screen.getByText('Next round: arrows on 1 of 2 moves.')).toBeTruthy();
 
     // Round 2: fewer arrows. e5 keeps its arrow, Nc6 has none and is hidden in the log.
     nextRound();
@@ -124,8 +125,11 @@ describe('CourseDrill', () => {
     expect(arrowsShown()).toBe(0);
     expect(log()).not.toContain('Nc6');
     expect(screen.getByRole('button', { name: 'Show the move' })).toBeTruthy();
+    expect(screen.getByText(/Round 2 of 3 ·/)).toBeTruthy();
     await miss();
-    expect(await screen.findByText('0 of 2 moves known.')).toBeTruthy();
+    // The miss adds rounds.
+    expect(await screen.findByText('Round 2 of 5 done.')).toBeTruthy();
+    expect(screen.getByText(/Missed: Nc6\. The arrow comes back for it\./)).toBeTruthy();
 
     // Round 3: e5 without its arrow; the missed Nc6 has its arrow back.
     nextRound();
@@ -135,7 +139,8 @@ describe('CourseDrill', () => {
     await findPrompt();
     expect(arrowsShown()).toBe(1);
     await play('Nc6', nc6!.fenAfter, nc6!.uci);
-    expect(await screen.findByText('1 of 2 moves known.')).toBeTruthy();
+    expect(await screen.findByText('Round 3 of 5 done.')).toBeTruthy();
+    expect(screen.getByText('Next round: arrows on every move.')).toBeTruthy();
 
     // Rounds 4 and 5: e5 is known and played for you; Nc6 fades out.
     nextRound();

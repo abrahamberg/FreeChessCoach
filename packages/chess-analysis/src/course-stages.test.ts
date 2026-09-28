@@ -1,6 +1,6 @@
 import { parseCourseTree } from './course-tree.js';
 import { describe, expect, test } from 'vitest';
-import { COURSE_STAGES, isPracticeDone, nextCourseStage, nextPracticeState, practiceArrow, practiceAsks, practiceShowsArrow } from './course-stages.js';
+import { COURSE_STAGES, isPracticeDone, nextCourseStage, nextPracticeState, practiceArrow, practiceAsks, practiceProgress, practiceRoundsLeft, practiceShowsArrow } from './course-stages.js';
 
 describe('course stages', () => {
   test('play through, practice, drill, then the full drill', () => {
@@ -43,5 +43,18 @@ describe('practice hints', () => {
   test('the hint is the move itself', () => {
     const [d4] = parseCourseTree('1. d4 *').nodes;
     expect(practiceArrow(d4!)).toEqual({ from: 'd2', to: 'd4', kind: 'best' });
+  });
+});
+
+describe('practice rounds', () => {
+  test('three rounds when every answer is right; a miss adds rounds', () => {
+    const keys = ['a', 'b'];
+    expect(practiceRoundsLeft(keys, new Map())).toBe(3);
+    const afterOne = new Map([['a', 'some_arrow' as const], ['b', 'some_arrow' as const]]);
+    expect(practiceRoundsLeft(keys, afterOne)).toBe(2);
+    expect(practiceProgress(keys, afterOne)).toBeCloseTo(1 / 3);
+    const missed = new Map([['a', 'no_arrow' as const], ['b', 'arrow' as const]]);
+    expect(practiceRoundsLeft(keys, missed)).toBe(3);
+    expect(practiceRoundsLeft(keys, new Map([['a', 'cleared' as const], ['b', 'cleared' as const]]))).toBe(0);
   });
 });

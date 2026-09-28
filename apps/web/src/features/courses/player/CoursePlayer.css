@@ -457,3 +457,9 @@
   color: var(--color-text-secondary);
   font-size: 0.85rem;
 }
+
+.course-drill__progress {
+  width: 100%;
+  height: 8px;
+  accent-color: var(--color-primary);
+}

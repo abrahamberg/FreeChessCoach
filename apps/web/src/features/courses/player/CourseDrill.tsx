@@ -4,6 +4,8 @@ import {
   nextPracticeState,
   practiceArrow,
   practiceAsks,
+  practiceProgress,
+  practiceRoundsLeft,
   practiceShowsArrow,
   type CourseDrill as Drill,
   type CourseDrillStep,
@@ -98,16 +100,10 @@ export function CourseDrill({ document, stage, progress, courseSlug, knownMoves,
   // Practice: a known move is played for the learner; the arrow shows until they know it.
   // Fixed for the round, so a miss brings the arrow back next round.
   const run = useMemo(() => {
-    if (!drill || reviewed) return drill && { drill, arrowKeys: new Set<string>() };
-    const episodes = drill.episodes
-      .map((episode) => ({ ...episode, steps: episode.steps.map((step) => ({ ...step, asked: step.asked && practiceAsks(practice.get(step.key)) })) }))
-      .filter((episode) => episode.steps.some((step) => step.asked));
-    const arrowKeys = new Set(
-      episodes.flatMap((episode) =>
-        episode.steps.filter((step) => step.asked).flatMap((step, index) => (practiceShowsArrow(practice.get(step.key), index) ? [step.key] : []))
-      )
-    );
-    return { drill: { ...drill, episodes }, arrowKeys };
+    if (!drill || reviewed) return drill && { drill, arrowKeys: new Set<string>(), roundLabel: null };
+    const next = practiceRound(drill, practice);
+    const keys = drill.episodes.flatMap((episode) => episode.steps.filter((step) => step.asked).map((step) => step.key));
+    return { ...next, roundLabel: `Round ${round + 1} of ${round + Math.max(1, practiceRoundsLeft(keys, practice))}` };
   }, [drill, reviewed, round]);
 
   // Practice is done only once every move is known, after this round's last answer landed.
@@ -144,6 +140,7 @@ export function CourseDrill({ document, stage, progress, courseSlug, knownMoves,
         result={finished}
         practiceKeys={askedKeys}
         practice={practice}
+        roundsDone={round + 1}
         onAgain={again}
         onNextStage={onNextStage}
         onExit={onExit}
@@ -159,6 +156,7 @@ export function CourseDrill({ document, stage, progress, courseSlug, knownMoves,
       drill={run.drill}
       introText={round === 0 ? intro(stage, drill) : stage === 'practice' ? 'Again, with fewer arrows.' : null}
       arrowKeys={run.arrowKeys}
+      roundLabel={run.roundLabel}
       onResult={(result) => {
         if (reviewed) void progress?.record([{ ...result, courseSlug: courseSlug ?? '' }]).catch(() => undefined);
         else {
@@ -179,25 +177,36 @@ interface StageSummaryProps {
   result: RoundResult;
   practiceKeys: string[];
   practice: ReadonlyMap<string, PracticeMoveState>;
+  roundsDone: number;
   onAgain: () => void;
   onNextStage: () => void;
   onExit: () => void;
 }
 
-function StageSummary({ document, stage, drill, result, practiceKeys, practice, onAgain, onNextStage, onExit }: StageSummaryProps): ReactNode {
+function StageSummary({ document, stage, drill, result, practiceKeys, practice, roundsDone, onAgain, onNextStage, onExit }: StageSummaryProps): ReactNode {
   const tries = [...result.firstTries.values()];
   const right = tries.filter((each) => each.correct).length;
   const missed = tries.filter((each) => !each.correct).map((each) => each.san);
   const avatar = <CoachAvatar persona={document.coachPersona} size="chat" />;
 
   if (stage === 'practice') {
-    const known = practiceKeys.filter((key) => practice.get(key) === 'cleared').length;
     const done = isPracticeDone(practiceKeys, practice);
+    const total = roundsDone + practiceRoundsLeft(practiceKeys, practice);
+    const next = practiceRound(drill, practice);
+    const nextAsked = next.drill.episodes.flatMap((episode) => episode.steps.filter((step) => step.asked)).length;
+    const nextLine =
+      next.arrowKeys.size === 0
+        ? 'Next round: no arrows.'
+        : next.arrowKeys.size === nextAsked
+          ? 'Next round: arrows on every move.'
+          : `Next round: arrows on ${next.arrowKeys.size} of ${nextAsked} moves.`;
     return (
       <div className="course-drill">
         <CoachCard avatar={avatar}>
-          <p className="course-drill__score">{done ? 'You know every move.' : `${known} of ${practiceKeys.length} moves known.`}</p>
-          <p>{done ? 'Now play them with no arrows at all.' : 'Another round: the moves you know are played for you, and fewer arrows show.'}</p>
+          <p className="course-drill__score">{done ? 'You know every move.' : `Round ${roundsDone} of ${total} done.`}</p>
+          <progress className="course-drill__progress" value={practiceProgress(practiceKeys, practice)} max={1} aria-label="Practice progress" />
+          {missed.length > 0 && <p>Missed: {missed.join(', ')}. The arrow comes back for {missed.length === 1 ? 'it' : 'them'}.</p>}
+          <p>{done ? 'Now play them with no arrows at all.' : nextLine}</p>
         </CoachCard>
         <div className="course-player__actions">
           <button type="button" className="btn-primary" onClick={done ? onNextStage : onAgain}>
@@ -244,13 +253,15 @@ interface DrillRunProps {
   introText: string | null;
   /** Asked moves whose arrow shows (practice). */
   arrowKeys: ReadonlySet<string>;
+  /** Practice: "Round 2 of 3". */
+  roundLabel: string | null;
   /** The first try at each asked move. */
   onResult: (result: { key: string; san: string; correct: boolean }) => void;
   onFinished: (result: RoundResult) => void;
   onExit: () => void;
 }
 
-function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFinished, onExit }: DrillRunProps): ReactNode {
+function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, onResult, onFinished, onExit }: DrillRunProps): ReactNode {
   const [at, setAt] = useState({ episode: 0, step: 0 });
   const [firstTries, setFirstTries] = useState<Map<string, { san: string; correct: boolean }>>(new Map());
   const [attempt, setAttempt] = useState<Attempt | null>(null);
@@ -352,6 +363,7 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
         <div className="course-player__nav">
           <span className="meta">
             {/* In practice only the sequence matters, not which episode it is. */}
+            {roundLabel ? `${roundLabel} · ` : ''}
             {stage !== 'practice' && drill.episodes.length > 1 ? `Line ${at.episode + 1} of ${drill.episodes.length} · ` : ''}
             {firstTries.size} of {asked.length} moves
           </span>
@@ -415,4 +427,18 @@ function sideOf(fenBefore: string): 'white' | 'black' {
 function moveLabel(fenBefore: string, san: string): string {
   const [, turn, , , , fullmove] = fenBefore.split(' ');
   return `${fullmove ?? '1'}${turn === 'b' ? '…' : '.'}${san}`;
+}
+
+/** The next practice round: the moves not yet known, and which of them show
+ * their arrow (every other one while the arrows thin out). */
+function practiceRound(drill: Drill, practice: ReadonlyMap<string, PracticeMoveState>): { drill: Drill; arrowKeys: Set<string> } {
+  const episodes = drill.episodes
+    .map((episode) => ({ ...episode, steps: episode.steps.map((step) => ({ ...step, asked: step.asked && practiceAsks(practice.get(step.key)) })) }))
+    .filter((episode) => episode.steps.some((step) => step.asked));
+  const arrowKeys = new Set(
+    episodes.flatMap((episode) =>
+      episode.steps.filter((step) => step.asked).flatMap((step, index) => (practiceShowsArrow(practice.get(step.key), index) ? [step.key] : []))
+    )
+  );
+  return { drill: { ...drill, episodes }, arrowKeys };
 }

@@ -870,7 +870,11 @@ of "your move"; while the move is hidden, its name is blanked out of the note
 (`withoutMove`, `player/course-steps.ts`). "Show the move" is offered only
 once the arrow has gone (the arrow already shows it). The log runs on across episodes
 (one sequence; a new episode does not clear it), and practice shows no
-"Line 1 of 3" counter. The current move is named in practice only while its arrow shows,
+"Line 1 of 3" counter. Practice counts rounds instead: "Round 2 of 3" while
+playing (three rounds when every answer is right; a miss adds rounds), and
+each round's summary has "Round 1 of 3 done", a progress bar that grows
+every round, the moves missed, and how many arrows the next round has
+(`practiceRoundsLeft`, `practiceProgress` in `course-stages.ts`). The current move is named in practice only while its arrow shows,
 and hidden (`?`) otherwise and in the drills.
 
 - [x] Failing tests first (mock `CoachBoard` as `CourseDrill.test.tsx`

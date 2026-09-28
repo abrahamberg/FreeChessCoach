@@ -36,6 +36,24 @@ export function nextPracticeState(state: PracticeMoveState | undefined, correct:
   return state === 'some_arrow' ? 'no_arrow' : 'cleared';
 }
 
+/** How far a move is towards known: 0 (arrow) to 3 (cleared). Each right
+ * answer moves it one step, one round at a time. */
+export function practiceLevel(state: PracticeMoveState | undefined): number {
+  return state === 'cleared' ? 3 : state === 'no_arrow' ? 2 : state === 'some_arrow' ? 1 : 0;
+}
+
+/** Rounds still needed if every answer from now on is right: the slowest
+ * move's remaining steps. A miss sets that move back, so it can grow. */
+export function practiceRoundsLeft(keys: readonly string[], states: ReadonlyMap<string, PracticeMoveState>): number {
+  return Math.max(0, ...keys.map((key) => 3 - practiceLevel(states.get(key))));
+}
+
+/** Share of the way to knowing every move, 0 to 1, counting each step. */
+export function practiceProgress(keys: readonly string[], states: ReadonlyMap<string, PracticeMoveState>): number {
+  if (!keys.length) return 0;
+  return keys.reduce((sum, key) => sum + practiceLevel(states.get(key)), 0) / (3 * keys.length);
+}
+
 /** Practice is done once every move it asks has been cleared. */
 export function isPracticeDone(keys: readonly string[], states: ReadonlyMap<string, PracticeMoveState>): boolean {
   return keys.length > 0 && keys.every((key) => states.get(key) === 'cleared');
