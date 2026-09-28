@@ -188,6 +188,9 @@ export const CourseGenerationSchema = z.object({
   error: z.string().nullable(),
   outline: CourseOutlineSchema.nullable(),
   finishedEpisodeIds: z.array(z.string()),
-  warnings: z.array(CourseWarningSchema)
+  warnings: z.array(CourseWarningSchema),
+  /** When the worker last showed it was alive; a running job that stops
+   * beating (the worker was killed) reads as failed, so it can be resumed. */
+  heartbeatAt: z.string().optional()
 });
 export type CourseGeneration = z.infer<typeof CourseGenerationSchema>;

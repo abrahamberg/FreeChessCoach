@@ -8,9 +8,10 @@ import * as courseAiCallsRepo from '../db/repositories/course-ai-calls.js';
 import * as coursesRepo from '../db/repositories/courses.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
-import { ValidationError } from '../lib/errors.js';
-import { runCourseGeneration, type CourseGenerateDeps } from './course-generate.js';
-import { createCourse } from './courses.js';
+import { noopJobQueue } from '../jobs/queue.js';
+import { ConflictError, ValidationError } from '../lib/errors.js';
+import { runCourseGeneration, startCourseGeneration, type CourseGenerateDeps } from './course-generate.js';
+import { createCourse, GENERATION_STALE_MS, liveGeneration } from './courses.js';
 
 let testDb: TestDb;
 let db: Kysely<Database>;
@@ -167,5 +168,27 @@ describe('runCourseGeneration', () => {
     expect(resumed.prompts()).toHaveLength(3);
     expect(resumed.prompts()[0]).toContain('e3 bait, n11 to n11');
     expect(row?.generation).toMatchObject({ status: 'succeeded', finishedEpisodeIds: ['e1', 'e2', 'e3', 'e4', 'e5'] });
+  });
+
+  test('a run whose worker died (no heartbeat) reads as failed and resumes; a live one still refuses a second start', async () => {
+    const id = await newCourse('killed@example.com');
+    const owner = (await coursesRepo.findById(db, id))!.ownerId;
+    await runCourseGeneration(depsWith([step(outline()), ...cleanEpisodes()]).deps, id);
+    const finished = (await coursesRepo.findById(db, id))!.generation!;
+    expect(finished.heartbeatAt).toEqual(expect.any(String));
+
+    const now = Date.now();
+    const running = { ...finished, status: 'running' as const, step: 'Writing episode 5 of 5', finishedEpisodeIds: ['e1', 'e2', 'e3', 'e4'] };
+    await coursesRepo.setGeneration(db, id, { ...running, heartbeatAt: new Date(now - 10_000).toISOString() });
+    await expect(startCourseGeneration(db, noopJobQueue, owner, id, false)).rejects.toBeInstanceOf(ConflictError);
+    await coursesRepo.touchGeneration(db, id, new Date(now));
+    expect((await coursesRepo.findById(db, id))!.generation!.heartbeatAt).toBe(new Date(now).toISOString());
+
+    const dead = { ...running, heartbeatAt: new Date(now - GENERATION_STALE_MS - 1).toISOString() };
+    expect(liveGeneration(dead, now)).toMatchObject({ status: 'failed', step: null, error: expect.stringContaining('stopped unexpectedly') });
+    expect(liveGeneration({ ...running, heartbeatAt: undefined }, now)?.status).toBe('failed');
+    await coursesRepo.setGeneration(db, id, dead);
+    const resumed = await startCourseGeneration(db, noopJobQueue, owner, id, false);
+    expect(resumed.generation).toMatchObject({ status: 'queued', error: null, finishedEpisodeIds: ['e1', 'e2', 'e3', 'e4'] });
   });
 });

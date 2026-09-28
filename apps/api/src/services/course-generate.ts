@@ -7,7 +7,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../lib/errors.js'
 import * as courseAiCallsRepo from '../db/repositories/course-ai-calls.js';
 import type { ModelResolution } from '../llm/gateway.js';
 import type { CourseDossierBuilder } from './course-dossier.js';
-import { ownedCourse, storedDocument, toCourseResponse } from './courses.js';
+import { liveGeneration, ownedCourse, storedDocument, toCourseResponse } from './courses.js';
 import { writeEpisode } from './courses/generate-episode.js';
 import { documentFromOutline, planOutline } from './courses/generate-outline.js';
 import { loggedCourseCall } from './courses/debug-log.js';
@@ -22,6 +22,8 @@ export interface CourseGenerateDeps {
 }
 
 const ACTIVE = new Set(['queued', 'running']);
+/** How often a running job says it is alive; well inside GENERATION_STALE_MS. */
+const HEARTBEAT_MS = 30_000;
 
 function freshGeneration(): CourseGeneration {
   return { status: 'queued', step: null, done: 0, total: 0, error: null, outline: null, finishedEpisodeIds: [], warnings: [] };
@@ -34,7 +36,7 @@ function freshGeneration(): CourseGeneration {
 export async function startCourseGeneration(db: Kysely<Database>, jobQueue: JobQueue, ownerId: string, id: string, restart: boolean): Promise<CourseResponse> {
   const row = await ownedCourse(db, ownerId, id);
   storedDocument(row);
-  const current = row.generation;
+  const current = liveGeneration(row.generation);
   if (current && ACTIVE.has(current.status) && !restart) throw new ConflictError('The course is already being written');
   const resume = !restart && current?.status === 'failed' && current.outline !== null;
   const generation: CourseGeneration = resume ? { ...current, status: 'queued', error: null } : freshGeneration();
@@ -56,9 +58,12 @@ export async function runCourseGeneration(deps: CourseGenerateDeps, courseId: st
   if (!row) throw new NotFoundError(`Course ${courseId} not found`);
   let state = row.generation ?? freshGeneration();
   const save = async (patch: Partial<CourseGeneration>): Promise<void> => {
-    state = { ...state, ...patch };
+    state = { ...state, ...patch, heartbeatAt: new Date().toISOString() };
     await coursesRepo.setGeneration(deps.db, courseId, state);
   };
+  // A slow local model can spend minutes on one call; the beat shows the
+  // job is still alive, and stops with the process if the worker is killed.
+  const heartbeat = setInterval(() => void coursesRepo.touchGeneration(deps.db, courseId, new Date()).catch(() => undefined), HEARTBEAT_MS);
 
   try {
     await save({ status: 'running', step: 'Analysing positions', error: null });
@@ -89,13 +94,15 @@ export async function runCourseGeneration(deps: CourseGenerateDeps, courseId: st
   } catch (error) {
     await save({ status: 'failed', step: null, error: error instanceof Error ? error.message : String(error) });
     if (!(error instanceof ValidationError)) throw error;
+  } finally {
+    clearInterval(heartbeat);
   }
 }
 
 /** §6.5: one episode again, with the creator's instruction, in the request. */
 export async function regenerateCourseEpisode(deps: CourseGenerateDeps, ownerId: string, id: string, episodeId: string, instruction: string): Promise<CourseResponse> {
   const row = await ownedCourse(deps.db, ownerId, id);
-  const generation = row.generation;
+  const generation = liveGeneration(row.generation);
   const outline: CourseOutline | null = generation?.outline ?? null;
   if (generation && ACTIVE.has(generation.status)) throw new ConflictError('The course is still being written');
   if (!generation || !outline) throw new ValidationError('Write the course with AI first');

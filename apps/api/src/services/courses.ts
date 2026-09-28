@@ -7,6 +7,7 @@ import {
 import {
   CreateCourseRequestSchema,
   type CourseDocument,
+  type CourseGeneration,
   type CourseListResponse,
   type CourseResponse
 } from '@freechesscoach/shared';
@@ -116,6 +117,18 @@ export function storedDocument(row: coursesRepo.CourseRow): CourseDocument {
   return row.document;
 }
 
+/** A run whose worker stopped beating this long ago was killed mid-job. */
+export const GENERATION_STALE_MS = 3 * 60_000;
+
+/** The generation as the creator should see it: a running job with no
+ * recent heartbeat died with its worker, so it reads as failed (and resumes). */
+export function liveGeneration(generation: CourseGeneration | null, now = Date.now()): CourseGeneration | null {
+  if (generation?.status !== 'running') return generation;
+  const beat = generation.heartbeatAt ? Date.parse(generation.heartbeatAt) : 0;
+  if (now - beat < GENERATION_STALE_MS) return generation;
+  return { ...generation, status: 'failed', step: null, error: 'The writing stopped unexpectedly. Write with AI again to carry on.' };
+}
+
 export function toCourseResponse(row: coursesRepo.CourseRow): CourseResponse {
   return {
     id: row.id,
@@ -125,7 +138,7 @@ export function toCourseResponse(row: coursesRepo.CourseRow): CourseResponse {
     title: row.title,
     direction: row.direction,
     document: storedDocument(row),
-    generation: row.generation,
+    generation: liveGeneration(row.generation),
     updatedAt: row.updatedAt.toISOString()
   };
 }

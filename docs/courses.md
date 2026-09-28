@@ -152,7 +152,9 @@ polls its progress: "Analysing positions 34 / 60 → Planning → Writing episod
 3 / 7 → Checking". It uses the creator's own AI setup and the **standard** tier
 for the outline and episode calls (quality matters, volume is small). If the
 unlock expires mid-run, the job stops with the usual "Unlock your AI" error and
-can be resumed; finished episodes are kept.
+can be resumed; finished episodes are kept. The job writes a heartbeat every
+30 seconds; a running job with none for 3 minutes (its worker was killed)
+reads as failed and resumes the same way.
 
 A trap reel is about 1 + 5 calls; a master game course about 1 + 10. A local
 model is allowed but the form warns that small models do poorly on long

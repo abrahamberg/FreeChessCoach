@@ -1,6 +1,6 @@
 import type { CourseDossier } from '@freechesscoach/chess-analysis';
 import { CourseDocumentSchema, CourseGenerationSchema, type CourseDocument, type CourseGeneration, type CourseKind, type CourseStatus } from '@freechesscoach/shared';
-import type { Kysely, Selectable } from 'kysely';
+import { sql, type Kysely, type Selectable } from 'kysely';
 import type { CoursesTable, Database } from '../schema.js';
 
 export type CourseRow = Selectable<CoursesTable>;
@@ -51,6 +51,16 @@ export async function setGeneration(db: Kysely<Database>, id: string, generation
     .updateTable('courses')
     .set({ generation: JSON.stringify(CourseGenerationSchema.parse(generation)) })
     .where('id', '=', id)
+    .execute();
+}
+
+/** Only the heartbeat, so it never races the job's own saves. */
+export async function touchGeneration(db: Kysely<Database>, id: string, at: Date): Promise<void> {
+  await db
+    .updateTable('courses')
+    .set({ generation: sql`jsonb_set(generation, '{heartbeatAt}', to_jsonb(${at.toISOString()}::text))` })
+    .where('id', '=', id)
+    .where(sql`generation->>'status'`, '=', 'running')
     .execute();
 }
 
