@@ -43,7 +43,13 @@ export function DebugPanel({ sessionId, basePath, onClose }: DebugPanelProps): R
         {state.status === 'loading' && <div className="debug-panel__status">Loading…</div>}
         {state.status === 'error' && <div className="debug-panel__status">{state.message}</div>}
         {state.status === 'ready' && (
-          <DebugPanelContent snapshot={state.snapshot} sessionId={sessionId} copied={copied} onCopy={handleCopy} onClose={onClose} />
+          <DebugPanelContent
+            snapshot={state.snapshot}
+            context={`session ${sessionId.slice(0, 4)}…${sessionId.slice(-4)}`}
+            copied={copied}
+            onCopy={handleCopy}
+            onClose={onClose}
+          />
         )}
       </div>
     </div>

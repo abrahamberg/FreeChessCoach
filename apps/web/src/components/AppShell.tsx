@@ -9,6 +9,7 @@ import { EngineActivityIndicator } from './EngineActivityIndicator.js';
 import { FullscreenPrompt } from './FullscreenPrompt.js';
 import { RateLimitNotice } from './RateLimitNotice.js';
 import { BarChartIcon, BoardIcon, PlayCircleIcon, TrendingUpIcon } from './Icon.js';
+import { PageMenuProvider } from './PageMenu.js';
 import { UserMenu } from './UserMenu.js';
 import './AppShell.css';
 
@@ -56,19 +57,21 @@ export function AppShell({ children }: AppShellProps): ReactNode {
   const showBottomTabBar = showGlobalNav && !isDesktop;
 
   return (
-    <div className="app-shell" data-layout={isDesktop ? 'desktop' : 'mobile'} data-bottom-bar={showBottomTabBar}>
-      {/* Fixed overlay, not gated by showGlobalNav — a board route (session/
-       * bot-session/review) hides the top bar but still wants the nudge
-       * toward full screen, arguably more than any other page. */}
-      {/* An install nudge for an app the demo visitor has not signed into would only cover the demo notice. */}
-      {!getDemoRuntime() && <FullscreenPrompt />}
-      <DemoBanner />
-      {showGlobalNav && <TopBar isDesktop={isDesktop} />}
-      <ChessApiPauseNotice />
-      <RateLimitNotice />
-      <main className="app-shell__content">{children}</main>
-      {showBottomTabBar && <BottomTabBar />}
-    </div>
+    <PageMenuProvider>
+      <div className="app-shell" data-layout={isDesktop ? 'desktop' : 'mobile'} data-bottom-bar={showBottomTabBar}>
+        {/* Fixed overlay, not gated by showGlobalNav — a board route (session/
+         * bot-session/review) hides the top bar but still wants the nudge
+         * toward full screen, arguably more than any other page. */}
+        {/* An install nudge for an app the demo visitor has not signed into would only cover the demo notice. */}
+        {!getDemoRuntime() && <FullscreenPrompt />}
+        <DemoBanner />
+        {showGlobalNav && <TopBar isDesktop={isDesktop} />}
+        <ChessApiPauseNotice />
+        <RateLimitNotice />
+        <main className="app-shell__content">{children}</main>
+        {showBottomTabBar && <BottomTabBar />}
+      </div>
+    </PageMenuProvider>
   );
 }
 

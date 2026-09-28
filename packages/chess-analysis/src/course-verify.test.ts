@@ -69,6 +69,32 @@ describe('verifyCourseEpisode', () => {
     ]);
   });
 
+  test("a hook may promise the line's ending; its notes still stay on its own moves", () => {
+    const hook = (episode: CourseEpisode): void => {
+      Object.assign(episode, { role: 'hook', startNodeId: 'n1', endNodeId: 'n1', quiz: undefined });
+      episode.beats = [{ nodeId: null, say: 'Eight moves, then Qc1# checkmate.', caption: 'Checkmate in eight', arrows: [] }];
+      episode.notes = [{ nodeId: 'n1', text: 'This line ends in mate with Qc1#.', arrows: [] }];
+    };
+    expect(verify(hook)).toEqual([]);
+    expect(verify((episode) => (hook(episode), (episode.notes[0]!.nodeId = 'n16')))).toEqual([
+      { code: 'nodes', nodeId: 'n16', message: 'A note is on n16, which is not in this episode' }
+    ]);
+    // Any other episode still may not claim the mate from move 1.
+    expect(verify((episode) => (hook(episode), (episode.role = 'setup')))).not.toEqual([]);
+  });
+
+  test('an arrow along an attack passes after a check, when the other side cannot be to move', () => {
+    const qb4 = (episode: CourseEpisode): void => {
+      Object.assign(episode, { role: 'setup', startNodeId: 'n8', endNodeId: 'n8', quiz: undefined });
+      episode.beats = [{ nodeId: 'n8', say: 'Qb4+ checks and hits b2.', caption: 'Check', arrows: [{ from: 'b4', to: 'f4', kind: 'threat' }, { from: 'b4', to: 'b2', kind: 'threat' }] }];
+      episode.notes = [{ nodeId: 'n8', text: 'Qb4+ gives check.', arrows: [] }];
+    };
+    expect(verify(qb4)).toEqual([]);
+    expect(verify((episode) => (qb4(episode), (episode.beats[0]!.arrows = [{ from: 'b4', to: 'h4', kind: 'threat' }])))).toEqual([
+      { code: 'arrows', nodeId: 'n8', message: 'The arrow b4-h4 in beat 1 is not a move for either side' }
+    ]);
+  });
+
   test('tactic words: "skews" counts as a skewer claim', () => {
     expect(verify((episode) => (episode.beats[0]!.say = 'Six. Bc3 skews the queen.'))).toEqual([
       { code: 'tactic-words', nodeId: 'n11', message: '"skews" in beat 1: the analysis finds no skewer here' }

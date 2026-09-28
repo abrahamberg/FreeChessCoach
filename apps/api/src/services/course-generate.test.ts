@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { ENGLUND_INTAKE, englundDossier } from '../../test/helpers/course-fixtures.js';
 import { createTestDb, type TestDb } from '../../test/helpers/db.js';
 import { mockResolution, multiStepGenerateModel, type MockStep } from '../../test/helpers/mock-model.js';
+import * as courseAiCallsRepo from '../db/repositories/course-ai-calls.js';
 import * as coursesRepo from '../db/repositories/courses.js';
 import * as usersRepo from '../db/repositories/users.js';
 import type { Database } from '../db/schema.js';
@@ -81,6 +82,22 @@ describe('runCourseGeneration', () => {
     expect(row?.document?.episodes.map((episode) => episode.notes[0]?.text)).toEqual(['e1', 'e2', 'e3', 'e4', 'e5'].map((id) => `Episode ${id} in words.`));
     expect(row?.document?.episodes[1]?.drillNodeIds).toEqual(['n2', 'n4', 'n6', 'n8', 'n10']);
     expect(row?.dossier?.nodes).toHaveLength(16);
+
+    const calls = await courseAiCallsRepo.listForCourse(db, id);
+    expect(calls.map(({ step, episodeId, repair }) => [step, episodeId, repair])).toEqual([
+      ['outline', null, false],
+      ['outline', null, true],
+      ...['e1', 'e2', 'e3', 'e4', 'e5'].map((episodeId) => ['episode', episodeId, false])
+    ]);
+    expect(calls[0]?.problems).toContain('there is no safety episode');
+    expect(JSON.stringify(calls[1]?.snapshot)).toContain('YOUR PREVIOUS OUTLINE HAD THESE PROBLEMS');
+    expect(calls[1]?.problems).toEqual([]);
+    expect(calls[2]).toMatchObject({ error: null, problems: [] });
+    // The chat's TurnDebugSnapshot shape, so the web reuses its debug panel.
+    expect(calls[2]?.snapshot).toMatchObject({
+      request: { instructions: [{ role: 'system', content: expect.stringContaining('You write chess lessons') }], messages: [{ role: 'user' }], tools: [], maxSteps: 1 },
+      response: { messages: [{ role: 'assistant', content: JSON.stringify(script('e1', 'n1'), null, 2) }], finishReason: 'stop' }
+    });
   });
 
   test('two bad outlines fall back to the code skeleton, with a warning', async () => {
@@ -113,6 +130,11 @@ describe('runCourseGeneration', () => {
     expect(row?.document?.episodes.find((episode) => episode.id === 'e3')?.notes[0]?.text).toBe('Episode e3 in words.');
     expect(row?.generation?.warnings).toEqual([{ episodeId: 'e5', code: 'moves', nodeId: 'n11', message: 'Nd5 in the note on n11 is not in the analysis' }]);
     expect(row?.generation?.status).toBe('succeeded');
+    const e5 = (await courseAiCallsRepo.listForCourse(db, id)).filter((call) => call.episodeId === 'e5');
+    expect(e5.map((call) => [call.repair, call.problems])).toEqual([
+      [false, ['Nd5 in the note on n11 is not in the analysis']],
+      [true, ['Nd5 in the note on n11 is not in the analysis']]
+    ]);
   });
 
   test('a quiz the outline did not plan is a problem for the repair call', async () => {

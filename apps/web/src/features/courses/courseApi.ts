@@ -1,6 +1,8 @@
 import {
+  CourseDebugResponseSchema,
   CourseListResponseSchema,
   CourseResponseSchema,
+  type CourseDebugResponse,
   type CourseDocument,
   type CourseListResponse,
   type CourseResponse,
@@ -21,6 +23,15 @@ export function useCourse(id: string): UseQueryResult<CourseResponse> {
     queryKey: ['course', id],
     queryFn: ({ signal }) => apiGet(`/api/courses/${id}`, CourseResponseSchema, signal),
     refetchInterval: (query) => (isGenerating(query.state.data) ? GENERATION_POLL_MS : false)
+  });
+}
+
+/** Task 80.6: the latest run's AI calls; follows the run while it writes. */
+export function useCourseDebug(id: string, generating: boolean): UseQueryResult<CourseDebugResponse> {
+  return useQuery({
+    queryKey: ['course-debug', id],
+    queryFn: ({ signal }) => apiGet(`/api/courses/${id}/debug`, CourseDebugResponseSchema, signal),
+    refetchInterval: generating ? GENERATION_POLL_MS : false
   });
 }
 

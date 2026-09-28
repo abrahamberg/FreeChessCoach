@@ -40,7 +40,7 @@ export function BoardMenu({ label, items, engineActivity }: BoardMenuProps): Rea
   );
 }
 
-function BoardMenuItem({ item, onClose }: { item: OverflowMenuItem; onClose: () => void }): ReactNode {
+export function BoardMenuItem({ item, onClose }: { item: OverflowMenuItem; onClose: () => void }): ReactNode {
   const className = item.destructive
     ? 'user-menu__item user-menu__item--button user-menu__item--destructive'
     : 'user-menu__item user-menu__item--button';

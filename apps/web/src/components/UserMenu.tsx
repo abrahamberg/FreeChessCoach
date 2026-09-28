@@ -4,7 +4,9 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { apiGet } from '../api/client.js';
 import { BugReportModal } from '../features/bug-report/BugReportModal.js';
 import { AccountMenuSections, initialsFor } from './AccountMenuSections.js';
+import { BoardMenuItem } from './BoardMenu.js';
 import { ChevronDownIcon } from './Icon.js';
+import { usePageMenu } from './PageMenu.js';
 import type { EngineActivityIndicatorState } from '../hooks/useEngineActivityIndicator.js';
 import './UserMenu.css';
 
@@ -24,6 +26,7 @@ export function UserMenu({ engineActivity }: UserMenuProps): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const pageItems = usePageMenu();
 
   const profileQuery = useQuery({
     queryKey: ['profile'],
@@ -68,7 +71,11 @@ export function UserMenu({ engineActivity }: UserMenuProps): ReactNode {
             engineActivity={engineActivity}
             onClose={() => setIsOpen(false)}
             onReportBug={() => setIsReporting(true)}
-          />
+          >
+            {pageItems.map((item) => (
+              <BoardMenuItem key={item.label} item={item} onClose={() => setIsOpen(false)} />
+            ))}
+          </AccountMenuSections>
         </div>
       )}
       {isReporting && <BugReportModal onClose={() => setIsReporting(false)} />}

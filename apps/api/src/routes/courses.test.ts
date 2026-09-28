@@ -1,5 +1,5 @@
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
-import type { CourseResponse } from '@freechesscoach/shared';
+import type { CourseDebugResponse, CourseResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build-app.js';
@@ -83,6 +83,7 @@ describe('course routes', () => {
 
     expect((await app.inject({ method: 'GET', url: `/api/courses/${theirs.id}` })).statusCode).toBe(404);
     expect((await app.inject({ method: 'GET', url: '/api/courses/not-a-uuid' })).statusCode).toBe(404);
+    expect((await app.inject({ method: 'GET', url: `/api/courses/${theirs.id}/debug` })).statusCode).toBe(404);
     await app.close();
   });
 
@@ -154,6 +155,9 @@ describe('course routes', () => {
       { id: 'e1', role: 'bait', focus: 'Bc3 looks natural.', startNodeId: 'n11', endNodeId: 'n11', beats: [], notes: [{ nodeId: 'n11', text: 'It hits the queen.', arrows: [] }], drillNodeIds: [] }
     ]);
     expect(JSON.stringify(model.doGenerateCalls[0]?.prompt)).toContain("CREATOR'S REQUEST FOR THIS EPISODE");
+    const debug = (await app.inject({ method: 'GET', url: `/api/courses/${course.id}/debug` })).json<CourseDebugResponse>();
+    expect(debug.calls.map(({ step, episodeId, repair }) => [step, episodeId, repair])).toEqual([['episode', 'e1', false]]);
+    expect(JSON.stringify(debug.calls[0]?.snapshot)).toContain("CREATOR'S REQUEST FOR THIS EPISODE");
     expect((await app.inject({ method: 'POST', url: `/api/courses/${course.id}/episodes/e9/regenerate`, payload: {} })).statusCode).toBe(404);
     await app.close();
   });

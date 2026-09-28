@@ -70,7 +70,11 @@ function isPinnedToKing(fenAfter: string, square: Square, pinner: Square): boole
   const chess = new Chess(fenAfter);
   const piece = chess.get(square);
   if (!piece) return false;
-  chess.remove(square);
   const king = chess.findPiece({ type: 'k', color: piece.color })[0];
-  return king !== undefined && chess.attackers(king, piece.color === 'w' ? 'b' : 'w').includes(pinner);
+  if (king === undefined) return false;
+  const enemy = piece.color === 'w' ? 'b' : 'w';
+  // Already giving check: the piece is not what shields the king.
+  if (chess.attackers(king, enemy).includes(pinner)) return false;
+  chess.remove(square);
+  return chess.attackers(king, enemy).includes(pinner);
 }

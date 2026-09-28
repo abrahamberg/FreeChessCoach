@@ -1,6 +1,6 @@
 import type { ColumnType, Generated } from 'kysely';
 import type { CourseDossier, GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { BotConfig, CoachPersona, CourseDocument, CourseGeneration, CourseKind, CourseStatus, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { BotConfig, CoachPersona, CourseDebugCall, CourseDocument, CourseGeneration, CourseKind, CourseStatus, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -321,6 +321,14 @@ export interface CoursesTable {
   updatedAt: Generated<Date>;
 }
 
+/** 0015_course_ai_calls.ts — one AI call of a course run (Task 80.6). */
+export interface CourseAiCallsTable {
+  id: Generated<string>;
+  courseId: string;
+  entry: Jsonb<CourseDebugCall>;
+  createdAt: Generated<Date>;
+}
+
 /** 0042_stats_archive_weeks.ts — a deleted game's stats, merged per (user,
  * week, speed). `weekStart` is written as a `YYYY-MM-DD` string. */
 export interface StatsArchiveWeeksTable {
@@ -338,6 +346,7 @@ export interface Database {
   gameImportEvents: GameImportEventsTable;
   bugReports: BugReportsTable;
   courses: CoursesTable;
+  courseAiCalls: CourseAiCallsTable;
   statsArchiveWeeks: StatsArchiveWeeksTable;
   analyses: AnalysesTable;
   sessions: SessionsTable;

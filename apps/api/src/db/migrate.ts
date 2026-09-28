@@ -15,6 +15,7 @@ import * as chessApiRateLimit from './migrations/0011_chess_api_rate_limit.js';
 import * as courseCreators from './migrations/0012_course_creators.js';
 import * as courses from './migrations/0013_courses.js';
 import * as courseDossier from './migrations/0014_course_dossier.js';
+import * as courseAiCalls from './migrations/0015_course_ai_calls.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -33,7 +34,8 @@ const provider: MigrationProvider = {
       '0011_chess_api_rate_limit': chessApiRateLimit,
       '0012_course_creators': courseCreators,
       '0013_courses': courses,
-      '0014_course_dossier': courseDossier
+      '0014_course_dossier': courseDossier,
+      '0015_course_ai_calls': courseAiCalls
     })
 };
 

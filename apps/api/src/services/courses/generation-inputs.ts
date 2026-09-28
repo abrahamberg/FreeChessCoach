@@ -8,9 +8,21 @@ import type { Database } from '../../db/schema.js';
 import type { CourseDossierBuilder } from '../course-dossier.js';
 import { courseHeaders } from './intake-text.js';
 
+/** Which call of a run this is: the debug log's row and the golden script's
+ * counts (Task 80.6). */
+export interface CourseCallLabel {
+  step: 'outline' | 'episode';
+  episodeId: string | null;
+  repair: boolean;
+}
+
 /** One structured call with the creator's model. Resolved per call, so an
- * unlock that expires mid-run stops the job at the next call. */
-export type CourseModelCall = <T>(messages: CourseMessages, schema: z.ZodType<T>) => Promise<T>;
+ * unlock that expires mid-run stops the job at the next call. `checked`
+ * hears what the outline checks or the verifier found in that call's answer. */
+export interface CourseModelCall {
+  <T>(messages: CourseMessages, schema: z.ZodType<T>, label: CourseCallLabel): Promise<T>;
+  checked?: (label: CourseCallLabel, problems: string[]) => Promise<void>;
+}
 
 export interface GenerationInputs {
   document: CourseDocument;

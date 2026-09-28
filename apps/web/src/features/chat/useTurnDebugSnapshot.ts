@@ -18,7 +18,7 @@ const TurnUsageSchema = z.object({
   reasoningTokens: z.number().default(0)
 });
 
-const TurnDebugSnapshotSchema = z.object({
+export const TurnDebugSnapshotSchema = z.object({
   request: z.object({
     provider: z.string(),
     model: z.string(),

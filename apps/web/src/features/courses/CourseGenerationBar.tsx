@@ -1,8 +1,10 @@
 import type { CourseResponse } from '@freechesscoach/shared';
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { describeApiError } from '../../api/client.js';
 import { ConfirmDialog } from '../../components/ConfirmDialog.js';
+import { usePageMenuItems } from '../../components/PageMenu.js';
 import { isGenerating, useStartCourseGeneration } from './courseApi.js';
+import { CourseDebugPanel } from './CourseDebugPanel.js';
 
 export interface CourseGenerationBarProps {
   course: CourseResponse;
@@ -15,6 +17,11 @@ export interface CourseGenerationBarProps {
 export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps): ReactNode {
   const start = useStartCourseGeneration(course.id);
   const [confirm, setConfirm] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+  // The chat's menu item, in the avatar menu: every AI call of the latest run.
+  const hasRun = course.generation !== null;
+  const menuItems = useMemo(() => [{ label: 'Debug last answer', onSelect: () => setDebugOpen(true), disabled: !hasRun }], [hasRun]);
+  usePageMenuItems(menuItems);
   const generation = course.generation;
   const running = isGenerating(course);
   const resumable = generation?.status === 'failed' && generation.outline !== null;
@@ -64,6 +71,7 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
           {warning.message}
         </p>
       ))}
+      {debugOpen && <CourseDebugPanel courseId={course.id} generating={running} onClose={() => setDebugOpen(false)} />}
       {confirm && (
         <ConfirmDialog
           title="Write the course with AI?"

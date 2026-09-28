@@ -37,6 +37,11 @@ describe('course dossier', () => {
     expect(facts.get('n5')?.quizEligible).toBe(false);
     expect(facts.get('n16')?.after).toBe('checkmate');
     expect(facts.get('n16')?.board).toContain('gives checkmate');
+    // A piece the checking piece "attacks" is not pinned by it: the king is
+    // attacked already (4...Qb4+ and 8...Qc1#). 7...Bxc3+ does pin the queen.
+    expect(facts.get('n8')?.board).toContain('attacks the bishop on f4');
+    expect(facts.get('n16')?.board).toContain('attacks the knight on b1');
+    expect(facts.get('n14')?.board).toContain('attacks the queen on d2, which is pinned to the king');
     expect(dossier.lines[0]?.openingName).toMatch(/Englund/);
   });
 

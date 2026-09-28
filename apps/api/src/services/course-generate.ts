@@ -1,15 +1,16 @@
-import type { CourseDocument, CourseEpisode, CourseGeneration, CourseOutline, CourseResponse, CourseWarning } from '@freechesscoach/shared';
+import type { CourseDebugResponse, CourseDocument, CourseEpisode, CourseGeneration, CourseOutline, CourseResponse, CourseWarning } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as coursesRepo from '../db/repositories/courses.js';
 import type { Database } from '../db/schema.js';
 import type { JobQueue } from '../jobs/queue.js';
 import { ConflictError, NotFoundError, ValidationError } from '../lib/errors.js';
+import * as courseAiCallsRepo from '../db/repositories/course-ai-calls.js';
 import type { ModelResolution } from '../llm/gateway.js';
-import { generateStructured } from '../llm/text.js';
 import type { CourseDossierBuilder } from './course-dossier.js';
 import { ownedCourse, storedDocument, toCourseResponse } from './courses.js';
 import { writeEpisode } from './courses/generate-episode.js';
 import { documentFromOutline, planOutline } from './courses/generate-outline.js';
+import { loggedCourseCall } from './courses/debug-log.js';
 import { loadGenerationInputs, type CourseModelCall } from './courses/generation-inputs.js';
 
 export interface CourseGenerateDeps {
@@ -37,6 +38,7 @@ export async function startCourseGeneration(db: Kysely<Database>, jobQueue: JobQ
   if (current && ACTIVE.has(current.status) && !restart) throw new ConflictError('The course is already being written');
   const resume = !restart && current?.status === 'failed' && current.outline !== null;
   const generation: CourseGeneration = resume ? { ...current, status: 'queued', error: null } : freshGeneration();
+  if (!resume) await courseAiCallsRepo.clear(db, id);
   await coursesRepo.setGeneration(db, id, generation);
   await jobQueue.enqueueCourseGenerate(id);
   return toCourseResponse({ ...row, generation });
@@ -62,7 +64,7 @@ export async function runCourseGeneration(deps: CourseGenerateDeps, courseId: st
     await save({ status: 'running', step: 'Analysing positions', error: null });
     let document = storedDocument(row);
     const inputs = await loadGenerationInputs(deps.db, row, document, deps.buildDossier);
-    const call = modelCall(deps, row.ownerId);
+    const call = modelCall(deps, row.ownerId, courseId);
 
     let outline = state.outline;
     if (!outline) {
@@ -101,18 +103,22 @@ export async function regenerateCourseEpisode(deps: CourseGenerateDeps, ownerId:
 
   const document = storedDocument(row);
   const inputs = await loadGenerationInputs(deps.db, row, document, deps.buildDossier);
-  const written = await writeEpisode(inputs, outline, episodeId, modelCall(deps, ownerId), instruction || null);
+  const written = await writeEpisode(inputs, outline, episodeId, modelCall(deps, ownerId, id), instruction || null);
   const saved = await saveDocument(deps.db, row, withEpisode(document, written.episode));
   const next: CourseGeneration = { ...generation, warnings: withWarnings(generation.warnings, episodeId, written.warnings) };
   await coursesRepo.setGeneration(deps.db, id, next);
   return toCourseResponse({ ...saved, generation: next });
 }
 
-function modelCall(deps: CourseGenerateDeps, ownerId: string): CourseModelCall {
-  return async (messages, schema) => {
-    const resolution = await deps.resolveModel(ownerId);
-    return (await generateStructured({ resolution, system: messages.system, prompt: messages.user, schema })).object;
-  };
+/** Task 80.6: the AI calls of the course's latest run, for its owner. */
+export async function courseDebug(db: Kysely<Database>, ownerId: string, id: string): Promise<CourseDebugResponse> {
+  await ownedCourse(db, ownerId, id);
+  return { calls: await courseAiCallsRepo.listForCourse(db, id) };
+}
+
+/** Every call is logged for the creator's "Debug AI calls" view (Task 80.6). */
+function modelCall(deps: CourseGenerateDeps, ownerId: string, courseId: string): CourseModelCall {
+  return loggedCourseCall({ db: deps.db, courseId, resolve: () => deps.resolveModel(ownerId) });
 }
 
 async function saveDocument(db: Kysely<Database>, row: coursesRepo.CourseRow, document: CourseDocument): Promise<coursesRepo.CourseRow> {

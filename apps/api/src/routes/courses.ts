@@ -3,6 +3,7 @@ import {
   RegenerateEpisodeRequestSchema,
   SaveCourseDraftRequestSchema,
   StartCourseGenerationRequestSchema,
+  type CourseDebugResponse,
   type CourseListResponse,
   type CourseResponse
 } from '@freechesscoach/shared';
@@ -53,6 +54,12 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
   app.get('/api/courses/:id', async (request): Promise<CourseResponse> => {
     const ownerId = await creatorId(request);
     return coursesService.getCourse(db, ownerId, courseId(request));
+  });
+
+  /** Task 80.6: every AI call of the latest run, prompts and answers as they were. */
+  app.get('/api/courses/:id/debug', async (request): Promise<CourseDebugResponse> => {
+    const ownerId = await creatorId(request);
+    return courseGenerate.courseDebug(db, ownerId, courseId(request));
   });
 
   /** 204, like every PUT in this app; the client already holds what it saved. */

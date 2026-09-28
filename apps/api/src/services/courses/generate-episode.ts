@@ -22,18 +22,24 @@ export async function writeEpisode(
   creatorRequest: string | null = null
 ): Promise<WrittenEpisode> {
   const request = { context: inputs.context, outline, episodeId, creatorRequest };
-  const first = await call(buildCourseEpisodeMessages(request), EpisodeScriptSchema);
+  const label = { step: 'episode', episodeId, repair: false } as const;
+  const first = await call(buildCourseEpisodeMessages(request), EpisodeScriptSchema, label);
   let episode = toEpisode(inputs, outline, episodeId, first);
   let problems = verify(inputs, outline, episode);
+  await call.checked?.(label, messagesOf(problems));
 
   if (problems.length > 0) {
-    const retry = { previousOutput: JSON.stringify(first), problems: problems.map((problem) => problem.message) };
-    const repaired = await call(buildCourseEpisodeMessages({ ...request, retry }), EpisodeScriptSchema);
+    const retry = { previousOutput: JSON.stringify(first), problems: messagesOf(problems) };
+    const repairLabel = { ...label, repair: true };
+    const repaired = await call(buildCourseEpisodeMessages({ ...request, retry }), EpisodeScriptSchema, repairLabel);
     episode = toEpisode(inputs, outline, episodeId, repaired);
     problems = verify(inputs, outline, episode);
+    await call.checked?.(repairLabel, messagesOf(problems));
   }
   return { episode, warnings: problems.map((problem) => ({ episodeId, ...problem })) };
 }
+
+const messagesOf = (problems: CourseVerifyProblem[]): string[] => problems.map((problem) => problem.message);
 
 function verify(inputs: GenerationInputs, outline: CourseOutline, episode: CourseEpisode): CourseVerifyProblem[] {
   const { document } = inputs;

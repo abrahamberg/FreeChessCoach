@@ -466,6 +466,29 @@ worker job, browser LLM tunnel, LM Studio `google/gemma-4-12b-qat`; outline
   as "best". Next: tune on a strong model (owner's gpt-6-luna, run the
   golden set inside the worker container — WSL has no DNS), then back to
   gemma to see what a weak model still misses.
+- gpt-6-luna, all five kinds (golden script inside the worker container,
+  `--email dev@local.test --engine-url http://engine:8081`): 7–10 s per call,
+  trap 106 s in total. Trap: correct mate hooks, the 6...Bb4 pin and the Nc3
+  safety move; 2 arrow warnings left (b4-b2 is blocked). tactics and
+  master_game: clean. opening_reel: the outline failed twice (narrates n9
+  outside a one-node episode; 11 narrated nodes, budget 10) → skeleton.
+  opening_course: outline failed twice (episode e9 leaves line l1 at n16) →
+  skeleton; one 3-sentence note.
+- **Dossier said "pinned" for a checking piece's target** ("Qb4+ attacks the
+  bishop on f4, which is pinned to the king"; the same on 8...Qc1#): with the
+  king already in check, removing any piece still leaves the check. Both
+  models repeated it. Fixed in `course-dossier-words.ts`.
+- Both models give the hook episode the whole line (n1–n16) and so write a
+  note on every move, duplicating the setup episode's notes. To fix in the
+  outline check / playbook.
+- Seen in the debug log (gpt-6-luna, app run): 7 of 13 calls were repairs.
+  Two were our false alarms, now fixed: arrows after a check (b4-f4 after
+  Qb4+; the flipped position is illegal, so `course-verify-board.ts` also
+  accepts an arrow along an attack), and the hook, which the playbook tells
+  to promise the ending (8...Qc1#) while the verifier only allowed facts
+  from its own move (`EpisodeScope.claims` adds the main line to the end for
+  a hook). Still to tune: notes on the move before the episode (n10), the
+  hook spanning the whole line, the trap's safety episode not on the bait.
 - Harness: prints each call's duration on stderr; with a local model use
   `GOLDEN_PROTOCOL=openai-chat GOLDEN_ENDPOINT=http://<windows-host>:1234/v1
   LLM_ALLOW_PRIVATE_ENDPOINTS=1`. docker-compose passes
@@ -481,6 +504,40 @@ worker job, browser LLM tunnel, LM Studio `google/gemma-4-12b-qat`; outline
   on it.
 
 Commit: `chore(courses): golden set for judging course prompts`
+
+### Task 80.6 — Debug the course's AI calls
+
+Status: done 2026-09-28, commit (this one).
+Notes: owner request — reuse the chat's "Debug last answer", and put it in the
+menu. Each call is stored (`course_ai_calls`, migration 0015; repo
+`course-ai-calls.ts`, capped at 80 per course, cleared by a fresh run) as the
+chat's `TurnDebugSnapshot` (system prompt in `instructions`, the request as
+the user message, the JSON answer as the assistant message, usage,
+finishReason, providerMetadata) plus step / episode / repair / duration /
+error and the checks' `problems`. `CourseModelCall` now takes a
+`CourseCallLabel` and has `checked(label, problems)`, which `planOutline` and
+`writeEpisode` call after each check; `loggedCourseCall`
+(`services/courses/debug-log.ts`) is the job's and the regenerate route's
+call. `GET /api/courses/:id/debug` (owner only). Web: `DebugPanelContent`
+takes `title`/`context`/`children`; `CourseDebugPanel` is that panel plus a
+call picker and the checks; "Debug last answer" is in the avatar menu via
+`components/PageMenu.tsx` (`usePageMenuItems`, rendered by UserMenu with
+BoardMenu's item button). `generateStructured` also returns finishReason and
+providerMetadata.
+
+**Read:** `apps/web/src/features/chat/DebugPanel*.tsx`,
+`apps/api/src/services/coach-agent-debug.ts`.
+
+- [x] Every model call of a run (outline, each episode, each repair, a
+  regenerated episode) is logged on the course as the chat's debug snapshot,
+  with which call it was and the problems our checks then found. A new run
+  starts a fresh log.
+- [x] `GET /api/courses/:id/debug` returns the log to the owner (404 for
+  anyone else).
+- [x] "Debug last answer" in the avatar menu opens the chat's debug panel on
+  the newest call, with a strip to pick any call and its check results.
+
+Commit: `feat(courses): show the creator every AI call of a course run`
 
 ## Phase 81 — Voice and clips (browser)
 

@@ -68,9 +68,8 @@ async function runCourse(course: GoldenCourse, resolution: ModelResolution, engi
   const engineMs = Date.now() - started;
 
   const calls = { outline: 0, episodes: 0, repairs: 0 };
-  let phase: 'outline' | 'episodes' = 'outline';
-  const call: CourseModelCall = async (messages, schema) => {
-    const kind = messages.user.includes('YOUR PREVIOUS') ? 'repairs' : phase;
+  const call: CourseModelCall = async (messages, schema, label) => {
+    const kind = label.repair ? 'repairs' : label.step === 'outline' ? 'outline' : 'episodes';
     calls[kind]++;
     const callStarted = Date.now();
     const result = await generateStructured({ resolution, system: messages.system, prompt: messages.user, schema });
@@ -80,7 +79,6 @@ async function runCourse(course: GoldenCourse, resolution: ModelResolution, engi
   };
 
   const planned = await planOutline(inputs, call);
-  phase = 'episodes';
   const episodes: WrittenEpisode[] = [];
   for (const episode of planned.outline.chapters.flatMap((chapter) => chapter.episodes)) {
     episodes.push(await writeEpisode(inputs, planned.outline, episode.id, call));

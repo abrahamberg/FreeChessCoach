@@ -1,4 +1,4 @@
-import { Chess } from 'chess.js';
+import { Chess, type Square } from 'chess.js';
 import type { CourseArrow, CourseEpisode } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 import type { CourseVerifyProblem } from './course-verify.js';
@@ -50,7 +50,17 @@ export function arrowProblems(episode: CourseEpisode, scope: EpisodeScope): Cour
 }
 
 function isMoveEitherSide(fen: string, arrow: CourseArrow): boolean {
-  return [fen, flipActiveColorFen(fen)].some(
+  const legal = [fen, flipActiveColorFen(fen)].some(
     (position) => position !== null && new Chess(position).moves({ verbose: true }).some((move) => move.from === arrow.from && move.to === arrow.to)
   );
+  return legal || attacksAlong(fen, arrow);
+}
+
+/** The piece on `from` attacks `to`. After a check the side that gave it
+ * can't be put to move (the flipped position is illegal), yet "Qb4+ also
+ * hits b2" is still a fair arrow. */
+function attacksAlong(fen: string, arrow: CourseArrow): boolean {
+  const chess = new Chess(fen);
+  const piece = chess.get(arrow.from as Square);
+  return piece !== undefined && chess.attackers(arrow.to as Square, piece.color).includes(arrow.from as Square);
 }

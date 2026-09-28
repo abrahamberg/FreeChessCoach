@@ -52,7 +52,7 @@ export function moveProblems(texts: EpisodeText[], scope: EpisodeScope, hasAnaly
 }
 
 function analysedMoves(scope: EpisodeScope): string[] {
-  return [...scope.inside].flatMap((nodeId) => {
+  return [...scope.claims].flatMap((nodeId) => {
     const facts = scope.facts.get(nodeId);
     if (!facts) return [];
     return [...(facts.bestInstead ? [facts.bestInstead.san, ...facts.bestInstead.line] : []), ...facts.alternatives.map((line) => line.san), ...facts.tempting];
@@ -89,7 +89,7 @@ const TACTIC_WORDS: { name: string; pattern: RegExp }[] = [
 
 /** A motif word only where the dossier's facts inside the episode use it too. */
 export function tacticWordProblems(texts: EpisodeText[], scope: EpisodeScope): CourseVerifyProblem[] {
-  const evidence = [...scope.inside]
+  const evidence = [...scope.claims]
     .flatMap((nodeId) => {
       const facts = scope.facts.get(nodeId);
       if (!facts) return [];

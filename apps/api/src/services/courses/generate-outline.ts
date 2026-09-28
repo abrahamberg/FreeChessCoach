@@ -12,12 +12,17 @@ import { buildManualEpisodes } from './manual-episodes.js';
  * takeaways, and the creator gets a warning saying so.
  */
 export async function planOutline(inputs: GenerationInputs, call: CourseModelCall): Promise<{ outline: CourseOutline; warnings: CourseWarning[] }> {
-  const first = await call(buildCourseOutlineMessages(inputs.context), CourseOutlineSchema);
+  const firstLabel = { step: 'outline', episodeId: null, repair: false } as const;
+  const first = await call(buildCourseOutlineMessages(inputs.context), CourseOutlineSchema, firstLabel);
   const firstProblems = outlineProblems(inputs, first);
+  await call.checked?.(firstLabel, firstProblems);
   if (firstProblems.length === 0) return { outline: first, warnings: [] };
 
-  const second = await call(buildCourseOutlineMessages(inputs.context, { previousOutput: JSON.stringify(first), problems: firstProblems }), CourseOutlineSchema);
+  const retry = { previousOutput: JSON.stringify(first), problems: firstProblems };
+  const repairLabel = { ...firstLabel, repair: true };
+  const second = await call(buildCourseOutlineMessages(inputs.context, retry), CourseOutlineSchema, repairLabel);
   const problems = outlineProblems(inputs, second);
+  await call.checked?.(repairLabel, problems);
   if (problems.length === 0) return { outline: second, warnings: [] };
 
   if (!inputs.skeleton) throw new ValidationError(`The AI outline failed its checks twice: ${problems.join('; ')}`);

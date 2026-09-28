@@ -37,7 +37,9 @@ export interface StructuredCallArgs<T> extends TextCallArgs {
  * callers keep the existing "LLM output never reaches the DB unvalidated"
  * guarantee for free.
  */
-export async function generateStructured<T>(args: StructuredCallArgs<T>): Promise<{ object: T; usage: TurnUsage }> {
+export async function generateStructured<T>(
+  args: StructuredCallArgs<T>
+): Promise<{ object: T; usage: TurnUsage; finishReason: string; providerMetadata: unknown }> {
   const result = await generateObject({
     model: args.resolution.model,
     instructions: args.system,
@@ -45,5 +47,5 @@ export async function generateStructured<T>(args: StructuredCallArgs<T>): Promis
     schema: args.schema,
     ...args.resolution.callOptions
   });
-  return { object: result.object, usage: toTurnUsage(result.usage) };
+  return { object: result.object, usage: toTurnUsage(result.usage), finishReason: result.finishReason, providerMetadata: result.providerMetadata ?? null };
 }
