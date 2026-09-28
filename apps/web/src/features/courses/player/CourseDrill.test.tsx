@@ -99,8 +99,8 @@ describe('CourseDrill', () => {
     await play('e5', e5!.fenAfter, e5!.uci);
     await findPrompt();
     expect(arrowsShown()).toBe(1);
-    // The log: your last move, the opponent's reply, then yours to play.
-    expect(log()).toMatch(/You 1…e5.*Opponent 2\.dxe5.*You 2…Nc6/);
+    // The log, newest on top: yours to play, the opponent's reply, your last move.
+    expect(log()).toMatch(/You 2…Nc6.*Opponent 2\.dxe5.*You 1…e5/);
     await play('Nc6', nc6!.fenAfter, nc6!.uci);
     expect(await screen.findByText('0 of 2 moves known.')).toBeTruthy();
 

@@ -862,9 +862,9 @@ summary says how many are known and offers "Next round" until all are, then
 "Now without arrows". Which stages are finished is kept for the visit only
 until Task 85.2 saves it. The play-through's end button is now "Practice".
 A move log (`player/MoveLog.tsx`, owner 2026-09-28) is the coach's card
-while the learner plays: their previous move (✓ or "shown"), the reply with
-the course's note, and the move to play now with "Show the move" beside it,
-each with a pawn in its side's colour. Nothing else repeats them.
+while the learner plays, newest on top: the move to play now with "Show the
+move" beside it, the reply with the course's note, and their previous move
+(✓ or "shown"), each with a pawn in its side's colour. Nothing else repeats them.
 In practice the move to find shows what it does (the course's note) in place
 of "your move"; while the move is hidden, its name is blanked out of the note
 (`withoutMove`, `player/course-steps.ts`). The current move is named in practice only while its arrow shows,
