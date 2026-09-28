@@ -17,9 +17,11 @@ import type { CourseDocument } from '@freechesscoach/shared';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CoachAvatar } from '../../../components/CoachAvatar.js';
 import { CoachCard } from '../../../components/CoachCard.js';
+import { ChevronRightIcon } from '../../../components/Icon.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
+import { STAGE_LABELS } from './CourseStageBar.js';
 import { localToday, type CourseProgressStore } from './course-progress.js';
 import { isAcceptedAlternative, withoutMove } from './course-steps.js';
 import { judgeQuizMove } from './judge-quiz-move.js';
@@ -39,7 +41,7 @@ export interface CourseDrillProps {
   onKnownMoves?: (practice: Record<string, PracticeMoveState>) => void;
   /** The stage is finished; the learner may go on to the next one. */
   onStageDone: (stage: PlayedStage) => void;
-  /** Opens the next stage ("Now without arrows", "Now both sides"). */
+  /** Opens the next stage; its button is named after it ("Drill ›"). */
   onNextStage: () => void;
   onExit: () => void;
 }
@@ -209,8 +211,15 @@ function StageSummary({ document, stage, drill, result, practiceKeys, practice, 
           <p>{done ? 'Now play them with no arrows at all.' : nextLine}</p>
         </CoachCard>
         <div className="course-player__actions">
-          <button type="button" className="btn-primary" onClick={done ? onNextStage : onAgain}>
-            {done ? 'Now without arrows' : 'Next round'}
+          <button type="button" className="btn-primary course-player__next" aria-label={done ? `Next: ${STAGE_LABELS.drill}` : undefined} onClick={done ? onNextStage : onAgain}>
+            {done ? (
+              <>
+                {STAGE_LABELS.drill}
+                <ChevronRightIcon width={16} height={16} />
+              </>
+            ) : (
+              'Next round'
+            )}
           </button>
           <button type="button" className="btn-secondary" onClick={onExit}>
             Back to the course
@@ -231,8 +240,9 @@ function StageSummary({ document, stage, drill, result, practiceKeys, practice, 
       </CoachCard>
       <div className="course-player__actions">
         {stage === 'drill' && (
-          <button type="button" className="btn-primary" onClick={onNextStage}>
-            Now both sides
+          <button type="button" className="btn-primary course-player__next" aria-label={`Next: ${STAGE_LABELS.full_drill}`} onClick={onNextStage}>
+            {STAGE_LABELS.full_drill}
+            <ChevronRightIcon width={16} height={16} />
           </button>
         )}
         <button type="button" className={stage === 'drill' ? 'btn-secondary' : 'btn-primary'} onClick={onAgain}>

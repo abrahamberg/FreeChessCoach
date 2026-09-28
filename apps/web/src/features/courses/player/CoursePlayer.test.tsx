@@ -23,7 +23,7 @@ const document: CourseDocument = {
 };
 
 describe('CoursePlayer', () => {
-  test('plays the notes with audio, waits at the quiz, reveals the answer, then shows the takeaways', () => {
+  test('plays the notes with audio, waits at the quiz, reveals the answer, shows the takeaways, then moves on to Practice', () => {
     const noteAudio = vi.fn(() => Promise.resolve(null));
     render(<CoursePlayer document={document} noteAudio={noteAudio} />);
     expect(screen.getByRole('heading', { name: 'Englund' })).toBeTruthy();
@@ -40,8 +40,10 @@ describe('CoursePlayer', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Show the answer' }));
     expect(screen.getByText(/The answer is Nc6\. Nc6 hits the pawn on e5\./)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
     expect(screen.getByRole('region', { name: 'Takeaways' }).textContent).toContain('Mind b2.');
+    fireEvent.click(screen.getByRole('button', { name: 'Next: Practice' }));
+    expect(screen.getByRole('button', { name: /Play through, done/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Practice' }).getAttribute('aria-current')).toBe('step');
   });
 
   test('a returning learner opens where they left off, and moving on saves the place', async () => {

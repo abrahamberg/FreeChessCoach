@@ -154,7 +154,7 @@ describe('CourseDrill', () => {
 
     expect(await screen.findByText('You know every move.')).toBeTruthy();
     expect(props.onStageDone).toHaveBeenCalledWith('practice');
-    fireEvent.click(screen.getByRole('button', { name: 'Now without arrows' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next: Drill' }));
     expect(props.onNextStage).toHaveBeenCalled();
     expect(record).not.toHaveBeenCalled();
   }, 20000);

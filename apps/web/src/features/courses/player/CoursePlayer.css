@@ -463,3 +463,10 @@
   height: 8px;
   accent-color: var(--color-primary);
 }
+
+/* "Bait ›", "Practice ›": the next step named on its button. */
+.course-player__next {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}

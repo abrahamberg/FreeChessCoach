@@ -3,6 +3,7 @@ import { COACH_PERSONA_INFO, type CourseDocument, type CourseEnrollmentPlace, ty
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CoachAvatar } from '../../../components/CoachAvatar.js';
 import { CoachCard } from '../../../components/CoachCard.js';
+import { ChevronRightIcon } from '../../../components/Icon.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { COURSE_KIND_INFO } from '../courseKinds.js';
@@ -129,8 +130,10 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
             touch();
             setPlace((prev) => (prev.episode === episode && prev.step === step ? prev : { ...prev, episode, step }));
           }}
-          onFinished={() => finish('play_through')}
-          onNextStage={openNext}
+          onFinished={() => {
+            finish('play_through');
+            openNext();
+          }}
         />
       ) : (
         <CourseDrill
@@ -169,17 +172,18 @@ interface PlayThroughProps {
   /** Where to open: the saved episode and step. */
   start: CourseEnrollmentPlace;
   onPlace: (episode: number, step: number) => void;
+  /** The last episode's end: the play-through is done, on to Practice. */
   onFinished: () => void;
-  onNextStage: () => void;
 }
 
 /** §11 step 2: the clip, then each episode move by move; the takeaways and
  * the way to the drill at the end. */
-function PlayThrough({ document, audio, ask, start, onPlace, onFinished, onNextStage }: PlayThroughProps): ReactNode {
+function PlayThrough({ document, audio, ask, start, onPlace, onFinished }: PlayThroughProps): ReactNode {
   const [episodeIndex, setEpisodeIndex] = useState(() => Math.min(start.episode, Math.max(document.episodes.length - 1, 0)));
   const startEpisode = useRef(episodeIndex);
-  const [finished, setFinished] = useState(false);
   const episode = document.episodes[episodeIndex];
+  const nextEpisode = document.episodes[episodeIndex + 1];
+  const takeaways = document.takeaways.filter((takeaway) => takeaway.trim());
   const clip = document.clipLinks.youtube ?? document.clipLinks.shorts;
 
   const openEpisode = (index: number): void => {
@@ -215,33 +219,28 @@ function PlayThrough({ document, audio, ask, start, onPlace, onFinished, onNextS
           ask={ask}
           startStep={episodeIndex === startEpisode.current ? start.step : 0}
           onStep={(step) => onPlace(episodeIndex, step)}
-          isLast={episodeIndex === document.episodes.length - 1}
-          onDone={() => {
-            if (episodeIndex < document.episodes.length - 1) openEpisode(episodeIndex + 1);
-            else {
-              setFinished(true);
-              onFinished();
-            }
-          }}
+          nextLabel={nextEpisode ? roleLabel(nextEpisode.role) : STAGE_LABELS.practice}
+          ending={
+            nextEpisode ? null : (
+              <section className="course-player__takeaways" aria-label="Takeaways">
+                {takeaways.length > 0 && (
+                  <>
+                    <h2>Remember</h2>
+                    <ol>
+                      {takeaways.map((takeaway, index) => (
+                        <li key={index}>{takeaway}</li>
+                      ))}
+                    </ol>
+                  </>
+                )}
+                <p>Next, play the moves yourself, with arrows to help at first.</p>
+              </section>
+            )
+          }
+          onDone={() => (nextEpisode ? openEpisode(episodeIndex + 1) : onFinished())}
         />
       ) : (
         <p className="meta">This course has no episodes yet.</p>
-      )}
-      {finished && (
-        <section className="course-player__takeaways" aria-label="Takeaways">
-          {document.takeaways.some((takeaway) => takeaway.trim()) && (
-            <>
-              <h2>Remember</h2>
-              <ol>
-                {document.takeaways.map((takeaway, index) => (takeaway.trim() ? <li key={index}>{takeaway}</li> : null))}
-              </ol>
-            </>
-          )}
-          <p>Now play the moves yourself, with arrows to help at first.</p>
-          <button type="button" className="btn-primary" onClick={onNextStage}>
-            Practice
-          </button>
-        </section>
       )}
     </>
   );
@@ -258,11 +257,14 @@ interface EpisodeViewProps {
   ask: AskCoach;
   startStep: number;
   onStep: (step: number) => void;
-  isLast: boolean;
+  /** What comes after this episode: the next episode's name, or the next stage. */
+  nextLabel: string;
+  /** Shown at the episode's last step (the last episode's takeaways). */
+  ending?: ReactNode;
   onDone: () => void;
 }
 
-function EpisodeView({ document, episode, audio, ask, startStep, onStep, isLast, onDone }: EpisodeViewProps): ReactNode {
+function EpisodeView({ document, episode, audio, ask, startStep, onStep, nextLabel, ending, onDone }: EpisodeViewProps): ReactNode {
   const walk = episodeWalk(document, episode);
   const [step, setStep] = useState(() => Math.min(startStep, walk.moves.length));
   const [solved, setSolved] = useState<'course' | 'alternative' | 'shown' | null>(null);
@@ -338,8 +340,9 @@ function EpisodeView({ document, episode, audio, ask, startStep, onStep, isLast,
             {step === 0 ? 'Start' : `Move ${step} of ${walk.moves.length}`}
           </span>
           {atEnd ? (
-            <button type="button" className="btn-primary" onClick={onDone}>
-              {isLast ? 'Finish' : 'Next episode'}
+            <button type="button" className="btn-primary course-player__next" aria-label={`Next: ${nextLabel}`} onClick={onDone}>
+              {nextLabel}
+              <ChevronRightIcon width={16} height={16} />
             </button>
           ) : (
             <button type="button" className="btn-primary" disabled={Boolean(asking)} onClick={() => goTo(step + 1)}>
@@ -372,6 +375,7 @@ function EpisodeView({ document, episode, audio, ask, startStep, onStep, isLast,
           )}
           {asking && attempt && <AttemptFeedback attempt={attempt} judgement={judgement} answerSan={answer.san} acceptLabel="See the course move" onAccept={() => solve('alternative')} onRetry={tryAgain} />}
         </CoachCard>
+        {atEnd && ending}
         <div className="course-player__sound">
           <button type="button" className="btn-secondary" aria-pressed={audio.soundOn} onClick={() => audio.setSoundOn(!audio.soundOn)}>
             {audio.soundOn ? 'Sound on' : 'Sound off'}
