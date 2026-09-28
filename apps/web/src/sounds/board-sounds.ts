@@ -3,115 +3,64 @@ import type { BoardSound, MoveSounds } from './move-sounds.js';
 import { isVoiceSpeaking } from './voice-activity.js';
 
 const SAMPLE_RATE = 44100;
-/** Every sound is normalized to this peak, then set to its own level
- * (`VOICES[…].level`), so the opponent's knock stays softer than the
- * learner's and the stingers sit with the knocks. */
-const PEAK = 0.8;
 /** A board sound while the coach's voice speaks. */
 const DUCKED = 1 / 3;
 /** The stinger (bad, great) after the knock. */
 export const STINGER_DELAY_MS = 120;
 
-type Voice = (context: OfflineAudioContext, out: AudioNode) => void;
-
-/** A short burst of noise through a band-pass: the click of a piece. */
-function click(context: OfflineAudioContext, out: AudioNode, at: number, frequency: number, gain: number): void {
-  const length = Math.floor(context.sampleRate * 0.03);
-  const buffer = context.createBuffer(1, length, context.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let index = 0; index < length; index++) data[index] = (Math.random() * 2 - 1) * Math.exp(-index / (length / 6));
-  const source = context.createBufferSource();
-  source.buffer = buffer;
-  const filter = context.createBiquadFilter();
-  filter.type = 'bandpass';
-  filter.frequency.value = frequency;
-  filter.Q.value = 1.4;
-  const level = context.createGain();
-  level.gain.value = gain;
-  source.connect(filter).connect(level).connect(out);
-  source.start(at);
-}
-
-/** A tone with a quick attack and an exponential fall. */
-function tone(context: OfflineAudioContext, out: AudioNode, options: { at: number; from: number; to?: number; length: number; type: OscillatorType; gain: number }): void {
-  const { at, from, to = from, length, type, gain } = options;
-  const oscillator = context.createOscillator();
-  oscillator.type = type;
-  oscillator.frequency.setValueAtTime(from, at);
-  if (to !== from) oscillator.frequency.exponentialRampToValueAtTime(to, at + length);
-  const envelope = context.createGain();
-  envelope.gain.setValueAtTime(0.0001, at);
-  envelope.gain.exponentialRampToValueAtTime(gain, at + 0.006);
-  envelope.gain.exponentialRampToValueAtTime(0.0001, at + length);
-  oscillator.connect(envelope).connect(out);
-  oscillator.start(at);
-  oscillator.stop(at + length + 0.02);
-}
-
-/** A wooden knock: the click and a short hollow body. */
-function knock(context: OfflineAudioContext, out: AudioNode, pitch: number, gain: number): void {
-  click(context, out, 0, pitch * 8, gain);
-  tone(context, out, { at: 0, from: pitch * 1.6, to: pitch, length: 0.09, type: 'sine', gain: gain * 0.9 });
-  tone(context, out, { at: 0, from: pitch * 3.1, length: 0.04, type: 'triangle', gain: gain * 0.25 });
-}
-
-const VOICES: Record<BoardSound, { seconds: number; level: number; play: Voice }> = {
-  move: { seconds: 0.18, level: 1, play: (context, out) => knock(context, out, 220, 1) },
-  // Lower and softer: the other side's piece.
-  opponent: { seconds: 0.18, level: 0.65, play: (context, out) => knock(context, out, 165, 0.75) },
-  // The knock, then two rising notes.
-  check: {
-    seconds: 0.38,
-    level: 0.9,
-    play: (context, out) => {
-      knock(context, out, 220, 0.8);
-      tone(context, out, { at: 0.05, from: 880, length: 0.16, type: 'sine', gain: 0.45 });
-      tone(context, out, { at: 0.14, from: 1175, length: 0.22, type: 'sine', gain: 0.4 });
-    }
-  },
-  // A low fall, two tones a semitone apart.
-  bad: {
-    seconds: 0.4,
-    level: 0.85,
-    play: (context, out) => {
-      tone(context, out, { at: 0, from: 233, to: 131, length: 0.36, type: 'triangle', gain: 0.6 });
-      tone(context, out, { at: 0, from: 220, to: 123, length: 0.36, type: 'sine', gain: 0.5 });
-    }
-  },
-  // A bright rise, the notes of a major chord.
-  great: {
-    seconds: 0.68,
-    level: 0.6,
-    play: (context, out) => {
-      [659, 831, 988, 1319].forEach((frequency, index) =>
-        tone(context, out, { at: index * 0.07, from: frequency, length: 0.45 - index * 0.05, type: 'triangle', gain: 0.35 })
-      );
-      tone(context, out, { at: 0.21, from: 2637, length: 0.4, type: 'sine', gain: 0.12 });
-    }
-  }
+/** Each sound from the recorded files in `public/sounds/` (Kenney, CC0; see
+ * its README): the file, when it starts and how loud. Check is a brighter
+ * knock with a glass ping just after it. The levels keep the opponent's
+ * knock softer than the learner's and the stingers under the knocks. */
+const LAYERS: Record<BoardSound, { file: string; delayMs?: number; gain: number }[]> = {
+  move: [{ file: 'move', gain: 1 }],
+  opponent: [{ file: 'opponent', gain: 0.7 }],
+  check: [
+    { file: 'check-knock', gain: 1 },
+    { file: 'check-ping', delayMs: 30, gain: 0.45 }
+  ],
+  bad: [{ file: 'bad', gain: 0.6 }],
+  great: [{ file: 'great', gain: 0.4 }]
 };
 
-async function render(sound: BoardSound): Promise<AudioBuffer> {
-  const { seconds, level, play } = VOICES[sound];
-  const context = new OfflineAudioContext(1, Math.ceil(SAMPLE_RATE * seconds), SAMPLE_RATE);
-  const out = context.createGain();
-  out.connect(context.destination);
-  play(context, out);
-  const buffer = await context.startRendering();
-  const data = buffer.getChannelData(0);
-  let peak = 0;
-  for (const sample of data) peak = Math.max(peak, Math.abs(sample));
-  if (peak > 0) for (let index = 0; index < data.length; index++) data[index] = (data[index]! / peak) * PEAK * level;
-  return buffer;
+/** How long each sound lasts, in seconds (the files' lengths, the check's
+ * ping included), for a voice that should wait for it and for clip timing. */
+const SECONDS: Record<BoardSound, number> = { move: 0.1, opponent: 0.18, check: 0.24, bad: 0.14, great: 0.29 };
+
+async function render(sound: BoardSound, files: Map<string, AudioBuffer>): Promise<AudioBuffer> {
+  const context = new OfflineAudioContext(1, Math.ceil(SAMPLE_RATE * SECONDS[sound]) + 1024, SAMPLE_RATE);
+  for (const layer of LAYERS[sound]) {
+    const source = context.createBufferSource();
+    source.buffer = files.get(layer.file) ?? null;
+    const level = context.createGain();
+    level.gain.value = layer.gain;
+    source.connect(level).connect(context.destination);
+    source.start((layer.delayMs ?? 0) / 1000);
+  }
+  return context.startRendering();
 }
 
 let rendered: Promise<Record<BoardSound, AudioBuffer>> | null = null;
 
-/** The five sounds, rendered once; also scheduled into clips. */
+/** The five sounds, loaded and mixed once; also scheduled into clips. */
 export function boardSoundBuffers(): Promise<Record<BoardSound, AudioBuffer>> {
-  rendered ??= Promise.all((Object.keys(VOICES) as BoardSound[]).map(async (sound) => [sound, await render(sound)] as const)).then(
-    (pairs) => Object.fromEntries(pairs) as Record<BoardSound, AudioBuffer>
-  );
+  rendered ??= (async () => {
+    const decoder = new OfflineAudioContext(1, 1, SAMPLE_RATE);
+    const names = [...new Set(Object.values(LAYERS).flatMap((layers) => layers.map((layer) => layer.file)))];
+    const files = new Map(
+      await Promise.all(
+        names.map(async (name) => {
+          const response = await fetch(`/sounds/${name}.wav`);
+          if (!response.ok) throw new Error(`Board sound ${name} did not load`);
+          return [name, await decoder.decodeAudioData(await response.arrayBuffer())] as const;
+        })
+      )
+    );
+    const sounds = await Promise.all((Object.keys(LAYERS) as BoardSound[]).map(async (sound) => [sound, await render(sound, files)] as const));
+    return Object.fromEntries(sounds) as Record<BoardSound, AudioBuffer>;
+  })();
+  // A failed load (offline, blocked) may be tried again next time.
+  rendered.catch(() => (rendered = null));
   return rendered;
 }
 
@@ -151,6 +100,6 @@ function play(queue: [BoardSound, number][]): void {
 
 /** How long a move's sounds last, for a voice that should wait for them. */
 export function boardSoundsLengthMs(sounds: MoveSounds): number {
-  const base = VOICES[sounds.base].seconds * 1000;
-  return sounds.stinger ? Math.max(base, STINGER_DELAY_MS + VOICES[sounds.stinger].seconds * 1000) : base;
+  const base = SECONDS[sounds.base] * 1000;
+  return sounds.stinger ? Math.max(base, STINGER_DELAY_MS + SECONDS[sounds.stinger] * 1000) : base;
 }

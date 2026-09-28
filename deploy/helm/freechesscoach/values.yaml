@@ -407,6 +407,9 @@ oauth2-proxy:
     # public. The api exempts only this prefix from identity headers.
     - --skip-auth-route=^/learn/[a-z0-9-]+$
     - --skip-auth-route=^/api/public/
+    # The board sounds (apps/web/public/sounds/, CC0 recordings) the course
+    # page and the demo play; static files, nothing per-user.
+    - --skip-auth-route=^/sounds/
   service:
     portNumber: 80
   # Our own templates/ingress.yaml owns the public route.

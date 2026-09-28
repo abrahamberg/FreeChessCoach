@@ -28,7 +28,7 @@ steps done by hand, once, when courses first go to production.
 - [ ] **Migrations 0012–0019** run on upgrade (the hook Job); nothing to do,
       but expect the new `courses`, `course_*` and `debug_turns` tables.
 - [ ] **Public routes** are in the chart's oauth2-proxy `extraArgs`
-      (`^/learn/[a-z0-9-]+$`, `^/api/public/`) and asserted by `test.sh`. If
+      (`^/learn/[a-z0-9-]+$`, `^/api/public/`, `^/sounds/`) and asserted by `test.sh`. If
       you override `extraArgs` (e.g. for Lichess login), copy them too.
 - [ ] **Course creators**: grant the flag per user,
       `npx tsx apps/api/scripts/course-creator.ts grant <email>`.

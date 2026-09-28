@@ -115,8 +115,8 @@ Browser Stockfish is UX-only and never authoritative.
 
 ### Board sounds
 
-`apps/web/src/sounds/`: five sounds synthesized in the browser (Web Audio,
-rendered once): the student's move, the opponent's (lower, softer), check,
+`apps/web/src/sounds/`: five sounds from recorded CC0 files
+(`apps/web/public/sounds/`, Kenney; mixed once into buffers): the student's move, the opponent's (lower, softer), check,
 bad (a mistake or blunder) and great (great/brilliant, or a move that turns
 the game). `move-sounds.ts` picks them; `useMoveStepSounds` plays a move when
 the board steps forward one move (the student's own drop at once). Live

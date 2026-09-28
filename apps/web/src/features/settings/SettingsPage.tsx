@@ -6,6 +6,8 @@ import { ConfirmDialog } from '../../components/ConfirmDialog.js';
 import { useLlmSetupStatus } from '../../hooks/useLlmSetupStatus.js';
 import { useProfile, useUpdateProfile } from '../../hooks/useProfile.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
+import { playBoardSound } from '../../sounds/board-sounds.js';
+import type { BoardSound } from '../../sounds/move-sounds.js';
 import { useMoveSounds } from '../../sounds/move-sounds-setting.js';
 import { AiSetupHelp } from './AiSetupHelp.js';
 import { CoachPersonaSelect } from './CoachPersonaSelect.js';
@@ -26,6 +28,14 @@ function readStoredTheme(): Theme | null {
 
 /** design.md §4.4: Settings — Profile, API keys, Appearance, Account.
  * Owns fetching (AGENTS.md rule 7); every child below is presentational. */
+const SOUND_SAMPLES: [BoardSound, string][] = [
+  ['move', 'Your move'],
+  ['opponent', 'Opponent'],
+  ['check', 'Check'],
+  ['bad', 'Bad move'],
+  ['great', 'Great move']
+];
+
 export function SettingsPage(): ReactNode {
   const [theme, setTheme] = useState<Theme | null>(() => readStoredTheme());
   const [showLegalMoveDots, setShowLegalMoveDots] = useShowLegalMoveDots();
@@ -125,6 +135,16 @@ export function SettingsPage(): ReactNode {
           <button type="button" aria-pressed={!moveSounds} onClick={() => setMoveSounds(false)}>
             Sounds off
           </button>
+          {moveSounds && (
+            <p className="settings-page__sound-samples">
+              Hear them:{' '}
+              {SOUND_SAMPLES.map(([sound, label]) => (
+                <button key={sound} type="button" onClick={() => playBoardSound(sound)}>
+                  {label}
+                </button>
+              ))}
+            </p>
+          )}
         </SettingsSection>
 
         <SettingsSection id="settings-engine" label="Engine" title="Engine">

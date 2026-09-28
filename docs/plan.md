@@ -1201,10 +1201,14 @@ knock, lower and softer), **check**, **bad** (a mistake or blunder) and
 **great** (a great or brilliant move, or one that turns the game).
 
 Decisions:
-- Synthesized in the browser (Web Audio, rendered once into `AudioBuffer`s
-  by an `OfflineAudioContext`): no sound files to license or host, the same
-  buffers play on the board and are scheduled into clips. The kit sits
-  behind one module, so recorded CC0 samples can replace it later.
+- Recorded sounds, not synthesized: the owner found the first synthesized
+  set unnatural (2026-09-28). The files are Kenney's CC0 packs (Impact
+  Sounds, Interface Sounds), trimmed to 16-bit mono WAV in
+  `apps/web/public/sounds/` (its README names each original); Lichess's sets
+  are AGPL or non-commercial, so not used. Each sound is mixed once from its
+  layers into an `AudioBuffer`, so the board and clips play the same thing.
+  `/sounds/` is a skip-auth route (the public course page plays them).
+  Settings > Board has a button per sound to hear them.
 - One pure function picks what a move sounds like:
   `moveSounds({ san, mover, learnerSide, quality, expectedBefore,
   expectedAfter })` → a base (`move`/`opponent`, or `check` when the SAN ends
