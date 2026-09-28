@@ -411,9 +411,11 @@ Commit: `feat(courses): generate a course draft with the creator's AI`
 
 ### Task 80.5 — Quality harness
 
-Status: in progress — harness done 2026-09-28, commit 6a30b51; waiting for the
-owner's first run (Stop 4). Findings and prompt tuning are still to do, so the
-box stays open; on "continue" with the run's output, start here.
+Status: done 2026-09-28, commits 6a30b51 (harness) … c4c0f8d (last tuning);
+findings below. Tuned on gpt-6-luna, then on gemma-4-12b until all five kinds
+ran with 0 warnings and no false chess claims. The tuning rule that came out
+of it: the app supplies every chess fact (dossier, code's plan), the model
+only words them; a wrong claim means a missing fact, not a prompt warning.
 Notes: `apps/api/scripts/course-golden.ts` (`npm run course:golden -w apps/api`)
 runs `draftFromIntake` → engine dossier (`NativeEngineBackend`, default
 `http://localhost:8081`) → `generationInputs` → `planOutline` → `writeEpisode`
@@ -535,6 +537,13 @@ worker job, browser LLM tunnel, LM Studio `google/gemma-4-12b-qat`; outline
   pawn guarding f7"; the tactics playbook's concept/scan episodes come out
   generic, and Legal's mate starts at Bxf7+ (the queen sacrifice 5.Nxe5 is
   not an example node); the opening reel's hook repeats the line's first beat.
+- Last round (c4c0f8d): a mate now says why ("the bishop on f7 is guarded by
+  the knight on e5"; gemma had written "Nd5# saves your knight on e5"), and
+  a tactics example starts one learner move before the opponent's mistake
+  (Legal's mate from 5.Nxe5 Bxd1??). Tactics rerun: 6 calls, 1 repair (the
+  plan check), 0 warnings, reasons true. Left for later: vague phrasing
+  ("deeper into your reach"), the opening reel's hook repeating its first
+  beat, generic concept/scan episodes.
 - A killed worker left the course "running" for good. Fixed (2ff1a3f): the
   job beats every 30 s; with no beat for 3 minutes it reads as failed and
   "Resume writing" carries on.
@@ -547,7 +556,7 @@ worker job, browser LLM tunnel, LM Studio `google/gemma-4-12b-qat`; outline
 **Files:** `apps/api/scripts/course-golden.ts`, `apps/api/test/fixtures/courses/`
 (one small PGN + direction per kind, each under 5 KB).
 
-- [ ] Runs the pipeline against the owner's configured model without writing
+- [x] Runs the pipeline against the owner's configured model without writing
   to the database; prints each episode, the verifier result and the call
   count. Record the first run's findings in this task, then tune the prompts
   on it.
