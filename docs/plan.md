@@ -507,7 +507,7 @@ Commit: `chore(courses): golden set for judging course prompts`
 
 ### Task 80.6 — Debug the course's AI calls
 
-Status: done 2026-09-28, commit (this one).
+Status: done 2026-09-28, commit 195e664.
 Notes: owner request — reuse the chat's "Debug last answer", and put it in the
 menu. Each call is stored (`course_ai_calls`, migration 0015; repo
 `course-ai-calls.ts`, capped at 80 per course, cleared by a fresh run) as the
