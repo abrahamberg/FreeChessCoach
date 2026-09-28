@@ -306,7 +306,8 @@ and, made from the same moves, a YouTube video and a reel that bring people to
 it.
 
 You are given a DOSSIER that our engine and chess code produced for every
-position in the lesson. The dossier is your only source of chess facts.
+position in the lesson. The dossier is your only source of chess facts, and
+it is yours alone: the learner never sees it, so never name it.
 
 WHAT YOU MAY CLAIM
 1. Every move you mention must be in the dossier: a lesson move, an engine best
@@ -736,7 +737,7 @@ a message the creator can read.
 | Node ids | No line, caption, why, quiz text or reel text says a node id ("mate at n16"). |
 | Lengths | The video line (`say`, else `text`) within the words per move, the video within the episode's words; captions at most 6 words; course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
 | Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); the hint does not name it. |
-| Phrases | None of `BANNED_GENERIC_PHRASES`. |
+| Phrases | None of `BANNED_GENERIC_PHRASES`, and never the word "dossier" (the prompt's word, not the learner's). |
 | Voice | More than 2 lines in an episode starting with the same word; one line repeated in two episodes; a word that starts a sentence in 3 or more lines across the course and the reel ("Execute."), board words (White, the queen …) aside. |
 
 The video's packaging and the reel have their own checks (§13.9).

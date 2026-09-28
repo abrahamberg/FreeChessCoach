@@ -201,6 +201,12 @@ describe('verifyCourseEpisode', () => {
     ]);
   });
 
+  test('phrases: "dossier" is the prompt\'s word, never the learner\'s', () => {
+    expect(verify((episode) => (first(episode).text = 'Bc3 hits the queen, but the dossier prefers Nc3.'))).toContainEqual({
+      code: 'phrases', nodeId: 'n11', message: 'the line on n11 says "dossier": the learner never sees it; say "the engine", or just name the better move'
+    });
+  });
+
   test('node ids: the coach names the move, never "n16"', () => {
     expect(verify((episode) => (first(episode).text = 'Bc3 hits the queen, and n16 is coming.'))).toEqual([
       { code: 'nodes', nodeId: 'n11', message: 'the line on n11 says "n16": name the move (8…Qc1#), never a node id' }

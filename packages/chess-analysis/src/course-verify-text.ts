@@ -138,10 +138,13 @@ export function nodeIdProblems(texts: EpisodeText[]): CourseVerifyProblem[] {
 export function phraseProblems(texts: EpisodeText[]): CourseVerifyProblem[] {
   return texts.flatMap(({ where, nodeId, text }) => {
     const lower = text.toLowerCase().replace(/’/g, "'");
-    return BANNED_GENERIC_PHRASES.filter((phrase) => lower.includes(phrase.toLowerCase())).map((phrase) => ({
+    const stock = BANNED_GENERIC_PHRASES.filter((phrase) => lower.includes(phrase.toLowerCase())).map((phrase) => ({
       code: 'phrases' as const,
       nodeId,
       message: `"${phrase.toLowerCase()}" in ${where} is a stock phrase`
     }));
+    // The prompt's word, not the learner's ("Qc5 is stronger in the dossier").
+    const jargon = /\bdossier\b/.test(lower) ? [{ code: 'phrases' as const, nodeId, message: `${where} says "dossier": the learner never sees it; say "the engine", or just name the better move` }] : [];
+    return [...stock, ...jargon];
   });
 }

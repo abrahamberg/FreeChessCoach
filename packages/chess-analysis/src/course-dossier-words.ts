@@ -171,15 +171,30 @@ export function abandonedGuard(fenBefore: string, san: string, replySan: string 
   const reply = inspectMoves(moved.resultFen, [replySan]).moves[0];
   if (!reply?.legal || !(reply.captured || reply.gives)) return [];
   const target = reply.to as Square;
+  // Moving onto the square is not leaving it: "the bishop stops guarding c3"
+  // after …Bxc3 put the bishop on c3 was nonsense.
+  if (target === moved.to) return [];
   const color = moved.color === 'white' ? 'w' : 'b';
   const guardedBefore = new Chess(fenBefore).attackers(target, color).includes(moved.from as Square);
   const guardsAfter = new Chess(moved.resultFen).attackers(target, color).includes(moved.to as Square);
   return guardedBefore && !guardsAfter ? [`the ${PIECE_NAMES[moved.piece]} stops guarding ${target}, where ${replySan} follows`] : [];
 }
 
-/** A legal capture on the square, so a pinned attacker doesn't count. */
+const VALUES: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
+
+/** A capture on the square that wins material: legal (a pinned attacker
+ * doesn't count), and not answered by a recapture that costs the taker more
+ * than it took. The first real runs read "leaves the rook on a1 hanging"
+ * after 6.Bc3 in the Englund, where …Qxa1 loses the queen to Bxa1: the
+ * bishop sees a1 once the queen leaves b2. */
 function canBeTaken(fenAfter: string, square: string): boolean {
-  return new Chess(fenAfter).moves({ verbose: true }).some((move) => move.to === square && Boolean(move.captured));
+  const chess = new Chess(fenAfter);
+  return chess.moves({ verbose: true }).some((move) => {
+    if (move.to !== square || !move.captured) return false;
+    const after = new Chess(move.after);
+    const recaptured = after.moves({ verbose: true }).some((reply) => reply.to === square && Boolean(reply.captured));
+    return !recaptured || VALUES[move.captured] >= VALUES[move.piece];
+  });
 }
 
 /** Enemy knights, bishops, rooks and queens the moved piece now hits. */

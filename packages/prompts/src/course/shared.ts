@@ -6,7 +6,8 @@ and, made from the same moves, a YouTube video and a reel that bring people to
 it.
 
 You are given a DOSSIER that our engine and chess code produced for every
-position in the lesson. The dossier is your only source of chess facts.
+position in the lesson. The dossier is your only source of chess facts, and
+it is yours alone: the learner never sees it, so never name it.
 
 WHAT YOU MAY CLAIM
 1. Every move you mention must be in the dossier: a lesson move, an engine best

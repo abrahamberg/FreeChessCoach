@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { renderCourseDossier } from './course-dossier-text.js';
-import { abandonedGuard } from './course-dossier-words.js';
+import { abandonedGuard, boardFacts } from './course-dossier-words.js';
 import { inferLearnerSide, puzzleShapeProblems } from './course-learner-side.js';
 import { courseLineGames } from './course-line-game.js';
 import { buildCourseSkeleton } from './course-skeleton.js';
@@ -47,7 +47,8 @@ describe('course dossier', () => {
     // What the model must not guess: how a check is met, why the safe move
     // works, and forks by piece, not by square.
     expect(facts.get('n8')?.board).toContain('the check can be answered: block with Bd2, Nfd2, c3, Nc3, Nbd2, Qd2; the checking piece cannot be taken; the king cannot move');
-    expect(bait?.bestInstead?.board).toEqual(['moves the knight from b1 to c3', 'keeps the rook on a1 safe: the queen on d1 now defends it']);
+    // No "keeps the rook safe": after 6.Bc3 the rook was never truly loose (…Qxa1 Bxa1).
+    expect(bait?.bestInstead?.board).toEqual(['moves the knight from b1 to c3']);
     expect(facts.get('n7')?.board).toEqual(['moves the bishop from c1 to f4']);
     expect(facts.get('n16')?.board).toContain('a back-rank mate');
     expect(facts.get('n16')?.board).toContain('why it is mate: the king on e1 is checked by the queen on c1; e2, f1, f2 hold its own pieces; d1 and d2 are covered by the queen on c1');
@@ -66,6 +67,20 @@ describe('course dossier', () => {
     expect(abandonedGuard(fenBefore, 'Qxc3', undefined)).toEqual([]);
   });
 
+  test('the Englund facts the first runs got wrong: no hanging rook on a1, no guard "left" by moving onto it', () => {
+    const { tree } = englund();
+    const nodes = byId(tree);
+    const before = (id: string): string => nodes.get(nodes.get(id)?.parentId ?? '')?.fenAfter ?? tree.startFen;
+    // 6.Bc3: …Qxa1 is answered by Bxa1, through b2 once the queen leaves it.
+    expect(boardFacts(before('n11'), 'Bc3')).not.toContain('leaves the rook on a1 hanging');
+    // 7.Qd2 unpins the bishop, which still answers …Qxa1.
+    expect(boardFacts(before('n13'), 'Qd2')).not.toContain('leaves the rook on a1 hanging');
+    // 7…Bxc3 lands on c3; Nxc3 takes the bishop there, no guard was left.
+    expect(abandonedGuard(before('n14'), 'Bxc3', 'Nxc3')).toEqual([]);
+    // A piece that really is loose still says so: Qxd5 walks into exd5.
+    expect(boardFacts('4k3/8/4p3/3p4/8/8/8/3QK3 w - - 0 1', 'Qxd5')).toContain('leaves the queen on d5 hanging');
+  });
+
   test('the rendered dossier carries verdict words and no eval numbers', () => {
     const text = renderCourseDossier(englund().dossier);
 
@@ -73,7 +88,7 @@ describe('course dossier', () => {
     expect(text).toContain('n12 6…Bb4 (Black, Line A)');
     expect(text).toContain('Black is winning');
     expect(text).toContain('flags: quiz-eligible');
-    expect(text).toContain('    why Nc3 is better: moves the knight from b1 to c3 | keeps the rook on a1 safe: the queen on d1 now defends it');
+    expect(text).toContain('    why Nc3 is better: moves the knight from b1 to c3');
     expect(text).not.toMatch(/\d\.\d|[+-]\d|\bcp\b|%|centipawn/i);
   });
 });
