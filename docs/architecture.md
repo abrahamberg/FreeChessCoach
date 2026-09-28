@@ -435,7 +435,7 @@ A course is a chess lesson built from a PGN (spec: `docs/courses.md`).
   (draft/unlisted/public/removed) and the `dossier`: the engine pass over
   every tree position (the review pipeline, `services/course-dossier.ts`),
   kept for generation, the verifier and the player's evaluations. AI
-  generation is a pg-boss job (outline, then one call per episode, each
+  generation is a graphile-worker job (`jobs/course-generate.ts`: outline, then one call per episode, each
   checked by the verifier in `chess-analysis`); `course_ai_calls` logs the
   calls. `apps/api/scripts/course-dossier-refresh.ts` rebuilds dossiers with
   the engine alone.
