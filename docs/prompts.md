@@ -873,6 +873,7 @@ OUTPUT SCHEMA
     "arrows": [{ "from": square, "to": square, "kind": "best" | "threat" | "idea" }],
     "pauseMs": number | null }],
   "notes": [{ "nodeId": string, "text": string, "arrows": [same as beats] }],
-  "quiz": { "answerNodeId": string, "prompt": string, "hint": string, "reveal": string } | null
+  "quiz": { "answerNodeId": string, "prompt": string, "hint": string (points at the target, never names the move),
+    "reveal": string (names the move and says in one sentence why it works) } | null
 }
 ```

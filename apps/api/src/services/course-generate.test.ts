@@ -115,6 +115,20 @@ describe('runCourseGeneration', () => {
     expect(row?.document?.episodes.map((episode) => episode.role)).toContain('safety');
   });
 
+  test('a beat with nothing on it is dropped, not sent back for repair', async () => {
+    const id = await newCourse('empty-beat@example.com');
+    const withBlank = { ...script('e2', 'n2'), beats: [{ nodeId: 'n2', say: '', caption: ' ', arrows: [], pauseMs: null }, ...script('e2', 'n2').beats] };
+    const [e1, , ...rest] = cleanEpisodes();
+    const { deps, prompts } = depsWith([step(outline()), e1!, step(withBlank), ...rest]);
+
+    await runCourseGeneration(deps, id);
+
+    const row = await coursesRepo.findById(db, id);
+    expect(prompts()).toHaveLength(6);
+    expect(row?.document?.episodes.find((episode) => episode.id === 'e2')?.beats.map((beat) => beat.say)).toEqual(['Look at this, e2.']);
+    expect(row?.generation?.warnings).toEqual([]);
+  });
+
   test('a verifier failure triggers exactly one repair; what still fails is kept as a warning', async () => {
     const id = await newCourse('repair@example.com');
     const bad = (episodeId: string) => step(script(episodeId, 'n11', 'Nd5 was the real test.'));

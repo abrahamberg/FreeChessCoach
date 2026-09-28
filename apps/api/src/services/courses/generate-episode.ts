@@ -69,7 +69,10 @@ function plannedEpisode(outline: CourseOutline, episodeId: string): CourseOutlin
   return planned;
 }
 
-/** The outline's frame with the script's text; null fields become absent. */
+/** The outline's frame with the script's text; null fields become absent.
+ * A beat with nothing on it (no words, caption, arrows or pause) is dropped:
+ * gemma-4-12b writes one per setup move and keeps them through the repair,
+ * and the clip plays the moves between beats anyway. */
 function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: string, script: EpisodeScript): CourseEpisode {
   const planned = plannedEpisode(outline, episodeId);
   return {
@@ -78,7 +81,9 @@ function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: 
     focus: planned.focus,
     startNodeId: planned.startNodeId,
     endNodeId: planned.endNodeId,
-    beats: script.beats.map(({ pauseMs, ...beat }) => (pauseMs === null ? beat : { ...beat, pauseMs })),
+    beats: script.beats
+      .filter((beat) => beat.say.trim() || beat.caption.trim() || beat.arrows.length || beat.pauseMs)
+      .map(({ pauseMs, ...beat }) => (pauseMs === null ? beat : { ...beat, pauseMs })),
     notes: script.notes,
     ...(script.quiz ? { quiz: script.quiz } : {}),
     drillNodeIds: learnerNodes(inputs, planned.startNodeId, planned.endNodeId)
