@@ -12,12 +12,13 @@ Socratically while tracking their progress over time. The initial build
 - `docs/architecture.md` — how it fits together (layout, DB, agent, K8s). Always relevant.
   It also describes the guided first-run flow ("Welcome flow", `/welcome`).
 - `docs/plan.md` — the implementation plan for whatever is being built next.
-  Currently Phases 79–87, courses and clips: a creator-only course editor
+  Currently Phases 79–88, courses and clips: a creator-only course editor
   (moderator flag), AI course generation from a PGN and a short direction,
   clips recorded in the browser with the course coach's voice, public course
   pages and spaced review, then the learning stages (practice, drill, full
   drill), saved places in the Continue rail, a Courses page replacing the
-  Play tab, and the player on Game Review's board layout. Its spec is `docs/courses.md` (read only the
+  Play tab, the player on Game Review's board layout, and board sounds
+  (also under clip moves). Its spec is `docs/courses.md` (read only the
   section a task names). Everything shipped before is described in
   `docs/architecture.md`. Open the plan, find the one Phase/Task being worked
   on, and read only that task's **Read:** files.

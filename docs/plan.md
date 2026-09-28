@@ -1190,6 +1190,112 @@ same component as `/learn/:slug` inside the board-route shell.
 
 Commit: `fix(courses): phone layout pass`
 
+## Phase 88 — Board sounds
+
+The owner, 2026-09-28: a few clear board sounds, on every board and in
+courses, and under the moves of clips. They must never talk over the
+coach's voice; on the live board they fill the wait for the coach.
+
+The five sounds: **move** (the learner's), **opponent** (the same kind of
+knock, lower and softer), **check**, **bad** (a mistake or blunder) and
+**great** (a great or brilliant move, or one that turns the game).
+
+Decisions:
+- Synthesized in the browser (Web Audio, rendered once into `AudioBuffer`s
+  by an `OfflineAudioContext`): no sound files to license or host, the same
+  buffers play on the board and are scheduled into clips. The kit sits
+  behind one module, so recorded CC0 samples can replace it later.
+- One pure function picks what a move sounds like:
+  `moveSounds({ san, mover, learnerSide, quality, expectedBefore,
+  expectedAfter })` → a base (`move`/`opponent`, or `check` when the SAN ends
+  in `+`/`#`) and an optional stinger (`bad`/`great`) about 120 ms later.
+  "Turns the game": the mover's expected points (the classifier's
+  win-probability) go from below 0.4 to above 0.6. On the live board and in
+  review the stingers are for the learner's own moves only (an opponent's
+  blunder is not the learner's bad move); a course play-through and a clip
+  tell the story of both sides, so there they follow either side's move.
+- Never over the voice: voice players (`useCoachVoice`, `useNoteAudio`, the
+  native speech queue) report speaking to a small shared signal; a board
+  sound during speech plays at a third of its volume. A course note whose
+  move makes a sound starts its voice 250 ms after the move sound. In a
+  clip the timeline gives every narrated move a 250 ms lead before its
+  audio, so the sound and the voice never overlap.
+- A setting: Settings > Board, "Move sounds" on/off (default on), per
+  device like the legal-move dots. Clips: a "Board sounds" switch in the
+  clip panel (default on); the recording uses what the preview plays.
+
+### Task 88.1 — The sound kit
+
+**Read:** `apps/web/src/hooks/useShowLegalMoveDots.ts`,
+`features/settings/SettingsPage.tsx` (the Board section),
+`packages/chess-analysis/src/classify.ts` (expected points).
+**Files:** new `apps/web/src/sounds/board-sounds.ts` (synthesis, a shared
+`AudioContext`, `playBoardSounds`), `sounds/move-sounds.ts` + test (the pure
+picker), `sounds/voice-activity.ts` (the speaking signal), a
+`useMoveSounds` setting hook; Settings.
+
+- [ ] Failing tests first: the picker (learner move, opponent move, check
+  beats move, mistake/blunder → bad, great/brilliant or a turned game →
+  great, stingers only for the learner's side unless `bothSides`).
+- [ ] The five sounds, each under 400 ms (great under 700 ms), normalized so
+  none is louder than the others; ducked while the voice speaks.
+- [ ] Settings > Board: Move sounds on/off.
+
+Commit: `feat(sounds): board sounds and when to play them`
+
+### Task 88.2 — Sounds on the board
+
+**Read:** `features/session/SessionBoardColumn.tsx`, `usePlayMoveSubmit.ts`,
+`usePlayBotMoveSubmit.ts`, `useLivePositions.ts`,
+`features/review/useGameReviewPageData.ts`, `hooks/useCoachVoice.ts`,
+`features/puzzle-session/` (practice).
+**Files:** those.
+
+- [ ] The learner's move sounds on drop; the coach's or bot's reply when it
+  lands; bad/great once the move's quality comes back (the stinger, late,
+  is fine: it fills the wait for the coach).
+- [ ] Review: stepping forward one move plays that move's sounds; jumps do
+  not.
+- [ ] `useCoachVoice` and the native queue report speaking.
+
+Commit: `feat(sounds): sounds on the live board and in review`
+
+### Task 88.3 — Sounds in courses
+
+**Read:** `features/courses/player/PlayThrough.tsx`, `CourseDrill.tsx`,
+`useNoteAudio.ts`.
+**Files:** those, their tests.
+
+- [ ] Play through: stepping forward plays the move's sounds (both sides'
+  stingers, from the course's evaluations); a solved quiz plays great; the
+  note's voice starts 250 ms after.
+- [ ] Practice and drills: the learner's move, the auto-played opponent,
+  check; a wrong try plays bad; `useNoteAudio` reports speaking.
+
+Commit: `feat(sounds): sounds in courses`
+
+### Task 88.4 — Sounds in clips
+
+**Read:** `features/courses/clip/timeline.ts`, `clip-player.ts`,
+`record-clip.ts`, `ClipPreview.tsx`.
+**Files:** those, `timeline.test.ts`.
+
+- [ ] Failing test first: each `move`/`beat` segment with a move carries its
+  sound cue; a narrated beat's audio starts `soundLeadMs` (250) after the
+  segment starts, and its length grows by the same.
+- [ ] `ClipPlayer` schedules the sound buffers on the same clock into the
+  same output, so the preview and the recording match; the "Board sounds"
+  switch turns them off.
+
+Commit: `feat(sounds): board sounds under clip moves`
+
+### Task 88.5 — Docs
+
+- [ ] `docs/architecture.md` (Web: board sounds), `docs/courses.md` §8 (clip
+  sounds) and §11.
+
+Commit: `docs: board sounds`
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.
@@ -1215,3 +1321,6 @@ Commit: `fix(courses): phone layout pass`
 - 87: the Englund trap at 390 px and 1280 px wide looks like Game Review: the
   explorer, the board with its eval bar and graph, the coach; every stage and
   the Remember screen work on both.
+- 88: on the Englund trap, a clip and the board: move and opponent knocks,
+  a check, the bait's bad sound and the punish's great sound, none over the
+  voice; Settings turns them off.
