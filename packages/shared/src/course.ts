@@ -299,9 +299,9 @@ export const CourseOutlineSchema = z.object({
   chapters: z.array(z.object({ title: z.string(), lineId: z.string().min(1), episodes: z.array(CourseOutlineEpisodeSchema).min(1) })).min(1),
   takeaways: z.array(z.string()).min(3).max(3),
   /** §13.4: null when the course makes no YouTube video. */
-  video: CourseVideoSchema.nullable().default(null),
+  video: CourseVideoSchema.nullable(),
   /** §13.3: null when the course makes no reel. */
-  reel: CourseOutlineReelSchema.nullable().default(null)
+  reel: CourseOutlineReelSchema.nullable()
 });
 export type CourseOutline = z.infer<typeof CourseOutlineSchema>;
 
@@ -315,8 +315,9 @@ export const CourseOutlineCallSchema = CourseOutlineSchema.extend({
 /** The episode call's answer (§6.5); merged into a `CourseEpisode` by code. */
 export const EpisodeScriptSchema = z.object({
   episodeId: z.string().min(1),
-  // A small model may leave out "tempting"; none is the same as an empty list.
-  plies: z.array(CoursePlySchema.extend({ say: z.string().nullable(), caption: z.string().nullable(), tempting: z.array(CourseTemptingSchema.pick({ san: true, why: true })).default([]) })),
+  // Every key required, none defaulted (a strict provider refuses both): an
+  // empty "tempting" is [].
+  plies: z.array(CoursePlySchema.extend({ say: z.string().nullable(), caption: z.string().nullable(), tempting: z.array(CourseTemptingSchema.pick({ san: true, why: true })) })),
   quiz: CourseQuizSchema.nullable()
 });
 export type EpisodeScript = z.infer<typeof EpisodeScriptSchema>;

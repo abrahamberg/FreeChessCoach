@@ -226,7 +226,7 @@ describe('runCourseGeneration', () => {
 
   test('a move with nothing on it is dropped, not sent back for repair', async () => {
     const id = await newCourse('empty-beat@example.com');
-    const blank = { nodeId: 'n1', text: '', say: null, caption: ' ', arrows: [], course: false, video: false };
+    const blank = { nodeId: 'n1', text: '', say: null, caption: ' ', arrows: [], tempting: [], course: false, video: false };
     const withBlank = { ...script('e2', 'n2'), plies: [blank, ...script('e2', 'n2').plies] };
     const [e1, , ...rest] = cleanEpisodes();
     const { deps, prompts } = depsWith([step(outline()), e1!, step(withBlank), ...rest]);

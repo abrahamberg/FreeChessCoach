@@ -103,7 +103,9 @@ describe('model-facing schemas are strict (every key required)', () => {
     const own = schema.properties ? Object.keys(schema.properties).filter((key) => !schema.required?.includes(key)).map((key) => `${path}.${key}`) : [];
     return [...own, ...Object.entries(node).flatMap(([key, child]) => optionalKeys(child, `${path}/${key}`))];
   }
-  const strict = (schema: z.ZodType): string[] => optionalKeys(z.toJSONSchema(schema, { io: 'output' }));
+  // As the request is sent: a defaulted key is optional there too (the
+  // second OpenAI run refused the outline's defaulted "video").
+  const strict = (schema: z.ZodType): string[] => optionalKeys(z.toJSONSchema(schema, { io: 'input' }));
 
   test('the outline, episode and reel calls', () => {
     expect(strict(CourseOutlineCallSchema)).toEqual([]);
