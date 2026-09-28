@@ -54,9 +54,25 @@ describe('buildCourseDrill', () => {
     ]);
   });
 
-  test('a trap asks both sides', () => {
-    const drill = buildCourseDrill(course('trap', [episode('e1', 1, 3, [2])]));
+  test('until the full drill, only the learner’s side is asked, a trap included', () => {
+    // Englund: 1.d4 e5 2.dxe5 Nc6; the learner is Black. A White drill move is not asked.
+    const drill = buildCourseDrill(course('trap', [episode('e1', 1, 4, [1, 2, 4])]));
+    expect(drill.sides).toBe('learner');
+    expect(drill.episodes[0]!.steps.map((step) => [step.node.san, step.asked])).toEqual([
+      ['d4', false], ['e5', true], ['dxe5', false], ['Nc6', true]
+    ]);
+  });
+
+  test('the full drill asks both sides', () => {
+    const drill = buildCourseDrill(course('trap', [episode('e1', 1, 3, [2])]), new Map(), '', 'both');
+    expect(drill.sides).toBe('both');
     expect(drill.episodes[0]!.steps.every((step) => step.asked)).toBe(true);
+  });
+
+  test('tactics ask each example’s move, whichever side plays it', () => {
+    const drill = buildCourseDrill(course('tactics', [episode('e1', 1, 1, [1]), episode('e2', 2, 2, [2])]));
+    expect(drill.mode).toBe('find_move');
+    expect(drill.episodes.map((each) => each.steps.filter((step) => step.asked).map((step) => step.node.san))).toEqual([['d4'], ['e5']]);
   });
 
   test('episodes without drill moves are left out, and a move asked once is not asked again', () => {

@@ -22,7 +22,6 @@ const AUTO_MOVE_MS = 600;
 
 const MODE_INTRO: Record<Drill['mode'], string> = {
   learner_side: 'Play your side; the other side’s moves are played for you.',
-  both_sides: 'Play both sides: spring the trap, and see it coming.',
   find_move: 'Find the move in each position.',
   guess_move: 'Guess each move of the game; your score is kept.'
 };
@@ -199,7 +198,7 @@ function DrillRun({ document, drill, onResult, onAgain, onExit }: DrillRunProps)
       </div>
       <div className="course-player__words">
         <CoachCard avatar={<CoachAvatar persona={document.coachPersona} size="chat" />}>
-          {at.episode === 0 && at.step === 0 && <p className="meta">{MODE_INTRO[drill.mode]}</p>}
+          {at.episode === 0 && at.step === 0 && <p className="meta">{drill.sides === 'both' ? 'Play both sides: every move of the line is yours.' : MODE_INTRO[drill.mode]}</p>}
           {said && <p>{said}</p>}
           {waiting && (
             <div className="course-player__quiz">

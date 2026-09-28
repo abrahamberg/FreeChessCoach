@@ -42,16 +42,22 @@ export function courseDrillKey(fenBefore: string, uci: string): string {
   return `${positionKey(fenBefore)}|${uci}`;
 }
 
-/** §11, per kind: which moves the learner plays in a drill. */
-export type CourseDrillMode = 'learner_side' | 'both_sides' | 'find_move' | 'guess_move';
+/** §11, per kind: how the learner's moves are asked. A master game is a
+ * guess at each move, scored; tactics ask each example's move, whichever
+ * side plays it. */
+export type CourseDrillMode = 'learner_side' | 'find_move' | 'guess_move';
 
 export const COURSE_DRILL_MODE: Record<CourseKind, CourseDrillMode> = {
   opening_reel: 'learner_side',
   opening_course: 'learner_side',
-  trap: 'both_sides',
+  trap: 'learner_side',
   tactics: 'find_move',
   master_game: 'guess_move'
 };
+
+/** Which side's moves are asked: the learner's own until the full drill,
+ * where they play both (the opponent's moves are otherwise played for them). */
+export type CourseDrillSides = 'learner' | 'both';
 
 export interface CourseDrillStep {
   node: CourseNode;
@@ -69,19 +75,28 @@ export interface CourseDrillEpisode {
 
 export interface CourseDrill {
   mode: CourseDrillMode;
+  sides: CourseDrillSides;
   episodes: CourseDrillEpisode[];
 }
 
 /**
  * The drill for a course: each episode with drill moves, walked from its
- * first move. The episode's drill moves are asked (both sides' moves for a
- * trap, springing it and avoiding it); the rest are played automatically. A
+ * first move. With `sides: 'learner'` the episode's drill moves on the
+ * learner's side are asked (for tactics, each example's move whichever side
+ * plays it); with `'both'` every move is. The rest are played automatically. A
  * position + move asked earlier in the drill is not asked again. Episodes with
  * a missed or due move come first, so a branch the learner got wrong is met
  * more often. `states` holds the learner's progress by drill key.
  */
-export function buildCourseDrill(document: CourseDocument, states: ReadonlyMap<string, CourseReviewState> = new Map(), today = ''): CourseDrill {
+export function buildCourseDrill(
+  document: CourseDocument,
+  states: ReadonlyMap<string, CourseReviewState> = new Map(),
+  today = '',
+  sides: CourseDrillSides = 'learner'
+): CourseDrill {
   const mode = COURSE_DRILL_MODE[document.kind];
+  const learnerTurn = document.learnerSide === 'white' ? 'w' : 'b';
+  const learnerAsks = (fenBefore: string): boolean => mode === 'find_move' || fenBefore.split(' ')[1] === learnerTurn;
   const byId = new Map(document.nodes.map((node) => [node.id, node]));
   const fenBefore = (node: CourseNode): string => (node.parentId ? byId.get(node.parentId)?.fenAfter : undefined) ?? document.startFen;
   const needsWork = (key: string): boolean => {
@@ -98,7 +113,7 @@ export function buildCourseDrill(document: CourseDocument, states: ReadonlyMap<s
         const node = byId.get(id);
         if (!node) return [];
         const before = fenBefore(node);
-        return [{ node, fenBefore: before, key: courseDrillKey(before, node.uci), asked: mode === 'both_sides' || drillIds.has(id) }];
+        return [{ node, fenBefore: before, key: courseDrillKey(before, node.uci), asked: sides === 'both' || (drillIds.has(id) && learnerAsks(before)) }];
       });
       return { episodeId: episode.id, role: episode.role, steps };
     });
@@ -115,5 +130,5 @@ export function buildCourseDrill(document: CourseDocument, states: ReadonlyMap<s
       })
     }))
     .filter((episode) => episode.steps.some((step) => step.asked));
-  return { mode, episodes };
+  return { mode, sides, episodes };
 }

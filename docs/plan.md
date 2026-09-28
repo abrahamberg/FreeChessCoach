@@ -823,19 +823,25 @@ Design decisions (owner, 2026-09-28; do not relitigate):
 **Files:** a new `packages/chess-analysis/src/course-stages.ts` + test;
 `course-review.ts` (+ test).
 
-- [ ] Failing tests first: `COURSE_STAGES = ['play_through', 'practice',
+Status: done 2026-09-28. Practice is `course-stages.ts`: a move's state is
+`arrow` → `no_arrow` (played right with the arrow) → `cleared` (right without
+it; no longer asked), and a miss goes back to `arrow`. `buildCourseDrill`
+returns `sides`; `COURSE_DRILL_MODE.trap` is now `learner_side`.
+
+- [x] Failing tests first: `COURSE_STAGES = ['play_through', 'practice',
   'drill', 'full_drill']` and `nextCourseStage`.
-- [ ] `buildCourseDrill(document, states, today, sides)` with `sides:
+- [x] `buildCourseDrill(document, states, today, sides)` with `sides:
   'learner' | 'both'` replacing the per-kind `both_sides` mode. `learner`:
   the drill moves of the side that plays them (the learner's side; for
   tactics, the side to move at each example's drill move). `both`: every move
   of the drill episodes. Keep `guess_move` scoring for master games.
-- [ ] Practice hints, pure: `practiceShowsArrow(key, practice)`. A move shows
+- [x] Practice hints, pure: `practiceShowsArrow(key, practice)`. A move shows
   its arrow until the learner has played it right without the arrow; a miss
   turns it back on. The stage is done when every asked move has been played
-  right once without its arrow. The arrow is the note's arrows, else the
-  creator's, else one arrow for the move itself (from → to, kind `best`).
-- [ ] Tests for each: the first ask shows the arrow, a right answer hides it
+  right once without its arrow. The arrow is the move itself (from → to, kind
+  `best`): the note's and the creator's arrows explain the position after the
+  move, not the move.
+- [x] Tests for each: the first ask shows the arrow, a right answer hides it
   next time, a miss shows it again, and when the stage is done.
 
 Commit: `feat(courses): the four learning stages and fading hints`
