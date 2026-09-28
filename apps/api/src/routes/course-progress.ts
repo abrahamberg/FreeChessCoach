@@ -2,6 +2,8 @@ import {
   CourseDaySchema,
   CourseProgressLookupRequestSchema,
   ImportCourseProgressRequestSchema,
+  SaveCourseEnrollmentRequestSchema,
+  type CourseEnrollmentListResponse,
   RecordCourseDrillRequestSchema,
   type CourseProgressResponse,
   type CourseReviewDueResponse
@@ -15,8 +17,8 @@ import * as progress from '../services/courses/progress.js';
 import * as userProfileService from '../services/user-profile.js';
 
 /**
- * docs/courses.md §11: a signed-in learner's drill results and review
- * schedule. Any signed-in user, not only creators; the anonymous learner's
+ * docs/courses.md §11: a signed-in learner's drill results, review schedule
+ * and the courses they are on. Any signed-in user, not only creators; the anonymous learner's
  * progress stays in the browser until they sign in and it is imported here.
  */
 export function registerCourseProgressRoutes(app: FastifyInstance, db: Kysely<Database>): void {
@@ -33,8 +35,25 @@ export function registerCourseProgressRoutes(app: FastifyInstance, db: Kysely<Da
   });
 
   app.post('/api/course-progress/import', async (request, reply) => {
-    const { items } = parse(ImportCourseProgressRequestSchema, request.body);
-    await progress.importProgress(db, await userId(request), items);
+    const { items, enrollments } = parse(ImportCourseProgressRequestSchema, request.body);
+    await progress.importProgress(db, await userId(request), items, enrollments);
+    return reply.code(204).send();
+  });
+
+  /** docs/courses.md §11: the courses the learner is on, and where they are in each. */
+  app.get('/api/course-enrollments', async (request): Promise<CourseEnrollmentListResponse> => ({
+    items: await progress.listEnrollments(db, await userId(request))
+  }));
+
+  app.put('/api/course-enrollments/:slug', async (request, reply) => {
+    const { slug } = parse(SlugParamsSchema, request.params);
+    await progress.saveEnrollment(db, await userId(request), slug, parse(SaveCourseEnrollmentRequestSchema, request.body));
+    return reply.code(204).send();
+  });
+
+  app.delete('/api/course-enrollments/:slug', async (request, reply) => {
+    const { slug } = parse(SlugParamsSchema, request.params);
+    await progress.removeEnrollment(db, await userId(request), slug);
     return reply.code(204).send();
   });
 
@@ -43,6 +62,8 @@ export function registerCourseProgressRoutes(app: FastifyInstance, db: Kysely<Da
     return progress.due(db, await userId(request), today);
   });
 }
+
+const SlugParamsSchema = z.object({ slug: z.string().min(1).max(120) });
 
 function parse<S extends z.ZodTypeAny>(schema: S, value: unknown): z.output<S> {
   const result = schema.safeParse(value);

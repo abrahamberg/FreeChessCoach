@@ -35,7 +35,7 @@ const arrowsShown = () => Number(screen.getByTestId('board').dataset.arrows);
 describe('CourseDrill', () => {
   test('plays the other side, records the first try at each move, and sums up', async () => {
     const record = vi.fn(() => Promise.resolve());
-    const progress: CourseProgressStore = { signedIn: true, lookup: vi.fn(() => Promise.resolve(new Map())), record };
+    const progress: CourseProgressStore = { signedIn: true, lookup: vi.fn(() => Promise.resolve(new Map())), record, loadEnrollment: vi.fn(() => Promise.resolve(null)), saveEnrollment: vi.fn(() => Promise.resolve()) };
     vi.mocked(judgeQuizMove).mockResolvedValue({ quality: 'mistake', bestLineSan: [] } as unknown as ClassifiedMoveDto);
     render(<CourseDrill document={document} stage="drill" progress={progress} courseSlug="englund-aaaaaaaaaaaa" {...handlers()} />);
 
@@ -71,7 +71,7 @@ describe('CourseDrill', () => {
 
   test('practice: arrows first, then fewer; known moves are played for you; nothing is recorded', async () => {
     const record = vi.fn(() => Promise.resolve());
-    const progress: CourseProgressStore = { signedIn: true, lookup: vi.fn(() => Promise.resolve(new Map())), record };
+    const progress: CourseProgressStore = { signedIn: true, lookup: vi.fn(() => Promise.resolve(new Map())), record, loadEnrollment: vi.fn(() => Promise.resolve(null)), saveEnrollment: vi.fn(() => Promise.resolve()) };
     vi.mocked(judgeQuizMove).mockResolvedValue({ quality: 'mistake', bestLineSan: [] } as unknown as ClassifiedMoveDto);
     const props = handlers();
     render(<CourseDrill document={document} stage="practice" progress={progress} courseSlug="englund-aaaaaaaaaaaa" {...props} />);

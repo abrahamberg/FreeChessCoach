@@ -114,7 +114,11 @@ export const CourseProgressLookupRequestSchema = z.object({ keys: z.array(Course
 
 /** Progress kept in the browser before signing in, moved to the account; the
  * later of the two copies of a move wins. */
-export const ImportCourseProgressRequestSchema = z.object({ items: z.array(CourseProgressItemSchema).max(2000) });
+export const ImportCourseProgressRequestSchema = z.object({
+  items: z.array(CourseProgressItemSchema).max(2000),
+  /** Courses being learned in this browser (docs/courses.md §11); the newer copy wins. */
+  enrollments: z.array(z.lazy(() => ImportCourseEnrollmentSchema)).max(200).default([])
+});
 
 /** The Games page's "Due today" card: moves to review, by course. */
 export const CourseReviewDueResponseSchema = z.object({
@@ -138,3 +142,49 @@ export const AskCourseCoachRequestSchema = z.object({
     .refine((messages) => messages.at(-1)?.role === 'user', 'The last message must be the learner’s question.')
 });
 export type AskCourseCoachRequest = z.infer<typeof AskCourseCoachRequestSchema>;
+
+/** docs/courses.md §11: the stages of learning a course, in order. */
+export const COURSE_STAGES = ['play_through', 'practice', 'drill', 'full_drill'] as const;
+export const CourseStageSchema = z.enum(COURSE_STAGES);
+export type CourseStage = z.infer<typeof CourseStageSchema>;
+
+/** Where the learner is in a course: the play-through's episode and step,
+ * and in practice which moves they already know (drill key → state). A drill
+ * restarts at its beginning; it is short, and its order follows the review. */
+export const CourseEnrollmentPlaceSchema = z.object({
+  episode: z.number().int().min(0).max(200).default(0),
+  step: z.number().int().min(0).max(2000).default(0),
+  practice: z
+    .record(CourseDrillKeySchema, z.enum(['arrow', 'no_arrow', 'cleared']))
+    .refine((practice) => Object.keys(practice).length <= 400, 'Too many practice moves.')
+    .default({})
+});
+export type CourseEnrollmentPlace = z.infer<typeof CourseEnrollmentPlaceSchema>;
+
+export const SaveCourseEnrollmentRequestSchema = z.object({
+  stage: CourseStageSchema,
+  place: CourseEnrollmentPlaceSchema,
+  stagesDone: z.array(CourseStageSchema).max(COURSE_STAGES.length)
+});
+export type SaveCourseEnrollmentRequest = z.infer<typeof SaveCourseEnrollmentRequestSchema>;
+
+export const ImportCourseEnrollmentSchema = SaveCourseEnrollmentRequestSchema.extend({
+  slug: z.string().min(1).max(120),
+  updatedAt: z.string()
+});
+export type ImportCourseEnrollment = z.infer<typeof ImportCourseEnrollmentSchema>;
+
+/** A course the learner has started, with where they are in it. */
+export const CourseEnrollmentSchema = SaveCourseEnrollmentRequestSchema.extend({
+  slug: z.string(),
+  title: z.string(),
+  kind: CourseKindSchema,
+  startedAt: z.string(),
+  updatedAt: z.string(),
+  /** Set once the full drill is finished. */
+  completedAt: z.string().nullable()
+});
+export type CourseEnrollment = z.infer<typeof CourseEnrollmentSchema>;
+
+export const CourseEnrollmentListResponseSchema = z.object({ items: z.array(CourseEnrollmentSchema) });
+export type CourseEnrollmentListResponse = z.infer<typeof CourseEnrollmentListResponseSchema>;

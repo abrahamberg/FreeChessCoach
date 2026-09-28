@@ -883,26 +883,31 @@ Commit: `feat(courses): practice with fading arrows, then drill, then both sides
 **Read:** `apps/api/src/db/migrations/0020_course_progress.ts`,
 `apps/api/src/db/repositories/course-progress.ts`,
 `apps/api/src/routes/course-progress.ts`, `apps/api/src/services/account.ts`.
+Status: done 2026-09-28. The stage list moved to `packages/shared`
+(`COURSE_STAGES`, `CourseStageSchema`), re-exported by chess-analysis.
+
 **Files:** migration `0021_course_enrollments.ts` (+ `migrate.ts`,
 `schema.ts`), `repositories/course-enrollments.ts`, routes in
 `routes/course-progress.ts`, schemas in `packages/shared/src/course-api.ts`,
 `services/account.ts`, `player/course-progress.ts`.
 
-- [ ] Failing route tests first.
-- [ ] Table `course_enrollments (user_id → users ON DELETE CASCADE, course_id
+- [x] Failing route tests first.
+- [x] Table `course_enrollments (user_id → users ON DELETE CASCADE, course_id
   → courses ON DELETE CASCADE, stage text, place jsonb {episode, step},
   stages_done text[], started_at, updated_at, completed_at null, PRIMARY KEY
-  (user_id, course_id))`. `completed_at` is set when the full drill is
+  (user_id, course_id))`. `place` is the play-through's episode and step and,
+  in practice, which moves are known (drill key → state); a drill restarts at
+  its beginning, as it is short and its order follows the review. `completed_at` is set when the full drill is
   finished.
-- [ ] `PUT /api/course-enrollments/:slug` (stage, place, stagesDone; 204),
+- [x] `PUT /api/course-enrollments/:slug` (stage, place, stagesDone; 204),
   `GET /api/course-enrollments` (newest activity first, with title, kind,
   stage, stages done, place, completed), `DELETE
   /api/course-enrollments/:slug` ("remove from my learning"). The slug is
   resolved to a published course on the server; a taken-down course drops
   out of the list.
-- [ ] Signed out: the same record in `localStorage`, moved to the account by
+- [x] Signed out: the same record in `localStorage`, moved to the account by
   the sign-in import (the newer copy wins), next to the review progress.
-- [ ] Account deletion deletes the rows (test).
+- [x] Account deletion deletes the rows (test).
 
 Commit: `feat(courses): keep each learner's stage and place in a course`
 

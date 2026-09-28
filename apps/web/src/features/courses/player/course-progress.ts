@@ -1,7 +1,16 @@
 import { nextCourseReview, type CourseReviewState } from '@freechesscoach/chess-analysis';
-import { CourseProgressItemSchema, CourseProgressResponseSchema, type CourseDrillResult, type CourseProgressItem } from '@freechesscoach/shared';
+import {
+  CourseEnrollmentListResponseSchema,
+  CourseProgressItemSchema,
+  CourseProgressResponseSchema,
+  ImportCourseEnrollmentSchema,
+  type CourseDrillResult,
+  type CourseProgressItem,
+  type ImportCourseEnrollment,
+  type SaveCourseEnrollmentRequest
+} from '@freechesscoach/shared';
 import { z } from 'zod';
-import { apiPost } from '../../../api/client.js';
+import { apiGet, apiPost, apiPut } from '../../../api/client.js';
 
 /** docs/courses.md §11: where a learner's drill results go. Signed in, the
  * account; otherwise this browser, moved to the account on sign-in. */
@@ -9,6 +18,9 @@ export interface CourseProgressStore {
   signedIn: boolean;
   lookup: (keys: string[]) => Promise<Map<string, CourseReviewState>>;
   record: (results: CourseDrillResult[]) => Promise<void>;
+  /** Where the learner is in a course (§11), null when not started. */
+  loadEnrollment: (slug: string) => Promise<SaveCourseEnrollmentRequest | null>;
+  saveEnrollment: (slug: string, enrollment: SaveCourseEnrollmentRequest) => Promise<void>;
 }
 
 /** The learner's own calendar day: "due today" means their today. */
@@ -38,6 +50,31 @@ function writeBrowser(items: Record<string, CourseProgressItem>): void {
   }
 }
 
+const ENROLLMENTS_KEY = 'fcc.courseEnrollments.v1';
+const StoredEnrollmentsSchema = z.record(z.string(), ImportCourseEnrollmentSchema);
+
+function readBrowserEnrollments(): Record<string, ImportCourseEnrollment> {
+  try {
+    const parsed = StoredEnrollmentsSchema.safeParse(JSON.parse(window.localStorage.getItem(ENROLLMENTS_KEY) ?? '{}'));
+    return parsed.success ? parsed.data : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeBrowserEnrollments(enrollments: Record<string, ImportCourseEnrollment>): void {
+  try {
+    if (Object.keys(enrollments).length) window.localStorage.setItem(ENROLLMENTS_KEY, JSON.stringify(enrollments));
+    else window.localStorage.removeItem(ENROLLMENTS_KEY);
+  } catch {
+    // Blocked storage: the course still plays, its place unsaved.
+  }
+}
+
+function saveEnrollmentInBrowser(slug: string, enrollment: SaveCourseEnrollmentRequest): void {
+  writeBrowserEnrollments({ ...readBrowserEnrollments(), [slug]: { ...enrollment, slug, updatedAt: new Date().toISOString() } });
+}
+
 function saveInBrowser(results: CourseDrillResult[]): void {
   const items = readBrowser();
   const today = localToday();
@@ -57,6 +94,11 @@ export const browserProgressStore: CourseProgressStore = {
   record: (results) => {
     saveInBrowser(results);
     return Promise.resolve();
+  },
+  loadEnrollment: (slug) => Promise.resolve(readBrowserEnrollments()[slug] ?? null),
+  saveEnrollment: (slug, enrollment) => {
+    saveEnrollmentInBrowser(slug, enrollment);
+    return Promise.resolve();
   }
 };
 
@@ -73,6 +115,18 @@ export const accountProgressStore: CourseProgressStore = {
       // Signed out meanwhile, or offline: kept here and moved over next time.
       saveInBrowser(results);
     }
+  },
+  loadEnrollment: async (slug) => {
+    const { items } = await apiGet('/api/course-enrollments', CourseEnrollmentListResponseSchema);
+    const found = items.find((item) => item.slug === slug);
+    return found ? { stage: found.stage, place: found.place, stagesDone: found.stagesDone } : null;
+  },
+  saveEnrollment: async (slug, enrollment) => {
+    try {
+      await apiPut(`/api/course-enrollments/${encodeURIComponent(slug)}`, enrollment);
+    } catch {
+      saveEnrollmentInBrowser(slug, enrollment);
+    }
   }
 };
 
@@ -88,15 +142,20 @@ export async function isSignedIn(): Promise<boolean> {
   }
 }
 
-/** Moves what this browser kept before sign-in to the account, once. */
+/** Moves what this browser kept before sign-in to the account, once: the
+ * review schedule and the courses being learned. */
 export async function importBrowserProgress(): Promise<void> {
   const items = Object.values(readBrowser());
-  if (!items.length) return;
+  const enrollments = Object.values(readBrowserEnrollments());
+  if (!items.length && !enrollments.length) return;
   const response = await fetch('/api/course-progress/import', {
     method: 'POST',
     credentials: 'include',
     headers: { 'content-type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ items: items.slice(-2000) })
+    body: JSON.stringify({ items: items.slice(-2000), enrollments: enrollments.slice(-200) })
   });
-  if (response.ok) writeBrowser({});
+  if (response.ok) {
+    writeBrowser({});
+    writeBrowserEnrollments({});
+  }
 }

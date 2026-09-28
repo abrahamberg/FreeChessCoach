@@ -1,6 +1,6 @@
 import type { ColumnType, Generated } from 'kysely';
 import type { CourseDossier, GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { BotConfig, CoachPersona, CourseDebugCall, CourseDocument, CourseGeneration, CourseKind, CourseStatus, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { BotConfig, CoachPersona, CourseDebugCall, CourseDocument, CourseEnrollmentPlace, CourseGeneration, CourseKind, CourseStage, CourseStatus, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -354,6 +354,18 @@ export interface CourseProgressTable {
   updatedAt: Generated<Date>;
 }
 
+/** 0021_course_enrollments.ts: a learner's stage and place in a course. */
+export interface CourseEnrollmentsTable {
+  userId: string;
+  courseId: string;
+  stage: CourseStage;
+  place: Jsonb<CourseEnrollmentPlace>;
+  stagesDone: CourseStage[];
+  startedAt: Generated<Date>;
+  updatedAt: Generated<Date>;
+  completedAt: Date | null;
+}
+
 /** 0016_debug_turns.ts: a session's last LLM turns, for the debug picker. */
 export interface DebugTurnsTable {
   id: Generated<string>;
@@ -384,6 +396,7 @@ export interface Database {
   debugTurns: DebugTurnsTable;
   courseAudio: CourseAudioTable;
   courseProgress: CourseProgressTable;
+  courseEnrollments: CourseEnrollmentsTable;
   statsArchiveWeeks: StatsArchiveWeeksTable;
   analyses: AnalysesTable;
   sessions: SessionsTable;

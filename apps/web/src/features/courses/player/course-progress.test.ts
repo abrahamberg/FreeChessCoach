@@ -28,6 +28,17 @@ describe('course progress in the browser', () => {
     expect(fetch).toHaveBeenCalledOnce();
   });
 
+  test('a course’s place is kept here, and moves to the account with the progress', async () => {
+    await browserProgressStore.saveEnrollment('englund', { stage: 'practice', place: { episode: 1, step: 3, practice: {} }, stagesDone: ['play_through'] });
+    expect(await browserProgressStore.loadEnrollment('englund')).toMatchObject({ stage: 'practice', place: { episode: 1, step: 3 } });
+    const fetch = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
+    vi.stubGlobal('fetch', fetch);
+    await importBrowserProgress();
+    const body = JSON.parse(String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+    expect(body).toMatchObject({ items: [], enrollments: [{ slug: 'englund', stage: 'practice', stagesDone: ['play_through'] }] });
+    expect(await browserProgressStore.loadEnrollment('englund')).toBeNull();
+  });
+
   test('the day is the learner’s own', () => {
     expect(localToday(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05');
   });

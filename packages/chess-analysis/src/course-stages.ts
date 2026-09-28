@@ -1,10 +1,10 @@
-import type { CourseArrow, CourseNode } from '@freechesscoach/shared';
+import { COURSE_STAGES, type CourseArrow, type CourseNode, type CourseStage } from '@freechesscoach/shared';
 
-/** docs/courses.md §11: the stages of learning a course, in order. Play
- * through with all the arrows; practise the learner's own moves while the
- * arrows fade; drill their side with none; then drill both sides. */
-export const COURSE_STAGES = ['play_through', 'practice', 'drill', 'full_drill'] as const;
-export type CourseStage = (typeof COURSE_STAGES)[number];
+// docs/courses.md §11: the stages of learning a course, in order (defined in
+// shared, which the API validates with). Play through with all the arrows;
+// practise the learner's own moves while the arrows fade; drill their side
+// with none; then drill both sides.
+export { COURSE_STAGES, type CourseStage };
 
 export function nextCourseStage(stage: CourseStage): CourseStage | null {
   return COURSE_STAGES[COURSE_STAGES.indexOf(stage) + 1] ?? null;
