@@ -8,18 +8,24 @@ export interface MoveLogEntry {
   who: string;
   /** The course's note on the move, when there is one. */
   note: string | null;
+  /** How the learner's own move went: found first time, or shown to them. */
+  result?: 'right' | 'shown';
 }
 
 export interface MoveLogProps {
   /** The last moves played, oldest first (at most two are shown). */
   played: MoveLogEntry[];
-  /** The move to play now; `label` null keeps it hidden (the drill). */
-  current: { side: 'white' | 'black'; who: string; label: string | null };
+  /** The move now: the learner's to find (`label` null keeps it hidden), or
+   * the opponent's being played for them. */
+  current: { side: 'white' | 'black'; who: string; label: string | null; yours: boolean };
+  /** Beside the learner's move: "Show the move". */
+  action?: ReactNode;
 }
 
-/** docs/courses.md §11: while the learner plays, the last moves and the one
- * they are to find, each with a pawn in its side's colour. */
-export function MoveLog({ played, current }: MoveLogProps): ReactNode {
+/** docs/courses.md §11: while the learner plays, the last moves with the
+ * course's notes and the one they are to find, each with a pawn in its
+ * side's colour. */
+export function MoveLog({ played, current, action }: MoveLogProps): ReactNode {
   return (
     <ol className="move-log" aria-label="Last moves">
       {played.slice(-2).map((entry, index) => (
@@ -27,17 +33,21 @@ export function MoveLog({ played, current }: MoveLogProps): ReactNode {
           <Pawn side={entry.side} />
           <div className="move-log__text">
             <span className="move-log__who">{entry.who}</span> <span className="move-log__move">{entry.label}</span>
+            {entry.result && (
+              <span className={`move-log__result move-log__result--${entry.result}`}>{entry.result === 'right' ? ' ✓' : ' · shown'}</span>
+            )}
             {entry.note && <p className="move-log__note">{entry.note}</p>}
           </div>
         </li>
       ))}
-      <li className="move-log__row move-log__row--current" aria-current="step">
+      <li className={current.yours ? 'move-log__row move-log__row--current' : 'move-log__row'} aria-current="step">
         <Pawn side={current.side} />
         <div className="move-log__text">
           <span className="move-log__who">{current.who}</span>{' '}
           {current.label ? <span className="move-log__move">{current.label}</span> : <span className="move-log__mask" aria-label="Your move, hidden">?</span>}
-          <span className="move-log__hint"> · your move</span>
+          <span className="move-log__hint">{current.yours ? ' · your move' : ' · playing…'}</span>
         </div>
+        {action && <div className="move-log__action">{action}</div>}
       </li>
     </ol>
   );

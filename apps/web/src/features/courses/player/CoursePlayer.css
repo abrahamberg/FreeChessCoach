@@ -441,3 +441,19 @@
   color: var(--color-text-secondary);
   font-size: 0.9rem;
 }
+
+.move-log__action {
+  margin-left: auto;
+  flex: none;
+  align-self: center;
+}
+
+.move-log__result--right {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.move-log__result--shown {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}

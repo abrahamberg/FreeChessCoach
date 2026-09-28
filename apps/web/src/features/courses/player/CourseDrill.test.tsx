@@ -29,7 +29,7 @@ function handlers() {
   return { onStageDone: vi.fn(), onNextStage: vi.fn(), onExit: vi.fn() };
 }
 
-const findPrompt = () => screen.findByText(/to play/, undefined, { timeout: 2000 });
+const findPrompt = () => screen.findByRole('button', { name: 'Show the move' }, { timeout: 2000 });
 const arrowsShown = () => Number(screen.getByTestId('board').dataset.arrows);
 
 describe('CourseDrill', () => {
@@ -40,14 +40,15 @@ describe('CourseDrill', () => {
     render(<CourseDrill document={document} stage="drill" progress={progress} courseSlug="englund-aaaaaaaaaaaa" {...handlers()} />);
 
     // 1.d4 is played for the learner, then Black is asked.
-    expect(await screen.findByText(/Black to play/, undefined, { timeout: 2000 })).toBeTruthy();
+    expect(await findPrompt()).toBeTruthy();
     expect(screen.getByTestId('board').dataset.fen).toBe(d4!.fenAfter);
     act(() => board.play('e5', e5!.fenAfter, e5!.uci));
-    expect(screen.getByText('e5. The gambit.')).toBeTruthy();
+    await findPrompt();
+    expect(screen.getByRole('list', { name: 'Last moves' }).textContent).toContain('1…e5 ✓The gambit.');
     expect(record).toHaveBeenCalledWith([{ key: courseDrillKey(d4!.fenAfter, e5!.uci), san: 'e5', courseSlug: 'englund-aaaaaaaaaaaa', correct: true }]);
 
     // 2.dxe5 is played; a weaker move than Nc6 is a miss, and counts once.
-    expect(await screen.findByText(/Black to play/, undefined, { timeout: 2000 })).toBeTruthy();
+    expect(await findPrompt()).toBeTruthy();
     await act(async () => board.play('Nf6', 'irrelevant', 'g8f6'));
     expect(await screen.findByRole('button', { name: 'Try again' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -63,7 +64,7 @@ describe('CourseDrill', () => {
   test('a move about as good as the course move is accepted without penalty; the preview saves nothing', async () => {
     vi.mocked(judgeQuizMove).mockResolvedValue({ quality: 'excellent' } as ClassifiedMoveDto);
     render(<CourseDrill document={{ ...document, episodes: [{ ...document.episodes[0]!, drillNodeIds: [e5!.id] }] }} stage="drill" {...handlers()} />);
-    expect(await screen.findByText(/Black to play/, undefined, { timeout: 2000 })).toBeTruthy();
+    expect(await findPrompt()).toBeTruthy();
     await act(async () => board.play('d5', 'irrelevant', 'd7d5'));
     fireEvent.click(await screen.findByRole('button', { name: 'Play the course move' }));
     expect(await screen.findByText('1 of 1 right first time.', undefined, { timeout: 3000 })).toBeTruthy();
@@ -140,7 +141,7 @@ describe('CourseDrill', () => {
 
   test('the full drill asks both sides, White first, with the move hidden', async () => {
     render(<CourseDrill document={document} stage="full_drill" {...handlers()} />);
-    expect(await screen.findByText(/White to play/)).toBeTruthy();
+    expect(await findPrompt()).toBeTruthy();
     expect(screen.getByTestId('board').dataset.fen).toBe(tree.startFen);
     expect(screen.getByRole('img', { name: 'White' })).toBeTruthy();
     expect(screen.getByLabelText('Your move, hidden')).toBeTruthy();

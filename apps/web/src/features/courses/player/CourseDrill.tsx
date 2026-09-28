@@ -254,7 +254,6 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
   const [firstTries, setFirstTries] = useState<Map<string, { san: string; correct: boolean }>>(new Map());
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [judgement, setJudgement] = useState<Judgement | null>(null);
-  const [said, setSaid] = useState<string | null>(null);
   const judgeRef = useRef(0);
 
   const episode = drill.episodes[at.episode];
@@ -290,8 +289,6 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
     if (!step?.asked) return;
     if (uci === step.node.uci) {
       firstTry(true);
-      const note = document.episodes.find((each) => each.id === episode!.episodeId)?.notes.find((each) => each.nodeId === step.node.id)?.text.trim();
-      setSaid(note ? `${san}. ${note}` : `${san}, yes.`);
       advance();
       return;
     }
@@ -299,7 +296,6 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
     const request = ++judgeRef.current;
     setAttempt(tried);
     setJudgement({ status: 'checking' });
-    setSaid(null);
     judgeQuizMove({ ...tried, mover: step.fenBefore.split(' ')[1] === 'b' ? 'black' : 'white' })
       .then((move) => {
         if (request !== judgeRef.current) return;
@@ -320,7 +316,6 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
   if (done) return null;
 
   const waiting = step?.asked && !attempt;
-  const askedSoFar = asked.findIndex((each) => each === step) + 1;
   const hinted = Boolean(step && arrowKeys.has(step.key));
   const hint = waiting && step && hinted ? toBoardMarks([practiceArrow(step.node)]) : null;
   const notes = document.episodes.find((each) => each.id === episode?.episodeId)?.notes ?? [];
@@ -330,8 +325,13 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
     label: moveLabel(each.fenBefore, each.node.san),
     side: sideOf(each.fenBefore),
     who: who(each.fenBefore, each.asked),
-    note: notes.find((note) => note.nodeId === each.node.id)?.text.trim() || null
+    note: notes.find((note) => note.nodeId === each.node.id)?.text.trim() || null,
+    result: each.asked ? (firstTries.get(each.key)?.correct === false ? 'shown' : 'right') : undefined
   }));
+  const showMove = (): void => {
+    firstTry(false);
+    advance();
+  };
   return (
     <div className="course-player__episode">
       <div className="course-player__board">
@@ -355,40 +355,26 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
         </div>
       </div>
       <div className="course-player__words">
-        {step?.asked && (
-          <MoveLog
-            played={played}
-            current={{
-              side: sideOf(step.fenBefore),
-              who: who(step.fenBefore, true),
-              // Practice names the move while its arrow shows; the drill never does.
-              label: stage === 'practice' && hinted ? moveLabel(step.fenBefore, step.node.san) : null
-            }}
-          />
-        )}
         <CoachCard avatar={<CoachAvatar persona={document.coachPersona} size="chat" />}>
           {introText && firstTries.size === 0 && !attempt && <p className="meta">{introText}</p>}
-          {said && <p>{said}</p>}
-          {waiting && (
-            <div className="course-player__quiz">
-              <p className="course-player__prompt">
-                {askedSoFar > 0 ? `Move ${askedSoFar}: ` : ''}
-                {fen.split(' ')[1] === 'b' ? 'Black' : 'White'} to play.
-              </p>
-              <div className="course-player__actions">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => {
-                    firstTry(false);
-                    setSaid(`The move is ${step.node.san}.`);
-                    advance();
-                  }}
-                >
-                  Show the move
-                </button>
-              </div>
-            </div>
+          {step && (
+            <MoveLog
+              played={played}
+              current={{
+                side: sideOf(step.fenBefore),
+                who: who(step.fenBefore, step.asked),
+                // Practice names the move while its arrow shows; the drills never do.
+                label: !step.asked || (stage === 'practice' && hinted) ? moveLabel(step.fenBefore, step.node.san) : null,
+                yours: step.asked
+              }}
+              action={
+                waiting ? (
+                  <button type="button" className="btn-secondary" onClick={showMove}>
+                    Show the move
+                  </button>
+                ) : undefined
+              }
+            />
           )}
           {step?.asked && attempt && (
             <AttemptFeedback
@@ -396,19 +382,13 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
               judgement={judgement}
               answerSan={step.node.san}
               acceptLabel="Play the course move"
-              onAccept={() => {
-                setSaid(`The course plays ${step.node.san}.`);
-                advance();
-              }}
+              onAccept={advance}
               onRetry={() => {
                 judgeRef.current += 1;
                 setAttempt(null);
                 setJudgement(null);
               }}
-              onReveal={() => {
-                setSaid(`The move is ${step.node.san}.`);
-                advance();
-              }}
+              onReveal={advance}
             />
           )}
         </CoachCard>
