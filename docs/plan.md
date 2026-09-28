@@ -867,7 +867,8 @@ move" beside it, the reply with the course's note, and their previous move
 (✓ or "shown"), each with a pawn in its side's colour. Nothing else repeats them.
 In practice the move to find shows what it does (the course's note) in place
 of "your move"; while the move is hidden, its name is blanked out of the note
-(`withoutMove`, `player/course-steps.ts`). The current move is named in practice only while its arrow shows,
+(`withoutMove`, `player/course-steps.ts`). "Show the move" is offered only
+once the arrow has gone (the arrow already shows it). The current move is named in practice only while its arrow shows,
 and hidden (`?`) otherwise and in the drills.
 
 - [x] Failing tests first (mock `CoachBoard` as `CourseDrill.test.tsx`

@@ -1,6 +1,6 @@
 import { courseDrillKey, parseCourseTree } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto, CourseDocument } from '@freechesscoach/shared';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import { CourseDrill } from './CourseDrill.js';
 import type { CourseProgressStore } from './course-progress.js';
@@ -29,7 +29,16 @@ function handlers() {
   return { onStageDone: vi.fn(), onNextStage: vi.fn(), onExit: vi.fn() };
 }
 
-const findPrompt = () => screen.findByRole('button', { name: 'Show the move' }, { timeout: 2000 });
+/** The learner's move to find is up (the highlighted row of the move log). */
+const findPrompt = () =>
+  waitFor(
+    () => {
+      const row = window.document.querySelector('.move-log__row--current');
+      expect(row).not.toBeNull();
+      return row;
+    },
+    { timeout: 2000 }
+  );
 const arrowsShown = () => Number(screen.getByTestId('board').dataset.arrows);
 
 describe('CourseDrill', () => {
@@ -96,6 +105,8 @@ describe('CourseDrill', () => {
     // Practice says what the move does, not "your move".
     expect(log()).toContain('The gambit.');
     expect(log()).not.toContain('your move');
+    // The arrow shows the move, so no "Show the move" yet.
+    expect(screen.queryByRole('button', { name: 'Show the move' })).toBeNull();
     await play('e5', e5!.fenAfter, e5!.uci);
     await findPrompt();
     expect(arrowsShown()).toBe(1);
@@ -112,6 +123,7 @@ describe('CourseDrill', () => {
     await findPrompt();
     expect(arrowsShown()).toBe(0);
     expect(log()).not.toContain('Nc6');
+    expect(screen.getByRole('button', { name: 'Show the move' })).toBeTruthy();
     await miss();
     expect(await screen.findByText('0 of 2 moves known.')).toBeTruthy();
 

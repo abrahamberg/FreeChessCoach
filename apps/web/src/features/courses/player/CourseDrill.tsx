@@ -370,8 +370,9 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
                 purpose:
                   stage === 'practice' && step.asked ? withoutMove(notes.find((note) => note.nodeId === step.node.id)?.text.trim() || null, hinted ? null : step.node.san) : null
               }}
+              // The arrow already shows the move; "Show the move" is for when it has gone.
               action={
-                waiting ? (
+                waiting && !hinted ? (
                   <button type="button" className="btn-secondary" onClick={showMove}>
                     Show the move
                   </button>
