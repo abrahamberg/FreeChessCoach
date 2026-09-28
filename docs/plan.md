@@ -1630,6 +1630,228 @@ Status: done 2026-09-28. The Details card's picker reads "The AI makes".
 
 Commit: `feat(courses): course, clip or both; key moves always speak`
 
+## Phases 92–95 — The course, the YouTube video and the reel
+
+The owner, 2026-09-28: the "long" and "short" versions are two videos, not
+the course and one clip. The long clip is a YouTube video; the short clip
+is a reel for Instagram, YouTube Shorts and TikTok. A course may have
+either, both or neither; the course always holds everything. The reel is
+"one idea" (a single sacrifice, blunder or finish, never a 40-move
+summary) or an interactive puzzle ("Mate in 3"); the video tells the story
+and, at each important move, weighs the moves that look right and says why
+they fail. `opening_reel` and `opening_course` become one `opening` kind;
+`puzzle` is new. The owner's research on reels (9:16 layout with a top-band
+hook and a bottom-band payoff, 30–45 s, a spoken keyword hook in 2 s, the
+slowed climax with silence before the winning move, a specific CTA and a
+loop line) and on long form (a 15-second premise hook, commentator
+storytelling, the eval bar, an interactive question and a series CTA, a
+title under 55 characters) is folded into the spec.
+
+**Spec:** `docs/courses.md` §13 (all of it; the tasks name subsections).
+Do not read the rest of the file end to end.
+
+**Already there, reused as is (verified in code):**
+- the dossier's `tempting` (captures and checks the engine did not rank,
+  `course-dossier-node.ts` `temptingMoves`), with no refutation yet;
+- engine lines carry `pvSan` (`EngineLineSchema`);
+- `checks-captures-threats.ts` for the candidates;
+- the clip renderer (`clip/draw-frame.ts`, `timeline.ts`, `clip-player.ts`,
+  `record-clip.ts`) draws 9:16 and 16:9 from one timeline;
+- board sounds and ducking (Phase 88);
+- key moves and code-owned budgets (Phase 91).
+
+**Layering:** chess facts in chess-analysis, prompt text in
+`packages/prompts`, the pipeline in `apps/api/src/services/courses`, the
+renderer in `apps/web/src/features/courses/clip`. Course rows are test data:
+no backward compatibility, and the kind check constraint changes in a new
+migration.
+
+## Phase 92 — Kinds and the document
+
+### Task 92.1 — `opening` and `puzzle`
+
+**Read:** §13.2.
+**Files:** `packages/shared/src/course.ts` (`COURSE_KINDS`, roles),
+migration `00NN_course_kinds.ts` (check constraint; existing opening rows
+become `opening`), `course-skeleton.ts` (opening merged; puzzle: every
+learner move a quiz), `course-learner-side.ts` (puzzle: the side to move),
+intake (`CourseIntakePage.tsx`, `courseKinds.ts`), the template
+(`manual-episodes*.ts`), playbooks, their tests.
+
+- [ ] Failing tests first: the puzzle skeleton on a mate-in-3 FEN (each
+  learner move a quiz; the engine's defence as the replies); a puzzle whose
+  line is not the engine's forced win is refused at intake with the reason.
+- [ ] `opening` replaces both opening kinds everywhere (roles: line,
+  deviation, trap, recap).
+- [ ] The intake lists five kinds with their summaries and examples.
+
+Commit: `feat(courses): one opening kind, and puzzles`
+
+### Task 92.2 — The document: course, video, reel
+
+**Read:** §13.1, §13.6.
+**Files:** `packages/shared/src/course.ts`, `course-api.ts`, every user of
+`opener`, `clipText`, `short`, `versions`, `clipSeconds` (verifier,
+timeline, editor, player, pipeline, template), tests.
+
+- [ ] Ply: `text`, `say?`, `tempting: {san, why}[]`, `course`, `video`;
+  episode `budget: {course, video, keyNodeIds?}`; document `videos`,
+  `video?`, `reel?`. The intake's "Videos" ticks (YouTube video, Reel) with
+  the §13.2 defaults replace "What to make".
+- [ ] The editor and player compile against it (the Video and Reel tabs
+  come in Phase 95; until then the Clip tab previews the video).
+
+Commit: `feat(courses): the course, the video and the reel in the document`
+
+### Task 92.3 — Tempting moves with their refutation
+
+**Read:** §13.5.
+**Files:** `course-tempting.ts` (new), `course-dossier-node.ts`,
+`course-dossier.ts` (the extra positions go in the same engine batch),
+`course-dossier-text.ts` (rendering), tests.
+
+- [ ] Failing test first: on the Englund at n11 (6.Bc3) the tempting moves
+  are listed with their refutations; a candidate within 15 win% of the best
+  is not tempting.
+- [ ] Candidates: checks, captures, threats (attacks an undefended piece or
+  one worth more); at critical nodes, quiz answers, and every learner move
+  of a puzzle or tactics course; at most 3.
+- [ ] `course-dossier-refresh.ts` rebuilds dossiers.
+
+Commit: `feat(courses): tempting moves and why they fail, from the engine`
+
+## Phase 93 — Prompts and the pipeline
+
+### Task 93.1 — Three products in the prompts
+
+**Read:** §13.7, §13.2.
+**Files:** `packages/prompts/src/course/shared.ts`, `playbooks.ts`,
+`outline.ts`, `episode.ts`, `budget.ts`, snapshot tests.
+
+- [ ] The shared block's "three products" (§13.7) replaces "each move, two
+  versions"; every playbook gains its video and reel paragraphs, and the
+  puzzle playbook is new (the thinking method: checks, captures, threats at
+  every learner move).
+- [ ] The outline: course and video budgets, the reel's style and span from
+  code's candidates, the video's title, thumbnail text, hook and outro;
+  only for the ticked videos.
+- [ ] The episode: `text`, `say`, `tempting` (from the dossier's list),
+  ticks within budgets.
+- [ ] Voice rule: never start two lines the same way; no stock words
+  repeated across the course.
+
+Commit: `feat(courses): prompts for the course, the video and the reel`
+
+### Task 93.2 — The reel call
+
+**Read:** §13.3.
+**Files:** `packages/prompts/src/course/reel.ts` (new),
+`apps/api/src/services/courses/generate-reel.ts` (new),
+`course-reel-candidates.ts` (chess-analysis, new), `course-generate.ts`,
+tests.
+
+- [ ] Code's reel candidates: climaxes ranked (mate, brilliant or great,
+  largest swing, a trap's punishment) with their spans.
+- [ ] One call after the episodes writes the §13.3 script; checked (93.3),
+  sent back once, then kept with warnings.
+- [ ] `POST /api/courses/:id/generate` takes `{ only: 'reel' | 'video' }`
+  to add one later.
+
+Commit: `feat(courses): the reel, one idea, written and checked`
+
+### Task 93.3 — The checks
+
+**Read:** §13.9.
+**Files:** `course-verify*.ts`, `course-verify-reel.ts` (new),
+`packages/shared/src/constants` (`GENERIC_CTAS`, `VIDEO_INTRO_PHRASES`),
+tests.
+
+- [ ] Every row of §13.9, each with a failing test first.
+
+Commit: `feat(courses): checks for tempting moves, the reel, the video and the voice`
+
+### Task 93.4 — The golden set
+
+**Files:** `apps/api/test/fixtures/courses/`, `course-golden.ts`.
+
+- [ ] One fixture per kind (a mate-in-3 puzzle added, the openings as one),
+  printing the video and reel scripts.
+- [ ] The owner runs it (their unlock phrase and credits).
+
+Commit: `test(courses): golden set for five kinds and three products`
+
+## Phase 94 — The videos
+
+### Task 94.1 — The reel
+
+**Read:** §13.3, §13.8.
+**Files:** `clip/reel-timeline.ts` (new), `draw-frame.ts` (9:16 bands),
+`clip-player.ts`, `scripts/sounds/generate-board-sounds.py` (`riser`,
+`whoosh`), tests.
+
+- [ ] Failing timeline tests first: the build-up at 500 ms a move; 0.5 s of
+  silence then the climax at half speed; a puzzle's 5 s countdown over the
+  riser; the total within 30–45 s; the promo stops before the climax.
+- [ ] The top band (`topText`) from frame one; captions in the bottom band;
+  the payoff at the climax; the CTA card; the loop line last.
+
+Commit: `feat(courses): the reel, 9:16, one idea`
+
+### Task 94.2 — The YouTube video
+
+**Read:** §13.4.
+**Files:** `clip/video-timeline.ts` (new, from `timeline.ts`),
+`draw-frame.ts` (16:9, chapter cards, the ghost arrow), tests.
+
+- [ ] Failing tests first: the hook plays over the climax, then the start;
+  a chapter card per chapter; a tempting move plays with its refutation and
+  returns before the real move; the outro question card.
+
+Commit: `feat(courses): the YouTube video, with the tempting moves played out`
+
+### Task 94.3 — Recording and audio
+
+**Files:** `record-clip.ts`, `prepare-audio.ts` (keys `video:`, `reel:`,
+`tempting:`), `ClipPreview.tsx`.
+
+- [ ] Each product records in its own shape (the video 16:9, the reel 9:16),
+  all audio first as before (Kokoro only).
+
+Commit: `feat(courses): record the video and the reel`
+
+## Phase 95 — The editor and the player
+
+### Task 95.1 — The editor
+
+**Files:** `CourseDetails.tsx` (Videos ticks, "Add a reel"/"Add a video"),
+`CourseEpisodePanel.tsx` (Moves: course and video ticks, the video line,
+the tempting moves with their why), a Video tab (title, thumbnail text,
+hook, outro, preview) and a Reel tab (style, span on the move list, top
+text, beats, payoff, CTA, loop, preview), tests.
+
+Commit: `feat(courses): edit the video and the reel`
+
+### Task 95.2 — The player
+
+**Files:** `PlayThrough.tsx`, `CoursePane.tsx`, `CourseDrill.tsx`,
+`PublishedCourse.tsx`, tests.
+
+- [ ] Under a note: "Tempting: Qxf7+? Kxf7, and the knight hangs",
+  folded by default.
+- [ ] Puzzle courses play as solve mode: every learner move is asked.
+- [ ] The course page embeds the YouTube video and links the reel
+  (`clipLinks`: youtube for the video; shorts, instagram, tiktok for the
+  reel).
+
+Commit: `feat(courses): tempting moves and puzzles in the player`
+
+### Task 95.3 — Docs
+
+- [ ] Rewrite `docs/courses.md` §3, §4, §6, §8, §10 from §13, then fold
+  §13 into them; `docs/architecture.md`'s Courses section.
+
+Commit: `docs: the course, the video and the reel`
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

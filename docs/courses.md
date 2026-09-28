@@ -1,6 +1,6 @@
 # Courses and clips
 
-The spec behind Phases 79–91 (`docs/plan.md`). Read the section a task points
+The spec behind Phases 79–95 (`docs/plan.md`). Read the section a task points
 at, not the whole file.
 
 A **course** is a chess lesson built from a PGN: a clip (a reel or a YouTube
@@ -908,7 +908,7 @@ drills. Signed out, the same button explains that coaching needs an account.
 
 ---
 
-## 12. Later, not in Phases 79–91
+## 12. Later, not in Phases 79–95
 
 - Linking courses to the learner's own imported games ("you reached move 7 of
   the Italian trap on Tuesday and played Nc3").
@@ -916,3 +916,234 @@ drills. Signed out, the same button explains that coaching needs an account.
 - Creator statistics (plays, completion, "68% miss move 9").
 - Opening course creation to more users (for example by rating) and an admin UI.
 - Email or push reminders.
+- Background music (a low lo-fi bed at 10–15% under the voice, with a drop
+  on the winning move). Phase 92 uses sound design only (§13.8).
+- Zooming the board on a quadrant during a tactic.
+- Posting to YouTube, Instagram or TikTok from the app, and YouTube's
+  "Related video" link (the creator sets it in YouTube Studio; the reel's
+  line says "full video linked below").
+
+---
+
+## 13. Three products: the course, the video and the reel (Phases 92–95)
+
+Decided with the owner, 2026-09-28. This section replaces the Phase 90–91
+"long and short" model (a course and one clip recorded in two shapes) and
+the kinds `opening_reel` / `opening_course`. Where §3, §4, §6, §8 and §10
+disagree with it, this section wins; those sections are rewritten in task
+95.4.
+
+### 13.1 What a course makes
+
+| Product | Where it lives | Job | Length |
+|---|---|---|---|
+| **Course** | our board (`/courses/:slug`, `/learn/:slug`) | Teach. Holds everything: every episode, every note, the tempting moves and why they fail, the quizzes and the drills. | as long as the lesson |
+| **Video** (long clip) | YouTube, 16:9 | Build trust and subscribers: storytelling commentary, stops on every important move, weighs the moves that look right and says why they are not. | 5–15 min |
+| **Reel** (short clip) | YouTube Shorts, Instagram Reels, TikTok, 9:16 | Reach: one idea, or one puzzle, that stops the scroll. | 30–45 s |
+
+The course is always made: it is what the app hosts and what both videos
+point to. The video and the reel are each optional; the intake asks
+"Videos: YouTube video, Reel" (two ticks, defaults per kind, §13.2). The
+AI plans and writes only what is ticked. The creator can add the other
+later from the editor ("Add a reel", "Add a video"): code builds it from
+the course's facts, and the AI can write it on its own
+(`POST /api/courses/:id/generate` with `{ only: 'reel' | 'video' }`).
+
+A reel made alongside a video can be a **promo**: the same moment, cut as a
+cliffhanger that stops before the outcome and sends viewers to the video.
+A standalone reel is a **highlight** or a **puzzle** (§13.3).
+
+### 13.2 Kinds
+
+| Kind | Input | Video | Reel (default style) | Default videos |
+|---|---|---|---|---|
+| `trap` | the trap line | the setup, the bait, why it looks natural, the punishment, how to stay safe | highlight: the bait and the punishment | both |
+| `opening` | a main line and sidelines (was `opening_reel` + `opening_course`) | the plan, each learner move's purpose, each sideline, each trap inside | highlight: the one trap or idea a player must know | video |
+| `tactics` | 1–6 positions with their solutions, one motif | the cue, then each example, the tempting moves and why they fail | puzzle: the clearest example | both |
+| `master_game` | a full game | a storytelling recap: the players (headers only), the turning points, the tempting moves at each | highlight: the single brilliant move, blunder or finish | video |
+| `puzzle` (new) | a position (`[FEN]`) and its solution, e.g. mate in 3 | the thinking method: at each move, the checks, captures and threats, which look right, why they fail, then the move | puzzle: "White to play. Mate in 3." | both |
+
+`puzzle` checks: the PGN has a `[FEN]`; the learner is the side to move;
+the engine confirms the solution (mate in N matches the line, or every
+learner move is the one clearly best move). Each learner move is a quiz;
+the opponent's replies are the engine's best defence.
+
+### 13.3 The reel
+
+One idea. The planner picks the moment from code's candidates:
+
+- **the climax**: a brilliant or great move, a mate, a blunder that swings
+  the game (`winDrop`), or a trap's punishment;
+- **the span**: from the position that sets up the idea (at most 6 moves
+  before the climax) to the climax, plus at most 2 moves after it;
+- **the style**:
+  - `highlight`: plays the build-up fast, slows down at the climax;
+  - `puzzle`: shows the position, asks ("White to play. Mate in 3."),
+    counts down 5 s over a riser, then plays the solution, slowed at the
+    mate;
+  - `promo`: plays up to the moment before the climax and stops on the
+    question; the CTA sends viewers to the video. Only when there is a
+    video.
+
+Script (`document.reel`):
+
+```ts
+reel: {
+  style: 'highlight' | 'puzzle' | 'promo',
+  startNodeId, climaxNodeId, endNodeId,   // the span; promo ends before the climax
+  hook: string,        // spoken in the first 2 s, names the idea's keywords
+                       // ("A queen sacrifice that wins in the Sicilian"), ≤ 10 words
+  topText: string,     // the top band, the whole reel: "White to play", "Mate in 3?" (≤ 5 words)
+  beats: [{ nodeId, say, caption }],      // the moves that speak; caption = bottom band
+  payoff: string,      // bottom band at the climax: "Mate in three" (≤ 5 words)
+  cta: string,         // specific: "Follow for a daily mate-in-3" — never "subscribe for more"
+  loop: string         // the last line, written to run straight back into `hook`
+}
+```
+
+Timing (code, `clip/reel-timeline.ts`):
+
+| Seconds | What |
+|---|---|
+| 0–3 | the spoken hook over the first position; the top band is on from frame one |
+| 3–20 | the build-up: moves at 500 ms, an arrow flashes on each threat, the board never still for more than 4 s |
+| 20–30 | the climax: the move before plays at normal speed, then 0.5 s of silence (board sounds and voice cut), then the climax move at half speed with its sound; the payoff appears |
+| 30–40 | the explanation beat(s), the CTA card, the loop line |
+
+The whole reel is 30–45 s (`CONFIG.courses.reelSeconds`); code stretches
+the climax and the explanation, never the build-up. A puzzle's countdown
+counts toward it.
+
+Layout (1080×1920): the top band (y 0–420) holds `topText`, bold, at least
+72 px, high contrast; the board takes the full width (1080) in the middle;
+the bottom band (y 1500–1920) holds the caption burned in, and the coach's
+avatar small in a corner. No title card: the reel starts on the board.
+
+### 13.4 The video
+
+A YouTube lesson with a story, built on the course's episodes.
+
+- **The 15-second hook** (`video.hook`): jump to the premise or the
+  climax ("On move 14 Black gave up the queen, and White never recovered").
+  It plays over the climax position, then cuts to the start. Never "hey
+  guys", "welcome back" or an intro card.
+- **Chapters**: one card per chapter (its title, 2 s), then its episodes.
+- **Each important move** (the plies ticked `video`): the coach's line
+  (`say`, commentator style: tension, stakes, why), then the **tempting
+  moves** (§13.5): each is shown as a ghost arrow, played on the board, the
+  engine's refutation played after it, the coach says why it fails, and
+  the board goes back. Then the move itself.
+- **The eval bar** is on screen throughout; board sounds on every move.
+- **The outro** (`video.outro`): an interactive question ("Would you have
+  taken on f7, or defended? Tell me below") and a series CTA anchored to
+  what comes next ("Next: the Englund's second trap, 1200-02"). The end
+  card shows the course's link.
+- **Packaging** (`video.title` ≤ 55 characters, curiosity plus clarity;
+  `video.thumbnailText` ≤ 4 words), shown to the creator for YouTube.
+
+### 13.5 Tempting moves
+
+Code, not the model, finds them (`course-tempting.ts`, chess-analysis),
+at every critical node, every quiz answer, and every learner move of a
+puzzle or tactics course:
+
+1. Candidates for the side to move: every check, every capture, every move
+   that attacks an undefended piece or a piece worth more than the mover
+   (`checks-captures-threats.ts`), except the move played and the engine's
+   best.
+2. Each candidate's position is analysed with the other dossier positions
+   (one engine batch). A candidate is tempting when it loses at least 15
+   points of the mover's win% against the best move, or walks into mate.
+3. Keep at most 3, ordered checks, then captures by value taken, then
+   threats.
+4. Each gets its refutation: the engine's reply and line (`pvSan`, at most
+   4 plies) and the board facts after it ("Kxf7, and the knight on g5 is
+   hanging"), in the dossier's words.
+
+Dossier (`CourseNodeFacts.tempting`):
+`{ san, kind: 'check' | 'capture' | 'threat', refutation: string[], after: string, verdict: string }[]`.
+The model may only discuss these; the verifier checks each named move.
+
+The course shows them under the note ("Tempting: Qxf7+? Kxf7, and the
+knight hangs"); the video plays them (§13.4); a puzzle's video walks all
+of them at every learner move, in the checks → captures → threats order,
+as the thinking method.
+
+### 13.6 The document
+
+```ts
+CourseDocument = {
+  …, kind: 'trap' | 'opening' | 'tactics' | 'master_game' | 'puzzle',
+  videos: { video: boolean, reel: boolean },
+  episodes: [{
+    id, role, focus, startNodeId, endNodeId,
+    plies: [{ nodeId, arrows,
+              text,                // the course note: stands alone, 1–2 sentences (4 at critical)
+              say?,                // the video's line when it differs: commentator, may run longer
+              tempting: [{ san, why }],  // from the dossier's tempting moves only
+              course: boolean,     // speaks in the course
+              video: boolean }],   // speaks in the video
+    budget?: { course, video, keyNodeIds? },
+    quiz?, drillNodeIds }],
+  video?: { title, thumbnailText, hook, outro },
+  reel?: CourseReel,               // §13.3
+  …
+}
+```
+
+`opener`, `clipText`, `short`, `versions` and `clipSeconds` go (test data
+only, no migration of rows). A ply's `tempting` show in the course whether
+or not it speaks in the video.
+
+### 13.7 The calls
+
+1. **Outline** (as §6.4, plus): budgets per episode for the course and the
+   video (0 when there is no video); the reel's style, span and climax from
+   code's reel candidates (none when there is no reel); the video's title,
+   thumbnail text, hook and outro.
+2. **Episode** (one per episode, as §6.5): each ply's `text`, `say` when
+   the video needs its own line, `tempting` (from the episode's dossier
+   tempting moves: which to discuss and why, in the coach's voice), the
+   ticks within the budgets, and the quiz.
+3. **Reel** (new, one call, after the episodes so it can reuse their
+   facts): the §13.3 script for the chosen span and style.
+
+The shared block (§6.1) becomes three products:
+
+```text
+THREE PRODUCTS FROM THE SAME MOVES
+- The course: a learner plays through it on our board, maybe weeks later,
+  without the videos. Each note stands alone: what the move does and why,
+  in one or two sentences.
+- The video: a YouTube lesson. Tell it like a commentator, not a math
+  teacher: the stakes, the tension, the turn. At each important move, weigh
+  the tempting moves the dossier lists and say why each fails, the way a
+  strong player thinks: checks, captures, threats.
+- The reel: 30 to 45 seconds, one idea. The first words name the idea
+  ("A queen sacrifice that wins in the Sicilian"); no greeting, no "today".
+  Short lines, the climax slowed down, a specific call to action, and a last
+  line that runs straight back into the first.
+```
+
+Playbooks per kind (§6.3) gain a video paragraph and a reel paragraph (the
+table in §13.2).
+
+### 13.8 Sound
+
+- Board sounds as Phase 88 in both videos.
+- New sounds from `scripts/sounds/generate-board-sounds.py`: `riser` (a
+  low building hum for the puzzle countdown, 5 s, released at the reveal)
+  and `whoosh` (a soft cut sound for chapter cards and the video hook's cut
+  to the start).
+- The reel's climax: 0.5 s of full silence, then the climax move's sound
+  alone, then the voice.
+
+### 13.9 The checks (verifier additions)
+
+| Check | Rule |
+|---|---|
+| Tempting | Every `tempting[].san` is one of the dossier's tempting moves at that node; its `why` names no move outside the refutation. |
+| Reel | Span within 6 moves before the climax and 2 after; the style fits (promo only with a video; puzzle only where the climax side has a forced win); `hook` ≤ 10 words and names no greeting; `topText` and `payoff` ≤ 5 words; `cta` is not generic (`GENERIC_CTAS`: "subscribe for more", "like and subscribe", "follow for more"); the estimated length is 30–45 s. |
+| Video | `title` ≤ 55 characters; `thumbnailText` ≤ 4 words; `hook` ≤ 40 words and not an intro ("hey guys", "welcome back", "today we"); `outro` asks a question. |
+| Voice | At most 2 lines in an episode start with the same word ("Execute …"); no stock line repeated across episodes. |
+| Key moves | As Phase 91, for the course and the video. |
