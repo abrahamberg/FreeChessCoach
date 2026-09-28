@@ -126,7 +126,7 @@ export function liveGeneration(generation: CourseGeneration | null, now = Date.n
   if (generation?.status !== 'running') return generation;
   const beat = generation.heartbeatAt ? Date.parse(generation.heartbeatAt) : 0;
   if (now - beat < GENERATION_STALE_MS) return generation;
-  return { ...generation, status: 'failed', step: null, error: 'The writing stopped unexpectedly. Write with AI again to carry on.' };
+  return { ...generation, status: 'failed', step: null, error: 'The writing stopped unexpectedly. Resume writing to carry on.' };
 }
 
 export function toCourseResponse(row: coursesRepo.CourseRow): CourseResponse {
