@@ -155,7 +155,7 @@ export const CourseEnrollmentPlaceSchema = z.object({
   episode: z.number().int().min(0).max(200).default(0),
   step: z.number().int().min(0).max(2000).default(0),
   practice: z
-    .record(CourseDrillKeySchema, z.enum(['arrow', 'no_arrow', 'cleared']))
+    .record(CourseDrillKeySchema, z.enum(['arrow', 'some_arrow', 'no_arrow', 'cleared']))
     .refine((practice) => Object.keys(practice).length <= 400, 'Too many practice moves.')
     .default({})
 });

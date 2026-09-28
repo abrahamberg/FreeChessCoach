@@ -20,6 +20,7 @@ import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback
 import { localToday, type CourseProgressStore } from './course-progress.js';
 import { isAcceptedAlternative } from './course-steps.js';
 import { judgeQuizMove } from './judge-quiz-move.js';
+import { MoveLog, type MoveLogEntry } from './MoveLog.js';
 
 /** The stages the learner plays themselves (§11). */
 export type PlayedStage = Exclude<CourseStage, 'play_through'>;
@@ -50,7 +51,7 @@ const MODE_INTRO: Record<Drill['mode'], string> = {
 };
 
 function intro(stage: PlayedStage, drill: Drill): string {
-  if (stage === 'practice') return 'Play your moves. The arrow shows the move until you know it; then it goes.';
+  if (stage === 'practice') return 'Play your moves. The arrows show them at first, then fewer each round, then none.';
   if (stage === 'full_drill') return 'Play both sides now: every move of the line is yours.';
   return MODE_INTRO[drill.mode];
 }
@@ -100,7 +101,11 @@ export function CourseDrill({ document, stage, progress, courseSlug, knownMoves,
     const episodes = drill.episodes
       .map((episode) => ({ ...episode, steps: episode.steps.map((step) => ({ ...step, asked: step.asked && practiceAsks(practice.get(step.key)) })) }))
       .filter((episode) => episode.steps.some((step) => step.asked));
-    const arrowKeys = new Set(episodes.flatMap((episode) => episode.steps.filter((step) => step.asked && practiceShowsArrow(practice.get(step.key))).map((step) => step.key)));
+    const arrowKeys = new Set(
+      episodes.flatMap((episode) =>
+        episode.steps.filter((step) => step.asked).flatMap((step, index) => (practiceShowsArrow(practice.get(step.key), index) ? [step.key] : []))
+      )
+    );
     return { drill: { ...drill, episodes }, arrowKeys };
   }, [drill, reviewed, round]);
 
@@ -316,7 +321,17 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
 
   const waiting = step?.asked && !attempt;
   const askedSoFar = asked.findIndex((each) => each === step) + 1;
-  const hint = waiting && step && arrowKeys.has(step.key) ? toBoardMarks([practiceArrow(step.node)]) : null;
+  const hinted = Boolean(step && arrowKeys.has(step.key));
+  const hint = waiting && step && hinted ? toBoardMarks([practiceArrow(step.node)]) : null;
+  const notes = document.episodes.find((each) => each.id === episode?.episodeId)?.notes ?? [];
+  const who = (fenBefore: string, learnerPlays: boolean): string =>
+    stage === 'full_drill' ? (sideOf(fenBefore) === 'white' ? 'White' : 'Black') : learnerPlays ? 'You' : 'Opponent';
+  const played: MoveLogEntry[] = (episode?.steps.slice(Math.max(0, at.step - 2), at.step) ?? []).map((each) => ({
+    label: moveLabel(each.fenBefore, each.node.san),
+    side: sideOf(each.fenBefore),
+    who: who(each.fenBefore, each.asked),
+    note: notes.find((note) => note.nodeId === each.node.id)?.text.trim() || null
+  }));
   return (
     <div className="course-player__episode">
       <div className="course-player__board">
@@ -340,6 +355,17 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
         </div>
       </div>
       <div className="course-player__words">
+        {step?.asked && (
+          <MoveLog
+            played={played}
+            current={{
+              side: sideOf(step.fenBefore),
+              who: who(step.fenBefore, true),
+              // Practice names the move while its arrow shows; the drill never does.
+              label: stage === 'practice' && hinted ? moveLabel(step.fenBefore, step.node.san) : null
+            }}
+          />
+        )}
         <CoachCard avatar={<CoachAvatar persona={document.coachPersona} size="chat" />}>
           {introText && firstTries.size === 0 && !attempt && <p className="meta">{introText}</p>}
           {said && <p>{said}</p>}
@@ -389,4 +415,14 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
       </div>
     </div>
   );
+}
+
+function sideOf(fenBefore: string): 'white' | 'black' {
+  return fenBefore.split(' ')[1] === 'b' ? 'black' : 'white';
+}
+
+/** "6.Bc3" or "6…Bb4", read off the position before the move. */
+function moveLabel(fenBefore: string, san: string): string {
+  const [, turn, , , , fullmove] = fenBefore.split(' ');
+  return `${fullmove ?? '1'}${turn === 'b' ? '…' : '.'}${san}`;
 }

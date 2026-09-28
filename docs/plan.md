@@ -824,8 +824,10 @@ Design decisions (owner, 2026-09-28; do not relitigate):
 `course-review.ts` (+ test).
 
 Status: done 2026-09-28. Practice is `course-stages.ts`: a move's state is
-`arrow` → `no_arrow` (played right with the arrow) → `cleared` (right without
-it; no longer asked), and a miss goes back to `arrow`. `buildCourseDrill`
+`arrow` → `some_arrow` → `no_arrow` → `cleared` (known; no longer asked), one
+step per right answer, and a miss goes back to `arrow`. In `some_arrow` every
+other move of the line keeps its arrow, so the arrows thin out over rounds
+(owner, 2026-09-28: round 2 had lost them all at once). `buildCourseDrill`
 returns `sides`; `COURSE_DRILL_MODE.trap` is now `learner_side`.
 
 - [x] Failing tests first: `COURSE_STAGES = ['play_through', 'practice',
@@ -859,6 +861,11 @@ not yet known, with the arrow on the ones not yet played right; a round's
 summary says how many are known and offers "Next round" until all are, then
 "Now without arrows". Which stages are finished is kept for the visit only
 until Task 85.2 saves it. The play-through's end button is now "Practice".
+A move log (`player/MoveLog.tsx`, owner 2026-09-28) sits above the coach's
+card while the learner plays: their previous move, the reply with the
+course's note, and the move to play now, each with a pawn in its side's
+colour. The current move is named in practice only while its arrow shows,
+and hidden (`?`) otherwise and in the drills.
 
 - [x] Failing tests first (mock `CoachBoard` as `CourseDrill.test.tsx`
   does): practice shows the arrow on the first ask, not after a right answer,

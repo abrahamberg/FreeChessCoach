@@ -76,35 +76,60 @@ describe('CourseDrill', () => {
     const props = handlers();
     render(<CourseDrill document={document} stage="practice" progress={progress} courseSlug="englund-aaaaaaaaaaaa" {...props} />);
 
-    // Round 1: both moves with their arrow.
+    const log = () => screen.getByRole('list', { name: 'Last moves' }).textContent ?? '';
+    const play = async (san: string, fenAfter: string, uci: string) => {
+      await findPrompt();
+      await act(async () => board.play(san, fenAfter, uci));
+    };
+    const miss = async () => {
+      await findPrompt();
+      await act(async () => board.play('Nf6', 'irrelevant', 'g8f6'));
+      fireEvent.click(await screen.findByRole('button', { name: 'Show the move' }));
+    };
+    const nextRound = () => fireEvent.click(screen.getByRole('button', { name: 'Next round' }));
+
+    // Round 1: every move with its arrow, and named in the log.
     await findPrompt();
     expect(arrowsShown()).toBe(1);
-    act(() => board.play('e5', e5!.fenAfter, e5!.uci));
+    expect(log()).toContain('1…e5');
+    await play('e5', e5!.fenAfter, e5!.uci);
     await findPrompt();
     expect(arrowsShown()).toBe(1);
-    act(() => board.play('Nc6', nc6!.fenAfter, nc6!.uci));
+    // The log: your last move, the opponent's reply, then yours to play.
+    expect(log()).toMatch(/You 1…e5.*Opponent 2\.dxe5.*You 2…Nc6/);
+    await play('Nc6', nc6!.fenAfter, nc6!.uci);
     expect(await screen.findByText('0 of 2 moves known.')).toBeTruthy();
 
-    // Round 2: no arrows; e5 right (known), Nc6 missed (its arrow comes back).
-    fireEvent.click(screen.getByRole('button', { name: 'Next round' }));
+    // Round 2: fewer arrows. e5 keeps its arrow, Nc6 has none and is hidden in the log.
+    nextRound();
+    await findPrompt();
+    expect(arrowsShown()).toBe(1);
+    await play('e5', e5!.fenAfter, e5!.uci);
     await findPrompt();
     expect(arrowsShown()).toBe(0);
-    act(() => board.play('e5', e5!.fenAfter, e5!.uci));
+    expect(log()).not.toContain('Nc6');
+    await miss();
+    expect(await screen.findByText('0 of 2 moves known.')).toBeTruthy();
+
+    // Round 3: e5 without its arrow; the missed Nc6 has its arrow back.
+    nextRound();
     await findPrompt();
-    await act(async () => board.play('Nf6', 'irrelevant', 'g8f6'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Show the move' }));
+    expect(arrowsShown()).toBe(0);
+    await play('e5', e5!.fenAfter, e5!.uci);
+    await findPrompt();
+    expect(arrowsShown()).toBe(1);
+    await play('Nc6', nc6!.fenAfter, nc6!.uci);
     expect(await screen.findByText('1 of 2 moves known.')).toBeTruthy();
 
-    // Round 3: e5 is played for you; Nc6 has its arrow again.
-    fireEvent.click(screen.getByRole('button', { name: 'Next round' }));
+    // Rounds 4 and 5: e5 is known and played for you; Nc6 fades out.
+    nextRound();
     await findPrompt();
     expect(screen.getByTestId('board').dataset.fen).toBe(dxe5!.fenAfter);
-    expect(arrowsShown()).toBe(1);
-    act(() => board.play('Nc6', nc6!.fenAfter, nc6!.uci));
-    fireEvent.click(await screen.findByRole('button', { name: 'Next round' }));
+    await play('Nc6', nc6!.fenAfter, nc6!.uci);
+    nextRound();
     await findPrompt();
     expect(arrowsShown()).toBe(0);
-    act(() => board.play('Nc6', nc6!.fenAfter, nc6!.uci));
+    await play('Nc6', nc6!.fenAfter, nc6!.uci);
 
     expect(await screen.findByText('You know every move.')).toBeTruthy();
     expect(props.onStageDone).toHaveBeenCalledWith('practice');
@@ -113,9 +138,11 @@ describe('CourseDrill', () => {
     expect(record).not.toHaveBeenCalled();
   }, 20000);
 
-  test('the full drill asks both sides, White first', async () => {
+  test('the full drill asks both sides, White first, with the move hidden', async () => {
     render(<CourseDrill document={document} stage="full_drill" {...handlers()} />);
     expect(await screen.findByText(/White to play/)).toBeTruthy();
     expect(screen.getByTestId('board').dataset.fen).toBe(tree.startFen);
+    expect(screen.getByRole('img', { name: 'White' })).toBeTruthy();
+    expect(screen.getByLabelText('Your move, hidden')).toBeTruthy();
   });
 });

@@ -12,18 +12,22 @@ describe('course stages', () => {
 });
 
 describe('practice hints', () => {
-  test('a move shows its arrow until it is played right without it', () => {
+  test('the arrows fade over rounds: all, every other move, none, then the move is known', () => {
     expect(practiceShowsArrow(undefined)).toBe(true);
-    const withArrow = nextPracticeState(undefined, true);
-    expect(withArrow).toBe('no_arrow');
-    expect(practiceShowsArrow(withArrow)).toBe(false);
-    const cleared = nextPracticeState(withArrow, true);
-    expect(cleared).toBe('cleared');
-    expect(practiceAsks(cleared)).toBe(false);
+    const second = nextPracticeState(undefined, true);
+    expect(second).toBe('some_arrow');
+    expect([0, 1, 2, 3].map((index) => practiceShowsArrow(second, index))).toEqual([true, false, true, false]);
+    const third = nextPracticeState(second, true);
+    expect(third).toBe('no_arrow');
+    expect(practiceShowsArrow(third, 0)).toBe(false);
+    const known = nextPracticeState(third, true);
+    expect(known).toBe('cleared');
+    expect(practiceAsks(known)).toBe(false);
   });
 
   test('a miss turns the arrow back on', () => {
     expect(nextPracticeState('no_arrow', false)).toBe('arrow');
+    expect(nextPracticeState('some_arrow', false)).toBe('arrow');
     expect(nextPracticeState(undefined, false)).toBe('arrow');
     expect(practiceShowsArrow('arrow')).toBe(true);
     expect(practiceAsks('arrow')).toBe(true);

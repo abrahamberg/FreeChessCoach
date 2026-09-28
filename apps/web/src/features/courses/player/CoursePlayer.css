@@ -358,3 +358,86 @@
   align-items: center;
   gap: 8px 12px;
 }
+
+.move-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.move-log__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.move-log__row--current {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.move-log__pawn {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+}
+
+/* The piece's own colours, the same in light and dark mode. */
+.move-log__pawn--white svg {
+  fill: #ffffff;
+  stroke: #2b2925;
+  stroke-width: 1.2;
+}
+
+.move-log__pawn--black svg {
+  fill: #2b2925;
+  stroke: #2b2925;
+  stroke-width: 1.2;
+}
+
+.move-log__text {
+  min-width: 0;
+}
+
+.move-log__who {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.move-log__move {
+  font-weight: 600;
+}
+
+.move-log__mask {
+  display: inline-block;
+  min-width: 2.5em;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.move-log__hint {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.move-log__note {
+  margin: 2px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}

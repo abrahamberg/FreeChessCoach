@@ -11,14 +11,19 @@ export function nextCourseStage(stage: CourseStage): CourseStage | null {
 }
 
 /**
- * One move in practice. It shows its arrow until the learner has played it
- * right, then is asked without the arrow; right again and it is cleared (no
- * longer asked in practice). A miss turns the arrow back on.
+ * One move in practice. The arrows fade over rounds: a new move shows its
+ * arrow; played right, it is `some_arrow` (every other move of the line still
+ * shows it, so the arrows thin out rather than vanish at once); right again,
+ * `no_arrow`; right without the arrow, `cleared` (known, no longer asked).
+ * A miss turns the arrow back on.
  */
-export type PracticeMoveState = 'arrow' | 'no_arrow' | 'cleared';
+export type PracticeMoveState = 'arrow' | 'some_arrow' | 'no_arrow' | 'cleared';
 
-export function practiceShowsArrow(state: PracticeMoveState | undefined): boolean {
-  return state === undefined || state === 'arrow';
+/** `index` is the move's place among the moves asked in its line; in the
+ * middle round the even ones (the first, third, …) keep their arrow. */
+export function practiceShowsArrow(state: PracticeMoveState | undefined, index = 0): boolean {
+  if (state === undefined || state === 'arrow') return true;
+  return state === 'some_arrow' && index % 2 === 0;
 }
 
 export function practiceAsks(state: PracticeMoveState | undefined): boolean {
@@ -27,7 +32,8 @@ export function practiceAsks(state: PracticeMoveState | undefined): boolean {
 
 export function nextPracticeState(state: PracticeMoveState | undefined, correct: boolean): PracticeMoveState {
   if (!correct) return 'arrow';
-  return practiceShowsArrow(state) ? 'no_arrow' : 'cleared';
+  if (state === undefined || state === 'arrow') return 'some_arrow';
+  return state === 'some_arrow' ? 'no_arrow' : 'cleared';
 }
 
 /** Practice is done once every move it asks has been cleared. */
