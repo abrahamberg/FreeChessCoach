@@ -6,6 +6,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog.js';
 import { useLlmSetupStatus } from '../../hooks/useLlmSetupStatus.js';
 import { useProfile, useUpdateProfile } from '../../hooks/useProfile.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
+import { useMoveSounds } from '../../sounds/move-sounds-setting.js';
 import { AiSetupHelp } from './AiSetupHelp.js';
 import { CoachPersonaSelect } from './CoachPersonaSelect.js';
 import { EngineFields } from './EngineFields.js';
@@ -28,6 +29,7 @@ function readStoredTheme(): Theme | null {
 export function SettingsPage(): ReactNode {
   const [theme, setTheme] = useState<Theme | null>(() => readStoredTheme());
   const [showLegalMoveDots, setShowLegalMoveDots] = useShowLegalMoveDots();
+  const [moveSounds, setMoveSounds] = useMoveSounds();
   const { hash } = useLocation();
   const [confirmingDeleteAccount, setConfirmingDeleteAccount] = useState(false);
 
@@ -115,6 +117,13 @@ export function SettingsPage(): ReactNode {
           </button>
           <button type="button" aria-pressed={!showLegalMoveDots} onClick={() => setShowLegalMoveDots(false)}>
             Hide
+          </button>
+          <p>Play a sound for each move: yours, your opponent's, a check, and in reviews and courses a bad or great move.</p>
+          <button type="button" aria-pressed={moveSounds} onClick={() => setMoveSounds(true)}>
+            Sounds on
+          </button>
+          <button type="button" aria-pressed={!moveSounds} onClick={() => setMoveSounds(false)}>
+            Sounds off
           </button>
         </SettingsSection>
 

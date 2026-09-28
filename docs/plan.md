@@ -1210,10 +1210,11 @@ Decisions:
   expectedAfter })` → a base (`move`/`opponent`, or `check` when the SAN ends
   in `+`/`#`) and an optional stinger (`bad`/`great`) about 120 ms later.
   "Turns the game": the mover's expected points (the classifier's
-  win-probability) go from below 0.4 to above 0.6. On the live board and in
-  review the stingers are for the learner's own moves only (an opponent's
-  blunder is not the learner's bad move); a course play-through and a clip
-  tell the story of both sides, so there they follow either side's move.
+  win-probability) go from below 0.4 to above 0.6. The owner, 2026-09-28:
+  **live games** (with the coach, with a bot) have no bad or great sounds;
+  **analyzed moves** (review, a course play-through, clips) play them for
+  both sides. In practice and drills a wrong try plays bad (it is the
+  course's judgement of the learner's try, not a live game's move).
 - Never over the voice: voice players (`useCoachVoice`, `useNoteAudio`, the
   native speech queue) report speaking to a small shared signal; a board
   sound during speech plays at a third of its volume. A course note whose
@@ -1234,12 +1235,19 @@ Decisions:
 picker), `sounds/voice-activity.ts` (the speaking signal), a
 `useMoveSounds` setting hook; Settings.
 
-- [ ] Failing tests first: the picker (learner move, opponent move, check
+- [x] Failing tests first: the picker (learner move, opponent move, check
   beats move, mistake/blunder → bad, great/brilliant or a turned game →
-  great, stingers only for the learner's side unless `bothSides`).
-- [ ] The five sounds, each under 400 ms (great under 700 ms), normalized so
+  great, for either side; no quality given, as in a live game → no stinger).
+- [x] The five sounds, each under 400 ms (great under 700 ms), normalized so
   none is louder than the others; ducked while the voice speaks.
-- [ ] Settings > Board: Move sounds on/off.
+- [x] Settings > Board: Move sounds on/off.
+
+Status: done 2026-09-28. `apps/web/src/sounds/`: `move-sounds.ts` (the
+picker), `board-sounds.ts` (synthesis; each sound normalized, then set to
+its own level: in Chrome the average levels sit at 0.08–0.09 and the
+opponent's knock at 0.066; lengths 180/180/380/400/680 ms),
+`voice-activity.ts`, `move-sounds-setting.ts`. Not yet listened to by the
+owner.
 
 Commit: `feat(sounds): board sounds and when to play them`
 
@@ -1251,11 +1259,10 @@ Commit: `feat(sounds): board sounds and when to play them`
 `features/puzzle-session/` (practice).
 **Files:** those.
 
-- [ ] The learner's move sounds on drop; the coach's or bot's reply when it
-  lands; bad/great once the move's quality comes back (the stinger, late,
-  is fine: it fills the wait for the coach).
-- [ ] Review: stepping forward one move plays that move's sounds; jumps do
-  not.
+- [ ] Live games: the learner's move sounds on drop, the coach's or bot's
+  reply when it lands, check; no bad/great (the owner's call).
+- [ ] Review: stepping forward one move plays that move's sounds, bad/great
+  for either side; jumps do not.
 - [ ] `useCoachVoice` and the native queue report speaking.
 
 Commit: `feat(sounds): sounds on the live board and in review`
