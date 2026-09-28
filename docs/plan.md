@@ -502,6 +502,22 @@ worker job, browser LLM tunnel, LM Studio `google/gemma-4-12b-qat`; outline
   since every node must get one. Not yet re-run: opening_reel and
   opening_course on the plan (the golden script needs the owner's unlock
   phrase), and gemma.
+- **gemma-4-12b on the plan** (app, browser tunnel): 7 calls, 0 repairs,
+  ~1.6 min (was ~10 min with outline failures). Checks passed, but the script
+  was wrong where the dossier was silent: empty beats per setup move, a bare
+  "6... Bb4" reveal, "Qb4+ forces the king to move", "Nc3 protects/blocks
+  the rook", "4.Bf4 attacks the queen", "removes the piece preventing mate",
+  "neutralizes the knight fork" (from a review "you stopped them…"
+  sentence). **Principle (owner): the app supplies every chess fact; the
+  model only words them.** Fixes: code drops empty beats (32251f6), the
+  schema says what hint/reveal hold and the verifier refuses a bare reveal
+  (541cdd1); the dossier states how a check can be answered, why the better
+  move is better and how it keeps a piece safe ("the queen on d1 now defends
+  it"), what every move does ("moves the bishop from c1 to f4"), back-rank
+  mates, a lost guard ("the queen stops guarding c1, where Qc1# follows"),
+  forks by piece, and drops prevention sentences (049d080, 8512935). After:
+  8 calls, 1 repair (3 arrows), 0 warnings, no false chess claims; loose
+  wording left ("vacate the first rank" for the lost guard).
 - A killed worker left the course "running" for good. Fixed (2ff1a3f): the
   job beats every 30 s; with no beat for 3 minutes it reads as failed and
   "Resume writing" carries on.
