@@ -1,6 +1,7 @@
 import type { CourseDebugCall } from '@freechesscoach/shared';
 import { useEffect, useState, type ReactNode } from 'react';
 import { describeApiError } from '../../api/client.js';
+import { DebugCallPicker, type DebugCallPickerItem } from '../chat/DebugCallPicker.js';
 import { DebugPanelContent } from '../chat/DebugPanelContent.js';
 import { TurnDebugSnapshotSchema, type TurnDebugSnapshot } from '../chat/useTurnDebugSnapshot.js';
 import '../chat/DebugPanel.css';
@@ -59,7 +60,12 @@ export function CourseDebugPanel({ courseId, generating, onClose }: CourseDebugP
             onCopy={(value) => void copy(value)}
             onClose={onClose}
           >
-            <CallPicker calls={calls} index={index} onPick={setPicked} />
+            <DebugCallPicker
+              items={calls.map((each, position) => ({ key: `${each.at}-${position}`, label: callTitle(each), mark: verdict(each) }))}
+              index={index}
+              label="AI calls"
+              onPick={setPicked}
+            />
             <Checks call={call} />
           </DebugPanelContent>
         )}
@@ -73,32 +79,10 @@ function callTitle(call: CourseDebugCall): string {
   return call.repair ? `${what}, repair` : what;
 }
 
-function verdict(call: CourseDebugCall): { mark: string; tone: 'ok' | 'bad' | 'pending' } {
-  if (call.error) return { mark: '!', tone: 'bad' };
-  if (call.problems === null) return { mark: '…', tone: 'pending' };
-  return call.problems.length === 0 ? { mark: '✓', tone: 'ok' } : { mark: `✗${call.problems.length}`, tone: 'bad' };
-}
-
-function CallPicker({ calls, index, onPick }: { calls: CourseDebugCall[]; index: number; onPick: (index: number) => void }): ReactNode {
-  return (
-    <div className="course-debug__picker" role="tablist" aria-label="AI calls">
-      {calls.map((call, position) => {
-        const { mark, tone } = verdict(call);
-        return (
-          <button
-            key={`${call.at}-${position}`}
-            type="button"
-            role="tab"
-            aria-selected={position === index}
-            className={`debug-panel__btn course-debug__chip${position === index ? ' course-debug__chip--active' : ''}`}
-            onClick={() => onPick(position)}
-          >
-            {position + 1}. {callTitle(call)} <span className={`course-debug__mark course-debug__mark--${tone}`}>{mark}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
+function verdict(call: CourseDebugCall): NonNullable<DebugCallPickerItem['mark']> {
+  if (call.error) return { text: '!', tone: 'bad' };
+  if (call.problems === null) return { text: '…', tone: 'pending' };
+  return call.problems.length === 0 ? { text: '✓', tone: 'ok' } : { text: `✗${call.problems.length}`, tone: 'bad' };
 }
 
 function Checks({ call }: { call: CourseDebugCall }): ReactNode {

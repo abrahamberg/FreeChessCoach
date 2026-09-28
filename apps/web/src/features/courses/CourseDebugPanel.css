@@ -1,41 +1,5 @@
-/* Task 80.6: the course's call picker and check results, on top of the chat
+/* Task 80.6: the course's check results (the picker is DebugCallPicker), on top of the chat
  * debug panel (../chat/DebugPanel.css and its tokens). */
-.course-debug__picker {
-  display: flex;
-  gap: 6px;
-  padding: 10px 14px;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--debug-border);
-  flex-shrink: 0;
-}
-
-.course-debug__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.course-debug__chip--active {
-  border-color: var(--color-primary);
-  box-shadow: inset 0 0 0 1px var(--color-primary);
-}
-
-.course-debug__mark {
-  font-weight: 700;
-}
-
-.course-debug__mark--ok {
-  color: var(--color-success);
-}
-
-.course-debug__mark--bad {
-  color: var(--color-danger);
-}
-
-.course-debug__mark--pending {
-  color: var(--color-warning);
-}
-
 .course-debug__checks {
   margin: 0;
   padding: 10px 18px;

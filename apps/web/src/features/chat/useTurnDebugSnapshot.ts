@@ -44,24 +44,39 @@ export const TurnDebugSnapshotSchema = z.object({
 export type TurnDebugSnapshot = z.infer<typeof TurnDebugSnapshotSchema>;
 export type DebugMessage = { role?: unknown; content?: unknown; providerOptions?: unknown; id?: unknown };
 
+/** One turn in the picker. `snapshot` is null when the stored turn no
+ * longer matches the schema (logged in an older format). */
+export interface DebugTurnView {
+  at: string | null;
+  snapshot: TurnDebugSnapshot | null;
+}
+
 export type TurnDebugSnapshotState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; snapshot: TurnDebugSnapshot };
+  | { status: 'ready'; turns: DebugTurnView[] };
 
-/** Fetches the most recent coach turn's literal LLM request/response for the
- * debug popup. DebugPanel still owns triggering this (mounted only while the
- * popup is open) — the fetch itself just lives in a hook per AGENTS.md's
- * "data fetching lives in hooks" rule. */
+const DebugTurnsSchema = z.object({ turns: z.array(z.object({ at: z.string(), snapshot: z.unknown() })) });
+
+/** Fetches the session's last coach turns (oldest first) for the debug
+ * popup's picker. A session whose turns predate the turn log has only the
+ * latest turn, from `/debug/last-turn`. DebugPanel owns triggering this
+ * (mounted only while the popup is open); the fetch lives in a hook per
+ * AGENTS.md's "data fetching lives in hooks" rule. */
 export function useTurnDebugSnapshot(sessionId: string, basePath = '/api/sessions'): TurnDebugSnapshotState {
   const [state, setState] = useState<TurnDebugSnapshotState>({ status: 'loading' });
 
   useEffect(() => {
     let cancelled = false;
     setState({ status: 'loading' });
-    apiGet(`${basePath}/${sessionId}/debug/last-turn`, TurnDebugSnapshotSchema)
-      .then((snapshot) => {
-        if (!cancelled) setState({ status: 'ready', snapshot });
+    const load = async (): Promise<DebugTurnView[]> => {
+      const { turns } = await apiGet(`${basePath}/${sessionId}/debug/turns`, DebugTurnsSchema);
+      if (turns.length) return turns.map((turn) => ({ at: turn.at, snapshot: TurnDebugSnapshotSchema.safeParse(turn.snapshot).data ?? null }));
+      return [{ at: null, snapshot: await apiGet(`${basePath}/${sessionId}/debug/last-turn`, TurnDebugSnapshotSchema) }];
+    };
+    load()
+      .then((turns) => {
+        if (!cancelled) setState({ status: 'ready', turns });
       })
       .catch((error: unknown) => {
         if (cancelled) return;
