@@ -51,7 +51,7 @@ Use exactly these episodes, in order:
 3. bait — why the victim's move looks natural. This is the heart of the trap:
    the viewer should think "I'd play that too".
 4. quiz — "What does ${trapper} play here?" plus a hint at the target. The
-   clip pauses ${budget.pauseSeconds}s.
+   clip pauses ${budget.pauseSeconds}s (the app adds the pause).
 5. punish — one beat per forcing move; captions carry the rhythm.
 6. safety — how the victim stays safe: ${safeMove}, in one or two sentences.${risk}
 The end card and call to action are added by the app; don't write them.

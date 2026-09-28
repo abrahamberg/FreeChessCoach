@@ -33,7 +33,7 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
   const budget = courseBudget(context.kind, context.persona);
   const words = episodeWordBudget(budget, outline, episodeId);
   const quizLine = episode.answerNodeId
-    ? `\nQuiz: the answer is ${episode.answerNodeId}; the quiz beat pauses the clip (pauseMs ${budget.pauseSeconds * 1000}).`
+    ? `\nQuiz: the answer is ${episode.answerNodeId}. The app shows the position before it, says quiz.prompt and pauses ${budget.pauseSeconds}s; your beats start at the answer and reveal it (pauseMs null).`
     : '\nQuiz: none in this episode, so "quiz" is null.';
   const sections = [
     `COURSE\nTitle: ${outline.title}\nPromise: ${outline.promise}`,

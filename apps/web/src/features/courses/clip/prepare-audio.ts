@@ -5,7 +5,8 @@ import type { TtsClient } from '../../../tts/tts-client.js';
 
 /** One sentence group the coach says: a clip beat or a course note. */
 export interface CourseSpeech {
-  /** `beat:<episodeId>:<index>` or `note:<episodeId>:<nodeId>`. */
+  /** `beat:<episodeId>:<index>`, `quiz:<episodeId>` (the clip's quiz
+   * prompt) or `note:<episodeId>:<nodeId>`. */
   key: string;
   text: string;
 }
@@ -31,10 +32,11 @@ export const NATIVE_VOICE_REFUSED =
   "The device's built-in voice can't be recorded. Pick the browser voice, a local voice or OpenAI in Settings.";
 
 /** Everything the course's coach says, in document order: every beat that
- * has words, then every note. */
+ * has words, the quiz prompt, then every note. */
 export function courseSpeeches(document: CourseDocument): CourseSpeech[] {
   return document.episodes.flatMap((episode) => [
     ...episode.beats.flatMap((beat, index) => (beat.say.trim() ? [{ key: `beat:${episode.id}:${index}`, text: beat.say }] : [])),
+    ...(episode.quiz?.prompt.trim() ? [{ key: `quiz:${episode.id}`, text: episode.quiz.prompt }] : []),
     ...episode.notes.flatMap((note) => (note.text.trim() ? [{ key: `note:${episode.id}:${note.nodeId}`, text: note.text }] : []))
   ]);
 }

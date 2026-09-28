@@ -624,11 +624,19 @@ Commit: `feat(courses): prepare all coach audio before recording`
 **Files:** `apps/web/src/features/courses/clip/` (`timeline.ts`,
 `draw-frame.ts`, `record-clip.ts`), tests for `timeline.ts`.
 
-- [ ] Pure timeline: beats → start/end times from audio durations, gaps and
+Status: in progress — desktop Chrome done 2026-09-28 (commit below); waiting
+for the owner's iPhone Safari test (**Stop 5**). Chrome records
+`video/mp4;codecs=avc1,mp4a`: the trap's 16:9 clip came out 1920×1080, 46.2 s,
+3.4 MB, video and audio decoding. Not drawn yet: the eval bar (the editor's
+course has no evals; the dossier does). Also built: a voice picker in the
+preview (a creator whose chat voice is the device voice gets the browser
+voice, not a refusal), and code-built quiz moments (docs/courses.md §8).
+
+- [x] Pure timeline: beats → start/end times from audio durations, gaps and
   quiz pauses (tested).
-- [ ] Canvas drawing for 1080×1920 and 1920×1080: board, arrows, captions,
+- [x] Canvas drawing for 1080×1920 and 1920×1080: board, arrows, captions,
   coach avatar, end card with the course link.
-- [ ] **Preview clip** in the editor: plays the timeline live on the canvas
+- [x] **Preview clip** in the editor: plays the timeline live on the canvas
   with the audio, in either format, with play/pause and a scrubber, no
   recording. Recording is the same playback captured, so the preview is
   exactly the file.

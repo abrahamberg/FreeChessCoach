@@ -687,7 +687,7 @@ Use exactly these episodes, in order:
 3. bait — why the victim's move looks natural. This is the heart of the trap:
    the viewer should think "I'd play that too".
 4. quiz — "What does Black play here?" plus a hint at the target. The
-   clip pauses 3s.
+   clip pauses 3s (the app adds the pause).
 5. punish — one beat per forcing move; captions carry the rhythm.
 6. safety — how the victim stays safe: Nc3, in one or two sentences.
 The end card and call to action are added by the app; don't write them.
@@ -845,7 +845,7 @@ THIS EPISODE
 e3 bait, n11 to n11
 Focus: Bc3 looks natural.
 Narrated nodes: n11
-Quiz: the answer is n12; the quiz beat pauses the clip (pauseMs 3000).
+Quiz: the answer is n12. The app shows the position before it, says quiz.prompt and pauses 3s; your beats start at the answer and reveal it (pauseMs null).
 Every beat nodeId (or null) and every note nodeId is one of: n11 (6. Bc3). n10 in the dossier is the move before, for context only: no note or beat on it.
 Budget: at most 28 spoken words in this episode, at most 30 words per beat, captions at most 6 words.
 

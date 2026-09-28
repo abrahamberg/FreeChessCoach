@@ -11,6 +11,7 @@ import { CourseEpisodeAi } from './CourseEpisodeAi.js';
 import { CourseEpisodePanel } from './CourseEpisodePanel.js';
 import { CourseGenerationBar } from './CourseGenerationBar.js';
 import { CourseOutline } from './CourseOutline.js';
+import { ClipPreview } from './clip/ClipPreview.js';
 import './CourseEditor.css';
 
 export function CourseEditorPage(): ReactNode {
@@ -31,6 +32,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
   const [episodeId, setEpisodeId] = useState<string | null>(course.document.episodes[0]?.id ?? null);
   const [nodeId, setNodeId] = useState<string | null>(course.document.episodes[0]?.startNodeId ?? null);
   const [drawnArrows, setDrawnArrows] = useState<BoardArrow[]>([]);
+  const [previewing, setPreviewing] = useState(false);
 
   const episode = document.episodes.find((candidate) => candidate.id === episodeId);
   const nodeIds = episode ? episodeNodeIds(document, episode) : document.nodes.map((node) => node.id);
@@ -71,6 +73,9 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
           <input value={document.promise} placeholder="After this you can …" onChange={(event) => edit({ ...document, promise: event.target.value })} />
         </label>
         <div className="course-editor__actions">
+          <button type="button" className="btn-secondary" disabled={!document.episodes.some((each) => each.beats.length)} onClick={() => setPreviewing(true)}>
+            Preview clip
+          </button>
           <button
             type="button"
             className="btn-secondary"
@@ -115,6 +120,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
           <div className="course-panel meta">Pick an episode on the left.</div>
         )}
       </div>
+      {previewing && <ClipPreview document={document} slug={course.slug} onClose={() => setPreviewing(false)} />}
       {confirmRebuild && (
         <ConfirmDialog
           title="Rebuild without AI?"

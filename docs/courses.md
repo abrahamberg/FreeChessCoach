@@ -610,8 +610,12 @@ Decided with the owner:
   recorded until every sentence exists.
 - The device's built-in voice (`native`) is not offered: it produces no audio
   bytes to record and sounds different on every device.
-- Timing comes from the audio: a beat lasts its audio plus a short gap; a quiz
-  beat adds its pause. So a re-export is identical.
+- Timing comes from the audio: a beat lasts its audio plus a short gap. So a
+  re-export is identical (`clip/timeline.ts`).
+- The quiz moment is built by code, not written by the model: the position
+  before the answer, the coach saying `quiz.prompt`, a 3 s countdown, then the
+  episode's beats reveal the answer. (gemma-4-12b put the quiz beat on the
+  answer itself, with no pause, so the clip gave the answer away.)
 - The whole clip is recorded in one pass from a canvas (board, eval bar,
   arrows, captions, coach avatar, end card) plus the audio through Web Audio,
   in both formats: 9:16 (1080×1920) and 16:9 (1920×1080). The persona's playback

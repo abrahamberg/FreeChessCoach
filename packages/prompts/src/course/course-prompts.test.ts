@@ -28,7 +28,7 @@ describe('course prompts', () => {
     expect(system).toContain('The bait is node n11. The answer is node\nn12.');
     expect(system).toContain("The victim's safe move at the bait is Nc3.");
     expect(system).toContain('What does Black play here?');
-    expect(system).toContain('The\n   clip pauses 3s.');
+    expect(system).toContain('The\n   clip pauses 3s (the app adds the pause).');
   });
 
   test('the trap hook is told how the line ends, with no example hook to copy', () => {
@@ -82,7 +82,7 @@ describe('course prompts', () => {
     expect([...dossier.matchAll(/^n(\d+) /gm)].map((match) => `n${match[1]}`)).toEqual(['n10', 'n11', 'n12']);
     expect(user).toContain('e3 bait, n11 to n11');
     expect(user).toContain('note nodeId is one of: n11 (6. Bc3). n10 in the dossier is the move before, for context only: no note or beat on it.');
-    expect(user).toContain('pauseMs 3000');
+    expect(user).toContain('The app shows the position before it, says quiz.prompt and pauses 3s; your beats start at the answer and reveal it');
     expect(buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e2' }).user).toContain('Quiz: none in this episode, so "quiz" is null.');
     expect(user).toContain('"mention the pin earlier"');
   });
