@@ -122,6 +122,15 @@ let live: AudioContext | null = null;
  * after; a third as loud while the coach speaks; nothing when Settings >
  * Board has move sounds off. */
 export function playBoardSounds(sounds: MoveSounds): void {
+  play(sounds.stinger ? [[sounds.base, 0], [sounds.stinger, STINGER_DELAY_MS]] : [[sounds.base, 0]]);
+}
+
+/** One sound on its own: a drill's wrong try (bad). */
+export function playBoardSound(sound: BoardSound): void {
+  play([[sound, 0]]);
+}
+
+function play(queue: [BoardSound, number][]): void {
   if (!canPlay || !readMoveSoundsEnabled()) return;
   live ??= new AudioContext();
   const context = live;
@@ -131,14 +140,12 @@ export function playBoardSounds(sounds: MoveSounds): void {
     const level = context.createGain();
     level.gain.value = isVoiceSpeaking() ? DUCKED : 1;
     level.connect(context.destination);
-    const start = (sound: BoardSound, delayMs: number): void => {
+    for (const [sound, delayMs] of queue) {
       const source = context.createBufferSource();
       source.buffer = buffers[sound];
       source.connect(level);
       source.start(context.currentTime + delayMs / 1000);
-    };
-    start(sounds.base, 0);
-    if (sounds.stinger) start(sounds.stinger, STINGER_DELAY_MS);
+    }
   })().catch(() => undefined);
 }
 

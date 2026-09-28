@@ -13,8 +13,11 @@ import { CourseBoardLayout } from './CourseBoardLayout.js';
 import { CoursePane } from './CoursePane.js';
 import { CourseRecap } from './CourseRecap.js';
 import { STAGE_LABELS } from './CourseStageBar.js';
-import { courseMoveList, type CourseEvals } from './course-move-list.js';
-import { episodeWalk, stepView } from './course-steps.js';
+import { boardSoundsLengthMs, playBoardSound, playBoardSounds } from '../../../sounds/board-sounds.js';
+import { moveSounds, type MoveSounds } from '../../../sounds/move-sounds.js';
+import { readMoveSoundsEnabled } from '../../../sounds/move-sounds-setting.js';
+import { courseMoveList, courseMoveSounds, type CourseEvals } from './course-move-list.js';
+import { episodeWalk, isAcceptedAlternative, stepView } from './course-steps.js';
 import { judgeQuizMove } from './judge-quiz-move.js';
 import type { useNoteAudio } from './useNoteAudio.js';
 import { YouTubeClip } from './YouTubeClip.js';
@@ -178,7 +181,7 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
   const rated = list.classifiedMoves.filter((move) => move.ply <= shownPlies);
   const hasEvals = list.classifiedMoves.length > 0;
 
-  const goTo = (next: number): void => {
+  const goTo = (next: number, stinger?: MoveSounds['stinger']): void => {
     judgeRef.current += 1;
     setAttempt(null);
     setJudgement(null);
@@ -186,7 +189,14 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
     setReached((prev) => Math.max(prev, next));
     onStep(next);
     const move = walk.moves[next - 1];
-    if (next > step && move && episode.notes.some((note) => note.nodeId === move.id && note.text.trim())) audio.play(episode.id, move.id);
+    // One step on sounds the move; its note waits until the sounds end.
+    let wait = 0;
+    if (move && next === step + 1) {
+      const sounds = courseMoveSounds(document, evals, move, stinger);
+      playBoardSounds(sounds);
+      if (readMoveSoundsEnabled()) wait = boardSoundsLengthMs(sounds);
+    }
+    if (next > step && move && episode.notes.some((note) => note.nodeId === move.id && note.text.trim())) audio.play(episode.id, move.id, wait);
     else audio.stop();
   };
   // A lead-in move (before the episode starts) opens the episode's start.
@@ -194,7 +204,8 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
 
   const solve = (how: 'course' | 'alternative' | 'shown'): void => {
     setSolved(how);
-    goTo(step + 1);
+    // Found it: great. Otherwise the move's own sounds.
+    goTo(step + 1, how === 'course' ? 'great' : undefined);
   };
 
   const onQuizMove = (san: string, fenAfter: string, uci: string): void => {
@@ -207,8 +218,13 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
     const request = ++judgeRef.current;
     setAttempt(tried);
     setJudgement({ status: 'checking' });
+    playBoardSounds(moveSounds({ san, mover: document.learnerSide, learnerSide: document.learnerSide }));
     judgeQuizMove({ ...tried, mover: view.fen.split(' ')[1] === 'b' ? 'black' : 'white' })
-      .then((move) => request === judgeRef.current && setJudgement({ status: 'ready', move }))
+      .then((move) => {
+        if (request !== judgeRef.current) return;
+        setJudgement({ status: 'ready', move });
+        playBoardSound(isAcceptedAlternative(move.quality) ? 'great' : 'bad');
+      })
       .catch(() => request === judgeRef.current && setJudgement({ status: 'error' }));
   };
 

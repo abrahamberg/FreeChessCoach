@@ -21,6 +21,8 @@ import { MoveExplorer } from '../../board/MoveExplorer.js';
 import { MoveStrip } from '../../board/MoveStrip.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
+import { playBoardSound, playBoardSounds } from '../../../sounds/board-sounds.js';
+import { moveSounds } from '../../../sounds/move-sounds.js';
 import { CourseBoardLayout } from './CourseBoardLayout.js';
 import { CoursePane } from './CoursePane.js';
 import { STAGE_LABELS } from './CourseStageBar.js';
@@ -314,7 +316,10 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
   // A move the learner does not play is made for them.
   useEffect(() => {
     if (!step || step.asked) return;
-    const timer = window.setTimeout(advance, AUTO_MOVE_MS);
+    const timer = window.setTimeout(() => {
+      knock(step.node.san, false);
+      advance();
+    }, AUTO_MOVE_MS);
     return () => window.clearTimeout(timer);
   }, [at.episode, at.step, step?.asked]);
 
@@ -326,6 +331,7 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
 
   const onMove = (san: string, fenAfter: string, uci: string): void => {
     if (!step?.asked) return;
+    knock(san, true);
     if (uci === step.node.uci) {
       firstTry(true);
       advance();
@@ -339,6 +345,8 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
       .then((move) => {
         if (request !== judgeRef.current) return;
         setJudgement({ status: 'ready', move });
+        // The course's judgement of the try (not a live game's move).
+        if (!isAcceptedAlternative(move.quality)) playBoardSound('bad');
       })
       .catch(() => request === judgeRef.current && setJudgement({ status: 'error' }));
   };
@@ -370,6 +378,7 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
   }));
   const showMove = (): void => {
     firstTry(false);
+    if (step) knock(step.node.san, true);
     advance();
   };
   // The current line, from the course's start through the moves played so far.
@@ -503,6 +512,12 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
       bottomBar={nav}
     />
   );
+}
+
+/** A drill's move sound: the learner's knock or the other side's softer
+ * one, the chime on a check; no bad or great for the moves themselves. */
+function knock(san: string, own: boolean): void {
+  playBoardSounds(moveSounds({ san, mover: own ? 'white' : 'black', learnerSide: 'white' }));
 }
 
 function sideOf(fenBefore: string): 'white' | 'black' {

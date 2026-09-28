@@ -1,5 +1,6 @@
 import type { ClassifiedMoveDto, CourseDocument, CourseNode, PublicCourseResponse } from '@freechesscoach/shared';
 import { moveListStart, type MoveListStart } from '../../board/moveListStart.js';
+import { moveSounds, type MoveSounds } from '../../../sounds/move-sounds.js';
 
 export type CourseEvals = PublicCourseResponse['evals'];
 
@@ -46,4 +47,21 @@ export function moveListOf(document: CourseDocument, line: readonly CourseNode[]
     positions: [{ ply: 0, fen: document.startFen }, ...line.map((node, index) => ({ ply: index + 1, fen: node.fenAfter }))],
     classifiedMoves
   };
+}
+
+/** A course move's board sounds (docs/plan.md Phase 88): an analyzed move,
+ * so bad and great follow either side's move, from the course's
+ * evaluations. `stinger` overrides it (a solved quiz is great). */
+export function courseMoveSounds(document: CourseDocument, evals: CourseEvals, node: CourseNode, stinger?: MoveSounds['stinger']): MoveSounds {
+  const rated = evals[node.id];
+  const sounds = moveSounds({
+    san: node.san,
+    // The side to move after the move is the other side.
+    mover: node.fenAfter.split(' ')[1] === 'w' ? 'black' : 'white',
+    learnerSide: document.learnerSide,
+    quality: rated?.quality,
+    cpBefore: node.parentId ? evals[node.parentId]?.cp : 0,
+    cpAfter: rated?.cp
+  });
+  return stinger === undefined ? sounds : { ...sounds, stinger };
 }

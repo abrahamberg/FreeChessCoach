@@ -1280,11 +1280,17 @@ Commit: `feat(sounds): sounds on the live board and in review`
 `useNoteAudio.ts`.
 **Files:** those, their tests.
 
-- [ ] Play through: stepping forward plays the move's sounds (both sides'
+- [x] Play through: stepping forward plays the move's sounds (both sides'
   stingers, from the course's evaluations); a solved quiz plays great; the
   note's voice starts 250 ms after.
-- [ ] Practice and drills: the learner's move, the auto-played opponent,
+- [x] Practice and drills: the learner's move, the auto-played opponent,
   check; a wrong try plays bad; `useNoteAudio` reports speaking.
+
+Status: done 2026-09-28. `courseMoveSounds` (`player/course-move-list.ts`)
+reads the course's evaluations; the note's voice waits the length of the
+move's sounds (`boardSoundsLengthMs`), not a fixed 250 ms, so a great
+sparkle never runs under it. A quiz try knocks on drop, then plays great
+(accepted) or bad; a solved quiz's move plays great.
 
 Commit: `feat(sounds): sounds in courses`
 

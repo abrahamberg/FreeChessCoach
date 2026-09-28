@@ -1,7 +1,7 @@
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
 import type { CourseDocument } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { courseMoveList } from './course-move-list.js';
+import { courseMoveList, courseMoveSounds } from './course-move-list.js';
 
 const tree = parseCourseTree('1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 *');
 const [d4, e5, dxe5, nc6] = tree.nodes;
@@ -31,5 +31,17 @@ describe('courseMoveList', () => {
 
   test('a course with no engine pass has no rated moves', () => {
     expect(courseMoveList(documentFrom(), [d4!], {}).classifiedMoves).toEqual([]);
+  });
+});
+
+describe('courseMoveSounds', () => {
+  test('an analyzed course move: either side’s blunder is bad, a solved quiz is great', () => {
+    const evals = { [d4!.id]: { cp: 20, quality: 'book' as const }, [e5!.id]: { cp: 110, quality: 'blunder' as const } };
+    // The learner plays Black: White's d4 is the opponent's knock.
+    expect(courseMoveSounds(documentFrom(), evals, d4!)).toEqual({ base: 'opponent', stinger: null });
+    expect(courseMoveSounds(documentFrom(), evals, e5!)).toEqual({ base: 'move', stinger: 'bad' });
+    expect(courseMoveSounds(documentFrom(), evals, nc6!, 'great')).toEqual({ base: 'move', stinger: 'great' });
+    // No engine pass: just the knock.
+    expect(courseMoveSounds(documentFrom(), {}, dxe5!)).toEqual({ base: 'opponent', stinger: null });
   });
 });
