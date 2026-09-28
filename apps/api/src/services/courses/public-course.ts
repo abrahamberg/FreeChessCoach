@@ -13,7 +13,8 @@ const NOT_FOUND = 'No course at this link';
 /** Note audio files are named by their bytes' hash; only WAV is stored (§8). */
 const AUDIO_FILE = /^([0-9a-f]{32})\.wav$/;
 
-/** docs/courses.md §9: the frozen published copy, and each note's audio file.
+/** docs/courses.md §9: the frozen published copy, each note's audio file,
+ * and each move's evaluation from the engine pass (the eval bar and graph).
  * The file is named by its content, so its URL never serves different bytes
  * and Cloudflare can keep it at the edge; from the R2 mirror once copied there. Drafts and removed courses are 404,
  * like a wrong link. */
@@ -28,7 +29,11 @@ export async function publicCourse(db: Kysely<Database>, slug: string, mirror?: 
       return file ? [[`${note.episodeId}:${note.nodeId}`, audioFileUrl(mirror, row.slug, file)]] : [];
     })
   );
-  return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio };
+  const nodeIds = new Set(document.nodes.map((node) => node.id));
+  const evals = Object.fromEntries(
+    (row.dossier?.nodes ?? []).filter((facts) => nodeIds.has(facts.nodeId)).map((facts) => [facts.nodeId, { cp: facts.evalAfterCp, quality: facts.quality }])
+  );
+  return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio, evals };
 }
 
 /** One note's audio file, only while a note of the published copy says it. */

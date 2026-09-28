@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MoveQualitySchema } from './analysis.js';
 import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
 import { CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseStatusSchema } from './course.js';
 
@@ -73,7 +74,10 @@ export const PublicCourseResponseSchema = z.object({
   document: CourseDocumentSchema,
   /** `<episodeId>:<nodeId>` → its audio file's URL, named by the file's own
    * hash so it can be cached for good; notes without audio are absent. */
-  noteAudio: z.record(z.string(), z.string())
+  noteAudio: z.record(z.string(), z.string()),
+  /** Node id → White's evaluation after the move and its quality, from the
+   * course's engine pass; `{}` when it has none (docs/courses.md §9). */
+  evals: z.record(z.string(), z.object({ cp: z.number(), quality: MoveQualitySchema }))
 });
 export type PublicCourseResponse = z.infer<typeof PublicCourseResponseSchema>;
 

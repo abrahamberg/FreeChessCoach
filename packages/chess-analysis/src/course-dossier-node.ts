@@ -19,6 +19,9 @@ export interface CourseNodeFacts {
   lineId: string;
   moveNumber: number;
   quality: MoveQuality;
+  /** White's view after the move, mate clamped (classify.ts): the course
+   * player's eval bar and graph. */
+  evalAfterCp: number;
   /** The position before and after, in words. */
   before: string;
   after: string;
@@ -71,6 +74,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     lineId: node.lineId,
     moveNumber: Number(fenBefore.split(' ')[5] ?? 1),
     quality: move.quality,
+    evalAfterCp: move.evalAfterCp,
     before: positionWords(fenBefore, evalBefore),
     after: positionWords(node.fenAfter, evalsByFen.get(node.fenAfter)),
     inBook: isBookMoveFrom(fenBefore, node.san),

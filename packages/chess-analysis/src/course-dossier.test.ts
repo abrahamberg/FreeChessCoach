@@ -34,6 +34,7 @@ describe('course dossier', () => {
     expect(bait?.bestInstead?.san).toBe('Nc3');
     expect(bait?.after).toBe('Black is winning');
     expect(facts.get('n12')?.quizEligible).toBe(true);
+    expect(facts.get('n12')?.evalAfterCp).toEqual(expect.any(Number));
     expect(facts.get('n12')?.board).toEqual(['moves the bishop from f8 to b4', 'attacks the bishop on c3, which is pinned to the king']);
     expect(facts.get('n5')?.quizEligible).toBe(false);
     expect(facts.get('n16')?.after).toBe('checkmate');

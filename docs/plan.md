@@ -1075,9 +1075,10 @@ Decisions:
 - The stages sit in the header as one compact control; the episodes sit at
   the top of the explorer column (desktop) or as a chip row above the note
   (phone).
-- Evaluations come from the engine pass, frozen at publish: the eval bar and
-  graph show only when the published course has them (older courses and
-  hand-made ones without a dossier show neither, never a made-up 0.0).
+- Evaluations come from the course's engine pass (`courses.dossier`), read
+  when the public course is served. All course data is test data (owner,
+  2026-09-28), so there is no compatibility for older dossiers; a course
+  with no dossier shows no eval bar or graph, never a made-up 0.0.
 - The board widgets need only `ply`, `evalAfterCp` and `quality` from a move;
   their props narrow to that instead of the whole `ClassifiedMoveDto`, so a
   course can feed them without faking a game analysis.
@@ -1089,15 +1090,18 @@ Decisions:
 `apps/api/src/services/courses/publish.ts`,
 `apps/api/src/services/courses/public-course.ts`,
 `packages/shared/src/course-api.ts` (`PublicCourseResponseSchema`).
-**Files:** those; a migration adding `courses.published_evals jsonb`; tests.
+**Files:** those; tests.
 
-- [ ] Failing tests first: a published course's response carries
+Status: done 2026-09-28. `apps/api/scripts/course-dossier-refresh.ts`
+rebuilds dossiers with the engine alone (no AI); the dev courses were run
+through it.
+
+- [x] Failing tests first: a published course's response carries
   `evals: {nodeId: {cp, quality}}` (White's view, mate clamped like
-  `classify.ts`); a course whose dossier lacks them returns `{}`.
-- [ ] `CourseNodeFacts` gains `evalAfterCp` (optional: older dossiers lack
-  it); publish freezes the map next to `published_document`.
+  `classify.ts`) for its nodes; a course with no dossier returns `{}`.
+- [x] `CourseNodeFacts` gains a required `evalAfterCp`.
 
-Commit: `feat(courses): evaluations frozen with the published course`
+Commit: `feat(courses): the public course carries its evaluations`
 
 ### Task 87.2 — Board widgets take a light move
 

@@ -1,4 +1,4 @@
-import { parseCourseTree } from '@freechesscoach/chess-analysis';
+import { parseCourseTree, type CourseDossier } from '@freechesscoach/chess-analysis';
 import { CourseCatalogResponseSchema, type CourseCatalogResponse, type CourseDocument, type PublicCourseResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
@@ -67,6 +67,8 @@ describe('public course routes', () => {
     expect(body.noteAudio).toEqual({ [`e1:${body.document.nodes[0]!.id}`]: audioUrl });
     expect(body.document.takeaways).toEqual(['One.', 'Two.', 'Three.']);
     expect(JSON.stringify(body)).not.toContain('example.com');
+    // No engine pass on this course: no evaluations, rather than made-up ones.
+    expect(body.evals).toEqual({});
     expect((await app.inject({ method: 'GET', url: '/api/public/courses/englund-public-bbbbbbbbbbbb' })).statusCode).toBe(200);
 
     const audio = await app.inject({ method: 'GET', url: audioUrl });
@@ -91,6 +93,21 @@ describe('public course routes', () => {
     for (const url of ['/api/courses', '/api/public/../courses', '/api/public/%2E%2E/courses', '/api/public/..%2Fcourses']) {
       expect((await app.inject({ method: 'GET', url })).statusCode, url).toBeOneOf([401, 404]);
     }
+    await app.close();
+  });
+
+  test('a course with an engine pass carries each move’s evaluation for the eval bar and graph', async () => {
+    const app = buildTestApp({ db, authMode: 'proxy' });
+    await app.ready();
+    const id = await insertCourse('englund-evals-aaaaaaaaaaaa', 'unlisted');
+    const [first, second] = trapDocument().nodes;
+    const facts = (nodeId: string, evalAfterCp: number, quality: string) => ({ nodeId, evalAfterCp, quality });
+    const dossier = { learnerSide: 'black', lines: [], nodes: [facts(first!.id, 30, 'best'), facts(second!.id, -120, 'mistake'), facts('n999', 0, 'good')] } as unknown as CourseDossier;
+    await coursesRepo.setDossier(db, id, dossier);
+
+    const body = (await app.inject({ method: 'GET', url: '/api/public/courses/englund-evals-aaaaaaaaaaaa' })).json<PublicCourseResponse>();
+    // Only the published course's own nodes.
+    expect(body.evals).toEqual({ [first!.id]: { cp: 30, quality: 'best' }, [second!.id]: { cp: -120, quality: 'mistake' } });
     await app.close();
   });
 
