@@ -20,11 +20,10 @@ const SKELETONS: Record<CourseKind, CourseSkeleton> = {
 const PLACEHOLDER = /\{[a-zA-Z]+\}|undefined|\bnull\b(?! \|)|\[object/;
 
 describe('course prompts', () => {
-  test('system prompt: shared block, then the playbook, then the voice', () => {
+  test('system prompt: the voice first, then the shared block, then the playbook', () => {
     const system = buildCourseSystemPrompt(englundCourseContext());
 
-    expect(system.startsWith(COURSE_SHARED_BLOCK)).toBe(true);
-    expect(system.endsWith(buildCourseVoiceBlock('commander'))).toBe(true);
+    expect(system.startsWith(`${buildCourseVoiceBlock('commander')}\n\n${COURSE_SHARED_BLOCK}`)).toBe(true);
     expect(system).toContain('The bait is node n11. The answer is node\nn12.');
     expect(system).toContain("The victim's safe move at the bait is Nc3.");
     expect(system).toContain('What does Black play here?');
@@ -61,7 +60,8 @@ describe('course prompts', () => {
 
     expect(user).toContain('l1 (Line A): 1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 Bxc3 8. Qxc3 Qc1#');
     expect(user).toContain('bait: n11 (6. Bc3)');
-    expect(user).toContain('Budgets: clip at most 60s, at most 114 spoken words in total');
+    expect(user).toContain('Budgets: clip at most 60s (clipSeconds), at most 114 spoken words in total');
+    expect(user).toContain('budgetLong is how many of its moves speak in the\ncourse');
     expect(user).toContain('n16 8…Qc1#');
     expect(user).not.toContain('EPISODE PLAN');
   });
@@ -81,8 +81,10 @@ describe('course prompts', () => {
 
     expect([...dossier.matchAll(/^n(\d+) /gm)].map((match) => `n${match[1]}`)).toEqual(['n10', 'n11', 'n12']);
     expect(user).toContain('e3 bait, n11 to n11');
-    expect(user).toContain('note nodeId is one of: n11 (6. Bc3). n10 in the dossier is the move before, for context only: no note or beat on it.');
-    expect(user).toContain('The app shows the position before it, says quiz.prompt and pauses 3s; your beats start at the answer and reveal it');
+    expect(user).toContain('Every plies nodeId is one of: n11 (6. Bc3). n10 in the dossier is the move before, for context only: no line on it.');
+    expect(user).toContain('The app shows the position before it, says quiz.prompt and pauses 3s; the clip\'s moves start at the answer and reveal it');
+    expect(user).toContain('Speaking budget: at most 1 moves with "long": true, at most 1 with "short": true.');
+    expect(user).toContain('Say every line as the coach in VOICE would.');
     expect(buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e2' }).user).toContain('Quiz: none in this episode, so "quiz" is null.');
     expect(user).toContain('"mention the pin earlier"');
   });

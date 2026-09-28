@@ -26,14 +26,14 @@ export function courseBudget(kind: CourseKind, persona: CoachPersona): CourseBud
   };
 }
 
-/** One episode's share of the clip's words, by how many nodes it narrates;
- * a hook gets the hook's limit. */
+/** One episode's share of the clip's words, by how many moves may speak in
+ * its clip; a hook gets the hook's limit. */
 export function episodeWordBudget(budget: CourseBudget, outline: CourseOutline, episodeId: string): CourseVerifyBudget {
   const episodes = outline.chapters.flatMap((chapter) => chapter.episodes);
   const episode = episodes.find((candidate) => candidate.id === episodeId);
-  const weight = (narrated: string[]): number => Math.max(1, narrated.length);
-  const total = episodes.reduce((sum, candidate) => sum + weight(candidate.narratedNodeIds), 0);
+  const weight = (short: number): number => Math.max(1, short);
+  const total = episodes.reduce((sum, candidate) => sum + weight(candidate.budgetShort), 0);
   if (!episode) return { wordsPerBeat: budget.wordsPerBeat, wordsPerEpisode: 0 };
   if (episode.role === 'hook') return { wordsPerBeat: budget.hookWords, wordsPerEpisode: budget.hookWords };
-  return { wordsPerBeat: budget.wordsPerBeat, wordsPerEpisode: Math.floor((budget.words * weight(episode.narratedNodeIds)) / total) };
+  return { wordsPerBeat: budget.wordsPerBeat, wordsPerEpisode: Math.floor((budget.words * weight(episode.budgetShort)) / total) };
 }

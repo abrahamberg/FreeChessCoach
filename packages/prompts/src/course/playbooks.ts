@@ -46,18 +46,18 @@ ${skeleton?.answerNodeId ?? 'not found'}. The victim's safe move at the bait is 
 Use exactly these episodes, in order:
 1. hook — at most ${budget.hookWords} words, true and specific to how the trap ends:
    ${trapEnding(context)}
-2. setup — the setup moves play fast. Narrate at most two, only where the move
-   order matters.
+2. setup — the setup moves play fast. At most two speak in the clip, only
+   where the move order matters.
 3. bait — why the victim's move looks natural. This is the heart of the trap:
    the viewer should think "I'd play that too".
 4. quiz — "What does ${trapper} play here?" plus a hint at the target. The
    clip pauses ${budget.pauseSeconds}s (the app adds the pause).
-5. punish — one beat per forcing move; captions carry the rhythm.
+5. punish — every forcing move speaks in the clip; captions carry the rhythm.
 6. safety — how the victim stays safe: ${safeMove}, in one or two sentences.${risk}
 The end card and call to action are added by the app; don't write them.
-Notes: every node gets one. The bait and the safe move get the longest. The
-learner drills both sides, so the notes must teach springing the trap and
-avoiding it.`;
+In the course, every move speaks. The bait and the safe move get the longest
+lines. The learner drills both sides, so the lines must teach springing the
+trap and avoiding it.`;
 }
 
 /** The hook's one fact, stated rather than shown by example: a quoted
@@ -77,14 +77,14 @@ function openingReelPlaybook(context: CoursePromptContext, budget: CourseBudget)
   return `KIND: OPENING MAIN LINE (vertical reel, at most ${budget.seconds}s, at most ${budget.words} words)
 The learner plays ${side}. The line ends at node ${context.lines[0]?.leafNodeId ?? 'not found'}.
 1. hook — at most ${budget.hookWords} words: what this opening gives the learner, concretely.
-2. line — play the line. Narrate at most ${budget.narratedMax} moves, only those that
-   carry the idea; the rest get a caption only.
+2. line — play the line. At most ${budget.narratedMax} moves speak in the clip, only those
+   that carry the idea; the rest play silently.
 3. idea — one sentence on the plan from the final position, grounded in the
    line's position features.
 4. remember — the one trap or common mistake in this line if the dossier lists
    one; otherwise the key pawn break or square.
-Notes: every ${side} move gets a "why this move" note. Opponent moves get
-a note only where they change the plan.`;
+In the course, every ${side} move speaks: "why this move". Opponent moves
+speak only where they change the plan.`;
 }
 
 function openingCoursePlaybook(context: CoursePromptContext): string {
@@ -100,8 +100,8 @@ The learner plays ${capitalise(context.learnerSide)}. Lines, in the creator's or
 - Last chapter "Recap": the move orders only, then the three takeaways.
 drillNodeIds: every learner move in the main line, plus the first two learner
 moves after each deviation.
-Clip: narrate chapter 1 fully; each sideline in two or three beats. The course
-carries the detail.`;
+Clip: chapter 1's key moves speak; each sideline in two or three moves. The
+course carries the detail.`;
 }
 
 function tacticExampleCount(context: CoursePromptContext): number {
@@ -131,12 +131,12 @@ function masterGamePlaybook(context: CoursePromptContext): string {
 Headers: ${white ?? 'White unknown'} vs ${black ?? 'Black unknown'}, ${event ?? 'event unknown'}, ${year ?? 'year unknown'}. Use nothing about the players
 beyond these headers and the creator's direction.
 - intro — one sentence on what this game teaches.
-- Every ${side} move gets a note naming its purpose as a principle:
+- In the course, every ${side} move speaks, naming its purpose as a principle:
   development, the centre, king safety, weak squares, open files, piece
   activity, a pawn majority, the plan. Routine moves: one short sentence.
   Critical nodes: up to four sentences, including the move a club player would
   be tempted by and why it is worse (dossier alternatives only).
-- Opponent moves get a note only when they create a threat or change the plan.
+- Opponent moves speak only when they create a threat or change the plan.
 - Guess-the-move quizzes only at critical, quiz-eligible nodes where the
   master's move is the engine's best or marked "also good".
 - If the dossier marks a master's move as a mistake, say so respectfully and

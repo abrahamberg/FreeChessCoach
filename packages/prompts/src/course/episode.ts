@@ -5,10 +5,11 @@ import { buildCourseSystemPrompt, nodeLabel, type CourseMessages, type CoursePro
 
 export const EPISODE_SCRIPT_JSON_SCHEMA = `{
   "episodeId": string,
-  "beats": [{ "nodeId": string | null, "say": string, "caption": string,
+  "opener": { "say": string, "caption": string } | null (the clip's opening card, a hook's only),
+  "plies": [{ "nodeId": string, "text": string, "clipText": string | null, "caption": string | null,
     "arrows": [{ "from": square, "to": square, "kind": "best" | "threat" | "idea" }],
-    "pauseMs": number | null }],
-  "notes": [{ "nodeId": string, "text": string, "arrows": [same as beats] }],
+    "long": boolean (speaks in the course), "short": boolean (speaks in the clip) }] (in move order,
+    only the moves that speak or carry arrows),
   "quiz": { "answerNodeId": string, "prompt": string, "hint": string (points at the target, never names the move),
     "reveal": string (names the move and says in one sentence why it works) } | null
 }`;
@@ -33,12 +34,12 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
   const budget = courseBudget(context.kind, context.persona);
   const words = episodeWordBudget(budget, outline, episodeId);
   const quizLine = episode.answerNodeId
-    ? `\nQuiz: the answer is ${episode.answerNodeId}. The app shows the position before it, says quiz.prompt and pauses ${budget.pauseSeconds}s; your beats start at the answer and reveal it (pauseMs null).`
+    ? `\nQuiz: the answer is ${episode.answerNodeId}. The app shows the position before it, says quiz.prompt and pauses ${budget.pauseSeconds}s; the clip's moves start at the answer and reveal it.`
     : '\nQuiz: none in this episode, so "quiz" is null.';
   const sections = [
     `COURSE\nTitle: ${outline.title}\nPromise: ${outline.promise}`,
     `OUTLINE\n${renderOutline(outline, episodeId)}`,
-    `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nNarrated nodes: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\n${ownNodesLine(context, episode)}\nBudget: at most ${words.wordsPerEpisode} spoken words in this episode, at most ${words.wordsPerBeat} words per beat, captions at most 6 words.`,
+    `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nThe plan's key moves: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\n${ownNodesLine(context, episode)}\nSpeaking budget: at most ${episode.budgetLong} moves with "long": true, at most ${episode.budgetShort} with "short": true.\nClip words: at most ${words.wordsPerEpisode} spoken in this episode's clip (the opener included), at most ${words.wordsPerBeat} per move; captions at most 6 words.\nSay every line as the coach in VOICE would.`,
     `DOSSIER (this episode only)\n${renderCourseDossier(episodeDossier(context, episode))}`,
     request.creatorRequest ? `CREATOR'S REQUEST FOR THIS EPISODE\n"${request.creatorRequest}"` : '',
     request.retry
@@ -49,13 +50,13 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
   return { system: buildCourseSystemPrompt(context), user: sections.filter(Boolean).join('\n\n') };
 }
 
-/** Where beats and notes may go. The dossier also shows the move before the
+/** Where the moves may be. The dossier also shows the move before the
  * episode, and gpt-6-luna put notes there until this said it was context only. */
 function ownNodesLine(context: CoursePromptContext, episode: CourseOutlineEpisode): string {
   const path = courseNodePath(context.nodes, episode.startNodeId, episode.endNodeId) ?? [];
   const before = context.nodes.find((node) => node.id === episode.startNodeId)?.parentId;
-  const own = `Every beat nodeId (or null) and every note nodeId is one of: ${path.map((nodeId) => nodeLabel(context, nodeId)).join(', ')}.`;
-  return before ? `${own} ${before} in the dossier is the move before, for context only: no note or beat on it.` : own;
+  const own = `Every plies nodeId is one of: ${path.map((nodeId) => nodeLabel(context, nodeId)).join(', ')}.`;
+  return before ? `${own} ${before} in the dossier is the move before, for context only: no line on it.` : own;
 }
 
 /** Only this episode's nodes, the one before it and its quiz answer, with

@@ -12,8 +12,11 @@ export const COURSE_OUTLINE_JSON_SCHEMA = `{
   "chapters": [{ "title": string, "lineId": string,
     "episodes": [{ "id": string ("e1", "e2" … across the whole course), "role": string, "focus": string,
       "startNodeId": string, "endNodeId": string, "narratedNodeIds": string[],
-      "answerNodeId": string | null }] }],
-  "takeaways": string[3]
+      "answerNodeId": string | null,
+      "budgetLong": number (moves that may speak in the course),
+      "budgetShort": number (moves that may speak in the clip) }] }],
+  "takeaways": string[3],
+  "clipSeconds": number (the clip's target length)
 }`;
 
 /** The checks' problems with the previous outline (§6.4: sent back once). */
@@ -31,8 +34,13 @@ Kind: ${context.kind}
 Direction (from the creator): "${context.direction}"
 Learner side: ${capitalise(context.learnerSide)}
 Learner level: ${calibration.label} — ${calibration.description}
-Budgets: clip at most ${budget.seconds}s, at most ${budget.words} spoken words in total, hook at
-most ${budget.hookWords} words, ${episodeRange(context)} episodes.
+Budgets: clip at most ${budget.seconds}s (clipSeconds), at most ${budget.words} spoken words in total,
+hook at most ${budget.hookWords} words, ${episodeRange(context)} episodes.
+Speaking budgets, per episode: budgetLong is how many of its moves speak in the
+course (the moves a learner needs a word on: their key moves, and the opponent's
+where the plan changes); budgetShort is how many speak in the clip. Across the
+whole clip, at most ${budget.narratedMax} moves speak. A hook speaks over its opening
+card, so its budgetShort is 0. Neither budget may exceed the episode's moves.
 Episode roles: ${COURSE_ROLES[context.kind].join(', ')}.
 
 LINES
@@ -67,8 +75,9 @@ function renderPlan(context: CoursePromptContext): string {
   return `
 EPISODE PLAN (computed by code)
 Keep every chapter, episode id, role, startNodeId, endNodeId and answerNodeId
-exactly as listed. You write each focus, and pick narratedNodeIds only from
-the moves between that episode's startNodeId and endNodeId.
+exactly as listed. You write each focus, set each episode's budgets, and pick
+narratedNodeIds only from the moves between that episode's startNodeId and
+endNodeId.
 ${chapters.join('\n')}
 `;
 }

@@ -1493,16 +1493,23 @@ Commit: `feat(courses): one ply list for the long course and the short clip`
 `apps/api/src/services/courses/generate-*.ts`, `docs/courses.md` §6.
 **Files:** those, their snapshot tests, the golden set.
 
-- [ ] The outline call returns each episode's budget (`long`, `short`
+- [x] The outline call returns each episode's budget (`long`, `short`
   voiced moves) and the clip's target seconds, from the kind's template.
-- [ ] The episode call returns plies with `long`/`short`, `text`, and
+- [x] The episode call returns plies with `long`/`short`, `text`, and
   `clipText` only when the clip needs a shorter line; within its budget.
-- [ ] The voice block leads the episode prompt, with the persona's example
+- [x] The voice block leads the episode prompt, with the persona's example
   lines and two rules: every line sounds like this coach, and every line
   says something the learner would want to hear (no filler like "a solid
   move"). Each ply's facts come from the dossier.
 - [ ] `npm run course:golden` on the six golden courses: every episode within
   budget, the verifier clean or its warnings shown.
+
+Status: code done 2026-09-28. The voice block now opens the system prompt;
+the shared block's "two texts" became "each move, two versions" and "every
+line earns its place" (no filler, every line in the coach's voice). The
+golden run is the owner's: it needs their unlock phrase (`UNLOCK_PHRASE=… npm
+run course:golden -w apps/api -- --email <owner>`), and it spends their
+credits.
 
 Commit: `feat(courses): budgets from the plan, plies from the episode call`
 

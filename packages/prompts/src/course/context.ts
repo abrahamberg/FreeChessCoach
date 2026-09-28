@@ -47,7 +47,8 @@ export interface CourseMessages {
 /** §6: shared block, then the kind playbook, then the voice. Depends only on
  * the course, never on the episode, so every call of one course shares it. */
 export function buildCourseSystemPrompt(context: CoursePromptContext): string {
-  return [COURSE_SHARED_BLOCK, buildCoursePlaybook(context, courseBudget(context.kind, context.persona)), buildCourseVoiceBlock(context.persona)]
+  // The coach's voice first: every line in the course and the clip is theirs.
+  return [buildCourseVoiceBlock(context.persona), COURSE_SHARED_BLOCK, buildCoursePlaybook(context, courseBudget(context.kind, context.persona))]
     .filter(Boolean)
     .join('\n\n');
 }
