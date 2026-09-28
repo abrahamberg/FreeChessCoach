@@ -5,7 +5,7 @@ import { CoachCard } from '../../../components/CoachCard.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { COURSE_KIND_INFO } from '../courseKinds.js';
-import { AskCoachPanel } from './AskCoachPanel.js';
+import { AskCoachPanel, AskCoachSignIn } from './AskCoachPanel.js';
 import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
 import { CourseDrill } from './CourseDrill.js';
 import type { CourseProgressStore } from './course-progress.js';
@@ -71,7 +71,7 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
   );
 }
 
-/** §11: signed in, the learner's own coach; signed out, a sign-in line; the
+/** §11: signed in, the learner's own coach; signed out, a sign-in box; the
  * editor's preview (no progress store), neither. */
 type AskCoach = { slug: string } | 'sign-in' | null;
 
@@ -290,11 +290,7 @@ function EpisodeView({ document, episode, audio, ask, isLast, onDone }: EpisodeV
           )}
         </div>
         {/* Not while the quiz asks: the coach knows the course's answer. */}
-        {!asking && ask === 'sign-in' && (
-          <p className="meta">
-            <a href="/">Sign in</a> to ask your own coach about a move.
-          </p>
-        )}
+        {!asking && ask === 'sign-in' && <AskCoachSignIn />}
         {!asking && ask && ask !== 'sign-in' && <AskCoachPanel position={{ slug: ask.slug, episodeId: episode.id, nodeId: view.move?.id ?? null }} />}
       </div>
     </div>

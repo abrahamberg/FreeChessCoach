@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { AskCoachPanel } from './AskCoachPanel.js';
+import { AskCoachPanel, AskCoachSignIn } from './AskCoachPanel.js';
 
 vi.mock('../../../hooks/useProfile.js', () => ({ useProfile: () => ({ data: { coachPersona: 'scholar' } }) }));
 vi.mock('../../../hooks/useUnlockLlmSetup.js', () => ({ useUnlockLlmSetup: () => ({ unlock: vi.fn(), reset: vi.fn(), isPending: false, isSuccess: false, errorMessage: undefined }) }));
@@ -47,5 +47,13 @@ describe('AskCoachPanel', () => {
     fireEvent.change(screen.getByLabelText('Your question'), { target: { value: 'Why?' } });
     fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
     expect(await screen.findByText('Your coach needs your AI setup unlocked to answer.')).toBeTruthy();
+  });
+
+  test('signed out, the box says coaching needs sign-in and signs in back to this course', () => {
+    window.history.pushState({}, '', '/learn/englund-aaaaaaaaaaaa');
+    render(<AskCoachSignIn />);
+    fireEvent.click(screen.getByRole('button', { name: /Ask my coach/ }));
+    expect(screen.getByText(/To use coaching you need to sign in/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe('/oauth2/start?rd=%2Flearn%2Fenglund-aaaaaaaaaaaa');
   });
 });

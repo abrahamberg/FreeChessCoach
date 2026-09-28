@@ -118,3 +118,37 @@ export function AskCoachPanel({ position }: AskCoachPanelProps): ReactNode {
     </section>
   );
 }
+
+/** §11 for a signed-out visitor: the same button, and a box saying coaching
+ * needs an account. Sign-in comes back to this course (oauth2-proxy's `rd`). */
+export function AskCoachSignIn(): ReactNode {
+  const [open, setOpen] = useState(false);
+  if (!open) {
+    return (
+      <button type="button" className="btn-secondary ask-coach__open" onClick={() => setOpen(true)}>
+        <CoachAvatar persona="general" size="chat" />
+        Ask my coach about this move
+      </button>
+    );
+  }
+  const back = `${window.location.pathname}${window.location.search}`;
+  return (
+    <section className="ask-coach" aria-label="Ask my coach">
+      <header className="ask-coach__header">
+        <CoachAvatar persona="general" size="chat" />
+        <div>
+          <p className="ask-coach__title">Ask your own coach</p>
+          <p className="meta">To use coaching you need to sign in. Your coach then answers your questions about any move in this course.</p>
+        </div>
+      </header>
+      <div className="course-player__actions">
+        <a className="btn-primary" href={`/oauth2/start?rd=${encodeURIComponent(back)}`}>
+          Sign in
+        </a>
+        <button type="button" className="btn-secondary" onClick={() => setOpen(false)}>
+          Not now
+        </button>
+      </div>
+    </section>
+  );
+}

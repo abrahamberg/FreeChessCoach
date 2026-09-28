@@ -775,7 +775,9 @@ summary of the position, with the rule that the engine wins. Tools:
 when the learner has an engine. The panel sits under the course coach's card
 in the play-through, in its own box with the learner's coach avatar and name;
 hidden while a quiz asks (the coach knows the answer) and in the drill;
-signed-out visitors get a sign-in line, the editor's preview neither.
+signed-out visitors get the same button, whose box says coaching needs
+sign-in and signs in back to the course (`/oauth2/start?rd=…`); the editor's
+preview shows neither.
 
 Commit: `feat(courses): ask your own coach about a course move`
 

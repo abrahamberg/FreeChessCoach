@@ -285,3 +285,7 @@
   min-width: 0;
   resize: vertical;
 }
+
+.ask-coach a.btn-primary {
+  text-decoration: none;
+}
