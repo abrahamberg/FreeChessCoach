@@ -1103,18 +1103,21 @@ through it.
 
 Commit: `feat(courses): the public course carries its evaluations`
 
-### Task 87.2 — Board widgets take a light move
+### Task 87.2 — Course moves for the board widgets
 
-**Read:** `features/board/EvalBar.tsx`, `GameEvalChart.tsx`,
-`MoveExplorer.tsx`, `MoveNavStrip.tsx` and their callers.
-**Files:** those, their tests.
+Status: done 2026-09-28. A move needs only nine fields (`ply`, `moveSan`,
+`mover`, `isUserMove`, `cpLoss`, `quality`, `bestLineSan`, `evalAfterCp`,
+`hangsPiece`); the rest are optional. So `player/course-move-list.ts` builds
+real `ClassifiedMoveDto`s from the course's evaluations (no loss figure, no
+tactics) and the widgets were not narrowed after all.
 
-- [ ] A `BoardMove = Pick<ClassifiedMoveDto, 'ply' | 'evalAfterCp' |
-  'quality'>` (plus what MoveExplorer's inspect needs, optional); the four
-  widgets take it. Game Review and the sessions still pass full moves.
-- [ ] MoveExplorer and MoveNavStrip accept a `dimmedBefore` ply.
+- [x] `courseMoveList(document, moves, evals)`: the line from the course's
+  start (an episode's lead-in first), positions, rated moves.
+- [x] MoveExplorer, MoveStrip and MoveNavStrip take `start`
+  (`board/moveListStart.ts`: a course may start mid-game, Black to move)
+  and `dimmedThroughPly` (the lead-in, faded).
 
-Commit: `refactor(board): the board widgets take a light move`
+Commit: `feat(board): move lists from any start, courses' moves for the widgets`
 
 ### Task 87.3 — The layout
 

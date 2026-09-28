@@ -125,6 +125,18 @@
   color: var(--color-on-primary);
 }
 
+/* A course episode's lead-in moves: there for the move numbers, not the
+ * episode's own. */
+.move-explorer__list .move-explorer__move--dimmed:not([aria-current='true']) {
+  opacity: 0.5;
+}
+
+/* "1. …" when Black moves first. */
+.move-explorer__gap {
+  padding: 0 6px;
+  color: var(--color-text-muted);
+}
+
 .move-explorer__note {
   font-size: 13px;
   color: var(--color-text-secondary);

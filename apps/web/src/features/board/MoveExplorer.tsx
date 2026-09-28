@@ -5,6 +5,7 @@ import { MoveAnalysisModal } from './MoveAnalysisModal.js';
 import { AlternativesPanel, MoveNote, OpeningLabel } from './MoveNoteContent.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import { TacticMotifBadge } from './TacticMotifBadge.js';
+import { GAME_START, type MoveListStart } from './moveListStart.js';
 import './MoveExplorer.css';
 
 export interface MoveExplorerProps {
@@ -21,24 +22,31 @@ export interface MoveExplorerProps {
    * (the same note, shown large) — repeating it here too would just be the
    * same text twice, so that caller passes false. */
   showNotes?: boolean;
+  /** Where the moves start (`moveListStart.ts`); a game's 1. by default. */
+  start?: MoveListStart;
+  /** Plies up to this one are shown faded: a course episode's lead-in. */
+  dimmedThroughPly?: number;
 }
 
 interface MovePair {
   moveNumber: number;
-  white: { ply: number; san: string };
+  /** Absent on the first row when Black moves first ("1... e5"). */
+  white?: { ply: number; san: string };
   black?: { ply: number; san: string };
 }
 
-function pairMoves(sanMoves: string[]): MovePair[] {
+function pairMoves(sanMoves: string[], start: MoveListStart): MovePair[] {
   const pairs: MovePair[] = [];
-  for (let index = 0; index < sanMoves.length; index += 2) {
-    const whiteSan = sanMoves[index];
-    if (whiteSan === undefined) continue;
-    const blackSan = sanMoves[index + 1];
+  const offset = start.blackFirst ? 1 : 0;
+  for (let half = 0; half < sanMoves.length + offset; half += 2) {
+    const whiteIndex = half - offset;
+    const whiteSan = whiteIndex >= 0 ? sanMoves[whiteIndex] : undefined;
+    const blackSan = sanMoves[whiteIndex + 1];
+    if (whiteSan === undefined && blackSan === undefined) continue;
     pairs.push({
-      moveNumber: index / 2 + 1,
-      white: { ply: index + 1, san: whiteSan },
-      black: blackSan === undefined ? undefined : { ply: index + 2, san: blackSan }
+      moveNumber: start.moveNumber + half / 2,
+      white: whiteSan === undefined ? undefined : { ply: whiteIndex + 1, san: whiteSan },
+      black: blackSan === undefined ? undefined : { ply: whiteIndex + 2, san: blackSan }
     });
   }
   return pairs;
@@ -51,11 +59,20 @@ function pairMoves(sanMoves: string[]): MovePair[] {
  * <details>, open by default — no separate show/hide button, just click the
  * "Notes" summary to collapse it. Sidelines/PGN comments are out of scope
  * here — parsePgn only produces a mainline. */
-export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly, onSelect, showNotes = true }: MoveExplorerProps): ReactNode {
+export function MoveExplorer({
+  sanMoves,
+  classifiedMoves,
+  positions,
+  currentPly,
+  onSelect,
+  showNotes = true,
+  start = GAME_START,
+  dimmedThroughPly = 0
+}: MoveExplorerProps): ReactNode {
   const [inspecting, setInspecting] = useState<{ fen: string; label: string } | null>(null);
   const qualityByPly = new Map(classifiedMoves.map((move) => [move.ply, move]));
   const fenByPly = new Map(positions.map((position) => [position.ply, position.fen]));
-  const pairs = pairMoves(sanMoves);
+  const pairs = pairMoves(sanMoves, start);
   const totalPlies = sanMoves.length;
   const currentMove = qualityByPly.get(currentPly);
 
@@ -85,25 +102,31 @@ export function MoveExplorer({ sanMoves, classifiedMoves, positions, currentPly,
       <ol className="move-explorer__list">
         {pairs.map((pair) => {
           const { moveNumber, white, black } = pair;
-          const whiteFen = fenByPly.get(white.ply);
+          const whiteFen = white ? fenByPly.get(white.ply) : undefined;
           const blackFen = black ? fenByPly.get(black.ply) : undefined;
           return (
             <li key={moveNumber}>
               <span className="move-explorer__number">{moveNumber}.</span>
-              <MoveCell
-                ply={white.ply}
-                san={white.san}
-                move={qualityByPly.get(white.ply)}
-                isCurrent={currentPly === white.ply}
-                onSelect={onSelect}
-                onInspect={whiteFen ? () => setInspecting({ fen: whiteFen, label: `${moveNumber}. ${white.san}` }) : undefined}
-              />
+              {white ? (
+                <MoveCell
+                  ply={white.ply}
+                  san={white.san}
+                  move={qualityByPly.get(white.ply)}
+                  isCurrent={currentPly === white.ply}
+                  dimmed={white.ply <= dimmedThroughPly}
+                  onSelect={onSelect}
+                  onInspect={whiteFen ? () => setInspecting({ fen: whiteFen, label: `${moveNumber}. ${white.san}` }) : undefined}
+                />
+              ) : (
+                <span className="move-explorer__gap">…</span>
+              )}
               {black && (
                 <MoveCell
                   ply={black.ply}
                   san={black.san}
                   move={qualityByPly.get(black.ply)}
                   isCurrent={currentPly === black.ply}
+                  dimmed={black.ply <= dimmedThroughPly}
                   onSelect={onSelect}
                   onInspect={blackFen ? () => setInspecting({ fen: blackFen, label: `${moveNumber}... ${black.san}` }) : undefined}
                 />
@@ -140,6 +163,8 @@ interface MoveCellProps {
   san: string;
   move: ClassifiedMoveDto | undefined;
   isCurrent: boolean;
+  /** A course episode's lead-in: shown, but not the episode's own moves. */
+  dimmed?: boolean;
   onSelect: (ply: number) => void;
   /** Opens the move-analysis inspector for this move's position; undefined
    * when the fen isn't known yet (shouldn't happen once positions load, but
@@ -147,12 +172,13 @@ interface MoveCellProps {
   onInspect: (() => void) | undefined;
 }
 
-function MoveCell({ ply, san, move, isCurrent, onSelect, onInspect }: MoveCellProps): ReactNode {
+function MoveCell({ ply, san, move, isCurrent, dimmed = false, onSelect, onInspect }: MoveCellProps): ReactNode {
   const quality = move?.quality;
+  const className = [quality ? `move-quality-${quality}` : null, dimmed ? 'move-explorer__move--dimmed' : null].filter(Boolean).join(' ');
   return (
     <button
       type="button"
-      className={quality ? `move-quality-${quality}` : undefined}
+      className={className || undefined}
       aria-current={isCurrent ? 'true' : undefined}
       onClick={() => onSelect(ply)}
       onContextMenu={(event) => {

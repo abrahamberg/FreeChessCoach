@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { useLongPress } from '../../hooks/useLongPress.js';
 import { MoveAnalysisModal } from './MoveAnalysisModal.js';
+import { GAME_START, type MoveListStart } from './moveListStart.js';
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import './MoveStrip.css';
 
@@ -28,6 +29,10 @@ export interface MoveStripProps {
   currentPly: number;
   momentPlies: number[];
   onSelect: (ply: number) => void;
+  /** Where the moves start (MoveExplorer's `moveListStart`); a game's 1. by default. */
+  start?: MoveListStart;
+  /** 1-based plies up to this one are faded: a course episode's lead-in. */
+  dimmedThroughPly?: number;
 }
 
 /** design.md §5.5: horizontal move-number chip list, peek-mode navigation.
@@ -40,7 +45,7 @@ export interface MoveStripProps {
  * raw 0-based local `ply` — so a future caller wiring up `momentPlies` with
  * real 1-based ply data will find the moment dot one chip off from the
  * badge it should line up with. */
-export function MoveStrip({ sanMoves, classifiedMoves, positions, currentPly, momentPlies, onSelect }: MoveStripProps): ReactNode {
+export function MoveStrip({ sanMoves, classifiedMoves, positions, currentPly, momentPlies, onSelect, start = GAME_START, dimmedThroughPly = 0 }: MoveStripProps): ReactNode {
   const [inspecting, setInspecting] = useState<{ fen: string; label: string } | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
 
@@ -70,20 +75,24 @@ export function MoveStrip({ sanMoves, classifiedMoves, positions, currentPly, mo
         const isCurrent = ply === currentPly;
         const isMoment = momentSet.has(ply);
         const quality = qualityByPly.get(ply + 1);
-        const className = [isMoment ? 'moment' : null, quality ? `move-quality-${quality}` : null]
+        const className = [isMoment ? 'moment' : null, quality ? `move-quality-${quality}` : null, ply + 1 <= dimmedThroughPly ? 'move-strip__chip--dimmed' : null]
           .filter(Boolean)
           .join(' ');
         const children = [];
-        if (ply % 2 === 0) {
+        const half = ply + (start.blackFirst ? 1 : 0);
+        const moveNumber = start.moveNumber + Math.floor(half / 2);
+        const white = half % 2 === 0;
+        if (white || ply === 0) {
           children.push(
             <span key={`num-${ply}`} className="move-number">
-              {ply / 2 + 1}.
+              {moveNumber}
+              {white ? '.' : '...'}
             </span>
           );
         }
         const fen = fenByPly.get(ply + 1);
         const openingLabel = openingLabelByPly.get(ply + 1);
-        const label = `${Math.floor(ply / 2) + 1}${ply % 2 === 0 ? '.' : '...'} ${san}${openingLabel ? ` — ${openingLabel}` : ''}`;
+        const label = `${moveNumber}${white ? '.' : '...'} ${san}${openingLabel ? ` — ${openingLabel}` : ''}`;
         children.push(
           <MoveChip
             key={ply}

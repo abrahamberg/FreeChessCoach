@@ -35,6 +35,10 @@
   font-weight: 600;
 }
 
+.move-strip button.move-strip__chip--dimmed:not([aria-current='true']) {
+  opacity: 0.5;
+}
+
 .move-strip button.moment {
   position: relative;
 }
