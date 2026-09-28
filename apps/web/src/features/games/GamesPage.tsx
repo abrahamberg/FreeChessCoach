@@ -6,8 +6,10 @@ import { useImportQuota } from '../../hooks/useImportQuota.js';
 import { useProfile } from '../../hooks/useProfile.js';
 import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
 import { CoachNudgeCard } from './CoachNudgeCard.js';
+import { CourseContinueCard } from './CourseContinueCard.js';
 import { CourseReviewCard } from './CourseReviewCard.js';
 import { ContinueSessionCard } from './ContinueSessionCard.js';
+import { continueItems } from './continueItems.js';
 import { GameCard } from './GameCard.js';
 import { ImportShortcuts } from './ImportShortcuts.js';
 import { PracticeAssignmentCard } from './PracticeAssignmentCard.js';
@@ -18,6 +20,7 @@ import {
   useRecentImportedGames,
   useRefreshGamesWhenAnalysisFinishes
 } from './useGamesQueries.js';
+import { useCourseEnrollments } from './useCourseEnrollments.js';
 import { useCourseReviewsDue } from './useCourseReviewsDue.js';
 import { usePracticeAssignments } from './usePracticeAssignments.js';
 import './GamesPage.css';
@@ -27,8 +30,8 @@ import './GamesPage.css';
  * single-row sliding rails: Due today (course moves to review, only
  * when there are any), Practice (coach-assigned sets, only when there
  * are any), Continue (every open session — coaching on a game, a live
- * coach or bot game — most recently started first, with a count; only when
- * there are any) and Recently imported (the last 15 imports, with a "Find game" link
+ * coach or bot game — and every unfinished course, most recent first, with a
+ * count; only when there are any) and Recently imported (the last 15 imports, with a "Find game" link
  * to the full searchable list). Owns fetching (AGENTS.md rule 7); the cards
  * are presentational. */
 export function GamesPage(): ReactNode {
@@ -41,6 +44,8 @@ export function GamesPage(): ReactNode {
   const recentGames = recentQuery.data?.items ?? [];
   const practiceAssignments = practiceQuery.data ?? [];
   const reviewsDue = useCourseReviewsDue().data?.courses ?? [];
+  const courses = useCourseEnrollments().data?.items ?? [];
+  const continuing = continueItems(inProgressGames, courses);
 
   // Feeds ImportShortcuts' "N of 30 imported today" — the rolling-24h count
   // the backend enforces, not "games with today's date".
@@ -107,24 +112,28 @@ export function GamesPage(): ReactNode {
         </section>
       )}
 
-      {inProgressGames.length > 0 && (
+      {continuing.length > 0 && (
         <section aria-label="Continue" className="games-page__section">
           <h2 className="games-page__section-heading">
             Continue
-            <span className="games-page__count" aria-label={`${inProgressGames.length} active`}>
-              {inProgressGames.length}
+            <span className="games-page__count" aria-label={`${continuing.length} active`}>
+              {continuing.length}
             </span>
           </h2>
-          <HorizontalScroller label="Games in progress">
-            {inProgressGames.map((game) => (
-              <ContinueSessionCard
-                key={game.id}
-                game={game}
-                onContinue={actions.handleContinue}
-                onFinish={actions.handleFinishCoaching}
-                onDelete={actions.handleDelete}
-              />
-            ))}
+          <HorizontalScroller label="Games and courses in progress">
+            {continuing.map((item) =>
+              item.kind === 'course' ? (
+                <CourseContinueCard key={`course:${item.course.slug}`} course={item.course} />
+              ) : (
+                <ContinueSessionCard
+                  key={item.game.id}
+                  game={item.game}
+                  onContinue={actions.handleContinue}
+                  onFinish={actions.handleFinishCoaching}
+                  onDelete={actions.handleDelete}
+                />
+              )
+            )}
           </HorizontalScroller>
         </section>
       )}

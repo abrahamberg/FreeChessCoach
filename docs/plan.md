@@ -953,8 +953,13 @@ Commit: `feat(courses): pick a course up where you left it`
 (`useInProgressGames`).
 **Files:** a new `games/CourseContinueCard.tsx` + test, `GamesPage.tsx`.
 
-- [ ] Failing test first.
-- [ ] Unfinished courses join the Continue rail as rail cards: a "Course"
+Status: done 2026-09-28. `CourseContinueCard` shows "Stage 3 of 4: Drill",
+the last day played and a bar of stages done; its play button opens
+`/learn/:slug`, which resumes the saved place. `continueItems.ts` mixes and
+orders the rail; `useCourseEnrollments` moves browser progress first.
+
+- [x] Failing test first.
+- [x] Unfinished courses join the Continue rail as rail cards: a "Course"
   chip, the title, the stage and a progress bar, a play button to the course
   at its saved place. Mixed with the game sessions by last activity; the
   count includes them.

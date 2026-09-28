@@ -335,6 +335,15 @@ export function ClipboardIcon(props: IconProps): ReactNode {
   );
 }
 
+export function BookIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M12 6.5C10.2 5 7.6 4.5 4 4.5v14c3.6 0 6.2.5 8 2 1.8-1.5 4.4-2 8-2v-14c-3.6 0-6.2.5-8 2Z" />
+      <line x1="12" y1="6.5" x2="12" y2="20.5" />
+    </svg>
+  );
+}
+
 export function PawnIcon(props: IconProps): ReactNode {
   return (
     <svg {...iconProps(props)}>
