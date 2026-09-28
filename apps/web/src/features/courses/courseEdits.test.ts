@@ -25,13 +25,13 @@ describe('course edits', () => {
   test('a move’s entry is created on first edit, speaking in the course, and kept in move order', () => {
     const order = ['n2', 'n3', 'n4'];
     let next = updateEpisode(document, 'e1', (current) => setPly(current, 'n4', { text: 'Develops.' }, order));
-    next = updateEpisode(next, 'e1', (current) => setPly(current, 'n2', { short: true }, order));
+    next = updateEpisode(next, 'e1', (current) => setPly(current, 'n2', { video: true }, order));
     next = updateEpisode(next, 'e1', (current) => setPly(current, 'n4', { arrows: [{ from: 'b8', to: 'c6', kind: 'idea' }] }, order));
     const [edited] = next.episodes;
 
     expect(edited?.plies).toEqual([
-      { nodeId: 'n2', text: '', arrows: [], long: true, short: true },
-      { nodeId: 'n4', text: 'Develops.', arrows: [{ from: 'b8', to: 'c6', kind: 'idea' }], long: true, short: false }
+      { nodeId: 'n2', text: '', arrows: [], course: true, video: true },
+      { nodeId: 'n4', text: 'Develops.', arrows: [{ from: 'b8', to: 'c6', kind: 'idea' }], course: true, video: false }
     ]);
   });
 

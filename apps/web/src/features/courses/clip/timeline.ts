@@ -1,4 +1,4 @@
-import { clipCaption, clipLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CourseKind, type CourseNode } from '@freechesscoach/shared';
+import { videoCaption, videoLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CourseKind, type CourseNode } from '@freechesscoach/shared';
 import { boardSoundLengthMs } from '../../../sounds/board-sounds.js';
 import type { BoardSound } from '../../../sounds/move-sounds.js';
 import { courseMoveSound, type CourseEvals } from '../player/course-move-list.js';
@@ -121,14 +121,15 @@ export function buildClipTimeline(options: {
     push({ kind: 'quiz', ...board(before ?? null), arrows: [], caption: episode.quiz.prompt, audioKey: spoken === undefined ? null : key, pauseMs: timing.quizPauseMs }, length);
   };
 
+  // §13.4: the video opens on its hook (Phase 94 plays it over the climax).
+  const hook = document.video?.hook.trim();
+  if (hook) {
+    const spoken = audioMs('video:hook');
+    const length = spoken === undefined ? timing.silentBeatMs : spoken + timing.gapMs;
+    push({ kind: 'title', ...board(null), lastMove: null, moveLabel: null, arrows: [], caption: document.video?.thumbnailText ?? '', audioKey: spoken === undefined ? null : 'video:hook', pauseMs: 0 }, length);
+  }
   for (const episode of clipEpisodes(document, format)) {
-    if (episode.opener) {
-      const key = `opener:${episode.id}`;
-      const spoken = episode.opener.say.trim() ? audioMs(key) : undefined;
-      const length = spoken === undefined ? timing.silentBeatMs : spoken + timing.gapMs;
-      push({ kind: 'title', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: episode.opener.caption, audioKey: spoken === undefined ? null : key, pauseMs: 0 }, length);
-    }
-    const clipPlies = episode.plies.filter((ply) => ply.short);
+    const clipPlies = episode.plies.filter((ply) => ply.video);
     // Code owns the quiz moment: before the answer is shown, never twice.
     const answerAt = episode.quiz ? clipPlies.findIndex((ply) => ply.nodeId === episode.quiz?.answerNodeId) : -1;
     if (episode.quiz && answerAt <= 0) quizMoment(episode);
@@ -137,7 +138,7 @@ export function buildClipTimeline(options: {
       const node = byId.get(ply.nodeId);
       if (!node) return;
       const key = `clip:${episode.id}:${ply.nodeId}`;
-      const spoken = clipLine(ply) ? audioMs(key) : undefined;
+      const spoken = videoLine(ply) ? audioMs(key) : undefined;
       const length = spoken === undefined ? timing.silentBeatMs : spoken + timing.gapMs;
       for (const between of movesBetween(byId, shown, node)) push({ kind: 'move', ...board(between), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: soundOf(between) }, timing.moveMs);
       // A move shown for the first time sounds; its narration waits for it.
@@ -145,7 +146,7 @@ export function buildClipTimeline(options: {
       const lead = sound && spoken !== undefined ? soundLength(sound) : 0;
       shown = node;
       push(
-        { kind: 'beat', ...board(node), arrows: ply.arrows, caption: clipCaption(ply), audioKey: spoken === undefined ? null : key, pauseMs: 0, sound, audioOffsetMs: lead },
+        { kind: 'beat', ...board(node), arrows: ply.arrows, caption: videoCaption(ply), audioKey: spoken === undefined ? null : key, pauseMs: 0, sound, audioOffsetMs: lead },
         length + lead
       );
     });

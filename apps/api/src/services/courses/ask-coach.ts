@@ -136,7 +136,7 @@ export function coursePosition(document: CourseDocument, episodeId: string, node
   const at = nodeId === null ? -1 : path.indexOf(nodeId);
   if (nodeId !== null && at < 0) return null;
   const fenBefore = (node: CourseNode): string => (node.parentId ? byId.get(node.parentId)?.fenAfter : undefined) ?? document.startFen;
-  const spoken = episode.plies.filter((ply) => ply.long && ply.text.trim());
+  const spoken = episode.plies.filter((ply) => ply.course && ply.text.trim());
   const noteOn = (id: string): string | null => spoken.find((ply) => ply.nodeId === id)?.text.trim() || null;
   const label = (node: CourseNode): string => {
     const [, turn, , , , fullmove] = fenBefore(node).split(' ');

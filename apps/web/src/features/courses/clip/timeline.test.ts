@@ -1,13 +1,13 @@
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
-import type { CourseDocument, CourseEpisode, CourseOpener, CoursePly } from '@freechesscoach/shared';
+import type { CourseDocument, CourseEpisode, CoursePly } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { buildClipTimeline, clipEpisodes, segmentAt } from './timeline.js';
 
 const tree = parseCourseTree('1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 Bxc3 8. Qxc3 Qc1# *');
 /** A move in the clip: its line, a caption from it. */
-const clip = (nodeId: string, text: string): CoursePly => ({ nodeId, text, caption: text.slice(0, 10), arrows: [], long: false, short: true });
-const episode = (id: string, role: string, plies: CoursePly[], opener?: CourseOpener): CourseEpisode => ({
-  id, role, focus: '', startNodeId: 'n1', endNodeId: 'n16', plies, drillNodeIds: [], ...(opener ? { opener } : {})
+const clip = (nodeId: string, text: string): CoursePly => ({ nodeId, text, caption: text.slice(0, 10), arrows: [], course: false, video: true });
+const episode = (id: string, role: string, plies: CoursePly[]): CourseEpisode => ({
+  id, role, focus: '', startNodeId: 'n1', endNodeId: 'n16', plies, drillNodeIds: []
 });
 
 function trap(episodes: CourseEpisode[], kind: CourseDocument['kind'] = 'trap'): CourseDocument {
@@ -33,18 +33,19 @@ function trap(episodes: CourseEpisode[], kind: CourseDocument['kind'] = 'trap'):
 const TIMING = { moveMs: 100, gapMs: 10, silentBeatMs: 500, endCardMs: 1000, quizPauseMs: 3000 };
 
 describe('buildClipTimeline', () => {
-  test('the opener and each clip move last their audio plus the gap; moves between play fast; the end card closes', () => {
+  test('the hook and each video move last their audio plus the gap; moves between play fast; the end card closes', () => {
     const document = trap([
-      episode('e1', 'hook', [], { say: 'Greed loses.', caption: 'Greed lose' }),
+      episode('e1', 'hook', []),
       episode('e2', 'setup', [clip('n2', 'The gambit.'), clip('n4', '')]),
       episode('e3', 'safety', [clip('n11', 'Your move.')])
     ]);
-    const audio: Record<string, number> = { 'opener:e1': 2000, 'clip:e2:n2': 1000, 'clip:e3:n11': 1500 };
+    document.video = { title: 'Greed', thumbnailText: 'Greed loses', hook: 'Greed loses.', outro: '' };
+    const audio: Record<string, number> = { 'video:hook': 2000, 'clip:e2:n2': 1000, 'clip:e3:n11': 1500 };
 
     const timeline = buildClipTimeline({ document, format: 'vertical', audioMs: (key) => audio[key], timing: TIMING });
 
     expect(timeline.segments.map((segment) => [segment.kind, segment.start, segment.end, segment.moveLabel, segment.audioKey])).toEqual([
-      ['title', 0, 2010, null, 'opener:e1'],
+      ['title', 0, 2010, null, 'video:hook'],
       ['move', 2010, 2110, '1.d4', null],
       ['beat', 2110, 3120, '1…e5', 'clip:e2:n2'],
       ['move', 3120, 3220, '2.dxe5', null],
@@ -113,8 +114,8 @@ describe('buildClipTimeline', () => {
 
 describe('the clip from plies', () => {
   test('only clip moves speak; a course-only move is played without a word; the caption comes from the line', () => {
-    const courseOnly: CoursePly = { nodeId: 'n2', text: 'The course explains this at length.', arrows: [], long: true, short: false };
-    const spoken: CoursePly = { nodeId: 'n4', text: 'Nc6 hits e5. Black wins the pawn back.', arrows: [], long: true, short: true };
+    const courseOnly: CoursePly = { nodeId: 'n2', text: 'The course explains this at length.', arrows: [], course: true, video: false };
+    const spoken: CoursePly = { nodeId: 'n4', text: 'Nc6 hits e5. Black wins the pawn back.', arrows: [], course: true, video: true };
     const document = trap([episode('e1', 'setup', [courseOnly, spoken])]);
     const beats = buildClipTimeline({ document, format: 'vertical', audioMs: () => 1000, timing: TIMING }).segments.filter((segment) => segment.kind === 'beat');
     expect(beats.map((segment) => [segment.moveLabel, segment.audioKey, segment.caption])).toEqual([['2…Nc6', 'clip:e1:n4', 'Nc6 hits e5.']]);

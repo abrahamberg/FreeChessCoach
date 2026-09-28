@@ -1,5 +1,5 @@
 import { courseNodeAncestry, type CourseDossier, type CourseSkeleton, type CourseTreeNode } from '@freechesscoach/chess-analysis';
-import type { CoachPersona, CourseKind, CourseLine, CourseVersions, RatingBand } from '@freechesscoach/shared';
+import type { CoachPersona, CourseKind, CourseLine, CourseVideos, RatingBand } from '@freechesscoach/shared';
 import { courseBudget } from './budget.js';
 import { buildCoursePlaybook } from './playbooks.js';
 import { COURSE_SHARED_BLOCK } from './shared.js';
@@ -37,8 +37,8 @@ export interface CoursePromptContext {
   /** Null when code found no skeleton; the model then plans the spans itself. */
   plan: CoursePlanChapter[] | null;
   headers: CourseHeaders;
-  /** Phase 91: the versions to plan and write; absent means both. */
-  versions?: CourseVersions;
+  /** §13.1: the videos besides the course; absent means both. */
+  videos?: CourseVideos;
 }
 
 export interface CourseMessages {
@@ -55,9 +55,9 @@ export function buildCourseSystemPrompt(context: CoursePromptContext): string {
     .join('\n\n');
 }
 
-/** What this course makes (Phase 91): the course, the clip or both. */
-export function promptVersions(context: CoursePromptContext): CourseVersions {
-  return context.versions ?? { long: true, short: true };
+/** The videos this course makes besides the course (§13.1). */
+export function promptVideos(context: CoursePromptContext): CourseVideos {
+  return context.videos ?? { video: true, reel: true };
 }
 
 export function capitalise(side: string): string {

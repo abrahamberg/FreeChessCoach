@@ -51,30 +51,33 @@ export const CourseChapterSchema = z.object({
 });
 export type CourseChapter = z.infer<typeof CourseChapterSchema>;
 
+/** docs/courses.md §13.5: a move that looks right here and fails, from the
+ * dossier's tempting moves, and why, in the coach's words. */
+export const CourseTemptingSchema = z.object({
+  san: z.string().min(1),
+  why: z.string()
+});
+export type CourseTempting = z.infer<typeof CourseTemptingSchema>;
+
 /**
- * docs/courses.md §4 (Phase 90): one move of an episode, for both versions
- * of the course. `long`: the coach says `text` on this move in the course
- * (the play-through); `short`: in the clip, saying `clipText` when it has a
- * shorter line, else `text`, with `caption` on screen (else one made from
- * the line). A move with neither is played without a word.
+ * docs/courses.md §13.6: one move of an episode. `course`: the coach says
+ * `text` on this move in the course (the play-through); `video`: in the
+ * YouTube video, saying `say` when it has its own line, else `text`, with
+ * `caption` on screen (else one made from the line). `tempting` show under
+ * the note in the course, and are played out in the video. A move with
+ * neither tick is played without a word.
  */
 export const CoursePlySchema = z.object({
   nodeId: NodeIdSchema,
   text: z.string(),
-  clipText: z.string().optional(),
+  say: z.string().optional(),
   caption: z.string().optional(),
   arrows: z.array(CourseArrowSchema),
-  long: z.boolean(),
-  short: z.boolean()
+  tempting: z.array(CourseTemptingSchema).optional(),
+  course: z.boolean(),
+  video: z.boolean()
 });
 export type CoursePly = z.infer<typeof CoursePlySchema>;
-
-/** The card an episode's clip opens on (the hook's title card): no move. */
-export const CourseOpenerSchema = z.object({
-  say: z.string(),
-  caption: z.string()
-});
-export type CourseOpener = z.infer<typeof CourseOpenerSchema>;
 
 /** A course's target rating and its order among that level's courses. */
 export const CourseLevelSchema = z.object({
@@ -83,30 +86,60 @@ export const CourseLevelSchema = z.object({
 });
 export type CourseLevel = z.infer<typeof CourseLevelSchema>;
 
-/** Which versions the planner makes: `long` the course, `short` the clip.
- * At least one; the creator can add the other by hand later. */
-export const CourseVersionsSchema = z
-  .object({ long: z.boolean(), short: z.boolean() })
-  .refine((versions) => versions.long || versions.short, 'Make the course, the clip or both');
-export type CourseVersions = z.infer<typeof CourseVersionsSchema>;
+/** docs/courses.md §13.1: the videos a course makes besides the course
+ * itself, which is always made. At least one; the creator can add the other
+ * later. */
+export const CourseVideosSchema = z
+  .object({ video: z.boolean(), reel: z.boolean() })
+  .refine((videos) => videos.video || videos.reel, 'Make a reel, a YouTube video or both');
+export type CourseVideos = z.infer<typeof CourseVideosSchema>;
 
-/** A document without `versions` makes both. */
-export function courseVersions(document: { versions?: CourseVersions }): CourseVersions {
-  return document.versions ?? { long: true, short: true };
+/** §13.2: what the intake preselects for a kind. */
+export function defaultCourseVideos(kind: CourseKind): CourseVideos {
+  if (kind === 'opening' || kind === 'master_game') return { video: true, reel: false };
+  return { video: true, reel: true };
 }
 
-/** What the intake picks for a kind until the creator changes it. */
-export function defaultCourseVersions(kind: CourseKind): CourseVersions {
-  if (kind === 'opening' || kind === 'master_game') return { long: true, short: false };
-  return { long: true, short: true };
+/** The document's videos, or the kind's default when it has none. */
+export function courseVideos(document: { kind: CourseKind; videos?: CourseVideos }): CourseVideos {
+  return document.videos ?? defaultCourseVideos(document.kind);
 }
 
-/** How many moves may speak in each version: set by the planning call. */
+/** §13.4: the YouTube video's packaging and its frame. */
+export const CourseVideoSchema = z.object({
+  /** At most 55 characters: curiosity and clarity. */
+  title: z.string(),
+  /** At most 4 words, on the thumbnail. */
+  thumbnailText: z.string(),
+  /** The first 15 seconds: the premise or the climax, never an intro. */
+  hook: z.string(),
+  /** A question for the comments and what comes next in the series. */
+  outro: z.string()
+});
+export type CourseVideo = z.infer<typeof CourseVideoSchema>;
+
+/** §13.3: the reel's one idea. */
+export const CourseReelSchema = z.object({
+  style: z.enum(['highlight', 'puzzle', 'promo']),
+  startNodeId: NodeIdSchema,
+  climaxNodeId: NodeIdSchema,
+  endNodeId: NodeIdSchema,
+  hook: z.string(),
+  topText: z.string(),
+  beats: z.array(z.object({ nodeId: NodeIdSchema, say: z.string(), caption: z.string() })),
+  payoff: z.string(),
+  cta: z.string(),
+  loop: z.string()
+});
+export type CourseReel = z.infer<typeof CourseReelSchema>;
+
+/** How many moves may speak in the course and in the video: set by the
+ * planning call; 0 for the video when there is none. */
 export const CourseBudgetSchema = z.object({
-  long: z.number().int().nonnegative(),
-  short: z.number().int().nonnegative(),
-  /** Moves that must speak in both versions (the quiz answer, a mate, a
-   * trap's bait and end), set by code; the counts above always fit them. */
+  course: z.number().int().nonnegative(),
+  video: z.number().int().nonnegative(),
+  /** Moves that must speak in the course and the video (the quiz answer, a
+   * mate, a trap's bait and end), set by code; the counts always fit them. */
   keyNodeIds: z.array(NodeIdSchema).optional()
 });
 export type CourseBudget = z.infer<typeof CourseBudgetSchema>;
@@ -126,9 +159,7 @@ export const CourseEpisodeSchema = z.object({
   focus: z.string(),
   startNodeId: NodeIdSchema,
   endNodeId: NodeIdSchema,
-  /** The clip's opening card, if the episode has one. */
-  opener: CourseOpenerSchema.optional(),
-  /** The moves that speak, in either version, in move order. */
+  /** The moves that speak or carry arrows, in move order. */
   plies: z.array(CoursePlySchema),
   budget: CourseBudgetSchema.optional(),
   quiz: CourseQuizSchema.optional(),
@@ -148,7 +179,8 @@ function hostedUrl(hosts: string[]) {
     }, `Use a link on ${hosts[0]}`);
 }
 
-/** docs/courses.md §8: where the creator posted the clips (never uploaded). */
+/** docs/courses.md §8: where the creator posted the videos (never
+ * uploaded): `youtube` the video; `shorts`, `instagram`, `tiktok` the reel. */
 export const CourseClipLinksSchema = z.object({
   youtube: hostedUrl(['youtube.com', 'youtu.be']).optional(),
   shorts: hostedUrl(['youtube.com', 'youtu.be']).optional(),
@@ -180,38 +212,36 @@ export const CourseDocumentSchema = z.object({
   takeaways: z.array(z.string()).max(3),
   hookOptions: z.array(z.string()).max(3),
   clipLinks: CourseClipLinksSchema,
-  /** The clip's target length (the planning call's budget), seconds. */
-  clipSeconds: z.number().int().positive().optional(),
   /** Phase 90: the learner's target rating and the course's place in that
    * level's curriculum ("1200-01"); how the Courses page sorts. */
   level: CourseLevelSchema.optional(),
-  /** Phase 91: the versions the planner makes (absent: both). */
-  versions: CourseVersionsSchema.optional()
+  /** §13.1: the videos besides the course (absent: the kind's default). */
+  videos: CourseVideosSchema.optional(),
+  video: CourseVideoSchema.optional(),
+  reel: CourseReelSchema.optional()
 });
 export type CourseDocument = z.infer<typeof CourseDocumentSchema>;
 
-/** The clip's line for a move: its own when it has one, else the course's. */
-export function clipLine(ply: CoursePly): string {
-  return ply.clipText?.trim() || ply.text.trim();
+/** The video's line for a move: its own when it has one, else the course's. */
+export function videoLine(ply: CoursePly): string {
+  return ply.say?.trim() || ply.text.trim();
 }
 
-/** The clip's caption for a move: set, or the spoken line's first sentence,
- * cut at a word to fit the screen. */
-export function clipCaption(ply: CoursePly, maxLength = 60): string {
+/** The video's caption for a move: set, or the spoken line's first
+ * sentence, cut at a word to fit the screen. */
+export function videoCaption(ply: CoursePly, maxLength = 60): string {
   if (ply.caption?.trim()) return ply.caption.trim();
-  const first = clipLine(ply).split(/(?<=[.!?])\s/)[0] ?? '';
+  const first = videoLine(ply).split(/(?<=[.!?])\s/)[0] ?? '';
   if (first.length <= maxLength) return first;
   return `${first.slice(0, maxLength - 1).replace(/\s+\S*$/, '')}…`;
 }
 
 /** A budget when no plan gives one (code's skeleton, a hand-built course):
- * most moves speak in the course, one or two in the clip. */
+ * most moves speak in the course, the key ones in the video. */
 export function defaultCourseBudget(moves: number): CourseBudget {
-  return { long: Math.min(moves, Math.max(1, Math.ceil(moves * 0.6))), short: Math.min(moves, 2) };
+  const course = Math.min(moves, Math.max(1, Math.ceil(moves * 0.6)));
+  return { course, video: Math.min(moves, Math.max(1, Math.ceil(moves * 0.4))) };
 }
-
-/** The clip's length when no plan gives one: a reel. */
-export const DEFAULT_CLIP_SECONDS = 45;
 
 /** "1200-01": a course's level and place in its curriculum. */
 export function levelCode(level: CourseLevel): string {
@@ -225,8 +255,6 @@ export function bandForRating(rating: number): (typeof RATING_BANDS)[number] {
   if (rating < 1900) return 'club';
   return 'advanced';
 }
-
-
 
 /** docs/courses.md §6.3: the episode roles each kind's playbook uses. */
 export const COURSE_ROLES: Record<CourseKind, readonly string[]> = {
@@ -247,9 +275,9 @@ export const CourseOutlineEpisodeSchema = z.object({
   endNodeId: NodeIdSchema,
   narratedNodeIds: z.array(NodeIdSchema),
   answerNodeId: NodeIdSchema.nullable(),
-  /** How many moves may speak: in the course, and in the clip. */
-  budgetLong: z.number().int().nonnegative(),
-  budgetShort: z.number().int().nonnegative(),
+  /** How many moves may speak: in the course, and in the video. */
+  budgetCourse: z.number().int().nonnegative(),
+  budgetVideo: z.number().int().nonnegative(),
   /** Set by code after the call, never by the model: see CourseBudget. */
   keyNodeIds: z.array(NodeIdSchema).optional()
 });
@@ -260,17 +288,15 @@ export const CourseOutlineSchema = z.object({
   promise: z.string(),
   hookOptions: z.array(z.string()).min(3).max(3),
   chapters: z.array(z.object({ title: z.string(), lineId: z.string().min(1), episodes: z.array(CourseOutlineEpisodeSchema).min(1) })).min(1),
-  takeaways: z.array(z.string()).min(3).max(3),
-  /** The clip's target length, seconds. */
-  clipSeconds: z.number().int().positive()
+  takeaways: z.array(z.string()).min(3).max(3)
 });
 export type CourseOutline = z.infer<typeof CourseOutlineSchema>;
 
 /** The episode call's answer (§6.5); merged into a `CourseEpisode` by code. */
 export const EpisodeScriptSchema = z.object({
   episodeId: z.string().min(1),
-  opener: CourseOpenerSchema.nullable(),
-  plies: z.array(CoursePlySchema.extend({ clipText: z.string().nullable(), caption: z.string().nullable() })),
+  // A small model may leave out "tempting"; none is the same as an empty list.
+  plies: z.array(CoursePlySchema.extend({ say: z.string().nullable(), caption: z.string().nullable(), tempting: z.array(CourseTemptingSchema).default([]) })),
   quiz: CourseQuizSchema.nullable()
 });
 export type EpisodeScript = z.infer<typeof EpisodeScriptSchema>;

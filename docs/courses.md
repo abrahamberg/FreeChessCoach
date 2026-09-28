@@ -1090,6 +1090,7 @@ CourseDocument = {
     plies: [{ nodeId, arrows,
               text,                // the course note: stands alone, 1–2 sentences (4 at critical)
               say?,                // the video's line when it differs: commentator, may run longer
+              caption?,            // the video's on-screen text (else the line's first sentence)
               tempting: [{ san, why }],  // from the dossier's tempting moves only
               course: boolean,     // speaks in the course
               video: boolean }],   // speaks in the video
@@ -1102,7 +1103,8 @@ CourseDocument = {
 ```
 
 `opener`, `clipText`, `short`, `versions` and `clipSeconds` go (test data
-only, no migration of rows). A ply's `tempting` show in the course whether
+only, no migration of rows). The video's length comes from
+`CONFIG.courses.videoSeconds` per kind; the reel's from `reelSeconds`. A ply's `tempting` show in the course whether
 or not it speaks in the video.
 
 ### 13.7 The calls

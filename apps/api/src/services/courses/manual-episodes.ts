@@ -1,5 +1,5 @@
 import type { CourseDossier, CourseLineGame, CourseSkeleton, TrapSkeleton } from '@freechesscoach/chess-analysis';
-import { courseVersions, type CourseChapter, type CourseDocument, type CourseEpisode } from '@freechesscoach/shared';
+import { courseVideos, type CourseChapter, type CourseDocument, type CourseEpisode } from '@freechesscoach/shared';
 import { EpisodeBuilder } from './manual-notes.js';
 import { openingChapters } from './manual-episodes-openings.js';
 import { masterGameChapters, puzzleChapters, tacticsChapters } from './manual-episodes-study.js';
@@ -22,7 +22,7 @@ export interface ManualEpisodes {
 export function buildManualEpisodes(input: ManualEpisodesInput): ManualEpisodes {
   const facts = new Map(input.dossier.nodes.map((node) => [node.nodeId, node]));
   const arrows = new Map(input.document.nodes.map((node) => [node.id, node.arrows]));
-  const builder = new EpisodeBuilder(facts, arrows, input.skeleton, courseVersions(input.document));
+  const builder = new EpisodeBuilder(facts, arrows, input.skeleton, courseVideos(input.document));
   const chapters = chaptersFor(input, builder);
   return { chapters, episodes: builder.episodes };
 }
@@ -65,7 +65,7 @@ function trapChapters(skeleton: TrapSkeleton, lines: CourseLineGame[], learner: 
       focus: 'safety: how does the victim stay safe?',
       nodeIds: [skeleton.baitNodeId],
       noteNodeIds: [],
-      extraNotes: skeleton.safeMoveSan ? [{ nodeId: skeleton.baitNodeId, text: `Safe instead: ${skeleton.safeMoveSan}.`, arrows: [], long: builder.versions.long, short: !builder.versions.long }] : []
+      extraNotes: skeleton.safeMoveSan ? [{ nodeId: skeleton.baitNodeId, text: `Safe instead: ${skeleton.safeMoveSan}.`, arrows: [], course: true, video: false }] : []
     })
   ];
   return [{ id: 'c1', title: 'The trap', lineId: skeleton.lineId, episodeIds }];

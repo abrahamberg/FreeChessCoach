@@ -25,7 +25,7 @@ export function stepView(episode: CourseEpisode, walk: EpisodeWalk, step: number
   const move = step > 0 ? (walk.moves[step - 1] ?? null) : null;
   if (!move) return { fen: walk.startFen, move: null, note: null, arrows: [] };
   const ply = episode.plies.find((each) => each.nodeId === move.id);
-  return { fen: move.fenAfter, move, note: (ply?.long && ply.text.trim()) || null, arrows: ply?.arrows.length ? ply.arrows : move.arrows };
+  return { fen: move.fenAfter, move, note: (ply?.course && ply.text.trim()) || null, arrows: ply?.arrows.length ? ply.arrows : move.arrows };
 }
 
 /** §11: a move the engine rates about as good as the course's is accepted,

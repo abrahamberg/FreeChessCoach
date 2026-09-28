@@ -13,7 +13,7 @@ import type { Database } from '../db/schema.js';
 
 const DEV_EMAIL = 'dev@local.test';
 const INTAKE = ENGLUND_INTAKE;
-const REGENERATED = { episodeId: 'e1', opener: null, plies: [{ nodeId: 'n11', text: 'It hits the queen.', clipText: null, caption: null, arrows: [], long: true, short: false }], quiz: null };
+const REGENERATED = { episodeId: 'e1', plies: [{ nodeId: 'n11', text: 'It hits the queen.', say: null, caption: null, arrows: [], tempting: [], course: true, video: false }], quiz: null };
 
 let testDb: TestDb;
 let db: Kysely<Database>;
@@ -102,7 +102,7 @@ describe('course routes', () => {
     const app = await creatorApp();
     const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
     const url = `/api/courses/${course.id}/draft`;
-    const episode = { id: 'e1', role: 'bait', focus: '', startNodeId: 'n11', endNodeId: 'n11', plies: [{ nodeId: 'n11', text: 'Looks natural.', arrows: [], long: true, short: false }], drillNodeIds: [] };
+    const episode = { id: 'e1', role: 'bait', focus: '', startNodeId: 'n11', endNodeId: 'n11', plies: [{ nodeId: 'n11', text: 'Looks natural.', arrows: [], course: true, video: false }], drillNodeIds: [] };
 
     const saved = await app.inject({ method: 'PUT', url, payload: { document: { ...course.document, title: 'Renamed', episodes: [episode] } } });
     expect(saved.statusCode).toBe(204);
@@ -131,10 +131,10 @@ describe('course routes', () => {
     const bait = episodes.find((episode) => episode.role === 'bait');
     expect(bait?.startNodeId).toBe('n11');
     expect(bait?.focus).toBe('bait: why does this move look natural?');
-    expect(bait?.plies[0]).toMatchObject({ long: true, text: expect.stringContaining('Bc3 attacks the queen on b2') });
+    expect(bait?.plies[0]).toMatchObject({ course: true, text: expect.stringContaining('Bc3 attacks the queen on b2') });
     expect(episodes.find((episode) => episode.role === 'quiz')?.quiz?.answerNodeId).toBe('n12');
     // The template picks a clip move or two where there is a tactic or a critical moment.
-    expect(episodes.every((episode) => episode.plies.filter((ply) => ply.short).length <= 2)).toBe(true);
+    expect(episodes.every((episode) => episode.plies.filter((ply) => ply.video).length <= 2)).toBe(true);
     await app.close();
   });
 
@@ -156,8 +156,8 @@ describe('course routes', () => {
     const regenerateUrl = `/api/courses/${course.id}/episodes/e1/regenerate`;
     expect((await app.inject({ method: 'POST', url: regenerateUrl, payload: { instruction: 'punchier' } })).statusCode).toBe(409);
     const outline = {
-      title: 'Englund', promise: '', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], clipSeconds: 45,
-      chapters: [{ title: 'The trap', lineId: 'l1', episodes: [{ id: 'e1', role: 'bait', focus: 'Bc3 looks natural.', startNodeId: 'n11', endNodeId: 'n11', narratedNodeIds: [], answerNodeId: null, budgetLong: 1, budgetShort: 1 }] }]
+      title: 'Englund', promise: '', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'],
+      chapters: [{ title: 'The trap', lineId: 'l1', episodes: [{ id: 'e1', role: 'bait', focus: 'Bc3 looks natural.', startNodeId: 'n11', endNodeId: 'n11', narratedNodeIds: [], answerNodeId: null, budgetCourse: 1, budgetVideo: 1 }] }]
     };
     await coursesRepo.setGeneration(db, course.id, { status: 'succeeded', step: null, done: 1, total: 1, error: null, outline, finishedEpisodeIds: ['e1'], warnings: [] });
 
@@ -170,8 +170,8 @@ describe('course routes', () => {
         focus: 'Bc3 looks natural.',
         startNodeId: 'n11',
         endNodeId: 'n11',
-        plies: [{ nodeId: 'n11', text: 'It hits the queen.', arrows: [], long: true, short: false }],
-        budget: { long: 1, short: 1 },
+        plies: [{ nodeId: 'n11', text: 'It hits the queen.', arrows: [], course: true, video: false }],
+        budget: { course: 1, video: 1 },
         drillNodeIds: []
       }
     ]);
@@ -207,7 +207,7 @@ describe('course routes', () => {
     expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/wav' }, payload: wav(1_600_000) })).statusCode).toBe(413);
     expect((await app.inject({ method: 'PUT', url: `${url}/notes/e1/n99/audio`, headers: { 'content-type': 'audio/wav' }, payload: wav(10) })).statusCode).toBe(404);
     const after = (await app.inject({ method: 'GET', url })).json<CourseResponse>();
-    expect(after.missingNoteAudio).toHaveLength(missing.length - after.document.episodes.flatMap((episode) => episode.plies).filter((ply) => ply.long && ply.text === noteText(after, first)).length);
+    expect(after.missingNoteAudio).toHaveLength(missing.length - after.document.episodes.flatMap((episode) => episode.plies).filter((ply) => ply.course && ply.text === noteText(after, first)).length);
 
     const refused = await app.inject({ method: 'POST', url: `${url}/publish`, payload: {} });
     const published = refused.statusCode === 409 ? await app.inject({ method: 'POST', url: `${url}/publish`, payload: { warningsChecked: true } }) : refused;

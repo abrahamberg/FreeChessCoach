@@ -1,6 +1,6 @@
 import { checkCourseOutline, courseNodePath, episodeKeyMoves } from '@freechesscoach/chess-analysis';
 import { buildCourseOutlineMessages, courseBudget } from '@freechesscoach/prompts';
-import { CourseOutlineSchema, courseVersions, defaultCourseBudget, type CourseDocument, type CourseEpisode, type CourseOutline, type CourseWarning } from '@freechesscoach/shared';
+import { CourseOutlineSchema, courseVideos, defaultCourseBudget, type CourseDocument, type CourseEpisode, type CourseOutline, type CourseWarning } from '@freechesscoach/shared';
 import { ValidationError } from '../../lib/errors.js';
 import type { CourseModelCall, GenerationInputs } from './generation-inputs.js';
 
@@ -34,7 +34,7 @@ export async function planOutline(inputs: GenerationInputs, call: CourseModelCal
       episodes: chapter.episodes.map((episode) => {
         const moves = courseNodePath(inputs.context.nodes, episode.startNodeId, episode.endNodeId)?.length ?? 1;
         const budget = defaultCourseBudget(moves);
-        return { ...episode, narratedNodeIds: [], budgetLong: budget.long, budgetShort: budget.short };
+        return { ...episode, narratedNodeIds: [], budgetCourse: budget.course, budgetVideo: budget.video };
       })
     }))
   };
@@ -42,13 +42,13 @@ export async function planOutline(inputs: GenerationInputs, call: CourseModelCal
   return { outline: withKeyMoves(inputs, outline), warnings: [{ episodeId: null, code: 'outline', nodeId: null, message }] };
 }
 
-/** Code's say over the budgets: a version the creator did not ask for
- * (Phase 91) gets 0, and each made version's budget is raised to fit the
+/** Code's say over the budgets: with no YouTube video (§13.1) the video's
+ * budget is 0, and each budget is raised to fit the
  * episode's key moves (the quiz answer, a mate, a trap's bait and end),
  * which join the plan's key moves, so no budget can leave them silent. */
 export function withKeyMoves(inputs: GenerationInputs, outline: CourseOutline): CourseOutline {
   const sans = new Map(inputs.document.nodes.map((node) => [node.id, node.san]));
-  const versions = courseVersions(inputs.document);
+  const video = courseVideos(inputs.document).video;
   return {
     ...outline,
     chapters: outline.chapters.map((chapter) => ({
@@ -59,8 +59,8 @@ export function withKeyMoves(inputs: GenerationInputs, outline: CourseOutline): 
         return {
           ...episode,
           narratedNodeIds: path.filter((id) => keys.includes(id) || episode.narratedNodeIds.includes(id)),
-          budgetLong: versions.long ? Math.max(episode.budgetLong, keys.length) : 0,
-          budgetShort: versions.short ? Math.max(episode.budgetShort, keys.length) : 0,
+          budgetCourse: Math.max(episode.budgetCourse, keys.length),
+          budgetVideo: video ? Math.max(episode.budgetVideo, keys.length) : 0,
           keyNodeIds: keys
         };
       })
@@ -108,7 +108,6 @@ export function documentFromOutline(inputs: GenerationInputs, outline: CourseOut
     promise: outline.promise,
     hookOptions: outline.hookOptions,
     takeaways: outline.takeaways,
-    clipSeconds: outline.clipSeconds,
     chapters: outline.chapters.map((chapter, index) => ({
       id: `c${index + 1}`,
       title: chapter.title,
@@ -124,7 +123,7 @@ export function documentFromOutline(inputs: GenerationInputs, outline: CourseOut
           startNodeId: episode.startNodeId,
           endNodeId: episode.endNodeId,
           plies: [],
-          budget: { long: episode.budgetLong, short: episode.budgetShort, ...(episode.keyNodeIds?.length ? { keyNodeIds: episode.keyNodeIds } : {}) },
+          budget: { course: episode.budgetCourse, video: episode.budgetVideo, ...(episode.keyNodeIds?.length ? { keyNodeIds: episode.keyNodeIds } : {}) },
           drillNodeIds: learnerNodes(inputs, episode.startNodeId, episode.endNodeId)
         })
       )

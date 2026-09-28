@@ -12,7 +12,7 @@ export function setPly(episode: CourseEpisode, nodeId: string, patch: Partial<Om
   if (episode.plies.some((ply) => ply.nodeId === nodeId)) {
     return { ...episode, plies: episode.plies.map((ply) => (ply.nodeId === nodeId ? { ...ply, ...patch } : ply)) };
   }
-  const created: CoursePly = { nodeId, text: '', arrows: [], long: true, short: false, ...patch };
+  const created: CoursePly = { nodeId, text: '', arrows: [], course: true, video: false, ...patch };
   const at = (id: string): number => (order.includes(id) ? order.indexOf(id) : Number.MAX_SAFE_INTEGER);
   return { ...episode, plies: [...episode.plies, created].sort((a, b) => at(a.nodeId) - at(b.nodeId)) };
 }

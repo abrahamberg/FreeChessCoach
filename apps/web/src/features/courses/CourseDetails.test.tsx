@@ -21,13 +21,13 @@ describe('CourseDetails', () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ level: { rating: 1600, order: 1 }, levelBand: 'club' }));
   });
 
-  test('what the AI makes: both unless set; choosing the clip saves it', () => {
+  test("videos: the kind's default unless set; choosing the reel saves it", () => {
     const onChange = vi.fn();
     render(<CourseDetails document={document} onChange={onChange} />);
-    const group = screen.getByRole('group', { name: 'The AI makes' });
-    expect(within(group).getByRole('button', { name: 'Course and clip' })).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(within(group).getByRole('button', { name: 'Clip' }));
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ versions: { long: false, short: true } }));
+    const group = screen.getByRole('group', { name: 'Videos' });
+    expect(within(group).getByRole('button', { name: 'Both' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(group).getByRole('button', { name: 'Reel' }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ videos: { video: false, reel: true } }));
   });
 
   test('changing the coach says the words need rewriting for the new voice', () => {

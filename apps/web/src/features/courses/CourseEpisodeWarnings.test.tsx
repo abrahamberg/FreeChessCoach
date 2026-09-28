@@ -13,7 +13,7 @@ const document: CourseDocument = {
 
 describe('CourseEpisodeWarnings', () => {
   test('a hand-written line gets the verifier warnings', () => {
-    const noted = { ...episode, plies: [{ nodeId: 'n3', text: 'Nf3 and White is +1.3. Qh8 wins.', arrows: [], long: true, short: false }] };
+    const noted = { ...episode, plies: [{ nodeId: 'n3', text: 'Nf3 and White is +1.3. Qh8 wins.', arrows: [], course: true, video: false }] };
     render(<CourseEpisodeWarnings document={document} episode={noted} direction="" />);
 
     expect(screen.getByRole('region', { name: 'Checks' })).toBeTruthy();
@@ -22,7 +22,7 @@ describe('CourseEpisodeWarnings', () => {
   });
 
   test('nothing when the episode is clean', () => {
-    const noted = { ...episode, plies: [{ nodeId: 'n3', text: 'Nf3 attacks e5.', arrows: [], long: true, short: false }] };
+    const noted = { ...episode, plies: [{ nodeId: 'n3', text: 'Nf3 attacks e5.', arrows: [], course: true, video: false }] };
     const { container } = render(<CourseEpisodeWarnings document={document} episode={noted} direction="" />);
 
     expect(container.textContent).toBe('');

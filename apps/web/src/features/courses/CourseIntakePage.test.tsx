@@ -32,9 +32,9 @@ describe('CourseIntakePage', () => {
     fireEvent.click(screen.getByRole('radio', { name: /Tactic theme/ }));
     expect(screen.getByRole('radio', { name: /Tactic theme/ })).toBeChecked();
     fireEvent.click(screen.getByRole('radio', { name: /Trap/ }));
-    // What to make: the kind's default (a trap makes both) until chosen.
-    expect(screen.getByRole('button', { name: 'Course and clip' })).toHaveAttribute('aria-pressed', 'true');
-    fireEvent.click(screen.getByRole('button', { name: 'Course' }));
+    // Videos: the kind's default (a trap makes both) until chosen.
+    expect(screen.getByRole('button', { name: 'Both' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'YouTube video' }));
 
     fireEvent.change(screen.getByRole('textbox', { name: 'PGN' }), { target: { value: ENGLUND } });
     expect(screen.getByText('16 moves, 1 line, you teach Black')).toBeTruthy();
@@ -49,7 +49,7 @@ describe('CourseIntakePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create draft' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/courses', expect.objectContaining({ method: 'POST' })));
     const post = fetchMock.mock.calls.find(([url, init]) => url === '/api/courses' && init?.method === 'POST')!;
-    expect(JSON.parse(String(post[1]!.body))).toMatchObject({ kind: 'trap', learnerSide: 'white', rating: 1600, levelBand: 'club', versions: { long: true, short: false } });
+    expect(JSON.parse(String(post[1]!.body))).toMatchObject({ kind: 'trap', learnerSide: 'white', rating: 1600, levelBand: 'club', videos: { video: true, reel: false } });
   });
 
   test('a PGN that does not parse says why and cannot be created', () => {

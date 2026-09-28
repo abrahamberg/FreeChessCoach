@@ -119,7 +119,7 @@ export function PublishDialog({ course, document, onDocumentChange, onPublished,
           </label>
         </fieldset>
         <fieldset className="publish-dialog__group" disabled={busy}>
-          <legend>Where you posted the clips (optional)</legend>
+          <legend>Where you posted the videos (optional)</legend>
           {LINKS.map(({ key, label, placeholder }) => (
             <label key={key} className="course-field">
               <span>{label}</span>

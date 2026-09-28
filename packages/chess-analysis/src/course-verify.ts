@@ -1,4 +1,4 @@
-import { clipCaption, clipLine, type CourseEpisode } from '@freechesscoach/shared';
+import { videoCaption, videoLine, type CourseEpisode } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 import type { CourseDossier } from './course-dossier.js';
 import { arrowProblems, nodeProblems } from './course-verify-board.js';
@@ -17,7 +17,7 @@ export interface CourseVerifyProblem {
   message: string;
 }
 
-/** Spoken words per clip move and per episode's clip (docs/courses.md §6.5). */
+/** Spoken words per video move and per episode in the video (docs/courses.md §6.5). */
 export interface CourseVerifyBudget {
   wordsPerBeat: number;
   wordsPerEpisode: number;
@@ -61,40 +61,36 @@ export function verifyCourseEpisode(input: CourseVerifyInput): CourseVerifyProbl
 function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: CourseVerifyBudget | null): CourseVerifyProblem[] {
   const problems: CourseVerifyProblem[] = [];
   const { maxCaptionWords, maxNoteSentences, maxCriticalNoteSentences } = CONFIG.courses;
-  const opener = episode.opener;
-  if (opener && wordCount(opener.caption) > maxCaptionWords) {
-    problems.push({ code: 'lengths', nodeId: null, message: `The opening card's caption has ${wordCount(opener.caption)} words (at most ${maxCaptionWords})` });
+  const course = episode.plies.filter((ply) => ply.course);
+  const video = episode.plies.filter((ply) => ply.video);
+  for (const ply of episode.plies.filter((each) => each.course || each.video)) {
+    if (!ply.text.trim() && !(ply.video && ply.say?.trim())) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `${ply.nodeId} speaks but has no words; write them or untick it` });
   }
-  const long = episode.plies.filter((ply) => ply.long);
-  const short = episode.plies.filter((ply) => ply.short);
-  for (const ply of episode.plies.filter((each) => each.long || each.short)) {
-    if (!ply.text.trim() && !(ply.short && ply.clipText?.trim())) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `${ply.nodeId} speaks but has no words; write them or untick it` });
-  }
-  for (const ply of long) {
+  for (const ply of course) {
     const limit = scope.facts.get(ply.nodeId)?.critical ? maxCriticalNoteSentences : maxNoteSentences;
     const sentences = sentenceCount(ply.text);
     if (sentences > limit) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The line on ${ply.nodeId} has ${sentences} sentences (at most ${limit})` });
   }
-  for (const ply of short) {
-    const captionWords = wordCount(clipCaption(ply));
+  for (const ply of video) {
+    const captionWords = wordCount(videoCaption(ply));
     if (captionWords > maxCaptionWords) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The caption on ${ply.nodeId} has ${captionWords} words (at most ${maxCaptionWords})` });
-    const sayWords = wordCount(clipLine(ply));
+    const sayWords = wordCount(videoLine(ply));
     if (budget && sayWords > budget.wordsPerBeat) {
-      problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The clip line on ${ply.nodeId} has ${sayWords} words (at most ${budget.wordsPerBeat}); give it a shorter clip line` });
+      problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The video line on ${ply.nodeId} has ${sayWords} words (at most ${budget.wordsPerBeat}); give it a shorter video line` });
     }
   }
-  const total = (opener ? wordCount(opener.say) : 0) + short.reduce((sum, ply) => sum + wordCount(clipLine(ply)), 0);
+  const total = video.reduce((sum, ply) => sum + wordCount(videoLine(ply)), 0);
   if (budget && total > budget.wordsPerEpisode) {
-    problems.push({ code: 'lengths', nodeId: null, message: `The clip has ${total} words (at most ${budget.wordsPerEpisode})` });
+    problems.push({ code: 'lengths', nodeId: null, message: `The video has ${total} words here (at most ${budget.wordsPerEpisode})` });
   }
   // The planning call's budget: how many moves may speak in each version.
-  // A version the plan gave 0 was not planned (Phase 91): the creator may add
-  // it by hand, with no budget to keep.
-  if (episode.budget?.long && long.length > episode.budget.long) {
-    problems.push({ code: 'lengths', nodeId: null, message: `${long.length} moves speak in the course (the plan allows ${episode.budget.long})` });
+  // A video the plan gave 0 was not planned: the creator may add it by hand,
+  // with no budget to keep.
+  if (episode.budget?.course && course.length > episode.budget.course) {
+    problems.push({ code: 'lengths', nodeId: null, message: `${course.length} moves speak in the course (the plan allows ${episode.budget.course})` });
   }
-  if (episode.budget?.short && short.length > episode.budget.short) {
-    problems.push({ code: 'lengths', nodeId: null, message: `${short.length} moves speak in the clip (the plan allows ${episode.budget.short})` });
+  if (episode.budget?.video && video.length > episode.budget.video) {
+    problems.push({ code: 'lengths', nodeId: null, message: `${video.length} moves speak in the video (the plan allows ${episode.budget.video})` });
   }
   return problems;
 }
@@ -107,7 +103,7 @@ function keyMoveProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVer
     const ply = episode.plies.find((each) => each.nodeId === nodeId);
     const node = scope.byId.get(nodeId);
     const label = node ? moveLabel(scope.fenBefore(nodeId), node.san) : nodeId;
-    const missing = [budget.long > 0 && !ply?.long && 'the course', budget.short > 0 && !ply?.short && 'the clip'].filter(Boolean);
+    const missing = [budget.course > 0 && !ply?.course && 'the course', budget.video > 0 && !ply?.video && 'the video'].filter(Boolean);
     if (!missing.length) return [];
     return [{ code: 'key-moves' as const, nodeId, message: `${label} is a key move of this episode; let it speak in ${missing.join(' and ')}` }];
   });

@@ -32,7 +32,7 @@ function trapDocument(): CourseDocument {
     takeaways: ['One.', 'Two.', 'Three.'],
     episodes: [{
       id: 'e1', role: 'setup', focus: '', startNodeId: first!.id, endNodeId: second!.id, drillNodeIds: [],
-      plies: [{ nodeId: first!.id, text: 'The centre pawn.', arrows: [], long: true, short: false }, { nodeId: second!.id, text: 'Not voiced.', arrows: [], long: true, short: false }]
+      plies: [{ nodeId: first!.id, text: 'The centre pawn.', arrows: [], course: true, video: false }, { nodeId: second!.id, text: 'Not voiced.', arrows: [], course: true, video: false }]
     }]
   };
 }

@@ -77,7 +77,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
         dirty={dirty}
         saving={save.isPending}
         onSave={() => save.mutate(document, { onSuccess: () => setDirty(false) })}
-        onPreviewClip={document.episodes.some((each) => each.opener || each.plies.some((ply) => ply.short)) ? () => setPreviewing(true) : undefined}
+        onPreviewClip={document.episodes.some((each) => each.plies.some((ply) => ply.video)) ? () => setPreviewing(true) : undefined}
         onPreviewLearner={document.episodes.length ? () => setLearnerPreview(true) : undefined}
         onPublish={document.episodes.length ? () => setPublishing(true) : undefined}
         published={course.publishedAt !== null}

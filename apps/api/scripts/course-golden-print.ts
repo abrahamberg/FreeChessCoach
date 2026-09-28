@@ -39,11 +39,10 @@ export function printCourseRun(run: CourseRun): void {
       lines.push(`  ${planned.id} ${planned.role} ${planned.startNodeId}–${planned.endNodeId}: ${planned.focus}`);
       if (!written) continue;
       const { episode } = written;
-      if (episode.budget) lines.push(`    budget: ${episode.budget.long} in the course, ${episode.budget.short} in the clip`);
-      if (episode.opener) lines.push(`    opener: ${episode.opener.say}  «${episode.opener.caption}»`);
+      if (episode.budget) lines.push(`    budget: ${episode.budget.course} in the course, ${episode.budget.video} in the video`);
       for (const ply of episode.plies) {
-        const where = [ply.long ? 'course' : null, ply.short ? 'clip' : null].filter(Boolean).join('+') || 'silent';
-        lines.push(`    ${ply.nodeId} [${where}]: ${ply.text}${ply.clipText ? `  | clip: ${ply.clipText}` : ''}${ply.caption ? `  «${ply.caption}»` : ''}${arrows(ply.arrows)}`);
+        const where = [ply.course ? 'course' : null, ply.video ? 'video' : null].filter(Boolean).join('+') || 'silent';
+        lines.push(`    ${ply.nodeId} [${where}]: ${ply.text}${ply.say ? `  | video: ${ply.say}` : ''}${(ply.tempting ?? []).map((each) => `  | tempting ${each.san}: ${each.why}`).join('')}${ply.caption ? `  «${ply.caption}»` : ''}${arrows(ply.arrows)}`);
       }
       if (episode.quiz) {
         lines.push(`    quiz ${episode.quiz.answerNodeId}: ${episode.quiz.prompt} / hint: ${episode.quiz.hint} / reveal: ${episode.quiz.reveal}`);

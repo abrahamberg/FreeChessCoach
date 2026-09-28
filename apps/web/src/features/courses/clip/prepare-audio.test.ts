@@ -19,15 +19,19 @@ function course(): CourseDocument {
     chapters: [],
     episodes: [
       {
-        id: 'e1', role: 'hook', focus: '', startNodeId: 'n1', endNodeId: 'n1', opener: { say: 'Greed loses.', caption: 'Greed' }, drillNodeIds: [],
-        plies: [{ nodeId: 'n1', text: 'Six... Bb4 pins it.', arrows: [], long: true, short: false }]
+        id: 'e1', role: 'hook', focus: '', startNodeId: 'n1', endNodeId: 'n1', drillNodeIds: [],
+        plies: [{ nodeId: 'n1', text: 'Six... Bb4 pins it.', arrows: [], course: true, video: false }]
       },
-      // The same words again are synthesised once; a clip move with no words is skipped.
-      { id: 'e2', role: 'bait', focus: '', startNodeId: 'n2', endNodeId: 'n2', opener: { say: 'Greed loses.', caption: 'Greed' }, drillNodeIds: [], plies: [{ nodeId: 'n2', text: '  ', arrows: [], long: false, short: true }] }
+      // The same words again are synthesised once; a video move with no words is skipped.
+      {
+        id: 'e2', role: 'bait', focus: '', startNodeId: 'n2', endNodeId: 'n2', drillNodeIds: [],
+        plies: [{ nodeId: 'n2', text: '  ', arrows: [], course: false, video: true }, { nodeId: 'n3', text: 'Greed loses.', arrows: [], course: false, video: true }]
+      }
     ],
     takeaways: [],
     hookOptions: [],
-    clipLinks: {}
+    clipLinks: {},
+    video: { title: 'Greed', thumbnailText: 'Greed', hook: 'Greed loses.', outro: 'Would you take?' }
   };
 }
 
@@ -52,17 +56,17 @@ function memoryCache(): AudioCache & { entries: Map<string, SpokenAudio> } {
 }
 
 describe('prepareCourseAudio', () => {
-  test('the opener, the clip lines and the course lines, each text synthesised once, chunks kept in order', async () => {
+  test('the video hook, the video lines and the course lines, each text synthesised once, chunks kept in order', async () => {
     const client = fakeClient();
     const progress: string[] = [];
 
     const audio = await prepareCourseAudio({ document: course(), backend: 'browser', cache: memoryCache(), client, onProgress: ({ done, total }) => progress.push(`${done}/${total}`) });
 
-    expect(courseSpeeches(course()).map((speech) => speech.key)).toEqual(['opener:e1', 'note:e1:n1', 'opener:e2']);
-    expect([...audio.keys()]).toEqual(['opener:e1', 'note:e1:n1', 'opener:e2']);
+    expect(courseSpeeches(course()).map((speech) => speech.key)).toEqual(['video:hook', 'note:e1:n1', 'clip:e2:n3']);
+    expect([...audio.keys()]).toEqual(['video:hook', 'note:e1:n1', 'clip:e2:n3']);
     expect(client.texts).toHaveLength(2);
     expect(client.texts[1]).not.toContain('Bb4');
-    expect(new TextDecoder().decode(audio.get('opener:e2')!.chunks[1])).toBe('Greed loses.#1');
+    expect(new TextDecoder().decode(audio.get('clip:e2:n3')!.chunks[1])).toBe('Greed loses.#1');
     expect(progress).toEqual(['0/2', '1/2', '2/2']);
   });
 

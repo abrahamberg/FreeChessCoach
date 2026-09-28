@@ -14,7 +14,7 @@ import { noteHashes } from './note-audio.js';
 export function publishBlockers(document: CourseDocument): string[] {
   const blockers: string[] = [];
   if (!document.title.trim()) blockers.push('Give the course a title');
-  if (!document.episodes.some((episode) => episode.plies.some((ply) => (ply.long || ply.short) && ply.text.trim()))) blockers.push('Write the course first');
+  if (!document.episodes.some((episode) => episode.plies.some((ply) => (ply.course || ply.video) && ply.text.trim()))) blockers.push('Write the course first');
   if (document.takeaways.filter((takeaway) => takeaway.trim()).length !== 3) blockers.push('Write the three takeaways');
   return blockers;
 }

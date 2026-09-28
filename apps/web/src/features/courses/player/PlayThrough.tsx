@@ -196,7 +196,7 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
       playBoardSound(sound);
       if (readMoveSoundsEnabled()) wait = boardSoundLengthMs(sound);
     }
-    if (next > step && move && episode.plies.some((ply) => ply.nodeId === move.id && ply.long && ply.text.trim())) audio.play(episode.id, move.id, wait);
+    if (next > step && move && episode.plies.some((ply) => ply.nodeId === move.id && ply.course && ply.text.trim())) audio.play(episode.id, move.id, wait);
     else audio.stop();
   };
   // A lead-in move (before the episode starts) opens the episode's start.

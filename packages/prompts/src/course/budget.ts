@@ -1,21 +1,21 @@
 import { CONFIG, type CourseVerifyBudget } from '@freechesscoach/chess-analysis';
 import { PERSONA_SPEECH_SPEED, type CoachPersona, type CourseKind, type CourseOutline } from '@freechesscoach/shared';
 
-/** What one course's clip may hold (docs/courses.md §6.3). */
+/** What one course's YouTube video may hold (docs/courses.md §13.4). */
 export interface CourseBudget {
   seconds: number;
-  /** Spoken words in the whole clip, at this coach's speaking speed. */
+  /** Spoken words in the whole video, at this coach's speaking speed. */
   words: number;
   hookWords: number;
   wordsPerBeat: number;
-  /** Opening reel: moves narrated at most; the rest get a caption only. */
+  /** Moves the video narrates at most. */
   narratedMax: number;
   pauseSeconds: number;
 }
 
 export function courseBudget(kind: CourseKind, persona: CoachPersona): CourseBudget {
-  const { clipSeconds, wordsPerSecond, hookWords, maxWordsPerBeat, quizPauseSeconds, secondsPerNarratedMove } = CONFIG.courses;
-  const seconds = clipSeconds[kind];
+  const { videoSeconds, wordsPerSecond, hookWords, maxWordsPerBeat, quizPauseSeconds, secondsPerNarratedMove } = CONFIG.courses;
+  const seconds = videoSeconds[kind];
   return {
     seconds,
     words: Math.floor(seconds * wordsPerSecond * PERSONA_SPEECH_SPEED[persona]),
@@ -26,14 +26,14 @@ export function courseBudget(kind: CourseKind, persona: CoachPersona): CourseBud
   };
 }
 
-/** One episode's share of the clip's words, by how many moves may speak in
- * its clip; a hook gets the hook's limit. */
+/** One episode's share of the video's words, by how many moves may speak
+ * in its part of the video; a hook gets the hook's limit. */
 export function episodeWordBudget(budget: CourseBudget, outline: CourseOutline, episodeId: string): CourseVerifyBudget {
   const episodes = outline.chapters.flatMap((chapter) => chapter.episodes);
   const episode = episodes.find((candidate) => candidate.id === episodeId);
-  const weight = (short: number): number => Math.max(1, short);
-  const total = episodes.reduce((sum, candidate) => sum + weight(candidate.budgetShort), 0);
+  const weight = (video: number): number => Math.max(1, video);
+  const total = episodes.reduce((sum, candidate) => sum + weight(candidate.budgetVideo), 0);
   if (!episode) return { wordsPerBeat: budget.wordsPerBeat, wordsPerEpisode: 0 };
   if (episode.role === 'hook') return { wordsPerBeat: budget.hookWords, wordsPerEpisode: budget.hookWords };
-  return { wordsPerBeat: budget.wordsPerBeat, wordsPerEpisode: Math.floor((budget.words * weight(episode.budgetShort)) / total) };
+  return { wordsPerBeat: budget.wordsPerBeat, wordsPerEpisode: Math.floor((budget.words * weight(episode.budgetVideo)) / total) };
 }

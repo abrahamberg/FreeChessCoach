@@ -50,7 +50,7 @@ export function CourseStudioHeader({ title, onTitle, status, dirty, saving, onSa
           <span className="studio-header__preview-label">Preview</span>
           <button type="button" disabled={!onPreviewClip} onClick={onPreviewClip}>
             <PlayCircleIcon width={16} height={16} />
-            Clip
+            Video
           </button>
           <button type="button" disabled={!onPreviewLearner} onClick={onPreviewLearner}>
             <EyeIcon width={16} height={16} />

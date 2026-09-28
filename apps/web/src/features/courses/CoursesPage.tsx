@@ -46,7 +46,7 @@ export function CoursesPage(): ReactNode {
       <header className="studio__header">
         <div>
           <h1>Course studio</h1>
-          <p className="courses-home__empty">Turn a PGN into a lesson, a clip and a course page.</p>
+          <p className="courses-home__empty">Turn a PGN into a course, a YouTube video and a reel.</p>
         </div>
         <Link to="/studio/new" className="btn-primary studio__new">
           <PlusIcon width={16} height={16} />
@@ -144,8 +144,8 @@ function StudioCard({ course }: { course: CourseSummary }): ReactNode {
 function EmptyStudio(): ReactNode {
   const steps = [
     ['Paste a PGN', 'A game, an opening line or a trap, and one line on what to teach.'],
-    ['The AI writes it', 'Episodes, notes, a quiz and the clip, checked against the engine.'],
-    ['Preview', 'As a learner, and the clip with the coach’s voice.'],
+    ['The AI writes it', 'Episodes, notes, quizzes and the videos, checked against the engine.'],
+    ['Preview', 'As a learner, and the video with the coach’s voice.'],
     ['Publish', 'Unlisted for a link, or public in Browse.']
   ];
   return (

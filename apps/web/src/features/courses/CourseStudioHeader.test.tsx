@@ -48,7 +48,7 @@ describe('CourseStudioHeader', () => {
     expect(screen.getByRole('status').textContent).toBe('Unsaved changes');
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(props.onSave).toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Clip' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Video' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Publish' })).toBeTruthy();
   });
 });

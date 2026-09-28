@@ -1,5 +1,5 @@
 import { episodeKeyMoves, type CourseNodeFacts, type CourseSkeleton } from '@freechesscoach/chess-analysis';
-import type { CourseArrow, CourseEpisode, CoursePly, CourseVersions } from '@freechesscoach/shared';
+import type { CourseArrow, CourseEpisode, CoursePly, CourseVideos } from '@freechesscoach/shared';
 
 /** docs/courses.md §10: a note pre-filled from checked facts only — the
  * creator's own comment first, then the opening name, the board facts and
@@ -35,7 +35,7 @@ export class EpisodeBuilder {
     private readonly facts: ReadonlyMap<string, CourseNodeFacts>,
     private readonly arrows: ReadonlyMap<string, CourseArrow[]>,
     private readonly skeleton: CourseSkeleton | null = null,
-    readonly versions: CourseVersions = { long: true, short: true }
+    readonly videos: CourseVideos = { video: true, reel: true }
   ) {}
 
   /** Adds the episode and returns its id; a draft with no nodes is skipped. */
@@ -55,7 +55,7 @@ export class EpisodeBuilder {
       startNodeId: first,
       endNodeId: last,
       plies,
-      budget: { long: plies.filter((ply) => ply.long).length, short: plies.filter((ply) => ply.short).length, ...(keys.length ? { keyNodeIds: keys } : {}) },
+      budget: { course: plies.filter((ply) => ply.course).length, video: plies.filter((ply) => ply.video).length, ...(keys.length ? { keyNodeIds: keys } : {}) },
       ...(draft.quiz ? { quiz: draft.quiz } : {}),
       drillNodeIds: draft.drillNodeIds ?? []
     });
@@ -66,19 +66,18 @@ export class EpisodeBuilder {
     return this.facts.get(nodeId);
   }
 
-  /** Only the versions the course makes (Phase 91). Each move speaks in the
-   * course; the clip takes the key moves, then
-   * the first with a tactic or a critical moment, two in all unless there
-   * are more key moves (the template's short). */
+  /** Each move speaks in the course; the YouTube video, when the course
+   * makes one (§13.1), takes the key moves, then the first with a tactic or
+   * a critical moment, two in all unless there are more key moves. */
   private plies(nodeIds: string[], keys: readonly string[]): CoursePly[] {
-    let clip = keys.length;
+    let spoken = keys.length;
     return nodeIds.flatMap((nodeId) => {
       const facts = this.facts.get(nodeId);
       if (!facts) return [];
       const key = keys.includes(nodeId);
-      const short = this.versions.short && (key || (clip < 2 && (facts.critical || facts.tactics.length > 0)));
-      if (short && !key) clip += 1;
-      return [{ nodeId, text: noteText(facts), arrows: this.arrows.get(nodeId) ?? [], long: this.versions.long, short }];
+      const video = this.videos.video && (key || (spoken < 2 && (facts.critical || facts.tactics.length > 0)));
+      if (video && !key) spoken += 1;
+      return [{ nodeId, text: noteText(facts), arrows: this.arrows.get(nodeId) ?? [], course: true, video }];
     });
   }
 }

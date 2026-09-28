@@ -36,7 +36,7 @@ export function LearnerPreview({ document, onClose }: { document: CourseDocument
     async (episodeId: string, nodeId: string): Promise<string | null> => {
       const key = `note:${episodeId}:${nodeId}`;
       const ply = document.episodes.find((episode) => episode.id === episodeId)?.plies.find((each) => each.nodeId === nodeId);
-      const text = ply?.long ? ply.text : undefined;
+      const text = ply?.course ? ply.text : undefined;
       if (!text?.trim()) return null;
       const known = urls.current.get(`${voice}|${text}`);
       if (known) return known;

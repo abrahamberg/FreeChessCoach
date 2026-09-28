@@ -1,4 +1,4 @@
-import { clipCaption, clipLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CoursePly } from '@freechesscoach/shared';
+import { videoCaption, videoLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CoursePly } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import type { BoardArrow } from '../board/CoachBoard.js';
 import { COURSE_ARROW_KINDS, fromDrawnArrows } from './courseArrows.js';
@@ -18,18 +18,19 @@ export interface CourseEpisodePanelProps {
   aiWriter?: ReactNode;
 }
 
-type Tab = 'moves' | 'quiz' | 'clip' | 'ai';
+type Tab = 'moves' | 'quiz' | 'video' | 'ai';
 
-/** A clip line's rough length: spoken words, and the move shown before it. */
-export function clipSecondsOf(episode: CourseEpisode): number {
+/** This episode's rough length in the video: spoken words, and the move
+ * shown before each line. */
+export function videoSecondsOf(episode: CourseEpisode): number {
   const words = (text: string): number => text.split(/\s+/).filter(Boolean).length;
-  const spoken = (episode.opener ? words(episode.opener.say) : 0) + episode.plies.filter((ply) => ply.short).reduce((sum, ply) => sum + words(clipLine(ply)), 0);
-  return Math.round(spoken / 2.6 + episode.plies.filter((ply) => ply.short).length * 0.7);
+  const spoken = episode.plies.filter((ply) => ply.video).reduce((sum, ply) => sum + words(videoLine(ply)), 0);
+  return Math.round(spoken / 2.6 + episode.plies.filter((ply) => ply.video).length * 0.7);
 }
 
-/** Right column (Phase 90): the selected episode's warnings, what speaks
- * against the plan's budget, and tabs: Moves (the selected move for the
- * course and the clip), Quiz, Clip (the clip's script) and AI. */
+/** Right column: the selected episode's warnings, what speaks against the
+ * plan's budget, and tabs: Moves (the selected move for the course and the
+ * YouTube video), Quiz, Video (this episode's part of the video) and AI. */
 export function CourseEpisodePanel({ document, episode, direction, nodeIds, selectedNodeId, drawnArrows, onChange, aiWriter }: CourseEpisodePanelProps): ReactNode {
   const [tab, setTab] = useState<Tab>('moves');
   const node = selectedNodeId ? document.nodes.find((candidate) => candidate.id === selectedNodeId) : undefined;
@@ -38,28 +39,28 @@ export function CourseEpisodePanel({ document, episode, direction, nodeIds, sele
   const change = (patch: Partial<Omit<CoursePly, 'nodeId'>>): void => {
     if (selectedNodeId) onChange(setPly(episode, selectedNodeId, patch, nodeIds));
   };
-  const long = episode.plies.filter((each) => each.long).length;
-  const short = episode.plies.filter((each) => each.short).length;
+  const inCourse = episode.plies.filter((each) => each.course).length;
+  const inVideo = episode.plies.filter((each) => each.video).length;
   const tabs: [Tab, string][] = [
     ['moves', 'Moves'],
     ['quiz', episode.quiz ? 'Quiz ✓' : 'Quiz'],
-    ['clip', 'Clip'],
+    ['video', 'Video'],
     ...(aiWriter ? [['ai', 'AI'] as [Tab, string]] : [])
   ];
 
   return (
     <div className="course-panel course-episode-panel">
       <p className="course-panel__role">{episode.role}</p>
-      {/* A version the plan gave 0 was not planned (Phase 91): added by hand, no budget. */}
+      {/* A video the plan gave 0 was not planned: added by hand, no budget. */}
       <p className="course-budget meta">
-        <span className={episode.budget?.long && long > episode.budget.long ? 'course-budget--over' : undefined}>
-          {long}
-          {episode.budget?.long ? ` of ${episode.budget.long}` : ''} speak in the course
+        <span className={episode.budget?.course && inCourse > episode.budget.course ? 'course-budget--over' : undefined}>
+          {inCourse}
+          {episode.budget?.course ? ` of ${episode.budget.course}` : ''} speak in the course
         </span>
         {' · '}
-        <span className={episode.budget?.short && short > episode.budget.short ? 'course-budget--over' : undefined}>
-          {short}
-          {episode.budget?.short ? ` of ${episode.budget.short}` : ''} in the clip
+        <span className={episode.budget?.video && inVideo > episode.budget.video ? 'course-budget--over' : undefined}>
+          {inVideo}
+          {episode.budget?.video ? ` of ${episode.budget.video}` : ''} in the video
         </span>
       </p>
       <CourseEpisodeWarnings document={document} episode={episode} direction={direction} />
@@ -90,18 +91,18 @@ export function CourseEpisodePanel({ document, episode, direction, nodeIds, sele
               <section className="course-panel__section" aria-label={`The move ${moveLabel(document, node)}`}>
                 <h3>{moveLabel(document, node)}</h3>
                 <div className="course-ply__ticks" role="group" aria-label="Where it speaks">
-                  <button type="button" className="course-ply__tick" aria-pressed={Boolean(ply?.long)} onClick={() => change({ long: !ply?.long })}>
+                  <button type="button" className="course-ply__tick" aria-pressed={Boolean(ply?.course)} onClick={() => change({ course: !ply?.course })}>
                     In the course
                   </button>
-                  <button type="button" className="course-ply__tick" aria-pressed={Boolean(ply?.short)} onClick={() => change({ short: !ply?.short })}>
-                    In the clip
+                  <button type="button" className="course-ply__tick" aria-pressed={Boolean(ply?.video)} onClick={() => change({ video: !ply?.video })}>
+                    In the video
                   </button>
                 </div>
                 <label className="course-field">
                   <span>What the coach says</span>
                   <textarea rows={4} value={ply?.text ?? ''} onChange={(event) => change({ text: event.target.value })} />
                 </label>
-                {ply?.short && <ClipLineFields ply={ply} onChange={change} />}
+                {ply?.video && <VideoLineFields ply={ply} onChange={change} />}
                 <Arrows arrows={ply?.arrows ?? []} drawnArrows={drawnArrows} onChange={(arrows) => change({ arrows })} />
               </section>
             ) : (
@@ -141,7 +142,7 @@ export function CourseEpisodePanel({ document, episode, direction, nodeIds, sele
           </section>
         )}
 
-        {tab === 'clip' && <ClipScript document={document} episode={episode} onChange={onChange} />}
+        {tab === 'video' && <VideoScript document={document} episode={episode} />}
 
         {tab === 'ai' && aiWriter}
       </div>
@@ -149,9 +150,9 @@ export function CourseEpisodePanel({ document, episode, direction, nodeIds, sele
   );
 }
 
-/** A clip move: its own shorter line when it needs one, and the caption. */
-function ClipLineFields({ ply, onChange }: { ply: CoursePly; onChange: (patch: Partial<Omit<CoursePly, 'nodeId'>>) => void }): ReactNode {
-  const [own, setOwn] = useState(ply.clipText !== undefined);
+/** A video move: its own line when it needs one, and the caption. */
+function VideoLineFields({ ply, onChange }: { ply: CoursePly; onChange: (patch: Partial<Omit<CoursePly, 'nodeId'>>) => void }): ReactNode {
+  const [own, setOwn] = useState(ply.say !== undefined);
   return (
     <div className="course-ply__clip">
       <label className="course-ply__own">
@@ -160,20 +161,20 @@ function ClipLineFields({ ply, onChange }: { ply: CoursePly; onChange: (patch: P
           checked={own}
           onChange={(event) => {
             setOwn(event.target.checked);
-            onChange({ clipText: event.target.checked ? (ply.clipText ?? ply.text) : undefined });
+            onChange({ say: event.target.checked ? (ply.say ?? ply.text) : undefined });
           }}
         />
-        A different line for the clip
+        A different line for the video
       </label>
       {own && (
         <label className="course-field">
-          <span>The clip says</span>
-          <textarea rows={2} value={ply.clipText ?? ''} onChange={(event) => onChange({ clipText: event.target.value })} />
+          <span>The video says</span>
+          <textarea rows={2} value={ply.say ?? ''} onChange={(event) => onChange({ say: event.target.value })} />
         </label>
       )}
       <label className="course-field">
         <span>Caption</span>
-        <input value={ply.caption ?? ''} placeholder={clipCaption({ ...ply, caption: undefined })} onChange={(event) => onChange({ caption: event.target.value || undefined })} />
+        <input value={ply.caption ?? ''} placeholder={videoCaption({ ...ply, caption: undefined })} onChange={(event) => onChange({ caption: event.target.value || undefined })} />
       </label>
     </div>
   );
@@ -208,54 +209,28 @@ function Arrows({ arrows, drawnArrows, onChange }: { arrows: CourseArrow[]; draw
   );
 }
 
-/** The clip's script for this episode: the opening card, then each clip move
- * with what it says and shows, and the rough length. */
-function ClipScript({ document, episode, onChange }: { document: CourseDocument; episode: CourseEpisode; onChange: (episode: CourseEpisode) => void }): ReactNode {
+/** This episode's part of the YouTube video: each move that speaks, with
+ * what it says and shows, and the rough length. */
+function VideoScript({ document, episode }: { document: CourseDocument; episode: CourseEpisode }): ReactNode {
   const byId = new Map(document.nodes.map((node) => [node.id, node]));
-  const clipPlies = episode.plies.filter((ply) => ply.short);
-  const withoutOpener = (): CourseEpisode => {
-    const next = { ...episode };
-    delete next.opener;
-    return next;
-  };
+  const videoPlies = episode.plies.filter((ply) => ply.video);
   return (
-    <section className="course-panel__section" aria-label="The clip's script">
-      <p className="meta">
-        About {clipSecondsOf(episode)} s{document.clipSeconds ? ` (the whole clip aims at ${document.clipSeconds} s)` : ''}. Tick a move “In the clip” on the Moves tab to add it.
-      </p>
-      {episode.opener ? (
-        <div className="course-script__opener">
-          <label className="course-field">
-            <span>Opening card: the coach says</span>
-            <textarea rows={2} value={episode.opener.say} onChange={(event) => episode.opener && onChange({ ...episode, opener: { ...episode.opener, say: event.target.value } })} />
-          </label>
-          <label className="course-field">
-            <span>On screen</span>
-            <input value={episode.opener.caption} onChange={(event) => episode.opener && onChange({ ...episode, opener: { ...episode.opener, caption: event.target.value } })} />
-          </label>
-          <button type="button" className="btn-ghost" onClick={() => onChange(withoutOpener())}>
-            Remove the opening card
-          </button>
-        </div>
-      ) : (
-        <button type="button" className="btn-secondary" onClick={() => onChange({ ...episode, opener: { say: '', caption: '' } })}>
-          Add an opening card
-        </button>
-      )}
-      {clipPlies.length ? (
+    <section className="course-panel__section" aria-label="The video's script">
+      <p className="meta">About {videoSecondsOf(episode)} s of the video. Tick a move “In the video” on the Moves tab to add it.</p>
+      {videoPlies.length ? (
         <ol className="course-script">
-          {clipPlies.map((ply) => {
+          {videoPlies.map((ply) => {
             const node = byId.get(ply.nodeId);
             return (
               <li key={ply.nodeId}>
-                <strong>{node ? moveLabel(document, node) : ply.nodeId}</strong> {clipLine(ply) || <span className="meta">(no words)</span>}
-                <span className="meta"> «{clipCaption(ply)}»</span>
+                <strong>{node ? moveLabel(document, node) : ply.nodeId}</strong> {videoLine(ply) || <span className="meta">(no words)</span>}
+                <span className="meta"> «{videoCaption(ply)}»</span>
               </li>
             );
           })}
         </ol>
       ) : (
-        <p className="meta">No move speaks in the clip yet.</p>
+        <p className="meta">No move speaks in the video yet.</p>
       )}
     </section>
   );

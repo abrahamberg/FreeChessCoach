@@ -17,7 +17,7 @@ export interface CourseOutlineCheckInput {
   lines: readonly CourseLine[];
   dossier: CourseDossier;
   skeleton: CourseSkeleton | null;
-  /** How many nodes the clip may narrate in all. */
+  /** How many nodes the video may narrate in all. */
   maxNarrated: number;
 }
 
@@ -75,8 +75,8 @@ function episodeProblems(input: CourseOutlineCheckInput, byId: ReadonlyMap<strin
     problems.push(`episode ${episode.id} runs from ${episode.startNodeId} to ${episode.endNodeId}, which is not one line`);
     return null;
   }
-  if (episode.budgetLong > path.length || episode.budgetShort > path.length) {
-    problems.push(`episode ${episode.id} lets ${Math.max(episode.budgetLong, episode.budgetShort)} moves speak but has ${path.length}`);
+  if (episode.budgetCourse > path.length || episode.budgetVideo > path.length) {
+    problems.push(`episode ${episode.id} lets ${Math.max(episode.budgetCourse, episode.budgetVideo)} moves speak but has ${path.length}`);
   }
   const strays = episode.narratedNodeIds.filter((id) => !path.includes(id));
   if (strays.length) problems.push(`episode ${episode.id} narrates ${strays.join(', ')}, outside ${episode.startNodeId}–${episode.endNodeId}`);

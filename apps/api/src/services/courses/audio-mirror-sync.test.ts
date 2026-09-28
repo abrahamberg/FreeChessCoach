@@ -54,7 +54,7 @@ async function publishedCourse(slug: string, notes: string[]): Promise<{ id: str
     version: 1, kind: 'trap', title: 'T', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
     startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], hookOptions: [], clipLinks: {}, takeaways: ['a', 'b', 'c'],
     episodes: [{ id: 'e1', role: 'setup', focus: '', startNodeId: tree.nodes[0]!.id, endNodeId: tree.nodes[notes.length - 1]!.id, drillNodeIds: [],
-      plies: notes.map((text, index) => ({ nodeId: tree.nodes[index]!.id, text, arrows: [], long: true, short: false })) }]
+      plies: notes.map((text, index) => ({ nodeId: tree.nodes[index]!.id, text, arrows: [], course: true, video: false })) }]
   };
   const row = await coursesRepo.insert(db, { ownerId: owner.id, slug, kind: 'trap', title: 'T', sourcePgn: ENGLUND, direction: '', document });
   await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted');

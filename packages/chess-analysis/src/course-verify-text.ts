@@ -13,15 +13,10 @@ export interface EpisodeText {
 }
 
 export function episodeTexts(episode: CourseEpisode): EpisodeText[] {
-  const texts: EpisodeText[] = episode.opener
-    ? [
-        { where: 'the opening card', nodeId: null, text: episode.opener.say },
-        { where: 'the opening card’s caption', nodeId: null, text: episode.opener.caption }
-      ]
-    : [];
+  const texts: EpisodeText[] = [];
   for (const ply of episode.plies) {
     texts.push({ where: `the line on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.text });
-    if (ply.clipText) texts.push({ where: `the clip line on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.clipText });
+    if (ply.say) texts.push({ where: `the video line on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.say });
     if (ply.caption) texts.push({ where: `the caption on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.caption });
   }
   const quiz = episode.quiz;

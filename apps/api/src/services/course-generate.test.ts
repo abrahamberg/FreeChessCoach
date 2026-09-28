@@ -27,7 +27,7 @@ afterAll(async () => {
 const UNLOCK = 'Unlock your AI setup in Settings with your unlock phrase before coaching.';
 
 const planned = (id: string, role: string, startNodeId: string, endNodeId: string, narratedNodeIds: string[] = []): CourseOutlineEpisode => ({
-  id, role, focus: `${role} focus`, startNodeId, endNodeId, narratedNodeIds, answerNodeId: null, budgetLong: 1, budgetShort: 1
+  id, role, focus: `${role} focus`, startNodeId, endNodeId, narratedNodeIds, answerNodeId: null, budgetCourse: 1, budgetVideo: 1
 });
 
 /** Code's plan for the Englund trap (manual-episodes.ts), which the outline
@@ -41,13 +41,12 @@ function outline(withSafety = true): CourseOutline {
     planned('e5', 'punish', 'n13', 'n16', ['n16'])
   ];
   if (withSafety) episodes.push(planned('e6', 'safety', 'n11', 'n11'));
-  return { title: 'The Englund trap', promise: 'After this you can spring it.', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], clipSeconds: 45, chapters: [{ title: 'The trap', lineId: 'l1', episodes }] };
+  return { title: 'The Englund trap', promise: 'After this you can spring it.', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], chapters: [{ title: 'The trap', lineId: 'l1', episodes }] };
 }
 
 const script = (episodeId: string, nodeId: string, text = `Episode ${episodeId} in words.`): EpisodeScript => ({
   episodeId,
-  opener: null,
-  plies: [{ nodeId, text, clipText: `Look at this, ${episodeId}.`, caption: 'Look', arrows: [], long: true, short: true }],
+  plies: [{ nodeId, text, say: `Look at this, ${episodeId}.`, caption: 'Look', arrows: [], tempting: [], course: true, video: true }],
   quiz: null
 });
 
@@ -120,24 +119,24 @@ describe('runCourseGeneration', () => {
     const sent = prompts();
     expect(sent[5]).toContain('n16 (8... Qc1#)');
     expect(sent[5]).toContain('Must speak');
-    expect(sent[6]).toContain('8…Qc1# is a key move of this episode; let it speak in the course and the clip');
+    expect(sent[6]).toContain('8…Qc1# is a key move of this episode; let it speak in the course and the video');
     const row = await coursesRepo.findById(db, id);
     const e5 = row?.document?.episodes.find((episode) => episode.id === 'e5');
-    expect(e5?.budget).toEqual({ long: 1, short: 1, keyNodeIds: ['n16'] });
+    expect(e5?.budget).toEqual({ course: 1, video: 1, keyNodeIds: ['n16'] });
     expect(row?.generation?.warnings).toEqual([]);
   });
 
-  test('a course without a clip: no clip budget, no clip ticks, whatever the model says', async () => {
-    const id = await newCourse('course-only@example.com', { versions: { long: true, short: false } });
+  test('no YouTube video: no video budget, no video ticks, whatever the model says', async () => {
+    const id = await newCourse('reel-only@example.com', { videos: { video: false, reel: true } });
     const { deps, prompts } = depsWith([step(outline()), ...cleanEpisodes()]);
 
     await runCourseGeneration(deps, id);
 
-    expect(prompts()[0]).toContain('Make: the course only, no clip.');
+    expect(prompts()[0]).toContain('There is no YouTube video: every budgetVideo is 0.');
     const row = await coursesRepo.findById(db, id);
     const episodes = row?.document?.episodes ?? [];
-    expect(episodes.map((episode) => episode.budget?.short)).toEqual([0, 0, 0, 0, 0, 0]);
-    expect(episodes.flatMap((episode) => episode.plies).some((ply) => ply.short || ply.clipText || ply.caption)).toBe(false);
+    expect(episodes.map((episode) => episode.budget?.video)).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(episodes.flatMap((episode) => episode.plies).some((ply) => ply.video || ply.say || ply.caption)).toBe(false);
     expect(row?.generation).toMatchObject({ status: 'succeeded', warnings: [] });
   });
 
@@ -155,7 +154,7 @@ describe('runCourseGeneration', () => {
 
   test('two bad outlines fall back to the code skeleton, with a warning', async () => {
     const id = await newCourse('outline-fallback@example.com');
-    const empty = step({ episodeId: 'any', opener: null, plies: [], quiz: null });
+    const empty = step({ episodeId: 'any', plies: [], quiz: null });
     const skeletonEpisodes = Array.from({ length: 20 }, () => empty);
     const { deps } = depsWith([step(outline(false)), step(outline(false)), ...skeletonEpisodes]);
 
@@ -169,7 +168,7 @@ describe('runCourseGeneration', () => {
 
   test('a move with nothing on it is dropped, not sent back for repair', async () => {
     const id = await newCourse('empty-beat@example.com');
-    const blank = { nodeId: 'n1', text: '', clipText: null, caption: ' ', arrows: [], long: false, short: false };
+    const blank = { nodeId: 'n1', text: '', say: null, caption: ' ', arrows: [], course: false, video: false };
     const withBlank = { ...script('e2', 'n2'), plies: [blank, ...script('e2', 'n2').plies] };
     const [e1, , ...rest] = cleanEpisodes();
     const { deps, prompts } = depsWith([step(outline()), e1!, step(withBlank), ...rest]);
@@ -179,7 +178,7 @@ describe('runCourseGeneration', () => {
     const row = await coursesRepo.findById(db, id);
     expect(prompts()).toHaveLength(7);
     expect(row?.document?.episodes.find((episode) => episode.id === 'e2')?.plies).toEqual([
-      { nodeId: 'n2', text: 'Episode e2 in words.', clipText: 'Look at this, e2.', caption: 'Look', arrows: [], long: true, short: true }
+      { nodeId: 'n2', text: 'Episode e2 in words.', say: 'Look at this, e2.', caption: 'Look', arrows: [], course: true, video: true }
     ]);
     expect(row?.generation?.warnings).toEqual([]);
   });

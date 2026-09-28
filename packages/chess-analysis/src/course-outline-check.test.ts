@@ -6,7 +6,7 @@ import { buildCourseSkeleton } from './course-skeleton.js';
 import { analyseEnglund } from './course-test-fixtures.js';
 
 const episode = (id: string, role: string, startNodeId: string, endNodeId: string, extra: Partial<CourseOutlineEpisode> = {}): CourseOutlineEpisode => ({
-  id, role, focus: '', startNodeId, endNodeId, narratedNodeIds: [], answerNodeId: null, budgetLong: 1, budgetShort: 1, ...extra
+  id, role, focus: '', startNodeId, endNodeId, narratedNodeIds: [], answerNodeId: null, budgetCourse: 1, budgetVideo: 1, ...extra
 });
 
 function trapOutline(): CourseOutline {
@@ -15,7 +15,6 @@ function trapOutline(): CourseOutline {
     promise: '',
     hookOptions: ['a', 'b', 'c'],
     takeaways: ['a', 'b', 'c'],
-    clipSeconds: 45,
     chapters: [
       {
         title: 'The trap',
@@ -65,7 +64,7 @@ describe('checkCourseOutline', () => {
   });
 
   test('an episode may not let more moves speak than it has', () => {
-    const problems = check((outline) => (outline.chapters[0]!.episodes[0]!.budgetLong = 99));
+    const problems = check((outline) => (outline.chapters[0]!.episodes[0]!.budgetCourse = 99));
     expect(problems.some((problem) => /lets 99 moves speak but has \d+/.test(problem))).toBe(true);
   });
 

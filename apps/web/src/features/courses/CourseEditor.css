@@ -320,11 +320,6 @@
   height: 16px;
 }
 
-.course-script__opener {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 
 .course-script {
   display: flex;

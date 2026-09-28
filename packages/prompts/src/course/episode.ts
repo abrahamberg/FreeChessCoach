@@ -1,14 +1,14 @@
 import { courseNodePath, renderCourseDossier, type CourseDossier } from '@freechesscoach/chess-analysis';
 import type { CourseOutline, CourseOutlineEpisode } from '@freechesscoach/shared';
 import { courseBudget, episodeWordBudget } from './budget.js';
-import { buildCourseSystemPrompt, nodeLabel, promptVersions, type CourseMessages, type CoursePromptContext } from './context.js';
+import { buildCourseSystemPrompt, nodeLabel, promptVideos, type CourseMessages, type CoursePromptContext } from './context.js';
 
 export const EPISODE_SCRIPT_JSON_SCHEMA = `{
   "episodeId": string,
-  "opener": { "say": string, "caption": string } | null (the clip's opening card, a hook's only),
-  "plies": [{ "nodeId": string, "text": string, "clipText": string | null, "caption": string | null,
-    "arrows": [{ "from": square, "to": square, "kind": "best" | "threat" | "idea" }],
-    "long": boolean (speaks in the course), "short": boolean (speaks in the clip) }] (in move order,
+  "plies": [{ "nodeId": string, "text": string (the course's note), "say": string | null (the video's own line, when it differs),
+    "caption": string | null, "arrows": [{ "from": square, "to": square, "kind": "best" | "threat" | "idea" }],
+    "tempting": [{ "san": string, "why": string }] (moves that look right here and fail, from the dossier's tempting moves only),
+    "course": boolean (speaks in the course), "video": boolean (speaks in the YouTube video) }] (in move order,
     only the moves that speak or carry arrows),
   "quiz": { "answerNodeId": string, "prompt": string, "hint": string (points at the target, never names the move),
     "reveal": string (names the move and says in one sentence why it works) } | null
@@ -34,7 +34,7 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
   const budget = courseBudget(context.kind, context.persona);
   const words = episodeWordBudget(budget, outline, episodeId);
   const quizLine = episode.answerNodeId
-    ? `\nQuiz: the answer is ${episode.answerNodeId}. The app shows the position before it, says quiz.prompt and pauses ${budget.pauseSeconds}s; the clip's moves start at the answer and reveal it.`
+    ? `\nQuiz: the answer is ${episode.answerNodeId}. The app shows the position before it, says quiz.prompt and pauses ${budget.pauseSeconds}s; the video's moves start at the answer and reveal it.`
     : '\nQuiz: none in this episode, so "quiz" is null.';
   const sections = [
     `COURSE\nTitle: ${outline.title}\nPromise: ${outline.promise}`,
@@ -82,18 +82,17 @@ function renderOutline(outline: CourseOutline, current: string): string {
     .join('\n');
 }
 
-/** The budget for the versions this course makes (Phase 91), code's key
+/** The budget for the course and the video (§13.1), code's key
  * moves (the quiz answer, a mate, a trap's bait and end: they speak in every
- * version made, and the budget counts them), and the clip's words. */
+ * version made, and the budget counts them), and the video's words. */
 function speakingLines(context: CoursePromptContext, episode: CourseOutlineEpisode, words: { wordsPerEpisode: number; wordsPerBeat: number }): string {
-  const versions = promptVersions(context);
+  const video = promptVideos(context).video;
   const keys = episode.keyNodeIds ?? [];
-  const lines: string[] = [];
-  if (versions.long && versions.short) lines.push(`Speaking budget: at most ${episode.budgetLong} moves with "long": true, at most ${episode.budgetShort} with "short": true.`);
-  else if (versions.long) lines.push(`This course has no clip: "short" is false on every move, "clipText", "caption" and "opener" are null.`, `Speaking budget: at most ${episode.budgetLong} moves with "long": true.`);
-  else lines.push(`This is a clip only: "long" is false on every move, and "text" is what the clip says.`, `Speaking budget: at most ${episode.budgetShort} moves with "short": true.`);
-  const ticks = [versions.long && '"long": true', versions.short && '"short": true'].filter(Boolean).join(' and ');
+  const lines: string[] = video
+    ? [`Speaking budget: at most ${episode.budgetCourse} moves with "course": true, at most ${episode.budgetVideo} with "video": true.`]
+    : [`There is no YouTube video: "video" is false on every move, "say" and "caption" are null.`, `Speaking budget: at most ${episode.budgetCourse} moves with "course": true.`];
+  const ticks = video ? '"course": true and "video": true' : '"course": true';
   if (keys.length) lines.push(`Must speak, ${ticks}: ${keys.map((id) => nodeLabel(context, id)).join(', ')}. These are the moves the episode is for; the budget counts them.`);
-  if (versions.short) lines.push(`Clip words: at most ${words.wordsPerEpisode} spoken in this episode's clip (the opener included), at most ${words.wordsPerBeat} per move; captions at most 6 words.`);
+  if (video) lines.push(`Video words: at most ${words.wordsPerEpisode} spoken in this episode's part of the video, at most ${words.wordsPerBeat} per move; captions at most 6 words.`);
   return lines.join('\n');
 }

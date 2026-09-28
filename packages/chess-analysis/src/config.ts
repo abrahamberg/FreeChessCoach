@@ -468,16 +468,18 @@ export const CONFIG = {
     maxCriticalNoteSentences: 4,
     /** A reveal says why the answer works, not just the move (gemma wrote "6... Bb4"). */
     minRevealWords: 6,
-    /** §6.3 clip budgets. Spoken words per second at Kokoro speed 1, with
-     * room left for silent moves, quiz pauses and the end card; scaled by
-     * the coach's `PERSONA_SPEECH_SPEED`. */
+    /** §13.4 the YouTube video's budgets. Spoken words per second at Kokoro
+     * speed 1, with room left for moves, tempting moves played out and the
+     * cards; scaled by the coach's `PERSONA_SPEECH_SPEED`. */
     wordsPerSecond: 2,
-    clipSeconds: { trap: 60, opening: 600, tactics: 180, puzzle: 60, master_game: 300 },
+    videoSeconds: { trap: 300, opening: 720, tactics: 480, puzzle: 300, master_game: 720 },
+    /** §13.3 the reel's length. */
+    reelSeconds: { min: 30, max: 45 },
     hookWords: 12,
     maxWordsPerBeat: 30,
     quizPauseSeconds: 3,
-    /** An opening reel narrates at most one move per this many seconds. */
-    secondsPerNarratedMove: 6,
+    /** The video narrates at most one move per this many seconds. */
+    secondsPerNarratedMove: 12,
     /** §8 note audio uploads: a WAV at 24 kHz mono is ~48 KB a second, so
      * one note is at most ~30 s and a course's notes ~10 minutes. */
     maxNoteAudioBytes: 1_500_000,

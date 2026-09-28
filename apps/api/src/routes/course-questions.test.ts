@@ -33,7 +33,7 @@ const document: CourseDocument = {
   startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], hookOptions: [], clipLinks: {}, takeaways: ['A.', 'B.', 'C.'],
   episodes: [{
     id: 'e1', role: 'setup', focus: '', startNodeId: id(1), endNodeId: id(6), drillNodeIds: [],
-    plies: [{ nodeId: id(2), text: 'The Englund Gambit.', arrows: [], long: true, short: false }, { nodeId: id(6), text: 'The queen eyes b2.', arrows: [], long: true, short: false }]
+    plies: [{ nodeId: id(2), text: 'The Englund Gambit.', arrows: [], course: true, video: false }, { nodeId: id(6), text: 'The queen eyes b2.', arrows: [], course: true, video: false }]
   }]
 };
 

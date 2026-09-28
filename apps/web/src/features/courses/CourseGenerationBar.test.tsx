@@ -43,7 +43,7 @@ describe('CourseGenerationBar', () => {
   });
 
   test('a failed run with an outline shows its error and offers to resume', () => {
-    const outline = { title: 't', promise: '', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], clipSeconds: 45, chapters: [] };
+    const outline = { title: 't', promise: '', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], chapters: [] };
     renderBar({ ...generation, status: 'failed', step: null, error: 'Unlock your AI setup in Settings.', outline });
 
     expect(screen.getByRole('alert').textContent).toBe('Unlock your AI setup in Settings.');

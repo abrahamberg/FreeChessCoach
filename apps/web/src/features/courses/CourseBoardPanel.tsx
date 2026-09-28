@@ -13,7 +13,7 @@ export interface CourseBoardPanelProps {
   /** The selected move's note arrows, shown on the board. */
   arrows: CourseArrow[];
   onDrawnArrows: (arrows: BoardArrow[]) => void;
-  /** The episode's moves: the chips mark which speak in the course and the clip. */
+  /** The episode's moves: the chips mark which speak in the course and the video. */
   plies?: readonly CoursePly[];
 }
 
@@ -64,14 +64,14 @@ export function CourseBoardPanel({ document, nodeIds, selectedNodeId, onSelectNo
               onClick={() => onSelectNode(nodeId)}
             >
               {moveLabel(document, node)}
-              {ply?.long && (
+              {ply?.course && (
                 <span className="course-chip__mark course-chip__mark--long" title="Speaks in the course">
                   <span className="visually-hidden">, in the course</span>
                 </span>
               )}
-              {ply?.short && (
-                <span className="course-chip__mark course-chip__mark--short" title="Speaks in the clip">
-                  <span className="visually-hidden">, in the clip</span>
+              {ply?.video && (
+                <span className="course-chip__mark course-chip__mark--short" title="Speaks in the video">
+                  <span className="visually-hidden">, in the video</span>
                 </span>
               )}
             </button>

@@ -1,6 +1,6 @@
 import { verifyCourseEpisode, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
 import { buildCourseEpisodeMessages, courseBudget, episodeWordBudget } from '@freechesscoach/prompts';
-import { courseVersions, EpisodeScriptSchema, type CourseEpisode, type CourseOutline, type CourseOutlineEpisode, type CourseWarning, type EpisodeScript } from '@freechesscoach/shared';
+import { courseVideos, EpisodeScriptSchema, type CourseEpisode, type CourseOutline, type CourseOutlineEpisode, type CourseWarning, type EpisodeScript } from '@freechesscoach/shared';
 import { learnerNodes } from './generate-outline.js';
 import type { CourseModelCall, GenerationInputs } from './generation-inputs.js';
 
@@ -75,24 +75,24 @@ function plannedEpisode(outline: CourseOutline, episodeId: string): CourseOutlin
  * anyway. */
 function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: string, script: EpisodeScript): CourseEpisode {
   const planned = plannedEpisode(outline, episodeId);
-  // Only the versions the creator asked for (Phase 91); they add the other by hand.
-  const versions = courseVersions(inputs.document);
+  // The course always; the video only when the course makes one (§13.1).
+  const video = courseVideos(inputs.document).video;
   return {
     id: planned.id,
     role: planned.role,
     focus: planned.focus,
     startNodeId: planned.startNodeId,
     endNodeId: planned.endNodeId,
-    ...(versions.short && script.opener && (script.opener.say.trim() || script.opener.caption.trim()) ? { opener: script.opener } : {}),
     plies: script.plies
-      .map((ply) => ({ ...ply, long: versions.long && ply.long, short: versions.short && ply.short }))
-      .filter((ply) => ply.long || ply.short || ply.text.trim() || ply.arrows.length)
-      .map(({ clipText, caption, ...ply }) => ({
+      .map((ply) => ({ ...ply, video: video && ply.video }))
+      .filter((ply) => ply.course || ply.video || ply.text.trim() || ply.arrows.length || ply.tempting.length)
+      .map(({ say, caption, tempting, ...ply }) => ({
         ...ply,
-        ...(versions.short && clipText?.trim() ? { clipText } : {}),
-        ...(versions.short && caption?.trim() ? { caption } : {})
+        ...(video && say?.trim() ? { say } : {}),
+        ...(video && caption?.trim() ? { caption } : {}),
+        ...(tempting.length ? { tempting } : {})
       })),
-    budget: { long: planned.budgetLong, short: planned.budgetShort, ...(planned.keyNodeIds?.length ? { keyNodeIds: planned.keyNodeIds } : {}) },
+    budget: { course: planned.budgetCourse, video: planned.budgetVideo, ...(planned.keyNodeIds?.length ? { keyNodeIds: planned.keyNodeIds } : {}) },
     ...(script.quiz ? { quiz: script.quiz } : {}),
     drillNodeIds: learnerNodes(inputs, planned.startNodeId, planned.endNodeId)
   };

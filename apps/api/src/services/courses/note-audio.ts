@@ -20,7 +20,7 @@ export function noteTextHash(text: string): string {
  * records, never uploaded. */
 export function noteHashes(document: CourseDocument): { episodeId: string; nodeId: string; hash: string }[] {
   return document.episodes.flatMap((episode) =>
-    episode.plies.flatMap((ply) => (ply.long && ply.text.trim() ? [{ episodeId: episode.id, nodeId: ply.nodeId, hash: noteTextHash(ply.text) }] : []))
+    episode.plies.flatMap((ply) => (ply.course && ply.text.trim() ? [{ episodeId: episode.id, nodeId: ply.nodeId, hash: noteTextHash(ply.text) }] : []))
   );
 }
 

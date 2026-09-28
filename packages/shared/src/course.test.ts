@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { bandForRating, clipCaption, clipLine, CourseDocumentSchema, levelCode, type CourseDocument } from './course.js';
+import { bandForRating, videoCaption, videoLine, CourseDocumentSchema, levelCode, type CourseDocument } from './course.js';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -34,8 +34,7 @@ function minimalDocument(): CourseDocument {
         focus: 'White grabs the centre.',
         startNodeId: 'n1',
         endNodeId: 'n1',
-        opener: { say: 'Watch this.', caption: 'Watch' },
-        plies: [{ nodeId: 'n1', text: 'The main move.', arrows: [], long: true, short: false }],
+        plies: [{ nodeId: 'n1', text: 'The main move.', arrows: [], course: true, video: false }],
         drillNodeIds: []
       }
     ],
@@ -73,19 +72,19 @@ describe('CourseDocumentSchema', () => {
   });
 });
 
-describe('the clip line, caption and level', () => {
-  const ply = { nodeId: 'n1', text: 'The knight lands on f7. It forks queen and rook, and White is lost.', arrows: [], long: true, short: true };
+describe('the video line, caption and level', () => {
+  const ply = { nodeId: 'n1', text: 'The knight lands on f7. It forks queen and rook, and White is lost.', arrows: [], course: true, video: true };
 
-  test('the clip says its own line when it has one, else the course text', () => {
-    expect(clipLine(ply)).toBe(ply.text);
-    expect(clipLine({ ...ply, clipText: 'Fork!' })).toBe('Fork!');
-    expect(clipLine({ ...ply, clipText: '  ' })).toBe(ply.text);
+  test('the video says its own line when it has one, else the course text', () => {
+    expect(videoLine(ply)).toBe(ply.text);
+    expect(videoLine({ ...ply, say: 'Fork!' })).toBe('Fork!');
+    expect(videoLine({ ...ply, say: '  ' })).toBe(ply.text);
   });
 
   test('the caption is set, or the line’s first sentence cut at a word', () => {
-    expect(clipCaption(ply)).toBe('The knight lands on f7.');
-    expect(clipCaption({ ...ply, caption: 'Nf7!' })).toBe('Nf7!');
-    expect(clipCaption({ ...ply, text: 'A very long first sentence that keeps going well past what fits on the screen at once' }, 30)).toBe('A very long first sentence…');
+    expect(videoCaption(ply)).toBe('The knight lands on f7.');
+    expect(videoCaption({ ...ply, caption: 'Nf7!' })).toBe('Nf7!');
+    expect(videoCaption({ ...ply, text: 'A very long first sentence that keeps going well past what fits on the screen at once' }, 30)).toBe('A very long first sentence…');
   });
 
   test('a level reads 1200-01 and gives the prompts their band', () => {

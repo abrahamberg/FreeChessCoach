@@ -7,7 +7,7 @@ import {
 } from '@freechesscoach/chess-analysis';
 import {
   bandForRating,
-  defaultCourseVersions,
+  defaultCourseVideos,
   CreateCourseRequestSchema,
   type CourseDocument,
   type CourseGeneration,
@@ -70,7 +70,7 @@ export function draftFromIntake(intake: CourseIntake, order = 1): CourseDocument
     levelBand: intake.rating === undefined ? intake.levelBand : bandForRating(intake.rating),
     coachPersona: intake.coachPersona,
     ...(intake.rating === undefined ? {} : { level: { rating: intake.rating, order: Math.min(Math.max(order, 1), 99) } }),
-    versions: intake.versions ?? defaultCourseVersions(intake.kind),
+    videos: intake.videos ?? defaultCourseVideos(intake.kind),
     startFen: tree.startFen,
     nodes: tree.nodes,
     lines: tree.lines,

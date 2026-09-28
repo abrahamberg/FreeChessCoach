@@ -1698,13 +1698,16 @@ Commit: `feat(courses): one opening kind, and puzzles`
 `opener`, `clipText`, `short`, `versions`, `clipSeconds` (verifier,
 timeline, editor, player, pipeline, template), tests.
 
-- [ ] Ply: `text`, `say?`, `tempting: {san, why}[]`, `course`, `video`;
-  episode `budget: {course, video, keyNodeIds?}`; document `videos`,
-  `video?`, `reel?`. The intake's "Videos" choice (Reel, YouTube video,
+- [x] Ply: `text`, `say?`, `caption?`, `tempting?: {san, why}[]`, `course`,
+  `video`; episode `budget: {course, video, keyNodeIds?}`; document
+  `videos`, `video?`, `reel?`. The intake's "Videos" choice (Reel, YouTube video,
   Both; one is required, the kind preselects it per §13.2) replaces "What
-  to make". The course is always made.
-- [ ] The editor and player compile against it (the Video and Reel tabs
-  come in Phase 95; until then the Clip tab previews the video).
+  to make". The course is always made. (Done with the above.)
+- [x] The editor and player compile against it. The Clip tab is now the
+  Video tab (this episode's part of the video); the video opens on
+  `video.hook` in place of the episode openers (audio key `video:hook`).
+  The shared prompt block already describes the three products, since its
+  field names changed; the rest of 93.1 stays.
 
 Commit: `feat(courses): the course, the video and the reel in the document`
 

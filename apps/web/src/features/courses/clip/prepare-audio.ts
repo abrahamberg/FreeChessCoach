@@ -1,4 +1,4 @@
-import { clipLine, type CoachPersona, type CourseDocument } from '@freechesscoach/shared';
+import { videoLine, type CoachPersona, type CourseDocument } from '@freechesscoach/shared';
 import { resolveTtsClient } from '../../../tts/resolve-tts-client.js';
 import { translateChessNotationForSpeech } from '../../../tts/sanToSpokenText.js';
 import type { TtsClient } from '../../../tts/tts-client.js';
@@ -36,15 +36,16 @@ export type CourseVoice = (typeof COURSE_VOICES)[number];
 
 export const KOKORO_ONLY = 'Courses are voiced by Kokoro only: in the browser or on your local Kokoro server.';
 
-/** Everything the course's coach says, in document order: the clip's
- * opener and its moves' lines, the quiz prompt, then the course's lines. */
+/** Everything the course's coach says, in document order: the video's hook,
+ * then per episode the video's lines, the quiz prompt and the course's
+ * lines. */
 export function courseSpeeches(document: CourseDocument): CourseSpeech[] {
-  return document.episodes.flatMap((episode) => [
-    ...(episode.opener?.say.trim() ? [{ key: `opener:${episode.id}`, text: episode.opener.say }] : []),
-    ...episode.plies.flatMap((ply) => (ply.short && clipLine(ply) ? [{ key: `clip:${episode.id}:${ply.nodeId}`, text: clipLine(ply) }] : [])),
+  const hook = document.video?.hook.trim() ? [{ key: 'video:hook', text: document.video.hook }] : [];
+  return [...hook, ...document.episodes.flatMap((episode) => [
+    ...episode.plies.flatMap((ply) => (ply.video && videoLine(ply) ? [{ key: `clip:${episode.id}:${ply.nodeId}`, text: videoLine(ply) }] : [])),
     ...(episode.quiz?.prompt.trim() ? [{ key: `quiz:${episode.id}`, text: episode.quiz.prompt }] : []),
-    ...episode.plies.flatMap((ply) => (ply.long && ply.text.trim() ? [{ key: `note:${episode.id}:${ply.nodeId}`, text: ply.text }] : []))
-  ]);
+    ...episode.plies.flatMap((ply) => (ply.course && ply.text.trim() ? [{ key: `note:${episode.id}:${ply.nodeId}`, text: ply.text }] : []))
+  ])];
 }
 
 /** docs/courses.md §8, "all audio first, then record": synthesises every

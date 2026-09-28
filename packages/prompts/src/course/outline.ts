@@ -2,7 +2,7 @@ import { renderCourseDossier, type CourseSkeleton } from '@freechesscoach/chess-
 import { COURSE_ROLES } from '@freechesscoach/shared';
 import { CALIBRATION } from '../calibration.js';
 import { courseBudget } from './budget.js';
-import { buildCourseSystemPrompt, capitalise, lineMovetext, nodeLabel, promptVersions, type CourseMessages, type CoursePromptContext } from './context.js';
+import { buildCourseSystemPrompt, capitalise, lineMovetext, nodeLabel, promptVideos, type CourseMessages, type CoursePromptContext } from './context.js';
 import { episodeRange } from './playbooks.js';
 
 export const COURSE_OUTLINE_JSON_SCHEMA = `{
@@ -13,10 +13,9 @@ export const COURSE_OUTLINE_JSON_SCHEMA = `{
     "episodes": [{ "id": string ("e1", "e2" … across the whole course), "role": string, "focus": string,
       "startNodeId": string, "endNodeId": string, "narratedNodeIds": string[],
       "answerNodeId": string | null,
-      "budgetLong": number (moves that may speak in the course),
-      "budgetShort": number (moves that may speak in the clip) }] }],
-  "takeaways": string[3],
-  "clipSeconds": number (the clip's target length)
+      "budgetCourse": number (moves that may speak in the course),
+      "budgetVideo": number (moves that may speak in the YouTube video) }] }],
+  "takeaways": string[3]
 }`;
 
 /** The checks' problems with the previous outline (§6.4: sent back once). */
@@ -34,8 +33,7 @@ Kind: ${context.kind}
 Direction (from the creator): "${context.direction}"
 Learner side: ${capitalise(context.learnerSide)}
 Learner level: ${calibration.label} — ${calibration.description}
-Budgets: clip at most ${budget.seconds}s (clipSeconds), at most ${budget.words} spoken words in total,
-hook at most ${budget.hookWords} words, ${episodeRange(context)} episodes.
+Budgets: ${episodeRange(context)} episodes; the YouTube video about ${Math.round(budget.seconds / 60)} minutes, at most ${budget.words} spoken words in total.
 ${speakingBudgets(context, budget.narratedMax)}
 Episode roles: ${COURSE_ROLES[context.kind].join(', ')}.
 
@@ -53,19 +51,16 @@ ${COURSE_OUTLINE_JSON_SCHEMA}`;
   return { system: buildCourseSystemPrompt(context), user };
 }
 
-/** Phase 91: the planner budgets only the versions the creator asked for;
- * code sets the other version's budgets to 0 whatever the answer says. */
+/** §13.1: the course is always made; the video's budgets are 0 when there
+ * is no video, set by code whatever the answer says. */
 function speakingBudgets(context: CoursePromptContext, narratedMax: number): string {
-  const versions = promptVersions(context);
-  const long = `budgetLong is how many of its moves speak in the
+  const course = `budgetCourse is how many of its moves speak in the
 course (the moves a learner needs a word on: their key moves, and the opponent's
 where the plan changes)`;
-  const short = `budgetShort is how many speak in the clip. Across the
-whole clip, at most ${narratedMax} moves speak. A hook speaks over its opening
-card, so its budgetShort is 0`;
-  if (!versions.short) return `Make: the course only, no clip. Every budgetShort is 0.\nSpeaking budgets, per episode: ${long}. It may not exceed the episode's moves.`;
-  if (!versions.long) return `Make: the clip only, no course notes. Every budgetLong is 0.\nSpeaking budgets, per episode: ${short}. It may not exceed the episode's moves.`;
-  return `Make: the course and the clip.\nSpeaking budgets, per episode: ${long}; ${short}. Neither budget may exceed the episode's moves.`;
+  if (!promptVideos(context).video) return `Make: the course. There is no YouTube video: every budgetVideo is 0.\nSpeaking budgets, per episode: ${course}. It may not exceed the episode's moves.`;
+  const video = `budgetVideo is how many speak in the YouTube video: the important
+moves. Across the whole video, at most ${narratedMax} moves speak`;
+  return `Make: the course and the YouTube video.\nSpeaking budgets, per episode: ${course}; ${video}. Neither budget may exceed the episode's moves.`;
 }
 
 /** The episodes code would build, so a small model fills in words rather

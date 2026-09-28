@@ -60,8 +60,8 @@ describe('course prompts', () => {
 
     expect(user).toContain('l1 (Line A): 1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 Bxc3 8. Qxc3 Qc1#');
     expect(user).toContain('bait: n11 (6. Bc3)');
-    expect(user).toContain('Budgets: clip at most 60s (clipSeconds), at most 114 spoken words in total');
-    expect(user).toContain('budgetLong is how many of its moves speak in the\ncourse');
+    expect(user).toContain('Budgets: 6 episodes; the YouTube video about 5 minutes, at most 570 spoken words in total.');
+    expect(user).toContain('budgetCourse is how many of its moves speak in the\ncourse');
     expect(user).toContain('n16 8…Qc1#');
     expect(user).not.toContain('EPISODE PLAN');
   });
@@ -82,35 +82,34 @@ describe('course prompts', () => {
     expect([...dossier.matchAll(/^n(\d+) /gm)].map((match) => `n${match[1]}`)).toEqual(['n10', 'n11', 'n12']);
     expect(user).toContain('e3 bait, n11 to n11');
     expect(user).toContain('Every plies nodeId is one of: n11 (6. Bc3). n10 in the dossier is the move before, for context only: no line on it.');
-    expect(user).toContain('The app shows the position before it, says quiz.prompt and pauses 3s; the clip\'s moves start at the answer and reveal it');
-    expect(user).toContain('Speaking budget: at most 1 moves with "long": true, at most 1 with "short": true.');
+    expect(user).toContain('The app shows the position before it, says quiz.prompt and pauses 3s; the video\'s moves start at the answer and reveal it');
+    expect(user).toContain('Speaking budget: at most 1 moves with "course": true, at most 1 with "video": true.');
     expect(user).toContain('Say every line as the coach in VOICE would.');
     expect(buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e2' }).user).toContain('Quiz: none in this episode, so "quiz" is null.');
     expect(user).toContain('"mention the pin earlier"');
   });
 
-  test('the outline plans only the versions the creator asked for', () => {
+  test('the outline budgets the video only when there is one', () => {
     const both = buildCourseOutlineMessages(englundCourseContext()).user;
-    expect(both).toContain('Make: the course and the clip.');
-    const courseOnly = buildCourseOutlineMessages({ ...englundCourseContext(), versions: { long: true, short: false } }).user;
-    expect(courseOnly).toContain('Make: the course only, no clip. Every budgetShort is 0.');
-    expect(courseOnly).not.toContain('budgetShort is how many');
-    const clipOnly = buildCourseOutlineMessages({ ...englundCourseContext(), versions: { long: false, short: true } }).user;
-    expect(clipOnly).toContain('Make: the clip only, no course notes. Every budgetLong is 0.');
+    expect(both).toContain('Make: the course and the YouTube video.');
+    expect(both).toContain('budgetVideo is how many speak in the YouTube video');
+    const reelOnly = buildCourseOutlineMessages({ ...englundCourseContext(), videos: { video: false, reel: true } }).user;
+    expect(reelOnly).toContain('Make: the course. There is no YouTube video: every budgetVideo is 0.');
+    expect(reelOnly).not.toContain('budgetVideo is how many');
   });
 
-  test("an episode names code's key moves, and a course without a clip says so", () => {
+  test("an episode names code's key moves, and a course without a video says so", () => {
     const outline = structuredClone(ENGLUND_OUTLINE);
     const e3 = outline.chapters[0]!.episodes.find((episode) => episode.id === 'e3')!;
     e3.keyNodeIds = ['n11'];
     const both = buildCourseEpisodeMessages({ context: englundCourseContext(), outline, episodeId: 'e3' }).user;
-    expect(both).toContain('Must speak, "long": true and "short": true: n11 (6. Bc3).');
-    expect(both).toContain('Clip words: at most');
+    expect(both).toContain('Must speak, "course": true and "video": true: n11 (6. Bc3).');
+    expect(both).toContain('Video words: at most');
 
-    const courseOnly = buildCourseEpisodeMessages({ context: { ...englundCourseContext(), versions: { long: true, short: false } }, outline, episodeId: 'e3' }).user;
-    expect(courseOnly).toContain('This course has no clip: "short" is false on every move');
-    expect(courseOnly).toContain('Must speak, "long": true: n11 (6. Bc3).');
-    expect(courseOnly).not.toContain('Clip words');
+    const reelOnly = buildCourseEpisodeMessages({ context: { ...englundCourseContext(), videos: { video: false, reel: true } }, outline, episodeId: 'e3' }).user;
+    expect(reelOnly).toContain('There is no YouTube video: "video" is false on every move');
+    expect(reelOnly).toContain('Must speak, "course": true: n11 (6. Bc3).');
+    expect(reelOnly).not.toContain('Video words');
   });
 
   test('an outline retry lists the problems and the previous outline, and names the roles', () => {
@@ -128,13 +127,13 @@ describe('course prompts', () => {
     expect(user).toContain('{"episodeId":"e3"}');
   });
 
-  test("budgets follow the clip length and the coach's speaking speed", () => {
-    expect(courseBudget('trap', 'general').words).toBe(120);
-    expect(courseBudget('trap', 'scholar').words).toBe(102);
-    expect(courseBudget('trap', 'shark').words).toBe(132);
+  test("budgets follow the video's length and the coach's speaking speed", () => {
+    expect(courseBudget('trap', 'general').words).toBe(600);
+    expect(courseBudget('trap', 'scholar').words).toBe(510);
+    expect(courseBudget('trap', 'shark').words).toBe(660);
     const budget = courseBudget('trap', 'commander');
 
     expect(episodeWordBudget(budget, ENGLUND_OUTLINE, 'e1')).toEqual({ wordsPerBeat: 12, wordsPerEpisode: 12 });
-    expect(episodeWordBudget(budget, ENGLUND_OUTLINE, 'e2')).toEqual({ wordsPerBeat: 30, wordsPerEpisode: 57 });
+    expect(episodeWordBudget(budget, ENGLUND_OUTLINE, 'e2')).toEqual({ wordsPerBeat: 30, wordsPerEpisode: 285 });
   });
 });

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { MoveQualitySchema } from './analysis.js';
 import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
-import { CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseLevelSchema, CourseStatusSchema, CourseVersionsSchema } from './course.js';
+import { CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseLevelSchema, CourseStatusSchema, CourseVideosSchema } from './course.js';
 
 /** The intake form (docs/courses.md §5.3). `learnerSide` null lets code
  * infer it (§3); the route refuses when it can't. */
@@ -15,8 +15,9 @@ export const CreateCourseRequestSchema = z.object({
   /** Phase 90: the learner's target rating; it sets the band the prompts
    * write for, and the course takes the next place at that level ("1200-02"). */
   rating: z.number().int().min(400).max(2800).optional(),
-  /** Phase 91: what the planner makes; the kind's default when absent. */
-  versions: CourseVersionsSchema.optional()
+  /** §13.1: which videos to make besides the course; the kind's default
+   * when absent. */
+  videos: CourseVideosSchema.optional()
 });
 export type CreateCourseRequest = z.input<typeof CreateCourseRequestSchema>;
 
