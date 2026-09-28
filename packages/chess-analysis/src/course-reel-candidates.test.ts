@@ -6,12 +6,13 @@ import { analyseCourse, analyseEnglund, fakeEvals } from './course-test-fixtures
 import { parseCourseTree } from './course-tree.js';
 
 describe('reel candidates (§13.3)', () => {
-  test('the Englund: the mate first, then the trap’s answer, then the blunder that swings it; at most 6 moves before and 2 after', () => {
+  test('the Englund: the mate first, then the trap’s answer, then the blunder that swings it; at most 6 moves before and 2 after, or on to a mate', () => {
     const { tree, dossier } = analyseEnglund();
     const skeleton = buildCourseSkeleton({ kind: 'trap', tree, lines: courseLineGames(tree), dossier });
     expect(reelCandidates(tree, dossier, skeleton).map((each) => [each.id, each.reason, each.startNodeId, each.climaxNodeId, each.endNodeId, each.styles.join(' ')])).toEqual([
       ['r1', 'mate', 'n10', 'n16', 'n16', 'highlight puzzle promo'],
-      ['r2', 'trap', 'n6', 'n12', 'n14', 'highlight puzzle promo'],
+      // The trap's answer runs on to the mate, 4 moves later: the payoff.
+      ['r2', 'trap', 'n6', 'n12', 'n16', 'highlight puzzle promo'],
       // The blunder is not the move to find, so it is no puzzle.
       ['r3', 'swing', 'n5', 'n11', 'n13', 'highlight promo']
     ]);

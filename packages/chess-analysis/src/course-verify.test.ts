@@ -164,6 +164,11 @@ describe('verifyCourseEpisode', () => {
     ]);
   });
 
+  test("tempting moves: a why pasted from the analysis is not the coach's", () => {
+    const problems = verify((episode) => (first(episode).tempting = [{ san: 'Qg4?', why: 'answered by Qxg4 (White is much better)' }]));
+    expect(problems.map((problem) => problem.message)).toContain("why Qg4? fails on n11 copies the analysis: say in the coach's words what it hopes for and what goes wrong");
+  });
+
   test('key moves speak in every version the plan made', () => {
     expect(verify((episode) => ((first(episode).video = false), (episode.budget = { course: 1, video: 1, keyNodeIds: ['n11'] })))).toEqual([
       { code: 'key-moves', nodeId: 'n11', message: '6.Bc3 is a key move of this episode; let it speak in the video' }
@@ -193,6 +198,12 @@ describe('verifyCourseEpisode', () => {
   test('phrases: stock chatbot phrases', () => {
     expect(verify((episode) => (first(episode).say = "Let's dive in. Bc3 hits the queen."))).toEqual([
       { code: 'phrases', nodeId: 'n11', message: '"let\'s dive in" in the video line on n11 is a stock phrase' }
+    ]);
+  });
+
+  test('node ids: the coach names the move, never "n16"', () => {
+    expect(verify((episode) => (first(episode).text = 'Bc3 hits the queen, and n16 is coming.'))).toEqual([
+      { code: 'nodes', nodeId: 'n11', message: 'the line on n11 says "n16": name the move (8…Qc1#), never a node id' }
     ]);
   });
 

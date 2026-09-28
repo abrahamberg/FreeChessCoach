@@ -12,6 +12,7 @@ import { noopJobQueue } from '../jobs/queue.js';
 import { ConflictError, ValidationError } from '../lib/errors.js';
 import { runCourseGeneration, startCourseGeneration, writeCourseReel, type CourseGenerateDeps } from './course-generate.js';
 import { createCourse, GENERATION_STALE_MS, liveGeneration } from './courses.js';
+import { courseTreeOf } from './courses/generation-inputs.js';
 
 let testDb: TestDb;
 let db: Kysely<Database>;
@@ -44,9 +45,9 @@ function outline(withSafety = true): CourseOutline {
   return { title: 'The Englund trap', promise: 'After this you can spring it.', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], video: null, reel: null, chapters: [{ title: 'The trap', lineId: 'l1', episodes }] };
 }
 
-const script = (episodeId: string, nodeId: string, text = `Episode ${episodeId} in words.`): EpisodeScript => ({
+const script = (episodeId: string, nodeId: string, text = `In ${episodeId}, the words.`): EpisodeScript => ({
   episodeId,
-  plies: [{ nodeId, text, say: `Look at this, ${episodeId}.`, caption: 'Look', arrows: [], tempting: [], course: true, video: true }],
+  plies: [{ nodeId, text, say: `So, ${episodeId}.`, caption: 'Look', arrows: [], tempting: [], course: true, video: true }],
   quiz: null
 });
 
@@ -89,7 +90,7 @@ describe('runCourseGeneration', () => {
     expect(row?.generation).toMatchObject({ status: 'succeeded', done: 6, total: 6, error: null, finishedEpisodeIds: ['e1', 'e2', 'e3', 'e4', 'e5', 'e6'], warnings: [] });
     expect(row?.document?.title).toBe('The Englund trap');
     expect(row?.document?.chapters).toEqual([{ id: 'c1', title: 'The trap', lineId: 'l1', episodeIds: ['e1', 'e2', 'e3', 'e4', 'e5', 'e6'] }]);
-    expect(row?.document?.episodes.map((episode) => episode.plies[0]?.text)).toEqual(['e1', 'e2', 'e3', 'e4', 'e5', 'e6'].map((id) => `Episode ${id} in words.`));
+    expect(row?.document?.episodes.map((episode) => episode.plies[0]?.text)).toEqual(['e1', 'e2', 'e3', 'e4', 'e5', 'e6'].map((id) => `In ${id}, the words.`));
     expect(row?.document?.episodes[1]?.drillNodeIds).toEqual(['n2', 'n4', 'n6', 'n8', 'n10']);
     expect(row?.dossier?.nodes).toHaveLength(16);
 
@@ -173,6 +174,30 @@ describe('runCourseGeneration', () => {
     expect(row?.generation).toMatchObject({ status: 'succeeded', warnings: [] });
   });
 
+  test("tempting moves: the dossier's spelling and refutation; one it does not list at that move is dropped", async () => {
+    const id = await newCourse('tempting@example.com');
+    const row = await coursesRepo.findById(db, id);
+    const document = row!.document!;
+    const { dossier } = await englundDossier(courseTreeOf(document), document.learnerSide, row!.ownerId, document.kind);
+    const at = dossier.nodes.find((node) => ['n13', 'n14', 'n15', 'n16'].includes(node.nodeId) && node.tempting.length > 0)!;
+    const fact = at.tempting[0]!;
+    // As the first real run wrote them: the dossier's "?" kept, the "+" dropped.
+    const punish: EpisodeScript = {
+      episodeId: 'e5',
+      plies: [{ nodeId: at.nodeId, text: 'The trap closes.', say: null, caption: null, arrows: [], course: true, video: true, tempting: [
+        { san: `${fact.san.replace(/[+#]$/, '')}?`, why: 'It grabs material and lets the king breathe.' },
+        { san: 'Kh1', why: 'Not a move the engine looked at.' }
+      ] }],
+      quiz: null
+    };
+    const { deps } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), step(script('e3', 'n11')), step(quizScript()), step(punish), step(script('e6', 'n11'))]);
+
+    await runCourseGeneration(deps, id);
+
+    const ply = (await coursesRepo.findById(db, id))?.document?.episodes.find((episode) => episode.id === 'e5')?.plies.find((each) => each.nodeId === at.nodeId);
+    expect(ply?.tempting).toEqual([{ san: fact.san, why: 'It grabs material and lets the king breathe.', refutation: fact.refutation }]);
+  });
+
   test("an outline that changes code's plan is sent back with what to keep", async () => {
     const id = await newCourse('outline-plan@example.com');
     const stretched = outline();
@@ -211,7 +236,7 @@ describe('runCourseGeneration', () => {
     const row = await coursesRepo.findById(db, id);
     expect(prompts()).toHaveLength(7);
     expect(row?.document?.episodes.find((episode) => episode.id === 'e2')?.plies).toEqual([
-      { nodeId: 'n2', text: 'Episode e2 in words.', say: 'Look at this, e2.', caption: 'Look', arrows: [], course: true, video: true }
+      { nodeId: 'n2', text: 'In e2, the words.', say: 'So, e2.', caption: 'Look', arrows: [], course: true, video: true }
     ]);
     expect(row?.generation?.warnings).toEqual([]);
   });
@@ -229,7 +254,7 @@ describe('runCourseGeneration', () => {
     expect(sent[4]).toContain('Nd5 in the line on n11 is not in the analysis');
     expect(sent.filter((prompt) => prompt.includes('YOUR PREVIOUS ANSWER'))).toHaveLength(2);
     const row = await coursesRepo.findById(db, id);
-    expect(row?.document?.episodes.find((episode) => episode.id === 'e3')?.plies[0]?.text).toBe('Episode e3 in words.');
+    expect(row?.document?.episodes.find((episode) => episode.id === 'e3')?.plies[0]?.text).toBe('In e3, the words.');
     expect(row?.generation?.warnings).toEqual([{ episodeId: 'e6', code: 'moves', nodeId: 'n11', message: 'Nd5 in the line on n11 is not in the analysis' }]);
     expect(row?.generation?.status).toBe('succeeded');
     const e6 = (await courseAiCallsRepo.listForCourse(db, id)).filter((call) => call.episodeId === 'e6');

@@ -3,7 +3,7 @@ import { CONFIG } from './config.js';
 import type { CourseDossier } from './course-dossier.js';
 import type { CourseVerifyNode, CourseVerifyProblem } from './course-verify.js';
 import { episodeScope } from './course-verify-scope.js';
-import { moveProblems, numberProblems, phraseProblems, tacticWordProblems, type EpisodeText } from './course-verify-text.js';
+import { moveProblems, nodeIdProblems, numberProblems, phraseProblems, tacticWordProblems, type EpisodeText } from './course-verify-text.js';
 
 const MAX_HOOK_WORDS = 10;
 const MAX_BAND_WORDS = 5;
@@ -69,6 +69,7 @@ export function verifyCourseReel(input: CourseReelVerifyInput): CourseVerifyProb
     ...moveProblems(texts, scope, input.dossier !== null),
     ...(input.dossier ? tacticWordProblems(texts, scope) : []),
     ...numberProblems(texts, input.direction ?? ''),
+    ...nodeIdProblems(texts),
     ...phraseProblems(texts)
   ];
 }
@@ -111,7 +112,32 @@ export function verifyCourseFrame(document: CourseDocument): CourseVerifyProblem
       if (count > 2) problems.push({ code: 'voice', nodeId: null, message: `${count} lines in ${episode.id} start with "${word}": vary how the coach starts` });
     }
   }
+  problems.push(...catchphraseProblems(document));
   return problems;
+}
+
+/** Board words any coach starts with; not a catchphrase. */
+const BOARD_WORDS = new Set(['white', 'black', 'the', 'this', 'that', 'your', 'their', 'king', 'queen', 'rook', 'bishop', 'knight', 'pawn']);
+
+/** A word the coach starts sentences with in 3 or more lines across the
+ * course and the reel ("Execute." in five): a catchphrase, not a voice. */
+function catchphraseProblems(document: CourseDocument): CourseVerifyProblem[] {
+  const lines = [
+    ...document.episodes.flatMap((episode) => episode.plies.flatMap((ply) => [ply.course ? ply.text : '', ply.video && ply.say ? ply.say : ''])),
+    ...(document.reel?.beats.map((beat) => beat.say) ?? [])
+  ].filter((line) => line.trim());
+  const counts = new Map<string, number>();
+  for (const line of lines) {
+    // A SAN ("Bc3") starts with a capital too; only plain words count.
+    const starts = new Set(line.split(/(?<=[.!?])\s+/).map((sentence) => normalised(sentence).split(/\s+/)[0] ?? '').filter((word) => /^[a-z']+[,;:]?$/.test(word)));
+    for (const word of starts) {
+      const plain = word.replace(/[,;:]$/, '');
+      if (plain.length > 3 && !BOARD_WORDS.has(plain)) counts.set(plain, (counts.get(plain) ?? 0) + 1);
+    }
+  }
+  return [...counts]
+    .filter(([, count]) => count >= 3)
+    .map(([word, count]) => ({ code: 'voice' as const, nodeId: null, message: `${count} lines start a sentence with "${word}" across the course: a catchphrase, vary it` }));
 }
 
 function introProblems(text: string, where: string): CourseVerifyProblem[] {

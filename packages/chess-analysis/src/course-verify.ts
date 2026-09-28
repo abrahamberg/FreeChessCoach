@@ -3,7 +3,7 @@ import { CONFIG } from './config.js';
 import type { CourseDossier } from './course-dossier.js';
 import { arrowProblems, nodeProblems } from './course-verify-board.js';
 import { episodeScope, moveLabel, type CourseVerifyNode, type EpisodeScope } from './course-verify-scope.js';
-import { episodeTexts, moveProblems, numberProblems, phraseProblems, sameMove, sanTokens, tacticWordProblems } from './course-verify-text.js';
+import { episodeTexts, moveProblems, nodeIdProblems, numberProblems, phraseProblems, sameMove, sanTokens, tacticWordProblems } from './course-verify-text.js';
 
 export type { CourseVerifyNode } from './course-verify-scope.js';
 
@@ -55,6 +55,7 @@ export function verifyCourseEpisode(input: CourseVerifyInput): CourseVerifyProbl
     ...keyMoveProblems(episode, scope),
     ...(dossier ? temptingProblems(episode, scope) : []),
     ...quizProblems(episode, scope, dossier !== null),
+    ...nodeIdProblems(texts),
     ...phraseProblems(texts)
   ];
 }
@@ -100,9 +101,13 @@ function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: Cou
 function temptingProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVerifyProblem[] {
   return episode.plies.flatMap((ply) => {
     const known = new Set((scope.facts.get(ply.nodeId)?.tempting ?? []).flatMap((each) => sameMove(each.san)));
-    return (ply.tempting ?? [])
-      .filter((each) => !sameMove(each.san).some((form) => known.has(form)))
-      .map((each) => ({ code: 'tempting' as const, nodeId: ply.nodeId, message: `${each.san} on ${ply.nodeId} is not one of the analysis's tempting moves there` }));
+    return (ply.tempting ?? []).flatMap((each) => [
+      ...(sameMove(each.san).some((form) => known.has(form)) ? [] : [{ code: 'tempting' as const, nodeId: ply.nodeId, message: `${each.san} on ${ply.nodeId} is not one of the analysis's tempting moves there` }]),
+      // The first real run pasted the dossier's line as the why.
+      ...(/answered by|\((white|black) is /i.test(each.why)
+        ? [{ code: 'tempting' as const, nodeId: ply.nodeId, message: `why ${each.san} fails on ${ply.nodeId} copies the analysis: say in the coach's words what it hopes for and what goes wrong` }]
+        : [])
+    ]);
   });
 }
 

@@ -5,6 +5,9 @@ import type { CourseTree } from './course-tree.js';
 /** docs/courses.md §13.3: at most this many moves before the climax, and after it. */
 export const REEL_MOVES_BEFORE = 6;
 export const REEL_MOVES_AFTER = 2;
+/** A mate this close after the climax is the payoff: the reel runs to it
+ * (the first real run ended a trap's reel two moves before its mate). */
+export const REEL_MATE_REACH = 4;
 const MAX_CANDIDATES = 5;
 const SWING_WIN_DROP = 25;
 const BRILLIANT = new Set(['brilliant', 'great']);
@@ -27,8 +30,8 @@ export interface ReelCandidate {
 /**
  * §13.3: the reel's candidates, best first — a puzzle's solution, a mate, a
  * brilliant or great move, a trap's punishment, a blunder that swings the
- * game. Each spans at most 6 moves before its climax and 2 after, on the
- * climax's own line. The planner picks one; with none, there is no reel.
+ * game. Each spans at most 6 moves before its climax and 2 after (up to 4
+ * when that reaches a mate), on the climax's own line. The planner picks one; with none, there is no reel.
  */
 export function reelCandidates(tree: CourseTree, dossier: CourseDossier, skeleton: CourseSkeleton | null): ReelCandidate[] {
   const byId = new Map(tree.nodes.map((node) => [node.id, node]));
@@ -51,7 +54,9 @@ export function reelCandidates(tree: CourseTree, dossier: CourseDossier, skeleto
     .slice(0, MAX_CANDIDATES)
     .map(({ reason, climax }, index) => {
       const before = ancestors(byId, climax.nodeId).slice(-REEL_MOVES_BEFORE);
-      const after = descendants(tree, climax.nodeId, REEL_MOVES_AFTER);
+      const reach = descendants(tree, climax.nodeId, REEL_MATE_REACH);
+      const mate = reach.findIndex((nodeId) => byId.get(nodeId)?.san.endsWith('#'));
+      const after = mate >= 0 ? reach.slice(0, mate + 1) : reach.slice(0, REEL_MOVES_AFTER);
       const findable = reason === 'puzzle' || climax.quizEligible || climax.san.endsWith('#');
       return {
         id: `r${index + 1}`,

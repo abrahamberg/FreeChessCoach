@@ -310,8 +310,9 @@ position in the lesson. The dossier is your only source of chess facts.
 
 WHAT YOU MAY CLAIM
 1. Every move you mention must be in the dossier: a lesson move, an engine best
-   move or line, or a listed alternative. Refer to positions by node id (n12).
-   Never write a FEN.
+   move or line, or a listed alternative. The JSON's id fields name positions
+   by node id (n12); what the coach says or shows names the move (Bb4), never
+   a node id. Never write a FEN.
 2. Name a tactic (fork, pin, skewer, discovered attack, a mate pattern…) only at
    a node where the dossier lists it. Anywhere else, say what the move does with
    the dossier's board facts ("hits the queen and the rook at once").
@@ -343,9 +344,12 @@ THREE PRODUCTS FROM THE SAME MOVES
   that runs straight back into the first.
 - Most moves stay silent, above all in the video. The plan gives each episode
   a budget: at most that many moves speak in the course, and in the video.
-- "tempting" lists the moves that look right on a move and fail, each with
-  why, only from the dossier's tempting moves there. They show under the
-  course's note and are played out in the video.
+- "tempting" lists the moves that look right on a move and fail, only from
+  the dossier's tempting moves at that very move. Each "why" is the coach
+  talking: what the move hopes for and what goes wrong ("Taking the rook
+  looks free, but the knight takes the queen with it"), never the dossier's line or
+  verdict pasted. They show under the course's note and are played out in
+  the video.
 - Write moves in SAN (they are read aloud correctly). The board shows every
   move, so never narrate what the viewer can already see ("White moves the
   knight"); say why.
@@ -722,11 +726,12 @@ a message the creator can read.
 | Arrows | Each arrow is a legal move for either side in that position (the opponent's via `null-move-fen.ts`) or a threat the dossier lists. At most 2 per move. |
 | Budgets | At most `budget.course` plies ticked `course`, at most `budget.video` ticked `video`. A video budget of 0 was not planned: plies the creator ticks there by hand are not counted. |
 | Key moves | Each of `budget.keyNodeIds` speaks in the course, and in the video when it is planned ("8…Qc1# is a key move of this episode; let it speak in the video"). |
-| Tempting | Every `tempting[].san` is one of the dossier's tempting moves at that node. |
+| Tempting | Every `tempting[].san` is one of the dossier's tempting moves at that node (code drops any other when it merges the model's answer, and takes the dossier's spelling and refutation); a `why` that pastes the dossier's line ("answered by …", "(White is …)") goes back. |
+| Node ids | No line, caption, why, quiz text or reel text says a node id ("mate at n16"). |
 | Lengths | The video line (`say`, else `text`) within the words per move, the video within the episode's words; captions at most 6 words; course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
 | Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); the hint does not name it. |
 | Phrases | None of `BANNED_GENERIC_PHRASES`. |
-| Voice | Across the course: more than 2 lines in an episode starting with the same word, or one line repeated in two episodes. |
+| Voice | More than 2 lines in an episode starting with the same word; one line repeated in two episodes; a word that starts a sentence in 3 or more lines across the course and the reel ("Execute."), board words (White, the queen …) aside. |
 
 The video's packaging and the reel have their own checks (§13.9).
 
@@ -1085,7 +1090,8 @@ One idea. The planner picks the moment from code's candidates:
 - **the climax**: a brilliant or great move, a mate, a blunder that swings
   the game (`winDrop`), or a trap's punishment;
 - **the span**: from the position that sets up the idea (at most 6 moves
-  before the climax) to the climax, plus at most 2 moves after it;
+  before the climax) to the climax, plus at most 2 moves after it, or up
+  to 4 when that reaches a mate (the payoff);
 - **the style**:
   - `highlight`: plays the build-up fast, slows down at the climax;
   - `puzzle`: shows the position, asks ("White to play. Mate in 3."),

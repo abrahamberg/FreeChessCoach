@@ -38,7 +38,8 @@ export function sanTokens(text: string): string[] {
 
 /** The same move written with or without check marks or disambiguation. */
 export function sameMove(san: string): string[] {
-  const plain = san.replace(/[+#]+$/, '');
+  // "Qxc3+?" as the dossier writes a tempting move is Qxc3.
+  const plain = san.replace(/[+#?!]+$/, '');
   return [plain, plain.replace(/^([KQRBN])[a-h]?[1-8]?(x?[a-h][1-8])/, '$1$2')];
 }
 
@@ -123,6 +124,15 @@ export function numberProblems(texts: EpisodeText[], direction: string): CourseV
     ...[...text.matchAll(EVAL_NUMBER)].map((match) => match[0]),
     ...[...text.matchAll(PERCENT)].filter((match) => !directionPercents.has(match[1])).map((match) => match[0])
   ].map((found) => ({ code: 'numbers' as const, nodeId, message: `"${found}" in ${where} looks like an engine number` })));
+}
+
+/** Node ids are for the JSON's fields; a coach never says "n16" (the first
+ * run's hook: "a forced mate at n16"). */
+export function nodeIdProblems(texts: EpisodeText[]): CourseVerifyProblem[] {
+  return texts.flatMap(({ where, nodeId, text }) => {
+    const found = text.match(/\bn\d+\b/);
+    return found ? [{ code: 'nodes' as const, nodeId, message: `${where} says "${found[0]}": name the move (8…Qc1#), never a node id` }] : [];
+  });
 }
 
 export function phraseProblems(texts: EpisodeText[]): CourseVerifyProblem[] {

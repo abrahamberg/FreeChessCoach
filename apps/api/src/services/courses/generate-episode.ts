@@ -66,12 +66,17 @@ function plannedQuizProblems(outline: CourseOutline, episode: CourseEpisode): Co
 /** §13.5: each tempting move with the engine's answer from the dossier, for
  * the video to play out; one the dossier does not know keeps none (the
  * verifier flags it). */
+/** §13.5: the model picks which of the dossier's tempting moves to discuss
+ * and writes why; the move's spelling and its refutation are the dossier's.
+ * One the dossier does not list at that move is dropped: the first real run
+ * put 7…Qxa1 on a move where the engine never looked at it. */
 function withRefutations(inputs: GenerationInputs, nodeId: string, tempting: { san: string; why: string }[]): CourseTempting[] {
   const facts = inputs.dossier.nodes.find((node) => node.nodeId === nodeId)?.tempting ?? [];
-  const plain = (san: string): string => san.replace(/[+#]+$/, '');
-  return tempting.map((each) => {
-    const refutation = facts.find((fact) => plain(fact.san) === plain(each.san))?.refutation;
-    return refutation ? { ...each, refutation } : each;
+  // The dossier writes "Qxc3+?"; the model may keep the "?" or drop the "+".
+  const plain = (san: string): string => san.replace(/[+#?!]+$/, '');
+  return tempting.flatMap((each) => {
+    const fact = facts.find((candidate) => plain(candidate.san) === plain(each.san));
+    return fact ? [{ san: fact.san, why: each.why, refutation: fact.refutation }] : [];
   });
 }
 

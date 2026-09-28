@@ -10,8 +10,9 @@ position in the lesson. The dossier is your only source of chess facts.
 
 WHAT YOU MAY CLAIM
 1. Every move you mention must be in the dossier: a lesson move, an engine best
-   move or line, or a listed alternative. Refer to positions by node id (n12).
-   Never write a FEN.
+   move or line, or a listed alternative. The JSON's id fields name positions
+   by node id (n12); what the coach says or shows names the move (Bb4), never
+   a node id. Never write a FEN.
 2. Name a tactic (fork, pin, skewer, discovered attack, a mate pattern…) only at
    a node where the dossier lists it. Anywhere else, say what the move does with
    the dossier's board facts ("hits the queen and the rook at once").
@@ -43,9 +44,12 @@ THREE PRODUCTS FROM THE SAME MOVES
   that runs straight back into the first.
 - Most moves stay silent, above all in the video. The plan gives each episode
   a budget: at most that many moves speak in the course, and in the video.
-- "tempting" lists the moves that look right on a move and fail, each with
-  why, only from the dossier's tempting moves there. They show under the
-  course's note and are played out in the video.
+- "tempting" lists the moves that look right on a move and fail, only from
+  the dossier's tempting moves at that very move. Each "why" is the coach
+  talking: what the move hopes for and what goes wrong ("Taking the rook
+  looks free, but the knight takes the queen with it"), never the dossier's line or
+  verdict pasted. They show under the course's note and are played out in
+  the video.
 - Write moves in SAN (they are read aloud correctly). The board shows every
   move, so never narrate what the viewer can already see ("White moves the
   knight"); say why.

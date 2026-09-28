@@ -77,7 +77,8 @@ describe('verifyCourseFrame (§13.9)', () => {
       `"welcome back" in the video's hook: start on the idea, not an intro`,
       "The video's outro asks the viewer nothing: end on a question for the comments",
       '3 lines in e1 start with "execute": vary how the coach starts',
-      '"Execute the plan on n2." is said in e1 and again in e2'
+      '"Execute the plan on n2." is said in e1 and again in e2',
+      '4 lines start a sentence with "execute" across the course: a catchphrase, vary it'
     ]);
   });
 });
