@@ -11,9 +11,8 @@ import { CourseReviewCard } from './CourseReviewCard.js';
 import { ContinueSessionCard } from './ContinueSessionCard.js';
 import { continueItems } from './continueItems.js';
 import { GameCard } from './GameCard.js';
-import { ImportShortcuts } from './ImportShortcuts.js';
-import { PlayShortcuts } from './PlayShortcuts.js';
 import { PracticeAssignmentCard } from './PracticeAssignmentCard.js';
+import { StartShortcuts } from './StartShortcuts.js';
 import { useGameActions } from './useGameActions.js';
 import {
   useCoachNudge,
@@ -26,8 +25,8 @@ import { useCourseReviewsDue } from './useCourseReviewsDue.js';
 import { usePracticeAssignments } from './usePracticeAssignments.js';
 import './GamesPage.css';
 
-/** design.md §4.1: Games (home) — an "Import games" section, a "Play"
- * section (Play with Coach, Play a Bot), the coach area
+/** design.md §4.1: Games (home) — one card with Play (with Coach, a Bot)
+ * and Import games, the coach area
  * (CoachNudgeCard: the student's coach saying what to do next), then up to four
  * single-row sliding rails: Due today (course moves to review, only
  * when there are any), Practice (coach-assigned sets, only when there
@@ -49,7 +48,7 @@ export function GamesPage(): ReactNode {
   const courses = useCourseEnrollments().data?.items ?? [];
   const continuing = continueItems(inProgressGames, courses);
 
-  // Feeds ImportShortcuts' "N of 30 imported today" — the rolling-24h count
+  // Feeds StartShortcuts' "N of 30 today" — the rolling-24h count
   // the backend enforces, not "games with today's date".
   const importQuotaQuery = useImportQuota();
   const nudgeQuery = useCoachNudge();
@@ -65,8 +64,7 @@ export function GamesPage(): ReactNode {
   return (
     <div className="page games-page">
       <h1 className="visually-hidden">Games</h1>
-      <ImportShortcuts quota={importQuotaQuery.data?.daily} />
-      <PlayShortcuts persona={profileQuery.data?.coachPersona} />
+      <StartShortcuts persona={profileQuery.data?.coachPersona} quota={importQuotaQuery.data?.daily} />
       {nudge && (
         <CoachNudgeCard
           nudge={nudge}

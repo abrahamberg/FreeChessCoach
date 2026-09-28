@@ -977,8 +977,8 @@ the earlier choice to split playing from studying; the owner reversed it on
 (`NAV_DESTINATIONS`), `apps/web/src/components/Icon.tsx`.
 **Files:** those files; `App.tsx`.
 
-Status: done 2026-09-28. `games/PlayShortcuts.tsx` reuses the Import games
-card; the nav's Courses icon is `BookIcon`. Until 86.3, `/courses` is still
+Status: done 2026-09-28. Play and Import games share one compact card,
+`games/StartShortcuts.tsx` (the owner found two cards too tall); the nav's Courses icon is `BookIcon`. Until 86.3, `/courses` is still
 the creator's list, so a learner without the creator flag sees its error there.
 
 - [x] A "Play" section on the Games page under Import games: Play with Coach
