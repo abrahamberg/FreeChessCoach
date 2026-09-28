@@ -1,5 +1,5 @@
 import { inferLearnerSide, parseCourseTree } from '@freechesscoach/chess-analysis';
-import { bandForRating, COURSE_KINDS, type CoachPersona, type CourseKind } from '@freechesscoach/shared';
+import { bandForRating, COURSE_KINDS, defaultCourseVersions, type CoachPersona, type CourseKind, type CourseVersions } from '@freechesscoach/shared';
 import { useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
@@ -10,6 +10,7 @@ import { BAND_LABELS } from '../settings/BandSelect.js';
 import { CoachPersonaSelect } from '../settings/CoachPersonaSelect.js';
 import { useCreateCourse } from './courseApi.js';
 import { COURSE_KIND_INFO } from './courseKinds.js';
+import { CourseVersionsPicker } from './CourseVersionsPicker.js';
 import '../session/SessionPage.css';
 import './CourseEditor.css';
 import './CourseIntakePage.css';
@@ -39,6 +40,8 @@ export function CourseIntakePage(): ReactNode {
   const [kind, setKind] = useState<CourseKind>('trap');
   const [direction, setDirection] = useState('');
   const [rating, setRating] = useState(1200);
+  const [chosenVersions, setVersions] = useState<CourseVersions | null>(null);
+  const versions = chosenVersions ?? defaultCourseVersions(kind);
   const [side, setSide] = useState<SideChoice>('auto');
   const [persona, setPersona] = useState<CoachPersona | null>(null);
   const coachPersona = persona ?? profile.data?.coachPersona ?? 'general';
@@ -56,7 +59,7 @@ export function CourseIntakePage(): ReactNode {
   function submit(event: FormEvent): void {
     event.preventDefault();
     const learnerSide = side === 'auto' ? null : side;
-    create.mutate({ pgn, kind, direction, levelBand: bandForRating(rating), rating, learnerSide, coachPersona }, { onSuccess: (course) => navigate(`/studio/${course.id}/edit`) });
+    create.mutate({ pgn, kind, direction, levelBand: bandForRating(rating), rating, learnerSide, coachPersona, versions }, { onSuccess: (course) => navigate(`/studio/${course.id}/edit`) });
   }
 
   return (
@@ -120,6 +123,7 @@ export function CourseIntakePage(): ReactNode {
               );
             })}
           </div>
+          <CourseVersionsPicker value={versions} onChange={setVersions} />
         </section>
 
         <section className="card course-new__step" aria-labelledby="course-new-direction">

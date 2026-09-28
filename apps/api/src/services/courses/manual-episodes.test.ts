@@ -1,8 +1,9 @@
 import { Chess } from 'chess.js';
 import { buildCourseSkeleton, parseCourseTree } from '@freechesscoach/chess-analysis';
-import type { CourseDocument, CourseKind, EngineEval } from '@freechesscoach/shared';
+import type { CourseDocument, CourseKind, CourseVersions, EngineEval } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { buildCourseDossierFromEngine } from '../course-dossier.js';
+import { ENGLUND, englundDossier } from '../../../test/helpers/course-fixtures.js';
+import { buildCourseDossierFromEngine, type CourseDossierBuilder } from '../course-dossier.js';
 import { buildManualEpisodes } from './manual-episodes.js';
 
 /** Level everywhere: the engine's two lines are the first two legal moves. */
@@ -17,13 +18,14 @@ function levelEngine(fens: string[]): Promise<EngineEval[]> {
   );
 }
 
-async function manual(pgn: string, kind: CourseKind, learnerSide: 'white' | 'black') {
+async function manual(pgn: string, kind: CourseKind, learnerSide: 'white' | 'black', options: { engine?: CourseDossierBuilder; versions?: CourseVersions } = {}) {
   const tree = parseCourseTree(pgn);
   const document: CourseDocument = {
     version: 1, kind, title: 't', promise: '', learnerSide, levelBand: 'improving', coachPersona: 'general', startFen: tree.startFen,
-    nodes: tree.nodes, lines: tree.lines, chapters: [], episodes: [], takeaways: [], hookOptions: [], clipLinks: {}
+    nodes: tree.nodes, lines: tree.lines, chapters: [], episodes: [], takeaways: [], hookOptions: [], clipLinks: {},
+    ...(options.versions ? { versions: options.versions } : {})
   };
-  const { dossier, lines } = await buildCourseDossierFromEngine(tree, learnerSide, { analyzeGame: levelEngine });
+  const { dossier, lines } = options.engine ? await options.engine(tree, learnerSide, 'owner') : await buildCourseDossierFromEngine(tree, learnerSide, { analyzeGame: levelEngine });
   const lineGames = lines.map((analysis) => analysis.line);
   const skeleton = buildCourseSkeleton({ kind, tree, lines: lineGames, dossier });
   if (!skeleton) throw new Error('no skeleton');
@@ -56,5 +58,17 @@ describe('buildManualEpisodes', () => {
     const first = episodes[1]?.plies[0];
     expect(first?.text).toMatch(/^Centre first/);
     expect(first?.arrows).toEqual([{ from: 'd2', to: 'd4', kind: 'best' }]);
+  });
+
+  test('a trap: the mate speaks in the course and the clip; only the versions the course makes', async () => {
+    const both = await manual(ENGLUND, 'trap', 'black', { engine: englundDossier });
+    const punish = both.episodes.find((episode) => episode.role === 'punish');
+    expect(punish?.budget?.keyNodeIds).toEqual(['n16']);
+    expect(punish?.plies.find((ply) => ply.nodeId === 'n16')).toMatchObject({ long: true, short: true });
+
+    const courseOnly = await manual(ENGLUND, 'trap', 'black', { engine: englundDossier, versions: { long: true, short: false } });
+    expect(courseOnly.episodes.flatMap((episode) => episode.plies).some((ply) => ply.short)).toBe(false);
+    const clipOnly = await manual(ENGLUND, 'trap', 'black', { engine: englundDossier, versions: { long: false, short: true } });
+    expect(clipOnly.episodes.flatMap((episode) => episode.plies).some((ply) => ply.long)).toBe(false);
   });
 });

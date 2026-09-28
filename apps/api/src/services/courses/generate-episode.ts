@@ -1,6 +1,6 @@
 import { verifyCourseEpisode, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
 import { buildCourseEpisodeMessages, courseBudget, episodeWordBudget } from '@freechesscoach/prompts';
-import { EpisodeScriptSchema, type CourseEpisode, type CourseOutline, type CourseOutlineEpisode, type CourseWarning, type EpisodeScript } from '@freechesscoach/shared';
+import { courseVersions, EpisodeScriptSchema, type CourseEpisode, type CourseOutline, type CourseOutlineEpisode, type CourseWarning, type EpisodeScript } from '@freechesscoach/shared';
 import { learnerNodes } from './generate-outline.js';
 import type { CourseModelCall, GenerationInputs } from './generation-inputs.js';
 
@@ -75,17 +75,24 @@ function plannedEpisode(outline: CourseOutline, episodeId: string): CourseOutlin
  * anyway. */
 function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: string, script: EpisodeScript): CourseEpisode {
   const planned = plannedEpisode(outline, episodeId);
+  // Only the versions the creator asked for (Phase 91); they add the other by hand.
+  const versions = courseVersions(inputs.document);
   return {
     id: planned.id,
     role: planned.role,
     focus: planned.focus,
     startNodeId: planned.startNodeId,
     endNodeId: planned.endNodeId,
-    ...(script.opener && (script.opener.say.trim() || script.opener.caption.trim()) ? { opener: script.opener } : {}),
+    ...(versions.short && script.opener && (script.opener.say.trim() || script.opener.caption.trim()) ? { opener: script.opener } : {}),
     plies: script.plies
+      .map((ply) => ({ ...ply, long: versions.long && ply.long, short: versions.short && ply.short }))
       .filter((ply) => ply.long || ply.short || ply.text.trim() || ply.arrows.length)
-      .map(({ clipText, caption, ...ply }) => ({ ...ply, ...(clipText?.trim() ? { clipText } : {}), ...(caption?.trim() ? { caption } : {}) })),
-    budget: { long: planned.budgetLong, short: planned.budgetShort },
+      .map(({ clipText, caption, ...ply }) => ({
+        ...ply,
+        ...(versions.short && clipText?.trim() ? { clipText } : {}),
+        ...(versions.short && caption?.trim() ? { caption } : {})
+      })),
+    budget: { long: planned.budgetLong, short: planned.budgetShort, ...(planned.keyNodeIds?.length ? { keyNodeIds: planned.keyNodeIds } : {}) },
     ...(script.quiz ? { quiz: script.quiz } : {}),
     drillNodeIds: learnerNodes(inputs, planned.startNodeId, planned.endNodeId)
   };

@@ -83,10 +83,32 @@ export const CourseLevelSchema = z.object({
 });
 export type CourseLevel = z.infer<typeof CourseLevelSchema>;
 
+/** Which versions the planner makes: `long` the course, `short` the clip.
+ * At least one; the creator can add the other by hand later. */
+export const CourseVersionsSchema = z
+  .object({ long: z.boolean(), short: z.boolean() })
+  .refine((versions) => versions.long || versions.short, 'Make the course, the clip or both');
+export type CourseVersions = z.infer<typeof CourseVersionsSchema>;
+
+/** A document without `versions` makes both. */
+export function courseVersions(document: { versions?: CourseVersions }): CourseVersions {
+  return document.versions ?? { long: true, short: true };
+}
+
+/** What the intake picks for a kind until the creator changes it. */
+export function defaultCourseVersions(kind: CourseKind): CourseVersions {
+  if (kind === 'opening_reel') return { long: false, short: true };
+  if (kind === 'opening_course' || kind === 'master_game') return { long: true, short: false };
+  return { long: true, short: true };
+}
+
 /** How many moves may speak in each version: set by the planning call. */
 export const CourseBudgetSchema = z.object({
   long: z.number().int().nonnegative(),
-  short: z.number().int().nonnegative()
+  short: z.number().int().nonnegative(),
+  /** Moves that must speak in both versions (the quiz answer, a mate, a
+   * trap's bait and end), set by code; the counts above always fit them. */
+  keyNodeIds: z.array(NodeIdSchema).optional()
 });
 export type CourseBudget = z.infer<typeof CourseBudgetSchema>;
 
@@ -163,7 +185,9 @@ export const CourseDocumentSchema = z.object({
   clipSeconds: z.number().int().positive().optional(),
   /** Phase 90: the learner's target rating and the course's place in that
    * level's curriculum ("1200-01"); how the Courses page sorts. */
-  level: CourseLevelSchema.optional()
+  level: CourseLevelSchema.optional(),
+  /** Phase 91: the versions the planner makes (absent: both). */
+  versions: CourseVersionsSchema.optional()
 });
 export type CourseDocument = z.infer<typeof CourseDocumentSchema>;
 
@@ -226,7 +250,9 @@ export const CourseOutlineEpisodeSchema = z.object({
   answerNodeId: NodeIdSchema.nullable(),
   /** How many moves may speak: in the course, and in the clip. */
   budgetLong: z.number().int().nonnegative(),
-  budgetShort: z.number().int().nonnegative()
+  budgetShort: z.number().int().nonnegative(),
+  /** Set by code after the call, never by the model: see CourseBudget. */
+  keyNodeIds: z.array(NodeIdSchema).optional()
 });
 export type CourseOutlineEpisode = z.infer<typeof CourseOutlineEpisodeSchema>;
 

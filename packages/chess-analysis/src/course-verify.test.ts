@@ -146,11 +146,28 @@ describe('verifyCourseEpisode', () => {
     expect(verify((episode) => ((first(episode).text = ''), (first(episode).long = false)))).toEqual([]);
   });
 
-  test('lengths: the plan’s budget of speaking moves', () => {
-    expect(verify((episode) => (episode.budget = { long: 0, short: 1 }))).toEqual([
-      { code: 'lengths', nodeId: null, message: '1 moves speak in the course (the plan allows 0)' }
+  test('lengths: the plan’s budget of speaking moves; a version it gave 0 was not planned', () => {
+    const twoMoves = (episode: CourseEpisode): void => {
+      episode.endNodeId = 'n12';
+      episode.plies.push(ply('n12', 'Bb4 pins the bishop to the king.'));
+    };
+    expect(verify((episode) => (twoMoves(episode), (episode.budget = { long: 1, short: 1 })))).toEqual([
+      { code: 'lengths', nodeId: null, message: '2 moves speak in the course (the plan allows 1)' }
     ]);
     expect(verify((episode) => (episode.budget = { long: 1, short: 1 }))).toEqual([]);
+    // A course-only plan: the creator ticked a clip move by hand.
+    expect(verify((episode) => (episode.budget = { long: 1, short: 0 }))).toEqual([]);
+  });
+
+  test('key moves speak in every version the plan made', () => {
+    expect(verify((episode) => ((first(episode).short = false), (episode.budget = { long: 1, short: 1, keyNodeIds: ['n11'] })))).toEqual([
+      { code: 'key-moves', nodeId: 'n11', message: '6.Bc3 is a key move of this episode; let it speak in the clip' }
+    ]);
+    expect(verify((episode) => ((first(episode).short = false), (first(episode).long = false), (episode.budget = { long: 1, short: 1, keyNodeIds: ['n11'] })))).toEqual([
+      { code: 'key-moves', nodeId: 'n11', message: '6.Bc3 is a key move of this episode; let it speak in the course and the clip' }
+    ]);
+    // No clip planned: silent in the clip is fine.
+    expect(verify((episode) => ((first(episode).short = false), (episode.budget = { long: 1, short: 0, keyNodeIds: ['n11'] })))).toEqual([]);
   });
 
   test('quiz: the hint must not give the answer away, the reveal must name it', () => {

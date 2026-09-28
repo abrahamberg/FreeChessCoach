@@ -1,6 +1,6 @@
 # Courses and clips
 
-The spec behind Phases 79–90 (`docs/plan.md`). Read the section a task points
+The spec behind Phases 79–91 (`docs/plan.md`). Read the section a task points
 at, not the whole file.
 
 A **course** is a chess lesson built from a PGN: a clip (a reel or a YouTube
@@ -89,7 +89,8 @@ CourseDocument = {
     opener?: { say, caption? },    // the clip's hook, before any move
     plies: { nodeId, text, clipText?, caption?, arrows: Arrow[],
              long: boolean, short: boolean }[],  // in the course / in the clip
-    budget?: { long, short },      // speaking plies the outline allowed
+    budget?: { long, short,        // speaking plies the outline allowed (0: not planned)
+               keyNodeIds? },      // code's key moves: they speak in every planned version
     quiz?: { answerNodeId, prompt, hint, reveal },
     drillNodeIds: string[]         // learner moves that become drill positions
   }[],
@@ -97,6 +98,7 @@ CourseDocument = {
   hookOptions: string[],           // 3 from the AI; the creator picks one
   clipSeconds?: number,            // the clip's target length (the outline sets it)
   level?: { rating, order },       // curriculum place: 1200-02 (§9)
+  versions?: { long, short },      // what the AI makes: course, clip or both (absent: both)
   clipLinks: { youtube?, shorts?, instagram?, tiktok? }
 }
 Arrow = { from: Square, to: Square, kind: 'idea' | 'threat' | 'best' }
@@ -176,6 +178,7 @@ Kept to what the AI can't infer:
 | Direction | One or two sentences. Placeholder text shows an example per kind (below). |
 | Rating | The learner's rating, 800 … 2200 in steps of 200; defaults to 1200. The band the prompts write for comes from it (`bandForRating`), and the course takes the next place at that rating among the creator's courses (`level: { rating, order }`, §9). |
 | Learner side | Pre-filled by code (§3); editable. |
+| What to make | Course and clip, Course, or Clip (`versions`). Defaults by kind: Clip for an opening reel, Course for an opening course or a master game, both for a trap or tactics. The AI plans and writes only these; the creator can add the other by hand later (the ticks), and the Details card changes it for the next Start over. |
 | Coach | Pre-selected: the creator's own coach. Fixes the voice for the clip and the notes. |
 
 The page (`/studio/new`, `CourseIntakePage.tsx`) asks in four numbered cards:
@@ -471,10 +474,13 @@ Learner side: {learnerSide}
 Learner level: {CALIBRATION[band].label} — {CALIBRATION[band].description}
 Budgets: clip at most {seconds}s (clipSeconds), at most {words} spoken words in
 total, hook at most 12 words, {episodeRange} episodes.
+Make: the course and the clip.
 Speaking budgets, per episode: budgetLong is how many of its moves speak in the
 course; budgetShort is how many speak in the clip. Across the whole clip, at
 most {narratedMax} moves speak. A hook speaks over its opening card, so its
 budgetShort is 0. Neither budget may exceed the episode's moves.
+(Course only: "Make: the course only, no clip. Every budgetShort is 0." and
+the long budget alone; clip only, the mirror.)
 
 LINES
 {lineId} ({name}): {SAN movetext with move numbers}
@@ -532,7 +538,16 @@ The budgets are the planner's real job: it decides, per episode, how many
 moves speak in the course and how many in the clip, so the episode calls
 don't voice every move. They land on the episode (`budget: { long, short }`)
 and the verifier holds the episode to them. `clipSeconds` lands on the
-document. A fallback outline gets default budgets from code
+document.
+
+Code then has the last word on the budgets (`withKeyMoves`): a version the
+course does not make gets 0, whatever the model answered, and each made
+version's budget is raised to fit the episode's **key moves**
+(`episodeKeyMoves`, chess-analysis): the quiz answer, any mate, and for a
+trap its bait, answer and last move; none for a hook or a safety episode.
+They join the plan's key moves and are stored as `budget.keyNodeIds`. The
+first run with budgets left 8…Qc1# silent: the planner gave the punish
+episode 3 of its 4 moves. A fallback outline gets default budgets from code
 (`defaultCourseBudget`).
 
 ### 6.5 The episode call
@@ -542,7 +557,10 @@ the system prompt (cached across the episode calls), and in the user message:
 the course title, promise and the whole outline (so it knows what comes before
 and after), **only this episode's dossier** (plus the previous episode's last
 node), its speaking budget ("at most {budgetLong} moves with "long": true, at
-most {budgetShort} with "short": true"), its clip word budget, and any creator
+most {budgetShort} with "short": true", or for one version only, which tick
+stays false on every move), its key moves ("Must speak, "long": true and
+"short": true: n16 (8... Qc1#)"), its clip word budget (only when there is a
+clip), and any creator
 instruction for a regeneration. It lists the nodes the plies may use, and says
 the previous node is context only; without that line, gpt-6-luna kept writing
 notes on it.
@@ -629,7 +647,8 @@ a message the creator can read.
 | Tactic words | A motif word (fork, pin, skewer, discovered, double check, mate, trapped, deflection, …, from the detectors' vocabulary) appears only if the dossier lists that motif within the episode. |
 | Numbers | No eval-looking numbers (`+1.3`, `-0.8`, "centipawn", "eval"). No `N%` unless the creator's direction contains it. |
 | Arrows | Each arrow is a legal move for either side in that position (the opponent's via `null-move-fen.ts`) or a threat the dossier lists. At most 2 per move. |
-| Budgets | At most `budget.long` plies ticked `long`, at most `budget.short` ticked `short`. |
+| Budgets | At most `budget.long` plies ticked `long`, at most `budget.short` ticked `short`. A version with budget 0 was not planned: plies the creator ticks there by hand are not counted. Code also clears the unplanned version's ticks, clip lines, captions and opener from the model's answer. |
+| Key moves | Each of `budget.keyNodeIds` speaks in every planned version ("8…Qc1# is a key move of this episode; let it speak in the clip"). |
 | Lengths | The clip line (`clipText`, else `text`) within the words per move, the clip within the episode's words; captions at most 6 words; course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
 | Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); the hint does not name it. |
 | Phrases | None of `BANNED_GENERIC_PHRASES`. |
@@ -810,12 +829,13 @@ Decided with the owner:
 
 The skeleton (§5.5) becomes episodes directly, with template text the creator
 overwrites:
+- Only the versions the course makes are ticked (`versions`).
 - Every move becomes a ply ticked for the course, its text pre-filled from
   checked facts: the opening name ("Main line of the Englund Gambit"), the
   tactic sentences (`tactic-reason-text.ts`), the board facts ("Bc3 attacks
   the queen on b2").
-- The clip gets at most two plies per episode, on its critical or tactic
-  moves, with the same text; the creator ticks more or writes clip lines.
+- The clip gets the episode's key moves, then critical or tactic moves up to
+  two, with the same text; the creator ticks more or writes clip lines.
   Budgets come from `defaultCourseBudget`.
 - The same verifier runs on hand-written text, so a typo'd move is caught.
 
@@ -888,7 +908,7 @@ drills. Signed out, the same button explains that coaching needs an account.
 
 ---
 
-## 12. Later, not in Phases 79–90
+## 12. Later, not in Phases 79–91
 
 - Linking courses to the learner's own imported games ("you reached move 7 of
   the Italian trap on Tuesday and played Nc3").

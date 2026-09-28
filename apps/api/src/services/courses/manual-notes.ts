@@ -1,5 +1,5 @@
-import type { CourseNodeFacts } from '@freechesscoach/chess-analysis';
-import type { CourseArrow, CourseEpisode, CoursePly } from '@freechesscoach/shared';
+import { episodeKeyMoves, type CourseNodeFacts, type CourseSkeleton } from '@freechesscoach/chess-analysis';
+import type { CourseArrow, CourseEpisode, CoursePly, CourseVersions } from '@freechesscoach/shared';
 
 /** docs/courses.md §10: a note pre-filled from checked facts only — the
  * creator's own comment first, then the opening name, the board facts and
@@ -33,7 +33,9 @@ export class EpisodeBuilder {
   /** `arrows` are the creator's own from the PGN, carried onto each note. */
   constructor(
     private readonly facts: ReadonlyMap<string, CourseNodeFacts>,
-    private readonly arrows: ReadonlyMap<string, CourseArrow[]>
+    private readonly arrows: ReadonlyMap<string, CourseArrow[]>,
+    private readonly skeleton: CourseSkeleton | null = null,
+    readonly versions: CourseVersions = { long: true, short: true }
   ) {}
 
   /** Adds the episode and returns its id; a draft with no nodes is skipped. */
@@ -42,7 +44,10 @@ export class EpisodeBuilder {
     const last = draft.nodeIds[draft.nodeIds.length - 1];
     if (!first || !last) return [];
     const id = `e${this.episodes.length + 1}`;
-    const plies = [...this.plies(draft.noteNodeIds ?? draft.nodeIds), ...(draft.extraNotes ?? [])];
+    const sans = new Map(draft.nodeIds.map((nodeId) => [nodeId, this.facts.get(nodeId)?.san ?? '']));
+    const keys = episodeKeyMoves({ role: draft.role, path: draft.nodeIds, answerNodeId: draft.quiz?.answerNodeId ?? null, sans, skeleton: this.skeleton });
+    const speaking = new Set([...(draft.noteNodeIds ?? draft.nodeIds), ...keys]);
+    const plies = [...this.plies(draft.nodeIds.filter((nodeId) => speaking.has(nodeId)), keys), ...(draft.extraNotes ?? [])];
     this.episodes.push({
       id,
       role: draft.role,
@@ -50,7 +55,7 @@ export class EpisodeBuilder {
       startNodeId: first,
       endNodeId: last,
       plies,
-      budget: { long: plies.filter((ply) => ply.long).length, short: plies.filter((ply) => ply.short).length },
+      budget: { long: plies.filter((ply) => ply.long).length, short: plies.filter((ply) => ply.short).length, ...(keys.length ? { keyNodeIds: keys } : {}) },
       ...(draft.quiz ? { quiz: draft.quiz } : {}),
       drillNodeIds: draft.drillNodeIds ?? []
     });
@@ -61,16 +66,19 @@ export class EpisodeBuilder {
     return this.facts.get(nodeId);
   }
 
-  /** Each move speaks in the course; the clip takes the first one or two
-   * with a tactic or a critical moment (the template's short). */
-  private plies(nodeIds: string[]): CoursePly[] {
-    let clip = 0;
+  /** Only the versions the course makes (Phase 91). Each move speaks in the
+   * course; the clip takes the key moves, then
+   * the first with a tactic or a critical moment, two in all unless there
+   * are more key moves (the template's short). */
+  private plies(nodeIds: string[], keys: readonly string[]): CoursePly[] {
+    let clip = keys.length;
     return nodeIds.flatMap((nodeId) => {
       const facts = this.facts.get(nodeId);
       if (!facts) return [];
-      const short = clip < 2 && (facts.critical || facts.tactics.length > 0);
-      if (short) clip += 1;
-      return [{ nodeId, text: noteText(facts), arrows: this.arrows.get(nodeId) ?? [], long: true, short }];
+      const key = keys.includes(nodeId);
+      const short = this.versions.short && (key || (clip < 2 && (facts.critical || facts.tactics.length > 0)));
+      if (short && !key) clip += 1;
+      return [{ nodeId, text: noteText(facts), arrows: this.arrows.get(nodeId) ?? [], long: this.versions.long, short }];
     });
   }
 }

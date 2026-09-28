@@ -89,6 +89,30 @@ describe('course prompts', () => {
     expect(user).toContain('"mention the pin earlier"');
   });
 
+  test('the outline plans only the versions the creator asked for', () => {
+    const both = buildCourseOutlineMessages(englundCourseContext()).user;
+    expect(both).toContain('Make: the course and the clip.');
+    const courseOnly = buildCourseOutlineMessages({ ...englundCourseContext(), versions: { long: true, short: false } }).user;
+    expect(courseOnly).toContain('Make: the course only, no clip. Every budgetShort is 0.');
+    expect(courseOnly).not.toContain('budgetShort is how many');
+    const clipOnly = buildCourseOutlineMessages({ ...englundCourseContext(), versions: { long: false, short: true } }).user;
+    expect(clipOnly).toContain('Make: the clip only, no course notes. Every budgetLong is 0.');
+  });
+
+  test("an episode names code's key moves, and a course without a clip says so", () => {
+    const outline = structuredClone(ENGLUND_OUTLINE);
+    const e3 = outline.chapters[0]!.episodes.find((episode) => episode.id === 'e3')!;
+    e3.keyNodeIds = ['n11'];
+    const both = buildCourseEpisodeMessages({ context: englundCourseContext(), outline, episodeId: 'e3' }).user;
+    expect(both).toContain('Must speak, "long": true and "short": true: n11 (6. Bc3).');
+    expect(both).toContain('Clip words: at most');
+
+    const courseOnly = buildCourseEpisodeMessages({ context: { ...englundCourseContext(), versions: { long: true, short: false } }, outline, episodeId: 'e3' }).user;
+    expect(courseOnly).toContain('This course has no clip: "short" is false on every move');
+    expect(courseOnly).toContain('Must speak, "long": true: n11 (6. Bc3).');
+    expect(courseOnly).not.toContain('Clip words');
+  });
+
   test('an outline retry lists the problems and the previous outline, and names the roles', () => {
     const { user } = buildCourseOutlineMessages(englundCourseContext(), { previousOutput: '{"title":"x"}', problems: ['there is no safety episode'] });
 

@@ -1,6 +1,6 @@
 import { buildCourseSkeleton, courseLineGames, isQuizAnswerEligible, type CourseDossier, type CourseLineGame, type CourseSkeleton, type CourseTree } from '@freechesscoach/chess-analysis';
 import type { CourseMessages, CoursePlanChapter, CoursePromptContext } from '@freechesscoach/prompts';
-import type { CourseDocument } from '@freechesscoach/shared';
+import { courseVersions, type CourseDocument } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { z } from 'zod';
 import * as coursesRepo from '../../db/repositories/courses.js';
@@ -67,6 +67,7 @@ export function generationInputs(input: { document: CourseDocument; dossier: Cou
     persona: document.coachPersona,
     learnerSide: document.learnerSide,
     levelBand: document.levelBand,
+    versions: courseVersions(document),
     direction: input.direction,
     startFen: document.startFen,
     nodes: document.nodes,

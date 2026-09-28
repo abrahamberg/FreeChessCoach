@@ -8,7 +8,7 @@ import { episodeTexts, moveProblems, numberProblems, phraseProblems, sameMove, s
 export type { CourseVerifyNode } from './course-verify-scope.js';
 
 /** docs/courses.md §7, one code per check. */
-export type CourseVerifyCode = 'nodes' | 'moves' | 'tactic-words' | 'numbers' | 'arrows' | 'lengths' | 'quiz' | 'phrases';
+export type CourseVerifyCode = 'nodes' | 'moves' | 'tactic-words' | 'numbers' | 'arrows' | 'lengths' | 'key-moves' | 'quiz' | 'phrases';
 
 export interface CourseVerifyProblem {
   code: CourseVerifyCode;
@@ -52,6 +52,7 @@ export function verifyCourseEpisode(input: CourseVerifyInput): CourseVerifyProbl
     ...numberProblems(texts, input.direction ?? ''),
     ...arrowProblems(episode, scope),
     ...lengthProblems(episode, scope, input.budget ?? null),
+    ...keyMoveProblems(episode, scope),
     ...quizProblems(episode, scope, dossier !== null),
     ...phraseProblems(texts)
   ];
@@ -87,13 +88,29 @@ function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: Cou
     problems.push({ code: 'lengths', nodeId: null, message: `The clip has ${total} words (at most ${budget.wordsPerEpisode})` });
   }
   // The planning call's budget: how many moves may speak in each version.
-  if (episode.budget && long.length > episode.budget.long) {
+  // A version the plan gave 0 was not planned (Phase 91): the creator may add
+  // it by hand, with no budget to keep.
+  if (episode.budget?.long && long.length > episode.budget.long) {
     problems.push({ code: 'lengths', nodeId: null, message: `${long.length} moves speak in the course (the plan allows ${episode.budget.long})` });
   }
-  if (episode.budget && short.length > episode.budget.short) {
+  if (episode.budget?.short && short.length > episode.budget.short) {
     problems.push({ code: 'lengths', nodeId: null, message: `${short.length} moves speak in the clip (the plan allows ${episode.budget.short})` });
   }
   return problems;
+}
+
+/** Code's key moves (CourseBudget.keyNodeIds) speak in every planned version. */
+function keyMoveProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVerifyProblem[] {
+  const budget = episode.budget;
+  if (!budget) return [];
+  return (budget.keyNodeIds ?? []).flatMap((nodeId) => {
+    const ply = episode.plies.find((each) => each.nodeId === nodeId);
+    const node = scope.byId.get(nodeId);
+    const label = node ? moveLabel(scope.fenBefore(nodeId), node.san) : nodeId;
+    const missing = [budget.long > 0 && !ply?.long && 'the course', budget.short > 0 && !ply?.short && 'the clip'].filter(Boolean);
+    if (!missing.length) return [];
+    return [{ code: 'key-moves' as const, nodeId, message: `${label} is a key move of this episode; let it speak in ${missing.join(' and ')}` }];
+  });
 }
 
 function quizProblems(episode: CourseEpisode, scope: EpisodeScope, hasAnalysis: boolean): CourseVerifyProblem[] {

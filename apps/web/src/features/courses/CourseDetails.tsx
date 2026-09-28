@@ -1,9 +1,10 @@
-import { bandForRating, COACH_PERSONA_INFO, levelCode, type CourseDocument } from '@freechesscoach/shared';
+import { bandForRating, COACH_PERSONA_INFO, courseVersions, levelCode, type CourseDocument } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
 import { Modal } from '../../components/Modal.js';
 import { BAND_LABELS } from '../settings/BandSelect.js';
 import { CoachPersonaSelect } from '../settings/CoachPersonaSelect.js';
+import { CourseVersionsPicker } from './CourseVersionsPicker.js';
 
 const RATINGS = [800, 1000, 1200, 1400, 1600, 1800, 2000, 2200];
 
@@ -16,7 +17,8 @@ export interface CourseDetailsProps {
 
 /** The editor's Details card (Phase 90): the promise, the course coach
  * (their portrait; change it, and the voice changes with them) and the
- * level ("1200-01"), which sorts the course on the Courses page. */
+ * level ("1200-01"), which sorts the course on the Courses page; and what
+ * the AI makes on its next writing (Phase 91): the course, the clip or both. */
 export function CourseDetails({ document, onChange, children }: CourseDetailsProps): ReactNode {
   const [choosing, setChoosing] = useState(false);
   const [changedCoach, setChangedCoach] = useState(false);
@@ -69,6 +71,8 @@ export function CourseDetails({ document, onChange, children }: CourseDetailsPro
         <span className="course-details__code">{level ? levelCode(level) : '—'}</span>
       </div>
       <p className="meta">Written for: {BAND_LABELS[document.levelBand]}.</p>
+
+      <CourseVersionsPicker label="The AI makes" value={courseVersions(document)} onChange={(versions) => onChange({ ...document, versions })} />
 
       <label className="course-field">
         <span>Promise</span>

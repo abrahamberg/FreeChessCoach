@@ -50,15 +50,16 @@ export function CourseEpisodePanel({ document, episode, direction, nodeIds, sele
   return (
     <div className="course-panel course-episode-panel">
       <p className="course-panel__role">{episode.role}</p>
+      {/* A version the plan gave 0 was not planned (Phase 91): added by hand, no budget. */}
       <p className="course-budget meta">
-        <span className={episode.budget && long > episode.budget.long ? 'course-budget--over' : undefined}>
+        <span className={episode.budget?.long && long > episode.budget.long ? 'course-budget--over' : undefined}>
           {long}
-          {episode.budget ? ` of ${episode.budget.long}` : ''} speak in the course
+          {episode.budget?.long ? ` of ${episode.budget.long}` : ''} speak in the course
         </span>
         {' · '}
-        <span className={episode.budget && short > episode.budget.short ? 'course-budget--over' : undefined}>
+        <span className={episode.budget?.short && short > episode.budget.short ? 'course-budget--over' : undefined}>
           {short}
-          {episode.budget ? ` of ${episode.budget.short}` : ''} in the clip
+          {episode.budget?.short ? ` of ${episode.budget.short}` : ''} in the clip
         </span>
       </p>
       <CourseEpisodeWarnings document={document} episode={episode} direction={direction} />

@@ -1,6 +1,6 @@
-import { checkCourseOutline, courseNodePath } from '@freechesscoach/chess-analysis';
+import { checkCourseOutline, courseNodePath, episodeKeyMoves } from '@freechesscoach/chess-analysis';
 import { buildCourseOutlineMessages, courseBudget } from '@freechesscoach/prompts';
-import { CourseOutlineSchema, defaultCourseBudget, type CourseDocument, type CourseEpisode, type CourseOutline, type CourseWarning } from '@freechesscoach/shared';
+import { CourseOutlineSchema, courseVersions, defaultCourseBudget, type CourseDocument, type CourseEpisode, type CourseOutline, type CourseWarning } from '@freechesscoach/shared';
 import { ValidationError } from '../../lib/errors.js';
 import type { CourseModelCall, GenerationInputs } from './generation-inputs.js';
 
@@ -15,14 +15,14 @@ export async function planOutline(inputs: GenerationInputs, call: CourseModelCal
   const first = await call(buildCourseOutlineMessages(inputs.context), CourseOutlineSchema, firstLabel);
   const firstProblems = outlineProblems(inputs, first);
   await call.checked?.(firstLabel, firstProblems);
-  if (firstProblems.length === 0) return { outline: first, warnings: [] };
+  if (firstProblems.length === 0) return { outline: withKeyMoves(inputs, first), warnings: [] };
 
   const retry = { previousOutput: JSON.stringify(first), problems: firstProblems };
   const repairLabel = { ...firstLabel, repair: true };
   const second = await call(buildCourseOutlineMessages(inputs.context, retry), CourseOutlineSchema, repairLabel);
   const problems = outlineProblems(inputs, second);
   await call.checked?.(repairLabel, problems);
-  if (problems.length === 0) return { outline: second, warnings: [] };
+  if (problems.length === 0) return { outline: withKeyMoves(inputs, second), warnings: [] };
 
   const plan = inputs.context.plan;
   if (!plan) throw new ValidationError(`The AI outline failed its checks twice: ${problems.join('; ')}`);
@@ -39,7 +39,33 @@ export async function planOutline(inputs: GenerationInputs, call: CourseModelCal
     }))
   };
   const message = `The AI outline failed its checks twice, so the episodes come from the code skeleton: ${problems.join('; ')}`;
-  return { outline, warnings: [{ episodeId: null, code: 'outline', nodeId: null, message }] };
+  return { outline: withKeyMoves(inputs, outline), warnings: [{ episodeId: null, code: 'outline', nodeId: null, message }] };
+}
+
+/** Code's say over the budgets: a version the creator did not ask for
+ * (Phase 91) gets 0, and each made version's budget is raised to fit the
+ * episode's key moves (the quiz answer, a mate, a trap's bait and end),
+ * which join the plan's key moves, so no budget can leave them silent. */
+export function withKeyMoves(inputs: GenerationInputs, outline: CourseOutline): CourseOutline {
+  const sans = new Map(inputs.document.nodes.map((node) => [node.id, node.san]));
+  const versions = courseVersions(inputs.document);
+  return {
+    ...outline,
+    chapters: outline.chapters.map((chapter) => ({
+      ...chapter,
+      episodes: chapter.episodes.map((episode) => {
+        const path = courseNodePath(inputs.document.nodes, episode.startNodeId, episode.endNodeId) ?? [];
+        const keys = episodeKeyMoves({ role: episode.role, path, answerNodeId: episode.answerNodeId, sans, skeleton: inputs.skeleton });
+        return {
+          ...episode,
+          narratedNodeIds: path.filter((id) => keys.includes(id) || episode.narratedNodeIds.includes(id)),
+          budgetLong: versions.long ? Math.max(episode.budgetLong, keys.length) : 0,
+          budgetShort: versions.short ? Math.max(episode.budgetShort, keys.length) : 0,
+          keyNodeIds: keys
+        };
+      })
+    }))
+  };
 }
 
 function outlineProblems(inputs: GenerationInputs, outline: CourseOutline): string[] {
@@ -98,7 +124,7 @@ export function documentFromOutline(inputs: GenerationInputs, outline: CourseOut
           startNodeId: episode.startNodeId,
           endNodeId: episode.endNodeId,
           plies: [],
-          budget: { long: episode.budgetLong, short: episode.budgetShort },
+          budget: { long: episode.budgetLong, short: episode.budgetShort, ...(episode.keyNodeIds?.length ? { keyNodeIds: episode.keyNodeIds } : {}) },
           drillNodeIds: learnerNodes(inputs, episode.startNodeId, episode.endNodeId)
         })
       )

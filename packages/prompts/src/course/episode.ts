@@ -1,7 +1,7 @@
 import { courseNodePath, renderCourseDossier, type CourseDossier } from '@freechesscoach/chess-analysis';
 import type { CourseOutline, CourseOutlineEpisode } from '@freechesscoach/shared';
 import { courseBudget, episodeWordBudget } from './budget.js';
-import { buildCourseSystemPrompt, nodeLabel, type CourseMessages, type CoursePromptContext } from './context.js';
+import { buildCourseSystemPrompt, nodeLabel, promptVersions, type CourseMessages, type CoursePromptContext } from './context.js';
 
 export const EPISODE_SCRIPT_JSON_SCHEMA = `{
   "episodeId": string,
@@ -39,7 +39,7 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
   const sections = [
     `COURSE\nTitle: ${outline.title}\nPromise: ${outline.promise}`,
     `OUTLINE\n${renderOutline(outline, episodeId)}`,
-    `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nThe plan's key moves: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\n${ownNodesLine(context, episode)}\nSpeaking budget: at most ${episode.budgetLong} moves with "long": true, at most ${episode.budgetShort} with "short": true.\nClip words: at most ${words.wordsPerEpisode} spoken in this episode's clip (the opener included), at most ${words.wordsPerBeat} per move; captions at most 6 words.\nSay every line as the coach in VOICE would.`,
+    `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nThe plan's key moves: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\n${ownNodesLine(context, episode)}\n${speakingLines(context, episode, words)}\nSay every line as the coach in VOICE would.`,
     `DOSSIER (this episode only)\n${renderCourseDossier(episodeDossier(context, episode))}`,
     request.creatorRequest ? `CREATOR'S REQUEST FOR THIS EPISODE\n"${request.creatorRequest}"` : '',
     request.retry
@@ -80,4 +80,20 @@ function renderOutline(outline: CourseOutline, current: string): string {
       )
     ])
     .join('\n');
+}
+
+/** The budget for the versions this course makes (Phase 91), code's key
+ * moves (the quiz answer, a mate, a trap's bait and end: they speak in every
+ * version made, and the budget counts them), and the clip's words. */
+function speakingLines(context: CoursePromptContext, episode: CourseOutlineEpisode, words: { wordsPerEpisode: number; wordsPerBeat: number }): string {
+  const versions = promptVersions(context);
+  const keys = episode.keyNodeIds ?? [];
+  const lines: string[] = [];
+  if (versions.long && versions.short) lines.push(`Speaking budget: at most ${episode.budgetLong} moves with "long": true, at most ${episode.budgetShort} with "short": true.`);
+  else if (versions.long) lines.push(`This course has no clip: "short" is false on every move, "clipText", "caption" and "opener" are null.`, `Speaking budget: at most ${episode.budgetLong} moves with "long": true.`);
+  else lines.push(`This is a clip only: "long" is false on every move, and "text" is what the clip says.`, `Speaking budget: at most ${episode.budgetShort} moves with "short": true.`);
+  const ticks = [versions.long && '"long": true', versions.short && '"short": true'].filter(Boolean).join(' and ');
+  if (keys.length) lines.push(`Must speak, ${ticks}: ${keys.map((id) => nodeLabel(context, id)).join(', ')}. These are the moves the episode is for; the budget counts them.`);
+  if (versions.short) lines.push(`Clip words: at most ${words.wordsPerEpisode} spoken in this episode's clip (the opener included), at most ${words.wordsPerBeat} per move; captions at most 6 words.`);
+  return lines.join('\n');
 }

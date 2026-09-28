@@ -2,7 +2,7 @@ import { renderCourseDossier, type CourseSkeleton } from '@freechesscoach/chess-
 import { COURSE_ROLES } from '@freechesscoach/shared';
 import { CALIBRATION } from '../calibration.js';
 import { courseBudget } from './budget.js';
-import { buildCourseSystemPrompt, capitalise, lineMovetext, nodeLabel, type CourseMessages, type CoursePromptContext } from './context.js';
+import { buildCourseSystemPrompt, capitalise, lineMovetext, nodeLabel, promptVersions, type CourseMessages, type CoursePromptContext } from './context.js';
 import { episodeRange } from './playbooks.js';
 
 export const COURSE_OUTLINE_JSON_SCHEMA = `{
@@ -36,11 +36,7 @@ Learner side: ${capitalise(context.learnerSide)}
 Learner level: ${calibration.label} — ${calibration.description}
 Budgets: clip at most ${budget.seconds}s (clipSeconds), at most ${budget.words} spoken words in total,
 hook at most ${budget.hookWords} words, ${episodeRange(context)} episodes.
-Speaking budgets, per episode: budgetLong is how many of its moves speak in the
-course (the moves a learner needs a word on: their key moves, and the opponent's
-where the plan changes); budgetShort is how many speak in the clip. Across the
-whole clip, at most ${budget.narratedMax} moves speak. A hook speaks over its opening
-card, so its budgetShort is 0. Neither budget may exceed the episode's moves.
+${speakingBudgets(context, budget.narratedMax)}
 Episode roles: ${COURSE_ROLES[context.kind].join(', ')}.
 
 LINES
@@ -55,6 +51,21 @@ ${renderCourseDossier(context.dossier)}
 ${retry ? `YOUR PREVIOUS OUTLINE HAD THESE PROBLEMS — fix every one\n${retry.problems.map((problem) => `- ${problem}`).join('\n')}\n\nYour previous outline:\n${retry.previousOutput}\n\n` : ''}OUTPUT SCHEMA
 ${COURSE_OUTLINE_JSON_SCHEMA}`;
   return { system: buildCourseSystemPrompt(context), user };
+}
+
+/** Phase 91: the planner budgets only the versions the creator asked for;
+ * code sets the other version's budgets to 0 whatever the answer says. */
+function speakingBudgets(context: CoursePromptContext, narratedMax: number): string {
+  const versions = promptVersions(context);
+  const long = `budgetLong is how many of its moves speak in the
+course (the moves a learner needs a word on: their key moves, and the opponent's
+where the plan changes)`;
+  const short = `budgetShort is how many speak in the clip. Across the
+whole clip, at most ${narratedMax} moves speak. A hook speaks over its opening
+card, so its budgetShort is 0`;
+  if (!versions.short) return `Make: the course only, no clip. Every budgetShort is 0.\nSpeaking budgets, per episode: ${long}. It may not exceed the episode's moves.`;
+  if (!versions.long) return `Make: the clip only, no course notes. Every budgetLong is 0.\nSpeaking budgets, per episode: ${short}. It may not exceed the episode's moves.`;
+  return `Make: the course and the clip.\nSpeaking budgets, per episode: ${long}; ${short}. Neither budget may exceed the episode's moves.`;
 }
 
 /** The episodes code would build, so a small model fills in words rather

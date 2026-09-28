@@ -29,6 +29,7 @@ export * from './config.js';
 export * from './compare-player-baseline.js';
 export * from './course-dossier.js';
 export * from './course-dossier-text.js';
+export * from './course-key-moves.js';
 export * from './course-learner-side.js';
 export * from './course-line-game.js';
 export * from './course-node-path.js';

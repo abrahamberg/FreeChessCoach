@@ -1570,6 +1570,66 @@ Commit: `feat(courses): sort courses by level and curriculum order`
 
 Commit: `docs: plies, budgets and the curriculum order`
 
+## Phase 91 — Course, clip or both; key moves always speak
+
+The owner, 2026-09-28, after the first AI run with budgets: "not every
+session should have long and short clip; at the beginning we pick one or
+both; later the user can manually add the other one, but the planner plans
+only for that type". The same run left 8…Qc1#, the move the Englund trap
+builds to, silent: the planner gave the punish episode 3 of its 4 moves.
+
+**Spec:** `docs/courses.md` §4 (the document), §5.3 (the intake), §6.4–6.5
+(budgets), §7 (the verifier), §10 (the template). Read only those sections.
+
+**Already there, reused as is (verified in code):** plies with `long` /
+`short` ticks and per-episode budgets (Phase 90); the editor's ticks
+already let the creator add either version by hand; `withKeyMoves` is new
+here.
+
+### Task 91.1 — Key moves
+
+**Read:** `packages/chess-analysis/src/course-verify.ts`,
+`apps/api/src/services/courses/generate-outline.ts`.
+**Files:** `course-key-moves.ts` (new), `course-verify.ts`,
+`generate-outline.ts`, `generate-episode.ts`, `manual-notes.ts`,
+`packages/prompts/src/course/episode.ts`, `packages/shared/src/course.ts`,
+their tests.
+
+- [x] `episodeKeyMoves`: an episode's moves that must speak: the quiz
+  answer, a mate, and for a trap its bait, answer and last move; none for
+  a hook or a safety episode.
+- [x] After the outline is accepted (or falls back), code raises each
+  planned version's budget to fit the key moves and stores them
+  (`budget.keyNodeIds`); the episode prompt names them ("Must speak").
+- [x] The verifier's `key-moves` check: a key move silent in a planned
+  version is a problem (sent back once, then a warning).
+- [x] The template ticks key moves in the clip first.
+
+### Task 91.2 — Course, clip or both
+
+**Read:** `CourseIntakePage.tsx`, `packages/prompts/src/course/outline.ts`,
+`episode.ts`, `CourseDetails.tsx`.
+**Files:** `packages/shared/src/course.ts`, `course-api.ts`,
+`apps/api/src/services/courses.ts`, `generate-outline.ts`, the prompts,
+`manual-notes.ts`, `CourseIntakePage.tsx`, `CourseDetails.tsx`, their tests.
+
+- [x] `document.versions: { long, short }` (at least one; absent reads as
+  both). The intake asks "What to make": Course and clip, Course, Clip.
+  Default: Clip for an opening reel, Course for an opening course or a
+  master game, both for a trap or tactics.
+- [x] The outline prompt plans only the chosen versions: an unplanned
+  version's budgets are 0, set by code whatever the model answers. The
+  episode prompt says which tick stays false on every move.
+- [x] The template ticks only the chosen versions.
+- [x] The verifier's budget checks skip a version the plan gave 0, so a
+  creator who adds the other version by hand gets no budget warnings.
+- [x] The Details card shows What to make and lets the creator change it
+  (it applies to the next Start over).
+
+Status: done 2026-09-28. The Details card's picker reads "The AI makes".
+
+Commit: `feat(courses): course, clip or both; key moves always speak`
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

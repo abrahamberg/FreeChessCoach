@@ -1,4 +1,4 @@
-import { CreateCourseRequestSchema, type CourseOutline, type CourseOutlineEpisode, type EpisodeScript } from '@freechesscoach/shared';
+import { CreateCourseRequestSchema, type CourseOutline, type CreateCourseRequest, type CourseOutlineEpisode, type EpisodeScript } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { ENGLUND_INTAKE, englundDossier } from '../../test/helpers/course-fixtures.js';
@@ -53,11 +53,11 @@ const script = (episodeId: string, nodeId: string, text = `Episode ${episodeId} 
 
 const step = (value: unknown): MockStep => ({ text: JSON.stringify(value), finishReason: 'stop' });
 const quizScript = (): EpisodeScript => script('e4', 'n12');
-const cleanEpisodes = (): MockStep[] => [step(script('e1', 'n1')), step(script('e2', 'n2')), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n13')), step(script('e6', 'n11'))];
+const cleanEpisodes = (): MockStep[] => [step(script('e1', 'n1')), step(script('e2', 'n2')), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n16')), step(script('e6', 'n11'))];
 
-async function newCourse(email: string): Promise<string> {
+async function newCourse(email: string, intake: Partial<CreateCourseRequest> = {}): Promise<string> {
   const user = await usersRepo.insert(db, { email, displayName: 'Creator' });
-  return (await createCourse(db, user.id, CreateCourseRequestSchema.parse(ENGLUND_INTAKE))).id;
+  return (await createCourse(db, user.id, CreateCourseRequestSchema.parse({ ...ENGLUND_INTAKE, ...intake }))).id;
 }
 
 /** The mock model, and deps whose `resolveModel` fails from call `failFrom` on. */
@@ -110,6 +110,37 @@ describe('runCourseGeneration', () => {
     });
   });
 
+  test("code's key moves: budgets raised to fit them, and a silent one is sent back", async () => {
+    const id = await newCourse('key-moves@example.com');
+    // e5 speaks on n13 only; the mate n16 is its key move.
+    const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n13')), step(script('e5', 'n16')), step(script('e6', 'n11'))]);
+
+    await runCourseGeneration(deps, id);
+
+    const sent = prompts();
+    expect(sent[5]).toContain('n16 (8... Qc1#)');
+    expect(sent[5]).toContain('Must speak');
+    expect(sent[6]).toContain('8…Qc1# is a key move of this episode; let it speak in the course and the clip');
+    const row = await coursesRepo.findById(db, id);
+    const e5 = row?.document?.episodes.find((episode) => episode.id === 'e5');
+    expect(e5?.budget).toEqual({ long: 1, short: 1, keyNodeIds: ['n16'] });
+    expect(row?.generation?.warnings).toEqual([]);
+  });
+
+  test('a course without a clip: no clip budget, no clip ticks, whatever the model says', async () => {
+    const id = await newCourse('course-only@example.com', { versions: { long: true, short: false } });
+    const { deps, prompts } = depsWith([step(outline()), ...cleanEpisodes()]);
+
+    await runCourseGeneration(deps, id);
+
+    expect(prompts()[0]).toContain('Make: the course only, no clip.');
+    const row = await coursesRepo.findById(db, id);
+    const episodes = row?.document?.episodes ?? [];
+    expect(episodes.map((episode) => episode.budget?.short)).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(episodes.flatMap((episode) => episode.plies).some((ply) => ply.short || ply.clipText || ply.caption)).toBe(false);
+    expect(row?.generation).toMatchObject({ status: 'succeeded', warnings: [] });
+  });
+
   test("an outline that changes code's plan is sent back with what to keep", async () => {
     const id = await newCourse('outline-plan@example.com');
     const stretched = outline();
@@ -156,7 +187,7 @@ describe('runCourseGeneration', () => {
   test('a verifier failure triggers exactly one repair; what still fails is kept as a warning', async () => {
     const id = await newCourse('repair@example.com');
     const bad = (episodeId: string) => step(script(episodeId, 'n11', 'Nd5 was the real test.'));
-    const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), bad('e3'), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n13')), bad('e6'), bad('e6')]);
+    const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), bad('e3'), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n16')), bad('e6'), bad('e6')]);
 
     await runCourseGeneration(deps, id);
 
@@ -179,7 +210,7 @@ describe('runCourseGeneration', () => {
   test('a quiz the outline did not plan is a problem for the repair call', async () => {
     const id = await newCourse('unplanned-quiz@example.com');
     const quizzed = { ...script('e3', 'n11'), quiz: { answerNodeId: 'n12', prompt: 'What now?', hint: 'Look at the king.', reveal: 'Bb4 pins it.' } };
-    const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), step(quizzed), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n13')), step(script('e6', 'n11'))]);
+    const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), step(quizzed), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n16')), step(script('e6', 'n11'))]);
 
     await runCourseGeneration(deps, id);
 
@@ -199,7 +230,7 @@ describe('runCourseGeneration', () => {
     expect(row?.generation).toMatchObject({ status: 'failed', error: UNLOCK, finishedEpisodeIds: ['e1', 'e2'] });
     expect(row?.document?.episodes.map((episode) => episode.plies.length)).toEqual([1, 1, 0, 0, 0, 0]);
 
-    const resumed = depsWith([step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n13')), step(script('e6', 'n11'))]);
+    const resumed = depsWith([step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n16')), step(script('e6', 'n11'))]);
     await runCourseGeneration(resumed.deps, id);
 
     row = await coursesRepo.findById(db, id);
