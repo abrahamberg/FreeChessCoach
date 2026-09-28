@@ -69,6 +69,12 @@ describe('verifyCourseEpisode', () => {
     ]);
   });
 
+  test('tactic words: "skews" counts as a skewer claim', () => {
+    expect(verify((episode) => (episode.beats[0]!.say = 'Six. Bc3 skews the queen.'))).toEqual([
+      { code: 'tactic-words', nodeId: 'n11', message: '"skews" in beat 1: the analysis finds no skewer here' }
+    ]);
+  });
+
   test('numbers: eval numbers, and a percentage the direction did not give', () => {
     expect(verify((episode) => (episode.beats[0]!.say = 'Six. Bc3, and White is +1.3.'))).toEqual([
       { code: 'numbers', nodeId: 'n11', message: '"+1.3" in beat 1 looks like an engine number' }

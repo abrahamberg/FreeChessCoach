@@ -7,7 +7,7 @@ export interface BandSelectProps {
   onChange: (band: RatingBand) => void;
 }
 
-const BAND_LABELS: Record<RatingBand, string> = {
+export const BAND_LABELS: Record<RatingBand, string> = {
   novice: 'New to chess',
   improving: 'Improving',
   club: 'Club level',

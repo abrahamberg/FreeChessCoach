@@ -115,6 +115,19 @@ describe('runCourseGeneration', () => {
     expect(row?.generation?.status).toBe('succeeded');
   });
 
+  test('a quiz the outline did not plan is a problem for the repair call', async () => {
+    const id = await newCourse('unplanned-quiz@example.com');
+    const quizzed = { ...script('e3', 'n11'), quiz: { answerNodeId: 'n12', prompt: 'What now?', hint: 'Look at the king.', reveal: 'Bb4 pins it.' } };
+    const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), step(quizzed), step(script('e3', 'n11')), step(script('e4', 'n12')), step(script('e5', 'n11'))]);
+
+    await runCourseGeneration(deps, id);
+
+    expect(prompts()[4]).toContain('The outline gives this episode no quiz, so quiz must be null');
+    const row = await coursesRepo.findById(db, id);
+    expect(row?.document?.episodes.find((episode) => episode.id === 'e3')?.quiz).toBeUndefined();
+    expect(row?.generation?.warnings).toEqual([]);
+  });
+
   test('an expired unlock stops the job with the unlock error and keeps finished episodes; a resume writes only the rest', async () => {
     const id = await newCourse('unlock@example.com');
     const stopped = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2'))], 4);

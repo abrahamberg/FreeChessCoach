@@ -1,6 +1,6 @@
 import { TACTIC_MOTIF_PHRASES, type CourseSkeleton } from '@freechesscoach/chess-analysis';
 import type { CourseBudget } from './budget.js';
-import { capitalise, type CoursePromptContext } from './context.js';
+import { capitalise, nodeLabel, type CoursePromptContext } from './context.js';
 
 /** docs/courses.md §6.3, one playbook per kind, filled from the skeleton
  * (§5.5), the budget and the course. Missing facts are named as missing, so
@@ -44,9 +44,8 @@ function trapPlaybook(context: CoursePromptContext, budget: CourseBudget, skelet
 The trapper is ${trapper}. The bait is node ${skeleton?.baitNodeId ?? 'not found'}. The answer is node
 ${skeleton?.answerNodeId ?? 'not found'}. The victim's safe move at the bait is ${safeMove}.
 Use exactly these episodes, in order:
-1. hook — at most ${budget.hookWords} words, true and specific to what the dossier says the trap
-   wins ("Their queen is gone in eight moves."). Mate if it mates, the queen if
-   it wins the queen.
+1. hook — at most ${budget.hookWords} words, true and specific to how the trap ends:
+   ${trapEnding(context)}
 2. setup — the setup moves play fast. Narrate at most two, only where the move
    order matters.
 3. bait — why the victim's move looks natural. This is the heart of the trap:
@@ -59,6 +58,18 @@ The end card and call to action are added by the app; don't write them.
 Notes: every node gets one. The bait and the safe move get the longest. The
 learner drills both sides, so the notes must teach springing the trap and
 avoiding it.`;
+}
+
+/** The hook's one fact, stated rather than shown by example: a quoted
+ * example hook ("Their queen is gone…") was copied word for word by a local
+ * model on a trap that mates. */
+function trapEnding(context: CoursePromptContext): string {
+  const leafId = context.lines[0]?.leafNodeId;
+  const leaf = context.nodes.find((node) => node.id === leafId);
+  if (!leafId || !leaf) return 'not found; say what the dossier shows.';
+  if (leaf.san.endsWith('#')) return `checkmate, ${nodeLabel(context, leafId)}. Promise the mate, not material.`;
+  const after = context.dossier.nodes.find((node) => node.nodeId === leafId)?.after;
+  return `${nodeLabel(context, leafId)}, after which ${after ? after.charAt(0).toLowerCase() + after.slice(1) : 'see the dossier'}. Promise what that wins, nothing more.`;
 }
 
 function openingReelPlaybook(context: CoursePromptContext, budget: CourseBudget): string {

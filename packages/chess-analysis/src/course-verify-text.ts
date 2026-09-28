@@ -67,7 +67,7 @@ function legalMoves(scope: EpisodeScope): string[] {
 const TACTIC_WORDS: { name: string; pattern: RegExp }[] = [
   { name: 'fork', pattern: /\bfork(?:s|ed|ing)?\b/gi },
   { name: 'pin', pattern: /\bpin(?:s|ned|ning)?\b/gi },
-  { name: 'skewer', pattern: /\bskewer(?:s|ed|ing)?\b/gi },
+  { name: 'skewer', pattern: /\bskew(?:er)?(?:s|ed|ing)?\b/gi },
   { name: 'discovered attack', pattern: /\bdiscover(?:ed|s|y)\b/gi },
   { name: 'double check', pattern: /\bdouble[- ]check/gi },
   { name: 'mate', pattern: /\b(?:check)?mat(?:e|es|ed|ing)\b/gi },

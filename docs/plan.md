@@ -430,7 +430,46 @@ Game), loaded by `golden-set.ts`; `golden-set.test.ts` checks each parses,
 its learner side, and < 5 KB. Not yet run against a real model or engine
 here (no engine on :8081 and no network in this session).
 
-First run findings: (pending)
+First run findings (2026-09-28, trap = Englund, in the app end to end:
+worker job, browser LLM tunnel, LM Studio `google/gemma-4-12b-qat`; outline
+≈2 min, whole course ≈10 min, 8 calls):
+- **Dossier had no quiz-eligible node.** The Lichess eval index stores one
+  line for most forced positions (6...Bb4, 7...Bxc3, 8.Qxc3 all 1 line), so
+  `isQuizEligible` never saw a second line; the AI outline's quiz failed
+  §6.4 twice and the skeleton fallback put the quiz on n12 anyway. Fixed:
+  `EngineBackendAnalyzeOptions.minLines` — an index hit with fewer lines than
+  that (and than the legal moves) is searched instead; the course dossier
+  passes `minLines: 2`, game review is unchanged. After: n12/n14/n16
+  quiz-eligible, 8 of 17 positions searched, outline passed first try.
+- **Hook copied the playbook's example** "Their queen is gone in eight moves."
+  word for word on a trap that mates. Fixed: the trap playbook states the
+  ending (`trapEnding`: "checkmate, n16 (8... Qc1#). Promise the mate, not
+  material.") and shows no example hook (courses.md §6.3 updated).
+- **A quiz on an episode the outline gave none** (bait e3 carried e4's quiz)
+  passed: the verifier never sees the outline. Fixed: `writeEpisode` checks
+  the quiz against the outline's `answerNodeId` before the verifier.
+- **"skews the queen"** on 7...Bxc3 passed: the skewer pattern needed
+  "skewer". Fixed: `\bskew(?:er)?…`.
+- Not fixed, prompt-level: an invented plan ("stops White's plan to win
+  material through a fork"), highlights drawn with kind "best" (c3-c3),
+  terse quiz reveal ("Bb4"). Good: the safety episode found 6.Nc3 from the
+  dossier, the 6...Bb4 pin was stated correctly.
+- App, found on the way: intake level showed raw band values and two
+  identical "Coach" options (now "New to chess"… and "Coach (male/female
+  voice)"); disabled secondary/ghost/destructive buttons looked enabled
+  (base.css now dims every disabled button); an api/worker restart
+  mid-job (tsx watch) fails the run with a bare "fetch failed".
+- Rerun with the fixes (same model): hooks now promise the mate; the two
+  remaining warnings are real (arrow b4-f4). Still wrong and not caught: the
+  outline's hook episode spans n1–n16 so e1 writes a note on all 16 moves;
+  "Qb4+ pins the bishop on f4"; "fork" on n8; highlight arrows (x-x) used
+  as "best". Next: tune on a strong model (owner's gpt-6-luna, run the
+  golden set inside the worker container — WSL has no DNS), then back to
+  gemma to see what a weak model still misses.
+- Harness: prints each call's duration on stderr; with a local model use
+  `GOLDEN_PROTOCOL=openai-chat GOLDEN_ENDPOINT=http://<windows-host>:1234/v1
+  LLM_ALLOW_PRIVATE_ENDPOINTS=1`. docker-compose passes
+  `LLM_ALLOW_PRIVATE_ENDPOINTS` through (default 0).
 
 **Read:** `docs/courses.md` §7 (last paragraph).
 **Files:** `apps/api/scripts/course-golden.ts`, `apps/api/test/fixtures/courses/`

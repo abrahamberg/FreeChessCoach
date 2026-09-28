@@ -320,9 +320,8 @@ KIND: TRAP (vertical reel, at most {seconds}s, at most {words} spoken words)
 The trapper is {trapperSide}. The bait is node {baitNodeId}. The answer is node
 {answerNodeId}. The victim's safe move at the bait is {safeMove}.
 Use exactly these episodes, in order:
-1. hook — at most 12 words, true and specific to what the dossier says the trap
-   wins ("Their queen is gone in eight moves."). Mate if it mates, the queen if
-   it wins the queen.
+1. hook — at most 12 words, true and specific to how the trap ends:
+   {trapEnding}
 2. setup — the setup moves play fast. Narrate at most two, only where the move
    order matters.
 3. bait — why the victim's move looks natural. This is the heart of the trap:
@@ -339,6 +338,13 @@ avoiding it.
 ```
 `{trapperRiskLine}` is "The trapper's setup is risky against best play (see the
 dossier); say so plainly." when `trapperRisk` is set, else empty.
+
+`{trapEnding}` states the line's last move: "checkmate, n16 (8... Qc1#).
+Promise the mate, not material." when it mates, else the move and the
+dossier's words for the position after it, then "Promise what that wins,
+nothing more." It is stated, never shown as an example hook: the first real
+run (gemma-4-12b, 2026-09-28) copied the old example "Their queen is gone in
+eight moves." word for word on a trap that mates.
 
 **opening_reel**
 ```text

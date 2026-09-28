@@ -16,6 +16,9 @@ x-node-dev: &node-dev
     LLM_UNLOCK_TTL_SECONDS: ${LLM_UNLOCK_TTL_SECONDS:-900}
     REDIS_URL: redis://redis:6379
     LLM_FAKE: ${LLM_FAKE:-0}
+    # 1 lets a saved AI setup reach LM Studio/Ollama on this machine
+    # (http://host.docker.internal:1234/v1); apps/api/src/llm/endpoint-fetch.ts.
+    LLM_ALLOW_PRIVATE_ENDPOINTS: ${LLM_ALLOW_PRIVATE_ENDPOINTS:-0}
     LLM_REASONING_STANDARD: ${LLM_REASONING_STANDARD:-medium}
     LLM_REASONING_LIGHT: ${LLM_REASONING_LIGHT:-none}
     LLM_OPENAI_SERVICE_TIER: ${LLM_OPENAI_SERVICE_TIER:-auto}

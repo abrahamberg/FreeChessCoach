@@ -680,9 +680,8 @@ KIND: TRAP (vertical reel, at most 60s, at most 114 spoken words)
 The trapper is Black. The bait is node n11. The answer is node
 n12. The victim's safe move at the bait is Nc3.
 Use exactly these episodes, in order:
-1. hook — at most 12 words, true and specific to what the dossier says the trap
-   wins ("Their queen is gone in eight moves."). Mate if it mates, the queen if
-   it wins the queen.
+1. hook — at most 12 words, true and specific to how the trap ends:
+   checkmate, n16 (8... Qc1#). Promise the mate, not material.
 2. setup — the setup moves play fast. Narrate at most two, only where the move
    order matters.
 3. bait — why the victim's move looks natural. This is the heart of the trap:

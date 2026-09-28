@@ -70,9 +70,13 @@ async function runCourse(course: GoldenCourse, resolution: ModelResolution, engi
   const calls = { outline: 0, episodes: 0, repairs: 0 };
   let phase: 'outline' | 'episodes' = 'outline';
   const call: CourseModelCall = async (messages, schema) => {
-    if (messages.user.includes('YOUR PREVIOUS')) calls.repairs++;
-    else calls[phase]++;
-    return (await generateStructured({ resolution, system: messages.system, prompt: messages.user, schema })).object;
+    const kind = messages.user.includes('YOUR PREVIOUS') ? 'repairs' : phase;
+    calls[kind]++;
+    const callStarted = Date.now();
+    const result = await generateStructured({ resolution, system: messages.system, prompt: messages.user, schema });
+    // Progress on stderr: a slow local model otherwise looks hung.
+    console.error(`  ${course.name}: ${kind} call ${calls[kind]} took ${Math.round((Date.now() - callStarted) / 1000)}s`);
+    return result.object;
   };
 
   const planned = await planOutline(inputs, call);

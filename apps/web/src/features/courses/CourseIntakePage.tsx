@@ -13,10 +13,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
 import { useProfile } from '../../hooks/useProfile.js';
 import { useCourses, useCreateCourse } from './courseApi.js';
+import { BAND_LABELS } from '../settings/BandSelect.js';
 import { COURSE_KIND_INFO } from './courseKinds.js';
 import './CourseEditor.css';
 
 type SideChoice = 'auto' | 'white' | 'black';
+
+/** Both default coaches are labelled "Coach"; the voice tells them apart. */
+function personaLabel(persona: CoachPersona): string {
+  const info = COACH_PERSONA_INFO[persona];
+  return persona === 'general' || persona === 'general_female' ? `${info.label} (${info.voiceProfile.split(',')[0]!.toLowerCase()} voice)` : info.label;
+}
 
 /** docs/courses.md §5.3: only what the AI can't infer. The learner side is
  * pre-filled by the same inference the server runs. */
@@ -90,7 +97,7 @@ export function CourseIntakePage(): ReactNode {
             <select value={levelBand} onChange={(event) => setLevelBand(event.target.value as RatingBand)}>
               {RATING_BANDS.map((band) => (
                 <option key={band} value={band}>
-                  {band}
+                  {BAND_LABELS[band]}
                 </option>
               ))}
             </select>
@@ -108,7 +115,7 @@ export function CourseIntakePage(): ReactNode {
             <select value={coachPersona} onChange={(event) => setPersona(event.target.value as CoachPersona)}>
               {COACH_PERSONAS.map((option) => (
                 <option key={option} value={option}>
-                  {COACH_PERSONA_INFO[option].label}
+                  {personaLabel(option)}
                 </option>
               ))}
             </select>

@@ -31,6 +31,13 @@ describe('course prompts', () => {
     expect(system).toContain('The\n   clip pauses 3s.');
   });
 
+  test('the trap hook is told how the line ends, with no example hook to copy', () => {
+    const system = buildCourseSystemPrompt(englundCourseContext());
+
+    expect(system).toContain('true and specific to how the trap ends:\n   checkmate, n16 (8... Qc1#). Promise the mate, not material.');
+    expect(system).not.toContain('Their queen is gone');
+  });
+
   test('the system prompt is identical across the outline and every episode call (cache-stable)', () => {
     const context = englundCourseContext();
     const systems = ['e1', 'e2', 'e3'].map((episodeId) => buildCourseEpisodeMessages({ context, outline: ENGLUND_OUTLINE, episodeId }).system);

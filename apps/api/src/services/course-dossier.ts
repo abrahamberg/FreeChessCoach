@@ -42,7 +42,9 @@ export async function buildCourseDossierFromEngine(
   backend: Pick<EngineBackend, 'analyzeGame'>
 ): Promise<CourseDossierResult> {
   const fens = courseTreeFens(tree);
-  const evals = await backend.analyzeGame(fens, { multiPv: COURSE_MULTI_PV });
+  // minLines 2: the index stores one line for most forced positions, and a
+  // quiz is judged on the gap to the second move.
+  const evals = await backend.analyzeGame(fens, { multiPv: COURSE_MULTI_PV, minLines: 2 });
   const evalsByFen = new Map<string, EngineEval>();
   fens.forEach((fen, index) => {
     const evaluation = evals[index];
