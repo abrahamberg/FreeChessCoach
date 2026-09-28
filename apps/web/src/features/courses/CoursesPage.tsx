@@ -5,7 +5,7 @@ import { useCourses } from './courseApi.js';
 import { COURSE_KIND_INFO } from './courseKinds.js';
 import './CourseEditor.css';
 
-/** /courses: the creator's courses, as the API lists them, and the way to
+/** /studio: the creator's courses, as the API lists them, and the way to
  * start a new one. */
 export function CoursesPage(): ReactNode {
   const courses = useCourses();
@@ -14,8 +14,8 @@ export function CoursesPage(): ReactNode {
   return (
     <div className="course-intake">
       <div className="course-intake__header">
-        <h1>Your courses</h1>
-        <Link to="/courses/new" className="btn-primary">
+        <h1>Course studio</h1>
+        <Link to="/studio/new" className="btn-primary">
           New course
         </Link>
       </div>
@@ -31,7 +31,7 @@ export function CoursesPage(): ReactNode {
           <ul>
             {list.map((course) => (
               <li key={course.id}>
-                <Link to={`/courses/${course.id}/edit`}>{course.title || 'Untitled course'}</Link>
+                <Link to={`/studio/${course.id}/edit`}>{course.title || 'Untitled course'}</Link>
                 <span className="meta">
                   {COURSE_KIND_INFO[course.kind].label} · {course.status} · {new Date(course.updatedAt).toLocaleDateString()}
                 </span>

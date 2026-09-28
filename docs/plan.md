@@ -1021,19 +1021,26 @@ courses"), `App.tsx`.
 **Files:** a new `features/courses/learn/CoursesHomePage.tsx` + test and CSS;
 `App.tsx`; `AccountMenuSections.tsx`.
 
-- [ ] Failing test first: the three sections render from mocked queries,
+Status: done 2026-09-28. `learn/CoursesHomePage.tsx`: Learning reuses
+`CourseContinueCard` (now with a remove button), Browse is a grid with kind
+pills and a Learning/Learned badge, Learned shows moves due from the review
+query. `player/PublishedCourse.tsx` is the fetch-and-play part shared by
+`/learn/:slug` and the new `learn/CoursePage.tsx`. The Continue and Due today
+cards link to `/courses/:slug`. Not yet seen in the browser.
+
+- [x] Failing test first: the three sections render from mocked queries,
   with their empty states.
-- [ ] `/courses` becomes the learner's page: **Learning** (unfinished: stage,
+- [x] `/courses` becomes the learner's page: **Learning** (unfinished: stage,
   progress, last activity), **Browse** (the catalogue, kind filter chips; a
   badge on courses already learning or learned), **Learned** (finished, with
   moves due for review).
-- [ ] The creator's pages move to `/studio`, `/studio/new`,
+- [x] The creator's pages move to `/studio`, `/studio/new`,
   `/studio/:id/edit`, with redirects from the old creator paths; the account
   menu item becomes "Course studio" (still creators only).
-- [ ] `/courses/:slug` shows the same `CoursePlayer` inside the app shell for
+- [x] `/courses/:slug` shows the same `CoursePlayer` inside the app shell for
   signed-in users; `/learn/:slug` stays the public page. The Courses page and
   the Continue rail link to `/courses/:slug`.
-- [ ] "Remove from my learning" on a Learning card.
+- [x] "Remove from my learning" on a Learning card.
 
 Commit: `feat(courses): a Courses page for learning, browsing and learned courses`
 

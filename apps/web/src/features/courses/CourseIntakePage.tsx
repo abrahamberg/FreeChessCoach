@@ -51,7 +51,7 @@ export function CourseIntakePage(): ReactNode {
     const learnerSide = side === 'auto' ? null : side;
     create.mutate(
       { pgn, kind, direction, levelBand, learnerSide, coachPersona },
-      { onSuccess: (course) => navigate(`/courses/${course.id}/edit`) }
+      { onSuccess: (course) => navigate(`/studio/${course.id}/edit`) }
     );
   }
 
@@ -60,7 +60,7 @@ export function CourseIntakePage(): ReactNode {
   return (
     <div className="course-intake">
       <p className="meta">
-        <Link to="/courses">← Your courses</Link>
+        <Link to="/studio">← Course studio</Link>
       </p>
       <h1>Create a course</h1>
       <form className="course-intake__form" onSubmit={submit}>

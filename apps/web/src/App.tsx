@@ -7,6 +7,8 @@ import { TunnelTakeoverGate } from './components/TunnelTakeoverGate.js';
 import { CourseEditorPage } from './features/courses/CourseEditorPage.js';
 import { CourseIntakePage } from './features/courses/CourseIntakePage.js';
 import { CoursesPage } from './features/courses/CoursesPage.js';
+import { CoursePage } from './features/courses/learn/CoursePage.js';
+import { CoursesHomePage } from './features/courses/learn/CoursesHomePage.js';
 import { LearnPage } from './features/courses/player/LearnPage.js';
 import { FindGamesPage } from './features/games/FindGamesPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
@@ -65,6 +67,11 @@ function GameReviewRoute(): ReactNode {
   return <GameReviewPage key={gameId} />;
 }
 
+function StudioEditRedirect(): ReactNode {
+  const { id = '' } = useParams<{ id: string }>();
+  return <Navigate to={`/studio/${id}/edit`} replace />;
+}
+
 export function App(): ReactNode {
   return (
     <QueryClientProvider client={queryClient}>
@@ -109,9 +116,14 @@ export function AppRoutes(): ReactNode {
             <Route path="/dashboard" element={<Navigate to="/progress" replace />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/courses" element={<CoursesPage />} />
-            <Route path="/courses/new" element={<CourseIntakePage />} />
-            <Route path="/courses/:id/edit" element={<CourseEditorPage />} />
+            <Route path="/courses" element={<CoursesHomePage />} />
+            <Route path="/courses/:slug" element={<CoursePage />} />
+            {/* The creator's pages were under /courses until 2026-09-28. */}
+            <Route path="/courses/new" element={<Navigate to="/studio/new" replace />} />
+            <Route path="/courses/:id/edit" element={<StudioEditRedirect />} />
+            <Route path="/studio" element={<CoursesPage />} />
+            <Route path="/studio/new" element={<CourseIntakePage />} />
+            <Route path="/studio/:id/edit" element={<CourseEditorPage />} />
             {getDemoRuntime() && <Route path="/coach" element={<DemoCoachRedirect />} />}
           </Routes>
         </OnboardingRedirect>

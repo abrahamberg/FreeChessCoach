@@ -30,7 +30,7 @@ describe('CourseContinueCard', () => {
     const progress = screen.getByRole('progressbar', { name: '2 of 4 stages done' });
     expect(progress.getAttribute('value')).toBe('2');
     expect(progress.getAttribute('max')).toBe('4');
-    expect(screen.getByRole('link', { name: 'Continue course: The Englund trap' }).getAttribute('href')).toBe('/learn/englund-trap-aaaaaaaaaaaa');
+    expect(screen.getByRole('link', { name: 'Continue course: The Englund trap' }).getAttribute('href')).toBe('/courses/englund-trap-aaaaaaaaaaaa');
   });
 });
 

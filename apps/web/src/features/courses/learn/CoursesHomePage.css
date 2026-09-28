@@ -1,0 +1,93 @@
+/* The learner's Courses page: the Games page's sections and rail cards, plus
+ * kind filter pills and a grid for the catalogue. */
+.courses-home h1 {
+  margin: 0;
+}
+
+.courses-home__empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.courses-home__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.courses-home__filter {
+  min-height: 34px;
+  padding: 4px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.courses-home__filter:hover {
+  border-color: var(--color-primary);
+}
+
+.courses-home__filter[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.courses-home__filter:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.courses-home__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+
+.courses-home__course {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.courses-home__course:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-strong);
+}
+
+.courses-home__status {
+  margin-left: auto;
+}
+
+.courses-home__promise {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.courses-home__title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.courses-home__title-link:hover {
+  color: var(--color-primary);
+}
+
+@media (max-width: 639px) {
+  .courses-home__filter {
+    min-height: 44px;
+  }
+}

@@ -20,8 +20,8 @@ afterEach(() => vi.unstubAllGlobals());
 describe('CoursesPage', () => {
   test('lists the creator courses, each opening its editor', async () => {
     renderWith([{ id: 'c1', slug: 'englund', kind: 'trap', status: 'draft', title: 'The Englund trap', updatedAt: '2026-09-28T10:00:00.000Z' }]);
-    expect(await screen.findByRole('link', { name: 'The Englund trap' })).toHaveAttribute('href', '/courses/c1/edit');
-    expect(screen.getByRole('link', { name: 'New course' })).toHaveAttribute('href', '/courses/new');
+    expect(await screen.findByRole('link', { name: 'The Englund trap' })).toHaveAttribute('href', '/studio/c1/edit');
+    expect(screen.getByRole('link', { name: 'New course' })).toHaveAttribute('href', '/studio/new');
   });
 
   test('says so when there are none', async () => {
