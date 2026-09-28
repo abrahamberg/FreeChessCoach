@@ -196,11 +196,20 @@ Per node:
 - Book: in book or not, the opening name where the book names it
   (`opening-book.ts`).
 - Engine best move and its line (SAN, at most 6 plies) when the course move is
-  not the best.
-- Board facts (`inspect-moves.ts`): captures, checks, what it leaves hanging,
-  forks it creates.
+  not the best, and **why it is better** in board facts: what it does, and
+  each piece the played move left hanging that it keeps safe ("Nc3 keeps the
+  rook on a1 safe").
+- Board facts (`inspect-moves.ts`): captures, checks and **how the check can
+  be answered** (blocks, captures of the checker, king moves), what it leaves
+  hanging, forks it creates (named by piece; pawns left out).
 - Tactics (the tactic detectors and `tactic-reason-text.ts`): motifs found,
-  missed, allowed or prevented at this node, each with its checked sentence.
+  missed or allowed at this node, each with its checked sentence. Not the
+  review's "you stopped them…" sentences: they are about a move nobody played,
+  and models presented them as the point of the move.
+
+The principle: the app supplies every chess fact; the model only puts the
+facts it is given into words. When a script states something wrong, the fix is
+a missing or misleading fact here, not a prompt telling the model to be careful.
 - Alternatives: the engine's other top moves and the tempting moves (captures,
   checks) with verdict words, so "why not X?" is answered from facts.
 - Flags: `quiz-eligible` (one move is clearly best: a win-percentage gap above

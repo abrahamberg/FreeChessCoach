@@ -33,14 +33,57 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   const facts: string[] = [];
   if (inspected.captured) facts.push(`captures the ${PIECE_NAMES[inspected.captured]} on ${inspected.to}`);
   if (inspected.gives) facts.push(`gives ${inspected.gives}`);
+  if (inspected.gives === 'check') facts.push(checkAnswers(inspected.resultFen));
   facts.push(...attackedPieces(inspected.resultFen, inspected.to as Square));
   for (const piece of inspected.leavesHanging) {
     if (canBeTaken(inspected.resultFen, piece.square)) facts.push(`leaves the ${PIECE_NAMES[piece.piece]} on ${piece.square} hanging`);
   }
   for (const fork of inspected.createsForks) {
-    if (fork.square === inspected.to) facts.push(`the ${PIECE_NAMES[fork.piece]} on ${fork.square} forks ${fork.forkedSquares.join(' and ')}`);
+    const targets = forkTargets(inspected.resultFen, fork.forkedSquares);
+    if (fork.square === inspected.to && targets.length >= 2) facts.push(`the ${PIECE_NAMES[fork.piece]} on ${fork.square} forks ${targets.join(' and ')}`);
   }
   return facts;
+}
+
+/** How the checked side can answer, so a script can't say "forces the king
+ * to move" when a block exists (gemma-4-12b did, on 4...Qb4+). */
+function checkAnswers(fenAfter: string): string {
+  const chess = new Chess(fenAfter);
+  const checker = chess.attackers(chess.findPiece({ type: 'k', color: chess.turn() })[0] as Square, chess.turn() === 'w' ? 'b' : 'w');
+  const moves = chess.moves({ verbose: true });
+  const kingMoves = moves.filter((move) => move.piece === 'k').map((move) => move.san);
+  const captures = moves.filter((move) => move.piece !== 'k' && checker.includes(move.to)).map((move) => move.san);
+  const blocks = moves.filter((move) => move.piece !== 'k' && !checker.includes(move.to)).map((move) => move.san);
+  const ways = [
+    blocks.length ? `block with ${blocks.join(', ')}` : 'no block',
+    captures.length ? `take the checking piece with ${captures.join(', ')}` : 'the checking piece cannot be taken',
+    kingMoves.length ? `move the king with ${kingMoves.join(', ')}` : 'the king cannot move'
+  ];
+  return `the check can be answered: ${ways.join('; ')}`;
+}
+
+/** The forked pieces by name, pawns left out: "forks e5 and a2 and c2" read
+ * as nonsense and was copied word for word. */
+function forkTargets(fenAfter: string, squares: string[]): string[] {
+  const chess = new Chess(fenAfter);
+  return squares.flatMap((square) => {
+    const piece = chess.get(square as Square);
+    return piece && piece.type !== 'p' ? [`the ${PIECE_NAMES[piece.type]} on ${square}`] : [];
+  });
+}
+
+/** Why the engine's move was better, in board facts: what it does, and each
+ * piece the played move left hanging that it keeps safe ("Nc3 keeps the rook
+ * on a1 safe"). The model is never left to guess the reason. */
+export function betterMoveFacts(fenBefore: string, playedSan: string, betterSan: string): string[] {
+  const played = inspectMoves(fenBefore, [playedSan]).moves[0];
+  const better = inspectMoves(fenBefore, [betterSan]).moves[0];
+  if (!played?.legal || !better?.legal) return [];
+  const stillHanging = new Set(better.leavesHanging.filter((piece) => canBeTaken(better.resultFen, piece.square)).map((piece) => piece.square));
+  const kept = played.leavesHanging
+    .filter((piece) => canBeTaken(played.resultFen, piece.square) && !stillHanging.has(piece.square))
+    .map((piece) => `keeps the ${PIECE_NAMES[piece.piece]} on ${piece.square} safe`);
+  return [...boardFacts(fenBefore, betterSan), ...kept];
 }
 
 /** A legal capture on the square, so a pinned attacker doesn't count. */

@@ -2,11 +2,11 @@ import { Chess } from 'chess.js';
 import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
 import type { ClassifiedMove } from './classify.js';
 import { CONFIG } from './config.js';
-import { boardFacts, lineWords, positionWords } from './course-dossier-words.js';
+import { betterMoveFacts, boardFacts, lineWords, positionWords } from './course-dossier-words.js';
 import type { CourseTreeNode } from './course-tree.js';
 import { isBookMoveFrom, resolveOpening } from './opening-book.js';
 import { positionKey } from './opening-book-key.js';
-import { tacticAllowedReason, tacticOpportunityReason, tacticPreventionReason } from './tactic-reason-text.js';
+import { tacticAllowedReason, tacticOpportunityReason } from './tactic-reason-text.js';
 import { toCpWhite, winPctFor } from './win-probability.js';
 
 const BEST_LINE_PLIES = 6;
@@ -24,10 +24,15 @@ export interface CourseNodeFacts {
   after: string;
   inBook: boolean;
   openingName: string | null;
-  /** The engine's best move and line (at most 6 plies) when the course move is not it. */
-  bestInstead: { san: string; line: string[] } | null;
+  /** The engine's best move and line (at most 6 plies) when the course move
+   * is not it, with its board facts (`betterMoveFacts`); `board` is absent in
+   * dossiers stored before it existed. */
+  bestInstead: { san: string; line: string[]; board?: string[] } | null;
   board: string[];
-  /** Checked tactic sentences (`tactic-reason-text.ts`), learner = "you". */
+  /** Checked tactic sentences (`tactic-reason-text.ts`), learner = "you".
+   * Not the review's prevention sentences ("you stopped them winning a
+   * bishop through a fork"): about a move nobody played, the model presented
+   * them as the point of the move. */
   tactics: string[];
   /** The motif the move plays, when the detectors found one. */
   motif: TacticMotifType | null;
@@ -70,7 +75,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     after: positionWords(node.fenAfter, evalsByFen.get(node.fenAfter)),
     inBook: isBookMoveFrom(fenBefore, node.san),
     openingName: opening?.name ?? null,
-    bestInstead: bestInstead(move, node.san),
+    bestInstead: bestInstead(move, node.san, fenBefore),
     board: boardFacts(fenBefore, node.san),
     tactics: tacticSentences(move, side === input.learnerSide),
     motif: move.tacticOpportunity?.found ? move.tacticOpportunity.type : null,
@@ -84,18 +89,17 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
   };
 }
 
-function bestInstead(move: ClassifiedMove, san: string): CourseNodeFacts['bestInstead'] {
+function bestInstead(move: ClassifiedMove, san: string, fenBefore: string): CourseNodeFacts['bestInstead'] {
   const best = move.bestMoveSan ?? move.bestLineSan[0];
   if (!best || best === san) return null;
   const line = move.bestLinePvSan?.length ? move.bestLinePvSan : move.bestLineSan;
-  return { san: best, line: line.slice(0, BEST_LINE_PLIES) };
+  return { san: best, line: line.slice(0, BEST_LINE_PLIES), board: betterMoveFacts(fenBefore, san, best) };
 }
 
 function tacticSentences(move: ClassifiedMove, isUserMove: boolean): string[] {
   const sentences: string[] = [];
   if (move.tacticOpportunity) sentences.push(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove }, move.bestMoveSan));
   if (move.tacticAllowed) sentences.push(tacticAllowedReason({ ...move.tacticAllowed, isUserMove }));
-  if (move.tacticPrevention) sentences.push(tacticPreventionReason({ ...move.tacticPrevention, isUserMove }));
   return sentences;
 }
 

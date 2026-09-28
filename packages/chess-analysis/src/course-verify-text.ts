@@ -93,7 +93,7 @@ export function tacticWordProblems(texts: EpisodeText[], scope: EpisodeScope): C
     .flatMap((nodeId) => {
       const facts = scope.facts.get(nodeId);
       if (!facts) return [];
-      return [facts.motif ? TACTIC_MOTIF_PHRASES[facts.motif].noun : '', ...facts.tactics, ...facts.board, facts.after, facts.creatorComment ?? ''];
+      return [facts.motif ? TACTIC_MOTIF_PHRASES[facts.motif].noun : '', ...facts.tactics, ...facts.board, ...(facts.bestInstead?.board ?? []), facts.after, facts.creatorComment ?? ''];
     })
     .join('\n');
   const supported = TACTIC_WORDS.filter(({ pattern }) => new RegExp(pattern.source, 'i').test(evidence));

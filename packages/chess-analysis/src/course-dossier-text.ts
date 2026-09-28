@@ -38,6 +38,7 @@ function renderNode(node: CourseNodeFacts, lineName: string, oneLine: boolean): 
   };
   if (node.inBook) detail('book', node.openingName ? `in book (${node.openingName})` : 'in book');
   if (node.bestInstead) detail('best instead', `${node.bestInstead.san} (line: ${node.bestInstead.line.join(' ')})`);
+  if (node.bestInstead?.board?.length) detail(`why ${node.bestInstead.san} is better`, node.bestInstead.board.join(' | '));
   if (node.board.length) detail('board', node.board.join(' | '));
   if (node.tactics.length) detail('tactics', node.tactics.join(' '));
   if (node.alternatives.length) detail('alternatives', node.alternatives.map((alt) => `${alt.san}: ${alt.verdict}`).join('; '));

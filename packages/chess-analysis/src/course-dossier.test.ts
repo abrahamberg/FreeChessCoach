@@ -42,6 +42,13 @@ describe('course dossier', () => {
     expect(facts.get('n8')?.board).toContain('attacks the bishop on f4');
     expect(facts.get('n16')?.board).toContain('attacks the knight on b1');
     expect(facts.get('n14')?.board).toContain('attacks the queen on d2, which is pinned to the king');
+    // What the model must not guess: how a check is met, why the safe move
+    // works, and forks by piece, not by square.
+    expect(facts.get('n8')?.board).toContain('the check can be answered: block with Bd2, Nfd2, c3, Nc3, Nbd2, Qd2; the checking piece cannot be taken; the king cannot move');
+    expect(bait?.bestInstead?.board).toEqual(['keeps the rook on a1 safe']);
+    expect(facts.get('n10')?.board).toContain('the queen on b2 forks the rook on a1 and the knight on b1');
+    // No review "you stopped them" sentences about moves nobody played.
+    expect(dossier.nodes.flatMap((node) => node.tactics).join(' ')).not.toMatch(/stopped/);
     expect(dossier.lines[0]?.openingName).toMatch(/Englund/);
   });
 
@@ -52,6 +59,7 @@ describe('course dossier', () => {
     expect(text).toContain('n12 6…Bb4 (Black, Line A)');
     expect(text).toContain('Black is winning');
     expect(text).toContain('flags: quiz-eligible');
+    expect(text).toContain('    why Nc3 is better: keeps the rook on a1 safe');
     expect(text).not.toMatch(/\d\.\d|[+-]\d|\bcp\b|%|centipawn/i);
   });
 });
