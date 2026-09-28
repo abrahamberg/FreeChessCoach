@@ -29,7 +29,9 @@ export interface OpeningSkeleton {
 export interface TacticsSkeleton {
   kind: 'tactics';
   /** Easiest first: the shortest winning line. */
-  examples: { lineId: string; nodeId: string; motif: TacticMotifType | null; depth: number }[];
+  /** `nodeId` is the move to find; `startNodeId` is where the example
+   * starts: the learner's move before the opponent's mistake that allows it. */
+  examples: { lineId: string; nodeId: string; startNodeId: string; motif: TacticMotifType | null; depth: number }[];
 }
 
 export interface MasterGameSkeleton {
@@ -118,7 +120,12 @@ function deviations(tree: CourseTree): string[] {
 }
 
 /** One example per line: the learner's first move that plays a motif,
- * else the first quiz-eligible one; depth = plies left to the line's end. */
+ * else the first quiz-eligible one; depth = plies left to the line's end.
+ * When the opponent's move just before it was a mistake, the example starts
+ * one move earlier, so it shows the mistake (Legal's mate: 5.Nxe5 Bxd1??,
+ * not just 6.Bxf7+). */
+const MISTAKES = new Set(['mistake', 'blunder']);
+
 function tacticsSkeleton(
   lines: CourseLineGame[],
   lineFacts: (line: CourseLineGame) => CourseNodeFacts[],
@@ -128,7 +135,10 @@ function tacticsSkeleton(
     const nodes = lineFacts(line).filter((node) => node.side === learnerSide);
     const pick = nodes.find((node) => node.motif) ?? nodes.find((node) => node.quizEligible);
     if (!pick) return [];
-    return [{ lineId: line.lineId, nodeId: pick.nodeId, motif: pick.motif, depth: line.nodeIds.length - line.nodeIds.indexOf(pick.nodeId) }];
+    const at = line.nodeIds.indexOf(pick.nodeId);
+    const allowedBy = lineFacts(line).find((node) => node.nodeId === line.nodeIds[at - 1]);
+    const startNodeId = allowedBy && MISTAKES.has(allowedBy.quality) && at >= 2 ? line.nodeIds[at - 2]! : pick.nodeId;
+    return [{ lineId: line.lineId, nodeId: pick.nodeId, startNodeId, motif: pick.motif, depth: line.nodeIds.length - at }];
   });
   return { kind: 'tactics', examples: examples.sort((a, b) => a.depth - b.depth) };
 }

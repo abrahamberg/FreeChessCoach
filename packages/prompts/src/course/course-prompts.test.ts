@@ -13,7 +13,7 @@ const SKELETONS: Record<CourseKind, CourseSkeleton> = {
   trap: { kind: 'trap', lineId: 'l1', baitNodeId: 'n11', answerNodeId: 'n12', punishNodeIds: ['n13'], safeMoveSan: 'Nc3', trapperRiskNodeIds: ['n2'] },
   opening_reel: { kind: 'opening_reel', lines: [{ lineId: 'l1', bookExitNodeId: 'n7', learnerNodeIds: ['n2', 'n4'] }], deviationNodeIds: [], traps: [] },
   opening_course: { kind: 'opening_course', lines: [{ lineId: 'l1', bookExitNodeId: null, learnerNodeIds: ['n2'] }], deviationNodeIds: [], traps: [{ blunderNodeId: 'n11', answerNodeId: 'n12' }] },
-  tactics: { kind: 'tactics', examples: [{ lineId: 'l1', nodeId: 'n12', motif: 'pin', depth: 3 }] },
+  tactics: { kind: 'tactics', examples: [{ lineId: 'l1', nodeId: 'n12', startNodeId: 'n10', motif: 'pin', depth: 3 }] },
   master_game: { kind: 'master_game', criticalNodeIds: ['n11'], quizNodeIds: ['n12'], phaseBoundaryNodeIds: [] }
 };
 

@@ -746,65 +746,71 @@ l1 "Line A" | opening: Englund Gambit: Main Line | leaves book at n7
 Moves:
 n1 1.d4 (White, Line A) | book | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Queen's Pawn Game)
+    board: moves the pawn from d2 to d4
     alternatives: a3: Black is slightly better
 n2 1…e5 (Black, Line A) | book | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Englund Gambit)
-    board: leaves the pawn on e5 hanging
+    board: moves the pawn from e7 to e5 | leaves the pawn on e5 hanging
     alternatives: Nc6: White is slightly better
 n3 2.dxe5 (White, Line A) | book | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Englund Gambit)
-    board: captures the pawn on e5
+    board: moves the pawn from d4 to e5 | captures the pawn on e5
     alternatives: d5: Black is slightly better
 n4 2…Nc6 (Black, Line A) | book | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Englund Gambit)
+    board: moves the knight from b8 to c6
     alternatives: Na6: White is slightly better
     tempting, not in the engine top lines: Bb4+
 n5 3.Nf3 (White, Line A) | book | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Englund Gambit)
+    board: moves the knight from g1 to f3
     alternatives: e6: Black is slightly better
     tempting, not in the engine top lines: Qxd7+
 n6 3…Qe7 (Black, Line A) | book | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Englund Gambit: Main Line)
+    board: moves the queen from d8 to e7
     alternatives: Rb8: White is slightly better
     tempting, not in the engine top lines: Bb4+, Nxe5
 n7 4.Bf4 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from c1 to f4
     alternatives: e6: Black is slightly better
     tempting, not in the engine top lines: Qxd7+
 n8 4…Qb4+ (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
-    board: gives check | attacks the bishop on f4 | the queen on b4 forks f4 and b2 and e1
+    board: moves the queen from e7 to b4 | gives check | the check can be answered: block with Bd2, Nfd2, c3, Nc3, Nbd2, Qd2; the checking piece cannot be taken; the king cannot move | attacks the bishop on f4 | the queen on b4 forks the bishop on f4 and the king on e1
     alternatives: Rb8: White is slightly better
     tempting, not in the engine top lines: Qxe5, Nxe5
 n9 5.Bd2 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
-    board: attacks the queen on b4 | leaves the pawn on b2 hanging
+    board: moves the bishop from f4 to d2 | attacks the queen on b4 | leaves the pawn on b2 hanging
     alternatives: Nfd2: Black is slightly better
 n10 5…Qxb2 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
-    board: captures the pawn on b2 | attacks the rook on a1 | attacks the knight on b1 | the queen on b2 forks e5 and a2 and c2 and a1 and b1
+    board: moves the queen from b4 to b2 | captures the pawn on b2 | attacks the rook on a1 | attacks the knight on b1 | the queen on b2 forks the rook on a1 and the knight on b1
     alternatives: Rb8: White is slightly better
     tempting, not in the engine top lines: Nxe5, Qxd2+
 n11 6.Bc3 (White, Line A) | blunder | before: The position is roughly equal → after: Black is winning
     best instead: Nc3 (line: Nc3)
-    board: attacks the queen on b2 | leaves the rook on a1 hanging
+    why Nc3 is better: moves the knight from b1 to c3 | keeps the rook on a1 safe: the queen on d1 now defends it
+    board: moves the bishop from d2 to c3 | attacks the queen on b2 | leaves the rook on a1 hanging
     alternatives: Nc3: The position is roughly equal
     flags: critical
 n12 6…Bb4 (Black, Line A) | great | before: Black is winning → after: Black is winning
-    board: attacks the bishop on c3, which is pinned to the king
+    board: moves the bishop from f8 to b4 | attacks the bishop on c3, which is pinned to the king
     alternatives: Qb6: The position is roughly equal
     tempting, not in the engine top lines: Nxe5, Qxc3+, Qxc2, Qxb1
     flags: quiz-eligible, critical
 n13 7.Qd2 (White, Line A) | best | before: Black is winning → after: Black is winning
-    board: leaves the rook on a1 hanging
+    board: moves the queen from d1 to d2 | leaves the rook on a1 hanging
     alternatives: e6: Black is winning
     tempting, not in the engine top lines: Bxb4, Qxd7+
 n14 7…Bxc3 (Black, Line A) | best | before: Black is winning → after: Black is winning
-    board: captures the bishop on c3 | attacks the queen on d2, which is pinned to the king | the bishop on c3 forks e5 and d2
+    board: moves the bishop from b4 to c3 | captures the bishop on c3 | attacks the queen on d2, which is pinned to the king | the bishop stops guarding c3, where Qxc3 follows
     alternatives: Rb8: Black is winning
     tempting, not in the engine top lines: Nxe5, Qxc3, Qxc2, Qc1+
 n15 8.Qxc3 (White, Line A) | best | before: Black is winning → after: Black is winning
-    board: captures the bishop on c3 | attacks the knight on c6 | attacks the queen on b2 | leaves the rook on a1 hanging | the queen on c3 forks c6 and b2
+    board: moves the queen from d2 to c3 | captures the bishop on c3 | attacks the knight on c6 | attacks the queen on b2 | leaves the rook on a1 hanging | the queen on c3 forks the knight on c6 and the queen on b2 | the queen stops guarding c1, where Qc1# follows
     alternatives: e6: Black is winning
     tempting, not in the engine top lines: Nxc3
 n16 8…Qc1# (Black, Line A) | best | before: Black is winning → after: checkmate
-    board: gives checkmate | attacks the knight on b1
+    board: moves the queen from b2 to c1 | gives checkmate | a back-rank mate | why it is mate: the king on e1 is checked by the queen on c1; e2, f1, f2 hold its own pieces; d1 and d2 are covered by the queen on c1 | attacks the knight on b1
     alternatives: Rb8: Black is winning
     tempting, not in the engine top lines: Nxe5, Qxc3+, Qxc2, Qxb1+
     flags: critical
@@ -852,16 +858,17 @@ l1 "Line A" | opening: Englund Gambit: Main Line | leaves book at n7
 
 Moves:
 n10 5…Qxb2 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
-    board: captures the pawn on b2 | attacks the rook on a1 | attacks the knight on b1 | the queen on b2 forks e5 and a2 and c2 and a1 and b1
+    board: moves the queen from b4 to b2 | captures the pawn on b2 | attacks the rook on a1 | attacks the knight on b1 | the queen on b2 forks the rook on a1 and the knight on b1
     alternatives: Rb8: White is slightly better
     tempting, not in the engine top lines: Nxe5, Qxd2+
 n11 6.Bc3 (White, Line A) | blunder | before: The position is roughly equal → after: Black is winning
     best instead: Nc3 (line: Nc3)
-    board: attacks the queen on b2 | leaves the rook on a1 hanging
+    why Nc3 is better: moves the knight from b1 to c3 | keeps the rook on a1 safe: the queen on d1 now defends it
+    board: moves the bishop from d2 to c3 | attacks the queen on b2 | leaves the rook on a1 hanging
     alternatives: Nc3: The position is roughly equal
     flags: critical
 n12 6…Bb4 (Black, Line A) | great | before: Black is winning → after: Black is winning
-    board: attacks the bishop on c3, which is pinned to the king
+    board: moves the bishop from f8 to b4 | attacks the bishop on c3, which is pinned to the king
     alternatives: Qb6: The position is roughly equal
     tempting, not in the engine top lines: Nxe5, Qxc3+, Qxc2, Qxb1
     flags: quiz-eligible, critical

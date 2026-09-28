@@ -31,7 +31,7 @@ export function tacticsChapters(skeleton: TacticsSkeleton, lines: CourseLineGame
       episodeIds: builder.add({
         role: 'example',
         focus: 'example: the position, the reveal, why it works, and this example’s cue',
-        nodeIds: nodeIds.slice(nodeIds.indexOf(example.nodeId)),
+        nodeIds: nodeIds.slice(nodeIds.indexOf(example.startNodeId)),
         noteNodeIds: [example.nodeId],
         drillNodeIds: [example.nodeId],
         ...(facts?.quizEligible ? { quiz: findMoveQuiz(example.nodeId, facts.side) } : {})

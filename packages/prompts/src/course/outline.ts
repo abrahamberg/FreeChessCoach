@@ -97,7 +97,7 @@ function renderCandidates(context: CoursePromptContext, skeleton: CourseSkeleton
       ].join('\n');
     case 'tactics':
       return `examples, easiest first: ${
-        skeleton.examples.map((example) => `${example.lineId} at ${label(example.nodeId)} (${example.motif ?? 'motif not detected'}, ${example.depth} plies)`).join('; ') || 'none'
+        skeleton.examples.map((example) => `${example.lineId} at ${label(example.nodeId)}${example.startNodeId === example.nodeId ? '' : `, starting from ${label(example.startNodeId)}`} (${example.motif ?? 'motif not detected'}, ${example.depth} plies)`).join('; ') || 'none'
       }`;
     case 'master_game':
       return [`critical: ${list(skeleton.criticalNodeIds)}`, `quiz-eligible: ${list(skeleton.quizNodeIds)}`, `phase boundaries: ${list(skeleton.phaseBoundaryNodeIds)}`].join('\n');

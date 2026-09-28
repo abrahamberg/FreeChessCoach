@@ -205,6 +205,9 @@ Per node:
   leaves hanging, forks it creates (named by piece; pawns left out), and when
   the opponent's best reply is forcing, whether the moved piece stopped
   guarding its square ("the queen stops guarding c1, where Qc1# follows").
+  A mate says why, square by square: the checker, the king's squares that
+  hold its own pieces, the ones covered and by what, and which adjacent
+  attackers are guarded ("the bishop on f7 is guarded by the knight on e5").
 - Tactics (the tactic detectors and `tactic-reason-text.ts`): motifs found,
   missed or allowed at this node, each with its checked sentence. Not the
   review's "you stopped them…" sentences: they are about a move nobody played,
@@ -230,7 +233,7 @@ plans.
 |---|---|
 | trap | `baitNodeId`: the victim's move with the largest win-percentage drop on the line. `answerNodeId`: the trapper's next move. `punishNodes`: the rest of the line. `safeMove`: the engine's best at the bait. `trapperRisk`: whether the trapper's own setup moves are marked inaccurate or worse against best play. |
 | opening_reel / opening_course | Book exit per line, the learner's moves, the deviations (where sidelines branch), traps found inside the lines (a blunder by one side followed by a winning answer). |
-| tactics | One example per game/position, ordered by difficulty (puzzle rating when the example comes from the puzzle pool, else the depth of the winning line). The motif per example from the detectors. |
+| tactics | One example per game/position, ordered by difficulty (puzzle rating when the example comes from the puzzle pool, else the depth of the winning line). The motif per example from the detectors. When the opponent's move just before the move to find was a mistake, the example starts one learner move earlier, so it shows the mistake too (Legal's mate: from 5.Nxe5 Bxd1??, not just 6.Bxf7+). |
 | master_game | Critical moments (`critical-moments.ts`), quiz-eligible master moves, the phase boundaries (`phase-segmentation.ts`). |
 
 The same skeleton is the manual path (§10): with AI off, it becomes the episodes

@@ -49,6 +49,7 @@ describe('course dossier', () => {
     expect(bait?.bestInstead?.board).toEqual(['moves the knight from b1 to c3', 'keeps the rook on a1 safe: the queen on d1 now defends it']);
     expect(facts.get('n7')?.board).toEqual(['moves the bishop from c1 to f4']);
     expect(facts.get('n16')?.board).toContain('a back-rank mate');
+    expect(facts.get('n16')?.board).toContain('why it is mate: the king on e1 is checked by the queen on c1; e2, f1, f2 hold its own pieces; d1 and d2 are covered by the queen on c1');
     expect(facts.get('n10')?.board).toContain('the queen on b2 forks the rook on a1 and the knight on b1');
     // No review "you stopped them" sentences about moves nobody played.
     expect(dossier.nodes.flatMap((node) => node.tactics).join(' ')).not.toMatch(/stopped/);
@@ -89,6 +90,25 @@ describe('course skeleton', () => {
       safeMoveSan: 'Nc3',
       trapperRiskNodeIds: []
     });
+  });
+
+  test("tactics: an example starts before the opponent's mistake that allows it (Legal's mate)", () => {
+    const tree = parseCourseTree('1. e4 e5 2. Nf3 d6 3. Bc4 Bg4 4. Nc3 g6 5. Nxe5 Bxd1 6. Bxf7+ Ke7 7. Nd5# *');
+    const fen = (id: string): string => byId(tree).get(id)?.fenAfter ?? '';
+    const won = new Set([fen('n10'), fen('n11'), fen('n12')]);
+    const overrides = new Map<string, FakeEval>([
+      [fen('n9'), { cp: 0, moves: [{ san: 'dxe5', cp: 0 }, { san: 'Bxd1', cp: 2000 }] }],
+      [fen('n10'), { cp: 2000, moves: [{ san: 'Bxf7+', cp: 2000 }, { san: 'Kxd1', cp: 0 }] }]
+    ]);
+    const { dossier } = analyseCourse(tree, fakeEvals(tree, (value) => (won.has(value) ? 2000 : 0), overrides), 'white');
+
+    expect(buildCourseSkeleton({ kind: 'tactics', tree, lines: courseLineGames(tree), dossier })).toEqual({
+      kind: 'tactics',
+      examples: [{ lineId: 'l1', nodeId: 'n11', startNodeId: 'n9', motif: null, depth: 3 }]
+    });
+    expect(dossier.nodes.find((node) => node.nodeId === 'n13')?.board).toContain(
+      'why it is mate: the king on e7 is checked by the knight on d5; d6, d8, f8 hold its own pieces; d7 is covered by the knight on e5; e6 and e8 are covered by the bishop on f7; f6 is covered by the knight on d5; the bishop on f7 is guarded by the knight on e5'
+    );
   });
 
   test('opening: learner moves per line, sidelines as deviations, a blunder answered as a trap', () => {

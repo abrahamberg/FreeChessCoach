@@ -34,6 +34,7 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   if (inspected.captured) facts.push(`captures the ${PIECE_NAMES[inspected.captured]} on ${inspected.to}`);
   if (inspected.gives) facts.push(`gives ${inspected.gives}`);
   if (inspected.gives === 'checkmate' && isBackRankMate(inspected.resultFen, inspected.to as Square)) facts.push('a back-rank mate');
+  if (inspected.gives === 'checkmate') facts.push(mateNet(inspected.resultFen));
   if (inspected.gives === 'check') facts.push(checkAnswers(inspected.resultFen));
   facts.push(...attackedPieces(inspected.resultFen, inspected.to as Square));
   for (const piece of inspected.leavesHanging) {
@@ -60,6 +61,51 @@ function isBackRankMate(fenAfter: string, checker: Square): boolean {
   const king = chess.findPiece({ type: 'k', color: chess.turn() })[0];
   const backRank = chess.turn() === 'w' ? '1' : '8';
   return king !== undefined && king[1] === backRank && checker[1] === backRank;
+}
+
+/** Why it is mate, square by square: which of the king's squares hold its
+ * own pieces, which are covered and by what, and which adjacent attackers
+ * are guarded. gemma-4-12b invented "Nd5# saves your knight on e5" when the
+ * dossier only said "gives checkmate". */
+function mateNet(fenAfter: string): string {
+  const chess = new Chess(fenAfter);
+  const side = chess.turn();
+  const enemy = side === 'w' ? 'b' : 'w';
+  const king = chess.findPiece({ type: 'k', color: side })[0];
+  if (!king) return 'checkmate';
+  const name = (square: Square): string => `the ${PIECE_NAMES[chess.get(square)!.type]} on ${square}`;
+  const own: string[] = [];
+  const covered = new Map<string, string[]>();
+  const guarded: string[] = [];
+  for (const square of kingNeighbours(king)) {
+    const piece = chess.get(square);
+    const by = chess.attackers(square, enemy).map(name);
+    if (piece?.color === side) own.push(square);
+    else if (piece) guarded.push(`${name(square)} is guarded by ${by.join(' and ')}`);
+    else {
+      const key = by.join(' and ');
+      covered.set(key, [...(covered.get(key) ?? []), square]);
+    }
+  }
+  const parts = [`the king on ${king} is checked by ${chess.attackers(king, enemy).map(name).join(' and ')}`];
+  if (own.length) parts.push(`${own.join(', ')} ${own.length > 1 ? 'hold' : 'holds'} its own pieces`);
+  for (const [by, squares] of covered) parts.push(`${squares.join(' and ')} ${squares.length > 1 ? 'are' : 'is'} covered by ${by}`);
+  parts.push(...guarded);
+  return `why it is mate: ${parts.join('; ')}`;
+}
+
+function kingNeighbours(king: Square): Square[] {
+  const file = king.charCodeAt(0);
+  const rank = Number(king[1]);
+  const squares: Square[] = [];
+  for (const df of [-1, 0, 1]) {
+    for (const dr of [-1, 0, 1]) {
+      const f = file + df;
+      const r = rank + dr;
+      if ((df || dr) && f >= 97 && f <= 104 && r >= 1 && r <= 8) squares.push(`${String.fromCharCode(f)}${r}` as Square);
+    }
+  }
+  return squares;
 }
 
 /** How the checked side can answer, so a script can't say "forces the king
