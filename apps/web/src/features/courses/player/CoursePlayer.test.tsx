@@ -1,6 +1,6 @@
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
 import type { CourseDocument, CourseEpisode } from '@freechesscoach/shared';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import { CoursePlayer } from './CoursePlayer.js';
 import type { CourseProgressStore } from './course-progress.js';
@@ -62,8 +62,8 @@ describe('CoursePlayer', () => {
       saveEnrollment
     };
     const { unmount } = render(<CoursePlayer document={document} noteAudio={() => Promise.resolve(null)} progress={progress} courseSlug="englund-aaaaaaaaaaaa" />);
-    expect(await screen.findByText(/Welcome back: you were on Play through, episode 1, move 1/)).toBeTruthy();
-    expect(screen.getByText('The Englund Gambit.')).toBeTruthy();
+    expect(await screen.findByText('The Englund Gambit.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start over' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     unmount();
@@ -79,10 +79,11 @@ describe('CoursePlayer', () => {
       saveEnrollment: vi.fn(() => Promise.resolve())
     };
     render(<CoursePlayer document={document} noteAudio={() => Promise.resolve(null)} progress={progress} courseSlug="englund-aaaaaaaaaaaa" />);
-    expect(await screen.findByText(/Welcome back: you were on Drill/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Drill' }).getAttribute('aria-current')).toBe('step');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Drill' }).getAttribute('aria-current')).toBe('step'));
     expect(screen.getByRole('button', { name: /Practice, done/ })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
+    // It asks first: the place is lost.
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Start over' }));
     expect(screen.getByRole('button', { name: /Play through/ }).getAttribute('aria-current')).toBe('step');
     expect(screen.queryByRole('button', { name: /Practice, done/ })).toBeNull();
   });

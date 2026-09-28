@@ -3,7 +3,8 @@ import { COACH_PERSONA_INFO, type CourseDocument, type CourseEnrollmentPlace, ty
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CoachAvatar } from '../../../components/CoachAvatar.js';
 import { CoachCard } from '../../../components/CoachCard.js';
-import { ChevronRightIcon } from '../../../components/Icon.js';
+import { ChevronRightIcon, UndoIcon } from '../../../components/Icon.js';
+import { useConfirmDialog } from '../../../hooks/useConfirmDialog.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { COURSE_KIND_INFO } from '../courseKinds.js';
@@ -48,8 +49,8 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
   const [place, setPlace] = useState<CourseEnrollmentPlace>(START);
   /** Remounts the stage's view when a saved place or "Start over" replaces it. */
   const [viewKey, setViewKey] = useState(0);
-  const [welcomeBack, setWelcomeBack] = useState(false);
   const audio = useNoteAudio(noteAudio);
+  const { confirm, dialog } = useConfirmDialog();
   const coach = COACH_PERSONA_INFO[document.coachPersona].label;
   const enrollment = useCourseEnrollment(courseSlug, progress);
   /** The learner has done something here, so there is a place worth saving. */
@@ -67,7 +68,6 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
     setPlace(saved.place);
     if (!startStage) setStage(saved.stage);
     setViewKey((key) => key + 1);
-    setWelcomeBack(true);
   }, [enrollment.saved, startStage]);
 
   useEffect(() => {
@@ -97,7 +97,6 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
     setDone(new Set());
     setPlace(START);
     setViewKey((key) => key + 1);
-    setWelcomeBack(false);
   };
 
   return (
@@ -110,16 +109,26 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
         <h1>{document.title || 'Untitled course'}</h1>
         {document.promise && <p className="course-player__promise">{document.promise}</p>}
       </header>
-      <CourseStageBar current={stage} done={done} onSelect={open} />
-      {welcomeBack && (
-        <p className="course-player__notice course-player__welcome">
-          Welcome back: you were on {STAGE_LABELS[stage]}
-          {stage === 'play_through' && place.step > 0 ? `, episode ${place.episode + 1}, move ${place.step}` : ''}.
-          <button type="button" className="btn-secondary" onClick={startOver}>
+      <div className="course-player__stage-row">
+        <CourseStageBar current={stage} done={done} onSelect={open} />
+        {/* Only for a learner (the editor's preview has no progress), once there is something to lose. */}
+        {progress && (done.size > 0 || stage !== 'play_through' || place.episode > 0 || place.step > 0) && (
+          <button
+            type="button"
+            className="course-player__start-over"
+            onClick={() =>
+              confirm(
+                { title: 'Start this course over?', description: 'You go back to the first move of Play through, with no stages done. Moves you drilled stay in your reviews.', confirmLabel: 'Start over' },
+                startOver
+              )
+            }
+          >
+            <UndoIcon width={15} height={15} />
             Start over
           </button>
-        </p>
-      )}
+        )}
+      </div>
+      {dialog}
       {stage === 'play_through' ? (
         <PlayThrough
           key={viewKey}

@@ -441,11 +441,38 @@
   color: var(--color-primary);
 }
 
-.course-player__welcome {
+/* The stage bar, and "Start over" small at its end. */
+.course-player__stage-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 8px 12px;
+}
+
+.course-player__start-over {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.course-player__start-over:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
+.course-player__start-over:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .move-log {
