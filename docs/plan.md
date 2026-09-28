@@ -627,7 +627,8 @@ Commit: `feat(courses): prepare all coach audio before recording`
 Status: in progress — desktop Chrome done 2026-09-28 (commit below); waiting
 for the owner's iPhone Safari test (**Stop 5**). Chrome records
 `video/mp4;codecs=avc1,mp4a`: the trap's 16:9 clip came out 1920×1080, 46.2 s,
-3.4 MB, video and audio decoding. Not drawn yet: the eval bar (the editor's
+3.4 MB, video and audio decoding; the owner recorded one in Chrome too and
+the MP4 plays (2026-09-28). Not drawn yet: the eval bar (the editor's
 course has no evals; the dossier does). Also built: a voice picker in the
 preview (a creator whose chat voice is the device voice gets the browser
 voice, not a refusal), and code-built quiz moments (docs/courses.md §8).
