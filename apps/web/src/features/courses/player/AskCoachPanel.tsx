@@ -1,7 +1,10 @@
 import { COACH_PERSONA_INFO } from '@freechesscoach/shared';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { CoachAvatar } from '../../../components/CoachAvatar.js';
 import { useProfile } from '../../../hooks/useProfile.js';
+import { useUnlockLlmSetup } from '../../../hooks/useUnlockLlmSetup.js';
+import { AiSetupRequiredModal } from '../../settings/AiSetupRequiredModal.js';
+import { UnlockPhraseModal } from '../../settings/UnlockPhraseModal.js';
 import { useCourseCoachChat, type CourseQuestionPosition } from './useCourseCoachChat.js';
 
 export interface AskCoachPanelProps {
@@ -16,7 +19,18 @@ export interface AskCoachPanelProps {
  */
 export function AskCoachPanel({ position }: AskCoachPanelProps): ReactNode {
   const profile = useProfile();
-  const chat = useCourseCoachChat(position);
+  const unlock = useUnlockLlmSetup();
+  const [popup, setPopup] = useState<'unlock' | 'setup' | null>(null);
+  const retryRef = useRef<(() => Promise<void>) | null>(null);
+  // The same popups as the other coach pages: unlock here and the question
+  // is asked again; no setup at all goes to Settings.
+  const chat = useCourseCoachChat(position, {
+    onUnlockRequired: (retry) => {
+      retryRef.current = retry;
+      setPopup('unlock');
+    },
+    onSetupRequired: () => setPopup('setup')
+  });
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const persona = profile.data?.coachPersona ?? 'general';
@@ -57,10 +71,33 @@ export function AskCoachPanel({ position }: AskCoachPanelProps): ReactNode {
           ))}
         </ol>
       )}
-      {chat.needsSettings && (
-        <p className="meta">
-          Your coach needs your AI setup: <a href="/settings">open Settings</a>.
-        </p>
+      {popup === 'unlock' && (
+        <UnlockPhraseModal
+          description="Your coach needs your AI setup unlocked to answer."
+          onClose={() => {
+            setPopup(null);
+            unlock.reset();
+          }}
+          onUnlock={unlock.unlock}
+          onUnlocked={() => {
+            setPopup(null);
+            unlock.reset();
+            const retry = retryRef.current;
+            retryRef.current = null;
+            void retry?.();
+          }}
+          isPending={unlock.isPending}
+          isSuccess={unlock.isSuccess}
+          errorMessage={unlock.errorMessage}
+        />
+      )}
+      {popup === 'setup' && (
+        <AiSetupRequiredModal
+          onClose={() => setPopup(null)}
+          onGoToSettings={() => {
+            window.location.href = '/settings#settings-api-keys';
+          }}
+        />
       )}
       <form className="ask-coach__form" onSubmit={submit}>
         <textarea

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { AskCoachPanel } from './AskCoachPanel.js';
 
 vi.mock('../../../hooks/useProfile.js', () => ({ useProfile: () => ({ data: { coachPersona: 'scholar' } }) }));
+vi.mock('../../../hooks/useUnlockLlmSetup.js', () => ({ useUnlockLlmSetup: () => ({ unlock: vi.fn(), reset: vi.fn(), isPending: false, isSuccess: false, errorMessage: undefined }) }));
 
 function sse(chunks: object[]): Response {
   const body = chunks.map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`).join('') + 'data: [DONE]\n\n';
@@ -30,12 +31,21 @@ describe('AskCoachPanel', () => {
     expect(JSON.parse(String(init.body))).toEqual({ slug: 'englund-aaaaaaaaaaaa', episodeId: 'e1', nodeId: 'n3', messages: [{ role: 'user', content: 'Why not Qe7?' }] });
   });
 
-  test('without an AI setup, points to Settings', async () => {
+  test('without an AI setup, the setup popup opens', async () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(JSON.stringify({ title: 'Set up your AI in Settings first.', status: 400 }), { status: 400, headers: { 'content-type': 'application/problem+json' } }))));
     render(<AskCoachPanel position={{ slug: 's', episodeId: 'e1', nodeId: null }} />);
     fireEvent.click(screen.getByRole('button', { name: /Ask my coach/ }));
     fireEvent.change(screen.getByLabelText('Your question'), { target: { value: 'Why?' } });
     fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
-    expect(await screen.findByRole('link', { name: 'open Settings' })).toBeTruthy();
+    expect(await screen.findByRole('dialog')).toBeTruthy();
+  });
+
+  test('a locked AI setup opens the unlock popup', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(JSON.stringify({ title: 'Unlock your AI setup in Settings with your unlock phrase before coaching.', status: 400 }), { status: 400, headers: { 'content-type': 'application/problem+json' } }))));
+    render(<AskCoachPanel position={{ slug: 's', episodeId: 'e1', nodeId: null }} />);
+    fireEvent.click(screen.getByRole('button', { name: /Ask my coach/ }));
+    fireEvent.change(screen.getByLabelText('Your question'), { target: { value: 'Why?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(await screen.findByText('Your coach needs your AI setup unlocked to answer.')).toBeTruthy();
   });
 });
