@@ -18,6 +18,21 @@ export async function find(db: Kysely<Database>, courseId: string, textHash: str
   return db.selectFrom('courseAudio').select(['mimeType', 'bytes']).where('courseId', '=', courseId).where('textHash', '=', textHash).executeTakeFirst();
 }
 
+/** Each stored note text's audio, by its content hash (the public URL). */
+export async function contentHashes(db: Kysely<Database>, courseId: string): Promise<Map<string, string>> {
+  const rows = await db.selectFrom('courseAudio').select(['textHash', 'contentHash']).where('courseId', '=', courseId).execute();
+  return new Map(rows.map((row) => [row.textHash, row.contentHash]));
+}
+
+export async function findByContent(db: Kysely<Database>, courseId: string, contentHash: string): Promise<(CourseAudio & { textHash: string }) | undefined> {
+  return db
+    .selectFrom('courseAudio')
+    .select(['mimeType', 'bytes', 'textHash'])
+    .where('courseId', '=', courseId)
+    .where('contentHash', '=', contentHash)
+    .executeTakeFirst();
+}
+
 /** Each stored hash with its size, for the per-course cap and "what's missing". */
 export async function sizes(db: Kysely<Database>, courseId: string): Promise<Map<string, number>> {
   const rows = await db

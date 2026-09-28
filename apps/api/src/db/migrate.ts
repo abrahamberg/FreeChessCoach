@@ -18,6 +18,7 @@ import * as courseDossier from './migrations/0014_course_dossier.js';
 import * as courseAiCalls from './migrations/0015_course_ai_calls.js';
 import * as debugTurns from './migrations/0016_debug_turns.js';
 import * as courseAudio from './migrations/0017_course_audio.js';
+import * as courseAudioContentHash from './migrations/0018_course_audio_content_hash.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -39,7 +40,8 @@ const provider: MigrationProvider = {
       '0014_course_dossier': courseDossier,
       '0015_course_ai_calls': courseAiCalls,
       '0016_debug_turns': debugTurns,
-      '0017_course_audio': courseAudio
+      '0017_course_audio': courseAudio,
+      '0018_course_audio_content_hash': courseAudioContentHash
     })
 };
 

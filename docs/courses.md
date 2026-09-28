@@ -653,7 +653,7 @@ Decided with the owner:
   unless the creator ticked "I checked these".
 - Public route `/learn/:slug` (SPA outside the app shell, no login) and
   read-only endpoints `GET /api/public/courses/:slug` (the published copy and
-  which notes have audio) and `GET /api/public/courses/:slug/audio/:hash`
+  each note's audio URL) and `GET /api/public/courses/:slug/audio/<hash>.wav`
   (`routes/public-courses.ts`). Drafts and removed courses are 404. Nothing
   about the creator is sent: their display name defaults to their email's
   local part. Skip-auth entries in `values.yaml` (asserted by
@@ -668,6 +668,18 @@ Decided with the owner:
   engine and the game-review classifier: the quality label and the checked
   sentence; brilliant/great/best/excellent is accepted as "good move too".
   The last episode ends with the takeaways.
+- Learners never make audio: it is made once, in the creator's browser, when
+  they publish (§8). Each file is named by the hash of its bytes (a column
+  Postgres computes, migration 0018), so a URL never serves different audio
+  and is sent `Cache-Control: public, max-age=31536000, immutable` with no
+  cookie. Behind Cloudflare it is then served from the edge; the origin sees
+  each file about once per edge location. Cloudflare does not cache `.wav`
+  by default, so it needs one Cache Rule: URI path starts with
+  `/api/public/courses/` and ends with `.wav` → eligible for cache, edge TTL
+  from the origin's header. The course JSON is cached 60 s (a removal shows
+  within a minute). Removing a course (below) must also purge its files from
+  Cloudflare (`/api/public/courses/<slug>/audio/` prefix), or anyone who has
+  a file's URL can still fetch it for up to a year.
 - **Preview as learner** in the editor is the same `CoursePlayer` on the
   draft, each note voiced the first time it plays (browser cache first).
 - Removing a course is `UPDATE courses SET status = 'removed'` through the same

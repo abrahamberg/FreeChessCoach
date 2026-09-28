@@ -71,8 +71,8 @@ export const PublicCourseResponseSchema = z.object({
   slug: z.string(),
   publishedAt: z.string(),
   document: CourseDocumentSchema,
-  /** `<episodeId>:<nodeId>` → the hash its audio is served under
-   * (`/api/public/courses/:slug/audio/:hash`); notes without audio are absent. */
+  /** `<episodeId>:<nodeId>` → its audio file's URL, named by the file's own
+   * hash so it can be cached for good; notes without audio are absent. */
   noteAudio: z.record(z.string(), z.string())
 });
 export type PublicCourseResponse = z.infer<typeof PublicCourseResponseSchema>;

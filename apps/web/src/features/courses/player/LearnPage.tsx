@@ -15,11 +15,8 @@ export function LearnPage(): ReactNode {
   });
   const noteAudio = course.data?.noteAudio;
   const source = useCallback(
-    (episodeId: string, nodeId: string) => {
-      const hash = noteAudio?.[`${episodeId}:${nodeId}`];
-      return Promise.resolve(hash ? `/api/public/courses/${encodeURIComponent(slug)}/audio/${hash}` : null);
-    },
-    [noteAudio, slug]
+    (episodeId: string, nodeId: string) => Promise.resolve(noteAudio?.[`${episodeId}:${nodeId}`] ?? null),
+    [noteAudio]
   );
 
   useEffect(() => {

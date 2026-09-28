@@ -335,6 +335,8 @@ export interface CourseAudioTable {
   textHash: string;
   mimeType: string;
   bytes: Buffer;
+  /** 0018: sha256 of `bytes` (32 hex), computed by Postgres; the public URL. */
+  contentHash: Generated<string>;
   createdAt: Generated<Date>;
 }
 

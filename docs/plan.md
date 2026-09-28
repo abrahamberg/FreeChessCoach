@@ -708,6 +708,11 @@ Chrome loads no media there). Owner to listen once.
   current draft (the player takes a `CourseDocument`, not a slug), note audio
   from the browser cache (81.1) instead of uploaded files; no publish needed.
 - [x] Threat-model entry for the new public endpoints (T13).
+- [x] Owner, 2026-09-28: learner audio served from Cloudflare's edge. Files
+  are named by their bytes' hash (migration 0018) and cached a year,
+  `immutable`. Still to do by hand in Cloudflare: the Cache Rule for
+  `/api/public/courses/*.wav`, and a purge whenever a course is removed
+  (docs/courses.md §9).
 
 Commit: `feat(courses): public course page, no login`
 

@@ -8,7 +8,7 @@ import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.
 import { publicCourse, publicNoteAudio } from '../services/courses/public-course.js';
 
 const SlugParamsSchema = z.object({ slug: z.string().regex(/^[a-z0-9-]{1,80}$/) });
-const AudioParamsSchema = SlugParamsSchema.extend({ hash: z.string().regex(/^[0-9a-f]{32}$/) });
+const AudioParamsSchema = SlugParamsSchema.extend({ file: z.string().max(40) });
 
 /**
  * docs/courses.md §9: the read-only course page's data, with no login
@@ -28,10 +28,13 @@ export function registerPublicCoursesRoutes(app: FastifyInstance, db: Kysely<Dat
     return course;
   });
 
-  app.get('/api/public/courses/:slug/audio/:hash', limit, async (request, reply) => {
-    const { slug, hash } = parseParams(AudioParamsSchema, request.params);
-    const audio = await publicNoteAudio(db, slug, hash);
-    return reply.header('cache-control', 'public, max-age=3600').type(audio.mimeType).send(audio.bytes);
+  // Named by its bytes' hash, so a URL never changes content: cached for a
+  // year, at the edge too (docs/courses.md §9). A removed course's files
+  // stay in those caches until purged.
+  app.get('/api/public/courses/:slug/audio/:file', limit, async (request, reply) => {
+    const { slug, file } = parseParams(AudioParamsSchema, request.params);
+    const audio = await publicNoteAudio(db, slug, file);
+    return reply.header('cache-control', 'public, max-age=31536000, immutable').type(audio.mimeType).send(audio.bytes);
   });
 }
 
