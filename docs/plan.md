@@ -1891,8 +1891,12 @@ Commit: `feat(courses): tempting moves and puzzles in the player`
 
 ### Task 95.3 — Docs
 
-- [ ] Rewrite `docs/courses.md` §3, §4, §6, §8, §10 from §13, then fold
-  §13 into them; `docs/architecture.md`'s Courses section.
+- [x] Rewrite `docs/courses.md` §3, §4, §6, §8, §10 from §13, then fold
+  §13 into them; `docs/architecture.md`'s Courses section. (Done
+  2026-09-29: §1, §3–§10 describe the three products; §13 keeps the
+  reel, video, tempting, sound and check details and points to §4 and §6
+  for the document and the calls. The trap and opening playbooks' headers
+  lost "vertical reel" / "landscape video".)
 
 Commit: `docs: the course, the video and the reel`
 

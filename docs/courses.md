@@ -1,20 +1,23 @@
-# Courses and clips
+# Courses, videos and reels
 
 The spec behind Phases 79–95 (`docs/plan.md`). Read the section a task points
 at, not the whole file.
 
-A **course** is a chess lesson built from a PGN: a clip (a reel or a YouTube
-video, recorded in the creator's browser) plus a public board where anyone can
-play the same lesson through, hear the coach, and drill it. Signed-in learners
-get their progress kept and are reminded to review.
+A **course** is a chess lesson built from a PGN: a public board where anyone
+can play the lesson through, hear the coach, and drill it. Signed-in learners
+get their progress kept and are reminded to review. Made from the same moves,
+a course can have a **YouTube video** (16:9, 5–15 min) and a **reel** (9:16,
+30–45 s, for Shorts, Reels and TikTok), both recorded in the creator's
+browser. The course is the product; the videos bring people to it (§13).
 
 **Who uses it now.** The owner, to turn a PGN and one line of direction into a
-finished reel, a YouTube video and a course page quickly. Nobody else can create
-courses until a moderator switches it on for them (§2). Opening it to more
-creators later (for example players above a rating) is a later decision.
+finished course, video and reel quickly. Nobody else can create courses until
+a moderator switches it on for them (§2). Opening it to more creators later
+(for example players above a rating) is a later decision.
 
-**Why.** Reels and Shorts bring people to the site; the course behind every clip
-is the reason they stay: a free, better-checked equivalent of a paid course.
+**Why.** Reels and Shorts bring people to the site; the course behind every
+video is the reason they stay: a free, better-checked equivalent of a paid
+course.
 
 ---
 
@@ -27,11 +30,13 @@ is the reason they stay: a free, better-checked equivalent of a paid course.
 | Node | One move in the tree, with a stable id (`n1`, `n2` …) assigned by code. Everything refers to nodes by id. |
 | Chapter | A group of episodes on one line. |
 | Episode | A stretch of nodes that teaches **one** point. The unit the AI writes and the creator edits. |
-| Ply | One move of an episode with its words: `text` (spoken on the course board and, by default, in the clip), an optional `clipText` for a sharper clip line, an optional caption, arrows, and two ticks: `long` (in the course) and `short` (in the clip). An empty text means the move plays without words. |
-| Opener | The clip's first line, before any move: a hook, at most 12 words. Episodes without one start straight on the board. |
-| Budget | How many plies the outline lets an episode speak: `long` in the course, `short` in the clip. The episode call stays inside it. |
+| Ply | One move of an episode with its words: `text` (the course's note, and by default the video's line), an optional `say` for the video's own line, an optional caption, arrows, the tempting moves, and two ticks: `course` and `video` (where it speaks). An empty text means the move plays without words. |
+| Video | The YouTube video (16:9): the course's episodes told as a story, with its own title, thumbnail text, hook and outro (§13.4). |
+| Reel | The 9:16 short: one idea from a span of moves, in one of three styles (§13.3). |
+| Tempting move | A move that looks right at a position and fails; found by code and the engine, with the engine's refutation (§13.5). |
+| Budget | How many plies the outline lets an episode speak: `course` in the course, `video` in the video. The episode call stays inside it. |
 | Level | Where a course sits in the curriculum: a rating (800 … 2200) and its place at that rating, shown as `1200-01`, `1200-02`. |
-| Quiz | "Find the move" at a node: the clip pauses, the course waits for the learner's move. |
+| Quiz | "Find the move" at a node: the video pauses, the course waits for the learner's move. |
 | Dossier | Everything our code and the engine know about every node, rendered as text for the AI (§5.2). The only source of chess facts. |
 
 ---
@@ -54,17 +59,24 @@ is the reason they stay: a free, better-checked equivalent of a paid course.
 The creator picks the kind; the AI never guesses it. Each kind has its own
 playbook (§6.3), its own checks (§7) and its own drill mode (§11).
 
-| Kind | Typical input | Clip | Course |
+| Kind | Typical input | Course | Default videos |
 |---|---|---|---|
-| `opening_reel` | One main line, 8–16 plies | 9:16, ≤ 60 s | The line, a note on every learner move |
-| `opening_course` | Main line + sidelines (PGN variations or a Lichess study) | 16:9, 5–20 min | Chapters per line, drill on every must-know move |
-| `tactics` | Several games or positions on one motif | 9:16 (first example) and 16:9 (all) | Concept, then examples easiest first, quiz each |
-| `trap` | One line with a bait move | 9:16, ≤ 60 s | Drill both sides: spring it and avoid it |
-| `master_game` | One full game | 16:9 highlights (4–6 moments) | Every move explained, Logical-Chess style; guess the move at critical moments |
+| `trap` | One line with a bait move | Drill both sides: spring it and avoid it | both |
+| `opening` | A main line, and sidelines (PGN variations or a Lichess study) | Chapters per line, drill on every must-know move | the video |
+| `tactics` | Several games or positions on one motif | Concept, then examples easiest first, quiz each | both |
+| `puzzle` | A position (`[FEN]`) and its solution, e.g. mate in 3 | Every learner move is a quiz; the checks, captures and threats at each | both |
+| `master_game` | One full game | Every move explained, Logical-Chess style; guess the move at critical moments | the video |
+
+What each kind's video and reel show: §13.2.
 
 **Learner side** is inferred by code where it can be, so the form stays short:
 trap = the side that wins material or mates at the end of the line; master game =
-the winner (a draw asks); openings = asked (White or Black repertoire).
+the winner (a draw asks); puzzle = the side to move; openings = asked (White or
+Black repertoire).
+
+**A puzzle** needs a `[FEN]` and no sidelines; the form refuses it otherwise.
+Where the engine finds a second good move at a solution move
+(`unsoundNodeIds`), the checks warn, and the player accepts either.
 
 ---
 
@@ -86,23 +98,33 @@ CourseDocument = {
   episodes: {
     id, role, focus,               // role per kind (§6.3); focus = the one point
     startNodeId, endNodeId,
-    opener?: { say, caption? },    // the clip's hook, before any move
-    plies: { nodeId, text, clipText?, caption?, arrows: Arrow[],
-             long: boolean, short: boolean }[],  // in the course / in the clip
-    budget?: { long, short,        // speaking plies the outline allowed (0: not planned)
-               keyNodeIds? },      // code's key moves: they speak in every planned version
+    plies: { nodeId, arrows: Arrow[],
+             text,                 // the course's note: stands alone, 1–2 sentences
+             say?,                 // the video's own line, when it differs
+             caption?,             // the video's on-screen text (else the line's first sentence)
+             tempting?: { san, why, refutation? }[],  // §13.5; refutation from the engine
+             course: boolean,      // speaks in the course
+             video: boolean }[],   // speaks in the video
+    budget?: { course, video,      // speaking plies the outline allowed (video 0: not planned)
+               keyNodeIds? },      // code's key moves: they speak wherever planned
     quiz?: { answerNodeId, prompt, hint, reveal },
     drillNodeIds: string[]         // learner moves that become drill positions
   }[],
   takeaways: string[],             // exactly 3
   hookOptions: string[],           // 3 from the AI; the creator picks one
-  clipSeconds?: number,            // the clip's target length (the outline sets it)
   level?: { rating, order },       // curriculum place: 1200-02 (§9)
-  versions?: { long, short },      // what the AI makes: course, clip or both (absent: both)
-  clipLinks: { youtube?, shorts?, instagram?, tiktok? }
+  videos?: { video, reel },        // what is made besides the course (absent: the kind's default)
+  video?: { title, thumbnailText, hook, outro },   // §13.4
+  reel?: { style, startNodeId, climaxNodeId, endNodeId,
+           hook, topText, beats: { nodeId, say, caption }[], payoff, cta, loop },  // §13.3
+  clipLinks: { youtube?, shorts?, instagram?, tiktok? }  // youtube: the video; the rest: the reel
 }
 Arrow = { from: Square, to: Square, kind: 'idea' | 'threat' | 'best' }
 ```
+
+`courseVideos(document)` reads `videos` or the kind's default
+(`defaultCourseVideos`). The video's length is `CONFIG.courses.videoSeconds`
+per kind; the reel's `reelSeconds`.
 
 - Node ids are assigned once, by code, when the PGN is parsed, and never reused.
   Editing text never changes them, so audio (§8) and learner progress (§11) stay
@@ -138,8 +160,8 @@ coach's `check_moves` discipline, the tactic-review rebuild):
 6. **Checked after writing.** A verifier (§7) checks every move, tactic word,
    number and length. One repair call per failing episode; anything left is shown
    to the creator as a warning, never published silently.
-7. **Budgets are numbers from code.** Word limits come from the clip length and
-   the coach's speaking speed, not from "keep it short".
+7. **Budgets are numbers from code.** Word limits come from the video's length
+   and the coach's speaking speed, not from "keep it short".
 8. **The creator's own words win.** Comments the creator wrote in the PGN are
    their teaching points; the AI keeps the ideas and sharpens the wording.
 
@@ -151,6 +173,7 @@ Intake form ─► Parse (tree, node ids) ─► Dossier (engine + chess-analysi
    ─► Outline call (AI, structured) ─► validate ─┐ (one retry with the issues)
    ─► Episode calls (AI, structured, one per episode)
    ─► Verifier (code) ─► repair call per failing episode (once)
+   ─► Reel call (AI, one, when the course makes a reel) ─► its checks, one repair
    ─► Draft in the editor, with warnings
 ```
 
@@ -163,7 +186,9 @@ can be resumed; finished episodes are kept. The job writes a heartbeat every
 30 seconds; a running job with none for 3 minutes (its worker was killed)
 reads as failed and resumes the same way.
 
-A trap reel is about 1 + 5 calls; a master game course about 1 + 10. A local
+A trap is about 1 + 6 calls, plus 1 for the reel; a master game about
+1 + 10. The Dossier step runs a second, small engine batch for the tempting
+moves (§13.5). A local
 model is allowed but the form warns that small models do poorly on long
 structured output; the no-AI skeleton (§10) is always there as a fallback.
 
@@ -174,12 +199,12 @@ Kept to what the AI can't infer:
 | Field | Notes |
 |---|---|
 | PGN or Lichess study URL | Variations and comments kept; `[%cal]`/`[%csl]` arrows kept as creator arrows. |
-| Kind | The five in §3. |
+| Kind | The five in §3. A puzzle is refused without a `[FEN]` or with sidelines. |
 | Direction | One or two sentences. Placeholder text shows an example per kind (below). |
 | Rating | The learner's rating, 800 … 2200 in steps of 200; defaults to 1200. The band the prompts write for comes from it (`bandForRating`), and the course takes the next place at that rating among the creator's courses (`level: { rating, order }`, §9). |
 | Learner side | Pre-filled by code (§3); editable. |
-| What to make | Course and clip, Course, or Clip (`versions`). Defaults by kind: Clip for an opening reel, Course for an opening course or a master game, both for a trap or tactics. The AI plans and writes only these; the creator can add the other by hand later (the ticks), and the Details card changes it for the next Start over. |
-| Coach | Pre-selected: the creator's own coach. Fixes the voice for the clip and the notes. |
+| Videos | The course is always made; besides it: Reel, YouTube video, or Both (`videos`, `CourseVideosPicker`). Defaults by kind (§3). The AI plans and writes only these; the Details card changes it, and the missing one can be added later (§13.1). |
+| Coach | Pre-selected: the creator's own coach. Fixes the voice for the videos and the notes. |
 
 The page (`/studio/new`, `CourseIntakePage.tsx`) asks in four numbered cards:
 the moves (the PGN beside a small board of the line's end, "16 moves, 1
@@ -190,8 +215,8 @@ the coach's portrait).
 
 Example directions shown in the form:
 - trap: "Englund Gambit trap for beginners. Make the viewer feel they'd play 6.Bc3 too."
-- opening_reel: "Italian Game main line for 1000-rated players. One plan to remember."
-- opening_course: "Caro-Kann Advance for club players, main line plus the three sidelines in the PGN."
+- opening: "Caro-Kann Advance for club players, main line plus the three sidelines in the PGN."
+- puzzle: "Smothered mate in 2. Teach checks, captures, threats."
 - tactics: "Knight forks. Start with the easiest; teach what tells you a fork is there."
 - master_game: "Capablanca's endgame technique. Explain every Black move for 1200s."
 
@@ -247,9 +272,15 @@ plans.
 | Kind | What code proposes |
 |---|---|
 | trap | `baitNodeId`: the victim's move with the largest win-percentage drop on the line. `answerNodeId`: the trapper's next move. `punishNodes`: the rest of the line. `safeMove`: the engine's best at the bait. `trapperRisk`: whether the trapper's own setup moves are marked inaccurate or worse against best play. |
-| opening_reel / opening_course | Book exit per line, the learner's moves, the deviations (where sidelines branch), traps found inside the lines (a blunder by one side followed by a winning answer). |
+| opening | Book exit per line, the learner's moves, the deviations (where sidelines branch), traps found inside the lines (a blunder by one side followed by a winning answer). |
 | tactics | One example per game/position, ordered by difficulty (puzzle rating when the example comes from the puzzle pool, else the depth of the winning line). The motif per example from the detectors. When the opponent's move just before the move to find was a mistake, the example starts one learner move earlier, so it shows the mistake too (Legal's mate: from 5.Nxe5 Bxd1??, not just 6.Bxf7+). |
 | master_game | Critical moments (`critical-moments.ts`), quiz-eligible master moves, the phase boundaries (`phase-segmentation.ts`). |
+| puzzle | The solution's learner moves, mate in N when the engine finds it, and `unsoundNodeIds` (learner moves with a second good answer). |
+
+Besides the skeleton, code ranks the **reel candidates**
+(`course-reel-candidates.ts`): a puzzle, a mate, a trap's answer, a
+brilliant or great move, a swing (win% drop ≥ 25), each with its span and
+the styles it allows (§13.3).
 
 The same skeleton is the manual path (§10): with AI off, it becomes the episodes
 with template text.
@@ -261,17 +292,18 @@ with template text.
 All prompt text lives in `packages/prompts/src/course/`, following the repo's
 convention (`buildCourseOutlineMessages`, `buildCourseEpisodeMessages`; blocks
 joined with `[...].filter(Boolean).join('\n\n')`). The system prompt is built
-cache-stable: the coach's voice first (every line in the course and the clip
+cache-stable: the coach's voice first (every line in the course and the videos
 is theirs), then the shared block, then the kind playbook. All three depend
 only on the course, so every call of one course shares the prefix.
 The request, budgets and dossier go in the user message.
 
-### 6.1 Shared system block (both calls)
+### 6.1 Shared system block (every call)
 
 ```text
-You write chess lessons for FreeChessCoach. Each lesson is two things made from
-the same moves: a short video (the clip), and a course that learners play
-through on a board, move by move, and come back to for review.
+You write chess lessons for FreeChessCoach. Each lesson is a course that
+learners play through on a board, move by move, and come back to for review;
+and, made from the same moves, a YouTube video and a reel that bring people to
+it.
 
 You are given a DOSSIER that our engine and chess code produced for every
 position in the lesson. The dossier is your only source of chess facts.
@@ -295,21 +327,25 @@ WHAT YOU MAY CLAIM
    ideas; improve the wording. Never copy more than one sentence of any other
    text.
 
-EACH MOVE, TWO VERSIONS
-Every episode is a run of moves, and the board plays them all. You choose which
-moves speak, and where:
-- "long": the coach speaks on this move in the course, which a learner plays
-  through on the board, maybe weeks later, maybe without having seen the clip.
-  The line stands alone: what the move does and why, in one or two sentences.
-- "short": the coach speaks on this move in the clip, a short video. The clip
-  performs: it hooks, builds tension, moves on. Sentences of 18 words or fewer,
-  one idea per move.
-- Most moves stay silent, above all in the clip. The plan gives each episode a
-  budget: at most that many moves speak in the course, and in the clip.
-- One text per move ("text") serves both. Set "clipText" only when the clip
-  needs a shorter or punchier line. "caption" is the on-screen text in the
-  clip, 6 words or fewer; set it only when the line's first sentence would not
-  do, since the app takes the caption from the line.
+THREE PRODUCTS FROM THE SAME MOVES
+- The course: a learner plays through it on our board, maybe weeks later,
+  without the videos. Each note ("text", with "course": true) stands alone:
+  what the move does and why, in one or two sentences.
+- The YouTube video ("video": true): tell it like a commentator, not a math
+  teacher: the stakes, the tension, the turn. Its line is "text" unless you
+  set "say" for a line made to be heard. At each important move, weigh the
+  tempting moves the dossier lists and say why each fails, the way a strong
+  player thinks: checks, captures, threats. "caption" is its on-screen text,
+  6 words or fewer, only when the line's first sentence would not do.
+- The reel: 30 to 45 seconds, one idea. The first words name the idea ("A
+  queen sacrifice that wins in the Sicilian"); no greeting, no "today". Short
+  lines, the climax slowed down, a specific call to action, and a last line
+  that runs straight back into the first.
+- Most moves stay silent, above all in the video. The plan gives each episode
+  a budget: at most that many moves speak in the course, and in the video.
+- "tempting" lists the moves that look right on a move and fail, each with
+  why, only from the dossier's tempting moves there. They show under the
+  course's note and are played out in the video.
 - Write moves in SAN (they are read aloud correctly). The board shows every
   move, so never narrate what the viewer can already see ("White moves the
   knight"); say why.
@@ -317,6 +353,9 @@ moves speak, and where:
 EVERY LINE EARNS ITS PLACE
 - Every line sounds like the coach in VOICE: their words, their attitude, their
   rhythm. Read each line back: if any coach could have said it, rewrite it.
+- Never start two lines the same way, and never lean on one word ("Execute",
+  "Sloppy") across the course: a coach's voice is a way of thinking, not a
+  catchphrase.
 - Every line says something the learner wants to hear: the threat, the trick,
   the reason, the feeling at the board. No filler: never "a solid move",
   "develops a piece", "an interesting position", "a good choice here". If a
@@ -342,7 +381,7 @@ object for the schema you are given.
 
 ### 6.2 The voice block
 
-The course uses the course's coach, so the clip and the notes sound like the
+The course uses the course's coach, so the videos and the notes sound like the
 same person as the voice reading them. The chat persona blocks
 (`coach-persona.ts`) carry chat-only rules (greeting once, `show_position`), so
 courses get their own short block per persona, built from the same word bank:
@@ -351,7 +390,7 @@ courses get their own short block per persona, built from the same word bank:
 VOICE: You are {name}. {one-line identity from coaches.md}.
 Words you reach for: {the persona's word bank}.
 Words you never use: {BANNED_GENERIC_PHRASES}.
-How it sounds in a clip: "{example narration line 1}" / "{example line 2}".
+How it sounds in a video: "{example narration line 1}" / "{example line 2}".
 Voice changes how you say things, never what is true about the position.
 ```
 
@@ -366,19 +405,19 @@ Placeholders in `{}` are filled by code (budgets, node ids, sides).
 
 **trap**
 ```text
-KIND: TRAP (vertical reel, at most {seconds}s, at most {words} spoken words)
+KIND: TRAP
 The trapper is {trapperSide}. The bait is node {baitNodeId}. The answer is node
 {answerNodeId}. The victim's safe move at the bait is {safeMove}.
 Use exactly these episodes, in order:
 1. hook — at most 12 words, true and specific to how the trap ends:
    {trapEnding}
-2. setup — the setup moves play fast. At most two speak in the clip, only
+2. setup — the setup moves play fast. At most two speak in the video, only
    where the move order matters.
 3. bait — why the victim's move looks natural. This is the heart of the trap:
    the viewer should think "I'd play that too".
 4. quiz — "What does {trapperSide} play here?" plus a hint at the target. The
-   clip pauses {pauseSeconds}s (the app adds the pause).
-5. punish — every forcing move speaks in the clip; captions carry the rhythm.
+   video pauses {pauseSeconds}s (the app adds the pause).
+5. punish — every forcing move speaks in the video; captions carry the rhythm.
 6. safety — how the victim stays safe: {safeMove}, in one or two sentences.
    {trapperRiskLine}
 The end card and call to action are added by the app; don't write them.
@@ -396,24 +435,9 @@ nothing more." It is stated, never shown as an example hook: the first real
 run (gemma-4-12b, 2026-09-28) copied the old example "Their queen is gone in
 eight moves." word for word on a trap that mates.
 
-**opening_reel**
+**opening**
 ```text
-KIND: OPENING MAIN LINE (vertical reel, at most {seconds}s, at most {words} words)
-The learner plays {learnerSide}. The line ends at node {endNodeId}.
-1. hook — at most 12 words: what this opening gives the learner, concretely.
-2. line — play the line. At most {narratedMax} moves speak in the clip, only those
-   that carry the idea; the rest play silently.
-3. idea — one sentence on the plan from the final position, grounded in the
-   line's position features.
-4. remember — the one trap or common mistake in this line if the dossier lists
-   one; otherwise the key pawn break or square.
-In the course, every {learnerSide} move speaks: "why this move". Opponent moves
-speak only where they change the plan.
-```
-
-**opening_course**
-```text
-KIND: OPENING COURSE (landscape video and a chaptered course)
+KIND: OPENING
 The learner plays {learnerSide}. Lines, in the creator's order: {lineList}.
 - Chapter 1 "The idea": the main line to its end. What each learner move is
   for; then the plan and the pawn structure it leads to.
@@ -424,9 +448,26 @@ The learner plays {learnerSide}. Lines, in the creator's order: {lineList}.
 - Last chapter "Recap": the move orders only, then the three takeaways.
 drillNodeIds: every learner move in the main line, plus the first two learner
 moves after each deviation.
-Clip: chapter 1's key moves speak; each sideline in two or three moves. The
-course carries the detail.
+In the video: chapter 1's key moves speak; each sideline in two or three
+moves. The course carries the detail.
 ```
+
+**puzzle**
+```text
+KIND: PUZZLE. {side} to play: {mate in N | the winning line}. The solution: {learner moves}.
+Use exactly these episodes, in order:
+1. question — the position and the task, in one breath ("{side} to play. Mate in N."),
+   and what to look at first.
+2. solve — one per {side} move, each a quiz: the checks, captures and threats
+   the dossier lists here, in that order; which look right and why they fail
+   (tempting moves only as the dossier gives them); then the move and why it
+   works. The defender's reply: why it is forced.
+3. recap — the pattern, and the cue that tells you to look for it in a game.
+A strong player thinks checks, captures, threats, every move: teach that
+habit, not just this answer.
+```
+With `unsoundNodeIds`, a last line names those moves: the course's move is
+the one to learn, and the other is named only if the dossier lists it.
 
 **tactics**
 ```text
@@ -458,9 +499,14 @@ beyond these headers and the creator's direction.
   master's move is the engine's best or marked "also good".
 - If the dossier marks a master's move as a mistake, say so respectfully and
   give the better move.
-- Clip: only the critical moments, 4–6 episodes: the position, the question,
-  the master's move, why.
+- In the video: the critical moments carry the story: the position, the
+  question, the master's move, why.
 ```
+
+After the kind's playbook, one line per video the course makes
+(`productsPlaybook`), from §13.2's table: "YouTube video: the setup, the
+bait and why it looks natural, …" and "Reel: the bait and the
+punishment.".
 
 ### 6.4 The outline call
 
@@ -472,15 +518,17 @@ Kind: {kind}
 Direction (from the creator): "{direction}"
 Learner side: {learnerSide}
 Learner level: {CALIBRATION[band].label} — {CALIBRATION[band].description}
-Budgets: clip at most {seconds}s (clipSeconds), at most {words} spoken words in
-total, hook at most 12 words, {episodeRange} episodes.
-Make: the course and the clip.
-Speaking budgets, per episode: budgetLong is how many of its moves speak in the
-course; budgetShort is how many speak in the clip. Across the whole clip, at
-most {narratedMax} moves speak. A hook speaks over its opening card, so its
-budgetShort is 0. Neither budget may exceed the episode's moves.
-(Course only: "Make: the course only, no clip. Every budgetShort is 0." and
-the long budget alone; clip only, the mirror.)
+Budgets: {episodeRange} episodes; the YouTube video about {minutes} minutes, at
+most {words} spoken words in total.
+Make: the course and the YouTube video.
+Speaking budgets, per episode: budgetCourse is how many of its moves speak in the
+course (the moves a learner needs a word on: their key moves, and the opponent's
+where the plan changes); budgetVideo is how many speak in the YouTube video: the
+important moves. Across the whole video, at most {narratedMax} moves speak.
+Neither budget may exceed the episode's moves.
+(No video: "Make: the course. There is no YouTube video: every budgetVideo is 0."
+and the course budget alone.)
+Episode roles: {COURSE_ROLES[kind]}.
 
 LINES
 {lineId} ({name}): {SAN movetext with move numbers}
@@ -494,6 +542,18 @@ exactly as listed. You write each focus, set each episode's budgets, and pick
 narratedNodeIds only from the moves between that episode's startNodeId and
 endNodeId.
 {the §10 episodes as spans: "- e4 quiz, on n12 (6... Bb4), answerNodeId n12"}
+
+YOUTUBE VIDEO (write "video")
+- title: at most 55 characters, curiosity and clarity …
+- thumbnailText: at most 4 words …
+- hook: the first 15 seconds. Jump straight to the premise or the climax …
+- outro: a question the viewer answers in the comments, then what comes next.
+(No video: 'YOUTUBE VIDEO: none this time, so give "video" no value.')
+
+REEL CANDIDATES (computed by code; pick one id and a style it allows)
+- r1 mate: climax n16 (8... Qc1#), from n11 (6. Bc3) to n16 (8... Qc1#); styles highlight, puzzle, promo
+The reel is one idea: pick the moment a viewer would stop scrolling for. …
+(No reel, or no candidate: 'REEL: none this time, so give "reel" no value.')
 
 DOSSIER
 {rendered dossier}
@@ -511,10 +571,11 @@ Output (`CourseOutlineSchema`):
   hookOptions: string[3],      // three different angles, each at most 12 words
   chapters: [{ title, lineId,
     episodes: [{ id, role, focus, startNodeId, endNodeId,
-                 narratedNodeIds: string[], answerNodeId?: string,
-                 budgetLong: number, budgetShort: number }] }],
+                 narratedNodeIds: string[], answerNodeId: string | null,
+                 budgetCourse: number, budgetVideo: number }] }],
   takeaways: string[3],
-  clipSeconds: number          // the clip's target length
+  video: { title, thumbnailText, hook, outro } | null,
+  reel: { candidate: string, style: 'highlight' | 'puzzle' | 'promo' } | null
 }
 ```
 
@@ -535,14 +596,13 @@ checks refused. With no skeleton there is no plan, and the model plans the
 spans itself.
 
 The budgets are the planner's real job: it decides, per episode, how many
-moves speak in the course and how many in the clip, so the episode calls
-don't voice every move. They land on the episode (`budget: { long, short }`)
-and the verifier holds the episode to them. `clipSeconds` lands on the
-document.
+moves speak in the course and how many in the video, so the episode calls
+don't voice every move. They land on the episode (`budget: { course, video }`)
+and the verifier holds the episode to them.
 
-Code then has the last word on the budgets (`withKeyMoves`): a version the
-course does not make gets 0, whatever the model answered, and each made
-version's budget is raised to fit the episode's **key moves**
+Code then has the last word on the budgets (`withKeyMoves`): with no video,
+every video budget is 0, whatever the model answered, and each made
+budget is raised to fit the episode's **key moves**
 (`episodeKeyMoves`, chess-analysis): the quiz answer, any mate, and for a
 trap its bait, answer and last move; none for a hook or a safety episode.
 They join the plan's key moves and are stored as `budget.keyNodeIds`. The
@@ -550,17 +610,24 @@ first run with budgets left 8…Qc1# silent: the planner gave the punish
 episode 3 of its 4 moves. A fallback outline gets default budgets from code
 (`defaultCourseBudget`).
 
+Code also has the last word on the videos (`withProducts`): `video` and
+`reel` are dropped when the course does not make them; a reel pick that is
+not a candidate, or asks a style the candidate does not allow, falls back to
+the first candidate (a puzzle for a puzzle or tactics course, else a
+highlight). The pick becomes the document's `reel` stub (style and span,
+`reelFrame`), which the reel call fills.
+
 ### 6.5 The episode call
 
 One call per episode. It gets the shared block, the playbook and the voice as
 the system prompt (cached across the episode calls), and in the user message:
 the course title, promise and the whole outline (so it knows what comes before
 and after), **only this episode's dossier** (plus the previous episode's last
-node), its speaking budget ("at most {budgetLong} moves with "long": true, at
-most {budgetShort} with "short": true", or for one version only, which tick
-stays false on every move), its key moves ("Must speak, "long": true and
-"short": true: n16 (8... Qc1#)"), its clip word budget (only when there is a
-clip), and any creator
+node), its speaking budget ("at most {budgetCourse} moves with "course": true,
+at most {budgetVideo} with "video": true", or with no video: "There is no
+YouTube video: "video" is false on every move, "say" and "caption" are null."),
+its key moves ("Must speak, "course": true and "video": true: n16 (8...
+Qc1#)"), its video word budget (only with a video), and any creator
 instruction for a regeneration. It lists the nodes the plies may use, and says
 the previous node is context only; without that line, gpt-6-luna kept writing
 notes on it.
@@ -570,17 +637,23 @@ Output (`EpisodeScriptSchema`):
 ```ts
 {
   episodeId: string,
-  opener: { say: string, caption?: string } | null,   // the clip's hook
-  plies: [{ nodeId: string, text: string, clipText: string | null,
+  plies: [{ nodeId: string, text: string, say: string | null,
             caption: string | null, arrows: Arrow[],
-            long: boolean, short: boolean }],
+            tempting: { san: string, why: string }[],   // the dossier's tempting moves only
+            course: boolean, video: boolean }],
   quiz: { answerNodeId: string, prompt: string, hint: string, reveal: string } | null
 }
 ```
 
+Code merges it into the episode (`toEpisode`): with no video it strips the
+video ticks, lines and captions; it copies each tempting move's refutation
+from the dossier (`withRefutations`), so the model never writes engine lines.
+
 Regenerating one episode from the editor re-runs just this call, with the
 creator's instruction added ("punchier", "simpler words", "mention the pin
 earlier") under `CREATOR'S REQUEST FOR THIS EPISODE`.
+
+The reel call (§13.3) runs once after the episodes, on the reel's span only.
 
 ### 6.6 Worked example: the Englund Gambit trap
 
@@ -612,19 +685,19 @@ n16 8…Qc1# (Black, main) | checkmate
 
 Episode `bait` + `quiz` from the episode call (the Commander's voice; the
 verifier checks every SAN and the word "pin" against the dossier). One text
-serves the course; the clip gets its own, punchier line:
+serves the course; the video gets its own, spoken line:
 
 ```json
 {
   "episodeId": "e3",
-  "opener": null,
   "plies": [
     { "nodeId": "n11",
       "text": "Bc3 attacks the queen, so it feels like the natural move. But the bishop now stands on the diagonal to White's king, with nothing else in between.",
-      "clipText": "Six. Bc3. It hits the queen. Any sane player grabs that tempo.",
+      "say": "Six. Bc3. It hits the queen. Any sane player grabs that tempo.",
       "caption": "Hits the queen",
       "arrows": [{ "from": "c3", "to": "b2", "kind": "threat" }],
-      "long": true, "short": true }
+      "tempting": [],
+      "course": true, "video": true }
   ],
   "quiz": { "answerNodeId": "n12",
     "prompt": "Black to move. Find the strongest move.",
@@ -643,15 +716,19 @@ a message the creator can read.
 | Check | Rule |
 |---|---|
 | Nodes | Every `nodeId` exists and lies inside the episode (or is its quiz answer). Plies are in node order, one per move. |
-| Moves | Every SAN token in `text`, `clipText`, `caption`, the opener and the quiz (the same move-token grammar the chat uses) is a lesson move, an engine best move/line or a listed alternative within the episode's nodes. |
+| Moves | Every SAN token in `text`, `say`, `caption`, the tempting moves' `why` and the quiz (the same move-token grammar the chat uses) is a lesson move, an engine best move/line or a listed alternative within the episode's nodes. |
 | Tactic words | A motif word (fork, pin, skewer, discovered, double check, mate, trapped, deflection, …, from the detectors' vocabulary) appears only if the dossier lists that motif within the episode. |
 | Numbers | No eval-looking numbers (`+1.3`, `-0.8`, "centipawn", "eval"). No `N%` unless the creator's direction contains it. |
 | Arrows | Each arrow is a legal move for either side in that position (the opponent's via `null-move-fen.ts`) or a threat the dossier lists. At most 2 per move. |
-| Budgets | At most `budget.long` plies ticked `long`, at most `budget.short` ticked `short`. A version with budget 0 was not planned: plies the creator ticks there by hand are not counted. Code also clears the unplanned version's ticks, clip lines, captions and opener from the model's answer. |
-| Key moves | Each of `budget.keyNodeIds` speaks in every planned version ("8…Qc1# is a key move of this episode; let it speak in the clip"). |
-| Lengths | The clip line (`clipText`, else `text`) within the words per move, the clip within the episode's words; captions at most 6 words; course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
+| Budgets | At most `budget.course` plies ticked `course`, at most `budget.video` ticked `video`. A video budget of 0 was not planned: plies the creator ticks there by hand are not counted. |
+| Key moves | Each of `budget.keyNodeIds` speaks in the course, and in the video when it is planned ("8…Qc1# is a key move of this episode; let it speak in the video"). |
+| Tempting | Every `tempting[].san` is one of the dossier's tempting moves at that node. |
+| Lengths | The video line (`say`, else `text`) within the words per move, the video within the episode's words; captions at most 6 words; course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
 | Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); the hint does not name it. |
 | Phrases | None of `BANNED_GENERIC_PHRASES`. |
+| Voice | Across the course: more than 2 lines in an episode starting with the same word, or one line repeated in two episodes. |
+
+The video's packaging and the reel have their own checks (§13.9).
 
 Failures go back to the model once, as a list, with the episode's previous
 output. Anything still failing is kept and shown in the editor as a warning on
@@ -666,52 +743,61 @@ they ship.
 
 ---
 
-## 8. Voice and clips
+## 8. Voice and videos
 
 Decided with the owner:
 
-- One ply list, two versions: the course speaks the plies ticked `long`
-  (their `text`), the clip plays the plies ticked `short` (their `clipText`,
-  else `text`) after the episode's opener. Both are voiced by the course's
-  coach. The editor's per-move ticks decide which moves are in which.
-- **All audio first, then record.** Every sentence of both scripts is
-  synthesised in the creator's browser with the coach's voice: **Kokoro
-  only**, in the browser or on the creator's local Kokoro server (the same
-  voice and pitch per coach, `tts/persona-voices.ts`), so every course sounds
-  alike. OpenAI's voice is not offered and MP3 uploads are refused.
-  There is a progress bar. Browser Kokoro is slow; the creator waits. Nothing is
-  recorded until every sentence exists.
+- One ply list, three products: the course speaks the plies ticked `course`
+  (their `text`); the YouTube video plays the plies ticked `video` (their
+  `say`, else `text`) after its hook; the reel has its own script
+  (`document.reel`, §13.3). All are voiced by the course's coach. The
+  editor's per-move ticks decide which moves are in the course and the video.
+- **All audio first, then record.** Every sentence is synthesised in the
+  creator's browser with the coach's voice: **Kokoro only**, in the browser
+  or on the creator's local Kokoro server (the same voice and pitch per
+  coach, `tts/persona-voices.ts`), so every course sounds alike. OpenAI's
+  voice is not offered and MP3 uploads are refused. There is a progress
+  bar. Browser Kokoro is slow; the creator waits. Nothing is recorded until
+  every sentence exists.
 - The device's built-in voice (`native`) is not offered either: it produces no
   audio bytes to record and sounds different on every device.
-- Timing comes from the audio: a clip move lasts its audio plus a short gap
-  (a silent short ply gets a fixed pause), and the moves between two clip
-  plies play at move pace. So a re-export is identical (`clip/timeline.ts`).
-  Audio keys: `opener:{episode}`, `clip:{episode}:{node}`, `quiz:{episode}`,
-  and `note:{node}` for the course's long plies.
-- **Board sounds** (Phase 88, on by default, a switch in the clip panel):
+- Timing comes from the audio, so a re-export is identical: a video move
+  lasts its audio plus a short gap (a silent one gets a fixed pause), and the
+  moves between two video moves play at move pace (`clip/timeline.ts`); the
+  reel's timing is §13.3's (`clip/reel-timeline.ts`). Audio keys:
+  `video:hook`, `video:outro`, `clip:{episode}:{node}`,
+  `tempting:{episode}:{node}:{i}`, `quiz:{episode}`, `note:{episode}:{node}`
+  for the course's notes, and `reel:hook`, `reel:beat:{i}`, `reel:cta`,
+  `reel:loop`.
+- **Board sounds** (Phase 88, on by default, a switch in the preview):
   each move shown for the first time knocks (the learner's side, or the
   other side's softer knock), a check chimes, and from the engine pass a
   mistake or blunder plays bad and a great or brilliant move, or one that
   turns the game, plays great, for either side. A narrated move's voice
   starts once its sounds end, and the move is that much longer. The sounds
-  play on the clip's audio clock, so the recording has them as previewed.
+  play on the recording's audio clock, so the recording has them as
+  previewed. The riser and whoosh: §13.8.
 - The quiz moment is built by code, not written by the model: the position
   before the answer, the coach saying `quiz.prompt`, a 3 s countdown, then the
-  episode's short plies reveal the answer. (gemma-4-12b put the quiz line on
-  the answer itself, with no pause, so the clip gave the answer away.)
-- The whole clip is recorded in one pass from a canvas (board, eval bar,
-  arrows, captions, coach avatar, end card) plus the audio through Web Audio,
-  in both formats: 9:16 (1080×1920) and 16:9 (1920×1080). The persona's playback
-  rate (`personaPlaybackRate`) is applied when mixing, as in the app.
+  episode's video moves reveal the answer. (gemma-4-12b put the quiz line on
+  the answer itself, with no pause, so the video gave the answer away.)
+- Each video is recorded in one pass from a canvas (board, eval bar, arrows,
+  captions, coach avatar, cards) plus the audio through Web Audio: the
+  YouTube video at 16:9 (1920×1080), the reel at 9:16 (1080×1920, §13.3's
+  bands). The persona's playback rate (`personaPlaybackRate`) is applied
+  when mixing, as in the app. Downloads are `<slug>-youtube` and
+  `<slug>-reel`.
 - Audio is cached in the browser (IndexedDB, memory when that is unavailable)
   by exact text + voice, so after an edit only the changed sentences are
   synthesised again.
-- The editor previews both before anything is recorded or published:
-  **Preview clip** plays the clip live on the canvas with its audio (recording
-  is that same playback captured), and **Preview as learner** opens the public
-  player on the draft, voiced from the browser's audio cache.
+- The editor previews before anything is recorded or published:
+  **Preview: Videos** plays the video or the reel (a picker when there are
+  both) live on the canvas with its audio (recording is that same playback
+  captured), and **As learner** opens the public player on the draft,
+  voiced from the browser's audio cache.
 - Videos are never uploaded. The creator posts them and pastes the links into
-  the course (`clipLinks`), so the course page can embed the YouTube video.
+  the course (`clipLinks`: `youtube` for the video; `shorts`, `instagram`,
+  `tiktok` for the reel), so the course page can link and embed them.
 - Course-note audio is uploaded with the course when it is published (small
   files, one per note) and played on the public board, so every visitor hears
   exactly the same voice. Each file is a 16-bit mono WAV with the coach's
@@ -726,8 +812,9 @@ Decided with the owner:
 
 - Status: `draft` → `unlisted` (link works, not listed) → `public` (listed) →
   `removed` (moderator). New courses publish as `unlisted` by default.
-- The Publish dialog asks for the three takeaways, who can see it, the clip
-  links (https on youtube.com/youtu.be, instagram.com, tiktok.com), and the
+- The Publish dialog asks for the three takeaways, who can see it, where the
+  videos were posted (the YouTube video on youtube.com/youtu.be; the reel on
+  YouTube Shorts, instagram.com or tiktok.com; https only), and the
   voice for the notes; then it saves, voices and uploads the missing note
   audio, and publishes (`POST /api/courses/:id/publish`). The server re-runs
   the checks with the engine facts and refuses while they find problems,
@@ -760,10 +847,12 @@ Decided with the owner:
   and a bottom bar, with Ask my coach as a sheet. The header
   (`CourseHeader.tsx`) holds back, the title, the four stages (the stage bar,
   or a picker on a phone) and "⋮" (Start over). The move list and graph grow
-  as the learner steps on, so a quiz answer never shows early. The clip is a
-  "Watch the clip" chip: a thumbnail, then a `credentialless`
-  youtube-nocookie frame, since the app is cross-origin isolated; browsers
-  without that open YouTube. A quiz waits for the learner's move (Hint and
+  as the learner steps on, so a quiz answer never shows early. The videos
+  are chips above the episodes: "Watch the video" and "Watch the reel", each
+  a thumbnail, then a `credentialless` youtube-nocookie frame, since the app
+  is cross-origin isolated; browsers without that open YouTube, and a reel on
+  Instagram or TikTok opens there. A note's tempting moves fold under it
+  ("Tempting: Qxc3+?", opened for the engine's answer and why it fails). A quiz waits for the learner's move (Hint and
   Show the answer too); a different move is rated in the learner's browser
   by the lite engine and the game-review classifier, and
   brilliant/great/best/excellent is accepted as "good move too". The last
@@ -804,13 +893,17 @@ Decided with the owner:
   published), filtered All / Drafts / Published and sorted Newest or
   Curriculum; with none, the four steps of making one. The editor
   (`/studio/:id/edit`) has a header (back, the title edited in place, the
-  status, Saved / Unsaved changes, Preview: Clip | As learner, Publish,
-  Save), a Details card (the promise, the coach, the level as a rating and a
-  place, "1200-02", and a small Start over that rebuilds the course, with or
-  without the AI) above the outline, and the episode panel in tabs: Moves
-  (each move's text, an optional clip line, and the "Course" / "Clip" ticks,
-  under the plan's budget), Quiz, Clip (the opener and the clip's script),
-  AI. Write with AI shows only on a course with no words yet.
+  status, Saved / Unsaved changes, Preview: Videos | As learner, Publish,
+  Save), a Details card (the coach, the level as a rating and a place,
+  "1200-02", the videos (Reel / YouTube video / Both), the promise, and a
+  small Start over that rebuilds the course, with or without the AI), the
+  YouTube video card (title, thumbnail text, hook, outro) and the Reel card
+  (style, span, top text, hook, beats, payoff, CTA, loop, "Write the reel
+  with AI", its warnings) above the outline, and the episode panel in tabs:
+  Moves (each move's text, "In the course" / "In the video" ticks under the
+  plan's budget, the video's own line and caption, the tempting moves' why),
+  Quiz, Video (this episode's part of the video), AI. Write with AI shows
+  only on a course with no words yet.
 - **Curriculum.** A course's `level` places it: all courses at one rating
   form that rating's curriculum, in `order` (1200-01, 1200-02 …). A new
   course takes the creator's next place at its rating; the Details card
@@ -828,15 +921,19 @@ Decided with the owner:
 ## 10. The manual path (no AI)
 
 The skeleton (§5.5) becomes episodes directly, with template text the creator
-overwrites:
-- Only the versions the course makes are ticked (`versions`).
+overwrites (`manual-episodes.ts`):
 - Every move becomes a ply ticked for the course, its text pre-filled from
   checked facts: the opening name ("Main line of the Englund Gambit"), the
   tactic sentences (`tactic-reason-text.ts`), the board facts ("Bc3 attacks
   the queen on b2").
-- The clip gets the episode's key moves, then critical or tactic moves up to
-  two, with the same text; the creator ticks more or writes clip lines.
-  Budgets come from `defaultCourseBudget`.
+- With a video, it gets the episode's key moves first, then critical or
+  tactic moves up to two, with the same text; the creator ticks more or
+  writes video lines. With none, no move is ticked for the video. Budgets
+  come from `defaultCourseBudget`.
+- A puzzle gets the question, a solve episode per learner move (each a
+  quiz, with the defender's reply), and the recap.
+- The reel and the video's packaging are left empty: "Write the reel with
+  AI" writes the reel alone, and the video card is filled by hand.
 - The same verifier runs on hand-written text, so a typo'd move is caught.
 
 ---
@@ -930,11 +1027,10 @@ drills. Signed out, the same button explains that coaching needs an account.
 
 ## 13. Three products: the course, the video and the reel (Phases 92–95)
 
-Decided with the owner, 2026-09-28. This section replaces the Phase 90–91
-"long and short" model (a course and one clip recorded in two shapes) and
-the kinds `opening_reel` / `opening_course`. Where §3, §4, §6, §8 and §10
-disagree with it, this section wins; those sections are rewritten in task
-95.4.
+Decided with the owner, 2026-09-28. It replaced the Phase 90–91 "long and
+short" model (a course and one clip recorded in two shapes) and the kinds
+`opening_reel` / `opening_course` (migration 0022 rewrote them as
+`opening`). The document is §4; the calls are §6.
 
 ### 13.1 What a course makes
 
@@ -951,9 +1047,10 @@ strong combination: the reel promotes the video, the video sends viewers to
 the course). The kind preselects one (§13.2); the creator must be able to
 see and change it before anything is planned, because the plan differs:
 the outline budgets only the chosen videos. The creator can add the missing
-one later from the editor ("Add a reel", "Add a video"): code builds it
-from the course's facts, and the AI can write it on its own
-(`POST /api/courses/:id/generate` with `{ only: 'reel' | 'video' }`).
+one later from the editor's Details card: a reel is written on its own
+(`POST /api/courses/:id/reel`, one call on code's first candidate or the
+reel's span), a video needs the outline and every episode, so the creator
+writes it again with AI (or ticks moves "In the video" by hand).
 
 Videos with no course behind them ("the most ridiculous games", say) are a
 later category of templates with their own prompts, never published as
@@ -971,12 +1068,12 @@ A standalone reel is a **highlight** or a **puzzle** (§13.3).
 | `opening` | a main line and sidelines (was `opening_reel` + `opening_course`) | the plan, each learner move's purpose, each sideline, each trap inside | highlight: the one trap or idea a player must know | video |
 | `tactics` | 1–6 positions with their solutions, one motif | the cue, then each example, the tempting moves and why they fail | puzzle: the clearest example | both |
 | `master_game` | a full game | a storytelling recap: the players (headers only), the turning points, the tempting moves at each | highlight: the single brilliant move, blunder or finish | video |
-| `puzzle` (new) | a position (`[FEN]`) and its solution, e.g. mate in 3 | the thinking method: at each move, the checks, captures and threats, which look right, why they fail, then the move | puzzle: "White to play. Mate in 3." | both |
+| `puzzle` | a position (`[FEN]`) and its solution, e.g. mate in 3 | the thinking method: at each move, the checks, captures and threats, which look right, why they fail, then the move | puzzle: "White to play. Mate in 3." | both |
 
 `puzzle` checks: the PGN has a `[FEN]`; the learner is the side to move;
-the engine confirms the solution (mate in N matches the line, or every
-learner move is the one clearly best move). Each learner move is a quiz;
-the opponent's replies are the engine's best defence.
+the form refuses sidelines. Each learner move is a quiz (a puzzle's
+learner moves are always quiz answers, `isQuizAnswerEligible`); a move with
+a second good answer is a warning, and the player accepts either.
 
 ### 13.3 The reel
 
@@ -1073,77 +1170,28 @@ puzzle or tactics course:
 Dossier (`CourseNodeFacts.tempting`):
 `{ san, kind: 'check' | 'capture' | 'threat', refutation: string[], after: string, verdict: string }[]`.
 The model may only discuss these; the verifier checks each named move.
+Config: `CONFIG.courses.temptingDrop` (15) and `maxTempting` (3); at most 6
+candidates a node go to the engine.
 
 The course shows them under the note ("Tempting: Qxf7+? Kxf7, and the
 knight hangs"); the video plays them (§13.4); a puzzle's video walks all
 of them at every learner move, in the checks → captures → threats order,
 as the thinking method.
 
-### 13.6 The document
+### 13.6 The document and the calls
 
-```ts
-CourseDocument = {
-  …, kind: 'trap' | 'opening' | 'tactics' | 'master_game' | 'puzzle',
-  videos: { video: boolean, reel: boolean },   // at least one: Reel, Video or Both
-  episodes: [{
-    id, role, focus, startNodeId, endNodeId,
-    plies: [{ nodeId, arrows,
-              text,                // the course note: stands alone, 1–2 sentences (4 at critical)
-              say?,                // the video's line when it differs: commentator, may run longer
-              caption?,            // the video's on-screen text (else the line's first sentence)
-              tempting: [{ san, why }],  // from the dossier's tempting moves only
-              course: boolean,     // speaks in the course
-              video: boolean }],   // speaks in the video
-    budget?: { course, video, keyNodeIds? },
-    quiz?, drillNodeIds }],
-  video?: { title, thumbnailText, hook, outro },
-  reel?: CourseReel,               // §13.3
-  …
-}
-```
-
-`opener`, `clipText`, `short`, `versions` and `clipSeconds` go (test data
-only, no migration of rows). The video's length comes from
-`CONFIG.courses.videoSeconds` per kind; the reel's from `reelSeconds`. A ply's `tempting` show in the course whether
-or not it speaks in the video.
-
-### 13.7 The calls
-
-1. **Outline** (as §6.4, plus): budgets per episode for the course and the
-   video (0 when there is no video); the reel's style, span and climax from
-   code's reel candidates (none when there is no reel); the video's title,
-   thumbnail text, hook and outro.
-2. **Episode** (one per episode, as §6.5): each ply's `text`, `say` when
-   the video needs its own line, `tempting` (from the episode's dossier
-   tempting moves: which to discuss and why, in the coach's voice), the
-   ticks within the budgets, and the quiz.
-3. **Reel** (new, one call, after the episodes so it can reuse their
-   facts): the §13.3 script for the chosen span and style.
-
-The shared block (§6.1) becomes three products:
-
-```text
-THREE PRODUCTS FROM THE SAME MOVES
-- The course: a learner plays through it on our board, maybe weeks later,
-  without the videos. Each note stands alone: what the move does and why,
-  in one or two sentences.
-- The video: a YouTube lesson. Tell it like a commentator, not a math
-  teacher: the stakes, the tension, the turn. At each important move, weigh
-  the tempting moves the dossier lists and say why each fails, the way a
-  strong player thinks: checks, captures, threats.
-- The reel: 30 to 45 seconds, one idea. The first words name the idea
-  ("A queen sacrifice that wins in the Sicilian"); no greeting, no "today".
-  Short lines, the climax slowed down, a specific call to action, and a last
-  line that runs straight back into the first.
-```
-
-Playbooks per kind (§6.3) gain a video paragraph and a reel paragraph (the
-table in §13.2).
+The document is §4 (`videos`, `video`, `reel`, and each ply's `course`,
+`video`, `say`, `caption` and `tempting`). The calls are §6: the outline
+(§6.4) budgets the video and picks the reel; the episode calls (§6.5) write
+each ply's lines and tempting whys; one reel call after them writes
+§13.3's script (`buildCourseReelMessages`, `ReelScriptSchema`, one repair;
+its warnings carry the episode id `'reel'`).
 
 ### 13.8 Sound
 
 - Board sounds as Phase 88 in both videos.
-- New sounds from `scripts/sounds/generate-board-sounds.py`: `riser` (a
+- New sounds from `scripts/sounds/generate-clip-sounds.py` (the board
+  sounds' generator is untouched): `riser` (a
   low building hum for the puzzle countdown, 5 s, released at the reveal)
   and `whoosh` (a soft cut sound for chapter cards and the video hook's cut
   to the start).

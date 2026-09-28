@@ -67,7 +67,7 @@ function trapPlaybook(context: CoursePromptContext, budget: CourseBudget, skelet
   const trapper = capitalise(context.learnerSide);
   const safeMove = skeleton?.safeMoveSan ?? 'not found in the dossier';
   const risk = skeleton?.trapperRiskNodeIds.length ? "\nThe trapper's setup is risky against best play (see the dossier); say so plainly." : '';
-  return `KIND: TRAP (vertical reel, at most ${budget.seconds}s, at most ${budget.words} spoken words)
+  return `KIND: TRAP
 The trapper is ${trapper}. The bait is node ${skeleton?.baitNodeId ?? 'not found'}. The answer is node
 ${skeleton?.answerNodeId ?? 'not found'}. The victim's safe move at the bait is ${safeMove}.
 Use exactly these episodes, in order:
@@ -101,7 +101,7 @@ function trapEnding(context: CoursePromptContext): string {
 
 function openingPlaybook(context: CoursePromptContext): string {
   const lineList = context.lines.map((line) => `${line.id} "${line.name}"`).join(', ');
-  return `KIND: OPENING COURSE (landscape video and a chaptered course)
+  return `KIND: OPENING
 The learner plays ${capitalise(context.learnerSide)}. Lines, in the creator's order: ${lineList}.
 - Chapter 1 "The idea": the main line to its end. What each learner move is
   for; then the plan and the pawn structure it leads to.

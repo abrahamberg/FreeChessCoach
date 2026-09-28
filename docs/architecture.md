@@ -122,11 +122,11 @@ bad (a mistake or blunder) and great (great/brilliant, or a move that turns
 the game). `move-sounds.ts` picks them; `useMoveStepSounds` plays a move when
 the board steps forward one move (the student's own drop at once). Live
 games (with the coach, a bot, practice) never play bad or great; analyzed
-moves (review, coaching on a game, course play-throughs, clips) play them for
+moves (review, coaching on a game, course play-throughs, videos) play them for
 either side. While the coach's voice or a course note speaks
 (`voice-activity.ts`), a board sound plays at a third of its volume. Settings >
-Board turns them off, per device. Clips schedule the same sounds on their
-audio clock (docs/courses.md §8).
+Board turns them off, per device. A course's recorded videos schedule the
+same sounds on their audio clock (docs/courses.md §8).
 
 ### Browser tunnel
 
@@ -441,7 +441,10 @@ A practice session walks a student through an assigned batch of positions (`puzz
 
 ## Courses
 
-A course is a chess lesson built from a PGN (spec: `docs/courses.md`).
+A course is a chess lesson built from a PGN (spec: `docs/courses.md`),
+with a YouTube video, a reel, or both made from the same moves (§13): the
+course is the product, the videos bring people to it. Kinds: trap, opening,
+tactics, puzzle, master game.
 
 - **Creating** (creators only, `users.can_create_courses`, set by a
   moderator): `/studio` lists them, `/studio/new` takes the PGN, `/studio/:id/edit`
@@ -449,14 +452,20 @@ A course is a chess lesson built from a PGN (spec: `docs/courses.md`).
   `published_document` (jsonb, `CourseDocumentSchema`), `status`
   (draft/unlisted/public/removed) and the `dossier`: the engine pass over
   every tree position (the review pipeline, `services/course-dossier.ts`),
-  kept for generation, the verifier and the player's evaluations. AI
-  generation is a graphile-worker job (`jobs/course-generate.ts`: outline, then one call per episode, each
-  checked by the verifier in `chess-analysis`); `course_ai_calls` logs the
-  calls. `apps/api/scripts/course-dossier-refresh.ts` rebuilds dossiers with
+  plus a second small batch for the tempting moves (checks, captures and
+  threats that fail, with the engine's refutation), kept for generation,
+  the verifier and the player's evaluations. AI generation is a
+  graphile-worker job (`jobs/course-generate.ts`: the outline, which budgets
+  the video and picks the reel from code's candidates; one call per episode,
+  each checked by the verifier in `chess-analysis`; then the reel call);
+  `POST /api/courses/:id/reel` writes the reel alone. `course_ai_calls` logs
+  the calls. `apps/api/scripts/course-dossier-refresh.ts` rebuilds dossiers with
   the engine alone.
-- **Voice and clips**: Kokoro only, in the creator's browser; note audio is
+- **Voice and videos**: Kokoro only, in the creator's browser; note audio is
   uploaded at publish (`course_audio`, named by its bytes' hash, optionally
-  mirrored to R2), clips are recorded in the browser and posted elsewhere.
+  mirrored to R2). The YouTube video (16:9) and the reel (9:16) are
+  recorded from a canvas in the browser (`features/courses/clip/`) and
+  posted elsewhere; the course links them (`clipLinks`).
 - **Public**: `/learn/:slug` (outside the shell, no login) and
   `/api/public/courses/*` (skip-auth at the proxy): the published course with
   note audio URLs and per-move evaluations, the audio files, and the

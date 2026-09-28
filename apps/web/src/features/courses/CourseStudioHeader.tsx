@@ -28,7 +28,7 @@ export interface CourseStudioHeaderProps {
 
 /** The course editor's header (Phase 89): back to the studio, the title
  * edited in place, where the course stands, and its actions: Save first,
- * Preview (the clip, as a learner), Publish, the rarer ones in "⋮". */
+ * Preview (the videos, as a learner), Publish, the rarer ones in "⋮". */
 export function CourseStudioHeader({ title, onTitle, status, dirty, saving, onSave, onPreviewClip, onPreviewLearner, onPublish, published, more }: CourseStudioHeaderProps): ReactNode {
   const badge = STATUS[status];
   return (
