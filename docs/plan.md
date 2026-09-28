@@ -1870,13 +1870,20 @@ Commit: `feat(courses): edit the video and the reel`
 
 ### Task 95.2 — The player
 
+Done 2026-09-29: tempting moves fold under the note (`PlayThrough.tsx`);
+a puzzle's every learner move is a quiz answer (`isQuizAnswerEligible`
+for 'puzzle', and `puzzleChapters` quizzes every solve episode; an equal
+alternative is accepted by the player's engine check); "Watch the video"
+(YouTube) and "Watch the reel" (Shorts in the dialog; Instagram or TikTok
+open there) replace "Watch the clip", and the Publish dialog names them.
+
 **Files:** `PlayThrough.tsx`, `CoursePane.tsx`, `CourseDrill.tsx`,
 `PublishedCourse.tsx`, tests.
 
-- [ ] Under a note: "Tempting: Qxf7+? Kxf7, and the knight hangs",
+- [x] Under a note: "Tempting: Qxf7+? Kxf7, and the knight hangs",
   folded by default.
-- [ ] Puzzle courses play as solve mode: every learner move is asked.
-- [ ] The course page embeds the YouTube video and links the reel
+- [x] Puzzle courses play as solve mode: every learner move is asked.
+- [x] The course page embeds the YouTube video and links the reel
   (`clipLinks`: youtube for the video; shorts, instagram, tiktok for the
   reel).
 

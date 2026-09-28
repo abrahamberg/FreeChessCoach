@@ -186,6 +186,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  color: inherit;
+  text-decoration: none;
 }
 
 .course-clip-dialog {
@@ -918,4 +920,26 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+/* §13.5: tempting moves, folded under the note. */
+.course-player__tempting {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.course-player__tempting summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-danger);
+}
+
+.course-player__tempting ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.course-player__tempting strong {
+  color: var(--color-text);
 }

@@ -19,7 +19,6 @@ export function puzzleChapters(skeleton: PuzzleSkeleton, lines: CourseLineGame[]
     const at = nodeIds.indexOf(nodeId);
     const reply = nodeIds[at + 1];
     const facts = builder.fact(nodeId);
-    const sound = facts?.quizEligible || facts?.san.endsWith('#');
     episodeIds.push(
       ...builder.add({
         role: 'solve',
@@ -27,7 +26,8 @@ export function puzzleChapters(skeleton: PuzzleSkeleton, lines: CourseLineGame[]
         nodeIds: reply && !skeleton.learnerNodeIds.includes(reply) ? [nodeId, reply] : [nodeId],
         noteNodeIds: reply && !skeleton.learnerNodeIds.includes(reply) ? [nodeId, reply] : [nodeId],
         drillNodeIds: [nodeId],
-        ...(sound ? { quiz: findMoveQuiz(nodeId, facts?.side) } : {})
+        // Every solution move is asked (§13.2), a sound one or not.
+        quiz: findMoveQuiz(nodeId, facts?.side)
       })
     );
   });

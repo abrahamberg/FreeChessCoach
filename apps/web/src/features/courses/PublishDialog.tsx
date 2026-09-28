@@ -19,10 +19,10 @@ export interface PublishDialogProps {
 }
 
 const LINKS: { key: keyof CourseClipLinks; label: string; placeholder: string }[] = [
-  { key: 'youtube', label: 'YouTube', placeholder: 'https://www.youtube.com/watch?v=…' },
-  { key: 'shorts', label: 'YouTube Shorts', placeholder: 'https://www.youtube.com/shorts/…' },
-  { key: 'instagram', label: 'Instagram', placeholder: 'https://www.instagram.com/reel/…' },
-  { key: 'tiktok', label: 'TikTok', placeholder: 'https://www.tiktok.com/@you/video/…' }
+  { key: 'youtube', label: 'YouTube video', placeholder: 'https://www.youtube.com/watch?v=…' },
+  { key: 'shorts', label: 'Reel on YouTube Shorts', placeholder: 'https://www.youtube.com/shorts/…' },
+  { key: 'instagram', label: 'Reel on Instagram', placeholder: 'https://www.instagram.com/reel/…' },
+  { key: 'tiktok', label: 'Reel on TikTok', placeholder: 'https://www.tiktok.com/@you/video/…' }
 ];
 
 const cache = openCourseAudioCache();

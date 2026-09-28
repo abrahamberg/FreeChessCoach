@@ -97,4 +97,21 @@ describe('CoursePlayer', () => {
     expect(stage.value).toBe('play_through');
     expect(screen.queryByRole('option', { name: /✓/ })).toBeNull();
   });
+
+  test('a note’s tempting moves fold under it; the video and the reel each have a link', () => {
+    const tempting = [{ san: 'Nc3', why: 'Develops, but the pawn on e5 stays lost.', refutation: ['Nc6'] }];
+    const withTempting: CourseDocument = {
+      ...document,
+      episodes: [{ ...episode, plies: [{ ...episode.plies[0]!, tempting }] }],
+      clipLinks: { youtube: 'https://www.youtube.com/watch?v=abcdefghijk', tiktok: 'https://www.tiktok.com/@coach/video/1' }
+    };
+    render(<CoursePlayer document={withTempting} noteAudio={() => Promise.resolve(null)} />);
+    expect(screen.getByRole('button', { name: 'Watch the video' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Watch the reel' })).toHaveAttribute('href', 'https://www.tiktok.com/@coach/video/1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    const folded = screen.getByText('Tempting: Nc3?').closest('details')!;
+    expect(folded.open).toBe(false);
+    expect(folded.textContent).toContain('Nc3? Nc6 Develops, but the pawn on e5 stays lost.');
+  });
 });

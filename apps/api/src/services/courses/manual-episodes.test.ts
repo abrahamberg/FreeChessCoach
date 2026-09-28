@@ -78,7 +78,7 @@ describe('buildManualEpisodes', () => {
     expect(episodes.map((episode) => episode.role)).toEqual(['question', 'solve', 'solve', 'recap']);
     expect(episodes[0]?.focus).toBe('question: mate in 2. What do you look at first?');
     expect(episodes[1]).toMatchObject({ startNodeId: 'n1', endNodeId: 'n2', drillNodeIds: ['n1'] });
-    // The level test engine ranks no move clearly best; a mate is always a sound answer.
-    expect(episodes[2]?.quiz?.answerNodeId).toBe('n3');
+    // Every solution move is asked, even where the test engine ranks no move clearly best.
+    expect(episodes.map((episode) => episode.quiz?.answerNodeId ?? null)).toEqual([null, 'n1', 'n3', null]);
   });
 });

@@ -95,6 +95,9 @@ export function isQuizAnswerEligible(kind: CourseKind, dossier: CourseDossier, n
   const facts = dossier.nodes.find((node) => node.nodeId === nodeId);
   if (!facts) return false;
   if (kind === 'master_game') return facts.critical && (facts.quizEligible || MASTER_QUIZ_QUALITIES.has(facts.quality));
+  // A puzzle asks every solution move (§13.2); a second good answer is
+  // accepted by the player's engine check, and the checks warn about it.
+  if (kind === 'puzzle') return facts.side === dossier.learnerSide;
   return facts.quizEligible;
 }
 

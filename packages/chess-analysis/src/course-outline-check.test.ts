@@ -1,6 +1,6 @@
 import type { CourseOutline, CourseOutlineEpisode } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { checkCourseOutline, type CourseOutlineCheckInput } from './course-outline-check.js';
+import { checkCourseOutline, isQuizAnswerEligible, type CourseOutlineCheckInput } from './course-outline-check.js';
 import { courseLineGames } from './course-line-game.js';
 import { buildCourseSkeleton } from './course-skeleton.js';
 import { analyseEnglund } from './course-test-fixtures.js';
@@ -92,5 +92,14 @@ describe('checkCourseOutline', () => {
     const problems = checkCourseOutline({ kind: 'master_game', outline, nodes: tree.nodes, lines: tree.lines, dossier, skeleton: null, maxNarrated: 50 });
 
     expect(problems).toEqual(['every move needs an episode; 6 are in none: n11, n12, n13, n14, n15, n16']);
+  });
+
+  test('a puzzle asks every solution move: any learner move is a quiz answer', () => {
+    const { dossier } = analyseEnglund();
+    const learner = dossier.nodes.find((node) => node.side === dossier.learnerSide && !node.quizEligible)!;
+    const opponent = dossier.nodes.find((node) => node.side !== dossier.learnerSide)!;
+    expect(isQuizAnswerEligible('puzzle', dossier, learner.nodeId)).toBe(true);
+    expect(isQuizAnswerEligible('trap', dossier, learner.nodeId)).toBe(false);
+    expect(isQuizAnswerEligible('puzzle', dossier, opponent.nodeId)).toBe(false);
   });
 });

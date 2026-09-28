@@ -1,4 +1,4 @@
-import type { CourseDocument, CourseEnrollmentPlace, CourseEpisode } from '@freechesscoach/shared';
+import type { CourseDocument, CourseEnrollmentPlace, CourseEpisode, CourseTempting } from '@freechesscoach/shared';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronRightIcon, CloseIcon, PlayCircleIcon, PlaySmallIcon } from '../../../components/Icon.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
@@ -21,6 +21,7 @@ import { episodeWalk, isAcceptedAlternative, stepView } from './course-steps.js'
 import { judgeQuizMove } from './judge-quiz-move.js';
 import type { useNoteAudio } from './useNoteAudio.js';
 import { YouTubeClip } from './YouTubeClip.js';
+import { youtubeVideoId } from './youtube.js';
 
 /** §11: signed in, the learner's own coach; signed out, a sign-in box; the
  * editor's preview (no progress store), neither. */
@@ -48,7 +49,9 @@ export function PlayThrough({ document, evals, audio, ask, isDesktop, start, onP
   const episode = document.episodes[episodeIndex];
   const nextEpisode = document.episodes[episodeIndex + 1];
   const takeaways = document.takeaways.filter((takeaway) => takeaway.trim());
-  const clip = document.clipLinks.youtube ?? document.clipLinks.shorts;
+  const links = document.clipLinks;
+  const reel = links.shorts ?? links.instagram ?? links.tiktok;
+  const clips = Boolean(links.youtube || reel);
   const [recap, setRecap] = useState(false);
 
   const openEpisode = (index: number): void => {
@@ -58,9 +61,10 @@ export function PlayThrough({ document, evals, audio, ask, isDesktop, start, onP
   };
 
   const episodes =
-    document.episodes.length > 1 || clip ? (
+    document.episodes.length > 1 || clips ? (
       <nav className="course-player__episodes" aria-label="Episodes">
-        {clip && <ClipButton link={clip} title={document.title} vertical={!document.clipLinks.youtube} />}
+        {links.youtube && <ClipButton link={links.youtube} title={document.title} label="Watch the video" vertical={false} />}
+        {reel && <ClipButton link={reel} title={document.title} label="Watch the reel" vertical />}
         {document.episodes.length > 1 &&
           document.episodes.map((each, index) => (
             <button
@@ -115,19 +119,28 @@ function roleLabel(role: string): string {
   return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
-/** The course's clip in a dialog, so it takes no room beside the board. */
-function ClipButton({ link, title, vertical }: { link: string; title: string; vertical: boolean }): ReactNode {
+/** The course's YouTube video or reel (§13.1) in a dialog, so it takes no
+ * room beside the board; a reel on Instagram or TikTok opens there. */
+function ClipButton({ link, title, label, vertical }: { link: string; title: string; label: string; vertical: boolean }): ReactNode {
   const [open, setOpen] = useState(false);
+  if (!youtubeVideoId(link)) {
+    return (
+      <a className="course-chip course-chip--clip" href={link} target="_blank" rel="noopener noreferrer">
+        <PlayCircleIcon width={15} height={15} />
+        {label}
+      </a>
+    );
+  }
   return (
     <>
       <button type="button" className="course-chip course-chip--clip" onClick={() => setOpen(true)}>
         <PlayCircleIcon width={15} height={15} />
-        Watch the clip
+        {label}
       </button>
       {open && (
-        <div className="course-clip-dialog" role="dialog" aria-modal="true" aria-label="The course clip" onClick={() => setOpen(false)}>
+        <div className="course-clip-dialog" role="dialog" aria-modal="true" aria-label={label} onClick={() => setOpen(false)}>
           <div className="course-clip-dialog__body" onClick={(event) => event.stopPropagation()}>
-            <button type="button" className="course-clip-dialog__close" aria-label="Close the clip" onClick={() => setOpen(false)}>
+            <button type="button" className="course-clip-dialog__close" aria-label="Close" onClick={() => setOpen(false)}>
               <CloseIcon width={18} height={18} />
             </button>
             <YouTubeClip link={link} title={title} vertical={vertical} />
@@ -166,6 +179,7 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
   const judgeRef = useRef(0);
 
   const view = stepView(episode, walk, step);
+  const tempting = view.note ? (episode.plies.find((each) => each.nodeId === view.move?.id)?.tempting ?? []) : [];
   const quiz = episode.quiz;
   const answer = walk.quizAt === null ? null : walk.moves[walk.quizAt];
   const asking = quiz && answer && step === walk.quizAt && !solved;
@@ -309,6 +323,7 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
       ) : (
         !revealed && !asking && <p className="meta">{step === 0 ? 'Press Next to play through the moves.' : 'No note on this move.'}</p>
       )}
+      {tempting.length > 0 && !asking && <TemptingMoves tempting={tempting} />}
       {asking && !attempt && (
         <div className="course-player__quiz">
           <p className="course-player__prompt">{quiz.prompt || 'Your move: what would you play here?'}</p>
@@ -370,6 +385,25 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
       }
       bottomBar={nav}
     />
+  );
+}
+
+/** §13.5: the moves that looked right here and fail, folded under the note. */
+function TemptingMoves({ tempting }: { tempting: CourseTempting[] }): ReactNode {
+  return (
+    <details className="course-player__tempting">
+      <summary>Tempting: {tempting.map((each) => `${each.san}?`).join(', ')}</summary>
+      <ul>
+        {tempting.map((each) => (
+          <li key={each.san}>
+            <strong>
+              {each.san}?{each.refutation?.length ? ` ${each.refutation.join(' ')}` : ''}
+            </strong>{' '}
+            {each.why}
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 
