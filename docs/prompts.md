@@ -840,6 +840,7 @@ e3 bait, n11 to n11
 Focus: Bc3 looks natural.
 Narrated nodes: n11
 Quiz: the answer is n12; the quiz beat pauses the clip (pauseMs 3000).
+Every beat nodeId (or null) and every note nodeId is one of: n11 (6. Bc3). n10 in the dossier is the move before, for context only: no note or beat on it.
 Budget: at most 28 spoken words in this episode, at most 30 words per beat, captions at most 6 words.
 
 DOSSIER (this episode only)

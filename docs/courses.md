@@ -481,7 +481,9 @@ One call per episode. It gets the shared block, the playbook and the voice as
 the system prompt (cached across the episode calls), and in the user message:
 the course title, promise and the whole outline (so it knows what comes before
 and after), **only this episode's dossier** (plus the previous episode's last
-node), its word budget, and any creator instruction for a regeneration.
+node), its word budget, and any creator instruction for a regeneration. It
+lists the nodes the beats and notes may use, and says the previous node is
+context only; without that line, gpt-6-luna kept writing notes on it.
 
 Output (`EpisodeScriptSchema`):
 

@@ -81,6 +81,7 @@ describe('course prompts', () => {
 
     expect([...dossier.matchAll(/^n(\d+) /gm)].map((match) => `n${match[1]}`)).toEqual(['n10', 'n11', 'n12']);
     expect(user).toContain('e3 bait, n11 to n11');
+    expect(user).toContain('note nodeId is one of: n11 (6. Bc3). n10 in the dossier is the move before, for context only: no note or beat on it.');
     expect(user).toContain('pauseMs 3000');
     expect(user).toContain('"mention the pin earlier"');
   });

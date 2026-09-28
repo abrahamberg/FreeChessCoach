@@ -1,7 +1,7 @@
 import { courseNodePath, renderCourseDossier, type CourseDossier } from '@freechesscoach/chess-analysis';
 import type { CourseOutline, CourseOutlineEpisode } from '@freechesscoach/shared';
 import { courseBudget, episodeWordBudget } from './budget.js';
-import { buildCourseSystemPrompt, type CourseMessages, type CoursePromptContext } from './context.js';
+import { buildCourseSystemPrompt, nodeLabel, type CourseMessages, type CoursePromptContext } from './context.js';
 
 export const EPISODE_SCRIPT_JSON_SCHEMA = `{
   "episodeId": string,
@@ -37,7 +37,7 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
   const sections = [
     `COURSE\nTitle: ${outline.title}\nPromise: ${outline.promise}`,
     `OUTLINE\n${renderOutline(outline, episodeId)}`,
-    `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nNarrated nodes: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\nBudget: at most ${words.wordsPerEpisode} spoken words in this episode, at most ${words.wordsPerBeat} words per beat, captions at most 6 words.`,
+    `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nNarrated nodes: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\n${ownNodesLine(context, episode)}\nBudget: at most ${words.wordsPerEpisode} spoken words in this episode, at most ${words.wordsPerBeat} words per beat, captions at most 6 words.`,
     `DOSSIER (this episode only)\n${renderCourseDossier(episodeDossier(context, episode))}`,
     request.creatorRequest ? `CREATOR'S REQUEST FOR THIS EPISODE\n"${request.creatorRequest}"` : '',
     request.retry
@@ -46,6 +46,15 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
     `OUTPUT SCHEMA\n${EPISODE_SCRIPT_JSON_SCHEMA}`
   ];
   return { system: buildCourseSystemPrompt(context), user: sections.filter(Boolean).join('\n\n') };
+}
+
+/** Where beats and notes may go. The dossier also shows the move before the
+ * episode, and gpt-6-luna put notes there until this said it was context only. */
+function ownNodesLine(context: CoursePromptContext, episode: CourseOutlineEpisode): string {
+  const path = courseNodePath(context.nodes, episode.startNodeId, episode.endNodeId) ?? [];
+  const before = context.nodes.find((node) => node.id === episode.startNodeId)?.parentId;
+  const own = `Every beat nodeId (or null) and every note nodeId is one of: ${path.map((nodeId) => nodeLabel(context, nodeId)).join(', ')}.`;
+  return before ? `${own} ${before} in the dossier is the move before, for context only: no note or beat on it.` : own;
 }
 
 /** Only this episode's nodes, the one before it and its quiz answer, with
