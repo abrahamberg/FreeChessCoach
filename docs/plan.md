@@ -518,6 +518,23 @@ worker job, browser LLM tunnel, LM Studio `google/gemma-4-12b-qat`; outline
   forks by piece, and drops prevention sentences (049d080, 8512935). After:
   8 calls, 1 repair (3 arrows), 0 warnings, no false chess claims; loose
   wording left ("vacate the first rank" for the lost guard).
+- **gemma-4-12b, all five kinds in the app** (courses made from the golden
+  fixtures through `/api/courses`, the browser tunnel; no unlock phrase
+  needed). First pass: opening_reel and opening_course outlines passed first
+  try (both fell back on gpt-6-luna before the plan); four episodes grew
+  quizzes the outline never planned; the master game's intro stretched over
+  all 33 moves, so every note was written twice (the plan was asked for, not
+  checked); "trapped" false alarms on mated kings. Fixed (58e73de): the
+  outline check holds the model to the plan (spans, roles, quiz answers);
+  the plan drops a skeleton quiz answer that isn't eligible (shared
+  `isQuizAnswerEligible`); the episode prompt says "Quiz: none"; "trapped"
+  passes where the facts say mate. Rerun: trap 8 calls/1 repair, opening_reel
+  6/1, opening_course 4/0, tactics 5/0, master_game 7/1 (the outline repair
+  that restored the plan); 0 warnings in all five. Left, all "why" facts the
+  dossier lacks: tactics "Nd5# saving your knight on e5", a hint about "the
+  pawn guarding f7"; the tactics playbook's concept/scan episodes come out
+  generic, and Legal's mate starts at Bxf7+ (the queen sacrifice 5.Nxe5 is
+  not an example node); the opening reel's hook repeats the line's first beat.
 - A killed worker left the course "running" for good. Fixed (2ff1a3f): the
   job beats every 30 s; with no beat for 3 minutes it reads as failed and
   "Resume writing" carries on.
