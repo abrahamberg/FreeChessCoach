@@ -1,4 +1,4 @@
-import type { CoachPersona, CourseDocument, TtsBackend } from '@freechesscoach/shared';
+import type { CoachPersona, CourseDocument } from '@freechesscoach/shared';
 import { resolveTtsClient } from '../../../tts/resolve-tts-client.js';
 import { translateChessNotationForSpeech } from '../../../tts/sanToSpokenText.js';
 import type { TtsClient } from '../../../tts/tts-client.js';
@@ -28,8 +28,13 @@ export interface PrepareProgress {
   total: number;
 }
 
-export const NATIVE_VOICE_REFUSED =
-  "The device's built-in voice can't be recorded. Pick the browser voice, a local voice or OpenAI in Settings.";
+/** docs/courses.md §8: Kokoro only, in the browser or on the creator's own
+ * Kokoro server (the same voice and pitch per coach), so every course sounds
+ * alike. Not OpenAI, and not the device voice (no audio bytes). */
+export const COURSE_VOICES = ['browser', 'local'] as const;
+export type CourseVoice = (typeof COURSE_VOICES)[number];
+
+export const KOKORO_ONLY = 'Courses are voiced by Kokoro only: in the browser or on your local Kokoro server.';
 
 /** Everything the course's coach says, in document order: every beat that
  * has words, the quiz prompt, then every note. */
@@ -47,7 +52,7 @@ export function courseSpeeches(document: CourseDocument): CourseSpeech[] {
  * any failure rejects the whole run. Identical texts are synthesised once. */
 export async function prepareCourseAudio(options: {
   document: CourseDocument;
-  backend: TtsBackend;
+  backend: CourseVoice;
   cache: AudioCache;
   onProgress?: (progress: PrepareProgress) => void;
   signal?: AbortSignal;
@@ -57,7 +62,7 @@ export async function prepareCourseAudio(options: {
   keys?: Set<string>;
 }): Promise<Map<string, SpokenAudio>> {
   const { document, backend, cache, onProgress, signal, keys } = options;
-  if (backend === 'native') throw new Error(NATIVE_VOICE_REFUSED);
+  if (!(COURSE_VOICES as readonly string[]).includes(backend)) throw new Error(KOKORO_ONLY);
   const client = options.client ?? resolveTtsClient(backend);
   const persona = document.coachPersona;
   const speeches = courseSpeeches(document).filter((speech) => !keys || keys.has(speech.key));
@@ -81,7 +86,7 @@ export async function prepareCourseAudio(options: {
 
 /** The cache key: the voice (backend + coach) and the exact text, so an
  * edit only re-synthesises the sentences that changed. */
-export function audioCacheKey(backend: TtsBackend, persona: CoachPersona, text: string): string {
+export function audioCacheKey(backend: CourseVoice, persona: CoachPersona, text: string): string {
   return `${backend}|${persona}|${text}`;
 }
 

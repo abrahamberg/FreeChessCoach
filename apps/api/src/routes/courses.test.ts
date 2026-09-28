@@ -182,6 +182,7 @@ describe('course routes', () => {
 
     expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/wav' }, payload: wav(100) })).statusCode).toBe(204);
     expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/ogg' }, payload: wav(100) })).statusCode).toBe(415);
+    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/mpeg' }, payload: wav(100) })).statusCode).toBe(415);
     expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/wav' }, payload: wav(1_600_000) })).statusCode).toBe(413);
     expect((await app.inject({ method: 'PUT', url: `${url}/notes/e1/n99/audio`, headers: { 'content-type': 'audio/wav' }, payload: wav(10) })).statusCode).toBe(404);
     const after = (await app.inject({ method: 'GET', url })).json<CourseResponse>();

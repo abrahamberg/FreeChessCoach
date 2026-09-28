@@ -611,7 +611,8 @@ the UI that calls it comes with 81.2's Preview clip.
 
 - [x] Synthesise every beat and note with the course persona via the chosen
   backend (browser Kokoro, local Kokoro, OpenAI; `native` refused with a
-  message). Progress callback. Cache by text + persona + backend in
+  message). Later (2026-09-28, owner): Kokoro only, OpenAI removed from
+  courses so every course sounds alike; the server takes WAV only. Progress callback. Cache by text + persona + backend in
   IndexedDB (wrapped in try/catch, works without it).
 - [x] Nothing is returned until every sentence exists.
 

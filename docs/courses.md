@@ -604,12 +604,14 @@ Decided with the owner:
 - Two scripts: clip narration (everything in the video) and course notes
   (shorter, per move). Both are voiced by the course's coach.
 - **All audio first, then record.** Every sentence of both scripts is
-  synthesised in the creator's browser with the coach's voice (browser Kokoro,
-  local Kokoro or OpenAI; `tts/persona-voices.ts` fixes the voice per coach),
-  with a progress bar. Browser Kokoro is slow; the creator waits. Nothing is
+  synthesised in the creator's browser with the coach's voice: **Kokoro
+  only**, in the browser or on the creator's local Kokoro server (the same
+  voice and pitch per coach, `tts/persona-voices.ts`), so every course sounds
+  alike. OpenAI's voice is not offered and MP3 uploads are refused.
+  There is a progress bar. Browser Kokoro is slow; the creator waits. Nothing is
   recorded until every sentence exists.
-- The device's built-in voice (`native`) is not offered: it produces no audio
-  bytes to record and sounds different on every device.
+- The device's built-in voice (`native`) is not offered either: it produces no
+  audio bytes to record and sounds different on every device.
 - Timing comes from the audio: a beat lasts its audio plus a short gap. So a
   re-export is identical (`clip/timeline.ts`).
 - The quiz moment is built by code, not written by the model: the position

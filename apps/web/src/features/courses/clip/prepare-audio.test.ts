@@ -1,7 +1,7 @@
 import type { CourseDocument } from '@freechesscoach/shared';
 import { describe, expect, test, vi } from 'vitest';
 import type { TtsClient } from '../../../tts/tts-client.js';
-import { audioCacheKey, courseSpeeches, NATIVE_VOICE_REFUSED, openCourseAudioCache, prepareCourseAudio, type AudioCache, type SpokenAudio } from './prepare-audio.js';
+import { audioCacheKey, courseSpeeches, KOKORO_ONLY, openCourseAudioCache, prepareCourseAudio, type AudioCache, type SpokenAudio } from './prepare-audio.js';
 
 const beat = (say: string) => ({ nodeId: 'n1', say, caption: '', arrows: [] });
 
@@ -77,11 +77,13 @@ describe('prepareCourseAudio', () => {
   });
 
   test('nothing comes back unless every sentence has audio', async () => {
-    await expect(prepareCourseAudio({ document: course(), backend: 'openai', cache: memoryCache(), client: fakeClient(true) })).rejects.toThrow('voice down');
+    await expect(prepareCourseAudio({ document: course(), backend: 'local', cache: memoryCache(), client: fakeClient(true) })).rejects.toThrow('voice down');
   });
 
-  test("the device's voice is refused", async () => {
-    await expect(prepareCourseAudio({ document: course(), backend: 'native', cache: memoryCache(), client: fakeClient() })).rejects.toThrow(NATIVE_VOICE_REFUSED);
+  test('only Kokoro voices a course: OpenAI and the device voice are refused', async () => {
+    for (const backend of ['openai', 'native'] as never[]) {
+      await expect(prepareCourseAudio({ document: course(), backend, cache: memoryCache(), client: fakeClient() })).rejects.toThrow(KOKORO_ONLY);
+    }
   });
 
   test('the cache works without IndexedDB', async () => {

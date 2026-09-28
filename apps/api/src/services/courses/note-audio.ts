@@ -6,8 +6,9 @@ import * as courseAudioRepo from '../../db/repositories/course-audio.js';
 import type { Database } from '../../db/schema.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
 
-/** The audio types the browser's voices produce (WAV from Kokoro, MP3 from OpenAI). */
-export const NOTE_AUDIO_TYPES = ['audio/wav', 'audio/mpeg'] as const;
+/** Course notes are voiced by Kokoro only (docs/courses.md §8), uploaded as
+ * WAV. Not MP3: that is what the OpenAI voice gives. */
+export const NOTE_AUDIO_TYPES = ['audio/wav'] as const;
 
 /** A note's audio is found by its exact text: edit the note, and it needs new audio. */
 export function noteTextHash(text: string): string {
@@ -39,7 +40,7 @@ export async function saveNoteAudio(
 ): Promise<void> {
   const note = noteHashes(document).find((each) => each.episodeId === target.episodeId && each.nodeId === target.nodeId);
   if (!note) throw new NotFoundError('That note is not in the draft');
-  if (!(NOTE_AUDIO_TYPES as readonly string[]).includes(audio.mimeType)) throw new ValidationError('Note audio must be WAV or MP3');
+  if (!(NOTE_AUDIO_TYPES as readonly string[]).includes(audio.mimeType)) throw new ValidationError('Note audio must be WAV');
   if (!audio.bytes.length) throw new ValidationError('The audio is empty');
   if (audio.bytes.length > CONFIG.courses.maxNoteAudioBytes) throw new ValidationError('That note is too long to voice; shorten it');
   const stored = await courseAudioRepo.sizes(db, courseId);

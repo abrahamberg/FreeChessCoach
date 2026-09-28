@@ -1,7 +1,7 @@
-import type { CourseDocument, TtsBackend } from '@freechesscoach/shared';
+import type { CourseDocument } from '@freechesscoach/shared';
 import { useEffect, useState } from 'react';
 import { decodeCourseAudio } from './clip-player.js';
-import { openCourseAudioCache, prepareCourseAudio, type PrepareProgress } from './prepare-audio.js';
+import { openCourseAudioCache, prepareCourseAudio, type CourseVoice, type PrepareProgress } from './prepare-audio.js';
 
 export type ClipAudioState =
   | { status: 'preparing'; progress: PrepareProgress }
@@ -13,7 +13,7 @@ const cache = openCourseAudioCache();
 /** Prepares every sentence of the course in the coach's voice (81.1) and
  * decodes it for Web Audio. Re-runs when the text or the voice changes;
  * cached sentences come back at once. */
-export function useClipAudio(document: CourseDocument, backend: TtsBackend): ClipAudioState {
+export function useClipAudio(document: CourseDocument, backend: CourseVoice): ClipAudioState {
   const [state, setState] = useState<ClipAudioState>({ status: 'preparing', progress: { done: 0, total: 0 } });
 
   useEffect(() => {
