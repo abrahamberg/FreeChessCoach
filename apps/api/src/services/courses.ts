@@ -76,7 +76,21 @@ export function draftFromIntake(intake: CourseIntake): CourseDocument {
 export async function listCourses(db: Kysely<Database>, ownerId: string): Promise<CourseListResponse> {
   const rows = await coursesRepo.listByOwner(db, ownerId);
   return {
-    courses: rows.map((row) => ({ id: row.id, slug: row.slug, kind: row.kind, status: row.status, title: row.title, updatedAt: row.updatedAt.toISOString() }))
+    courses: rows.map((row) => {
+      const generation = liveGeneration(row.generation);
+      return {
+        id: row.id,
+        slug: row.slug,
+        kind: row.kind,
+        status: row.status,
+        title: row.title,
+        updatedAt: row.updatedAt.toISOString(),
+        promise: row.promise ?? '',
+        episodes: row.episodes ?? 0,
+        moves: row.moves ?? 0,
+        generation: generation && { status: generation.status, done: generation.done, total: generation.total }
+      };
+    })
   };
 }
 

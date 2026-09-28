@@ -1,5 +1,5 @@
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
-import type { CourseDebugResponse, CourseResponse } from '@freechesscoach/shared';
+import { CourseListResponseSchema, type CourseDebugResponse, type CourseResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build-app.js';
@@ -64,8 +64,9 @@ describe('course routes', () => {
     const noSide = await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, kind: 'opening_course' } });
     expect(noSide.statusCode).toBe(400);
 
-    const list = await app.inject({ method: 'GET', url: '/api/courses' });
-    expect(list.json<{ courses: { id: string }[] }>().courses.map((row) => row.id)).toContain(course.id);
+    const list = CourseListResponseSchema.parse((await app.inject({ method: 'GET', url: '/api/courses' })).json());
+    // The studio's card: the size and the writing state, not just the title.
+    expect(list.courses.find((row) => row.id === course.id)).toMatchObject({ promise: '', episodes: 0, moves: 16, generation: null });
     expect((await app.inject({ method: 'GET', url: `/api/courses/${course.id}` })).json<CourseResponse>().id).toBe(course.id);
     await app.close();
   });

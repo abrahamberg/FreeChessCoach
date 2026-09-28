@@ -1352,7 +1352,7 @@ Courses page and the board views) and share one header pattern.
 `packages/shared/src/course-api.ts` (`CourseSummarySchema`).
 **Files:** those; `routes/courses.test.ts`.
 
-- [ ] Failing test first: each summary carries `promise`, `episodes`,
+- [x] Failing test first: each summary carries `promise`, `episodes`,
   `moves` (from the draft) and `generation` (`status`, `done`, `total`, or
   null).
 

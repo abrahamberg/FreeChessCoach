@@ -42,7 +42,13 @@ export const CourseSummarySchema = z.object({
   kind: CourseKindSchema,
   status: CourseStatusSchema,
   title: z.string(),
-  updatedAt: z.string()
+  updatedAt: z.string(),
+  /** The Course studio's card (Phase 89): the draft's promise and size, and
+   * the AI's writing, if it ran. */
+  promise: z.string(),
+  episodes: z.number().int(),
+  moves: z.number().int(),
+  generation: z.object({ status: CourseGenerationSchema.shape.status, done: z.number(), total: z.number() }).nullable()
 });
 export type CourseSummary = z.infer<typeof CourseSummarySchema>;
 

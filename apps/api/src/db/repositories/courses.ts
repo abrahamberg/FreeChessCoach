@@ -13,6 +13,11 @@ export interface CourseSummaryRow {
   title: string;
   publishedAt: Date | null;
   updatedAt: Date;
+  /** From the draft; empty and 0 before one exists. */
+  promise: string | null;
+  episodes: number | null;
+  moves: number | null;
+  generation: CourseGeneration | null;
 }
 
 export interface NewCourse {
@@ -150,7 +155,19 @@ export async function updateDraft(
 export function listByOwner(db: Kysely<Database>, ownerId: string): Promise<CourseSummaryRow[]> {
   return db
     .selectFrom('courses')
-    .select(['id', 'slug', 'kind', 'status', 'title', 'publishedAt', 'updatedAt'])
+    .select([
+      'id',
+      'slug',
+      'kind',
+      'status',
+      'title',
+      'publishedAt',
+      'updatedAt',
+      'generation',
+      sql<string | null>`document->>'promise'`.as('promise'),
+      sql<number | null>`jsonb_array_length(document->'episodes')`.as('episodes'),
+      sql<number | null>`jsonb_array_length(document->'nodes')`.as('moves')
+    ])
     .where('ownerId', '=', ownerId)
     .orderBy('updatedAt', 'desc')
     .execute();
