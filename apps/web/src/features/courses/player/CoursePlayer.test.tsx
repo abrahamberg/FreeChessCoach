@@ -40,8 +40,14 @@ describe('CoursePlayer', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Show the answer' }));
     expect(screen.getByText(/The answer is Nc6\. Nc6 hits the pawn on e5\./)).toBeTruthy();
-    expect(screen.getByRole('region', { name: 'Takeaways' }).textContent).toContain('Mind b2.');
     fireEvent.click(screen.getByRole('button', { name: 'Next: Practice' }));
+    // The takeaways on their own screen, the board hidden until Back.
+    expect(screen.getByRole('region', { name: 'Remember' }).textContent).toContain('Mind b2.');
+    expect(screen.queryByRole('button', { name: 'Previous' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the moves' }));
+    expect(screen.queryByRole('region', { name: 'Remember' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Next: Practice' }));
+    fireEvent.click(screen.getByRole('button', { name: /Continue to Practice/ }));
     expect(screen.getByRole('button', { name: /Play through, done/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Practice' }).getAttribute('aria-current')).toBe('step');
   });
