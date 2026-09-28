@@ -342,6 +342,18 @@ export interface CourseAudioTable {
   createdAt: Generated<Date>;
 }
 
+/** 0020_course_progress.ts: a learner's review schedule per position + move. */
+export interface CourseProgressTable {
+  userId: string;
+  drillKey: string;
+  san: string;
+  courseSlug: string;
+  step: number;
+  /** YYYY-MM-DD; null once mastered. */
+  dueOn: string | null;
+  updatedAt: Generated<Date>;
+}
+
 /** 0016_debug_turns.ts: a session's last LLM turns, for the debug picker. */
 export interface DebugTurnsTable {
   id: Generated<string>;
@@ -371,6 +383,7 @@ export interface Database {
   courseAiCalls: CourseAiCallsTable;
   debugTurns: DebugTurnsTable;
   courseAudio: CourseAudioTable;
+  courseProgress: CourseProgressTable;
   statsArchiveWeeks: StatsArchiveWeeksTable;
   analyses: AnalysesTable;
   sessions: SessionsTable;

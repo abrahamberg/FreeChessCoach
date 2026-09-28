@@ -730,13 +730,25 @@ Commit: `feat(courses): public course page, no login`
 
 **Read:** `docs/courses.md` §11.
 **Files:** `packages/chess-analysis/src/course-review.ts` + test, migration
-`0015_course_progress.ts`, `repositories/course-progress.ts`, routes.
+`0020_course_progress.ts` (0015 was taken), `repositories/course-progress.ts`,
+`routes/course-progress.ts`, `player/CourseDrill.tsx`,
+`player/course-progress.ts`, `games/CourseReviewCard.tsx`.
 
-- [ ] Pure schedule: correct → next step (1 w, 3 w, 9 w, mastered); miss →
+- [x] Pure schedule: correct → next step (1 w, 3 w, 9 w, mastered); miss →
   step 0, due tomorrow (tests).
-- [ ] Progress keyed by normalised FEN + UCI; drill modes per kind.
-- [ ] Anonymous progress in the browser; moved to the account on sign-in.
-- [ ] "Due today" card on the Games page.
+- [x] Progress keyed by normalised FEN + UCI; drill modes per kind.
+- [x] Anonymous progress in the browser; moved to the account on sign-in.
+- [x] "Due today" card on the Games page.
+
+Notes: days are the learner's own calendar day (`YYYY-MM-DD` from the
+browser), so "due tomorrow" and "Due today" follow their clock. The server
+moves the schedule on from the stored step; the browser sends only right or
+wrong, and only the first try at each move in a drill counts. A move the
+engine rates about as good as the course's counts as right. On /learn the
+page asks `/api/users/me` with `Accept: application/json` to tell whether the
+visitor is signed in (oauth2-proxy answers 401 to that when not); the Games
+page and a signed-in /learn import the browser's progress, newer copy wins.
+The editor's "Preview as learner" drills too but saves nothing.
 
 Commit: `feat(courses): drills and spaced review`
 

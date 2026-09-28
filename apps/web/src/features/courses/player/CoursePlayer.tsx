@@ -1,13 +1,14 @@
-import { COACH_PERSONA_INFO, type ClassifiedMoveDto, type CourseDocument, type CourseEpisode } from '@freechesscoach/shared';
+import { COACH_PERSONA_INFO, type CourseDocument, type CourseEpisode } from '@freechesscoach/shared';
 import { useRef, useState, type ReactNode } from 'react';
 import { CoachAvatar } from '../../../components/CoachAvatar.js';
 import { CoachCard } from '../../../components/CoachCard.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
-import { MoveNote } from '../../board/MoveNoteContent.js';
-import { MoveQualityBadge } from '../../board/MoveQualityBadge.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { COURSE_KIND_INFO } from '../courseKinds.js';
-import { episodeWalk, isAcceptedAlternative, stepView } from './course-steps.js';
+import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
+import { CourseDrill } from './CourseDrill.js';
+import type { CourseProgressStore } from './course-progress.js';
+import { episodeWalk, stepView } from './course-steps.js';
 import { judgeQuizMove } from './judge-quiz-move.js';
 import { useNoteAudio, type NoteAudioSource } from './useNoteAudio.js';
 import { YouTubeClip } from './YouTubeClip.js';
@@ -20,23 +21,26 @@ export interface CoursePlayerProps {
   noteAudio: NoteAudioSource;
   /** Above the course, e.g. the editor's "this is a preview" line. */
   notice?: ReactNode;
+  /** Where drill results go (§11); absent in the preview, which saves nothing. */
+  progress?: CourseProgressStore | null;
+  courseSlug?: string;
+  /** The Games page's "Due today" link opens the drill straight away. */
+  startWithDrill?: boolean;
 }
 
-/** docs/courses.md §9, §11: the clip (when linked), then each episode on the
- * board, move by move with the coach's notes, arrows and voice. A quiz waits
- * for the learner's move; a different move is rated in the browser with no
- * AI. Takes a document, not a slug, so the editor previews the draft. */
-export function CoursePlayer({ document, noteAudio, notice }: CoursePlayerProps): ReactNode {
-  const [episodeIndex, setEpisodeIndex] = useState(0);
-  const [finished, setFinished] = useState(false);
+/** docs/courses.md §9, §11: play through (the clip when linked, then each
+ * episode on the board, move by move with the coach's notes, arrows and
+ * voice) or drill the moves. A quiz waits for the learner's move; a
+ * different move is rated in the browser with no AI. Takes a document, not a
+ * slug, so the editor previews the draft. */
+export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug, startWithDrill = false }: CoursePlayerProps): ReactNode {
+  const [drilling, setDrilling] = useState(startWithDrill);
   const audio = useNoteAudio(noteAudio);
-  const episode = document.episodes[episodeIndex];
-  const clip = document.clipLinks.youtube ?? document.clipLinks.shorts;
   const coach = COACH_PERSONA_INFO[document.coachPersona].label;
 
-  const openEpisode = (index: number): void => {
+  const drill = (on: boolean): void => {
     audio.stop();
-    setEpisodeIndex(index);
+    setDrilling(on);
   };
 
   return (
@@ -49,6 +53,44 @@ export function CoursePlayer({ document, noteAudio, notice }: CoursePlayerProps)
         <h1>{document.title || 'Untitled course'}</h1>
         {document.promise && <p className="course-player__promise">{document.promise}</p>}
       </header>
+      <nav className="course-player__modes" aria-label="Mode">
+        <button type="button" className={drilling ? 'course-chip' : 'course-chip course-chip--selected'} aria-pressed={!drilling} onClick={() => drill(false)}>
+          Play through
+        </button>
+        <button type="button" className={drilling ? 'course-chip course-chip--selected' : 'course-chip'} aria-pressed={drilling} onClick={() => drill(true)}>
+          Drill
+        </button>
+      </nav>
+      {drilling ? (
+        <CourseDrill document={document} progress={progress} courseSlug={courseSlug} onExit={() => drill(false)} />
+      ) : (
+        <PlayThrough document={document} audio={audio} onDrill={() => drill(true)} />
+      )}
+    </article>
+  );
+}
+
+interface PlayThroughProps {
+  document: CourseDocument;
+  audio: ReturnType<typeof useNoteAudio>;
+  onDrill: () => void;
+}
+
+/** §11 step 2: the clip, then each episode move by move; the takeaways and
+ * the way to the drill at the end. */
+function PlayThrough({ document, audio, onDrill }: PlayThroughProps): ReactNode {
+  const [episodeIndex, setEpisodeIndex] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const episode = document.episodes[episodeIndex];
+  const clip = document.clipLinks.youtube ?? document.clipLinks.shorts;
+
+  const openEpisode = (index: number): void => {
+    audio.stop();
+    setEpisodeIndex(index);
+  };
+
+  return (
+    <>
       {clip && <YouTubeClip link={clip} title={document.title} vertical={!document.clipLinks.youtube} />}
       {document.episodes.length > 1 && (
         <nav className="course-player__episodes" aria-label="Episodes">
@@ -77,28 +119,28 @@ export function CoursePlayer({ document, noteAudio, notice }: CoursePlayerProps)
       ) : (
         <p className="meta">This course has no episodes yet.</p>
       )}
-      {finished && document.takeaways.some((takeaway) => takeaway.trim()) && (
+      {finished && (
         <section className="course-player__takeaways" aria-label="Takeaways">
-          <h2>Remember</h2>
-          <ol>
-            {document.takeaways.map((takeaway, index) => (takeaway.trim() ? <li key={index}>{takeaway}</li> : null))}
-          </ol>
+          {document.takeaways.some((takeaway) => takeaway.trim()) && (
+            <>
+              <h2>Remember</h2>
+              <ol>
+                {document.takeaways.map((takeaway, index) => (takeaway.trim() ? <li key={index}>{takeaway}</li> : null))}
+              </ol>
+            </>
+          )}
+          <p>Now play the moves yourself.</p>
+          <button type="button" className="btn-primary" onClick={onDrill}>
+            Drill it
+          </button>
         </section>
       )}
-    </article>
+    </>
   );
 }
 
 function roleLabel(role: string): string {
   return role.charAt(0).toUpperCase() + role.slice(1);
-}
-
-type Judgement = { status: 'checking' } | { status: 'ready'; move: ClassifiedMoveDto } | { status: 'error' };
-
-interface Attempt {
-  fenBefore: string;
-  fenAfter: string;
-  san: string;
 }
 
 interface EpisodeViewProps {
@@ -216,7 +258,7 @@ function EpisodeView({ document, episode, audio, isLast, onDone }: EpisodeViewPr
               </div>
             </div>
           )}
-          {asking && attempt && <AttemptFeedback attempt={attempt} judgement={judgement} answerSan={answer.san} onAccept={() => solve('alternative')} onRetry={tryAgain} />}
+          {asking && attempt && <AttemptFeedback attempt={attempt} judgement={judgement} answerSan={answer.san} acceptLabel="See the course move" onAccept={() => solve('alternative')} onRetry={tryAgain} />}
         </CoachCard>
         <div className="course-player__sound">
           <button type="button" className="btn-secondary" aria-pressed={audio.soundOn} onClick={() => audio.setSoundOn(!audio.soundOn)}>
@@ -243,51 +285,4 @@ function solvedLine(how: 'course' | 'alternative' | 'shown' | null, san: string 
   if (how === 'course') return `Yes, ${san}!`;
   if (how === 'alternative') return `The course plays ${san}.`;
   return `The answer is ${san}.`;
-}
-
-interface AttemptFeedbackProps {
-  attempt: Attempt;
-  judgement: Judgement | null;
-  answerSan: string;
-  onAccept: () => void;
-  onRetry: () => void;
-}
-
-/** §11: the move-quality label and the checked tactic sentence; a move about
- * as good as the course's is accepted without penalty. */
-function AttemptFeedback({ attempt, judgement, answerSan, onAccept, onRetry }: AttemptFeedbackProps): ReactNode {
-  if (!judgement || judgement.status === 'checking') return <p className="meta" role="status">Checking {attempt.san}…</p>;
-  if (judgement.status === 'error') {
-    return (
-      <div className="course-player__quiz">
-        <p>{attempt.san} is not the course move.</p>
-        <div className="course-player__actions">
-          <button type="button" className="btn-primary" onClick={onRetry}>
-            Try again
-          </button>
-        </div>
-      </div>
-    );
-  }
-  const { move } = judgement;
-  const accepted = isAcceptedAlternative(move.quality);
-  return (
-    <div className="course-player__quiz">
-      <p className="course-player__verdict">
-        <MoveQualityBadge quality={move.quality} size="md" /> {attempt.san}: {accepted ? `good move too; the course plays ${answerSan}.` : move.quality}
-      </p>
-      {!accepted && <MoveNote move={move} />}
-      <div className="course-player__actions">
-        {accepted ? (
-          <button type="button" className="btn-primary" onClick={onAccept}>
-            See the course move
-          </button>
-        ) : (
-          <button type="button" className="btn-primary" onClick={onRetry}>
-            Try again
-          </button>
-        )}
-      </div>
-    </div>
-  );
 }

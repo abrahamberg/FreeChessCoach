@@ -6,6 +6,7 @@ import { useImportQuota } from '../../hooks/useImportQuota.js';
 import { useProfile } from '../../hooks/useProfile.js';
 import { AiSetupRequiredModal } from '../settings/AiSetupRequiredModal.js';
 import { CoachNudgeCard } from './CoachNudgeCard.js';
+import { CourseReviewCard } from './CourseReviewCard.js';
 import { ContinueSessionCard } from './ContinueSessionCard.js';
 import { GameCard } from './GameCard.js';
 import { ImportShortcuts } from './ImportShortcuts.js';
@@ -17,12 +18,14 @@ import {
   useRecentImportedGames,
   useRefreshGamesWhenAnalysisFinishes
 } from './useGamesQueries.js';
+import { useCourseReviewsDue } from './useCourseReviewsDue.js';
 import { usePracticeAssignments } from './usePracticeAssignments.js';
 import './GamesPage.css';
 
 /** design.md §4.1: Games (home) — an "Import games" section, the coach area
- * (CoachNudgeCard: the student's coach saying what to do next), then up to
- * three single-row sliding rails: Practice (coach-assigned sets, only when there
+ * (CoachNudgeCard: the student's coach saying what to do next), then up to four
+ * single-row sliding rails: Due today (course moves to review, only
+ * when there are any), Practice (coach-assigned sets, only when there
  * are any), Continue (every open session — coaching on a game, a live
  * coach or bot game — most recently started first, with a count; only when
  * there are any) and Recently imported (the last 15 imports, with a "Find game" link
@@ -37,6 +40,7 @@ export function GamesPage(): ReactNode {
   const inProgressGames = inProgressQuery.data ?? [];
   const recentGames = recentQuery.data?.items ?? [];
   const practiceAssignments = practiceQuery.data ?? [];
+  const reviewsDue = useCourseReviewsDue().data?.courses ?? [];
 
   // Feeds ImportShortcuts' "N of 30 imported today" — the rolling-24h count
   // the backend enforces, not "games with today's date".
@@ -75,6 +79,17 @@ export function GamesPage(): ReactNode {
           No games yet — add your first game to start a coaching session, or connect your Lichess account in
           Settings.
         </p>
+      )}
+
+      {reviewsDue.length > 0 && (
+        <section aria-label="Due today" className="games-page__section">
+          <h2 className="games-page__section-heading">Due today</h2>
+          <HorizontalScroller label="Course moves to review">
+            {reviewsDue.map((course) => (
+              <CourseReviewCard key={course.slug} course={course} />
+            ))}
+          </HorizontalScroller>
+        </section>
       )}
 
       {practiceAssignments.length > 0 && (

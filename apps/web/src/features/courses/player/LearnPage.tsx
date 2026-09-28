@@ -1,14 +1,17 @@
 import { PublicCourseResponseSchema } from '@freechesscoach/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, type ReactNode } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { ApiError, apiGet } from '../../../api/client.js';
 import { CoursePlayer } from './CoursePlayer.js';
+import { useCourseProgressStore } from './useCourseProgressStore.js';
 
 /** `/learn/:slug` (docs/courses.md §9): a published course, no login. Lives
  * outside the app shell, which needs a signed-in user. */
 export function LearnPage(): ReactNode {
   const { slug = '' } = useParams<{ slug: string }>();
+  const [search] = useSearchParams();
+  const progress = useCourseProgressStore();
   const course = useQuery({
     queryKey: ['public-course', slug],
     queryFn: ({ signal }) => apiGet(`/api/public/courses/${encodeURIComponent(slug)}`, PublicCourseResponseSchema, signal)
@@ -36,7 +39,7 @@ export function LearnPage(): ReactNode {
   }
   return (
     <div className="learn-page">
-      <CoursePlayer document={course.data.document} noteAudio={source} />
+      <CoursePlayer document={course.data.document} noteAudio={source} progress={progress} courseSlug={course.data.slug} startWithDrill={search.get('drill') === '1'} />
       <footer className="learn-page__footer">
         <a href="/">FreeChessCoach</a>: a free chess coach for your own games.
       </footer>

@@ -9,6 +9,7 @@ import { registerChesscomRoutes } from './routes/chesscom.js';
 import { registerPublicCoursesRoutes } from './routes/public-courses.js';
 import type { AudioMirror } from './services/courses/audio-mirror.js';
 import { registerCoursesRoutes } from './routes/courses.js';
+import { registerCourseProgressRoutes } from './routes/course-progress.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerDiagnosticsRoutes } from './routes/diagnostics.js';
 import { registerEngineTunnelInternalRoutes } from './routes/engine-tunnel-internal.js';
@@ -124,6 +125,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     registerUsersRoutes(app, options.db);
     registerBugReportsRoutes(app, options.db);
     registerPublicCoursesRoutes(app, options.db, options.audioMirror);
+    registerCourseProgressRoutes(app, options.db);
     registerCoursesRoutes(app, options.db, {
       buildDossier: options.courseDossierBuilder ?? (options.engineBackendOptions ? courseDossierBuilderFor(options.engineBackendOptions) : undefined),
       jobQueue: options.jobQueue ?? noopJobQueue,

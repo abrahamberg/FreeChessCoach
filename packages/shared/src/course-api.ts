@@ -76,3 +76,48 @@ export const PublicCourseResponseSchema = z.object({
   noteAudio: z.record(z.string(), z.string())
 });
 export type PublicCourseResponse = z.infer<typeof PublicCourseResponseSchema>;
+
+/** docs/courses.md §11: the learner's own calendar day, YYYY-MM-DD. */
+export const CourseDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+/** A position + move: the normalised FEN key (no move clocks), `|`, the UCI move. */
+export const CourseDrillKeySchema = z.string().regex(/^[1-8pnbrqkPNBRQK/]{15,71} [wb] (?:[KQkq]{1,4}|-) (?:[a-h][36]|-)\|[a-h][1-8][a-h][1-8][qrbn]?$/);
+
+/** One drilled move; the server moves its schedule on (or back). `correct`
+ * is the learner's first try at it in this drill. */
+export const CourseDrillResultSchema = z.object({
+  key: CourseDrillKeySchema,
+  san: z.string().min(1).max(10),
+  courseSlug: z.string().min(1).max(120),
+  correct: z.boolean()
+});
+export type CourseDrillResult = z.infer<typeof CourseDrillResultSchema>;
+
+export const RecordCourseDrillRequestSchema = z.object({ today: CourseDaySchema, results: z.array(CourseDrillResultSchema).min(1).max(50) });
+export type RecordCourseDrillRequest = z.infer<typeof RecordCourseDrillRequestSchema>;
+
+/** Where one position + move stands; `dueOn` is null once mastered. */
+export const CourseProgressItemSchema = z.object({
+  key: CourseDrillKeySchema,
+  san: z.string().min(1).max(10),
+  courseSlug: z.string().min(1).max(120),
+  step: z.number().int().min(0).max(4),
+  dueOn: CourseDaySchema.nullable(),
+  updatedAt: z.string()
+});
+export type CourseProgressItem = z.infer<typeof CourseProgressItemSchema>;
+
+export const CourseProgressResponseSchema = z.object({ items: z.array(CourseProgressItemSchema) });
+export type CourseProgressResponse = z.infer<typeof CourseProgressResponseSchema>;
+
+/** The learner's progress on these positions + moves (a course's drill). */
+export const CourseProgressLookupRequestSchema = z.object({ keys: z.array(CourseDrillKeySchema).max(500) });
+
+/** Progress kept in the browser before signing in, moved to the account; the
+ * later of the two copies of a move wins. */
+export const ImportCourseProgressRequestSchema = z.object({ items: z.array(CourseProgressItemSchema).max(2000) });
+
+/** The Games page's "Due today" card: moves to review, by course. */
+export const CourseReviewDueResponseSchema = z.object({
+  courses: z.array(z.object({ slug: z.string(), title: z.string(), due: z.number().int(), sans: z.array(z.string()) }))
+});
+export type CourseReviewDueResponse = z.infer<typeof CourseReviewDueResponseSchema>;

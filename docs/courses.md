@@ -741,6 +741,14 @@ overwrites:
 Without login, steps 1–3 work and progress is kept in the browser; signing in
 moves it to the account.
 
+Implementation: the schedule and the drill (which moves are asked, per kind)
+are pure code in `packages/chess-analysis/src/course-review.ts`; a drill
+opens from the course page's "Drill" switch, after the play-through, or from
+the Games page card (`/learn/<slug>?drill=1`). Signed-in progress is the
+`course_progress` table (`POST /api/course-progress/drills`, `/lookup`,
+`/import`, `GET /api/course-progress/due?today=`); `due_on` is the learner's
+own calendar day. Deleting the account deletes it.
+
 ---
 
 ## 12. Later, not in Phases 79–83
