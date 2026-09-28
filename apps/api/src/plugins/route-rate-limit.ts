@@ -24,7 +24,10 @@ export const ROUTE_RATE_LIMITS = {
   engineInteractive: { max: 240, windowMs: 60_000 },
   enginePing: { max: 15, windowMs: 60_000 },
   // One request per page of a player's game history.
-  remoteGameList: { max: 60, windowMs: 60_000 }
+  remoteGameList: { max: 60, windowMs: 60_000 },
+  // A course page is one document plus one audio file per note (about 20);
+  // every anonymous visitor shares one key (the proxy's address).
+  publicCourse: { max: 300, windowMs: 60_000 }
 } as const satisfies Record<string, RouteRateLimit>;
 
 /** Route options adding a fixed-window limit keyed by the authenticated user.

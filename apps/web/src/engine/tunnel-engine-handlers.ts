@@ -50,7 +50,7 @@ function toWhitePerspective(fen: string, value: number | null): number | null {
   return sideToMove === 'b' ? -value : value;
 }
 
-function toPositionAnalysisLine(fen: string, line: RawEngineLine) {
+export function toPositionAnalysisLine(fen: string, line: RawEngineLine) {
   const pvSan = pvUciToSan(fen, line.pvUci);
   return {
     moveUci: line.moveUci,

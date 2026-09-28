@@ -104,6 +104,7 @@ have tests or rendered-config assertions; commit hashes are on `main`.
 | T10 | E | deploy | **Footguns**: `authMode: dev-stub` (every request is one fixed user) was renderable by the chart; pods auto-mounted Kubernetes API tokens they never use; WebSocket frames up to 100 MiB. | P4 | Low | Fixed `11be6a2`, `e496880` |
 | T11 | T | import | **Platform detection by substring**: `Site` containing `lichess.org` anywhere (e.g. `evil.com/?lichess.org`) was treated as Lichess when auto-linking usernames (CodeQL `js/incomplete-url-substring-sanitization`). | P2 | Low | Fixed `cd5d988` |
 | T12 | E | TB7 | CI workflow ran with the default (broad) `GITHUB_TOKEN` (CodeQL `actions/missing-workflow-permissions`). | P5 | Low | Fixed `cd5d988` |
+| T13 | I, D, E | TB1, TB2 | **Public course pages** (docs/courses.md §9): `/learn/<slug>` and `GET /api/public/courses/:slug` (+ `/audio/:hash`) are the first `/api` routes reachable with no login. Risks: reaching other routes without identity, leaking the creator or drafts, guessing unlisted links, floods, a public engine. | P1 | Medium | Mitigated by design (Task 82.2) |
 
 ### What each fix does
 
@@ -114,6 +115,7 @@ have tests or rendered-config assertions; commit hashes are on `main`.
 - **T6** — `docker/nginx.security-headers.conf`, included in every location: COOP/COEP, `nosniff`, `Referrer-Policy`, HSTS, `Permissions-Policy`, `X-Frame-Options: DENY` plus an enforced CSP of `frame-ancestors 'none'; object-src 'none'; base-uri 'self'`, and the full script/connect policy as `Content-Security-Policy-Report-Only`.
 - **T8** — `engine/tunnel-engine-handlers.ts`: `fetch` tunnel requests must be `https://chess-api.com`, sent with `credentials: 'omit'`.
 - **T9** — SHA-256 + `timingSafeEqual`; `requireInternalToken()` refuses to boot with fewer than 32 characters outside dev-stub; `internalApi.existingSecret` wires the token and `API_INTERNAL_URL` from a Secret.
+- **T13** — `plugins/auth-headers.ts` exempts a request only when the *matched route* starts with `/api/public/`, not the raw URL, so `/api/public/../courses` and its encoded forms still need identity (tested). The proxy's skip-auth entries are `^/learn/[a-z0-9-]+$` and `^/api/public/` (`deploy/helm/test.sh` asserts them). The routes return the frozen published copy only; `draft` and `removed` are 404 like a wrong link, and audio is served only for a hash a published note uses. Nothing about the creator is returned: `users.display_name` defaults to the email's local part. New slugs carry 48 random bits (was 24), so unlisted links can't be enumerated. Per-route cap 300/min plus the 600/min floor; every anonymous visitor reaches the api from the proxy's address, so the caps are shared and a flood can block the public pages for everyone on that pod (accepted; see R10). Caches: 60 s for the course (a removal shows within a minute), 1 h for audio. A learner's wrong move is rated by the lite engine in their own browser, so no engine is exposed publicly. The YouTube clip loads nothing from YouTube until played (thumbnail first), then a `credentialless` youtube-nocookie iframe.
 
 ## Reviewed and found sound (no change)
 

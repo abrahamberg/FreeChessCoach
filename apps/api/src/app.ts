@@ -6,6 +6,7 @@ import type { Database } from './db/schema.js';
 import { registerAnalysesRoutes } from './routes/analyses.js';
 import { registerBugReportsRoutes } from './routes/bug-reports.js';
 import { registerChesscomRoutes } from './routes/chesscom.js';
+import { registerPublicCoursesRoutes } from './routes/public-courses.js';
 import { registerCoursesRoutes } from './routes/courses.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerDiagnosticsRoutes } from './routes/diagnostics.js';
@@ -119,6 +120,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (options.db) {
     registerUsersRoutes(app, options.db);
     registerBugReportsRoutes(app, options.db);
+    registerPublicCoursesRoutes(app, options.db);
     registerCoursesRoutes(app, options.db, {
       buildDossier: options.courseDossierBuilder ?? (options.engineBackendOptions ? courseDossierBuilderFor(options.engineBackendOptions) : undefined),
       jobQueue: options.jobQueue ?? noopJobQueue,

@@ -649,15 +649,25 @@ Decided with the owner:
   audio, and publishes (`POST /api/courses/:id/publish`). The server re-runs
   the checks with the engine facts and refuses while they find problems,
   unless the creator ticked "I checked these".
-- Public route `/learn/:slug` (SPA, no login) and read-only endpoints
-  `GET /api/public/courses/:slug` and `GET /api/public/courses/:slug/audio/:nodeId`.
-  These need the three public-route entries (nginx, `--skip-auth-route`,
-  `deploy/helm/test.sh`; see `docs/marketing-demo.md`) and a pass through
-  `docs/threat-model.md` (rate limits, cache headers, no user data beyond the
-  creator's display name).
-- The page: embedded clip (if linked), then the board: play through with arrows
-  and the coach's notes, quizzes wait for the learner's move, and the checks in
-  §11 answer wrong moves without AI.
+- Public route `/learn/:slug` (SPA outside the app shell, no login) and
+  read-only endpoints `GET /api/public/courses/:slug` (the published copy and
+  which notes have audio) and `GET /api/public/courses/:slug/audio/:hash`
+  (`routes/public-courses.ts`). Drafts and removed courses are 404. Nothing
+  about the creator is sent: their display name defaults to their email's
+  local part. Skip-auth entries in `values.yaml` (asserted by
+  `deploy/helm/test.sh`); nginx serves `/learn/*` through its SPA fallback,
+  like `/demo`. Rate limits, caching and the rest: `docs/threat-model.md` T13.
+- The page (`features/courses/player/`): the YouTube clip (a thumbnail until
+  played, then a `credentialless` youtube-nocookie frame, since the app is
+  cross-origin isolated; browsers without that open YouTube), then each
+  episode on the board: move by move with arrows, the coach's note and its
+  audio. A quiz waits for the learner's move (Hint and Show the answer are
+  there too). A different move is rated in the learner's browser by the lite
+  engine and the game-review classifier: the quality label and the checked
+  sentence; brilliant/great/best/excellent is accepted as "good move too".
+  The last episode ends with the takeaways.
+- **Preview as learner** in the editor is the same `CoursePlayer` on the
+  draft, each note voiced the first time it plays (browser cache first).
 - Removing a course is `UPDATE courses SET status = 'removed'` through the same
   script as §2 until there is an admin UI.
 

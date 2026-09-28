@@ -39,6 +39,18 @@ export function findByIdForOwner(db: Kysely<Database>, id: string, ownerId: stri
   return db.selectFrom('courses').selectAll().where('id', '=', id).where('ownerId', '=', ownerId).executeTakeFirst();
 }
 
+/** A course anyone with the link may see: unlisted or public, with a
+ * published copy. Drafts and removed courses are not found. */
+export function findPublishedBySlug(db: Kysely<Database>, slug: string): Promise<Pick<CourseRow, 'id' | 'slug' | 'publishedDocument' | 'publishedAt'> | undefined> {
+  return db
+    .selectFrom('courses')
+    .select(['id', 'slug', 'publishedDocument', 'publishedAt'])
+    .where('slug', '=', slug)
+    .where('status', 'in', ['unlisted', 'public'])
+    .where('publishedDocument', 'is not', null)
+    .executeTakeFirst();
+}
+
 /** No owner check: the generation job, which runs for the owner. */
 export function findById(db: Kysely<Database>, id: string): Promise<CourseRow | undefined> {
   return db.selectFrom('courses').selectAll().where('id', '=', id).executeTakeFirst();

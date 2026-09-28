@@ -7,6 +7,7 @@ import { TunnelTakeoverGate } from './components/TunnelTakeoverGate.js';
 import { CourseEditorPage } from './features/courses/CourseEditorPage.js';
 import { CourseIntakePage } from './features/courses/CourseIntakePage.js';
 import { CoursesPage } from './features/courses/CoursesPage.js';
+import { LearnPage } from './features/courses/player/LearnPage.js';
 import { FindGamesPage } from './features/games/FindGamesPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
 import { ImportPage } from './features/import/ImportPage.js';
@@ -69,7 +70,11 @@ export function App(): ReactNode {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter basename={getDemoRuntime() ? DEMO_BASENAME : undefined}>
-        <AppRoutes />
+        <Routes>
+          {/* Public, no login (docs/courses.md §9): outside the shell, which needs a user. */}
+          {!getDemoRuntime() && <Route path="/learn/:slug" element={<LearnPage />} />}
+          <Route path="*" element={<AppRoutes />} />
+        </Routes>
       </BrowserRouter>
     </QueryClientProvider>
   );

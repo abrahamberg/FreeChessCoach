@@ -53,7 +53,7 @@ describe('course routes', () => {
     expect(created.statusCode).toBe(201);
     const course = created.json<CourseResponse>();
     expect(course.title).toBe('Englund Gambit trap for beginners');
-    expect(course.slug).toMatch(/^englund-gambit-trap-for-beginners-[0-9a-f]{6}$/);
+    expect(course.slug).toMatch(/^englund-gambit-trap-for-beginners-[0-9a-f]{12}$/);
     expect(course.document.learnerSide).toBe('black');
     expect(course.document.nodes).toHaveLength(16);
     expect(course.document.episodes).toEqual([]);

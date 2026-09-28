@@ -13,6 +13,7 @@ import { CourseGenerationBar } from './CourseGenerationBar.js';
 import { CourseOutline } from './CourseOutline.js';
 import { ClipPreview } from './clip/ClipPreview.js';
 import { PublishDialog } from './PublishDialog.js';
+import { LearnerPreview } from './player/LearnerPreview.js';
 import './CourseEditor.css';
 
 export function CourseEditorPage(): ReactNode {
@@ -35,6 +36,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
   const [drawnArrows, setDrawnArrows] = useState<BoardArrow[]>([]);
   const [previewing, setPreviewing] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [learnerPreview, setLearnerPreview] = useState(false);
 
   const episode = document.episodes.find((candidate) => candidate.id === episodeId);
   const nodeIds = episode ? episodeNodeIds(document, episode) : document.nodes.map((node) => node.id);
@@ -77,6 +79,9 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
         <div className="course-editor__actions">
           <button type="button" className="btn-secondary" disabled={!document.episodes.some((each) => each.beats.length)} onClick={() => setPreviewing(true)}>
             Preview clip
+          </button>
+          <button type="button" className="btn-secondary" disabled={!document.episodes.length} onClick={() => setLearnerPreview(true)}>
+            Preview as learner
           </button>
           <button
             type="button"
@@ -137,6 +142,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
           onClose={() => setPublishing(false)}
         />
       )}
+      {learnerPreview && <LearnerPreview document={document} onClose={() => setLearnerPreview(false)} />}
       {previewing && <ClipPreview document={document} slug={course.slug} onClose={() => setPreviewing(false)} />}
       {confirmRebuild && (
         <ConfirmDialog

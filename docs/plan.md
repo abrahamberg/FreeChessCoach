@@ -683,16 +683,30 @@ Commit: `feat(courses): publish courses with their note audio`
 `values.example.yaml`, `deploy/helm/test.sh`, `routes/public-courses.ts`,
 `apps/web/src/features/courses/player/`.
 
-- [ ] `/learn/:slug` and the two read-only endpoints public (all three
+Status: done 2026-09-28 (commit below). Tried on the published gemma trap
+in a browser: the page loads outside the app shell; the quiz waits with Next
+disabled; a wrong 6...a6 came back "miss: leaves the queen on b2
+undefended" from the lite engine in the browser; Show the answer reveals;
+the note audio is served (a 7.6 s WAV that decodes). Preview as learner
+played the draft with the cached local voice. Differences from the box: the
+audio endpoint is `/audio/:hash` (audio is keyed by text hash, 82.1); nginx
+needs no entry (`/learn/*` goes through the SPA fallback, like `/demo`); no
+creator name is shown (it defaults to the email's local part); new slugs get
+48 random bits (unlisted links must not be guessable); the clip is a
+thumbnail until played, then a `credentialless` frame (the app runs under
+COEP). Not yet heard: sound in a visible tab (automation runs hidden, and
+Chrome loads no media there). Owner to listen once.
+
+- [x] `/learn/:slug` and the two read-only endpoints public (all three
   places); rate-limited; `removed` and `draft` return 404.
-- [ ] Player: embedded YouTube clip when linked; board play-through with
+- [x] Player: embedded YouTube clip when linked; board play-through with
   arrows and note audio; quizzes wait for a move; wrong moves answered with
   the move-quality label and the checked tactic sentence; engine-equal
   alternatives accepted (§11).
-- [ ] **Preview as learner** in the editor: the same player component on the
+- [x] **Preview as learner** in the editor: the same player component on the
   current draft (the player takes a `CourseDocument`, not a slug), note audio
   from the browser cache (81.1) instead of uploaded files; no publish needed.
-- [ ] Threat-model entry for the new public endpoints.
+- [x] Threat-model entry for the new public endpoints (T13).
 
 Commit: `feat(courses): public course page, no login`
 

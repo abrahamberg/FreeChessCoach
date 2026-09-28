@@ -19,7 +19,7 @@ export function courseSlug(title: string): string {
     .replace(/^-|-$/g, '')
     .slice(0, MAX_SLUG_WORDS)
     .replace(/-$/, '');
-  return `${words || 'course'}-${randomBytes(3).toString('hex')}`;
+  return `${words || 'course'}-${randomBytes(6).toString('hex')}`;
 }
 
 /** The first game's [Result] tag, e.g. "1-0"; null when absent or "*". */

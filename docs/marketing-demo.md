@@ -21,6 +21,7 @@ through oauth2-proxy by `--skip-auth-route` entries in
 | `/demo`, `/demo/*` | the live demo (see below); served by nginx's SPA fallback, so no nginx entry |
 | `/site.css`, `/shots/*`, `/sitemap.xml` | assets |
 | `/assets/*` | the SPA's hashed bundle, public because the demo runs from it |
+| `/learn/<slug>`, `/api/public/*` | published courses (`docs/courses.md` §9, `docs/threat-model.md` T13); SPA fallback, no nginx entry |
 
 The claims on `keys.html` are checked against code: encryption is
 `apps/api/src/llm/key-vault.ts` (AES-256-GCM, scrypt-derived from the user's

@@ -390,6 +390,12 @@ oauth2-proxy:
     # /api path stays behind the proxy.
     - --skip-auth-route=^/demo(/.*)?$
     - --skip-auth-route=^/assets/
+    # Published courses (docs/courses.md §9): the SPA's /learn/<slug> page and
+    # its two read-only endpoints under /api/public/ (the course and its note
+    # audio). Drafts and removed courses are 404 there; no other /api path is
+    # public. The api exempts only this prefix from identity headers.
+    - --skip-auth-route=^/learn/[a-z0-9-]+$
+    - --skip-auth-route=^/api/public/
   service:
     portNumber: 80
   # Our own templates/ingress.yaml owns the public route.

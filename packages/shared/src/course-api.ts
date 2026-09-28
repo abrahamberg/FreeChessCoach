@@ -63,3 +63,16 @@ export const PublishCourseRequestSchema = z.object({
   warningsChecked: z.boolean().default(false)
 });
 export type PublishCourseRequest = z.input<typeof PublishCourseRequestSchema>;
+
+/** docs/courses.md §9: a published course as anyone with the link sees it
+ * (`GET /api/public/courses/:slug`). Nothing about the creator: their display
+ * name defaults to their email's local part. */
+export const PublicCourseResponseSchema = z.object({
+  slug: z.string(),
+  publishedAt: z.string(),
+  document: CourseDocumentSchema,
+  /** `<episodeId>:<nodeId>` → the hash its audio is served under
+   * (`/api/public/courses/:slug/audio/:hash`); notes without audio are absent. */
+  noteAudio: z.record(z.string(), z.string())
+});
+export type PublicCourseResponse = z.infer<typeof PublicCourseResponseSchema>;
