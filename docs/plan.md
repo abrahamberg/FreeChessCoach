@@ -1046,10 +1046,13 @@ Commit: `feat(courses): a Courses page for learning, browsing and learned course
 
 ### Task 86.4 — Docs
 
-- [ ] `docs/architecture.md`: courses (tables, job, public routes, clips,
+Status: done 2026-09-28, after Phase 87 so the docs describe the final
+layout (architecture.md "Courses", courses.md §9 and §11).
+
+- [x] `docs/architecture.md`: courses (tables, job, public routes, clips,
   review, enrollments, catalogue, navigation).
-- [ ] `docs/courses.md` §11 (the four stages), §9 (the catalogue).
-- [ ] Update the AGENTS.md plan pointer.
+- [x] `docs/courses.md` §11 (the four stages), §9 (the catalogue).
+- [x] Update the AGENTS.md plan pointer.
 
 Commit: `docs: courses, learning and the Courses page`
 

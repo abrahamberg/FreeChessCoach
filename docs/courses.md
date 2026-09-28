@@ -1,6 +1,6 @@
 # Courses and clips
 
-The spec behind Phases 79–83 (`docs/plan.md`). Read the section a task points
+The spec behind Phases 79–87 (`docs/plan.md`). Read the section a task points
 at, not the whole file.
 
 A **course** is a chess lesson built from a PGN: a clip (a reel or a YouTube
@@ -652,22 +652,41 @@ Decided with the owner:
   the checks with the engine facts and refuses while they find problems,
   unless the creator ticked "I checked these".
 - Public route `/learn/:slug` (SPA outside the app shell, no login) and
-  read-only endpoints `GET /api/public/courses/:slug` (the published copy and
-  each note's audio URL) and `GET /api/public/courses/:slug/audio/<hash>.wav`
-  (`routes/public-courses.ts`). Drafts and removed courses are 404. Nothing
+  read-only endpoints `GET /api/public/courses/:slug` (the published copy,
+  each note's audio URL, and each move's evaluation and quality from the
+  engine pass, `evals`, `{}` without one) and
+  `GET /api/public/courses/:slug/audio/<hash>.wav`
+  (`routes/public-courses.ts`). Drafts and removed courses are 404.
+- **Catalogue**: `GET /api/public/courses?kind=&cursor=&limit=` lists
+  `public` courses only (unlisted ones are for their link), newest first, 50
+  a page, with an opaque cursor (the row's `published_at` to the microsecond
+  and its id); cached 60 s. Each item: slug, title, promise, kind, level,
+  coach, learner side, published date, episode and move counts. The Courses
+  page's Browse section reads it. Nothing
   about the creator is sent: their display name defaults to their email's
   local part. Skip-auth entries in `values.yaml` (asserted by
   `deploy/helm/test.sh`); nginx serves `/learn/*` through its SPA fallback,
   like `/demo`. Rate limits, caching and the rest: `docs/threat-model.md` T13.
-- The page (`features/courses/player/`): the YouTube clip (a thumbnail until
-  played, then a `credentialless` youtube-nocookie frame, since the app is
-  cross-origin isolated; browsers without that open YouTube), then each
-  episode on the board: move by move with arrows, the coach's note and its
-  audio. A quiz waits for the learner's move (Hint and Show the answer are
-  there too). A different move is rated in the learner's browser by the lite
-  engine and the game-review classifier: the quality label and the checked
-  sentence; brilliant/great/best/excellent is accepted as "good move too".
-  The last episode ends with the takeaways.
+- The page (`features/courses/player/`) is a board view on Game Review's
+  layout (`CourseBoardLayout.tsx`, Phase 87): on a desktop the explorer
+  column (episodes, then the line's moves with their quality badges, the
+  episode's lead-in faded), the board column (eval bar, board, Previous /
+  the next step, eval graph) and the coach column (`CoursePane`: the
+  coaching chat's header with the voice toggle, the note, the quiz, Ask my
+  coach); on a phone the coach on top, the board edge to edge, a move strip
+  and a bottom bar, with Ask my coach as a sheet. The header
+  (`CourseHeader.tsx`) holds back, the title, the four stages (the stage bar,
+  or a picker on a phone) and "⋮" (Start over). The move list and graph grow
+  as the learner steps on, so a quiz answer never shows early. The clip is a
+  "Watch the clip" chip: a thumbnail, then a `credentialless`
+  youtube-nocookie frame, since the app is cross-origin isolated; browsers
+  without that open YouTube. A quiz waits for the learner's move (Hint and
+  Show the answer too); a different move is rated in the learner's browser
+  by the lite engine and the game-review classifier, and
+  brilliant/great/best/excellent is accepted as "good move too". The last
+  episode's button is "Practice ›", which opens the takeaways on their own
+  Remember screen first. In the app, `/courses/:slug` is the same player in
+  the signed-in shell (a board route: its own header, no top bar).
 - Learners never make audio: it is made once, in the creator's browser, when
   they publish (§8). Each file is named by the hash of its bytes (a column
   Postgres computes, migration 0018), so a URL never serves different audio
@@ -698,6 +717,10 @@ Decided with the owner:
   hold copies for up to a year. There is no admin UI yet.
 - **Preview as learner** in the editor is the same `CoursePlayer` on the
   draft, each note voiced the first time it plays (browser cache first).
+- The evaluations come from the course's dossier (§5.4, each node's
+  `evalAfterCp`). `npx tsx apps/api/scripts/course-dossier-refresh.ts [slug …]`
+  rebuilds dossiers with the engine alone (no AI call) when their shape
+  changes.
 
 ---
 
@@ -714,49 +737,67 @@ overwrites:
 
 ---
 
-## 11. Learning, drills and review (signed-in learners)
+## 11. Learning a course: four stages, review, the Courses page
 
-1. **Watch** the clip.
-2. **Play through** with arrows and the coach's notes.
-3. **Drill**: the learner plays the moves themselves.
-   - openings: only the learner's side, opponent moves played automatically;
-     at a branch, the opponent picks a line, more often one the learner missed;
-   - trap: both sides, springing it and avoiding it;
-   - tactics: find the move at each example;
-   - master game: guess the move at each learner move, scored.
-   A wrong move gets free feedback with no AI: the move-quality label and the
-   checked tactic sentence ("this drops the knight to a fork"). A move the
-   engine rates about as good as the course move is accepted: "Good move too;
-   the course plays Nd5 because …", with no penalty. Signed-in learners with an
-   AI setup can ask **their own** coach (their persona, shown with its own
-   avatar, distinct from the course coach), which is given the course line and
-   notes so it doesn't contradict the lesson by accident; where the engine and
-   the course disagree, the engine wins.
-4. **Review schedule** per position + move: a correct drill moves it to the next
-   step, due after 1 week, then 3 weeks, then 9 weeks, then mastered. A miss
-   sends it back to the start, due tomorrow. A "Due today" card on the Games
-   page lists the moves to review. In-app only for now; email or push reminders
-   are a later decision.
+The stages (`COURSE_STAGES`; `packages/chess-analysis/src/course-stages.ts`):
 
-Without login, steps 1–3 work and progress is kept in the browser; signing in
-moves it to the account.
+1. **Play through**: each episode on the board with arrows, the coach's notes
+   and voice, and the quiz; it ends with the takeaways (Remember).
+2. **Practice**: the learner plays their own moves; the opponent's are
+   played for them. Each move goes arrow → some arrows (every other move
+   keeps its arrow) → no arrow → cleared, one step per correct round; a miss
+   brings its arrow back. Rounds repeat until every move is cleared ("Round 2
+   of 3", a progress bar, what the next round shows). Practice never touches
+   the review schedule.
+3. **Drill**: the learner's side only, no arrows (tactics: each example's
+   move, whichever side plays it; master game: a guess at each move,
+   scored).
+4. **Full drill** ("Both sides"): every move of the line.
 
-Implementation: the schedule and the drill (which moves are asked, per kind)
-are pure code in `packages/chess-analysis/src/course-review.ts`; a drill
-opens from the course page's "Drill" switch, after the play-through, or from
-the Games page card (`/learn/<slug>?drill=1`). Signed-in progress is the
-`course_progress` table (`POST /api/course-progress/drills`, `/lookup`,
-`/import`, `GET /api/course-progress/due?today=`); `due_on` is the learner's
-own calendar day. Deleting the account deletes it.
+While playing, the coach column keeps a move log across episodes: the move
+to find on top (hidden in the drills; practice says what it does), then the
+opponent's move with its note and the learner's previous move, each with a
+pawn in its side's colour. A wrong move gets free feedback with no AI (the
+quality label and the checked sentence); a move the engine rates about as
+good is accepted with no penalty.
 
-"Ask my coach" is `POST /api/course-questions` (signed in, the learner's own
-AI setup, nothing stored); its prompt is
-`packages/prompts/src/course/ask-coach.ts`. It is offered in the
-play-through, not while a quiz asks and not in the drill.
+**Review schedule** per position + move (`course-review.ts`), from the drill
+and full drill only: a correct first try moves it to the next step, due after
+1, 3 and 9 weeks, then mastered; a miss sends it back, due tomorrow. Days are
+the learner's own calendar day. Signed in it is the `course_progress` table
+(`POST /api/course-progress/drills`, `/lookup`, `/import`,
+`GET /api/course-progress/due?today=`); the Games page's "Due today" rail
+opens the drill.
+
+**Where the learner is** (`course_enrollments`, migration 0021): the stage,
+the play-through's episode and step, practice's per-move state, the stages
+done; `completed_at` once the full drill is done (kept if they go back).
+`GET /api/course-enrollments`, `PUT` / `DELETE /api/course-enrollments/:slug`.
+The player saves as the learner moves (debounced) and reopens there;
+"Start over" (the header's menu) resets it. Unfinished courses join the
+Games page's Continue rail, mixed with game sessions by last activity.
+
+**The Courses page** (`/courses`, `features/courses/learn/`): Learning
+(unfinished, with the stage and a remove button), Browse (the §9
+catalogue, kind filter pills, a Learning/Learned badge) and Learned
+(finished, with moves due). The navigation reads Games, Courses, Progress,
+Stats; Play with Coach and Play a Bot start from the Games page. The
+creator's pages are at `/studio` ("Course studio" in the account menu).
+
+Without login everything but review and Ask my coach works, kept in the
+browser (`fcc.courseProgress.v1`, `fcc.courseEnrollments.v1`); signing in
+moves it to the account, the newer copy winning.
+
+**Ask my coach** is `POST /api/course-questions` (signed in, the learner's
+own AI setup and persona, nothing stored; prompt
+`packages/prompts/src/course/ask-coach.ts`): it is given the course line and
+notes and may check moves and the engine; where they disagree, the engine
+wins. Offered in the play-through, not while a quiz asks and not in the
+drills. Signed out, the same button explains that coaching needs an account.
 
 ---
 
-## 12. Later, not in Phases 79–83
+## 12. Later, not in Phases 79–87
 
 - Linking courses to the learner's own imported games ("you reached move 7 of
   the Italian trap on Tuesday and played Nc3").

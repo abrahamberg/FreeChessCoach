@@ -16,8 +16,8 @@ Socratically while tracking their progress over time. The initial build
   (moderator flag), AI course generation from a PGN and a short direction,
   clips recorded in the browser with the course coach's voice, public course
   pages and spaced review, then the learning stages (practice, drill, full
-  drill), saved places in the Continue rail, and a Courses page replacing the
-  Play tab. Its spec is `docs/courses.md` (read only the
+  drill), saved places in the Continue rail, a Courses page replacing the
+  Play tab, and the player on Game Review's board layout. Its spec is `docs/courses.md` (read only the
   section a task names). Everything shipped before is described in
   `docs/architecture.md`. Open the plan, find the one Phase/Task being worked
   on, and read only that task's **Read:** files.

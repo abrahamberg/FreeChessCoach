@@ -424,6 +424,43 @@ involved; absent `preventable`/`prevented` (old reports) count as 0.
 
 A practice session walks a student through an assigned batch of positions (`puzzle_assignments`). It is **discuss-only**: the board is turned to the student's side and locked, with no hint and no Explore. The coach sees the whole stored line, asks for one move at a time in chat, and once the student has established a move calls the server tool `play_next_move` (`services/puzzle-move-commit.ts`), which plays the line's next move and the opponent's forced reply and advances `puzzle_sessions.currentPly`. The line never changes and messages stay tagged with the same item index, so it is one chat episode per position. Each position really is its own episode: a turn replays only the messages tagged with the current item (opened with a synthesized "Begin practice N of M"), and the system prompt carries just a ledger of earlier positions' results. When the line is fully played out the coach calls `advance_puzzle`, or the student uses "Next practice" (`POST /api/puzzle-sessions/:id/advance-item`). Every turn the coach's prompt carries the student's persona voice, the engine's analysis of the live position (best move, lines, features — best-effort, and the coach can call `get_engine_analysis` for more), and the rest of the known line with a checked note per move (captures, checks, forks, what it leaves hanging, from `inspectMoves`). The coach is told to run `check_moves` on any move the student proposes off the line before commenting on it, so it never calls a move wrong or illegal from memory. The header menu has "Reset session" (`POST /api/puzzle-sessions/:id/reset`: abandons the session and opens a fresh conversation on the same item) and, in dev builds, "Debug last answer" (`GET /api/puzzle-sessions/:id/debug/last-turn`, backed by `puzzle_sessions.debug_snapshot`). The UI and coach call these "practice", not "puzzles".
 
+## Courses
+
+A course is a chess lesson built from a PGN (spec: `docs/courses.md`).
+
+- **Creating** (creators only, `users.can_create_courses`, set by a
+  moderator): `/studio` lists them, `/studio/new` takes the PGN, `/studio/:id/edit`
+  is the editor. `courses` holds the draft `document` and the frozen
+  `published_document` (jsonb, `CourseDocumentSchema`), `status`
+  (draft/unlisted/public/removed) and the `dossier`: the engine pass over
+  every tree position (the review pipeline, `services/course-dossier.ts`),
+  kept for generation, the verifier and the player's evaluations. AI
+  generation is a pg-boss job (outline, then one call per episode, each
+  checked by the verifier in `chess-analysis`); `course_ai_calls` logs the
+  calls. `apps/api/scripts/course-dossier-refresh.ts` rebuilds dossiers with
+  the engine alone.
+- **Voice and clips**: Kokoro only, in the creator's browser; note audio is
+  uploaded at publish (`course_audio`, named by its bytes' hash, optionally
+  mirrored to R2), clips are recorded in the browser and posted elsewhere.
+- **Public**: `/learn/:slug` (outside the shell, no login) and
+  `/api/public/courses/*` (skip-auth at the proxy): the published course with
+  note audio URLs and per-move evaluations, the audio files, and the
+  catalogue of `public` courses.
+- **Learning**: the player (`features/courses/player/`) is a board view on
+  Game Review's layout (explorer, board with eval bar and graph, coach
+  pane; a phone stack with a bottom bar) through four stages: play through,
+  practice, drill, both sides. Signed in, `course_progress` keeps the spaced
+  review per position + move and `course_enrollments` the stage and place;
+  signed out, both live in the browser and are imported on sign-in.
+  `/courses` is the learner's page (Learning, Browse, Learned) and
+  `/courses/:slug` the player inside the shell; the Games page shows
+  unfinished courses in Continue and due moves in "Due today". Ask my coach
+  (`POST /api/course-questions`) is a stateless streamed turn with the
+  learner's own AI setup. Deleting an account deletes its courses, progress
+  and enrollments.
+- **Navigation**: Games, Courses, Progress, Stats. Play with Coach and Play
+  a Bot start from the Games page; `/play` redirects there.
+
 ## Bot Thinking log
 
 The log is opt-in per session (0043_bot_thinking_log.ts): a play_bot session
