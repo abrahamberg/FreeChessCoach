@@ -1,3 +1,4 @@
+import { nextCourseStage, type CourseStage } from '@freechesscoach/chess-analysis';
 import { COACH_PERSONA_INFO, type CourseDocument, type CourseEpisode } from '@freechesscoach/shared';
 import { useRef, useState, type ReactNode } from 'react';
 import { CoachAvatar } from '../../../components/CoachAvatar.js';
@@ -8,6 +9,7 @@ import { COURSE_KIND_INFO } from '../courseKinds.js';
 import { AskCoachPanel, AskCoachSignIn } from './AskCoachPanel.js';
 import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
 import { CourseDrill } from './CourseDrill.js';
+import { CourseStageBar } from './CourseStageBar.js';
 import type { CourseProgressStore } from './course-progress.js';
 import { episodeWalk, stepView } from './course-steps.js';
 import { judgeQuizMove } from './judge-quiz-move.js';
@@ -25,8 +27,8 @@ export interface CoursePlayerProps {
   /** Where drill results go (§11); absent in the preview, which saves nothing. */
   progress?: CourseProgressStore | null;
   courseSlug?: string;
-  /** The Games page's "Due today" link opens the drill straight away. */
-  startWithDrill?: boolean;
+  /** The stage to open at (`?stage=`); the Due today link opens the drill. */
+  startStage?: CourseStage;
 }
 
 /** docs/courses.md §9, §11: play through (the clip when linked, then each
@@ -34,14 +36,20 @@ export interface CoursePlayerProps {
  * voice) or drill the moves. A quiz waits for the learner's move; a
  * different move is rated in the browser with no AI. Takes a document, not a
  * slug, so the editor previews the draft. */
-export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug, startWithDrill = false }: CoursePlayerProps): ReactNode {
-  const [drilling, setDrilling] = useState(startWithDrill);
+export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug, startStage = 'play_through' }: CoursePlayerProps): ReactNode {
+  const [stage, setStage] = useState<CourseStage>(startStage);
+  const [done, setDone] = useState<ReadonlySet<CourseStage>>(new Set());
   const audio = useNoteAudio(noteAudio);
   const coach = COACH_PERSONA_INFO[document.coachPersona].label;
 
-  const drill = (on: boolean): void => {
+  const open = (next: CourseStage): void => {
     audio.stop();
-    setDrilling(on);
+    setStage(next);
+  };
+  const finish = (finished: CourseStage): void => setDone((prev) => new Set(prev).add(finished));
+  const openNext = (): void => {
+    const next = nextCourseStage(stage);
+    if (next) open(next);
   };
 
   return (
@@ -54,18 +62,26 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
         <h1>{document.title || 'Untitled course'}</h1>
         {document.promise && <p className="course-player__promise">{document.promise}</p>}
       </header>
-      <nav className="course-player__modes" aria-label="Mode">
-        <button type="button" className={drilling ? 'course-chip' : 'course-chip course-chip--selected'} aria-pressed={!drilling} onClick={() => drill(false)}>
-          Play through
-        </button>
-        <button type="button" className={drilling ? 'course-chip course-chip--selected' : 'course-chip'} aria-pressed={drilling} onClick={() => drill(true)}>
-          Drill
-        </button>
-      </nav>
-      {drilling ? (
-        <CourseDrill document={document} progress={progress} courseSlug={courseSlug} onExit={() => drill(false)} />
+      <CourseStageBar current={stage} done={done} onSelect={open} />
+      {stage === 'play_through' ? (
+        <PlayThrough
+          document={document}
+          audio={audio}
+          ask={askFor(progress, courseSlug)}
+          onFinished={() => finish('play_through')}
+          onNextStage={openNext}
+        />
       ) : (
-        <PlayThrough document={document} audio={audio} ask={askFor(progress, courseSlug)} onDrill={() => drill(true)} />
+        <CourseDrill
+          key={stage}
+          document={document}
+          stage={stage}
+          progress={progress}
+          courseSlug={courseSlug}
+          onStageDone={finish}
+          onNextStage={openNext}
+          onExit={() => open('play_through')}
+        />
       )}
     </article>
   );
@@ -84,12 +100,13 @@ interface PlayThroughProps {
   document: CourseDocument;
   audio: ReturnType<typeof useNoteAudio>;
   ask: AskCoach;
-  onDrill: () => void;
+  onFinished: () => void;
+  onNextStage: () => void;
 }
 
 /** §11 step 2: the clip, then each episode move by move; the takeaways and
  * the way to the drill at the end. */
-function PlayThrough({ document, audio, ask, onDrill }: PlayThroughProps): ReactNode {
+function PlayThrough({ document, audio, ask, onFinished, onNextStage }: PlayThroughProps): ReactNode {
   const [episodeIndex, setEpisodeIndex] = useState(0);
   const [finished, setFinished] = useState(false);
   const episode = document.episodes[episodeIndex];
@@ -126,7 +143,13 @@ function PlayThrough({ document, audio, ask, onDrill }: PlayThroughProps): React
           audio={audio}
           ask={ask}
           isLast={episodeIndex === document.episodes.length - 1}
-          onDone={() => (episodeIndex < document.episodes.length - 1 ? openEpisode(episodeIndex + 1) : setFinished(true))}
+          onDone={() => {
+            if (episodeIndex < document.episodes.length - 1) openEpisode(episodeIndex + 1);
+            else {
+              setFinished(true);
+              onFinished();
+            }
+          }}
         />
       ) : (
         <p className="meta">This course has no episodes yet.</p>
@@ -141,9 +164,9 @@ function PlayThrough({ document, audio, ask, onDrill }: PlayThroughProps): React
               </ol>
             </>
           )}
-          <p>Now play the moves yourself.</p>
-          <button type="button" className="btn-primary" onClick={onDrill}>
-            Drill it
+          <p>Now play the moves yourself, with arrows to help at first.</p>
+          <button type="button" className="btn-primary" onClick={onNextStage}>
+            Practice
           </button>
         </section>
       )}

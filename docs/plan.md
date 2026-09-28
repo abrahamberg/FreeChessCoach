@@ -854,19 +854,25 @@ CourseReviewCard.tsx` (its `?drill=1` link).
 **Files:** those files, a new `player/CourseStageBar.tsx` + test,
 `CourseDrill.test.tsx`.
 
-- [ ] Failing tests first (mock `CoachBoard` as `CourseDrill.test.tsx`
+Status: done 2026-09-28. Practice runs in rounds: each round asks the moves
+not yet known, with the arrow on the ones not yet played right; a round's
+summary says how many are known and offers "Next round" until all are, then
+"Now without arrows". Which stages are finished is kept for the visit only
+until Task 85.2 saves it. The play-through's end button is now "Practice".
+
+- [x] Failing tests first (mock `CoachBoard` as `CourseDrill.test.tsx`
   does): practice shows the arrow on the first ask, not after a right answer,
   again after a miss; the opponent's moves are played automatically in
   practice and drill; the full drill asks both sides; practice records
   nothing to the review schedule.
-- [ ] `CourseStageBar` replaces the "Play through / Drill" chips: four steps,
+- [x] `CourseStageBar` replaces the "Play through / Drill" chips: four steps,
   finished ones ticked, the next one highlighted; any stage can be opened.
   Token colours only, every button styled (dark mode).
-- [ ] `CourseDrill` takes a `stage` prop (`practice | drill | full_drill`).
+- [x] `CourseDrill` takes a `stage` prop (`practice | drill | full_drill`).
   Finishing a stage offers the next ("Now without arrows", "Now both sides").
-- [ ] `?stage=<stage>` opens a stage; `?drill=1` stays as an alias. The Due
+- [x] `?stage=<stage>` opens a stage; `?drill=1` stays as an alias. The Due
   today card links with `?stage=drill`.
-- [ ] Manual check on `/learn/<slug>`: all four stages on the Englund trap.
+- [x] Manual check on `/learn/<slug>`: all four stages on the Englund trap.
 
 Commit: `feat(courses): practice with fading arrows, then drill, then both sides`
 

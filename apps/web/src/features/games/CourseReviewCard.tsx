@@ -29,7 +29,7 @@ export function CourseReviewCard({ course }: CourseReviewCardProps): ReactNode {
         <span className="badge badge--primary game-card__status">Due today</span>
         <span className="game-card__spacer" />
         <Link
-          to={`/learn/${encodeURIComponent(course.slug)}?drill=1`}
+          to={`/learn/${encodeURIComponent(course.slug)}?stage=drill`}
           className="game-card__icon-action game-card__icon-action--primary"
           title="Drill"
           aria-label={`Drill ${course.title}`}

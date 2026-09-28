@@ -1,3 +1,4 @@
+import { COURSE_STAGES, type CourseStage } from '@freechesscoach/chess-analysis';
 import { PublicCourseResponseSchema } from '@freechesscoach/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, type ReactNode } from 'react';
@@ -39,10 +40,17 @@ export function LearnPage(): ReactNode {
   }
   return (
     <div className="learn-page">
-      <CoursePlayer document={course.data.document} noteAudio={source} progress={progress} courseSlug={course.data.slug} startWithDrill={search.get('drill') === '1'} />
+      <CoursePlayer document={course.data.document} noteAudio={source} progress={progress} courseSlug={course.data.slug} startStage={stageFromSearch(search)} />
       <footer className="learn-page__footer">
         <a href="/">FreeChessCoach</a>: a free chess coach for your own games.
       </footer>
     </div>
   );
+}
+
+/** `?stage=practice` and so on; `?drill=1` is the older link for the drill. */
+function stageFromSearch(search: URLSearchParams): CourseStage {
+  const stage = search.get('stage');
+  if ((COURSE_STAGES as readonly string[]).includes(stage ?? '')) return stage as CourseStage;
+  return search.get('drill') === '1' ? 'drill' : 'play_through';
 }

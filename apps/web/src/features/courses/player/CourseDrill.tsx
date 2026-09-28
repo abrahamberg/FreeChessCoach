@@ -1,19 +1,39 @@
-import { buildCourseDrill, type CourseDrill as Drill, type CourseReviewState } from '@freechesscoach/chess-analysis';
+import {
+  buildCourseDrill,
+  isPracticeDone,
+  nextPracticeState,
+  practiceArrow,
+  practiceAsks,
+  practiceShowsArrow,
+  type CourseDrill as Drill,
+  type CourseReviewState,
+  type CourseStage,
+  type PracticeMoveState
+} from '@freechesscoach/chess-analysis';
 import type { CourseDocument } from '@freechesscoach/shared';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CoachAvatar } from '../../../components/CoachAvatar.js';
 import { CoachCard } from '../../../components/CoachCard.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
+import { toBoardMarks } from '../courseArrows.js';
 import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
 import { localToday, type CourseProgressStore } from './course-progress.js';
 import { isAcceptedAlternative } from './course-steps.js';
 import { judgeQuizMove } from './judge-quiz-move.js';
 
+/** The stages the learner plays themselves (§11). */
+export type PlayedStage = Exclude<CourseStage, 'play_through'>;
+
 export interface CourseDrillProps {
   document: CourseDocument;
+  stage: PlayedStage;
   /** Where results go; absent in the editor's preview, which saves nothing. */
   progress?: CourseProgressStore | null;
   courseSlug?: string;
+  /** The stage is finished; the learner may go on to the next one. */
+  onStageDone: (stage: PlayedStage) => void;
+  /** Opens the next stage ("Now without arrows", "Now both sides"). */
+  onNextStage: () => void;
   onExit: () => void;
 }
 
@@ -26,19 +46,35 @@ const MODE_INTRO: Record<Drill['mode'], string> = {
   guess_move: 'Guess each move of the game; your score is kept.'
 };
 
+function intro(stage: PlayedStage, drill: Drill): string {
+  if (stage === 'practice') return 'Play your moves. The arrow shows the move until you know it; then it goes.';
+  if (stage === 'full_drill') return 'Play both sides now: every move of the line is yours.';
+  return MODE_INTRO[drill.mode];
+}
+
+interface RoundResult {
+  firstTries: Map<string, { san: string; correct: boolean }>;
+}
+
 /**
- * docs/courses.md §11 step 3: the learner plays the course's moves. The
- * first try at each asked move counts for the review schedule; a different
- * move is rated in the browser like the quiz (a move about as good is
- * accepted, no penalty). Results are sent as they happen.
+ * docs/courses.md §11 steps 3–4: the learner plays the course's moves.
+ * Practice asks their own moves with the arrow on, then off, round after
+ * round until each is known, and saves nothing. The drill asks their side
+ * with no arrows, the full drill both sides; there the first try at each
+ * move counts for the review schedule. A different move is rated in the
+ * browser like the quiz (a move about as good is accepted, no penalty).
  */
-export function CourseDrill({ document, progress, courseSlug, onExit }: CourseDrillProps): ReactNode {
-  const [states, setStates] = useState<Map<string, CourseReviewState> | null>(progress ? null : new Map());
+export function CourseDrill({ document, stage, progress, courseSlug, onStageDone, onNextStage, onExit }: CourseDrillProps): ReactNode {
+  const reviewed = stage !== 'practice';
+  const sides = stage === 'full_drill' ? 'both' : 'learner';
+  const [states, setStates] = useState<Map<string, CourseReviewState> | null>(progress && reviewed ? null : new Map());
+  const [practice, setPractice] = useState<Map<string, PracticeMoveState>>(new Map());
   const [round, setRound] = useState(0);
+  const [finished, setFinished] = useState<RoundResult | null>(null);
 
   useEffect(() => {
-    if (!progress) return;
-    const keys = buildCourseDrill(document).episodes.flatMap((episode) => episode.steps.map((step) => step.key));
+    if (!progress || !reviewed) return;
+    const keys = buildCourseDrill(document, new Map(), '', sides).episodes.flatMap((episode) => episode.steps.map((step) => step.key));
     let live = true;
     void progress
       .lookup(keys)
@@ -47,44 +83,158 @@ export function CourseDrill({ document, progress, courseSlug, onExit }: CourseDr
     return () => {
       live = false;
     };
-  }, [document, progress, round]);
+  }, [document, progress, reviewed, sides, round]);
 
-  const drill = useMemo(() => (states ? buildCourseDrill(document, states, localToday()) : null), [document, states]);
-  if (!drill) return <p className="meta">Loading your progress…</p>;
-  if (!drill.episodes.length) {
+  const drill = useMemo(() => (states ? buildCourseDrill(document, states, localToday(), sides) : null), [document, states, sides]);
+  // Practice: a known move is played for the learner; the arrow shows until they know it.
+  // Fixed for the round, so a miss brings the arrow back next round.
+  const run = useMemo(() => {
+    if (!drill || reviewed) return drill && { drill, arrowKeys: new Set<string>() };
+    const episodes = drill.episodes
+      .map((episode) => ({ ...episode, steps: episode.steps.map((step) => ({ ...step, asked: step.asked && practiceAsks(practice.get(step.key)) })) }))
+      .filter((episode) => episode.steps.some((step) => step.asked));
+    const arrowKeys = new Set(episodes.flatMap((episode) => episode.steps.filter((step) => step.asked && practiceShowsArrow(practice.get(step.key))).map((step) => step.key)));
+    return { drill: { ...drill, episodes }, arrowKeys };
+  }, [drill, reviewed, round]);
+
+  // Practice is done only once every move is known, after this round's last answer landed.
+  const askedKeys = drill?.episodes.flatMap((episode) => episode.steps.filter((step) => step.asked).map((step) => step.key)) ?? [];
+  const stageDone = finished !== null && (reviewed || isPracticeDone(askedKeys, practice));
+  useEffect(() => {
+    if (stageDone) onStageDone(stage);
+  }, [stageDone]);
+
+  if (!run) return <p className="meta">Loading your progress…</p>;
+  if (!drill?.episodes.length) {
     return (
       <div className="course-drill">
-        <p className="meta">This course has no moves to drill.</p>
+        <p className="meta">This course has no moves to play here.</p>
         <button type="button" className="btn-secondary" onClick={onExit}>
           Back to the course
         </button>
       </div>
     );
   }
+
+  const again = (): void => {
+    setFinished(null);
+    if (progress && reviewed) setStates(null);
+    setRound(round + 1);
+  };
+
+  if (finished) {
+    return (
+      <StageSummary
+        document={document}
+        stage={stage}
+        drill={drill}
+        result={finished}
+        practiceKeys={askedKeys}
+        practice={practice}
+        onAgain={again}
+        onNextStage={onNextStage}
+        onExit={onExit}
+      />
+    );
+  }
+
   return (
     <DrillRun
       key={round}
       document={document}
-      drill={drill}
-      onResult={(result) => void progress?.record([{ ...result, courseSlug: courseSlug ?? '' }]).catch(() => undefined)}
-      onAgain={() => {
-        if (progress) setStates(null);
-        setRound(round + 1);
+      stage={stage}
+      drill={run.drill}
+      introText={round === 0 ? intro(stage, drill) : stage === 'practice' ? 'Again, with fewer arrows.' : null}
+      arrowKeys={run.arrowKeys}
+      onResult={(result) => {
+        if (reviewed) void progress?.record([{ ...result, courseSlug: courseSlug ?? '' }]).catch(() => undefined);
+        else setPractice((prev) => new Map(prev).set(result.key, nextPracticeState(prev.get(result.key), result.correct)));
       }}
+      onFinished={setFinished}
       onExit={onExit}
     />
   );
 }
 
-interface DrillRunProps {
+interface StageSummaryProps {
   document: CourseDocument;
+  stage: PlayedStage;
   drill: Drill;
-  onResult: (result: { key: string; san: string; correct: boolean }) => void;
+  result: RoundResult;
+  practiceKeys: string[];
+  practice: ReadonlyMap<string, PracticeMoveState>;
   onAgain: () => void;
+  onNextStage: () => void;
   onExit: () => void;
 }
 
-function DrillRun({ document, drill, onResult, onAgain, onExit }: DrillRunProps): ReactNode {
+function StageSummary({ document, stage, drill, result, practiceKeys, practice, onAgain, onNextStage, onExit }: StageSummaryProps): ReactNode {
+  const tries = [...result.firstTries.values()];
+  const right = tries.filter((each) => each.correct).length;
+  const missed = tries.filter((each) => !each.correct).map((each) => each.san);
+  const avatar = <CoachAvatar persona={document.coachPersona} size="chat" />;
+
+  if (stage === 'practice') {
+    const known = practiceKeys.filter((key) => practice.get(key) === 'cleared').length;
+    const done = isPracticeDone(practiceKeys, practice);
+    return (
+      <div className="course-drill">
+        <CoachCard avatar={avatar}>
+          <p className="course-drill__score">{done ? 'You know every move.' : `${known} of ${practiceKeys.length} moves known.`}</p>
+          <p>{done ? 'Now play them with no arrows at all.' : 'Another round: the moves you know are played for you, and fewer arrows show.'}</p>
+        </CoachCard>
+        <div className="course-player__actions">
+          <button type="button" className="btn-primary" onClick={done ? onNextStage : onAgain}>
+            {done ? 'Now without arrows' : 'Next round'}
+          </button>
+          <button type="button" className="btn-secondary" onClick={onExit}>
+            Back to the course
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="course-drill">
+      <CoachCard avatar={avatar}>
+        <p className="course-drill__score">
+          {drill.mode === 'guess_move' ? `Your score: ${right} of ${tries.length}.` : `${right} of ${tries.length} right first time.`}
+        </p>
+        {missed.length > 0 ? <p>To go over again tomorrow: {missed.join(', ')}.</p> : <p>Every move right. They come back for review in a week.</p>}
+        {stage === 'full_drill' && <p>That is the whole course, both sides.</p>}
+      </CoachCard>
+      <div className="course-player__actions">
+        {stage === 'drill' && (
+          <button type="button" className="btn-primary" onClick={onNextStage}>
+            Now both sides
+          </button>
+        )}
+        <button type="button" className={stage === 'drill' ? 'btn-secondary' : 'btn-primary'} onClick={onAgain}>
+          {stage === 'drill' ? 'Drill again' : 'Play both sides again'}
+        </button>
+        <button type="button" className="btn-secondary" onClick={onExit}>
+          Back to the course
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface DrillRunProps {
+  document: CourseDocument;
+  stage: PlayedStage;
+  drill: Drill;
+  introText: string | null;
+  /** Asked moves whose arrow shows (practice). */
+  arrowKeys: ReadonlySet<string>;
+  /** The first try at each asked move. */
+  onResult: (result: { key: string; san: string; correct: boolean }) => void;
+  onFinished: (result: RoundResult) => void;
+  onExit: () => void;
+}
+
+function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFinished, onExit }: DrillRunProps): ReactNode {
   const [at, setAt] = useState({ episode: 0, step: 0 });
   const [firstTries, setFirstTries] = useState<Map<string, { san: string; correct: boolean }>>(new Map());
   const [attempt, setAttempt] = useState<Attempt | null>(null);
@@ -149,31 +299,14 @@ function DrillRun({ document, drill, onResult, onAgain, onExit }: DrillRunProps)
     firstTry(isAcceptedAlternative(judgement.move.quality));
   }, [judgement]);
 
-  if (done) {
-    const right = [...firstTries.values()].filter((each) => each.correct).length;
-    const missed = [...firstTries.values()].filter((each) => !each.correct).map((each) => each.san);
-    return (
-      <div className="course-drill">
-        <CoachCard avatar={<CoachAvatar persona={document.coachPersona} size="chat" />}>
-          <p className="course-drill__score">
-            {drill.mode === 'guess_move' ? `Your score: ${right} of ${firstTries.size}.` : `${right} of ${firstTries.size} right first time.`}
-          </p>
-          {missed.length > 0 ? <p>To go over again tomorrow: {missed.join(', ')}.</p> : <p>Every move right. They come back for review in a week.</p>}
-        </CoachCard>
-        <div className="course-player__actions">
-          <button type="button" className="btn-primary" onClick={onAgain}>
-            Drill again
-          </button>
-          <button type="button" className="btn-secondary" onClick={onExit}>
-            Back to the course
-          </button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (done) onFinished({ firstTries });
+  }, [done]);
+  if (done) return null;
 
   const waiting = step?.asked && !attempt;
   const askedSoFar = asked.findIndex((each) => each === step) + 1;
+  const hint = waiting && step && arrowKeys.has(step.key) ? toBoardMarks([practiceArrow(step.node)]) : null;
   return (
     <div className="course-player__episode">
       <div className="course-player__board">
@@ -182,8 +315,8 @@ function DrillRun({ document, drill, onResult, onAgain, onExit }: DrillRunProps)
           orientation={document.learnerSide}
           mode={waiting ? 'answer' : 'peek'}
           disabled={!waiting}
-          arrows={[]}
-          highlights={[]}
+          arrows={hint?.arrows ?? []}
+          highlights={hint?.highlights ?? []}
           onUserMove={onMove}
         />
         <div className="course-player__nav">
@@ -192,13 +325,13 @@ function DrillRun({ document, drill, onResult, onAgain, onExit }: DrillRunProps)
             {firstTries.size} of {asked.length} moves
           </span>
           <button type="button" className="btn-secondary" onClick={onExit}>
-            Stop the drill
+            {stage === 'practice' ? 'Stop practising' : 'Stop the drill'}
           </button>
         </div>
       </div>
       <div className="course-player__words">
         <CoachCard avatar={<CoachAvatar persona={document.coachPersona} size="chat" />}>
-          {at.episode === 0 && at.step === 0 && <p className="meta">{drill.sides === 'both' ? 'Play both sides: every move of the line is yours.' : MODE_INTRO[drill.mode]}</p>}
+          {introText && firstTries.size === 0 && !attempt && <p className="meta">{introText}</p>}
           {said && <p>{said}</p>}
           {waiting && (
             <div className="course-player__quiz">
