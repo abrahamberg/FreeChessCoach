@@ -1335,6 +1335,88 @@ Commit: `feat(sounds): board sounds under clip moves`
 
 Commit: `docs: board sounds`
 
+## Phase 89 — A Course studio in the app's style
+
+The owner, 2026-09-28: "Course studio looks very primitive". Seen in the
+browser: `/studio` is a bare list of underlined links; `/studio/new` a
+column of plain fields and native selects; the editor has the title and
+promise as two inputs in a row of five identical outlined buttons, "Write
+with AI" on a line of its own, and one long scrolling form on the right.
+All three should look like the rest of the app (cards, sections, the
+Courses page and the board views) and share one header pattern.
+
+### Task 89.1 — The studio list's data
+
+**Read:** `apps/api/src/services/courses.ts` (`listCourses`),
+`apps/api/src/db/repositories/courses.ts` (`listByOwner`),
+`packages/shared/src/course-api.ts` (`CourseSummarySchema`).
+**Files:** those; `routes/courses.test.ts`.
+
+- [ ] Failing test first: each summary carries `promise`, `episodes`,
+  `moves` (from the draft) and `generation` (`status`, `done`, `total`, or
+  null).
+
+Commit: `feat(courses): the studio list shows each course's size and state`
+
+### Task 89.2 — The studio page
+
+**Read:** `features/courses/CoursesPage.tsx`,
+`features/courses/learn/CoursesHomePage.tsx` + CSS (the card grid and filter
+pills to reuse), `features/games/RailCard.css`.
+**Files:** `CoursesPage.tsx` (the studio) + CSS + test.
+
+- [ ] Failing test first: cards with the kind chip, a status badge (Draft,
+  Unlisted, Public, Removed), title, promise, "12 moves · 6 episodes · edited
+  Sep 28", a progress bar while the AI writes; Edit, and Open (the public
+  page) once published; filter pills All / Drafts / Published; an empty state
+  that says how a course is made (paste a PGN, the AI writes, preview,
+  publish) with New course.
+
+Commit: `feat(courses): the Course studio page`
+
+### Task 89.3 — New course
+
+**Read:** `features/courses/CourseIntakePage.tsx`,
+`features/settings/BandSelect.tsx`, `CoachPersonaSelect.tsx`,
+`features/board/MiniBoard.tsx`, `courseKinds.ts`.
+**Files:** those; `CourseIntakePage.css` + test.
+
+- [ ] Failing test first: kinds as cards (icon, name, one line); the PGN
+  box beside a small board of the line's end with "16 moves, 1 line, you
+  teach Black"; level with `BandSelect`, the coach with
+  `CoachPersonaSelect`, the learner side as a three-way switch (From the
+  PGN, White, Black); the direction with the kind's example as a "Use this
+  example" chip; Create draft at the end. One column on a phone.
+
+Commit: `feat(courses): a guided new-course page`
+
+### Task 89.4 — The editor's frame
+
+**Read:** `features/courses/CourseEditorPage.tsx`, `CourseEpisodePanel.tsx`,
+`CourseEpisodeAi.tsx`, `CourseGenerationBar.tsx`, `CourseOutline.tsx`,
+`player/CourseHeader.tsx`.
+**Files:** those + CSS + tests.
+
+- [ ] A studio header: back to the studio, the title (edited in place),
+  the status badge, the save state ("Saved" / "Unsaved changes"), Save,
+  Preview (a menu: clip, as learner), Publish; "Build without AI" in "⋮".
+- [ ] The promise and "Write with AI" move into a Details card at the top
+  of the outline column.
+- [ ] The right panel in tabs: Notes (focus, the move's note, arrows),
+  Quiz, Clip, AI (the episode's writer), instead of one long form.
+- [ ] The columns in the board views' style (the explorer and notes column
+  chrome); a creator tool, so desktop first, but nothing breaks on a
+  phone (the columns stack).
+
+Commit: `feat(courses): the course editor's frame`
+
+### Task 89.5 — Browser pass and docs
+
+- [ ] All three pages at 1920, 1280 and 390 wide, light and dark.
+- [ ] `docs/courses.md` §5.3 (the new-course page) and §9 (the studio).
+
+Commit: `docs: the Course studio`
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.
