@@ -337,6 +337,8 @@ export interface CourseAudioTable {
   bytes: Buffer;
   /** 0018: sha256 of `bytes` (32 hex), computed by Postgres; the public URL. */
   contentHash: Generated<string>;
+  /** 0019: the content hash of this row's file in the R2 mirror; null when none. */
+  mirroredHash: string | null;
   createdAt: Generated<Date>;
 }
 

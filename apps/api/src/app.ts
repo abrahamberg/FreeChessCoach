@@ -7,6 +7,7 @@ import { registerAnalysesRoutes } from './routes/analyses.js';
 import { registerBugReportsRoutes } from './routes/bug-reports.js';
 import { registerChesscomRoutes } from './routes/chesscom.js';
 import { registerPublicCoursesRoutes } from './routes/public-courses.js';
+import type { AudioMirror } from './services/courses/audio-mirror.js';
 import { registerCoursesRoutes } from './routes/courses.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerDiagnosticsRoutes } from './routes/diagnostics.js';
@@ -81,6 +82,8 @@ export interface BuildAppOptions {
    * default so tests stay quiet; server.ts turns it on. Without it every
    * `log.error` in the app is a silent no-op. */
   logger?: boolean;
+  /** The R2 copy of published course audio (services/courses/audio-mirror.ts). */
+  audioMirror?: AudioMirror;
   /** Overrides the per-user cap on all /api routes (plugins/api-rate-limit.ts). */
   apiRateLimit?: RateLimit;
 }
@@ -120,11 +123,12 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (options.db) {
     registerUsersRoutes(app, options.db);
     registerBugReportsRoutes(app, options.db);
-    registerPublicCoursesRoutes(app, options.db);
+    registerPublicCoursesRoutes(app, options.db, options.audioMirror);
     registerCoursesRoutes(app, options.db, {
       buildDossier: options.courseDossierBuilder ?? (options.engineBackendOptions ? courseDossierBuilderFor(options.engineBackendOptions) : undefined),
       jobQueue: options.jobQueue ?? noopJobQueue,
-      resolveModel: options.courseModelResolver ?? courseModelResolver(options.db, options.coachAgentBaseDeps?.gatewayConfig)
+      resolveModel: options.courseModelResolver ?? courseModelResolver(options.db, options.coachAgentBaseDeps?.gatewayConfig),
+      audioMirror: options.audioMirror
     });
     registerDashboardRoutes(app, options.db);
     registerDiagnosticsRoutes(app, options.db);

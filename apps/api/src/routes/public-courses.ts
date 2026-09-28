@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { Database } from '../db/schema.js';
 import { NotFoundError } from '../lib/errors.js';
 import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.js';
+import type { AudioMirror } from '../services/courses/audio-mirror.js';
 import { publicCourse, publicNoteAudio } from '../services/courses/public-course.js';
 
 const SlugParamsSchema = z.object({ slug: z.string().regex(/^[a-z0-9-]{1,80}$/) });
@@ -17,12 +18,12 @@ const AudioParamsSchema = SlugParamsSchema.extend({ file: z.string().max(40) });
  * from the proxy's address, so the per-route cap is shared by them
  * (docs/threat-model.md T13).
  */
-export function registerPublicCoursesRoutes(app: FastifyInstance, db: Kysely<Database>): void {
+export function registerPublicCoursesRoutes(app: FastifyInstance, db: Kysely<Database>, audioMirror?: AudioMirror): void {
   const limit = rateLimitConfig(ROUTE_RATE_LIMITS.publicCourse);
 
   app.get('/api/public/courses/:slug', limit, async (request, reply): Promise<PublicCourseResponse> => {
     const { slug } = parseParams(SlugParamsSchema, request.params);
-    const course = await publicCourse(db, slug);
+    const course = await publicCourse(db, slug, audioMirror);
     // Short, so a course the moderator removes is gone within a minute.
     void reply.header('cache-control', 'public, max-age=60');
     return course;

@@ -187,6 +187,16 @@ internalApi:
   existingSecret: ""
   tokenKey: token
 
+## Published course audio mirrored to S3-compatible storage (Cloudflare R2),
+## so learners fetch it from the edge (docs/courses.md §9). Off unless both
+## existingSecret and publicUrl are set; learners then get it from the api.
+## The Secret holds endpoint (https://<account id>.r2.cloudflarestorage.com),
+## bucket, accessKeyId and secretAccessKey (an R2 API token with Object Read
+## & Write on that bucket only). publicUrl is the bucket's custom domain.
+courseAudioMirror:
+  existingSecret: ""
+  publicUrl: ""
+
 ## Extra env vars appended to the api and worker containers, as a raw k8s env
 ## list. Escape hatch for settings the chart doesn't model yet.
 extraEnv: []

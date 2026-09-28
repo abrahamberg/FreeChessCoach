@@ -677,13 +677,27 @@ Decided with the owner:
   by default, so it needs one Cache Rule: URI path starts with
   `/api/public/courses/` and ends with `.wav` → eligible for cache, edge TTL
   from the origin's header. The course JSON is cached 60 s (a removal shows
-  within a minute). Removing a course (below) must also purge its files from
-  Cloudflare (`/api/public/courses/<slug>/audio/` prefix), or anyone who has
-  a file's URL can still fetch it for up to a year.
+  within a minute).
+- **R2 mirror** (optional; `services/courses/audio-mirror*.ts`): Postgres keeps
+  the files, and each publish copies the ones the bucket lacks to
+  `courses/<slug>/audio/<hash>.wav` and deletes the ones no note uses any
+  more (a re-voiced note replaces its old file; identical bytes share one
+  object). The page links a file to the bucket's custom domain once it is
+  copied, and to the api otherwise, so a failed or missing mirror never breaks
+  a course; a failed copy is logged and the next publish carries on. Config:
+  `COURSE_AUDIO_S3_{ENDPOINT,BUCKET,ACCESS_KEY_ID,SECRET_ACCESS_KEY}` and
+  `COURSE_AUDIO_PUBLIC_URL`, all or none (Helm: `courseAudioMirror`, the four
+  keys from a Secret). Any S3-compatible store works; the signer is
+  `lib/s3-sign.ts` (AWS SigV4, checked against AWS's published example).
+  One-time Cloudflare setup: an R2 bucket, a custom domain on it (e.g.
+  `media.freechesscoach.org`; not the rate-limited r2.dev URL), an R2 API
+  token with Object Read & Write on that bucket only, and the Secret.
+- Removing a course: `npx tsx apps/api/scripts/course-remove.ts <slug>` sets
+  `removed`, deletes its files from the bucket, and prints the prefixes to
+  purge in Cloudflare (the api's and the bucket domain's), since the edge may
+  hold copies for up to a year. There is no admin UI yet.
 - **Preview as learner** in the editor is the same `CoursePlayer` on the
   draft, each note voiced the first time it plays (browser cache first).
-- Removing a course is `UPDATE courses SET status = 'removed'` through the same
-  script as §2 until there is an admin UI.
 
 ---
 

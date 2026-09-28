@@ -4,6 +4,8 @@ import * as courseAudioRepo from '../../db/repositories/course-audio.js';
 import * as coursesRepo from '../../db/repositories/courses.js';
 import type { Database } from '../../db/schema.js';
 import { NotFoundError } from '../../lib/errors.js';
+import type { AudioMirror } from './audio-mirror.js';
+import { audioFileUrl } from './audio-mirror-sync.js';
 import { noteHashes } from './note-audio.js';
 
 const NOT_FOUND = 'No course at this link';
@@ -13,17 +15,17 @@ const AUDIO_FILE = /^([0-9a-f]{32})\.wav$/;
 
 /** docs/courses.md §9: the frozen published copy, and each note's audio file.
  * The file is named by its content, so its URL never serves different bytes
- * and Cloudflare can keep it at the edge. Drafts and removed courses are 404,
+ * and Cloudflare can keep it at the edge; from the R2 mirror once copied there. Drafts and removed courses are 404,
  * like a wrong link. */
-export async function publicCourse(db: Kysely<Database>, slug: string): Promise<PublicCourseResponse> {
+export async function publicCourse(db: Kysely<Database>, slug: string, mirror?: AudioMirror): Promise<PublicCourseResponse> {
   const row = await coursesRepo.findPublishedBySlug(db, slug);
   if (!row?.publishedDocument || !row.publishedAt) throw new NotFoundError(NOT_FOUND);
   const document = CourseDocumentSchema.parse(row.publishedDocument);
-  const files = await courseAudioRepo.contentHashes(db, row.id);
+  const files = new Map((await courseAudioRepo.files(db, row.id)).map((file) => [file.textHash, file]));
   const noteAudio = Object.fromEntries(
     noteHashes(document).flatMap((note) => {
-      const content = files.get(note.hash);
-      return content ? [[`${note.episodeId}:${note.nodeId}`, `/api/public/courses/${row.slug}/audio/${content}.wav`]] : [];
+      const file = files.get(note.hash);
+      return file ? [[`${note.episodeId}:${note.nodeId}`, audioFileUrl(mirror, row.slug, file)]] : [];
     })
   );
   return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio };

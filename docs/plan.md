@@ -713,6 +713,14 @@ Chrome loads no media there). Owner to listen once.
   `immutable`. Still to do by hand in Cloudflare: the Cache Rule for
   `/api/public/courses/*.wav`, and a purge whenever a course is removed
   (docs/courses.md §9).
+- [x] Owner, 2026-09-28: sync the audio to R2 (mirror of Postgres, custom
+  domain). Publishing copies new files and deletes unused ones; the page
+  uses the bucket once a file is there, the api otherwise;
+  `scripts/course-remove.ts` takes a course down. Signer tested against
+  AWS's published SigV4 example; not yet run against real R2 (the owner's
+  bucket, token and domain come first; MinIO couldn't be pulled here to
+  stand in). Owner to do: bucket, custom domain, token, Secret,
+  `courseAudioMirror` values, then publish once and check the bucket.
 
 Commit: `feat(courses): public course page, no login`
 

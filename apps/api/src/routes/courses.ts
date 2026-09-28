@@ -19,6 +19,7 @@ import type { CourseDossierBuilder } from '../services/course-dossier.js';
 import * as courseGenerate from '../services/course-generate.js';
 import * as coursesService from '../services/courses.js';
 import { NOTE_AUDIO_TYPES, saveNoteAudio } from '../services/courses/note-audio.js';
+import type { AudioMirror } from '../services/courses/audio-mirror.js';
 import { publishCourse } from '../services/courses/publish.js';
 import { requireCourseCreator } from '../services/courses/require-course-creator.js';
 import { CONFIG } from '@freechesscoach/chess-analysis';
@@ -34,6 +35,8 @@ export interface CoursesRouteDeps {
   jobQueue: JobQueue;
   /** The creator's standard-tier model, for regenerating one episode in the request. */
   resolveModel: ((userId: string) => Promise<ModelResolution>) | undefined;
+  /** The R2 copy of published note audio (docs/courses.md §9); absent without one. */
+  audioMirror?: AudioMirror;
 }
 
 /**
@@ -95,7 +98,8 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
   app.post('/api/courses/:id/publish', async (request): Promise<CourseResponse> => {
     const ownerId = await creatorId(request);
     const body = parseBody(PublishCourseRequestSchema, request.body ?? {});
-    return publishCourse(db, ownerId, courseId(request), body);
+    const mirror = deps.audioMirror && { mirror: deps.audioMirror, onError: (error: unknown) => request.log.error({ err: error }, 'course audio mirror sync failed') };
+    return publishCourse(db, ownerId, courseId(request), body, mirror);
   });
 
   /** §8: one note's audio, as its draft text reads now. 204. */

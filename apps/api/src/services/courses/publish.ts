@@ -6,6 +6,8 @@ import * as coursesRepo from '../../db/repositories/courses.js';
 import type { Database } from '../../db/schema.js';
 import { ConflictError, ValidationError } from '../../lib/errors.js';
 import { ownedCourse, storedDocument, toCourseResponse } from '../courses.js';
+import type { AudioMirror } from './audio-mirror.js';
+import { syncCourseAudio } from './audio-mirror-sync.js';
 import { noteHashes } from './note-audio.js';
 
 /** What must be there before anything is published (docs/courses.md §4, §9). */
@@ -29,12 +31,14 @@ export function draftCheckProblems(document: CourseDocument, row: coursesRepo.Co
 
 /** §9: copies the draft to the frozen published copy. Refused while the
  * checks report problems, unless the creator ticked "I checked these". Audio
- * that no published note uses any more is dropped. */
+ * that no published note uses any more is dropped, and the R2 mirror follows. */
 export async function publishCourse(
   db: Kysely<Database>,
   ownerId: string,
   id: string,
-  request: Required<PublishCourseRequest>
+  request: Required<PublishCourseRequest>,
+  /** The R2 copy for learners; a failure there never fails the publish. */
+  mirror?: { mirror: AudioMirror; onError: (error: unknown) => void }
 ): Promise<CourseResponse> {
   const row = await ownedCourse(db, ownerId, id);
   if (row.status === 'removed') throw new ConflictError('This course was removed by a moderator');
@@ -46,6 +50,7 @@ export async function publishCourse(
     throw new ConflictError(`The checks found ${problems.length} ${problems.length === 1 ? 'problem' : 'problems'}; look at them and tick "I checked these" to publish anyway`);
   }
   const published = await coursesRepo.publish(db, id, ownerId, document, request.visibility);
-  await courseAudioRepo.keepOnly(db, id, noteHashes(document).map((note) => note.hash));
+  const dropped = await courseAudioRepo.keepOnly(db, id, noteHashes(document).map((note) => note.hash));
+  if (mirror) await syncCourseAudio(db, mirror.mirror, published, dropped).catch(mirror.onError);
   return toCourseResponse(db, published);
 }

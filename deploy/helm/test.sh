@@ -126,6 +126,19 @@ render "$WORKER" --show-only templates/worker-deployment.yaml
 assert_contains "worker deployment runs the worker bundle" '"node", "dist-bundle/worker.mjs"' "$WORKER"
 assert_contains "worker deployment declares ENGINE_URL" "name: ENGINE_URL" "$WORKER"
 
+# Course audio mirror (docs/courses.md §9): off by default; with a Secret and
+# a public URL the api gets the four keys from the Secret, never from values.
+MIRROR_OFF="$RENDER_DIR/mirror-off.yaml"
+render "$MIRROR_OFF" --show-only templates/api-deployment.yaml
+if grep -q "COURSE_AUDIO_" "$MIRROR_OFF"; then fail "course audio mirror must be off unless configured"; else pass "course audio mirror is off by default"; fi
+MIRROR_ON="$RENDER_DIR/mirror-on.yaml"
+render "$MIRROR_ON" --set courseAudioMirror.existingSecret=course-audio-r2 --set courseAudioMirror.publicUrl=https://media.example.org --show-only templates/api-deployment.yaml
+for key in COURSE_AUDIO_S3_ENDPOINT COURSE_AUDIO_S3_BUCKET COURSE_AUDIO_S3_ACCESS_KEY_ID COURSE_AUDIO_S3_SECRET_ACCESS_KEY; do
+  assert_contains "api reads $key when the mirror is on" "name: $key" "$MIRROR_ON"
+done
+assert_contains "mirror keys come from the named Secret" "name: course-audio-r2" "$MIRROR_ON"
+assert_contains "api gets the mirror's public URL" "https://media.example.org" "$MIRROR_ON"
+
 # ---------------------------------------------------------------------------
 # 3. The health probes are unauthenticated at the proxy.
 # ---------------------------------------------------------------------------
