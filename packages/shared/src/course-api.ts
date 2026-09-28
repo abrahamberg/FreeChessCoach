@@ -121,3 +121,20 @@ export const CourseReviewDueResponseSchema = z.object({
   courses: z.array(z.object({ slug: z.string(), title: z.string(), due: z.number().int(), sans: z.array(z.string()) }))
 });
 export type CourseReviewDueResponse = z.infer<typeof CourseReviewDueResponseSchema>;
+
+/** docs/courses.md §11: the learner asks their own coach about one position
+ * of a published course. The conversation lives in the browser and is sent
+ * whole each time (text only, last message the learner's); the server takes
+ * the course, the position and the engine facts from its own copy. */
+export const AskCourseCoachRequestSchema = z.object({
+  slug: z.string().min(1).max(120),
+  episodeId: z.string().min(1).max(40),
+  /** The board after this move; null for the position before the episode's first move. */
+  nodeId: z.string().regex(/^n\d+$/).nullable(),
+  messages: z
+    .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().trim().min(1).max(2000) }))
+    .min(1)
+    .max(24)
+    .refine((messages) => messages.at(-1)?.role === 'user', 'The last message must be the learner’s question.')
+});
+export type AskCourseCoachRequest = z.infer<typeof AskCourseCoachRequestSchema>;

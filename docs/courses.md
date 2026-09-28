@@ -749,6 +749,11 @@ the Games page card (`/learn/<slug>?drill=1`). Signed-in progress is the
 `/import`, `GET /api/course-progress/due?today=`); `due_on` is the learner's
 own calendar day. Deleting the account deletes it.
 
+"Ask my coach" is `POST /api/course-questions` (signed in, the learner's own
+AI setup, nothing stored); its prompt is
+`packages/prompts/src/course/ask-coach.ts`. It is offered in the
+play-through, not while a quiz asks and not in the drill.
+
 ---
 
 ## 12. Later, not in Phases 79–83

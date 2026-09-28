@@ -758,9 +758,24 @@ Commit: `feat(courses): drills and spaced review`
 **Files:** the course player's "Ask my coach" panel and a course context
 block for the coach prompt.
 
-- [ ] The learner's own persona answers, with the course line and notes in
+- [x] The learner's own persona answers, with the course line and notes in
   its context; distinct avatar from the course coach; engine wins over the
   course when they disagree.
+
+Notes: `POST /api/course-questions` (signed in, the learner's own AI setup),
+streamed like the other coach chats; nothing is stored, the browser sends the
+short conversation each time and it restarts when the position changes. The
+server builds the position from the published copy
+(`services/courses/ask-coach.ts`); the prompt is
+`packages/prompts/src/course/ask-coach.ts`: the course line as a scoresheet,
+the move just played and the course's next move with their notes (the next
+move also as checked facts), the episode's other notes, and the engine's
+summary of the position, with the rule that the engine wins. Tools:
+`check_moves` (defaults to the course position) and `get_engine_analysis`
+when the learner has an engine. The panel sits under the course coach's card
+in the play-through, in its own box with the learner's coach avatar and name;
+hidden while a quiz asks (the coach knows the answer) and in the drill;
+signed-out visitors get a sign-in line, the editor's preview neither.
 
 Commit: `feat(courses): ask your own coach about a course move`
 

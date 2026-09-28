@@ -21,6 +21,7 @@ import { registerPositionAnalysisRoutes } from './routes/positions.js';
 import { registerEnginePingRoutes } from './routes/engine-ping.js';
 import { registerPuzzleAssignmentsRoutes } from './routes/puzzle-assignments.js';
 import { registerPuzzleSessionsRoutes } from './routes/puzzle-sessions.js';
+import { registerCourseQuestionRoutes } from './routes/course-questions.js';
 import { registerSessionsRoutes } from './routes/sessions.js';
 import type { RatingEvalStore } from './services/bot/bot-rating-evals.js';
 import type { BotThinkingRegistry } from './services/bot/bot-thinking-registry.js';
@@ -159,6 +160,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     // analysis and get_engine_analysis; without, it works from the line notes.
     if (options.coachAgentBaseDeps) {
       registerPuzzleSessionsRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions);
+      registerCourseQuestionRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions);
     }
     if (options.ttsConfig && options.llmUnlockStore) {
       registerTtsRoutes(app, options.db, options.llmUnlockStore, options.ttsConfig);

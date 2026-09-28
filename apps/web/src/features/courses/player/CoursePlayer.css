@@ -217,3 +217,71 @@
   font-weight: 600;
   font-size: 1.1rem;
 }
+
+.ask-coach__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+}
+
+.ask-coach {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.ask-coach__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ask-coach__header p {
+  margin: 0;
+}
+
+.ask-coach__title {
+  font-weight: 600;
+}
+
+.ask-coach__messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.ask-coach__message {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ask-coach__message--you {
+  align-self: flex-end;
+  max-width: 85%;
+  background: var(--color-info-soft);
+}
+
+.ask-coach__form {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.ask-coach__form textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  resize: vertical;
+}

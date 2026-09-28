@@ -5,6 +5,7 @@ import { CoachCard } from '../../../components/CoachCard.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { COURSE_KIND_INFO } from '../courseKinds.js';
+import { AskCoachPanel } from './AskCoachPanel.js';
 import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
 import { CourseDrill } from './CourseDrill.js';
 import type { CourseProgressStore } from './course-progress.js';
@@ -64,21 +65,31 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
       {drilling ? (
         <CourseDrill document={document} progress={progress} courseSlug={courseSlug} onExit={() => drill(false)} />
       ) : (
-        <PlayThrough document={document} audio={audio} onDrill={() => drill(true)} />
+        <PlayThrough document={document} audio={audio} ask={askFor(progress, courseSlug)} onDrill={() => drill(true)} />
       )}
     </article>
   );
 }
 
+/** §11: signed in, the learner's own coach; signed out, a sign-in line; the
+ * editor's preview (no progress store), neither. */
+type AskCoach = { slug: string } | 'sign-in' | null;
+
+function askFor(progress: CourseProgressStore | null | undefined, slug: string | undefined): AskCoach {
+  if (!progress || !slug) return null;
+  return progress.signedIn ? { slug } : 'sign-in';
+}
+
 interface PlayThroughProps {
   document: CourseDocument;
   audio: ReturnType<typeof useNoteAudio>;
+  ask: AskCoach;
   onDrill: () => void;
 }
 
 /** §11 step 2: the clip, then each episode move by move; the takeaways and
  * the way to the drill at the end. */
-function PlayThrough({ document, audio, onDrill }: PlayThroughProps): ReactNode {
+function PlayThrough({ document, audio, ask, onDrill }: PlayThroughProps): ReactNode {
   const [episodeIndex, setEpisodeIndex] = useState(0);
   const [finished, setFinished] = useState(false);
   const episode = document.episodes[episodeIndex];
@@ -113,6 +124,7 @@ function PlayThrough({ document, audio, onDrill }: PlayThroughProps): ReactNode 
           document={document}
           episode={episode}
           audio={audio}
+          ask={ask}
           isLast={episodeIndex === document.episodes.length - 1}
           onDone={() => (episodeIndex < document.episodes.length - 1 ? openEpisode(episodeIndex + 1) : setFinished(true))}
         />
@@ -147,11 +159,12 @@ interface EpisodeViewProps {
   document: CourseDocument;
   episode: CourseEpisode;
   audio: ReturnType<typeof useNoteAudio>;
+  ask: AskCoach;
   isLast: boolean;
   onDone: () => void;
 }
 
-function EpisodeView({ document, episode, audio, isLast, onDone }: EpisodeViewProps): ReactNode {
+function EpisodeView({ document, episode, audio, ask, isLast, onDone }: EpisodeViewProps): ReactNode {
   const walk = episodeWalk(document, episode);
   const [step, setStep] = useState(0);
   const [solved, setSolved] = useState<'course' | 'alternative' | 'shown' | null>(null);
@@ -276,6 +289,13 @@ function EpisodeView({ document, episode, audio, isLast, onDone }: EpisodeViewPr
             </span>
           )}
         </div>
+        {/* Not while the quiz asks: the coach knows the course's answer. */}
+        {!asking && ask === 'sign-in' && (
+          <p className="meta">
+            <a href="/">Sign in</a> to ask your own coach about a move.
+          </p>
+        )}
+        {!asking && ask && ask !== 'sign-in' && <AskCoachPanel position={{ slug: ask.slug, episodeId: episode.id, nodeId: view.move?.id ?? null }} />}
       </div>
     </div>
   );

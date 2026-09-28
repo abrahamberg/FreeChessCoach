@@ -20,6 +20,7 @@ export * from './puzzle-coach-system.js';
 export * from './render.js';
 export * from './tools.js';
 export * from './tools-play.js';
+export * from './course/ask-coach.js';
 export * from './course/budget.js';
 export * from './course/context.js';
 export * from './course/episode.js';
