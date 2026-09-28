@@ -999,8 +999,13 @@ Commit: `feat(nav): play from the Games page, Courses in the navigation`
 `apps/api/src/db/repositories/courses.ts` (`findPublishedBySlug`).
 **Files:** those, `packages/shared/src/course-api.ts`, tests.
 
-- [ ] Failing tests first: unlisted, draft and removed courses never appear.
-- [ ] `GET /api/public/courses?kind=` lists `public` courses only: slug,
+Status: done 2026-09-28. `coursesRepo.listPublic` reads the published copy's
+fields in SQL; `courseCatalogue` pages with an opaque cursor (the row's
+`published_at` text to the microsecond and its id). `?limit=` (1–50) is
+there for tests and a short rail. The move count is the course's nodes.
+
+- [x] Failing tests first: unlisted, draft and removed courses never appear.
+- [x] `GET /api/public/courses?kind=` lists `public` courses only: slug,
   title, promise, kind, level, coach, learner side, published date, episode
   and move counts. Newest first, 50 a page with a cursor; cached 60 s.
 

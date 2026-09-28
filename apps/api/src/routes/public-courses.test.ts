@@ -1,5 +1,5 @@
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
-import type { CourseDocument, PublicCourseResponse } from '@freechesscoach/shared';
+import { CourseCatalogResponseSchema, type CourseCatalogResponse, type CourseDocument, type PublicCourseResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build-app.js';
@@ -90,6 +90,63 @@ describe('public course routes', () => {
     // The creator's routes stay behind the login, however the path is dressed up.
     for (const url of ['/api/courses', '/api/public/../courses', '/api/public/%2E%2E/courses', '/api/public/..%2Fcourses']) {
       expect((await app.inject({ method: 'GET', url })).statusCode, url).toBeOneOf([401, 404]);
+    }
+    await app.close();
+  });
+
+  test('the catalogue lists public courses only, newest first, a page at a time', async () => {
+    const app = buildTestApp({ db, authMode: 'proxy' });
+    await app.ready();
+    const catalogue = async (query = '') => {
+      const response = await app.inject({ method: 'GET', url: `/api/public/courses${query}` });
+      expect(response.statusCode).toBe(200);
+      return CourseCatalogResponseSchema.parse(response.json());
+    };
+    const slugs = async (query = '') => (await catalogue(query)).items.map((item) => item.slug).filter((slug) => slug.startsWith('cat-'));
+
+    await insertCourse('cat-unlisted-aaaaaaaaaaaa', 'unlisted');
+    await insertCourse('cat-draft-bbbbbbbbbbbb', 'draft');
+    await insertCourse('cat-removed-cccccccccccc', 'removed');
+    const first = await insertCourse('cat-first-dddddddddddd', 'public');
+    const second = await insertCourse('cat-second-eeeeeeeeeeee', 'public');
+    await db.updateTable('courses').set({ publishedAt: new Date('2026-01-01T00:00:00Z') }).where('id', '=', first).execute();
+    await db.updateTable('courses').set({ publishedAt: new Date('2026-02-01T00:00:00Z') }).where('id', '=', second).execute();
+
+    const listed = await catalogue();
+    expect(listed.items.filter((item) => item.slug.startsWith('cat-')).map((item) => item.slug)).toEqual(['cat-second-eeeeeeeeeeee', 'cat-first-dddddddddddd']);
+    expect(listed.items.find((item) => item.slug === 'cat-first-dddddddddddd')).toEqual({
+      slug: 'cat-first-dddddddddddd',
+      title: 'Englund trap',
+      promise: '',
+      kind: 'trap',
+      levelBand: 'improving',
+      coachPersona: 'commander',
+      learnerSide: 'black',
+      publishedAt: '2026-01-01T00:00:00.000Z',
+      episodes: 1,
+      moves: trapDocument().nodes.length
+    });
+    expect(JSON.stringify(listed)).not.toContain('example.com');
+
+    const response = await app.inject({ method: 'GET', url: '/api/public/courses' });
+    expect(response.headers['cache-control']).toBe('public, max-age=60');
+
+    // A page of one, then the next from its cursor.
+    const page = await catalogue('?limit=1&kind=trap');
+    expect(page.items).toHaveLength(1);
+    expect(page.nextCursor).not.toBeNull();
+    const all: string[] = [];
+    let cursor: string | null = null;
+    do {
+      const next: CourseCatalogResponse = await catalogue(`?limit=1${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+      all.push(...next.items.map((item) => item.slug));
+      cursor = next.nextCursor;
+    } while (cursor);
+    expect(all.filter((slug) => slug.startsWith('cat-'))).toEqual(['cat-second-eeeeeeeeeeee', 'cat-first-dddddddddddd']);
+
+    expect(await slugs('?kind=opening_course')).toEqual([]);
+    for (const query of ['?kind=nonsense', '?cursor=%%%', '?limit=500']) {
+      expect((await app.inject({ method: 'GET', url: `/api/public/courses${query}` })).statusCode, query).toBe(400);
     }
     await app.close();
   });

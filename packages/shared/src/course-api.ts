@@ -77,6 +77,33 @@ export const PublicCourseResponseSchema = z.object({
 });
 export type PublicCourseResponse = z.infer<typeof PublicCourseResponseSchema>;
 
+/** docs/courses.md §9: the catalogue lists `public` courses only; unlisted
+ * ones are reached by their link alone. `cursor` is the last page's
+ * `nextCursor`. */
+export const CourseCatalogQuerySchema = z.object({
+  kind: CourseKindSchema.optional(),
+  cursor: z.string().regex(/^[A-Za-z0-9_-]{1,120}$/).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(50)
+});
+export type CourseCatalogQuery = z.infer<typeof CourseCatalogQuerySchema>;
+
+export const CourseCatalogItemSchema = z.object({
+  slug: z.string(),
+  title: z.string(),
+  promise: z.string(),
+  kind: CourseKindSchema,
+  levelBand: z.enum(RATING_BANDS),
+  coachPersona: z.enum(COACH_PERSONAS),
+  learnerSide: z.enum(['white', 'black']),
+  publishedAt: z.string(),
+  episodes: z.number().int(),
+  moves: z.number().int()
+});
+export type CourseCatalogItem = z.infer<typeof CourseCatalogItemSchema>;
+
+export const CourseCatalogResponseSchema = z.object({ items: z.array(CourseCatalogItemSchema), nextCursor: z.string().nullable() });
+export type CourseCatalogResponse = z.infer<typeof CourseCatalogResponseSchema>;
+
 /** docs/courses.md §11: the learner's own calendar day, YYYY-MM-DD. */
 export const CourseDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 /** A position + move: the normalised FEN key (no move clocks), `|`, the UCI move. */

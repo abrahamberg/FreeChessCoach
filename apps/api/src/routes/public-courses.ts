@@ -1,12 +1,12 @@
-import type { PublicCourseResponse } from '@freechesscoach/shared';
+import { CourseCatalogQuerySchema, type CourseCatalogResponse, type PublicCourseResponse } from '@freechesscoach/shared';
 import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import { z } from 'zod';
 import type { Database } from '../db/schema.js';
-import { NotFoundError } from '../lib/errors.js';
+import { NotFoundError, ValidationError } from '../lib/errors.js';
 import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.js';
 import type { AudioMirror } from '../services/courses/audio-mirror.js';
-import { publicCourse, publicNoteAudio } from '../services/courses/public-course.js';
+import { courseCatalogue, publicCourse, publicNoteAudio } from '../services/courses/public-course.js';
 
 const SlugParamsSchema = z.object({ slug: z.string().regex(/^[a-z0-9-]{1,80}$/) });
 const AudioParamsSchema = SlugParamsSchema.extend({ file: z.string().max(40) });
@@ -20,6 +20,15 @@ const AudioParamsSchema = SlugParamsSchema.extend({ file: z.string().max(40) });
  */
 export function registerPublicCoursesRoutes(app: FastifyInstance, db: Kysely<Database>, audioMirror?: AudioMirror): void {
   const limit = rateLimitConfig(ROUTE_RATE_LIMITS.publicCourse);
+
+  // The catalogue: public courses only; unlisted ones are for their link.
+  app.get('/api/public/courses', limit, async (request, reply): Promise<CourseCatalogResponse> => {
+    const query = CourseCatalogQuerySchema.safeParse(request.query);
+    if (!query.success) throw new ValidationError(query.error.issues.map((issue) => issue.message).join('; '));
+    const page = await courseCatalogue(db, query.data);
+    void reply.header('cache-control', 'public, max-age=60');
+    return page;
+  });
 
   app.get('/api/public/courses/:slug', limit, async (request, reply): Promise<PublicCourseResponse> => {
     const { slug } = parseParams(SlugParamsSchema, request.params);

@@ -51,6 +51,56 @@ export function findPublishedBySlug(db: Kysely<Database>, slug: string): Promise
     .executeTakeFirst();
 }
 
+export interface CatalogRow {
+  id: string;
+  slug: string;
+  title: string;
+  promise: string | null;
+  kind: CourseKind;
+  levelBand: string | null;
+  coachPersona: string | null;
+  learnerSide: string | null;
+  publishedAt: Date;
+  /** `published_at` to the microsecond, for the next page's cursor. */
+  cursorAt: string;
+  episodes: number;
+  moves: number;
+}
+
+/** docs/courses.md §9: `public` courses with a published copy, newest first,
+ * read from the published copy (the title a learner sees). `before` is the
+ * last row of the previous page. */
+export function listPublic(
+  db: Kysely<Database>,
+  options: { kind?: CourseKind; before?: { cursorAt: string; id: string }; limit: number }
+): Promise<CatalogRow[]> {
+  let query = db
+    .selectFrom('courses')
+    .select([
+      'id',
+      'slug',
+      'kind',
+      'publishedAt',
+      sql<string>`published_at::text`.as('cursorAt'),
+      sql<string>`published_document->>'title'`.as('title'),
+      sql<string | null>`published_document->>'promise'`.as('promise'),
+      sql<string | null>`published_document->>'levelBand'`.as('levelBand'),
+      sql<string | null>`published_document->>'coachPersona'`.as('coachPersona'),
+      sql<string | null>`published_document->>'learnerSide'`.as('learnerSide'),
+      sql<number>`jsonb_array_length(published_document->'episodes')`.as('episodes'),
+      sql<number>`jsonb_array_length(published_document->'nodes')`.as('moves')
+    ])
+    .where('status', '=', 'public')
+    .where('publishedDocument', 'is not', null)
+    .where('publishedAt', 'is not', null);
+  if (options.kind) query = query.where('kind', '=', options.kind);
+  if (options.before) {
+    const { cursorAt, id } = options.before;
+    query = query.where(sql<boolean>`(published_at, id) < (${cursorAt}::timestamptz, ${id}::uuid)`);
+  }
+  return query.orderBy('publishedAt', 'desc').orderBy('id', 'desc').limit(options.limit).execute() as Promise<CatalogRow[]>;
+}
+
 /** No owner check: the generation job, which runs for the owner. */
 export function findById(db: Kysely<Database>, id: string): Promise<CourseRow | undefined> {
   return db.selectFrom('courses').selectAll().where('id', '=', id).executeTakeFirst();

@@ -1,9 +1,9 @@
-import { CourseDocumentSchema, type PublicCourseResponse } from '@freechesscoach/shared';
+import { CourseCatalogItemSchema, CourseDocumentSchema, type CourseCatalogQuery, type CourseCatalogResponse, type PublicCourseResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as courseAudioRepo from '../../db/repositories/course-audio.js';
 import * as coursesRepo from '../../db/repositories/courses.js';
 import type { Database } from '../../db/schema.js';
-import { NotFoundError } from '../../lib/errors.js';
+import { NotFoundError, ValidationError } from '../../lib/errors.js';
 import type { AudioMirror } from './audio-mirror.js';
 import { audioFileUrl } from './audio-mirror-sync.js';
 import { noteHashes } from './note-audio.js';
@@ -40,4 +40,40 @@ export async function publicNoteAudio(db: Kysely<Database>, slug: string, file: 
   const document = CourseDocumentSchema.parse(row.publishedDocument);
   if (!audio || !noteHashes(document).some((note) => note.hash === audio.textHash)) throw new NotFoundError('No such note audio');
   return { mimeType: audio.mimeType, bytes: audio.bytes };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/** Postgres's text for a timestamptz: `2026-02-01 00:00:00.123456+00`. */
+const PG_TIMESTAMP = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?[+-]\d{2}(?::\d{2})?$/;
+
+/** docs/courses.md §9: one page of the catalogue. The cursor is the last
+ * row's published time (to the microsecond) and id, so a course published
+ * meanwhile neither repeats nor skips a row. */
+export async function courseCatalogue(db: Kysely<Database>, query: CourseCatalogQuery): Promise<CourseCatalogResponse> {
+  const rows = await coursesRepo.listPublic(db, { kind: query.kind, before: query.cursor ? decodeCursor(query.cursor) : undefined, limit: query.limit + 1 });
+  const page = rows.slice(0, query.limit);
+  const last = page.at(-1);
+  return {
+    items: page.map((row) =>
+      CourseCatalogItemSchema.parse({
+        slug: row.slug,
+        title: row.title,
+        promise: row.promise ?? '',
+        kind: row.kind,
+        levelBand: row.levelBand,
+        coachPersona: row.coachPersona,
+        learnerSide: row.learnerSide,
+        publishedAt: row.publishedAt.toISOString(),
+        episodes: row.episodes,
+        moves: row.moves
+      })
+    ),
+    nextCursor: rows.length > query.limit && last ? Buffer.from(`${last.cursorAt}|${last.id}`).toString('base64url') : null
+  };
+}
+
+function decodeCursor(cursor: string): { cursorAt: string; id: string } {
+  const [cursorAt, id] = Buffer.from(cursor, 'base64url').toString('utf8').split('|');
+  if (!cursorAt || !id || !UUID.test(id) || !PG_TIMESTAMP.test(cursorAt)) throw new ValidationError('Not a catalogue cursor');
+  return { cursorAt, id };
 }
