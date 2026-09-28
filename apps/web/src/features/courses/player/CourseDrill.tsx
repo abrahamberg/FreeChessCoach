@@ -30,6 +30,9 @@ export interface CourseDrillProps {
   /** Where results go; absent in the editor's preview, which saves nothing. */
   progress?: CourseProgressStore | null;
   courseSlug?: string;
+  /** Practice: the moves already known (drill key → state), saved from last time. */
+  knownMoves?: Readonly<Record<string, PracticeMoveState>>;
+  onKnownMoves?: (practice: Record<string, PracticeMoveState>) => void;
   /** The stage is finished; the learner may go on to the next one. */
   onStageDone: (stage: PlayedStage) => void;
   /** Opens the next stage ("Now without arrows", "Now both sides"). */
@@ -64,11 +67,15 @@ interface RoundResult {
  * move counts for the review schedule. A different move is rated in the
  * browser like the quiz (a move about as good is accepted, no penalty).
  */
-export function CourseDrill({ document, stage, progress, courseSlug, onStageDone, onNextStage, onExit }: CourseDrillProps): ReactNode {
+export function CourseDrill({ document, stage, progress, courseSlug, knownMoves, onKnownMoves, onStageDone, onNextStage, onExit }: CourseDrillProps): ReactNode {
   const reviewed = stage !== 'practice';
   const sides = stage === 'full_drill' ? 'both' : 'learner';
   const [states, setStates] = useState<Map<string, CourseReviewState> | null>(progress && reviewed ? null : new Map());
-  const [practice, setPractice] = useState<Map<string, PracticeMoveState>>(new Map());
+  const [practice, setPractice] = useState<Map<string, PracticeMoveState>>(() => new Map(Object.entries(knownMoves ?? {})));
+  const practiceChanged = useRef(false);
+  useEffect(() => {
+    if (practiceChanged.current) onKnownMoves?.(Object.fromEntries(practice));
+  }, [practice]);
   const [round, setRound] = useState(0);
   const [finished, setFinished] = useState<RoundResult | null>(null);
 
@@ -148,7 +155,10 @@ export function CourseDrill({ document, stage, progress, courseSlug, onStageDone
       arrowKeys={run.arrowKeys}
       onResult={(result) => {
         if (reviewed) void progress?.record([{ ...result, courseSlug: courseSlug ?? '' }]).catch(() => undefined);
-        else setPractice((prev) => new Map(prev).set(result.key, nextPracticeState(prev.get(result.key), result.correct)));
+        else {
+          practiceChanged.current = true;
+          setPractice((prev) => new Map(prev).set(result.key, nextPracticeState(prev.get(result.key), result.correct)));
+        }
       }}
       onFinished={setFinished}
       onExit={onExit}

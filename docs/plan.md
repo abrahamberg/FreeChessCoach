@@ -916,9 +916,15 @@ Commit: `feat(courses): keep each learner's stage and place in a course`
 **Read:** `player/CoursePlayer.tsx`, `player/useCourseProgressStore.ts`.
 **Files:** those, a new `player/useCourseEnrollment.ts` + test.
 
-- [ ] Failing test first: a saved stage and place open the player there, with
+Status: done 2026-09-28. Without `?stage=` the saved stage opens; with it,
+that stage opens with the stages finished before. The notice reads "Welcome
+back: you were on Drill" (with the episode and move in the play-through) and
+has "Start over". Nothing is saved until the learner does something. The
+tests are in `CoursePlayer.test.tsx`.
+
+- [x] Failing test first: a saved stage and place open the player there, with
   "Continue where you left off: Drill, move 5 of 15" and "Start over".
-- [ ] Saves the place as the learner moves (debounced, about 1 s) and on each
+- [x] Saves the place as the learner moves (debounced, about 1 s) and on each
   finished stage; the editor's preview saves nothing.
 
 Commit: `feat(courses): pick a course up where you left it`

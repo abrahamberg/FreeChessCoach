@@ -48,9 +48,10 @@ export function LearnPage(): ReactNode {
   );
 }
 
-/** `?stage=practice` and so on; `?drill=1` is the older link for the drill. */
-function stageFromSearch(search: URLSearchParams): CourseStage {
+/** `?stage=practice` and so on; `?drill=1` is the older link for the drill.
+ * None: the learner's saved stage, else the play-through. */
+function stageFromSearch(search: URLSearchParams): CourseStage | undefined {
   const stage = search.get('stage');
   if ((COURSE_STAGES as readonly string[]).includes(stage ?? '')) return stage as CourseStage;
-  return search.get('drill') === '1' ? 'drill' : 'play_through';
+  return search.get('drill') === '1' ? 'drill' : undefined;
 }

@@ -351,3 +351,10 @@
   background: var(--color-on-primary);
   color: var(--color-primary);
 }
+
+.course-player__welcome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}

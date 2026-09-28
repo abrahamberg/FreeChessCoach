@@ -1,6 +1,6 @@
 import { nextCourseStage, type CourseStage } from '@freechesscoach/chess-analysis';
-import { COACH_PERSONA_INFO, type CourseDocument, type CourseEpisode } from '@freechesscoach/shared';
-import { useRef, useState, type ReactNode } from 'react';
+import { COACH_PERSONA_INFO, type CourseDocument, type CourseEnrollmentPlace, type CourseEpisode } from '@freechesscoach/shared';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CoachAvatar } from '../../../components/CoachAvatar.js';
 import { CoachCard } from '../../../components/CoachCard.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
@@ -9,10 +9,11 @@ import { COURSE_KIND_INFO } from '../courseKinds.js';
 import { AskCoachPanel, AskCoachSignIn } from './AskCoachPanel.js';
 import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
 import { CourseDrill } from './CourseDrill.js';
-import { CourseStageBar } from './CourseStageBar.js';
+import { CourseStageBar, STAGE_LABELS } from './CourseStageBar.js';
 import type { CourseProgressStore } from './course-progress.js';
 import { episodeWalk, stepView } from './course-steps.js';
 import { judgeQuizMove } from './judge-quiz-move.js';
+import { useCourseEnrollment } from './useCourseEnrollment.js';
 import { useNoteAudio, type NoteAudioSource } from './useNoteAudio.js';
 import { YouTubeClip } from './YouTubeClip.js';
 import '../CourseEditor.css';
@@ -27,29 +28,74 @@ export interface CoursePlayerProps {
   /** Where drill results go (§11); absent in the preview, which saves nothing. */
   progress?: CourseProgressStore | null;
   courseSlug?: string;
-  /** The stage to open at (`?stage=`); the Due today link opens the drill. */
+  /** The stage to open at (`?stage=`); the Due today link opens the drill.
+   * Without it, a learner coming back opens where they left off. */
   startStage?: CourseStage;
 }
+
+const START: CourseEnrollmentPlace = { episode: 0, step: 0, practice: {} };
 
 /** docs/courses.md §9, §11: play through (the clip when linked, then each
  * episode on the board, move by move with the coach's notes, arrows and
  * voice) or drill the moves. A quiz waits for the learner's move; a
  * different move is rated in the browser with no AI. Takes a document, not a
  * slug, so the editor previews the draft. */
-export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug, startStage = 'play_through' }: CoursePlayerProps): ReactNode {
-  const [stage, setStage] = useState<CourseStage>(startStage);
+export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug, startStage }: CoursePlayerProps): ReactNode {
+  const [stage, setStage] = useState<CourseStage>(startStage ?? 'play_through');
   const [done, setDone] = useState<ReadonlySet<CourseStage>>(new Set());
+  const [place, setPlace] = useState<CourseEnrollmentPlace>(START);
+  /** Remounts the stage's view when a saved place or "Start over" replaces it. */
+  const [viewKey, setViewKey] = useState(0);
+  const [welcomeBack, setWelcomeBack] = useState(false);
   const audio = useNoteAudio(noteAudio);
   const coach = COACH_PERSONA_INFO[document.coachPersona].label;
+  const enrollment = useCourseEnrollment(courseSlug, progress);
+  /** The learner has done something here, so there is a place worth saving. */
+  const touchedRef = useRef(false);
+  const appliedRef = useRef(false);
 
+  // §11: coming back picks up where they left off (a stage asked for in the
+  // link still opens, with what they finished before).
+  useEffect(() => {
+    if (appliedRef.current || enrollment.saved === undefined) return;
+    appliedRef.current = true;
+    const saved = enrollment.saved;
+    if (!saved || touchedRef.current) return;
+    setDone(new Set(saved.stagesDone));
+    setPlace(saved.place);
+    if (!startStage) setStage(saved.stage);
+    setViewKey((key) => key + 1);
+    setWelcomeBack(true);
+  }, [enrollment.saved, startStage]);
+
+  useEffect(() => {
+    if (touchedRef.current) enrollment.save({ stage, place, stagesDone: [...done] });
+  }, [stage, done, place]);
+
+  const touch = (): void => {
+    touchedRef.current = true;
+  };
   const open = (next: CourseStage): void => {
+    touch();
     audio.stop();
     setStage(next);
   };
-  const finish = (finished: CourseStage): void => setDone((prev) => new Set(prev).add(finished));
+  const finish = (finished: CourseStage): void => {
+    touch();
+    setDone((prev) => new Set(prev).add(finished));
+  };
   const openNext = (): void => {
     const next = nextCourseStage(stage);
     if (next) open(next);
+  };
+  const startOver = (): void => {
+    touch();
+    audio.stop();
+    setStage('play_through');
+    setDone(new Set());
+    setPlace(START);
+    setViewKey((key) => key + 1);
+    setWelcomeBack(false);
   };
 
   return (
@@ -63,21 +109,41 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
         {document.promise && <p className="course-player__promise">{document.promise}</p>}
       </header>
       <CourseStageBar current={stage} done={done} onSelect={open} />
+      {welcomeBack && (
+        <p className="course-player__notice course-player__welcome">
+          Welcome back: you were on {STAGE_LABELS[stage]}
+          {stage === 'play_through' && place.step > 0 ? `, episode ${place.episode + 1}, move ${place.step}` : ''}.
+          <button type="button" className="btn-secondary" onClick={startOver}>
+            Start over
+          </button>
+        </p>
+      )}
       {stage === 'play_through' ? (
         <PlayThrough
+          key={viewKey}
           document={document}
           audio={audio}
           ask={askFor(progress, courseSlug)}
+          start={place}
+          onPlace={(episode, step) => {
+            touch();
+            setPlace((prev) => (prev.episode === episode && prev.step === step ? prev : { ...prev, episode, step }));
+          }}
           onFinished={() => finish('play_through')}
           onNextStage={openNext}
         />
       ) : (
         <CourseDrill
-          key={stage}
+          key={`${stage}:${viewKey}`}
           document={document}
           stage={stage}
           progress={progress}
           courseSlug={courseSlug}
+          knownMoves={place.practice}
+          onKnownMoves={(practice) => {
+            touch();
+            setPlace((prev) => ({ ...prev, practice }));
+          }}
           onStageDone={finish}
           onNextStage={openNext}
           onExit={() => open('play_through')}
@@ -100,14 +166,18 @@ interface PlayThroughProps {
   document: CourseDocument;
   audio: ReturnType<typeof useNoteAudio>;
   ask: AskCoach;
+  /** Where to open: the saved episode and step. */
+  start: CourseEnrollmentPlace;
+  onPlace: (episode: number, step: number) => void;
   onFinished: () => void;
   onNextStage: () => void;
 }
 
 /** §11 step 2: the clip, then each episode move by move; the takeaways and
  * the way to the drill at the end. */
-function PlayThrough({ document, audio, ask, onFinished, onNextStage }: PlayThroughProps): ReactNode {
-  const [episodeIndex, setEpisodeIndex] = useState(0);
+function PlayThrough({ document, audio, ask, start, onPlace, onFinished, onNextStage }: PlayThroughProps): ReactNode {
+  const [episodeIndex, setEpisodeIndex] = useState(() => Math.min(start.episode, Math.max(document.episodes.length - 1, 0)));
+  const startEpisode = useRef(episodeIndex);
   const [finished, setFinished] = useState(false);
   const episode = document.episodes[episodeIndex];
   const clip = document.clipLinks.youtube ?? document.clipLinks.shorts;
@@ -115,6 +185,7 @@ function PlayThrough({ document, audio, ask, onFinished, onNextStage }: PlayThro
   const openEpisode = (index: number): void => {
     audio.stop();
     setEpisodeIndex(index);
+    onPlace(index, 0);
   };
 
   return (
@@ -142,6 +213,8 @@ function PlayThrough({ document, audio, ask, onFinished, onNextStage }: PlayThro
           episode={episode}
           audio={audio}
           ask={ask}
+          startStep={episodeIndex === startEpisode.current ? start.step : 0}
+          onStep={(step) => onPlace(episodeIndex, step)}
           isLast={episodeIndex === document.episodes.length - 1}
           onDone={() => {
             if (episodeIndex < document.episodes.length - 1) openEpisode(episodeIndex + 1);
@@ -183,13 +256,15 @@ interface EpisodeViewProps {
   episode: CourseEpisode;
   audio: ReturnType<typeof useNoteAudio>;
   ask: AskCoach;
+  startStep: number;
+  onStep: (step: number) => void;
   isLast: boolean;
   onDone: () => void;
 }
 
-function EpisodeView({ document, episode, audio, ask, isLast, onDone }: EpisodeViewProps): ReactNode {
+function EpisodeView({ document, episode, audio, ask, startStep, onStep, isLast, onDone }: EpisodeViewProps): ReactNode {
   const walk = episodeWalk(document, episode);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => Math.min(startStep, walk.moves.length));
   const [solved, setSolved] = useState<'course' | 'alternative' | 'shown' | null>(null);
   const [hint, setHint] = useState(false);
   const [attempt, setAttempt] = useState<Attempt | null>(null);
@@ -209,6 +284,7 @@ function EpisodeView({ document, episode, audio, ask, isLast, onDone }: EpisodeV
     setAttempt(null);
     setJudgement(null);
     setStep(next);
+    onStep(next);
     const move = walk.moves[next - 1];
     if (next > step && move && episode.notes.some((note) => note.nodeId === move.id && note.text.trim())) audio.play(episode.id, move.id);
     else audio.stop();
