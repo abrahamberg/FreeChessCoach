@@ -161,4 +161,20 @@ describe('CourseDrill', () => {
     expect(screen.getByRole('img', { name: 'White' })).toBeTruthy();
     expect(screen.getByLabelText('Your move, hidden')).toBeTruthy();
   });
+
+  test('practice keeps one move log across episodes, and no line counter', async () => {
+    const split: CourseDocument = {
+      ...document,
+      episodes: [
+        { id: 'e1', role: 'line', focus: '', startNodeId: d4!.id, endNodeId: e5!.id, beats: [], drillNodeIds: [e5!.id], notes: [] },
+        { id: 'e2', role: 'line', focus: '', startNodeId: dxe5!.id, endNodeId: nc6!.id, beats: [], drillNodeIds: [nc6!.id], notes: [] }
+      ]
+    };
+    render(<CourseDrill document={split} stage="practice" {...handlers()} />);
+    await findPrompt();
+    act(() => board.play('e5', e5!.fenAfter, e5!.uci));
+    // Episode 2 begins with 2.dxe5 played for you; the log still has 1…e5.
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Last moves' }).textContent).toMatch(/You 2…Nc6.*Opponent 2\.dxe5.*You 1…e5/), { timeout: 2000 });
+    expect(screen.queryByText(/Line \d of/)).toBeNull();
+  });
 });

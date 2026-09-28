@@ -868,7 +868,9 @@ move" beside it, the reply with the course's note, and their previous move
 In practice the move to find shows what it does (the course's note) in place
 of "your move"; while the move is hidden, its name is blanked out of the note
 (`withoutMove`, `player/course-steps.ts`). "Show the move" is offered only
-once the arrow has gone (the arrow already shows it). The current move is named in practice only while its arrow shows,
+once the arrow has gone (the arrow already shows it). The log runs on across episodes
+(one sequence; a new episode does not clear it), and practice shows no
+"Line 1 of 3" counter. The current move is named in practice only while its arrow shows,
 and hidden (`?`) otherwise and in the drills.
 
 - [x] Failing tests first (mock `CoachBoard` as `CourseDrill.test.tsx`

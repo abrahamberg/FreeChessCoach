@@ -6,6 +6,7 @@ import {
   practiceAsks,
   practiceShowsArrow,
   type CourseDrill as Drill,
+  type CourseDrillStep,
   type CourseReviewState,
   type CourseStage,
   type PracticeMoveState
@@ -253,6 +254,8 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
   const [at, setAt] = useState({ episode: 0, step: 0 });
   const [firstTries, setFirstTries] = useState<Map<string, { san: string; correct: boolean }>>(new Map());
   const [attempt, setAttempt] = useState<Attempt | null>(null);
+  /** The last two moves played, across episodes (the move log). */
+  const [history, setHistory] = useState<{ step: CourseDrillStep; episodeId: string }[]>([]);
   const [judgement, setJudgement] = useState<Judgement | null>(null);
   const judgeRef = useRef(0);
 
@@ -268,6 +271,7 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
     setAttempt(null);
     setJudgement(null);
     if (!episode) return;
+    if (step) setHistory((prev) => [...prev.slice(-1), { step, episodeId: episode.episodeId }]);
     if (at.step + 1 < episode.steps.length) setAt({ episode: at.episode, step: at.step + 1 });
     else setAt({ episode: at.episode + 1, step: 0 });
   };
@@ -321,11 +325,12 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
   const notes = document.episodes.find((each) => each.id === episode?.episodeId)?.notes ?? [];
   const who = (fenBefore: string, learnerPlays: boolean): string =>
     stage === 'full_drill' ? (sideOf(fenBefore) === 'white' ? 'White' : 'Black') : learnerPlays ? 'You' : 'Opponent';
-  const played: MoveLogEntry[] = (episode?.steps.slice(Math.max(0, at.step - 2), at.step) ?? []).map((each) => ({
+  // One running sequence: a new episode does not start the log afresh.
+  const played: MoveLogEntry[] = history.map(({ step: each, episodeId }) => ({
     label: moveLabel(each.fenBefore, each.node.san),
     side: sideOf(each.fenBefore),
     who: who(each.fenBefore, each.asked),
-    note: notes.find((note) => note.nodeId === each.node.id)?.text.trim() || null,
+    note: document.episodes.find((one) => one.id === episodeId)?.notes.find((note) => note.nodeId === each.node.id)?.text.trim() || null,
     result: each.asked ? (firstTries.get(each.key)?.correct === false ? 'shown' : 'right') : undefined
   }));
   const showMove = (): void => {
@@ -346,7 +351,8 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
         />
         <div className="course-player__nav">
           <span className="meta">
-            {drill.episodes.length > 1 ? `Line ${at.episode + 1} of ${drill.episodes.length} · ` : ''}
+            {/* In practice only the sequence matters, not which episode it is. */}
+            {stage !== 'practice' && drill.episodes.length > 1 ? `Line ${at.episode + 1} of ${drill.episodes.length} · ` : ''}
             {firstTries.size} of {asked.length} moves
           </span>
           <button type="button" className="btn-secondary" onClick={onExit}>
