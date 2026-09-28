@@ -1549,11 +1549,17 @@ Commit: `feat(courses): edit each move for the course and the clip`
 `features/courses/learn/CoursesHomePage.tsx`, `CoursesPage.tsx`.
 **Files:** those + tests.
 
-- [ ] The catalogue items carry the level; `?sort=curriculum|newest`
+- [x] The catalogue items carry the level; `?sort=curriculum|newest`
   (curriculum: rating, then order, then newest).
-- [ ] Browse and the studio: a Sort control (Curriculum, Newest); in
+- [x] Browse and the studio: a Sort control (Curriculum, Newest); in
   Curriculum order each card shows "1200-01", and the rows fall under level
   headings (1000, 1200, …).
+
+Status: done 2026-09-28. Curriculum order pages by position (an offset
+cursor), since level and place give no stable key to page after; newest
+keeps its date cursor. Browse opens in Curriculum order, the studio in
+Newest (sorted on the page). `learn/course-sort.tsx` has the order, the level
+groups and the Sort control.
 
 Commit: `feat(courses): sort courses by level and curriculum order`
 

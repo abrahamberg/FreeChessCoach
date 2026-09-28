@@ -15,6 +15,7 @@ const course = (overrides: Record<string, unknown>) => ({
   episodes: 6,
   moves: 16,
   generation: null,
+  level: null,
   ...overrides
 });
 
@@ -70,5 +71,17 @@ describe('CoursesPage (the Course studio)', () => {
     renderWith([]);
     expect(await screen.findByText(/Paste a PGN/)).toBeTruthy();
     expect(screen.getAllByRole('link', { name: 'New course' }).length).toBeGreaterThan(0);
+  });
+
+  test('sorted by curriculum: level, then place, no level last', async () => {
+    renderWith([
+      course({ id: 'a', title: 'No level' }),
+      course({ id: 'b', title: 'Second at 1200', level: { rating: 1200, order: 2 } }),
+      course({ id: 'c', title: 'First at 1200', level: { rating: 1200, order: 1 } })
+    ]);
+    await screen.findByRole('heading', { name: 'No level' });
+    fireEvent.click(screen.getByRole('button', { name: 'Curriculum' }));
+    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual(['First at 1200', 'Second at 1200', 'No level']);
+    expect(screen.getByText('1200-02')).toBeTruthy();
   });
 });

@@ -26,7 +26,8 @@ const catalogueItem = (slug: string, title: string, kind = 'trap') => ({
   learnerSide: 'black',
   publishedAt: '2026-09-01T00:00:00.000Z',
   episodes: 3,
-  moves: 12
+  moves: 12,
+  level: null as { rating: number; order: number } | null
 });
 
 interface Data {
@@ -104,5 +105,19 @@ describe('CoursesHomePage', () => {
     fireEvent.click(await within(learning).findByRole('button', { name: 'Remove Englund trap from my learning' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Remove' }));
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/course-enrollments/englund-aaaaaaaaaaaa', expect.objectContaining({ method: 'DELETE' })));
+  });
+
+  test('Browse in curriculum order: courses under their level, each with its place', async () => {
+    const leveled = (slug: string, title: string, rating: number, order: number) => ({ ...catalogueItem(slug, title), level: { rating, order } });
+    renderWith({ catalogue: [leveled('b-bbbbbbbbbbbb', 'Two', 1200, 2), leveled('a-aaaaaaaaaaaa', 'One', 1200, 1), leveled('c-cccccccccccc', 'Three', 1400, 1)] });
+    const browse = await screen.findByRole('region', { name: 'Browse' });
+    expect(await within(browse).findByRole('heading', { name: /^1200/ })).toBeTruthy();
+    expect(within(browse).getByRole('heading', { name: /^1400/ })).toBeTruthy();
+    expect(within(browse).getAllByRole('link').map((link) => link.textContent)).toEqual([
+      expect.stringContaining('One'),
+      expect.stringContaining('Two'),
+      expect.stringContaining('Three')
+    ]);
+    expect(within(browse).getByText('1200-01')).toBeTruthy();
   });
 });

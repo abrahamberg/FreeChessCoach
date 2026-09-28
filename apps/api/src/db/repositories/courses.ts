@@ -17,6 +17,7 @@ export interface CourseSummaryRow {
   promise: string | null;
   episodes: number | null;
   moves: number | null;
+  level: { rating: number; order: number } | null;
   generation: CourseGeneration | null;
 }
 
@@ -70,14 +71,17 @@ export interface CatalogRow {
   cursorAt: string;
   episodes: number;
   moves: number;
+  level: { rating: number; order: number } | null;
 }
 
-/** docs/courses.md §9: `public` courses with a published copy, newest first,
+/** docs/courses.md §9: `public` courses with a published copy, newest first
+ * (or, `curriculum`, by level: rating, then place, then newest; paged by
+ * position, `offset`),
  * read from the published copy (the title a learner sees). `before` is the
  * last row of the previous page. */
 export function listPublic(
   db: Kysely<Database>,
-  options: { kind?: CourseKind; before?: { cursorAt: string; id: string }; limit: number }
+  options: { kind?: CourseKind; before?: { cursorAt: string; id: string }; limit: number; sort?: 'curriculum' | 'newest'; offset?: number }
 ): Promise<CatalogRow[]> {
   let query = db
     .selectFrom('courses')
@@ -93,7 +97,8 @@ export function listPublic(
       sql<string | null>`published_document->>'coachPersona'`.as('coachPersona'),
       sql<string | null>`published_document->>'learnerSide'`.as('learnerSide'),
       sql<number>`jsonb_array_length(published_document->'episodes')`.as('episodes'),
-      sql<number>`jsonb_array_length(published_document->'nodes')`.as('moves')
+      sql<number>`jsonb_array_length(published_document->'nodes')`.as('moves'),
+      sql<{ rating: number; order: number } | null>`published_document->'level'`.as('level')
     ])
     .where('status', '=', 'public')
     .where('publishedDocument', 'is not', null)
@@ -102,6 +107,12 @@ export function listPublic(
   if (options.before) {
     const { cursorAt, id } = options.before;
     query = query.where(sql<boolean>`(published_at, id) < (${cursorAt}::timestamptz, ${id}::uuid)`);
+  }
+  if (options.sort === 'curriculum') {
+    query = query
+      .orderBy(sql`(published_document->'level'->>'rating')::int`, sql`asc nulls last`)
+      .orderBy(sql`(published_document->'level'->>'order')::int`, sql`asc nulls last`)
+      .offset(options.offset ?? 0);
   }
   return query.orderBy('publishedAt', 'desc').orderBy('id', 'desc').limit(options.limit).execute() as Promise<CatalogRow[]>;
 }
@@ -175,6 +186,7 @@ export function listByOwner(db: Kysely<Database>, ownerId: string): Promise<Cour
       'publishedAt',
       'updatedAt',
       'generation',
+      sql<{ rating: number; order: number } | null>`document->'level'`.as('level'),
       sql<string | null>`document->>'promise'`.as('promise'),
       sql<number | null>`jsonb_array_length(document->'episodes')`.as('episodes'),
       sql<number | null>`jsonb_array_length(document->'nodes')`.as('moves')

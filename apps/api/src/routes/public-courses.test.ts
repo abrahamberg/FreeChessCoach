@@ -37,9 +37,9 @@ function trapDocument(): CourseDocument {
   };
 }
 
-async function insertCourse(slug: string, status: 'draft' | 'unlisted' | 'public' | 'removed'): Promise<string> {
+async function insertCourse(slug: string, status: 'draft' | 'unlisted' | 'public' | 'removed', level?: CourseDocument['level']): Promise<string> {
   const owner = await usersRepo.insert(db, { email: `${slug}@example.com`, displayName: 'Creator', engineMode: 'chess_api' });
-  const document = trapDocument();
+  const document = { ...trapDocument(), ...(level ? { level } : {}) };
   const row = await coursesRepo.insert(db, { ownerId: owner.id, slug, kind: 'trap', title: document.title, sourcePgn: ENGLUND, direction: '', document });
   if (status !== 'draft') await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted');
   if (status === 'public' || status === 'removed') await coursesRepo.setStatus(db, row.id, status);
@@ -111,6 +111,32 @@ describe('public course routes', () => {
     await app.close();
   });
 
+  test('curriculum order: by level, then place; courses with no level last; paged by position', async () => {
+    const app = buildTestApp({ db, authMode: 'proxy' });
+    await app.ready();
+    await insertCourse('cur-1400-01-aaaaaaaaaaaa', 'public', { rating: 1400, order: 1 });
+    await insertCourse('cur-1200-02-bbbbbbbbbbbb', 'public', { rating: 1200, order: 2 });
+    await insertCourse('cur-none-cccccccccccc', 'public');
+    await insertCourse('cur-1200-01-dddddddddddd', 'public', { rating: 1200, order: 1 });
+    const page = async (query: string) => CourseCatalogResponseSchema.parse((await app.inject({ method: 'GET', url: `/api/public/courses${query}` })).json());
+    const ours = (items: { slug: string }[]) => items.map((item) => item.slug).filter((slug) => slug.startsWith('cur-'));
+
+    const all = await page('?sort=curriculum');
+    expect(ours(all.items)).toEqual(['cur-1200-01-dddddddddddd', 'cur-1200-02-bbbbbbbbbbbb', 'cur-1400-01-aaaaaaaaaaaa', 'cur-none-cccccccccccc']);
+    expect(all.items.find((item) => item.slug === 'cur-1200-02-bbbbbbbbbbbb')?.level).toEqual({ rating: 1200, order: 2 });
+
+    const seen: string[] = [];
+    let cursor: string | null = null;
+    do {
+      const next: CourseCatalogResponse = await page(`?sort=curriculum&limit=2${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+      seen.push(...next.items.map((item) => item.slug));
+      cursor = next.nextCursor;
+    } while (cursor);
+    expect(ours(seen.map((slug) => ({ slug })))).toEqual(ours(all.items));
+    expect((await app.inject({ method: 'GET', url: '/api/public/courses?sort=best' })).statusCode).toBe(400);
+    await app.close();
+  });
+
   test('the catalogue lists public courses only, newest first, a page at a time', async () => {
     const app = buildTestApp({ db, authMode: 'proxy' });
     await app.ready();
@@ -141,7 +167,8 @@ describe('public course routes', () => {
       learnerSide: 'black',
       publishedAt: '2026-01-01T00:00:00.000Z',
       episodes: 1,
-      moves: trapDocument().nodes.length
+      moves: trapDocument().nodes.length,
+      level: null
     });
     expect(JSON.stringify(listed)).not.toContain('example.com');
 

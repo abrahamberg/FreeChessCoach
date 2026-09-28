@@ -91,3 +91,49 @@
     min-height: 44px;
   }
 }
+
+/* Phase 90: sorting by curriculum (level, then place). */
+.courses-home__browse-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.courses-home__browse-header .games-page__section-heading,
+.courses-home__browse-header .courses-home__filters {
+  margin: 0;
+}
+
+.courses-home__sort {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.courses-home__level + .courses-home__level {
+  margin-top: var(--space-5);
+}
+
+.courses-home__level-heading {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-md);
+}
+
+.courses-home__code {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.courses-home__code + .courses-home__status {
+  margin-left: 0;
+}

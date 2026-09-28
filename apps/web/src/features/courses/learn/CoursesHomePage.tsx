@@ -1,4 +1,4 @@
-import { COURSE_KINDS, type CourseCatalogItem, type CourseEnrollment, type CourseKind, type CourseReviewDueResponse } from '@freechesscoach/shared';
+import { bandForRating, COURSE_KINDS, levelCode, type CourseCatalogItem, type CourseEnrollment, type CourseKind, type CourseReviewDueResponse } from '@freechesscoach/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
@@ -11,7 +11,8 @@ import { useCourseEnrollments } from '../../games/useCourseEnrollments.js';
 import { useCourseReviewsDue } from '../../games/useCourseReviewsDue.js';
 import { BAND_LABELS } from '../../settings/BandSelect.js';
 import { COURSE_KIND_INFO } from '../courseKinds.js';
-import { useCourseCatalogue } from './useCourseCatalogue.js';
+import { useCourseCatalogue, type CatalogueSort } from './useCourseCatalogue.js';
+import { SortControl, levelGroups } from './course-sort.js';
 import '../../games/GameCard.css';
 import '../../games/GamesPage.css';
 import '../../games/RailCard.css';
@@ -26,8 +27,9 @@ type DueCourse = CourseReviewDueResponse['courses'][number];
 export function CoursesHomePage(): ReactNode {
   const queryClient = useQueryClient();
   const [kind, setKind] = useState<CourseKind | null>(null);
+  const [sort, setSort] = useState<CatalogueSort>('curriculum');
   const enrollments = useCourseEnrollments();
-  const catalogue = useCourseCatalogue(kind);
+  const catalogue = useCourseCatalogue(kind, sort);
   const due = useCourseReviewsDue().data?.courses ?? [];
   const remove = useMutation({
     mutationFn: (slug: string) => apiDelete(`/api/course-enrollments/${encodeURIComponent(slug)}`),
@@ -59,7 +61,10 @@ export function CoursesHomePage(): ReactNode {
       </section>
 
       <section aria-label="Browse" className="games-page__section">
-        <h2 className="games-page__section-heading">Browse</h2>
+        <div className="courses-home__browse-header">
+          <h2 className="games-page__section-heading">Browse</h2>
+          <SortControl value={sort} onChange={setSort} />
+        </div>
         <div className="courses-home__filters" role="group" aria-label="Kind of course">
           <button type="button" className="courses-home__filter" aria-pressed={kind === null} onClick={() => setKind(null)}>
             All
@@ -75,13 +80,29 @@ export function CoursesHomePage(): ReactNode {
         {catalogue.isSuccess && !catalogue.data.items.length && (
           <p className="courses-home__empty">{kind ? `No public ${COURSE_KIND_INFO[kind].label.toLowerCase()} courses yet.` : 'No public courses yet.'}</p>
         )}
-        {catalogue.isSuccess && catalogue.data.items.length > 0 && (
-          <div className="courses-home__grid">
-            {catalogue.data.items.map((course) => (
-              <CatalogueCard key={course.slug} course={course} status={status.get(course.slug)} />
-            ))}
-          </div>
-        )}
+        {catalogue.isSuccess &&
+          catalogue.data.items.length > 0 &&
+          (sort === 'curriculum' ? (
+            levelGroups(catalogue.data.items).map((group) => (
+              <div key={group.rating ?? 'none'} className="courses-home__level">
+                <h3 className="courses-home__level-heading">
+                  {group.rating === null ? 'Other courses' : `${group.rating}`}
+                  {group.rating !== null && <span className="meta"> · {BAND_LABELS[bandForRating(group.rating)]}</span>}
+                </h3>
+                <div className="courses-home__grid">
+                  {group.items.map((course) => (
+                    <CatalogueCard key={course.slug} course={course} status={status.get(course.slug)} />
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="courses-home__grid">
+              {catalogue.data.items.map((course) => (
+                <CatalogueCard key={course.slug} course={course} status={status.get(course.slug)} />
+              ))}
+            </div>
+          ))}
       </section>
 
       <section aria-label="Learned" className="games-page__section">
@@ -107,6 +128,7 @@ function CatalogueCard({ course, status }: { course: CourseCatalogItem; status?:
           <BookIcon width={16} height={16} />
           {COURSE_KIND_INFO[course.kind].label}
         </span>
+        {course.level && <span className="courses-home__code">{levelCode(course.level)}</span>}
         {status && <span className="badge badge--primary courses-home__status">{status}</span>}
       </span>
       <span className="rail-card__title rail-card__title-wrap">{course.title}</span>

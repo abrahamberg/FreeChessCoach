@@ -92,6 +92,7 @@ export async function listCourses(db: Kysely<Database>, ownerId: string): Promis
         promise: row.promise ?? '',
         episodes: row.episodes ?? 0,
         moves: row.moves ?? 0,
+        level: row.level ?? null,
         generation: generation && { status: generation.status, done: generation.done, total: generation.total }
       };
     })

@@ -1,10 +1,12 @@
-import type { CourseStatus, CourseSummary } from '@freechesscoach/shared';
+import { levelCode, type CourseStatus, type CourseSummary } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
 import { BookIcon, EditIcon, ExternalLinkIcon, PlusIcon } from '../../components/Icon.js';
 import { shortDate } from '../games/gameDisplay.js';
 import { useCourses } from './courseApi.js';
+import { SortControl, byCurriculum } from './learn/course-sort.js';
+import type { CatalogueSort } from './learn/useCourseCatalogue.js';
 import { COURSE_KIND_INFO } from './courseKinds.js';
 import '../games/GameCard.css';
 import '../games/GamesPage.css';
@@ -33,8 +35,11 @@ const FILTERS: [Filter, string][] = [
 export function CoursesPage(): ReactNode {
   const courses = useCourses();
   const [filter, setFilter] = useState<Filter>('all');
+  const [sort, setSort] = useState<CatalogueSort>('newest');
   const list = courses.data?.courses ?? [];
-  const shown = list.filter((course) => filter === 'all' || (filter === 'drafts' ? course.status === 'draft' : course.status === 'unlisted' || course.status === 'public'));
+  const filtered = list.filter((course) => filter === 'all' || (filter === 'drafts' ? course.status === 'draft' : course.status === 'unlisted' || course.status === 'public'));
+  // The API lists the newest edit first; curriculum is level, then place.
+  const shown = sort === 'curriculum' ? byCurriculum(filtered) : filtered;
 
   return (
     <div className="page courses-home studio">
@@ -60,12 +65,15 @@ export function CoursesPage(): ReactNode {
 
       {list.length > 0 && (
         <section aria-label="Your courses" className="games-page__section">
-          <div className="courses-home__filters" role="group" aria-label="Show">
-            {FILTERS.map(([value, label]) => (
-              <button key={value} type="button" className="courses-home__filter" aria-pressed={filter === value} onClick={() => setFilter(value)}>
-                {label}
-              </button>
-            ))}
+          <div className="courses-home__browse-header">
+            <div className="courses-home__filters" role="group" aria-label="Show">
+              {FILTERS.map(([value, label]) => (
+                <button key={value} type="button" className="courses-home__filter" aria-pressed={filter === value} onClick={() => setFilter(value)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <SortControl value={sort} onChange={setSort} />
           </div>
           {shown.length ? (
             <div className="courses-home__grid">
@@ -94,6 +102,7 @@ function StudioCard({ course }: { course: CourseSummary }): ReactNode {
           <BookIcon width={16} height={16} />
           {COURSE_KIND_INFO[course.kind].label}
         </span>
+        {course.level && <span className="courses-home__code">{levelCode(course.level)}</span>}
         <span className={`${status.badge} courses-home__status`}>{status.label}</span>
       </span>
       <h2 className="rail-card__title rail-card__title-wrap studio__title">

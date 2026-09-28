@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { MoveQualitySchema } from './analysis.js';
 import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
-import { CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseStatusSchema } from './course.js';
+import { CourseDocumentSchema, CourseGenerationSchema, CourseKindSchema, CourseLevelSchema, CourseStatusSchema } from './course.js';
 
 /** The intake form (docs/courses.md §5.3). `learnerSide` null lets code
  * infer it (§3); the route refuses when it can't. */
@@ -51,6 +51,7 @@ export const CourseSummarySchema = z.object({
   promise: z.string(),
   episodes: z.number().int(),
   moves: z.number().int(),
+  level: CourseLevelSchema.nullable(),
   generation: z.object({ status: CourseGenerationSchema.shape.status, done: z.number(), total: z.number() }).nullable()
 });
 export type CourseSummary = z.infer<typeof CourseSummarySchema>;
@@ -98,6 +99,8 @@ export type PublicCourseResponse = z.infer<typeof PublicCourseResponseSchema>;
  * `nextCursor`. */
 export const CourseCatalogQuerySchema = z.object({
   kind: CourseKindSchema.optional(),
+  /** Phase 90: `curriculum` is by level (rating, then place), `newest` by date. */
+  sort: z.enum(['curriculum', 'newest']).default('newest'),
   cursor: z.string().regex(/^[A-Za-z0-9_-]{1,120}$/).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(50)
 });
@@ -113,7 +116,9 @@ export const CourseCatalogItemSchema = z.object({
   learnerSide: z.enum(['white', 'black']),
   publishedAt: z.string(),
   episodes: z.number().int(),
-  moves: z.number().int()
+  moves: z.number().int(),
+  /** Where it sits in its level's curriculum; null when the creator set none. */
+  level: CourseLevelSchema.nullable()
 });
 export type CourseCatalogItem = z.infer<typeof CourseCatalogItemSchema>;
 

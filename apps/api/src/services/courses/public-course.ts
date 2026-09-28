@@ -59,7 +59,16 @@ const PG_TIMESTAMP = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?[+-]\d{2
  * row's published time (to the microsecond) and id, so a course published
  * meanwhile neither repeats nor skips a row. */
 export async function courseCatalogue(db: Kysely<Database>, query: CourseCatalogQuery): Promise<CourseCatalogResponse> {
-  const rows = await coursesRepo.listPublic(db, { kind: query.kind, before: query.cursor ? decodeCursor(query.cursor) : undefined, limit: query.limit + 1 });
+  const curriculum = query.sort === 'curriculum';
+  // Curriculum order has no stable key to page after, so it pages by position.
+  const offset = curriculum && query.cursor ? decodeOffset(query.cursor) : 0;
+  const rows = await coursesRepo.listPublic(db, {
+    kind: query.kind,
+    sort: query.sort,
+    offset,
+    before: !curriculum && query.cursor ? decodeCursor(query.cursor) : undefined,
+    limit: query.limit + 1
+  });
   const page = rows.slice(0, query.limit);
   const last = page.at(-1);
   return {
@@ -74,11 +83,21 @@ export async function courseCatalogue(db: Kysely<Database>, query: CourseCatalog
         learnerSide: row.learnerSide,
         publishedAt: row.publishedAt.toISOString(),
         episodes: row.episodes,
-        moves: row.moves
+        moves: row.moves,
+        level: row.level ?? null
       })
     ),
-    nextCursor: rows.length > query.limit && last ? Buffer.from(`${last.cursorAt}|${last.id}`).toString('base64url') : null
+    nextCursor:
+      rows.length > query.limit && last
+        ? Buffer.from(curriculum ? `o:${offset + query.limit}` : `${last.cursorAt}|${last.id}`).toString('base64url')
+        : null
   };
+}
+
+function decodeOffset(cursor: string): number {
+  const match = /^o:(\d{1,6})$/.exec(Buffer.from(cursor, 'base64url').toString('utf8'));
+  if (!match) throw new ValidationError('Not a catalogue cursor');
+  return Number(match[1]);
 }
 
 function decodeCursor(cursor: string): { cursorAt: string; id: string } {
