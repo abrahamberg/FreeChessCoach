@@ -71,6 +71,14 @@ llm:
 database:
   sslMode: disable
 
+# Published course audio copied to Cloudflare R2 and served from its custom
+# domain (docs/courses.md §9). Off while empty; learners then get the audio
+# from the api. Setup steps: README.md, "Before the first deploy with courses".
+# TODO(owner, at deploy): create the bucket, domain, token and Secret, then:
+# courseAudioMirror:
+#   existingSecret: course-audio-r2
+#   publicUrl: https://media.freechesscoach.org
+
 # The cluster ExternalSecret syncs the Bitwarden item
 # `freechesscoach-database-url` into this Secret under DATABASE_URL.
 externalDatabase:

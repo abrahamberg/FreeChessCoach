@@ -193,6 +193,7 @@ internalApi:
 ## The Secret holds endpoint (https://<account id>.r2.cloudflarestorage.com),
 ## bucket, accessKeyId and secretAccessKey (an R2 API token with Object Read
 ## & Write on that bucket only). publicUrl is the bucket's custom domain.
+## Step-by-step setup (a TODO at the first deploy with courses): README.md.
 courseAudioMirror:
   existingSecret: ""
   publicUrl: ""
