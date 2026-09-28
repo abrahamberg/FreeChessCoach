@@ -173,6 +173,13 @@ Kept to what the AI can't infer:
 | Learner side | Pre-filled by code (§3); editable. |
 | Coach | Pre-selected: the creator's own coach. Fixes the voice for the clip and the notes. |
 
+The page (`/studio/new`, `CourseIntakePage.tsx`) asks in four numbered cards:
+the moves (the PGN beside a small board of the line's end, "16 moves, 1
+line, you teach Black", or the parse errors), the kind (cards with a line
+each), what to teach (the kind's example as a "Use this example" chip), and
+who it is for (level, the learner's side as From the PGN / White / Black,
+the coach's portrait).
+
 Example directions shown in the form:
 - trap: "Englund Gambit trap for beginners. Make the viewer feel they'd play 6.Bc3 too."
 - opening_reel: "Italian Game main line for 1000-rated players. One plan to remember."
@@ -722,6 +729,15 @@ Decided with the owner:
   `removed`, deletes its files from the bucket, and prints the prefixes to
   purge in Cloudflare (the api's and the bucket domain's), since the edge may
   hold copies for up to a year. There is no admin UI yet.
+- **The Course studio** (`/studio`, creators only): the creator's courses as
+  cards (kind, Draft/Unlisted/Public/Removed, title, promise, moves and
+  episodes, the AI's progress while it writes; Edit, and Open once
+  published), filtered All / Drafts / Published; with none, the four steps
+  of making one. The editor (`/studio/:id/edit`) has a header (back, the
+  title edited in place, the status, Saved / Unsaved changes, Preview: Clip
+  | As learner, Publish, Save, "⋮" Build without AI), a Details card (the
+  promise, Write with AI) above the outline, and the episode panel in tabs:
+  Notes, Quiz, Clip, AI.
 - **Preview as learner** in the editor is the same `CoursePlayer` on the
   draft, each note voiced the first time it plays (browser cache first).
 - The evaluations come from the course's dossier (§5.4, each node's

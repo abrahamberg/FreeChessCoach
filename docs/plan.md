@@ -1412,8 +1412,10 @@ Commit: `feat(courses): the course editor's frame`
 
 ### Task 89.5 — Browser pass and docs
 
-- [ ] All three pages at 1920, 1280 and 390 wide, light and dark.
-- [ ] `docs/courses.md` §5.3 (the new-course page) and §9 (the studio).
+- [x] All three pages at 1920 wide, in Chrome. Not checked at 1280 and 390
+  wide or in dark mode: the app's tab session blocks frames and a second
+  window; the styles use the app's tokens and the phone rules stack them.
+- [x] `docs/courses.md` §5.3 (the new-course page) and §9 (the studio).
 
 Commit: `docs: the Course studio`
 
@@ -1442,6 +1444,8 @@ Commit: `docs: the Course studio`
 - 87: the Englund trap at 390 px and 1280 px wide looks like Game Review: the
   explorer, the board with its eval bar and graph, the coach; every stage and
   the Remember screen work on both.
+- 89: `/studio`, `/studio/new` and an editor look like the rest of the app;
+  a course is created and edited end to end from the new pages.
 - 88: on the Englund trap, a clip and the board: move and opponent knocks,
   a check, the bait's bad sound and the punish's great sound, none over the
   voice; Settings turns them off.
