@@ -2,9 +2,9 @@ import type { CourseDocument, CourseResponse } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
-import { ConfirmDialog } from '../../components/ConfirmDialog.js';
 import type { BoardArrow } from '../board/CoachBoard.js';
-import { useBuildCourseSkeleton, useCourse, useSaveCourseDraft } from './courseApi.js';
+import { useBuildCourseSkeleton, useCourse, useSaveCourseDraft, useStartCourseGeneration } from './courseApi.js';
+import { CourseDetails } from './CourseDetails.js';
 import { episodeNodeIds, updateEpisode } from './courseEdits.js';
 import { CourseBoardPanel } from './CourseBoardPanel.js';
 import { CourseEpisodeAi } from './CourseEpisodeAi.js';
@@ -14,6 +14,7 @@ import { CourseStudioHeader } from './CourseStudioHeader.js';
 import { CourseOutline } from './CourseOutline.js';
 import { ClipPreview } from './clip/ClipPreview.js';
 import { PublishDialog } from './PublishDialog.js';
+import { StartOverDialog } from './StartOverDialog.js';
 import { LearnerPreview } from './player/LearnerPreview.js';
 import './CourseEditor.css';
 
@@ -31,7 +32,8 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
   const build = useBuildCourseSkeleton(course.id);
   const [document, setDocument] = useState<CourseDocument>(course.document);
   const [dirty, setDirty] = useState(false);
-  const [confirmRebuild, setConfirmRebuild] = useState(false);
+  const [startingOver, setStartingOver] = useState(false);
+  const start = useStartCourseGeneration(course.id);
   const [episodeId, setEpisodeId] = useState<string | null>(course.document.episodes[0]?.id ?? null);
   const [nodeId, setNodeId] = useState<string | null>(course.document.episodes[0]?.startNodeId ?? null);
   const [drawnArrows, setDrawnArrows] = useState<BoardArrow[]>([]);
@@ -55,7 +57,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
 
   /** Unsaved edits are saved first: the server builds from its own copy. */
   function runBuild(): void {
-    setConfirmRebuild(false);
+    setStartingOver(false);
     if (!dirty) return build.mutate();
     save.mutate(document, {
       onSuccess: () => {
@@ -65,7 +67,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
     });
   }
 
-  const error = save.error ?? build.error;
+  const error = save.error ?? build.error ?? start.error;
   return (
     <div className="course-editor">
       <CourseStudioHeader
@@ -79,13 +81,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
         onPreviewLearner={document.episodes.length ? () => setLearnerPreview(true) : undefined}
         onPublish={document.episodes.length ? () => setPublishing(true) : undefined}
         published={course.publishedAt !== null}
-        more={[
-          {
-            label: build.isPending ? 'Building…' : 'Build without AI',
-            disabled: build.isPending,
-            onSelect: () => (document.episodes.length ? setConfirmRebuild(true) : runBuild())
-          }
-        ]}
+        more={[{ label: build.isPending || start.isPending ? 'Starting over…' : 'Start over…', disabled: build.isPending || start.isPending, onSelect: () => setStartingOver(true) }]}
       />
       {error && (
         <p className="course-intake__errors" role="alert">
@@ -94,13 +90,9 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
       )}
       <div className="course-editor__columns">
         <aside className="course-editor__side">
-          <section className="course-panel course-details" aria-label="Course details">
-            <label className="course-field">
-              <span>Promise</span>
-              <textarea rows={3} value={document.promise} placeholder="After this you can …" onChange={(event) => edit({ ...document, promise: event.target.value })} />
-            </label>
+          <CourseDetails document={document} onChange={edit}>
             <CourseGenerationBar course={course} dirty={dirty} />
-          </section>
+          </CourseDetails>
           <CourseOutline document={document} selectedEpisodeId={episodeId} onSelectEpisode={selectEpisode} />
         </aside>
         <CourseBoardPanel
@@ -109,6 +101,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
           selectedNodeId={nodeId}
           onSelectNode={setNodeId}
           arrows={noteArrows}
+          plies={episode?.plies ?? []}
           onDrawnArrows={setDrawnArrows}
         />
         {episode ? (
@@ -140,13 +133,21 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
       )}
       {learnerPreview && <LearnerPreview document={document} onClose={() => setLearnerPreview(false)} />}
       {previewing && <ClipPreview document={document} slug={course.slug} evals={course.evals} onClose={() => setPreviewing(false)} />}
-      {confirmRebuild && (
-        <ConfirmDialog
-          title="Rebuild without AI?"
-          description="This replaces every chapter and episode with fresh template text. Your title and promise stay."
-          confirmLabel="Rebuild"
-          onConfirm={runBuild}
-          onCancel={() => setConfirmRebuild(false)}
+      {startingOver && (
+        <StartOverDialog
+          dirty={dirty}
+          onClose={() => setStartingOver(false)}
+          onTemplate={runBuild}
+          onWithAi={() => {
+            setStartingOver(false);
+            if (!dirty) return start.mutate({ restart: true });
+            save.mutate(document, {
+              onSuccess: () => {
+                setDirty(false);
+                start.mutate({ restart: true });
+              }
+            });
+          }}
         />
       )}
     </div>

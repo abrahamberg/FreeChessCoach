@@ -106,6 +106,17 @@ export function listPublic(
   return query.orderBy('publishedAt', 'desc').orderBy('id', 'desc').limit(options.limit).execute() as Promise<CatalogRow[]>;
 }
 
+/** How many of the owner's courses sit at this level (Phase 90's curriculum). */
+export async function countAtLevel(db: Kysely<Database>, ownerId: string, rating: number): Promise<number> {
+  const row = await db
+    .selectFrom('courses')
+    .select((eb) => eb.fn.countAll<string>().as('count'))
+    .where('ownerId', '=', ownerId)
+    .where(sql<boolean>`(document->'level'->>'rating')::int = ${rating}`)
+    .executeTakeFirst();
+  return Number(row?.count ?? 0);
+}
+
 /** No owner check: the generation job, which runs for the owner. */
 export function findById(db: Kysely<Database>, id: string): Promise<CourseRow | undefined> {
   return db.selectFrom('courses').selectAll().where('id', '=', id).executeTakeFirst();

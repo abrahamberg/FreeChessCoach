@@ -66,7 +66,11 @@
 .course-field > span {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
-  text-transform: capitalize;
+}
+
+/* "prompt" → "Prompt", without turning "What the coach says" into title case. */
+.course-field > span::first-letter {
+  text-transform: uppercase;
 }
 
 .course-field--grow {
@@ -652,4 +656,109 @@
   width: min(100%, calc(100vh - 330px));
   width: min(100%, calc(100svh - 330px));
   margin: 0 auto;
+}
+
+/* Phase 90: the Details card's coach and level, the move chips' marks and
+ * the Start over dialog. */
+.course-details__coach {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.course-details__coach .coach-avatar-image {
+  width: 44px;
+  margin: 0;
+}
+
+.course-details__coach-name {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.course-details__change {
+  min-height: 32px;
+  padding: 4px 12px;
+}
+
+.course-details__hint {
+  margin: 0;
+  color: var(--color-warning);
+}
+
+.course-details__level {
+  display: grid;
+  grid-template-columns: minmax(96px, 1.4fr) minmax(56px, 0.8fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.course-details__code {
+  padding-bottom: 8px;
+  white-space: nowrap;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.course-chip__mark {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 5px;
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+
+.course-chip__mark--long {
+  background: var(--color-primary);
+}
+
+.course-chip__mark--short {
+  border-radius: 1px;
+  background: var(--color-warning);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.start-over {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.start-over__choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.start-over__choice:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-subtle);
+}
+
+.start-over__choice > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.start-over__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }

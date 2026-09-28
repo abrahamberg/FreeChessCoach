@@ -11,7 +11,10 @@ export const CreateCourseRequestSchema = z.object({
   direction: z.string().trim().max(500).default(''),
   levelBand: z.enum(RATING_BANDS).default('improving'),
   learnerSide: z.enum(['white', 'black']).nullable().default(null),
-  coachPersona: z.enum(COACH_PERSONAS)
+  coachPersona: z.enum(COACH_PERSONAS),
+  /** Phase 90: the learner's target rating; it sets the band the prompts
+   * write for, and the course takes the next place at that level ("1200-02"). */
+  rating: z.number().int().min(400).max(2800).optional()
 });
 export type CreateCourseRequest = z.input<typeof CreateCourseRequestSchema>;
 

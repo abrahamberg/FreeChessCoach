@@ -5,6 +5,7 @@ import {
   type CourseTree
 } from '@freechesscoach/chess-analysis';
 import {
+  bandForRating,
   CreateCourseRequestSchema,
   type CourseDocument,
   type CourseGeneration,
@@ -31,7 +32,9 @@ export type CourseIntake = z.output<typeof CreateCourseRequestSchema>;
 
 /** The intake form's PGN becomes the fixed move tree of a new draft. */
 export async function createCourse(db: Kysely<Database>, ownerId: string, intake: CourseIntake): Promise<CourseResponse> {
-  const document = draftFromIntake(intake);
+  // The next place in the creator's curriculum at that level.
+  const order = intake.rating === undefined ? 0 : (await coursesRepo.countAtLevel(db, ownerId, intake.rating)) + 1;
+  const document = draftFromIntake(intake, order);
   const title = document.title;
   const row = await coursesRepo.insert(db, {
     ownerId,
@@ -47,7 +50,7 @@ export async function createCourse(db: Kysely<Database>, ownerId: string, intake
 
 /** The new draft for an intake: the tree, the learner side (inferred when
  * not given) and empty episodes. Throws a `ValidationError` the creator can read. */
-export function draftFromIntake(intake: CourseIntake): CourseDocument {
+export function draftFromIntake(intake: CourseIntake, order = 1): CourseDocument {
   const tree = parseCourseTree(intake.pgn);
   if (tree.errors.length) throw new ValidationError(tree.errors.map((error) => error.message).join('; '));
   if (!tree.nodes.length) throw new ValidationError('The PGN has no moves');
@@ -60,8 +63,9 @@ export function draftFromIntake(intake: CourseIntake): CourseDocument {
     title: courseTitle(intake.direction),
     promise: '',
     learnerSide,
-    levelBand: intake.levelBand,
+    levelBand: intake.rating === undefined ? intake.levelBand : bandForRating(intake.rating),
     coachPersona: intake.coachPersona,
+    ...(intake.rating === undefined ? {} : { level: { rating: intake.rating, order: Math.min(Math.max(order, 1), 99) } }),
     startFen: tree.startFen,
     nodes: tree.nodes,
     lines: tree.lines,

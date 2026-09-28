@@ -64,6 +64,13 @@ describe('course routes', () => {
     const noSide = await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, kind: 'opening_course' } });
     expect(noSide.statusCode).toBe(400);
 
+    // A target rating sets the band and the next place at that level.
+    const first = (await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, rating: 1200 } })).json<CourseResponse>();
+    const second = (await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, rating: 1200, levelBand: 'advanced' } })).json<CourseResponse>();
+    expect(first.document).toMatchObject({ level: { rating: 1200, order: 1 }, levelBand: 'improving' });
+    expect(second.document).toMatchObject({ level: { rating: 1200, order: 2 }, levelBand: 'improving' });
+    expect(course.document.level).toBeUndefined();
+
     const list = CourseListResponseSchema.parse((await app.inject({ method: 'GET', url: '/api/courses' })).json());
     // The studio's card: the size and the writing state, not just the title.
     expect(list.courses.find((row) => row.id === course.id)).toMatchObject({ promise: '', episodes: 0, moves: 16, generation: null });

@@ -41,10 +41,12 @@ describe('CourseIntakePage', () => {
     expect((screen.getByRole('textbox', { name: 'What to teach' }) as HTMLTextAreaElement).value).toMatch(/Englund Gambit trap/);
 
     fireEvent.click(screen.getByRole('button', { name: 'White' }));
+    fireEvent.click(screen.getByRole('button', { name: '1600' }));
+    expect(screen.getByText(/Written for: Club level/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Create draft' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/courses', expect.objectContaining({ method: 'POST' })));
     const post = fetchMock.mock.calls.find(([url, init]) => url === '/api/courses' && init?.method === 'POST')!;
-    expect(JSON.parse(String(post[1]!.body))).toMatchObject({ kind: 'trap', learnerSide: 'white', levelBand: 'improving' });
+    expect(JSON.parse(String(post[1]!.body))).toMatchObject({ kind: 'trap', learnerSide: 'white', rating: 1600, levelBand: 'club' });
   });
 
   test('a PGN that does not parse says why and cannot be created', () => {

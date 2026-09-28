@@ -24,11 +24,22 @@ function renderBar(next: CourseGeneration | null, dirty = false) {
 }
 
 describe('CourseGenerationBar', () => {
-  test('shows the step while running, with the button disabled', () => {
+  test('shows the step while running, and no second start', () => {
     renderBar(generation);
 
     expect(screen.getByRole('status').textContent).toBe('Writing episode 3 of 5 (2 of 5 done)');
-    expect(screen.getByRole('button', { name: 'Write with AI' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Write with AI' })).toBeNull();
+  });
+
+  test('a written course starts over from the editor’s menu, not here', () => {
+    const written = course(null);
+    written.document.episodes = [{ id: 'e1', role: 'setup', focus: '', startNodeId: 'n1', endNodeId: 'n1', plies: [], drillNodeIds: [] }];
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <CourseGenerationBar course={written} dirty={false} />
+      </QueryClientProvider>
+    );
+    expect(screen.queryByRole('button', { name: 'Write with AI' })).toBeNull();
   });
 
   test('a failed run with an outline shows its error and offers to resume', () => {

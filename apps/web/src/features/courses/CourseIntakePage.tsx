@@ -1,12 +1,12 @@
 import { inferLearnerSide, parseCourseTree } from '@freechesscoach/chess-analysis';
-import { COURSE_KINDS, type CoachPersona, type CourseKind, type RatingBand } from '@freechesscoach/shared';
+import { bandForRating, COURSE_KINDS, type CoachPersona, type CourseKind } from '@freechesscoach/shared';
 import { useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
 import { ArrowLeftIcon, BookIcon, FlagIcon, type IconProps, KnightIcon, LightbulbIcon, PlayCircleIcon } from '../../components/Icon.js';
 import { useProfile } from '../../hooks/useProfile.js';
 import { MiniBoard } from '../board/MiniBoard.js';
-import { BandSelect } from '../settings/BandSelect.js';
+import { BAND_LABELS } from '../settings/BandSelect.js';
 import { CoachPersonaSelect } from '../settings/CoachPersonaSelect.js';
 import { useCreateCourse } from './courseApi.js';
 import { COURSE_KIND_INFO } from './courseKinds.js';
@@ -15,6 +15,9 @@ import './CourseEditor.css';
 import './CourseIntakePage.css';
 
 type SideChoice = 'auto' | 'white' | 'black';
+
+/** The ratings a course can aim at (Phase 90's curriculum levels). */
+const RATINGS = [800, 1000, 1200, 1400, 1600, 1800, 2000, 2200];
 
 const KIND_ICONS: Record<CourseKind, ComponentType<IconProps>> = {
   trap: FlagIcon,
@@ -35,7 +38,7 @@ export function CourseIntakePage(): ReactNode {
   const [pgn, setPgn] = useState('');
   const [kind, setKind] = useState<CourseKind>('trap');
   const [direction, setDirection] = useState('');
-  const [levelBand, setLevelBand] = useState<RatingBand>('improving');
+  const [rating, setRating] = useState(1200);
   const [side, setSide] = useState<SideChoice>('auto');
   const [persona, setPersona] = useState<CoachPersona | null>(null);
   const coachPersona = persona ?? profile.data?.coachPersona ?? 'general';
@@ -53,7 +56,7 @@ export function CourseIntakePage(): ReactNode {
   function submit(event: FormEvent): void {
     event.preventDefault();
     const learnerSide = side === 'auto' ? null : side;
-    create.mutate({ pgn, kind, direction, levelBand, learnerSide, coachPersona }, { onSuccess: (course) => navigate(`/studio/${course.id}/edit`) });
+    create.mutate({ pgn, kind, direction, levelBand: bandForRating(rating), rating, learnerSide, coachPersona }, { onSuccess: (course) => navigate(`/studio/${course.id}/edit`) });
   }
 
   return (
@@ -145,8 +148,17 @@ export function CourseIntakePage(): ReactNode {
             <span className="course-new__number">4</span> Who it is for
           </h2>
           <div className="course-new__field">
-            <span className="course-new__label">Level</span>
-            <BandSelect value={levelBand} onChange={setLevelBand} />
+            <span className="course-new__label">The learner’s rating</span>
+            <div className="course-new__sides" role="group" aria-label="The learner’s rating">
+              {RATINGS.map((option) => (
+                <button key={option} type="button" className="course-new__side" aria-pressed={rating === option} onClick={() => setRating(option)}>
+                  {option}
+                </button>
+              ))}
+            </div>
+            <span className="meta">
+              Written for: {BAND_LABELS[bandForRating(rating)]}. The course takes the next place in your {rating} curriculum.
+            </span>
           </div>
           <div className="course-new__field">
             <span className="course-new__label">The learner plays</span>

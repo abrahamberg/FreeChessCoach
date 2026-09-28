@@ -1519,19 +1519,26 @@ Commit: `feat(courses): budgets from the plan, plies from the episode call`
 `CourseBoardPanel.tsx`, `CourseBeatsEditor.tsx`, `CourseStudioHeader.tsx`.
 **Files:** those + tests.
 
-- [ ] The Moves tab (was Notes): for the selected move, two ticks (In the
+- [x] The Moves tab (was Notes): for the selected move, two ticks (In the
   course, In the clip), the text, "A different line for the clip" (shows
   `clipText`), the caption override, the arrows. The move chips under the
   board mark which moves speak in the course and in the clip.
-- [ ] The Clip tab becomes the short's script: the opener and each clip
+- [x] The Clip tab becomes the short's script: the opener and each clip
   move in order with its line, and the clip's estimated length against its
   budget. `CourseBeatsEditor` goes.
-- [ ] One "Start over…" in "⋮": a dialog with Write it again with AI, or
+- [x] One "Start over…" in "⋮": a dialog with Write it again with AI, or
   Start from the template (no AI). "Write with AI" shows only on an empty
   course; an episode is rewritten from its AI tab.
-- [ ] The Details card shows the course coach (portrait and name, change
+- [x] The Details card shows the course coach (portrait and name, change
   it: the voice changes, and a hint to rewrite for the new personality) and
   the level (rating and order, "1200-01").
+
+Status: done 2026-09-28, checked in the browser on a template-built
+Englund trap at 1200. The intake asks for the learner's rating (pills,
+800–2200) instead of the band; the server derives the band and gives the
+course the next place at that level (`coursesRepo.countAtLevel`).
+`CourseDetails.tsx` (coach, level, promise), `StartOverDialog.tsx`; the
+move chips mark course and clip moves.
 
 Commit: `feat(courses): edit each move for the course and the clip`
 

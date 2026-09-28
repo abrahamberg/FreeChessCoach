@@ -1,7 +1,6 @@
 import type { CourseResponse } from '@freechesscoach/shared';
 import { useMemo, useState, type ReactNode } from 'react';
 import { describeApiError } from '../../api/client.js';
-import { ConfirmDialog } from '../../components/ConfirmDialog.js';
 import { usePageMenuItems } from '../../components/PageMenu.js';
 import { isGenerating, useStartCourseGeneration } from './courseApi.js';
 import { CourseDebugPanel } from './CourseDebugPanel.js';
@@ -12,11 +11,11 @@ export interface CourseGenerationBarProps {
   dirty: boolean;
 }
 
-/** "Write with AI" and the job's progress (docs/courses.md §5.2). A failed
- * run resumes, keeping the episodes it finished. */
+/** "Write with AI" on an empty course, and the job's progress (docs/courses.md
+ * §5.2). A failed run resumes, keeping the episodes it finished; a written
+ * course starts over from the editor's menu (Phase 90). */
 export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps): ReactNode {
   const start = useStartCourseGeneration(course.id);
-  const [confirm, setConfirm] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
   // The chat's menu item, in the avatar menu: every AI call of the latest run.
   const hasRun = course.generation !== null;
@@ -28,7 +27,6 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
   const courseWarnings = generation?.warnings.filter((warning) => warning.episodeId === null) ?? [];
 
   const begin = (restart: boolean): void => {
-    setConfirm(false);
     start.mutate({ restart });
   };
 
@@ -40,15 +38,12 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
             Resume writing
           </button>
         )}
-        <button
-          type="button"
-          className="btn-secondary"
-          disabled={dirty || running || start.isPending}
-          title={dirty ? 'Save your changes first' : undefined}
-          onClick={() => (course.document.episodes.length ? setConfirm(true) : begin(true))}
-        >
-          Write with AI
-        </button>
+        {/* A written course starts over from the editor's "⋮" menu instead. */}
+        {!course.document.episodes.length && !running && (
+          <button type="button" className="btn-primary" disabled={dirty || start.isPending} title={dirty ? 'Save your changes first' : undefined} onClick={() => begin(true)}>
+            Write with AI
+          </button>
+        )}
       </div>
       {running && (
         <p className="meta" role="status">
@@ -72,15 +67,6 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
         </p>
       ))}
       {debugOpen && <CourseDebugPanel courseId={course.id} generating={running} onClose={() => setDebugOpen(false)} />}
-      {confirm && (
-        <ConfirmDialog
-          title="Write the course with AI?"
-          description="Your AI plans the episodes and writes every clip and note. This replaces the current chapters and episodes."
-          confirmLabel="Write it"
-          onConfirm={() => begin(true)}
-          onCancel={() => setConfirm(false)}
-        />
-      )}
     </div>
   );
 }
