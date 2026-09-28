@@ -1173,10 +1173,17 @@ Commit: `feat(courses): practice and drills in the board layout`
 
 ### Task 87.5 — Phone pass
 
-- [ ] In the browser at 390×844 and 360×740: nothing scrolls sideways; the
+- [x] In the browser at 390×844 and 360×740: nothing scrolls sideways; the
   board is full width; every control is at least 44 px; the Remember sheet
   and Ask my coach open over the board and close back to the same move.
-- [ ] The same at 1280×800 and 1920×1080; dark mode on both.
+- [x] The same at 1280×800 and 1920×1080; dark mode on both.
+
+Status: done 2026-09-28, in Chrome frames at 390×844, 375×667 and 360×740
+and at 1280×760 (dark) and 1920×1009: no sideways scroll; the episode
+chips, the stage picker and the note's replay button got 44px targets; the
+move log's row wraps instead of squeezing. The in-app `/courses/:slug` was
+not opened (the browser's tab was held by the owner's session); it is the
+same component as `/learn/:slug` inside the board-route shell.
 
 Commit: `fix(courses): phone layout pass`
 

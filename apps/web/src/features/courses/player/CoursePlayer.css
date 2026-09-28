@@ -142,6 +142,23 @@
   min-height: 7.5rem;
 }
 
+/* Phone touch targets: at least 44px (design-improvements.md). */
+.course-layout__episodes--row .course-chip {
+  min-height: 44px;
+}
+
+.game-review-body.mobile .course-pane__note .coach-voice-button {
+  width: 44px;
+  height: 44px;
+  margin: -12px -12px -12px -4px;
+}
+
+@media (max-width: 1079px) {
+  .course-header__stage select {
+    min-height: 44px;
+  }
+}
+
 .course-layout__strip {
   flex: 0 0 auto;
   min-width: 0;
@@ -800,6 +817,7 @@
 
 .move-log__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 10px;
   padding: 8px 10px;
@@ -838,6 +856,7 @@
 }
 
 .move-log__text {
+  flex: 1 1 9rem;
   min-width: 0;
 }
 
