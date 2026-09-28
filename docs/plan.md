@@ -489,6 +489,22 @@ worker job, browser LLM tunnel, LM Studio `google/gemma-4-12b-qat`; outline
   from its own move (`EpisodeScope.claims` adds the main line to the end for
   a hook). Still to tune: notes on the move before the episode (n10), the
   hook spanning the whole line, the trap's safety episode not on the bait.
+- **Outline plan** (da53778): the outline prompt lists the §10 episodes
+  (code's plan, the same the fallback uses) as spans to keep, the hook with
+  `narratedNodeIds []`; the model writes the focus and picks narrated moves.
+  Fixes the hook spanning the line and the safety episode off the bait.
+  **Own nodes** (78a13c5): the episode prompt names the nodes its beats
+  and notes may use; the move before is context only. Englund on gpt-6-luna
+  in the app: before, 13 calls / 7 repairs / fallback outline; after the
+  plan, 9 / 2 (notes on n10); after own nodes, 7 calls, 0 repairs, 0
+  warnings. Script facts correct (pin on d2 after 7...Bxc3, 6.Nc3 safety on
+  the bait). Weak: setup notes are filler ("Keep the move order intact"),
+  since every node must get one. Not yet re-run: opening_reel and
+  opening_course on the plan (the golden script needs the owner's unlock
+  phrase), and gemma.
+- A killed worker left the course "running" for good. Fixed (2ff1a3f): the
+  job beats every 30 s; with no beat for 3 minutes it reads as failed and
+  "Resume writing" carries on.
 - Harness: prints each call's duration on stderr; with a local model use
   `GOLDEN_PROTOCOL=openai-chat GOLDEN_ENDPOINT=http://<windows-host>:1234/v1
   LLM_ALLOW_PRIVATE_ENDPOINTS=1`. docker-compose passes
