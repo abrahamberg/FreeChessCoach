@@ -7,7 +7,7 @@ import { CourseEpisodeWarnings } from './CourseEpisodeWarnings.js';
 const tree = parseCourseTree('1. e4 e5 2. Nf3 Nc6 *');
 const episode: CourseEpisode = { id: 'e1', role: 'line', focus: '', startNodeId: 'n1', endNodeId: 'n4', plies: [], drillNodeIds: [] };
 const document: CourseDocument = {
-  version: 1, kind: 'opening_course', title: 't', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'general',
+  version: 1, kind: 'opening', title: 't', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'general',
   startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], episodes: [episode], takeaways: [], hookOptions: [], clipLinks: {}
 };
 

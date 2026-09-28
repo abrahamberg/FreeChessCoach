@@ -9,10 +9,10 @@ export function buildCoursePlaybook(context: CoursePromptContext, budget: Course
   switch (context.kind) {
     case 'trap':
       return trapPlaybook(context, budget, context.skeleton?.kind === 'trap' ? context.skeleton : null);
-    case 'opening_reel':
-      return openingReelPlaybook(context, budget);
-    case 'opening_course':
-      return openingCoursePlaybook(context);
+    case 'opening':
+      return openingPlaybook(context);
+    case 'puzzle':
+      return puzzlePlaybook(context, context.skeleton?.kind === 'puzzle' ? context.skeleton : null);
     case 'tactics':
       return tacticsPlaybook(context, context.skeleton?.kind === 'tactics' ? context.skeleton : null);
     case 'master_game':
@@ -25,12 +25,12 @@ export function episodeRange(context: CoursePromptContext): string {
   switch (context.kind) {
     case 'trap':
       return '6';
-    case 'opening_reel':
-      return '4';
-    case 'opening_course':
+    case 'opening':
       return `one chapter per line (${context.lines.length}), plus one episode per trap and the recap`;
     case 'tactics':
       return String(tacticExampleCount(context) + 2);
+    case 'puzzle':
+      return String(puzzleLearnerMoves(context).length + 2);
     case 'master_game':
       return '6 to 20, of which 4 to 6 are in the clip';
   }
@@ -72,22 +72,7 @@ function trapEnding(context: CoursePromptContext): string {
   return `${nodeLabel(context, leafId)}, after which ${after ? after.charAt(0).toLowerCase() + after.slice(1) : 'see the dossier'}. Promise what that wins, nothing more.`;
 }
 
-function openingReelPlaybook(context: CoursePromptContext, budget: CourseBudget): string {
-  const side = capitalise(context.learnerSide);
-  return `KIND: OPENING MAIN LINE (vertical reel, at most ${budget.seconds}s, at most ${budget.words} words)
-The learner plays ${side}. The line ends at node ${context.lines[0]?.leafNodeId ?? 'not found'}.
-1. hook — at most ${budget.hookWords} words: what this opening gives the learner, concretely.
-2. line — play the line. At most ${budget.narratedMax} moves speak in the clip, only those
-   that carry the idea; the rest play silently.
-3. idea — one sentence on the plan from the final position, grounded in the
-   line's position features.
-4. remember — the one trap or common mistake in this line if the dossier lists
-   one; otherwise the key pawn break or square.
-In the course, every ${side} move speaks: "why this move". Opponent moves
-speak only where they change the plan.`;
-}
-
-function openingCoursePlaybook(context: CoursePromptContext): string {
+function openingPlaybook(context: CoursePromptContext): string {
   const lineList = context.lines.map((line) => `${line.id} "${line.name}"`).join(', ');
   return `KIND: OPENING COURSE (landscape video and a chaptered course)
 The learner plays ${capitalise(context.learnerSide)}. Lines, in the creator's order: ${lineList}.
@@ -102,6 +87,30 @@ drillNodeIds: every learner move in the main line, plus the first two learner
 moves after each deviation.
 Clip: chapter 1's key moves speak; each sideline in two or three moves. The
 course carries the detail.`;
+}
+
+function puzzleLearnerMoves(context: CoursePromptContext): string[] {
+  return context.skeleton?.kind === 'puzzle' ? context.skeleton.learnerNodeIds : [];
+}
+
+/** §13.2: a position and its solution, taught as the way to think. */
+function puzzlePlaybook(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'puzzle' }> | null): string {
+  const side = capitalise(context.learnerSide);
+  const task = skeleton?.mateIn ? `mate in ${skeleton.mateIn}` : 'the winning line';
+  const moves = puzzleLearnerMoves(context).map((id) => nodeLabel(context, id)).join(', ') || 'not found';
+  const unsound = skeleton?.unsoundNodeIds.length
+    ? `\nThe engine finds another good move at ${skeleton.unsoundNodeIds.map((id) => nodeLabel(context, id)).join(', ')}: say the course's move is the one to learn, and name the other only if the dossier lists it.`
+    : '';
+  return `KIND: PUZZLE. ${side} to play: ${task}. The solution: ${moves}.
+Use exactly these episodes, in order:
+1. question — the position and the task, in one breath ("${side} to play. ${skeleton?.mateIn ? `Mate in ${skeleton.mateIn}.` : 'Find the win.'}"), and what to look at first.
+2. solve — one per ${side} move, each a quiz: the checks, captures and threats
+   the dossier lists here, in that order; which look right and why they fail
+   (tempting moves only as the dossier gives them); then the move and why it
+   works. The defender's reply: why it is forced.
+3. recap — the pattern, and the cue that tells you to look for it in a game.
+A strong player thinks checks, captures, threats, every move: teach that
+habit, not just this answer.${unsound}`;
 }
 
 function tacticExampleCount(context: CoursePromptContext): number {

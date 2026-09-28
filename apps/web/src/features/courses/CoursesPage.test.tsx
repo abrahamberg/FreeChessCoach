@@ -36,7 +36,7 @@ describe('CoursesPage (the Course studio)', () => {
   test('a card per course: kind, status, title, promise, size; Edit, and Open once published', async () => {
     renderWith([
       course({}),
-      course({ id: 'c2', slug: 'italian-bbbb', kind: 'opening_course', status: 'public', title: 'The Italian Game', episodes: 4, moves: 15 }),
+      course({ id: 'c2', slug: 'italian-bbbb', kind: 'opening', status: 'public', title: 'The Italian Game', episodes: 4, moves: 15 }),
       course({ id: 'c3', title: 'Being written', status: 'draft', episodes: 0, generation: { status: 'running', done: 2, total: 7 } })
     ]);
     const draft = (await screen.findByRole('heading', { name: 'The Englund trap' })).closest('article')!;

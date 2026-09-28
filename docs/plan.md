@@ -1678,12 +1678,16 @@ learner move a quiz), `course-learner-side.ts` (puzzle: the side to move),
 intake (`CourseIntakePage.tsx`, `courseKinds.ts`), the template
 (`manual-episodes*.ts`), playbooks, their tests.
 
-- [ ] Failing tests first: the puzzle skeleton on a mate-in-3 FEN (each
-  learner move a quiz; the engine's defence as the replies); a puzzle whose
-  line is not the engine's forced win is refused at intake with the reason.
-- [ ] `opening` replaces both opening kinds everywhere (roles: line,
-  deviation, trap, recap).
-- [ ] The intake lists five kinds with their summaries and examples.
+- [x] Failing tests first: the puzzle skeleton on a smothered mate in 2
+  (each learner move asked; the defence as the replies). The intake refuses
+  a puzzle without a `[FEN]` or with sidelines. Whether each move is the one
+  clear best needs the engine, which runs after intake, so the skeleton
+  lists those moves (`unsoundNodeIds`) and the puzzle playbook tells the
+  model; the editor warning comes with 93.3.
+- [x] `opening` replaces both opening kinds everywhere (roles: line,
+  deviation, trap, recap); migration 0022 rewrites the rows and their
+  documents.
+- [x] The intake lists five kinds with their summaries and examples.
 
 Commit: `feat(courses): one opening kind, and puzzles`
 
@@ -1768,6 +1772,8 @@ Commit: `feat(courses): the reel, one idea, written and checked`
 tests.
 
 - [ ] Every row of §13.9, each with a failing test first.
+- [ ] A puzzle move with a second good answer (`unsoundNodeIds`) is a
+  warning in the editor.
 
 Commit: `feat(courses): checks for tempting moves, the reel, the video and the voice`
 

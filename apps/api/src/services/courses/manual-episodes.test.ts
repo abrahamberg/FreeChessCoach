@@ -34,7 +34,7 @@ async function manual(pgn: string, kind: CourseKind, learnerSide: 'white' | 'bla
 
 describe('buildManualEpisodes', () => {
   test('opening course: the idea, a chapter per sideline from where it branches, then recap', async () => {
-    const { chapters, episodes } = await manual('{Main} 1. e4 c6 2. d4 d5 3. e5 ({Exchange} 3. exd5 cxd5 4. Bd3 Nc6 5. c3) 3... Bf5 *', 'opening_course', 'black');
+    const { chapters, episodes } = await manual('{Main} 1. e4 c6 2. d4 d5 3. e5 ({Exchange} 3. exd5 cxd5 4. Bd3 Nc6 5. c3) 3... Bf5 *', 'opening', 'black');
 
     expect(chapters.map((chapter) => [chapter.title, chapter.lineId])).toEqual([
       ['The idea', 'l1'],
@@ -70,5 +70,16 @@ describe('buildManualEpisodes', () => {
     expect(courseOnly.episodes.flatMap((episode) => episode.plies).some((ply) => ply.short)).toBe(false);
     const clipOnly = await manual(ENGLUND, 'trap', 'black', { engine: englundDossier, versions: { long: false, short: true } });
     expect(clipOnly.episodes.flatMap((episode) => episode.plies).some((ply) => ply.long)).toBe(false);
+  });
+
+  test('puzzle: the question, a solve episode per learner move with its defence, then the recap', async () => {
+    const { chapters, episodes } = await manual('[SetUp "1"]\n[FEN "r6k/6pp/7N/8/8/1Q6/6PP/6K1 w - - 0 1"]\n\n1. Qg8+ Rxg8 2. Nf7# *', 'puzzle', 'white');
+
+    expect(chapters.map((chapter) => chapter.title)).toEqual(['The puzzle']);
+    expect(episodes.map((episode) => episode.role)).toEqual(['question', 'solve', 'solve', 'recap']);
+    expect(episodes[0]?.focus).toBe('question: mate in 2. What do you look at first?');
+    expect(episodes[1]).toMatchObject({ startNodeId: 'n1', endNodeId: 'n2', drillNodeIds: ['n1'] });
+    // The level test engine ranks no move clearly best; a mate is always a sound answer.
+    expect(episodes[2]?.quiz?.answerNodeId).toBe('n3');
   });
 });

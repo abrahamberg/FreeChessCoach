@@ -14,7 +14,7 @@ export const CLIP_SIZES: Record<ClipFormat, { width: number; height: number }> =
 
 /** §3's clip column: the format each kind is made for first. */
 export function defaultClipFormat(kind: CourseKind): ClipFormat {
-  return kind === 'opening_reel' || kind === 'trap' || kind === 'tactics' ? 'vertical' : 'landscape';
+  return kind === 'trap' || kind === 'tactics' || kind === 'puzzle' ? 'vertical' : 'landscape';
 }
 
 /** How long the pieces of a clip last, in ms. */

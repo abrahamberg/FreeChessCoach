@@ -99,9 +99,9 @@ export async function askCourseCoach(deps: AskCourseCoachDependencies, userId: s
 }
 
 const KIND_WORDS: Record<CourseKind, string> = {
-  opening_reel: 'a short opening lesson',
-  opening_course: 'an opening course',
+  opening: 'an opening course',
   tactics: 'a tactics lesson',
+  puzzle: 'a puzzle',
   trap: 'a trap',
   master_game: 'a master game'
 };

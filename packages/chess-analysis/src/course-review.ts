@@ -48,10 +48,10 @@ export function courseDrillKey(fenBefore: string, uci: string): string {
 export type CourseDrillMode = 'learner_side' | 'find_move' | 'guess_move';
 
 export const COURSE_DRILL_MODE: Record<CourseKind, CourseDrillMode> = {
-  opening_reel: 'learner_side',
-  opening_course: 'learner_side',
+  opening: 'learner_side',
   trap: 'learner_side',
   tactics: 'find_move',
+  puzzle: 'learner_side',
   master_game: 'guess_move'
 };
 

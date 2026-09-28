@@ -61,8 +61,11 @@ describe('course routes', () => {
     const illegal = await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, pgn: '1. e4 e5 2. Ke3 *' } });
     expect(illegal.statusCode).toBe(400);
     expect(illegal.body).toContain('Illegal move 2. Ke3');
-    const noSide = await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, kind: 'opening_course' } });
+    const noSide = await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, kind: 'opening' } });
     expect(noSide.statusCode).toBe(400);
+    const notAPuzzle = await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, kind: 'puzzle' } });
+    expect(notAPuzzle.statusCode).toBe(400);
+    expect(notAPuzzle.body).toContain('A puzzle starts from a position');
 
     // A target rating sets the band and the next place at that level.
     const first = (await app.inject({ method: 'POST', url: '/api/courses', payload: { ...INTAKE, rating: 1200 } })).json<CourseResponse>();

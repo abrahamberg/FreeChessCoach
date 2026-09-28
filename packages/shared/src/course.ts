@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
 
 /** docs/courses.md §3. The creator picks the kind; the AI never guesses it. */
-export const COURSE_KINDS = ['opening_reel', 'opening_course', 'tactics', 'trap', 'master_game'] as const;
+export const COURSE_KINDS = ['trap', 'opening', 'tactics', 'puzzle', 'master_game'] as const;
 export const CourseKindSchema = z.enum(COURSE_KINDS);
 export type CourseKind = z.infer<typeof CourseKindSchema>;
 
@@ -97,8 +97,7 @@ export function courseVersions(document: { versions?: CourseVersions }): CourseV
 
 /** What the intake picks for a kind until the creator changes it. */
 export function defaultCourseVersions(kind: CourseKind): CourseVersions {
-  if (kind === 'opening_reel') return { long: false, short: true };
-  if (kind === 'opening_course' || kind === 'master_game') return { long: true, short: false };
+  if (kind === 'opening' || kind === 'master_game') return { long: true, short: false };
   return { long: true, short: true };
 }
 
@@ -232,9 +231,9 @@ export function bandForRating(rating: number): (typeof RATING_BANDS)[number] {
 /** docs/courses.md §6.3: the episode roles each kind's playbook uses. */
 export const COURSE_ROLES: Record<CourseKind, readonly string[]> = {
   trap: ['hook', 'setup', 'bait', 'quiz', 'punish', 'safety'],
-  opening_reel: ['hook', 'line', 'idea', 'remember'],
-  opening_course: ['line', 'deviation', 'trap', 'recap'],
+  opening: ['line', 'deviation', 'trap', 'recap'],
   tactics: ['concept', 'example', 'scan'],
+  puzzle: ['question', 'solve', 'recap'],
   master_game: ['intro', 'moves', 'moment']
 };
 

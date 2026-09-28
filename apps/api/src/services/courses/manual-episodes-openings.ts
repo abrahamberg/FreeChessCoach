@@ -2,24 +2,9 @@ import type { CourseLineGame, OpeningSkeleton } from '@freechesscoach/chess-anal
 import type { CourseChapter } from '@freechesscoach/shared';
 import { noteworthy, type EpisodeBuilder } from './manual-notes.js';
 
-/** §6.3 opening_reel: hook, line, idea, remember — one chapter. */
-export function openingReelChapters(skeleton: OpeningSkeleton, lines: CourseLineGame[], learner: 'white' | 'black', builder: EpisodeBuilder): CourseChapter[] {
-  const line = lines[0];
-  if (!line) return [];
-  const last = line.nodeIds.slice(-1);
-  const trap = skeleton.traps.find((candidate) => line.nodeIds.includes(candidate.blunderNodeId));
-  const episodeIds = [
-    ...builder.add({ role: 'hook', focus: 'hook: what does this opening give the learner?', nodeIds: line.nodeIds.slice(0, 1), noteNodeIds: [] }),
-    ...builder.add({ role: 'line', focus: 'line: which moves carry the idea?', nodeIds: line.nodeIds, noteNodeIds: noteworthy(line.nodeIds, learner, builder) }),
-    ...builder.add({ role: 'idea', focus: 'idea: the plan from the final position', nodeIds: last, noteNodeIds: [] }),
-    ...builder.add({ role: 'remember', focus: 'remember: the one trap, mistake, pawn break or square', nodeIds: trap ? [trap.blunderNodeId, trap.answerNodeId] : last, noteNodeIds: [] })
-  ];
-  return [{ id: 'c1', title: 'The main line', lineId: line.lineId, episodeIds }];
-}
-
-/** §6.3 opening_course: "The idea", a chapter per sideline (from where it
+/** §6.3 opening: "The idea", a chapter per sideline (from where it
  * leaves the lines before it), a trap episode per trap, then "Recap". */
-export function openingCourseChapters(
+export function openingChapters(
   skeleton: OpeningSkeleton,
   lines: CourseLineGame[],
   learner: 'white' | 'black',

@@ -1,8 +1,8 @@
 import type { CourseDossier, CourseLineGame, CourseSkeleton, TrapSkeleton } from '@freechesscoach/chess-analysis';
 import { courseVersions, type CourseChapter, type CourseDocument, type CourseEpisode } from '@freechesscoach/shared';
 import { EpisodeBuilder } from './manual-notes.js';
-import { openingCourseChapters, openingReelChapters } from './manual-episodes-openings.js';
-import { masterGameChapters, tacticsChapters } from './manual-episodes-study.js';
+import { openingChapters } from './manual-episodes-openings.js';
+import { masterGameChapters, puzzleChapters, tacticsChapters } from './manual-episodes-study.js';
 
 export interface ManualEpisodesInput {
   document: CourseDocument;
@@ -33,9 +33,9 @@ function chaptersFor(input: ManualEpisodesInput, builder: EpisodeBuilder): Cours
   if (skeleton.kind === 'trap') return trapChapters(skeleton, lines, learner, builder);
   if (skeleton.kind === 'tactics') return tacticsChapters(skeleton, lines, builder);
   if (skeleton.kind === 'master_game') return masterGameChapters(skeleton, lines, learner, builder);
-  if (skeleton.kind === 'opening_reel') return openingReelChapters(skeleton, lines, learner, builder);
+  if (skeleton.kind === 'puzzle') return puzzleChapters(skeleton, lines, builder);
   const lineNames = new Map(input.document.lines.map((line) => [line.id, line.name]));
-  return openingCourseChapters(skeleton, lines, learner, lineNames, builder);
+  return openingChapters(skeleton, lines, learner, lineNames, builder);
 }
 
 export const sideName = (side: 'white' | 'black'): string => (side === 'white' ? 'White' : 'Black');

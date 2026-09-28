@@ -1,10 +1,39 @@
-import type { CourseLineGame, MasterGameSkeleton, TacticsSkeleton } from '@freechesscoach/chess-analysis';
+import type { CourseLineGame, MasterGameSkeleton, PuzzleSkeleton, TacticsSkeleton } from '@freechesscoach/chess-analysis';
 import type { CourseChapter, CourseQuiz } from '@freechesscoach/shared';
 import { noteworthy, type EpisodeBuilder } from './manual-notes.js';
 
 function findMoveQuiz(nodeId: string, side: 'white' | 'black' | undefined): CourseQuiz {
   const mover = side === 'black' ? 'Black' : 'White';
   return { answerNodeId: nodeId, prompt: `${mover} to move. Find the strongest move.`, hint: '', reveal: '' };
+}
+
+/** §13.2 puzzle: the question, one solve episode per learner move (asked,
+ * with the defence that follows), then the recap of the pattern. */
+export function puzzleChapters(skeleton: PuzzleSkeleton, lines: CourseLineGame[], builder: EpisodeBuilder): CourseChapter[] {
+  const nodeIds = lines.find((line) => line.lineId === skeleton.lineId)?.nodeIds ?? [];
+  const first = nodeIds[0];
+  if (!first) return [];
+  const question = skeleton.mateIn ? `question: mate in ${skeleton.mateIn}. What do you look at first?` : 'question: what does the position ask? What do you look at first?';
+  const episodeIds = [...builder.add({ role: 'question', focus: question, nodeIds: [first], noteNodeIds: [] })];
+  skeleton.learnerNodeIds.forEach((nodeId) => {
+    const at = nodeIds.indexOf(nodeId);
+    const reply = nodeIds[at + 1];
+    const facts = builder.fact(nodeId);
+    const sound = facts?.quizEligible || facts?.san.endsWith('#');
+    episodeIds.push(
+      ...builder.add({
+        role: 'solve',
+        focus: 'solve: the checks, captures and threats here, which fail and why, then the move',
+        nodeIds: reply && !skeleton.learnerNodeIds.includes(reply) ? [nodeId, reply] : [nodeId],
+        noteNodeIds: reply && !skeleton.learnerNodeIds.includes(reply) ? [nodeId, reply] : [nodeId],
+        drillNodeIds: [nodeId],
+        ...(sound ? { quiz: findMoveQuiz(nodeId, facts?.side) } : {})
+      })
+    );
+  });
+  const last = nodeIds[nodeIds.length - 1]!;
+  episodeIds.push(...builder.add({ role: 'recap', focus: 'recap: the pattern, and the cue to spot it in your games', nodeIds: [last], noteNodeIds: [] }));
+  return [{ id: 'c1', title: 'The puzzle', lineId: skeleton.lineId, episodeIds }];
 }
 
 /** §6.3 tactics: concept, one chapter per example (easiest first, as the

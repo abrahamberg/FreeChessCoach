@@ -108,8 +108,7 @@ function renderCandidates(context: CoursePromptContext, skeleton: CourseSkeleton
         `victim's safe move at the bait: ${skeleton.safeMoveSan ?? 'none found'}`,
         `trapper's risky setup moves: ${list(skeleton.trapperRiskNodeIds)}`
       ].join('\n');
-    case 'opening_reel':
-    case 'opening_course':
+    case 'opening':
       return [
         ...skeleton.lines.map((line) => `${line.lineId}: learner moves ${list(line.learnerNodeIds)}; leaves book at ${line.bookExitNodeId ? label(line.bookExitNodeId) : 'never'}`),
         `deviations: ${list(skeleton.deviationNodeIds)}`,
@@ -121,5 +120,10 @@ function renderCandidates(context: CoursePromptContext, skeleton: CourseSkeleton
       }`;
     case 'master_game':
       return [`critical: ${list(skeleton.criticalNodeIds)}`, `quiz-eligible: ${list(skeleton.quizNodeIds)}`, `phase boundaries: ${list(skeleton.phaseBoundaryNodeIds)}`].join('\n');
+    case 'puzzle':
+      return [
+        `solution, ${skeleton.mateIn ? `mate in ${skeleton.mateIn}` : 'no forced mate'}: ${list(skeleton.learnerNodeIds)}`,
+        `moves with a second good answer: ${list(skeleton.unsoundNodeIds)}`
+      ].join('\n');
   }
 }

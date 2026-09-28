@@ -188,7 +188,7 @@ describe('public course routes', () => {
     } while (cursor);
     expect(all.filter((slug) => slug.startsWith('cat-'))).toEqual(['cat-second-eeeeeeeeeeee', 'cat-first-dddddddddddd']);
 
-    expect(await slugs('?kind=opening_course')).toEqual([]);
+    expect(await slugs('?kind=opening')).toEqual([]);
     for (const query of ['?kind=nonsense', '?cursor=%%%', '?limit=500']) {
       expect((await app.inject({ method: 'GET', url: `/api/public/courses${query}` })).statusCode, query).toBe(400);
     }

@@ -47,7 +47,7 @@ function episode(episodeId: string, start: number, end: number, drill: number[])
 
 describe('buildCourseDrill', () => {
   test('an opening asks only its drill moves and plays the rest', () => {
-    const drill = buildCourseDrill(course('opening_course', [episode('e1', 1, 6, [2, 4, 6])]));
+    const drill = buildCourseDrill(course('opening', [episode('e1', 1, 6, [2, 4, 6])]));
     expect(drill.mode).toBe('learner_side');
     expect(drill.episodes[0]!.steps.map((step) => [step.node.san, step.asked])).toEqual([
       ['d4', false], ['e5', true], ['dxe5', false], ['Nc6', true], ['Nf3', false], ['Qe7', true]
@@ -76,13 +76,13 @@ describe('buildCourseDrill', () => {
   });
 
   test('episodes without drill moves are left out, and a move asked once is not asked again', () => {
-    const drill = buildCourseDrill(course('opening_course', [episode('hook', 1, 4, []), episode('e1', 1, 4, [2, 4]), episode('e2', 1, 6, [2, 4, 6])]));
+    const drill = buildCourseDrill(course('opening', [episode('hook', 1, 4, []), episode('e1', 1, 4, [2, 4]), episode('e2', 1, 6, [2, 4, 6])]));
     expect(drill.episodes.map((each) => each.episodeId)).toEqual(['e1', 'e2']);
     expect(drill.episodes[1]!.steps.filter((step) => step.asked).map((step) => step.node.san)).toEqual(['Qe7']);
   });
 
   test('an episode with a missed or due move comes first', () => {
-    const document = course('opening_course', [episode('e1', 1, 2, [2]), episode('e2', 1, 4, [4])]);
+    const document = course('opening', [episode('e1', 1, 2, [2]), episode('e2', 1, 4, [4])]);
     const nc6 = tree.nodes[3]!;
     const states = new Map<string, CourseReviewState>([[courseDrillKey(tree.nodes[2]!.fenAfter, nc6.uci), { step: 0, dueOn: '2026-09-29' }]]);
     expect(buildCourseDrill(document, states, '2026-09-28').episodes.map((each) => each.episodeId)).toEqual(['e2', 'e1']);

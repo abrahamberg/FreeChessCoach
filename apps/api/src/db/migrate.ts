@@ -22,6 +22,7 @@ import * as courseAudioContentHash from './migrations/0018_course_audio_content_
 import * as courseAudioMirrored from './migrations/0019_course_audio_mirrored.js';
 import * as courseProgress from './migrations/0020_course_progress.js';
 import * as courseEnrollments from './migrations/0021_course_enrollments.js';
+import * as courseKinds from './migrations/0022_course_kinds.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -47,7 +48,8 @@ const provider: MigrationProvider = {
       '0018_course_audio_content_hash': courseAudioContentHash,
       '0019_course_audio_mirrored': courseAudioMirrored,
       '0020_course_progress': courseProgress,
-      '0021_course_enrollments': courseEnrollments
+      '0021_course_enrollments': courseEnrollments,
+      '0022_course_kinds': courseKinds
     })
 };
 

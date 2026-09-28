@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { renderCourseDossier } from './course-dossier-text.js';
 import { abandonedGuard } from './course-dossier-words.js';
-import { inferLearnerSide } from './course-learner-side.js';
+import { inferLearnerSide, puzzleShapeProblems } from './course-learner-side.js';
 import { courseLineGames } from './course-line-game.js';
 import { buildCourseSkeleton } from './course-skeleton.js';
 import { analyseCourse, analyseEnglund, ENGLUND_TRAP, fakeEvals, type FakeEval } from './course-test-fixtures.js';
@@ -120,10 +120,10 @@ describe('course skeleton', () => {
     ]);
     const lost = new Set([fen('n8')]);
     const { dossier } = analyseCourse(tree, fakeEvals(tree, (value) => (lost.has(value) ? 2000 : 0), overrides), 'white');
-    const skeleton = buildCourseSkeleton({ kind: 'opening_course', tree, lines: courseLineGames(tree), dossier });
+    const skeleton = buildCourseSkeleton({ kind: 'opening', tree, lines: courseLineGames(tree), dossier });
 
     expect(skeleton).toMatchObject({
-      kind: 'opening_course',
+      kind: 'opening',
       lines: [
         { lineId: 'l1', learnerNodeIds: ['n1', 'n3'] },
         { lineId: 'l2', learnerNodeIds: ['n1', 'n5', 'n7', 'n9'] }
@@ -131,6 +131,35 @@ describe('course skeleton', () => {
       deviationNodeIds: ['n5'],
       traps: [{ blunderNodeId: 'n8', answerNodeId: 'n9' }]
     });
+  });
+});
+
+describe('puzzle', () => {
+  const SMOTHERED = '[SetUp "1"]\n[FEN "r6k/6pp/7N/8/8/1Q6/6PP/6K1 w - - 0 1"]\n\n1. Qg8+ Rxg8 2. Nf7# *';
+
+  test('skeleton: every learner move, mate in 2, sound when each move is the one clear best', () => {
+    const tree = parseCourseTree(SMOTHERED);
+    const clear = new Map<string, FakeEval>([[tree.startFen, { cp: 2000, moves: [{ san: 'Qg8+', cp: 2000 }, { san: 'Qb8+', cp: 0 }] }]]);
+    const sound = analyseCourse(tree, fakeEvals(tree, () => 2000, clear), 'white').dossier;
+    expect(buildCourseSkeleton({ kind: 'puzzle', tree, lines: courseLineGames(tree), dossier: sound })).toEqual({
+      kind: 'puzzle',
+      lineId: 'l1',
+      learnerNodeIds: ['n1', 'n3'],
+      mateIn: 2,
+      unsoundNodeIds: []
+    });
+    // Two moves as good as each other: the first move has a second answer.
+    const level = analyseCourse(tree, fakeEvals(tree, () => 2000), 'white').dossier;
+    expect(buildCourseSkeleton({ kind: 'puzzle', tree, lines: courseLineGames(tree), dossier: level })).toMatchObject({ unsoundNodeIds: ['n1'] });
+  });
+
+  test('learned by the side to move; a puzzle needs a position and one line', () => {
+    expect(inferLearnerSide('puzzle', parseCourseTree(SMOTHERED), null)).toBe('white');
+    expect(puzzleShapeProblems(parseCourseTree(SMOTHERED))).toEqual([]);
+    expect(puzzleShapeProblems(parseCourseTree('1. e4 (1. d4) e5 *'))).toEqual([
+      'A puzzle starts from a position: add its [FEN] header',
+      'A puzzle has one solution line: remove the sidelines'
+    ]);
   });
 });
 
@@ -146,6 +175,6 @@ describe('inferLearnerSide', () => {
 
     expect(inferLearnerSide('master_game', tree, '0-1')).toBe('black');
     expect(inferLearnerSide('master_game', tree, '1/2-1/2')).toBeNull();
-    expect(inferLearnerSide('opening_course', tree, '1-0')).toBeNull();
+    expect(inferLearnerSide('opening', tree, '1-0')).toBeNull();
   });
 });

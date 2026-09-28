@@ -11,9 +11,9 @@ import { COURSE_SHARED_BLOCK } from './shared.js';
 
 const SKELETONS: Record<CourseKind, CourseSkeleton> = {
   trap: { kind: 'trap', lineId: 'l1', baitNodeId: 'n11', answerNodeId: 'n12', punishNodeIds: ['n13'], safeMoveSan: 'Nc3', trapperRiskNodeIds: ['n2'] },
-  opening_reel: { kind: 'opening_reel', lines: [{ lineId: 'l1', bookExitNodeId: 'n7', learnerNodeIds: ['n2', 'n4'] }], deviationNodeIds: [], traps: [] },
-  opening_course: { kind: 'opening_course', lines: [{ lineId: 'l1', bookExitNodeId: null, learnerNodeIds: ['n2'] }], deviationNodeIds: [], traps: [{ blunderNodeId: 'n11', answerNodeId: 'n12' }] },
+  opening: { kind: 'opening', lines: [{ lineId: 'l1', bookExitNodeId: null, learnerNodeIds: ['n2'] }], deviationNodeIds: [], traps: [{ blunderNodeId: 'n11', answerNodeId: 'n12' }] },
   tactics: { kind: 'tactics', examples: [{ lineId: 'l1', nodeId: 'n12', startNodeId: 'n10', motif: 'pin', depth: 3 }] },
+  puzzle: { kind: 'puzzle', lineId: 'l1', learnerNodeIds: ['n12', 'n14', 'n16'], mateIn: 3, unsoundNodeIds: ['n14'] },
   master_game: { kind: 'master_game', criticalNodeIds: ['n11'], quizNodeIds: ['n12'], phaseBoundaryNodeIds: [] }
 };
 

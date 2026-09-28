@@ -76,7 +76,7 @@ describe('CoursesHomePage', () => {
   test('Learning, Browse and Learned, each linking into the course', async () => {
     renderWith({
       enrollments: [enrollment('englund-aaaaaaaaaaaa', 'Englund trap', null), enrollment('fork-bbbbbbbbbbbb', 'Knight forks', '2026-09-25T00:00:00.000Z')],
-      catalogue: [catalogueItem('englund-aaaaaaaaaaaa', 'Englund trap'), catalogueItem('caro-cccccccccccc', 'Caro-Kann', 'opening_course'), catalogueItem('fork-bbbbbbbbbbbb', 'Knight forks', 'tactics')],
+      catalogue: [catalogueItem('englund-aaaaaaaaaaaa', 'Englund trap'), catalogueItem('caro-cccccccccccc', 'Caro-Kann', 'opening'), catalogueItem('fork-bbbbbbbbbbbb', 'Knight forks', 'tactics')],
       due: [{ slug: 'fork-bbbbbbbbbbbb', title: 'Knight forks', due: 2, sans: ['Nf7', 'Nd6'] }]
     });
 
@@ -93,8 +93,8 @@ describe('CoursesHomePage', () => {
     expect(within(within(browse).getByRole('link', { name: /Englund trap/ })).getByText('Learning')).toBeTruthy();
     expect(within(within(browse).getByRole('link', { name: /Knight forks/ })).getByText('Learned')).toBeTruthy();
 
-    fireEvent.click(within(browse).getByRole('button', { name: 'Opening course' }));
-    expect(within(browse).getByRole('button', { name: 'Opening course' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(browse).getByRole('button', { name: 'Opening' }));
+    expect(within(browse).getByRole('button', { name: 'Opening' })).toHaveAttribute('aria-pressed', 'true');
     expect(await within(browse).findByText('Caro-Kann')).toBeTruthy();
     expect(within(browse).queryByText('Englund trap')).toBeNull();
   });

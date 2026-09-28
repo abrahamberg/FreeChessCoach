@@ -19,7 +19,7 @@ export interface TrapSkeleton {
 }
 
 export interface OpeningSkeleton {
-  kind: 'opening_reel' | 'opening_course';
+  kind: 'opening';
   lines: { lineId: string; bookExitNodeId: string | null; learnerNodeIds: string[] }[];
   /** First moves of sidelines: where the tree branches off the main continuation. */
   deviationNodeIds: string[];
@@ -41,7 +41,20 @@ export interface MasterGameSkeleton {
   phaseBoundaryNodeIds: string[];
 }
 
-export type CourseSkeleton = TrapSkeleton | OpeningSkeleton | TacticsSkeleton | MasterGameSkeleton;
+/** docs/courses.md §13.2: a position and its solution. Every learner move
+ * is asked; the opponent's are the defence. */
+export interface PuzzleSkeleton {
+  kind: 'puzzle';
+  lineId: string;
+  learnerNodeIds: string[];
+  /** Learner moves to mate when the line ends in mate, else null. */
+  mateIn: number | null;
+  /** Learner moves that are not the engine's one clear best: a second
+   * solution the learner could play. Empty when the puzzle is sound. */
+  unsoundNodeIds: string[];
+}
+
+export type CourseSkeleton = TrapSkeleton | OpeningSkeleton | TacticsSkeleton | MasterGameSkeleton | PuzzleSkeleton;
 
 export interface CourseSkeletonInput {
   kind: CourseKind;
@@ -61,6 +74,10 @@ export function buildCourseSkeleton(input: CourseSkeletonInput): CourseSkeleton 
   }
   if (input.kind === 'tactics') return tacticsSkeleton(input.lines, lineFacts, input.dossier.learnerSide);
   if (input.kind === 'master_game') return masterGameSkeleton(input.dossier);
+  if (input.kind === 'puzzle') {
+    const line = input.lines[0];
+    return line ? puzzleSkeleton(line.lineId, lineFacts(line), input.dossier.learnerSide) : null;
+  }
   return openingSkeleton(input, lineFacts);
 }
 
@@ -95,7 +112,7 @@ function openingSkeleton(input: CourseSkeletonInput, lineFacts: (line: CourseLin
     });
   }
   return {
-    kind: input.kind === 'opening_reel' ? 'opening_reel' : 'opening_course',
+    kind: 'opening',
     lines: input.lines.map((line) => ({
       lineId: line.lineId,
       bookExitNodeId: exits.get(line.lineId) ?? null,
@@ -103,6 +120,19 @@ function openingSkeleton(input: CourseSkeletonInput, lineFacts: (line: CourseLin
     })),
     deviationNodeIds: deviations(input.tree),
     traps: [...traps].map(([blunderNodeId, answerNodeId]) => ({ blunderNodeId, answerNodeId }))
+  };
+}
+
+function puzzleSkeleton(lineId: string, nodes: CourseNodeFacts[], learnerSide: 'white' | 'black'): PuzzleSkeleton {
+  const learner = nodes.filter((node) => node.side === learnerSide);
+  const last = nodes[nodes.length - 1];
+  return {
+    kind: 'puzzle',
+    lineId,
+    learnerNodeIds: learner.map((node) => node.nodeId),
+    mateIn: last?.san.endsWith('#') && last.side === learnerSide ? learner.length : null,
+    // A mating move is sound even when another move mates too.
+    unsoundNodeIds: learner.filter((node) => !node.quizEligible && !node.san.endsWith('#')).map((node) => node.nodeId)
   };
 }
 
