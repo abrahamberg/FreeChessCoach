@@ -1784,7 +1784,7 @@ Commit: `feat(courses): checks for tempting moves, the reel, the video and the v
 
 **Files:** `apps/api/test/fixtures/courses/`, `course-golden.ts`.
 
-- [x] One fixture per kind (a mate-in-3 puzzle added, the openings as one),
+- [x] One fixture per kind (a smothered mate in 2 added, the openings as one),
   printing the video and reel scripts.
 - [ ] The owner runs it (their unlock phrase and credits).
 
@@ -1807,10 +1807,10 @@ Commit: `test(courses): golden set for five kinds and three products`
 `clip-player.ts`, `scripts/sounds/generate-board-sounds.py` (`riser`,
 `whoosh`), tests.
 
-- [ ] Failing timeline tests first: the build-up at 500 ms a move; 0.5 s of
+- [x] Failing timeline tests first: the build-up at 500 ms a move; 0.5 s of
   silence then the climax at half speed; a puzzle's 5 s countdown over the
   riser; the total within 30–45 s; the promo stops before the climax.
-- [ ] The top band (`topText`) from frame one; captions in the bottom band;
+- [x] The top band (`topText`) from frame one; captions in the bottom band;
   the payoff at the climax; the CTA card; the loop line last.
 
 Commit: `feat(courses): the reel, 9:16, one idea`
@@ -1821,7 +1821,7 @@ Commit: `feat(courses): the reel, 9:16, one idea`
 **Files:** `clip/video-timeline.ts` (new, from `timeline.ts`),
 `draw-frame.ts` (16:9, chapter cards, the ghost arrow), tests.
 
-- [ ] Failing tests first: the hook plays over the climax, then the start;
+- [x] Failing tests first: the hook plays over the climax, then the start;
   a chapter card per chapter; a tempting move plays with its refutation and
   returns before the real move; the outro question card.
 
@@ -1832,8 +1832,18 @@ Commit: `feat(courses): the YouTube video, with the tempting moves played out`
 **Files:** `record-clip.ts`, `prepare-audio.ts` (keys `video:`, `reel:`,
 `tempting:`), `ClipPreview.tsx`.
 
-- [ ] Each product records in its own shape (the video 16:9, the reel 9:16),
+- [x] Each product records in its own shape (the video 16:9, the reel 9:16),
   all audio first as before (Kokoro only).
+
+Status: done 2026-09-29. `timeline.ts` is the YouTube video's
+(`buildVideoTimeline`: the hook over the climax and a whoosh back to the
+start, a card per chapter, each tempting move shown with a red arrow while
+the coach says why, played out with the engine's answer, then taken back;
+the outro card). `reel-timeline.ts` is the reel's. The tempting moves'
+refutations are copied onto the plies by code from the dossier. The
+preview picks "YouTube video (16:9)" or "Reel (9:16)"; the downloads are
+`<slug>-youtube` and `<slug>-reel`. Riser and whoosh come from
+`scripts/sounds/generate-clip-sounds.py`; the board sounds are untouched.
 
 Commit: `feat(courses): record the video and the reel`
 

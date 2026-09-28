@@ -12,7 +12,7 @@ import { CourseEpisodePanel } from './CourseEpisodePanel.js';
 import { CourseGenerationBar } from './CourseGenerationBar.js';
 import { CourseStudioHeader } from './CourseStudioHeader.js';
 import { CourseOutline } from './CourseOutline.js';
-import { ClipPreview } from './clip/ClipPreview.js';
+import { ClipPreview, previewableProducts } from './clip/ClipPreview.js';
 import { PublishDialog } from './PublishDialog.js';
 import { StartOverDialog } from './StartOverDialog.js';
 import { LearnerPreview } from './player/LearnerPreview.js';
@@ -77,7 +77,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
         dirty={dirty}
         saving={save.isPending}
         onSave={() => save.mutate(document, { onSuccess: () => setDirty(false) })}
-        onPreviewClip={document.episodes.some((each) => each.plies.some((ply) => ply.video)) ? () => setPreviewing(true) : undefined}
+        onPreviewClip={previewableProducts(document).length ? () => setPreviewing(true) : undefined}
         onPreviewLearner={document.episodes.length ? () => setLearnerPreview(true) : undefined}
         onPublish={document.episodes.length ? () => setPublishing(true) : undefined}
         published={course.publishedAt !== null}

@@ -1,6 +1,6 @@
 import { verifyCourseEpisode, type CourseVerifyProblem } from '@freechesscoach/chess-analysis';
 import { buildCourseEpisodeMessages, courseBudget, episodeWordBudget } from '@freechesscoach/prompts';
-import { courseVideos, EpisodeScriptSchema, type CourseEpisode, type CourseOutline, type CourseOutlineEpisode, type CourseWarning, type EpisodeScript } from '@freechesscoach/shared';
+import { courseVideos, EpisodeScriptSchema, type CourseEpisode, type CourseTempting, type CourseOutline, type CourseOutlineEpisode, type CourseWarning, type EpisodeScript } from '@freechesscoach/shared';
 import { learnerNodes } from './generate-outline.js';
 import type { CourseModelCall, GenerationInputs } from './generation-inputs.js';
 
@@ -63,6 +63,18 @@ function plannedQuizProblems(outline: CourseOutline, episode: CourseEpisode): Co
   return [{ code: 'quiz', nodeId: given ?? answer, message }];
 }
 
+/** §13.5: each tempting move with the engine's answer from the dossier, for
+ * the video to play out; one the dossier does not know keeps none (the
+ * verifier flags it). */
+function withRefutations(inputs: GenerationInputs, nodeId: string, tempting: { san: string; why: string }[]): CourseTempting[] {
+  const facts = inputs.dossier.nodes.find((node) => node.nodeId === nodeId)?.tempting ?? [];
+  const plain = (san: string): string => san.replace(/[+#]+$/, '');
+  return tempting.map((each) => {
+    const refutation = facts.find((fact) => plain(fact.san) === plain(each.san))?.refutation;
+    return refutation ? { ...each, refutation } : each;
+  });
+}
+
 function plannedEpisode(outline: CourseOutline, episodeId: string): CourseOutlineEpisode {
   const planned = outline.chapters.flatMap((chapter) => chapter.episodes).find((episode) => episode.id === episodeId);
   if (!planned) throw new Error(`Episode ${episodeId} is not in the outline`);
@@ -86,12 +98,15 @@ function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: 
     plies: script.plies
       .map((ply) => ({ ...ply, video: video && ply.video }))
       .filter((ply) => ply.course || ply.video || ply.text.trim() || ply.arrows.length || ply.tempting.length)
-      .map(({ say, caption, tempting, ...ply }) => ({
-        ...ply,
-        ...(video && say?.trim() ? { say } : {}),
-        ...(video && caption?.trim() ? { caption } : {}),
-        ...(tempting.length ? { tempting } : {})
-      })),
+      .map(({ say, caption, tempting, ...ply }) => {
+        const known = withRefutations(inputs, ply.nodeId, tempting);
+        return {
+          ...ply,
+          ...(video && say?.trim() ? { say } : {}),
+          ...(video && caption?.trim() ? { caption } : {}),
+          ...(known.length ? { tempting: known } : {})
+        };
+      }),
     budget: { course: planned.budgetCourse, video: planned.budgetVideo, ...(planned.keyNodeIds?.length ? { keyNodeIds: planned.keyNodeIds } : {}) },
     ...(script.quiz ? { quiz: script.quiz } : {}),
     drillNodeIds: learnerNodes(inputs, planned.startNodeId, planned.endNodeId)

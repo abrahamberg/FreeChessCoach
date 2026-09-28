@@ -75,39 +75,57 @@ export interface FrameInput {
   assets: ClipAssets;
 }
 
-/** Draws one frame of the clip at the timeline's size. */
+/** Draws one frame at the timeline's size: the reel's bands, or the
+ * YouTube video's board and side panel. */
 export function drawClipFrame(ctx: CanvasRenderingContext2D, input: FrameInput): void {
   const { width, height } = CLIP_SIZES[input.timeline.format];
-  const vertical = input.timeline.format === 'vertical';
   ctx.fillStyle = COLORS.background;
   ctx.fillRect(0, 0, width, height);
+  if (input.timeline.product === 'reel') drawReelFrame(ctx, input, width, height);
+  else drawVideoFrame(ctx, input, width, height);
+}
 
-  const boardSize = vertical ? 1000 : 960;
-  const boardX = vertical ? 40 : 60;
-  const boardY = vertical ? 360 : 60;
-  drawBoard(ctx, input, boardX, boardY, boardSize);
-  // Title and end cards carry their own text over the board.
-  const caption = input.segment.kind === 'beat' || input.segment.kind === 'quiz' ? input.segment.caption : '';
+/** docs/courses.md §13.3: the top band holds the challenge from the first
+ * frame; the board takes the full width; the bottom band holds the caption,
+ * burned in; the coach small in a corner. No title card. */
+function drawReelFrame(ctx: CanvasRenderingContext2D, input: FrameInput, width: number, height: number): void {
+  const board = { x: 0, y: 420, size: 1080 };
+  wrapText(ctx, input.timeline.topText ?? '', { x: width / 2, y: 190, maxWidth: 980, font: `900 96px ${FONT}`, color: COLORS.text, lineHeight: 110, maxLines: 2, align: 'center' });
+  drawBoard(ctx, input, board.x, board.y, board.size);
+  const { segment } = input;
+  if (segment.moveLabel) text(ctx, segment.moveLabel, 40, 1580, `700 48px ${FONT}`, COLORS.accent);
+  wrapText(ctx, segment.caption, { x: width / 2, y: 1690, maxWidth: 980, font: `900 80px ${FONT}`, color: COLORS.text, lineHeight: 92, maxLines: 2, align: 'center' });
+  drawAvatar(ctx, input, width - 150, height - 150, 110);
+  if (segment.kind === 'cta') drawCard(ctx, width, height, segment.caption, input.link);
+  drawCountdownOf(ctx, input, board.x + board.size / 2, board.y + board.size / 2);
+}
 
-  if (vertical) {
-    wrapText(ctx, input.title, { x: 60, y: 110, maxWidth: 960, font: `700 58px ${FONT}`, color: COLORS.text, lineHeight: 70, maxLines: 2 });
-    if (input.segment.moveLabel) text(ctx, input.segment.moveLabel, 60, 320, `700 48px ${FONT}`, COLORS.accent);
-    wrapText(ctx, caption, { x: 540, y: 1480, maxWidth: 960, font: `800 76px ${FONT}`, color: COLORS.text, lineHeight: 88, maxLines: 3, align: 'center' });
-    drawAvatar(ctx, input, 60, 1700, 170);
-    text(ctx, input.coachName, 250, 1795, `600 44px ${FONT}`, COLORS.muted);
-  } else {
-    const panelX = 1080;
-    wrapText(ctx, input.title, { x: panelX, y: 130, maxWidth: 780, font: `700 52px ${FONT}`, color: COLORS.text, lineHeight: 62, maxLines: 3 });
-    if (input.segment.moveLabel) text(ctx, input.segment.moveLabel, panelX, 360, `700 64px ${FONT}`, COLORS.accent);
-    wrapText(ctx, caption, { x: panelX, y: 500, maxWidth: 780, font: `800 72px ${FONT}`, color: COLORS.text, lineHeight: 84, maxLines: 4 });
-    drawAvatar(ctx, input, panelX, 860, 150);
-    text(ctx, input.coachName, panelX + 180, 945, `600 42px ${FONT}`, COLORS.muted);
-  }
+/** §13.4: the board with the side panel; a card for the hook, each chapter,
+ * the outro and the end. */
+function drawVideoFrame(ctx: CanvasRenderingContext2D, input: FrameInput, width: number, height: number): void {
+  const board = { x: 60, y: 60, size: 960 };
+  const { segment } = input;
+  drawBoard(ctx, input, board.x, board.y, board.size);
+  const panelX = 1080;
+  // Cards carry their own text over the board.
+  const caption = segment.kind === 'beat' || segment.kind === 'quiz' || segment.kind === 'tempting' || segment.kind === 'move' ? segment.caption : '';
+  wrapText(ctx, input.title, { x: panelX, y: 130, maxWidth: 780, font: `700 52px ${FONT}`, color: COLORS.text, lineHeight: 62, maxLines: 3 });
+  if (segment.moveLabel) text(ctx, segment.moveLabel, panelX, 360, `700 64px ${FONT}`, segment.kind === 'tempting' || (segment.kind === 'move' && caption) ? COLORS.arrows.threat : COLORS.accent);
+  if (segment.kind === 'tempting') text(ctx, 'Tempting, but…', panelX, 440, `600 44px ${FONT}`, COLORS.muted);
+  wrapText(ctx, caption, { x: panelX, y: 540, maxWidth: 780, font: `800 72px ${FONT}`, color: COLORS.text, lineHeight: 84, maxLines: 4 });
+  drawAvatar(ctx, input, panelX, 860, 150);
+  text(ctx, input.coachName, panelX + 180, 945, `600 42px ${FONT}`, COLORS.muted);
 
-  if (input.segment.kind === 'title') drawCard(ctx, width, height, input.title, input.segment.caption);
-  if (input.segment.kind === 'end') drawCard(ctx, width, height, input.title, `Learn it move by move: ${input.link}`);
+  if (segment.kind === 'title') drawCard(ctx, width, height, segment.caption || input.title, '');
+  if (segment.kind === 'chapter') drawCard(ctx, width, height, segment.caption, input.title);
+  if (segment.kind === 'outro') drawCard(ctx, width, height, segment.caption, `Learn it move by move: ${input.link}`);
+  if (segment.kind === 'end') drawCard(ctx, width, height, input.title, `Learn it move by move: ${input.link}`);
+  drawCountdownOf(ctx, input, board.x + board.size / 2, board.y + board.size / 2);
+}
+
+function drawCountdownOf(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, y: number): void {
   const countdown = input.segment.pauseMs ? input.segment.end - input.ms : 0;
-  if (countdown > 0 && countdown <= input.segment.pauseMs) drawCountdown(ctx, boardX + boardSize / 2, boardY + boardSize / 2, Math.ceil(countdown / 1000));
+  if (countdown > 0 && countdown <= input.segment.pauseMs) drawCountdown(ctx, x, y, Math.ceil(countdown / 1000));
 }
 
 function drawBoard(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, y: number, size: number): void {

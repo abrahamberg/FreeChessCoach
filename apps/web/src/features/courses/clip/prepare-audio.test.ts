@@ -31,7 +31,7 @@ function course(): CourseDocument {
     takeaways: [],
     hookOptions: [],
     clipLinks: {},
-    video: { title: 'Greed', thumbnailText: 'Greed', hook: 'Greed loses.', outro: 'Would you take?' }
+    video: { title: 'Greed', thumbnailText: 'Greed', hook: 'Greed loses.', outro: '' }
   };
 }
 
@@ -81,6 +81,19 @@ describe('prepareCourseAudio', () => {
     await prepareCourseAudio({ document: { ...course(), coachPersona: 'scholar' }, backend: 'browser', cache, client: again });
     expect(again.texts).toHaveLength(2);
     expect(cache.entries.has(audioCacheKey('browser', 'scholar', 'Greed loses.'))).toBe(true);
+  });
+
+  test("the video's tempting moves and outro, then the reel's lines, each with its key", () => {
+    const document = course();
+    document.episodes[1]!.plies[1] = { ...document.episodes[1]!.plies[1]!, tempting: [{ san: 'Qxc3+', why: 'It gives the win away.' }] };
+    document.video = { title: 'Greed', thumbnailText: 'Greed', hook: '', outro: 'Would you take it?' };
+    document.reel = {
+      style: 'highlight', startNodeId: 'n1', climaxNodeId: 'n2', endNodeId: 'n2', hook: 'A trap in eight.', topText: 'Black to play',
+      beats: [{ nodeId: 'n2', say: 'Mate.', caption: 'Mate' }], payoff: 'Mate', cta: 'Follow for a trap a day.', loop: ''
+    };
+    expect(courseSpeeches(document).map((speech) => speech.key)).toEqual([
+      'note:e1:n1', 'tempting:e2:n3:0', 'clip:e2:n3', 'video:outro', 'reel:hook', 'reel:beat:n2', 'reel:cta'
+    ]);
   });
 
   test('nothing comes back unless every sentence has audio', async () => {

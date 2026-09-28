@@ -1,169 +1,253 @@
-import { videoCaption, videoLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CourseKind, type CourseNode } from '@freechesscoach/shared';
-import { boardSoundLengthMs } from '../../../sounds/board-sounds.js';
-import type { BoardSound } from '../../../sounds/move-sounds.js';
+import { Chess } from 'chess.js';
+import { videoCaption, videoLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CourseNode, type CoursePly } from '@freechesscoach/shared';
+import { moveSound } from '../../../sounds/move-sounds.js';
 import { courseMoveSound, type CourseEvals } from '../player/course-move-list.js';
 import { moveLabel } from '../courseEdits.js';
+import { clipSoundLengthMs, type ClipSound } from './clip-sounds.js';
 
-/** docs/courses.md §8: 9:16 for reels and Shorts, 16:9 for YouTube. */
+/** docs/courses.md §13.1: the YouTube video is 16:9, the reel 9:16. */
 export type ClipFormat = 'vertical' | 'landscape';
+export type ClipProduct = 'video' | 'reel';
 
 export const CLIP_SIZES: Record<ClipFormat, { width: number; height: number }> = {
   vertical: { width: 1080, height: 1920 },
   landscape: { width: 1920, height: 1080 }
 };
 
-/** §3's clip column: the format each kind is made for first. */
-export function defaultClipFormat(kind: CourseKind): ClipFormat {
-  return kind === 'trap' || kind === 'tactics' || kind === 'puzzle' ? 'vertical' : 'landscape';
-}
+export const PRODUCT_FORMAT: Record<ClipProduct, ClipFormat> = { video: 'landscape', reel: 'vertical' };
 
-/** How long the pieces of a clip last, in ms. */
+/** How long the pieces of the YouTube video last, in ms. */
 export const CLIP_TIMING = {
-  /** An unnarrated move between beats ("the setup moves play fast"). */
+  /** An unnarrated move between lines. */
   moveMs: 700,
-  /** After each beat's audio. */
+  /** After each line's audio. */
   gapMs: 350,
-  /** A beat with no words (a caption only). */
+  /** A line with no words (a caption only). */
   silentBeatMs: 1500,
   /** The end card with the course link. */
   endCardMs: 3000,
   /** The quiz countdown after its prompt (CONFIG.courses.quizPauseSeconds). */
-  quizPauseMs: 3000
+  quizPauseMs: 3000,
+  /** A chapter's card (§13.4). */
+  chapterMs: 2000,
+  /** The board back where it was after a tempting move is played out. */
+  backMs: 500
 };
 
 export interface ClipSegment {
   start: number;
   end: number;
-  /** `title`: a beat with no node (the hook card); `move`: an unnarrated move
-   * played fast; `quiz`: the position before the answer, the prompt and a
-   * countdown; `beat`: a narrated moment; `end`: the end card. */
-  kind: 'title' | 'move' | 'quiz' | 'beat' | 'end';
+  /** `title`: the hook, no move; `chapter`: a chapter card; `move`: a move
+   * played without a word; `quiz`: the position before the answer, the
+   * prompt and a countdown; `beat`: a narrated moment; `tempting`: a move
+   * that looks right, shown and explained before it is played out;
+   * `silence`: the held breath before a reel's climax; `outro`, `cta`: the
+   * closing cards; `end`: the end card. */
+  kind: 'title' | 'chapter' | 'move' | 'quiz' | 'beat' | 'tempting' | 'silence' | 'outro' | 'cta' | 'end';
   fen: string;
   /** The move just played, highlighted on the board. */
   lastMove: { from: string; to: string } | null;
-  /** "6.Bc3", shown with the move; null on title and end cards. */
+  /** "6.Bc3", shown with the move; null on cards. */
   moveLabel: string | null;
   arrows: CourseArrow[];
   caption: string;
-  /** prepare-audio.ts's key for the beat's audio; null when silent. */
+  /** prepare-audio.ts's key for the segment's audio; null when silent. */
   audioKey: string | null;
-  /** A quiz beat's pause, at the end of the segment (a countdown). */
+  /** A countdown's length, at the end of the segment. */
   pauseMs: number;
-  /** The move's board sound, at the segment's start; null when it shows no
-   * new move or the clip has sounds off (docs/plan.md Phase 88). */
-  sound: BoardSound | null;
+  /** The sound at the segment's start: the move's, or a cut's; null when
+   * none (sounds off, no new move). */
+  sound: ClipSound | null;
   /** The segment's audio starts this long after the segment: after the
    * move's sound, so they never talk over each other. */
   audioOffsetMs: number;
 }
 
 export interface ClipTimeline {
+  product: ClipProduct;
   format: ClipFormat;
   segments: ClipSegment[];
   durationMs: number;
+  /** The reel's top band, on screen the whole reel (§13.3). */
+  topText?: string;
 }
 
-/** The episodes a clip covers, in chapter order. The 9:16 tactics clip is
- * the first example only (with the concept before it, §3). */
-export function clipEpisodes(document: CourseDocument, format: ClipFormat): CourseEpisode[] {
-  const byId = new Map(document.episodes.map((episode) => [episode.id, episode]));
-  const ordered = document.chapters.flatMap((chapter) => chapter.episodeIds.flatMap((id) => byId.get(id) ?? []));
-  const episodes = ordered.length ? ordered : document.episodes;
-  if (document.kind !== 'tactics' || format !== 'vertical') return episodes;
-  const firstExample = episodes.findIndex((episode) => episode.role === 'example');
-  return firstExample < 0 ? episodes : episodes.slice(0, firstExample + 1);
-}
-
-/** The clip as timed segments: beats last their audio (already at the
- * persona's playback rate) plus a gap plus any quiz pause; the moves
- * between two beats on the same line play fast; a beat off the line shown
- * (the trap's safety move) cuts straight to it. Pure, so the preview and
- * the recording are the same clip. */
-export function buildClipTimeline(options: {
+export interface TimelineOptions {
   document: CourseDocument;
-  format: ClipFormat;
   /** Audio length per prepare-audio key, in ms at playback speed. */
   audioMs: (key: string) => number | undefined;
-  timing?: typeof CLIP_TIMING;
   /** Board sounds under the moves: the course's evaluations (bad and great
-   * for either side) and how long a move's sounds last. Absent: none. */
-  sounds?: { evals: CourseEvals; lengthMs?: (sound: BoardSound) => number } | null;
-}): ClipTimeline {
-  const { document, format, audioMs, timing = CLIP_TIMING, sounds = null } = options;
-  const soundOf = (node: CourseNode): BoardSound | null => (sounds ? courseMoveSound(document, sounds.evals, node) : null);
-  const soundLength = sounds?.lengthMs ?? boardSoundLengthMs;
-  const byId = new Map(document.nodes.map((node) => [node.id, node]));
-  const segments: ClipSegment[] = [];
-  let clock = 0;
-  let shown: CourseNode | null = null;
+   * for either side) and how long a sound lasts. Absent: none. */
+  sounds?: { evals: CourseEvals; lengthMs?: (sound: ClipSound) => number } | null;
+}
 
-  const push = (segment: Omit<ClipSegment, 'start' | 'end' | 'sound' | 'audioOffsetMs'> & Partial<Pick<ClipSegment, 'sound' | 'audioOffsetMs'>>, length: number): void => {
-    segments.push({ sound: null, audioOffsetMs: 0, ...segment, start: clock, end: clock + length });
-    clock += length;
-  };
-  const board = (node: CourseNode | null) => ({
+type NewSegment = Omit<ClipSegment, 'start' | 'end' | 'sound' | 'audioOffsetMs'> & Partial<Pick<ClipSegment, 'sound' | 'audioOffsetMs'>>;
+
+/** Appends segments back to back. */
+export class SegmentWriter {
+  readonly segments: ClipSegment[] = [];
+  clock = 0;
+
+  push(segment: NewSegment, length: number): void {
+    this.segments.push({ sound: null, audioOffsetMs: 0, ...segment, start: this.clock, end: this.clock + length });
+    this.clock += length;
+  }
+}
+
+/** The board after `node`, or the start. */
+export function boardAt(document: CourseDocument, node: CourseNode | null): Pick<ClipSegment, 'fen' | 'lastMove' | 'moveLabel'> {
+  return {
     fen: node?.fenAfter ?? document.startFen,
     lastMove: node ? { from: node.uci.slice(0, 2), to: node.uci.slice(2, 4) } : null,
     moveLabel: node ? moveLabel(document, node) : null
-  });
-
-  const quizMoment = (episode: CourseEpisode): void => {
-    const answer = episode.quiz ? byId.get(episode.quiz.answerNodeId) : undefined;
-    const before = answer?.parentId ? byId.get(answer.parentId) : undefined;
-    if (!episode.quiz || !answer) return;
-    if (before) {
-      for (const between of movesBetween(byId, shown, before)) push({ kind: 'move', ...board(between), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: soundOf(between) }, timing.moveMs);
-      shown = before;
-    }
-    const key = `quiz:${episode.id}`;
-    const spoken = episode.quiz.prompt.trim() ? audioMs(key) : undefined;
-    const length = (spoken === undefined ? 0 : spoken + timing.gapMs) + timing.quizPauseMs;
-    push({ kind: 'quiz', ...board(before ?? null), arrows: [], caption: episode.quiz.prompt, audioKey: spoken === undefined ? null : key, pauseMs: timing.quizPauseMs }, length);
   };
-
-  // §13.4: the video opens on its hook (Phase 94 plays it over the climax).
-  const hook = document.video?.hook.trim();
-  if (hook) {
-    const spoken = audioMs('video:hook');
-    const length = spoken === undefined ? timing.silentBeatMs : spoken + timing.gapMs;
-    push({ kind: 'title', ...board(null), lastMove: null, moveLabel: null, arrows: [], caption: document.video?.thumbnailText ?? '', audioKey: spoken === undefined ? null : 'video:hook', pauseMs: 0 }, length);
-  }
-  for (const episode of clipEpisodes(document, format)) {
-    const clipPlies = episode.plies.filter((ply) => ply.video);
-    // Code owns the quiz moment: before the answer is shown, never twice.
-    const answerAt = episode.quiz ? clipPlies.findIndex((ply) => ply.nodeId === episode.quiz?.answerNodeId) : -1;
-    if (episode.quiz && answerAt <= 0) quizMoment(episode);
-    clipPlies.forEach((ply, index) => {
-      if (episode.quiz && index === answerAt && index > 0) quizMoment(episode);
-      const node = byId.get(ply.nodeId);
-      if (!node) return;
-      const key = `clip:${episode.id}:${ply.nodeId}`;
-      const spoken = videoLine(ply) ? audioMs(key) : undefined;
-      const length = spoken === undefined ? timing.silentBeatMs : spoken + timing.gapMs;
-      for (const between of movesBetween(byId, shown, node)) push({ kind: 'move', ...board(between), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: soundOf(between) }, timing.moveMs);
-      // A move shown for the first time sounds; its narration waits for it.
-      const sound = shown?.id === node.id ? null : soundOf(node);
-      const lead = sound && spoken !== undefined ? soundLength(sound) : 0;
-      shown = node;
-      push(
-        { kind: 'beat', ...board(node), arrows: ply.arrows, caption: videoCaption(ply), audioKey: spoken === undefined ? null : key, pauseMs: 0, sound, audioOffsetMs: lead },
-        length + lead
-      );
-    });
-  }
-  push({ kind: 'end', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.endCardMs);
-  return { format, segments, durationMs: clock };
 }
 
 /** The moves after `from` up to, not including, `to`, when `to` is further
  * down the same line; none when it is not (a cut). */
-function movesBetween(byId: Map<string, CourseNode>, from: CourseNode | null, to: CourseNode): CourseNode[] {
+export function movesBetween(byId: ReadonlyMap<string, CourseNode>, from: CourseNode | null, to: CourseNode): CourseNode[] {
   const path: CourseNode[] = [];
   for (let node = to.parentId ? byId.get(to.parentId) : undefined; node; node = node.parentId ? byId.get(node.parentId) : undefined) {
     if (node.id === from?.id) return path;
     path.unshift(node);
   }
   return from ? [] : path;
+}
+
+/** The episodes in chapter order, with their chapter. */
+function chapteredEpisodes(document: CourseDocument): { chapter: string | null; episode: CourseEpisode }[] {
+  const byId = new Map(document.episodes.map((episode) => [episode.id, episode]));
+  const ordered = document.chapters.flatMap((chapter) => chapter.episodeIds.flatMap((id, index) => {
+    const episode = byId.get(id);
+    return episode ? [{ chapter: index === 0 ? chapter.title : null, episode }] : [];
+  }));
+  return ordered.length ? ordered : document.episodes.map((episode) => ({ chapter: null, episode }));
+}
+
+/**
+ * docs/courses.md §13.4, the YouTube video as timed segments: the hook over
+ * the climax, a card per chapter, and each speaking move with its tempting
+ * moves first: each shown with an arrow while the coach says why it fails,
+ * then played out with the engine's answer, then the board goes back. Lines
+ * last their audio plus a gap; the moves between play fast; a line off the
+ * line shown (the trap's safety move) cuts straight to it. Pure, so the
+ * preview and the recording are the same video.
+ */
+export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof CLIP_TIMING }): ClipTimeline {
+  const { document, audioMs, timing = CLIP_TIMING, sounds = null } = options;
+  const soundOf = (node: CourseNode): ClipSound | null => (sounds ? courseMoveSound(document, sounds.evals, node) : null);
+  const soundLength = sounds?.lengthMs ?? clipSoundLengthMs;
+  const byId = new Map(document.nodes.map((node) => [node.id, node]));
+  const out = new SegmentWriter();
+  let shown: CourseNode | null = null;
+  const board = (node: CourseNode | null) => boardAt(document, node);
+  const spokenLength = (key: string, has: boolean): { key: string | null; length: number } => {
+    const spoken = has ? audioMs(key) : undefined;
+    return spoken === undefined ? { key: null, length: timing.silentBeatMs } : { key, length: spoken + timing.gapMs };
+  };
+  const playTo = (node: CourseNode): void => {
+    for (const between of movesBetween(byId, shown, node)) out.push({ kind: 'move', ...board(between), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: soundOf(between) }, timing.moveMs);
+  };
+
+  // §13.4: the hook over the climax, then the cut back to the start.
+  const hook = document.video?.hook.trim();
+  let cut = false;
+  if (hook) {
+    const climax = byId.get(document.reel?.climaxNodeId ?? document.lines[0]?.leafNodeId ?? '') ?? null;
+    const spoken = spokenLength('video:hook', true);
+    out.push({ kind: 'title', ...board(climax), moveLabel: null, arrows: [], caption: document.video?.thumbnailText ?? '', audioKey: spoken.key, pauseMs: 0 }, spoken.length);
+    cut = true;
+  }
+
+  const quizMoment = (episode: CourseEpisode): void => {
+    const answer = episode.quiz ? byId.get(episode.quiz.answerNodeId) : undefined;
+    const before = answer?.parentId ? byId.get(answer.parentId) : undefined;
+    if (!episode.quiz || !answer) return;
+    if (before) {
+      playTo(before);
+      shown = before;
+    }
+    const key = `quiz:${episode.id}`;
+    const spoken = episode.quiz.prompt.trim() ? audioMs(key) : undefined;
+    const length = (spoken === undefined ? 0 : spoken + timing.gapMs) + timing.quizPauseMs;
+    out.push({ kind: 'quiz', ...board(before ?? null), arrows: [], caption: episode.quiz.prompt, audioKey: spoken === undefined ? null : key, pauseMs: timing.quizPauseMs }, length);
+  };
+
+  const temptingMoves = (episode: CourseEpisode, ply: CoursePly, node: CourseNode): void => {
+    const before = node.parentId ? (byId.get(node.parentId) ?? null) : null;
+    (ply.tempting ?? []).forEach((tempting, index) => {
+      const played = playOut(before?.fenAfter ?? document.startFen, [tempting.san, ...(tempting.refutation ?? [])]);
+      const first = played[0];
+      if (!first) return;
+      const spoken = spokenLength(`tempting:${episode.id}:${ply.nodeId}:${index}`, Boolean(tempting.why.trim()));
+      out.push(
+        { kind: 'tempting', ...board(before), arrows: [{ from: first.from, to: first.to, kind: 'threat' }], caption: `${tempting.san}?`, audioKey: spoken.key, pauseMs: 0 },
+        spoken.length
+      );
+      played.forEach((move, at) => {
+        const sound = sounds ? (at === 0 ? 'bad' : moveSound({ san: move.san, mover: move.mover, learnerSide: document.learnerSide })) : null;
+        out.push({ kind: 'move', fen: move.fen, lastMove: { from: move.from, to: move.to }, moveLabel: move.label, arrows: [], caption: at === 0 ? `${tempting.san}?` : '', audioKey: null, pauseMs: 0, sound }, timing.moveMs);
+      });
+      out.push({ kind: 'move', ...board(before), arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.backMs);
+    });
+  };
+
+  for (const { chapter, episode } of chapteredEpisodes(document)) {
+    if (chapter !== null) {
+      out.push({ kind: 'chapter', ...board(shown), moveLabel: null, lastMove: null, arrows: [], caption: chapter, audioKey: null, pauseMs: 0, sound: sounds ? 'whoosh' : null }, timing.chapterMs);
+      cut = false;
+    }
+    if (cut) {
+      // The hook's cut back to the start, when no chapter card makes it.
+      out.push({ kind: 'move', ...board(null), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: sounds ? 'whoosh' : null }, timing.backMs);
+      shown = null;
+      cut = false;
+    }
+    const videoPlies = episode.plies.filter((ply) => ply.video);
+    // Code owns the quiz moment: before the answer is shown, never twice.
+    const answerAt = episode.quiz ? videoPlies.findIndex((ply) => ply.nodeId === episode.quiz?.answerNodeId) : -1;
+    if (episode.quiz && answerAt <= 0) quizMoment(episode);
+    videoPlies.forEach((ply, index) => {
+      if (episode.quiz && index === answerAt && index > 0) quizMoment(episode);
+      const node = byId.get(ply.nodeId);
+      if (!node) return;
+      if (shown?.id !== node.id) {
+        playTo(node);
+        if (node.parentId) shown = byId.get(node.parentId) ?? shown;
+        temptingMoves(episode, ply, node);
+      }
+      const spoken = spokenLength(`clip:${episode.id}:${ply.nodeId}`, Boolean(videoLine(ply)));
+      // A move shown for the first time sounds; its line waits for it.
+      const sound = shown?.id === node.id ? null : soundOf(node);
+      const lead = sound && spoken.key ? soundLength(sound) : 0;
+      shown = node;
+      out.push({ kind: 'beat', ...board(node), arrows: ply.arrows, caption: videoCaption(ply), audioKey: spoken.key, pauseMs: 0, sound, audioOffsetMs: lead }, spoken.length + lead);
+    });
+  }
+  const outro = document.video?.outro.trim();
+  if (outro) {
+    const spoken = spokenLength('video:outro', true);
+    out.push({ kind: 'outro', ...board(shown), moveLabel: null, arrows: [], caption: outro, audioKey: spoken.key, pauseMs: 0 }, spoken.length);
+  }
+  out.push({ kind: 'end', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.endCardMs);
+  return { product: 'video', format: 'landscape', segments: out.segments, durationMs: out.clock };
+}
+
+/** Moves off the course's tree (a tempting move and its refutation), played
+ * from `fen` while they are legal. */
+export function playOut(fen: string, sans: string[]): { san: string; from: string; to: string; fen: string; mover: 'white' | 'black'; label: string }[] {
+  const chess = new Chess(fen);
+  const played: { san: string; from: string; to: string; fen: string; mover: 'white' | 'black'; label: string }[] = [];
+  for (const san of sans) {
+    const [, turn, , , , fullmove] = chess.fen().split(' ');
+    try {
+      const move = chess.move(san);
+      played.push({ san: move.san, from: move.from, to: move.to, fen: chess.fen(), mover: move.color === 'w' ? 'white' : 'black', label: `${fullmove ?? '1'}${turn === 'b' ? '…' : '.'}${move.san}` });
+    } catch {
+      break;
+    }
+  }
+  return played;
 }
 
 /** The segment playing at `ms` (the last one past the end). */

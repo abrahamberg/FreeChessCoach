@@ -55,7 +55,10 @@ export type CourseChapter = z.infer<typeof CourseChapterSchema>;
  * dossier's tempting moves, and why, in the coach's words. */
 export const CourseTemptingSchema = z.object({
   san: z.string().min(1),
-  why: z.string()
+  why: z.string(),
+  /** The engine's answer, copied from the dossier by code (never the
+   * model): the video plays it out. */
+  refutation: z.array(z.string()).optional()
 });
 export type CourseTempting = z.infer<typeof CourseTemptingSchema>;
 
@@ -306,7 +309,7 @@ export type CourseOutline = z.infer<typeof CourseOutlineSchema>;
 export const EpisodeScriptSchema = z.object({
   episodeId: z.string().min(1),
   // A small model may leave out "tempting"; none is the same as an empty list.
-  plies: z.array(CoursePlySchema.extend({ say: z.string().nullable(), caption: z.string().nullable(), tempting: z.array(CourseTemptingSchema).default([]) })),
+  plies: z.array(CoursePlySchema.extend({ say: z.string().nullable(), caption: z.string().nullable(), tempting: z.array(CourseTemptingSchema.pick({ san: true, why: true })).default([]) })),
   quiz: CourseQuizSchema.nullable()
 });
 export type EpisodeScript = z.infer<typeof EpisodeScriptSchema>;

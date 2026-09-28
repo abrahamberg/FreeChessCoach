@@ -14,3 +14,11 @@ chose; no reference audio is used or included. 16-bit mono 44.1 kHz WAV (docs/pl
 | check.wav | the capture made sharper, over a heavier knock |
 | bad.wav | the move's knock with its ring choked |
 | great.wav | between a capture and a move |
+
+The videos' cut sounds come from `scripts/sounds/generate-clip-sounds.py`
+(docs/courses.md §13.8), also generated from scratch:
+
+| File | What |
+|---|---|
+| riser.wav | a low hum building for 5 s under a puzzle's countdown |
+| whoosh.wav | a soft air sweep for a cut: a chapter card, the hook cutting back |

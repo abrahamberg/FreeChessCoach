@@ -1,4 +1,4 @@
-import type { BoardSound } from '../../../sounds/move-sounds.js';
+import type { ClipSound } from './clip-sounds.js';
 import { drawClipFrame, type FrameInput } from './draw-frame.js';
 import type { SpokenAudio } from './prepare-audio.js';
 import { segmentAt, type ClipTimeline } from './timeline.js';
@@ -42,8 +42,8 @@ export interface ClipPlayerOptions {
   context: AudioContext;
   timeline: ClipTimeline;
   buffers: Map<string, AudioBuffer>;
-  /** The board sounds (`boardSoundBuffers`), when the clip has them on. */
-  soundBuffers?: Record<BoardSound, AudioBuffer> | null;
+  /** The board and cut sounds (`clipSoundBuffers`), when the clip has them on. */
+  soundBuffers?: Record<ClipSound, AudioBuffer> | null;
   playbackRate: number;
   frame: Omit<FrameInput, 'timeline' | 'segment' | 'ms'>;
   onTime?: (ms: number) => void;

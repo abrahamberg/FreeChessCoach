@@ -36,16 +36,29 @@ export type CourseVoice = (typeof COURSE_VOICES)[number];
 
 export const KOKORO_ONLY = 'Courses are voiced by Kokoro only: in the browser or on your local Kokoro server.';
 
-/** Everything the course's coach says, in document order: the video's hook,
- * then per episode the video's lines, the quiz prompt and the course's
- * lines. */
+/** Everything the course's coach says, in document order: the YouTube
+ * video's hook; per episode the video's lines with their tempting moves, the
+ * quiz prompt and the course's lines; the video's outro; then the reel. */
 export function courseSpeeches(document: CourseDocument): CourseSpeech[] {
-  const hook = document.video?.hook.trim() ? [{ key: 'video:hook', text: document.video.hook }] : [];
-  return [...hook, ...document.episodes.flatMap((episode) => [
-    ...episode.plies.flatMap((ply) => (ply.video && videoLine(ply) ? [{ key: `clip:${episode.id}:${ply.nodeId}`, text: videoLine(ply) }] : [])),
+  const said = (key: string, text: string | undefined): CourseSpeech[] => (text?.trim() ? [{ key, text }] : []);
+  const reel = document.reel;
+  return [...said('video:hook', document.video?.hook), ...document.episodes.flatMap((episode) => [
+    ...episode.plies.flatMap((ply) =>
+      ply.video
+        ? [
+            ...(ply.tempting ?? []).flatMap((tempting, index) => said(`tempting:${episode.id}:${ply.nodeId}:${index}`, tempting.why)),
+            ...said(`clip:${episode.id}:${ply.nodeId}`, videoLine(ply))
+          ]
+        : []
+    ),
     ...(episode.quiz?.prompt.trim() ? [{ key: `quiz:${episode.id}`, text: episode.quiz.prompt }] : []),
     ...episode.plies.flatMap((ply) => (ply.course && ply.text.trim() ? [{ key: `note:${episode.id}:${ply.nodeId}`, text: ply.text }] : []))
-  ])];
+  ]), ...said('video:outro', document.video?.outro), ...(reel ? [
+    ...said('reel:hook', reel.hook),
+    ...reel.beats.flatMap((beat) => said(`reel:beat:${beat.nodeId}`, beat.say)),
+    ...said('reel:cta', reel.cta),
+    ...said('reel:loop', reel.loop)
+  ] : [])];
 }
 
 /** docs/courses.md §8, "all audio first, then record": synthesises every
