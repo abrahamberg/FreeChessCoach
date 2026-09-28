@@ -624,8 +624,9 @@ Commit: `feat(courses): prepare all coach audio before recording`
 **Files:** `apps/web/src/features/courses/clip/` (`timeline.ts`,
 `draw-frame.ts`, `record-clip.ts`), tests for `timeline.ts`.
 
-Status: in progress — desktop Chrome done 2026-09-28 (commit below); waiting
-for the owner's iPhone Safari test (**Stop 5**). Chrome records
+Status: done 2026-09-28 for desktop Chrome, commit 08c992e. **Safari
+deferred by the owner** (2026-09-28): the last box stays open until an iPhone
+Safari recording is tried; come back to it before promoting clips. Chrome records
 `video/mp4;codecs=avc1,mp4a`: the trap's 16:9 clip came out 1920×1080, 46.2 s,
 3.4 MB, video and audio decoding; the owner recorded one in Chrome too and
 the MP4 plays (2026-09-28). Not drawn yet: the eval bar (the editor's
