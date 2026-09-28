@@ -1419,6 +1419,128 @@ Commit: `feat(courses): the course editor's frame`
 
 Commit: `docs: the Course studio`
 
+## Phase 90 — Long and short, move by move; a curriculum order
+
+The owner, 2026-09-28, on the editor: "Write with AI" and "Build without
+AI" both replace everything, so they are one reset; the clip's "beats" are
+not understood; the course coach is not shown; and courses need sorting by
+level with a curriculum order ("1200-01, 1200-02") so learners can follow a
+path.
+
+The model today: an episode has **notes** (text per move, the course page)
+and **beats** (the clip's script: which moves it stops on, what is said,
+the caption). They are the same idea twice. Phase 90 makes them one:
+
+- Each move of an episode is a **ply** entry: `{ nodeId, text, clipText?,
+  caption?, arrows, long, short }`. `long`: it speaks in the course (the
+  play-through); `short`: in the clip. The clip speaks `clipText` when
+  there is one, else `text`; the caption is made from the spoken line
+  unless set. A move with neither is just played. Most moves are not
+  voiced, least of all in the short.
+- An episode may open with a card (`opener: { say, caption }`), the hook's
+  title card today; the end card stays code's.
+- **Budgets**, set by the planning call: each episode gets how many moves
+  may speak in the long and in the short, and the clip a total length (a
+  reel about 45 s, a YouTube video a few minutes); the episode call picks
+  the moves within them. The creator changes any of it by ticking
+  "In the course" / "In the clip" while stepping through the moves.
+- The pipeline stays (docs/courses.md §5.2): the engine pass, the outline
+  call (the structure from the kind's template and the direction, now with
+  budgets), one episode call each (the course coach's voice, very
+  important, and text worth hearing), every sentence grounded in the
+  engine's facts for its move, then the verifier.
+- **Level and order**: a course gets a target rating and a place in that
+  level's curriculum (`level: { rating: 1200, order: 1 }`, shown
+  "1200-01"). The rating replaces the band picker (the band the prompts use
+  is derived from it: under 1000 new to chess, under 1500 improving, under
+  1900 club, then advanced). The Courses page and the studio sort by it:
+  Curriculum (level, then order) or Newest.
+- All course data is test data (owner, 2026-09-28): the schema changes
+  without migrating old documents; `scripts/sounds`-style tools rebuild what
+  is needed.
+
+### Task 90.1 — The ply model
+
+**Read:** `packages/shared/src/course.ts` (`CourseEpisodeSchema`),
+`packages/chess-analysis/src/course-verify*.ts`, `course-skeleton.ts`,
+`apps/api/src/services/courses/manual-episodes*.ts`, `note-audio.ts`,
+`apps/web/src/features/courses/player/course-steps.ts`,
+`clip/timeline.ts`, `clip/prepare-audio.ts`.
+**Files:** those and their tests.
+
+- [ ] Failing tests first: the player speaks a ply's `text` when `long`;
+  the clip timeline narrates `short` plies with `clipText ?? text` and an
+  automatic caption; a ply with neither is played silently; the opener is
+  the title card.
+- [ ] `notes` and `beats` are replaced by `plies` and `opener`; the
+  verifier, the manual skeleton, note audio (one file per spoken text) and
+  publish follow.
+
+Commit: `feat(courses): one ply list for the long course and the short clip`
+
+### Task 90.2 — Budgets and the episode call
+
+**Read:** `packages/prompts/src/course/` (outline, episode, voice),
+`apps/api/src/services/courses/generate-*.ts`, `docs/courses.md` §6.
+**Files:** those, their snapshot tests, the golden set.
+
+- [ ] The outline call returns each episode's budget (`long`, `short`
+  voiced moves) and the clip's target seconds, from the kind's template.
+- [ ] The episode call returns plies with `long`/`short`, `text`, and
+  `clipText` only when the clip needs a shorter line; within its budget.
+- [ ] The voice block leads the episode prompt, with the persona's example
+  lines and two rules: every line sounds like this coach, and every line
+  says something the learner would want to hear (no filler like "a solid
+  move"). Each ply's facts come from the dossier.
+- [ ] `npm run course:golden` on the six golden courses: every episode within
+  budget, the verifier clean or its warnings shown.
+
+Commit: `feat(courses): budgets from the plan, plies from the episode call`
+
+### Task 90.3 — The editor, move by move
+
+**Read:** `CourseEditorPage.tsx`, `CourseEpisodePanel.tsx`,
+`CourseBoardPanel.tsx`, `CourseBeatsEditor.tsx`, `CourseStudioHeader.tsx`.
+**Files:** those + tests.
+
+- [ ] The Moves tab (was Notes): for the selected move, two ticks (In the
+  course, In the clip), the text, "A different line for the clip" (shows
+  `clipText`), the caption override, the arrows. The move chips under the
+  board mark which moves speak in the course and in the clip.
+- [ ] The Clip tab becomes the short's script: the opener and each clip
+  move in order with its line, and the clip's estimated length against its
+  budget. `CourseBeatsEditor` goes.
+- [ ] One "Start over…" in "⋮": a dialog with Write it again with AI, or
+  Start from the template (no AI). "Write with AI" shows only on an empty
+  course; an episode is rewritten from its AI tab.
+- [ ] The Details card shows the course coach (portrait and name, change
+  it: the voice changes, and a hint to rewrite for the new personality) and
+  the level (rating and order, "1200-01").
+
+Commit: `feat(courses): edit each move for the course and the clip`
+
+### Task 90.4 — Sorting by level and order
+
+**Read:** `apps/api/src/routes/public-courses.ts` and
+`services/courses/public-course.ts` (the catalogue),
+`features/courses/learn/CoursesHomePage.tsx`, `CoursesPage.tsx`.
+**Files:** those + tests.
+
+- [ ] The catalogue items carry the level; `?sort=curriculum|newest`
+  (curriculum: rating, then order, then newest).
+- [ ] Browse and the studio: a Sort control (Curriculum, Newest); in
+  Curriculum order each card shows "1200-01", and the rows fall under level
+  headings (1000, 1200, …).
+
+Commit: `feat(courses): sort courses by level and curriculum order`
+
+### Task 90.5 — Docs
+
+- [ ] `docs/courses.md` §4 (the document), §5–6 (budgets, the episode
+  output), §8 (the clip from plies), §9 (the level), §11.
+
+Commit: `docs: plies, budgets and the curriculum order`
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.
@@ -1444,6 +1566,9 @@ Commit: `docs: the Course studio`
 - 87: the Englund trap at 390 px and 1280 px wide looks like Game Review: the
   explorer, the board with its eval bar and graph, the coach; every stage and
   the Remember screen work on both.
+- 90: a regenerated Englund trap: each episode within its budget, the coach's
+  voice in every line; ticking a move out of the clip removes it from the
+  preview; the Courses page in Curriculum order shows 1200-01 before 1200-02.
 - 89: `/studio`, `/studio/new` and an editor look like the rest of the app;
   a course is created and edited end to end from the new pages.
 - 88: on the Englund trap, a clip and the board: move and opponent knocks,
