@@ -1,9 +1,7 @@
 import { nextCourseStage, type CourseStage } from '@freechesscoach/chess-analysis';
 import { COACH_PERSONA_INFO, type CourseDocument, type CourseEnrollmentPlace, type CourseEpisode } from '@freechesscoach/shared';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { CoachAvatar } from '../../../components/CoachAvatar.js';
-import { CoachCard } from '../../../components/CoachCard.js';
-import { ChevronRightIcon, UndoIcon } from '../../../components/Icon.js';
+import { ChevronRightIcon, PlaySmallIcon, UndoIcon } from '../../../components/Icon.js';
 import { useConfirmDialog } from '../../../hooks/useConfirmDialog.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
 import { toBoardMarks } from '../courseArrows.js';
@@ -11,6 +9,7 @@ import { COURSE_KIND_INFO } from '../courseKinds.js';
 import { AskCoachPanel, AskCoachSignIn } from './AskCoachPanel.js';
 import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
 import { CourseDrill } from './CourseDrill.js';
+import { CoursePane } from './CoursePane.js';
 import { CourseRecap } from './CourseRecap.js';
 import { CourseStageBar, STAGE_LABELS } from './CourseStageBar.js';
 import type { CourseProgressStore } from './course-progress.js';
@@ -357,10 +356,40 @@ function EpisodeView({ document, episode, audio, ask, startStep, onStep, nextLab
       </div>
 
       <div className="course-player__words">
-        <CoachCard avatar={<CoachAvatar persona={document.coachPersona} size="chat" />}>
+        <CoursePane
+          persona={document.coachPersona}
+          soundOn={audio.soundOn}
+          onSoundOn={audio.setSoundOn}
+          footer={
+            // Not while the quiz asks: the coach knows the course's answer.
+            asking ? null : ask === 'sign-in' ? (
+              <AskCoachSignIn />
+            ) : ask ? (
+              <AskCoachPanel position={{ slug: ask.slug, episodeId: episode.id, nodeId: view.move?.id ?? null }} />
+            ) : null
+          }
+        >
           {view.move && <p className="course-player__move">{view.move.san}</p>}
           {revealed && <p className="course-player__reveal">{solvedLine(solved, answer?.san)} {quiz.reveal}</p>}
-          {view.note ? <p>{view.note}</p> : !revealed && !asking && <p className="meta">{step === 0 ? 'Press Next to play through the moves.' : 'No note on this move.'}</p>}
+          {view.note ? (
+            <p className="course-pane__note">
+              {view.note}
+              {view.move && audio.soundOn && (
+                <button
+                  type="button"
+                  className="coach-voice-button"
+                  data-state={audio.loading ? 'loading' : 'idle'}
+                  aria-label="Hear it again"
+                  title="Hear it again"
+                  onClick={() => audio.play(episode.id, view.move!.id)}
+                >
+                  {audio.loading ? <span className="coach-voice-button__spinner" aria-hidden="true" /> : <PlaySmallIcon width={11} height={11} />}
+                </button>
+              )}
+            </p>
+          ) : (
+            !revealed && !asking && <p className="meta">{step === 0 ? 'Press Next to play through the moves.' : 'No note on this move.'}</p>
+          )}
           {asking && !attempt && (
             <div className="course-player__quiz">
               <p className="course-player__prompt">{quiz.prompt || 'Your move: what would you play here?'}</p>
@@ -378,26 +407,12 @@ function EpisodeView({ document, episode, audio, ask, startStep, onStep, nextLab
             </div>
           )}
           {asking && attempt && <AttemptFeedback attempt={attempt} judgement={judgement} answerSan={answer.san} acceptLabel="See the course move" onAccept={() => solve('alternative')} onRetry={tryAgain} />}
-        </CoachCard>
-        <div className="course-player__sound">
-          <button type="button" className="btn-secondary" aria-pressed={audio.soundOn} onClick={() => audio.setSoundOn(!audio.soundOn)}>
-            {audio.soundOn ? 'Sound on' : 'Sound off'}
-          </button>
-          {view.note && view.move && audio.soundOn && (
-            <button type="button" className="btn-secondary" onClick={() => audio.play(episode.id, view.move!.id)}>
-              Hear it again
-            </button>
-          )}
-          {audio.loading && <span className="meta">Loading the voice…</span>}
           {audio.error && (
-            <span className="meta" role="alert">
+            <p className="meta" role="alert">
               {audio.error}
-            </span>
+            </p>
           )}
-        </div>
-        {/* Not while the quiz asks: the coach knows the course's answer. */}
-        {!asking && ask === 'sign-in' && <AskCoachSignIn />}
-        {!asking && ask && ask !== 'sign-in' && <AskCoachPanel position={{ slug: ask.slug, episodeId: episode.id, nodeId: view.move?.id ?? null }} />}
+        </CoursePane>
       </div>
     </div>
   );

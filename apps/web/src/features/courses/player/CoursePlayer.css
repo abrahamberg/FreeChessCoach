@@ -137,11 +137,34 @@
 }
 
 .course-player__actions,
-.course-player__sound {
+/* The coach beside the board, in the coaching session's chat pane look
+ * (ChatPane.css gives the header and the voice toggle). */
+.course-pane {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.course-pane__body {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
+  padding: 16px;
+}
+
+.course-pane__body p {
+  margin: 0;
+}
+
+.course-pane__note {
+  line-height: var(--line-height-reading);
+}
+
+.course-pane__footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
 }
 
 /* The takeaways between the play-through and Practice: one centred column,

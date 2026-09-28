@@ -31,6 +31,11 @@ describe('CoursePlayer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByText('The Englund Gambit.')).toBeTruthy();
     expect(noteAudio).toHaveBeenCalledWith('e1', n2);
+    // The coaching pane's round voice toggle, and the note's own replay button.
+    expect(screen.getByRole('button', { name: 'Hear it again' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Turn the coach’s voice off' }));
+    expect(screen.getByRole('button', { name: 'Turn the coach’s voice on' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.queryByRole('button', { name: 'Hear it again' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByText('How does Black win the pawn back?')).toBeTruthy();
