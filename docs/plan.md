@@ -1696,8 +1696,9 @@ timeline, editor, player, pipeline, template), tests.
 
 - [ ] Ply: `text`, `say?`, `tempting: {san, why}[]`, `course`, `video`;
   episode `budget: {course, video, keyNodeIds?}`; document `videos`,
-  `video?`, `reel?`. The intake's "Videos" ticks (YouTube video, Reel) with
-  the §13.2 defaults replace "What to make".
+  `video?`, `reel?`. The intake's "Videos" choice (Reel, YouTube video,
+  Both; one is required, the kind preselects it per §13.2) replaces "What
+  to make". The course is always made.
 - [ ] The editor and player compile against it (the Video and Reel tabs
   come in Phase 95; until then the Clip tab previews the video).
 

@@ -919,6 +919,9 @@ drills. Signed out, the same button explains that coaching needs an account.
 - Background music (a low lo-fi bed at 10–15% under the voice, with a drop
   on the winning move). Phase 92 uses sound design only (§13.8).
 - Zooming the board on a quadrant during a tactic.
+- Video-only templates with no course behind them (for example "the most
+  ridiculous games"): their own kinds and prompts, never published as
+  courses.
 - Posting to YouTube, Instagram or TikTok from the app, and YouTube's
   "Related video" link (the creator sets it in YouTube Studio; the reel's
   line says "full video linked below").
@@ -941,13 +944,20 @@ disagree with it, this section wins; those sections are rewritten in task
 | **Video** (long clip) | YouTube, 16:9 | Build trust and subscribers: storytelling commentary, stops on every important move, weighs the moves that look right and says why they are not. | 5–15 min |
 | **Reel** (short clip) | YouTube Shorts, Instagram Reels, TikTok, 9:16 | Reach: one idea, or one puzzle, that stops the scroll. | 30–45 s |
 
-The course is always made: it is what the app hosts and what both videos
-point to. The video and the reel are each optional; the intake asks
-"Videos: YouTube video, Reel" (two ticks, defaults per kind, §13.2). The
-AI plans and writes only what is ticked. The creator can add the other
-later from the editor ("Add a reel", "Add a video"): code builds it from
-the course's facts, and the AI can write it on its own
+The course is the product: every video exists to bring people to a course,
+so the course is always made and holds everything. The intake asks which
+videos to make, one of three: **Reel**, **YouTube video**, or **Both** (the
+strong combination: the reel promotes the video, the video sends viewers to
+the course). The kind preselects one (§13.2); the creator must be able to
+see and change it before anything is planned, because the plan differs:
+the outline budgets only the chosen videos. The creator can add the missing
+one later from the editor ("Add a reel", "Add a video"): code builds it
+from the course's facts, and the AI can write it on its own
 (`POST /api/courses/:id/generate` with `{ only: 'reel' | 'video' }`).
+
+Videos with no course behind them ("the most ridiculous games", say) are a
+later category of templates with their own prompts, never published as
+courses (§12).
 
 A reel made alongside a video can be a **promo**: the same moment, cut as a
 cliffhanger that stops before the outcome and sends viewers to the video.
@@ -1074,7 +1084,7 @@ as the thinking method.
 ```ts
 CourseDocument = {
   …, kind: 'trap' | 'opening' | 'tactics' | 'master_game' | 'puzzle',
-  videos: { video: boolean, reel: boolean },
+  videos: { video: boolean, reel: boolean },   // at least one: Reel, Video or Both
   episodes: [{
     id, role, focus, startNodeId, endNodeId,
     plies: [{ nodeId, arrows,
