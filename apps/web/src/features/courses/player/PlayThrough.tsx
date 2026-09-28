@@ -261,8 +261,7 @@ function EpisodeView({ document, evals, episode, episodes, audio, ask, isDesktop
   const coach = (
     <CoursePane
       persona={document.coachPersona}
-      soundOn={audio.soundOn}
-      onSoundOn={audio.setSoundOn}
+      sound={{ on: audio.soundOn, onChange: audio.setSoundOn }}
       footerInHeader={!isDesktop}
       footer={
         // Not while the quiz asks: the coach knows the course's answer.

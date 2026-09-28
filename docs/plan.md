@@ -1156,10 +1156,18 @@ Commit: `feat(courses): the course player on the app's board layout`
 **Read:** `player/CourseDrill.tsx`, `MoveLog.tsx`.
 **Files:** those, their tests.
 
-- [ ] The move log becomes the explorer column's list (desktop) and the
+- [x] The move log becomes the explorer column's list (desktop) and the
   strip (phone); the masked current move stays masked.
-- [ ] The coach column holds the prompt, the feedback and Show the move;
+- [x] The coach column holds the prompt, the feedback and Show the move;
   the round and progress go in the bottom bar on a phone.
+
+Status: done 2026-09-28. The move log stays in the coach column (the
+owner asked for it as the coach's message); the explorer column holds the
+round's status and the current line's moves so far (`MoveExplorer`'s new
+`hideNav`), the phone a strip and the status in the bottom bar. The
+summaries sit centred where the board was. On a phone the course reserves
+21rem around the board (Game Review 27.5rem), so the board is near full
+width; the move to play comes first in the pane.
 
 Commit: `feat(courses): practice and drills in the board layout`
 

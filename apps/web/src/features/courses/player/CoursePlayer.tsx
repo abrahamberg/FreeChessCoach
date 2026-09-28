@@ -148,21 +148,24 @@ export function CoursePlayer({ document, noteAudio, notice, progress, courseSlug
           }}
         />
       ) : (
-        <CourseDrill
-          key={`${stage}:${viewKey}`}
-          document={document}
-          stage={stage}
-          progress={progress}
-          courseSlug={courseSlug}
-          knownMoves={place.practice}
-          onKnownMoves={(practice) => {
-            touch();
-            setPlace((prev) => ({ ...prev, practice }));
-          }}
-          onStageDone={finish}
-          onNextStage={openNext}
-          onExit={() => open('play_through')}
-        />
+        <div className="course-player__stage">
+          <CourseDrill
+            key={`${stage}:${viewKey}`}
+            document={document}
+            stage={stage}
+            progress={progress}
+            courseSlug={courseSlug}
+            knownMoves={place.practice}
+            onKnownMoves={(practice) => {
+              touch();
+              setPlace((prev) => ({ ...prev, practice }));
+            }}
+            onStageDone={finish}
+            onNextStage={openNext}
+            onExit={() => open('play_through')}
+            isDesktop={isDesktop}
+          />
+        </div>
       )}
     </article>
   );

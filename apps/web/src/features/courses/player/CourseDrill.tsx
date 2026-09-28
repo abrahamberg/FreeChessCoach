@@ -15,13 +15,16 @@ import {
 } from '@freechesscoach/chess-analysis';
 import type { CourseDocument } from '@freechesscoach/shared';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { CoachAvatar } from '../../../components/CoachAvatar.js';
-import { CoachCard } from '../../../components/CoachCard.js';
 import { ChevronRightIcon } from '../../../components/Icon.js';
 import { CoachBoard } from '../../board/CoachBoard.js';
+import { MoveExplorer } from '../../board/MoveExplorer.js';
+import { MoveStrip } from '../../board/MoveStrip.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
+import { CourseBoardLayout } from './CourseBoardLayout.js';
+import { CoursePane } from './CoursePane.js';
 import { STAGE_LABELS } from './CourseStageBar.js';
+import { courseMoveList, type CourseEvals } from './course-move-list.js';
 import { localToday, type CourseProgressStore } from './course-progress.js';
 import { isAcceptedAlternative, withoutMove } from './course-steps.js';
 import { judgeQuizMove } from './judge-quiz-move.js';
@@ -44,7 +47,12 @@ export interface CourseDrillProps {
   /** Opens the next stage; its button is named after it ("Drill ›"). */
   onNextStage: () => void;
   onExit: () => void;
+  /** The board layout's desktop arrangement (CourseBoardLayout). */
+  isDesktop?: boolean;
 }
+
+/** The drills show no evaluations: they are about remembering the moves. */
+const NO_EVALS: CourseEvals = {};
 
 /** Pause before a move the learner does not play is made for them. */
 const AUTO_MOVE_MS = 600;
@@ -73,7 +81,7 @@ interface RoundResult {
  * move counts for the review schedule. A different move is rated in the
  * browser like the quiz (a move about as good is accepted, no penalty).
  */
-export function CourseDrill({ document, stage, progress, courseSlug, knownMoves, onKnownMoves, onStageDone, onNextStage, onExit }: CourseDrillProps): ReactNode {
+export function CourseDrill({ document, stage, progress, courseSlug, knownMoves, onKnownMoves, onStageDone, onNextStage, onExit, isDesktop = false }: CourseDrillProps): ReactNode {
   const reviewed = stage !== 'practice';
   const sides = stage === 'full_drill' ? 'both' : 'learner';
   const [states, setStates] = useState<Map<string, CourseReviewState> | null>(progress && reviewed ? null : new Map());
@@ -115,10 +123,10 @@ export function CourseDrill({ document, stage, progress, courseSlug, knownMoves,
     if (stageDone) onStageDone(stage);
   }, [stageDone]);
 
-  if (!run) return <p className="meta">Loading your progress…</p>;
+  if (!run) return <p className="meta course-summary">Loading your progress…</p>;
   if (!drill?.episodes.length) {
     return (
-      <div className="course-drill">
+      <div className="course-drill course-summary">
         <p className="meta">This course has no moves to play here.</p>
         <button type="button" className="btn-secondary" onClick={onExit}>
           Back to the course
@@ -159,6 +167,10 @@ export function CourseDrill({ document, stage, progress, courseSlug, knownMoves,
       introText={round === 0 ? intro(stage, drill) : stage === 'practice' ? 'Again, with fewer arrows.' : null}
       arrowKeys={run.arrowKeys}
       roundLabel={run.roundLabel}
+      progressBar={
+        reviewed ? null : <progress className="course-drill__progress" value={practiceProgress(askedKeys, practice)} max={1} aria-label="Practice progress" />
+      }
+      isDesktop={isDesktop}
       onResult={(result) => {
         if (reviewed) void progress?.record([{ ...result, courseSlug: courseSlug ?? '' }]).catch(() => undefined);
         else {
@@ -189,7 +201,6 @@ function StageSummary({ document, stage, drill, result, practiceKeys, practice, 
   const tries = [...result.firstTries.values()];
   const right = tries.filter((each) => each.correct).length;
   const missed = tries.filter((each) => !each.correct).map((each) => each.san);
-  const avatar = <CoachAvatar persona={document.coachPersona} size="chat" />;
 
   if (stage === 'practice') {
     const done = isPracticeDone(practiceKeys, practice);
@@ -203,13 +214,13 @@ function StageSummary({ document, stage, drill, result, practiceKeys, practice, 
           ? 'Next round: arrows on every move.'
           : `Next round: arrows on ${next.arrowKeys.size} of ${nextAsked} moves.`;
     return (
-      <div className="course-drill">
-        <CoachCard avatar={avatar}>
+      <div className="course-drill course-summary">
+        <CoursePane persona={document.coachPersona}>
           <p className="course-drill__score">{done ? 'You know every move.' : `Round ${roundsDone} of ${total} done.`}</p>
           <progress className="course-drill__progress" value={practiceProgress(practiceKeys, practice)} max={1} aria-label="Practice progress" />
           {missed.length > 0 && <p>Missed: {missed.join(', ')}. The arrow comes back for {missed.length === 1 ? 'it' : 'them'}.</p>}
           <p>{done ? 'Now play them with no arrows at all.' : nextLine}</p>
-        </CoachCard>
+        </CoursePane>
         <div className="course-player__actions">
           <button type="button" className="btn-primary course-player__next" aria-label={done ? `Next: ${STAGE_LABELS.drill}` : undefined} onClick={done ? onNextStage : onAgain}>
             {done ? (
@@ -230,14 +241,14 @@ function StageSummary({ document, stage, drill, result, practiceKeys, practice, 
   }
 
   return (
-    <div className="course-drill">
-      <CoachCard avatar={avatar}>
+    <div className="course-drill course-summary">
+      <CoursePane persona={document.coachPersona}>
         <p className="course-drill__score">
           {drill.mode === 'guess_move' ? `Your score: ${right} of ${tries.length}.` : `${right} of ${tries.length} right first time.`}
         </p>
         {missed.length > 0 ? <p>To go over again tomorrow: {missed.join(', ')}.</p> : <p>Every move right. They come back for review in a week.</p>}
         {stage === 'full_drill' && <p>That is the whole course, both sides.</p>}
-      </CoachCard>
+      </CoursePane>
       <div className="course-player__actions">
         {stage === 'drill' && (
           <button type="button" className="btn-primary course-player__next" aria-label={`Next: ${STAGE_LABELS.full_drill}`} onClick={onNextStage}>
@@ -265,13 +276,16 @@ interface DrillRunProps {
   arrowKeys: ReadonlySet<string>;
   /** Practice: "Round 2 of 3". */
   roundLabel: string | null;
+  /** Practice: how far the learner is, beside the status in the explorer column. */
+  progressBar: ReactNode;
+  isDesktop: boolean;
   /** The first try at each asked move. */
   onResult: (result: { key: string; san: string; correct: boolean }) => void;
   onFinished: (result: RoundResult) => void;
   onExit: () => void;
 }
 
-function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, onResult, onFinished, onExit }: DrillRunProps): ReactNode {
+function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, progressBar, isDesktop, onResult, onFinished, onExit }: DrillRunProps): ReactNode {
   const [at, setAt] = useState({ episode: 0, step: 0 });
   const [firstTries, setFirstTries] = useState<Map<string, { san: string; correct: boolean }>>(new Map());
   const [attempt, setAttempt] = useState<Attempt | null>(null);
@@ -358,74 +372,136 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, on
     firstTry(false);
     advance();
   };
-  return (
-    <div className="course-player__episode">
-      <div className="course-player__board">
-        <CoachBoard
-          fen={attempt?.fenAfter ?? fen}
-          orientation={document.learnerSide}
-          mode={waiting ? 'answer' : 'peek'}
-          disabled={!waiting}
-          arrows={hint?.arrows ?? []}
-          highlights={hint?.highlights ?? []}
-          onUserMove={onMove}
-        />
-        <div className="course-player__nav">
-          <span className="meta">
-            {/* In practice only the sequence matters, not which episode it is. */}
-            {roundLabel ? `${roundLabel} · ` : ''}
-            {stage !== 'practice' && drill.episodes.length > 1 ? `Line ${at.episode + 1} of ${drill.episodes.length} · ` : ''}
-            {firstTries.size} of {asked.length} moves
-          </span>
-          <button type="button" className="btn-secondary" onClick={onExit}>
-            {stage === 'practice' ? 'Stop practising' : 'Stop the drill'}
-          </button>
-        </div>
-      </div>
-      <div className="course-player__words">
-        <CoachCard avatar={<CoachAvatar persona={document.coachPersona} size="chat" />}>
-          {introText && firstTries.size === 0 && !attempt && <p className="meta">{introText}</p>}
-          {step && (
-            <MoveLog
-              played={played}
-              current={{
-                side: sideOf(step.fenBefore),
-                who: who(step.fenBefore, step.asked),
-                // Practice names the move while its arrow shows; the drills never do.
-                label: !step.asked || (stage === 'practice' && hinted) ? moveLabel(step.fenBefore, step.node.san) : null,
-                yours: step.asked,
-                // Practice says what the move does; with the move hidden, its name is blanked out of the note.
-                purpose:
-                  stage === 'practice' && step.asked ? withoutMove(notes.find((note) => note.nodeId === step.node.id)?.text.trim() || null, hinted ? null : step.node.san) : null
-              }}
-              // The arrow already shows the move; "Show the move" is for when it has gone.
-              action={
-                waiting && !hinted ? (
-                  <button type="button" className="btn-secondary" onClick={showMove}>
-                    Show the move
-                  </button>
-                ) : undefined
-              }
-            />
-          )}
-          {step?.asked && attempt && (
-            <AttemptFeedback
-              attempt={attempt}
-              judgement={judgement}
-              answerSan={step.node.san}
-              acceptLabel="Play the course move"
-              onAccept={advance}
-              onRetry={() => {
-                judgeRef.current += 1;
-                setAttempt(null);
-                setJudgement(null);
-              }}
-              onReveal={advance}
-            />
-          )}
-        </CoachCard>
-      </div>
+  // The current line, from the course's start through the moves played so far.
+  const line = episode ? courseMoveList(document, episode.steps.map((each) => each.node), NO_EVALS) : null;
+  const shown = line ? line.leadIn + at.step : 0;
+  const lineMoves = line?.sanMoves.slice(0, shown) ?? [];
+  const linePositions = line?.positions.slice(0, shown + 1) ?? [];
+
+  const status = (
+    <span className="meta course-drill__status">
+      {/* In practice only the sequence matters, not which episode it is. */}
+      {roundLabel ? `${roundLabel} · ` : ''}
+      {stage !== 'practice' && drill.episodes.length > 1 ? `Line ${at.episode + 1} of ${drill.episodes.length} · ` : ''}
+      {firstTries.size} of {asked.length} moves
+    </span>
+  );
+  const stop = (
+    <button type="button" className="btn-secondary" onClick={onExit}>
+      {stage === 'practice' ? 'Stop practising' : 'Stop the drill'}
+    </button>
+  );
+  const nav = (
+    <div className="course-player__nav">
+      {status}
+      {stop}
     </div>
+  );
+
+  const coach = (
+    <CoursePane persona={document.coachPersona}>
+      {/* The move to play first: on a phone the pane shows only a few lines. */}
+      {step && (
+        <MoveLog
+          played={played}
+          current={{
+            side: sideOf(step.fenBefore),
+            who: who(step.fenBefore, step.asked),
+            // Practice names the move while its arrow shows; the drills never do.
+            label: !step.asked || (stage === 'practice' && hinted) ? moveLabel(step.fenBefore, step.node.san) : null,
+            yours: step.asked,
+            // Practice says what the move does; with the move hidden, its name is blanked out of the note.
+            purpose:
+              stage === 'practice' && step.asked ? withoutMove(notes.find((note) => note.nodeId === step.node.id)?.text.trim() || null, hinted ? null : step.node.san) : null
+          }}
+          // The arrow already shows the move; "Show the move" is for when it has gone.
+          action={
+            waiting && !hinted ? (
+              <button type="button" className="btn-secondary" onClick={showMove}>
+                Show the move
+              </button>
+            ) : undefined
+          }
+        />
+      )}
+      {step?.asked && attempt && (
+        <AttemptFeedback
+          attempt={attempt}
+          judgement={judgement}
+          answerSan={step.node.san}
+          acceptLabel="Play the course move"
+          onAccept={advance}
+          onRetry={() => {
+            judgeRef.current += 1;
+            setAttempt(null);
+            setJudgement(null);
+          }}
+          onReveal={advance}
+        />
+      )}
+      {introText && firstTries.size === 0 && !attempt && <p className="meta">{introText}</p>}
+    </CoursePane>
+  );
+
+  return (
+    <CourseBoardLayout
+      isDesktop={isDesktop}
+      explorer={
+        <>
+          <div className="course-drill__panel">
+            {status}
+            {progressBar}
+            {stop}
+          </div>
+          {line && (
+            <MoveExplorer
+              sanMoves={lineMoves}
+              classifiedMoves={[]}
+              positions={linePositions}
+              currentPly={shown}
+              onSelect={() => undefined}
+              showNotes={false}
+              start={line.start}
+              dimmedThroughPly={line.leadIn}
+              hideNav
+            />
+          )}
+        </>
+      }
+      board={
+        <>
+          <div className="session-board-row">
+            <CoachBoard
+              fen={attempt?.fenAfter ?? fen}
+              orientation={document.learnerSide}
+              mode={waiting ? 'answer' : 'peek'}
+              disabled={!waiting}
+              arrows={hint?.arrows ?? []}
+              highlights={hint?.highlights ?? []}
+              onUserMove={onMove}
+            />
+          </div>
+        </>
+      }
+      coach={coach}
+      strip={
+        line && lineMoves.length > 0 ? (
+          <div className="course-layout__strip">
+            <MoveStrip
+              sanMoves={lineMoves}
+              classifiedMoves={[]}
+              positions={linePositions}
+              currentPly={shown - 1}
+              momentPlies={[]}
+              onSelect={() => undefined}
+              start={line.start}
+              dimmedThroughPly={line.leadIn}
+            />
+          </div>
+        ) : undefined
+      }
+      bottomBar={nav}
+    />
   );
 }
 

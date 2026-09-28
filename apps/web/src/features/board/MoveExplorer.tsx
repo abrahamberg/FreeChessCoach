@@ -26,6 +26,9 @@ export interface MoveExplorerProps {
   start?: MoveListStart;
   /** Plies up to this one are shown faded: a course episode's lead-in. */
   dimmedThroughPly?: number;
+  /** A list to read, not to step through (a course drill's moves so far):
+   * no nav pills. */
+  hideNav?: boolean;
 }
 
 interface MovePair {
@@ -67,7 +70,8 @@ export function MoveExplorer({
   onSelect,
   showNotes = true,
   start = GAME_START,
-  dimmedThroughPly = 0
+  dimmedThroughPly = 0,
+  hideNav = false
 }: MoveExplorerProps): ReactNode {
   const [inspecting, setInspecting] = useState<{ fen: string; label: string } | null>(null);
   const qualityByPly = new Map(classifiedMoves.map((move) => [move.ply, move]));
@@ -82,23 +86,25 @@ export function MoveExplorer({
 
   return (
     <div className="move-explorer">
-      <div className="move-explorer__nav">
-        <button type="button" aria-label="first move" onClick={() => goTo(0)}>
-          <SkipBackIcon width={15} height={15} />
-        </button>
-        <button type="button" aria-label="previous move" onClick={() => goTo(currentPly - 1)}>
-          <ChevronLeftIcon width={16} height={16} />
-        </button>
-        <span className="move-explorer__position">
-          move {currentPly} of {totalPlies}
-        </span>
-        <button type="button" aria-label="next move" onClick={() => goTo(currentPly + 1)}>
-          <ChevronRightIcon width={16} height={16} />
-        </button>
-        <button type="button" aria-label="last move" onClick={() => goTo(totalPlies)}>
-          <SkipForwardIcon width={15} height={15} />
-        </button>
-      </div>
+      {!hideNav && (
+        <div className="move-explorer__nav">
+          <button type="button" aria-label="first move" onClick={() => goTo(0)}>
+            <SkipBackIcon width={15} height={15} />
+          </button>
+          <button type="button" aria-label="previous move" onClick={() => goTo(currentPly - 1)}>
+            <ChevronLeftIcon width={16} height={16} />
+          </button>
+          <span className="move-explorer__position">
+            move {currentPly} of {totalPlies}
+          </span>
+          <button type="button" aria-label="next move" onClick={() => goTo(currentPly + 1)}>
+            <ChevronRightIcon width={16} height={16} />
+          </button>
+          <button type="button" aria-label="last move" onClick={() => goTo(totalPlies)}>
+            <SkipForwardIcon width={15} height={15} />
+          </button>
+        </div>
+      )}
       <ol className="move-explorer__list">
         {pairs.map((pair) => {
           const { moveNumber, white, black } = pair;
