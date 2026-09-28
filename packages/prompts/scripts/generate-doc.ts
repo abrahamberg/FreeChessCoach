@@ -10,7 +10,7 @@ import { INVESTIGATE_POSITION_SYSTEM_PROMPT, renderInvestigatePositionPrompt } f
 import { buildPuzzleCoachSystemPrompt } from '../src/puzzle-coach-system.js';
 import { CALIBRATION } from '../src/calibration.js';
 import { buildCourseEpisodeMessages } from '../src/course/episode.js';
-import { ENGLUND_OUTLINE, englundCourseContext } from '../src/course/fixtures.js';
+import { ENGLUND_OUTLINE, ENGLUND_PLAN, englundCourseContext } from '../src/course/fixtures.js';
 import { buildCourseOutlineMessages } from '../src/course/outline.js';
 import {
   baseCoachInput,
@@ -39,7 +39,7 @@ export function renderDoc(): string {
   const onboarding = buildOnboardingProfilerMessages(baseOnboardingInput());
   const investigate = renderInvestigatePositionPrompt(investigatePositionFixture.fen, investigatePositionFixture.question);
   const puzzleCoach = buildPuzzleCoachSystemPrompt(basePuzzleCoachInput());
-  const courseOutline = buildCourseOutlineMessages(englundCourseContext());
+  const courseOutline = buildCourseOutlineMessages(englundCourseContext('trap', undefined, ENGLUND_PLAN));
   const courseEpisode = buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e3' });
 
   return `# Chess AI Coach — LLM Prompts

@@ -40,13 +40,37 @@ ${context.lines.map((line) => `${line.id} (${line.name}): ${lineMovetext(context
 
 CANDIDATES (computed by code, choose from these)
 ${renderCandidates(context, context.skeleton)}
-
+${renderPlan(context)}
 DOSSIER
 ${renderCourseDossier(context.dossier)}
 
 ${retry ? `YOUR PREVIOUS OUTLINE HAD THESE PROBLEMS — fix every one\n${retry.problems.map((problem) => `- ${problem}`).join('\n')}\n\nYour previous outline:\n${retry.previousOutput}\n\n` : ''}OUTPUT SCHEMA
 ${COURSE_OUTLINE_JSON_SCHEMA}`;
   return { system: buildCourseSystemPrompt(context), user };
+}
+
+/** The episodes code would build, so a small model fills in words rather
+ * than inventing spans (a first real run lost both opening outlines, and the
+ * trap's safety episode, to spans the checks refuse). */
+function renderPlan(context: CoursePromptContext): string {
+  if (!context.plan) return '';
+  const chapters = context.plan.map((chapter) => {
+    const episodes = chapter.episodes.map((episode) => {
+      const span = episode.startNodeId === episode.endNodeId ? `on ${nodeLabel(context, episode.startNodeId)}` : `${nodeLabel(context, episode.startNodeId)} to ${nodeLabel(context, episode.endNodeId)}`;
+      const answer = episode.answerNodeId ? `, answerNodeId ${episode.answerNodeId}` : '';
+      // The hook speaks over the start; the ending it promises is not its move.
+      const hook = episode.role === 'hook' ? ', narratedNodeIds []' : '';
+      return `- ${episode.id} ${episode.role}, ${span}${answer}${hook}`;
+    });
+    return [`Chapter "${chapter.title}", lineId ${chapter.lineId}:`, ...episodes].join('\n');
+  });
+  return `
+EPISODE PLAN (computed by code)
+Keep every chapter, episode id, role, startNodeId, endNodeId and answerNodeId
+exactly as listed. You write each focus, and pick narratedNodeIds only from
+the moves between that episode's startNodeId and endNodeId.
+${chapters.join('\n')}
+`;
 }
 
 /** The skeleton (§5.5) as the model reads it: node ids with their moves. */

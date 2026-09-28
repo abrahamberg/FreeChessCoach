@@ -13,6 +13,15 @@ export interface CourseHeaders {
   year: string | null;
 }
 
+/** One chapter of the episodes code would build (§10, the outline's
+ * fallback), as spans the outline keeps. */
+export interface CoursePlanChapter {
+  title: string;
+  lineId: string;
+  /** `focus` is code's question for the role; not shown to the model. */
+  episodes: { id: string; role: string; focus: string; startNodeId: string; endNodeId: string; answerNodeId: string | null }[];
+}
+
 /** Everything both course calls are built from. */
 export interface CoursePromptContext {
   kind: CourseKind;
@@ -25,6 +34,8 @@ export interface CoursePromptContext {
   lines: readonly CourseLine[];
   dossier: CourseDossier;
   skeleton: CourseSkeleton | null;
+  /** Null when code found no skeleton; the model then plans the spans itself. */
+  plan: CoursePlanChapter[] | null;
   headers: CourseHeaders;
 }
 

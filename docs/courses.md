@@ -433,6 +433,12 @@ LINES
 CANDIDATES (computed by code, choose from these)
 {skeleton candidates for this kind}
 
+EPISODE PLAN (computed by code)
+Keep every chapter, episode id, role, startNodeId, endNodeId and answerNodeId
+exactly as listed. You write each focus, and pick narratedNodeIds only from
+the moves between that episode's startNodeId and endNodeId.
+{the §10 episodes as spans: "- e4 quiz, on n12 (6... Bb4), answerNodeId n12"}
+
 DOSSIER
 {rendered dossier}
 
@@ -462,6 +468,12 @@ and best/also-good); the count of narrated nodes fits the budget. A failure is
 sent back once with the exact problems listed ("episode e4 answerNodeId n17 is
 not quiz-eligible; eligible nodes near it: n15, n19"). A second failure falls
 back to the skeleton for the failing part and tells the creator.
+
+The plan is the §10 episodes, the same ones the fallback uses, so the model
+writes words and picks narrated moves rather than inventing spans. The first
+real runs lost both opening outlines and the trap's safety episode to spans the
+checks refused. With no skeleton there is no plan, and the model plans the
+spans itself.
 
 ### 6.5 The episode call
 

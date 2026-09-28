@@ -724,6 +724,18 @@ punish: n13 (7. Qd2), n14 (7... Bxc3), n15 (8. Qxc3), n16 (8... Qc1#)
 victim's safe move at the bait: Nc3
 trapper's risky setup moves: none
 
+EPISODE PLAN (computed by code)
+Keep every chapter, episode id, role, startNodeId, endNodeId and answerNodeId
+exactly as listed. You write each focus, and pick narratedNodeIds only from
+the moves between that episode's startNodeId and endNodeId.
+Chapter "The trap", lineId l1:
+- e1 hook, on n1 (1. d4), narratedNodeIds []
+- e2 setup, n1 (1. d4) to n10 (5... Qxb2)
+- e3 bait, on n11 (6. Bc3)
+- e4 quiz, on n12 (6... Bb4), answerNodeId n12
+- e5 punish, n13 (7. Qd2) to n16 (8... Qc1#)
+- e6 safety, on n11 (6. Bc3)
+
 DOSSIER
 Learner side: Black
 
@@ -759,7 +771,7 @@ n7 4.Bf4 (White, Line A) | best | before: The position is roughly equal → afte
     alternatives: e6: Black is slightly better
     tempting, not in the engine top lines: Qxd7+
 n8 4…Qb4+ (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
-    board: gives check | attacks the bishop on f4, which is pinned to the king | the queen on b4 forks f4 and b2 and e1
+    board: gives check | attacks the bishop on f4 | the queen on b4 forks f4 and b2 and e1
     alternatives: Rb8: White is slightly better
     tempting, not in the engine top lines: Qxe5, Nxe5
 n9 5.Bd2 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
@@ -792,7 +804,7 @@ n15 8.Qxc3 (White, Line A) | best | before: Black is winning → after: Black is
     alternatives: e6: Black is winning
     tempting, not in the engine top lines: Nxc3
 n16 8…Qc1# (Black, Line A) | best | before: Black is winning → after: checkmate
-    board: gives checkmate | attacks the knight on b1, which is pinned to the king
+    board: gives checkmate | attacks the knight on b1
     alternatives: Rb8: Black is winning
     tempting, not in the engine top lines: Nxe5, Qxc3+, Qxc2, Qxb1+
     flags: critical

@@ -3,7 +3,6 @@ import { buildCourseOutlineMessages, courseBudget } from '@freechesscoach/prompt
 import { CourseOutlineSchema, type CourseDocument, type CourseEpisode, type CourseOutline, type CourseWarning } from '@freechesscoach/shared';
 import { ValidationError } from '../../lib/errors.js';
 import type { CourseModelCall, GenerationInputs } from './generation-inputs.js';
-import { buildManualEpisodes } from './manual-episodes.js';
 
 /**
  * docs/courses.md §6.4: the outline call, checked in code, sent back once
@@ -25,18 +24,14 @@ export async function planOutline(inputs: GenerationInputs, call: CourseModelCal
   await call.checked?.(repairLabel, problems);
   if (problems.length === 0) return { outline: second, warnings: [] };
 
-  if (!inputs.skeleton) throw new ValidationError(`The AI outline failed its checks twice: ${problems.join('; ')}`);
-  const manual = buildManualEpisodes({ document: inputs.document, skeleton: inputs.skeleton, dossier: inputs.dossier, lines: inputs.lineGames });
-  const byId = new Map(manual.episodes.map((episode) => [episode.id, episode]));
+  const plan = inputs.context.plan;
+  if (!plan) throw new ValidationError(`The AI outline failed its checks twice: ${problems.join('; ')}`);
   const outline: CourseOutline = {
     ...second,
-    chapters: manual.chapters.map((chapter) => ({
+    chapters: plan.map((chapter) => ({
       title: chapter.title,
       lineId: chapter.lineId,
-      episodes: chapter.episodeIds.flatMap((id) => {
-        const episode = byId.get(id);
-        return episode ? [{ id, role: episode.role, focus: episode.focus, startNodeId: episode.startNodeId, endNodeId: episode.endNodeId, narratedNodeIds: [], answerNodeId: episode.quiz?.answerNodeId ?? null }] : [];
-      })
+      episodes: chapter.episodes.map((episode) => ({ ...episode, narratedNodeIds: [] }))
     }))
   };
   const message = `The AI outline failed its checks twice, so the episodes come from the code skeleton: ${problems.join('; ')}`;

@@ -1,5 +1,5 @@
 import { buildCourseSkeleton, courseLineGames, type CourseDossier, type CourseLineGame, type CourseSkeleton, type CourseTree } from '@freechesscoach/chess-analysis';
-import type { CourseMessages, CoursePromptContext } from '@freechesscoach/prompts';
+import type { CourseMessages, CoursePlanChapter, CoursePromptContext } from '@freechesscoach/prompts';
 import type { CourseDocument } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { z } from 'zod';
@@ -7,6 +7,7 @@ import * as coursesRepo from '../../db/repositories/courses.js';
 import type { Database } from '../../db/schema.js';
 import type { CourseDossierBuilder } from '../course-dossier.js';
 import { courseHeaders } from './intake-text.js';
+import { buildManualEpisodes } from './manual-episodes.js';
 
 /** Which call of a run this is: the debug log's row and the golden script's
  * counts (Task 80.6). */
@@ -72,7 +73,23 @@ export function generationInputs(input: { document: CourseDocument; dossier: Cou
     lines: document.lines,
     dossier,
     skeleton,
+    plan: skeleton ? coursePlan(document, skeleton, dossier, lineGames) : null,
     headers: courseHeaders(input.sourcePgn)
   };
   return { document, tree, lineGames, dossier, skeleton, context };
+}
+
+/** §10's episodes as spans: the outline prompt asks the model to keep them,
+ * and the outline falls back to them when the model's fails twice. */
+function coursePlan(document: CourseDocument, skeleton: CourseSkeleton, dossier: CourseDossier, lines: CourseLineGame[]): CoursePlanChapter[] {
+  const manual = buildManualEpisodes({ document, skeleton, dossier, lines });
+  const byId = new Map(manual.episodes.map((episode) => [episode.id, episode]));
+  return manual.chapters.map((chapter) => ({
+    title: chapter.title,
+    lineId: chapter.lineId,
+    episodes: chapter.episodeIds.flatMap((id) => {
+      const episode = byId.get(id);
+      return episode ? [{ id, role: episode.role, focus: episode.focus, startNodeId: episode.startNodeId, endNodeId: episode.endNodeId, answerNodeId: episode.quiz?.answerNodeId ?? null }] : [];
+    })
+  }));
 }

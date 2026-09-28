@@ -5,7 +5,7 @@ import { courseBudget, episodeWordBudget } from './budget.js';
 import { buildCourseSystemPrompt } from './context.js';
 import { buildCourseVoiceBlock } from './course-voice.js';
 import { buildCourseEpisodeMessages } from './episode.js';
-import { ENGLUND_OUTLINE, englundCourseContext } from './fixtures.js';
+import { ENGLUND_OUTLINE, ENGLUND_PLAN, englundCourseContext } from './fixtures.js';
 import { buildCourseOutlineMessages } from './outline.js';
 import { COURSE_SHARED_BLOCK } from './shared.js';
 
@@ -63,6 +63,16 @@ describe('course prompts', () => {
     expect(user).toContain('bait: n11 (6. Bc3)');
     expect(user).toContain('Budgets: clip at most 60s, at most 114 spoken words in total');
     expect(user).toContain('n16 8…Qc1#');
+    expect(user).not.toContain('EPISODE PLAN');
+  });
+
+  test("the outline request lists the code's episode plan, spans and all, to keep", () => {
+    const { user } = buildCourseOutlineMessages(englundCourseContext('trap', undefined, ENGLUND_PLAN));
+
+    expect(user).toContain('Keep every chapter, episode id, role, startNodeId, endNodeId and answerNodeId');
+    expect(user).toContain('Chapter "The trap", lineId l1:\n- e1 hook, on n1 (1. d4), narratedNodeIds []\n- e2 setup, n1 (1. d4) to n10 (5... Qxb2)');
+    expect(user).toContain('- e4 quiz, on n12 (6... Bb4), answerNodeId n12');
+    expect(user).toContain('- e6 safety, on n11 (6. Bc3)\n\nDOSSIER');
   });
 
   test("an episode's dossier holds only its nodes, the one before and its quiz answer", () => {
