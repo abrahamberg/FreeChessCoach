@@ -1259,11 +1259,18 @@ Commit: `feat(sounds): board sounds and when to play them`
 `features/puzzle-session/` (practice).
 **Files:** those.
 
-- [ ] Live games: the learner's move sounds on drop, the coach's or bot's
+- [x] Live games: the learner's move sounds on drop, the coach's or bot's
   reply when it lands, check; no bad/great (the owner's call).
-- [ ] Review: stepping forward one move plays that move's sounds, bad/great
+- [x] Review: stepping forward one move plays that move's sounds, bad/great
   for either side; jumps do not.
-- [ ] `useCoachVoice` and the native queue report speaking.
+- [x] `useCoachVoice` and the native queue report speaking.
+
+Status: done 2026-09-28. One hook, `sounds/useMoveStepSounds.ts`: a step
+forward of one move sounds it (practice: up to two, in turn, from the
+position's side to move); the student's drop sounds at once
+(`soundOwnMove`) and not again when it lands. Coaching on an analyzed game
+passes its ratings; coach and bot games pass none. `useCoachVoice` and
+`useNoteAudio` report speaking through `sounds/voice-activity.ts`.
 
 Commit: `feat(sounds): sounds on the live board and in review`
 

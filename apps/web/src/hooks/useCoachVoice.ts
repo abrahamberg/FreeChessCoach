@@ -1,11 +1,12 @@
 import type { CoachPersona, TtsBackend } from '@freechesscoach/shared';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { CoachMessage } from './useCoachChat.js';
 import { getSpeakableSentences, isSpeakableProse } from '../tts/getSpeakableText.js';
 import { startMessageAudio, type MessageAudio, type MessageAudioState } from '../tts/message-audio.js';
 import { createNativeSpeechQueue, speakNative, type NativeSpeechQueue } from '../tts/native-speech.js';
 import { applyPlaybackRate, personaPlaybackRate } from '../tts/persona-voices.js';
 import { resolveTtsClient } from '../tts/resolve-tts-client.js';
+import { setVoiceSpeaking } from '../sounds/voice-activity.js';
 
 const AUTOPLAY_STORAGE_KEY = 'freechesscoach:coach-voice-autoplay';
 
@@ -90,6 +91,12 @@ export function useCoachVoice({
   const [autoplayEnabled, setAutoplayEnabledState] = useState(readStoredAutoplay);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [loadingMessageId, setLoadingMessageId] = useState<string | null>(null);
+  // Board sounds step aside while the coach speaks (docs/plan.md Phase 88).
+  const voiceId = useId();
+  useEffect(() => {
+    setVoiceSpeaking(voiceId, playingMessageId !== null);
+    return () => setVoiceSpeaking(voiceId, false);
+  }, [voiceId, playingMessageId]);
 
   const personaRef = useRef(persona);
   useEffect(() => {
