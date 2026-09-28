@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { ENGLUND, englundDossier } from '../../../test/helpers/course-fixtures.js';
 import { buildCourseDossierFromEngine, type CourseDossierBuilder } from '../course-dossier.js';
 import { buildManualEpisodes } from './manual-episodes.js';
+import { temptingNote } from './manual-notes.js';
 
 /** Level everywhere: the engine's two lines are the first two legal moves. */
 function levelEngine(fens: string[]): Promise<EngineEval[]> {
@@ -80,5 +81,14 @@ describe('buildManualEpisodes', () => {
     expect(episodes[1]).toMatchObject({ startNodeId: 'n1', endNodeId: 'n2', drillNodeIds: ['n1'] });
     // Every solution move is asked, even where the test engine ranks no move clearly best.
     expect(episodes.map((episode) => episode.quiz?.answerNodeId ?? null)).toEqual([null, 'n1', 'n3', null]);
+  });
+});
+
+describe('temptingNote (§13.5)', () => {
+  test('the engine answer and what it does, for the creator to write over', () => {
+    const facts = { san: 'Qxc3+', kind: 'capture' as const, refutation: ['Nxc3', 'Bb4'], after: ['moves the knight from b1 to c3', 'captures the queen on c3'], verdict: 'White is winning' };
+    expect(temptingNote(facts)).toEqual({ san: 'Qxc3+', why: 'Nxc3 captures the queen on c3.', refutation: ['Nxc3', 'Bb4'] });
+    expect(temptingNote({ ...facts, after: [...facts.after, 'attacks the bishop on f8'] }).why).toBe('Nxc3 captures the queen on c3 and attacks the bishop on f8.');
+    expect(temptingNote({ ...facts, refutation: [] }).why).toBe('White is winning');
   });
 });

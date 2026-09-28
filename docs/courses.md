@@ -932,6 +932,9 @@ overwrites (`manual-episodes.ts`):
   come from `defaultCourseBudget`.
 - A puzzle gets the question, a solve episode per learner move (each a
   quiz, with the defender's reply), and the recap.
+- Each ply gets the dossier's tempting moves at that node, each with a
+  why from the engine's answer ("Nxc3 captures the queen on c3.",
+  `temptingNote`).
 - The reel and the video's packaging are left empty: "Write the reel with
   AI" writes the reel alone, and the video card is filled by hand.
 - The same verifier runs on hand-written text, so a typo'd move is caught.
@@ -1168,7 +1171,8 @@ puzzle or tactics course:
    hanging"), in the dossier's words.
 
 Dossier (`CourseNodeFacts.tempting`):
-`{ san, kind: 'check' | 'capture' | 'threat', refutation: string[], after: string, verdict: string }[]`.
+`{ san, kind: 'check' | 'capture' | 'threat', refutation: string[], after: string[], verdict: string }[]`
+(`after`: the answer's board facts, the first being its own move).
 The model may only discuss these; the verifier checks each named move.
 Config: `CONFIG.courses.temptingDrop` (15) and `maxTempting` (3); at most 6
 candidates a node go to the engine.

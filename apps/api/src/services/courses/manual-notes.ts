@@ -1,5 +1,5 @@
-import { episodeKeyMoves, type CourseNodeFacts, type CourseSkeleton } from '@freechesscoach/chess-analysis';
-import type { CourseArrow, CourseEpisode, CoursePly, CourseVideos } from '@freechesscoach/shared';
+import { episodeKeyMoves, type CourseNodeFacts, type CourseSkeleton, type CourseTemptingFacts } from '@freechesscoach/chess-analysis';
+import type { CourseArrow, CourseEpisode, CoursePly, CourseTempting, CourseVideos } from '@freechesscoach/shared';
 
 /** docs/courses.md §10: a note pre-filled from checked facts only — the
  * creator's own comment first, then the opening name, the board facts and
@@ -77,9 +77,21 @@ export class EpisodeBuilder {
       const key = keys.includes(nodeId);
       const video = this.videos.video && (key || (spoken < 2 && (facts.critical || facts.tactics.length > 0)));
       if (video && !key) spoken += 1;
-      return [{ nodeId, text: noteText(facts), arrows: this.arrows.get(nodeId) ?? [], course: true, video }];
+      const tempting = facts.tempting.map(temptingNote);
+      return [{ nodeId, text: noteText(facts), arrows: this.arrows.get(nodeId) ?? [], course: true, video, ...(tempting.length ? { tempting } : {}) }];
     });
   }
+}
+
+/** §13.5 from checked facts: the engine's answer and what it does ("Nxc3
+ * captures the queen on c3."), for the creator to write over. The first
+ * board fact is the answer's own move, which the SAN already says. */
+export function temptingNote(facts: CourseTemptingFacts): CourseTempting {
+  const [answer] = facts.refutation;
+  const effects = facts.after.length > 1 ? facts.after.slice(1) : facts.after;
+  const listed = effects.length > 1 ? `${effects.slice(0, -1).join(', ')} and ${effects.at(-1)}` : (effects[0] ?? '');
+  const why = answer ? `${answer} ${listed}.`.replace(/ \.$/, '.') : facts.verdict;
+  return { san: facts.san, why, refutation: facts.refutation };
 }
 
 /** Every learner move, and opponent moves the facts have something on. */
