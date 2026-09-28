@@ -1,4 +1,3 @@
-import { STINGER_DELAY_MS } from '../../../sounds/board-sounds.js';
 import type { BoardSound } from '../../../sounds/move-sounds.js';
 import { drawClipFrame, type FrameInput } from './draw-frame.js';
 import type { SpokenAudio } from './prepare-audio.js';
@@ -86,11 +85,8 @@ export class ClipPlayer {
     this.startedAt = context.currentTime;
     const { soundBuffers } = this.options;
     for (const segment of timeline.segments) {
-      // The move's sounds first, on the same clock (so the recording has them).
-      if (segment.sound && soundBuffers && segment.start >= fromMs) {
-        this.schedule(soundBuffers[segment.sound.base], segment.start - fromMs);
-        if (segment.sound.stinger) this.schedule(soundBuffers[segment.sound.stinger], segment.start - fromMs + STINGER_DELAY_MS);
-      }
+      // The move's sound first, on the same clock (so the recording has it).
+      if (segment.sound && soundBuffers && segment.start >= fromMs) this.schedule(soundBuffers[segment.sound], segment.start - fromMs);
       const buffer = segment.audioKey ? buffers.get(segment.audioKey) : undefined;
       const audioStart = segment.start + segment.audioOffsetMs;
       if (!buffer || segment.end <= fromMs) continue;

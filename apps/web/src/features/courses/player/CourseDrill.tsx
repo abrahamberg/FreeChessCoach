@@ -21,8 +21,8 @@ import { MoveExplorer } from '../../board/MoveExplorer.js';
 import { MoveStrip } from '../../board/MoveStrip.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
-import { playBoardSound, playBoardSounds } from '../../../sounds/board-sounds.js';
-import { moveSounds } from '../../../sounds/move-sounds.js';
+import { playBoardSound } from '../../../sounds/board-sounds.js';
+import { moveSound } from '../../../sounds/move-sounds.js';
 import { CourseBoardLayout } from './CourseBoardLayout.js';
 import { CoursePane } from './CoursePane.js';
 import { STAGE_LABELS } from './CourseStageBar.js';
@@ -517,7 +517,7 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
 /** A drill's move sound: the learner's knock or the other side's softer
  * one, the chime on a check; no bad or great for the moves themselves. */
 function knock(san: string, own: boolean): void {
-  playBoardSounds(moveSounds({ san, mover: own ? 'white' : 'black', learnerSide: 'white' }));
+  playBoardSound(moveSound({ san, mover: own ? 'white' : 'black', learnerSide: 'white' }));
 }
 
 function sideOf(fenBefore: string): 'white' | 'black' {

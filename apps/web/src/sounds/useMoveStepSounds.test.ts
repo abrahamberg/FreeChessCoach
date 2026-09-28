@@ -1,11 +1,11 @@
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { playBoardSounds } from './board-sounds.js';
+import { playBoardSound } from './board-sounds.js';
 import { useMoveStepSounds } from './useMoveStepSounds.js';
 
-vi.mock('./board-sounds.js', () => ({ playBoardSounds: vi.fn() }));
-const played = vi.mocked(playBoardSounds);
+vi.mock('./board-sounds.js', () => ({ playBoardSound: vi.fn() }));
+const played = vi.mocked(playBoardSound);
 
 const rated = (ply: number, quality: ClassifiedMoveDto['quality'], evalAfterCp: number) => ({ ply, quality, evalAfterCp }) as ClassifiedMoveDto;
 
@@ -18,9 +18,9 @@ describe('useMoveStepSounds', () => {
     });
     expect(played).not.toHaveBeenCalled();
     rerender({ ply: 3 });
-    expect(played).toHaveBeenLastCalledWith({ base: 'move', stinger: null });
+    expect(played).toHaveBeenLastCalledWith('move');
     rerender({ ply: 4 });
-    expect(played).toHaveBeenLastCalledWith({ base: 'opponent', stinger: null });
+    expect(played).toHaveBeenLastCalledWith('opponent');
     rerender({ ply: 3 });
     rerender({ ply: 5 });
     rerender({ ply: 0 });
@@ -31,11 +31,11 @@ describe('useMoveStepSounds', () => {
     const classifiedMoves = [rated(1, 'book', 20), rated(2, 'blunder', 400)];
     const analyzed = renderHook((props: { ply: number }) => useMoveStepSounds({ ply: props.ply, sanMoves: ['e4', 'f6'], learnerSide: 'white', classifiedMoves }), { initialProps: { ply: 1 } });
     analyzed.rerender({ ply: 2 });
-    expect(played).toHaveBeenLastCalledWith({ base: 'opponent', stinger: 'bad' });
+    expect(played).toHaveBeenLastCalledWith('bad');
 
     const live = renderHook((props: { ply: number }) => useMoveStepSounds({ ply: props.ply, sanMoves: ['e4', 'f6'], learnerSide: 'white' }), { initialProps: { ply: 1 } });
     live.rerender({ ply: 2 });
-    expect(played).toHaveBeenLastCalledWith({ base: 'opponent', stinger: null });
+    expect(played).toHaveBeenLastCalledWith('opponent');
   });
 
   test('the learner’s own drop sounds at once, not again when the move lands', () => {
@@ -47,7 +47,7 @@ describe('useMoveStepSounds', () => {
     rerender({ ply: 1, sanMoves: ['e4'] });
     expect(played).toHaveBeenCalledTimes(1);
     rerender({ ply: 2, sanMoves: ['e4', 'e5'] });
-    expect(played).toHaveBeenLastCalledWith({ base: 'opponent', stinger: null });
+    expect(played).toHaveBeenLastCalledWith('opponent');
   });
 
   test('practice: a position with Black to move, and the move and reply sounded in turn', () => {
@@ -57,9 +57,9 @@ describe('useMoveStepSounds', () => {
       initialProps: { ply: 0 }
     });
     rerender({ ply: 2 });
-    expect(played).toHaveBeenLastCalledWith({ base: 'move', stinger: null });
+    expect(played).toHaveBeenLastCalledWith('move');
     vi.advanceTimersByTime(300);
-    expect(played).toHaveBeenLastCalledWith({ base: 'opponent', stinger: null });
+    expect(played).toHaveBeenLastCalledWith('opponent');
     vi.useRealTimers();
   });
 });

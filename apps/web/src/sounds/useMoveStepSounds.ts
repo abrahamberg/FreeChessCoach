@@ -1,7 +1,7 @@
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { useCallback, useEffect, useRef } from 'react';
-import { playBoardSounds } from './board-sounds.js';
-import { moveSounds } from './move-sounds.js';
+import { playBoardSound } from './board-sounds.js';
+import { moveSound } from './move-sounds.js';
 
 export interface MoveStepSoundsInput {
   /** The board's ply (0 = the start); a step of one forward sounds that move. */
@@ -57,7 +57,7 @@ export function useMoveStepSounds({
       if (!san) continue;
       const move = classifiedMoves?.find((each) => each.ply === at);
       const before = classifiedMoves?.find((each) => each.ply === at - 1);
-      const sounds = moveSounds({
+      const sound = moveSound({
         san,
         mover: (at + (blackFirst ? 1 : 0)) % 2 === 1 ? 'white' : 'black',
         learnerSide,
@@ -66,15 +66,15 @@ export function useMoveStepSounds({
         cpAfter: move?.evalAfterCp
       });
       const delay = (at - from - 1) * BETWEEN_MS;
-      if (delay) window.setTimeout(() => playBoardSounds(sounds), delay);
-      else playBoardSounds(sounds);
+      if (delay) window.setTimeout(() => playBoardSound(sound), delay);
+      else playBoardSound(sound);
     }
   }, [ply]);
 
   const soundOwnMove = useCallback(
     (san: string) => {
       sounded.current = sanMoves.length + 1;
-      playBoardSounds(moveSounds({ san, mover: learnerSide, learnerSide }));
+      playBoardSound(moveSound({ san, mover: learnerSide, learnerSide }));
     },
     [sanMoves.length, learnerSide]
   );

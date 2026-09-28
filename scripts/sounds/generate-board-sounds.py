@@ -12,8 +12,9 @@ new: every band gets its own fresh random resonances and noise at that
 band's level, the whole shaped by the loudness pattern, and the frequencies
 are shifted a few percent. The same kind of sound, a different wave.
 
-Check is the capture's pattern made sharper. Bad and great are struck wooden bars (marimba-like): the
-note and its 3.9 and 9.2 overtones, the upper ones dying fast.
+Check is the capture's pattern made sharper over a heavier knock; bad is
+the move's knock with its ring choked; great is between a capture and a
+move.
 
     python3 scripts/sounds/generate-board-sounds.py [out_dir]
 
@@ -129,24 +130,28 @@ def from_profile(profile, seed, shift=1.04, tilt=0.0):
     return out
 
 
+def lowpass(samples, cutoff):
+    """One-pole low-pass: takes the brightness off."""
+    alpha = 1 - math.exp(-2 * math.pi * cutoff / RATE)
+    out, level = [], 0.0
+    for sample in samples:
+        level += alpha * (sample - level)
+        out.append(level)
+    return out
+
+
+def blend(first, second, share=0.5):
+    """A profile between two: each number `share` of the way from the first
+    to the second (the shorter loudness pattern padded with silence)."""
+    length = max(len(first['env']), len(second['env']))
+    pad = lambda env: env + [-80] * (length - len(env))
+    mix = lambda a, b: [x + (y - x) * share for x, y in zip(a, b)]
+    return {'env': mix(pad(first['env']), pad(second['env'])), **{key: mix(first[key], second[key]) for key in ('early', 'mid', 'late')}}
+
+
 def sharpen(samples, after, decay):
     """A faster fade: past `after` seconds the sound dies with time constant `decay`."""
     return [sample * (1.0 if n / RATE < after else math.exp(-(n / RATE - after) / decay)) for n, sample in enumerate(samples)]
-
-
-def wood_note(frequency, seconds=0.35, decay=0.12):
-    """A struck wooden bar: the note, and its 3.9 and 9.2 overtones dying fast."""
-    out = []
-    for index in range(int(RATE * seconds)):
-        time = index / RATE
-        sample = (
-            math.sin(2 * math.pi * frequency * time) * math.exp(-time / decay)
-            + 0.35 * math.sin(2 * math.pi * frequency * 3.9 * time) * math.exp(-time / (decay * 0.25))
-            + 0.12 * math.sin(2 * math.pi * frequency * 9.2 * time) * math.exp(-time / (decay * 0.08))
-        )
-        # A 2 ms attack, so the mallet doesn't click.
-        out.append(sample * min(1.0, time / 0.002))
-    return out
 
 
 def sounds():
@@ -154,15 +159,19 @@ def sounds():
     # The other side: a lower, darker version of the same knock.
     opponent = from_profile(PROFILES['move'], seed=2, shift=0.9, tilt=-3.0)
     capture = from_profile(PROFILES['capture'], seed=3, shift=1.05)
-    # Check: the capture's pattern made sharper: higher, brighter, and it
-    # dies faster after the hit (the owner's call).
-    check = sharpen(from_profile(PROFILES['capture'], seed=4, shift=1.2, tilt=3.0), after=0.015, decay=0.035)
-    # Two notes falling (E4 to C#4), low and soft: a mistake.
-    bad = add(add(silence(0.0), wood_note(330, 0.3, 0.1), 0.0, 0.8), wood_note(277, 0.4, 0.14), 0.11, 0.8)
-    # Three notes rising (C5, E5, G5): a great move.
-    great = silence(0.0)
-    for index, note in enumerate([523, 659, 784]):
-        add(great, wood_note(note, 0.35, 0.12), index * 0.075, 0.7)
+    # Check: the capture's pattern made sharper (higher, brighter), over a
+    # heavier knock, fading a little slower: it should dominate.
+    check = add(
+        sharpen(from_profile(PROFILES['capture'], seed=4, shift=1.2, tilt=3.0), after=0.02, decay=0.05),
+        from_profile(PROFILES['move'], seed=6, shift=0.85),
+        0.0,
+        0.6,
+    )
+    # Bad: the move's knock with its ring choked, as if a hand were on the
+    # board: darker, a little lower, and it stops almost at once.
+    bad = sharpen(lowpass(from_profile(PROFILES['move'], seed=5, shift=0.92, tilt=-8.0), 1100), after=0.004, decay=0.01)
+    # Great: between a capture and a move.
+    great = from_profile(blend(PROFILES['move'], PROFILES['capture']), seed=7, shift=1.06)
     return {'move': move, 'opponent': opponent, 'capture': capture, 'check': check, 'bad': bad, 'great': great}
 
 

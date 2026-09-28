@@ -1,29 +1,26 @@
 import { readMoveSoundsEnabled } from './move-sounds-setting.js';
-import type { BoardSound, MoveSounds } from './move-sounds.js';
+import type { BoardSound } from './move-sounds.js';
 import { isVoiceSpeaking } from './voice-activity.js';
 
 const SAMPLE_RATE = 44100;
 /** A board sound while the coach's voice speaks. */
 const DUCKED = 1 / 3;
-/** The stinger (bad, great) after the knock. */
-export const STINGER_DELAY_MS = 120;
 
 /** Each sound's file in `public/sounds/` (made by
  * scripts/sounds/generate-board-sounds.py; see its README) and its level:
- * the opponent's knock softer than the learner's, the stingers under the
- * knocks. */
+ * the opponent's knock softer than the learner's. */
 const LAYERS: Record<BoardSound, { file: string; delayMs?: number; gain: number }[]> = {
   move: [{ file: 'move', gain: 1 }],
   opponent: [{ file: 'opponent', gain: 0.75 }],
   capture: [{ file: 'capture', gain: 1 }],
   check: [{ file: 'check', gain: 1 }],
-  bad: [{ file: 'bad', gain: 0.45 }],
-  great: [{ file: 'great', gain: 0.5 }]
+  bad: [{ file: 'bad', gain: 0.9 }],
+  great: [{ file: 'great', gain: 0.95 }]
 };
 
 /** How long each sound lasts, in seconds (the files' lengths), for a voice
  * that should wait for it and for clip timing. */
-const SECONDS: Record<BoardSound, number> = { move: 0.16, opponent: 0.16, capture: 0.23, check: 0.11, bad: 0.51, great: 0.5 };
+const SECONDS: Record<BoardSound, number> = { move: 0.16, opponent: 0.16, capture: 0.23, check: 0.15, bad: 0.04, great: 0.23 };
 
 async function render(sound: BoardSound, files: Map<string, AudioBuffer>): Promise<AudioBuffer> {
   const context = new OfflineAudioContext(1, Math.ceil(SAMPLE_RATE * SECONDS[sound]) + 1024, SAMPLE_RATE);
@@ -65,14 +62,8 @@ export function boardSoundBuffers(): Promise<Record<BoardSound, AudioBuffer>> {
 const canPlay = typeof window !== 'undefined' && typeof AudioContext !== 'undefined' && typeof OfflineAudioContext !== 'undefined';
 let live: AudioContext | null = null;
 
-/** Plays a move's sounds on the board: the knock now, the stinger just
- * after; a third as loud while the coach speaks; nothing when Settings >
- * Board has move sounds off. */
-export function playBoardSounds(sounds: MoveSounds): void {
-  play(sounds.stinger ? [[sounds.base, 0], [sounds.stinger, STINGER_DELAY_MS]] : [[sounds.base, 0]]);
-}
-
-/** One sound on its own: a drill's wrong try (bad). */
+/** Plays a sound on the board: a third as loud while the coach speaks;
+ * nothing when Settings > Board has move sounds off. */
 export function playBoardSound(sound: BoardSound): void {
   play([[sound, 0]]);
 }
@@ -96,8 +87,7 @@ function play(queue: [BoardSound, number][]): void {
   })().catch(() => undefined);
 }
 
-/** How long a move's sounds last, for a voice that should wait for them. */
-export function boardSoundsLengthMs(sounds: MoveSounds): number {
-  const base = SECONDS[sounds.base] * 1000;
-  return sounds.stinger ? Math.max(base, STINGER_DELAY_MS + SECONDS[sounds.stinger] * 1000) : base;
+/** How long a sound lasts, for a voice that should wait for it. */
+export function boardSoundLengthMs(sound: BoardSound): number {
+  return SECONDS[sound] * 1000;
 }

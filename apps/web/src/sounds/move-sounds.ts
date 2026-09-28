@@ -1,7 +1,7 @@
 import { expectedPoints } from '@freechesscoach/chess-analysis';
 import type { MoveQuality } from '@freechesscoach/shared';
 
-/** The board's six sounds (docs/plan.md Phase 88). */
+/** The board's six sounds (docs/plan.md Phase 88); a move plays one. */
 export type BoardSound = 'move' | 'opponent' | 'capture' | 'check' | 'bad' | 'great';
 
 export interface MoveSoundInput {
@@ -17,26 +17,25 @@ export interface MoveSoundInput {
   cpAfter?: number;
 }
 
-/** The knock (a capture's hit, or the check), and a stinger just after it. */
-export interface MoveSounds {
-  base: 'move' | 'opponent' | 'capture' | 'check';
-  stinger: 'bad' | 'great' | null;
-}
-
 const BAD: ReadonlySet<MoveQuality> = new Set(['mistake', 'blunder']);
 const GREAT: ReadonlySet<MoveQuality> = new Set(['great', 'brilliant']);
 
 /** The mover's expected points go from below this to above 1 − this. */
 const TURNED = 0.4;
 
-/** What a move sounds like. Bad and great follow either side's move, and
- * only when the move was analyzed. */
-export function moveSounds(input: MoveSoundInput): MoveSounds {
-  const base = /[+#]$/.test(input.san) ? 'check' : input.san.includes('x') ? 'capture' : input.mover === input.learnerSide ? 'move' : 'opponent';
-  return { base, stinger: input.quality ? stingerFor(input as MoveSoundInput & { quality: MoveQuality }) : null };
+/** What a move sounds like, one sound: a check; else, for an analyzed move,
+ * bad (a mistake or blunder: the knock with its ring choked) or great (a
+ * great or brilliant move, or one that turns the game), for either side;
+ * else a capture; else the learner's knock or the opponent's. */
+export function moveSound(input: MoveSoundInput): BoardSound {
+  if (/[+#]$/.test(input.san)) return 'check';
+  const judged = input.quality ? judgement(input as MoveSoundInput & { quality: MoveQuality }) : null;
+  if (judged) return judged;
+  if (input.san.includes('x')) return 'capture';
+  return input.mover === input.learnerSide ? 'move' : 'opponent';
 }
 
-function stingerFor({ quality, mover, cpBefore, cpAfter }: MoveSoundInput & { quality: MoveQuality }): MoveSounds['stinger'] {
+function judgement({ quality, mover, cpBefore, cpAfter }: MoveSoundInput & { quality: MoveQuality }): 'bad' | 'great' | null {
   if (BAD.has(quality)) return 'bad';
   if (GREAT.has(quality)) return 'great';
   if (cpBefore === undefined || cpAfter === undefined) return null;

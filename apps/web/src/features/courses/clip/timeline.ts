@@ -1,7 +1,7 @@
 import type { CourseArrow, CourseDocument, CourseEpisode, CourseKind, CourseNode } from '@freechesscoach/shared';
-import { boardSoundsLengthMs } from '../../../sounds/board-sounds.js';
-import type { MoveSounds } from '../../../sounds/move-sounds.js';
-import { courseMoveSounds, type CourseEvals } from '../player/course-move-list.js';
+import { boardSoundLengthMs } from '../../../sounds/board-sounds.js';
+import type { BoardSound } from '../../../sounds/move-sounds.js';
+import { courseMoveSound, type CourseEvals } from '../player/course-move-list.js';
 import { moveLabel } from '../courseEdits.js';
 
 /** docs/courses.md §8: 9:16 for reels and Shorts, 16:9 for YouTube. */
@@ -49,11 +49,11 @@ export interface ClipSegment {
   audioKey: string | null;
   /** A quiz beat's pause, at the end of the segment (a countdown). */
   pauseMs: number;
-  /** The move's board sounds, at the segment's start; null when it shows no
+  /** The move's board sound, at the segment's start; null when it shows no
    * new move or the clip has sounds off (docs/plan.md Phase 88). */
-  sound: MoveSounds | null;
+  sound: BoardSound | null;
   /** The segment's audio starts this long after the segment: after the
-   * move's sounds, so they never talk over each other. */
+   * move's sound, so they never talk over each other. */
   audioOffsetMs: number;
 }
 
@@ -87,11 +87,11 @@ export function buildClipTimeline(options: {
   timing?: typeof CLIP_TIMING;
   /** Board sounds under the moves: the course's evaluations (bad and great
    * for either side) and how long a move's sounds last. Absent: none. */
-  sounds?: { evals: CourseEvals; lengthMs?: (sounds: MoveSounds) => number } | null;
+  sounds?: { evals: CourseEvals; lengthMs?: (sound: BoardSound) => number } | null;
 }): ClipTimeline {
   const { document, format, audioMs, timing = CLIP_TIMING, sounds = null } = options;
-  const soundOf = (node: CourseNode): MoveSounds | null => (sounds ? courseMoveSounds(document, sounds.evals, node) : null);
-  const soundLength = sounds?.lengthMs ?? boardSoundsLengthMs;
+  const soundOf = (node: CourseNode): BoardSound | null => (sounds ? courseMoveSound(document, sounds.evals, node) : null);
+  const soundLength = sounds?.lengthMs ?? boardSoundLengthMs;
   const byId = new Map(document.nodes.map((node) => [node.id, node]));
   const segments: ClipSegment[] = [];
   let clock = 0;

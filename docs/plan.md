@@ -1207,17 +1207,20 @@ Decisions:
   `scripts/sounds/generate-board-sounds.py` holds only a coarse profile of
   each (loudness every 2.5 ms, third-octave band levels early, mid and late)
   and builds new sounds from fresh random resonances and noise following it,
-  shifted a few percent; check is the capture's pattern made sharper
-  (higher, brighter, shorter), bad and great are struck wooden bars. Six
-  sounds now: a capture has its own (`x` in the SAN, a check still wins).
+  shifted a few percent. The owner's choices: check is the capture's
+  pattern made sharper over a heavier knock (it dominates); bad is the
+  move's knock with its ring choked; great sits between a capture and a
+  move. Six sounds: a capture has its own (`x` in the SAN).
   The files are in `apps/web/public/sounds/`. Each sound is mixed once from its
   layers into an `AudioBuffer`, so the board and clips play the same thing.
   `/sounds/` is a skip-auth route (the public course page plays them).
   Settings > Board has a button per sound to hear them.
-- One pure function picks what a move sounds like:
-  `moveSounds({ san, mover, learnerSide, quality, expectedBefore,
-  expectedAfter })` → a base (`move`/`opponent`, or `check` when the SAN ends
-  in `+`/`#`) and an optional stinger (`bad`/`great`) about 120 ms later.
+- One pure function picks a move's one sound:
+  `moveSound({ san, mover, learnerSide, quality, cpBefore, cpAfter })` →
+  `check` (`+`/`#`), else for an analyzed move `bad` or `great`, else
+  `capture`, else `move` or `opponent`. (Bad and great were first a second
+  sound 120 ms after the knock; once they became versions of the knock
+  itself, each move plays one.)
   "Turns the game": the mover's expected points (the classifier's
   win-probability) go from below 0.4 to above 0.6. The owner, 2026-09-28:
   **live games** (with the coach, with a bot) have no bad or great sounds;

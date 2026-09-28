@@ -66,9 +66,9 @@ describe('buildClipTimeline', () => {
     const timeline = buildClipTimeline({ document, format: 'vertical', audioMs: (key) => audio[key], timing: TIMING, sounds: { evals, lengthMs: () => 180 } });
 
     const [move, first, again] = timeline.segments;
-    expect(move).toMatchObject({ kind: 'move', sound: { base: 'opponent', stinger: 'bad' }, audioOffsetMs: 0, end: 100 });
+    expect(move).toMatchObject({ kind: 'move', sound: 'bad', audioOffsetMs: 0, end: 100 });
     // The beat's audio waits for the knock; the beat is longer by as much.
-    expect(first).toMatchObject({ kind: 'beat', sound: { base: 'move', stinger: null }, audioOffsetMs: 180, start: 100, end: 100 + 180 + 1010 });
+    expect(first).toMatchObject({ kind: 'beat', sound: 'move', audioOffsetMs: 180, start: 100, end: 100 + 180 + 1010 });
     // The same move again: no sound, no wait.
     expect(again).toMatchObject({ kind: 'beat', sound: null, audioOffsetMs: 0 });
 

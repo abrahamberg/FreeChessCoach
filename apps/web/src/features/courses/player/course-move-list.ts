@@ -1,6 +1,6 @@
 import type { ClassifiedMoveDto, CourseDocument, CourseNode, PublicCourseResponse } from '@freechesscoach/shared';
 import { moveListStart, type MoveListStart } from '../../board/moveListStart.js';
-import { moveSounds, type MoveSounds } from '../../../sounds/move-sounds.js';
+import { moveSound, type BoardSound } from '../../../sounds/move-sounds.js';
 
 export type CourseEvals = PublicCourseResponse['evals'];
 
@@ -49,12 +49,12 @@ export function moveListOf(document: CourseDocument, line: readonly CourseNode[]
   };
 }
 
-/** A course move's board sounds (docs/plan.md Phase 88): an analyzed move,
+/** A course move's board sound (docs/plan.md Phase 88): an analyzed move,
  * so bad and great follow either side's move, from the course's
- * evaluations. `stinger` overrides it (a solved quiz is great). */
-export function courseMoveSounds(document: CourseDocument, evals: CourseEvals, node: CourseNode, stinger?: MoveSounds['stinger']): MoveSounds {
+ * evaluations. `great` makes it great (a solved quiz), unless a check. */
+export function courseMoveSound(document: CourseDocument, evals: CourseEvals, node: CourseNode, great = false): BoardSound {
   const rated = evals[node.id];
-  const sounds = moveSounds({
+  const sound = moveSound({
     san: node.san,
     // The side to move after the move is the other side.
     mover: node.fenAfter.split(' ')[1] === 'w' ? 'black' : 'white',
@@ -63,5 +63,5 @@ export function courseMoveSounds(document: CourseDocument, evals: CourseEvals, n
     cpBefore: node.parentId ? evals[node.parentId]?.cp : 0,
     cpAfter: rated?.cp
   });
-  return stinger === undefined ? sounds : { ...sounds, stinger };
+  return great && sound !== 'check' ? 'great' : sound;
 }
