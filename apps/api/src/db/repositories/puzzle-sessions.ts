@@ -1,5 +1,6 @@
 import type { Kysely } from 'kysely';
 import type { Database } from '../schema.js';
+import * as debugTurnsRepo from './debug-turns.js';
 
 export type PuzzleSessionStatus = 'active' | 'completed' | 'abandoned';
 
@@ -152,13 +153,10 @@ export function deleteMessagesBySessionId(db: Kysely<Database>, puzzleSessionId:
 }
 
 /** Latest-turn-only, overwritten each turn — same contract as sessionsRepo.updateDebugSnapshot. */
-export function updateDebugSnapshot(db: Kysely<Database>, id: string, snapshot: unknown): Promise<void> {
-  return db
-    .updateTable('puzzleSessions')
-    .set({ debugSnapshot: JSON.stringify(snapshot) })
-    .where('id', '=', id)
-    .execute()
-    .then(() => undefined);
+export async function updateDebugSnapshot(db: Kysely<Database>, id: string, snapshot: unknown): Promise<void> {
+  await db.updateTable('puzzleSessions').set({ debugSnapshot: JSON.stringify(snapshot) }).where('id', '=', id).execute();
+  // The last few turns too, for the debug panel's turn picker.
+  await debugTurnsRepo.insert(db, { puzzleSessionId: id }, snapshot);
 }
 
 export async function getDebugSnapshot(db: Kysely<Database>, id: string): Promise<unknown> {

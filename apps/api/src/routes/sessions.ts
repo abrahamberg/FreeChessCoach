@@ -8,13 +8,15 @@ import {
   CreatePlaySessionRequestSchema,
   CreateSessionRequestSchema,
   findBotConfig,
-  PostSessionMessageRequestSchema
+  PostSessionMessageRequestSchema,
+  type DebugTurnsResponse
 } from '@freechesscoach/shared';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
+import * as debugTurnsRepo from '../db/repositories/debug-turns.js';
 import type { Database } from '../db/schema.js';
 import { parsePositiveInt, type CoachAgentBaseDependencies } from '../bootstrap.js';
 import { ConflictError, NotFoundError, ValidationError } from '../lib/errors.js';
@@ -334,6 +336,14 @@ export function registerSessionsRoutes(
     const snapshot = await coachAgent.getLastTurnDebugSnapshot(db, session.id);
     if (!snapshot) throw new NotFoundError('No completed turn to debug yet');
     return snapshot;
+  });
+
+  /** The session's last turns, oldest first, for the debug panel's picker. */
+  app.get<{ Params: { id: string } }>('/api/sessions/:id/debug/turns', async (request): Promise<DebugTurnsResponse> => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    const session = await sessionsRepo.findByIdForUser(db, request.params.id, user.id);
+    if (!session) throw new NotFoundError('Session not found');
+    return { turns: await debugTurnsRepo.list(db, { sessionId: session.id }) };
   });
 }
 

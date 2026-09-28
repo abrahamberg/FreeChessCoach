@@ -14,6 +14,7 @@ export * from './course.js';
 export * from './banned-phrases.js';
 export * from './course-api.js';
 export * from './course-debug.js';
+export * from './debug-turns.js';
 export * from './dashboard.js';
 export * from './diagnosis/index.js';
 export * from './engine-ping.js';

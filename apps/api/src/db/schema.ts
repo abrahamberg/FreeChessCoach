@@ -329,6 +329,15 @@ export interface CourseAiCallsTable {
   createdAt: Generated<Date>;
 }
 
+/** 0016_debug_turns.ts: a session's last LLM turns, for the debug picker. */
+export interface DebugTurnsTable {
+  id: Generated<string>;
+  sessionId: string | null;
+  puzzleSessionId: string | null;
+  snapshot: ColumnType<unknown, string, string>;
+  createdAt: Generated<Date>;
+}
+
 /** 0042_stats_archive_weeks.ts — a deleted game's stats, merged per (user,
  * week, speed). `weekStart` is written as a `YYYY-MM-DD` string. */
 export interface StatsArchiveWeeksTable {
@@ -347,6 +356,7 @@ export interface Database {
   bugReports: BugReportsTable;
   courses: CoursesTable;
   courseAiCalls: CourseAiCallsTable;
+  debugTurns: DebugTurnsTable;
   statsArchiveWeeks: StatsArchiveWeeksTable;
   analyses: AnalysesTable;
   sessions: SessionsTable;
