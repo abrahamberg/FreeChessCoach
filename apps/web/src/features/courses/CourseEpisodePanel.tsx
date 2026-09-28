@@ -1,4 +1,4 @@
-import { videoCaption, videoLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CoursePly } from '@freechesscoach/shared';
+import { videoCaption, videoLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CoursePly, type CourseTempting } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import type { BoardArrow } from '../board/CoachBoard.js';
 import { COURSE_ARROW_KINDS, fromDrawnArrows } from './courseArrows.js';
@@ -103,6 +103,7 @@ export function CourseEpisodePanel({ document, episode, direction, nodeIds, sele
                   <textarea rows={4} value={ply?.text ?? ''} onChange={(event) => change({ text: event.target.value })} />
                 </label>
                 {ply?.video && <VideoLineFields ply={ply} onChange={change} />}
+                {ply?.tempting?.length ? <TemptingMoves tempting={ply.tempting} onChange={(tempting) => change({ tempting: tempting.length ? tempting : undefined })} /> : null}
                 <Arrows arrows={ply?.arrows ?? []} drawnArrows={drawnArrows} onChange={(arrows) => change({ arrows })} />
               </section>
             ) : (
@@ -176,6 +177,29 @@ function VideoLineFields({ ply, onChange }: { ply: CoursePly; onChange: (patch: 
         <span>Caption</span>
         <input value={ply.caption ?? ''} placeholder={videoCaption({ ...ply, caption: undefined })} onChange={(event) => onChange({ caption: event.target.value || undefined })} />
       </label>
+    </div>
+  );
+}
+
+/** §13.5: moves that look right here and fail, found by the engine; the
+ * video plays each out before the real move. The why is editable; the move
+ * is the engine's, so it can only be removed. */
+function TemptingMoves({ tempting, onChange }: { tempting: CourseTempting[]; onChange: (tempting: CourseTempting[]) => void }): ReactNode {
+  return (
+    <div className="course-tempting" role="group" aria-label="Tempting moves">
+      <span className="meta">Tempting moves, and why they fail</span>
+      {tempting.map((each, index) => (
+        <div key={each.san} className="course-tempting__item">
+          <span className="course-tempting__san">{each.san}?</span>
+          <label className="course-field">
+            <span>{each.refutation?.length ? `Answered by ${each.refutation.join(' ')}` : 'Why it fails'}</span>
+            <textarea rows={2} aria-label={`Why ${each.san} fails`} value={each.why} onChange={(event) => onChange(tempting.map((other, at) => (at === index ? { ...other, why: event.target.value } : other)))} />
+          </label>
+          <button type="button" className="btn-ghost" aria-label={`Remove ${each.san}`} onClick={() => onChange(tempting.filter((_other, at) => at !== index))}>
+            ✕
+          </button>
+        </div>
+      ))}
     </div>
   );
 }

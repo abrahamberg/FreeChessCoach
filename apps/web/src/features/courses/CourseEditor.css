@@ -757,3 +757,55 @@
   background: var(--color-primary-soft);
   color: var(--color-primary);
 }
+
+/* §13: the YouTube video's packaging and the reel. */
+.course-products {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.course-products h3 {
+  margin: 0;
+}
+
+.course-products__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 12px;
+}
+
+.course-products__span {
+  padding-bottom: 8px;
+}
+
+.course-products__beat {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+}
+
+.course-products__beat strong {
+  grid-column: 1 / -1;
+  font-size: var(--font-size-sm);
+}
+
+.course-tempting {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.course-tempting__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 8px;
+}
+
+.course-tempting__san {
+  padding-top: 8px;
+  color: var(--color-danger);
+  font-weight: 700;
+}

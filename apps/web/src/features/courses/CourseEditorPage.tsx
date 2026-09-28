@@ -9,6 +9,7 @@ import { episodeNodeIds, updateEpisode } from './courseEdits.js';
 import { CourseBoardPanel } from './CourseBoardPanel.js';
 import { CourseEpisodeAi } from './CourseEpisodeAi.js';
 import { CourseEpisodePanel } from './CourseEpisodePanel.js';
+import { CourseProducts } from './CourseProducts.js';
 import { CourseGenerationBar } from './CourseGenerationBar.js';
 import { CourseStudioHeader } from './CourseStudioHeader.js';
 import { CourseOutline } from './CourseOutline.js';
@@ -93,6 +94,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
           <CourseDetails document={document} onChange={edit}>
             <CourseGenerationBar course={course} dirty={dirty} />
           </CourseDetails>
+          <CourseProducts courseId={course.id} document={document} generation={course.generation} dirty={dirty} onChange={edit} />
           <CourseOutline document={document} selectedEpisodeId={episodeId} onSelectEpisode={selectEpisode} />
         </aside>
         <CourseBoardPanel

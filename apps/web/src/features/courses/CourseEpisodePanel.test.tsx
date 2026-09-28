@@ -65,4 +65,15 @@ describe('CourseEpisodePanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Quiz on this move' }));
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ quiz: expect.objectContaining({ answerNodeId: e5!.id }) }));
   });
+
+  test('tempting moves: the why is edited, a move removed', () => {
+    const tempting = [{ san: 'Qxf2+', why: 'Looks like a check.', refutation: ['Kxf2'] }];
+    const onChange = vi.fn();
+    render(<CourseEpisodePanel document={document} episode={{ ...episode, plies: [{ ...episode.plies[0]!, tempting }] }} direction="" nodeIds={nodeIds} selectedNodeId={e5!.id} drawnArrows={[]} onChange={onChange} />);
+    expect(screen.getByText('Answered by Kxf2')).toBeTruthy();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Why Qxf2+ fails' }), { target: { value: 'The king takes.' } });
+    expect(onChange.mock.lastCall?.[0].plies[0].tempting).toEqual([{ ...tempting[0], why: 'The king takes.' }]);
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Qxf2+' }));
+    expect(onChange.mock.lastCall?.[0].plies[0].tempting).toBeUndefined();
+  });
 });
