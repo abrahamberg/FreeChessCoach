@@ -36,14 +36,14 @@ function renderMenu(profile: Record<string, unknown>) {
 describe('AccountMenuSections', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  test('shows Create course only to a course creator', async () => {
+  test('shows Your courses only to a course creator', async () => {
     renderMenu({ ...PROFILE, canCreateCourses: true });
-    expect(await screen.findByRole('menuitem', { name: 'Create course' })).toHaveAttribute('href', '/courses/new');
+    expect(await screen.findByRole('menuitem', { name: 'Your courses' })).toHaveAttribute('href', '/courses');
   });
 
-  test('hides Create course from everyone else', async () => {
+  test('hides Your courses from everyone else', async () => {
     renderMenu({ ...PROFILE, canCreateCourses: false });
     await screen.findByText('me@example.com');
-    expect(screen.queryByRole('menuitem', { name: 'Create course' })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: 'Your courses' })).toBeNull();
   });
 });

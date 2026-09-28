@@ -31,6 +31,13 @@
   list-style: none;
 }
 
+.course-intake__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .course-intake__list {
   margin-top: 32px;
 }

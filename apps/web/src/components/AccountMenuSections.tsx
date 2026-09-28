@@ -63,9 +63,9 @@ export function AccountMenuSections({ engineActivity, onClose, onReportBug, chil
       <div className="user-menu__divider" />
       {/* docs/courses.md §2: only accounts a moderator switched on. */}
       {profileQuery.data?.canCreateCourses && !getDemoRuntime() && (
-        <NavLink to="/courses/new" role="menuitem" className="user-menu__item" onClick={onClose}>
+        <NavLink to="/courses" role="menuitem" className="user-menu__item" onClick={onClose}>
           <PlusIcon width={17} height={17} />
-          Create course
+          Your courses
         </NavLink>
       )}
       <NavLink to="/settings" role="menuitem" className="user-menu__item" onClick={onClose}>

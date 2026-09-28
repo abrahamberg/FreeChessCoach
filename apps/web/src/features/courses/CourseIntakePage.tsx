@@ -12,7 +12,7 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
 import { useProfile } from '../../hooks/useProfile.js';
-import { useCourses, useCreateCourse } from './courseApi.js';
+import { useCreateCourse } from './courseApi.js';
 import { BAND_LABELS } from '../settings/BandSelect.js';
 import { COURSE_KIND_INFO } from './courseKinds.js';
 import './CourseEditor.css';
@@ -59,6 +59,9 @@ export function CourseIntakePage(): ReactNode {
 
   return (
     <div className="course-intake">
+      <p className="meta">
+        <Link to="/courses">← Your courses</Link>
+      </p>
       <h1>Create a course</h1>
       <form className="course-intake__form" onSubmit={submit}>
         <label className="course-field">
@@ -130,27 +133,6 @@ export function CourseIntakePage(): ReactNode {
           {create.isPending ? 'Creating…' : 'Create draft'}
         </button>
       </form>
-      <YourCourses />
     </div>
-  );
-}
-
-function YourCourses(): ReactNode {
-  const courses = useCourses();
-  if (!courses.data?.courses.length) return null;
-  return (
-    <section className="course-intake__list">
-      <h2>Your courses</h2>
-      <ul>
-        {courses.data.courses.map((course) => (
-          <li key={course.id}>
-            <Link to={`/courses/${course.id}/edit`}>{course.title}</Link>
-            <span className="meta">
-              {COURSE_KIND_INFO[course.kind].label} · {course.status}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }

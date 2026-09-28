@@ -6,6 +6,7 @@ import { AppShell } from './components/AppShell.js';
 import { TunnelTakeoverGate } from './components/TunnelTakeoverGate.js';
 import { CourseEditorPage } from './features/courses/CourseEditorPage.js';
 import { CourseIntakePage } from './features/courses/CourseIntakePage.js';
+import { CoursesPage } from './features/courses/CoursesPage.js';
 import { FindGamesPage } from './features/games/FindGamesPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
 import { ImportPage } from './features/import/ImportPage.js';
@@ -104,6 +105,7 @@ export function AppRoutes(): ReactNode {
             <Route path="/dashboard" element={<Navigate to="/progress" replace />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/courses" element={<CoursesPage />} />
             <Route path="/courses/new" element={<CourseIntakePage />} />
             <Route path="/courses/:id/edit" element={<CourseEditorPage />} />
             {getDemoRuntime() && <Route path="/coach" element={<DemoCoachRedirect />} />}
