@@ -1,7 +1,7 @@
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
 import type { CourseDocument, CourseEpisode } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { episodeWalk, isAcceptedAlternative, stepView } from './course-steps.js';
+import { episodeWalk, isAcceptedAlternative, stepView, withoutMove } from './course-steps.js';
 
 const tree = parseCourseTree('1. d4 {[%cal Gd2d4]} e5 2. dxe5 Nc6 3. Nf3 Qe7 *');
 const ids = tree.nodes.map((node) => node.id);
@@ -39,4 +39,12 @@ describe('episodeWalk', () => {
 test('only moves about as good as the course move are accepted', () => {
   expect(['brilliant', 'great', 'best', 'excellent'].every((quality) => isAcceptedAlternative(quality as never))).toBe(true);
   expect(['good', 'inaccuracy', 'mistake', 'blunder', 'miss'].some((quality) => isAcceptedAlternative(quality as never))).toBe(false);
+});
+
+test('a hidden move’s name is blanked out of its note, and only that move', () => {
+  expect(withoutMove('Nc6 hits the pawn on e5.', 'Nc6')).toBe('… hits the pawn on e5.');
+  expect(withoutMove('After 2...Nc6 the pawn is attacked; Nc6 again.', 'Nc6')).toBe('After … the pawn is attacked; … again.');
+  expect(withoutMove('Qxe5 would drop the queen; e5 is the move.', 'e5')).toBe('Qxe5 would drop the queen; … is the move.');
+  expect(withoutMove('Mate with Qc1#!', 'Qc1#')).toBe('Mate with …');
+  expect(withoutMove('Develop the knight.', null)).toBe('Develop the knight.');
 });

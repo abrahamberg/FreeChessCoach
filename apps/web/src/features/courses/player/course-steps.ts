@@ -35,3 +35,12 @@ const ACCEPTED: ReadonlySet<MoveQuality> = new Set(['brilliant', 'great', 'best'
 export function isAcceptedAlternative(quality: MoveQuality): boolean {
   return ACCEPTED.has(quality);
 }
+
+/** The note with the move's own name blanked out ("2...Nc6 hits e5" → "…
+ * hits e5"), so a hidden move is not given away; a whole move only, never
+ * part of another ("e5" in "Qxe5"). With no move, the note as it is. */
+export function withoutMove(note: string | null, san: string | null): string | null {
+  if (!note || !san) return note;
+  const escaped = san.replace(/[+#!?]+$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return note.replace(new RegExp(`(?<![\\w.…])(?:\\d+(?:\\.\\.\\.|…|\\.)\\s*)?${escaped}[+#!?]*(?![\\w])`, 'g'), '…');
+}

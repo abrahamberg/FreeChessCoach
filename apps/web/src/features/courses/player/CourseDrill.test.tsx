@@ -93,6 +93,9 @@ describe('CourseDrill', () => {
     await findPrompt();
     expect(arrowsShown()).toBe(1);
     expect(log()).toContain('1…e5');
+    // Practice says what the move does, not "your move".
+    expect(log()).toContain('The gambit.');
+    expect(log()).not.toContain('your move');
     await play('e5', e5!.fenAfter, e5!.uci);
     await findPrompt();
     expect(arrowsShown()).toBe(1);

@@ -18,7 +18,7 @@ import { CoachBoard } from '../../board/CoachBoard.js';
 import { toBoardMarks } from '../courseArrows.js';
 import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
 import { localToday, type CourseProgressStore } from './course-progress.js';
-import { isAcceptedAlternative } from './course-steps.js';
+import { isAcceptedAlternative, withoutMove } from './course-steps.js';
 import { judgeQuizMove } from './judge-quiz-move.js';
 import { MoveLog, type MoveLogEntry } from './MoveLog.js';
 
@@ -365,7 +365,10 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, onResult, onFi
                 who: who(step.fenBefore, step.asked),
                 // Practice names the move while its arrow shows; the drills never do.
                 label: !step.asked || (stage === 'practice' && hinted) ? moveLabel(step.fenBefore, step.node.san) : null,
-                yours: step.asked
+                yours: step.asked,
+                // Practice says what the move does; with the move hidden, its name is blanked out of the note.
+                purpose:
+                  stage === 'practice' && step.asked ? withoutMove(notes.find((note) => note.nodeId === step.node.id)?.text.trim() || null, hinted ? null : step.node.san) : null
               }}
               action={
                 waiting ? (

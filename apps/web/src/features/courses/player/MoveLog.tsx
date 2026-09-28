@@ -17,7 +17,14 @@ export interface MoveLogProps {
   played: MoveLogEntry[];
   /** The move now: the learner's to find (`label` null keeps it hidden), or
    * the opponent's being played for them. */
-  current: { side: 'white' | 'black'; who: string; label: string | null; yours: boolean };
+  current: {
+    side: 'white' | 'black';
+    who: string;
+    label: string | null;
+    yours: boolean;
+    /** Practice: what the move does (the course's note), shown in place of "your move". */
+    purpose?: string | null;
+  };
   /** Beside the learner's move: "Show the move". */
   action?: ReactNode;
 }
@@ -45,7 +52,8 @@ export function MoveLog({ played, current, action }: MoveLogProps): ReactNode {
         <div className="move-log__text">
           <span className="move-log__who">{current.who}</span>{' '}
           {current.label ? <span className="move-log__move">{current.label}</span> : <span className="move-log__mask" aria-label="Your move, hidden">?</span>}
-          <span className="move-log__hint">{current.yours ? ' · your move' : ' · playing…'}</span>
+          {!current.purpose && <span className="move-log__hint">{current.yours ? ' · your move' : ' · playing…'}</span>}
+          {current.purpose && <p className="move-log__note">{current.purpose}</p>}
         </div>
         {action && <div className="move-log__action">{action}</div>}
       </li>
