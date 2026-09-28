@@ -624,6 +624,10 @@ Commit: `feat(courses): prepare all coach audio before recording`
   quiz pauses (tested).
 - [ ] Canvas drawing for 1080×1920 and 1920×1080: board, arrows, captions,
   coach avatar, end card with the course link.
+- [ ] **Preview clip** in the editor: plays the timeline live on the canvas
+  with the audio, in either format, with play/pause and a scrubber, no
+  recording. Recording is the same playback captured, so the preview is
+  exactly the file.
 - [ ] Record canvas + Web Audio (persona playback rate applied) with
   `MediaRecorder`; MP4 where the browser supports it, else WebM with a note.
   Test on iPhone Safari and desktop Chrome before building further; record
@@ -662,6 +666,9 @@ Commit: `feat(courses): publish courses with their note audio`
   arrows and note audio; quizzes wait for a move; wrong moves answered with
   the move-quality label and the checked tactic sentence; engine-equal
   alternatives accepted (§11).
+- [ ] **Preview as learner** in the editor: the same player component on the
+  current draft (the player takes a `CourseDocument`, not a slug), note audio
+  from the browser cache (81.1) instead of uploaded files; no publish needed.
 - [ ] Threat-model entry for the new public endpoints.
 
 Commit: `feat(courses): public course page, no login`

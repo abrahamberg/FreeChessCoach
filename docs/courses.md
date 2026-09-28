@@ -618,6 +618,10 @@ Decided with the owner:
   rate (`personaPlaybackRate`) is applied when mixing, as in the app.
 - Audio is cached in the browser by text hash + voice, so after an edit only the
   changed sentences are synthesised again.
+- The editor previews both before anything is recorded or published:
+  **Preview clip** plays the clip live on the canvas with its audio (recording
+  is that same playback captured), and **Preview as learner** opens the public
+  player on the draft, voiced from the browser's audio cache.
 - Videos are never uploaded. The creator posts them and pastes the links into
   the course (`clipLinks`), so the course page can embed the YouTube video.
 - Course-note audio is uploaded with the course when it is published (small
