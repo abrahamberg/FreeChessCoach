@@ -616,8 +616,9 @@ Decided with the owner:
   arrows, captions, coach avatar, end card) plus the audio through Web Audio,
   in both formats: 9:16 (1080×1920) and 16:9 (1920×1080). The persona's playback
   rate (`personaPlaybackRate`) is applied when mixing, as in the app.
-- Audio is cached in the browser by text hash + voice, so after an edit only the
-  changed sentences are synthesised again.
+- Audio is cached in the browser (IndexedDB, memory when that is unavailable)
+  by exact text + voice, so after an edit only the changed sentences are
+  synthesised again.
 - The editor previews both before anything is recorded or published:
   **Preview clip** plays the clip live on the canvas with its audio (recording
   is that same playback captured), and **Preview as learner** opens the public

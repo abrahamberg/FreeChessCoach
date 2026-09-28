@@ -605,11 +605,15 @@ Commit: `feat(courses): show the creator every AI call of a course run`
 `resolve-tts-client.ts`, `persona-voices.ts`.
 **Files:** `apps/web/src/features/courses/clip/prepare-audio.ts`, tests.
 
-- [ ] Synthesise every beat and note with the course persona via the chosen
+Status: done 2026-09-28 (commit below). The cache key is the exact text
+(IndexedDB takes long keys), not a hash; identical texts are synthesised once;
+the UI that calls it comes with 81.2's Preview clip.
+
+- [x] Synthesise every beat and note with the course persona via the chosen
   backend (browser Kokoro, local Kokoro, OpenAI; `native` refused with a
-  message). Progress callback. Cache by text hash + persona + backend in
+  message). Progress callback. Cache by text + persona + backend in
   IndexedDB (wrapped in try/catch, works without it).
-- [ ] Nothing is returned until every sentence exists.
+- [x] Nothing is returned until every sentence exists.
 
 Commit: `feat(courses): prepare all coach audio before recording`
 
