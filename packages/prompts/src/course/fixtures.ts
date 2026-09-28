@@ -55,5 +55,7 @@ export const ENGLUND_OUTLINE: CourseOutline = {
       ]
     }
   ],
-  takeaways: ['a', 'b', 'c']
+  takeaways: ['a', 'b', 'c'],
+  video: null,
+  reel: null
 };

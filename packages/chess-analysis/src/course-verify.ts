@@ -8,7 +8,7 @@ import { episodeTexts, moveProblems, numberProblems, phraseProblems, sameMove, s
 export type { CourseVerifyNode } from './course-verify-scope.js';
 
 /** docs/courses.md §7, one code per check. */
-export type CourseVerifyCode = 'nodes' | 'moves' | 'tactic-words' | 'numbers' | 'arrows' | 'lengths' | 'key-moves' | 'quiz' | 'phrases';
+export type CourseVerifyCode = 'nodes' | 'moves' | 'tactic-words' | 'numbers' | 'arrows' | 'lengths' | 'key-moves' | 'tempting' | 'quiz' | 'phrases' | 'reel' | 'video' | 'voice';
 
 export interface CourseVerifyProblem {
   code: CourseVerifyCode;
@@ -53,6 +53,7 @@ export function verifyCourseEpisode(input: CourseVerifyInput): CourseVerifyProbl
     ...arrowProblems(episode, scope),
     ...lengthProblems(episode, scope, input.budget ?? null),
     ...keyMoveProblems(episode, scope),
+    ...(dossier ? temptingProblems(episode, scope) : []),
     ...quizProblems(episode, scope, dossier !== null),
     ...phraseProblems(texts)
   ];
@@ -93,6 +94,16 @@ function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: Cou
     problems.push({ code: 'lengths', nodeId: null, message: `${video.length} moves speak in the video (the plan allows ${episode.budget.video})` });
   }
   return problems;
+}
+
+/** §13.5: a ply's tempting moves are the dossier's, at that move. */
+function temptingProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVerifyProblem[] {
+  return episode.plies.flatMap((ply) => {
+    const known = new Set((scope.facts.get(ply.nodeId)?.tempting ?? []).flatMap((each) => sameMove(each.san)));
+    return (ply.tempting ?? [])
+      .filter((each) => !sameMove(each.san).some((form) => known.has(form)))
+      .map((each) => ({ code: 'tempting' as const, nodeId: ply.nodeId, message: `${each.san} on ${ply.nodeId} is not one of the analysis's tempting moves there` }));
+  });
 }
 
 /** Code's key moves (CourseBudget.keyNodeIds) speak in every planned version. */

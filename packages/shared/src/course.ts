@@ -283,12 +283,22 @@ export const CourseOutlineEpisodeSchema = z.object({
 });
 export type CourseOutlineEpisode = z.infer<typeof CourseOutlineEpisodeSchema>;
 
+/** §13.3: the outline's reel pick, one of code's candidates. */
+export const CourseOutlineReelSchema = z.object({
+  candidate: z.string().min(1),
+  style: z.enum(['highlight', 'puzzle', 'promo'])
+});
+
 export const CourseOutlineSchema = z.object({
   title: z.string().min(1).max(60),
   promise: z.string(),
   hookOptions: z.array(z.string()).min(3).max(3),
   chapters: z.array(z.object({ title: z.string(), lineId: z.string().min(1), episodes: z.array(CourseOutlineEpisodeSchema).min(1) })).min(1),
-  takeaways: z.array(z.string()).min(3).max(3)
+  takeaways: z.array(z.string()).min(3).max(3),
+  /** §13.4: null when the course makes no YouTube video. */
+  video: CourseVideoSchema.nullable().default(null),
+  /** §13.3: null when the course makes no reel. */
+  reel: CourseOutlineReelSchema.nullable().default(null)
 });
 export type CourseOutline = z.infer<typeof CourseOutlineSchema>;
 
@@ -300,6 +310,14 @@ export const EpisodeScriptSchema = z.object({
   quiz: CourseQuizSchema.nullable()
 });
 export type EpisodeScript = z.infer<typeof EpisodeScriptSchema>;
+
+/** The reel call's answer (§13.3); code adds the style and span. */
+export const ReelScriptSchema = CourseReelSchema.pick({ hook: true, topText: true, beats: true, payoff: true, cta: true, loop: true });
+export type ReelScript = z.infer<typeof ReelScriptSchema>;
+
+/** The `episodeId` of the reel's warnings (§13.3): the reel has no episode,
+ * and a resumed run keeps them apart from the whole course's. */
+export const REEL_WARNINGS = 'reel';
 
 /** A verifier problem kept on the draft (§7); `episodeId` null for the whole course. */
 export const CourseWarningSchema = z.object({

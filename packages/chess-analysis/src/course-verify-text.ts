@@ -18,6 +18,7 @@ export function episodeTexts(episode: CourseEpisode): EpisodeText[] {
     texts.push({ where: `the line on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.text });
     if (ply.say) texts.push({ where: `the video line on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.say });
     if (ply.caption) texts.push({ where: `the caption on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.caption });
+    for (const tempting of ply.tempting ?? []) texts.push({ where: `why ${tempting.san} fails on ${ply.nodeId}`, nodeId: ply.nodeId, text: tempting.why });
   }
   const quiz = episode.quiz;
   if (quiz) texts.push(...(['prompt', 'hint', 'reveal'] as const).map((field) => ({ where: `the quiz ${field}`, nodeId: quiz.answerNodeId, text: quiz[field] })));

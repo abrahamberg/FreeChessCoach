@@ -15,14 +15,14 @@ export async function planOutline(inputs: GenerationInputs, call: CourseModelCal
   const first = await call(buildCourseOutlineMessages(inputs.context), CourseOutlineSchema, firstLabel);
   const firstProblems = outlineProblems(inputs, first);
   await call.checked?.(firstLabel, firstProblems);
-  if (firstProblems.length === 0) return { outline: withKeyMoves(inputs, first), warnings: [] };
+  if (firstProblems.length === 0) return { outline: withProducts(inputs, withKeyMoves(inputs, first)), warnings: [] };
 
   const retry = { previousOutput: JSON.stringify(first), problems: firstProblems };
   const repairLabel = { ...firstLabel, repair: true };
   const second = await call(buildCourseOutlineMessages(inputs.context, retry), CourseOutlineSchema, repairLabel);
   const problems = outlineProblems(inputs, second);
   await call.checked?.(repairLabel, problems);
-  if (problems.length === 0) return { outline: withKeyMoves(inputs, second), warnings: [] };
+  if (problems.length === 0) return { outline: withProducts(inputs, withKeyMoves(inputs, second)), warnings: [] };
 
   const plan = inputs.context.plan;
   if (!plan) throw new ValidationError(`The AI outline failed its checks twice: ${problems.join('; ')}`);
@@ -39,7 +39,28 @@ export async function planOutline(inputs: GenerationInputs, call: CourseModelCal
     }))
   };
   const message = `The AI outline failed its checks twice, so the episodes come from the code skeleton: ${problems.join('; ')}`;
-  return { outline: withKeyMoves(inputs, outline), warnings: [{ episodeId: null, code: 'outline', nodeId: null, message }] };
+  return { outline: withProducts(inputs, withKeyMoves(inputs, outline)), warnings: [{ episodeId: null, code: 'outline', nodeId: null, message }] };
+}
+
+/** §13.3–13.4, code's say over the videos: none the course does not make,
+ * and a reel on one of code's candidates in a style it allows (a promo only
+ * with a video). An invalid pick falls back to the first candidate, as a
+ * puzzle for a puzzle or tactics course and a highlight otherwise. */
+export function withProducts(inputs: GenerationInputs, outline: CourseOutline): CourseOutline {
+  const videos = courseVideos(inputs.document);
+  const candidates = inputs.context.reelCandidates ?? [];
+  const allowed = (style: string, styles: readonly string[]): boolean => styles.includes(style) && (style !== 'promo' || videos.video);
+  let reel: CourseOutline['reel'] = null;
+  if (videos.reel && candidates.length) {
+    const picked = candidates.find((candidate) => candidate.id === outline.reel?.candidate);
+    if (picked && outline.reel && allowed(outline.reel.style, picked.styles)) reel = outline.reel;
+    else {
+      const first = candidates[0]!;
+      const puzzle = (inputs.document.kind === 'puzzle' || inputs.document.kind === 'tactics') && first.styles.includes('puzzle');
+      reel = { candidate: first.id, style: puzzle ? 'puzzle' : 'highlight' };
+    }
+  }
+  return { ...outline, video: videos.video ? outline.video : null, reel };
 }
 
 /** Code's say over the budgets: with no YouTube video (§13.1) the video's
@@ -108,6 +129,8 @@ export function documentFromOutline(inputs: GenerationInputs, outline: CourseOut
     promise: outline.promise,
     hookOptions: outline.hookOptions,
     takeaways: outline.takeaways,
+    ...(outline.video ? { video: outline.video } : {}),
+    ...reelFrame(inputs, outline),
     chapters: outline.chapters.map((chapter, index) => ({
       id: `c${index + 1}`,
       title: chapter.title,
@@ -135,4 +158,13 @@ export function documentFromOutline(inputs: GenerationInputs, outline: CourseOut
 export function learnerNodes(inputs: GenerationInputs, startNodeId: string, endNodeId: string): string[] {
   const sides = new Map(inputs.dossier.nodes.map((facts) => [facts.nodeId, facts.side]));
   return (courseNodePath(inputs.document.nodes, startNodeId, endNodeId) ?? []).filter((id) => sides.get(id) === inputs.document.learnerSide);
+}
+
+/** The reel's span and style from the outline's pick; the reel call writes
+ * its words (§13.3). */
+function reelFrame(inputs: GenerationInputs, outline: CourseOutline): Pick<CourseDocument, 'reel'> {
+  const candidate = inputs.context.reelCandidates?.find((each) => each.id === outline.reel?.candidate);
+  if (!candidate || !outline.reel) return {};
+  const { startNodeId, climaxNodeId, endNodeId } = candidate;
+  return { reel: { style: outline.reel.style, startNodeId, climaxNodeId, endNodeId, hook: '', topText: '', beats: [], payoff: '', cta: '', loop: '' } };
 }

@@ -41,7 +41,7 @@ function outline(withSafety = true): CourseOutline {
     planned('e5', 'punish', 'n13', 'n16', ['n16'])
   ];
   if (withSafety) episodes.push(planned('e6', 'safety', 'n11', 'n11'));
-  return { title: 'The Englund trap', promise: 'After this you can spring it.', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], chapters: [{ title: 'The trap', lineId: 'l1', episodes }] };
+  return { title: 'The Englund trap', promise: 'After this you can spring it.', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], video: null, reel: null, chapters: [{ title: 'The trap', lineId: 'l1', episodes }] };
 }
 
 const script = (episodeId: string, nodeId: string, text = `Episode ${episodeId} in words.`): EpisodeScript => ({
@@ -54,9 +54,10 @@ const step = (value: unknown): MockStep => ({ text: JSON.stringify(value), finis
 const quizScript = (): EpisodeScript => script('e4', 'n12');
 const cleanEpisodes = (): MockStep[] => [step(script('e1', 'n1')), step(script('e2', 'n2')), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n16')), step(script('e6', 'n11'))];
 
+/** No reel unless a test asks: the reel call is one more model step. */
 async function newCourse(email: string, intake: Partial<CreateCourseRequest> = {}): Promise<string> {
   const user = await usersRepo.insert(db, { email, displayName: 'Creator' });
-  return (await createCourse(db, user.id, CreateCourseRequestSchema.parse({ ...ENGLUND_INTAKE, ...intake }))).id;
+  return (await createCourse(db, user.id, CreateCourseRequestSchema.parse({ ...ENGLUND_INTAKE, videos: { video: true, reel: false }, ...intake }))).id;
 }
 
 /** The mock model, and deps whose `resolveModel` fails from call `failFrom` on. */
@@ -126,9 +127,28 @@ describe('runCourseGeneration', () => {
     expect(row?.generation?.warnings).toEqual([]);
   });
 
+  test('the reel: written last on the candidate the outline picked, checked, and kept in the document', async () => {
+    const id = await newCourse('reel@example.com', { videos: { video: true, reel: true } });
+    const picked = { ...outline(), video: { title: 'A greedy queen, mated in eight', thumbnailText: 'Mated in eight', hook: 'Black gives a pawn and mates.', outro: 'Would you take it?' }, reel: { candidate: 'r1', style: 'highlight' } };
+    const script = { hook: 'The Englund Gambit trap that mates in eight.', topText: 'Black to play', beats: [{ nodeId: 'n16', say: 'Qc1 is mate. Nowhere to go.', caption: 'Mate' }], payoff: 'Mate in eight', cta: 'Follow for a trap a day.', loop: 'All from one greedy gambit.' };
+    const { deps, prompts } = depsWith([step(picked), ...cleanEpisodes(), step(script)]);
+
+    await runCourseGeneration(deps, id);
+
+    const sent = prompts();
+    expect(sent[0]).toContain('REEL CANDIDATES');
+    expect(sent[7]).toContain('THE REEL (9:16, 30 to 45 seconds, one idea)');
+    const row = await coursesRepo.findById(db, id);
+    expect(row?.document?.reel).toMatchObject({ style: 'highlight', climaxNodeId: 'n16', hook: script.hook, beats: script.beats });
+    expect(row?.document?.video?.title).toBe('A greedy queen, mated in eight');
+    expect(row?.generation).toMatchObject({ status: 'succeeded', done: 7, total: 7 });
+    expect(row?.generation?.warnings.filter((warning) => warning.episodeId === 'reel')).toEqual([]);
+  });
+
   test('no YouTube video: no video budget, no video ticks, whatever the model says', async () => {
     const id = await newCourse('reel-only@example.com', { videos: { video: false, reel: true } });
-    const { deps, prompts } = depsWith([step(outline()), ...cleanEpisodes()]);
+    const reel = { hook: 'The Englund Gambit trap that mates in eight.', topText: 'Black to play', beats: [], payoff: 'Mate in eight', cta: 'Follow for a trap a day.', loop: 'All from one greedy gambit.' };
+    const { deps, prompts } = depsWith([step(outline()), ...cleanEpisodes(), step(reel)]);
 
     await runCourseGeneration(deps, id);
 

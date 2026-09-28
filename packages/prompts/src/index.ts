@@ -26,4 +26,5 @@ export * from './course/context.js';
 export * from './course/episode.js';
 export * from './course/outline.js';
 export * from './course/playbooks.js';
+export * from './course/reel.js';
 export * from './course/shared.js';

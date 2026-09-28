@@ -28,7 +28,8 @@ import { generateStructured } from '../src/llm/text.js';
 import { buildCourseDossierFromEngine } from '../src/services/course-dossier.js';
 import { draftFromIntake } from '../src/services/courses.js';
 import { writeEpisode, type WrittenEpisode } from '../src/services/courses/generate-episode.js';
-import { planOutline } from '../src/services/courses/generate-outline.js';
+import { documentFromOutline, planOutline } from '../src/services/courses/generate-outline.js';
+import { writeReel } from '../src/services/courses/generate-reel.js';
 import { courseTreeOf, generationInputs, type CourseModelCall } from '../src/services/courses/generation-inputs.js';
 import { NativeEngineBackend } from '../src/services/engine/native-engine-backend.js';
 import { printCourseRun, type CourseRun } from './course-golden-print.js';
@@ -67,9 +68,9 @@ async function runCourse(course: GoldenCourse, resolution: ModelResolution, engi
   const inputs = generationInputs({ document, dossier, direction: course.intake.direction, sourcePgn: course.intake.pgn });
   const engineMs = Date.now() - started;
 
-  const calls = { outline: 0, episodes: 0, repairs: 0 };
+  const calls = { outline: 0, episodes: 0, reel: 0, repairs: 0 };
   const call: CourseModelCall = async (messages, schema, label) => {
-    const kind = label.repair ? 'repairs' : label.step === 'outline' ? 'outline' : 'episodes';
+    const kind = label.repair ? 'repairs' : label.step === 'episode' ? 'episodes' : label.step;
     calls[kind]++;
     const callStarted = Date.now();
     const result = await generateStructured({ resolution, system: messages.system, prompt: messages.user, schema });
@@ -83,7 +84,10 @@ async function runCourse(course: GoldenCourse, resolution: ModelResolution, engi
   for (const episode of planned.outline.chapters.flatMap((chapter) => chapter.episodes)) {
     episodes.push(await writeEpisode(inputs, planned.outline, episode.id, call));
   }
-  return { name: course.name, intake: course.intake, document, outline: planned.outline, outlineWarnings: planned.warnings, episodes, calls, engineMs, totalMs: Date.now() - started };
+  const framed = documentFromOutline(inputs, planned.outline);
+  const written = { ...framed, episodes: episodes.map((each) => each.episode) };
+  const reel = written.reel ? await writeReel(inputs, written, written.reel, call) : null;
+  return { name: course.name, intake: course.intake, document, outline: planned.outline, outlineWarnings: planned.warnings, episodes, reel, calls, engineMs, totalMs: Date.now() - started };
 }
 
 async function main(): Promise<void> {
@@ -105,7 +109,7 @@ async function main(): Promise<void> {
     }
   }
   const warnings = runs.reduce((sum, run) => sum + run.outlineWarnings.length + run.episodes.reduce((count, episode) => count + episode.warnings.length, 0), 0);
-  const calls = runs.reduce((sum, run) => sum + run.calls.outline + run.calls.episodes + run.calls.repairs, 0);
+  const calls = runs.reduce((sum, run) => sum + run.calls.outline + run.calls.episodes + run.calls.reel + run.calls.repairs, 0);
   console.log(`SUMMARY: ${runs.length} courses, ${calls} model calls, ${warnings} warnings left after repair`);
   if (values.json) writeFileSync(values.json, JSON.stringify(runs, null, 2));
 }

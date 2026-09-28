@@ -1,11 +1,15 @@
 import { TACTIC_MOTIF_PHRASES, type CourseSkeleton } from '@freechesscoach/chess-analysis';
 import type { CourseBudget } from './budget.js';
-import { capitalise, nodeLabel, type CoursePromptContext } from './context.js';
+import { capitalise, nodeLabel, promptVideos, type CoursePromptContext } from './context.js';
 
 /** docs/courses.md §6.3, one playbook per kind, filled from the skeleton
  * (§5.5), the budget and the course. Missing facts are named as missing, so
  * no `{placeholder}` ever reaches the model. */
 export function buildCoursePlaybook(context: CoursePromptContext, budget: CourseBudget): string {
+  return [kindPlaybook(context, budget), productsPlaybook(context)].filter(Boolean).join('\n');
+}
+
+function kindPlaybook(context: CoursePromptContext, budget: CourseBudget): string {
   switch (context.kind) {
     case 'trap':
       return trapPlaybook(context, budget, context.skeleton?.kind === 'trap' ? context.skeleton : null);
@@ -20,6 +24,29 @@ export function buildCoursePlaybook(context: CoursePromptContext, budget: Course
   }
 }
 
+/** docs/courses.md §13.2: what the YouTube video and the reel do for this
+ * kind, for the videos the course makes. */
+const VIDEO_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
+  trap: 'the setup, the bait and why it looks natural, the punishment, and how to stay safe; at the bait and the answer, play out the tempting moves.',
+  opening: 'the plan, what each learner move is for, each sideline, each trap inside; the tempting moves where the opponent can go wrong.',
+  tactics: 'the cue first, then each example with the tempting moves and why they fail.',
+  puzzle: 'the thinking method: at every learner move, the checks, captures and threats in that order, which look right, why they fail, then the move.',
+  master_game: 'a storytelling recap: the players (headers only), the turning points, and at each the tempting moves and why the master avoided them.'
+};
+
+const REEL_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
+  trap: 'the bait and the punishment.',
+  opening: 'the one trap or idea a player of this opening must know.',
+  tactics: 'the clearest example, as a puzzle.',
+  puzzle: 'the position and the question ("White to play. Mate in 3."), then the solution.',
+  master_game: 'the single brilliant move, blunder or finish, never a summary of the game.'
+};
+
+function productsPlaybook(context: CoursePromptContext): string {
+  const videos = promptVideos(context);
+  return [videos.video && `YouTube video: ${VIDEO_PLAYBOOK[context.kind]}`, videos.reel && `Reel: ${REEL_PLAYBOOK[context.kind]}`].filter(Boolean).join('\n');
+}
+
 /** Episodes the outline should have, per kind (§6.4's `{episodeRange}`). */
 export function episodeRange(context: CoursePromptContext): string {
   switch (context.kind) {
@@ -32,7 +59,7 @@ export function episodeRange(context: CoursePromptContext): string {
     case 'puzzle':
       return String(puzzleLearnerMoves(context).length + 2);
     case 'master_game':
-      return '6 to 20, of which 4 to 6 are in the clip';
+      return '6 to 20';
   }
 }
 
@@ -46,13 +73,13 @@ ${skeleton?.answerNodeId ?? 'not found'}. The victim's safe move at the bait is 
 Use exactly these episodes, in order:
 1. hook — at most ${budget.hookWords} words, true and specific to how the trap ends:
    ${trapEnding(context)}
-2. setup — the setup moves play fast. At most two speak in the clip, only
+2. setup — the setup moves play fast. At most two speak in the video, only
    where the move order matters.
 3. bait — why the victim's move looks natural. This is the heart of the trap:
    the viewer should think "I'd play that too".
 4. quiz — "What does ${trapper} play here?" plus a hint at the target. The
-   clip pauses ${budget.pauseSeconds}s (the app adds the pause).
-5. punish — every forcing move speaks in the clip; captions carry the rhythm.
+   video pauses ${budget.pauseSeconds}s (the app adds the pause).
+5. punish — every forcing move speaks in the video; captions carry the rhythm.
 6. safety — how the victim stays safe: ${safeMove}, in one or two sentences.${risk}
 The end card and call to action are added by the app; don't write them.
 In the course, every move speaks. The bait and the safe move get the longest
@@ -85,8 +112,8 @@ The learner plays ${capitalise(context.learnerSide)}. Lines, in the creator's or
 - Last chapter "Recap": the move orders only, then the three takeaways.
 drillNodeIds: every learner move in the main line, plus the first two learner
 moves after each deviation.
-Clip: chapter 1's key moves speak; each sideline in two or three moves. The
-course carries the detail.`;
+In the video: chapter 1's key moves speak; each sideline in two or three
+moves. The course carries the detail.`;
 }
 
 function puzzleLearnerMoves(context: CoursePromptContext): string[] {
@@ -150,6 +177,6 @@ beyond these headers and the creator's direction.
   master's move is the engine's best or marked "also good".
 - If the dossier marks a master's move as a mistake, say so respectfully and
   give the better move.
-- Clip: only the critical moments, 4–6 episodes: the position, the question,
-  the master's move, why.`;
+- In the video: the critical moments carry the story: the position, the
+  question, the master's move, why.`;
 }

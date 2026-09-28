@@ -1736,16 +1736,16 @@ Commit: `feat(courses): tempting moves and why they fail, from the engine`
 **Files:** `packages/prompts/src/course/shared.ts`, `playbooks.ts`,
 `outline.ts`, `episode.ts`, `budget.ts`, snapshot tests.
 
-- [ ] The shared block's "three products" (§13.7) replaces "each move, two
+- [x] The shared block's "three products" (§13.7) replaces "each move, two
   versions"; every playbook gains its video and reel paragraphs, and the
   puzzle playbook is new (the thinking method: checks, captures, threats at
   every learner move).
-- [ ] The outline: course and video budgets, the reel's style and span from
+- [x] The outline: course and video budgets, the reel's style and span from
   code's candidates, the video's title, thumbnail text, hook and outro;
   only for the ticked videos.
-- [ ] The episode: `text`, `say`, `tempting` (from the dossier's list),
+- [x] The episode: `text`, `say`, `tempting` (from the dossier's list),
   ticks within budgets.
-- [ ] Voice rule: never start two lines the same way; no stock words
+- [x] Voice rule: never start two lines the same way; no stock words
   repeated across the course.
 
 Commit: `feat(courses): prompts for the course, the video and the reel`
@@ -1758,12 +1758,12 @@ Commit: `feat(courses): prompts for the course, the video and the reel`
 `course-reel-candidates.ts` (chess-analysis, new), `course-generate.ts`,
 tests.
 
-- [ ] Code's reel candidates: climaxes ranked (mate, brilliant or great,
+- [x] Code's reel candidates: climaxes ranked (mate, brilliant or great,
   largest swing, a trap's punishment) with their spans.
-- [ ] One call after the episodes writes the §13.3 script; checked (93.3),
+- [x] One call after the episodes writes the §13.3 script; checked (93.3),
   sent back once, then kept with warnings.
 - [ ] `POST /api/courses/:id/generate` takes `{ only: 'reel' | 'video' }`
-  to add one later.
+  to add one later. Moved to 95.1, with the editor's "Add a reel".
 
 Commit: `feat(courses): the reel, one idea, written and checked`
 
@@ -1774,8 +1774,8 @@ Commit: `feat(courses): the reel, one idea, written and checked`
 `packages/shared/src/constants` (`GENERIC_CTAS`, `VIDEO_INTRO_PHRASES`),
 tests.
 
-- [ ] Every row of §13.9, each with a failing test first.
-- [ ] A puzzle move with a second good answer (`unsoundNodeIds`) is a
+- [x] Every row of §13.9, each with a failing test first.
+- [x] A puzzle move with a second good answer (`unsoundNodeIds`) is a
   warning in the editor.
 
 Commit: `feat(courses): checks for tempting moves, the reel, the video and the voice`
@@ -1784,9 +1784,17 @@ Commit: `feat(courses): checks for tempting moves, the reel, the video and the v
 
 **Files:** `apps/api/test/fixtures/courses/`, `course-golden.ts`.
 
-- [ ] One fixture per kind (a mate-in-3 puzzle added, the openings as one),
+- [x] One fixture per kind (a mate-in-3 puzzle added, the openings as one),
   printing the video and reel scripts.
 - [ ] The owner runs it (their unlock phrase and credits).
+
+Status: code done 2026-09-29. The outline picks the reel from code's
+candidates (`course-reel-candidates.ts`) and writes the video's packaging;
+code keeps only what the course makes (`withProducts`). The reel call runs
+after the episodes, one more step; its warnings carry `episodeId: 'reel'`.
+The whole-course checks (`verifyCourseFrame`: the video's packaging, the
+voice across episodes) and a puzzle's second answers are warnings at the
+end of a run. The golden script prints the video and the reel.
 
 Commit: `test(courses): golden set for five kinds and three products`
 

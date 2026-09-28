@@ -27,7 +27,7 @@ describe('course prompts', () => {
     expect(system).toContain('The bait is node n11. The answer is node\nn12.');
     expect(system).toContain("The victim's safe move at the bait is Nc3.");
     expect(system).toContain('What does Black play here?');
-    expect(system).toContain('The\n   clip pauses 3s (the app adds the pause).');
+    expect(system).toContain('The\n   video pauses 3s (the app adds the pause).');
   });
 
   test('the trap hook is told how the line ends, with no example hook to copy', () => {
@@ -72,7 +72,7 @@ describe('course prompts', () => {
     expect(user).toContain('Keep every chapter, episode id, role, startNodeId, endNodeId and answerNodeId');
     expect(user).toContain('Chapter "The trap", lineId l1:\n- e1 hook, on n1 (1. d4), narratedNodeIds []\n- e2 setup, n1 (1. d4) to n10 (5... Qxb2)');
     expect(user).toContain('- e4 quiz, on n12 (6... Bb4), answerNodeId n12');
-    expect(user).toContain('- e6 safety, on n11 (6. Bc3)\n\nDOSSIER');
+    expect(user).toContain('- e6 safety, on n11 (6. Bc3)\n\nYOUTUBE VIDEO (write "video")');
   });
 
   test("an episode's dossier holds only its nodes, the one before and its quiz answer", () => {

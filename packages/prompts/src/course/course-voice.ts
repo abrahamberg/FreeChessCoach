@@ -36,7 +36,7 @@ export function buildCourseVoiceBlock(persona: CoachPersona): string {
     `VOICE: ${intro}`,
     `Words you reach for: ${wordBankSentence(words)}`,
     `Words you never use: ${BANNED_GENERIC_PHRASES.map((phrase) => `"${phrase}"`).join(', ')}.`,
-    `How it sounds in a clip: "${first}" / "${second}"`,
+    `How it sounds in a video: "${first}" / "${second}"`,
     'Voice changes how you say things, never what is true about the position.'
   ].join('\n');
 }

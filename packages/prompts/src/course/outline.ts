@@ -15,7 +15,9 @@ export const COURSE_OUTLINE_JSON_SCHEMA = `{
       "answerNodeId": string | null,
       "budgetCourse": number (moves that may speak in the course),
       "budgetVideo": number (moves that may speak in the YouTube video) }] }],
-  "takeaways": string[3]
+  "takeaways": string[3],
+  "video": { "title": string, "thumbnailText": string, "hook": string, "outro": string } | null,
+  "reel": { "candidate": string, "style": "highlight" | "puzzle" | "promo" } | null
 }`;
 
 /** The checks' problems with the previous outline (§6.4: sent back once). */
@@ -43,6 +45,7 @@ ${context.lines.map((line) => `${line.id} (${line.name}): ${lineMovetext(context
 CANDIDATES (computed by code, choose from these)
 ${renderCandidates(context, context.skeleton)}
 ${renderPlan(context)}
+${renderProducts(context)}
 DOSSIER
 ${renderCourseDossier(context.dossier)}
 
@@ -61,6 +64,31 @@ where the plan changes)`;
   const video = `budgetVideo is how many speak in the YouTube video: the important
 moves. Across the whole video, at most ${narratedMax} moves speak`;
   return `Make: the course and the YouTube video.\nSpeaking budgets, per episode: ${course}; ${video}. Neither budget may exceed the episode's moves.`;
+}
+
+/** §13.3–13.4: the YouTube video's packaging and the reel's one idea, each
+ * only when the course makes it; the reel from code's candidates. */
+function renderProducts(context: CoursePromptContext): string {
+  const videos = promptVideos(context);
+  const video = videos.video
+    ? `YOUTUBE VIDEO (write "video")
+- title: at most 55 characters, curiosity and clarity ("How a greedy queen gets mated in 8").
+- thumbnailText: at most 4 words, big on the thumbnail.
+- hook: the first 15 seconds. Jump straight to the premise or the climax ("On move 8, Black's
+  queen lands on c1 and it is over"). Never "hey guys", "welcome back" or "today we".
+- outro: a question the viewer answers in the comments, then what comes next in the series.`
+    : 'YOUTUBE VIDEO: none this time, so give "video" no value.';
+  const candidates = context.reelCandidates ?? [];
+  const reel = !videos.reel
+    ? 'REEL: none this time, so give "reel" no value.'
+    : candidates.length
+      ? `REEL CANDIDATES (computed by code; pick one id and a style it allows)
+${candidates.map((candidate) => `- ${candidate.id} ${candidate.reason}: climax ${nodeLabel(context, candidate.climaxNodeId)}, from ${nodeLabel(context, candidate.startNodeId)} to ${nodeLabel(context, candidate.endNodeId)}; styles ${candidate.styles.filter((style) => style !== 'promo' || videos.video).join(', ')}`).join('\n')}
+The reel is one idea: pick the moment a viewer would stop scrolling for. "puzzle" asks the
+viewer to find the move; "highlight" plays it; "promo" stops before the climax and sends
+viewers to the YouTube video.`
+      : 'REEL: code found no moment for one, so give "reel" no value.';
+  return `${video}\n\n${reel}\n`;
 }
 
 /** The episodes code would build, so a small model fills in words rather

@@ -9,7 +9,7 @@ import { z } from 'zod';
  */
 export const CourseDebugCallSchema = z.object({
   at: z.string(),
-  step: z.enum(['outline', 'episode']),
+  step: z.enum(['outline', 'episode', 'reel']),
   /** Null for the outline. */
   episodeId: z.string().nullable(),
   /** The second call, with the first answer's problems listed. */

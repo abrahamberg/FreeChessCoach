@@ -15,6 +15,8 @@ function trapOutline(): CourseOutline {
     promise: '',
     hookOptions: ['a', 'b', 'c'],
     takeaways: ['a', 'b', 'c'],
+    video: null,
+    reel: null,
     chapters: [
       {
         title: 'The trap',

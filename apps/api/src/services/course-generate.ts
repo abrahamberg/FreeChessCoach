@@ -1,4 +1,5 @@
-import type { CourseDebugResponse, CourseDocument, CourseEpisode, CourseGeneration, CourseOutline, CourseResponse, CourseWarning } from '@freechesscoach/shared';
+import { verifyCourseFrame, type CourseSkeleton } from '@freechesscoach/chess-analysis';
+import { REEL_WARNINGS, type CourseDebugResponse, type CourseDocument, type CourseEpisode, type CourseGeneration, type CourseOutline, type CourseResponse, type CourseWarning } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as coursesRepo from '../db/repositories/courses.js';
 import type { Database } from '../db/schema.js';
@@ -9,6 +10,7 @@ import type { ModelResolution } from '../llm/gateway.js';
 import type { CourseDossierBuilder } from './course-dossier.js';
 import { liveGeneration, ownedCourse, storedDocument, toCourseResponse } from './courses.js';
 import { writeEpisode } from './courses/generate-episode.js';
+import { writeReel } from './courses/generate-reel.js';
 import { documentFromOutline, planOutline } from './courses/generate-outline.js';
 import { loggedCourseCall } from './courses/debug-log.js';
 import { loadGenerationInputs, type CourseModelCall } from './courses/generation-inputs.js';
@@ -82,15 +84,24 @@ export async function runCourseGeneration(deps: CourseGenerateDeps, courseId: st
     }
 
     const episodes = outline.chapters.flatMap((chapter) => chapter.episodes);
+    // §13.3: the reel is written after the episodes, as one more step.
+    const total = episodes.length + (document.reel ? 1 : 0);
     for (const [index, planned] of episodes.entries()) {
       if (state.finishedEpisodeIds.includes(planned.id)) continue;
-      await save({ step: `Writing episode ${index + 1} of ${episodes.length}`, done: state.finishedEpisodeIds.length, total: episodes.length });
+      await save({ step: `Writing episode ${index + 1} of ${episodes.length}`, done: state.finishedEpisodeIds.length, total });
       const written = await writeEpisode({ ...inputs, document }, outline, planned.id, call);
       document = withEpisode(document, written.episode);
       await saveDocument(deps.db, row, document);
       await save({ finishedEpisodeIds: [...state.finishedEpisodeIds, planned.id], warnings: withWarnings(state.warnings, planned.id, written.warnings) });
     }
-    await save({ status: 'succeeded', step: null, done: episodes.length, total: episodes.length });
+    if (document.reel && !state.finishedEpisodeIds.includes(REEL_WARNINGS)) {
+      await save({ step: 'Writing the reel', done: state.finishedEpisodeIds.length, total });
+      const written = await writeReel({ ...inputs, document }, document, document.reel, call);
+      document = { ...document, reel: written.reel };
+      await saveDocument(deps.db, row, document);
+      await save({ finishedEpisodeIds: [...state.finishedEpisodeIds, REEL_WARNINGS], warnings: withWarnings(state.warnings, REEL_WARNINGS, written.warnings) });
+    }
+    await save({ status: 'succeeded', step: null, done: total, total, warnings: withCourseWarnings(state.warnings, courseWarnings(document, inputs.skeleton)) });
   } catch (error) {
     await save({ status: 'failed', step: null, error: error instanceof Error ? error.message : String(error) });
     if (!(error instanceof ValidationError)) throw error;
@@ -140,6 +151,20 @@ function withEpisode(document: CourseDocument, episode: CourseEpisode): CourseDo
     ...document,
     episodes: exists ? document.episodes.map((candidate) => (candidate.id === episode.id ? episode : candidate)) : [...document.episodes, episode]
   };
+}
+
+/** §13.9's whole-course checks (the video's packaging, the voice across
+ * episodes) and a puzzle's second solutions, recomputed at the end of a run. */
+function courseWarnings(document: CourseDocument, skeleton: CourseSkeleton | null): CourseWarning[] {
+  const frame = verifyCourseFrame(document).map((problem) => ({ episodeId: null, ...problem }));
+  const unsound = skeleton?.kind === 'puzzle' ? skeleton.unsoundNodeIds : [];
+  const puzzle = unsound.map((nodeId) => ({ episodeId: null, code: 'puzzle', nodeId, message: `The engine finds another good move at ${nodeId}: the puzzle has two answers there` }));
+  return [...frame, ...puzzle];
+}
+
+/** The outline's warnings stay; the whole-course ones are replaced. */
+function withCourseWarnings(warnings: CourseWarning[], fresh: CourseWarning[]): CourseWarning[] {
+  return [...warnings.filter((warning) => warning.episodeId !== null || warning.code === 'outline'), ...fresh];
 }
 
 function withWarnings(warnings: CourseWarning[], episodeId: string, fresh: CourseWarning[]): CourseWarning[] {

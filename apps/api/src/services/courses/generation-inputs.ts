@@ -1,4 +1,4 @@
-import { buildCourseSkeleton, courseLineGames, isQuizAnswerEligible, type CourseDossier, type CourseLineGame, type CourseSkeleton, type CourseTree } from '@freechesscoach/chess-analysis';
+import { buildCourseSkeleton, courseLineGames, isQuizAnswerEligible, reelCandidates, type CourseDossier, type CourseLineGame, type CourseSkeleton, type CourseTree } from '@freechesscoach/chess-analysis';
 import type { CourseMessages, CoursePlanChapter, CoursePromptContext } from '@freechesscoach/prompts';
 import { courseVideos, type CourseDocument } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
@@ -12,7 +12,7 @@ import { buildManualEpisodes } from './manual-episodes.js';
 /** Which call of a run this is: the debug log's row and the golden script's
  * counts (Task 80.6). */
 export interface CourseCallLabel {
-  step: 'outline' | 'episode';
+  step: 'outline' | 'episode' | 'reel';
   episodeId: string | null;
   repair: boolean;
 }
@@ -75,7 +75,8 @@ export function generationInputs(input: { document: CourseDocument; dossier: Cou
     dossier,
     skeleton,
     plan: skeleton ? coursePlan(document, skeleton, dossier, lineGames) : null,
-    headers: courseHeaders(input.sourcePgn)
+    headers: courseHeaders(input.sourcePgn),
+    reelCandidates: reelCandidates(tree, dossier, skeleton)
   };
   return { document, tree, lineGames, dossier, skeleton, context };
 }

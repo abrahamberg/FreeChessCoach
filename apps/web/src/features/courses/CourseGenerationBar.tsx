@@ -1,4 +1,4 @@
-import type { CourseResponse } from '@freechesscoach/shared';
+import { REEL_WARNINGS, type CourseResponse } from '@freechesscoach/shared';
 import { useMemo, useState, type ReactNode } from 'react';
 import { describeApiError } from '../../api/client.js';
 import { usePageMenuItems } from '../../components/PageMenu.js';
@@ -24,7 +24,8 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
   const generation = course.generation;
   const running = isGenerating(course);
   const resumable = generation?.status === 'failed' && generation.outline !== null;
-  const courseWarnings = generation?.warnings.filter((warning) => warning.episodeId === null) ?? [];
+  // The whole course's warnings, and the reel's (§13.3), which has no episode.
+  const courseWarnings = generation?.warnings.filter((warning) => warning.episodeId === null || warning.episodeId === REEL_WARNINGS) ?? [];
 
   const begin = (restart: boolean): void => {
     start.mutate({ restart });

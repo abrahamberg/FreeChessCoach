@@ -1,5 +1,6 @@
 import type { CourseArrow, CourseDocument, CourseOutline, CourseWarning } from '@freechesscoach/shared';
 import type { WrittenEpisode } from '../src/services/courses/generate-episode.js';
+import type { WrittenReel } from '../src/services/courses/generate-reel.js';
 import type { CourseIntake } from '../src/services/courses.js';
 
 export interface CourseRun {
@@ -9,7 +10,8 @@ export interface CourseRun {
   outline: CourseOutline;
   outlineWarnings: CourseWarning[];
   episodes: WrittenEpisode[];
-  calls: { outline: number; episodes: number; repairs: number };
+  reel: WrittenReel | null;
+  calls: { outline: number; episodes: number; reel: number; repairs: number };
   engineMs: number;
   totalMs: number;
 }
@@ -23,12 +25,13 @@ export function printCourseRun(run: CourseRun): void {
   const lines: string[] = [
     `=== ${run.name} — ${intake.coachPersona}, ${intake.levelBand}, learner ${run.document.learnerSide}`,
     `Direction: ${intake.direction}`,
-    `Engine ${Math.round(run.engineMs / 1000)}s, total ${Math.round(run.totalMs / 1000)}s; calls: outline ${run.calls.outline}, episodes ${run.calls.episodes}, repairs ${run.calls.repairs}`,
+    `Engine ${Math.round(run.engineMs / 1000)}s, total ${Math.round(run.totalMs / 1000)}s; calls: outline ${run.calls.outline}, episodes ${run.calls.episodes}, reel ${run.calls.reel}, repairs ${run.calls.repairs}`,
     '',
     `Title: ${outline.title}`,
     `Promise: ${outline.promise}`,
     `Hooks: ${outline.hookOptions.join(' | ')}`,
     `Takeaways: ${outline.takeaways.join(' | ')}`,
+    ...(outline.video ? [`Video: "${outline.video.title}" [${outline.video.thumbnailText}]`, `  hook: ${outline.video.hook}`, `  outro: ${outline.video.outro}`] : []),
     ...run.outlineWarnings.map((warning) => `OUTLINE WARNING: ${warning.message}`)
   ];
 
@@ -49,6 +52,13 @@ export function printCourseRun(run: CourseRun): void {
       }
       lines.push(written.warnings.length ? written.warnings.map((warning) => `    ✗ ${warning.code}: ${warning.message}`).join('\n') : '    ✓ verifier: clean');
     }
+  }
+  if (run.reel) {
+    const { reel, warnings } = run.reel;
+    lines.push('', `Reel (${reel.style}) ${reel.startNodeId}–${reel.endNodeId}, climax ${reel.climaxNodeId}`, `  top: ${reel.topText}`, `  hook: ${reel.hook}`);
+    for (const beat of reel.beats) lines.push(`  ${beat.nodeId}: ${beat.say}  «${beat.caption}»`);
+    lines.push(`  payoff: ${reel.payoff}`, `  cta: ${reel.cta}`, `  loop: ${reel.loop}`);
+    lines.push(warnings.length ? warnings.map((warning) => `    ✗ ${warning.code}: ${warning.message}`).join('\n') : '    ✓ reel checks: clean');
   }
   console.log(`${lines.join('\n')}\n`);
 }

@@ -75,7 +75,7 @@ export function CourseDebugPanel({ courseId, generating, onClose }: CourseDebugP
 }
 
 function callTitle(call: CourseDebugCall): string {
-  const what = call.step === 'outline' ? 'outline' : `episode ${call.episodeId ?? ''}`;
+  const what = call.step === 'episode' ? `episode ${call.episodeId ?? ''}` : call.step;
   return call.repair ? `${what}, repair` : what;
 }
 

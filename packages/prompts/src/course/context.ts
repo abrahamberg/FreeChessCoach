@@ -1,4 +1,4 @@
-import { courseNodeAncestry, type CourseDossier, type CourseSkeleton, type CourseTreeNode } from '@freechesscoach/chess-analysis';
+import { courseNodeAncestry, type CourseDossier, type CourseSkeleton, type CourseTreeNode, type ReelCandidate } from '@freechesscoach/chess-analysis';
 import type { CoachPersona, CourseKind, CourseLine, CourseVideos, RatingBand } from '@freechesscoach/shared';
 import { courseBudget } from './budget.js';
 import { buildCoursePlaybook } from './playbooks.js';
@@ -39,6 +39,8 @@ export interface CoursePromptContext {
   headers: CourseHeaders;
   /** §13.1: the videos besides the course; absent means both. */
   videos?: CourseVideos;
+  /** §13.3: code's reel candidates, best first; the outline picks one. */
+  reelCandidates?: ReelCandidate[];
 }
 
 export interface CourseMessages {
@@ -49,7 +51,7 @@ export interface CourseMessages {
 /** §6: the voice, then the shared block, then the kind playbook. Depends only on
  * the course, never on the episode, so every call of one course shares it. */
 export function buildCourseSystemPrompt(context: CoursePromptContext): string {
-  // The coach's voice first: every line in the course and the clip is theirs.
+  // The coach's voice first: every line in the course and the videos is theirs.
   return [buildCourseVoiceBlock(context.persona), COURSE_SHARED_BLOCK, buildCoursePlaybook(context, courseBudget(context.kind, context.persona))]
     .filter(Boolean)
     .join('\n\n');

@@ -158,6 +158,12 @@ describe('verifyCourseEpisode', () => {
     expect(verify((episode) => (episode.budget = { course: 1, video: 0 }))).toEqual([]);
   });
 
+  test('tempting moves: only the analysis’s at that move, and their why names only moves it knows', () => {
+    expect(verify((episode) => (first(episode).tempting = [{ san: 'Qg4', why: 'It looks active but drops the queen.' }]))).toEqual([
+      { code: 'tempting', nodeId: 'n11', message: "Qg4 on n11 is not one of the analysis's tempting moves there" }
+    ]);
+  });
+
   test('key moves speak in every version the plan made', () => {
     expect(verify((episode) => ((first(episode).video = false), (episode.budget = { course: 1, video: 1, keyNodeIds: ['n11'] })))).toEqual([
       { code: 'key-moves', nodeId: 'n11', message: '6.Bc3 is a key move of this episode; let it speak in the video' }
