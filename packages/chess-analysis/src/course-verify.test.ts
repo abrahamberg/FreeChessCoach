@@ -95,6 +95,16 @@ describe('verifyCourseEpisode', () => {
     ]);
   });
 
+  test('tactic words: a mated king is "trapped" where the facts say mate', () => {
+    const mate = (episode: CourseEpisode): void => {
+      Object.assign(episode, { role: 'punish', startNodeId: 'n16', endNodeId: 'n16', quiz: undefined });
+      episode.beats = [{ nodeId: 'n16', say: 'Qc1#. The king is trapped.', caption: 'Mate', arrows: [] }];
+      episode.notes = [{ nodeId: 'n16', text: 'Qc1# mates.', arrows: [] }];
+    };
+    expect(verify(mate)).toEqual([]);
+    expect(codes(verify((episode) => (episode.beats[0]!.say = 'Six. Bc3, and the queen is trapped.')))).toEqual(['tactic-words']);
+  });
+
   test('tactic words: "skews" counts as a skewer claim', () => {
     expect(verify((episode) => (episode.beats[0]!.say = 'Six. Bc3 skews the queen.'))).toEqual([
       { code: 'tactic-words', nodeId: 'n11', message: '"skews" in beat 1: the analysis finds no skewer here' }

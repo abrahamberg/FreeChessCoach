@@ -1,4 +1,4 @@
-import { buildCourseSkeleton, courseLineGames, type CourseDossier, type CourseLineGame, type CourseSkeleton, type CourseTree } from '@freechesscoach/chess-analysis';
+import { buildCourseSkeleton, courseLineGames, isQuizAnswerEligible, type CourseDossier, type CourseLineGame, type CourseSkeleton, type CourseTree } from '@freechesscoach/chess-analysis';
 import type { CourseMessages, CoursePlanChapter, CoursePromptContext } from '@freechesscoach/prompts';
 import type { CourseDocument } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
@@ -89,7 +89,11 @@ function coursePlan(document: CourseDocument, skeleton: CourseSkeleton, dossier:
     lineId: chapter.lineId,
     episodes: chapter.episodeIds.flatMap((id) => {
       const episode = byId.get(id);
-      return episode ? [{ id, role: episode.role, focus: episode.focus, startNodeId: episode.startNodeId, endNodeId: episode.endNodeId, answerNodeId: episode.quiz?.answerNodeId ?? null }] : [];
+      if (!episode) return [];
+      // The skeleton's answer can miss the quiz check (no clear only move).
+      const answer = episode.quiz?.answerNodeId ?? null;
+      const answerNodeId = answer && isQuizAnswerEligible(document.kind, dossier, answer) ? answer : null;
+      return [{ id, role: episode.role, focus: episode.focus, startNodeId: episode.startNodeId, endNodeId: episode.endNodeId, answerNodeId }];
     })
   }));
 }

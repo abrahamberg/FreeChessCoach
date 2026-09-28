@@ -77,7 +77,7 @@ function episodeProblems(input: CourseOutlineCheckInput, byId: ReadonlyMap<strin
   }
   const strays = episode.narratedNodeIds.filter((id) => !path.includes(id));
   if (strays.length) problems.push(`episode ${episode.id} narrates ${strays.join(', ')}, outside ${episode.startNodeId}–${episode.endNodeId}`);
-  if (episode.answerNodeId && !answerEligible(input, episode.answerNodeId)) {
+  if (episode.answerNodeId && !isQuizAnswerEligible(input.kind, input.dossier, episode.answerNodeId)) {
     const near = nearestEligible(input, episode.answerNodeId);
     problems.push(
       `episode ${episode.id} answerNodeId ${episode.answerNodeId} is not quiz-eligible; ${near.length ? `eligible nodes near it: ${near.join(', ')}` : 'no node is eligible, so drop the quiz'}`
@@ -86,17 +86,19 @@ function episodeProblems(input: CourseOutlineCheckInput, byId: ReadonlyMap<strin
   return path;
 }
 
-function answerEligible(input: CourseOutlineCheckInput, nodeId: string): boolean {
-  const facts = input.dossier.nodes.find((node) => node.nodeId === nodeId);
+/** A quiz may sit on this node (§6.4); code's plan uses the same rule, so
+ * the plan never fails the outline check. */
+export function isQuizAnswerEligible(kind: CourseKind, dossier: CourseDossier, nodeId: string): boolean {
+  const facts = dossier.nodes.find((node) => node.nodeId === nodeId);
   if (!facts) return false;
-  if (input.kind === 'master_game') return facts.critical && (facts.quizEligible || MASTER_QUIZ_QUALITIES.has(facts.quality));
+  if (kind === 'master_game') return facts.critical && (facts.quizEligible || MASTER_QUIZ_QUALITIES.has(facts.quality));
   return facts.quizEligible;
 }
 
 function nearestEligible(input: CourseOutlineCheckInput, nodeId: string): string[] {
   const number = (id: string): number => Number(id.slice(1));
   return input.dossier.nodes
-    .filter((node) => answerEligible(input, node.nodeId))
+    .filter((node) => isQuizAnswerEligible(input.kind, input.dossier, node.nodeId))
     .map((node) => node.nodeId)
     .sort((a, b) => Math.abs(number(a) - number(nodeId)) - Math.abs(number(b) - number(nodeId)) || number(a) - number(b))
     .slice(0, NEAREST_ELIGIBLE)

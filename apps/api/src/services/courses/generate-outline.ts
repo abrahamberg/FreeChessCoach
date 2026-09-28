@@ -40,7 +40,7 @@ export async function planOutline(inputs: GenerationInputs, call: CourseModelCal
 
 function outlineProblems(inputs: GenerationInputs, outline: CourseOutline): string[] {
   const { document } = inputs;
-  return checkCourseOutline({
+  return [...planProblems(inputs, outline), ...checkCourseOutline({
     kind: document.kind,
     outline,
     nodes: document.nodes,
@@ -48,6 +48,25 @@ function outlineProblems(inputs: GenerationInputs, outline: CourseOutline): stri
     dossier: inputs.dossier,
     skeleton: inputs.skeleton,
     maxNarrated: courseBudget(document.kind, document.coachPersona).narratedMax
+  })];
+}
+
+/** The prompt asks the model to keep code's plan; gemma-4-12b stretched the
+ * master game's one-move intro over the whole game, duplicating every note. */
+function planProblems(inputs: GenerationInputs, outline: CourseOutline): string[] {
+  const plan = inputs.context.plan;
+  if (!plan) return [];
+  const written = new Map(outline.chapters.flatMap((chapter) => chapter.episodes).map((episode) => [episode.id, episode]));
+  return plan.flatMap((chapter) => chapter.episodes).flatMap((planned) => {
+    const episode = written.get(planned.id);
+    if (!episode) return [`episode ${planned.id} (${planned.role}) from the plan is missing`];
+    const problems: string[] = [];
+    if (episode.role !== planned.role) problems.push(`episode ${planned.id} must have role ${planned.role}, as the plan says`);
+    if (episode.startNodeId !== planned.startNodeId || episode.endNodeId !== planned.endNodeId) {
+      problems.push(`episode ${planned.id} must run ${planned.startNodeId} to ${planned.endNodeId}, as the plan says (you wrote ${episode.startNodeId} to ${episode.endNodeId})`);
+    }
+    if ((episode.answerNodeId ?? null) !== planned.answerNodeId) problems.push(`episode ${planned.id} answerNodeId must be ${planned.answerNodeId ?? 'null'}, as the plan says`);
+    return problems;
   });
 }
 

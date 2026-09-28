@@ -97,6 +97,9 @@ export function tacticWordProblems(texts: EpisodeText[], scope: EpisodeScope): C
     })
     .join('\n');
   const supported = TACTIC_WORDS.filter(({ pattern }) => new RegExp(pattern.source, 'i').test(evidence));
+  // A mated king is "trapped": that word is fair wherever the facts say mate.
+  const mate = supported.some((family) => family.name === 'mate');
+  if (mate) supported.push(...TACTIC_WORDS.filter((family) => family.name === 'trapped piece'));
   return texts.flatMap(({ where, nodeId, text }) =>
     TACTIC_WORDS.filter((family) => !supported.includes(family)).flatMap(({ name, pattern }) =>
       [...text.matchAll(pattern)].map((match) => ({

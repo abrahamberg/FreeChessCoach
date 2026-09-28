@@ -8,7 +8,9 @@ export function noteText(facts: CourseNodeFacts): string {
   const parts: string[] = [];
   if (facts.creatorComment) parts.push(facts.creatorComment);
   if (facts.inBook && facts.openingName) parts.push(`Book move in the ${facts.openingName}.`);
-  if (facts.board.length) parts.push(`${facts.san} ${facts.board.join(', ')}.`);
+  // "moves the bishop from d2 to c3" is for the model; the board shows it.
+  const board = facts.board.filter((fact) => !/^(moves the |castles )/.test(fact));
+  if (board.length) parts.push(`${facts.san} ${board.join(', ')}.`);
   parts.push(...facts.tactics);
   return parts.join(' ');
 }

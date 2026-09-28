@@ -34,7 +34,7 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
   const words = episodeWordBudget(budget, outline, episodeId);
   const quizLine = episode.answerNodeId
     ? `\nQuiz: the answer is ${episode.answerNodeId}; the quiz beat pauses the clip (pauseMs ${budget.pauseSeconds * 1000}).`
-    : '';
+    : '\nQuiz: none in this episode, so "quiz" is null.';
   const sections = [
     `COURSE\nTitle: ${outline.title}\nPromise: ${outline.promise}`,
     `OUTLINE\n${renderOutline(outline, episodeId)}`,

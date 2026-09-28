@@ -83,6 +83,7 @@ describe('course prompts', () => {
     expect(user).toContain('e3 bait, n11 to n11');
     expect(user).toContain('note nodeId is one of: n11 (6. Bc3). n10 in the dossier is the move before, for context only: no note or beat on it.');
     expect(user).toContain('pauseMs 3000');
+    expect(buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e2' }).user).toContain('Quiz: none in this episode, so "quiz" is null.');
     expect(user).toContain('"mention the pin earlier"');
   });
 

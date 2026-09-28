@@ -30,9 +30,17 @@ const planned = (id: string, role: string, startNodeId: string, endNodeId: strin
   id, role, focus: `${role} focus`, startNodeId, endNodeId, narratedNodeIds, answerNodeId: null
 });
 
+/** Code's plan for the Englund trap (manual-episodes.ts), which the outline
+ * keeps. The test dossier has no quiz-eligible node, so the plan has no quiz. */
 function outline(withSafety = true): CourseOutline {
-  const episodes = [planned('e1', 'hook', 'n1', 'n1'), planned('e2', 'setup', 'n2', 'n10', ['n6']), planned('e3', 'bait', 'n11', 'n11', ['n11']), planned('e4', 'punish', 'n12', 'n16', ['n16'])];
-  if (withSafety) episodes.push(planned('e5', 'safety', 'n11', 'n11'));
+  const episodes = [
+    planned('e1', 'hook', 'n1', 'n1'),
+    planned('e2', 'setup', 'n1', 'n10', ['n6']),
+    planned('e3', 'bait', 'n11', 'n11', ['n11']),
+    planned('e4', 'quiz', 'n12', 'n12', ['n12']),
+    planned('e5', 'punish', 'n13', 'n16', ['n16'])
+  ];
+  if (withSafety) episodes.push(planned('e6', 'safety', 'n11', 'n11'));
   return { title: 'The Englund trap', promise: 'After this you can spring it.', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], chapters: [{ title: 'The trap', lineId: 'l1', episodes }] };
 }
 
@@ -44,7 +52,8 @@ const script = (episodeId: string, nodeId: string, text = `Episode ${episodeId} 
 });
 
 const step = (value: unknown): MockStep => ({ text: JSON.stringify(value), finishReason: 'stop' });
-const cleanEpisodes = (): MockStep[] => [step(script('e1', 'n1')), step(script('e2', 'n2')), step(script('e3', 'n11')), step(script('e4', 'n12')), step(script('e5', 'n11'))];
+const quizScript = (): EpisodeScript => script('e4', 'n12');
+const cleanEpisodes = (): MockStep[] => [step(script('e1', 'n1')), step(script('e2', 'n2')), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n13')), step(script('e6', 'n11'))];
 
 async function newCourse(email: string): Promise<string> {
   const user = await usersRepo.insert(db, { email, displayName: 'Creator' });
@@ -72,15 +81,15 @@ describe('runCourseGeneration', () => {
     await runCourseGeneration(deps, id);
 
     const sent = prompts();
-    expect(sent).toHaveLength(7);
+    expect(sent).toHaveLength(8);
     expect(sent[0]).not.toContain('YOUR PREVIOUS OUTLINE');
     expect(sent[1]).toContain('YOUR PREVIOUS OUTLINE HAD THESE PROBLEMS');
     expect(sent[1]).toContain('there is no safety episode');
     const row = await coursesRepo.findById(db, id);
-    expect(row?.generation).toMatchObject({ status: 'succeeded', done: 5, total: 5, error: null, finishedEpisodeIds: ['e1', 'e2', 'e3', 'e4', 'e5'], warnings: [] });
+    expect(row?.generation).toMatchObject({ status: 'succeeded', done: 6, total: 6, error: null, finishedEpisodeIds: ['e1', 'e2', 'e3', 'e4', 'e5', 'e6'], warnings: [] });
     expect(row?.document?.title).toBe('The Englund trap');
-    expect(row?.document?.chapters).toEqual([{ id: 'c1', title: 'The trap', lineId: 'l1', episodeIds: ['e1', 'e2', 'e3', 'e4', 'e5'] }]);
-    expect(row?.document?.episodes.map((episode) => episode.notes[0]?.text)).toEqual(['e1', 'e2', 'e3', 'e4', 'e5'].map((id) => `Episode ${id} in words.`));
+    expect(row?.document?.chapters).toEqual([{ id: 'c1', title: 'The trap', lineId: 'l1', episodeIds: ['e1', 'e2', 'e3', 'e4', 'e5', 'e6'] }]);
+    expect(row?.document?.episodes.map((episode) => episode.notes[0]?.text)).toEqual(['e1', 'e2', 'e3', 'e4', 'e5', 'e6'].map((id) => `Episode ${id} in words.`));
     expect(row?.document?.episodes[1]?.drillNodeIds).toEqual(['n2', 'n4', 'n6', 'n8', 'n10']);
     expect(row?.dossier?.nodes).toHaveLength(16);
 
@@ -88,7 +97,7 @@ describe('runCourseGeneration', () => {
     expect(calls.map(({ step, episodeId, repair }) => [step, episodeId, repair])).toEqual([
       ['outline', null, false],
       ['outline', null, true],
-      ...['e1', 'e2', 'e3', 'e4', 'e5'].map((episodeId) => ['episode', episodeId, false])
+      ...['e1', 'e2', 'e3', 'e4', 'e5', 'e6'].map((episodeId) => ['episode', episodeId, false])
     ]);
     expect(calls[0]?.problems).toContain('there is no safety episode');
     expect(JSON.stringify(calls[1]?.snapshot)).toContain('YOUR PREVIOUS OUTLINE HAD THESE PROBLEMS');
@@ -101,6 +110,18 @@ describe('runCourseGeneration', () => {
     });
   });
 
+  test("an outline that changes code's plan is sent back with what to keep", async () => {
+    const id = await newCourse('outline-plan@example.com');
+    const stretched = outline();
+    stretched.chapters[0]!.episodes[0]!.endNodeId = 'n16';
+    const { deps, prompts } = depsWith([step(stretched), step(outline()), ...cleanEpisodes()]);
+
+    await runCourseGeneration(deps, id);
+
+    expect(prompts()[1]).toContain('episode e1 must run n1 to n1, as the plan says (you wrote n1 to n16)');
+    expect((await coursesRepo.findById(db, id))?.document?.episodes[0]?.endNodeId).toBe('n1');
+  });
+
   test('two bad outlines fall back to the code skeleton, with a warning', async () => {
     const id = await newCourse('outline-fallback@example.com');
     const empty = step({ episodeId: 'any', beats: [], notes: [], quiz: null });
@@ -110,7 +131,7 @@ describe('runCourseGeneration', () => {
     await runCourseGeneration(deps, id);
 
     const row = await coursesRepo.findById(db, id);
-    expect(row?.generation?.warnings[0]?.message).toMatch(/^The AI outline failed its checks twice, so the episodes come from the code skeleton: there is no safety episode/);
+    expect(row?.generation?.warnings[0]?.message).toBe('The AI outline failed its checks twice, so the episodes come from the code skeleton: episode e6 (safety) from the plan is missing; there is no safety episode');
     expect(row?.document?.title).toBe('The Englund trap');
     expect(row?.document?.episodes.map((episode) => episode.role)).toContain('safety');
   });
@@ -124,7 +145,7 @@ describe('runCourseGeneration', () => {
     await runCourseGeneration(deps, id);
 
     const row = await coursesRepo.findById(db, id);
-    expect(prompts()).toHaveLength(6);
+    expect(prompts()).toHaveLength(7);
     expect(row?.document?.episodes.find((episode) => episode.id === 'e2')?.beats.map((beat) => beat.say)).toEqual(['Look at this, e2.']);
     expect(row?.generation?.warnings).toEqual([]);
   });
@@ -132,21 +153,21 @@ describe('runCourseGeneration', () => {
   test('a verifier failure triggers exactly one repair; what still fails is kept as a warning', async () => {
     const id = await newCourse('repair@example.com');
     const bad = (episodeId: string) => step(script(episodeId, 'n11', 'Nd5 was the real test.'));
-    const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), bad('e3'), step(script('e3', 'n11')), step(script('e4', 'n12')), bad('e5'), bad('e5')]);
+    const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), bad('e3'), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n13')), bad('e6'), bad('e6')]);
 
     await runCourseGeneration(deps, id);
 
     const sent = prompts();
-    expect(sent).toHaveLength(8);
+    expect(sent).toHaveLength(9);
     expect(sent[4]).toContain('YOUR PREVIOUS ANSWER HAD THESE PROBLEMS');
     expect(sent[4]).toContain('Nd5 in the note on n11 is not in the analysis');
     expect(sent.filter((prompt) => prompt.includes('YOUR PREVIOUS ANSWER'))).toHaveLength(2);
     const row = await coursesRepo.findById(db, id);
     expect(row?.document?.episodes.find((episode) => episode.id === 'e3')?.notes[0]?.text).toBe('Episode e3 in words.');
-    expect(row?.generation?.warnings).toEqual([{ episodeId: 'e5', code: 'moves', nodeId: 'n11', message: 'Nd5 in the note on n11 is not in the analysis' }]);
+    expect(row?.generation?.warnings).toEqual([{ episodeId: 'e6', code: 'moves', nodeId: 'n11', message: 'Nd5 in the note on n11 is not in the analysis' }]);
     expect(row?.generation?.status).toBe('succeeded');
-    const e5 = (await courseAiCallsRepo.listForCourse(db, id)).filter((call) => call.episodeId === 'e5');
-    expect(e5.map((call) => [call.repair, call.problems])).toEqual([
+    const e6 = (await courseAiCallsRepo.listForCourse(db, id)).filter((call) => call.episodeId === 'e6');
+    expect(e6.map((call) => [call.repair, call.problems])).toEqual([
       [false, ['Nd5 in the note on n11 is not in the analysis']],
       [true, ['Nd5 in the note on n11 is not in the analysis']]
     ]);
@@ -155,7 +176,7 @@ describe('runCourseGeneration', () => {
   test('a quiz the outline did not plan is a problem for the repair call', async () => {
     const id = await newCourse('unplanned-quiz@example.com');
     const quizzed = { ...script('e3', 'n11'), quiz: { answerNodeId: 'n12', prompt: 'What now?', hint: 'Look at the king.', reveal: 'Bb4 pins it.' } };
-    const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), step(quizzed), step(script('e3', 'n11')), step(script('e4', 'n12')), step(script('e5', 'n11'))]);
+    const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), step(quizzed), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n13')), step(script('e6', 'n11'))]);
 
     await runCourseGeneration(deps, id);
 
@@ -173,15 +194,15 @@ describe('runCourseGeneration', () => {
 
     let row = await coursesRepo.findById(db, id);
     expect(row?.generation).toMatchObject({ status: 'failed', error: UNLOCK, finishedEpisodeIds: ['e1', 'e2'] });
-    expect(row?.document?.episodes.map((episode) => episode.notes.length)).toEqual([1, 1, 0, 0, 0]);
+    expect(row?.document?.episodes.map((episode) => episode.notes.length)).toEqual([1, 1, 0, 0, 0, 0]);
 
-    const resumed = depsWith([step(script('e3', 'n11')), step(script('e4', 'n12')), step(script('e5', 'n11'))]);
+    const resumed = depsWith([step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n13')), step(script('e6', 'n11'))]);
     await runCourseGeneration(resumed.deps, id);
 
     row = await coursesRepo.findById(db, id);
-    expect(resumed.prompts()).toHaveLength(3);
+    expect(resumed.prompts()).toHaveLength(4);
     expect(resumed.prompts()[0]).toContain('e3 bait, n11 to n11');
-    expect(row?.generation).toMatchObject({ status: 'succeeded', finishedEpisodeIds: ['e1', 'e2', 'e3', 'e4', 'e5'] });
+    expect(row?.generation).toMatchObject({ status: 'succeeded', finishedEpisodeIds: ['e1', 'e2', 'e3', 'e4', 'e5', 'e6'] });
   });
 
   test('a run whose worker died (no heartbeat) reads as failed and resumes; a live one still refuses a second start', async () => {
