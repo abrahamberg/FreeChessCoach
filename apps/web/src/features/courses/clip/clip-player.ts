@@ -1,3 +1,5 @@
+import { STINGER_DELAY_MS } from '../../../sounds/board-sounds.js';
+import type { BoardSound } from '../../../sounds/move-sounds.js';
 import { drawClipFrame, type FrameInput } from './draw-frame.js';
 import type { SpokenAudio } from './prepare-audio.js';
 import { segmentAt, type ClipTimeline } from './timeline.js';
@@ -41,6 +43,8 @@ export interface ClipPlayerOptions {
   context: AudioContext;
   timeline: ClipTimeline;
   buffers: Map<string, AudioBuffer>;
+  /** The board sounds (`boardSoundBuffers`), when the clip has them on. */
+  soundBuffers?: Record<BoardSound, AudioBuffer> | null;
   playbackRate: number;
   frame: Omit<FrameInput, 'timeline' | 'segment' | 'ms'>;
   onTime?: (ms: number) => void;
@@ -80,17 +84,24 @@ export class ClipPlayer {
     if (context.state === 'suspended') await context.resume();
     this.offsetMs = fromMs;
     this.startedAt = context.currentTime;
+    const { soundBuffers } = this.options;
     for (const segment of timeline.segments) {
+      // The move's sounds first, on the same clock (so the recording has them).
+      if (segment.sound && soundBuffers && segment.start >= fromMs) {
+        this.schedule(soundBuffers[segment.sound.base], segment.start - fromMs);
+        if (segment.sound.stinger) this.schedule(soundBuffers[segment.sound.stinger], segment.start - fromMs + STINGER_DELAY_MS);
+      }
       const buffer = segment.audioKey ? buffers.get(segment.audioKey) : undefined;
+      const audioStart = segment.start + segment.audioOffsetMs;
       if (!buffer || segment.end <= fromMs) continue;
-      const lateMs = Math.max(0, fromMs - segment.start);
+      const lateMs = Math.max(0, fromMs - audioStart);
       const bufferOffset = (lateMs / 1000) * playbackRate;
       if (bufferOffset >= buffer.duration) continue;
       const source = context.createBufferSource();
       source.buffer = buffer;
       source.playbackRate.value = playbackRate;
       source.connect(this.output);
-      source.start(this.startedAt + Math.max(0, segment.start - fromMs) / 1000, bufferOffset);
+      source.start(this.startedAt + Math.max(0, audioStart - fromMs) / 1000, bufferOffset);
       this.sources.push(source);
     }
     this.playing = true;
@@ -133,6 +144,15 @@ export class ClipPlayer {
     const ctx = this.options.canvas.getContext('2d');
     const segment = segmentAt(this.options.timeline, ms);
     if (ctx && segment) drawClipFrame(ctx, { ...this.options.frame, timeline: this.options.timeline, segment, ms });
+  }
+
+  /** A board sound, `inMs` from the moment play started. */
+  private schedule(buffer: AudioBuffer, inMs: number): void {
+    const source = this.options.context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(this.output);
+    source.start(this.startedAt + inMs / 1000);
+    this.sources.push(source);
   }
 
   private stopSources(): void {

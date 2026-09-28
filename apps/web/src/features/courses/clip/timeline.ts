@@ -1,4 +1,7 @@
 import type { CourseArrow, CourseDocument, CourseEpisode, CourseKind, CourseNode } from '@freechesscoach/shared';
+import { boardSoundsLengthMs } from '../../../sounds/board-sounds.js';
+import type { MoveSounds } from '../../../sounds/move-sounds.js';
+import { courseMoveSounds, type CourseEvals } from '../player/course-move-list.js';
 import { moveLabel } from '../courseEdits.js';
 
 /** docs/courses.md §8: 9:16 for reels and Shorts, 16:9 for YouTube. */
@@ -46,6 +49,12 @@ export interface ClipSegment {
   audioKey: string | null;
   /** A quiz beat's pause, at the end of the segment (a countdown). */
   pauseMs: number;
+  /** The move's board sounds, at the segment's start; null when it shows no
+   * new move or the clip has sounds off (docs/plan.md Phase 88). */
+  sound: MoveSounds | null;
+  /** The segment's audio starts this long after the segment: after the
+   * move's sounds, so they never talk over each other. */
+  audioOffsetMs: number;
 }
 
 export interface ClipTimeline {
@@ -76,15 +85,20 @@ export function buildClipTimeline(options: {
   /** Audio length per prepare-audio key, in ms at playback speed. */
   audioMs: (key: string) => number | undefined;
   timing?: typeof CLIP_TIMING;
+  /** Board sounds under the moves: the course's evaluations (bad and great
+   * for either side) and how long a move's sounds last. Absent: none. */
+  sounds?: { evals: CourseEvals; lengthMs?: (sounds: MoveSounds) => number } | null;
 }): ClipTimeline {
-  const { document, format, audioMs, timing = CLIP_TIMING } = options;
+  const { document, format, audioMs, timing = CLIP_TIMING, sounds = null } = options;
+  const soundOf = (node: CourseNode): MoveSounds | null => (sounds ? courseMoveSounds(document, sounds.evals, node) : null);
+  const soundLength = sounds?.lengthMs ?? boardSoundsLengthMs;
   const byId = new Map(document.nodes.map((node) => [node.id, node]));
   const segments: ClipSegment[] = [];
   let clock = 0;
   let shown: CourseNode | null = null;
 
-  const push = (segment: Omit<ClipSegment, 'start' | 'end'>, length: number): void => {
-    segments.push({ ...segment, start: clock, end: clock + length });
+  const push = (segment: Omit<ClipSegment, 'start' | 'end' | 'sound' | 'audioOffsetMs'> & Partial<Pick<ClipSegment, 'sound' | 'audioOffsetMs'>>, length: number): void => {
+    segments.push({ sound: null, audioOffsetMs: 0, ...segment, start: clock, end: clock + length });
     clock += length;
   };
   const board = (node: CourseNode | null) => ({
@@ -98,7 +112,7 @@ export function buildClipTimeline(options: {
     const before = answer?.parentId ? byId.get(answer.parentId) : undefined;
     if (!episode.quiz || !answer) return;
     if (before) {
-      for (const between of movesBetween(byId, shown, before)) push({ kind: 'move', ...board(between), arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.moveMs);
+      for (const between of movesBetween(byId, shown, before)) push({ kind: 'move', ...board(between), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: soundOf(between) }, timing.moveMs);
       shown = before;
     }
     const key = `quiz:${episode.id}`;
@@ -123,9 +137,12 @@ export function buildClipTimeline(options: {
         push({ kind: 'title', ...board(shown), lastMove: null, moveLabel: null, ...common }, length);
         return;
       }
-      for (const between of movesBetween(byId, shown, node)) push({ kind: 'move', ...board(between), arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.moveMs);
+      for (const between of movesBetween(byId, shown, node)) push({ kind: 'move', ...board(between), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: soundOf(between) }, timing.moveMs);
+      // A move shown for the first time sounds; its narration waits for it.
+      const sound = shown?.id === node.id ? null : soundOf(node);
+      const lead = sound && common.audioKey ? soundLength(sound) : 0;
       shown = node;
-      push({ kind: 'beat', ...board(node), ...common }, length);
+      push({ kind: 'beat', ...board(node), ...common, sound, audioOffsetMs: lead }, length + lead);
     });
   }
   push({ kind: 'end', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.endCardMs);

@@ -19,6 +19,7 @@ import { NotFoundError, ValidationError } from '../lib/errors.js';
 import type { CourseDossierBuilder } from './course-dossier.js';
 import { draftProblem } from './courses/draft-checks.js';
 import { missingNoteAudio } from './courses/note-audio.js';
+import { courseEvals } from './courses/public-course.js';
 import { buildManualEpisodes } from './courses/manual-episodes.js';
 import { courseSlug, courseTitle, resultHeader } from './courses/intake-text.js';
 
@@ -142,6 +143,7 @@ export async function toCourseResponse(db: Kysely<Database>, row: coursesRepo.Co
     generation: liveGeneration(row.generation),
     updatedAt: row.updatedAt.toISOString(),
     publishedAt: row.publishedAt?.toISOString() ?? null,
-    missingNoteAudio: await missingNoteAudio(db, row.id, storedDocument(row))
+    missingNoteAudio: await missingNoteAudio(db, row.id, storedDocument(row)),
+    evals: courseEvals(storedDocument(row), row.dossier)
   };
 }

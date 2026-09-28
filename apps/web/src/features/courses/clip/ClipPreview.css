@@ -11,6 +11,13 @@
   gap: 8px;
 }
 
+.clip-preview__sounds {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+}
+
 .clip-preview__status {
   margin: 0;
   color: var(--color-text-secondary);

@@ -1,11 +1,15 @@
 import { COACH_PERSONA_INFO, type CourseDocument } from '@freechesscoach/shared';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { VolumeOffIcon, VolumeOnIcon } from '../../../components/Icon.js';
 import { Modal } from '../../../components/Modal.js';
+import { boardSoundBuffers } from '../../../sounds/board-sounds.js';
+import type { BoardSound } from '../../../sounds/move-sounds.js';
 import { personaPlaybackRate } from '../../../tts/persona-voices.js';
 import { audioLengths, ClipPlayer } from './clip-player.js';
 import { loadClipAssets, type ClipAssets } from './draw-frame.js';
 import { recordClip, type RecordedClip } from './record-clip.js';
 import { buildClipTimeline, CLIP_SIZES, defaultClipFormat, type ClipFormat } from './timeline.js';
+import type { CourseEvals } from '../player/course-move-list.js';
 import { useClipAudio } from './useClipAudio.js';
 import { COURSE_VOICE_LABELS, useCourseVoice, type CourseVoice } from './useCourseVoice.js';
 import './ClipPreview.css';
@@ -13,17 +17,33 @@ import './ClipPreview.css';
 export interface ClipPreviewProps {
   document: CourseDocument;
   slug: string;
+  /** The moves' evaluations (bad and great sounds for either side). */
+  evals: CourseEvals;
   onClose: () => void;
 }
 
 /** Task 81.2, "Preview clip": the draft's clip played live on the canvas
  * with the coach's voice, in either format, and recorded from the same
  * playback. Unsaved edits are included. */
-export function ClipPreview({ document, slug, onClose }: ClipPreviewProps): ReactNode {
+export function ClipPreview({ document, slug, evals, onClose }: ClipPreviewProps): ReactNode {
   const { voice: backend, setVoice: setPicked, voices, ready } = useCourseVoice();
   const audio = useClipAudio(document, backend);
   const [format, setFormat] = useState<ClipFormat>(defaultClipFormat(document.kind));
   const [assets, setAssets] = useState<ClipAssets | null>(null);
+  // Board sounds under the moves (docs/plan.md Phase 88); the recording has
+  // them exactly when the preview plays them.
+  const [boardSounds, setBoardSounds] = useState(true);
+  const [soundBuffers, setSoundBuffers] = useState<Record<BoardSound, AudioBuffer> | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    void boardSoundBuffers()
+      .then((loaded) => live && setSoundBuffers(loaded))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -32,6 +52,9 @@ export function ClipPreview({ document, slug, onClose }: ClipPreviewProps): Reac
       live = false;
     };
   }, []);
+
+  // Stable, so the timeline and the player are rebuilt only when it changes.
+  const sounds = useMemo(() => (boardSounds && soundBuffers ? { evals, buffers: soundBuffers } : null), [boardSounds, soundBuffers, evals]);
 
   let status: string | null = null;
   if (!ready) status = 'Loading…';
@@ -56,6 +79,10 @@ export function ClipPreview({ document, slug, onClose }: ClipPreviewProps): Reac
             </button>
           ))}
         </div>
+        <button type="button" className={boardSounds ? 'btn-primary clip-preview__sounds' : 'btn-secondary clip-preview__sounds'} aria-pressed={boardSounds} onClick={() => setBoardSounds(!boardSounds)}>
+          {boardSounds ? <VolumeOnIcon width={16} height={16} /> : <VolumeOffIcon width={16} height={16} />}
+          Board sounds {boardSounds ? 'on' : 'off'}
+        </button>
         <label className="course-field">
           <span>Voice</span>
           <select value={backend} onChange={(event) => setPicked(event.target.value as CourseVoice)}>
@@ -68,7 +95,17 @@ export function ClipPreview({ document, slug, onClose }: ClipPreviewProps): Reac
         </label>
         {status && <p className="clip-preview__status">{status}</p>}
         {audio.status === 'ready' && assets && (
-          <ClipStage key={format} document={document} slug={slug} format={format} context={audio.context} buffers={audio.buffers} assets={assets} playbackRate={personaPlaybackRate(document.coachPersona, backend)} />
+          <ClipStage
+            key={format}
+            document={document}
+            slug={slug}
+            format={format}
+            context={audio.context}
+            buffers={audio.buffers}
+            assets={assets}
+            playbackRate={personaPlaybackRate(document.coachPersona, backend)}
+            sounds={sounds}
+          />
         )}
       </div>
     </Modal>
@@ -83,8 +120,9 @@ function ClipStage(props: {
   buffers: Map<string, AudioBuffer>;
   assets: ClipAssets;
   playbackRate: number;
+  sounds: { evals: CourseEvals; buffers: Record<BoardSound, AudioBuffer> } | null;
 }): ReactNode {
-  const { document, format, context, buffers, assets, playbackRate } = props;
+  const { document, format, context, buffers, assets, playbackRate, sounds } = props;
   const canvas = useRef<HTMLCanvasElement>(null);
   const player = useRef<ClipPlayer | null>(null);
   const onEnd = useRef<(() => void) | null>(null);
@@ -95,8 +133,8 @@ function ClipStage(props: {
   const [error, setError] = useState<string | null>(null);
   const timeline = useMemo(() => {
     const lengths = audioLengths(buffers, playbackRate);
-    return buildClipTimeline({ document, format, audioMs: (key) => lengths.get(key) });
-  }, [document, format, buffers, playbackRate]);
+    return buildClipTimeline({ document, format, audioMs: (key) => lengths.get(key), sounds: sounds && { evals: sounds.evals } });
+  }, [document, format, buffers, playbackRate, sounds]);
   const size = CLIP_SIZES[format];
 
   useEffect(() => {
@@ -106,6 +144,7 @@ function ClipStage(props: {
       context,
       timeline,
       buffers,
+      soundBuffers: sounds?.buffers ?? null,
       playbackRate,
       frame: {
         title: document.title,
@@ -123,7 +162,7 @@ function ClipStage(props: {
     });
     player.current = created;
     return () => created.destroy();
-  }, [timeline, context, buffers, playbackRate, assets, document, props.slug]);
+  }, [timeline, context, buffers, sounds, playbackRate, assets, document, props.slug]);
 
   useEffect(() => () => {
     if (recorded) URL.revokeObjectURL(recorded.url);

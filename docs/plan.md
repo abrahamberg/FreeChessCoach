@@ -1300,12 +1300,19 @@ Commit: `feat(sounds): sounds in courses`
 `record-clip.ts`, `ClipPreview.tsx`.
 **Files:** those, `timeline.test.ts`.
 
-- [ ] Failing test first: each `move`/`beat` segment with a move carries its
+- [x] Failing test first: each `move`/`beat` segment with a move carries its
   sound cue; a narrated beat's audio starts `soundLeadMs` (250) after the
   segment starts, and its length grows by the same.
-- [ ] `ClipPlayer` schedules the sound buffers on the same clock into the
+- [x] `ClipPlayer` schedules the sound buffers on the same clock into the
   same output, so the preview and the recording match; the "Board sounds"
   switch turns them off.
+
+Status: done 2026-09-28. Segments carry `sound` and `audioOffsetMs`; a
+narrated move's voice waits the length of its sounds (not a fixed 250 ms).
+The editor's `CourseResponse` gained `evals` (shared `courseEvals` with the
+public course) for the clip's bad and great. Not yet heard or recorded in
+the browser (the editor is in the app, whose tab was held by the owner's
+session).
 
 Commit: `feat(sounds): board sounds under clip moves`
 

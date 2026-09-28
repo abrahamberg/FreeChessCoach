@@ -143,7 +143,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
         />
       )}
       {learnerPreview && <LearnerPreview document={document} onClose={() => setLearnerPreview(false)} />}
-      {previewing && <ClipPreview document={document} slug={course.slug} onClose={() => setPreviewing(false)} />}
+      {previewing && <ClipPreview document={document} slug={course.slug} evals={course.evals} onClose={() => setPreviewing(false)} />}
       {confirmRebuild && (
         <ConfirmDialog
           title="Rebuild without AI?"

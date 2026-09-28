@@ -8,7 +8,7 @@ import { CourseGenerationBar } from './CourseGenerationBar.js';
 const tree = parseCourseTree('1. e4 e5 *');
 const generation: CourseGeneration = { status: 'running', step: 'Writing episode 3 of 5', done: 2, total: 5, error: null, outline: null, finishedEpisodeIds: [], warnings: [] };
 const course = (next: CourseGeneration | null): CourseResponse => ({
-  id: 'c1', slug: 's', kind: 'trap', status: 'draft', title: 't', direction: '', updatedAt: '2026-09-28T00:00:00Z', publishedAt: null, missingNoteAudio: [], generation: next,
+  id: 'c1', slug: 's', kind: 'trap', status: 'draft', title: 't', direction: '', updatedAt: '2026-09-28T00:00:00Z', publishedAt: null, missingNoteAudio: [], evals: {}, generation: next,
   document: {
     version: 1, kind: 'trap', title: 't', promise: '', learnerSide: 'black', levelBand: 'novice', coachPersona: 'general',
     startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], episodes: [], takeaways: [], hookOptions: [], clipLinks: {}

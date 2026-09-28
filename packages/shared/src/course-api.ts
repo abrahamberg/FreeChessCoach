@@ -29,7 +29,10 @@ export const CourseResponseSchema = z.object({
   /** When the frozen copy was last published; null for a draft. */
   publishedAt: z.string().nullable(),
   /** Notes of the draft whose current text has no uploaded audio yet (§8). */
-  missingNoteAudio: z.array(z.object({ episodeId: z.string(), nodeId: z.string() }))
+  missingNoteAudio: z.array(z.object({ episodeId: z.string(), nodeId: z.string() })),
+  /** Each move's evaluation and quality from the engine pass (`{}` before
+   * it ran): the clip's board sounds. */
+  evals: z.record(z.string(), z.object({ cp: z.number(), quality: MoveQualitySchema }))
 });
 export type CourseResponse = z.infer<typeof CourseResponseSchema>;
 

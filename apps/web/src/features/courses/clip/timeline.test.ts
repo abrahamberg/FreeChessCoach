@@ -57,6 +57,25 @@ describe('buildClipTimeline', () => {
     expect(segmentAt(timeline, 99_999)?.kind).toBe('end');
   });
 
+  test('board sounds: each new move carries its sounds; a narrated move speaks after them', () => {
+    const document = trap([episode('e1', 'setup', [beat('n2', 'The gambit.'), beat('n2', 'Again, no new move.')])]);
+    const audio: Record<string, number> = { 'beat:e1:0': 1000, 'beat:e1:1': 500 };
+    // White blundered the first move (either side plays bad and great in a clip).
+    const evals = { n1: { cp: -200, quality: 'blunder' as const }, n2: { cp: -180, quality: 'best' as const } };
+
+    const timeline = buildClipTimeline({ document, format: 'vertical', audioMs: (key) => audio[key], timing: TIMING, sounds: { evals, lengthMs: () => 180 } });
+
+    const [move, first, again] = timeline.segments;
+    expect(move).toMatchObject({ kind: 'move', sound: { base: 'opponent', stinger: 'bad' }, audioOffsetMs: 0, end: 100 });
+    // The beat's audio waits for the knock; the beat is longer by as much.
+    expect(first).toMatchObject({ kind: 'beat', sound: { base: 'move', stinger: null }, audioOffsetMs: 180, start: 100, end: 100 + 180 + 1010 });
+    // The same move again: no sound, no wait.
+    expect(again).toMatchObject({ kind: 'beat', sound: null, audioOffsetMs: 0 });
+
+    const silent = buildClipTimeline({ document, format: 'vertical', audioMs: (key) => audio[key], timing: TIMING });
+    expect(silent.segments.every((segment) => segment.sound === null && segment.audioOffsetMs === 0)).toBe(true);
+  });
+
   test("code adds the quiz moment: the position before the answer, the prompt spoken, a countdown; the model's pause is dropped", () => {
     const quiz = { answerNodeId: 'n12', prompt: 'What does Black play?', hint: '', reveal: '' };
     const document = trap([

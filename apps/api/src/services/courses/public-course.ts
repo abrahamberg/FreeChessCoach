@@ -1,4 +1,5 @@
-import { CourseCatalogItemSchema, CourseDocumentSchema, type CourseCatalogQuery, type CourseCatalogResponse, type PublicCourseResponse } from '@freechesscoach/shared';
+import type { CourseDossier } from '@freechesscoach/chess-analysis';
+import { CourseCatalogItemSchema, CourseDocumentSchema, type CourseCatalogQuery, type CourseCatalogResponse, type CourseDocument, type PublicCourseResponse } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as courseAudioRepo from '../../db/repositories/course-audio.js';
 import * as coursesRepo from '../../db/repositories/courses.js';
@@ -29,11 +30,14 @@ export async function publicCourse(db: Kysely<Database>, slug: string, mirror?: 
       return file ? [[`${note.episodeId}:${note.nodeId}`, audioFileUrl(mirror, row.slug, file)]] : [];
     })
   );
+  return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio, evals: courseEvals(document, row.dossier) };
+}
+
+/** Each of the course's moves' evaluation and quality, from its engine pass
+ * (`{}` without one): the player's eval bar and graph, the board sounds. */
+export function courseEvals(document: CourseDocument, dossier: CourseDossier | null): PublicCourseResponse['evals'] {
   const nodeIds = new Set(document.nodes.map((node) => node.id));
-  const evals = Object.fromEntries(
-    (row.dossier?.nodes ?? []).filter((facts) => nodeIds.has(facts.nodeId)).map((facts) => [facts.nodeId, { cp: facts.evalAfterCp, quality: facts.quality }])
-  );
-  return { slug: row.slug, publishedAt: row.publishedAt.toISOString(), document, noteAudio, evals };
+  return Object.fromEntries((dossier?.nodes ?? []).filter((facts) => nodeIds.has(facts.nodeId)).map((facts) => [facts.nodeId, { cp: facts.evalAfterCp, quality: facts.quality }]));
 }
 
 /** One note's audio file, only while a note of the published copy says it. */
