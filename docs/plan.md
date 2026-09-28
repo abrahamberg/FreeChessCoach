@@ -1053,6 +1053,110 @@ Commit: `feat(courses): a Courses page for learning, browsing and learned course
 
 Commit: `docs: courses, learning and the Courses page`
 
+## Phase 87 — The course player on the app's board layout
+
+The owner, 2026-09-28: the player "seems something of its own" and looks bad
+on a phone. It should use the board layout every other board page uses,
+Game Review's above all (`features/review/GameReviewPage.tsx`): on a desktop
+an explorer column, the board column (eval bar, board, graph) and a coach
+column; on a phone the coach note, the board edge to edge, the move strip,
+and a bottom bar. The course's own features (stages, episodes, quiz,
+practice arrows, move log, Remember, Ask my coach) are fitted into those
+areas, not added beside them.
+
+Decisions:
+- `/courses/:slug` becomes a board route: no app top bar, its own header
+  (`SessionHeader`'s style: back to Courses, the title, the stage).
+  `/learn/:slug` gets the same layout without the app shell.
+- The explorer lists the current episode's line from move 1, so the move
+  numbers are right; moves before the episode starts are dimmed. In the
+  drills it lists only the moves played so far (the move log's rows), never
+  the ones still to find.
+- The stages sit in the header as one compact control; the episodes sit at
+  the top of the explorer column (desktop) or as a chip row above the note
+  (phone).
+- Evaluations come from the engine pass, frozen at publish: the eval bar and
+  graph show only when the published course has them (older courses and
+  hand-made ones without a dossier show neither, never a made-up 0.0).
+- The board widgets need only `ply`, `evalAfterCp` and `quality` from a move;
+  their props narrow to that instead of the whole `ClassifiedMoveDto`, so a
+  course can feed them without faking a game analysis.
+
+### Task 87.1 — Per-move evaluations in the published course
+
+**Read:** `apps/api/src/services/course-dossier.ts` (`evalsByFen`),
+`packages/chess-analysis/src/course-dossier-node.ts` (`CourseNodeFacts`),
+`apps/api/src/services/courses/publish.ts`,
+`apps/api/src/services/courses/public-course.ts`,
+`packages/shared/src/course-api.ts` (`PublicCourseResponseSchema`).
+**Files:** those; a migration adding `courses.published_evals jsonb`; tests.
+
+- [ ] Failing tests first: a published course's response carries
+  `evals: {nodeId: {cp, quality}}` (White's view, mate clamped like
+  `classify.ts`); a course whose dossier lacks them returns `{}`.
+- [ ] `CourseNodeFacts` gains `evalAfterCp` (optional: older dossiers lack
+  it); publish freezes the map next to `published_document`.
+
+Commit: `feat(courses): evaluations frozen with the published course`
+
+### Task 87.2 — Board widgets take a light move
+
+**Read:** `features/board/EvalBar.tsx`, `GameEvalChart.tsx`,
+`MoveExplorer.tsx`, `MoveNavStrip.tsx` and their callers.
+**Files:** those, their tests.
+
+- [ ] A `BoardMove = Pick<ClassifiedMoveDto, 'ply' | 'evalAfterCp' |
+  'quality'>` (plus what MoveExplorer's inspect needs, optional); the four
+  widgets take it. Game Review and the sessions still pass full moves.
+- [ ] MoveExplorer and MoveNavStrip accept a `dimmedBefore` ply.
+
+Commit: `refactor(board): the board widgets take a light move`
+
+### Task 87.3 — The layout
+
+**Read:** `features/review/GameReviewPage.tsx` + `.css`,
+`GameReviewBoardColumn.tsx`, `features/session/SessionHeader.tsx`,
+`components/AppShell.tsx` (`BOARD_ROUTE_PREFIXES`), `styles/board-bottom-bar.css`,
+`features/courses/player/CoursePlayer.tsx`.
+**Files:** a new `player/CourseBoardLayout.tsx` + CSS + test,
+`CoursePlayer.tsx`, `CoursePane.tsx`, `AppShell.tsx`.
+
+- [ ] Failing test first: at desktop width the three columns render (the
+  explorer, the board, the coach); at phone width the note, the board, the
+  strip and the bottom bar, in that order.
+- [ ] Header: back (to Courses in the app, to the site on `/learn`), title,
+  the stage control. `/courses/` is a board route.
+- [ ] Play through in it: the explorer column (episodes, then the line), the
+  board column (eval bar and graph when evals exist), the coach column
+  (`CoursePane`: note, quiz, Ask my coach). Phone: note card on top, the
+  strip under the board, the bottom bar holds Previous / the next step
+  ("Bait ›", "Practice ›").
+- [ ] Remember covers the board columns on desktop and is a full-screen
+  sheet on a phone.
+
+Commit: `feat(courses): the course player on the app's board layout`
+
+### Task 87.4 — Practice and drills in the same layout
+
+**Read:** `player/CourseDrill.tsx`, `MoveLog.tsx`.
+**Files:** those, their tests.
+
+- [ ] The move log becomes the explorer column's list (desktop) and the
+  strip (phone); the masked current move stays masked.
+- [ ] The coach column holds the prompt, the feedback and Show the move;
+  the round and progress go in the bottom bar on a phone.
+
+Commit: `feat(courses): practice and drills in the board layout`
+
+### Task 87.5 — Phone pass
+
+- [ ] In the browser at 390×844 and 360×740: nothing scrolls sideways; the
+  board is full width; every control is at least 44 px; the Remember sheet
+  and Ask my coach open over the board and close back to the same move.
+- [ ] The same at 1280×800 and 1920×1080; dark mode on both.
+
+Commit: `fix(courses): phone layout pass`
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.
@@ -1075,3 +1179,6 @@ Commit: `docs: courses, learning and the Courses page`
 - 86: the nav reads Games, Courses, Progress, Stats; Play with Coach and Play a
   Bot start from the Games page; a public course is in Browse, an unlisted one
   is not; a finished course is under Learned.
+- 87: the Englund trap at 390 px and 1280 px wide looks like Game Review: the
+  explorer, the board with its eval bar and graph, the coach; every stage and
+  the Remember screen work on both.
