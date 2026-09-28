@@ -305,6 +305,13 @@ export const CourseOutlineSchema = z.object({
 });
 export type CourseOutline = z.infer<typeof CourseOutlineSchema>;
 
+/** What the outline call asks the model for: the outline without the key
+ * moves code adds. A strict structured-output provider (OpenAI) refuses a
+ * schema with any key the model may leave out. */
+export const CourseOutlineCallSchema = CourseOutlineSchema.extend({
+  chapters: z.array(z.object({ title: z.string(), lineId: z.string().min(1), episodes: z.array(CourseOutlineEpisodeSchema.omit({ keyNodeIds: true })).min(1) })).min(1)
+});
+
 /** The episode call's answer (§6.5); merged into a `CourseEpisode` by code. */
 export const EpisodeScriptSchema = z.object({
   episodeId: z.string().min(1),

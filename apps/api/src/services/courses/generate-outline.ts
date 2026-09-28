@@ -1,6 +1,6 @@
 import { checkCourseOutline, courseNodePath, episodeKeyMoves } from '@freechesscoach/chess-analysis';
 import { buildCourseOutlineMessages, courseBudget } from '@freechesscoach/prompts';
-import { CourseOutlineSchema, courseVideos, defaultCourseBudget, type CourseDocument, type CourseEpisode, type CourseOutline, type CourseWarning } from '@freechesscoach/shared';
+import { CourseOutlineCallSchema, courseVideos, defaultCourseBudget, type CourseDocument, type CourseEpisode, type CourseOutline, type CourseWarning } from '@freechesscoach/shared';
 import { ValidationError } from '../../lib/errors.js';
 import type { CourseModelCall, GenerationInputs } from './generation-inputs.js';
 
@@ -12,14 +12,14 @@ import type { CourseModelCall, GenerationInputs } from './generation-inputs.js';
  */
 export async function planOutline(inputs: GenerationInputs, call: CourseModelCall): Promise<{ outline: CourseOutline; warnings: CourseWarning[] }> {
   const firstLabel = { step: 'outline', episodeId: null, repair: false } as const;
-  const first = await call(buildCourseOutlineMessages(inputs.context), CourseOutlineSchema, firstLabel);
+  const first = await call(buildCourseOutlineMessages(inputs.context), CourseOutlineCallSchema, firstLabel);
   const firstProblems = outlineProblems(inputs, first);
   await call.checked?.(firstLabel, firstProblems);
   if (firstProblems.length === 0) return { outline: withProducts(inputs, withKeyMoves(inputs, first)), warnings: [] };
 
   const retry = { previousOutput: JSON.stringify(first), problems: firstProblems };
   const repairLabel = { ...firstLabel, repair: true };
-  const second = await call(buildCourseOutlineMessages(inputs.context, retry), CourseOutlineSchema, repairLabel);
+  const second = await call(buildCourseOutlineMessages(inputs.context, retry), CourseOutlineCallSchema, repairLabel);
   const problems = outlineProblems(inputs, second);
   await call.checked?.(repairLabel, problems);
   if (problems.length === 0) return { outline: withProducts(inputs, withKeyMoves(inputs, second)), warnings: [] };

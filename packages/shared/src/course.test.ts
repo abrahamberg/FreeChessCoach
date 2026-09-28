@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { bandForRating, videoCaption, videoLine, CourseDocumentSchema, levelCode, type CourseDocument } from './course.js';
+import { z } from 'zod';
+import { bandForRating, videoCaption, videoLine, CourseDocumentSchema, CourseOutlineCallSchema, CourseOutlineSchema, EpisodeScriptSchema, levelCode, ReelScriptSchema, type CourseDocument } from './course.js';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -90,5 +91,25 @@ describe('the video line, caption and level', () => {
   test('a level reads 1200-01 and gives the prompts their band', () => {
     expect(levelCode({ rating: 1200, order: 1 })).toBe('1200-01');
     expect([800, 1200, 1600, 2000].map(bandForRating)).toEqual(['novice', 'improving', 'club', 'advanced']);
+  });
+});
+
+describe('model-facing schemas are strict (every key required)', () => {
+  /** Every object's keys, as a strict provider reads the schema: each must
+   * be required. The first OpenAI run refused the outline for keyNodeIds. */
+  function optionalKeys(node: unknown, path = ''): string[] {
+    if (!node || typeof node !== 'object') return [];
+    const schema = node as { properties?: Record<string, unknown>; required?: string[] };
+    const own = schema.properties ? Object.keys(schema.properties).filter((key) => !schema.required?.includes(key)).map((key) => `${path}.${key}`) : [];
+    return [...own, ...Object.entries(node).flatMap(([key, child]) => optionalKeys(child, `${path}/${key}`))];
+  }
+  const strict = (schema: z.ZodType): string[] => optionalKeys(z.toJSONSchema(schema, { io: 'output' }));
+
+  test('the outline, episode and reel calls', () => {
+    expect(strict(CourseOutlineCallSchema)).toEqual([]);
+    expect(strict(EpisodeScriptSchema)).toEqual([]);
+    expect(strict(ReelScriptSchema)).toEqual([]);
+    // The stored outline keeps code's key moves, so it is not sent to a model.
+    expect(strict(CourseOutlineSchema).some((key) => key.endsWith('.keyNodeIds'))).toBe(true);
   });
 });
