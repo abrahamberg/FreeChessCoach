@@ -32,8 +32,8 @@ const document: CourseDocument = {
   version: 1, kind: 'trap', title: 'Englund trap', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
   startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], hookOptions: [], clipLinks: {}, takeaways: ['A.', 'B.', 'C.'],
   episodes: [{
-    id: 'e1', role: 'setup', focus: '', startNodeId: id(1), endNodeId: id(6), beats: [], drillNodeIds: [],
-    notes: [{ nodeId: id(2), text: 'The Englund Gambit.', arrows: [] }, { nodeId: id(6), text: 'The queen eyes b2.', arrows: [] }]
+    id: 'e1', role: 'setup', focus: '', startNodeId: id(1), endNodeId: id(6), drillNodeIds: [],
+    plies: [{ nodeId: id(2), text: 'The Englund Gambit.', arrows: [], long: true, short: false }, { nodeId: id(6), text: 'The queen eyes b2.', arrows: [], long: true, short: false }]
   }]
 };
 

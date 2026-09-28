@@ -238,18 +238,100 @@
   font-size: 0.95rem;
 }
 
-.course-beats {
-  margin: 0;
-  padding-left: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.course-budget {
+  margin: -4px 0 8px;
 }
 
-.course-beat {
+.course-budget--over {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+/* A move for the course and the clip: two ticks, one text. */
+.course-ply__ticks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.course-ply__tick {
+  min-height: 36px;
+  padding: 4px 14px 4px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.course-ply__tick::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+
+.course-ply__tick[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.course-ply__tick[aria-pressed='true']::before {
+  background: currentColor;
+}
+
+.course-ply__tick:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.course-ply__clip {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.course-ply__own {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.course-ply__own input {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+}
+
+.course-script__opener {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.course-script {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.course-script li {
+  line-height: 1.45;
 }
 
 .course-warnings {

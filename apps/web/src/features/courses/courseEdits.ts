@@ -1,27 +1,20 @@
-import type { CourseArrow, CourseBeat, CourseDocument, CourseEpisode, CourseNode } from '@freechesscoach/shared';
+import type { CourseDocument, CourseEpisode, CourseNode, CoursePly } from '@freechesscoach/shared';
 
 /** Pure edits of a draft; the editor keeps the whole document in state. */
 export function updateEpisode(document: CourseDocument, episodeId: string, edit: (episode: CourseEpisode) => CourseEpisode): CourseDocument {
   return { ...document, episodes: document.episodes.map((episode) => (episode.id === episodeId ? edit(episode) : episode)) };
 }
 
-/** Creates the node's note when it has none. */
-export function setNote(episode: CourseEpisode, nodeId: string, patch: { text?: string; arrows?: CourseArrow[] }): CourseEpisode {
-  const existing = episode.notes.find((note) => note.nodeId === nodeId);
-  if (!existing) return { ...episode, notes: [...episode.notes, { nodeId, text: patch.text ?? '', arrows: patch.arrows ?? [] }] };
-  return { ...episode, notes: episode.notes.map((note) => (note.nodeId === nodeId ? { ...note, ...patch } : note)) };
-}
-
-export function addBeat(episode: CourseEpisode, nodeId: string | null): CourseEpisode {
-  return { ...episode, beats: [...episode.beats, { nodeId, say: '', caption: '', arrows: [] }] };
-}
-
-export function updateBeat(episode: CourseEpisode, index: number, patch: Partial<CourseBeat>): CourseEpisode {
-  return { ...episode, beats: episode.beats.map((beat, at) => (at === index ? { ...beat, ...patch } : beat)) };
-}
-
-export function removeBeat(episode: CourseEpisode, index: number): CourseEpisode {
-  return { ...episode, beats: episode.beats.filter((_beat, at) => at !== index) };
+/** Changes one move's entry, creating it when the move has none (speaking
+ * in the course, since the creator is writing for it). `order` is the
+ * episode's moves, so a new entry lands in move order. */
+export function setPly(episode: CourseEpisode, nodeId: string, patch: Partial<Omit<CoursePly, 'nodeId'>>, order: readonly string[] = []): CourseEpisode {
+  if (episode.plies.some((ply) => ply.nodeId === nodeId)) {
+    return { ...episode, plies: episode.plies.map((ply) => (ply.nodeId === nodeId ? { ...ply, ...patch } : ply)) };
+  }
+  const created: CoursePly = { nodeId, text: '', arrows: [], long: true, short: false, ...patch };
+  const at = (id: string): number => (order.includes(id) ? order.indexOf(id) : Number.MAX_SAFE_INTEGER);
+  return { ...episode, plies: [...episode.plies, created].sort((a, b) => at(a.nodeId) - at(b.nodeId)) };
 }
 
 export function withoutQuiz(episode: CourseEpisode): CourseEpisode {

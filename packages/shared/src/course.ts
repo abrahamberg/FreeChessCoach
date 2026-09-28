@@ -51,22 +51,44 @@ export const CourseChapterSchema = z.object({
 });
 export type CourseChapter = z.infer<typeof CourseChapterSchema>;
 
-/** One moment of the clip; `nodeId` null for the opening and end card. */
-export const CourseBeatSchema = z.object({
-  nodeId: NodeIdSchema.nullable(),
-  say: z.string(),
-  caption: z.string(),
-  arrows: z.array(CourseArrowSchema),
-  pauseMs: z.number().int().nonnegative().optional()
-});
-export type CourseBeat = z.infer<typeof CourseBeatSchema>;
-
-export const CourseNoteSchema = z.object({
+/**
+ * docs/courses.md §4 (Phase 90): one move of an episode, for both versions
+ * of the course. `long`: the coach says `text` on this move in the course
+ * (the play-through); `short`: in the clip, saying `clipText` when it has a
+ * shorter line, else `text`, with `caption` on screen (else one made from
+ * the line). A move with neither is played without a word.
+ */
+export const CoursePlySchema = z.object({
   nodeId: NodeIdSchema,
   text: z.string(),
-  arrows: z.array(CourseArrowSchema)
+  clipText: z.string().optional(),
+  caption: z.string().optional(),
+  arrows: z.array(CourseArrowSchema),
+  long: z.boolean(),
+  short: z.boolean()
 });
-export type CourseNote = z.infer<typeof CourseNoteSchema>;
+export type CoursePly = z.infer<typeof CoursePlySchema>;
+
+/** The card an episode's clip opens on (the hook's title card): no move. */
+export const CourseOpenerSchema = z.object({
+  say: z.string(),
+  caption: z.string()
+});
+export type CourseOpener = z.infer<typeof CourseOpenerSchema>;
+
+/** A course's target rating and its order among that level's courses. */
+export const CourseLevelSchema = z.object({
+  rating: z.number().int().min(400).max(2800),
+  order: z.number().int().min(1).max(99)
+});
+export type CourseLevel = z.infer<typeof CourseLevelSchema>;
+
+/** How many moves may speak in each version: set by the planning call. */
+export const CourseBudgetSchema = z.object({
+  long: z.number().int().nonnegative(),
+  short: z.number().int().nonnegative()
+});
+export type CourseBudget = z.infer<typeof CourseBudgetSchema>;
 
 export const CourseQuizSchema = z.object({
   answerNodeId: NodeIdSchema,
@@ -83,8 +105,11 @@ export const CourseEpisodeSchema = z.object({
   focus: z.string(),
   startNodeId: NodeIdSchema,
   endNodeId: NodeIdSchema,
-  beats: z.array(CourseBeatSchema),
-  notes: z.array(CourseNoteSchema),
+  /** The clip's opening card, if the episode has one. */
+  opener: CourseOpenerSchema.optional(),
+  /** The moves that speak, in either version, in move order. */
+  plies: z.array(CoursePlySchema),
+  budget: CourseBudgetSchema.optional(),
   quiz: CourseQuizSchema.optional(),
   /** Learner moves that become drill positions. */
   drillNodeIds: z.array(NodeIdSchema)
@@ -133,9 +158,50 @@ export const CourseDocumentSchema = z.object({
   episodes: z.array(CourseEpisodeSchema),
   takeaways: z.array(z.string()).max(3),
   hookOptions: z.array(z.string()).max(3),
-  clipLinks: CourseClipLinksSchema
+  clipLinks: CourseClipLinksSchema,
+  /** The clip's target length (the planning call's budget), seconds. */
+  clipSeconds: z.number().int().positive().optional(),
+  /** Phase 90: the learner's target rating and the course's place in that
+   * level's curriculum ("1200-01"); how the Courses page sorts. */
+  level: CourseLevelSchema.optional()
 });
 export type CourseDocument = z.infer<typeof CourseDocumentSchema>;
+
+/** The clip's line for a move: its own when it has one, else the course's. */
+export function clipLine(ply: CoursePly): string {
+  return ply.clipText?.trim() || ply.text.trim();
+}
+
+/** The clip's caption for a move: set, or the spoken line's first sentence,
+ * cut at a word to fit the screen. */
+export function clipCaption(ply: CoursePly, maxLength = 60): string {
+  if (ply.caption?.trim()) return ply.caption.trim();
+  const first = clipLine(ply).split(/(?<=[.!?])\s/)[0] ?? '';
+  if (first.length <= maxLength) return first;
+  return `${first.slice(0, maxLength - 1).replace(/\s+\S*$/, '')}…`;
+}
+
+/** A budget when no plan gives one (code's skeleton, a hand-built course):
+ * most moves speak in the course, one or two in the clip. */
+export function defaultCourseBudget(moves: number): CourseBudget {
+  return { long: Math.min(moves, Math.max(1, Math.ceil(moves * 0.6))), short: Math.min(moves, 2) };
+}
+
+/** The clip's length when no plan gives one: a reel. */
+export const DEFAULT_CLIP_SECONDS = 45;
+
+/** "1200-01": a course's level and place in its curriculum. */
+export function levelCode(level: CourseLevel): string {
+  return `${level.rating}-${String(level.order).padStart(2, '0')}`;
+}
+
+/** The band the prompts write for, from the target rating. */
+export function bandForRating(rating: number): (typeof RATING_BANDS)[number] {
+  if (rating < 1000) return 'novice';
+  if (rating < 1500) return 'improving';
+  if (rating < 1900) return 'club';
+  return 'advanced';
+}
 
 
 
@@ -157,7 +223,10 @@ export const CourseOutlineEpisodeSchema = z.object({
   startNodeId: NodeIdSchema,
   endNodeId: NodeIdSchema,
   narratedNodeIds: z.array(NodeIdSchema),
-  answerNodeId: NodeIdSchema.nullable()
+  answerNodeId: NodeIdSchema.nullable(),
+  /** How many moves may speak: in the course, and in the clip. */
+  budgetLong: z.number().int().nonnegative(),
+  budgetShort: z.number().int().nonnegative()
 });
 export type CourseOutlineEpisode = z.infer<typeof CourseOutlineEpisodeSchema>;
 
@@ -166,15 +235,17 @@ export const CourseOutlineSchema = z.object({
   promise: z.string(),
   hookOptions: z.array(z.string()).min(3).max(3),
   chapters: z.array(z.object({ title: z.string(), lineId: z.string().min(1), episodes: z.array(CourseOutlineEpisodeSchema).min(1) })).min(1),
-  takeaways: z.array(z.string()).min(3).max(3)
+  takeaways: z.array(z.string()).min(3).max(3),
+  /** The clip's target length, seconds. */
+  clipSeconds: z.number().int().positive()
 });
 export type CourseOutline = z.infer<typeof CourseOutlineSchema>;
 
 /** The episode call's answer (§6.5); merged into a `CourseEpisode` by code. */
 export const EpisodeScriptSchema = z.object({
   episodeId: z.string().min(1),
-  beats: z.array(CourseBeatSchema.extend({ pauseMs: z.number().int().nonnegative().nullable() })),
-  notes: z.array(CourseNoteSchema),
+  opener: CourseOpenerSchema.nullable(),
+  plies: z.array(CoursePlySchema.extend({ clipText: z.string().nullable(), caption: z.string().nullable() })),
   quiz: CourseQuizSchema.nullable()
 });
 export type EpisodeScript = z.infer<typeof EpisodeScriptSchema>;

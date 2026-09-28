@@ -31,8 +31,8 @@ function trapDocument(): CourseDocument {
     startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], hookOptions: [], clipLinks: {},
     takeaways: ['One.', 'Two.', 'Three.'],
     episodes: [{
-      id: 'e1', role: 'setup', focus: '', startNodeId: first!.id, endNodeId: second!.id, beats: [], drillNodeIds: [],
-      notes: [{ nodeId: first!.id, text: 'The centre pawn.', arrows: [] }, { nodeId: second!.id, text: 'Not voiced.', arrows: [] }]
+      id: 'e1', role: 'setup', focus: '', startNodeId: first!.id, endNodeId: second!.id, drillNodeIds: [],
+      plies: [{ nodeId: first!.id, text: 'The centre pawn.', arrows: [], long: true, short: false }, { nodeId: second!.id, text: 'Not voiced.', arrows: [], long: true, short: false }]
     }]
   };
 }

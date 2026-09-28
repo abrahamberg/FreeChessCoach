@@ -136,7 +136,8 @@ export function coursePosition(document: CourseDocument, episodeId: string, node
   const at = nodeId === null ? -1 : path.indexOf(nodeId);
   if (nodeId !== null && at < 0) return null;
   const fenBefore = (node: CourseNode): string => (node.parentId ? byId.get(node.parentId)?.fenAfter : undefined) ?? document.startFen;
-  const noteOn = (id: string): string | null => episode.notes.find((note) => note.nodeId === id)?.text.trim() || null;
+  const spoken = episode.plies.filter((ply) => ply.long && ply.text.trim());
+  const noteOn = (id: string): string | null => spoken.find((ply) => ply.nodeId === id)?.text.trim() || null;
   const label = (node: CourseNode): string => {
     const [, turn, , , , fullmove] = fenBefore(node).split(' ');
     return `${fullmove ?? '1'}${turn === 'b' ? '...' : '.'}${node.san}`;
@@ -162,9 +163,9 @@ export function coursePosition(document: CourseDocument, episodeId: string, node
       fen,
       lastMove: last ? { san: label(last), note: noteOn(last.id) } : null,
       courseMove: next ? { san: next.san, note: noteOn(next.id) } : null,
-      episodeNotes: episode.notes.filter((note) => note.text.trim() && note.nodeId !== last?.id && note.nodeId !== next?.id).flatMap((note) => {
-        const node = byId.get(note.nodeId);
-        return node ? [`${label(node)}: ${note.text.trim()}`] : [];
+      episodeNotes: spoken.filter((ply) => ply.nodeId !== last?.id && ply.nodeId !== next?.id).flatMap((ply) => {
+        const node = byId.get(ply.nodeId);
+        return node ? [`${label(node)}: ${ply.text.trim()}`] : [];
       })
     }
   };

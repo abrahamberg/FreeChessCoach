@@ -69,10 +69,10 @@ function plannedEpisode(outline: CourseOutline, episodeId: string): CourseOutlin
   return planned;
 }
 
-/** The outline's frame with the script's text; null fields become absent.
- * A beat with nothing on it (no words, caption, arrows or pause) is dropped:
- * gemma-4-12b writes one per setup move and keeps them through the repair,
- * and the clip plays the moves between beats anyway. */
+/** The outline's frame with the script's moves and the plan's budget; null
+ * fields become absent. A move with nothing on it (no words, no arrows, not
+ * speaking) is dropped: small models write one per move, and the moves play
+ * anyway. */
 function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: string, script: EpisodeScript): CourseEpisode {
   const planned = plannedEpisode(outline, episodeId);
   return {
@@ -81,10 +81,11 @@ function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: 
     focus: planned.focus,
     startNodeId: planned.startNodeId,
     endNodeId: planned.endNodeId,
-    beats: script.beats
-      .filter((beat) => beat.say.trim() || beat.caption.trim() || beat.arrows.length || beat.pauseMs)
-      .map(({ pauseMs, ...beat }) => (pauseMs === null ? beat : { ...beat, pauseMs })),
-    notes: script.notes,
+    ...(script.opener && (script.opener.say.trim() || script.opener.caption.trim()) ? { opener: script.opener } : {}),
+    plies: script.plies
+      .filter((ply) => ply.long || ply.short || ply.text.trim() || ply.arrows.length)
+      .map(({ clipText, caption, ...ply }) => ({ ...ply, ...(clipText?.trim() ? { clipText } : {}), ...(caption?.trim() ? { caption } : {}) })),
+    budget: { long: planned.budgetLong, short: planned.budgetShort },
     ...(script.quiz ? { quiz: script.quiz } : {}),
     drillNodeIds: learnerNodes(inputs, planned.startNodeId, planned.endNodeId)
   };

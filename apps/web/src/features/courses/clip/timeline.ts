@@ -1,4 +1,4 @@
-import type { CourseArrow, CourseDocument, CourseEpisode, CourseKind, CourseNode } from '@freechesscoach/shared';
+import { clipCaption, clipLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CourseKind, type CourseNode } from '@freechesscoach/shared';
 import { boardSoundLengthMs } from '../../../sounds/board-sounds.js';
 import type { BoardSound } from '../../../sounds/move-sounds.js';
 import { courseMoveSound, type CourseEvals } from '../player/course-move-list.js';
@@ -122,27 +122,32 @@ export function buildClipTimeline(options: {
   };
 
   for (const episode of clipEpisodes(document, format)) {
+    if (episode.opener) {
+      const key = `opener:${episode.id}`;
+      const spoken = episode.opener.say.trim() ? audioMs(key) : undefined;
+      const length = spoken === undefined ? timing.silentBeatMs : spoken + timing.gapMs;
+      push({ kind: 'title', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: episode.opener.caption, audioKey: spoken === undefined ? null : key, pauseMs: 0 }, length);
+    }
+    const clipPlies = episode.plies.filter((ply) => ply.short);
     // Code owns the quiz moment: before the answer is shown, never twice.
-    const answerAt = episode.quiz ? episode.beats.findIndex((beat) => beat.nodeId === episode.quiz?.answerNodeId) : -1;
+    const answerAt = episode.quiz ? clipPlies.findIndex((ply) => ply.nodeId === episode.quiz?.answerNodeId) : -1;
     if (episode.quiz && answerAt <= 0) quizMoment(episode);
-    episode.beats.forEach((beat, index) => {
+    clipPlies.forEach((ply, index) => {
       if (episode.quiz && index === answerAt && index > 0) quizMoment(episode);
-      const key = `beat:${episode.id}:${index}`;
-      const spoken = beat.say.trim() ? audioMs(key) : undefined;
-      const pauseMs = episode.quiz ? 0 : (beat.pauseMs ?? 0);
-      const length = (spoken === undefined ? timing.silentBeatMs : spoken + timing.gapMs) + pauseMs;
-      const common = { arrows: beat.arrows, caption: beat.caption, audioKey: spoken === undefined ? null : key, pauseMs };
-      const node = beat.nodeId ? byId.get(beat.nodeId) : undefined;
-      if (!node) {
-        push({ kind: 'title', ...board(shown), lastMove: null, moveLabel: null, ...common }, length);
-        return;
-      }
+      const node = byId.get(ply.nodeId);
+      if (!node) return;
+      const key = `clip:${episode.id}:${ply.nodeId}`;
+      const spoken = clipLine(ply) ? audioMs(key) : undefined;
+      const length = spoken === undefined ? timing.silentBeatMs : spoken + timing.gapMs;
       for (const between of movesBetween(byId, shown, node)) push({ kind: 'move', ...board(between), arrows: [], caption: '', audioKey: null, pauseMs: 0, sound: soundOf(between) }, timing.moveMs);
       // A move shown for the first time sounds; its narration waits for it.
       const sound = shown?.id === node.id ? null : soundOf(node);
-      const lead = sound && common.audioKey ? soundLength(sound) : 0;
+      const lead = sound && spoken !== undefined ? soundLength(sound) : 0;
       shown = node;
-      push({ kind: 'beat', ...board(node), ...common, sound, audioOffsetMs: lead }, length + lead);
+      push(
+        { kind: 'beat', ...board(node), arrows: ply.arrows, caption: clipCaption(ply), audioKey: spoken === undefined ? null : key, pauseMs: 0, sound, audioOffsetMs: lead },
+        length + lead
+      );
     });
   }
   push({ kind: 'end', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.endCardMs);

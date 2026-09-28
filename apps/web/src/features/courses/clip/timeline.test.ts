@@ -1,11 +1,14 @@
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
-import type { CourseBeat, CourseDocument, CourseEpisode } from '@freechesscoach/shared';
+import type { CourseDocument, CourseEpisode, CourseOpener, CoursePly } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { buildClipTimeline, clipEpisodes, segmentAt } from './timeline.js';
 
 const tree = parseCourseTree('1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 Bxc3 8. Qxc3 Qc1# *');
-const beat = (nodeId: string | null, say: string, extra: Partial<CourseBeat> = {}): CourseBeat => ({ nodeId, say, caption: say.slice(0, 10), arrows: [], ...extra });
-const episode = (id: string, role: string, beats: CourseBeat[]): CourseEpisode => ({ id, role, focus: '', startNodeId: 'n1', endNodeId: 'n16', beats, notes: [], drillNodeIds: [] });
+/** A move in the clip: its line, a caption from it. */
+const clip = (nodeId: string, text: string): CoursePly => ({ nodeId, text, caption: text.slice(0, 10), arrows: [], long: false, short: true });
+const episode = (id: string, role: string, plies: CoursePly[], opener?: CourseOpener): CourseEpisode => ({
+  id, role, focus: '', startNodeId: 'n1', endNodeId: 'n16', plies, drillNodeIds: [], ...(opener ? { opener } : {})
+});
 
 function trap(episodes: CourseEpisode[], kind: CourseDocument['kind'] = 'trap'): CourseDocument {
   return {
@@ -30,36 +33,35 @@ function trap(episodes: CourseEpisode[], kind: CourseDocument['kind'] = 'trap'):
 const TIMING = { moveMs: 100, gapMs: 10, silentBeatMs: 500, endCardMs: 1000, quizPauseMs: 3000 };
 
 describe('buildClipTimeline', () => {
-  test('beats last their audio plus the gap and the quiz pause; moves between beats play fast; the end card closes', () => {
+  test('the opener and each clip move last their audio plus the gap; moves between play fast; the end card closes', () => {
     const document = trap([
-      episode('e1', 'hook', [beat(null, 'Greed loses.')]),
-      episode('e2', 'setup', [beat('n2', 'The gambit.'), beat('n4', '')]),
-      episode('e3', 'safety', [beat('n11', 'Your move.', { pauseMs: 3000 })])
+      episode('e1', 'hook', [], { say: 'Greed loses.', caption: 'Greed lose' }),
+      episode('e2', 'setup', [clip('n2', 'The gambit.'), clip('n4', '')]),
+      episode('e3', 'safety', [clip('n11', 'Your move.')])
     ]);
-    const audio: Record<string, number> = { 'beat:e1:0': 2000, 'beat:e2:0': 1000, 'beat:e3:0': 1500 };
+    const audio: Record<string, number> = { 'opener:e1': 2000, 'clip:e2:n2': 1000, 'clip:e3:n11': 1500 };
 
     const timeline = buildClipTimeline({ document, format: 'vertical', audioMs: (key) => audio[key], timing: TIMING });
 
     expect(timeline.segments.map((segment) => [segment.kind, segment.start, segment.end, segment.moveLabel, segment.audioKey])).toEqual([
-      ['title', 0, 2010, null, 'beat:e1:0'],
+      ['title', 0, 2010, null, 'opener:e1'],
       ['move', 2010, 2110, '1.d4', null],
-      ['beat', 2110, 3120, '1…e5', 'beat:e2:0'],
+      ['beat', 2110, 3120, '1…e5', 'clip:e2:n2'],
       ['move', 3120, 3220, '2.dxe5', null],
       ['beat', 3220, 3720, '2…Nc6', null],
       ...['3.Nf3', '3…Qe7', '4.Bf4', '4…Qb4+', '5.Bd2', '5…Qxb2'].map((label, index) => ['move', 3720 + index * 100, 3820 + index * 100, label, null]),
-      ['beat', 4320, 4320 + 1510 + 3000, '6.Bc3', 'beat:e3:0'],
-      ['end', 8830, 9830, null, null]
+      ['beat', 4320, 4320 + 1510, '6.Bc3', 'clip:e3:n11'],
+      ['end', 5830, 6830, null, null]
     ]);
-    expect(timeline.durationMs).toBe(9830);
+    expect(timeline.durationMs).toBe(6830);
     expect(timeline.segments[2]?.lastMove).toEqual({ from: 'e7', to: 'e5' });
-    expect(timeline.segments.find((segment) => segment.kind === 'beat' && segment.pauseMs)?.pauseMs).toBe(3000);
     expect(segmentAt(timeline, 2110)?.moveLabel).toBe('1…e5');
     expect(segmentAt(timeline, 99_999)?.kind).toBe('end');
   });
 
   test('board sounds: each new move carries its sounds; a narrated move speaks after them', () => {
-    const document = trap([episode('e1', 'setup', [beat('n2', 'The gambit.'), beat('n2', 'Again, no new move.')])]);
-    const audio: Record<string, number> = { 'beat:e1:0': 1000, 'beat:e1:1': 500 };
+    const document = trap([episode('e1', 'setup', [clip('n2', 'The gambit.'), clip('n2', 'Again, no new move.')])]);
+    const audio: Record<string, number> = { 'clip:e1:n2': 1000 };
     // White blundered the first move (either side plays bad and great in a clip).
     const evals = { n1: { cp: -200, quality: 'blunder' as const }, n2: { cp: -180, quality: 'best' as const } };
 
@@ -76,13 +78,13 @@ describe('buildClipTimeline', () => {
     expect(silent.segments.every((segment) => segment.sound === null && segment.audioOffsetMs === 0)).toBe(true);
   });
 
-  test("code adds the quiz moment: the position before the answer, the prompt spoken, a countdown; the model's pause is dropped", () => {
+  test('code adds the quiz moment: the position before the answer, the prompt spoken, a countdown', () => {
     const quiz = { answerNodeId: 'n12', prompt: 'What does Black play?', hint: '', reveal: '' };
     const document = trap([
-      episode('e1', 'bait', [beat('n11', 'Bc3 hits the queen.')]),
-      { ...episode('e2', 'quiz', [beat('n12', 'Bb4 pins it.', { pauseMs: 3000 })]), quiz }
+      episode('e1', 'bait', [clip('n11', 'Bc3 hits the queen.')]),
+      { ...episode('e2', 'quiz', [clip('n12', 'Bb4 pins it.')]), quiz }
     ]);
-    const audio: Record<string, number> = { 'beat:e1:0': 1000, 'quiz:e2': 800, 'beat:e2:0': 900 };
+    const audio: Record<string, number> = { 'clip:e1:n11': 1000, 'quiz:e2': 800, 'clip:e2:n12': 900 };
 
     const segments = buildClipTimeline({ document, format: 'vertical', audioMs: (key) => audio[key], timing: TIMING }).segments.filter((segment) => segment.kind !== 'move');
 
@@ -94,8 +96,8 @@ describe('buildClipTimeline', () => {
     ]);
   });
 
-  test('a beat back up the line (the safety move) cuts to it without replaying moves', () => {
-    const document = trap([episode('e1', 'punish', [beat('n16', 'Mate.')]), episode('e2', 'safety', [beat('n11', 'Play Nc3 instead.')])]);
+  test('a clip move back up the line (the safety move) cuts to it without replaying moves', () => {
+    const document = trap([episode('e1', 'punish', [clip('n16', 'Mate.')]), episode('e2', 'safety', [clip('n11', 'Play Nc3 instead.')])]);
     const timeline = buildClipTimeline({ document, format: 'vertical', audioMs: () => 1000, timing: TIMING });
     const kinds = timeline.segments.map((segment) => segment.kind);
     expect(kinds.slice(-3)).toEqual(['beat', 'beat', 'end']);
@@ -106,5 +108,15 @@ describe('buildClipTimeline', () => {
     const episodes = [episode('e1', 'concept', []), episode('e2', 'example', []), episode('e3', 'example', []), episode('e4', 'scan', [])];
     expect(clipEpisodes(trap(episodes, 'tactics'), 'vertical').map((each) => each.id)).toEqual(['e1', 'e2']);
     expect(clipEpisodes(trap(episodes, 'tactics'), 'landscape').map((each) => each.id)).toEqual(['e1', 'e2', 'e3', 'e4']);
+  });
+});
+
+describe('the clip from plies', () => {
+  test('only clip moves speak; a course-only move is played without a word; the caption comes from the line', () => {
+    const courseOnly: CoursePly = { nodeId: 'n2', text: 'The course explains this at length.', arrows: [], long: true, short: false };
+    const spoken: CoursePly = { nodeId: 'n4', text: 'Nc6 hits e5. Black wins the pawn back.', arrows: [], long: true, short: true };
+    const document = trap([episode('e1', 'setup', [courseOnly, spoken])]);
+    const beats = buildClipTimeline({ document, format: 'vertical', audioMs: () => 1000, timing: TIMING }).segments.filter((segment) => segment.kind === 'beat');
+    expect(beats.map((segment) => [segment.moveLabel, segment.audioKey, segment.caption])).toEqual([['2…Nc6', 'clip:e1:n4', 'Nc6 hits e5.']]);
   });
 });

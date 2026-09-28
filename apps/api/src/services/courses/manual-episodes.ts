@@ -65,7 +65,7 @@ function trapChapters(skeleton: TrapSkeleton, lines: CourseLineGame[], learner: 
       focus: 'safety: how does the victim stay safe?',
       nodeIds: [skeleton.baitNodeId],
       noteNodeIds: [],
-      extraNotes: skeleton.safeMoveSan ? [{ nodeId: skeleton.baitNodeId, text: `Safe instead: ${skeleton.safeMoveSan}.`, arrows: [] }] : []
+      extraNotes: skeleton.safeMoveSan ? [{ nodeId: skeleton.baitNodeId, text: `Safe instead: ${skeleton.safeMoveSan}.`, arrows: [], long: true, short: false }] : []
     })
   ];
   return [{ id: 'c1', title: 'The trap', lineId: skeleton.lineId, episodeIds }];

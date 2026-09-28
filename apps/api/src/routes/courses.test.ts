@@ -13,7 +13,7 @@ import type { Database } from '../db/schema.js';
 
 const DEV_EMAIL = 'dev@local.test';
 const INTAKE = ENGLUND_INTAKE;
-const REGENERATED = { episodeId: 'e1', beats: [], notes: [{ nodeId: 'n11', text: 'It hits the queen.', arrows: [] }], quiz: null };
+const REGENERATED = { episodeId: 'e1', opener: null, plies: [{ nodeId: 'n11', text: 'It hits the queen.', clipText: null, caption: null, arrows: [], long: true, short: false }], quiz: null };
 
 let testDb: TestDb;
 let db: Kysely<Database>;
@@ -92,13 +92,13 @@ describe('course routes', () => {
     const app = await creatorApp();
     const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
     const url = `/api/courses/${course.id}/draft`;
-    const episode = { id: 'e1', role: 'bait', focus: '', startNodeId: 'n11', endNodeId: 'n11', beats: [], notes: [{ nodeId: 'n11', text: 'Looks natural.', arrows: [] }], drillNodeIds: [] };
+    const episode = { id: 'e1', role: 'bait', focus: '', startNodeId: 'n11', endNodeId: 'n11', plies: [{ nodeId: 'n11', text: 'Looks natural.', arrows: [], long: true, short: false }], drillNodeIds: [] };
 
     const saved = await app.inject({ method: 'PUT', url, payload: { document: { ...course.document, title: 'Renamed', episodes: [episode] } } });
     expect(saved.statusCode).toBe(204);
     const reloaded = (await app.inject({ method: 'GET', url: `/api/courses/${course.id}` })).json<CourseResponse>();
     expect(reloaded.title).toBe('Renamed');
-    expect(reloaded.document.episodes[0]?.notes[0]?.text).toBe('Looks natural.');
+    expect(reloaded.document.episodes[0]?.plies[0]?.text).toBe('Looks natural.');
 
     const movedTree = { ...course.document, nodes: course.document.nodes.slice(0, 15) };
     expect((await app.inject({ method: 'PUT', url, payload: { document: movedTree } })).statusCode).toBe(400);
@@ -109,7 +109,7 @@ describe('course routes', () => {
     await app.close();
   });
 
-  test('build without AI: the trap skeleton becomes the §6.3 episodes with fact-filled notes', async () => {
+  test('build without AI: the trap skeleton becomes the §6.3 episodes with fact-filled lines', async () => {
     const app = await creatorApp();
     const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
 
@@ -121,9 +121,10 @@ describe('course routes', () => {
     const bait = episodes.find((episode) => episode.role === 'bait');
     expect(bait?.startNodeId).toBe('n11');
     expect(bait?.focus).toBe('bait: why does this move look natural?');
-    expect(bait?.notes[0]?.text).toContain('Bc3 attacks the queen on b2');
+    expect(bait?.plies[0]).toMatchObject({ long: true, text: expect.stringContaining('Bc3 attacks the queen on b2') });
     expect(episodes.find((episode) => episode.role === 'quiz')?.quiz?.answerNodeId).toBe('n12');
-    expect(episodes.every((episode) => episode.beats.length === 0)).toBe(true);
+    // The template picks a clip move or two where there is a tactic or a critical moment.
+    expect(episodes.every((episode) => episode.plies.filter((ply) => ply.short).length <= 2)).toBe(true);
     await app.close();
   });
 
@@ -145,15 +146,24 @@ describe('course routes', () => {
     const regenerateUrl = `/api/courses/${course.id}/episodes/e1/regenerate`;
     expect((await app.inject({ method: 'POST', url: regenerateUrl, payload: { instruction: 'punchier' } })).statusCode).toBe(409);
     const outline = {
-      title: 'Englund', promise: '', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'],
-      chapters: [{ title: 'The trap', lineId: 'l1', episodes: [{ id: 'e1', role: 'bait', focus: 'Bc3 looks natural.', startNodeId: 'n11', endNodeId: 'n11', narratedNodeIds: [], answerNodeId: null }] }]
+      title: 'Englund', promise: '', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], clipSeconds: 45,
+      chapters: [{ title: 'The trap', lineId: 'l1', episodes: [{ id: 'e1', role: 'bait', focus: 'Bc3 looks natural.', startNodeId: 'n11', endNodeId: 'n11', narratedNodeIds: [], answerNodeId: null, budgetLong: 1, budgetShort: 1 }] }]
     };
     await coursesRepo.setGeneration(db, course.id, { status: 'succeeded', step: null, done: 1, total: 1, error: null, outline, finishedEpisodeIds: ['e1'], warnings: [] });
 
     const regenerated = await app.inject({ method: 'POST', url: regenerateUrl, payload: { instruction: 'punchier' } });
     expect(regenerated.statusCode).toBe(200);
     expect(regenerated.json<CourseResponse>().document.episodes).toEqual([
-      { id: 'e1', role: 'bait', focus: 'Bc3 looks natural.', startNodeId: 'n11', endNodeId: 'n11', beats: [], notes: [{ nodeId: 'n11', text: 'It hits the queen.', arrows: [] }], drillNodeIds: [] }
+      {
+        id: 'e1',
+        role: 'bait',
+        focus: 'Bc3 looks natural.',
+        startNodeId: 'n11',
+        endNodeId: 'n11',
+        plies: [{ nodeId: 'n11', text: 'It hits the queen.', arrows: [], long: true, short: false }],
+        budget: { long: 1, short: 1 },
+        drillNodeIds: []
+      }
     ]);
     expect(JSON.stringify(model.doGenerateCalls[0]?.prompt)).toContain("CREATOR'S REQUEST FOR THIS EPISODE");
     const debug = (await app.inject({ method: 'GET', url: `/api/courses/${course.id}/debug` })).json<CourseDebugResponse>();
@@ -187,7 +197,7 @@ describe('course routes', () => {
     expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/wav' }, payload: wav(1_600_000) })).statusCode).toBe(413);
     expect((await app.inject({ method: 'PUT', url: `${url}/notes/e1/n99/audio`, headers: { 'content-type': 'audio/wav' }, payload: wav(10) })).statusCode).toBe(404);
     const after = (await app.inject({ method: 'GET', url })).json<CourseResponse>();
-    expect(after.missingNoteAudio).toHaveLength(missing.length - after.document.episodes.flatMap((episode) => episode.notes).filter((note) => note.text === noteText(after, first)).length);
+    expect(after.missingNoteAudio).toHaveLength(missing.length - after.document.episodes.flatMap((episode) => episode.plies).filter((ply) => ply.long && ply.text === noteText(after, first)).length);
 
     const refused = await app.inject({ method: 'POST', url: `${url}/publish`, payload: {} });
     const published = refused.statusCode === 409 ? await app.inject({ method: 'POST', url: `${url}/publish`, payload: { warningsChecked: true } }) : refused;
@@ -198,7 +208,7 @@ describe('course routes', () => {
     expect(row?.publishedDocument?.takeaways).toEqual(document.takeaways);
 
     // Edit the voiced note and republish as public: its old audio goes.
-    const edited = { ...document, episodes: document.episodes.map((episode) => (episode.id === first.episodeId ? { ...episode, notes: episode.notes.map((note) => (note.nodeId === first.nodeId ? { ...note, text: `${note.text} Again.` } : note)) } : episode)) };
+    const edited = { ...document, episodes: document.episodes.map((episode) => (episode.id === first.episodeId ? { ...episode, plies: episode.plies.map((ply) => (ply.nodeId === first.nodeId ? { ...ply, text: `${ply.text} Again.` } : ply)) } : episode)) };
     await app.inject({ method: 'PUT', url: `${url}/draft`, payload: { document: edited } });
     const republished = await app.inject({ method: 'POST', url: `${url}/publish`, payload: { visibility: 'public', warningsChecked: true } });
     expect(republished.json<CourseResponse>().status).toBe('public');
@@ -213,5 +223,5 @@ describe('course routes', () => {
 });
 
 function noteText(course: CourseResponse, target: { episodeId: string; nodeId: string }): string | undefined {
-  return course.document.episodes.find((episode) => episode.id === target.episodeId)?.notes.find((note) => note.nodeId === target.nodeId)?.text;
+  return course.document.episodes.find((episode) => episode.id === target.episodeId)?.plies.find((ply) => ply.nodeId === target.nodeId)?.text;
 }

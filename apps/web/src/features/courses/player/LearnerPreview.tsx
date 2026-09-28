@@ -35,7 +35,8 @@ export function LearnerPreview({ document, onClose }: { document: CourseDocument
   const source = useCallback(
     async (episodeId: string, nodeId: string): Promise<string | null> => {
       const key = `note:${episodeId}:${nodeId}`;
-      const text = document.episodes.find((episode) => episode.id === episodeId)?.notes.find((note) => note.nodeId === nodeId)?.text;
+      const ply = document.episodes.find((episode) => episode.id === episodeId)?.plies.find((each) => each.nodeId === nodeId);
+      const text = ply?.long ? ply.text : undefined;
       if (!text?.trim()) return null;
       const known = urls.current.get(`${voice}|${text}`);
       if (known) return known;

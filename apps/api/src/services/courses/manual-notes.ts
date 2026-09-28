@@ -1,5 +1,5 @@
 import type { CourseNodeFacts } from '@freechesscoach/chess-analysis';
-import type { CourseArrow, CourseEpisode, CourseNote } from '@freechesscoach/shared';
+import type { CourseArrow, CourseEpisode, CoursePly } from '@freechesscoach/shared';
 
 /** docs/courses.md §10: a note pre-filled from checked facts only — the
  * creator's own comment first, then the opening name, the board facts and
@@ -20,11 +20,11 @@ export interface EpisodeDraft {
   /** The episode's prompt for the creator, e.g. "bait: why does this move look natural?". */
   focus: string;
   nodeIds: string[];
-  /** Nodes that get a note (defaults to all of `nodeIds`). */
+  /** Nodes that speak in the course (defaults to all of `nodeIds`). */
   noteNodeIds?: string[];
   drillNodeIds?: string[];
   quiz?: CourseEpisode['quiz'];
-  extraNotes?: CourseNote[];
+  extraNotes?: CoursePly[];
 }
 
 export class EpisodeBuilder {
@@ -42,14 +42,15 @@ export class EpisodeBuilder {
     const last = draft.nodeIds[draft.nodeIds.length - 1];
     if (!first || !last) return [];
     const id = `e${this.episodes.length + 1}`;
+    const plies = [...this.plies(draft.noteNodeIds ?? draft.nodeIds), ...(draft.extraNotes ?? [])];
     this.episodes.push({
       id,
       role: draft.role,
       focus: draft.focus,
       startNodeId: first,
       endNodeId: last,
-      beats: [],
-      notes: [...this.notes(draft.noteNodeIds ?? draft.nodeIds), ...(draft.extraNotes ?? [])],
+      plies,
+      budget: { long: plies.filter((ply) => ply.long).length, short: plies.filter((ply) => ply.short).length },
       ...(draft.quiz ? { quiz: draft.quiz } : {}),
       drillNodeIds: draft.drillNodeIds ?? []
     });
@@ -60,10 +61,16 @@ export class EpisodeBuilder {
     return this.facts.get(nodeId);
   }
 
-  private notes(nodeIds: string[]): CourseNote[] {
+  /** Each move speaks in the course; the clip takes the first one or two
+   * with a tactic or a critical moment (the template's short). */
+  private plies(nodeIds: string[]): CoursePly[] {
+    let clip = 0;
     return nodeIds.flatMap((nodeId) => {
       const facts = this.facts.get(nodeId);
-      return facts ? [{ nodeId, text: noteText(facts), arrows: this.arrows.get(nodeId) ?? [] }] : [];
+      if (!facts) return [];
+      const short = clip < 2 && (facts.critical || facts.tactics.length > 0);
+      if (short) clip += 1;
+      return [{ nodeId, text: noteText(facts), arrows: this.arrows.get(nodeId) ?? [], long: true, short }];
     });
   }
 }

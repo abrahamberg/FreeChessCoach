@@ -39,10 +39,12 @@ export function printCourseRun(run: CourseRun): void {
       lines.push(`  ${planned.id} ${planned.role} ${planned.startNodeId}–${planned.endNodeId}: ${planned.focus}`);
       if (!written) continue;
       const { episode } = written;
-      for (const beat of episode.beats) {
-        lines.push(`    beat ${beat.nodeId ?? '—'}: ${beat.say}  «${beat.caption}»${beat.pauseMs ? ` (pause ${beat.pauseMs}ms)` : ''}${arrows(beat.arrows)}`);
+      if (episode.budget) lines.push(`    budget: ${episode.budget.long} in the course, ${episode.budget.short} in the clip`);
+      if (episode.opener) lines.push(`    opener: ${episode.opener.say}  «${episode.opener.caption}»`);
+      for (const ply of episode.plies) {
+        const where = [ply.long ? 'course' : null, ply.short ? 'clip' : null].filter(Boolean).join('+') || 'silent';
+        lines.push(`    ${ply.nodeId} [${where}]: ${ply.text}${ply.clipText ? `  | clip: ${ply.clipText}` : ''}${ply.caption ? `  «${ply.caption}»` : ''}${arrows(ply.arrows)}`);
       }
-      for (const note of episode.notes) lines.push(`    note ${note.nodeId}: ${note.text}${arrows(note.arrows)}`);
       if (episode.quiz) {
         lines.push(`    quiz ${episode.quiz.answerNodeId}: ${episode.quiz.prompt} / hint: ${episode.quiz.hint} / reveal: ${episode.quiz.reveal}`);
       }

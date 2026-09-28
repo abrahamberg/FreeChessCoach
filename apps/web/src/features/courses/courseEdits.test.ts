@@ -2,10 +2,10 @@ import type { CourseDocument, CourseEpisode } from '@freechesscoach/shared';
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
 import { describe, expect, test } from 'vitest';
 import { toBoardMarks } from './courseArrows.js';
-import { addBeat, episodeNodeIds, moveLabel, removeBeat, setNote, updateBeat, updateEpisode } from './courseEdits.js';
+import { episodeNodeIds, moveLabel, setPly, updateEpisode } from './courseEdits.js';
 
 const tree = parseCourseTree('1. e4 e5 (1... c5 2. Nf3) 2. Nf3 Nc6 *');
-const episode: CourseEpisode = { id: 'e1', role: 'line', focus: '', startNodeId: 'n2', endNodeId: 'n4', beats: [], notes: [], drillNodeIds: [] };
+const episode: CourseEpisode = { id: 'e1', role: 'line', focus: '', startNodeId: 'n2', endNodeId: 'n4', plies: [], drillNodeIds: [] };
 const document: CourseDocument = {
   version: 1, kind: 'opening_course', title: 't', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'general',
   startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], episodes: [episode], takeaways: [], hookOptions: [], clipLinks: {}
@@ -22,15 +22,17 @@ describe('course edits', () => {
     expect(n3 && moveLabel(document, n3)).toBe('2.Nf3');
   });
 
-  test('notes are created on first edit and beats added, changed and removed', () => {
-    let next = updateEpisode(document, 'e1', (current) => setNote(current, 'n3', { text: 'Develops.' }));
-    next = updateEpisode(next, 'e1', (current) => setNote(current, 'n3', { arrows: [{ from: 'g1', to: 'f3', kind: 'idea' }] }));
-    next = updateEpisode(next, 'e1', (current) => updateBeat(addBeat(addBeat(current, 'n2'), null), 1, { say: 'Hello' }));
+  test('a move’s entry is created on first edit, speaking in the course, and kept in move order', () => {
+    const order = ['n2', 'n3', 'n4'];
+    let next = updateEpisode(document, 'e1', (current) => setPly(current, 'n4', { text: 'Develops.' }, order));
+    next = updateEpisode(next, 'e1', (current) => setPly(current, 'n2', { short: true }, order));
+    next = updateEpisode(next, 'e1', (current) => setPly(current, 'n4', { arrows: [{ from: 'b8', to: 'c6', kind: 'idea' }] }, order));
     const [edited] = next.episodes;
 
-    expect(edited?.notes).toEqual([{ nodeId: 'n3', text: 'Develops.', arrows: [{ from: 'g1', to: 'f3', kind: 'idea' }] }]);
-    expect(edited?.beats.map((beat) => beat.say)).toEqual(['', 'Hello']);
-    expect(edited && removeBeat(edited, 0).beats.map((beat) => beat.nodeId)).toEqual([null]);
+    expect(edited?.plies).toEqual([
+      { nodeId: 'n2', text: '', arrows: [], long: true, short: true },
+      { nodeId: 'n4', text: 'Develops.', arrows: [{ from: 'b8', to: 'c6', kind: 'idea' }], long: true, short: false }
+    ]);
   });
 
   test('a from === to arrow is drawn as a highlighted square', () => {

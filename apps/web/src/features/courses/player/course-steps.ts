@@ -18,13 +18,14 @@ export function episodeWalk(document: CourseDocument, episode: CourseEpisode): E
   return { startFen: first ? fenBefore(document, first) : document.startFen, moves, quizAt: quizAt < 0 ? null : quizAt };
 }
 
-/** The board and words at a step: the move just played, its note, and its
- * arrows (the note's own, else the creator's from the PGN). */
+/** The board and words at a step: the move just played, its line when it
+ * speaks in the course, and its arrows (the move's own, else the creator's
+ * from the PGN). */
 export function stepView(episode: CourseEpisode, walk: EpisodeWalk, step: number): { fen: string; move: CourseNode | null; note: string | null; arrows: CourseArrow[] } {
   const move = step > 0 ? (walk.moves[step - 1] ?? null) : null;
   if (!move) return { fen: walk.startFen, move: null, note: null, arrows: [] };
-  const note = episode.notes.find((each) => each.nodeId === move.id);
-  return { fen: move.fenAfter, move, note: note?.text.trim() || null, arrows: note?.arrows.length ? note.arrows : move.arrows };
+  const ply = episode.plies.find((each) => each.nodeId === move.id);
+  return { fen: move.fenAfter, move, note: (ply?.long && ply.text.trim()) || null, arrows: ply?.arrows.length ? ply.arrows : move.arrows };
 }
 
 /** §11: a move the engine rates about as good as the course's is accepted,

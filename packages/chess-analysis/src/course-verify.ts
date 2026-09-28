@@ -1,4 +1,4 @@
-import type { CourseEpisode } from '@freechesscoach/shared';
+import { clipCaption, clipLine, type CourseEpisode } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 import type { CourseDossier } from './course-dossier.js';
 import { arrowProblems, nodeProblems } from './course-verify-board.js';
@@ -17,7 +17,7 @@ export interface CourseVerifyProblem {
   message: string;
 }
 
-/** Spoken words per beat and per episode (docs/courses.md §6.5). */
+/** Spoken words per clip move and per episode's clip (docs/courses.md §6.5). */
 export interface CourseVerifyBudget {
   wordsPerBeat: number;
   wordsPerEpisode: number;
@@ -60,27 +60,38 @@ export function verifyCourseEpisode(input: CourseVerifyInput): CourseVerifyProbl
 function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: CourseVerifyBudget | null): CourseVerifyProblem[] {
   const problems: CourseVerifyProblem[] = [];
   const { maxCaptionWords, maxNoteSentences, maxCriticalNoteSentences } = CONFIG.courses;
-  episode.beats.forEach((beat, index) => {
-    if (!beat.say.trim() && !beat.caption.trim()) {
-      problems.push({ code: 'lengths', nodeId: beat.nodeId, message: `Beat ${index + 1} has no words and no caption; write one or drop the beat` });
-    }
-    const captionWords = wordCount(beat.caption);
-    if (captionWords > maxCaptionWords) {
-      problems.push({ code: 'lengths', nodeId: beat.nodeId, message: `The caption of beat ${index + 1} has ${captionWords} words (at most ${maxCaptionWords})` });
-    }
-    const sayWords = wordCount(beat.say);
+  const opener = episode.opener;
+  if (opener && wordCount(opener.caption) > maxCaptionWords) {
+    problems.push({ code: 'lengths', nodeId: null, message: `The opening card's caption has ${wordCount(opener.caption)} words (at most ${maxCaptionWords})` });
+  }
+  const long = episode.plies.filter((ply) => ply.long);
+  const short = episode.plies.filter((ply) => ply.short);
+  for (const ply of episode.plies.filter((each) => each.long || each.short)) {
+    if (!ply.text.trim() && !(ply.short && ply.clipText?.trim())) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `${ply.nodeId} speaks but has no words; write them or untick it` });
+  }
+  for (const ply of long) {
+    const limit = scope.facts.get(ply.nodeId)?.critical ? maxCriticalNoteSentences : maxNoteSentences;
+    const sentences = sentenceCount(ply.text);
+    if (sentences > limit) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The line on ${ply.nodeId} has ${sentences} sentences (at most ${limit})` });
+  }
+  for (const ply of short) {
+    const captionWords = wordCount(clipCaption(ply));
+    if (captionWords > maxCaptionWords) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The caption on ${ply.nodeId} has ${captionWords} words (at most ${maxCaptionWords})` });
+    const sayWords = wordCount(clipLine(ply));
     if (budget && sayWords > budget.wordsPerBeat) {
-      problems.push({ code: 'lengths', nodeId: beat.nodeId, message: `Beat ${index + 1} has ${sayWords} words (at most ${budget.wordsPerBeat})` });
+      problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The clip line on ${ply.nodeId} has ${sayWords} words (at most ${budget.wordsPerBeat}); give it a shorter clip line` });
     }
-  });
-  const total = episode.beats.reduce((sum, beat) => sum + wordCount(beat.say), 0);
+  }
+  const total = (opener ? wordCount(opener.say) : 0) + short.reduce((sum, ply) => sum + wordCount(clipLine(ply)), 0);
   if (budget && total > budget.wordsPerEpisode) {
     problems.push({ code: 'lengths', nodeId: null, message: `The clip has ${total} words (at most ${budget.wordsPerEpisode})` });
   }
-  for (const note of episode.notes) {
-    const limit = scope.facts.get(note.nodeId)?.critical ? maxCriticalNoteSentences : maxNoteSentences;
-    const sentences = sentenceCount(note.text);
-    if (sentences > limit) problems.push({ code: 'lengths', nodeId: note.nodeId, message: `The note on ${note.nodeId} has ${sentences} sentences (at most ${limit})` });
+  // The planning call's budget: how many moves may speak in each version.
+  if (episode.budget && long.length > episode.budget.long) {
+    problems.push({ code: 'lengths', nodeId: null, message: `${long.length} moves speak in the course (the plan allows ${episode.budget.long})` });
+  }
+  if (episode.budget && short.length > episode.budget.short) {
+    problems.push({ code: 'lengths', nodeId: null, message: `${short.length} moves speak in the clip (the plan allows ${episode.budget.short})` });
   }
   return problems;
 }

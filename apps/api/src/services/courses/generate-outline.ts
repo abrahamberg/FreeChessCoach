@@ -1,6 +1,6 @@
 import { checkCourseOutline, courseNodePath } from '@freechesscoach/chess-analysis';
 import { buildCourseOutlineMessages, courseBudget } from '@freechesscoach/prompts';
-import { CourseOutlineSchema, type CourseDocument, type CourseEpisode, type CourseOutline, type CourseWarning } from '@freechesscoach/shared';
+import { CourseOutlineSchema, defaultCourseBudget, type CourseDocument, type CourseEpisode, type CourseOutline, type CourseWarning } from '@freechesscoach/shared';
 import { ValidationError } from '../../lib/errors.js';
 import type { CourseModelCall, GenerationInputs } from './generation-inputs.js';
 
@@ -31,7 +31,11 @@ export async function planOutline(inputs: GenerationInputs, call: CourseModelCal
     chapters: plan.map((chapter) => ({
       title: chapter.title,
       lineId: chapter.lineId,
-      episodes: chapter.episodes.map((episode) => ({ ...episode, narratedNodeIds: [] }))
+      episodes: chapter.episodes.map((episode) => {
+        const moves = courseNodePath(inputs.context.nodes, episode.startNodeId, episode.endNodeId)?.length ?? 1;
+        const budget = defaultCourseBudget(moves);
+        return { ...episode, narratedNodeIds: [], budgetLong: budget.long, budgetShort: budget.short };
+      })
     }))
   };
   const message = `The AI outline failed its checks twice, so the episodes come from the code skeleton: ${problems.join('; ')}`;
@@ -78,6 +82,7 @@ export function documentFromOutline(inputs: GenerationInputs, outline: CourseOut
     promise: outline.promise,
     hookOptions: outline.hookOptions,
     takeaways: outline.takeaways,
+    clipSeconds: outline.clipSeconds,
     chapters: outline.chapters.map((chapter, index) => ({
       id: `c${index + 1}`,
       title: chapter.title,
@@ -92,8 +97,8 @@ export function documentFromOutline(inputs: GenerationInputs, outline: CourseOut
           focus: episode.focus,
           startNodeId: episode.startNodeId,
           endNodeId: episode.endNodeId,
-          beats: [],
-          notes: [],
+          plies: [],
+          budget: { long: episode.budgetLong, short: episode.budgetShort },
           drillNodeIds: learnerNodes(inputs, episode.startNodeId, episode.endNodeId)
         })
       )

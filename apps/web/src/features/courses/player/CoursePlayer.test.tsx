@@ -12,8 +12,8 @@ vi.mock('../../board/CoachBoard.js', () => ({ CoachBoard: ({ fen }: { fen: strin
 const tree = parseCourseTree('1. d4 e5 2. dxe5 Nc6 *');
 const [, n2, , n4] = tree.nodes.map((node) => node.id);
 const episode: CourseEpisode = {
-  id: 'e1', role: 'quiz', focus: '', startNodeId: n2!, endNodeId: n4!, beats: [], drillNodeIds: [],
-  notes: [{ nodeId: n2!, text: 'The Englund Gambit.', arrows: [] }],
+  id: 'e1', role: 'quiz', focus: '', startNodeId: n2!, endNodeId: n4!, drillNodeIds: [],
+  plies: [{ nodeId: n2!, text: 'The Englund Gambit.', arrows: [], long: true, short: false }],
   quiz: { answerNodeId: n4!, prompt: 'How does Black win the pawn back?', hint: 'Attack e5.', reveal: 'Nc6 hits the pawn on e5.' }
 };
 const document: CourseDocument = {

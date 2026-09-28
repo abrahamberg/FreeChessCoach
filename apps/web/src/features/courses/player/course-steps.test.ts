@@ -14,8 +14,8 @@ function documentWith(episode: CourseEpisode): CourseDocument {
 }
 
 const episode: CourseEpisode = {
-  id: 'e1', role: 'bait', focus: '', startNodeId: ids[1]!, endNodeId: ids[5]!, beats: [], drillNodeIds: [],
-  notes: [{ nodeId: ids[2]!, text: 'Take the pawn.', arrows: [{ from: 'e5', to: 'e5', kind: 'idea' }] }],
+  id: 'e1', role: 'bait', focus: '', startNodeId: ids[1]!, endNodeId: ids[5]!, drillNodeIds: [],
+  plies: [{ nodeId: ids[2]!, text: 'Take the pawn.', arrows: [{ from: 'e5', to: 'e5', kind: 'idea' }], long: true, short: false }],
   quiz: { answerNodeId: ids[5]!, prompt: 'What now?', hint: 'The queen.', reveal: 'Qe7 sets the trap.' }
 };
 

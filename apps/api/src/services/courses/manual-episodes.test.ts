@@ -44,8 +44,8 @@ describe('buildManualEpisodes', () => {
     expect(line?.drillNodeIds).toEqual(['n2', 'n4', 'n6']);
     expect(deviation?.startNodeId).toBe('n7');
     expect(deviation?.drillNodeIds).toEqual(['n8', 'n10']);
-    expect(line?.notes.map((note) => note.nodeId)).toEqual(['n2', 'n4', 'n6']);
-    expect(line?.notes[0]?.text).toContain('Caro-Kann');
+    expect(line?.plies.map((ply) => ply.nodeId)).toEqual(['n2', 'n4', 'n6']);
+    expect(line?.plies[0]?.text).toContain('Caro-Kann');
   });
 
   test('master game: intro and the moves; creator comments and arrows reach the notes', async () => {
@@ -53,7 +53,7 @@ describe('buildManualEpisodes', () => {
 
     expect(chapters[0]?.title).toBe('The game');
     expect(episodes.map((episode) => episode.role)).toEqual(['intro', 'moves']);
-    const first = episodes[1]?.notes[0];
+    const first = episodes[1]?.plies[0];
     expect(first?.text).toMatch(/^Centre first/);
     expect(first?.arrows).toEqual([{ from: 'd2', to: 'd4', kind: 'best' }]);
   });

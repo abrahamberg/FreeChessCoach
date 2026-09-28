@@ -42,7 +42,7 @@ function course(kind: CourseKind, episodes: CourseEpisode[]): CourseDocument {
 }
 
 function episode(episodeId: string, start: number, end: number, drill: number[]): CourseEpisode {
-  return { id: episodeId, role: 'line', focus: '', startNodeId: id(start), endNodeId: id(end), beats: [], notes: [], drillNodeIds: drill.map(id) };
+  return { id: episodeId, role: 'line', focus: '', startNodeId: id(start), endNodeId: id(end), plies: [], drillNodeIds: drill.map(id) };
 }
 
 describe('buildCourseDrill', () => {

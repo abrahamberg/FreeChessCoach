@@ -1468,13 +1468,22 @@ the caption). They are the same idea twice. Phase 90 makes them one:
 `clip/timeline.ts`, `clip/prepare-audio.ts`.
 **Files:** those and their tests.
 
-- [ ] Failing tests first: the player speaks a ply's `text` when `long`;
+- [x] Failing tests first: the player speaks a ply's `text` when `long`;
   the clip timeline narrates `short` plies with `clipText ?? text` and an
   automatic caption; a ply with neither is played silently; the opener is
   the title card.
-- [ ] `notes` and `beats` are replaced by `plies` and `opener`; the
+- [x] `notes` and `beats` are replaced by `plies` and `opener`; the
   verifier, the manual skeleton, note audio (one file per spoken text) and
   publish follow.
+
+Status: done 2026-09-28. `CoursePly`, `CourseOpener`, `CourseBudget`,
+`CourseLevel` and the helpers (`clipLine`, `clipCaption`, `levelCode`,
+`bandForRating`, `defaultCourseBudget`) are in `packages/shared/src/course.ts`.
+The verifier counts each version's budget; the no-AI template ticks a
+move or two for the clip where there is a tactic or a critical moment; note
+audio is the course's lines only (the clip voices its lines in the browser).
+The editor's panel moved to plies here too (the rest of 90.3 follows). The
+demo courses were dropped from the dev database.
 
 Commit: `feat(courses): one ply list for the long course and the short clip`
 

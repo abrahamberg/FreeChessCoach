@@ -6,7 +6,7 @@ import { buildCourseSkeleton } from './course-skeleton.js';
 import { analyseEnglund } from './course-test-fixtures.js';
 
 const episode = (id: string, role: string, startNodeId: string, endNodeId: string, extra: Partial<CourseOutlineEpisode> = {}): CourseOutlineEpisode => ({
-  id, role, focus: '', startNodeId, endNodeId, narratedNodeIds: [], answerNodeId: null, ...extra
+  id, role, focus: '', startNodeId, endNodeId, narratedNodeIds: [], answerNodeId: null, budgetLong: 1, budgetShort: 1, ...extra
 });
 
 function trapOutline(): CourseOutline {
@@ -15,6 +15,7 @@ function trapOutline(): CourseOutline {
     promise: '',
     hookOptions: ['a', 'b', 'c'],
     takeaways: ['a', 'b', 'c'],
+    clipSeconds: 45,
     chapters: [
       {
         title: 'The trap',
@@ -61,6 +62,11 @@ describe('checkCourseOutline', () => {
     expect(check((outline) => (episodes(outline)[2]!.narratedNodeIds = ['n14']))).toEqual(['episode e3 narrates n14, outside n11–n11']);
     expect(check((outline) => (episodes(outline)[4]!.startNodeId = 'n13'))).toEqual([]);
     expect(check((outline) => episodes(outline).reverse())).toContain('episode e1 starts before the episode before it on line l1');
+  });
+
+  test('an episode may not let more moves speak than it has', () => {
+    const problems = check((outline) => (outline.chapters[0]!.episodes[0]!.budgetLong = 99));
+    expect(problems.some((problem) => /lets 99 moves speak but has \d+/.test(problem))).toBe(true);
   });
 
   test('a quiz answer that is not eligible names the eligible nodes near it', () => {

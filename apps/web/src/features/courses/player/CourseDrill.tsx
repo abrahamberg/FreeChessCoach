@@ -365,7 +365,8 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
   const waiting = step?.asked && !attempt;
   const hinted = Boolean(step && arrowKeys.has(step.key));
   const hint = waiting && step && hinted ? toBoardMarks([practiceArrow(step.node)]) : null;
-  const notes = document.episodes.find((each) => each.id === episode?.episodeId)?.notes ?? [];
+  // The course's line on each move: what practice says a move does.
+  const lines = document.episodes.find((each) => each.id === episode?.episodeId)?.plies ?? [];
   const who = (fenBefore: string, learnerPlays: boolean): string =>
     stage === 'full_drill' ? (sideOf(fenBefore) === 'white' ? 'White' : 'Black') : learnerPlays ? 'You' : 'Opponent';
   // One running sequence: a new episode does not start the log afresh.
@@ -373,7 +374,7 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
     label: moveLabel(each.fenBefore, each.node.san),
     side: sideOf(each.fenBefore),
     who: who(each.fenBefore, each.asked),
-    note: document.episodes.find((one) => one.id === episodeId)?.notes.find((note) => note.nodeId === each.node.id)?.text.trim() || null,
+    note: document.episodes.find((one) => one.id === episodeId)?.plies.find((ply) => ply.nodeId === each.node.id)?.text.trim() || null,
     result: each.asked ? (firstTries.get(each.key)?.correct === false ? 'shown' : 'right') : undefined
   }));
   const showMove = (): void => {
@@ -421,7 +422,7 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
             yours: step.asked,
             // Practice says what the move does; with the move hidden, its name is blanked out of the note.
             purpose:
-              stage === 'practice' && step.asked ? withoutMove(notes.find((note) => note.nodeId === step.node.id)?.text.trim() || null, hinted ? null : step.node.san) : null
+              stage === 'practice' && step.asked ? withoutMove(lines.find((ply) => ply.nodeId === step.node.id)?.text.trim() || null, hinted ? null : step.node.san) : null
           }}
           // The arrow already shows the move; "Show the move" is for when it has gone.
           action={

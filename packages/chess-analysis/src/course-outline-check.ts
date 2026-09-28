@@ -75,6 +75,9 @@ function episodeProblems(input: CourseOutlineCheckInput, byId: ReadonlyMap<strin
     problems.push(`episode ${episode.id} runs from ${episode.startNodeId} to ${episode.endNodeId}, which is not one line`);
     return null;
   }
+  if (episode.budgetLong > path.length || episode.budgetShort > path.length) {
+    problems.push(`episode ${episode.id} lets ${Math.max(episode.budgetLong, episode.budgetShort)} moves speak but has ${path.length}`);
+  }
   const strays = episode.narratedNodeIds.filter((id) => !path.includes(id));
   if (strays.length) problems.push(`episode ${episode.id} narrates ${strays.join(', ')}, outside ${episode.startNodeId}–${episode.endNodeId}`);
   if (episode.answerNodeId && !isQuizAnswerEligible(input.kind, input.dossier, episode.answerNodeId)) {

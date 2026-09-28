@@ -41,7 +41,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
 
   const episode = document.episodes.find((candidate) => candidate.id === episodeId);
   const nodeIds = episode ? episodeNodeIds(document, episode) : document.nodes.map((node) => node.id);
-  const noteArrows = episode?.notes.find((note) => note.nodeId === nodeId)?.arrows ?? [];
+  const noteArrows = episode?.plies.find((ply) => ply.nodeId === nodeId)?.arrows ?? [];
 
   function edit(next: CourseDocument): void {
     setDocument(next);
@@ -75,7 +75,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
         dirty={dirty}
         saving={save.isPending}
         onSave={() => save.mutate(document, { onSuccess: () => setDirty(false) })}
-        onPreviewClip={document.episodes.some((each) => each.beats.length) ? () => setPreviewing(true) : undefined}
+        onPreviewClip={document.episodes.some((each) => each.opener || each.plies.some((ply) => ply.short)) ? () => setPreviewing(true) : undefined}
         onPreviewLearner={document.episodes.length ? () => setLearnerPreview(true) : undefined}
         onPublish={document.episodes.length ? () => setPublishing(true) : undefined}
         published={course.publishedAt !== null}

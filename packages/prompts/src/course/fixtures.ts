@@ -49,11 +49,12 @@ export const ENGLUND_OUTLINE: CourseOutline = {
       title: 'The trap',
       lineId: 'l1',
       episodes: [
-        { id: 'e1', role: 'hook', focus: 'Mate in eight.', startNodeId: 'n1', endNodeId: 'n1', narratedNodeIds: [], answerNodeId: null },
-        { id: 'e2', role: 'setup', focus: 'The gambit.', startNodeId: 'n2', endNodeId: 'n10', narratedNodeIds: ['n6', 'n8'], answerNodeId: null },
-        { id: 'e3', role: 'bait', focus: 'Bc3 looks natural.', startNodeId: 'n11', endNodeId: 'n11', narratedNodeIds: ['n11'], answerNodeId: 'n12' }
+        { id: 'e1', role: 'hook', focus: 'Mate in eight.', startNodeId: 'n1', endNodeId: 'n1', narratedNodeIds: [], answerNodeId: null, budgetLong: 1, budgetShort: 1 },
+        { id: 'e2', role: 'setup', focus: 'The gambit.', startNodeId: 'n2', endNodeId: 'n10', narratedNodeIds: ['n6', 'n8'], answerNodeId: null, budgetLong: 4, budgetShort: 2 },
+        { id: 'e3', role: 'bait', focus: 'Bc3 looks natural.', startNodeId: 'n11', endNodeId: 'n11', narratedNodeIds: ['n11'], answerNodeId: 'n12', budgetLong: 1, budgetShort: 1 }
       ]
     }
   ],
-  takeaways: ['a', 'b', 'c']
+  takeaways: ['a', 'b', 'c'],
+  clipSeconds: 45
 };

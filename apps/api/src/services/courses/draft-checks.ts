@@ -22,8 +22,7 @@ export function draftProblem(stored: CourseDocument, next: CourseDocument): stri
     const named = [
       episode.startNodeId,
       episode.endNodeId,
-      ...episode.beats.flatMap((beat) => (beat.nodeId ? [beat.nodeId] : [])),
-      ...episode.notes.map((note) => note.nodeId),
+      ...episode.plies.map((ply) => ply.nodeId),
       ...(episode.quiz ? [episode.quiz.answerNodeId] : []),
       ...episode.drillNodeIds
     ];

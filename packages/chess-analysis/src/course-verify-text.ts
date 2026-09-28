@@ -13,11 +13,17 @@ export interface EpisodeText {
 }
 
 export function episodeTexts(episode: CourseEpisode): EpisodeText[] {
-  const texts = episode.beats.flatMap((beat, index) => [
-    { where: `beat ${index + 1}`, nodeId: beat.nodeId, text: beat.say },
-    { where: `the caption of beat ${index + 1}`, nodeId: beat.nodeId, text: beat.caption }
-  ]);
-  texts.push(...episode.notes.map((note) => ({ where: `the note on ${note.nodeId}`, nodeId: note.nodeId, text: note.text })));
+  const texts: EpisodeText[] = episode.opener
+    ? [
+        { where: 'the opening card', nodeId: null, text: episode.opener.say },
+        { where: 'the opening card’s caption', nodeId: null, text: episode.opener.caption }
+      ]
+    : [];
+  for (const ply of episode.plies) {
+    texts.push({ where: `the line on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.text });
+    if (ply.clipText) texts.push({ where: `the clip line on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.clipText });
+    if (ply.caption) texts.push({ where: `the caption on ${ply.nodeId}`, nodeId: ply.nodeId, text: ply.caption });
+  }
   const quiz = episode.quiz;
   if (quiz) texts.push(...(['prompt', 'hint', 'reveal'] as const).map((field) => ({ where: `the quiz ${field}`, nodeId: quiz.answerNodeId, text: quiz[field] })));
   return texts;

@@ -1,4 +1,4 @@
-import type { CoachPersona, CourseDocument } from '@freechesscoach/shared';
+import { clipLine, type CoachPersona, type CourseDocument } from '@freechesscoach/shared';
 import { resolveTtsClient } from '../../../tts/resolve-tts-client.js';
 import { translateChessNotationForSpeech } from '../../../tts/sanToSpokenText.js';
 import type { TtsClient } from '../../../tts/tts-client.js';
@@ -36,13 +36,14 @@ export type CourseVoice = (typeof COURSE_VOICES)[number];
 
 export const KOKORO_ONLY = 'Courses are voiced by Kokoro only: in the browser or on your local Kokoro server.';
 
-/** Everything the course's coach says, in document order: every beat that
- * has words, the quiz prompt, then every note. */
+/** Everything the course's coach says, in document order: the clip's
+ * opener and its moves' lines, the quiz prompt, then the course's lines. */
 export function courseSpeeches(document: CourseDocument): CourseSpeech[] {
   return document.episodes.flatMap((episode) => [
-    ...episode.beats.flatMap((beat, index) => (beat.say.trim() ? [{ key: `beat:${episode.id}:${index}`, text: beat.say }] : [])),
+    ...(episode.opener?.say.trim() ? [{ key: `opener:${episode.id}`, text: episode.opener.say }] : []),
+    ...episode.plies.flatMap((ply) => (ply.short && clipLine(ply) ? [{ key: `clip:${episode.id}:${ply.nodeId}`, text: clipLine(ply) }] : [])),
     ...(episode.quiz?.prompt.trim() ? [{ key: `quiz:${episode.id}`, text: episode.quiz.prompt }] : []),
-    ...episode.notes.flatMap((note) => (note.text.trim() ? [{ key: `note:${episode.id}:${note.nodeId}`, text: note.text }] : []))
+    ...episode.plies.flatMap((ply) => (ply.long && ply.text.trim() ? [{ key: `note:${episode.id}:${ply.nodeId}`, text: ply.text }] : []))
   ]);
 }
 

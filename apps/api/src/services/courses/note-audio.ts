@@ -15,10 +15,12 @@ export function noteTextHash(text: string): string {
   return createHash('sha256').update(text).digest('hex').slice(0, 32);
 }
 
-/** Every note with words, and its text's hash. */
+/** Every move that speaks in the course (the long version), and its
+ * text's hash. The clip's lines are voiced in the creator's browser when it
+ * records, never uploaded. */
 export function noteHashes(document: CourseDocument): { episodeId: string; nodeId: string; hash: string }[] {
   return document.episodes.flatMap((episode) =>
-    episode.notes.flatMap((note) => (note.text.trim() ? [{ episodeId: episode.id, nodeId: note.nodeId, hash: noteTextHash(note.text) }] : []))
+    episode.plies.flatMap((ply) => (ply.long && ply.text.trim() ? [{ episodeId: episode.id, nodeId: ply.nodeId, hash: noteTextHash(ply.text) }] : []))
   );
 }
 

@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import type { CourseEpisode } from '@freechesscoach/shared';
+import type { CourseEpisode, CoursePly } from '@freechesscoach/shared';
 import { analyseEnglund } from './course-test-fixtures.js';
 import { verifyCourseEpisode, type CourseVerifyInput } from './course-verify.js';
 
-/** docs/courses.md §6.6, word for word. */
+/** docs/courses.md §6.6's worked example, as one move for both versions. */
 function worked(): CourseEpisode {
   return {
     id: 'e3',
@@ -11,26 +11,28 @@ function worked(): CourseEpisode {
     focus: '',
     startNodeId: 'n11',
     endNodeId: 'n11',
-    beats: [
-      { nodeId: 'n11', say: 'Six. Bc3. It hits the queen. Any sane player grabs that tempo.', caption: 'Hits the queen', arrows: [{ from: 'c3', to: 'b2', kind: 'threat' }] },
-      { nodeId: 'n11', say: 'Your move, Black. Look at the white king. Look at what stands in front of it.', caption: 'Your move', arrows: [], pauseMs: 3000 }
-    ],
-    notes: [
+    plies: [
       {
         nodeId: 'n11',
-        text: 'Bc3 attacks the queen, so it feels like the natural move. But the bishop now stands on the diagonal to White\'s king, with nothing else in between.',
-        arrows: []
+        text: "Bc3 attacks the queen, so it feels like the natural move. But the bishop now stands on the diagonal to White's king, with nothing else in between.",
+        clipText: 'Six. Bc3. It hits the queen. Any sane player grabs that tempo.',
+        caption: 'Hits the queen',
+        arrows: [{ from: 'c3', to: 'b2', kind: 'threat' }],
+        long: true,
+        short: true
       }
     ],
     quiz: {
       answerNodeId: 'n12',
       prompt: 'Black to move. Find the strongest move.',
       hint: 'The bishop on c3 has the white king right behind it.',
-      reveal: 'Bb4 pins the bishop to the king. It can\'t move, and Black is ready to take it.'
+      reveal: "Bb4 pins the bishop to the king. It can't move, and Black is ready to take it."
     },
     drillNodeIds: []
   };
 }
+
+const ply = (nodeId: string, text: string, extra: Partial<CoursePly> = {}): CoursePly => ({ nodeId, text, arrows: [], long: true, short: false, ...extra });
 
 function verify(edit: (episode: CourseEpisode) => void, extra: Partial<CourseVerifyInput> = {}) {
   const { tree, dossier } = analyseEnglund();
@@ -40,44 +42,44 @@ function verify(edit: (episode: CourseEpisode) => void, extra: Partial<CourseVer
 }
 
 const codes = (problems: { code: string }[]) => problems.map((problem) => problem.code);
+const first = (episode: CourseEpisode): CoursePly => episode.plies[0]!;
 
 describe('verifyCourseEpisode', () => {
   test('the §6.6 worked example passes', () => {
     expect(verify(() => undefined)).toEqual([]);
   });
 
-  test('nodes: a beat outside the episode, and beats out of order', () => {
-    expect(verify((episode) => episode.beats.push({ nodeId: 'n14', say: 'Later.', caption: '', arrows: [] }))).toEqual([
-      { code: 'nodes', nodeId: 'n14', message: 'Beat 3 is on n14, which is not in this episode' }
-    ]);
-    expect(codes(verify((episode) => episode.beats.unshift({ nodeId: 'n12', say: 'Bb4.', caption: '', arrows: [] })))).toEqual(['nodes', 'nodes']);
+  test('nodes: a move outside the episode, out of order, or twice', () => {
+    expect(verify((episode) => episode.plies.push(ply('n14', 'Later.')))).toEqual([{ code: 'nodes', nodeId: 'n14', message: 'The line on n14 is on n14, which is not in this episode' }]);
+    expect(verify((episode) => episode.plies.unshift(ply('n12', 'Bb4.')))).toEqual([{ code: 'nodes', nodeId: 'n11', message: 'The line on n11 goes back to an earlier move' }]);
+    expect(codes(verify((episode) => episode.plies.push(ply('n11', 'Again.'))))).toEqual(['nodes']);
   });
 
   test('moves: a move the analysis never mentions', () => {
-    expect(verify((episode) => (episode.notes[0]!.text = 'Nd5 was the real test here.'))).toEqual([
-      { code: 'moves', nodeId: 'n11', message: 'Nd5 in the note on n11 is not in the analysis' }
+    expect(verify((episode) => (first(episode).text = 'Nd5 was the real test here.'))).toEqual([
+      { code: 'moves', nodeId: 'n11', message: 'Nd5 in the line on n11 is not in the analysis' }
     ]);
   });
 
   test('moves: lesson moves, the engine best and a listed alternative are fine', () => {
-    expect(verify((episode) => (episode.notes[0]!.text = 'After 5...Qxb2, Nc3 holds. Qb6 is the quiet try.'))).toEqual([]);
+    expect(verify((episode) => (first(episode).text = 'After 5...Qxb2, Nc3 holds. Qb6 is the quiet try.'))).toEqual([]);
   });
 
   test('tactic words: "fork" at n11, where the analysis finds none', () => {
-    expect(verify((episode) => (episode.beats[0]!.say = 'Six. Bc3 is a fork.'))).toEqual([
-      { code: 'tactic-words', nodeId: 'n11', message: '"fork" in beat 1: the analysis finds no fork here' }
+    expect(verify((episode) => (first(episode).clipText = 'Six. Bc3 is a fork.'))).toEqual([
+      { code: 'tactic-words', nodeId: 'n11', message: '"fork" in the clip line on n11: the analysis finds no fork here' }
     ]);
   });
 
-  test("a hook may promise the line's ending; its notes still stay on its own moves", () => {
+  test("a hook may promise the line's ending; its moves still stay its own", () => {
     const hook = (episode: CourseEpisode): void => {
       Object.assign(episode, { role: 'hook', startNodeId: 'n1', endNodeId: 'n1', quiz: undefined });
-      episode.beats = [{ nodeId: null, say: 'Eight moves, then Qc1# checkmate.', caption: 'Checkmate in eight', arrows: [] }];
-      episode.notes = [{ nodeId: 'n1', text: 'This line ends in mate with Qc1#.', arrows: [] }];
+      episode.opener = { say: 'Eight moves, then Qc1# checkmate.', caption: 'Checkmate in eight' };
+      episode.plies = [ply('n1', 'This line ends in mate with Qc1#.')];
     };
     expect(verify(hook)).toEqual([]);
-    expect(verify((episode) => (hook(episode), (episode.notes[0]!.nodeId = 'n16')))).toEqual([
-      { code: 'nodes', nodeId: 'n16', message: 'A note is on n16, which is not in this episode' }
+    expect(verify((episode) => (hook(episode), (first(episode).nodeId = 'n16')))).toEqual([
+      { code: 'nodes', nodeId: 'n16', message: 'The line on n16 is on n16, which is not in this episode' }
     ]);
     // Any other episode still may not claim the mate from move 1.
     expect(verify((episode) => (hook(episode), (episode.role = 'setup')))).not.toEqual([]);
@@ -86,58 +88,73 @@ describe('verifyCourseEpisode', () => {
   test('an arrow along an attack passes after a check, when the other side cannot be to move', () => {
     const qb4 = (episode: CourseEpisode): void => {
       Object.assign(episode, { role: 'setup', startNodeId: 'n8', endNodeId: 'n8', quiz: undefined });
-      episode.beats = [{ nodeId: 'n8', say: 'Qb4+ checks and hits b2.', caption: 'Check', arrows: [{ from: 'b4', to: 'f4', kind: 'threat' }, { from: 'b4', to: 'b2', kind: 'threat' }] }];
-      episode.notes = [{ nodeId: 'n8', text: 'Qb4+ gives check.', arrows: [] }];
+      episode.plies = [ply('n8', 'Qb4+ checks and hits b2.', { arrows: [{ from: 'b4', to: 'f4', kind: 'threat' }, { from: 'b4', to: 'b2', kind: 'threat' }] })];
     };
     expect(verify(qb4)).toEqual([]);
-    expect(verify((episode) => (qb4(episode), (episode.beats[0]!.arrows = [{ from: 'b4', to: 'h4', kind: 'threat' }])))).toEqual([
-      { code: 'arrows', nodeId: 'n8', message: 'The arrow b4-h4 in beat 1 is not a move for either side' }
+    expect(verify((episode) => (qb4(episode), (first(episode).arrows = [{ from: 'b4', to: 'h4', kind: 'threat' }])))).toEqual([
+      { code: 'arrows', nodeId: 'n8', message: 'The arrow b4-h4 in the line on n8 is not a move for either side' }
     ]);
   });
 
   test('tactic words: a mated king is "trapped" where the facts say mate', () => {
     const mate = (episode: CourseEpisode): void => {
       Object.assign(episode, { role: 'punish', startNodeId: 'n16', endNodeId: 'n16', quiz: undefined });
-      episode.beats = [{ nodeId: 'n16', say: 'Qc1#. The king is trapped.', caption: 'Mate', arrows: [] }];
-      episode.notes = [{ nodeId: 'n16', text: 'Qc1# mates.', arrows: [] }];
+      episode.plies = [ply('n16', 'Qc1#. The king is trapped.')];
     };
     expect(verify(mate)).toEqual([]);
-    expect(codes(verify((episode) => (episode.beats[0]!.say = 'Six. Bc3, and the queen is trapped.')))).toEqual(['tactic-words']);
+    expect(codes(verify((episode) => (first(episode).clipText = 'Six. Bc3, and the queen is trapped.')))).toEqual(['tactic-words']);
   });
 
   test('tactic words: "skews" counts as a skewer claim', () => {
-    expect(verify((episode) => (episode.beats[0]!.say = 'Six. Bc3 skews the queen.'))).toEqual([
-      { code: 'tactic-words', nodeId: 'n11', message: '"skews" in beat 1: the analysis finds no skewer here' }
+    expect(verify((episode) => (first(episode).clipText = 'Six. Bc3 skews the queen.'))).toEqual([
+      { code: 'tactic-words', nodeId: 'n11', message: '"skews" in the clip line on n11: the analysis finds no skewer here' }
     ]);
   });
 
   test('numbers: eval numbers, and a percentage the direction did not give', () => {
-    expect(verify((episode) => (episode.beats[0]!.say = 'Six. Bc3, and White is +1.3.'))).toEqual([
-      { code: 'numbers', nodeId: 'n11', message: '"+1.3" in beat 1 looks like an engine number' }
+    expect(verify((episode) => (first(episode).clipText = 'Six. Bc3, and White is +1.3.'))).toEqual([
+      { code: 'numbers', nodeId: 'n11', message: '"+1.3" in the clip line on n11 looks like an engine number' }
     ]);
-    expect(codes(verify((episode) => (episode.notes[0]!.text = 'The eval drops.')))).toEqual(['numbers']);
-    expect(codes(verify((episode) => (episode.notes[0]!.text = '90% of players fall for it.')))).toEqual(['numbers']);
-    expect(verify((episode) => (episode.notes[0]!.text = '90% of players fall for it.'), { direction: 'Say 90% fall for it.' })).toEqual([]);
+    expect(codes(verify((episode) => (first(episode).text = 'The eval drops.')))).toEqual(['numbers']);
+    expect(codes(verify((episode) => (first(episode).text = '90% of players fall for it.')))).toEqual(['numbers']);
+    expect(verify((episode) => (first(episode).text = '90% of players fall for it.'), { direction: 'Say 90% fall for it.' })).toEqual([]);
   });
 
-  test('arrows: not a move for either side, and at most 2 per beat', () => {
-    expect(verify((episode) => episode.beats[1]!.arrows.push({ from: 'a1', to: 'h8', kind: 'idea' }))).toEqual([
-      { code: 'arrows', nodeId: 'n11', message: 'The arrow a1-h8 in beat 2 is not a move for either side' }
+  test('arrows: not a move for either side, and at most 2 per move', () => {
+    expect(verify((episode) => first(episode).arrows.push({ from: 'a1', to: 'h8', kind: 'idea' }))).toEqual([
+      { code: 'arrows', nodeId: 'n11', message: 'The arrow a1-h8 in the line on n11 is not a move for either side' }
     ]);
     const three = [{ from: 'c3', to: 'b2', kind: 'threat' as const }, { from: 'f8', to: 'b4', kind: 'best' as const }, { from: 'e1', to: 'e1', kind: 'idea' as const }];
-    expect(codes(verify((episode) => (episode.beats[0]!.arrows = three)))).toEqual(['arrows']);
+    expect(codes(verify((episode) => (first(episode).arrows = three)))).toEqual(['arrows']);
   });
 
-  test('lengths: captions, notes and the word budget', () => {
-    expect(codes(verify((episode) => (episode.beats[0]!.caption = 'This caption has far too many words')))).toEqual(['lengths']);
-    expect(codes(verify((episode) => (episode.notes[0]!.text = 'One. Two. Three.')))).toEqual([]);
-    expect(codes(verify((episode) => (episode.notes[0]!.nodeId = 'n11'), { budget: { wordsPerBeat: 10, wordsPerEpisode: 100 } }))).toEqual(['lengths', 'lengths']);
+  test('lengths: captions, course lines and the clip word budget', () => {
+    expect(codes(verify((episode) => (first(episode).caption = 'This caption has far too many words')))).toEqual(['lengths']);
+    expect(codes(verify((episode) => (first(episode).text = 'One. Two. Three.')))).toEqual([]);
+    // The clip line is 12 words: over a 10-word budget per move.
+    expect(verify(() => undefined, { budget: { wordsPerBeat: 10, wordsPerEpisode: 100 } })).toEqual([
+      { code: 'lengths', nodeId: 'n11', message: 'The clip line on n11 has 12 words (at most 10); give it a shorter clip line' }
+    ]);
+    expect(codes(verify(() => undefined, { budget: { wordsPerBeat: 20, wordsPerEpisode: 5 } }))).toEqual(['lengths']);
+  });
+
+  test('lengths: a move that speaks with no words; one that does not speak may stay empty', () => {
+    expect(verify((episode) => ((first(episode).text = ''), (first(episode).long = false), (first(episode).short = false)))).toEqual([]);
+    expect(verify((episode) => ((first(episode).text = ''), (first(episode).clipText = undefined)))).toEqual([
+      { code: 'lengths', nodeId: 'n11', message: 'n11 speaks but has no words; write them or untick it' }
+    ]);
+    expect(verify((episode) => ((first(episode).text = ''), (first(episode).long = false)))).toEqual([]);
+  });
+
+  test('lengths: the plan’s budget of speaking moves', () => {
+    expect(verify((episode) => (episode.budget = { long: 0, short: 1 }))).toEqual([
+      { code: 'lengths', nodeId: null, message: '1 moves speak in the course (the plan allows 0)' }
+    ]);
+    expect(verify((episode) => (episode.budget = { long: 1, short: 1 }))).toEqual([]);
   });
 
   test('quiz: the hint must not give the answer away, the reveal must name it', () => {
-    expect(verify((episode) => (episode.quiz!.hint = 'Think about Bb4.'))).toEqual([
-      { code: 'quiz', nodeId: 'n12', message: 'The quiz hint names the answer 6…Bb4' }
-    ]);
+    expect(verify((episode) => (episode.quiz!.hint = 'Think about Bb4.'))).toEqual([{ code: 'quiz', nodeId: 'n12', message: 'The quiz hint names the answer 6…Bb4' }]);
     expect(codes(verify((episode) => (episode.quiz!.reveal = 'The bishop pins it.')))).toEqual(['quiz']);
   });
 
@@ -147,26 +164,19 @@ describe('verifyCourseEpisode', () => {
     ]);
   });
 
-  test('lengths: a beat with no words and no caption; a caption-only beat is fine', () => {
-    expect(verify((episode) => episode.beats.push({ nodeId: 'n11', say: '', caption: ' ', arrows: [] }))).toEqual([
-      { code: 'lengths', nodeId: 'n11', message: 'Beat 3 has no words and no caption; write one or drop the beat' }
-    ]);
-    expect(verify((episode) => episode.beats.push({ nodeId: 'n11', say: '', caption: 'Silence', arrows: [] }))).toEqual([]);
-  });
-
   test('quiz: the answer has to be a clear only move', () => {
     expect(codes(verify((episode) => (episode.quiz = { answerNodeId: 'n11', prompt: 'White to move.', hint: 'The queen.', reveal: 'Bc3 hits the queen and gains a tempo.' })))).toEqual(['quiz']);
   });
 
   test('phrases: stock chatbot phrases', () => {
-    expect(verify((episode) => (episode.beats[1]!.say = "Let's dive in. Your move."))).toEqual([
-      { code: 'phrases', nodeId: 'n11', message: '"let\'s dive in" in beat 2 is a stock phrase' }
+    expect(verify((episode) => (first(episode).clipText = "Let's dive in. Bc3 hits the queen."))).toEqual([
+      { code: 'phrases', nodeId: 'n11', message: '"let\'s dive in" in the clip line on n11 is a stock phrase' }
     ]);
   });
 
   test('a hand-written episode with no analysis: legal moves pass, the rest is still checked', () => {
-    const handWritten = (episode: CourseEpisode) => (episode.notes[0]!.text = 'Nc3 was safer. Qxa1 is there too.');
+    const handWritten = (episode: CourseEpisode) => (first(episode).text = 'Nc3 was safer. Qxa1 is there too.');
     expect(verify(handWritten, { dossier: null })).toEqual([]);
-    expect(codes(verify((episode) => (episode.notes[0]!.text = 'Nd5 and +2.'), { dossier: null }))).toEqual(['moves', 'numbers']);
+    expect(codes(verify((episode) => (first(episode).text = 'Nd5 and +2.'), { dossier: null }))).toEqual(['moves', 'numbers']);
   });
 });

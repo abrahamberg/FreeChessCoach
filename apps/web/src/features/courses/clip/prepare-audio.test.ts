@@ -3,7 +3,6 @@ import { describe, expect, test, vi } from 'vitest';
 import type { TtsClient } from '../../../tts/tts-client.js';
 import { audioCacheKey, courseSpeeches, KOKORO_ONLY, openCourseAudioCache, prepareCourseAudio, type AudioCache, type SpokenAudio } from './prepare-audio.js';
 
-const beat = (say: string) => ({ nodeId: 'n1', say, caption: '', arrows: [] });
 
 function course(): CourseDocument {
   return {
@@ -19,8 +18,12 @@ function course(): CourseDocument {
     lines: [],
     chapters: [],
     episodes: [
-      { id: 'e1', role: 'hook', focus: '', startNodeId: 'n1', endNodeId: 'n1', beats: [beat('Greed loses.'), beat('  ')], notes: [{ nodeId: 'n1', text: 'Six... Bb4 pins it.', arrows: [] }], drillNodeIds: [] },
-      { id: 'e2', role: 'bait', focus: '', startNodeId: 'n2', endNodeId: 'n2', beats: [beat('Greed loses.')], notes: [], drillNodeIds: [] }
+      {
+        id: 'e1', role: 'hook', focus: '', startNodeId: 'n1', endNodeId: 'n1', opener: { say: 'Greed loses.', caption: 'Greed' }, drillNodeIds: [],
+        plies: [{ nodeId: 'n1', text: 'Six... Bb4 pins it.', arrows: [], long: true, short: false }]
+      },
+      // The same words again are synthesised once; a clip move with no words is skipped.
+      { id: 'e2', role: 'bait', focus: '', startNodeId: 'n2', endNodeId: 'n2', opener: { say: 'Greed loses.', caption: 'Greed' }, drillNodeIds: [], plies: [{ nodeId: 'n2', text: '  ', arrows: [], long: false, short: true }] }
     ],
     takeaways: [],
     hookOptions: [],
@@ -49,17 +52,17 @@ function memoryCache(): AudioCache & { entries: Map<string, SpokenAudio> } {
 }
 
 describe('prepareCourseAudio', () => {
-  test('every beat with words and every note, each text synthesised once, chunks kept in order', async () => {
+  test('the opener, the clip lines and the course lines, each text synthesised once, chunks kept in order', async () => {
     const client = fakeClient();
     const progress: string[] = [];
 
     const audio = await prepareCourseAudio({ document: course(), backend: 'browser', cache: memoryCache(), client, onProgress: ({ done, total }) => progress.push(`${done}/${total}`) });
 
-    expect(courseSpeeches(course()).map((speech) => speech.key)).toEqual(['beat:e1:0', 'note:e1:n1', 'beat:e2:0']);
-    expect([...audio.keys()]).toEqual(['beat:e1:0', 'note:e1:n1', 'beat:e2:0']);
+    expect(courseSpeeches(course()).map((speech) => speech.key)).toEqual(['opener:e1', 'note:e1:n1', 'opener:e2']);
+    expect([...audio.keys()]).toEqual(['opener:e1', 'note:e1:n1', 'opener:e2']);
     expect(client.texts).toHaveLength(2);
     expect(client.texts[1]).not.toContain('Bb4');
-    expect(new TextDecoder().decode(audio.get('beat:e2:0')!.chunks[1])).toBe('Greed loses.#1');
+    expect(new TextDecoder().decode(audio.get('opener:e2')!.chunks[1])).toBe('Greed loses.#1');
     expect(progress).toEqual(['0/2', '1/2', '2/2']);
   });
 

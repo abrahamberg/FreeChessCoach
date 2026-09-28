@@ -22,7 +22,7 @@ const [d4, e5, dxe5, nc6] = tree.nodes;
 const document: CourseDocument = {
   version: 1, kind: 'opening_course', title: 'Englund', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'general',
   startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], takeaways: [], hookOptions: [], clipLinks: {},
-  episodes: [{ id: 'e1', role: 'line', focus: '', startNodeId: d4!.id, endNodeId: nc6!.id, beats: [], drillNodeIds: [e5!.id, nc6!.id], notes: [{ nodeId: e5!.id, text: 'The gambit.', arrows: [] }] }]
+  episodes: [{ id: 'e1', role: 'line', focus: '', startNodeId: d4!.id, endNodeId: nc6!.id, drillNodeIds: [e5!.id, nc6!.id], plies: [{ nodeId: e5!.id, text: 'The gambit.', arrows: [], long: true, short: false }] }]
 };
 
 function handlers() {
@@ -171,8 +171,8 @@ describe('CourseDrill', () => {
     const split: CourseDocument = {
       ...document,
       episodes: [
-        { id: 'e1', role: 'line', focus: '', startNodeId: d4!.id, endNodeId: e5!.id, beats: [], drillNodeIds: [e5!.id], notes: [] },
-        { id: 'e2', role: 'line', focus: '', startNodeId: dxe5!.id, endNodeId: nc6!.id, beats: [], drillNodeIds: [nc6!.id], notes: [] }
+        { id: 'e1', role: 'line', focus: '', startNodeId: d4!.id, endNodeId: e5!.id, drillNodeIds: [e5!.id], plies: [] },
+        { id: 'e2', role: 'line', focus: '', startNodeId: dxe5!.id, endNodeId: nc6!.id, drillNodeIds: [nc6!.id], plies: [] }
       ]
     };
     render(<CourseDrill document={split} stage="practice" {...handlers()} />);

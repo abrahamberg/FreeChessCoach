@@ -5,7 +5,8 @@ import type { CourseVerifyProblem } from './course-verify.js';
 import type { EpisodeScope } from './course-verify-scope.js';
 import { flipActiveColorFen } from './null-move-fen.js';
 
-/** Every node the episode names lies inside it, and beats run in move order. */
+/** Every node the episode names lies inside it, and its moves run in move
+ * order, each once. */
 export function nodeProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVerifyProblem[] {
   const problems: CourseVerifyProblem[] = [];
   const outside = (nodeId: string, where: string): void => {
@@ -14,15 +15,16 @@ export function nodeProblems(episode: CourseEpisode, scope: EpisodeScope): Cours
   const order = new Map([...scope.inside].map((nodeId) => [nodeId, scope.path.indexOf(nodeId) < 0 ? scope.path.length : scope.path.indexOf(nodeId)]));
 
   let last = -1;
-  episode.beats.forEach((beat, index) => {
-    if (beat.nodeId === null) return;
-    outside(beat.nodeId, `Beat ${index + 1}`);
-    const at = order.get(beat.nodeId);
-    if (at === undefined) return;
-    if (at < last) problems.push({ code: 'nodes', nodeId: beat.nodeId, message: `Beat ${index + 1} goes back to an earlier move` });
+  const seen = new Set<string>();
+  for (const ply of episode.plies) {
+    outside(ply.nodeId, `The line on ${ply.nodeId}`);
+    if (seen.has(ply.nodeId)) problems.push({ code: 'nodes', nodeId: ply.nodeId, message: `${ply.nodeId} has two lines; keep one` });
+    seen.add(ply.nodeId);
+    const at = order.get(ply.nodeId);
+    if (at === undefined) continue;
+    if (at < last) problems.push({ code: 'nodes', nodeId: ply.nodeId, message: `The line on ${ply.nodeId} goes back to an earlier move` });
     last = Math.max(last, at);
-  });
-  for (const note of episode.notes) outside(note.nodeId, 'A note');
+  }
   for (const nodeId of episode.drillNodeIds) outside(nodeId, 'A drill');
   return problems;
 }
@@ -39,13 +41,12 @@ export function arrowProblems(episode: CourseEpisode, scope: EpisodeScope): Cour
     }
   };
 
-  episode.beats.forEach((beat, index) => {
-    if (beat.arrows.length > CONFIG.courses.maxArrowsPerBeat) {
-      problems.push({ code: 'arrows', nodeId: beat.nodeId, message: `Beat ${index + 1} has ${beat.arrows.length} arrows (at most ${CONFIG.courses.maxArrowsPerBeat})` });
+  for (const ply of episode.plies) {
+    if (ply.arrows.length > CONFIG.courses.maxArrowsPerBeat) {
+      problems.push({ code: 'arrows', nodeId: ply.nodeId, message: `The move ${ply.nodeId} has ${ply.arrows.length} arrows (at most ${CONFIG.courses.maxArrowsPerBeat})` });
     }
-    check(beat.arrows, beat.nodeId, `beat ${index + 1}`);
-  });
-  for (const note of episode.notes) check(note.arrows, note.nodeId, `the note on ${note.nodeId}`);
+    check(ply.arrows, ply.nodeId, `the line on ${ply.nodeId}`);
+  }
   return problems;
 }
 
