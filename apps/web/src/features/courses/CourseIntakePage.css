@@ -1,0 +1,245 @@
+/* The new-course page (/studio/new): four numbered cards, in the app's card
+ * style, then Create draft. */
+.course-new {
+  max-width: 920px;
+}
+
+.course-new__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.course-new__back:hover {
+  color: var(--color-text);
+}
+
+.course-new h1 {
+  margin: var(--space-2) 0 4px;
+}
+
+.course-new__lead {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-secondary);
+}
+
+.course-new__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.course-new__step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.course-new__step h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.course-new__number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.course-new__moves {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  gap: var(--space-4);
+}
+
+.course-new__pgn textarea,
+.course-new__direction {
+  width: 100%;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--font-size-sm);
+}
+
+.course-new__direction {
+  font-family: inherit;
+}
+
+.course-new__preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.course-new__placeholder {
+  display: grid;
+  place-items: center;
+  width: 168px;
+  height: 168px;
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.course-new__facts {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.course-new__kinds {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+
+.course-new__kind {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.course-new__kind:hover {
+  border-color: var(--color-primary);
+}
+
+.course-new__kind.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.course-new__kind input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.course-new__kind:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.course-new__kind-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  color: var(--color-primary);
+}
+
+.course-new__kind-summary {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.course-new__example {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.course-new__chip,
+.course-new__side {
+  min-height: 36px;
+  padding: 4px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.course-new__chip:hover,
+.course-new__side:hover {
+  border-color: var(--color-primary);
+}
+
+.course-new__side[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.course-new__chip:focus-visible,
+.course-new__side:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.course-new__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.course-new__label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.course-new__sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* The coach portraits smaller than in Settings: this is one field of four. */
+.course-new .coach-persona-select .coach-avatar-image--settings {
+  width: 72px;
+}
+
+.course-new__submit {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.course-new__submit .btn-primary {
+  min-width: 180px;
+  min-height: 44px;
+}
+
+@media (max-width: 639px) {
+  .course-new__moves {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .course-new__chip,
+  .course-new__side {
+    min-height: 44px;
+  }
+
+  .course-new__submit .btn-primary {
+    width: 100%;
+  }
+}

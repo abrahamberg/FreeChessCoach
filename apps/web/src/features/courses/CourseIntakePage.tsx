@@ -1,32 +1,33 @@
 import { inferLearnerSide, parseCourseTree } from '@freechesscoach/chess-analysis';
-import {
-  COACH_PERSONA_INFO,
-  COACH_PERSONAS,
-  COURSE_KINDS,
-  RATING_BANDS,
-  type CoachPersona,
-  type CourseKind,
-  type RatingBand
-} from '@freechesscoach/shared';
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { COURSE_KINDS, type CoachPersona, type CourseKind, type RatingBand } from '@freechesscoach/shared';
+import { useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
+import { ArrowLeftIcon, BookIcon, FlagIcon, type IconProps, KnightIcon, LightbulbIcon, PlayCircleIcon } from '../../components/Icon.js';
 import { useProfile } from '../../hooks/useProfile.js';
+import { MiniBoard } from '../board/MiniBoard.js';
+import { BandSelect } from '../settings/BandSelect.js';
+import { CoachPersonaSelect } from '../settings/CoachPersonaSelect.js';
 import { useCreateCourse } from './courseApi.js';
-import { BAND_LABELS } from '../settings/BandSelect.js';
 import { COURSE_KIND_INFO } from './courseKinds.js';
+import '../session/SessionPage.css';
 import './CourseEditor.css';
+import './CourseIntakePage.css';
 
 type SideChoice = 'auto' | 'white' | 'black';
 
-/** Both default coaches are labelled "Coach"; the voice tells them apart. */
-function personaLabel(persona: CoachPersona): string {
-  const info = COACH_PERSONA_INFO[persona];
-  return persona === 'general' || persona === 'general_female' ? `${info.label} (${info.voiceProfile.split(',')[0]!.toLowerCase()} voice)` : info.label;
-}
+const KIND_ICONS: Record<CourseKind, ComponentType<IconProps>> = {
+  trap: FlagIcon,
+  opening_reel: PlayCircleIcon,
+  opening_course: BookIcon,
+  tactics: LightbulbIcon,
+  master_game: KnightIcon
+};
 
-/** docs/courses.md §5.3: only what the AI can't infer. The learner side is
- * pre-filled by the same inference the server runs. */
+/** docs/courses.md §5.3: only what the AI can't infer, in four steps: the
+ * moves (with the line's end position), the kind, what to teach, and who it
+ * is for. The learner side is pre-filled by the same inference the server
+ * runs. */
 export function CourseIntakePage(): ReactNode {
   const navigate = useNavigate();
   const profile = useProfile();
@@ -43,95 +44,136 @@ export function CourseIntakePage(): ReactNode {
     if (!pgn.trim()) return null;
     const tree = parseCourseTree(pgn);
     const result = /\[Result\s+"([^"]*)"\]/.exec(pgn)?.[1] ?? null;
-    return { tree, inferred: tree.errors.length ? null : inferLearnerSide(kind, tree, result === '*' ? null : result) };
+    const leaf = tree.nodes.find((node) => node.id === tree.lines[0]?.leafNodeId);
+    return { tree, endFen: leaf?.fenAfter ?? tree.startFen, inferred: tree.errors.length ? null : inferLearnerSide(kind, tree, result === '*' ? null : result) };
   }, [pgn, kind]);
+  const valid = parsed !== null && parsed.tree.errors.length === 0 && parsed.tree.nodes.length > 0;
+  const teaches = side === 'auto' ? parsed?.inferred : side;
 
   function submit(event: FormEvent): void {
     event.preventDefault();
     const learnerSide = side === 'auto' ? null : side;
-    create.mutate(
-      { pgn, kind, direction, levelBand, learnerSide, coachPersona },
-      { onSuccess: (course) => navigate(`/studio/${course.id}/edit`) }
-    );
+    create.mutate({ pgn, kind, direction, levelBand, learnerSide, coachPersona }, { onSuccess: (course) => navigate(`/studio/${course.id}/edit`) });
   }
 
-  const autoLabel = parsed?.inferred ? `From the PGN: ${parsed.inferred === 'white' ? 'White' : 'Black'}` : 'From the PGN (ask me if unclear)';
-
   return (
-    <div className="course-intake">
-      <p className="meta">
-        <Link to="/studio">← Course studio</Link>
-      </p>
-      <h1>Create a course</h1>
-      <form className="course-intake__form" onSubmit={submit}>
-        <label className="course-field">
-          <span>PGN</span>
-          <textarea rows={8} value={pgn} onChange={(event) => setPgn(event.target.value)} placeholder="1. d4 e5 2. dxe5 Nc6 …" spellCheck={false} />
-        </label>
-        {parsed && parsed.tree.errors.length > 0 && (
-          <ul className="course-intake__errors" role="alert">
-            {parsed.tree.errors.slice(0, 3).map((error) => (
-              <li key={`${error.pgnLine}-${error.message}`}>{error.message}</li>
-            ))}
-          </ul>
-        )}
-        {parsed && !parsed.tree.errors.length && (
-          <p className="meta">
-            {parsed.tree.nodes.length} moves, {parsed.tree.lines.length} {parsed.tree.lines.length === 1 ? 'line' : 'lines'}
-          </p>
-        )}
-        <label className="course-field">
-          <span>Kind</span>
-          <select value={kind} onChange={(event) => setKind(event.target.value as CourseKind)}>
-            {COURSE_KINDS.map((option) => (
-              <option key={option} value={option}>
-                {COURSE_KIND_INFO[option].label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="course-field">
-          <span>Direction</span>
-          <textarea rows={2} maxLength={500} value={direction} onChange={(event) => setDirection(event.target.value)} placeholder={COURSE_KIND_INFO[kind].example} />
-        </label>
-        <div className="course-intake__row">
-          <label className="course-field">
-            <span>Level</span>
-            <select value={levelBand} onChange={(event) => setLevelBand(event.target.value as RatingBand)}>
-              {RATING_BANDS.map((band) => (
-                <option key={band} value={band}>
-                  {BAND_LABELS[band]}
-                </option>
+    <div className="page course-new">
+      <Link to="/studio" className="course-new__back">
+        <ArrowLeftIcon width={16} height={16} />
+        Course studio
+      </Link>
+      <h1>New course</h1>
+      <p className="course-new__lead">Paste the moves, say what to teach, and the AI writes the course for you to edit.</p>
+      <form className="course-new__form" onSubmit={submit}>
+        <section className="card course-new__step" aria-labelledby="course-new-moves">
+          <h2 id="course-new-moves">
+            <span className="course-new__number">1</span> The moves
+          </h2>
+          <div className="course-new__moves">
+            <label className="course-field course-new__pgn">
+              <span className="visually-hidden">PGN</span>
+              <textarea rows={9} value={pgn} onChange={(event) => setPgn(event.target.value)} placeholder="Paste a PGN: 1. d4 e5 2. dxe5 Nc6 …" spellCheck={false} aria-label="PGN" />
+            </label>
+            <div className="course-new__preview">
+              {valid ? (
+                <>
+                  <span data-testid="course-intake-board">
+                    <MiniBoard fen={parsed.endFen} size={168} />
+                  </span>
+                  <p className="course-new__facts">
+                    {`${parsed.tree.nodes.length} moves, ${parsed.tree.lines.length} ${parsed.tree.lines.length === 1 ? 'line' : 'lines'}${teaches ? `, you teach ${teaches === 'white' ? 'White' : 'Black'}` : ''}`}
+                  </p>
+                </>
+              ) : (
+                <div className="course-new__placeholder">The line’s end position shows here.</div>
+              )}
+              {parsed && parsed.tree.errors.length > 0 && (
+                <ul className="course-intake__errors" role="alert">
+                  {parsed.tree.errors.slice(0, 3).map((error) => (
+                    <li key={`${error.pgnLine}-${error.message}`}>{error.message}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="card course-new__step" aria-labelledby="course-new-kind">
+          <h2 id="course-new-kind">
+            <span className="course-new__number">2</span> What kind of course?
+          </h2>
+          <div className="course-new__kinds" role="radiogroup" aria-labelledby="course-new-kind">
+            {COURSE_KINDS.map((option) => {
+              const Icon = KIND_ICONS[option];
+              return (
+                <label key={option} className={kind === option ? 'course-new__kind selected' : 'course-new__kind'}>
+                  <input type="radio" name="course-kind" checked={kind === option} onChange={() => setKind(option)} aria-label={`${COURSE_KIND_INFO[option].label}: ${COURSE_KIND_INFO[option].summary}`} />
+                  <span className="course-new__kind-icon" aria-hidden="true">
+                    <Icon width={20} height={20} />
+                  </span>
+                  <strong>{COURSE_KIND_INFO[option].label}</strong>
+                  <span className="course-new__kind-summary">{COURSE_KIND_INFO[option].summary}</span>
+                </label>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="card course-new__step" aria-labelledby="course-new-direction">
+          <h2 id="course-new-direction">
+            <span className="course-new__number">3</span> What to teach
+          </h2>
+          <textarea
+            className="course-new__direction"
+            rows={3}
+            maxLength={500}
+            value={direction}
+            onChange={(event) => setDirection(event.target.value)}
+            placeholder={COURSE_KIND_INFO[kind].example}
+            aria-label="What to teach"
+          />
+          <div className="course-new__example">
+            <span className="meta">For example: {COURSE_KIND_INFO[kind].example}</span>
+            <button type="button" className="course-new__chip" onClick={() => setDirection(COURSE_KIND_INFO[kind].example)}>
+              Use this example
+            </button>
+          </div>
+        </section>
+
+        <section className="card course-new__step" aria-labelledby="course-new-who">
+          <h2 id="course-new-who">
+            <span className="course-new__number">4</span> Who it is for
+          </h2>
+          <div className="course-new__field">
+            <span className="course-new__label">Level</span>
+            <BandSelect value={levelBand} onChange={setLevelBand} />
+          </div>
+          <div className="course-new__field">
+            <span className="course-new__label">The learner plays</span>
+            <div className="course-new__sides" role="group" aria-label="The learner plays">
+              {(['auto', 'white', 'black'] as const).map((option) => (
+                <button key={option} type="button" className="course-new__side" aria-pressed={side === option} onClick={() => setSide(option)}>
+                  {option === 'auto' ? (parsed?.inferred ? `From the PGN (${parsed.inferred === 'white' ? 'White' : 'Black'})` : 'From the PGN') : option === 'white' ? 'White' : 'Black'}
+                </button>
               ))}
-            </select>
-          </label>
-          <label className="course-field">
-            <span>Learner side</span>
-            <select value={side} onChange={(event) => setSide(event.target.value as SideChoice)}>
-              <option value="auto">{autoLabel}</option>
-              <option value="white">White</option>
-              <option value="black">Black</option>
-            </select>
-          </label>
-          <label className="course-field">
-            <span>Coach</span>
-            <select value={coachPersona} onChange={(event) => setPersona(event.target.value as CoachPersona)}>
-              {COACH_PERSONAS.map((option) => (
-                <option key={option} value={option}>
-                  {personaLabel(option)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+            </div>
+          </div>
+          <div className="course-new__field">
+            <span className="course-new__label">The course coach</span>
+            <CoachPersonaSelect value={coachPersona} onChange={setPersona} />
+          </div>
+        </section>
+
         {create.isError && (
           <p className="course-intake__errors" role="alert">
             {describeApiError(create.error) ?? 'Could not create the course.'}
           </p>
         )}
-        <button type="submit" className="btn-primary" disabled={!pgn.trim() || create.isPending}>
-          {create.isPending ? 'Creating…' : 'Create draft'}
-        </button>
+        <div className="course-new__submit">
+          <button type="submit" className="btn-primary" disabled={!valid || create.isPending}>
+            {create.isPending ? 'Creating…' : 'Create draft'}
+          </button>
+        </div>
       </form>
     </div>
   );

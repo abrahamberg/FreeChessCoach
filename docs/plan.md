@@ -1381,7 +1381,7 @@ Commit: `feat(courses): the Course studio page`
 `features/board/MiniBoard.tsx`, `courseKinds.ts`.
 **Files:** those; `CourseIntakePage.css` + test.
 
-- [ ] Failing test first: kinds as cards (icon, name, one line); the PGN
+- [x] Failing test first: kinds as cards (icon, name, one line); the PGN
   box beside a small board of the line's end with "16 moves, 1 line, you
   teach Black"; level with `BandSelect`, the coach with
   `CoachPersonaSelect`, the learner side as a three-way switch (From the
