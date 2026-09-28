@@ -1128,18 +1128,26 @@ Commit: `feat(board): move lists from any start, courses' moves for the widgets`
 **Files:** a new `player/CourseBoardLayout.tsx` + CSS + test,
 `CoursePlayer.tsx`, `CoursePane.tsx`, `AppShell.tsx`.
 
-- [ ] Failing test first: at desktop width the three columns render (the
+- [x] Failing test first: at desktop width the three columns render (the
   explorer, the board, the coach); at phone width the note, the board, the
   strip and the bottom bar, in that order.
-- [ ] Header: back (to Courses in the app, to the site on `/learn`), title,
+- [x] Header: back (to Courses in the app, to the site on `/learn`), title,
   the stage control. `/courses/` is a board route.
-- [ ] Play through in it: the explorer column (episodes, then the line), the
+- [x] Play through in it: the explorer column (episodes, then the line), the
   board column (eval bar and graph when evals exist), the coach column
   (`CoursePane`: note, quiz, Ask my coach). Phone: note card on top, the
   strip under the board, the bottom bar holds Previous / the next step
   ("Bait ›", "Practice ›").
-- [ ] Remember covers the board columns on desktop and is a full-screen
+- [x] Remember covers the board columns on desktop and is a full-screen
   sheet on a phone.
+
+Status: done 2026-09-28, looked at in the browser at 1920×1009 and 375×667.
+`player/CourseHeader.tsx` (the stage bar on a desktop, a picker on a phone;
+Start over in the "⋮" menu), `player/CourseBoardLayout.tsx` (Game Review's
+classes), `player/PlayThrough.tsx` (moved out of `CoursePlayer.tsx`). The
+move list and graph grow as the learner goes, so a quiz answer never shows
+early. On a phone "Ask my coach" is a pill beside the voice toggle and opens
+as a sheet; the clip is a "Watch the clip" chip that opens a dialog.
 
 Commit: `feat(courses): the course player on the app's board layout`
 

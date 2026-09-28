@@ -9,10 +9,13 @@ export function LearnPage(): ReactNode {
   const [search] = useSearchParams();
   return (
     <div className="learn-page">
-      <PublishedCourse key={slug} slug={slug} startStage={stageFromSearch(search)} home={<a href="/">FreeChessCoach</a>} />
-      <footer className="learn-page__footer">
-        <a href="/">FreeChessCoach</a>: a free chess coach for your own games.
-      </footer>
+      <PublishedCourse
+        key={slug}
+        slug={slug}
+        startStage={stageFromSearch(search)}
+        home={<a href="/">FreeChessCoach</a>}
+        back={{ label: 'FreeChessCoach', onBack: () => window.location.assign('/') }}
+      />
     </div>
   );
 }

@@ -53,8 +53,10 @@ describe('CoursePlayer', () => {
     expect(screen.queryByRole('region', { name: 'Remember' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Next: Practice' }));
     fireEvent.click(screen.getByRole('button', { name: /Continue to Practice/ }));
-    expect(screen.getByRole('button', { name: /Play through, done/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Practice' }).getAttribute('aria-current')).toBe('step');
+    // At phone width the stages are the header's picker.
+    const stage = screen.getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement;
+    expect(stage.value).toBe('practice');
+    expect(screen.getByRole('option', { name: '1. Play through ✓' })).toBeTruthy();
   });
 
   test('a returning learner opens where they left off, and moving on saves the place', async () => {
@@ -68,7 +70,8 @@ describe('CoursePlayer', () => {
     };
     const { unmount } = render(<CoursePlayer document={document} noteAudio={() => Promise.resolve(null)} progress={progress} courseSlug="englund-aaaaaaaaaaaa" />);
     expect(await screen.findByText('The Englund Gambit.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Start over' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Course options' }));
+    expect(screen.getByRole('menuitem', { name: 'Start over' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     unmount();
@@ -84,12 +87,14 @@ describe('CoursePlayer', () => {
       saveEnrollment: vi.fn(() => Promise.resolve())
     };
     render(<CoursePlayer document={document} noteAudio={() => Promise.resolve(null)} progress={progress} courseSlug="englund-aaaaaaaaaaaa" />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Drill' }).getAttribute('aria-current')).toBe('step'));
-    expect(screen.getByRole('button', { name: /Practice, done/ })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
+    const stage = screen.getByRole('combobox', { name: 'Stage' }) as HTMLSelectElement;
+    await waitFor(() => expect(stage.value).toBe('drill'));
+    expect(screen.getByRole('option', { name: '2. Practice ✓' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Course options' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Start over' }));
     // It asks first: the place is lost.
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Start over' }));
-    expect(screen.getByRole('button', { name: /Play through/ }).getAttribute('aria-current')).toBe('step');
-    expect(screen.queryByRole('button', { name: /Practice, done/ })).toBeNull();
+    expect(stage.value).toBe('play_through');
+    expect(screen.queryByRole('option', { name: /✓/ })).toBeNull();
   });
 });

@@ -12,11 +12,15 @@ export interface PublishedCourseProps {
   /** Where "no course here" points: the site for the public page, the
    * Courses page inside the app. */
   home: ReactNode;
+  /** The header's back button. */
+  back: { label: string; onBack: () => void };
+  /** Inside the signed-in app (the account menu in the header). */
+  inApp?: boolean;
 }
 
 /** docs/courses.md §9: a published course in the player, fetched by its
  * slug. `/learn/:slug` shows it on its own; `/courses/:slug` in the app. */
-export function PublishedCourse({ slug, startStage, home }: PublishedCourseProps): ReactNode {
+export function PublishedCourse({ slug, startStage, home, back, inApp = false }: PublishedCourseProps): ReactNode {
   const progress = useCourseProgressStore();
   const course = useQuery({
     queryKey: ['public-course', slug],
@@ -43,7 +47,18 @@ export function PublishedCourse({ slug, startStage, home }: PublishedCourseProps
       </div>
     );
   }
-  return <CoursePlayer document={course.data.document} noteAudio={source} progress={progress} courseSlug={course.data.slug} startStage={startStage} />;
+  return (
+    <CoursePlayer
+      document={course.data.document}
+      noteAudio={source}
+      progress={progress}
+      courseSlug={course.data.slug}
+      startStage={startStage}
+      evals={course.data.evals}
+      back={back}
+      inApp={inApp}
+    />
+  );
 }
 
 /** `?stage=practice` and so on; `?drill=1` is the older link for the drill.

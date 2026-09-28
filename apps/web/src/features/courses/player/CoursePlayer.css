@@ -1,27 +1,194 @@
+/* A board view like Game Review: the header, then the stage filling the
+ * rest of the height (the layout's columns scroll inside themselves). */
 .course-player {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  height: 100%;
+  min-height: 0;
   color: var(--color-text);
+  background: var(--color-bg);
 }
 
-.course-player__header h1 {
+.course-player__stage {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.course-player__stage[hidden] {
+  display: none;
+}
+
+.course-player__empty {
+  padding: var(--space-4);
+}
+
+.course-header__title {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
-  font-size: 1.6rem;
 }
 
-.course-player__kicker {
-  margin: 0 0 4px;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
+.course-header .session-header__actions {
+  flex: none;
 }
 
-.course-player__promise {
-  margin: 6px 0 0;
-  color: var(--color-text-secondary);
+.course-header .course-stages__step {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.course-header__stage select {
+  min-height: 36px;
+  max-width: 44vw;
+  padding: 4px 28px 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.course-header__stage select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* --- the board layout (CourseBoardLayout): Game Review's classes, plus
+ * the course's own pieces --- */
+.course-layout {
+  flex: 1 1 auto;
+}
+
+.course-layout__explorer {
+  --explorer-col-label: 34px;
+}
+
+.course-layout__episodes {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.course-layout__episodes .course-player__episodes {
+  gap: 6px;
+}
+
+/* Phone: one scrolling row of chips above the coach. */
+.course-layout__episodes--row {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+}
+
+.course-layout__episodes--row .course-player__episodes {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.course-layout__episodes--row .course-chip {
+  flex: none;
+}
+
+/* Desktop: the coach fills the notes column, which gives the chrome. */
+.game-review-notes-column.course-layout__coach .course-pane {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Phone: the coach fills the gap between the header and the board, like
+ * Game Review's note card; a long note scrolls inside it. */
+.game-review-body.mobile .course-layout__coach {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 10.5rem;
+}
+
+.game-review-body.mobile .course-layout__coach > * {
+  flex: 1 1 auto;
+}
+
+.game-review-body.mobile .course-pane .chat-pane__header {
+  padding: 8px 12px;
+}
+
+.game-review-body.mobile .course-pane .coach-avatar-image--header {
+  width: 36px;
+}
+
+.game-review-body.mobile .course-pane__body {
+  padding: 12px;
+}
+
+.game-review-body.mobile.has-course-bar {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+
+.course-layout__strip {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.game-review-body.desktop.course-layout .session-board-column {
+  gap: var(--space-3);
+}
+
+.game-review-body.desktop.course-layout .course-player__nav {
+  width: 100%;
+  margin: 0;
+}
+
+.course-bottom-bar .course-player__nav {
+  margin: 0;
+  padding: 8px 12px;
+}
+
+.course-bottom-bar .course-player__nav button {
+  min-height: 44px;
+}
+
+.course-chip--clip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.course-clip-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: rgb(0 0 0 / 60%);
+}
+
+.course-clip-dialog__body {
+  position: relative;
+  width: min(900px, 100%);
+  display: flex;
+  justify-content: center;
+}
+
+.course-clip-dialog__close {
+  position: absolute;
+  top: -44px;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
 }
 
 .course-player__notice {
@@ -87,35 +254,12 @@
   gap: 8px;
 }
 
-.course-player__episode {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-}
-
-@media (min-width: 900px) {
-  .course-player__episode {
-    grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
-    align-items: start;
-  }
-}
-
 .course-player__nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   margin-top: 8px;
-}
-
-.course-player__words {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.course-player__words p {
-  margin: 0 0 8px;
 }
 
 .course-player__move {
@@ -136,10 +280,19 @@
   gap: 8px;
 }
 
-.course-player__actions,
+.course-player__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 /* The coach beside the board, in the coaching session's chat pane look
  * (ChatPane.css gives the header and the voice toggle). */
 .course-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
@@ -148,9 +301,12 @@
 
 .course-pane__body {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 8px;
+  min-height: 0;
   padding: 16px;
+  overflow-y: auto;
 }
 
 .course-pane__body p {
@@ -170,6 +326,9 @@
 /* The takeaways between the play-through and Practice: one centred column,
  * the coach on top, each line with its own icon. */
 .course-recap {
+  align-self: center;
+  width: calc(100% - 2 * var(--space-4));
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -274,27 +433,28 @@
 }
 
 .learn-page {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
   background: var(--color-bg);
 }
 
-.learn-page__footer {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
-  color: var(--color-text-secondary);
-}
-
-.learn-page__footer a {
-  color: var(--color-primary);
+.learn-page > .course-player {
+  flex: 1 1 auto;
 }
 
 .learner-preview {
   position: fixed;
   inset: 0;
   z-index: 50;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: var(--color-bg);
+}
+
+.learner-preview > .course-player {
+  flex: 1 1 auto;
 }
 
 .learner-preview__bar {
@@ -350,6 +510,97 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.ask-coach__close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.ask-coach__close:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
+/* In the coach pane's footer: one slim row, the learner's own coach small. */
+.course-pane__footer .ask-coach__open {
+  width: 100%;
+  min-height: 40px;
+  padding: 4px 12px 4px 4px;
+  font-size: var(--font-size-sm);
+}
+
+.course-pane__footer .ask-coach__open .coach-avatar-image {
+  width: 32px;
+  margin: 0;
+}
+
+.course-pane__footer .ask-coach .coach-avatar-image {
+  width: 40px;
+  margin: 0;
+}
+
+/* Phone: the open panel is a sheet over the board, not squeezed into the
+ * note's space; Close puts it away. */
+@media (max-width: 1079px) {
+  .course-pane__footer .ask-coach {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    max-height: 80svh;
+    overflow-y: auto;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgb(0 0 0 / 25%);
+  }
+
+  .course-pane__footer {
+    padding: 8px 12px;
+  }
+}
+
+/* Phone: beside the voice toggle, a compact pill ("Ask my coach"). */
+.course-pane__footer--header {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.course-pane__footer--header .ask-coach__open {
+  width: auto;
+  min-height: 40px;
+  padding: 4px 12px 4px 4px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.course-pane__footer--header .ask-coach__open .coach-avatar-image {
+  width: 30px;
+}
+
+.course-pane__footer--header .ask-coach__open-more {
+  display: none;
+}
+
+.game-review-body.mobile .course-pane .chat-pane__header {
+  gap: var(--space-2);
+}
+
+.game-review-body.mobile .course-pane .chat-pane__voice-toggle {
+  width: 40px;
+  height: 40px;
 }
 
 .ask-coach__header p {

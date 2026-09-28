@@ -1,6 +1,7 @@
 import { COACH_PERSONA_INFO } from '@freechesscoach/shared';
 import { useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { CoachAvatar } from '../../../components/CoachAvatar.js';
+import { CloseIcon } from '../../../components/Icon.js';
 import { useProfile } from '../../../hooks/useProfile.js';
 import { useUnlockLlmSetup } from '../../../hooks/useUnlockLlmSetup.js';
 import { AiSetupRequiredModal } from '../../settings/AiSetupRequiredModal.js';
@@ -40,7 +41,9 @@ export function AskCoachPanel({ position }: AskCoachPanelProps): ReactNode {
     return (
       <button type="button" className="btn-secondary ask-coach__open" onClick={() => setOpen(true)}>
         <CoachAvatar persona={persona} size="chat" />
-        Ask my coach about this move
+        <span>
+          Ask my coach<span className="ask-coach__open-more"> about this move</span>
+        </span>
       </button>
     );
   }
@@ -61,6 +64,9 @@ export function AskCoachPanel({ position }: AskCoachPanelProps): ReactNode {
           <p className="ask-coach__title">{coach === 'Coach' ? 'Your coach' : `Your coach: ${coach}`}</p>
           <p className="meta">Checks the course against the engine; where they disagree, the engine wins.</p>
         </div>
+        <button type="button" className="ask-coach__close" aria-label="Close" title="Close" onClick={() => setOpen(false)}>
+          <CloseIcon width={16} height={16} />
+        </button>
       </header>
       {chat.messages.length > 0 && (
         <ol className="ask-coach__messages" aria-live="polite">
@@ -127,7 +133,9 @@ export function AskCoachSignIn(): ReactNode {
     return (
       <button type="button" className="btn-secondary ask-coach__open" onClick={() => setOpen(true)}>
         <CoachAvatar persona="general" size="chat" />
-        Ask my coach about this move
+        <span>
+          Ask my coach<span className="ask-coach__open-more"> about this move</span>
+        </span>
       </button>
     );
   }
