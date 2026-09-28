@@ -8,7 +8,7 @@ import { ChessApiPauseNotice } from './ChessApiPauseNotice.js';
 import { EngineActivityIndicator } from './EngineActivityIndicator.js';
 import { FullscreenPrompt } from './FullscreenPrompt.js';
 import { RateLimitNotice } from './RateLimitNotice.js';
-import { BarChartIcon, BoardIcon, PlayCircleIcon, TrendingUpIcon } from './Icon.js';
+import { BarChartIcon, BoardIcon, BookIcon, TrendingUpIcon } from './Icon.js';
 import { PageMenuProvider } from './PageMenu.js';
 import { UserMenu } from './UserMenu.js';
 import './AppShell.css';
@@ -17,13 +17,11 @@ export interface AppShellProps {
   children: ReactNode;
 }
 
-// Daniel's IA feedback: "Play" used to be two giant CTAs crowding GamesPage's
-// own header — it's a primary nav destination in its own right (playing
-// chess is a different job from studying it), not a button living on
-// whichever page had room.
+// Play (with the coach or a bot) starts from the Games page since
+// 2026-09-28; its nav place went to Courses (docs/courses.md §11).
 const NAV_DESTINATIONS = [
   { to: '/games', label: 'Games', Icon: BoardIcon },
-  { to: '/play', label: 'Play', Icon: PlayCircleIcon },
+  { to: '/courses', label: 'Courses', Icon: BookIcon },
   { to: '/progress', label: 'Progress', Icon: TrendingUpIcon },
   { to: '/stats', label: 'Stats', Icon: BarChartIcon }
 ];

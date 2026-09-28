@@ -12,6 +12,7 @@ import { ContinueSessionCard } from './ContinueSessionCard.js';
 import { continueItems } from './continueItems.js';
 import { GameCard } from './GameCard.js';
 import { ImportShortcuts } from './ImportShortcuts.js';
+import { PlayShortcuts } from './PlayShortcuts.js';
 import { PracticeAssignmentCard } from './PracticeAssignmentCard.js';
 import { useGameActions } from './useGameActions.js';
 import {
@@ -25,7 +26,8 @@ import { useCourseReviewsDue } from './useCourseReviewsDue.js';
 import { usePracticeAssignments } from './usePracticeAssignments.js';
 import './GamesPage.css';
 
-/** design.md §4.1: Games (home) — an "Import games" section, the coach area
+/** design.md §4.1: Games (home) — an "Import games" section, a "Play"
+ * section (Play with Coach, Play a Bot), the coach area
  * (CoachNudgeCard: the student's coach saying what to do next), then up to four
  * single-row sliding rails: Due today (course moves to review, only
  * when there are any), Practice (coach-assigned sets, only when there
@@ -64,6 +66,7 @@ export function GamesPage(): ReactNode {
     <div className="page games-page">
       <h1 className="visually-hidden">Games</h1>
       <ImportShortcuts quota={importQuotaQuery.data?.daily} />
+      <PlayShortcuts persona={profileQuery.data?.coachPersona} />
       {nudge && (
         <CoachNudgeCard
           nudge={nudge}

@@ -977,14 +977,18 @@ the earlier choice to split playing from studying; the owner reversed it on
 (`NAV_DESTINATIONS`), `apps/web/src/components/Icon.tsx`.
 **Files:** those files; `App.tsx`.
 
-- [ ] A "Play" section on the Games page under Import games: Play with Coach
+Status: done 2026-09-28. `games/PlayShortcuts.tsx` reuses the Import games
+card; the nav's Courses icon is `BookIcon`. Until 86.3, `/courses` is still
+the creator's list, so a learner without the creator flag sees its error there.
+
+- [x] A "Play" section on the Games page under Import games: Play with Coach
   (the learner's coach avatar) and Play a Bot, the same two destinations as
   `PlayPage`'s `DESTINATIONS`, in the Import games card style.
-- [ ] Navigation becomes Games, Courses, Progress, Stats, in both the top
+- [x] Navigation becomes Games, Courses, Progress, Stats, in both the top
   pill nav and the bottom tab bar; a Courses icon in `Icon.tsx`'s stroke
   style. `/play` redirects to `/games`; `/play/new` and `/play-bot/new` are
   unchanged; `PlayPage` and its CSS go.
-- [ ] The `/demo` runtime still works (`getDemoRuntime()` routes).
+- [x] The `/demo` runtime still works (`getDemoRuntime()` routes).
 
 Commit: `feat(nav): play from the Games page, Courses in the navigation`
 
