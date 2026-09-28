@@ -335,3 +335,239 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* --- The editor's frame (Phase 89): a header like the board views', the
+ * details card, and the right panel's tabs. --- */
+.course-editor {
+  max-width: 1500px;
+}
+
+.studio-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
+}
+
+.studio-header__back {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+}
+
+.studio-header__back:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
+.studio-header__name {
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.studio-header__title {
+  width: 100%;
+  padding: 2px 6px;
+  margin-left: -6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.studio-header__title:hover {
+  border-color: var(--color-border);
+}
+
+.studio-header__title:focus {
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  outline: none;
+}
+
+.studio-header__state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.studio-header__save {
+  color: var(--color-text-muted);
+}
+
+.studio-header__save--dirty {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.studio-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* "Preview: Clip | As learner", one pill. */
+.studio-header__preview {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.studio-header__preview-label {
+  padding: 0 10px 0 14px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.studio-header__preview button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 12px;
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.studio-header__preview button:hover:not(:disabled) {
+  background: var(--color-surface-subtle);
+  color: var(--color-primary);
+}
+
+.studio-header__preview button:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.studio-header__preview button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.course-editor__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.course-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.course-details .course-editor__actions .btn-secondary,
+.course-details .course-editor__actions .btn-primary {
+  flex: 1 1 auto;
+}
+
+.course-outline,
+.course-panel {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.course-panel__role {
+  font-size: var(--font-size-lg);
+}
+
+.course-tabs {
+  display: flex;
+  gap: 2px;
+  margin: var(--space-2) 0 var(--space-3);
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+}
+
+.course-tabs__tab {
+  flex: 1 1 0;
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.course-tabs__tab:hover {
+  color: var(--color-text);
+}
+
+.course-tabs__tab[aria-selected='true'] {
+  background: var(--color-surface);
+  color: var(--color-primary-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.course-tabs__tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.course-tabs__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (max-width: 639px) {
+  .studio-header {
+    position: static;
+  }
+
+  .studio-header__actions {
+    width: 100%;
+  }
+
+  .studio-header__preview button,
+  .course-tabs__tab {
+    min-height: 44px;
+  }
+}
+
+/* The board fits the screen's height, so the moves under it stay in view. */
+.course-editor .course-board .coach-board-frame {
+  width: min(100%, calc(100vh - 330px));
+  width: min(100%, calc(100svh - 330px));
+  margin: 0 auto;
+}

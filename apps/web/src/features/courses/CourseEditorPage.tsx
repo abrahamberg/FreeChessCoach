@@ -10,6 +10,7 @@ import { CourseBoardPanel } from './CourseBoardPanel.js';
 import { CourseEpisodeAi } from './CourseEpisodeAi.js';
 import { CourseEpisodePanel } from './CourseEpisodePanel.js';
 import { CourseGenerationBar } from './CourseGenerationBar.js';
+import { CourseStudioHeader } from './CourseStudioHeader.js';
 import { CourseOutline } from './CourseOutline.js';
 import { ClipPreview } from './clip/ClipPreview.js';
 import { PublishDialog } from './PublishDialog.js';
@@ -67,46 +68,41 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
   const error = save.error ?? build.error;
   return (
     <div className="course-editor">
-      <header className="course-editor__header">
-        <label className="course-field course-field--grow">
-          <span>Title</span>
-          <input value={document.title} maxLength={120} onChange={(event) => edit({ ...document, title: event.target.value })} />
-        </label>
-        <label className="course-field course-field--grow">
-          <span>Promise</span>
-          <input value={document.promise} placeholder="After this you can …" onChange={(event) => edit({ ...document, promise: event.target.value })} />
-        </label>
-        <div className="course-editor__actions">
-          <button type="button" className="btn-secondary" disabled={!document.episodes.some((each) => each.beats.length)} onClick={() => setPreviewing(true)}>
-            Preview clip
-          </button>
-          <button type="button" className="btn-secondary" disabled={!document.episodes.length} onClick={() => setLearnerPreview(true)}>
-            Preview as learner
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={build.isPending}
-            onClick={() => (document.episodes.length ? setConfirmRebuild(true) : runBuild())}
-          >
-            {build.isPending ? 'Building…' : 'Build without AI'}
-          </button>
-          <button type="button" className="btn-secondary" disabled={!document.episodes.length} onClick={() => setPublishing(true)}>
-            {course.publishedAt ? `Publish again (${course.status})` : 'Publish'}
-          </button>
-          <button type="button" className="btn-primary" disabled={!dirty || save.isPending} onClick={() => save.mutate(document, { onSuccess: () => setDirty(false) })}>
-            {save.isPending ? 'Saving…' : dirty ? 'Save draft' : 'Saved'}
-          </button>
-        </div>
-      </header>
-      <CourseGenerationBar course={course} dirty={dirty} />
+      <CourseStudioHeader
+        title={document.title}
+        onTitle={(title) => edit({ ...document, title })}
+        status={course.status}
+        dirty={dirty}
+        saving={save.isPending}
+        onSave={() => save.mutate(document, { onSuccess: () => setDirty(false) })}
+        onPreviewClip={document.episodes.some((each) => each.beats.length) ? () => setPreviewing(true) : undefined}
+        onPreviewLearner={document.episodes.length ? () => setLearnerPreview(true) : undefined}
+        onPublish={document.episodes.length ? () => setPublishing(true) : undefined}
+        published={course.publishedAt !== null}
+        more={[
+          {
+            label: build.isPending ? 'Building…' : 'Build without AI',
+            disabled: build.isPending,
+            onSelect: () => (document.episodes.length ? setConfirmRebuild(true) : runBuild())
+          }
+        ]}
+      />
       {error && (
         <p className="course-intake__errors" role="alert">
           {describeApiError(error) ?? 'Something went wrong.'}
         </p>
       )}
       <div className="course-editor__columns">
-        <CourseOutline document={document} selectedEpisodeId={episodeId} onSelectEpisode={selectEpisode} />
+        <aside className="course-editor__side">
+          <section className="course-panel course-details" aria-label="Course details">
+            <label className="course-field">
+              <span>Promise</span>
+              <textarea rows={3} value={document.promise} placeholder="After this you can …" onChange={(event) => edit({ ...document, promise: event.target.value })} />
+            </label>
+            <CourseGenerationBar course={course} dirty={dirty} />
+          </section>
+          <CourseOutline document={document} selectedEpisodeId={episodeId} onSelectEpisode={selectEpisode} />
+        </aside>
         <CourseBoardPanel
           document={document}
           nodeIds={nodeIds}

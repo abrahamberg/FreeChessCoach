@@ -1397,14 +1397,14 @@ Commit: `feat(courses): a guided new-course page`
 `player/CourseHeader.tsx`.
 **Files:** those + CSS + tests.
 
-- [ ] A studio header: back to the studio, the title (edited in place),
+- [x] A studio header: back to the studio, the title (edited in place),
   the status badge, the save state ("Saved" / "Unsaved changes"), Save,
   Preview (a menu: clip, as learner), Publish; "Build without AI" in "⋮".
-- [ ] The promise and "Write with AI" move into a Details card at the top
+- [x] The promise and "Write with AI" move into a Details card at the top
   of the outline column.
-- [ ] The right panel in tabs: Notes (focus, the move's note, arrows),
+- [x] The right panel in tabs: Notes (focus, the move's note, arrows),
   Quiz, Clip, AI (the episode's writer), instead of one long form.
-- [ ] The columns in the board views' style (the explorer and notes column
+- [x] The columns in the board views' style (the explorer and notes column
   chrome); a creator tool, so desktop first, but nothing breaks on a
   phone (the columns stack).
 
