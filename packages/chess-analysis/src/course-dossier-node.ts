@@ -2,7 +2,7 @@ import { Chess } from 'chess.js';
 import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
 import type { ClassifiedMove } from './classify.js';
 import { CONFIG } from './config.js';
-import { betterMoveFacts, boardFacts, lineWords, positionWords } from './course-dossier-words.js';
+import { abandonedGuard, betterMoveFacts, boardFacts, lineWords, positionWords } from './course-dossier-words.js';
 import type { CourseTreeNode } from './course-tree.js';
 import { isBookMoveFrom, resolveOpening } from './opening-book.js';
 import { positionKey } from './opening-book-key.js';
@@ -76,7 +76,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     inBook: isBookMoveFrom(fenBefore, node.san),
     openingName: opening?.name ?? null,
     bestInstead: bestInstead(move, node.san, fenBefore),
-    board: boardFacts(fenBefore, node.san),
+    board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan)],
     tactics: tacticSentences(move, side === input.learnerSide),
     motif: move.tacticOpportunity?.found ? move.tacticOpportunity.type : null,
     alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),

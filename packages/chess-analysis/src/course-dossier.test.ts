@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { renderCourseDossier } from './course-dossier-text.js';
+import { abandonedGuard } from './course-dossier-words.js';
 import { inferLearnerSide } from './course-learner-side.js';
 import { courseLineGames } from './course-line-game.js';
 import { buildCourseSkeleton } from './course-skeleton.js';
@@ -33,7 +34,7 @@ describe('course dossier', () => {
     expect(bait?.bestInstead?.san).toBe('Nc3');
     expect(bait?.after).toBe('Black is winning');
     expect(facts.get('n12')?.quizEligible).toBe(true);
-    expect(facts.get('n12')?.board).toEqual(['attacks the bishop on c3, which is pinned to the king']);
+    expect(facts.get('n12')?.board).toEqual(['moves the bishop from f8 to b4', 'attacks the bishop on c3, which is pinned to the king']);
     expect(facts.get('n5')?.quizEligible).toBe(false);
     expect(facts.get('n16')?.after).toBe('checkmate');
     expect(facts.get('n16')?.board).toContain('gives checkmate');
@@ -45,11 +46,22 @@ describe('course dossier', () => {
     // What the model must not guess: how a check is met, why the safe move
     // works, and forks by piece, not by square.
     expect(facts.get('n8')?.board).toContain('the check can be answered: block with Bd2, Nfd2, c3, Nc3, Nbd2, Qd2; the checking piece cannot be taken; the king cannot move');
-    expect(bait?.bestInstead?.board).toEqual(['keeps the rook on a1 safe']);
+    expect(bait?.bestInstead?.board).toEqual(['moves the knight from b1 to c3', 'keeps the rook on a1 safe: the queen on d1 now defends it']);
+    expect(facts.get('n7')?.board).toEqual(['moves the bishop from c1 to f4']);
+    expect(facts.get('n16')?.board).toContain('a back-rank mate');
     expect(facts.get('n10')?.board).toContain('the queen on b2 forks the rook on a1 and the knight on b1');
     // No review "you stopped them" sentences about moves nobody played.
     expect(dossier.nodes.flatMap((node) => node.tactics).join(' ')).not.toMatch(/stopped/);
     expect(dossier.lines[0]?.openingName).toMatch(/Englund/);
+  });
+
+  test('a move that loses: the moved piece stopped guarding where the reply lands', () => {
+    const { tree } = englund();
+    const fenBefore = byId(tree).get('n14')?.fenAfter ?? '';
+
+    expect(abandonedGuard(fenBefore, 'Qxc3', 'Qc1#')).toEqual(['the queen stops guarding c1, where Qc1# follows']);
+    expect(abandonedGuard(fenBefore, 'Nxc3', 'Qxa1+')).toEqual([]);
+    expect(abandonedGuard(fenBefore, 'Qxc3', undefined)).toEqual([]);
   });
 
   test('the rendered dossier carries verdict words and no eval numbers', () => {
@@ -59,7 +71,7 @@ describe('course dossier', () => {
     expect(text).toContain('n12 6…Bb4 (Black, Line A)');
     expect(text).toContain('Black is winning');
     expect(text).toContain('flags: quiz-eligible');
-    expect(text).toContain('    why Nc3 is better: keeps the rook on a1 safe');
+    expect(text).toContain('    why Nc3 is better: moves the knight from b1 to c3 | keeps the rook on a1 safe: the queen on d1 now defends it');
     expect(text).not.toMatch(/\d\.\d|[+-]\d|\bcp\b|%|centipawn/i);
   });
 });

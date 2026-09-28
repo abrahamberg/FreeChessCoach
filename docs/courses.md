@@ -197,11 +197,14 @@ Per node:
   (`opening-book.ts`).
 - Engine best move and its line (SAN, at most 6 plies) when the course move is
   not the best, and **why it is better** in board facts: what it does, and
-  each piece the played move left hanging that it keeps safe ("Nc3 keeps the
-  rook on a1 safe").
-- Board facts (`inspect-moves.ts`): captures, checks and **how the check can
-  be answered** (blocks, captures of the checker, king moves), what it leaves
-  hanging, forks it creates (named by piece; pawns left out).
+  each piece the played move left hanging that it keeps safe, and by what
+  ("Nc3 keeps the rook on a1 safe: the queen on d1 now defends it").
+- Board facts (`inspect-moves.ts`): what moved where (so a quiet move has a
+  true fact too), captures, checks and **how the check can be answered**
+  (blocks, captures of the checker, king moves), a back-rank mate, what it
+  leaves hanging, forks it creates (named by piece; pawns left out), and when
+  the opponent's best reply is forcing, whether the moved piece stopped
+  guarding its square ("the queen stops guarding c1, where Qc1# follows").
 - Tactics (the tactic detectors and `tactic-reason-text.ts`): motifs found,
   missed or allowed at this node, each with its checked sentence. Not the
   review's "you stopped them…" sentences: they are about a move nobody played,

@@ -1,4 +1,4 @@
-import { Chess, type Square } from 'chess.js';
+import { Chess, type PieceSymbol, type Square } from 'chess.js';
 import type { EngineEval, EngineLine } from '@freechesscoach/shared';
 import { cpToWords, mateToWords } from './eval-words.js';
 import { inspectMoves } from './inspect-moves.js';
@@ -30,9 +30,10 @@ export function positionWords(fen: string, evaluation: EngineEval | undefined): 
 export function boardFacts(fenBefore: string, san: string): string[] {
   const inspected = inspectMoves(fenBefore, [san]).moves[0];
   if (!inspected?.legal) return [];
-  const facts: string[] = [];
+  const facts: string[] = [moveWords(inspected.san, inspected.piece, inspected.from, inspected.to)];
   if (inspected.captured) facts.push(`captures the ${PIECE_NAMES[inspected.captured]} on ${inspected.to}`);
   if (inspected.gives) facts.push(`gives ${inspected.gives}`);
+  if (inspected.gives === 'checkmate' && isBackRankMate(inspected.resultFen, inspected.to as Square)) facts.push('a back-rank mate');
   if (inspected.gives === 'check') facts.push(checkAnswers(inspected.resultFen));
   facts.push(...attackedPieces(inspected.resultFen, inspected.to as Square));
   for (const piece of inspected.leavesHanging) {
@@ -43,6 +44,22 @@ export function boardFacts(fenBefore: string, san: string): string[] {
     if (fork.square === inspected.to && targets.length >= 2) facts.push(`the ${PIECE_NAMES[fork.piece]} on ${fork.square} forks ${targets.join(' and ')}`);
   }
   return facts;
+}
+
+/** What moved where, so a quiet move has a true fact too (gemma-4-12b
+ * wrote "4.Bf4 attacks the queen" where the dossier said nothing). */
+function moveWords(san: string, piece: PieceSymbol, from: string, to: string): string {
+  if (san.startsWith('O-O-O')) return 'castles queenside';
+  if (san.startsWith('O-O')) return 'castles kingside';
+  return `moves the ${PIECE_NAMES[piece]} from ${from} to ${to}`;
+}
+
+/** Mate by a piece on the king's own back rank, checking along it. */
+function isBackRankMate(fenAfter: string, checker: Square): boolean {
+  const chess = new Chess(fenAfter);
+  const king = chess.findPiece({ type: 'k', color: chess.turn() })[0];
+  const backRank = chess.turn() === 'w' ? '1' : '8';
+  return king !== undefined && king[1] === backRank && checker[1] === backRank;
 }
 
 /** How the checked side can answer, so a script can't say "forces the king
@@ -82,8 +99,36 @@ export function betterMoveFacts(fenBefore: string, playedSan: string, betterSan:
   const stillHanging = new Set(better.leavesHanging.filter((piece) => canBeTaken(better.resultFen, piece.square)).map((piece) => piece.square));
   const kept = played.leavesHanging
     .filter((piece) => canBeTaken(played.resultFen, piece.square) && !stillHanging.has(piece.square))
-    .map((piece) => `keeps the ${PIECE_NAMES[piece.piece]} on ${piece.square} safe`);
+    .map((piece) => `keeps the ${PIECE_NAMES[piece.piece]} on ${piece.square} safe${newDefenders(played.resultFen, better.resultFen, piece.square as Square)}`);
   return [...boardFacts(fenBefore, betterSan), ...kept];
+}
+
+/** ": the queen on d1 now defends it" — how the better move keeps it safe,
+ * so the model doesn't guess ("Nc3 blocks the queen's attack", it doesn't). */
+function newDefenders(playedFen: string, betterFen: string, square: Square): string {
+  const played = new Chess(playedFen);
+  const better = new Chess(betterFen);
+  const owner = better.get(square)?.color;
+  if (!owner) return '';
+  const before = new Set(played.attackers(square, owner));
+  const added = better.attackers(square, owner).filter((from) => !before.has(from));
+  const names = added.map((from) => `the ${PIECE_NAMES[better.get(from)!.type]} on ${from}`);
+  return names.length ? `: ${names.join(' and ')} now ${names.length > 1 ? 'defend' : 'defends'} it` : '';
+}
+
+/** The moved piece used to guard the square the opponent's best reply lands
+ * on ("the queen stops guarding c1, where Qc1# follows"): why a move loses,
+ * stated rather than guessed. */
+export function abandonedGuard(fenBefore: string, san: string, replySan: string | undefined): string[] {
+  const moved = inspectMoves(fenBefore, [san]).moves[0];
+  if (!moved?.legal || !replySan) return [];
+  const reply = inspectMoves(moved.resultFen, [replySan]).moves[0];
+  if (!reply?.legal || !(reply.captured || reply.gives)) return [];
+  const target = reply.to as Square;
+  const color = moved.color === 'white' ? 'w' : 'b';
+  const guardedBefore = new Chess(fenBefore).attackers(target, color).includes(moved.from as Square);
+  const guardsAfter = new Chess(moved.resultFen).attackers(target, color).includes(moved.to as Square);
+  return guardedBefore && !guardsAfter ? [`the ${PIECE_NAMES[moved.piece]} stops guarding ${target}, where ${replySan} follows`] : [];
 }
 
 /** A legal capture on the square, so a pinned attacker doesn't count. */
