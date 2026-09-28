@@ -1565,7 +1565,7 @@ Commit: `feat(courses): sort courses by level and curriculum order`
 
 ### Task 90.5 — Docs
 
-- [ ] `docs/courses.md` §4 (the document), §5–6 (budgets, the episode
+- [x] `docs/courses.md` §4 (the document), §5–6 (budgets, the episode
   output), §8 (the clip from plies), §9 (the level), §11.
 
 Commit: `docs: plies, budgets and the curriculum order`

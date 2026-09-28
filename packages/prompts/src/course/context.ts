@@ -44,7 +44,7 @@ export interface CourseMessages {
   user: string;
 }
 
-/** §6: shared block, then the kind playbook, then the voice. Depends only on
+/** §6: the voice, then the shared block, then the kind playbook. Depends only on
  * the course, never on the episode, so every call of one course shares it. */
 export function buildCourseSystemPrompt(context: CoursePromptContext): string {
   // The coach's voice first: every line in the course and the clip is theirs.

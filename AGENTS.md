@@ -59,7 +59,7 @@ Socratically while tracking their progress over time. The initial build
 - `docs/algorith.md`: Spec for the Game Report. Read only the relevant subsection requested by a task.
 - `docs/marketing-demo.md`: Public marketing pages, demo data, and capture scripts. Read before touching `apps/web/public/` or demo scripts.
 - `docs/tactics-rework.md`: Tactic detection rebuild details. Read before touching `tactic-detectors/` or related logic.
-- `docs/courses.md`: Spec for courses and clips (Phases 79–87), including the course-generation prompts. Read only the section a task names.
+- `docs/courses.md`: Spec for courses and clips (Phases 79–90), including the course-generation prompts. Read only the section a task names.
 - `docs/threat-model.md`: Trust boundaries, security findings, accepted risks. Read before touching auth headers, the proxy/chart config, the tunnel, outbound calls to user endpoints, or rate limits.
 
 ## Commands

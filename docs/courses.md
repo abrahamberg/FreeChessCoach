@@ -1,6 +1,6 @@
 # Courses and clips
 
-The spec behind Phases 79–87 (`docs/plan.md`). Read the section a task points
+The spec behind Phases 79–90 (`docs/plan.md`). Read the section a task points
 at, not the whole file.
 
 A **course** is a chess lesson built from a PGN: a clip (a reel or a YouTube
@@ -27,9 +27,10 @@ is the reason they stay: a free, better-checked equivalent of a paid course.
 | Node | One move in the tree, with a stable id (`n1`, `n2` …) assigned by code. Everything refers to nodes by id. |
 | Chapter | A group of episodes on one line. |
 | Episode | A stretch of nodes that teaches **one** point. The unit the AI writes and the creator edits. |
-| Beat | One moment of the clip: a node (or none, for the opening and end card), what the coach says, the on-screen caption, arrows, an optional pause. |
-| Clip narration | What the coach says in the video. Performative: hooks, tension, pace. |
-| Course note | What the learner hears/reads on the public board at that move. Must make sense alone, weeks later, without the clip. Shorter; not every clip line becomes a note. |
+| Ply | One move of an episode with its words: `text` (spoken on the course board and, by default, in the clip), an optional `clipText` for a sharper clip line, an optional caption, arrows, and two ticks: `long` (in the course) and `short` (in the clip). An empty text means the move plays without words. |
+| Opener | The clip's first line, before any move: a hook, at most 12 words. Episodes without one start straight on the board. |
+| Budget | How many plies the outline lets an episode speak: `long` in the course, `short` in the clip. The episode call stays inside it. |
+| Level | Where a course sits in the curriculum: a rating (800 … 2200) and its place at that rating, shown as `1200-01`, `1200-02`. |
 | Quiz | "Find the move" at a node: the clip pauses, the course waits for the learner's move. |
 | Dossier | Everything our code and the engine know about every node, rendered as text for the AI (§5.2). The only source of chess facts. |
 
@@ -85,13 +86,17 @@ CourseDocument = {
   episodes: {
     id, role, focus,               // role per kind (§6.3); focus = the one point
     startNodeId, endNodeId,
-    beats: { nodeId | null, say, caption, arrows: Arrow[], pauseMs? }[],
-    notes: { nodeId, text, arrows: Arrow[] }[],
+    opener?: { say, caption? },    // the clip's hook, before any move
+    plies: { nodeId, text, clipText?, caption?, arrows: Arrow[],
+             long: boolean, short: boolean }[],  // in the course / in the clip
+    budget?: { long, short },      // speaking plies the outline allowed
     quiz?: { answerNodeId, prompt, hint, reveal },
     drillNodeIds: string[]         // learner moves that become drill positions
   }[],
   takeaways: string[],             // exactly 3
   hookOptions: string[],           // 3 from the AI; the creator picks one
+  clipSeconds?: number,            // the clip's target length (the outline sets it)
+  level?: { rating, order },       // curriculum place: 1200-02 (§9)
   clipLinks: { youtube?, shorts?, instagram?, tiktok? }
 }
 Arrow = { from: Square, to: Square, kind: 'idea' | 'threat' | 'best' }
@@ -169,7 +174,7 @@ Kept to what the AI can't infer:
 | PGN or Lichess study URL | Variations and comments kept; `[%cal]`/`[%csl]` arrows kept as creator arrows. |
 | Kind | The five in §3. |
 | Direction | One or two sentences. Placeholder text shows an example per kind (below). |
-| Level | Rating band (`novice` … `advanced`); defaults to `improving`. |
+| Rating | The learner's rating, 800 … 2200 in steps of 200; defaults to 1200. The band the prompts write for comes from it (`bandForRating`), and the course takes the next place at that rating among the creator's courses (`level: { rating, order }`, §9). |
 | Learner side | Pre-filled by code (§3); editable. |
 | Coach | Pre-selected: the creator's own coach. Fixes the voice for the clip and the notes. |
 
@@ -177,7 +182,7 @@ The page (`/studio/new`, `CourseIntakePage.tsx`) asks in four numbered cards:
 the moves (the PGN beside a small board of the line's end, "16 moves, 1
 line, you teach Black", or the parse errors), the kind (cards with a line
 each), what to teach (the kind's example as a "Use this example" chip), and
-who it is for (level, the learner's side as From the PGN / White / Black,
+who it is for (the rating as pills, the learner's side as From the PGN / White / Black,
 the coach's portrait).
 
 Example directions shown in the form:
@@ -253,7 +258,9 @@ with template text.
 All prompt text lives in `packages/prompts/src/course/`, following the repo's
 convention (`buildCourseOutlineMessages`, `buildCourseEpisodeMessages`; blocks
 joined with `[...].filter(Boolean).join('\n\n')`). The system prompt is built
-cache-stable: the shared block first, then the kind playbook, then the voice.
+cache-stable: the coach's voice first (every line in the course and the clip
+is theirs), then the shared block, then the kind playbook. All three depend
+only on the course, so every call of one course shares the prefix.
 The request, budgets and dossier go in the user message.
 
 ### 6.1 Shared system block (both calls)
@@ -285,27 +292,43 @@ WHAT YOU MAY CLAIM
    ideas; improve the wording. Never copy more than one sentence of any other
    text.
 
-TWO TEXTS, TWO JOBS
-- Clip narration ("say") is spoken over the board in a video. It performs: it
-  hooks, builds tension, moves on. Sentences of 18 words or fewer, one idea per
-  beat. Write moves in SAN (they are read aloud correctly). The board shows
-  every move, so never narrate what the viewer can already see ("White moves the
+EACH MOVE, TWO VERSIONS
+Every episode is a run of moves, and the board plays them all. You choose which
+moves speak, and where:
+- "long": the coach speaks on this move in the course, which a learner plays
+  through on the board, maybe weeks later, maybe without having seen the clip.
+  The line stands alone: what the move does and why, in one or two sentences.
+- "short": the coach speaks on this move in the clip, a short video. The clip
+  performs: it hooks, builds tension, moves on. Sentences of 18 words or fewer,
+  one idea per move.
+- Most moves stay silent, above all in the clip. The plan gives each episode a
+  budget: at most that many moves speak in the course, and in the clip.
+- One text per move ("text") serves both. Set "clipText" only when the clip
+  needs a shorter or punchier line. "caption" is the on-screen text in the
+  clip, 6 words or fewer; set it only when the line's first sentence would not
+  do, since the app takes the caption from the line.
+- Write moves in SAN (they are read aloud correctly). The board shows every
+  move, so never narrate what the viewer can already see ("White moves the
   knight"); say why.
-- Course notes ("notes") are for a learner sitting on that exact move, maybe
-  weeks later, maybe without having seen the clip. Each note stands alone: what
-  the move does and why, in one or two sentences.
-- Captions are on-screen text: 6 words or fewer.
+
+EVERY LINE EARNS ITS PLACE
+- Every line sounds like the coach in VOICE: their words, their attitude, their
+  rhythm. Read each line back: if any coach could have said it, rewrite it.
+- Every line says something the learner wants to hear: the threat, the trick,
+  the reason, the feeling at the board. No filler: never "a solid move",
+  "develops a piece", "an interesting position", "a good choice here". If a
+  move has nothing worth saying, it stays silent.
 
 TEACHING
 - One episode, one point. The episode's "focus" sentence is that point; every
-  beat serves it.
+  line serves it.
 - Explain why, not just what: the reason a move works, and the cue on the board
   that tells you to look for it.
 - Pitch everything at the learner level given below: vocabulary, line depth,
   what you can assume they know.
 - Before a quiz answer, give a hint that points at the target (the king, a loose
   piece, a square), never at the move.
-- Arrows: at most 2 per beat, only moves that are legal in that position or
+- Arrows: at most 2 per move, only moves that are legal in that position or
   threats the dossier lists. "best" = the move to learn, "threat" = danger,
   "idea" = a plan or a square.
 
@@ -346,19 +369,19 @@ The trapper is {trapperSide}. The bait is node {baitNodeId}. The answer is node
 Use exactly these episodes, in order:
 1. hook — at most 12 words, true and specific to how the trap ends:
    {trapEnding}
-2. setup — the setup moves play fast. Narrate at most two, only where the move
-   order matters.
+2. setup — the setup moves play fast. At most two speak in the clip, only
+   where the move order matters.
 3. bait — why the victim's move looks natural. This is the heart of the trap:
    the viewer should think "I'd play that too".
 4. quiz — "What does {trapperSide} play here?" plus a hint at the target. The
-   clip pauses {pauseSeconds}s.
-5. punish — one beat per forcing move; captions carry the rhythm.
+   clip pauses {pauseSeconds}s (the app adds the pause).
+5. punish — every forcing move speaks in the clip; captions carry the rhythm.
 6. safety — how the victim stays safe: {safeMove}, in one or two sentences.
    {trapperRiskLine}
 The end card and call to action are added by the app; don't write them.
-Notes: every node gets one. The bait and the safe move get the longest. The
-learner drills both sides, so the notes must teach springing the trap and
-avoiding it.
+In the course, every move speaks. The bait and the safe move get the longest
+lines. The learner drills both sides, so the lines must teach springing the
+trap and avoiding it.
 ```
 `{trapperRiskLine}` is "The trapper's setup is risky against best play (see the
 dossier); say so plainly." when `trapperRisk` is set, else empty.
@@ -375,14 +398,14 @@ eight moves." word for word on a trap that mates.
 KIND: OPENING MAIN LINE (vertical reel, at most {seconds}s, at most {words} words)
 The learner plays {learnerSide}. The line ends at node {endNodeId}.
 1. hook — at most 12 words: what this opening gives the learner, concretely.
-2. line — play the line. Narrate at most {narratedMax} moves, only those that
-   carry the idea; the rest get a caption only.
+2. line — play the line. At most {narratedMax} moves speak in the clip, only those
+   that carry the idea; the rest play silently.
 3. idea — one sentence on the plan from the final position, grounded in the
    line's position features.
 4. remember — the one trap or common mistake in this line if the dossier lists
    one; otherwise the key pawn break or square.
-Notes: every {learnerSide} move gets a "why this move" note. Opponent moves get
-a note only where they change the plan.
+In the course, every {learnerSide} move speaks: "why this move". Opponent moves
+speak only where they change the plan.
 ```
 
 **opening_course**
@@ -398,8 +421,8 @@ The learner plays {learnerSide}. Lines, in the creator's order: {lineList}.
 - Last chapter "Recap": the move orders only, then the three takeaways.
 drillNodeIds: every learner move in the main line, plus the first two learner
 moves after each deviation.
-Clip: narrate chapter 1 fully; each sideline in two or three beats. The course
-carries the detail.
+Clip: chapter 1's key moves speak; each sideline in two or three moves. The
+course carries the detail.
 ```
 
 **tactics**
@@ -422,12 +445,12 @@ KIND: MASTER GAME, MOVE BY MOVE. The learner studies {learnerSide}.
 Headers: {white} vs {black}, {event}, {year}. Use nothing about the players
 beyond these headers and the creator's direction.
 - intro — one sentence on what this game teaches.
-- Every {learnerSide} move gets a note naming its purpose as a principle:
+- In the course, every {learnerSide} move speaks, naming its purpose as a principle:
   development, the centre, king safety, weak squares, open files, piece
   activity, a pawn majority, the plan. Routine moves: one short sentence.
   Critical nodes: up to four sentences, including the move a club player would
   be tempted by and why it is worse (dossier alternatives only).
-- Opponent moves get a note only when they create a threat or change the plan.
+- Opponent moves speak only when they create a threat or change the plan.
 - Guess-the-move quizzes only at critical, quiz-eligible nodes where the
   master's move is the engine's best or marked "also good".
 - If the dossier marks a master's move as a mistake, say so respectfully and
@@ -446,8 +469,12 @@ Kind: {kind}
 Direction (from the creator): "{direction}"
 Learner side: {learnerSide}
 Learner level: {CALIBRATION[band].label} — {CALIBRATION[band].description}
-Budgets: clip at most {seconds}s, at most {words} spoken words in total, hook at
-most 12 words, {episodeRange} episodes.
+Budgets: clip at most {seconds}s (clipSeconds), at most {words} spoken words in
+total, hook at most 12 words, {episodeRange} episodes.
+Speaking budgets, per episode: budgetLong is how many of its moves speak in the
+course; budgetShort is how many speak in the clip. Across the whole clip, at
+most {narratedMax} moves speak. A hook speaks over its opening card, so its
+budgetShort is 0. Neither budget may exceed the episode's moves.
 
 LINES
 {lineId} ({name}): {SAN movetext with move numbers}
@@ -457,8 +484,9 @@ CANDIDATES (computed by code, choose from these)
 
 EPISODE PLAN (computed by code)
 Keep every chapter, episode id, role, startNodeId, endNodeId and answerNodeId
-exactly as listed. You write each focus, and pick narratedNodeIds only from
-the moves between that episode's startNodeId and endNodeId.
+exactly as listed. You write each focus, set each episode's budgets, and pick
+narratedNodeIds only from the moves between that episode's startNodeId and
+endNodeId.
 {the §10 episodes as spans: "- e4 quiz, on n12 (6... Bb4), answerNodeId n12"}
 
 DOSSIER
@@ -477,8 +505,10 @@ Output (`CourseOutlineSchema`):
   hookOptions: string[3],      // three different angles, each at most 12 words
   chapters: [{ title, lineId,
     episodes: [{ id, role, focus, startNodeId, endNodeId,
-                 narratedNodeIds: string[], answerNodeId?: string }] }],
-  takeaways: string[3]
+                 narratedNodeIds: string[], answerNodeId?: string,
+                 budgetLong: number, budgetShort: number }] }],
+  takeaways: string[3],
+  clipSeconds: number          // the clip's target length
 }
 ```
 
@@ -486,7 +516,8 @@ Validated in code before any episode is written: every node id exists; episodes
 are on their line and in order; every node the kind requires is covered (trap:
 bait, answer, safety; master game: every node in some episode); roles are legal
 for the kind; `answerNodeId` is quiz-eligible (or, for master games, critical
-and best/also-good); the count of narrated nodes fits the budget. A failure is
+and best/also-good); the count of narrated nodes fits the budget; neither
+speaking budget exceeds the episode's moves. A failure is
 sent back once with the exact problems listed ("episode e4 answerNodeId n17 is
 not quiz-eligible; eligible nodes near it: n15, n19"). A second failure falls
 back to the skeleton for the failing part and tells the creator.
@@ -497,25 +528,35 @@ real runs lost both opening outlines and the trap's safety episode to spans the
 checks refused. With no skeleton there is no plan, and the model plans the
 spans itself.
 
+The budgets are the planner's real job: it decides, per episode, how many
+moves speak in the course and how many in the clip, so the episode calls
+don't voice every move. They land on the episode (`budget: { long, short }`)
+and the verifier holds the episode to them. `clipSeconds` lands on the
+document. A fallback outline gets default budgets from code
+(`defaultCourseBudget`).
+
 ### 6.5 The episode call
 
 One call per episode. It gets the shared block, the playbook and the voice as
 the system prompt (cached across the episode calls), and in the user message:
 the course title, promise and the whole outline (so it knows what comes before
 and after), **only this episode's dossier** (plus the previous episode's last
-node), its word budget, and any creator instruction for a regeneration. It
-lists the nodes the beats and notes may use, and says the previous node is
-context only; without that line, gpt-6-luna kept writing notes on it.
+node), its speaking budget ("at most {budgetLong} moves with "long": true, at
+most {budgetShort} with "short": true"), its clip word budget, and any creator
+instruction for a regeneration. It lists the nodes the plies may use, and says
+the previous node is context only; without that line, gpt-6-luna kept writing
+notes on it.
 
 Output (`EpisodeScriptSchema`):
 
 ```ts
 {
   episodeId: string,
-  beats: [{ nodeId: string | null, say: string, caption: string,
-            arrows: Arrow[], pauseMs?: number }],
-  notes: [{ nodeId: string, text: string, arrows: Arrow[] }],
-  quiz?: { answerNodeId: string, prompt: string, hint: string, reveal: string }
+  opener: { say: string, caption?: string } | null,   // the clip's hook
+  plies: [{ nodeId: string, text: string, clipText: string | null,
+            caption: string | null, arrows: Arrow[],
+            long: boolean, short: boolean }],
+  quiz: { answerNodeId: string, prompt: string, hint: string, reveal: string } | null
 }
 ```
 
@@ -552,19 +593,20 @@ n16 8…Qc1# (Black, main) | checkmate
 ```
 
 Episode `bait` + `quiz` from the episode call (the Commander's voice; the
-verifier checks every SAN and the word "pin" against the dossier):
+verifier checks every SAN and the word "pin" against the dossier). One text
+serves the course; the clip gets its own, punchier line:
 
 ```json
 {
   "episodeId": "e3",
-  "beats": [
-    { "nodeId": "n11", "say": "Six. Bc3. It hits the queen. Any sane player grabs that tempo.",
-      "caption": "Hits the queen", "arrows": [{ "from": "c3", "to": "b2", "kind": "threat" }] },
-    { "nodeId": "n11", "say": "Your move, Black. Look at the white king. Look at what stands in front of it.",
-      "caption": "Your move", "arrows": [], "pauseMs": 3000 }
-  ],
-  "notes": [
-    { "nodeId": "n11", "text": "Bc3 attacks the queen, so it feels like the natural move. But the bishop now stands on the diagonal to White's king, with nothing else in between.", "arrows": [] }
+  "opener": null,
+  "plies": [
+    { "nodeId": "n11",
+      "text": "Bc3 attacks the queen, so it feels like the natural move. But the bishop now stands on the diagonal to White's king, with nothing else in between.",
+      "clipText": "Six. Bc3. It hits the queen. Any sane player grabs that tempo.",
+      "caption": "Hits the queen",
+      "arrows": [{ "from": "c3", "to": "b2", "kind": "threat" }],
+      "long": true, "short": true }
   ],
   "quiz": { "answerNodeId": "n12",
     "prompt": "Black to move. Find the strongest move.",
@@ -582,18 +624,19 @@ a message the creator can read.
 
 | Check | Rule |
 |---|---|
-| Nodes | Every `nodeId` exists and lies inside the episode (or is its quiz answer). Beats are in node order. |
-| Moves | Every SAN token in `say`, `caption`, `notes` and the quiz (the same move-token grammar the chat uses) is a lesson move, an engine best move/line or a listed alternative within the episode's nodes. |
+| Nodes | Every `nodeId` exists and lies inside the episode (or is its quiz answer). Plies are in node order, one per move. |
+| Moves | Every SAN token in `text`, `clipText`, `caption`, the opener and the quiz (the same move-token grammar the chat uses) is a lesson move, an engine best move/line or a listed alternative within the episode's nodes. |
 | Tactic words | A motif word (fork, pin, skewer, discovered, double check, mate, trapped, deflection, …, from the detectors' vocabulary) appears only if the dossier lists that motif within the episode. |
 | Numbers | No eval-looking numbers (`+1.3`, `-0.8`, "centipawn", "eval"). No `N%` unless the creator's direction contains it. |
-| Arrows | Each arrow is a legal move for either side in that position (the opponent's via `null-move-fen.ts`) or a threat the dossier lists. At most 2 per beat. |
-| Lengths | Words per beat and per episode within budget; captions at most 6 words; notes at most 2 sentences (4 at critical nodes); no beat without both words and a caption (the AI pipeline drops a beat with nothing on it before checking). |
+| Arrows | Each arrow is a legal move for either side in that position (the opponent's via `null-move-fen.ts`) or a threat the dossier lists. At most 2 per move. |
+| Budgets | At most `budget.long` plies ticked `long`, at most `budget.short` ticked `short`. |
+| Lengths | The clip line (`clipText`, else `text`) within the words per move, the clip within the episode's words; captions at most 6 words; course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
 | Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); the hint does not name it. |
 | Phrases | None of `BANNED_GENERIC_PHRASES`. |
 
 Failures go back to the model once, as a list, with the episode's previous
 output. Anything still failing is kept and shown in the editor as a warning on
-that episode ("Nd5 in the note on n14 is not in the analysis"). Publishing is
+that episode ("Nd5 in the line on n14 is not in the analysis"). Publishing is
 allowed with warnings only after the creator ticks "I checked these".
 
 **Quality harness.** `apps/api/scripts/course-golden.ts` runs the pipeline on a
@@ -608,8 +651,10 @@ they ship.
 
 Decided with the owner:
 
-- Two scripts: clip narration (everything in the video) and course notes
-  (shorter, per move). Both are voiced by the course's coach.
+- One ply list, two versions: the course speaks the plies ticked `long`
+  (their `text`), the clip plays the plies ticked `short` (their `clipText`,
+  else `text`) after the episode's opener. Both are voiced by the course's
+  coach. The editor's per-move ticks decide which moves are in which.
 - **All audio first, then record.** Every sentence of both scripts is
   synthesised in the creator's browser with the coach's voice: **Kokoro
   only**, in the browser or on the creator's local Kokoro server (the same
@@ -619,19 +664,22 @@ Decided with the owner:
   recorded until every sentence exists.
 - The device's built-in voice (`native`) is not offered either: it produces no
   audio bytes to record and sounds different on every device.
-- Timing comes from the audio: a beat lasts its audio plus a short gap. So a
-  re-export is identical (`clip/timeline.ts`).
+- Timing comes from the audio: a clip move lasts its audio plus a short gap
+  (a silent short ply gets a fixed pause), and the moves between two clip
+  plies play at move pace. So a re-export is identical (`clip/timeline.ts`).
+  Audio keys: `opener:{episode}`, `clip:{episode}:{node}`, `quiz:{episode}`,
+  and `note:{node}` for the course's long plies.
 - **Board sounds** (Phase 88, on by default, a switch in the clip panel):
   each move shown for the first time knocks (the learner's side, or the
   other side's softer knock), a check chimes, and from the engine pass a
   mistake or blunder plays bad and a great or brilliant move, or one that
   turns the game, plays great, for either side. A narrated move's voice
-  starts once its sounds end, and the beat is that much longer. The sounds
+  starts once its sounds end, and the move is that much longer. The sounds
   play on the clip's audio clock, so the recording has them as previewed.
 - The quiz moment is built by code, not written by the model: the position
   before the answer, the coach saying `quiz.prompt`, a 3 s countdown, then the
-  episode's beats reveal the answer. (gemma-4-12b put the quiz beat on the
-  answer itself, with no pause, so the clip gave the answer away.)
+  episode's short plies reveal the answer. (gemma-4-12b put the quiz line on
+  the answer itself, with no pause, so the clip gave the answer away.)
 - The whole clip is recorded in one pass from a canvas (board, eval bar,
   arrows, captions, coach avatar, end card) plus the audio through Web Audio,
   in both formats: 9:16 (1080×1920) and 16:9 (1920×1080). The persona's playback
@@ -671,12 +719,14 @@ Decided with the owner:
   engine pass, `evals`, `{}` without one) and
   `GET /api/public/courses/:slug/audio/<hash>.wav`
   (`routes/public-courses.ts`). Drafts and removed courses are 404.
-- **Catalogue**: `GET /api/public/courses?kind=&cursor=&limit=` lists
-  `public` courses only (unlisted ones are for their link), newest first, 50
-  a page, with an opaque cursor (the row's `published_at` to the microsecond
-  and its id); cached 60 s. Each item: slug, title, promise, kind, level,
-  coach, learner side, published date, episode and move counts. The Courses
-  page's Browse section reads it. Nothing
+- **Catalogue**: `GET /api/public/courses?kind=&sort=&cursor=&limit=` lists
+  `public` courses only (unlisted ones are for their link), 50 a page,
+  cached 60 s. `sort=newest` (the default) pages with an opaque cursor (the
+  row's `published_at` to the microsecond and its id); `sort=curriculum`
+  orders by level (rating, then place, courses without a level last, then
+  newest) and pages by offset. Each item: slug, title, promise, kind, level
+  band, the curriculum `level` (or null), coach, learner side, published
+  date, episode and move counts. The Courses page's Browse section reads it. Nothing
   about the creator is sent: their display name defaults to their email's
   local part. Skip-auth entries in `values.yaml` (asserted by
   `deploy/helm/test.sh`); nginx serves `/learn/*` through its SPA fallback,
@@ -730,14 +780,23 @@ Decided with the owner:
   purge in Cloudflare (the api's and the bucket domain's), since the edge may
   hold copies for up to a year. There is no admin UI yet.
 - **The Course studio** (`/studio`, creators only): the creator's courses as
-  cards (kind, Draft/Unlisted/Public/Removed, title, promise, moves and
-  episodes, the AI's progress while it writes; Edit, and Open once
-  published), filtered All / Drafts / Published; with none, the four steps
-  of making one. The editor (`/studio/:id/edit`) has a header (back, the
-  title edited in place, the status, Saved / Unsaved changes, Preview: Clip
-  | As learner, Publish, Save, "⋮" Build without AI), a Details card (the
-  promise, Write with AI) above the outline, and the episode panel in tabs:
-  Notes, Quiz, Clip, AI.
+  cards (kind, the level code, Draft/Unlisted/Public/Removed, title, promise,
+  moves and episodes, the AI's progress while it writes; Edit, and Open once
+  published), filtered All / Drafts / Published and sorted Newest or
+  Curriculum; with none, the four steps of making one. The editor
+  (`/studio/:id/edit`) has a header (back, the title edited in place, the
+  status, Saved / Unsaved changes, Preview: Clip | As learner, Publish,
+  Save), a Details card (the promise, the coach, the level as a rating and a
+  place, "1200-02", and a small Start over that rebuilds the course, with or
+  without the AI) above the outline, and the episode panel in tabs: Moves
+  (each move's text, an optional clip line, and the "Course" / "Clip" ticks,
+  under the plan's budget), Quiz, Clip (the opener and the clip's script),
+  AI. Write with AI shows only on a course with no words yet.
+- **Curriculum.** A course's `level` places it: all courses at one rating
+  form that rating's curriculum, in `order` (1200-01, 1200-02 …). A new
+  course takes the creator's next place at its rating; the Details card
+  changes either. Browse and the studio sort by it; Browse groups the
+  courses under their rating.
 - **Preview as learner** in the editor is the same `CoursePlayer` on the
   draft, each note voiced the first time it plays (browser cache first).
 - The evaluations come from the course's dossier (§5.4, each node's
@@ -751,11 +810,13 @@ Decided with the owner:
 
 The skeleton (§5.5) becomes episodes directly, with template text the creator
 overwrites:
-- Notes pre-filled from checked facts: the opening name ("Main line of the
-  Englund Gambit"), the tactic sentences (`tactic-reason-text.ts`), the board
-  facts ("Bc3 attacks the queen on b2").
-- Clip narration left empty, with the episode's role as a prompt ("bait: why
-  does this move look natural?").
+- Every move becomes a ply ticked for the course, its text pre-filled from
+  checked facts: the opening name ("Main line of the Englund Gambit"), the
+  tactic sentences (`tactic-reason-text.ts`), the board facts ("Bc3 attacks
+  the queen on b2").
+- The clip gets at most two plies per episode, on its critical or tactic
+  moves, with the same text; the creator ticks more or writes clip lines.
+  Budgets come from `defaultCourseBudget`.
 - The same verifier runs on hand-written text, so a typo'd move is caught.
 
 ---
@@ -808,7 +869,8 @@ Games page's Continue rail, mixed with game sessions by last activity.
 
 **The Courses page** (`/courses`, `features/courses/learn/`): Learning
 (unfinished, with the stage and a remove button), Browse (the §9
-catalogue, kind filter pills, a Learning/Learned badge) and Learned
+catalogue, sorted Curriculum (the default, grouped by rating, each card with
+its level code) or Newest, kind filter pills, a Learning/Learned badge) and Learned
 (finished, with moves due). The navigation reads Games, Courses, Progress,
 Stats; Play with Coach and Play a Bot start from the Games page. The
 creator's pages are at `/studio` ("Course studio" in the account menu).
@@ -826,7 +888,7 @@ drills. Signed out, the same button explains that coaching needs an account.
 
 ---
 
-## 12. Later, not in Phases 79–87
+## 12. Later, not in Phases 79–90
 
 - Linking courses to the learner's own imported games ("you reached move 7 of
   the Italian trap on Tuesday and played Nc3").
