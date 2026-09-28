@@ -1,4 +1,3 @@
-import { Chess } from 'chess.js';
 import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
 import type { ClassifiedMove } from './classify.js';
 import { CONFIG } from './config.js';
