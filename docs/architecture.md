@@ -113,6 +113,20 @@ Responsibilities:
 
 Browser Stockfish is UX-only and never authoritative.
 
+### Board sounds
+
+`apps/web/src/sounds/`: five sounds synthesized in the browser (Web Audio,
+rendered once): the student's move, the opponent's (lower, softer), check,
+bad (a mistake or blunder) and great (great/brilliant, or a move that turns
+the game). `move-sounds.ts` picks them; `useMoveStepSounds` plays a move when
+the board steps forward one move (the student's own drop at once). Live
+games (with the coach, a bot, practice) never play bad or great; analyzed
+moves (review, coaching on a game, course play-throughs, clips) play them for
+either side. While the coach's voice or a course note speaks
+(`voice-activity.ts`), a board sound plays at a third of its volume. Settings >
+Board turns them off, per device. Clips schedule the same sounds on their
+audio clock (docs/courses.md §8).
+
 ### Browser tunnel
 
 Every signed-in tab keeps one WebSocket open to `GET /api/tunnel`

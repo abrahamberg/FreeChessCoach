@@ -614,6 +614,13 @@ Decided with the owner:
   audio bytes to record and sounds different on every device.
 - Timing comes from the audio: a beat lasts its audio plus a short gap. So a
   re-export is identical (`clip/timeline.ts`).
+- **Board sounds** (Phase 88, on by default, a switch in the clip panel):
+  each move shown for the first time knocks (the learner's side, or the
+  other side's softer knock), a check chimes, and from the engine pass a
+  mistake or blunder plays bad and a great or brilliant move, or one that
+  turns the game, plays great, for either side. A narrated move's voice
+  starts once its sounds end, and the beat is that much longer. The sounds
+  play on the clip's audio clock, so the recording has them as previewed.
 - The quiz moment is built by code, not written by the model: the position
   before the answer, the coach saying `quiz.prompt`, a 3 s countdown, then the
   episode's beats reveal the answer. (gemma-4-12b put the quiz beat on the
@@ -753,6 +760,12 @@ The stages (`COURSE_STAGES`; `packages/chess-analysis/src/course-stages.ts`):
    move, whichever side plays it; master game: a guess at each move,
    scored).
 4. **Full drill** ("Both sides"): every move of the line.
+
+**Board sounds** (`apps/web/src/sounds/`, Settings > Board): stepping on
+in the play-through plays the move's sounds, bad and great for either side
+from the evaluations (a solved quiz plays great), and the note's voice
+waits for them; in practice and the drills the learner's move knocks, the
+auto-played reply knocks softer, and a wrong try plays bad.
 
 While playing, the coach column keeps a move log across episodes: the move
 to find on top (hidden in the drills; practice says what it does), then the

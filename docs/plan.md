@@ -1318,7 +1318,7 @@ Commit: `feat(sounds): board sounds under clip moves`
 
 ### Task 88.5 — Docs
 
-- [ ] `docs/architecture.md` (Web: board sounds), `docs/courses.md` §8 (clip
+- [x] `docs/architecture.md` (Web: board sounds), `docs/courses.md` §8 (clip
   sounds) and §11.
 
 Commit: `docs: board sounds`
