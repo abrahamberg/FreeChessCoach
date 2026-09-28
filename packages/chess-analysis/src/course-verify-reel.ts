@@ -51,6 +51,7 @@ export function verifyCourseReel(input: CourseReelVerifyInput): CourseVerifyProb
     if (!scope.inside.has(beat.nodeId)) problems.push({ code: 'reel', nodeId: beat.nodeId, message: `The reel line on ${beat.nodeId} is outside the reel's moves` });
     if (words(beat.say) > MAX_BEAT_WORDS) problems.push({ code: 'reel', nodeId: beat.nodeId, message: `The reel line on ${beat.nodeId} has ${words(beat.say)} words (at most ${MAX_BEAT_WORDS})` });
   }
+  problems.push(...sideToPlayProblems(input, texts));
   if (!reel.hook.trim()) problems.push({ code: 'reel', nodeId: null, message: 'The reel has no hook: name the idea in the first words' });
   if (words(reel.hook) > MAX_HOOK_WORDS) problems.push({ code: 'reel', nodeId: null, message: `The reel's hook has ${words(reel.hook)} words (at most ${MAX_HOOK_WORDS})` });
   for (const [where, text] of [['top text', reel.topText], ['payoff', reel.payoff]] as const) {
@@ -79,6 +80,19 @@ export function verifyCourseReel(input: CourseReelVerifyInput): CourseVerifyProb
     ...nodeIdProblems(texts),
     ...phraseProblems(texts)
   ];
+}
+
+/** "White to play" must be the side that plays the climax: the first
+ * smart-model run put "White to play: Mate?" over Black's 6…Bb4. */
+function sideToPlayProblems(input: CourseReelVerifyInput, texts: EpisodeText[]): CourseVerifyProblem[] {
+  const climax = input.nodes.find((node) => node.id === input.reel.climaxNodeId);
+  if (!climax) return [];
+  const parent = input.nodes.find((node) => node.id === climax.parentId);
+  const side = ((parent?.fenAfter ?? input.startFen).split(' ')[1] === 'b' ? 'black' : 'white');
+  return texts.flatMap(({ where, text }) => {
+    const said = text.toLowerCase().match(/\b(white|black) to (?:play|move)\b/)?.[1];
+    return said && said !== side ? [{ code: 'reel' as const, nodeId: climax.id, message: `${where} says "${said} to play", but ${side} plays the climax` }] : [];
+  });
 }
 
 /** The reel's rough length: its words, its moves at build-up pace, the

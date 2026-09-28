@@ -58,6 +58,11 @@ describe('verifyCourseReel (§13.9)', () => {
 });
 
 describe('the promo and the openers', () => {
+  test('the side to play is the side that plays the climax', () => {
+    expect(verify(reel({ topText: 'White to play: mate?' })).map((problem) => problem.message)).toEqual(["the reel's top text says \"white to play\", but black plays the climax"]);
+    expect(verify(reel({ topText: 'Black to play' }))).toEqual([]);
+  });
+
   test('a promo stops before its climax: a line on it or after it never plays', () => {
     const promo = reel({ style: 'promo', climaxNodeId: 'n16', endNodeId: 'n16' });
     expect(verify(promo).map((problem) => problem.message)).toEqual(['The promo stops before n16, so the line on n16 never plays: keep lines before the climax']);

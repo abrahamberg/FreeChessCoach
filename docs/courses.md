@@ -1221,7 +1221,7 @@ its warnings carry the episode id `'reel'`).
 | Check | Rule |
 |---|---|
 | Tempting | Every `tempting[].san` is one of the dossier's tempting moves at that node; its `why` names no move outside the refutation. |
-| Reel | Span within 6 moves before the climax and 2 after; the style fits (promo only with a video; puzzle only where the climax side has a forced win); `hook` ≤ 10 words and names no greeting; `topText` and `payoff` ≤ 5 words; `cta` is not generic (`GENERIC_CTAS`: "subscribe for more", "like and subscribe", "follow for more"); the estimated length is 30–45 s. |
+| Reel | "White/Black to play" names the side that plays the climax; span within 6 moves before the climax and 2 after; the style fits (promo only with a video; puzzle only where the climax side has a forced win); `hook` ≤ 10 words and names no greeting; `topText` and `payoff` ≤ 5 words; `cta` is not generic (`GENERIC_CTAS`: "subscribe for more", "like and subscribe", "follow for more"); the estimated length is 30–45 s. |
 | Video | `title` ≤ 55 characters; `thumbnailText` ≤ 4 words; `hook` ≤ 40 words and not an intro ("hey guys", "welcome back", "today we"); `outro` asks a question. |
 | Voice | At most 2 lines in an episode start with the same word ("Execute …"); no stock line repeated across episodes. |
 | Key moves | As Phase 91, for the course and the video. |
