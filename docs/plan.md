@@ -1365,7 +1365,7 @@ Commit: `feat(courses): the studio list shows each course's size and state`
 pills to reuse), `features/games/RailCard.css`.
 **Files:** `CoursesPage.tsx` (the studio) + CSS + test.
 
-- [ ] Failing test first: cards with the kind chip, a status badge (Draft,
+- [x] Failing test first: cards with the kind chip, a status badge (Draft,
   Unlisted, Public, Removed), title, promise, "12 moves · 6 episodes · edited
   Sep 28", a progress bar while the AI writes; Edit, and Open (the public
   page) once published; filter pills All / Drafts / Published; an empty state

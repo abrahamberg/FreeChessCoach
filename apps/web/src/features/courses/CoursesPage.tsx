@@ -1,45 +1,163 @@
-import type { ReactNode } from 'react';
+import type { CourseStatus, CourseSummary } from '@freechesscoach/shared';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
+import { BookIcon, EditIcon, ExternalLinkIcon, PlusIcon } from '../../components/Icon.js';
+import { shortDate } from '../games/gameDisplay.js';
 import { useCourses } from './courseApi.js';
 import { COURSE_KIND_INFO } from './courseKinds.js';
-import './CourseEditor.css';
+import '../games/GameCard.css';
+import '../games/GamesPage.css';
+import '../games/RailCard.css';
+import './learn/CoursesHomePage.css';
+import './CoursesPage.css';
 
-/** /studio: the creator's courses, as the API lists them, and the way to
- * start a new one. */
+type Filter = 'all' | 'drafts' | 'published';
+
+const STATUS: Record<CourseStatus, { label: string; badge: string }> = {
+  draft: { label: 'Draft', badge: 'badge' },
+  unlisted: { label: 'Unlisted', badge: 'badge badge--info' },
+  public: { label: 'Public', badge: 'badge badge--primary' },
+  removed: { label: 'Removed', badge: 'badge badge--danger' }
+};
+
+const FILTERS: [Filter, string][] = [
+  ['all', 'All'],
+  ['drafts', 'Drafts'],
+  ['published', 'Published']
+];
+
+/** `/studio` (docs/courses.md §9): the creator's courses as cards, in the
+ * Courses page's style: kind, status, title, promise and size, the AI's
+ * writing while it runs, Edit, and Open once published. */
 export function CoursesPage(): ReactNode {
   const courses = useCourses();
+  const [filter, setFilter] = useState<Filter>('all');
   const list = courses.data?.courses ?? [];
+  const shown = list.filter((course) => filter === 'all' || (filter === 'drafts' ? course.status === 'draft' : course.status === 'unlisted' || course.status === 'public'));
 
   return (
-    <div className="course-intake">
-      <div className="course-intake__header">
-        <h1>Course studio</h1>
-        <Link to="/studio/new" className="btn-primary">
+    <div className="page courses-home studio">
+      <header className="studio__header">
+        <div>
+          <h1>Course studio</h1>
+          <p className="courses-home__empty">Turn a PGN into a lesson, a clip and a course page.</p>
+        </div>
+        <Link to="/studio/new" className="btn-primary studio__new">
+          <PlusIcon width={16} height={16} />
           New course
         </Link>
-      </div>
-      {courses.isPending && <p className="meta">Loading…</p>}
+      </header>
+
+      {courses.isPending && <p className="courses-home__empty">Loading…</p>}
       {courses.isError && (
-        <p className="course-intake__errors" role="alert">
+        <p className="courses-home__empty" role="alert">
           {describeApiError(courses.error) ?? 'Could not load your courses.'}
         </p>
       )}
-      {courses.isSuccess && !list.length && <p className="meta">No courses yet. Paste a PGN to make your first one.</p>}
+
+      {courses.isSuccess && !list.length && <EmptyStudio />}
+
       {list.length > 0 && (
-        <section className="course-intake__list">
-          <ul>
-            {list.map((course) => (
-              <li key={course.id}>
-                <Link to={`/studio/${course.id}/edit`}>{course.title || 'Untitled course'}</Link>
-                <span className="meta">
-                  {COURSE_KIND_INFO[course.kind].label} · {course.status} · {new Date(course.updatedAt).toLocaleDateString()}
-                </span>
-              </li>
+        <section aria-label="Your courses" className="games-page__section">
+          <div className="courses-home__filters" role="group" aria-label="Show">
+            {FILTERS.map(([value, label]) => (
+              <button key={value} type="button" className="courses-home__filter" aria-pressed={filter === value} onClick={() => setFilter(value)}>
+                {label}
+              </button>
             ))}
-          </ul>
+          </div>
+          {shown.length ? (
+            <div className="courses-home__grid">
+              {shown.map((course) => (
+                <StudioCard key={course.id} course={course} />
+              ))}
+            </div>
+          ) : (
+            <p className="courses-home__empty">{filter === 'drafts' ? 'No drafts.' : 'Nothing published yet.'}</p>
+          )}
         </section>
       )}
     </div>
+  );
+}
+
+function StudioCard({ course }: { course: CourseSummary }): ReactNode {
+  const status = STATUS[course.status];
+  const writing = course.generation && (course.generation.status === 'queued' || course.generation.status === 'running') ? course.generation : null;
+  const published = course.status === 'unlisted' || course.status === 'public';
+  const title = course.title || 'Untitled course';
+  return (
+    <article className="card courses-home__course studio__card">
+      <span className="rail-card__top">
+        <span className="rail-card__chip">
+          <BookIcon width={16} height={16} />
+          {COURSE_KIND_INFO[course.kind].label}
+        </span>
+        <span className={`${status.badge} courses-home__status`}>{status.label}</span>
+      </span>
+      <h2 className="rail-card__title rail-card__title-wrap studio__title">
+        <Link to={`/studio/${course.id}/edit`}>{title}</Link>
+      </h2>
+      {course.promise && <span className="courses-home__promise">{course.promise}</span>}
+      <span className="rail-card__meta">
+        {course.moves} moves · {course.episodes === 1 ? '1 episode' : `${course.episodes} episodes`} · edited {shortDate(course.updatedAt)}
+      </span>
+      {writing && (
+        <span className="studio__writing">
+          <progress
+            className="rail-card__progress"
+            value={writing.done}
+            max={Math.max(writing.total, 1)}
+            aria-label={`The AI is writing: ${writing.done} of ${writing.total}`}
+          />
+          <span className="rail-card__meta">The AI is writing…</span>
+        </span>
+      )}
+      {course.generation?.status === 'failed' && <span className="rail-card__meta studio__failed">The AI's writing stopped; open it to resume.</span>}
+      <div className="rail-card__actions">
+        <Link to={`/studio/${course.id}/edit`} className="btn-primary studio__action" aria-label={`Edit ${title}`}>
+          <EditIcon width={16} height={16} />
+          Edit
+        </Link>
+        {published && (
+          <Link to={`/learn/${course.slug}`} className="btn-secondary studio__action" aria-label={`Open ${title}`} target="_blank" rel="noreferrer">
+            <ExternalLinkIcon width={16} height={16} />
+            Open
+          </Link>
+        )}
+      </div>
+    </article>
+  );
+}
+
+/** How a course is made, for a creator with none yet. */
+function EmptyStudio(): ReactNode {
+  const steps = [
+    ['Paste a PGN', 'A game, an opening line or a trap, and one line on what to teach.'],
+    ['The AI writes it', 'Episodes, notes, a quiz and the clip, checked against the engine.'],
+    ['Preview', 'As a learner, and the clip with the coach’s voice.'],
+    ['Publish', 'Unlisted for a link, or public in Browse.']
+  ];
+  return (
+    <section className="card studio__empty" aria-label="How a course is made">
+      <ol className="studio__steps">
+        {steps.map(([title, text], index) => (
+          <li key={title}>
+            <span className="studio__step-number" aria-hidden="true">
+              {index + 1}
+            </span>
+            <span>
+              <strong>{title}</strong>
+              <span className="courses-home__promise">{text}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <Link to="/studio/new" className="btn-primary studio__new">
+        <PlusIcon width={16} height={16} />
+        New course
+      </Link>
+    </section>
   );
 }
