@@ -3,6 +3,7 @@ import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freec
 import type { ClassifiedMove } from './classify.js';
 import { CONFIG } from './config.js';
 import { abandonedGuard, betterMoveFacts, boardFacts, lineWords, positionWords } from './course-dossier-words.js';
+import type { CourseTemptingFacts } from './course-tempting.js';
 import type { CourseTreeNode } from './course-tree.js';
 import { isBookMoveFrom, resolveOpening } from './opening-book.js';
 import { positionKey } from './opening-book-key.js';
@@ -10,7 +11,6 @@ import { tacticAllowedReason, tacticOpportunityReason } from './tactic-reason-te
 import { toCpWhite, winPctFor } from './win-probability.js';
 
 const BEST_LINE_PLIES = 6;
-const MAX_TEMPTING = 4;
 
 export interface CourseNodeFacts {
   nodeId: string;
@@ -41,8 +41,10 @@ export interface CourseNodeFacts {
   motif: TacticMotifType | null;
   /** The engine's other top moves, in words. */
   alternatives: { san: string; verdict: string }[];
-  /** Captures and checks the engine did not rank in its top lines. */
-  tempting: string[];
+  /** §13.5: checks, captures and threats that look right here and fail,
+   * with the engine's answer (`withTempting`, after a second engine batch);
+   * empty until then. */
+  tempting: CourseTemptingFacts[];
   quizEligible: boolean;
   critical: boolean;
   creatorComment: string | null;
@@ -84,7 +86,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     tactics: tacticSentences(move, side === input.learnerSide),
     motif: move.tacticOpportunity?.found ? move.tacticOpportunity.type : null,
     alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
-    tempting: temptingMoves(fenBefore, node.san, evalBefore),
+    tempting: [],
     quizEligible: isQuizEligible(evalBefore, node.san, side),
     critical: input.critical,
     creatorComment: node.comment,
@@ -105,15 +107,6 @@ function tacticSentences(move: ClassifiedMove, isUserMove: boolean): string[] {
   if (move.tacticOpportunity) sentences.push(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove }, move.bestMoveSan));
   if (move.tacticAllowed) sentences.push(tacticAllowedReason({ ...move.tacticAllowed, isUserMove }));
   return sentences;
-}
-
-function temptingMoves(fenBefore: string, san: string, evaluation: EngineEval | undefined): string[] {
-  const ranked = new Set((evaluation?.lines ?? []).map((line) => line.moveSan));
-  return new Chess(fenBefore)
-    .moves({ verbose: true })
-    .filter((candidate) => (candidate.captured || /[+#]$/.test(candidate.san)) && candidate.san !== san && !ranked.has(candidate.san))
-    .slice(0, MAX_TEMPTING)
-    .map((candidate) => candidate.san);
 }
 
 /** One move is clearly best, and it is the course move. */

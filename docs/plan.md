@@ -1718,13 +1718,13 @@ Commit: `feat(courses): the course, the video and the reel in the document`
 `course-dossier.ts` (the extra positions go in the same engine batch),
 `course-dossier-text.ts` (rendering), tests.
 
-- [ ] Failing test first: on the Englund at n11 (6.Bc3) the tempting moves
-  are listed with their refutations; a candidate within 15 win% of the best
-  is not tempting.
-- [ ] Candidates: checks, captures, threats (attacks an undefended piece or
+- [x] Failing test first: on the Englund at n12 (6…Bb4) the candidates are
+  Black's check and captures, the rook before the knight; kept only when the
+  engine says they fail, at most 3, each with the engine's answer.
+- [x] Candidates: checks, captures, threats (attacks an undefended piece or
   one worth more); at critical nodes, quiz answers, and every learner move
-  of a puzzle or tactics course; at most 3.
-- [ ] `course-dossier-refresh.ts` rebuilds dossiers.
+  of a puzzle or tactics course; at most 6 to the engine, 3 kept.
+- [x] `course-dossier-refresh.ts` rebuilds dossiers (it passes the kind).
 
 Commit: `feat(courses): tempting moves and why they fail, from the engine`
 

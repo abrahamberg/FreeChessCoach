@@ -44,7 +44,7 @@ export async function loadGenerationInputs(
   let dossier = row.dossier;
   if (!dossier) {
     if (!buildDossier) throw new Error('No engine is configured');
-    dossier = (await buildDossier(courseTreeOf(document), document.learnerSide, row.ownerId)).dossier;
+    dossier = (await buildDossier(courseTreeOf(document), document.learnerSide, row.ownerId, document.kind)).dossier;
     await coursesRepo.setDossier(db, row.id, dossier);
   }
   return generationInputs({ document, dossier, direction: row.direction, sourcePgn: row.sourcePgn });

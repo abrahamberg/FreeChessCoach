@@ -122,7 +122,7 @@ export async function buildSkeletonDraft(db: Kysely<Database>, ownerId: string, 
   const row = await ownedCourse(db, ownerId, id);
   const document = storedDocument(row);
   const tree: CourseTree = { startFen: document.startFen, nodes: document.nodes, lines: document.lines, errors: [] };
-  const { dossier, lines } = await buildDossier(tree, document.learnerSide, ownerId);
+  const { dossier, lines } = await buildDossier(tree, document.learnerSide, ownerId, document.kind);
   const lineGames = lines.map((analysis) => analysis.line);
   const skeleton = buildCourseSkeleton({ kind: document.kind, tree, lines: lineGames, dossier });
   if (!skeleton) throw new ValidationError('No trap found: no move by the other side loses ground on this line');

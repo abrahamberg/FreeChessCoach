@@ -29,7 +29,7 @@ async function main(): Promise<void> {
         continue;
       }
       const document = CourseDocumentSchema.parse(stored);
-      const { dossier } = await buildCourseDossierFromEngine(courseTreeOf(document), document.learnerSide, engine);
+      const { dossier } = await buildCourseDossierFromEngine(courseTreeOf(document), document.learnerSide, engine, document.kind);
       await coursesRepo.setDossier(db, row.id, dossier);
       console.log(`${row.slug}: ${dossier.nodes.length} moves`);
     }

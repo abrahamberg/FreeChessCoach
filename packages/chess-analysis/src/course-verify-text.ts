@@ -56,7 +56,7 @@ function analysedMoves(scope: EpisodeScope): string[] {
   return [...scope.claims].flatMap((nodeId) => {
     const facts = scope.facts.get(nodeId);
     if (!facts) return [];
-    return [...(facts.bestInstead ? [facts.bestInstead.san, ...facts.bestInstead.line] : []), ...facts.alternatives.map((line) => line.san), ...facts.tempting];
+    return [...(facts.bestInstead ? [facts.bestInstead.san, ...facts.bestInstead.line] : []), ...facts.alternatives.map((line) => line.san), ...facts.tempting.flatMap((tempting) => [tempting.san, ...tempting.refutation])];
   });
 }
 

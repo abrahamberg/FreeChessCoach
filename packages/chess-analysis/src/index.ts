@@ -36,6 +36,7 @@ export * from './course-node-path.js';
 export * from './course-outline-check.js';
 export * from './course-review.js';
 export * from './course-stages.js';
+export * from './course-tempting.js';
 export * from './course-skeleton.js';
 export * from './course-tree.js';
 export * from './course-verify.js';

@@ -460,6 +460,9 @@ export const CONFIG = {
    * `severity.mistakeMaxDrop` scale, so the wrong answer would be a mistake. */
   courses: {
     onlyMoveGap: 20,
+    /** §13.5: a tempting move costs the mover at least this much win%. */
+    temptingDrop: 15,
+    maxTempting: 3,
     /** §7 verifier limits: arrows per clip beat, words per caption, and
      * sentences per course note (more at a critical node). */
     maxArrowsPerBeat: 2,

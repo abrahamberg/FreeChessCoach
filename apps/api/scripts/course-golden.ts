@@ -61,7 +61,7 @@ function envSetup(): StoredLlmSetup {
 async function runCourse(course: GoldenCourse, resolution: ModelResolution, engineUrl: string): Promise<CourseRun> {
   const started = Date.now();
   const document = draftFromIntake(course.intake);
-  const { dossier } = await buildCourseDossierFromEngine(courseTreeOf(document), document.learnerSide, new NativeEngineBackend(engineUrl)).catch((error: unknown) => {
+  const { dossier } = await buildCourseDossierFromEngine(courseTreeOf(document), document.learnerSide, new NativeEngineBackend(engineUrl), document.kind).catch((error: unknown) => {
     throw new Error(`the engine at ${engineUrl} failed (${error instanceof Error ? error.message : String(error)}); is the dev stack up?`);
   });
   const inputs = generationInputs({ document, dossier, direction: course.intake.direction, sourcePgn: course.intake.pgn });

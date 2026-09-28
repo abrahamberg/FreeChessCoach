@@ -42,7 +42,9 @@ function renderNode(node: CourseNodeFacts, lineName: string, oneLine: boolean): 
   if (node.board.length) detail('board', node.board.join(' | '));
   if (node.tactics.length) detail('tactics', node.tactics.join(' '));
   if (node.alternatives.length) detail('alternatives', node.alternatives.map((alt) => `${alt.san}: ${alt.verdict}`).join('; '));
-  if (node.tempting.length) detail('tempting, not in the engine top lines', node.tempting.join(', '));
+  for (const tempting of node.tempting) {
+    detail(`tempting ${tempting.kind}`, `${tempting.san}? answered by ${tempting.refutation.join(' ')} (${tempting.verdict})${tempting.after.length ? `: ${tempting.after.join(' | ')}` : ''}`);
+  }
   if (node.creatorComment) detail('creator comment', `"${node.creatorComment}"`);
   const flags = [node.quizEligible && 'quiz-eligible', node.critical && 'critical', node.creatorComment && 'creator-comment'].filter(Boolean);
   if (flags.length) detail('flags', flags.join(', '));
