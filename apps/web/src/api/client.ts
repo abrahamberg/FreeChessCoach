@@ -87,6 +87,14 @@ export async function apiPut(path: string, payload: unknown): Promise<void> {
   }
 }
 
+/** PUT of a raw file (audio), 204 like every PUT here. */
+export async function apiPutBlob(path: string, blob: Blob): Promise<void> {
+  const response = await fetch(path, { method: 'PUT', credentials: 'include', headers: { 'content-type': blob.type }, body: blob });
+  if (!response.ok) {
+    throw await failedResponse('PUT', path, response);
+  }
+}
+
 export async function apiDelete(path: string): Promise<void> {
   const response = await fetch(path, { method: 'DELETE', credentials: 'include' });
   if (!response.ok) {

@@ -329,6 +329,15 @@ export interface CourseAiCallsTable {
   createdAt: Generated<Date>;
 }
 
+/** 0017_course_audio.ts: a course note's audio, by the note text's hash. */
+export interface CourseAudioTable {
+  courseId: string;
+  textHash: string;
+  mimeType: string;
+  bytes: Buffer;
+  createdAt: Generated<Date>;
+}
+
 /** 0016_debug_turns.ts: a session's last LLM turns, for the debug picker. */
 export interface DebugTurnsTable {
   id: Generated<string>;
@@ -357,6 +366,7 @@ export interface Database {
   courses: CoursesTable;
   courseAiCalls: CourseAiCallsTable;
   debugTurns: DebugTurnsTable;
+  courseAudio: CourseAudioTable;
   statsArchiveWeeks: StatsArchiveWeeksTable;
   analyses: AnalysesTable;
   sessions: SessionsTable;

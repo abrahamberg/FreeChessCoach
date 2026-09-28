@@ -53,12 +53,14 @@ export async function prepareCourseAudio(options: {
   signal?: AbortSignal;
   /** Tests pass a fake; the app resolves the backend's client. */
   client?: TtsClient;
+  /** Only these speech keys (publishing voices just the notes missing audio). */
+  keys?: Set<string>;
 }): Promise<Map<string, SpokenAudio>> {
-  const { document, backend, cache, onProgress, signal } = options;
+  const { document, backend, cache, onProgress, signal, keys } = options;
   if (backend === 'native') throw new Error(NATIVE_VOICE_REFUSED);
   const client = options.client ?? resolveTtsClient(backend);
   const persona = document.coachPersona;
-  const speeches = courseSpeeches(document);
+  const speeches = courseSpeeches(document).filter((speech) => !keys || keys.has(speech.key));
   const texts = [...new Set(speeches.map((speech) => speech.text))];
   const byText = new Map<string, SpokenAudio>();
 

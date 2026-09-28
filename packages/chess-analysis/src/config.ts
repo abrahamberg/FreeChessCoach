@@ -477,6 +477,10 @@ export const CONFIG = {
     maxWordsPerBeat: 30,
     quizPauseSeconds: 3,
     /** An opening reel narrates at most one move per this many seconds. */
-    secondsPerNarratedMove: 6
+    secondsPerNarratedMove: 6,
+    /** §8 note audio uploads: a WAV at 24 kHz mono is ~48 KB a second, so
+     * one note is at most ~30 s and a course's notes ~10 minutes. */
+    maxNoteAudioBytes: 1_500_000,
+    maxCourseAudioBytes: 30_000_000
   }
 } as const;

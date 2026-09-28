@@ -1,25 +1,14 @@
-import { COACH_PERSONA_INFO, type CourseDocument, type TtsBackend } from '@freechesscoach/shared';
+import { COACH_PERSONA_INFO, type CourseDocument } from '@freechesscoach/shared';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Modal } from '../../../components/Modal.js';
-import { useLlmSetupStatus } from '../../../hooks/useLlmSetupStatus.js';
-import { useProfile } from '../../../hooks/useProfile.js';
-import { effectiveTtsBackend } from '../../../tts/effective-tts-backend.js';
-import { isOpenAiVoiceAvailable } from '../../../tts/openai-voice-available.js';
 import { personaPlaybackRate } from '../../../tts/persona-voices.js';
 import { audioLengths, ClipPlayer } from './clip-player.js';
 import { loadClipAssets, type ClipAssets } from './draw-frame.js';
 import { recordClip, type RecordedClip } from './record-clip.js';
 import { buildClipTimeline, CLIP_SIZES, defaultClipFormat, type ClipFormat } from './timeline.js';
 import { useClipAudio } from './useClipAudio.js';
+import { COURSE_VOICE_LABELS, useCourseVoice, type CourseVoice } from './useCourseVoice.js';
 import './ClipPreview.css';
-
-type ClipVoice = Exclude<TtsBackend, 'native'>;
-const CLIP_VOICES: ClipVoice[] = ['browser', 'local', 'openai'];
-const VOICE_LABELS: Record<ClipVoice, string> = {
-  browser: 'In-browser voice (free, slower to make)',
-  local: 'Local voice server (Settings → Voice)',
-  openai: 'OpenAI voice'
-};
 
 export interface ClipPreviewProps {
   document: CourseDocument;
@@ -31,15 +20,7 @@ export interface ClipPreviewProps {
  * with the coach's voice, in either format, and recorded from the same
  * playback. Unsaved edits are included. */
 export function ClipPreview({ document, slug, onClose }: ClipPreviewProps): ReactNode {
-  const profile = useProfile();
-  const llmSetup = useLlmSetupStatus();
-  const openaiAvailable = isOpenAiVoiceAvailable(llmSetup.data);
-  const saved = effectiveTtsBackend(profile.data?.ttsBackend ?? 'openai', openaiAvailable);
-  // The device voice can't be recorded, so a creator who uses it for chat
-  // gets the in-browser voice here instead of a refusal.
-  const [picked, setPicked] = useState<ClipVoice | null>(null);
-  const backend: ClipVoice = picked ?? (saved === 'native' ? 'browser' : saved);
-  const voices = CLIP_VOICES.filter((voice) => voice !== 'openai' || openaiAvailable || backend === 'openai');
+  const { voice: backend, setVoice: setPicked, voices, ready } = useCourseVoice();
   const audio = useClipAudio(document, backend);
   const [format, setFormat] = useState<ClipFormat>(defaultClipFormat(document.kind));
   const [assets, setAssets] = useState<ClipAssets | null>(null);
@@ -53,7 +34,7 @@ export function ClipPreview({ document, slug, onClose }: ClipPreviewProps): Reac
   }, []);
 
   let status: string | null = null;
-  if (!profile.data) status = 'Loading…';
+  if (!ready) status = 'Loading…';
   else if (audio.status === 'preparing') status = `Making the coach's voice: ${audio.progress.done} of ${audio.progress.total || '…'} sentences`;
   else if (audio.status === 'error') status = audio.message;
   else if (!assets) status = 'Loading the board…';
@@ -77,10 +58,10 @@ export function ClipPreview({ document, slug, onClose }: ClipPreviewProps): Reac
         </div>
         <label className="course-field">
           <span>Voice</span>
-          <select value={backend} onChange={(event) => setPicked(event.target.value as ClipVoice)}>
+          <select value={backend} onChange={(event) => setPicked(event.target.value as CourseVoice)}>
             {voices.map((voice) => (
               <option key={voice} value={voice}>
-                {VOICE_LABELS[voice]}
+                {COURSE_VOICE_LABELS[voice]}
               </option>
             ))}
           </select>

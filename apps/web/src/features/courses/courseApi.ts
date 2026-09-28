@@ -6,10 +6,11 @@ import {
   type CourseDocument,
   type CourseListResponse,
   type CourseResponse,
-  type CreateCourseRequest
+  type CreateCourseRequest,
+  type PublishCourseRequest
 } from '@freechesscoach/shared';
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import { apiGet, apiPost, apiPut } from '../../api/client.js';
+import { apiGet, apiPost, apiPut, apiPutBlob } from '../../api/client.js';
 
 export function useCourses(): UseQueryResult<CourseListResponse> {
   return useQuery({ queryKey: ['courses'], queryFn: ({ signal }) => apiGet('/api/courses', CourseListResponseSchema, signal) });
@@ -88,4 +89,25 @@ export function useRegenerateEpisode(id: string): UseMutationResult<CourseRespon
       apiPost(`/api/courses/${id}/episodes/${episodeId}/regenerate`, { instruction }, CourseResponseSchema),
     onSuccess: (course) => queryClient.setQueryData(['course', id], course)
   });
+}
+
+/** docs/courses.md §9: the draft becomes the published copy. */
+export function usePublishCourse(id: string): UseMutationResult<CourseResponse, Error, PublishCourseRequest> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: PublishCourseRequest) => apiPost(`/api/courses/${id}/publish`, body, CourseResponseSchema),
+    onSuccess: (course) => {
+      queryClient.setQueryData(['course', id], course);
+      void queryClient.invalidateQueries({ queryKey: ['courses'] });
+    }
+  });
+}
+
+export function fetchCourse(id: string): Promise<CourseResponse> {
+  return apiGet(`/api/courses/${id}`, CourseResponseSchema);
+}
+
+/** §8: one note's audio, as its saved draft text reads. */
+export function uploadNoteAudio(id: string, episodeId: string, nodeId: string, audio: Blob): Promise<void> {
+  return apiPutBlob(`/api/courses/${id}/notes/${episodeId}/${nodeId}/audio`, audio);
 }

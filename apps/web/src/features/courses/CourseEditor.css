@@ -274,3 +274,64 @@
 .course-generation p {
   margin: 0;
 }
+
+/* Task 82.1: the publish dialog (inside Modal). */
+.publish-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 16px 16px;
+}
+
+.publish-dialog__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.publish-dialog__group legend {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.publish-dialog__group input[type='text'],
+.publish-dialog__group input:not([type]) {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.publish-dialog__choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  accent-color: var(--color-primary);
+}
+
+.publish-dialog__checks {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.publish-dialog__checks p {
+  margin: 0;
+}
+
+.publish-dialog__checks ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.publish-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

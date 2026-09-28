@@ -43,7 +43,7 @@ export async function startCourseGeneration(db: Kysely<Database>, jobQueue: JobQ
   if (!resume) await courseAiCallsRepo.clear(db, id);
   await coursesRepo.setGeneration(db, id, generation);
   await jobQueue.enqueueCourseGenerate(id);
-  return toCourseResponse({ ...row, generation });
+  return toCourseResponse(db, { ...row, generation });
 }
 
 /**
@@ -114,7 +114,7 @@ export async function regenerateCourseEpisode(deps: CourseGenerateDeps, ownerId:
   const saved = await saveDocument(deps.db, row, withEpisode(document, written.episode));
   const next: CourseGeneration = { ...generation, warnings: withWarnings(generation.warnings, episodeId, written.warnings) };
   await coursesRepo.setGeneration(deps.db, id, next);
-  return toCourseResponse({ ...saved, generation: next });
+  return toCourseResponse(deps.db, { ...saved, generation: next });
 }
 
 /** Task 80.6: the AI calls of the course's latest run, for its owner. */

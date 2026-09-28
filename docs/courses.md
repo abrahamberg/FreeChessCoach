@@ -631,7 +631,11 @@ Decided with the owner:
   the course (`clipLinks`), so the course page can embed the YouTube video.
 - Course-note audio is uploaded with the course when it is published (small
   files, one per note) and played on the public board, so every visitor hears
-  exactly the same voice.
+  exactly the same voice. Each file is a 16-bit mono WAV with the coach's
+  playback rate baked in, keyed by the note text's hash (`course_audio`); only
+  notes whose current text has no audio are voiced again, and publishing drops
+  audio no published note uses. Caps: `CONFIG.courses.maxNoteAudioBytes` and
+  `maxCourseAudioBytes`.
 
 ---
 
@@ -639,6 +643,12 @@ Decided with the owner:
 
 - Status: `draft` → `unlisted` (link works, not listed) → `public` (listed) →
   `removed` (moderator). New courses publish as `unlisted` by default.
+- The Publish dialog asks for the three takeaways, who can see it, the clip
+  links (https on youtube.com/youtu.be, instagram.com, tiktok.com), and the
+  voice for the notes; then it saves, voices and uploads the missing note
+  audio, and publishes (`POST /api/courses/:id/publish`). The server re-runs
+  the checks with the engine facts and refuses while they find problems,
+  unless the creator ticked "I checked these".
 - Public route `/learn/:slug` (SPA, no login) and read-only endpoints
   `GET /api/public/courses/:slug` and `GET /api/public/courses/:slug/audio/:nodeId`.
   These need the three public-route entries (nginx, `--skip-auth-route`,

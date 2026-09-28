@@ -91,11 +91,23 @@ export const CourseEpisodeSchema = z.object({
 });
 export type CourseEpisode = z.infer<typeof CourseEpisodeSchema>;
 
+/** A link on one of the given hosts (or their subdomains), https only. */
+function hostedUrl(hosts: string[]) {
+  return z
+    .string()
+    .url()
+    .refine((value) => {
+      const url = new URL(value);
+      return url.protocol === 'https:' && hosts.some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`));
+    }, `Use a link on ${hosts[0]}`);
+}
+
+/** docs/courses.md §8: where the creator posted the clips (never uploaded). */
 export const CourseClipLinksSchema = z.object({
-  youtube: z.string().url().optional(),
-  shorts: z.string().url().optional(),
-  instagram: z.string().url().optional(),
-  tiktok: z.string().url().optional()
+  youtube: hostedUrl(['youtube.com', 'youtu.be']).optional(),
+  shorts: hostedUrl(['youtube.com', 'youtu.be']).optional(),
+  instagram: hostedUrl(['instagram.com']).optional(),
+  tiktok: hostedUrl(['tiktok.com']).optional()
 });
 export type CourseClipLinks = z.infer<typeof CourseClipLinksSchema>;
 

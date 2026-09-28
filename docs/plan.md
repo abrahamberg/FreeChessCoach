@@ -654,15 +654,24 @@ Commit: `feat(courses): record reel and YouTube clips in the browser`
 ### Task 82.1 — Publish and audio upload
 
 **Read:** `docs/courses.md` §8, §9.
-**Files:** migration `0014_course_audio.ts`, `repositories/course-audio.ts`,
+**Files:** migration `0017_course_audio.ts`, `repositories/course-audio.ts`,
 routes, `services/courses.ts`.
 
-- [ ] Publish copies the draft to `published_document`, status `unlisted`
+Status: done 2026-09-28 (commit below). Tried on the gemma trap in the app:
+unlisted, 18 notes voiced with the local Kokoro server and uploaded as 24 kHz
+mono WAVs (4.3 MB). Differences from the box: audio is keyed by the note
+text's hash alone (identical texts share a file; the node adds nothing);
+the coach's playback rate is baked into the file; the editor had no way to
+write the takeaways, so the Publish dialog asks for them. Also fixed: the
+error mapper turned Fastify's own 4xx errors (body too large, unsupported
+type, malformed JSON) into 500s.
+
+- [x] Publish copies the draft to `published_document`, status `unlisted`
   unless the creator picks `public`; blocked while verifier warnings are
   unticked.
-- [ ] Upload course-note audio (type and size checked; cap per course in
+- [x] Upload course-note audio (type and size checked; cap per course in
   `CONFIG.courses`), keyed by node id + text hash.
-- [ ] Creator pastes clip links (YouTube/Shorts/Instagram/TikTok URLs,
+- [x] Creator pastes clip links (YouTube/Shorts/Instagram/TikTok URLs,
   validated by host).
 
 Commit: `feat(courses): publish courses with their note audio`

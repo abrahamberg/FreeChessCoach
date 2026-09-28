@@ -161,4 +161,55 @@ describe('course routes', () => {
     expect((await app.inject({ method: 'POST', url: `/api/courses/${course.id}/episodes/e9/regenerate`, payload: {} })).statusCode).toBe(404);
     await app.close();
   });
+
+  test('publish: note audio first, checks ticked, then the frozen copy; stale audio is dropped', async () => {
+    const app = await creatorApp();
+    const course = (await app.inject({ method: 'POST', url: '/api/courses', payload: INTAKE })).json<CourseResponse>();
+    const built = (await app.inject({ method: 'POST', url: `/api/courses/${course.id}/skeleton` })).json<CourseResponse>();
+    const url = `/api/courses/${course.id}`;
+    const wav = (size: number): Buffer => Buffer.alloc(size, 1);
+
+    const untitled = await app.inject({ method: 'POST', url: `${url}/publish`, payload: {} });
+    expect(untitled.statusCode).toBe(400);
+    expect(untitled.body).toContain('Write the three takeaways');
+
+    const document = { ...built.document, takeaways: ['Watch b2.', 'Mind the pin.', 'Guard c1.'] };
+    await app.inject({ method: 'PUT', url: `${url}/draft`, payload: { document } });
+    const missing = (await app.inject({ method: 'GET', url })).json<CourseResponse>().missingNoteAudio;
+    expect(missing.length).toBeGreaterThan(0);
+    const first = missing[0]!;
+    const noteUrl = `${url}/notes/${first.episodeId}/${first.nodeId}/audio`;
+
+    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/wav' }, payload: wav(100) })).statusCode).toBe(204);
+    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/ogg' }, payload: wav(100) })).statusCode).toBe(415);
+    expect((await app.inject({ method: 'PUT', url: noteUrl, headers: { 'content-type': 'audio/wav' }, payload: wav(1_600_000) })).statusCode).toBe(413);
+    expect((await app.inject({ method: 'PUT', url: `${url}/notes/e1/n99/audio`, headers: { 'content-type': 'audio/wav' }, payload: wav(10) })).statusCode).toBe(404);
+    const after = (await app.inject({ method: 'GET', url })).json<CourseResponse>();
+    expect(after.missingNoteAudio).toHaveLength(missing.length - after.document.episodes.flatMap((episode) => episode.notes).filter((note) => note.text === noteText(after, first)).length);
+
+    const refused = await app.inject({ method: 'POST', url: `${url}/publish`, payload: {} });
+    const published = refused.statusCode === 409 ? await app.inject({ method: 'POST', url: `${url}/publish`, payload: { warningsChecked: true } }) : refused;
+    expect(published.statusCode).toBe(200);
+    const body = published.json<CourseResponse>();
+    expect(body).toMatchObject({ status: 'unlisted', publishedAt: expect.any(String) });
+    const row = await coursesRepo.findById(db, course.id);
+    expect(row?.publishedDocument?.takeaways).toEqual(document.takeaways);
+
+    // Edit the voiced note and republish as public: its old audio goes.
+    const edited = { ...document, episodes: document.episodes.map((episode) => (episode.id === first.episodeId ? { ...episode, notes: episode.notes.map((note) => (note.nodeId === first.nodeId ? { ...note, text: `${note.text} Again.` } : note)) } : episode)) };
+    await app.inject({ method: 'PUT', url: `${url}/draft`, payload: { document: edited } });
+    const republished = await app.inject({ method: 'POST', url: `${url}/publish`, payload: { visibility: 'public', warningsChecked: true } });
+    expect(republished.json<CourseResponse>().status).toBe('public');
+    expect(await db.selectFrom('courseAudio').select('textHash').where('courseId', '=', course.id).execute()).toEqual([]);
+
+    const badLink = await app.inject({ method: 'PUT', url: `${url}/draft`, payload: { document: { ...edited, clipLinks: { youtube: 'https://evil.example/watch' } } } });
+    expect(badLink.statusCode).toBe(400);
+    const goodLink = await app.inject({ method: 'PUT', url: `${url}/draft`, payload: { document: { ...edited, clipLinks: { youtube: 'https://www.youtube.com/watch?v=abc', tiktok: 'https://www.tiktok.com/@me/video/1' } } } });
+    expect(goodLink.statusCode).toBe(204);
+    await app.close();
+  });
 });
+
+function noteText(course: CourseResponse, target: { episodeId: string; nodeId: string }): string | undefined {
+  return course.document.episodes.find((episode) => episode.id === target.episodeId)?.notes.find((note) => note.nodeId === target.nodeId)?.text;
+}

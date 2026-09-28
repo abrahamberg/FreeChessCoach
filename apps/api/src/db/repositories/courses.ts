@@ -94,6 +94,24 @@ export function listByOwner(db: Kysely<Database>, ownerId: string): Promise<Cour
     .execute();
 }
 
+/** docs/courses.md §9: the draft becomes the frozen copy learners see. */
+export async function publish(
+  db: Kysely<Database>,
+  id: string,
+  ownerId: string,
+  document: CourseDocument,
+  status: 'unlisted' | 'public'
+): Promise<CourseRow> {
+  const parsed = CourseDocumentSchema.parse(document);
+  return db
+    .updateTable('courses')
+    .set({ publishedDocument: JSON.stringify(parsed), status, publishedAt: new Date(), updatedAt: new Date() })
+    .where('id', '=', id)
+    .where('ownerId', '=', ownerId)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
 /** No owner check: the publish service checks ownership first, and the
  * moderator script sets `removed` for any course (docs/courses.md §9). */
 export async function setStatus(db: Kysely<Database>, id: string, status: CourseStatus): Promise<boolean> {

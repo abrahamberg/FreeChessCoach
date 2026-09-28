@@ -24,7 +24,11 @@ export const CourseResponseSchema = z.object({
   document: CourseDocumentSchema,
   /** Null until AI generation is first started. */
   generation: CourseGenerationSchema.nullable(),
-  updatedAt: z.string()
+  updatedAt: z.string(),
+  /** When the frozen copy was last published; null for a draft. */
+  publishedAt: z.string().nullable(),
+  /** Notes of the draft whose current text has no uploaded audio yet (§8). */
+  missingNoteAudio: z.array(z.object({ episodeId: z.string(), nodeId: z.string() }))
 });
 export type CourseResponse = z.infer<typeof CourseResponseSchema>;
 
@@ -51,3 +55,11 @@ export type RegenerateEpisodeRequest = z.input<typeof RegenerateEpisodeRequestSc
 /** Start (or resume) AI generation; `restart` drops a stuck or finished run. */
 export const StartCourseGenerationRequestSchema = z.object({ restart: z.boolean().default(false) });
 export type StartCourseGenerationRequest = z.input<typeof StartCourseGenerationRequestSchema>;
+
+/** docs/courses.md §9: publish the draft. `warningsChecked` is the creator's
+ * "I checked these" when the checks still report problems. */
+export const PublishCourseRequestSchema = z.object({
+  visibility: z.enum(['unlisted', 'public']).default('unlisted'),
+  warningsChecked: z.boolean().default(false)
+});
+export type PublishCourseRequest = z.input<typeof PublishCourseRequestSchema>;

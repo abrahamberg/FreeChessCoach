@@ -18,6 +18,7 @@ import type { Database } from '../db/schema.js';
 import { NotFoundError, ValidationError } from '../lib/errors.js';
 import type { CourseDossierBuilder } from './course-dossier.js';
 import { draftProblem } from './courses/draft-checks.js';
+import { missingNoteAudio } from './courses/note-audio.js';
 import { buildManualEpisodes } from './courses/manual-episodes.js';
 import { courseSlug, courseTitle, resultHeader } from './courses/intake-text.js';
 
@@ -40,7 +41,7 @@ export async function createCourse(db: Kysely<Database>, ownerId: string, intake
     direction: intake.direction,
     document
   });
-  return toCourseResponse(row);
+  return toCourseResponse(db, row);
 }
 
 /** The new draft for an intake: the tree, the learner side (inferred when
@@ -79,7 +80,7 @@ export async function listCourses(db: Kysely<Database>, ownerId: string): Promis
 }
 
 export async function getCourse(db: Kysely<Database>, ownerId: string, id: string): Promise<CourseResponse> {
-  return toCourseResponse(await ownedCourse(db, ownerId, id));
+  return toCourseResponse(db, await ownedCourse(db, ownerId, id));
 }
 
 export async function saveDraft(db: Kysely<Database>, ownerId: string, id: string, document: CourseDocument): Promise<void> {
@@ -103,7 +104,7 @@ export async function buildSkeletonDraft(db: Kysely<Database>, ownerId: string, 
   const { chapters, episodes } = buildManualEpisodes({ document, skeleton, dossier, lines: lineGames });
   const saved = await coursesRepo.updateDraft(db, id, ownerId, { ...document, chapters, episodes });
   if (!saved) throw new NotFoundError('Course not found');
-  return toCourseResponse(saved);
+  return toCourseResponse(db, saved);
 }
 
 export async function ownedCourse(db: Kysely<Database>, ownerId: string, id: string): Promise<coursesRepo.CourseRow> {
@@ -129,7 +130,7 @@ export function liveGeneration(generation: CourseGeneration | null, now = Date.n
   return { ...generation, status: 'failed', step: null, error: 'The writing stopped unexpectedly. Resume writing to carry on.' };
 }
 
-export function toCourseResponse(row: coursesRepo.CourseRow): CourseResponse {
+export async function toCourseResponse(db: Kysely<Database>, row: coursesRepo.CourseRow): Promise<CourseResponse> {
   return {
     id: row.id,
     slug: row.slug,
@@ -139,6 +140,8 @@ export function toCourseResponse(row: coursesRepo.CourseRow): CourseResponse {
     direction: row.direction,
     document: storedDocument(row),
     generation: liveGeneration(row.generation),
-    updatedAt: row.updatedAt.toISOString()
+    updatedAt: row.updatedAt.toISOString(),
+    publishedAt: row.publishedAt?.toISOString() ?? null,
+    missingNoteAudio: await missingNoteAudio(db, row.id, storedDocument(row))
   };
 }
