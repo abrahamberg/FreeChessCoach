@@ -12,7 +12,7 @@ new: every band gets its own fresh random resonances and noise at that
 band's level, the whole shaped by the loudness pattern, and the frequencies
 are shifted a few percent. The same kind of sound, a different wave.
 
-The check, bad and great sounds add struck wooden bars (marimba-like): the
+Check is the capture's pattern made sharper. Bad and great are struck wooden bars (marimba-like): the
 note and its 3.9 and 9.2 overtones, the upper ones dying fast.
 
     python3 scripts/sounds/generate-board-sounds.py [out_dir]
@@ -129,6 +129,11 @@ def from_profile(profile, seed, shift=1.04, tilt=0.0):
     return out
 
 
+def sharpen(samples, after, decay):
+    """A faster fade: past `after` seconds the sound dies with time constant `decay`."""
+    return [sample * (1.0 if n / RATE < after else math.exp(-(n / RATE - after) / decay)) for n, sample in enumerate(samples)]
+
+
 def wood_note(frequency, seconds=0.35, decay=0.12):
     """A struck wooden bar: the note, and its 3.9 and 9.2 overtones dying fast."""
     out = []
@@ -149,8 +154,9 @@ def sounds():
     # The other side: a lower, darker version of the same knock.
     opponent = from_profile(PROFILES['move'], seed=2, shift=0.9, tilt=-3.0)
     capture = from_profile(PROFILES['capture'], seed=3, shift=1.05)
-    # Check: a brighter knock, and a high wood note over it.
-    check = add(from_profile(PROFILES['move'], seed=4, shift=1.12, tilt=2.0), wood_note(1175, 0.4, 0.14), 0.03, 0.3)
+    # Check: the capture's pattern made sharper: higher, brighter, and it
+    # dies faster after the hit (the owner's call).
+    check = sharpen(from_profile(PROFILES['capture'], seed=4, shift=1.2, tilt=3.0), after=0.015, decay=0.035)
     # Two notes falling (E4 to C#4), low and soft: a mistake.
     bad = add(add(silence(0.0), wood_note(330, 0.3, 0.1), 0.0, 0.8), wood_note(277, 0.4, 0.14), 0.11, 0.8)
     # Three notes rising (C5, E5, G5): a great move.

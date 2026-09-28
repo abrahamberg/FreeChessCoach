@@ -16,14 +16,14 @@ const LAYERS: Record<BoardSound, { file: string; delayMs?: number; gain: number 
   move: [{ file: 'move', gain: 1 }],
   opponent: [{ file: 'opponent', gain: 0.75 }],
   capture: [{ file: 'capture', gain: 1 }],
-  check: [{ file: 'check', gain: 0.9 }],
+  check: [{ file: 'check', gain: 1 }],
   bad: [{ file: 'bad', gain: 0.45 }],
   great: [{ file: 'great', gain: 0.5 }]
 };
 
 /** How long each sound lasts, in seconds (the files' lengths), for a voice
  * that should wait for it and for clip timing. */
-const SECONDS: Record<BoardSound, number> = { move: 0.16, opponent: 0.16, capture: 0.23, check: 0.43, bad: 0.51, great: 0.5 };
+const SECONDS: Record<BoardSound, number> = { move: 0.16, opponent: 0.16, capture: 0.23, check: 0.11, bad: 0.51, great: 0.5 };
 
 async function render(sound: BoardSound, files: Map<string, AudioBuffer>): Promise<AudioBuffer> {
   const context = new OfflineAudioContext(1, Math.ceil(SAMPLE_RATE * SECONDS[sound]) + 1024, SAMPLE_RATE);

@@ -1207,7 +1207,8 @@ Decisions:
   `scripts/sounds/generate-board-sounds.py` holds only a coarse profile of
   each (loudness every 2.5 ms, third-octave band levels early, mid and late)
   and builds new sounds from fresh random resonances and noise following it,
-  shifted a few percent; check, bad and great add struck wooden bars. Six
+  shifted a few percent; check is the capture's pattern made sharper
+  (higher, brighter, shorter), bad and great are struck wooden bars. Six
   sounds now: a capture has its own (`x` in the SAN, a check still wins).
   The files are in `apps/web/public/sounds/`. Each sound is mixed once from its
   layers into an `AudioBuffer`, so the board and clips play the same thing.
