@@ -422,12 +422,12 @@ Use exactly these episodes, in order:
 2. setup — the setup moves play fast. At most two speak in the video, only
    where the move order matters.
 3. bait — why the victim's move looks natural. This is the heart of the trap:
-   the viewer should think "I'd play that too".
+   the viewer should think "I'd play that too".{baitFacts}
 4. quiz — "What does {trapperSide} play here?" plus a hint at the target. The
    video pauses {pauseSeconds}s (the app adds the pause).
-5. punish — every forcing move speaks in the video; captions carry the rhythm.
+5. punish — every forcing move speaks in the video; captions carry the rhythm.{victimErrors}
 6. safety — how the victim stays safe: {safeMove}, in one or two sentences.
-   {trapperDefence}{trapperRiskLine}
+   {trapperDefence}{trapperRiskLine}{safeLineOnBoard}
 The end card and call to action are added by the app; don't write them.
 In the course, every move speaks. The bait and the safe move get the longest
 lines. The learner drills both sides, so the lines must teach springing the
@@ -444,6 +444,24 @@ stands: the aim is to lose as little as possible, not to pretend the trap still
 works." It comes from the bait's `bestInstead` (line and `balance`, the material
 at the line's end) and the safe move's verdict; empty when the line is shorter
 than two moves.
+
+`{baitFacts}` (`baitFacts`) says why the victim walks in: "Before it,
+{previous move}: {what it attacks or forks}. {bait}: {what the bait does}.
+What it misses: {the bait's tactic row}. Say what the victim wants with the
+move and what they miss." A fork replaces the attacks it is made of.
+
+`{victimErrors}` (`victimErrors`) lists the victim's inaccuracies and worse
+from the bait on: "The victim goes wrong at: n11 (6. Bc3): blunder; best Nc3,
+after which material is level | …", then "At each, say what they hoped for;
+where even the best loses material, say so, never "safe"." (a run called
+7.Bd2 "safer" when it drops a rook).
+
+`{safeLineOnBoard}`, when the course makes a video and the bait has a
+`bestInstead` line: "In the video the board goes back to before the bait and
+plays {line} while this episode's video line on the bait is said: walk
+through those moves in order." Code copies that line onto the safety
+episode's ply on the bait as `playOut` (`trapSafeLine`, generate-episode.ts);
+the model never writes it.
 
 `{trapEnding}` states the line's last move: "checkmate, n16 (8... Qc1#).
 Promise the mate, not material." when it mates, else the move and the
@@ -1165,7 +1183,18 @@ A YouTube lesson with a story, built on the course's episodes.
 - **The 15-second hook** (`video.hook`): jump to the premise or the
   climax ("On move 14 Black gave up the queen, and White never recovered").
   It plays over the climax position, then cuts to the start. Never "hey
-  guys", "welcome back" or an intro card.
+  guys", "welcome back" or an intro card. The slide it plays on is the
+  start slide: the climax board in view, and beside it the logo and
+  "freechesscoach.org", the thumbnail text, the title, and the coach's whole
+  portrait with their name, sliding in one after another.
+- **The board follows the words** (`speech-marks.ts`): in every spoken line
+  (the hook, a move's line, a tempting move's why, the reel's hook and
+  beats) a square named lights up and a move named that is legal on the
+  board shown gets an arrow, each when the words reach it (its place in the
+  text times the audio's length), fading after 1.8 s.
+- **A line off the tree** (`playOut`, the trap's safe line): the board goes
+  back to before the move and plays the line while the coach says it, the
+  moves spread over the line's audio.
 - **Chapters**: one card per chapter (its title, 2 s), then its episodes.
 - **Each important move** (the plies ticked `video`): the coach's line
   (`say`, commentator style: tension, stakes, why), then the **tempting

@@ -76,15 +76,66 @@ Use exactly these episodes, in order:
 2. setup — the setup moves play fast. At most two speak in the video, only
    where the move order matters.
 3. bait — why the victim's move looks natural. This is the heart of the trap:
-   the viewer should think "I'd play that too".
+   the viewer should think "I'd play that too".${baitFacts(context, skeleton)}
 4. quiz — "What does ${trapper} play here?" plus a hint at the target. The
    video pauses ${budget.pauseSeconds}s (the app adds the pause).
-5. punish — every forcing move speaks in the video; captions carry the rhythm.
-6. safety — how the victim stays safe: ${safeMove}, in one or two sentences.${trapperDefence(context, skeleton)}${risk}
+5. punish — every forcing move speaks in the video; captions carry the rhythm.${victimErrors(context, skeleton)}
+6. safety — how the victim stays safe: ${safeMove}, in one or two sentences.${trapperDefence(context, skeleton)}${risk}${safeLineOnBoard(context, skeleton)}
 The end card and call to action are added by the app; don't write them.
 In the course, every move speaks. The bait and the safe move get the longest
 lines. The learner drills both sides, so the lines must teach springing the
 trap and avoiding it.`;
+}
+
+const ERROR_QUALITIES = new Set(['inaccuracy', 'mistake', 'blunder', 'miss']);
+
+/** Why the victim walks in: what the trapper's move before the bait
+ * threatens, what the bait does, and what it misses (the bait's tactic
+ * row). The Englund run said only "the chase looks natural". */
+function baitFacts(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'trap' }> | null): string {
+  const facts = new Map(context.dossier.nodes.map((node) => [node.nodeId, node]));
+  const bait = facts.get(skeleton?.baitNodeId ?? '');
+  if (!bait || !skeleton) return '';
+  const parentId = context.nodes.find((node) => node.id === bait.nodeId)?.parentId;
+  const before = parentId ? facts.get(parentId) : undefined;
+  const attacks = (before?.board ?? []).filter((fact) => /\b(attacks|forks|checks)\b/.test(fact));
+  // A fork says both attacks at once.
+  const forks = attacks.filter((fact) => fact.includes('forks'));
+  const threats = forks.length ? forks : attacks;
+  const does = bait.board.filter((fact) => !fact.startsWith('moves the '));
+  const rows = [
+    threats.length && parentId ? `Before it, ${nodeLabel(context, parentId)}: ${threats.join('; ')}.` : '',
+    does.length ? `${nodeLabel(context, bait.nodeId)}: ${does.join('; ')}.` : '',
+    bait.tactics.length ? `What it misses: ${bait.tactics.join(' ')}` : ''
+  ].filter(Boolean);
+  if (!rows.length) return '';
+  return `\n   ${rows.join('\n   ')}\n   Say what the victim wants with the move and what they miss.`;
+}
+
+/** Where the victim goes wrong from the bait on, each with the engine's
+ * best and the material after it: the Englund run called 7.Bd2 "safer"
+ * when it drops a rook. */
+function victimErrors(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'trap' }> | null): string {
+  if (!skeleton) return '';
+  const facts = new Map(context.dossier.nodes.map((node) => [node.nodeId, node]));
+  const errors = [skeleton.baitNodeId, ...skeleton.punishNodeIds].flatMap((id) => {
+    const node = facts.get(id);
+    if (!node || node.side === context.learnerSide || !ERROR_QUALITIES.has(node.quality)) return [];
+    const best = node.bestInstead ? `; best ${node.bestInstead.san}, after which ${node.bestInstead.balance}` : '';
+    return [`${nodeLabel(context, id)}: ${node.quality}${best}`];
+  });
+  if (!errors.length) return '';
+  return `\n   The victim goes wrong at: ${errors.join(' | ')}.\n   At each, say what they hoped for; where even the best loses material, say\n   so, never "safe".`;
+}
+
+/** §13.4: the video plays the safe line (`playOut`) under the safety
+ * episode's line on the bait. */
+function safeLineOnBoard(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'trap' }> | null): string {
+  const line = context.dossier.nodes.find((node) => node.nodeId === skeleton?.baitNodeId)?.bestInstead?.line;
+  if (!promptVideos(context).video || !line?.length) return '';
+  return `\n   In the video the board goes back to before the bait and plays
+   ${line.join(' ')} while this episode's video line on the bait is said:
+   walk through those moves in order.`;
 }
 
 /** When the victim finds the safe move, what the trapper plays to lose as

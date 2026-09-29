@@ -2003,6 +2003,62 @@ Commit: `fix(courses): the hook keeps its line`
 
 Commit: `fix(courses): best-instead in plain chess words`
 
+## Phase 98 — A branded start, the board follows the words, and the trap's why
+
+The owner's review of the Englund video (2026-09-29): the video should open
+on the site's logo, the coach and the site's name, and the first slide should
+be livelier than a dark card. A line naming several squares and moves is hard
+to follow without the board showing them. And the trap should say why the
+victim walks into it, where each of their moves goes wrong, and what the
+trapper plays when the victim does not fall for it, shown on the board rather
+than only listed in words.
+
+### Task 98.1 — The start slide
+
+**Files:** `clip/draw-frame.ts`, `clip/ClipPreview.tsx`, `clip/timeline.ts`, tests.
+
+- [x] The video's first segment (the hook) no longer covers the board with a
+  card: the climax board stays in view; the side panel shows the logo on a
+  light tile and "freechesscoach.org", the thumbnail text large, the course
+  title, and the coach's full portrait with their name. The panel's parts
+  slide in one after another over the first half second.
+
+### Task 98.2 — The board follows the words
+
+**Files:** new `clip/speech-marks.ts`, `timeline.ts`, `reel-timeline.ts`, `draw-frame.ts`, tests.
+
+- [x] Code reads each spoken line (the hook, a move's line, a tempting move's
+  why, the reel's hook and beats): a square it names ("the king on e1",
+  "c1") lights up, and a move it names that is legal on the board shown
+  gets an arrow. Each appears when the words reach it (its place in the text
+  times the audio's length) and fades after 1.8 s. Moves already on the
+  board and moves not legal there get nothing: code never guesses.
+
+### Task 98.3 — The trap's why
+
+**Files:** `playbooks.ts`, `course-prompts.test.ts`, `docs/courses.md`.
+
+- [x] The bait item gets its facts: what the trapper's move before it
+  threatens, what the bait does against it, and what it misses (the bait's
+  tactic row): "say what the victim wants and what they miss".
+- [x] The punish item lists the victim's errors on the line from the bait,
+  each with its best move and the material after it: where even the best
+  loses, the coach says so rather than calling it safe (the last run called
+  7.Bd2 "safer" when it drops a rook).
+
+### Task 98.4 — The safe line on the board
+
+**Files:** `packages/shared/src/course.ts`, `generate-episode.ts`,
+`manual-episodes.ts`, `timeline.ts`, tests, `docs/courses.md`.
+
+- [x] A ply may carry `playOut`: moves off the tree, copied by code. The
+  safety episode's line at the bait gets the safe move and the engine's line
+  after it (`bestInstead.line`).
+- [x] The video shows the board before the bait and plays that line while the
+  coach speaks, the moves spread over the line's audio.
+
+Commit per task; docs with the last.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.
