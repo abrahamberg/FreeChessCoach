@@ -2672,6 +2672,27 @@ code; where two copies exist, keep the better one.
   precision corpus unchanged. The course keeps only its two attacker
   conditions.
 
+### Task 109.6 — The first model run through the studio
+
+The Fishing Pole, written by the model through the studio (11 calls). The
+verifier caught a pin the model invented and a "pawn on g4" copied from a
+wrong fact; the review found three causes in code:
+
+- [x] "Keeps the X safe" only for a piece already standing there that the
+  better move leaves in place: "c3 keeps the pawn on g4 safe" named 6.hxg4's
+  own pawn (13 more like it in the golden set). A better move that moves the
+  loose piece says "takes the bishop out of danger on b5".
+- [x] A hanging piece names its owner ("leaves the white pawn on g4
+  hanging"): the model wrote "your pawn" for White's pawn.
+- [x] A trap's learner side is the side that plays the line's last move: the
+  material rule picked White for the Fishing Pole and the QGA trap, and
+  could not tell Noah's Ark; the last mover is right on all 12 traps.
+
+Not fixed, for the owner: the hook restates the facts ("8…g3 leaves Black a
+forced mate in one") instead of hooking; the Commander repeats "Hold the
+line"; the promise and takeaways carried the wrong g4 fact, and nothing
+verifies them against the board.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

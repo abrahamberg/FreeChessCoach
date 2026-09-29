@@ -1,22 +1,24 @@
 import { Chess } from 'chess.js';
 import type { CourseKind } from '@freechesscoach/shared';
 import type { CourseTree } from './course-tree.js';
-import { materialBalance } from './tactic-board-facts.js';
 
 
 /**
  * docs/courses.md §3: the learner side where code can tell it. A trap is
- * learned by the side that mates or comes out ahead in material at the end
- * of the line; a master game by the winner (`resultHeader`, else a mate on
- * the board). Null means the form asks: openings and tactics always do, and
- * so do a drawn game and a trap line that ends level. A puzzle is played by
- * the side to move in its position, and so is an endgame's technique.
+ * learned by the side that plays the line's last move; a master game by the
+ * winner (`resultHeader`, else a mate on the board). Null means the form
+ * asks: openings and tactics always do, and so does a drawn game. A puzzle
+ * is played by the side to move in its position, and so is an endgame's
+ * technique.
  */
 export function inferLearnerSide(kind: CourseKind, tree: CourseTree, resultHeader: string | null): 'white' | 'black' | null {
   const leafId = tree.lines[0]?.leafNodeId;
   const leaf = tree.nodes.find((node) => node.id === leafId);
   if (!leaf) return null;
-  if (kind === 'trap') return mater(leaf.fenAfter) ?? materialLeader(tree.startFen, leaf.fenAfter);
+  // A trap line ends on the trapper's blow: the side that moves last. The
+  // material at the end misread the Fishing Pole (…g3, White a knight up and
+  // mated next move) and the QGA's 6.Qf3 (the rook falls next move).
+  if (kind === 'trap') return new Chess(leaf.fenAfter).turn() === 'w' ? 'black' : 'white';
   if (kind === 'puzzle' || kind === 'endgame') return new Chess(tree.startFen).turn() === 'w' ? 'white' : 'black';
   if (kind === 'master_game') {
     if (resultHeader === '1-0') return 'white';
@@ -45,17 +47,4 @@ function mater(fen: string): 'white' | 'black' | null {
   const chess = new Chess(fen);
   if (!chess.isCheckmate()) return null;
   return chess.turn() === 'w' ? 'black' : 'white';
-}
-
-/** Whoever gained material between the start and the end of the line. */
-function materialLeader(startFen: string, endFen: string): 'white' | 'black' | null {
-  const gain = balance(endFen) - balance(startFen);
-  if (gain > 0) return 'white';
-  if (gain < 0) return 'black';
-  return null;
-}
-
-/** White's material minus Black's. */
-function balance(fen: string): number {
-  return materialBalance(new Chess(fen), 'w');
 }

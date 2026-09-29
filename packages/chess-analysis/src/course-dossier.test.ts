@@ -1,7 +1,7 @@
 import { Chess } from 'chess.js';
 import { describe, expect, test } from 'vitest';
 import { renderCourseDossier } from './course-dossier-text.js';
-import { abandonedGuard, boardFacts } from './course-dossier-words.js';
+import { abandonedGuard, betterMoveFacts, boardFacts } from './course-dossier-words.js';
 import { endgameShapeProblems, inferLearnerSide, puzzleShapeProblems } from './course-learner-side.js';
 import { courseLineGames } from './course-line-game.js';
 import { buildCourseSkeleton } from './course-skeleton.js';
@@ -74,13 +74,13 @@ describe('course dossier', () => {
     const nodes = byId(tree);
     const before = (id: string): string => nodes.get(nodes.get(id)?.parentId ?? '')?.fenAfter ?? tree.startFen;
     // 6.Bc3: …Qxa1 is answered by Bxa1, through b2 once the queen leaves it.
-    expect(boardFacts(before('n11'), 'Bc3')).not.toContain('leaves the rook on a1 hanging');
+    expect(boardFacts(before('n11'), 'Bc3')).not.toContain('leaves the white rook on a1 hanging');
     // 7.Qd2 unpins the bishop, which still answers …Qxa1.
-    expect(boardFacts(before('n13'), 'Qd2')).not.toContain('leaves the rook on a1 hanging');
+    expect(boardFacts(before('n13'), 'Qd2')).not.toContain('leaves the white rook on a1 hanging');
     // 7…Bxc3 lands on c3; Nxc3 takes the bishop there, no guard was left.
     expect(abandonedGuard(before('n14'), 'Bxc3', 'Nxc3')).toEqual([]);
     // A piece that really is loose still says so: Qxd5 walks into exd5.
-    expect(boardFacts('4k3/8/4p3/3p4/8/8/8/3QK3 w - - 0 1', 'Qxd5')).toContain('leaves the queen on d5 hanging');
+    expect(boardFacts('4k3/8/4p3/3p4/8/8/8/3QK3 w - - 0 1', 'Qxd5')).toContain('leaves the white queen on d5 hanging');
   });
 
   test('the facts the golden variations got wrong (Phase 106)', () => {
@@ -277,6 +277,17 @@ describe('puzzle', () => {
     expect(facts).toContain('the check can be answered: no block; take the checking piece with Kxd8; the king cannot move');
   });
 
+  test('a hanging piece names its owner; the better move keeps safe only a piece already standing there', () => {
+    expect(boardFacts('3qk3/8/8/8/8/4P3/8/4K3 b - - 0 1', 'Qd4')).toContain('leaves the black queen on d4 hanging');
+    // The Fishing Pole's bait: c3 keeps no "pawn on g4" safe; 6.hxg4 put it there.
+    const why = betterMoveFacts('r1bqkb1r/pppp1pp1/2n5/1B2p2p/4P1n1/5N1P/PPPP1PP1/RNBQ1RK1 w kq - 0 6', 'hxg4', 'c3').join(' | ');
+    expect(why).not.toContain('keeps the pawn on g4 safe');
+    // A better move that moves the loose piece says it takes it out of danger.
+    const away = betterMoveFacts('4k3/8/p7/1B6/8/8/8/4K3 w - - 0 1', 'Kd2', 'Bc4').join(' | ');
+    expect(away).toContain('takes the bishop out of danger on b5');
+    expect(away).not.toContain('keeps the bishop on b5 safe');
+  });
+
   test('a check answered by promoting names one promotion; a bare endgame has no king-safety words, and a lone pawn is passed, not isolated', () => {
     const facts = boardFacts('7K/8/8/8/8/8/3pk3/Q7 w - - 0 1', 'Qe1+').join(' | ');
     expect(facts).toContain('take the checking piece with dxe1=Q, Kxe1;');
@@ -361,10 +372,11 @@ describe('puzzle', () => {
 });
 
 describe('inferLearnerSide', () => {
-  test('trap: the side that mates, else the side up material; level means ask', () => {
+  test("trap: the side that plays the line's last move, the trapper's blow", () => {
     expect(inferLearnerSide('trap', parseCourseTree(ENGLUND_TRAP), null)).toBe('black');
     expect(inferLearnerSide('trap', parseCourseTree('1. e4 d5 2. exd5 *'), null)).toBe('white');
-    expect(inferLearnerSide('trap', parseCourseTree('1. e4 e5 *'), null)).toBeNull();
+    // The Fishing Pole ends on …g3 with White a knight up and mated next move.
+    expect(inferLearnerSide('trap', parseCourseTree('1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. O-O Ng4 5. h3 h5 6. hxg4 hxg4 7. Ne1 Qh4 8. f3 g3 *'), null)).toBe('black');
   });
 
   test('master game: the winner; a draw asks; openings always ask', () => {

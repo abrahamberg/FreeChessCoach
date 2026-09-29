@@ -60,7 +60,7 @@ describe('course tactic sentences', () => {
     const node = { id: 'n1', parentId: null, san: 'Rg2+', fenAfter: '7k/7p/4Q2P/8/8/6K1/6r1/8 w - - 1 2', lineId: 'l1', comment: null } as never;
     const facts = buildCourseNodeFacts({ node, move, fenBefore: before, linePositionFens: [before], evalsByFen: new Map(), critical: true, learnerSide: 'black' });
     expect(facts.tactics).toEqual(['You found a brilliant sacrifice.']);
-    expect(facts.board).toContain('leaves the rook on g2 hanging: taking it is stalemate');
+    expect(facts.board).toContain('leaves the black rook on g2 hanging: taking it is stalemate');
   });
 
   test('a material sentence goes where the position is already a forced mate', () => {

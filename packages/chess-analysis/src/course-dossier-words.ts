@@ -54,8 +54,11 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   // A capture taken back is a trade, not a piece left hanging: 3…cxd4 read
   // "leaves the pawn on d4 hanging" in every Open Sicilian.
   const traded = (square: string): boolean => square === inspected.to && inspected.captured !== null && valueOf(inspected.captured) >= valueOf(inspected.piece);
+  const owner = new Chess(fenBefore).turn() === 'w' ? 'white' : 'black';
   for (const piece of inspected.leavesHanging) {
-    if (!traded(piece.square) && canBeTaken(inspected.resultFen, piece.square)) facts.push(`leaves the ${PIECE_NAMES[piece.piece]} on ${piece.square} hanging${takingStalemates(inspected.resultFen, piece.square) ? ': taking it is stalemate' : ''}`);
+    // Whose piece: the model read "exd5 leaves the pawn on g4 hanging" as
+    // the learner's pawn, and it was White's.
+    if (!traded(piece.square) && canBeTaken(inspected.resultFen, piece.square)) facts.push(`leaves the ${owner} ${PIECE_NAMES[piece.piece]} on ${piece.square} hanging${takingStalemates(inspected.resultFen, piece.square) ? ': taking it is stalemate' : ''}`);
   }
   // A piece that is simply taken forks nothing: 3.Qg8+ in Philidor's Legacy
   // read "forks the rook on a8 and the king on h8" before …Rxg8.
@@ -239,10 +242,19 @@ export function betterMoveFacts(fenBefore: string, playedSan: string, betterSan:
   const better = inspectMoves(fenBefore, [betterSan]).moves[0];
   if (!played?.legal || !better?.legal) return [];
   const stillHanging = new Set(better.leavesHanging.filter((piece) => canBeTaken(better.resultFen, piece.square)).map((piece) => piece.square));
+  // Only a piece already standing there, which the better move leaves in
+  // place: 6.hxg4's own pawn on g4 read "c3 keeps the pawn on g4 safe".
+  const standing = new Chess(better.resultFen);
   const kept = played.leavesHanging
+    .filter((piece) => piece.square !== played.to && standing.get(piece.square as Square)?.type === piece.piece)
     .filter((piece) => canBeTaken(played.resultFen, piece.square) && !stillHanging.has(piece.square))
     .map((piece) => `keeps the ${PIECE_NAMES[piece.piece]} on ${piece.square} safe${newDefenders(played.resultFen, better.resultFen, piece.square as Square)}`);
-  return [...boardFacts(fenBefore, betterSan), ...kept];
+  // The better move takes the loose piece itself away: "Ba4 keeps the
+  // bishop on b5 safe" named a square the bishop had left.
+  const escapes = played.leavesHanging
+    .filter((piece) => piece.square === better.from && canBeTaken(played.resultFen, piece.square))
+    .map((piece) => `takes the ${PIECE_NAMES[piece.piece]} out of danger on ${piece.square}`);
+  return [...boardFacts(fenBefore, betterSan), ...escapes, ...kept];
 }
 
 /** ": the queen on d1 now defends it" — how the better move keeps it safe,
