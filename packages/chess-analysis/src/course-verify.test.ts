@@ -129,6 +129,11 @@ describe('verifyCourseEpisode', () => {
 
   test('lengths: captions, course lines and the video word budget', () => {
     expect(codes(verify((episode) => (first(episode).caption = 'This caption has far too many words')))).toEqual(['lengths']);
+    // No caption: the video shows the first sentence, and the model is asked
+    // for a caption, not told "the caption" it never wrote is long.
+    expect(verify((episode) => ((first(episode).caption = undefined), (first(episode).say = 'White attacks the queen with the bishop now.')))).toEqual([
+      { code: 'lengths', nodeId: 'n11', message: 'n11 has no caption, so the video shows its first sentence (8 words): add a caption of at most 6 words and keep the line' }
+    ]);
     expect(codes(verify((episode) => (first(episode).text = 'One. Two. Three.')))).toEqual([]);
     // The video line is 12 words: over a 10-word budget per move.
     expect(verify(() => undefined, { budget: { wordsPerBeat: 10, wordsPerEpisode: 100 } })).toEqual([

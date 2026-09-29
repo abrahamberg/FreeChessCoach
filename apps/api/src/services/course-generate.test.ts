@@ -113,8 +113,12 @@ describe('runCourseGeneration', () => {
 
   test("code's key moves: budgets raised to fit them, and a silent one is sent back", async () => {
     const id = await newCourse('key-moves@example.com');
-    // e5 speaks on n13 only; the mate n16 is its key move.
-    const { deps, prompts } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n13')), step(script('e5', 'n16')), step(script('e6', 'n11'))]);
+    // e5 speaks on n13 only; the mate n16 is its key move. The plan gives
+    // the hook 0, and it still gets its one line.
+    const plan = outline();
+    const chapter = plan.chapters[0]!;
+    chapter.episodes[0] = { ...chapter.episodes[0]!, budgetCourse: 0, budgetVideo: 0 };
+    const { deps, prompts } = depsWith([step(plan), step(script('e1', 'n1')), step(script('e2', 'n2')), step(script('e3', 'n11')), step(quizScript()), step(script('e5', 'n13')), step(script('e5', 'n16')), step(script('e6', 'n11'))]);
 
     await runCourseGeneration(deps, id);
 
@@ -125,6 +129,7 @@ describe('runCourseGeneration', () => {
     const row = await coursesRepo.findById(db, id);
     const e5 = row?.document?.episodes.find((episode) => episode.id === 'e5');
     expect(e5?.budget).toEqual({ course: 1, video: 1, keyNodeIds: ['n16'] });
+    expect(row?.document?.episodes.find((episode) => episode.id === 'e1')?.budget).toEqual({ course: 1, video: 1 });
     expect(row?.generation?.warnings).toEqual([]);
   });
 

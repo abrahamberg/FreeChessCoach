@@ -66,7 +66,9 @@ export function withProducts(inputs: GenerationInputs, outline: CourseOutline): 
 /** Code's say over the budgets: with no YouTube video (§13.1) the video's
  * budget is 0, and each budget is raised to fit the
  * episode's key moves (the quiz answer, a mate, a trap's bait and end),
- * which join the plan's key moves, so no budget can leave them silent. */
+ * which join the plan's key moves, so no budget can leave them silent. A
+ * hook always has its one line: a plan that gave it 0 left the video's first
+ * move silent. */
 export function withKeyMoves(inputs: GenerationInputs, outline: CourseOutline): CourseOutline {
   const sans = new Map(inputs.document.nodes.map((node) => [node.id, node.san]));
   const video = courseVideos(inputs.document).video;
@@ -77,11 +79,12 @@ export function withKeyMoves(inputs: GenerationInputs, outline: CourseOutline): 
       episodes: chapter.episodes.map((episode) => {
         const path = courseNodePath(inputs.document.nodes, episode.startNodeId, episode.endNodeId) ?? [];
         const keys = episodeKeyMoves({ role: episode.role, path, answerNodeId: episode.answerNodeId, sans, skeleton: inputs.skeleton });
+        const least = episode.role === 'hook' ? 1 : 0;
         return {
           ...episode,
           narratedNodeIds: path.filter((id) => keys.includes(id) || episode.narratedNodeIds.includes(id)),
-          budgetCourse: Math.max(episode.budgetCourse, keys.length),
-          budgetVideo: video ? Math.max(episode.budgetVideo, keys.length) : 0,
+          budgetCourse: Math.max(episode.budgetCourse, keys.length, least),
+          budgetVideo: video ? Math.max(episode.budgetVideo, keys.length, least) : 0,
           keyNodeIds: keys
         };
       })

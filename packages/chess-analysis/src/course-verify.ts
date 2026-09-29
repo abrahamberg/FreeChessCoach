@@ -74,8 +74,16 @@ function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: Cou
     if (sentences > limit) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The line on ${ply.nodeId} has ${sentences} sentences (at most ${limit})` });
   }
   for (const ply of video) {
+    // With no caption the video shows the line's first sentence: asked about
+    // "the caption" it never wrote, the model moved its words there and left
+    // the hook silent.
     const captionWords = wordCount(videoCaption(ply));
-    if (captionWords > maxCaptionWords) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The caption on ${ply.nodeId} has ${captionWords} words (at most ${maxCaptionWords})` });
+    if (captionWords > maxCaptionWords) {
+      const message = ply.caption?.trim()
+        ? `The caption on ${ply.nodeId} has ${captionWords} words (at most ${maxCaptionWords})`
+        : `${ply.nodeId} has no caption, so the video shows its first sentence (${captionWords} words): add a caption of at most ${maxCaptionWords} words and keep the line`;
+      problems.push({ code: 'lengths', nodeId: ply.nodeId, message });
+    }
     const sayWords = wordCount(videoLine(ply));
     if (budget && overLength(sayWords, budget.wordsPerBeat)) {
       problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The video line on ${ply.nodeId} has ${sayWords} words (at most ${budget.wordsPerBeat}); give it a shorter video line` });
