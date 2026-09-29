@@ -13,6 +13,7 @@ import type { Kysely } from 'kysely';
 import { z } from 'zod';
 import type { Database } from '../db/schema.js';
 import { EngineUnavailableError, NotFoundError, ValidationError } from '../lib/errors.js';
+import { parseRequest } from '../lib/parse-request.js';
 import type { JobQueue } from '../jobs/queue.js';
 import type { ModelResolution } from '../llm/gateway.js';
 import type { CourseDossierBuilder } from '../services/course-dossier.js';
@@ -55,7 +56,7 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
 
   app.post('/api/courses', async (request, reply): Promise<CourseResponse> => {
     const ownerId = await creatorId(request);
-    const course = await coursesService.createCourse(db, ownerId, parseBody(CreateCourseRequestSchema, request.body));
+    const course = await coursesService.createCourse(db, ownerId, parseRequest(CreateCourseRequestSchema, request.body));
     return reply.code(201).send(course);
   });
 
@@ -75,7 +76,7 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
   /** 204, like every PUT in this app; the client already holds what it saved. */
   app.put('/api/courses/:id/draft', async (request, reply) => {
     const ownerId = await creatorId(request);
-    const { document } = parseBody(SaveCourseDraftRequestSchema, request.body);
+    const { document } = parseRequest(SaveCourseDraftRequestSchema, request.body);
     await coursesService.saveDraft(db, ownerId, courseId(request), document);
     return reply.code(204).send();
   });
@@ -89,7 +90,7 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
   /** 202: the worker writes the draft; the editor polls GET for progress. */
   app.post('/api/courses/:id/generate', async (request, reply): Promise<CourseResponse> => {
     const ownerId = await creatorId(request);
-    const { restart } = parseBody(StartCourseGenerationRequestSchema, request.body ?? {});
+    const { restart } = parseRequest(StartCourseGenerationRequestSchema, request.body ?? {});
     const course = await courseGenerate.startCourseGeneration(db, deps.jobQueue, ownerId, courseId(request), restart);
     return reply.code(202).send(course);
   });
@@ -97,7 +98,7 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
   /** §9: publish the draft (unlisted unless the creator picks public). */
   app.post('/api/courses/:id/publish', async (request): Promise<CourseResponse> => {
     const ownerId = await creatorId(request);
-    const body = parseBody(PublishCourseRequestSchema, request.body ?? {});
+    const body = parseRequest(PublishCourseRequestSchema, request.body ?? {});
     const mirror = deps.audioMirror && { mirror: deps.audioMirror, onError: (error: unknown) => request.log.error({ err: error }, 'course audio mirror sync failed') };
     return publishCourse(db, ownerId, courseId(request), body, mirror);
   });
@@ -126,7 +127,7 @@ export function registerCoursesRoutes(app: FastifyInstance, db: Kysely<Database>
     const params = EpisodeParamsSchema.safeParse(request.params);
     if (!params.success) throw new NotFoundError('Episode not found');
     if (!deps.resolveModel) throw new ValidationError('AI is not configured on this server');
-    const { instruction } = parseBody(RegenerateEpisodeRequestSchema, request.body ?? {});
+    const { instruction } = parseRequest(RegenerateEpisodeRequestSchema, request.body ?? {});
     const generateDeps = { db, buildDossier, resolveModel: deps.resolveModel };
     return courseGenerate.regenerateCourseEpisode(generateDeps, ownerId, params.data.id, params.data.episodeId, instruction);
   });
@@ -136,10 +137,4 @@ function courseId(request: FastifyRequest): string {
   const parsed = CourseParamsSchema.safeParse(request.params);
   if (!parsed.success) throw new NotFoundError('Course not found');
   return parsed.data.id;
-}
-
-function parseBody<T extends z.ZodTypeAny>(schema: T, body: unknown): z.output<T> {
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) throw new ValidationError(parsed.error.issues.map((issue) => issue.message).join('; '));
-  return parsed.data;
 }

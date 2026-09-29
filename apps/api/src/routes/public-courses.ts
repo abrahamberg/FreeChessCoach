@@ -3,7 +3,8 @@ import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import { z } from 'zod';
 import type { Database } from '../db/schema.js';
-import { NotFoundError, ValidationError } from '../lib/errors.js';
+import { NotFoundError } from '../lib/errors.js';
+import { parseRequest } from '../lib/parse-request.js';
 import { ROUTE_RATE_LIMITS, rateLimitConfig } from '../plugins/route-rate-limit.js';
 import type { AudioMirror } from '../services/courses/audio-mirror.js';
 import { courseCatalogue, publicCourse, publicNoteAudio } from '../services/courses/public-course.js';
@@ -23,9 +24,7 @@ export function registerPublicCoursesRoutes(app: FastifyInstance, db: Kysely<Dat
 
   // The catalogue: public courses only; unlisted ones are for their link.
   app.get('/api/public/courses', limit, async (request, reply): Promise<CourseCatalogResponse> => {
-    const query = CourseCatalogQuerySchema.safeParse(request.query);
-    if (!query.success) throw new ValidationError(query.error.issues.map((issue) => issue.message).join('; '));
-    const page = await courseCatalogue(db, query.data);
+    const page = await courseCatalogue(db, parseRequest(CourseCatalogQuerySchema, request.query));
     void reply.header('cache-control', 'public, max-age=60');
     return page;
   });

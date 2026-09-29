@@ -12,7 +12,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import { z } from 'zod';
 import type { Database } from '../db/schema.js';
-import { ValidationError } from '../lib/errors.js';
+import { parseRequest } from '../lib/parse-request.js';
 import * as progress from '../services/courses/progress.js';
 import * as userProfileService from '../services/user-profile.js';
 
@@ -25,17 +25,17 @@ export function registerCourseProgressRoutes(app: FastifyInstance, db: Kysely<Da
   const userId = async (request: FastifyRequest): Promise<string> => (await userProfileService.getOrCreate(db, request.user)).id;
 
   app.post('/api/course-progress/drills', async (request): Promise<CourseProgressResponse> => {
-    const body = parse(RecordCourseDrillRequestSchema, request.body);
+    const body = parseRequest(RecordCourseDrillRequestSchema, request.body);
     return { items: await progress.recordDrill(db, await userId(request), body) };
   });
 
   app.post('/api/course-progress/lookup', async (request): Promise<CourseProgressResponse> => {
-    const { keys } = parse(CourseProgressLookupRequestSchema, request.body);
+    const { keys } = parseRequest(CourseProgressLookupRequestSchema, request.body);
     return { items: await progress.lookup(db, await userId(request), keys) };
   });
 
   app.post('/api/course-progress/import', async (request, reply) => {
-    const { items, enrollments } = parse(ImportCourseProgressRequestSchema, request.body);
+    const { items, enrollments } = parseRequest(ImportCourseProgressRequestSchema, request.body);
     await progress.importProgress(db, await userId(request), items, enrollments);
     return reply.code(204).send();
   });
@@ -46,27 +46,21 @@ export function registerCourseProgressRoutes(app: FastifyInstance, db: Kysely<Da
   }));
 
   app.put('/api/course-enrollments/:slug', async (request, reply) => {
-    const { slug } = parse(SlugParamsSchema, request.params);
-    await progress.saveEnrollment(db, await userId(request), slug, parse(SaveCourseEnrollmentRequestSchema, request.body));
+    const { slug } = parseRequest(SlugParamsSchema, request.params);
+    await progress.saveEnrollment(db, await userId(request), slug, parseRequest(SaveCourseEnrollmentRequestSchema, request.body));
     return reply.code(204).send();
   });
 
   app.delete('/api/course-enrollments/:slug', async (request, reply) => {
-    const { slug } = parse(SlugParamsSchema, request.params);
+    const { slug } = parseRequest(SlugParamsSchema, request.params);
     await progress.removeEnrollment(db, await userId(request), slug);
     return reply.code(204).send();
   });
 
   app.get('/api/course-progress/due', async (request): Promise<CourseReviewDueResponse> => {
-    const { today } = parse(z.object({ today: CourseDaySchema }), request.query);
+    const { today } = parseRequest(z.object({ today: CourseDaySchema }), request.query);
     return progress.due(db, await userId(request), today);
   });
 }
 
 const SlugParamsSchema = z.object({ slug: z.string().min(1).max(120) });
-
-function parse<S extends z.ZodTypeAny>(schema: S, value: unknown): z.output<S> {
-  const result = schema.safeParse(value);
-  if (!result.success) throw new ValidationError(result.error.issues.map((issue) => issue.message).join('; '));
-  return result.data;
-}
