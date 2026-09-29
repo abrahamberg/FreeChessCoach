@@ -224,3 +224,26 @@ describe('verifyCourseEpisode', () => {
     expect(codes(verify((episode) => (first(episode).text = 'Nd5 and +2.'), { dossier: null }))).toEqual(['moves', 'numbers']);
   });
 });
+
+describe('pieces on squares (§7)', () => {
+  const pieces = (problems: { code: string; message: string }[]) => problems.filter((problem) => problem.code === 'pieces').map((problem) => problem.message);
+
+  test('a piece a line names stands on that square in a position the line is about', () => {
+    expect(pieces(verify((episode) => (first(episode).text = 'Bc3 attacks the queen on b2; the rook on a1 is still loose.')))).toEqual([]);
+    expect(pieces(verify((episode) => (first(episode).text = 'Bc3 attacks the knight on b2.')))).toEqual([
+      '"knight on b2" in the line on n11: no knight stands on b2 in the positions this line is about'
+    ]);
+  });
+
+  test("a safety line is about the board before the bait and the safe line; after the bait only where it names it", () => {
+    const safety = (text: string) =>
+      verify((episode) => {
+        episode.role = 'safety';
+        episode.quiz = undefined;
+        episode.plies = [ply('n11', text, { playOut: ['Nc3', 'Bb4', 'Rb1'] })];
+      });
+    // The Elephant run: "6.e3 keeps the knight on d5 safe", with the knight on c3.
+    expect(pieces(safety('Nc3 keeps the bishop on c3 safe.'))).toEqual(['"bishop on c3" in the line on n11: no bishop stands on c3 in the positions this line is about']);
+    expect(pieces(safety('Nc3, not Bc3: the bishop on c3 would be pinned. The rook on b1 guards b2.'))).toEqual([]);
+  });
+});

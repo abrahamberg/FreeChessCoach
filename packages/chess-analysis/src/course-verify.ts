@@ -2,13 +2,14 @@ import { videoCaption, videoLine, type CourseEpisode } from '@freechesscoach/sha
 import { CONFIG } from './config.js';
 import type { CourseDossier } from './course-dossier.js';
 import { arrowProblems, nodeProblems } from './course-verify-board.js';
+import { pieceProblems } from './course-verify-pieces.js';
 import { episodeScope, moveLabel, type CourseVerifyNode, type EpisodeScope } from './course-verify-scope.js';
 import { episodeTexts, moveProblems, nodeIdProblems, numberProblems, overLength, phraseProblems, sameMove, sanTokens, tacticWordProblems } from './course-verify-text.js';
 
 export type { CourseVerifyNode } from './course-verify-scope.js';
 
 /** docs/courses.md §7, one code per check. */
-export type CourseVerifyCode = 'nodes' | 'moves' | 'tactic-words' | 'numbers' | 'arrows' | 'lengths' | 'key-moves' | 'tempting' | 'quiz' | 'phrases' | 'reel' | 'video' | 'voice';
+export type CourseVerifyCode = 'nodes' | 'moves' | 'pieces' | 'tactic-words' | 'numbers' | 'arrows' | 'lengths' | 'key-moves' | 'tempting' | 'quiz' | 'phrases' | 'reel' | 'video' | 'voice';
 
 export interface CourseVerifyProblem {
   code: CourseVerifyCode;
@@ -49,6 +50,7 @@ export function verifyCourseEpisode(input: CourseVerifyInput): CourseVerifyProbl
     ...nodeProblems(episode, scope),
     ...moveProblems(texts, scope, dossier !== null),
     ...(dossier ? tacticWordProblems(texts, scope) : []),
+    ...pieceProblems(episode, texts, scope),
     ...numberProblems(texts, input.direction ?? ''),
     ...arrowProblems(episode, scope),
     ...lengthProblems(episode, scope, input.budget ?? null),
