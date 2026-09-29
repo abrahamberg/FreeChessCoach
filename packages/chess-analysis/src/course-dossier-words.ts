@@ -2,6 +2,7 @@ import { Chess, type PieceSymbol, type Square } from 'chess.js';
 import type { EngineEval, EngineLine } from '@freechesscoach/shared';
 import { cpToWords, mateToWords } from './eval-words.js';
 import { inspectMoves } from './inspect-moves.js';
+import { flipActiveColorFen } from './null-move-fen.js';
 import { PIECE_NAMES } from './piece-names.js';
 
 const VALUABLE = new Set(['n', 'b', 'r', 'q']);
@@ -36,13 +37,18 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   if (inspected.gives === 'checkmate' && isBackRankMate(inspected.resultFen, inspected.to as Square)) facts.push('a back-rank mate');
   if (inspected.gives === 'checkmate') facts.push(mateNet(inspected.resultFen));
   if (inspected.gives === 'check') facts.push(checkAnswers(inspected.resultFen));
-  facts.push(...attackedPieces(inspected.resultFen, inspected.to as Square));
+  // A mate ends the game: what else the piece hits is noise ("Nd6# forks the
+  // bishop on c8").
+  if (inspected.gives !== 'checkmate') facts.push(...attackedPieces(inspected.resultFen, inspected.to as Square));
   for (const piece of inspected.leavesHanging) {
     if (canBeTaken(inspected.resultFen, piece.square)) facts.push(`leaves the ${PIECE_NAMES[piece.piece]} on ${piece.square} hanging`);
   }
+  // A piece that is simply taken forks nothing: 3.Qg8+ in Philidor's Legacy
+  // read "forks the rook on a8 and the king on h8" before …Rxg8.
+  const forker = inspected.gives !== 'checkmate' && !canBeTaken(inspected.resultFen, inspected.to);
   for (const fork of inspected.createsForks) {
     const targets = forkTargets(inspected.resultFen, fork.forkedSquares);
-    if (fork.square === inspected.to && targets.length >= 2) facts.push(`the ${PIECE_NAMES[fork.piece]} on ${fork.square} forks ${targets.join(' and ')}`);
+    if (forker && fork.square === inspected.to && targets.length >= 2) facts.push(`the ${PIECE_NAMES[fork.piece]} on ${fork.square} forks ${targets.join(' and ')}`);
   }
   return facts;
 }
@@ -74,12 +80,16 @@ function mateNet(fenAfter: string): string {
   const king = chess.findPiece({ type: 'k', color: side })[0];
   if (!king) return 'checkmate';
   const name = (square: Square): string => `the ${PIECE_NAMES[chess.get(square)!.type]} on ${square}`;
+  // The king's own square blocks the lines through it: with it on the board,
+  // Qc1# read "h1 is covered by " (the queen sees h1 once the king steps there).
+  const lifted = new Chess(fenAfter);
+  lifted.remove(king);
   const own: string[] = [];
   const covered = new Map<string, string[]>();
   const guarded: string[] = [];
   for (const square of kingNeighbours(king)) {
     const piece = chess.get(square);
-    const by = chess.attackers(square, enemy).map(name);
+    const by = lifted.attackers(square, enemy).map(name);
     if (piece?.color === side) own.push(square);
     else if (piece) guarded.push(`${name(square)} is guarded by ${by.join(' and ')}`);
     else {
@@ -208,22 +218,58 @@ function attackedPieces(fenAfter: string, from: Square): string[] {
       if (!cell || cell.color === mover.color || !VALUABLE.has(cell.type)) continue;
       if (!chess.attackers(cell.square, mover.color).includes(from)) continue;
       const target = `the ${PIECE_NAMES[cell.type]} on ${cell.square}`;
-      targets.push(isPinnedToKing(fenAfter, cell.square, from) ? `attacks ${target}, which is pinned to the king` : `attacks ${target}`);
+      const pin = pinOf(fenAfter, cell.square);
+      const trapped = isTrapped(fenAfter, cell.square) ? ', which is trapped: every square it can reach loses it' : '';
+      targets.push(`attacks ${target}${pin ? `, which is pinned to ${pin}` : ''}${trapped}`);
     }
   }
   return targets;
 }
 
-/** Lifting the piece off the board would put its own king in check from `pinner`. */
-function isPinnedToKing(fenAfter: string, square: Square, pinner: Square): boolean {
+/** "the king by the bishop on b5" or "the queen on d8 by the bishop on g5":
+ * lifting the piece off the board opens a line from an enemy piece to its
+ * king, or to its queen when the piece is worth less. The Elephant's bait
+ * never said the knight on f6 was pinned, which is why Nxd5 looks safe. */
+function pinOf(fenAfter: string, square: Square): string | null {
   const chess = new Chess(fenAfter);
   const piece = chess.get(square);
-  if (!piece) return false;
-  const king = chess.findPiece({ type: 'k', color: piece.color })[0];
-  if (king === undefined) return false;
+  if (!piece) return null;
   const enemy = piece.color === 'w' ? 'b' : 'w';
-  // Already giving check: the piece is not what shields the king.
-  if (chess.attackers(king, enemy).includes(pinner)) return false;
-  chess.remove(square);
-  return chess.attackers(king, enemy).includes(pinner);
+  const king = chess.findPiece({ type: 'k', color: piece.color })[0];
+  const queen = piece.type === 'q' ? undefined : chess.findPiece({ type: 'q', color: piece.color })[0];
+  const before = (target: Square | undefined): Set<Square> => new Set(target ? chess.attackers(target, enemy) : []);
+  const [kingBefore, queenBefore] = [before(king), before(queen)];
+  const lifted = new Chess(fenAfter);
+  lifted.remove(square);
+  const pinner = (target: Square | undefined, already: Set<Square>): Square | undefined =>
+    target ? lifted.attackers(target, enemy).find((from) => !already.has(from)) : undefined;
+  const byKing = pinner(king, kingBefore);
+  if (byKing) return `the king by the ${PIECE_NAMES[chess.get(byKing)!.type]} on ${byKing}`;
+  const byQueen = pinner(queen, queenBefore);
+  if (queen && byQueen && VALUES[chess.get(byQueen)!.type] < VALUES.q) return `the queen on ${queen} by the ${PIECE_NAMES[chess.get(byQueen)!.type]} on ${byQueen}`;
+  return null;
+}
+
+/** The piece's side is to move, staying loses it, and so does every move it
+ * has: it lands where it is lost without having taken as much. Noah's Ark
+ * ended on "attacks the bishop on b3" and nothing said the bishop had
+ * nowhere to go. An even trade is no loss: the Englund's pinned queen can
+ * still trade itself off on c3. */
+function isTrapped(fenAfter: string, square: Square): boolean {
+  const chess = new Chess(fenAfter);
+  const piece = chess.get(square);
+  const passed = flipActiveColorFen(fenAfter);
+  if (!piece || !passed || piece.color !== chess.turn() || piece.type === 'k' || piece.type === 'p' || !isLostOn(passed, square)) return false;
+  return chess.moves({ square, verbose: true }).every((move) => (!move.captured || VALUES[move.captured] < VALUES[piece.type]) && isLostOn(move.after, move.to));
+}
+
+/** The side to move takes on the square and comes out ahead: no recapture,
+ * or the piece taken is worth more than the taker. */
+function isLostOn(fen: string, square: string): boolean {
+  const chess = new Chess(fen);
+  return chess.moves({ verbose: true }).some((move) => {
+    if (move.to !== square || !move.captured) return false;
+    const recaptured = new Chess(move.after).moves({ verbose: true }).some((reply) => reply.to === square && Boolean(reply.captured));
+    return !recaptured || VALUES[move.captured] > VALUES[move.piece];
+  });
 }

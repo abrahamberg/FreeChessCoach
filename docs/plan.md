@@ -2404,13 +2404,13 @@ before any model wrote a word:
 
 **Files:** `course-dossier-words.ts`, tests.
 
-- [ ] Mate nets read the board with the king lifted off, so a square covered
+- [x] Mate nets read the board with the king lifted off, so a square covered
   through the king names its piece.
-- [ ] No fork from a square where the piece is simply taken; a mating move
+- [x] No fork from a square where the piece is simply taken; a mating move
   lists no attacks or forks.
-- [ ] An attacked piece pinned by any piece: to the king, or to the queen
+- [x] An attacked piece pinned by any piece: to the king, or to the queen
   ("which is pinned to the queen on d8 by the bishop on g5").
-- [ ] An attacked piece with no safe square is named trapped ("the bishop
+- [x] An attacked piece with no safe square is named trapped ("the bishop
   on b3 is trapped: every square it can reach loses it").
 
 ### Task 106.3 — Tactic sentences

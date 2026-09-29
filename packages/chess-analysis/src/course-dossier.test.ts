@@ -1,3 +1,4 @@
+import { Chess } from 'chess.js';
 import { describe, expect, test } from 'vitest';
 import { renderCourseDossier } from './course-dossier-text.js';
 import { abandonedGuard, boardFacts } from './course-dossier-words.js';
@@ -35,15 +36,16 @@ describe('course dossier', () => {
     expect(bait?.after).toBe('Black is winning');
     expect(facts.get('n12')?.quizEligible).toBe(true);
     expect(facts.get('n12')?.evalAfterCp).toEqual(expect.any(Number));
-    expect(facts.get('n12')?.board).toEqual(['moves the bishop from f8 to b4', 'attacks the bishop on c3, which is pinned to the king']);
+    expect(facts.get('n12')?.board).toEqual(['moves the bishop from f8 to b4', 'attacks the bishop on c3, which is pinned to the king by the bishop on b4']);
     expect(facts.get('n5')?.quizEligible).toBe(false);
     expect(facts.get('n16')?.after).toBe('checkmate');
     expect(facts.get('n16')?.board).toContain('gives checkmate');
     // A piece the checking piece "attacks" is not pinned by it: the king is
-    // attacked already (4...Qb4+ and 8...Qc1#). 7...Bxc3+ does pin the queen.
+    // attacked already (4...Qb4+). 7...Bxc3+ does pin the queen. A mate
+    // (8...Qc1#) lists no attacks at all.
     expect(facts.get('n8')?.board).toContain('attacks the bishop on f4');
-    expect(facts.get('n16')?.board).toContain('attacks the knight on b1');
-    expect(facts.get('n14')?.board).toContain('attacks the queen on d2, which is pinned to the king');
+    expect(facts.get('n16')?.board.join(' | ')).not.toContain('attacks');
+    expect(facts.get('n14')?.board).toContain('attacks the queen on d2, which is pinned to the king by the bishop on c3');
     // What the model must not guess: how a check is met, why the safe move
     // works, and forks by piece, not by square.
     expect(facts.get('n8')?.board).toContain('the check can be answered: block with Bd2, Nfd2, c3, Nc3, Nbd2, Qd2; the checking piece cannot be taken; the king cannot move');
@@ -79,6 +81,31 @@ describe('course dossier', () => {
     expect(abandonedGuard(before('n14'), 'Bxc3', 'Nxc3')).toEqual([]);
     // A piece that really is loose still says so: Qxd5 walks into exd5.
     expect(boardFacts('4k3/8/4p3/3p4/8/8/8/3QK3 w - - 0 1', 'Qxd5')).toContain('leaves the queen on d5 hanging');
+  });
+
+  test('the facts the golden variations got wrong (Phase 106)', () => {
+    const after = (pgn: string): string => {
+      const chess = new Chess();
+      chess.loadPgn(pgn);
+      return chess.fen();
+    };
+    // Qc1#: f1 and h1 are covered through the king on g1.
+    const mate = boardFacts('2q3k1/5ppp/1N6/8/8/8/5PPP/6K1 b - - 1 1', 'Qc1#').join(' | ');
+    expect(mate).toContain('f1 and h1 are covered by the queen on c1');
+    expect(mate).not.toMatch(/covered by (;|$|\|)/);
+    // Philidor's Legacy 3.Qg8+: the rook takes the queen, so it forks nothing.
+    expect(boardFacts('r6k/6pp/7N/8/2Q5/8/6PP/6K1 w - - 0 3', 'Qg8+').join(' | ')).not.toContain('forks');
+    expect(boardFacts('2q3k1/5ppp/8/3N4/8/8/5PPP/6K1 w - - 0 1', 'Ne7+')).toContain('the knight on e7 forks the queen on c8 and the king on g8');
+    // Nd6# mates: no "attacks the bishop on c8", no fork.
+    const nd6 = boardFacts(after('1. e4 c6 2. d4 d5 3. Nc3 dxe4 4. Nxe4 Nd7 5. Qe2 Ngf6'), 'Nd6#').join(' | ');
+    expect(nd6).not.toMatch(/attacks|forks/);
+    // The Elephant bait: why Nxd5 looks safe.
+    expect(boardFacts(after('1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Bg5 Nbd7 5. cxd5 exd5'), 'Nxd5')).toContain('attacks the knight on f6, which is pinned to the queen on d8 by the bishop on g5');
+    // Noah's Ark: the bishop on b3 has nowhere to go.
+    const noah = after('1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 d6 5. d4 b5 6. Bb3 Nxd4 7. Nxd4 exd4 8. Qxd4 c5 9. Qd5 Be6 10. Qc6+ Bd7 11. Qd5');
+    expect(boardFacts(noah, 'c4')).toContain('attacks the bishop on b3, which is trapped: every square it can reach loses it');
+    // A piece that can run is not trapped.
+    expect(boardFacts('4k3/8/8/2b5/8/8/1P6/4K3 w - - 0 1', 'b4').join(' | ')).not.toContain('trapped');
   });
 
   test('the rendered dossier carries verdict words and no eval numbers', () => {
