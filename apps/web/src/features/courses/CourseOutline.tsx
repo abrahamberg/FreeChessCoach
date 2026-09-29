@@ -1,6 +1,6 @@
 import type { CourseDocument, CourseEpisode } from '@freechesscoach/shared';
 import type { ReactNode } from 'react';
-import { moveLabel } from './courseEdits.js';
+import { findNode, moveLabel } from './courseEdits.js';
 
 export interface CourseOutlineProps {
   document: CourseDocument;
@@ -16,7 +16,7 @@ export function CourseOutline({ document, selectedEpisodeId, onSelectEpisode }: 
   if (!document.chapters.length) {
     return (
       <nav className="course-outline" aria-label="Episodes">
-        <p className="meta">No episodes yet. “Build without AI” starts them from the checked facts of your PGN.</p>
+        <p className="meta">No episodes yet.</p>
       </nav>
     );
   }
@@ -61,7 +61,7 @@ export function CourseOutline({ document, selectedEpisodeId, onSelectEpisode }: 
 /** "1.Rd1+ – 7.Rb4", or the one move. */
 function moveRange(document: CourseDocument, episode: CourseEpisode): string {
   const label = (nodeId: string): string => {
-    const node = document.nodes.find((candidate) => candidate.id === nodeId);
+    const node = findNode(document, nodeId);
     return node ? moveLabel(document, node) : '';
   };
   const start = label(episode.startNodeId);

@@ -35,9 +35,14 @@ export function episodeNodeIds(document: CourseDocument, episode: CourseEpisode)
   return [episode.endNodeId];
 }
 
+/** The node with this id, if the document has it. */
+export function findNode(document: CourseDocument, nodeId: string | null | undefined): CourseNode | undefined {
+  return nodeId ? document.nodes.find((candidate) => candidate.id === nodeId) : undefined;
+}
+
 /** The position a node's move is played from. */
 export function fenBefore(document: CourseDocument, node: CourseNode): string {
-  const parent = node.parentId ? document.nodes.find((candidate) => candidate.id === node.parentId) : undefined;
+  const parent = findNode(document, node.parentId);
   return parent?.fenAfter ?? document.startFen;
 }
 

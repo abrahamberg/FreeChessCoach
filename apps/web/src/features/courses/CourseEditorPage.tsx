@@ -150,7 +150,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
             />
           ) : (
             <div className="course-panel course-editor__empty meta">
-              {document.episodes.length ? 'Pick an episode on the left.' : 'No episodes yet. Write the course with AI, or start over from the ⋮ menu to build it from your PGN without AI.'}
+              {document.episodes.length ? 'Pick an episode from the list.' : 'No episodes yet. Write the course with AI, or start over from the ⋮ menu to build it from your PGN without AI.'}
             </div>
           )}
         </div>

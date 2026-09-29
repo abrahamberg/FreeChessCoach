@@ -1,10 +1,10 @@
 import { videoCaption, videoLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CoursePly, type CourseTempting } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon } from '../../components/Icon.js';
 import type { BoardArrow } from '../board/CoachBoard.js';
 import { COURSE_ARROW_KINDS, fromDrawnArrows } from './courseArrows.js';
-import { moveLabel, setPly, withoutQuiz } from './courseEdits.js';
+import { findNode, moveLabel, setPly, withoutQuiz } from './courseEdits.js';
 import { CourseEpisodeWarnings } from './CourseEpisodeWarnings.js';
+import { StepButtons } from './StepButtons.js';
 
 export interface CourseEpisodePanelProps {
   document: CourseDocument;
@@ -38,9 +38,9 @@ export function videoSecondsOf(episode: CourseEpisode): number {
  * YouTube video), Quiz, Video (this episode's part of the video) and AI. */
 export function CourseEpisodePanel({ document, episode, position, onStepEpisode, direction, nodeIds, selectedNodeId, drawnArrows, onChange, aiWriter }: CourseEpisodePanelProps): ReactNode {
   const [tab, setTab] = useState<Tab>('moves');
-  const node = selectedNodeId ? document.nodes.find((candidate) => candidate.id === selectedNodeId) : undefined;
+  const node = findNode(document, selectedNodeId);
   const ply = episode.plies.find((candidate) => candidate.nodeId === selectedNodeId);
-  const answerNode = document.nodes.find((candidate) => candidate.id === episode.quiz?.answerNodeId);
+  const answerNode = findNode(document, episode.quiz?.answerNodeId);
   const change = (patch: Partial<Omit<CoursePly, 'nodeId'>>): void => {
     if (selectedNodeId) onChange(setPly(episode, selectedNodeId, patch, nodeIds));
   };
@@ -65,14 +65,7 @@ export function CourseEpisodePanel({ document, episode, position, onStepEpisode,
           <p className="course-panel__role">{episode.role}</p>
         </div>
         {position && onStepEpisode && (
-          <div className="course-episode-panel__step" role="group" aria-label="Episodes">
-            <button type="button" className="btn-secondary" aria-label="Previous episode" title="Previous episode" disabled={position.index <= 0} onClick={() => onStepEpisode(-1)}>
-              <ChevronLeftIcon width={16} height={16} />
-            </button>
-            <button type="button" className="btn-secondary" aria-label="Next episode" title="Next episode" disabled={position.index >= position.count - 1} onClick={() => onStepEpisode(1)}>
-              <ChevronRightIcon width={16} height={16} />
-            </button>
-          </div>
+          <StepButtons className="course-episode-panel__step" noun="episode" index={position.index} count={position.count} onStep={onStepEpisode} />
         )}
       </div>
       {/* A video the plan gave 0 was not planned: added by hand, no budget. */}

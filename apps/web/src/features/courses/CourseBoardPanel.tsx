@@ -1,9 +1,9 @@
 import type { CourseArrow, CourseDocument, CoursePly } from '@freechesscoach/shared';
 import { useEffect, type ReactNode } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon } from '../../components/Icon.js';
 import { CoachBoard, type BoardArrow } from '../board/CoachBoard.js';
 import { toBoardMarks } from './courseArrows.js';
 import { moveLabel } from './courseEdits.js';
+import { StepButtons } from './StepButtons.js';
 
 export interface CourseBoardPanelProps {
   document: CourseDocument;
@@ -32,10 +32,11 @@ export function CourseBoardPanel({ document, nodeIds, selectedNodeId, onSelectNo
     if (next) onSelectNode(next);
   };
 
-  // ← and → step through the moves, unless the creator is typing.
+  // ← and → step through the moves, unless the creator is typing or a
+  // dialog (the learner preview, publishing) is over the editor.
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
-      if (event.altKey || event.ctrlKey || event.metaKey || typing(event.target)) return;
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || typing(event.target) || window.document.querySelector('[aria-modal="true"]')) return;
       const offset = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
       const next = offset ? nodeIds[index + offset] : undefined;
       if (!next) return;
@@ -57,15 +58,9 @@ export function CourseBoardPanel({ document, nodeIds, selectedNodeId, onSelectNo
         tapToDrawArrows
         onArrowsChange={onDrawnArrows}
       />
-      <div className="course-board__nav">
-        <button type="button" className="btn-secondary" aria-label="Previous move" title="Previous move (←)" onClick={() => step(-1)} disabled={index <= 0}>
-          <ChevronLeftIcon width={16} height={16} />
-        </button>
+      <StepButtons className="course-board__nav" noun="move" index={index} count={nodeIds.length} onStep={step} arrowKeys>
         <span className="meta course-board__count">{nodeIds.length ? `Move ${index + 1} of ${nodeIds.length}` : 'No moves'}</span>
-        <button type="button" className="btn-secondary" aria-label="Next move" title="Next move (→)" onClick={() => step(1)} disabled={index < 0 || index >= nodeIds.length - 1}>
-          <ChevronRightIcon width={16} height={16} />
-        </button>
-      </div>
+      </StepButtons>
       <div className="course-board__moves" role="list" aria-label="Moves">
         {nodeIds.map((nodeId) => {
           const node = byId.get(nodeId);
@@ -100,5 +95,5 @@ export function CourseBoardPanel({ document, nodeIds, selectedNodeId, onSelectNo
 
 function typing(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'VIDEO', 'AUDIO'].includes(target.tagName);
 }

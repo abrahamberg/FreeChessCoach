@@ -2,7 +2,7 @@ import { courseVideos, REEL_WARNINGS, type CourseDocument, type CourseGeneration
 import type { ReactNode } from 'react';
 import { describeApiError } from '../../api/client.js';
 import { useWriteReel } from './courseApi.js';
-import { moveLabel } from './courseEdits.js';
+import { findNode, moveLabel } from './courseEdits.js';
 
 export interface CourseProductsProps {
   courseId: string;
@@ -72,7 +72,7 @@ function ReelCard({ courseId, document, generation, dirty, onChange }: CoursePro
     if (reel) onChange({ ...document, reel: { ...reel, ...patch } });
   };
   const label = (nodeId: string): string => {
-    const node = document.nodes.find((candidate) => candidate.id === nodeId);
+    const node = findNode(document, nodeId);
     return node ? moveLabel(document, node) : nodeId;
   };
 

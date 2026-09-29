@@ -48,6 +48,18 @@ describe('the Studio’s episode workspace (Phase 104)', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  test('the arrow keys leave the moves alone while a dialog is open', () => {
+    const onSelect = vi.fn();
+    render(
+      <>
+        <div role="dialog" aria-modal="true" aria-label="Preview" />
+        <CourseBoardPanel document={document} nodeIds={ids} selectedNodeId={ids[1]!} onSelectNode={onSelect} arrows={[]} onDrawnArrows={vi.fn()} />
+      </>
+    );
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   test('the editor’s head: where the episode stands, and the previous and next episode', () => {
     const onStep = vi.fn();
     render(<CourseEpisodePanel document={document} episode={bait} position={{ index: 0, count: 2 }} onStepEpisode={onStep} direction="" nodeIds={ids} selectedNodeId={ids[0]!} drawnArrows={[]} onChange={vi.fn()} />);

@@ -32,8 +32,9 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
   };
   const empty = !course.document.episodes.length && !running;
   const debug = debugOpen && <CourseDebugPanel courseId={course.id} generating={running} onClose={() => setDebugOpen(false)} />;
+  const failed = generation?.status === 'failed';
   // Above every section of the editor: nothing when there is nothing to say.
-  if (!resumable && !empty && !running && generation?.status !== 'failed' && !start.error && !courseWarnings.length) return debug || null;
+  if (!empty && !running && !failed && !start.error && !courseWarnings.length) return debug || null;
 
   return (
     <div className="course-generation">
@@ -56,7 +57,7 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
           {generation && generation.total > 0 ? ` (${generation.done} of ${generation.total} done)` : ''}
         </p>
       )}
-      {generation?.status === 'failed' && (
+      {failed && (
         <p className="course-intake__errors" role="alert">
           {generation.error ?? 'Writing stopped.'}
         </p>

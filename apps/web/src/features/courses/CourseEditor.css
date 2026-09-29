@@ -233,7 +233,7 @@
   gap: 12px;
 }
 
-.course-board__nav .btn-secondary {
+.step-buttons .btn-secondary {
   display: inline-grid;
   place-items: center;
   width: 40px;
@@ -972,14 +972,6 @@
 .course-episode-panel__step {
   display: flex;
   gap: 6px;
-}
-
-.course-episode-panel__step .btn-secondary {
-  display: inline-grid;
-  place-items: center;
-  width: 40px;
-  min-height: 36px;
-  padding: 0;
 }
 
 .course-episode-panel .course-budget {
