@@ -2,6 +2,7 @@ import { Chess, DEFAULT_POSITION } from 'chess.js';
 import type { CourseTreeArrow } from './course-pgn-comment.js';
 import { tokenizeCoursePgn } from './course-pgn-tokens.js';
 import { buildDraftTree, type CourseTreeError, type DraftNode, type DraftRoot } from './course-tree-build.js';
+import { sideNotToMoveInCheck } from './null-move-fen.js';
 import { extractFirstGame } from './pgn.js';
 
 export type { CourseTreeArrow } from './course-pgn-comment.js';
@@ -66,11 +67,7 @@ function resolveStartFen(fenHeader: string | null, errors: CourseTreeError[]): s
   if (!fenHeader) return DEFAULT_POSITION;
   try {
     const chess = new Chess(fenHeader);
-    // chess.js accepts a position whose side not to move is in check, and
-    // the engine crashes on it (a knight on e5 already checking the king on
-    // c4, Black to move).
-    const waiting = chess.findPiece({ type: 'k', color: chess.turn() === 'w' ? 'b' : 'w' })[0];
-    if (waiting && chess.isAttacked(waiting, chess.turn())) {
+    if (sideNotToMoveInCheck(fenHeader)) {
       errors.push({ message: `Invalid [FEN] header: the side not to move is in check: ${fenHeader}`, pgnLine: 1, san: null, moveNumber: null, side: null });
       return DEFAULT_POSITION;
     }

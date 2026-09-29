@@ -36,7 +36,7 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   if (promoted) facts.push(`promotes to a ${PIECE_NAMES[promoted.toLowerCase() as PieceSymbol]}`);
   // En passant takes the pawn beside the capturer, not on the square it
   // lands on: 1.fxg6# read "captures the pawn on g6" for the pawn on g5.
-  const enPassant = inspected.piece === 'p' && inspected.captured !== null && !new Chess(fenBefore).get(inspected.to as Square);
+  const enPassant = inspected.captured !== null && new Chess(fenBefore).move(inspected.san).isEnPassant();
   if (enPassant) facts.push(`captures the pawn on ${inspected.to[0]}${inspected.from[1]} en passant`);
   else if (inspected.captured) facts.push(`captures the ${PIECE_NAMES[inspected.captured]} on ${inspected.to}`);
   facts.push(...blockedCheck(fenBefore, inspected.piece, inspected.to), ...endgameGeometry(inspected.resultFen, inspected.piece, inspected.to as Square));

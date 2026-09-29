@@ -22,3 +22,4 @@ apps/web/src/engine/stockfish/
 # (see apps/api/data/README.md), never committed to git.
 apps/api/data/*
 !apps/api/data/README.md
+apps/api/.golden-engine-cache.json

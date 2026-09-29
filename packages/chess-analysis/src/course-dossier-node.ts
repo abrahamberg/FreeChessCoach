@@ -9,6 +9,7 @@ import type { CourseTreeNode } from './course-tree.js';
 import { isBookMoveFrom, resolveOpening } from './opening-book.js';
 import { positionKey } from './opening-book-key.js';
 import { tacticAllowedReason, tacticOpportunityReason } from './tactic-reason-text.js';
+import { PIECE_VALUES } from './tactics.js';
 import { toCpWhite, winPctFor } from './win-probability.js';
 
 const BEST_LINE_PLIES = 6;
@@ -150,13 +151,11 @@ function tacticSentences(move: ClassifiedMove, san: string, isUserMove: boolean,
   return sentences;
 }
 
-const PIECE_PAWNS: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
-
 /** What the move itself captured, in pawns. */
 function capturedValue(fenBefore: string, san: string): number {
   try {
     const captured = new Chess(fenBefore).move(san).captured;
-    return captured ? (PIECE_PAWNS[captured] ?? 0) : 0;
+    return captured ? PIECE_VALUES[captured] : 0;
   } catch {
     return 0;
   }

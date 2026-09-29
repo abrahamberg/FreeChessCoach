@@ -2,7 +2,8 @@
  * docs/courses.md §7, quality harness: runs the course pipeline (engine
  * dossier → outline → episodes → verifier → repair) on the golden set in
  * `test/fixtures/courses/` with the owner's own model, prints every episode,
- * the verifier's result and the call count, and writes nothing anywhere.
+ * the verifier's result and the call count, and writes nothing but its
+ * engine cache.
  * Prompt changes are judged on this output before they ship.
  *
  * The model, either:
@@ -12,6 +13,9 @@
  *      GOLDEN_MODEL, GOLDEN_API_KEY and optionally GOLDEN_ENDPOINT (default:
  *      the provider's public API).
  * The engine: --engine-url (default http://localhost:8081, the dev stack's).
+ * Engine results are cached in apps/api/.golden-engine-cache.json (`--no-cache`
+ * skips it; delete it after an engine upgrade); `--jobs N` runs N courses of
+ * a facts pass at once (default 2, the dev engine's pool).
  * `--only` takes a kind ("trap") or one course ("trap-englund"). `--facts`
  * needs no model: it prints the facts each episode's call would get.
  *
@@ -34,8 +38,10 @@ import { writeEpisode, type WrittenEpisode } from '../src/services/courses/gener
 import { documentFromOutline, planOutline } from '../src/services/courses/generate-outline.js';
 import { writeReel } from '../src/services/courses/generate-reel.js';
 import { courseTreeOf, generationInputs, type CourseModelCall, type GenerationInputs } from '../src/services/courses/generation-inputs.js';
+import type { EngineBackend } from '../src/services/engine/engine-backend.js';
 import { NativeEngineBackend } from '../src/services/engine/native-engine-backend.js';
 import { printCourseFacts } from './course-golden-facts.js';
+import { GoldenEngineCache } from './golden-engine-cache.js';
 import { printCourseRun, type CourseRun } from './course-golden-print.js';
 
 const DEFAULT_DATABASE_URL = 'postgresql://chess_coach:chess_coach@localhost:5432/chess_coach';
@@ -63,18 +69,18 @@ function envSetup(): StoredLlmSetup {
 }
 
 /** The draft and its engine dossier, as a run starts from them. */
-async function courseInputs(course: GoldenCourse, engineUrl: string): Promise<GenerationInputs> {
+async function courseInputs(course: GoldenCourse, engine: EngineBackend, engineUrl: string): Promise<GenerationInputs> {
   const document = draftFromIntake(course.intake);
-  const { dossier } = await buildCourseDossierFromEngine(courseTreeOf(document), document.learnerSide, new NativeEngineBackend(engineUrl), document.kind).catch((error: unknown) => {
+  const { dossier } = await buildCourseDossierFromEngine(courseTreeOf(document), document.learnerSide, engine, document.kind).catch((error: unknown) => {
     throw new Error(`the engine at ${engineUrl} failed (${error instanceof Error ? error.message : String(error)}); is the dev stack up?`);
   });
   return generationInputs({ document, dossier, direction: course.intake.direction, sourcePgn: course.intake.pgn });
 }
 
 /** One golden course, start to finish, in memory. */
-async function runCourse(course: GoldenCourse, resolution: ModelResolution, engineUrl: string): Promise<CourseRun> {
+async function runCourse(course: GoldenCourse, resolution: ModelResolution, engine: EngineBackend, engineUrl: string): Promise<CourseRun> {
   const started = Date.now();
-  const inputs = await courseInputs(course, engineUrl);
+  const inputs = await courseInputs(course, engine, engineUrl);
   const { document } = inputs;
   const engineMs = Date.now() - started;
 
@@ -100,12 +106,38 @@ async function runCourse(course: GoldenCourse, resolution: ModelResolution, engi
   return { name: course.name, intake: course.intake, document, outline: planned.outline, outlineWarnings: planned.warnings, episodes, reel, calls, engineMs, totalMs: Date.now() - started };
 }
 
+/** GoldenEngineCache's file, next to the script; git ignores it. */
+const ENGINE_CACHE_PATH = new URL('../.golden-engine-cache.json', import.meta.url).pathname;
+
 async function main(): Promise<void> {
-  const { values } = parseArgs({ options: { email: { type: 'string' }, only: { type: 'string' }, json: { type: 'string' }, 'engine-url': { type: 'string' }, facts: { type: 'boolean' } } });
+  const { values } = parseArgs({
+    options: { email: { type: 'string' }, only: { type: 'string' }, json: { type: 'string' }, 'engine-url': { type: 'string' }, facts: { type: 'boolean' }, 'no-cache': { type: 'boolean' }, jobs: { type: 'string' } }
+  });
   const engineUrl = values['engine-url'] ?? 'http://localhost:8081';
+  const native = new NativeEngineBackend(engineUrl);
+  const cache = values['no-cache'] ? null : new GoldenEngineCache(native, ENGINE_CACHE_PATH);
+  const engine = cache ?? native;
   const courses = loadGoldenSet().filter((candidate) => !values.only || candidate.kind === values.only || candidate.name === values.only);
   if (values.facts) {
-    for (const course of courses) printCourseFacts(course.name, await courseInputs(course, engineUrl));
+    // Courses in parallel, printed in order: the engine pool searches one
+    // position per process, so more jobs than its size only queue.
+    const jobs = Math.max(1, Number(values.jobs ?? 2));
+    const pending = courses.map((course) => ({ course, inputs: null as Promise<GenerationInputs> | null }));
+    const start = (index: number): void => {
+      const entry = pending[index];
+      if (!entry) return;
+      entry.inputs = courseInputs(entry.course, engine, engineUrl);
+      // Awaited in order later; a failure before then is not unhandled.
+      entry.inputs.catch(() => undefined);
+    };
+    for (let index = 0; index < jobs; index += 1) start(index);
+    for (const [index, entry] of pending.entries()) {
+      const inputs = await entry.inputs;
+      if (!inputs) continue;
+      start(index + jobs);
+      printCourseFacts(entry.course.name, inputs);
+      cache?.save();
+    }
     return;
   }
   const setup = values.email ? await ownerSetup(values.email) : envSetup();
@@ -116,7 +148,8 @@ async function main(): Promise<void> {
   const runs: CourseRun[] = [];
   for (const course of courses) {
     try {
-      const run = await runCourse(course, resolution, engineUrl);
+      const run = await runCourse(course, resolution, engine, engineUrl);
+      cache?.save();
       printCourseRun(run);
       runs.push(run);
     } catch (error) {
