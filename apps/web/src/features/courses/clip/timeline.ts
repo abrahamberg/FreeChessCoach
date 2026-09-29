@@ -2,6 +2,7 @@ import { Chess } from 'chess.js';
 import { videoCaption, videoLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CourseNode, type CoursePly } from '@freechesscoach/shared';
 import { moveSound } from '../../../sounds/move-sounds.js';
 import { courseMoveSound, type CourseEvals } from '../player/course-move-list.js';
+import { moveLabel as sanLabel } from '@freechesscoach/chess-analysis';
 import { moveLabel } from '../courseEdits.js';
 import { clipSoundLengthMs, type ClipSound } from './clip-sounds.js';
 import { speechMarks, type ClipMark } from './speech-marks.js';
@@ -275,10 +276,10 @@ export function playOut(fen: string, sans: string[]): { san: string; from: strin
   const chess = new Chess(fen);
   const played: { san: string; from: string; to: string; fen: string; mover: 'white' | 'black'; label: string }[] = [];
   for (const san of sans) {
-    const [, turn, , , , fullmove] = chess.fen().split(' ');
+    const fenBefore = chess.fen();
     try {
       const move = chess.move(san);
-      played.push({ san: move.san, from: move.from, to: move.to, fen: chess.fen(), mover: move.color === 'w' ? 'white' : 'black', label: `${fullmove ?? '1'}${turn === 'b' ? '…' : '.'}${move.san}` });
+      played.push({ san: move.san, from: move.from, to: move.to, fen: chess.fen(), mover: move.color === 'w' ? 'white' : 'black', label: sanLabel(fenBefore, move.san) });
     } catch {
       break;
     }

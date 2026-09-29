@@ -2345,9 +2345,11 @@ and for its findings to be fixed.
 
 ### Task 105.3 — Shared helpers
 
-- [ ] One zod-issues-to-`ValidationError` helper for the course routes.
-- [ ] One "position before a move" and "6.Bc3 / 6…Bb4" label in
-  `chess-analysis`, used by the web app and the API.
+- [x] One zod-issues-to-`ValidationError` helper for the course routes
+  (`lib/parse-request.ts`); the older routes on `main` keep their own.
+- [x] One "position before a move" and "6.Bc3 / 6…Bb4" label in
+  `chess-analysis` (`course-moves.ts`), used by the drill, the editor, the
+  clip, the review and "Ask my coach" (which spells Black's dots "...").
 
 Commit per task; push each phase.
 

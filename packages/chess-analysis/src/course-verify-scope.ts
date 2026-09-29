@@ -54,9 +54,3 @@ function mainLineAfter(nodes: readonly CourseVerifyNode[], nodeId: string): Cour
   for (let next = nodes.find((node) => node.parentId === nodeId); next; next = nodes.find((node) => node.parentId === next!.id)) line.push(next);
   return line;
 }
-
-/** "6.Bc3" / "6…Bb4", from the position the move was played in. */
-export function moveLabel(fenBefore: string, san: string): string {
-  const [, turn, , , , fullmove] = fenBefore.split(' ');
-  return `${fullmove ?? '1'}${turn === 'b' ? '…' : '.'}${san}`;
-}

@@ -1,12 +1,14 @@
 import {
   buildCourseDrill,
   isPracticeDone,
+  moveLabel,
   nextPracticeState,
   practiceArrow,
   practiceAsks,
   practiceProgress,
   practiceRoundsLeft,
   practiceShowsArrow,
+  sideToMove,
   type CourseDrill as Drill,
   type CourseDrillStep,
   type CourseReviewState,
@@ -368,11 +370,11 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
   // The course's line on each move: what practice says a move does.
   const lines = document.episodes.find((each) => each.id === episode?.episodeId)?.plies ?? [];
   const who = (fenBefore: string, learnerPlays: boolean): string =>
-    stage === 'full_drill' ? (sideOf(fenBefore) === 'white' ? 'White' : 'Black') : learnerPlays ? 'You' : 'Opponent';
+    stage === 'full_drill' ? (sideToMove(fenBefore) === 'white' ? 'White' : 'Black') : learnerPlays ? 'You' : 'Opponent';
   // One running sequence: a new episode does not start the log afresh.
   const played: MoveLogEntry[] = history.map(({ step: each, episodeId }) => ({
     label: moveLabel(each.fenBefore, each.node.san),
-    side: sideOf(each.fenBefore),
+    side: sideToMove(each.fenBefore),
     who: who(each.fenBefore, each.asked),
     note: document.episodes.find((one) => one.id === episodeId)?.plies.find((ply) => ply.nodeId === each.node.id)?.text.trim() || null,
     result: each.asked ? (firstTries.get(each.key)?.correct === false ? 'shown' : 'right') : undefined
@@ -415,7 +417,7 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
         <MoveLog
           played={played}
           current={{
-            side: sideOf(step.fenBefore),
+            side: sideToMove(step.fenBefore),
             who: who(step.fenBefore, step.asked),
             // Practice names the move while its arrow shows; the drills never do.
             label: !step.asked || (stage === 'practice' && hinted) ? moveLabel(step.fenBefore, step.node.san) : null,
@@ -519,16 +521,6 @@ function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, pr
  * one, the chime on a check; no bad or great for the moves themselves. */
 function knock(san: string, own: boolean): void {
   playBoardSound(moveSound({ san, mover: own ? 'white' : 'black', learnerSide: 'white' }));
-}
-
-function sideOf(fenBefore: string): 'white' | 'black' {
-  return fenBefore.split(' ')[1] === 'b' ? 'black' : 'white';
-}
-
-/** "6.Bc3" or "6…Bb4", read off the position before the move. */
-function moveLabel(fenBefore: string, san: string): string {
-  const [, turn, , , , fullmove] = fenBefore.split(' ');
-  return `${fullmove ?? '1'}${turn === 'b' ? '…' : '.'}${san}`;
 }
 
 /** The next practice round: the moves not yet known, and which of them show

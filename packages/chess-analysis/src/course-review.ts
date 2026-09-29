@@ -1,4 +1,5 @@
 import type { CourseDocument, CourseKind, CourseNode } from '@freechesscoach/shared';
+import { courseFenBefore } from './course-moves.js';
 import { courseNodePath } from './course-node-path.js';
 import { positionKey } from './opening-book-key.js';
 
@@ -99,7 +100,7 @@ export function buildCourseDrill(
   const learnerTurn = document.learnerSide === 'white' ? 'w' : 'b';
   const learnerAsks = (fenBefore: string): boolean => mode === 'find_move' || fenBefore.split(' ')[1] === learnerTurn;
   const byId = new Map(document.nodes.map((node) => [node.id, node]));
-  const fenBefore = (node: CourseNode): string => (node.parentId ? byId.get(node.parentId)?.fenAfter : undefined) ?? document.startFen;
+  const fenBefore = (node: CourseNode): string => courseFenBefore(byId, document.startFen, node);
   const needsWork = (key: string): boolean => {
     const state = states.get(key);
     return state !== undefined && (state.step === 0 || isCourseReviewDue(state, today));

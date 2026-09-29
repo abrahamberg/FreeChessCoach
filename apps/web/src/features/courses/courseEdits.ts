@@ -1,3 +1,4 @@
+import { moveLabel as sanLabel } from '@freechesscoach/chess-analysis';
 import type { CourseDocument, CourseEpisode, CourseNode, CoursePly } from '@freechesscoach/shared';
 
 /** Pure edits of a draft; the editor keeps the whole document in state. */
@@ -48,6 +49,5 @@ export function fenBefore(document: CourseDocument, node: CourseNode): string {
 
 /** "6.Bc3" / "6…Bb4", read off the position before the move. */
 export function moveLabel(document: CourseDocument, node: CourseNode): string {
-  const [, turn, , , , fullmove] = fenBefore(document, node).split(' ');
-  return `${fullmove ?? '1'}${turn === 'b' ? '…' : '.'}${node.san}`;
+  return sanLabel(fenBefore(document, node), node.san);
 }

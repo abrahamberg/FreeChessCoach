@@ -1,4 +1,4 @@
-import { courseNodeAncestry, courseNodePath, inspectMoves } from '@freechesscoach/chess-analysis';
+import { courseFenBefore, courseNodeAncestry, courseNodePath, inspectMoves, moveLabel, sideToMove } from '@freechesscoach/chess-analysis';
 import {
   buildCourseQuestionSystemPrompt,
   checkMovesParameters,
@@ -136,13 +136,10 @@ export function coursePosition(document: CourseDocument, episodeId: string, node
   const path = courseNodePath(document.nodes, episode.startNodeId, episode.endNodeId) ?? [episode.endNodeId];
   const at = nodeId === null ? -1 : path.indexOf(nodeId);
   if (nodeId !== null && at < 0) return null;
-  const fenBefore = (node: CourseNode): string => (node.parentId ? byId.get(node.parentId)?.fenAfter : undefined) ?? document.startFen;
+  const fenBefore = (node: CourseNode): string => courseFenBefore(byId, document.startFen, node);
   const spoken = episode.plies.filter((ply) => ply.course && ply.text.trim());
   const noteOn = (id: string): string | null => spoken.find((ply) => ply.nodeId === id)?.text.trim() || null;
-  const label = (node: CourseNode): string => {
-    const [, turn, , , , fullmove] = fenBefore(node).split(' ');
-    return `${fullmove ?? '1'}${turn === 'b' ? '...' : '.'}${node.san}`;
-  };
+  const label = (node: CourseNode): string => moveLabel(fenBefore(node), node.san, '...');
 
   const last = nodeId ? byId.get(nodeId) : undefined;
   const firstId = path[0];
@@ -152,7 +149,7 @@ export function coursePosition(document: CourseDocument, episodeId: string, node
   // A scoresheet: "1.d4 e5 2.dxe5", a number on Black's move only when it comes first.
   const line = lineEnd
     ? courseNodeAncestry(byId, lineEnd.id)
-        .map((node, index) => (index === 0 || fenBefore(node).split(' ')[1] === 'w' ? label(node) : node.san))
+        .map((node, index) => (index === 0 || sideToMove(fenBefore(node)) === 'white' ? label(node) : node.san))
         .join(' ')
     : '';
   const nextId = path[at + 1];

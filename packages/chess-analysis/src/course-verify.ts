@@ -3,7 +3,8 @@ import { CONFIG } from './config.js';
 import type { CourseDossier } from './course-dossier.js';
 import { arrowProblems, nodeProblems } from './course-verify-board.js';
 import { pieceProblems } from './course-verify-pieces.js';
-import { episodeScope, moveLabel, type CourseVerifyNode, type EpisodeScope } from './course-verify-scope.js';
+import { moveLabel } from './course-moves.js';
+import { episodeScope, type CourseVerifyNode, type EpisodeScope } from './course-verify-scope.js';
 import { episodeTexts, moveProblems, nodeIdProblems, numberProblems, overLength, phraseProblems, sameMove, sanTokens, tacticWordProblems } from './course-verify-text.js';
 
 export type { CourseVerifyNode } from './course-verify-scope.js';
