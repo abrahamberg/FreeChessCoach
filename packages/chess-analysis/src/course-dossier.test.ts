@@ -111,6 +111,14 @@ describe('course dossier', () => {
     expect(boardFacts('r3k3/p7/8/3N4/8/8/8/4K3 w - - 0 1', 'Nb6').join(' | ')).not.toContain('trapped');
     // A capture taken back is a trade: 3…cxd4 leaves nothing hanging.
     expect(boardFacts(after('1. e4 c5 2. Nf3 d6 3. d4'), 'cxd4').join(' | ')).not.toContain('hanging');
+    // The endgame ideas, from the board: promotion, the bridge, the
+    // opposition, the square.
+    expect(boardFacts('8/5P2/4k3/8/8/8/8/7K w - - 0 1', 'f8=Q')).toContain('promotes to a queen');
+    expect(boardFacts('8/1P6/8/1K6/3R4/8/4k3/1r6 w - - 0 1', 'Rb4')).toContain('blocks the check from the rook on b1');
+    expect(boardFacts('4k3/4P3/5K2/8/8/8/8/8 w - - 0 1', 'Ke6').join(' | ')).not.toContain('opposition');
+    expect(boardFacts('4k3/8/8/4K3/4P3/8/8/8 b - - 0 1', 'Ke7')).toContain('takes the opposition: the kings face each other with one square between, and the other king must give way');
+    expect(boardFacts('8/8/8/8/8/8/k4P2/7K w - - 0 1', 'f4')).toContain("the black king on a2 is outside the pawn's square: it cannot catch the pawn");
+    expect(boardFacts('8/8/8/3k4/8/8/5P2/7K w - - 0 1', 'f4').join(' | ')).not.toContain('square');
     // A piece with no move at all is stuck, not trapped: the rook in its corner.
     const corner = boardFacts('rn2k3/p7/8/8/2B5/8/8/4K3 w - - 0 1', 'Bd5');
     expect(corner).toContain('attacks the rook on a8');

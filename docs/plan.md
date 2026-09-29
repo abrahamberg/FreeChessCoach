@@ -2529,6 +2529,13 @@ fixes, again until clean.
 - [x] Once the position after a move is a forced mate, the review's
   material sentence goes (the Immortal's 21.Nxg7+ "won a pawn", Lasker–Thomas
   12.Nxf6+ "won a bishop" in a mate in 7); a sentence about the mate stays.
+- [x] An endgame pawn run is no "space gain" (5.f8=Q "pushes a pawn to f8,
+  taking space").
+- [x] The endgame ideas, from the board: "promotes to a queen"; "blocks the
+  check from the rook on b1" (the Lucena's bridge, 7.Rb4); "takes the
+  opposition" after a king move with only kings and pawns, not at stalemate;
+  "the black king on a2 is outside the pawn's square: it cannot catch the
+  pawn".
 
 ## Verification (end of each phase)
 

@@ -32,7 +32,10 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   const inspected = inspectMoves(fenBefore, [san]).moves[0];
   if (!inspected?.legal) return [];
   const facts: string[] = [moveWords(inspected.san, inspected.piece, inspected.from, inspected.to)];
+  const promoted = /=([QRBN])/.exec(inspected.san)?.[1];
+  if (promoted) facts.push(`promotes to a ${PIECE_NAMES[promoted.toLowerCase() as PieceSymbol]}`);
   if (inspected.captured) facts.push(`captures the ${PIECE_NAMES[inspected.captured]} on ${inspected.to}`);
+  facts.push(...blockedCheck(fenBefore, inspected.piece, inspected.to), ...endgameGeometry(inspected.resultFen, inspected.piece, inspected.to as Square));
   if (inspected.gives) facts.push(`gives ${inspected.gives}`);
   if (inspected.gives === 'checkmate' && isBackRankMate(inspected.resultFen, inspected.to as Square)) facts.push('a back-rank mate');
   if (inspected.gives === 'checkmate') facts.push(mateNet(inspected.resultFen));
@@ -52,6 +55,50 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   for (const fork of inspected.createsForks) {
     const targets = forkTargets(inspected.resultFen, fork.forkedSquares);
     if (forker && fork.square === inspected.to && targets.length >= 2) facts.push(`the ${PIECE_NAMES[fork.piece]} on ${fork.square} forks ${targets.join(' and ')}`);
+  }
+  return facts;
+}
+
+/** The Lucena's 7.Rb4 builds the bridge by blocking a check: the one fact
+ * the course is about, and the board facts never said it. */
+function blockedCheck(fenBefore: string, piece: PieceSymbol, to: string): string[] {
+  const chess = new Chess(fenBefore);
+  if (!chess.inCheck() || piece === 'k') return [];
+  const king = chess.findPiece({ type: 'k', color: chess.turn() })[0];
+  const checkers = king ? chess.attackers(king, chess.turn() === 'w' ? 'b' : 'w') : [];
+  const checker = checkers.length === 1 ? checkers[0] : undefined;
+  if (!checker || checker === to) return [];
+  return [`blocks the check from the ${PIECE_NAMES[chess.get(checker)!.type]} on ${checker}`];
+}
+
+/** King-and-pawn geometry, stated where it decides the game and only with
+ * kings and pawns on the board: the opposition after a king move, and a
+ * passed pawn the enemy king cannot catch (the rule of the square). */
+function endgameGeometry(fenAfter: string, piece: PieceSymbol, to: Square): string[] {
+  const chess = new Chess(fenAfter);
+  const cells = chess.board().flat().filter((cell) => cell !== null);
+  // Stalemate ends it: no king has to give way (the rook's-pawn draw's 3.a7).
+  if (cells.some((cell) => cell.type !== 'k' && cell.type !== 'p') || chess.isGameOver()) return [];
+  const mover = chess.turn() === 'w' ? 'b' : 'w';
+  const own = chess.findPiece({ type: 'k', color: mover })[0];
+  const enemy = chess.findPiece({ type: 'k', color: chess.turn() })[0];
+  if (!own || !enemy) return [];
+  const file = (square: string): number => square.charCodeAt(0) - 97;
+  const rank = (square: string): number => Number(square[1]);
+  const facts: string[] = [];
+  if (piece === 'k') {
+    const [ownFile, ownRank] = [file(own), rank(own)];
+    const [enemyFile, enemyRank] = [file(enemy), rank(enemy)];
+    const facing = (ownFile === enemyFile && Math.abs(ownRank - enemyRank) === 2) || (ownRank === enemyRank && Math.abs(ownFile - enemyFile) === 2);
+    if (facing) facts.push('takes the opposition: the kings face each other with one square between, and the other king must give way');
+  }
+  if (piece === 'p') {
+    const up = mover === 'w' ? 1 : -1;
+    const promotion = `${to[0]}${mover === 'w' ? 8 : 1}`;
+    const ahead = cells.some((cell) => cell.type === 'p' && cell.color !== mover && Math.abs(file(cell.square) - file(to)) <= 1 && (rank(cell.square) - rank(to)) * up > 0);
+    const steps = mover === 'w' ? 8 - rank(to) : rank(to) - 1;
+    const distance = Math.max(Math.abs(file(enemy) - file(promotion)), Math.abs(rank(enemy) - rank(promotion)));
+    if (!ahead && distance > steps) facts.push(`the ${mover === 'w' ? 'black' : 'white'} king on ${enemy} is outside the pawn's square: it cannot catch the pawn`);
   }
   return facts;
 }
