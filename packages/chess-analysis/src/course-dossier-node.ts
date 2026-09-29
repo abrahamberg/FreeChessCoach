@@ -111,8 +111,23 @@ function tacticSentences(move: ClassifiedMove, isUserMove: boolean): string[] {
 }
 
 /** One move is clearly best, and it is the course move. */
-function isQuizEligible(evaluation: EngineEval | undefined, san: string, side: 'white' | 'black'): boolean {
+/** The engine's best, and clearly: `onlyMoveGap` ahead of the second, or a
+ * mate where the second mates later or not at all. A slower mate is no
+ * second answer: the smothered-mate run flagged every move of a mate in 4. */
+export function isQuizEligible(evaluation: EngineEval | undefined, san: string, side: 'white' | 'black'): boolean {
   const [first, second] = evaluation?.lines ?? [];
   if (!first || !second || first.moveSan !== san) return false;
+  const mates = moverMateIn(first, side);
+  if (mates !== null) {
+    const next = moverMateIn(second, side);
+    return next === null || next > mates;
+  }
   return winPctFor(side, toCpWhite(first)) - winPctFor(side, toCpWhite(second)) > CONFIG.courses.onlyMoveGap;
+}
+
+/** Moves to mate for `side` on an engine line (White's view: positive is
+ * White mating); null when it does not mate. */
+export function moverMateIn(line: { mateIn: number | null }, side: 'white' | 'black'): number | null {
+  if (line.mateIn === null || line.mateIn === 0 || (line.mateIn > 0) !== (side === 'white')) return null;
+  return Math.abs(line.mateIn);
 }

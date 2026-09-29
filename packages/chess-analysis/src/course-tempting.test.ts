@@ -1,6 +1,7 @@
 import type { EngineEval } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { analyseEnglund } from './course-test-fixtures.js';
+import { isQuizEligible } from './course-dossier-node.js';
 import { temptingCandidates, withTempting } from './course-tempting.js';
 
 const evaluation = (fen: string, moveSan: string, cp: number | null, mateIn: number | null = null, pvSan?: string[]): EngineEval => ({
@@ -64,5 +65,55 @@ describe('tempting moves (§13.5)', () => {
     const ordinary = [...asked].filter((id) => !dossier.nodes.find((node) => node.nodeId === id)?.critical);
     expect(ordinary.length).toBeGreaterThan(0);
     expect(temptingCandidates(tree, dossier, 'trap').some((candidate) => ordinary.includes(candidate.nodeId))).toBe(false);
+  });
+
+  test('at a solving move every worse check and capture is kept, the obvious ones too, and the ranked moves are candidates', () => {
+    const { tree, dossier } = analyseEnglund();
+    const candidates = temptingCandidates(tree, dossier, 'puzzle').filter((candidate) => candidate.nodeId === 'n12');
+    expect(candidates.every((candidate) => candidate.solving)).toBe(true);
+    const at = (san: string): string => candidates.find((candidate) => candidate.san === san)!.fen;
+    const before = candidates[0]!.fenBefore;
+    const evals = new Map<string, EngineEval>([
+      [before, evaluation(before, 'Bb4', -1000)],
+      // Obvious for a trap; a solver still wants to hear why it fails.
+      [at('Qxc3+'), evaluation(at('Qxc3+'), 'Nxc3', 150, null, ['Nxc3', 'Bb4', 'Bd2'])],
+      // As good as the course move: no tempting move.
+      [at('Qxa1'), evaluation(at('Qxa1'), 'Qd2', -1000)],
+      [at('Qxb1'), evaluation(at('Qxb1'), 'Qxb1', 200)]
+    ]);
+    const tempting = withTempting(dossier, candidates, evals).nodes.find((node) => node.nodeId === 'n12')!.tempting;
+    expect(tempting.map((each) => each.san)).toEqual(['Qxc3+', 'Qxb1']);
+  });
+
+  test('where the course move mates, a move that mates later or not at all misses the mate; a trap asks nothing at its mate', () => {
+    const { tree, dossier } = analyseEnglund();
+    const candidates = temptingCandidates(tree, dossier, 'puzzle').filter((candidate) => candidate.nodeId === 'n12');
+    const at = (san: string): string => candidates.find((candidate) => candidate.san === san)!.fen;
+    const before = candidates[0]!.fenBefore;
+    // Black mates in 3 (White's view: negative); after a candidate, White to move.
+    const evals = new Map<string, EngineEval>([
+      [before, evaluation(before, 'Bb4', null, -3)],
+      [at('Qxa1'), evaluation(at('Qxa1'), 'Qd2', null, -2)],
+      [at('Qxb1'), evaluation(at('Qxb1'), 'Qd2', null, -5)],
+      [at('Nxe5'), evaluation(at('Nxe5'), 'Qd2', -1000)]
+    ]);
+    const tempting = withTempting(dossier, candidates, evals).nodes.find((node) => node.nodeId === 'n12')!.tempting;
+    expect(tempting.map((each) => each.san)).toEqual(['Qxb1', 'Nxe5']);
+    expect(temptingCandidates(tree, dossier, 'trap').some((candidate) => candidate.nodeId === 'n16')).toBe(false);
+    expect(temptingCandidates(tree, dossier, 'puzzle').some((candidate) => candidate.nodeId === 'n16')).toBe(true);
+  });
+});
+
+describe('the one answer (§5.4)', () => {
+  const line = (moveSan: string, cp: number | null, mateIn: number | null = null) => ({ moveSan, moveUci: '', cp, mateIn });
+  const two = (first: ReturnType<typeof line>, second: ReturnType<typeof line>): EngineEval => ({ ply: 0, fen: '', depth: 20, lines: [first, second] });
+
+  test('the fastest mate is the one answer; a mate as fast is a second one', () => {
+    // The smothered mate: 1.Nf7+ mates in 4, 1.Ng6+ only wins.
+    expect(isQuizEligible(two(line('Nf7+', null, 4), line('Ng6+', 900)), 'Nf7+', 'white')).toBe(true);
+    expect(isQuizEligible(two(line('Nh6+', null, 3), line('Ne5+', null, 5)), 'Nh6+', 'white')).toBe(true);
+    expect(isQuizEligible(two(line('Qg8+', null, 2), line('Qf7', null, 2)), 'Qg8+', 'white')).toBe(false);
+    // Black mating is negative in White's view.
+    expect(isQuizEligible(two(line('Qc1#', null, -1), line('Qxa1', -900)), 'Qc1#', 'black')).toBe(true);
   });
 });

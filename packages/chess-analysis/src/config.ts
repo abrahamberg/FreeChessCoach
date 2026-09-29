@@ -463,6 +463,10 @@ export const CONFIG = {
     /** §13.5: a tempting move costs the mover at least this much win%. */
     temptingDrop: 15,
     maxTempting: 3,
+    /** At a puzzle's or tactics course's learner move: every check first. */
+    maxSolveTempting: 5,
+    /** There, a check that costs this much win% is explained too. */
+    solveCheckDrop: 5,
     /** §13.5: an answer that captures at once and leaves the mover this many
      * points down makes the move obvious, not tempting. */
     obviousLoss: 2,
@@ -472,6 +476,8 @@ export const CONFIG = {
     maxCaptionWords: 6,
     maxNoteSentences: 2,
     maxCriticalNoteSentences: 4,
+    /** A puzzle's solve line: the checks, captures and threats, then the move. */
+    maxSolveNoteSentences: 5,
     /** A reveal says why the answer works, not just the move (gemma wrote "6... Bb4"). */
     minRevealWords: 6,
     /** §13.4 the YouTube video's budgets. Spoken words per second at Kokoro

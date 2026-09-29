@@ -1,6 +1,7 @@
 import { Chess, type Square } from 'chess.js';
 import type { CourseKind, EngineEval } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
+import { moverMateIn } from './course-dossier-node.js';
 import type { CourseDossier } from './course-dossier.js';
 import { boardFacts, lineWords } from './course-dossier-words.js';
 import { captureWords, exchangeLoss, lineBalance, settledLine } from './course-material.js';
@@ -42,6 +43,9 @@ export interface TemptingCandidate {
   fenBefore: string;
   /** The position after the candidate: what the engine evaluates. */
   fen: string;
+  /** A puzzle's or tactics course's learner move: the solver weighs every
+   * check and capture, so each is kept with why it fails. */
+  solving: boolean;
 }
 
 /**
@@ -50,7 +54,9 @@ export interface TemptingCandidate {
  * threats the side to move could play instead, except the move played and
  * the engine's ranked moves. Checks first, then captures by value taken,
  * then threats; at most 6 a position. Outside a puzzle or tactics course a
- * mating move gets none: two trap runs listed Nxe2? and Ke7? under Nf3#.
+ * mating move gets none: two trap runs listed Nxe2? and Ke7? under Nf3#. At
+ * a puzzle's or tactics course's learner move the engine's ranked moves are
+ * candidates too: "Ng6+ misses the mate" needs its answer, hxg6.
  */
 export function temptingCandidates(tree: CourseTree, dossier: CourseDossier, kind: CourseKind | null): TemptingCandidate[] {
   const byId = new Map(tree.nodes.map((node) => [node.id, node]));
@@ -60,11 +66,12 @@ export function temptingCandidates(tree: CourseTree, dossier: CourseDossier, kin
     const node = byId.get(facts.nodeId);
     if (!asked || !node) return [];
     const fenBefore = node.parentId ? (byId.get(node.parentId)?.fenAfter ?? tree.startFen) : tree.startFen;
-    const ranked = new Set([facts.san, ...(facts.bestInstead ? [facts.bestInstead.san] : []), ...facts.alternatives.map((line) => line.san)]);
+    const solving = everyLearnerMove && facts.side === dossier.learnerSide;
+    const ranked = new Set([facts.san, ...(solving ? [] : [...(facts.bestInstead ? [facts.bestInstead.san] : []), ...facts.alternatives.map((line) => line.san)])]);
     return movesWorthTrying(fenBefore)
       .filter((candidate) => !ranked.has(candidate.san))
       .slice(0, MAX_CANDIDATES)
-      .map(({ san, kind: moveKind, fen }) => ({ nodeId: facts.nodeId, san, kind: moveKind, fenBefore, fen }));
+      .map(({ san, kind: moveKind, fen }) => ({ nodeId: facts.nodeId, san, kind: moveKind, fenBefore, fen, solving }));
   });
 }
 
@@ -123,11 +130,22 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
     const best = evalsByFen.get(candidate.fenBefore)?.lines[0];
     const answer = evalsByFen.get(candidate.fen)?.lines[0];
     const list = kept.get(candidate.nodeId) ?? [];
-    if (!facts || !best || !answer || list.length >= CONFIG.courses.maxTempting) continue;
+    const limit = candidate.solving ? CONFIG.courses.maxSolveTempting : CONFIG.courses.maxTempting;
+    if (!facts || !best || !answer || list.length >= limit) continue;
     const drop = winPctFor(facts.side, toCpWhite(best)) - winPctFor(facts.side, toCpWhite(answer));
     const walksIntoMate = answer.mateIn !== null && (answer.mateIn > 0) === (facts.side === 'black');
-    if (drop < CONFIG.courses.temptingDrop && !walksIntoMate) continue;
-    if (exchangeLoss(candidate.fenBefore, candidate.san, answer.moveSan) >= CONFIG.courses.obviousLoss) continue;
+    // The best mates in N; after this candidate, with the other side to
+    // move, N - 1 would keep pace. Later or never misses the mate.
+    const bestMate = moverMateIn(best, facts.side);
+    const answerMate = moverMateIn(answer, facts.side);
+    const missesMate = bestMate !== null && (answerMate === null || answerMate >= bestMate);
+    // A solver weighs every check and capture: none is too obvious to
+    // explain, and a check that is merely worse fails too. One as good as
+    // the course move (a mate as fast) is no tempting move.
+    const weighed = candidate.solving && candidate.kind !== 'threat';
+    const worseCheck = weighed && candidate.kind === 'check' && drop >= CONFIG.courses.solveCheckDrop;
+    if (drop < CONFIG.courses.temptingDrop && !walksIntoMate && !missesMate && !worseCheck) continue;
+    if (!weighed && exchangeLoss(candidate.fenBefore, candidate.san, answer.moveSan) >= CONFIG.courses.obviousLoss) continue;
     const pv = (answer.pvSan?.length ? answer.pvSan : [answer.moveSan]).slice(0, MAX_REFUTATION_PLIES);
     // Never cut mid-exchange, but always keep the answer itself.
     const refutation = [...pv.slice(0, 1), ...settledLine(candidate.fen, pv).slice(1)];
