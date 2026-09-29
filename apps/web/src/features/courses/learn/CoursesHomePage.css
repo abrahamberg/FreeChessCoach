@@ -137,3 +137,8 @@
 .courses-home__code + .courses-home__status {
   margin-left: 0;
 }
+
+.courses-home__more {
+  display: block;
+  margin: var(--space-4) auto 0;
+}

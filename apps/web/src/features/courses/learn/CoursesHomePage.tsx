@@ -30,6 +30,7 @@ export function CoursesHomePage(): ReactNode {
   const [sort, setSort] = useState<CatalogueSort>('curriculum');
   const enrollments = useCourseEnrollments();
   const catalogue = useCourseCatalogue(kind, sort);
+  const browse = catalogue.data?.pages.flatMap((page) => page.items) ?? [];
   const due = useCourseReviewsDue().data?.courses ?? [];
   const remove = useMutation({
     mutationFn: (slug: string) => apiDelete(`/api/course-enrollments/${encodeURIComponent(slug)}`),
@@ -77,13 +78,12 @@ export function CoursesHomePage(): ReactNode {
         </div>
         {catalogue.isPending && <p className="courses-home__empty">Loading…</p>}
         {catalogue.isError && <p className="courses-home__empty">{describeApiError(catalogue.error) ?? 'Could not load the courses.'}</p>}
-        {catalogue.isSuccess && !catalogue.data.items.length && (
+        {catalogue.isSuccess && !browse.length && (
           <p className="courses-home__empty">{kind ? `No public ${COURSE_KIND_INFO[kind].label.toLowerCase()} courses yet.` : 'No public courses yet.'}</p>
         )}
-        {catalogue.isSuccess &&
-          catalogue.data.items.length > 0 &&
+        {browse.length > 0 &&
           (sort === 'curriculum' ? (
-            levelGroups(catalogue.data.items).map((group) => (
+            levelGroups(browse).map((group) => (
               <div key={group.rating ?? 'none'} className="courses-home__level">
                 <h3 className="courses-home__level-heading">
                   {group.rating === null ? 'Other courses' : `${group.rating}`}
@@ -98,11 +98,16 @@ export function CoursesHomePage(): ReactNode {
             ))
           ) : (
             <div className="courses-home__grid">
-              {catalogue.data.items.map((course) => (
+              {browse.map((course) => (
                 <CatalogueCard key={course.slug} course={course} status={status.get(course.slug)} />
               ))}
             </div>
           ))}
+        {catalogue.hasNextPage && (
+          <button type="button" className="btn-secondary courses-home__more" disabled={catalogue.isFetchingNextPage} onClick={() => void catalogue.fetchNextPage()}>
+            {catalogue.isFetchingNextPage ? 'Loading…' : 'More courses'}
+          </button>
+        )}
       </section>
 
       <section aria-label="Learned" className="games-page__section">

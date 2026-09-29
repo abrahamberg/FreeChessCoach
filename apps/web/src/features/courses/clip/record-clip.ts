@@ -39,7 +39,7 @@ export function recordClip(player: ClipPlayer, canvas: HTMLCanvasElement, contex
     };
     onEnd(() => {
       // A beat for the last frame and the encoder to flush.
-      setTimeout(() => recorder.stop(), 200);
+      setTimeout(() => recorder.state !== 'inactive' && recorder.stop(), 200);
     });
     recorder.start(1000);
     void player.play(0);

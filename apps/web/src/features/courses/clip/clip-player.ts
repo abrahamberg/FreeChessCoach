@@ -78,6 +78,8 @@ export class ClipPlayer {
   }
 
   async play(fromMs = this.offsetMs >= this.options.timeline.durationMs ? 0 : this.offsetMs): Promise<void> {
+    // Playing again (Record during the preview) replaces the running loop.
+    cancelAnimationFrame(this.frameRequest);
     this.stopSources();
     const { context, timeline, buffers, playbackRate } = this.options;
     if (context.state === 'suspended') await context.resume();

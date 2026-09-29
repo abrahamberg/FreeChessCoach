@@ -187,7 +187,14 @@ export const AskCourseCoachRequestSchema = z.object({
   /** The board after this move; null for the position before the episode's first move. */
   nodeId: z.string().regex(/^n\d+$/).nullable(),
   messages: z
-    .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().trim().min(1).max(2000) }))
+    .array(
+      // The learner's box holds 2000 characters; the coach's own answers,
+      // sent back as history, are the model's and can run longer.
+      z.discriminatedUnion('role', [
+        z.object({ role: z.literal('user'), content: z.string().trim().min(1).max(2000) }),
+        z.object({ role: z.literal('assistant'), content: z.string().trim().min(1).max(8000) })
+      ])
+    )
     .min(1)
     .max(24)
     .refine((messages) => messages.at(-1)?.role === 'user', 'The last message must be the learner’s question.')

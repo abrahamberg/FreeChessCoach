@@ -34,20 +34,26 @@ interface Data {
   enrollments?: unknown[];
   catalogue?: unknown[];
   due?: unknown[];
+  /** The catalogue's page size; the whole list when absent. */
+  pageSize?: number;
 }
 
 function json(body: unknown): Response {
   return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
 }
 
-function renderWith({ enrollments = [], catalogue = [], due = [] }: Data) {
+function renderWith({ enrollments = [], catalogue = [], due = [], pageSize }: Data) {
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (init?.method === 'DELETE') return Promise.resolve(new Response(null, { status: 204 }));
     if (url.startsWith('/api/course-enrollments')) return Promise.resolve(json({ items: enrollments }));
     if (url.startsWith('/api/public/courses')) {
-      const kind = new URL(url, 'http://x').searchParams.get('kind');
-      return Promise.resolve(json({ items: catalogue.filter((item) => !kind || (item as { kind: string }).kind === kind), nextCursor: null }));
+      const params = new URL(url, 'http://x').searchParams;
+      const kind = params.get('kind');
+      const items = catalogue.filter((item) => !kind || (item as { kind: string }).kind === kind);
+      const from = Number(params.get('cursor') ?? 0);
+      const to = pageSize ? from + pageSize : items.length;
+      return Promise.resolve(json({ items: items.slice(from, to), nextCursor: to < items.length ? String(to) : null }));
     }
     if (url.startsWith('/api/course-progress/due')) return Promise.resolve(json({ courses: due }));
     return Promise.resolve(new Response('{}', { status: 404 }));
@@ -119,5 +125,14 @@ describe('CoursesHomePage', () => {
       expect.stringContaining('Three')
     ]);
     expect(within(browse).getByText('1200-01')).toBeTruthy();
+  });
+
+  test('Browse loads the next page of courses on request', async () => {
+    renderWith({ catalogue: [catalogueItem('a', 'Alpha'), catalogueItem('b', 'Bravo'), catalogueItem('c', 'Charlie')], pageSize: 2 });
+    expect(await screen.findByText('Bravo')).toBeTruthy();
+    expect(screen.queryByText('Charlie')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'More courses' }));
+    expect(await screen.findByText('Charlie')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'More courses' })).toBeNull();
   });
 });

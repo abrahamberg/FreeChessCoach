@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { z } from 'zod';
 import { bandForRating, videoCaption, videoLine, CourseDocumentSchema, CourseOutlineCallSchema, CourseOutlineSchema, EpisodeScriptSchema, levelCode, ReelScriptSchema, type CourseDocument } from './course.js';
+import { AskCourseCoachRequestSchema } from './course-api.js';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -69,7 +70,7 @@ describe('CourseDocumentSchema', () => {
   });
 
   test('rejects an unknown kind', () => {
-    expect(CourseDocumentSchema.safeParse({ ...minimalDocument(), kind: 'endgame' }).success).toBe(false);
+    expect(CourseDocumentSchema.safeParse({ ...minimalDocument(), kind: 'novel' }).success).toBe(false);
   });
 });
 
@@ -113,5 +114,15 @@ describe('model-facing schemas are strict (every key required)', () => {
     expect(strict(ReelScriptSchema)).toEqual([]);
     // The stored outline keeps code's key moves, so it is not sent to a model.
     expect(strict(CourseOutlineSchema).some((key) => key.endsWith('.keyNodeIds'))).toBe(true);
+  });
+});
+
+describe('AskCourseCoachRequestSchema', () => {
+  const request = (messages: { role: 'user' | 'assistant'; content: string }[]) => ({ slug: 'englund', episodeId: 'e1', nodeId: 'n3', messages });
+
+  test("the coach's long answer goes back as history; the learner's question keeps the box's limit", () => {
+    const longAnswer = 'Nc6 attacks e5 again. '.repeat(120);
+    expect(AskCourseCoachRequestSchema.safeParse(request([{ role: 'user', content: 'Why?' }, { role: 'assistant', content: longAnswer }, { role: 'user', content: 'And then?' }])).success).toBe(true);
+    expect(AskCourseCoachRequestSchema.safeParse(request([{ role: 'user', content: 'x'.repeat(2001) }])).success).toBe(false);
   });
 });

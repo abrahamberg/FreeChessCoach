@@ -2336,10 +2336,12 @@ and for its findings to be fixed.
 
 ### Task 105.2 — Smaller bugs
 
-- [ ] "Ask my coach": the coach's own replies no longer hit the 2000
+- [x] "Ask my coach": the coach's own replies no longer hit the 2000
   character limit on the next question.
-- [ ] The clip preview: Record during playback stops the playing loop first.
-- [ ] The Courses page loads every page of public courses.
+- [x] The clip preview: Record during playback stops the playing loop first.
+- [x] The Courses page loads every page of public courses ("More courses").
+- [x] `course.test.ts` used `endgame` as its unknown kind; endgame is a kind
+  since Phase 103.
 
 ### Task 105.3 — Shared helpers
 
