@@ -132,6 +132,14 @@ describe('course prompts', () => {
     expect(system).toContain('the game goes on level, so name the plan');
   });
 
+  test('tactics examples of different ideas name each; an error takes "an"', () => {
+    const mixed = { kind: 'tactics' as const, examples: [{ lineId: 'l1', nodeId: 'n12', startNodeId: 'n10', motif: 'pin' as const, depth: 3 }, { lineId: 'l1', nodeId: 'n16', startNodeId: 'n14', motif: 'fork' as const, depth: 2 }] };
+    expect(buildCourseSystemPrompt(englundCourseContext('tactics', mixed))).toContain('KIND: TACTICS (pin, fork), 2 examples, easiest first.');
+    const context = englundCourseContext('puzzle', SKELETONS.puzzle);
+    const inaccurate = context.dossier.nodes.map((node) => (node.nodeId === 'n16' ? { ...node, quality: 'inaccuracy' as const } : node));
+    expect(buildCourseSystemPrompt({ ...context, dossier: { ...context.dossier, nodes: inaccurate } })).toContain('n16 (8... Qc1#) is an inaccuracy');
+  });
+
   test('the outline request carries the lines, candidates and the whole dossier', () => {
     const { user } = buildCourseOutlineMessages(englundCourseContext());
 

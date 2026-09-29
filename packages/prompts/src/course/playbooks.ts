@@ -282,7 +282,7 @@ function wrongMoves(context: CoursePromptContext, ids: readonly string[]): strin
   const rows = ids.map((id) => {
     const node = facts.get(id);
     const best = node?.bestInstead ? `; the engine's best is ${node.bestInstead.san}` : '';
-    return `${nodeLabel(context, id)} is ${node ? `a ${node.quality}` : 'an error'}${best}`;
+    return `${nodeLabel(context, id)} is ${node ? `${/^[aeiou]/.test(node.quality) ? 'an' : 'a'} ${node.quality}` : 'an error'}${best}`;
   });
   return rows.length ? `\nThe engine disagrees with the course's line: ${rows.join('; ')}. Never call that move best or the answer; say what the engine prefers and why, from the dossier.` : '';
 }
@@ -292,15 +292,20 @@ function tacticExampleCount(context: CoursePromptContext): number {
 }
 
 function tacticsPlaybook(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'tactics' }> | null): string {
-  const example = skeleton?.examples.find((candidate) => candidate.motif);
   // A mate on the back rank is the back-rank theme, not "what a checkmate is".
-  const backRank = example?.motif === 'checkmate' && context.dossier.nodes.find((node) => node.nodeId === example.nodeId)?.board.includes('a back-rank mate');
-  const found = backRank ? 'weakBackRank' : example?.motif;
-  const motif = found ? TACTIC_MOTIF_PHRASES[found].noun : 'tactic';
+  const themes = [...new Set((skeleton?.examples ?? []).flatMap((example) => {
+    if (!example.motif) return [];
+    const backRank = example.motif === 'checkmate' && context.dossier.nodes.find((node) => node.nodeId === example.nodeId)?.board.includes('a back-rank mate');
+    return [TACTIC_MOTIF_PHRASES[backRank ? 'weakBackRank' : example.motif].noun];
+  }))];
+  // Examples of different ideas share no one theme: a discovered check and
+  // Legal's mate read "(fork)" from the first.
+  const motif = themes.length === 1 ? themes[0]! : 'tactic';
   const count = tacticExampleCount(context);
   const examples = count === 1 ? '1 example' : `${count} examples, easiest first`;
   const times = count === 1 ? 'once' : count === 2 ? 'twice' : `${count} times`;
-  return `KIND: TACTIC THEME (${motif}), ${examples}.
+  const theme = themes.length > 1 ? `TACTICS (${themes.join(', ')})` : `TACTIC THEME (${motif})`;
+  return `KIND: ${theme}, ${examples}.
 1. concept — one sentence on what a ${motif} is, then the cue: what on the board
    tells you to look for one. Take the cue from the examples' board facts
    (which pieces were loose, which squares they shared), not from general

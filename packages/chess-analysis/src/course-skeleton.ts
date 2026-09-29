@@ -6,6 +6,9 @@ import type { CourseTree } from './course-tree.js';
 
 const ERROR_QUALITIES = new Set(['inaccuracy', 'mistake', 'blunder', 'miss']);
 const BLUNDER_QUALITIES = new Set(['mistake', 'blunder']);
+/** A solution move that is wrong, not just slower: the Saavedra's 4.Kb3 is
+ * an inaccuracy beside Kc3, and both win. */
+const WRONG_QUALITIES = new Set(['mistake', 'blunder', 'miss']);
 const SOUND_ANSWER_QUALITIES = new Set(['brilliant', 'great', 'best', 'excellent', 'book']);
 
 export interface TrapSkeleton {
@@ -156,12 +159,14 @@ function endgameSkeleton(input: CourseSkeletonInput, lineId: string, nodes: Cour
   return {
     kind: 'endgame',
     lineId,
-    goal: winsFor(nodes[0]?.before ?? '', side) ? 'win' : 'draw',
+    // The start or the line's end: the Saavedra's start reads only "White is
+    // better" to the engine; its end, a rook up, is winning.
+    goal: winsFor(nodes[0]?.before ?? '', side) || winsFor(nodes[nodes.length - 1]?.after ?? '', side) ? 'win' : 'draw',
     material: materialBalance(input.tree.startFen),
     learnerNodeIds: learner.map((node) => node.nodeId),
     onlyMoveNodeIds: learner.filter((node) => node.quizEligible).map((node) => node.nodeId),
     deviationNodeIds: deviations(input.tree),
-    wrongNodeIds: learner.filter((node) => ERROR_QUALITIES.has(node.quality)).map((node) => node.nodeId)
+    wrongNodeIds: learner.filter((node) => WRONG_QUALITIES.has(node.quality)).map((node) => node.nodeId)
   };
 }
 
@@ -183,8 +188,8 @@ function puzzleSkeleton(lineId: string, nodes: CourseNodeFacts[], learnerSide: '
     learnerNodeIds: learner.map((node) => node.nodeId),
     mateIn: last?.san.endsWith('#') && last.side === learnerSide ? learner.length : null,
     // A mating move is sound even when another move mates too.
-    unsoundNodeIds: learner.filter((node) => !node.quizEligible && !node.san.endsWith('#') && !ERROR_QUALITIES.has(node.quality)).map((node) => node.nodeId),
-    wrongNodeIds: learner.filter((node) => ERROR_QUALITIES.has(node.quality)).map((node) => node.nodeId)
+    unsoundNodeIds: learner.filter((node) => !node.quizEligible && !node.san.endsWith('#') && !WRONG_QUALITIES.has(node.quality)).map((node) => node.nodeId),
+    wrongNodeIds: learner.filter((node) => WRONG_QUALITIES.has(node.quality)).map((node) => node.nodeId)
   };
 }
 

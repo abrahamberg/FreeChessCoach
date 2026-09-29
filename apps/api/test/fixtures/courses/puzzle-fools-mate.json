@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "novice",
+  "coachPersona": "gambler",
+  "direction": "The fastest mate in chess: Black to play after two weak pawn moves.",
+  "pgn": "[Event \"Fool's mate\"]\n[SetUp \"1\"]\n[FEN \"rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2\"]\n\n2... Qh4# *"
+}

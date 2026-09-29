@@ -133,6 +133,9 @@ describe('the one answer (§5.4)', () => {
     expect(isQuizEligible(two(line('Nf7+', null, 4), line('Ng6+', 900)), 'Nf7+', 'white')).toBe(true);
     expect(isQuizEligible(two(line('Nh6+', null, 3), line('Ne5+', null, 5)), 'Nh6+', 'white')).toBe(true);
     expect(isQuizEligible(two(line('Qg8+', null, 2), line('Qf7', null, 2)), 'Qg8+', 'white')).toBe(false);
+    // Both win, but taking the rook is worth 5 pawns more: the one answer.
+    expect(isQuizEligible(two(line('Qxa1+', -1400), line('Kd7', -900)), 'Qxa1+', 'black')).toBe(true);
+    expect(isQuizEligible(two(line('Qxa1+', -1400), line('Qh1+', -1250)), 'Qxa1+', 'black')).toBe(false);
     // Black mating is negative in White's view.
     expect(isQuizEligible(two(line('Qc1#', null, -1), line('Qxa1', -900)), 'Qc1#', 'black')).toBe(true);
   });

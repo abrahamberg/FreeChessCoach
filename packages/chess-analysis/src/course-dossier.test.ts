@@ -185,6 +185,10 @@ describe('course skeleton', () => {
     const skeleton = buildCourseSkeleton({ kind: 'endgame', tree, lines: courseLineGames(tree), dossier: { ...dossier, nodes } });
 
     expect(skeleton?.kind === 'endgame' && skeleton.goal).toBe('win');
+    // Or a line that ends won: the Saavedra starts at "White is better".
+    const ends = dossier.nodes.map((node, index) => (index === dossier.nodes.length - 1 ? { ...node, after: 'Black is winning' } : node));
+    const saavedra = buildCourseSkeleton({ kind: 'endgame', tree, lines: courseLineGames(tree), dossier: { ...dossier, nodes: ends } });
+    expect(saavedra?.kind === 'endgame' && saavedra.goal).toBe('win');
   });
 
   test("endgame: the goal from the start's verdict, the material, the learner's moves and its only moves", () => {
@@ -282,6 +286,9 @@ describe('puzzle', () => {
     // A solution move the engine calls an error is wrong, not a second answer.
     const blunder = { ...sound, nodes: sound.nodes.map((node) => (node.nodeId === 'n1' ? { ...node, quality: 'blunder' as const, quizEligible: false } : node)) };
     expect(buildCourseSkeleton({ kind: 'puzzle', tree, lines: courseLineGames(tree), dossier: blunder })).toMatchObject({ unsoundNodeIds: [], wrongNodeIds: ['n1'] });
+    // An inaccuracy is slower, not wrong.
+    const slower = { ...sound, nodes: sound.nodes.map((node) => (node.nodeId === 'n1' ? { ...node, quality: 'inaccuracy' as const, quizEligible: false } : node)) };
+    expect(buildCourseSkeleton({ kind: 'puzzle', tree, lines: courseLineGames(tree), dossier: slower })).toMatchObject({ unsoundNodeIds: ['n1'], wrongNodeIds: [] });
   });
 
   test('learned by the side to move; a puzzle needs a position and one line', () => {

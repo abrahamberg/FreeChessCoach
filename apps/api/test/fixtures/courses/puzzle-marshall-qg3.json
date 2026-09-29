@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "advanced",
+  "coachPersona": "sunzi",
+  "direction": "Marshall's famous move: Black to play, and the queen goes where every pawn can take it.",
+  "pgn": "[Event \"Marshall Qg3\"]\n[SetUp \"1\"]\n[FEN \"5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23\"]\n\n23... Qg3 *"
+}

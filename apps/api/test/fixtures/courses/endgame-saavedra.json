@@ -1,0 +1,8 @@
+{
+  "kind": "endgame",
+  "levelBand": "club",
+  "coachPersona": "scholar",
+  "learnerSide": "white",
+  "direction": "The Saavedra position: promote to a rook, not a queen, because the queen allows a stalemate trick.",
+  "pgn": "[Event \"Saavedra\"]\n[SetUp \"1\"]\n[FEN \"8/8/1KP5/3r4/8/8/8/k7 w - - 0 1\"]\n\n1. c7 Rd6+ 2. Kb5 Rd5+ 3. Kb4 Rd4+ 4. Kb3 Rd3+ 5. Kc2 Rd4 6. c8=R (6. c8=Q Rc4+ 7. Qxc4) 6... Ra4 7. Kb3 *"
+}

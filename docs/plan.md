@@ -2540,6 +2540,31 @@ fixes, again until clean.
   from the queen on e2" (the Petrov's 5.Nc6+), "a double check, with the
   queen on c4" (Philidor's Legacy 2.Nh6+).
 
+### Task 108.3 — Underpromotion, Black to move, famous finishes
+
+**Files:** `apps/api/test/fixtures/courses/*.json`, `course-skeleton.ts`,
+`course-dossier-node.ts`, `config.ts`, `playbooks.ts`, tests.
+
+- [x] 13 more courses (58): the Saavedra; Black-to-move puzzles (a back
+  rank, fool's mate, a queen fork, Marshall's …Qg3); the Opera, Evergreen,
+  Immortal and Lasker–Thomas finishes as puzzles, their positions from the
+  games with chess.js; Byrne–Fischer; the Two Knights with the Fried Liver
+  inside; a tactics course of two different ideas; Scholar's mate as a trap.
+- [x] An endgame is won when its start or its main line's end says so: the
+  Saavedra's start reads "White is better" and was "hold the draw".
+- [x] A wrong solution move is a mistake or worse; an inaccuracy (the
+  Saavedra's 4.Kb3 beside Kc3, both winning) is a slower way, not wrong.
+- [x] In a won position a move 300 centipawns better than the next is the
+  one answer: win% barely moves there, and every move read as having a
+  second answer.
+- [x] A tactics course whose examples show different ideas names each
+  ("TACTICS (fork, mating net)"), not the first one's.
+- [x] "is an inaccuracy", not "a inaccuracy".
+
+The facts caught two of my own fixtures: a queen fork whose queen already
+saw the rook, and one where …Qh1+ wins the rook as well (kept: the
+second-answer warning is right there).
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

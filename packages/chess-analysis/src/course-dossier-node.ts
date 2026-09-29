@@ -1,4 +1,4 @@
-import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
+import type { EngineEval, EngineLine, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
 import type { ClassifiedMove } from './classify.js';
 import { CONFIG } from './config.js';
 import { abandonedGuard, betterMoveFacts, boardFacts, lineWords, positionWords } from './course-dossier-words.js';
@@ -159,7 +159,8 @@ export function isQuizEligible(evaluation: EngineEval | undefined, san: string, 
     const next = moverMateIn(second, side);
     return next === null || next > mates;
   }
-  return winPctFor(side, toCpWhite(first)) - winPctFor(side, toCpWhite(second)) > CONFIG.courses.onlyMoveGap;
+  const moverCp = (line: EngineLine): number => (side === 'white' ? 1 : -1) * toCpWhite(line);
+  return winPctFor(side, toCpWhite(first)) - winPctFor(side, toCpWhite(second)) > CONFIG.courses.onlyMoveGap || moverCp(first) - moverCp(second) >= CONFIG.courses.onlyMoveCpGap;
 }
 
 /** Moves to mate for `side` on an engine line (White's view: positive is

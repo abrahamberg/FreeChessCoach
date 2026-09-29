@@ -460,6 +460,10 @@ export const CONFIG = {
    * `severity.mistakeMaxDrop` scale, so the wrong answer would be a mistake. */
   courses: {
     onlyMoveGap: 20,
+    /** In a won position win% barely moves, so a move that is this many
+     * centipawns better is the one answer too: …Qe5+ Kd1 Qxa1+ read as
+     * having a second answer at both moves. */
+    onlyMoveCpGap: 300,
     /** §13.5: a tempting move costs the mover at least this much win%. */
     temptingDrop: 15,
     maxTempting: 3,
