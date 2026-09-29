@@ -1,0 +1,8 @@
+{
+  "kind": "opening",
+  "levelBand": "improving",
+  "coachPersona": "general_female",
+  "learnerSide": "white",
+  "direction": "The Scotch Game for White: the Mieses line with e5, and what to do against ...Bc5.",
+  "pgn": "[Event \"Scotch Game\"]\n\n{Mieses} 1. e4 e5 2. Nf3 Nc6 3. d4 exd4 4. Nxd4 Nf6 ({Classical} 4... Bc5 5. Be3 Qf6 6. c3 Nge7 7. Bc4) 5. Nxc6 bxc6 6. e5 Qe7 7. Qe2 Nd5 8. c4 *"
+}

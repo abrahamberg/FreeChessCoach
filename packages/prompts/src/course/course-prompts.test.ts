@@ -13,9 +13,9 @@ const SKELETONS: Record<CourseKind, CourseSkeleton> = {
   trap: { kind: 'trap', lineId: 'l1', baitNodeId: 'n11', answerNodeId: 'n12', punishNodeIds: ['n13'], safeMoveSan: 'Nc3', trapperRiskNodeIds: ['n2'] },
   opening: { kind: 'opening', lines: [{ lineId: 'l1', bookExitNodeId: null, learnerNodeIds: ['n2'] }], deviationNodeIds: [], traps: [{ blunderNodeId: 'n11', answerNodeId: 'n12' }] },
   tactics: { kind: 'tactics', examples: [{ lineId: 'l1', nodeId: 'n12', startNodeId: 'n10', motif: 'pin', depth: 3 }] },
-  puzzle: { kind: 'puzzle', lineId: 'l1', learnerNodeIds: ['n12', 'n14', 'n16'], mateIn: 3, unsoundNodeIds: ['n14'] },
+  puzzle: { kind: 'puzzle', lineId: 'l1', learnerNodeIds: ['n12', 'n14', 'n16'], mateIn: 3, unsoundNodeIds: ['n14'], wrongNodeIds: ['n16'] },
   master_game: { kind: 'master_game', criticalNodeIds: ['n11'], quizNodeIds: ['n12'], phaseBoundaryNodeIds: [] },
-  endgame: { kind: 'endgame', lineId: 'l1', goal: 'win', material: 'Black is a rook up', learnerNodeIds: ['n12', 'n14', 'n16'], onlyMoveNodeIds: ['n12'], deviationNodeIds: [] }
+  endgame: { kind: 'endgame', lineId: 'l1', goal: 'win', material: 'Black is a rook up', learnerNodeIds: ['n12', 'n14', 'n16'], onlyMoveNodeIds: ['n12'], deviationNodeIds: [], wrongNodeIds: [] }
 };
 
 const PLACEHOLDER = /\{[a-zA-Z]+\}|undefined|\bnull\b(?! \|)|\[object/;
@@ -95,6 +95,7 @@ describe('course prompts', () => {
 
     expect(system).toContain('Every check in the\n   dossier\'s tempting moves at that move goes in its tempting list');
     expect(system).toContain('"Ng6+? hxg6 takes the knight, and the mate is gone"');
+    expect(system).toMatch(/The engine disagrees with the course's line: n16 \(8\.\.\. Qc1#\) is a \w+\. Never call that move best/);
     expect(system).toContain('where the\n   dossier says "Works, but not the answer", say it works and why it is still\n   not the answer');
   });
 
@@ -118,6 +119,17 @@ describe('course prompts', () => {
     expect(buildCourseSystemPrompt(englundCourseContext('trap', trap))).toMatch(/\n5\. punish — [\s\S]*\n6\. safety — /);
     expect(midSentence('The position is roughly equal')).toBe('the position is roughly equal');
     expect(midSentence('Black is better')).toBe('Black is better');
+  });
+
+  test("the bait misses the trap's own line; a trapper only slightly worse plays on level", () => {
+    const context = englundCourseContext('trap', SKELETONS.trap);
+    expect(buildCourseSystemPrompt(context)).toContain('What it misses: n12 (6... Bb4), which starts a forced mate (the quiz item has the line).');
+
+    const bait = context.dossier.nodes.find((node) => node.nodeId === 'n11')!;
+    const best = bait.bestInstead!;
+    const slightly = { ...bait, bestInstead: { ...best, line: [best.san, 'Nf6'] }, alternatives: [{ san: best.san, verdict: 'White is slightly better' }] };
+    const system = buildCourseSystemPrompt({ ...context, dossier: { ...context.dossier, nodes: context.dossier.nodes.map((node) => (node === bait ? slightly : node)) } });
+    expect(system).toContain('the game goes on level, so name the plan');
   });
 
   test('the outline request carries the lines, candidates and the whole dossier', () => {

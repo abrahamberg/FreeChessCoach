@@ -53,6 +53,9 @@ export interface PuzzleSkeleton {
   /** Learner moves that are not the engine's one clear best: a second
    * solution the learner could play. Empty when the puzzle is sound. */
   unsoundNodeIds: string[];
+  /** Learner moves the engine calls an error: the solution itself is wrong
+   * there (a puzzle whose 1.Qa4+ walks into …Rxa4). */
+  wrongNodeIds: string[];
 }
 
 /** Phase 103: a position and its technique. The goal is the learner's: to
@@ -70,6 +73,8 @@ export interface EndgameSkeleton {
   onlyMoveNodeIds: string[];
   /** The defender's tries: the first move of each sideline. */
   deviationNodeIds: string[];
+  /** Learner moves of the technique the engine calls an error. */
+  wrongNodeIds: string[];
 }
 
 export type CourseSkeleton = TrapSkeleton | OpeningSkeleton | TacticsSkeleton | MasterGameSkeleton | PuzzleSkeleton | EndgameSkeleton;
@@ -155,7 +160,8 @@ function endgameSkeleton(input: CourseSkeletonInput, lineId: string, nodes: Cour
     material: materialBalance(input.tree.startFen),
     learnerNodeIds: learner.map((node) => node.nodeId),
     onlyMoveNodeIds: learner.filter((node) => node.quizEligible).map((node) => node.nodeId),
-    deviationNodeIds: deviations(input.tree)
+    deviationNodeIds: deviations(input.tree),
+    wrongNodeIds: learner.filter((node) => ERROR_QUALITIES.has(node.quality)).map((node) => node.nodeId)
   };
 }
 
@@ -177,7 +183,8 @@ function puzzleSkeleton(lineId: string, nodes: CourseNodeFacts[], learnerSide: '
     learnerNodeIds: learner.map((node) => node.nodeId),
     mateIn: last?.san.endsWith('#') && last.side === learnerSide ? learner.length : null,
     // A mating move is sound even when another move mates too.
-    unsoundNodeIds: learner.filter((node) => !node.quizEligible && !node.san.endsWith('#')).map((node) => node.nodeId)
+    unsoundNodeIds: learner.filter((node) => !node.quizEligible && !node.san.endsWith('#') && !ERROR_QUALITIES.has(node.quality)).map((node) => node.nodeId),
+    wrongNodeIds: learner.filter((node) => ERROR_QUALITIES.has(node.quality)).map((node) => node.nodeId)
   };
 }
 

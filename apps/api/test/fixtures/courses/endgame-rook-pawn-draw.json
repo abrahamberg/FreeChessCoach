@@ -1,0 +1,8 @@
+{
+  "kind": "endgame",
+  "levelBand": "novice",
+  "coachPersona": "general",
+  "learnerSide": "black",
+  "direction": "King and rook's pawn against king: the defender's king in the corner draws by stalemate.",
+  "pgn": "[Event \"Rook pawn draw\"]\n[SetUp \"1\"]\n[FEN \"k7/8/K7/P7/8/8/8/8 w - - 0 1\"]\n\n1. Kb6 Kb8 2. a6 Ka8 3. a7 *"
+}

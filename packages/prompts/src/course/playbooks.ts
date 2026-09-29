@@ -114,10 +114,22 @@ function baitFacts(context: CoursePromptContext, skeleton: Extract<CourseSkeleto
   const rows = [
     threats.length && parentId ? `Before it, ${nodeLabel(context, parentId)}: ${threats.join('; ')}.` : '',
     does.length ? `${nodeLabel(context, bait.nodeId)}: ${does.join('; ')}.` : '',
-    bait.tactics.length ? `What it misses: ${bait.tactics.join(' ')}` : ''
+    missed(context, skeleton)
   ].filter(Boolean);
   if (!rows.length) return '';
   return `\n   ${rows.join('\n   ')}\n   Say what the victim wants with the move and what they miss.`;
+}
+
+/** What the bait misses, as the trap's own line: the game review's sentence
+ * on the bait read "win a pawn" in the Lasker trap, which wins the queen,
+ * and "win a bishop through a checkmate — knight forks b4, f4, b2, f2 and
+ * e1" in the Kieninger. */
+function missed(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'trap' }>): string {
+  if (!skeleton.answerNodeId) return '';
+  const leafId = context.lines[0]?.leafNodeId;
+  const mates = context.nodes.find((node) => node.id === leafId)?.san.endsWith('#');
+  const answer = nodeLabel(context, skeleton.answerNodeId);
+  return mates ? `What it misses: ${answer}, which starts a forced mate (the quiz item has the line).` : `What it misses: ${answer}, and what it wins (the quiz item has the line and the material).`;
 }
 
 /** Where the victim goes wrong from the bait on, each with the engine's
@@ -174,7 +186,8 @@ const TRAPPER_AIM = {
  * verdict) is level. */
 function standingOf(verdict: string, side: string): keyof typeof TRAPPER_AIM {
   const leader = /\b(White|Black) (?:is|has)\b/.exec(verdict)?.[1];
-  if (!leader || /equal|level/i.test(verdict)) return 'level';
+  // "White is slightly better" is no reason for damage control.
+  if (!leader || /equal|level|slightly/i.test(verdict)) return 'level';
   return leader === side ? 'better' : 'worse';
 }
 
@@ -208,7 +221,10 @@ function trapEnding(context: CoursePromptContext): string {
   // Noah's Ark ends with material level and the bishop on b3 trapped.
   const trapped = leafFacts?.board.find((fact) => fact.includes('which is trapped'))?.replace(/^attacks /, '').replace(/, which is trapped:.*$/, '');
   if (trapped) return `${nodeLabel(context, leafId)}, after which ${standing} and ${lineBalance(context.startFen, sans)}, but ${trapped} is trapped and will be lost. Promise that piece, nothing more.`;
-  return `${nodeLabel(context, leafId)}, after which ${standing} and ${lineBalance(context.startFen, sans)}. Promise that material, nothing more.`;
+  // The QGA's 6.Qf3 wins the rook on a8 next move: the line stops at the attack.
+  const attacks = leafFacts?.board.filter((fact) => fact.startsWith('attacks ')) ?? [];
+  const threat = attacks.length ? `; ${leafFacts?.san} ${attacks.join(' and ')}` : '';
+  return `${nodeLabel(context, leafId)}, after which ${standing} and ${lineBalance(context.startFen, sans)}${threat}. Promise that${threat ? ' and the threat' : ' material'}, nothing more.`;
 }
 
 function openingPlaybook(context: CoursePromptContext): string {
@@ -240,7 +256,7 @@ function puzzlePlaybook(context: CoursePromptContext, skeleton: Extract<CourseSk
   const unsound = skeleton?.unsoundNodeIds.length
     ? `\nThe engine finds another good move at ${skeleton.unsoundNodeIds.map((id) => nodeLabel(context, id)).join(', ')}: say the course's move is the one to learn, and name the other only if the dossier lists it.`
     : '';
-  return `KIND: PUZZLE. ${side} to play: ${task}. The solution: ${moves}.
+  return `KIND: PUZZLE. ${side} to play: ${task}. The solution: ${moves}.${wrongMoves(context, skeleton?.wrongNodeIds ?? [])}
 Use exactly these episodes, in order:
 1. question — the position and the task, in one breath ("${side} to play. ${skeleton?.mateIn ? `Mate in ${skeleton.mateIn}.` : 'Find the win.'}"), and what to look at first.
 2. solve — one per ${side} move, each a quiz: the checks, captures and threats
@@ -258,12 +274,28 @@ A strong player thinks checks, captures, threats, every move: teach that
 habit, not just this answer.${unsound}`;
 }
 
+/** A solution move the engine calls an error: the course's own line is
+ * wrong there, and the coach must not call it best (a puzzle's 1.Qa4+ that
+ * walks into …Rxa4). The creator is warned too. */
+function wrongMoves(context: CoursePromptContext, ids: readonly string[]): string {
+  const facts = new Map(context.dossier.nodes.map((node) => [node.nodeId, node]));
+  const rows = ids.map((id) => {
+    const node = facts.get(id);
+    const best = node?.bestInstead ? `; the engine's best is ${node.bestInstead.san}` : '';
+    return `${nodeLabel(context, id)} is ${node ? `a ${node.quality}` : 'an error'}${best}`;
+  });
+  return rows.length ? `\nThe engine disagrees with the course's line: ${rows.join('; ')}. Never call that move best or the answer; say what the engine prefers and why, from the dossier.` : '';
+}
+
 function tacticExampleCount(context: CoursePromptContext): number {
   return context.skeleton?.kind === 'tactics' && context.skeleton.examples.length ? context.skeleton.examples.length : context.lines.length;
 }
 
 function tacticsPlaybook(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'tactics' }> | null): string {
-  const found = skeleton?.examples.find((example) => example.motif)?.motif;
+  const example = skeleton?.examples.find((candidate) => candidate.motif);
+  // A mate on the back rank is the back-rank theme, not "what a checkmate is".
+  const backRank = example?.motif === 'checkmate' && context.dossier.nodes.find((node) => node.nodeId === example.nodeId)?.board.includes('a back-rank mate');
+  const found = backRank ? 'weakBackRank' : example?.motif;
   const motif = found ? TACTIC_MOTIF_PHRASES[found].noun : 'tactic';
   const count = tacticExampleCount(context);
   const examples = count === 1 ? '1 example' : `${count} examples, easiest first`;
@@ -292,7 +324,7 @@ function endgamePlaybook(context: CoursePromptContext, skeleton: Extract<CourseS
   const list = (ids: readonly string[]): string => ids.map((id) => nodeLabel(context, id)).join(', ') || 'none';
   return `KIND: ENDGAME. ${goal}. Material: ${skeleton?.material ?? 'see the dossier'}.
 The technique: ${list(skeleton?.learnerNodeIds ?? [])}. The only moves: ${list(skeleton?.onlyMoveNodeIds ?? [])}.
-The defender's tries: ${list(skeleton?.deviationNodeIds ?? [])}.
+The defender's tries: ${list(skeleton?.deviationNodeIds ?? [])}.${wrongMoves(context, skeleton?.wrongNodeIds ?? [])}
 Use these episodes, in order:
 1. goal — the position, the material and the goal, then the one idea that
    decides it, in plain words, from the dossier's board facts.

@@ -1,0 +1,8 @@
+{
+  "kind": "endgame",
+  "levelBand": "novice",
+  "coachPersona": "sunzi",
+  "learnerSide": "white",
+  "direction": "The rule of the square: the king is outside the pawn's square, so the pawn runs and queens.",
+  "pgn": "[Event \"Rule of the square\"]\n[SetUp \"1\"]\n[FEN \"8/8/8/8/8/8/k4P2/7K w - - 0 1\"]\n\n1. f4 Kb3 2. f5 Kc4 3. f6 Kd5 4. f7 Ke6 5. f8=Q *"
+}

@@ -1,0 +1,8 @@
+{
+  "kind": "endgame",
+  "levelBand": "improving",
+  "coachPersona": "scholar",
+  "learnerSide": "black",
+  "direction": "King and pawn against king, the defender's side: keep the opposition in front of the pawn and draw.",
+  "pgn": "[Event \"Opposition draw\"]\n[SetUp \"1\"]\n[FEN \"4k3/8/8/4K3/4P3/8/8/8 b - - 0 1\"]\n\n1... Ke7 2. Kf5 Kf7 3. e5 Ke7 4. e6 Ke8 5. Kf6 Kf8 6. e7+ Ke8 7. Ke6 *"
+}

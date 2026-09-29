@@ -180,7 +180,8 @@ describe('course skeleton', () => {
       material: 'material is level',
       learnerNodeIds: black.map((node) => node.nodeId),
       onlyMoveNodeIds: black.filter((node) => node.quizEligible).map((node) => node.nodeId),
-      deviationNodeIds: []
+      deviationNodeIds: [],
+      wrongNodeIds: black.filter((node) => ['inaccuracy', 'mistake', 'blunder', 'miss'].includes(node.quality)).map((node) => node.nodeId)
     });
     const winning = dossier.nodes.map((node, index) => (index === 0 ? { ...node, before: 'Black is winning' } : node));
     expect(buildCourseSkeleton({ kind: 'endgame', tree, lines: courseLineGames(tree), dossier: { ...dossier, nodes: winning } })).toMatchObject({ goal: 'win' });
@@ -253,11 +254,15 @@ describe('puzzle', () => {
       lineId: 'l1',
       learnerNodeIds: ['n1', 'n3'],
       mateIn: 2,
-      unsoundNodeIds: []
+      unsoundNodeIds: [],
+      wrongNodeIds: []
     });
     // Two moves as good as each other: the first move has a second answer.
     const level = analyseCourse(tree, fakeEvals(tree, () => 2000), 'white').dossier;
     expect(buildCourseSkeleton({ kind: 'puzzle', tree, lines: courseLineGames(tree), dossier: level })).toMatchObject({ unsoundNodeIds: ['n1'] });
+    // A solution move the engine calls an error is wrong, not a second answer.
+    const blunder = { ...sound, nodes: sound.nodes.map((node) => (node.nodeId === 'n1' ? { ...node, quality: 'blunder' as const, quizEligible: false } : node)) };
+    expect(buildCourseSkeleton({ kind: 'puzzle', tree, lines: courseLineGames(tree), dossier: blunder })).toMatchObject({ unsoundNodeIds: [], wrongNodeIds: ['n1'] });
   });
 
   test('learned by the side to move; a puzzle needs a position and one line', () => {

@@ -1,0 +1,8 @@
+{
+  "kind": "opening",
+  "levelBand": "club",
+  "coachPersona": "scholar",
+  "learnerSide": "white",
+  "direction": "The Queen's Gambit Declined for White: the Orthodox setup, and the Exchange variation's minority attack plan.",
+  "pgn": "[Event \"Queen's Gambit Declined\"]\n\n{Orthodox} 1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Bg5 ({Exchange} 4. cxd5 exd5 5. Bg5 c6 6. e3 Be7 7. Bd3) 4... Be7 5. e3 O-O 6. Nf3 Nbd7 7. Rc1 c6 8. Bd3 dxc4 9. Bxc4 *"
+}

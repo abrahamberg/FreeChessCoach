@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "novice",
+  "coachPersona": "shark",
+  "direction": "A queen fork: check the king and win the rook in the corner.",
+  "pgn": "[Event \"Queen fork\"]\n[SetUp \"1\"]\n[FEN \"r3k3/8/8/8/8/8/8/4K2Q w - - 0 1\"]\n\n1. Qe4+ Kd7 2. Qxa8 *"
+}

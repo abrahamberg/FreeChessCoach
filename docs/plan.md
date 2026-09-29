@@ -2487,6 +2487,31 @@ model, so keep adding positions and fixing the facts, with no model, until a
 facts pass finds nothing. 26 more golden courses, then the facts pass, then
 fixes, again until clean.
 
+### Task 108.1 — 26 more courses, and what they showed
+
+**Files:** `apps/api/test/fixtures/courses/*.json`, `course-skeleton.ts`,
+`playbooks.ts`, `course-generate.ts`, tests.
+
+- [x] 26 more golden courses (45): the Lasker, Kieninger, Siberian, QGA …b5
+  and Stafford traps; the QGD, Najdorf, King's Indian and Scotch; the fork
+  trick, the Petrov discovery, a back rank and a skewer; five mates and forks
+  as puzzles; the Immortal, the Evergreen and Lasker–Thomas; the rook's-pawn
+  draw, two rooks, the square and the opposition draw.
+- [x] A puzzle or endgame whose own solution move the engine calls an error
+  (`wrongNodeIds`; my first queen fork, 1.Qa4+ …Rxa4) warns the creator, and
+  the playbook tells the model never to call it best. Before, it read "the
+  engine finds another good move".
+- [x] The bait's "What it misses" is the answer and the line from it, not the
+  game review's sentence on the bait: the Lasker's read "win a pawn" (the line
+  wins the queen), the Kieninger's "win a bishop through a checkmate — knight
+  on d3 forks b4, f4, b2, f2 and e1".
+- [x] A trapper only slightly worse after the safe move plays on level, not
+  "lose as little as possible".
+- [x] A trap that ends on an attack (the QGA's 6.Qf3 on the rook) says what
+  the last move attacks, so the hook can promise the threat.
+- [x] A tactics course whose example mates on the back rank is the back-rank
+  theme, not "what a checkmate is".
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

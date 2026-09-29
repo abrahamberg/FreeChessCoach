@@ -191,7 +191,10 @@ function courseWarnings(document: CourseDocument, skeleton: CourseSkeleton | nul
   const frame = verifyCourseFrame(document).map((problem) => ({ episodeId: null, ...problem }));
   const unsound = skeleton?.kind === 'puzzle' ? skeleton.unsoundNodeIds : [];
   const puzzle = unsound.map((nodeId) => ({ episodeId: null, code: 'puzzle', nodeId, message: `The engine finds another good move at ${nodeId}: the puzzle has two answers there` }));
-  return [...frame, ...puzzle];
+  // The solution itself goes wrong there: a puzzle's 1.Qa4+ that walks into …Rxa4.
+  const wrong = skeleton?.kind === 'puzzle' || skeleton?.kind === 'endgame' ? skeleton.wrongNodeIds : [];
+  const errors = wrong.map((nodeId) => ({ episodeId: null, code: 'puzzle', nodeId, message: `The engine calls the course's move at ${nodeId} an error: check the solution there` }));
+  return [...frame, ...puzzle, ...errors];
 }
 
 /** The outline's warnings stay; the whole-course ones are replaced. */

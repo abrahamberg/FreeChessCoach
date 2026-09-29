@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "improving",
+  "coachPersona": "huntress",
+  "direction": "Smothered mate in one: the queen is not the piece that mates.",
+  "pgn": "[Event \"Smothered mate in one\"]\n[SetUp \"1\"]\n[FEN \"6rk/6pp/8/6N1/8/8/1Q6/6K1 w - - 0 1\"]\n\n1. Nf7# *"
+}
