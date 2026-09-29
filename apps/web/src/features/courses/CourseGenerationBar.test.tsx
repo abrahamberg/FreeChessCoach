@@ -42,6 +42,17 @@ describe('CourseGenerationBar', () => {
     expect(screen.queryByRole('button', { name: 'Write with AI' })).toBeNull();
   });
 
+  test('above every section: nothing when there is nothing to say', () => {
+    const written = course({ ...generation, status: 'succeeded', step: null });
+    written.document.episodes = [{ id: 'e1', role: 'setup', focus: '', startNodeId: 'n1', endNodeId: 'n1', plies: [], drillNodeIds: [] }];
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <CourseGenerationBar course={written} dirty={false} />
+      </QueryClientProvider>
+    );
+    expect(container.innerHTML).toBe('');
+  });
+
   test('a failed run with an outline shows its error and offers to resume', () => {
     const outline = { title: 't', promise: '', hookOptions: ['a', 'b', 'c'], takeaways: ['a', 'b', 'c'], video: null, reel: null, chapters: [] };
     renderBar({ ...generation, status: 'failed', step: null, error: 'Unlock your AI setup in Settings.', outline });

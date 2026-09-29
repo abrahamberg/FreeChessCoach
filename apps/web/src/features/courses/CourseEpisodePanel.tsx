@@ -1,5 +1,6 @@
 import { videoCaption, videoLine, type CourseArrow, type CourseDocument, type CourseEpisode, type CoursePly, type CourseTempting } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon } from '../../components/Icon.js';
 import type { BoardArrow } from '../board/CoachBoard.js';
 import { COURSE_ARROW_KINDS, fromDrawnArrows } from './courseArrows.js';
 import { moveLabel, setPly, withoutQuiz } from './courseEdits.js';
@@ -8,6 +9,10 @@ import { CourseEpisodeWarnings } from './CourseEpisodeWarnings.js';
 export interface CourseEpisodePanelProps {
   document: CourseDocument;
   episode: CourseEpisode;
+  /** Where the episode stands in the course, for "Episode 2 of 9". */
+  position?: { index: number; count: number };
+  /** The previous (-1) or next (1) episode. */
+  onStepEpisode?: (offset: number) => void;
   /** The creator's intake direction, for the verifier's percentage rule. */
   direction: string;
   nodeIds: string[];
@@ -28,10 +33,10 @@ export function videoSecondsOf(episode: CourseEpisode): number {
   return Math.round(spoken / 2.6 + episode.plies.filter((ply) => ply.video).length * 0.7);
 }
 
-/** Right column: the selected episode's warnings, what speaks against the
+/** Beside the board: the selected episode's warnings, what speaks against the
  * plan's budget, and tabs: Moves (the selected move for the course and the
  * YouTube video), Quiz, Video (this episode's part of the video) and AI. */
-export function CourseEpisodePanel({ document, episode, direction, nodeIds, selectedNodeId, drawnArrows, onChange, aiWriter }: CourseEpisodePanelProps): ReactNode {
+export function CourseEpisodePanel({ document, episode, position, onStepEpisode, direction, nodeIds, selectedNodeId, drawnArrows, onChange, aiWriter }: CourseEpisodePanelProps): ReactNode {
   const [tab, setTab] = useState<Tab>('moves');
   const node = selectedNodeId ? document.nodes.find((candidate) => candidate.id === selectedNodeId) : undefined;
   const ply = episode.plies.find((candidate) => candidate.nodeId === selectedNodeId);
@@ -50,7 +55,26 @@ export function CourseEpisodePanel({ document, episode, direction, nodeIds, sele
 
   return (
     <div className="course-panel course-episode-panel">
-      <p className="course-panel__role">{episode.role}</p>
+      <div className="course-episode-panel__head">
+        <div className="course-episode-panel__title">
+          {position && (
+            <span className="meta">
+              Episode {position.index + 1} of {position.count}
+            </span>
+          )}
+          <p className="course-panel__role">{episode.role}</p>
+        </div>
+        {position && onStepEpisode && (
+          <div className="course-episode-panel__step" role="group" aria-label="Episodes">
+            <button type="button" className="btn-secondary" aria-label="Previous episode" title="Previous episode" disabled={position.index <= 0} onClick={() => onStepEpisode(-1)}>
+              <ChevronLeftIcon width={16} height={16} />
+            </button>
+            <button type="button" className="btn-secondary" aria-label="Next episode" title="Next episode" disabled={position.index >= position.count - 1} onClick={() => onStepEpisode(1)}>
+              <ChevronRightIcon width={16} height={16} />
+            </button>
+          </div>
+        )}
+      </div>
       {/* A video the plan gave 0 was not planned: added by hand, no budget. */}
       <p className="course-budget meta">
         <span className={episode.budget?.course && inCourse > episode.budget.course ? 'course-budget--over' : undefined}>
@@ -85,7 +109,7 @@ export function CourseEpisodePanel({ document, episode, direction, nodeIds, sele
           <>
             <label className="course-field">
               <span>Focus</span>
-              <input value={episode.focus} onChange={(event) => onChange({ ...episode, focus: event.target.value })} />
+              <textarea rows={2} value={episode.focus} onChange={(event) => onChange({ ...episode, focus: event.target.value })} />
             </label>
             {node && selectedNodeId ? (
               <section className="course-panel__section" aria-label={`The move ${moveLabel(document, node)}`}>

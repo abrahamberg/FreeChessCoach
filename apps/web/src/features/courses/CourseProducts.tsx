@@ -103,7 +103,7 @@ function ReelCard({ courseId, document, generation, dirty, onChange }: CoursePro
           {reel.beats.map((beat, index) => (
             <div key={beat.nodeId} className="course-products__beat">
               <strong>{label(beat.nodeId)}</strong>
-              <input aria-label={`${label(beat.nodeId)} says`} value={beat.say} placeholder="Says" onChange={(event) => set({ beats: reel.beats.map((each, at) => (at === index ? { ...each, say: event.target.value } : each)) })} />
+              <textarea rows={2} aria-label={`${label(beat.nodeId)} says`} value={beat.say} placeholder="Says" onChange={(event) => set({ beats: reel.beats.map((each, at) => (at === index ? { ...each, say: event.target.value } : each)) })} />
               <input aria-label={`${label(beat.nodeId)} caption`} value={beat.caption} placeholder="Caption" onChange={(event) => set({ beats: reel.beats.map((each, at) => (at === index ? { ...each, caption: event.target.value } : each)) })} />
             </div>
           ))}

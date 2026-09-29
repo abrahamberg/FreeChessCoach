@@ -2279,6 +2279,36 @@ web `courseKinds.ts`, `CourseIntakePage.tsx`, tests.
 
 Commit per task; push each phase.
 
+## Phase 104 — The Studio's layout
+
+The owner (2026-09-29): improve the Studio; put the sidebars under the chess
+board so the fields have more space. At 1920 px the editor's left column was
+3,300 px tall: the course details, the YouTube video and the reel stacked in
+260 px, with the episode list, the editor's navigation, at its very bottom.
+
+### Task 104.1 — Sections and the episode workspace
+
+**Files:** `CourseEditorPage.tsx`, `CourseEditor.css`, `CourseOutline.tsx`,
+`CourseBoardPanel.tsx`, `CourseEpisodePanel.tsx`, `CourseDetails.tsx`,
+`CourseProducts.tsx`, `CourseGenerationBar.tsx`, tests.
+
+- [x] Under the header, three sections as tabs: Episodes (the default),
+  Course (coach, level, videos, promise) and Videos (the YouTube video and
+  the reel, shown when the course makes them), each at full width.
+- [x] Episodes: two columns. The board column (sticky, its own scroll) holds
+  the board sized to the screen's height, the moves under it, and the
+  episode list under those. The editor takes the rest of the width.
+- [x] The episode list: each episode's number, role, focus (two lines), its
+  moves ("1.Rd1+ – 7.Rb4") and a quiz mark.
+- [x] The editor's head: "Episode 2 of 9", the role, previous and next
+  episode. The arrow keys step through the moves when no field has focus.
+- [x] The writer's progress and "Write with AI" stay above the sections, so
+  they show on every tab; nothing shows when there is nothing to say.
+- [x] Below 1000 px everything stacks: the board, the moves, the editor, the
+  episode list.
+
+Commit per task; push each phase.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

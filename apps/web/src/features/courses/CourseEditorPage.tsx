@@ -1,4 +1,4 @@
-import type { CourseDocument, CourseResponse } from '@freechesscoach/shared';
+import { courseVideos, type CourseDocument, type CourseResponse } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
@@ -18,6 +18,8 @@ import { PublishDialog } from './PublishDialog.js';
 import { StartOverDialog } from './StartOverDialog.js';
 import { LearnerPreview } from './player/LearnerPreview.js';
 import './CourseEditor.css';
+
+type Section = 'episodes' | 'course' | 'videos';
 
 export function CourseEditorPage(): ReactNode {
   const { id = '' } = useParams<{ id: string }>();
@@ -41,6 +43,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
   const [previewing, setPreviewing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [learnerPreview, setLearnerPreview] = useState(false);
+  const [section, setSection] = useState<Section>('episodes');
 
   const episode = document.episodes.find((candidate) => candidate.id === episodeId);
   const nodeIds = episode ? episodeNodeIds(document, episode) : document.nodes.map((node) => node.id);
@@ -69,6 +72,14 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
   }
 
   const error = save.error ?? build.error ?? start.error;
+  const videos = courseVideos(document);
+  const sections: [Section, string][] = [
+    ['episodes', document.episodes.length ? `Episodes · ${document.episodes.length}` : 'Episodes'],
+    ['course', 'Course'],
+    ...(videos.video || videos.reel ? [['videos', 'Videos'] as [Section, string]] : [])
+  ];
+  const shown = sections.some(([value]) => value === section) ? section : 'episodes';
+  const episodeIndex = episode ? document.episodes.indexOf(episode) : -1;
   return (
     <div className="course-editor">
       <CourseStudioHeader
@@ -89,38 +100,71 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
           {describeApiError(error) ?? 'Something went wrong.'}
         </p>
       )}
-      <div className="course-editor__columns">
-        <aside className="course-editor__side">
-          <CourseDetails document={document} onChange={edit}>
-            <CourseGenerationBar course={course} dirty={dirty} />
-          </CourseDetails>
-          <CourseProducts courseId={course.id} document={document} generation={course.generation} dirty={dirty} onChange={edit} />
-          <CourseOutline document={document} selectedEpisodeId={episodeId} onSelectEpisode={selectEpisode} />
-        </aside>
-        <CourseBoardPanel
-          document={document}
-          nodeIds={nodeIds}
-          selectedNodeId={nodeId}
-          onSelectNode={setNodeId}
-          arrows={noteArrows}
-          plies={episode?.plies ?? []}
-          onDrawnArrows={setDrawnArrows}
-        />
-        {episode ? (
-          <CourseEpisodePanel
-            document={document}
-            episode={episode}
-            direction={course.direction}
-            nodeIds={nodeIds}
-            selectedNodeId={nodeId}
-            drawnArrows={drawnArrows}
-            onChange={(next) => edit(updateEpisode(document, next.id, () => next))}
-            aiWriter={<CourseEpisodeAi courseId={course.id} episodeId={episode.id} generation={course.generation} dirty={dirty} />}
-          />
-        ) : (
-          <div className="course-panel meta">Pick an episode on the left.</div>
-        )}
+      <CourseGenerationBar course={course} dirty={dirty} />
+      <div className="studio-sections" role="tablist" aria-label="Studio">
+        {sections.map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            id={`studio-tab-${value}`}
+            aria-selected={shown === value}
+            aria-controls={`studio-section-${value}`}
+            className="studio-sections__tab"
+            onClick={() => setSection(value)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
+
+      {shown === 'episodes' && (
+        <div className="course-editor__workspace" role="tabpanel" id="studio-section-episodes" aria-labelledby="studio-tab-episodes">
+          <div className="course-editor__stage">
+            <CourseBoardPanel
+              document={document}
+              nodeIds={nodeIds}
+              selectedNodeId={nodeId}
+              onSelectNode={setNodeId}
+              arrows={noteArrows}
+              plies={episode?.plies ?? []}
+              onDrawnArrows={setDrawnArrows}
+            />
+            <CourseOutline document={document} selectedEpisodeId={episodeId} onSelectEpisode={selectEpisode} />
+          </div>
+          {episode ? (
+            <CourseEpisodePanel
+              document={document}
+              episode={episode}
+              position={{ index: episodeIndex, count: document.episodes.length }}
+              onStepEpisode={(offset) => {
+                const next = document.episodes[episodeIndex + offset];
+                if (next) selectEpisode(next.id);
+              }}
+              direction={course.direction}
+              nodeIds={nodeIds}
+              selectedNodeId={nodeId}
+              drawnArrows={drawnArrows}
+              onChange={(next) => edit(updateEpisode(document, next.id, () => next))}
+              aiWriter={<CourseEpisodeAi courseId={course.id} episodeId={episode.id} generation={course.generation} dirty={dirty} />}
+            />
+          ) : (
+            <div className="course-panel course-editor__empty meta">
+              {document.episodes.length ? 'Pick an episode under the board.' : 'No episodes yet. Write the course with AI, or start over from the ⋮ menu to build it from your PGN without AI.'}
+            </div>
+          )}
+        </div>
+      )}
+      {shown === 'course' && (
+        <div className="course-editor__sheet" role="tabpanel" id="studio-section-course" aria-labelledby="studio-tab-course">
+          <CourseDetails document={document} onChange={edit} />
+        </div>
+      )}
+      {shown === 'videos' && (
+        <div className="course-editor__sheet course-editor__sheet--two" role="tabpanel" id="studio-section-videos" aria-labelledby="studio-tab-videos">
+          <CourseProducts courseId={course.id} document={document} generation={course.generation} dirty={dirty} onChange={edit} />
+        </div>
+      )}
       {publishing && (
         <PublishDialog
           course={course}

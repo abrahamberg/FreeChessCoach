@@ -30,6 +30,10 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
   const begin = (restart: boolean): void => {
     start.mutate({ restart });
   };
+  const empty = !course.document.episodes.length && !running;
+  const debug = debugOpen && <CourseDebugPanel courseId={course.id} generating={running} onClose={() => setDebugOpen(false)} />;
+  // Above every section of the editor: nothing when there is nothing to say.
+  if (!resumable && !empty && !running && generation?.status !== 'failed' && !start.error && !courseWarnings.length) return debug || null;
 
   return (
     <div className="course-generation">
@@ -40,7 +44,7 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
           </button>
         )}
         {/* A written course starts over from the editor's "⋮" menu instead. */}
-        {!course.document.episodes.length && !running && (
+        {empty && (
           <button type="button" className="btn-primary" disabled={dirty || start.isPending} title={dirty ? 'Save your changes first' : undefined} onClick={() => begin(true)}>
             Write with AI
           </button>
@@ -67,7 +71,7 @@ export function CourseGenerationBar({ course, dirty }: CourseGenerationBarProps)
           {warning.message}
         </p>
       ))}
-      {debugOpen && <CourseDebugPanel courseId={course.id} generating={running} onClose={() => setDebugOpen(false)} />}
+      {debug}
     </div>
   );
 }
