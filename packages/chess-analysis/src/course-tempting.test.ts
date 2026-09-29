@@ -1,6 +1,7 @@
 import type { EngineEval } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { analyseEnglund } from './course-test-fixtures.js';
+import { analyseCourse, analyseEnglund, fakeEvals } from './course-test-fixtures.js';
+import { parseCourseTree } from './course-tree.js';
 import { isQuizEligible } from './course-dossier-node.js';
 import { temptingCandidates, withTempting } from './course-tempting.js';
 
@@ -138,5 +139,16 @@ describe('the one answer (§5.4)', () => {
     expect(isQuizEligible(two(line('Qxa1+', -1400), line('Qh1+', -1250)), 'Qxa1+', 'black')).toBe(false);
     // Black mating is negative in White's view.
     expect(isQuizEligible(two(line('Qc1#', null, -1), line('Qxa1', -900)), 'Qc1#', 'black')).toBe(true);
+  });
+
+  test('a queen or rook the king just takes is never tempting; a minor piece stays a try', () => {
+    const tree = parseCourseTree('[SetUp "1"]\n[FEN "7K/8/8/8/8/8/3pk3/Q7 w - - 0 1"]\n\n1. Qe5+ *');
+    const { dossier } = analyseCourse(tree, fakeEvals(tree, () => 900), 'white');
+    const sans = temptingCandidates(tree, dossier, 'endgame').map((candidate) => candidate.san);
+    expect(sans).not.toContain('Qd1+');
+    expect(sans).not.toContain('Qf1+');
+    const greek = parseCourseTree('[SetUp "1"]\n[FEN "r1bq1rk1/pppn1ppp/4p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R2QK2R w KQ - 0 1"]\n\n1. O-O *');
+    const quiet = analyseCourse(greek, fakeEvals(greek, () => 0), 'white').dossier;
+    expect(temptingCandidates(greek, quiet, 'puzzle').map((candidate) => candidate.san)).toContain('Bxh7+');
   });
 });

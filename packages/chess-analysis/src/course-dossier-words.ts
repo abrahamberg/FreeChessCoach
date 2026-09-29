@@ -34,7 +34,11 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   const facts: string[] = [moveWords(inspected.san, inspected.piece, inspected.from, inspected.to)];
   const promoted = /=([QRBN])/.exec(inspected.san)?.[1];
   if (promoted) facts.push(`promotes to a ${PIECE_NAMES[promoted.toLowerCase() as PieceSymbol]}`);
-  if (inspected.captured) facts.push(`captures the ${PIECE_NAMES[inspected.captured]} on ${inspected.to}`);
+  // En passant takes the pawn beside the capturer, not on the square it
+  // lands on: 1.fxg6# read "captures the pawn on g6" for the pawn on g5.
+  const enPassant = inspected.piece === 'p' && inspected.captured !== null && !new Chess(fenBefore).get(inspected.to as Square);
+  if (enPassant) facts.push(`captures the pawn on ${inspected.to[0]}${inspected.from[1]} en passant`);
+  else if (inspected.captured) facts.push(`captures the ${PIECE_NAMES[inspected.captured]} on ${inspected.to}`);
   facts.push(...blockedCheck(fenBefore, inspected.piece, inspected.to), ...endgameGeometry(inspected.resultFen, inspected.piece, inspected.to as Square));
   if (inspected.gives) facts.push(`gives ${inspected.gives}`, ...discovered(inspected.resultFen, inspected.to as Square));
   if (inspected.gives === 'checkmate' && isBackRankMate(inspected.resultFen, inspected.to as Square)) facts.push('a back-rank mate');
@@ -47,7 +51,7 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   // "leaves the pawn on d4 hanging" in every Open Sicilian.
   const traded = (square: string): boolean => square === inspected.to && inspected.captured !== null && VALUES[inspected.captured] >= VALUES[inspected.piece];
   for (const piece of inspected.leavesHanging) {
-    if (!traded(piece.square) && canBeTaken(inspected.resultFen, piece.square)) facts.push(`leaves the ${PIECE_NAMES[piece.piece]} on ${piece.square} hanging`);
+    if (!traded(piece.square) && canBeTaken(inspected.resultFen, piece.square)) facts.push(`leaves the ${PIECE_NAMES[piece.piece]} on ${piece.square} hanging${takingStalemates(inspected.resultFen, piece.square) ? ': taking it is stalemate' : ''}`);
   }
   // A piece that is simply taken forks nothing: 3.Qg8+ in Philidor's Legacy
   // read "forks the rook on a8 and the king on h8" before …Rxg8.
@@ -57,6 +61,19 @@ export function boardFacts(fenBefore: string, san: string): string[] {
     if (forker && fork.square === inspected.to && targets.length >= 2) facts.push(`the ${PIECE_NAMES[fork.piece]} on ${fork.square} forks ${targets.join(' and ')}`);
   }
   return facts;
+}
+
+/** A capture of the piece on `square` leaves the capturer's opponent no
+ * legal move: the desperado rook of a stalemate save (…Rg2+ Kxg2). */
+function takingStalemates(fen: string, square: string): boolean {
+  const chess = new Chess(fen);
+  return chess.moves({ verbose: true }).some((move) => {
+    if (move.to !== square || !move.captured) return false;
+    chess.move(move);
+    const stalemate = chess.isStalemate();
+    chess.undo();
+    return stalemate;
+  });
 }
 
 /** Who gives the check when the moved piece is not the only one: the
@@ -185,9 +202,12 @@ function kingNeighbours(king: Square): Square[] {
 function checkAnswers(fenAfter: string): string {
   const chess = new Chess(fenAfter);
   const checker = chess.attackers(chess.findPiece({ type: 'k', color: chess.turn() })[0] as Square, chess.turn() === 'w' ? 'b' : 'w');
-  const moves = chess.moves({ verbose: true });
-  const kingMoves = moves.filter((move) => move.piece === 'k').map((move) => move.san);
-  const captures = moves.filter((move) => move.piece !== 'k' && checker.includes(move.to)).map((move) => move.san);
+  // One promotion stands for all four: "dxe1=N, dxe1=B, dxe1=R, dxe1=Q".
+  const moves = chess.moves({ verbose: true }).filter((move) => !move.promotion || move.promotion === 'q');
+  // The king taking the checker takes it: 8.Qxd8+ read "the checking piece
+  // cannot be taken; move the king with Kxd8".
+  const kingMoves = moves.filter((move) => move.piece === 'k' && !checker.includes(move.to)).map((move) => move.san);
+  const captures = moves.filter((move) => checker.includes(move.to)).map((move) => move.san);
   const blocks = moves.filter((move) => move.piece !== 'k' && !checker.includes(move.to)).map((move) => move.san);
   const ways = [
     blocks.length ? `block with ${blocks.join(', ')}` : 'no block',

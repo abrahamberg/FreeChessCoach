@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "improving",
+  "coachPersona": "huntress",
+  "direction": "Black just played ...g5. White to play and mate in one: the only capture that is also a discovered check.",
+  "pgn": "[Event \"En passant mate\"]\n[SetUp \"1\"]\n[FEN \"7r/8/7p/R4Ppk/8/3B1PK1/8/7q w - g6 0 1\"]\n\n1. fxg6# *"
+}

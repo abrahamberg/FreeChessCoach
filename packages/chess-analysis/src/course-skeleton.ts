@@ -53,6 +53,10 @@ export interface PuzzleSkeleton {
   learnerNodeIds: string[];
   /** Learner moves to mate when the line ends in mate, else null. */
   mateIn: number | null;
+  /** What the solution achieves, from the engine's words at the line's end:
+   * a mate, a win, a draw (stalemate, perpetual check), or none of them (a
+   * "perpetual" the defender escapes, still lost at the end). */
+  goal: 'mate' | 'win' | 'draw' | 'none';
   /** Learner moves that are not the engine's one clear best: a second
    * solution the learner could play. Empty when the puzzle is sound. */
   unsoundNodeIds: string[];
@@ -174,19 +178,30 @@ function endgameSkeleton(input: CourseSkeletonInput, lineId: string, nodes: Cour
  * forced mate in 12") give `side` a win. Without a tablebase a won endgame
  * reads "much better": the king-and-pawn win and the Lucena were both taught
  * as "hold the draw". */
-function winsFor(words: string, side: 'white' | 'black'): boolean {
+function winsFor(words: string, side: 'white' | 'black', edge = /much better|winning|mate/): boolean {
   const name = side === 'white' ? 'White' : 'Black';
-  return words.startsWith(name) && /much better|winning|mate/.test(words);
+  return words.startsWith(name) && edge.test(words);
+}
+
+/** A draw is a save: a stalemate, a repetition, or a level end from a start
+ * the learner was losing. A knight fork that takes the rook from a level
+ * start (knight against rook, then knight alone: both draws) saves nothing. */
+function savesDraw(nodes: CourseNodeFacts[], end: string, side: 'white' | 'black'): boolean {
+  if (end === 'stalemate' || nodes[nodes.length - 1]?.board.some((fact) => fact.startsWith('the position has now come'))) return true;
+  return /^The position is roughly equal/.test(end) && winsFor(nodes[0]?.before ?? '', side === 'white' ? 'black' : 'white', /better|winning|mate/);
 }
 
 function puzzleSkeleton(lineId: string, nodes: CourseNodeFacts[], learnerSide: 'white' | 'black'): PuzzleSkeleton {
   const learner = nodes.filter((node) => node.side === learnerSide);
   const last = nodes[nodes.length - 1];
+  const mateIn = last?.san.endsWith('#') && last.side === learnerSide ? learner.length : null;
+  const end = last?.after ?? '';
   return {
     kind: 'puzzle',
     lineId,
     learnerNodeIds: learner.map((node) => node.nodeId),
-    mateIn: last?.san.endsWith('#') && last.side === learnerSide ? learner.length : null,
+    mateIn,
+    goal: mateIn ? 'mate' : winsFor(end, learnerSide) ? 'win' : savesDraw(nodes, end, learnerSide) ? 'draw' : 'none',
     // A mating move is sound even when another move mates too.
     unsoundNodeIds: learner.filter((node) => !node.quizEligible && !node.san.endsWith('#') && !WRONG_QUALITIES.has(node.quality)).map((node) => node.nodeId),
     wrongNodeIds: learner.filter((node) => WRONG_QUALITIES.has(node.quality)).map((node) => node.nodeId)

@@ -2567,6 +2567,57 @@ The facts caught two of my own fixtures: a queen fork whose queen already
 saw the rook, and one where …Qh1+ wins the rook as well (kept: the
 second-answer warning is right there).
 
+## Phase 109 — Draws, en passant, and what the goal really is
+
+Five more courses (63): a perpetual check, an en passant mate, a stalemate
+save for Black, queen against a pawn on the seventh, and the Ruy Lopez with
+three sidelines. Plus the three items Phase 108 left open.
+
+### Task 109.1 — Reels where nothing is won
+
+**Files:** `course-reel-candidates.ts`, `course/outline.ts`, `playbooks.ts`, tests.
+
+- [x] A reel's last resort is an "idea": the one clear move with a fork, a
+  pin or a check in it. The Two Knights' all-book Fried Liver had no reel;
+  7.Qf3+ is now its candidate. The outline says an idea is not a win.
+- [x] An endgame's reel puzzle is its last only move. With none (the Lucena
+  at engine depth: Kc6 wins as well as Rb4), the technique's last move is a
+  "technique" candidate, played, never asked.
+- [x] An endgame playbook with no only move says so: no quiz, and never "only
+  one move works", even when the direction asks for it.
+
+### Task 109.2 — A puzzle's goal from the engine
+
+**Files:** `course-skeleton.ts`, `playbooks.ts`, `course/outline.ts`,
+`course-generate.ts`, tests.
+
+- [x] `PuzzleSkeleton.goal`: mate, win, draw (stalemate or level at the
+  line's end) or none. The stalemate save and the perpetual read "save the
+  draw"; they were "the winning line".
+- [x] Goal none (my first perpetual: …Qg7 blocks and Black stays much
+  better) tells the model never to call the solution winning or saving, and
+  warns the creator. A draw is a save: a stalemate, a repetition, or a level
+  end from a start the learner was losing. The knight fork of a rook (knight
+  against rook, then knight alone) starts and ends level: goal none.
+
+### Task 109.3 — Board facts
+
+**Files:** `course-dossier-words.ts`, `course-dossier-node.ts`,
+`course-dossier-line.ts`, `course-tempting.ts`, tests.
+
+- [x] En passant names the pawn it takes on its own square: 1.fxg6# read
+  "captures the pawn on g6".
+- [x] The king taking the checker takes it: every king capture read "the
+  checking piece cannot be taken; move the king with Kxd8".
+- [x] A check answered by promoting names the queen promotion only.
+- [x] A piece left hanging where taking it is stalemate says so; a
+  sacrifice's sentence drops the review's "takes the open g-file".
+- [x] A position that comes back says so: twice, then a draw by repetition.
+- [x] No king-safety words with two pieces or fewer left: the queen against
+  pawn's king "still in the centre on f6".
+- [x] No tempting queen or rook the king just takes for at most a pawn (five
+  a move in the perpetual); a minor piece stays (the Greek gift).
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

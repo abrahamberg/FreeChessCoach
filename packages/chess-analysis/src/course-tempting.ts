@@ -94,13 +94,23 @@ function movesWorthTrying(fen: string): WorthTrying[] {
   const chess = new Chess(fen);
   const found = chess.moves({ verbose: true }).flatMap((move): WorthTrying[] => {
     const after = new Chess(move.after);
-    if (after.isCheckmate()) return [];
+    if (after.isCheckmate() || kingTakesForNothing(after, move)) return [];
     if (move.san.endsWith('+')) return [{ san: move.san, kind: 'check', fen: move.after, value: 0 }];
     if (move.captured) return [{ san: move.san, kind: 'capture', fen: move.after, value: PIECE_VALUES[move.captured] ?? 0 }];
     const threat = threatens(after, move.to, move.piece, move.color);
     return threat ? [{ san: move.san, kind: 'threat', fen: move.after, value: threat }] : [];
   });
   return found.sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || b.value - a.value);
+}
+
+/** A queen or rook put where the king just takes it, for at most a pawn:
+ * no one is tempted by queen against pawn's Qd1+ Kxd1, and a perpetual's
+ * list was five of them a move. A minor piece stays (the Greek gift's
+ * Bxh7+ Kxh7 is a real try). */
+function kingTakesForNothing(after: Chess, move: { piece: string; to: string; captured?: string }): boolean {
+  const given = (PIECE_VALUES[move.piece] ?? 0) - (move.captured ? (PIECE_VALUES[move.captured] ?? 0) : 0);
+  if (given < 4) return false;
+  return after.moves({ verbose: true }).some((reply) => reply.piece === 'k' && reply.to === move.to);
 }
 
 /** The value of the best piece the moved piece now attacks that is either

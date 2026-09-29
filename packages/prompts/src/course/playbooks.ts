@@ -43,7 +43,7 @@ const REEL_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
   tactics: 'the clearest example, as a puzzle.',
   puzzle: 'the position and the question ("White to play. Mate in 3." or "White to play and win."), then the solution.',
   master_game: 'the single brilliant move, blunder or finish, never a summary of the game.',
-  endgame: 'one only move of the technique, as a puzzle ("White to play and win", "Black to play and draw").'
+  endgame: 'one only move of the technique, as a puzzle ("White to play and win", "Black to play and draw"); with no only move, the point the technique builds to, played as a highlight.'
 };
 
 function productsPlaybook(context: CoursePromptContext): string {
@@ -251,14 +251,22 @@ function puzzleLearnerMoves(context: CoursePromptContext): string[] {
 /** §13.2: a position and its solution, taught as the way to think. */
 function puzzlePlaybook(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'puzzle' }> | null): string {
   const side = capitalise(context.learnerSide);
-  const task = skeleton?.mateIn ? `mate in ${skeleton.mateIn}` : 'the winning line';
+  const goal = skeleton?.goal ?? 'win';
+  const task = skeleton?.mateIn ? `mate in ${skeleton.mateIn}` : goal === 'draw' ? 'save the draw' : goal === 'none' ? "the course's line" : 'the winning line';
+  const ask = skeleton?.mateIn ? `Mate in ${skeleton.mateIn}.` : goal === 'draw' ? 'Find the draw.' : goal === 'none' ? 'Find the best try.' : 'Find the win.';
+  // A "perpetual" the defender escapes: the line's end is still lost.
+  const lastId = skeleton?.learnerNodeIds[skeleton.learnerNodeIds.length - 1];
+  const end = context.dossier.nodes.find((node) => node.nodeId === lastId)?.after;
+  const noGoal = goal === 'none'
+    ? `\nThe engine does not rate the line's end a win or a draw for ${side} (${end ? midSentence(end) : 'no verdict'}): never call the solution winning or saving. ${end && /^The position is roughly equal/.test(end) ? 'Say what it wins, and that the engine still calls the position level.' : 'Say what it tries, and that the engine still prefers the other side.'}`
+    : '';
   const moves = puzzleLearnerMoves(context).map((id) => nodeLabel(context, id)).join(', ') || 'not found';
   const unsound = skeleton?.unsoundNodeIds.length
     ? `\nThe engine finds another good move at ${skeleton.unsoundNodeIds.map((id) => nodeLabel(context, id)).join(', ')}: say the course's move is the one to learn, and name the other only if the dossier lists it.`
     : '';
-  return `KIND: PUZZLE. ${side} to play: ${task}. The solution: ${moves}.${wrongMoves(context, skeleton?.wrongNodeIds ?? [])}
+  return `KIND: PUZZLE. ${side} to play: ${task}. The solution: ${moves}.${noGoal}${wrongMoves(context, skeleton?.wrongNodeIds ?? [])}
 Use exactly these episodes, in order:
-1. question — the position and the task, in one breath ("${side} to play. ${skeleton?.mateIn ? `Mate in ${skeleton.mateIn}.` : 'Find the win.'}"), and what to look at first.
+1. question — the position and the task, in one breath ("${side} to play. ${ask}"), and what to look at first.
 2. solve — one per ${side} move, each a quiz: the checks, captures and threats
    in that order, then the move and why it works. Every check in the
    dossier's tempting moves at that move goes in its tempting list, and each
@@ -327,6 +335,11 @@ function endgamePlaybook(context: CoursePromptContext, skeleton: Extract<CourseS
   const goal = !aim ? `${mover} to move` : mover === side ? `${side} to play and ${aim}` : `${mover} to move; ${side} ${aim === 'win' ? 'wins' : 'holds the draw'}`;
   const spoil = skeleton?.goal === 'draw' ? 'the draw becomes a loss' : 'the win becomes a draw';
   const list = (ids: readonly string[]): string => ids.map((id) => nodeLabel(context, id)).join(', ') || 'none';
+  // The Lucena: at engine depth every rook move that keeps the pawn wins, so
+  // there is no one move to ask, whatever the direction promises.
+  const quizzes = skeleton && !skeleton.onlyMoveNodeIds.length
+    ? 'The engine finds no only move here: other moves keep the result too. So there is no quiz, and never say only one move works, even if the direction asks for it.'
+    : 'The only moves are quizzes.';
   return `KIND: ENDGAME. ${goal}. Material: ${skeleton?.material ?? 'see the dossier'}.
 The technique: ${list(skeleton?.learnerNodeIds ?? [])}. The only moves: ${list(skeleton?.onlyMoveNodeIds ?? [])}.
 The defender's tries: ${list(skeleton?.deviationNodeIds ?? [])}.${wrongMoves(context, skeleton?.wrongNodeIds ?? [])}
@@ -334,9 +347,8 @@ Use these episodes, in order:
 1. goal — the position, the material and the goal, then the one idea that
    decides it, in plain words, from the dossier's board facts.
 2. technique — the main line in one or two episodes: every ${side} move
-   speaks and says what it keeps or gains. The only moves are quizzes. At
-   each, the tempting moves as the dossier gives them, and what each spoils:
-   ${spoil}.
+   speaks and says what it keeps or gains. ${quizzes} Where the
+   dossier gives tempting moves, say what each spoils: ${spoil}.
 3. defence — one per sideline: what the defender tries and the answer.
 4. recap — the rule to remember, and how to recognise the position in a game.
 Name a technique (a bridge, the opposition, checking from the side) only

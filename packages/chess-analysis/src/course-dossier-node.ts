@@ -92,7 +92,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     inBook: isBookMoveFrom(fenBefore, node.san),
     openingName: opening?.name ?? null,
     bestInstead: bestInstead(move, node.san, fenBefore),
-    board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan)],
+    board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan), ...repetition(node.fenAfter, input.linePositionFens)],
     tactics: tacticSentences(claims, node.san, side === input.learnerSide, mateAhead),
     motif: claims.tacticOpportunity?.found && fitsCourseMove(claims.tacticOpportunity, node.san, mateAhead) ? claims.tacticOpportunity.type : null,
     alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
@@ -103,6 +103,15 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     winDrop: move.drop ?? 0,
     phase: move.phase ?? null
   };
+}
+
+/** A perpetual check is a position that comes back: the perpetual's
+ * 6.Qe8+ is 4.Qe8+ again, which no board fact said. */
+function repetition(fenAfter: string, linePositionFens: readonly string[]): string[] {
+  const key = positionKey(fenAfter);
+  const times = linePositionFens.filter((fen) => positionKey(fen) === key).length;
+  if (times >= 3) return ['the position has now come three times: a draw by repetition'];
+  return times === 2 ? ['the position has now come twice: a third time is a draw'] : [];
 }
 
 function bestInstead(move: ClassifiedMove, san: string, fenBefore: string): CourseNodeFacts['bestInstead'] {
@@ -129,7 +138,7 @@ function fitsCourseMove(claim: { type: TacticMotifType; gain?: { kind: string } 
 
 function tacticSentences(move: ClassifiedMove, san: string, isUserMove: boolean, mateAhead: boolean): string[] {
   const sentences: string[] = [];
-  if (move.tacticOpportunity && fitsCourseMove(move.tacticOpportunity, san, mateAhead)) sentences.push(tacticOpportunityReason({ ...withoutSquareFork(move.tacticOpportunity), isUserMove }, move.bestMoveSan));
+  if (move.tacticOpportunity && fitsCourseMove(move.tacticOpportunity, san, mateAhead)) sentences.push(tacticOpportunityReason({ ...withoutSquareFork(withoutFileDetail(move.tacticOpportunity)), isUserMove }, move.bestMoveSan));
   if (move.tacticAllowed && !(mateAhead && move.tacticAllowed.gain?.kind === 'material')) sentences.push(tacticAllowedReason({ ...withoutSquareFork(move.tacticAllowed), isUserMove }));
   return sentences;
 }
@@ -140,6 +149,13 @@ function withoutMotif(move: ClassifiedMove, type: TacticMotifType): ClassifiedMo
     tacticOpportunity: move.tacticOpportunity?.type === type ? undefined : move.tacticOpportunity,
     tacticAllowed: move.tacticAllowed?.type === type ? undefined : move.tacticAllowed
   };
+}
+
+/** A sacrifice is never for an open file: the stalemate save's …Rg2+ read
+ * "a brilliant sacrifice — takes the open g-file with the rook". The board
+ * facts say what the sacrifice is for. */
+function withoutFileDetail<T extends { type: TacticMotifType; detail?: string | null }>(claim: T): T {
+  return claim.type === 'brilliantSacrifice' && claim.detail && /^takes the (half-)?open [a-h]-file/.test(claim.detail) ? { ...claim, detail: null } : claim;
 }
 
 /** The review's fork detail names squares ("knight on c6 forks b8, d8 and

@@ -13,7 +13,10 @@ const SWING_WIN_DROP = 25;
 const BRILLIANT = new Set(['brilliant', 'great']);
 
 export type ReelStyle = 'highlight' | 'puzzle' | 'promo';
-export type ReelReason = 'puzzle' | 'mate' | 'brilliant' | 'swing' | 'trap';
+export type ReelReason = 'puzzle' | 'mate' | 'brilliant' | 'swing' | 'trap' | 'idea' | 'technique';
+/** A move whose board facts make it a point to show: a fork, a pin, or a
+ * check. */
+const IDEA_FACT = /forks|pinned|gives check/;
 
 /** One idea a reel could be about: the climax and the moves around it. */
 export interface ReelCandidate {
@@ -30,7 +33,7 @@ export interface ReelCandidate {
 /**
  * §13.3: the reel's candidates, best first — a puzzle's solution, a mate, a
  * brilliant or great move, a trap's punishment, a blunder that swings the
- * game. Each spans at most 6 moves before its climax and 2 after (up to 4
+ * game, else the one clear move with a threat in it. Each spans at most 6 moves before its climax and 2 after (up to 4
  * when that reaches a mate), on the climax's own line. The planner picks one; with none, there is no reel.
  */
 export function reelCandidates(tree: CourseTree, dossier: CourseDossier, skeleton: CourseSkeleton | null): ReelCandidate[] {
@@ -43,13 +46,22 @@ export function reelCandidates(tree: CourseTree, dossier: CourseDossier, skeleto
   };
 
   if (skeleton?.kind === 'puzzle') add('puzzle', skeleton.learnerNodeIds[skeleton.learnerNodeIds.length - 1], 0);
-  // Phase 103: an endgame's reel is the technique's last move, the point
-  // it builds to (the Lucena's bridge, Rb4), asked as a puzzle.
-  if (skeleton?.kind === 'endgame') add('puzzle', skeleton.learnerNodeIds[skeleton.learnerNodeIds.length - 1], 0);
+  // Phase 103: an endgame's reel is its last only move, asked as a puzzle;
+  // with none, the technique's last move, the point it builds to (the
+  // Lucena's bridge, Rb4), played: Kc6 wins there too, so it is no puzzle.
+  if (skeleton?.kind === 'endgame') {
+    const only = skeleton.onlyMoveNodeIds[skeleton.onlyMoveNodeIds.length - 1];
+    if (only) add('puzzle', only, 0);
+    else add('technique', skeleton.learnerNodeIds[skeleton.learnerNodeIds.length - 1], 0);
+  }
   for (const node of dossier.nodes) if (node.san.endsWith('#')) add('mate', node.nodeId, 1);
   if (skeleton?.kind === 'trap') add('trap', skeleton.answerNodeId, 2);
   for (const node of dossier.nodes) if (BRILLIANT.has(node.quality)) add('brilliant', node.nodeId, 3);
   for (const node of [...dossier.nodes].sort((a, b) => b.winDrop - a.winDrop)) if (node.winDrop >= SWING_WIN_DROP) add('swing', node.nodeId, 4);
+  // Last: the one clear move with a threat in it, so a book line with no
+  // blunder still has a reel (the Two Knights' Fried Liver, 7.Qf3+ forking
+  // king and knight).
+  for (const node of dossier.nodes) if (node.quizEligible && (node.motif || node.board.some((fact) => IDEA_FACT.test(fact)))) add('idea', node.nodeId, 5);
 
   const puzzleStart = skeleton?.kind === 'puzzle' ? tree.nodes.find((node) => node.parentId === null)?.id : undefined;
   return found

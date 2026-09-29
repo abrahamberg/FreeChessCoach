@@ -13,7 +13,7 @@ const SKELETONS: Record<CourseKind, CourseSkeleton> = {
   trap: { kind: 'trap', lineId: 'l1', baitNodeId: 'n11', answerNodeId: 'n12', punishNodeIds: ['n13'], safeMoveSan: 'Nc3', trapperRiskNodeIds: ['n2'] },
   opening: { kind: 'opening', lines: [{ lineId: 'l1', bookExitNodeId: null, learnerNodeIds: ['n2'] }], deviationNodeIds: [], traps: [{ blunderNodeId: 'n11', answerNodeId: 'n12' }] },
   tactics: { kind: 'tactics', examples: [{ lineId: 'l1', nodeId: 'n12', startNodeId: 'n10', motif: 'pin', depth: 3 }] },
-  puzzle: { kind: 'puzzle', lineId: 'l1', learnerNodeIds: ['n12', 'n14', 'n16'], mateIn: 3, unsoundNodeIds: ['n14'], wrongNodeIds: ['n16'] },
+  puzzle: { kind: 'puzzle', lineId: 'l1', learnerNodeIds: ['n12', 'n14', 'n16'], mateIn: 3, goal: 'mate', unsoundNodeIds: ['n14'], wrongNodeIds: ['n16'] },
   master_game: { kind: 'master_game', criticalNodeIds: ['n11'], quizNodeIds: ['n12'], phaseBoundaryNodeIds: [] },
   endgame: { kind: 'endgame', lineId: 'l1', goal: 'win', material: 'Black is a rook up', learnerNodeIds: ['n12', 'n14', 'n16'], onlyMoveNodeIds: ['n12'], deviationNodeIds: [], wrongNodeIds: [] }
 };
@@ -107,6 +107,27 @@ describe('course prompts', () => {
     expect(system).toContain('The only moves: n12 (6... Bb4).');
     expect(system).toContain('the win becomes a draw');
     expect(buildCourseOutlineMessages(englundCourseContext('endgame', SKELETONS.endgame)).user).toContain('goal: win; material: Black is a rook up');
+  });
+
+  test("a puzzle's task follows its goal: a draw to save, or a line that is neither", () => {
+    const puzzle = SKELETONS.puzzle;
+    if (puzzle?.kind !== 'puzzle') throw new Error('no puzzle skeleton');
+    const draw = buildCourseSystemPrompt(englundCourseContext('puzzle', { ...puzzle, mateIn: null, goal: 'draw' }));
+    expect(draw).toContain('Black to play: save the draw.');
+    expect(draw).toContain('"Black to play. Find the draw."');
+    const none = buildCourseSystemPrompt(englundCourseContext('puzzle', { ...puzzle, mateIn: null, goal: 'none' }));
+    expect(none).toContain("The engine does not rate the line's end a win or a draw for Black");
+    expect(none).not.toContain('Find the win.');
+  });
+
+  test('an endgame with no only move has no quiz and never promises one (the Lucena)', () => {
+    const endgame = SKELETONS.endgame;
+    if (endgame?.kind !== 'endgame') throw new Error('no endgame skeleton');
+    const system = buildCourseSystemPrompt(englundCourseContext('endgame', { ...endgame, onlyMoveNodeIds: [] }));
+
+    expect(system).toContain('The only moves: none.');
+    expect(system).toContain('So there is no quiz, and never say only one move works');
+    expect(system).not.toContain('The only moves are quizzes.');
   });
 
   test('a trap whose answer ends it has no punish item; verdicts read mid-sentence', () => {

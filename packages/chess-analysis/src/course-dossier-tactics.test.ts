@@ -47,6 +47,22 @@ describe('course tactic sentences', () => {
     expect(facts.tactics).toEqual(['You won a queen through a fork.']);
   });
 
+  test('a sacrifice is never for an open file: the stalemate save keeps the sacrifice, and the board says taking is stalemate', () => {
+    const before = '7k/7p/4Q2P/8/8/6K1/r7/8 b - - 0 1';
+    const move = {
+      quality: 'brilliant',
+      mover: 'black',
+      evalAfterCp: 0,
+      bestMoveSan: 'Rg2+',
+      bestLineSan: ['Rg2+', 'Kxg2'],
+      tacticOpportunity: { type: 'brilliantSacrifice', found: true, isUserMove: true, detail: 'takes the open g-file with the rook', confidence: 1 }
+    } as unknown as ClassifiedMove;
+    const node = { id: 'n1', parentId: null, san: 'Rg2+', fenAfter: '7k/7p/4Q2P/8/8/6K1/6r1/8 w - - 1 2', lineId: 'l1', comment: null } as never;
+    const facts = buildCourseNodeFacts({ node, move, fenBefore: before, linePositionFens: [before], evalsByFen: new Map(), critical: true, learnerSide: 'black' });
+    expect(facts.tactics).toEqual(['You found a brilliant sacrifice.']);
+    expect(facts.board).toContain('leaves the rook on g2 hanging: taking it is stalemate');
+  });
+
   test('a material sentence goes where the position is already a forced mate', () => {
     const move = {
       quality: 'great',

@@ -268,6 +268,51 @@ describe('course skeleton', () => {
 describe('puzzle', () => {
   const SMOTHERED = '[SetUp "1"]\n[FEN "r6k/6pp/7N/8/8/1Q6/6PP/6K1 w - - 0 1"]\n\n1. Qg8+ Rxg8 2. Nf7# *';
 
+  test('the king taking the checker takes it', () => {
+    const facts = boardFacts('r1bqkb1r/ppp2ppp/2p5/4Pn2/8/5N2/PPP2PPP/RNBQ1RK1 w kq - 1 8', 'Qxd8+').join(' | ');
+    expect(facts).toContain('the check can be answered: no block; take the checking piece with Kxd8; the king cannot move');
+  });
+
+  test('a check answered by promoting names one promotion; a bare endgame has no king-safety words', () => {
+    const facts = boardFacts('7K/8/8/8/8/8/3pk3/Q7 w - - 0 1', 'Qe1+').join(' | ');
+    expect(facts).toContain('take the checking piece with dxe1=Q, Kxe1;');
+    expect(facts).not.toContain('dxe1=N');
+    const tree = parseCourseTree('[SetUp "1"]\n[FEN "7K/8/8/8/8/8/3pk3/Q7 w - - 0 1"]\n\n1. Qe5+ Kf2 *');
+    const { dossier } = analyseCourse(tree, fakeEvals(tree, () => 900), 'white');
+    expect(dossier.lines[0]?.endFeatures.join(' | ')).not.toMatch(/king is (still in the centre|tucked away)/);
+  });
+
+  test('en passant names the pawn it takes, on its own square', () => {
+    const facts = boardFacts('7r/8/7p/R4Ppk/8/3B1PK1/8/7q w - g6 0 1', 'fxg6#');
+    expect(facts).toContain('captures the pawn on g5 en passant');
+    expect(facts.join(' | ')).not.toContain('captures the pawn on g6');
+    expect(facts).toContain('a discovered check from the rook on a5');
+  });
+
+  test('a position that comes back says so: twice, then a draw by repetition', () => {
+    const tree = parseCourseTree('[SetUp "1"]\n[FEN "7k/6p1/7p/8/3Q4/8/1pr2PPP/q4BK1 w - - 0 1"]\n\n1. Qd8+ Kh7 2. Qd3+ Kh8 3. Qd8+ Kh7 4. Qd3+ Kh8 5. Qd8+ *');
+    const { dossier } = analyseCourse(tree, fakeEvals(tree, () => 0), 'white');
+    const board = (id: string): string[] => dossier.nodes.find((node) => node.nodeId === id)?.board ?? [];
+    expect(board('n1')).not.toContain('the position has now come twice: a third time is a draw');
+    expect(board('n5')).toContain('the position has now come twice: a third time is a draw');
+    expect(board('n9')).toContain('the position has now come three times: a draw by repetition');
+  });
+
+  test("a puzzle's goal comes from the line's end: a stalemate or a save from a lost start is a draw; a level line or a check series the defender escapes is no goal", () => {
+    const stalemate = parseCourseTree('[SetUp "1"]\n[FEN "7k/7p/4Q2P/8/8/6K1/r7/8 b - - 0 1"]\n\n1... Rg2+ 2. Kxg2 *');
+    const drawn = analyseCourse(stalemate, fakeEvals(stalemate, () => 0), 'black').dossier;
+    expect(buildCourseSkeleton({ kind: 'puzzle', tree: stalemate, lines: courseLineGames(stalemate), dossier: drawn })).toMatchObject({ mateIn: null, goal: 'draw' });
+    const escape = parseCourseTree('[SetUp "1"]\n[FEN "7k/6p1/7p/8/8/8/1qr2PPP/3Q2K1 w - - 0 1"]\n\n1. Qd8+ Kh7 2. Qd3+ g6 *');
+    const level = analyseCourse(escape, fakeEvals(escape, () => 0), 'white').dossier;
+    expect(buildCourseSkeleton({ kind: 'puzzle', tree: escape, lines: courseLineGames(escape), dossier: level })).toMatchObject({ goal: 'none' });
+    const saved = analyseCourse(escape, fakeEvals(escape, (fen) => (fen === escape.startFen ? -600 : 0)), 'white').dossier;
+    expect(buildCourseSkeleton({ kind: 'puzzle', tree: escape, lines: courseLineGames(escape), dossier: saved })).toMatchObject({ goal: 'draw' });
+    const lost = analyseCourse(escape, fakeEvals(escape, () => -600), 'white').dossier;
+    expect(buildCourseSkeleton({ kind: 'puzzle', tree: escape, lines: courseLineGames(escape), dossier: lost })).toMatchObject({ mateIn: null, goal: 'none' });
+    const won = analyseCourse(escape, fakeEvals(escape, () => 600), 'white').dossier;
+    expect(buildCourseSkeleton({ kind: 'puzzle', tree: escape, lines: courseLineGames(escape), dossier: won })).toMatchObject({ goal: 'win' });
+  });
+
   test('skeleton: every learner move, mate in 2, sound when each move is the one clear best', () => {
     const tree = parseCourseTree(SMOTHERED);
     const clear = new Map<string, FakeEval>([[tree.startFen, { cp: 2000, moves: [{ san: 'Qg8+', cp: 2000 }, { san: 'Qb8+', cp: 0 }] }]]);
@@ -277,6 +322,7 @@ describe('puzzle', () => {
       lineId: 'l1',
       learnerNodeIds: ['n1', 'n3'],
       mateIn: 2,
+      goal: 'mate',
       unsoundNodeIds: [],
       wrongNodeIds: []
     });

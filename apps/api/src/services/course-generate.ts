@@ -194,7 +194,9 @@ function courseWarnings(document: CourseDocument, skeleton: CourseSkeleton | nul
   // The solution itself goes wrong there: a puzzle's 1.Qa4+ that walks into …Rxa4.
   const wrong = skeleton?.kind === 'puzzle' || skeleton?.kind === 'endgame' ? skeleton.wrongNodeIds : [];
   const errors = wrong.map((nodeId) => ({ episodeId: null, code: 'puzzle', nodeId, message: `The engine calls the course's move at ${nodeId} an error: check the solution there` }));
-  return [...frame, ...puzzle, ...errors];
+  // A "perpetual" the defender escapes: the solution does not do what it says.
+  const noGoal = skeleton?.kind === 'puzzle' && skeleton.goal === 'none' ? [{ episodeId: null, code: 'puzzle', nodeId: null, message: "The engine does not rate the end of the puzzle's line a win or a draw for the solver: check the solution" }] : [];
+  return [...frame, ...puzzle, ...errors, ...noGoal];
 }
 
 /** The outline's warnings stay; the whole-course ones are replaced. */

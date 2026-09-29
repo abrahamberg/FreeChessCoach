@@ -1,0 +1,8 @@
+{
+  "kind": "endgame",
+  "levelBand": "improving",
+  "coachPersona": "general",
+  "learnerSide": "white",
+  "direction": "Queen against a pawn on the seventh: check the king in front of its pawn, then bring your king one step closer.",
+  "pgn": "[Event \"Queen against pawn\"]\n[SetUp \"1\"]\n[FEN \"7K/8/8/8/8/8/3pk3/Q7 w - - 0 1\"]\n\n1. Qe5+ Kf2 2. Qd4+ Ke2 3. Qe4+ Kd1 4. Kg7 Kc1 5. Qc4+ Kb2 6. Qd3 Kc1 7. Qc3+ Kd1 8. Kf6 *"
+}

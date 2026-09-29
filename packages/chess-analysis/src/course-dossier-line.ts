@@ -62,8 +62,13 @@ function majorities(fen: string): string[] {
   return facts;
 }
 
+/** Where the king stands, while there are pieces to attack it: with two or
+ * fewer pieces left the king belongs in the centre, and queen against pawn
+ * read "the white king is still in the centre on f6". */
 function kingSafety(fen: string): string[] {
   const chess = new Chess(fen);
+  const pieces = chess.board().flat().filter((cell) => cell && cell.type !== 'k' && cell.type !== 'p').length;
+  if (pieces <= 2) return [];
   return (['w', 'b'] as Color[]).flatMap((color) => {
     const square = chess.findPiece({ type: 'k', color })[0];
     const name = color === 'w' ? 'white' : 'black';

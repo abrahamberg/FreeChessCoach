@@ -87,7 +87,9 @@ function renderProducts(context: CoursePromptContext): string {
 ${candidates.map((candidate) => `- ${candidate.id} ${candidate.reason}: climax ${nodeLabel(context, candidate.climaxNodeId)}, from ${nodeLabel(context, candidate.startNodeId)} to ${nodeLabel(context, candidate.endNodeId)}; styles ${candidate.styles.filter((style) => style !== 'promo' || videos.video).join(', ')}`).join('\n')}
 The reel is one idea: pick the moment a viewer would stop scrolling for. "puzzle" asks the
 viewer to find the move; "highlight" plays it; "promo" stops before the climax and sends
-viewers to the YouTube video.`
+viewers to the YouTube video. An "idea" candidate is the one clear move with a threat in it
+(a fork, a pin, a check), not a win: never call it winning. A "technique" candidate is the
+point an endgame's technique builds to, where other moves win too: play it, never ask it.`
       : 'REEL: code found no moment for one, so give "reel" no value.';
   return `${video}\n\n${reel}\n`;
 }
@@ -146,7 +148,7 @@ function renderCandidates(context: CoursePromptContext, skeleton: CourseSkeleton
       return [`critical: ${list(skeleton.criticalNodeIds)}`, `quiz-eligible: ${list(skeleton.quizNodeIds)}`, `phase boundaries: ${list(skeleton.phaseBoundaryNodeIds)}`].join('\n');
     case 'puzzle':
       return [
-        `solution, ${skeleton.mateIn ? `mate in ${skeleton.mateIn}` : 'no forced mate'}: ${list(skeleton.learnerNodeIds)}`,
+        `solution, ${skeleton.mateIn ? `mate in ${skeleton.mateIn}` : `no forced mate; goal: ${skeleton.goal === 'none' ? 'neither a win nor a draw' : skeleton.goal}`}: ${list(skeleton.learnerNodeIds)}`,
         `moves with a second good answer: ${list(skeleton.unsoundNodeIds)}`
       ].join('\n');
     case 'endgame':
