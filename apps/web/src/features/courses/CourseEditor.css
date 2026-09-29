@@ -916,39 +916,34 @@
 .course-editor__workspace {
   --studio-top: 104px;
   display: grid;
-  /* The board as tall as the screen allows, its moves still in view. */
-  grid-template-columns: clamp(320px, calc(100svh - 400px), 560px) minmax(0, 1fr);
+  /* The episode list; the board as big as the screen allows, its moves
+   * still in view; the editor. */
+  grid-template-columns: minmax(220px, 280px) clamp(300px, min(calc(100svh - 300px), 36vw), 560px) minmax(0, 1fr);
   gap: var(--space-4);
   align-items: start;
 }
 
+/* The list and the board stay in view while the editor scrolls; the list
+ * scrolls on its own. */
+.course-editor__workspace > .course-outline,
 .course-editor__stage {
   position: sticky;
   top: var(--studio-top);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  min-width: 0;
   max-height: calc(100svh - var(--studio-top) - 16px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
 
-.course-editor__stage .course-board {
-  flex: none;
+.course-editor__stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
 }
 
 .course-editor__stage .course-board .coach-board-frame {
   width: 100%;
-}
-
-/* The list scrolls on its own; the board stays put. */
-.course-editor__stage .course-outline {
-  flex: 1 1 auto;
-  min-height: 180px;
-  overflow-y: auto;
-  scrollbar-width: thin;
 }
 
 .course-board__moves {
@@ -1032,23 +1027,53 @@
   max-width: 420px;
 }
 
+/* A laptop screen: three columns leave the fields too little room, so the
+ * list goes under the board and the editor spans both. */
+@media (min-width: 1001px) and (max-width: 1280px) {
+  .course-editor__workspace {
+    grid-template-columns: clamp(300px, min(calc(100svh - 300px), 40vw), 480px) minmax(0, 1fr);
+    grid-template-areas:
+      'board editor'
+      'list editor';
+  }
+
+  .course-editor__stage {
+    grid-area: board;
+    position: static;
+    max-height: none;
+  }
+
+  .course-editor__workspace > .course-outline {
+    grid-area: list;
+    position: static;
+    max-height: none;
+  }
+
+  .course-editor__workspace > .course-episode-panel,
+  .course-editor__workspace > .course-editor__empty {
+    grid-area: editor;
+  }
+}
+
 @media (max-width: 1000px) {
   .course-editor__workspace {
     grid-template-columns: minmax(0, 1fr);
   }
 
   /* Stacked: the board, its moves, the editor, then the episode list. */
+  .course-editor__workspace > .course-outline,
   .course-editor__stage {
-    display: contents;
+    position: static;
+    max-height: none;
+  }
+
+  .course-editor__workspace > .course-outline {
+    order: 1;
   }
 
   .course-editor__stage .course-board {
     width: min(100%, 560px);
     margin: 0 auto;
-  }
-
-  .course-editor__stage .course-outline {
-    order: 1;
   }
 
   .course-editor__sheet--two {

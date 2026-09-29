@@ -2295,9 +2295,12 @@ board so the fields have more space. At 1920 px the editor's left column was
 - [x] Under the header, three sections as tabs: Episodes (the default),
   Course (coach, level, videos, promise) and Videos (the YouTube video and
   the reel, shown when the course makes them), each at full width.
-- [x] Episodes: two columns. The board column (sticky, its own scroll) holds
-  the board sized to the screen's height, the moves under it, and the
-  episode list under those. The editor takes the rest of the width.
+- [x] Episodes: the episode list on the left, the board (sized to the
+  screen's height, its moves under it) in the middle, the editor on the
+  right; the list and the board stay in view while the editor scrolls, the
+  list scrolling on its own. From 1001 to 1280 px the list goes under the
+  board so the editor keeps its room. (The owner asked to keep the list on
+  the left after a first version put it under the board.)
 - [x] The episode list: each episode's number, role, focus (two lines), its
   moves ("1.Rd1+ – 7.Rb4") and a quiz mark.
 - [x] The editor's head: "Episode 2 of 9", the role, previous and next

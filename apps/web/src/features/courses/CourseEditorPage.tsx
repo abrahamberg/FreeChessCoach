@@ -120,6 +120,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
 
       {shown === 'episodes' && (
         <div className="course-editor__workspace" role="tabpanel" id="studio-section-episodes" aria-labelledby="studio-tab-episodes">
+          <CourseOutline document={document} selectedEpisodeId={episodeId} onSelectEpisode={selectEpisode} />
           <div className="course-editor__stage">
             <CourseBoardPanel
               document={document}
@@ -130,7 +131,6 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
               plies={episode?.plies ?? []}
               onDrawnArrows={setDrawnArrows}
             />
-            <CourseOutline document={document} selectedEpisodeId={episodeId} onSelectEpisode={selectEpisode} />
           </div>
           {episode ? (
             <CourseEpisodePanel
@@ -150,7 +150,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
             />
           ) : (
             <div className="course-panel course-editor__empty meta">
-              {document.episodes.length ? 'Pick an episode under the board.' : 'No episodes yet. Write the course with AI, or start over from the ⋮ menu to build it from your PGN without AI.'}
+              {document.episodes.length ? 'Pick an episode on the left.' : 'No episodes yet. Write the course with AI, or start over from the ⋮ menu to build it from your PGN without AI.'}
             </div>
           )}
         </div>

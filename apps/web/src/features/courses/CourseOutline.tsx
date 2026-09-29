@@ -8,7 +8,7 @@ export interface CourseOutlineProps {
   onSelectEpisode: (episodeId: string) => void;
 }
 
-/** Under the board: chapters, each with its episodes, numbered through the
+/** Left column: chapters, each with its episodes, numbered through the
  * course, with their moves and whether they ask a quiz. */
 export function CourseOutline({ document, selectedEpisodeId, onSelectEpisode }: CourseOutlineProps): ReactNode {
   const episodes = new Map(document.episodes.map((episode) => [episode.id, episode]));
