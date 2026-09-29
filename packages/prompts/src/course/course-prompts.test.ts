@@ -34,12 +34,19 @@ describe('course prompts', () => {
     const context = englundCourseContext();
     // The fixture's engine gives no line; the real one after 6.Nc3.
     const line = ['Nc3', 'Bb4', 'Rb1', 'Qa3', 'Rb3', 'Qa5'];
-    const nodes = context.dossier.nodes.map((node) => (node.nodeId === 'n11' && node.bestInstead ? { ...node, bestInstead: { ...node.bestInstead, line, balance: 'White is a pawn up' } } : node));
-    const system = buildCourseSystemPrompt({ ...context, dossier: { ...context.dossier, nodes } });
+    const withVerdict = (verdict: string) => {
+      const nodes = context.dossier.nodes.map((node) =>
+        node.nodeId === 'n11' && node.bestInstead ? { ...node, alternatives: [{ san: 'Nc3', verdict }], bestInstead: { ...node.bestInstead, line, balance: 'White is a pawn up' } } : node
+      );
+      return buildCourseSystemPrompt({ ...context, dossier: { ...context.dossier, nodes } });
+    };
+    const system = withVerdict('White is better');
+    // The Elephant run told the trapper to do damage control in a level game.
+    expect(withVerdict('The position is roughly equal')).toContain('the game goes on level, so name the plan, not damage control');
 
     expect(system).toContain("Then the trapper's side: when the victim finds Nc3, best play goes\n   Nc3 Bb4 Rb1 Qa3 Rb3 Qa5, and then ");
     expect(system).toContain('White is a pawn up. Name Black');
-    expect(system).toContain('not to pretend the trap still works');
+    expect(system).toContain('the aim is to lose as little as possible, not to pretend the trap still works');
     expect(system).toContain('the board goes back to before the bait and plays\n   Nc3 Bb4 Rb1 Qa3 Rb3 Qa5 while');
   });
 
@@ -49,6 +56,12 @@ describe('course prompts', () => {
     expect(system).toContain('Before it, n10 (5... Qxb2): the queen on b2 forks the rook on a1 and the knight on b1.\n   n11 (6. Bc3): attacks the queen on b2.');
     expect(system).toContain('Say what the victim wants with the move and what they miss.');
     expect(system).toContain('The victim goes wrong at: n11 (6. Bc3): blunder; best Nc3, after which material is level.');
+  });
+
+  test('the quiz item says what the trap wins, from the answer to the end', () => {
+    const system = buildCourseSystemPrompt(englundCourseContext());
+
+    expect(system).toContain('From the answer to the end: Bb4 Qd2 Bxc3 Qxc3 Qc1#; Black takes a bishop; White takes a bishop; it ends in checkmate.');
   });
 
   test('the trap hook is told how the line ends, with no example hook to copy', () => {

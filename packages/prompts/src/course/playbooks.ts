@@ -1,4 +1,4 @@
-import { TACTIC_MOTIF_PHRASES, type CourseSkeleton } from '@freechesscoach/chess-analysis';
+import { captureWords, courseNodeAncestry, lineBalance, TACTIC_MOTIF_PHRASES, type CourseSkeleton } from '@freechesscoach/chess-analysis';
 import type { CourseBudget } from './budget.js';
 import { capitalise, nodeLabel, promptVideos, type CoursePromptContext } from './context.js';
 
@@ -78,7 +78,7 @@ Use exactly these episodes, in order:
 3. bait — why the victim's move looks natural. This is the heart of the trap:
    the viewer should think "I'd play that too".${baitFacts(context, skeleton)}
 4. quiz — "What does ${trapper} play here?" plus a hint at the target. The
-   video pauses ${budget.pauseSeconds}s (the app adds the pause).
+   video pauses ${budget.pauseSeconds}s (the app adds the pause).${answerWins(context, skeleton)}
 5. punish — every forcing move speaks in the video; captions carry the rhythm.${victimErrors(context, skeleton)}
 6. safety — how the victim stays safe: ${safeMove}, in one or two sentences.${trapperDefence(context, skeleton)}${risk}${safeLineOnBoard(context, skeleton)}
 The end card and call to action are added by the app; don't write them.
@@ -151,8 +151,38 @@ function trapperDefence(context: CoursePromptContext, skeleton: Extract<CourseSk
   return `
    Then the trapper's side: when the victim finds ${best.san}, best play goes
    ${best.line.join(' ')}, and then ${stands}. Name ${trapper}'s best
-   moves from it and say plainly how ${trapper} stands: the aim is to lose as
-   little as possible, not to pretend the trap still works.`;
+   moves from it and say plainly how ${trapper} stands: ${TRAPPER_AIM[standingOf(verdict ?? '', trapper)]}`;
+}
+
+/** The Elephant run told the trapper to do "damage control" in a level
+ * position: the aim follows the verdict. */
+const TRAPPER_AIM = {
+  worse: 'the aim is to lose as little as possible, not to pretend the trap still works.',
+  level: 'the game goes on level, so name the plan, not damage control, and never pretend the trap still works.',
+  better: 'the trapper keeps an edge even without the trap; say what it is, and never pretend the trap still works.'
+} as const;
+
+/** "White is better" for Black: worse. Anything else (roughly equal, no
+ * verdict) is level. */
+function standingOf(verdict: string, side: string): keyof typeof TRAPPER_AIM {
+  const leader = /\b(White|Black) (?:is|has)\b/.exec(verdict)?.[1];
+  if (!leader || /equal|level/i.test(verdict)) return 'level';
+  return leader === side ? 'better' : 'worse';
+}
+
+/** What the trap wins, from the answer to the line's end: the moves, who
+ * takes what and the material after. The Elephant run promised "Black wins
+ * the queen" for a trap that wins a knight for a pawn. */
+function answerWins(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'trap' }> | null): string {
+  const leafId = context.lines[0]?.leafNodeId;
+  const byId = new Map(context.nodes.map((node) => [node.id, node]));
+  const path = leafId ? courseNodeAncestry(byId, leafId) : [];
+  const from = path.findIndex((node) => node.id === skeleton?.answerNodeId);
+  if (from < 0) return '';
+  const fen = (from > 0 ? path[from - 1]?.fenAfter : undefined) ?? context.startFen;
+  const sans = path.slice(from).map((node) => node.san);
+  const end = sans.at(-1)?.endsWith('#') ? 'it ends in checkmate' : `at the end ${lineBalance(fen, sans)}`;
+  return `\n   From the answer to the end: ${sans.join(' ')}; ${captureWords(fen, sans)}; ${end}.`;
 }
 
 /** The hook's one fact, stated rather than shown by example: a quoted
@@ -164,7 +194,10 @@ function trapEnding(context: CoursePromptContext): string {
   if (!leafId || !leaf) return 'not found; say what the dossier shows.';
   if (leaf.san.endsWith('#')) return `checkmate, ${nodeLabel(context, leafId)}. Promise the mate, not material.`;
   const after = context.dossier.nodes.find((node) => node.nodeId === leafId)?.after;
-  return `${nodeLabel(context, leafId)}, after which ${after ? after.charAt(0).toLowerCase() + after.slice(1) : 'see the dossier'}. Promise what that wins, nothing more.`;
+  const byId = new Map(context.nodes.map((node) => [node.id, node]));
+  const sans = courseNodeAncestry(byId, leafId).map((node) => node.san);
+  const standing = after ? after.charAt(0).toLowerCase() + after.slice(1) : 'see the dossier';
+  return `${nodeLabel(context, leafId)}, after which ${standing} and ${lineBalance(context.startFen, sans)}. Promise that material, nothing more.`;
 }
 
 function openingPlaybook(context: CoursePromptContext): string {
