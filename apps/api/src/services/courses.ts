@@ -19,7 +19,7 @@ import type { Kysely } from 'kysely';
 import type { z } from 'zod';
 import * as coursesRepo from '../db/repositories/courses.js';
 import type { Database } from '../db/schema.js';
-import { NotFoundError, ValidationError } from '../lib/errors.js';
+import { ConflictError, NotFoundError, ValidationError } from '../lib/errors.js';
 import type { CourseDossierBuilder } from './course-dossier.js';
 import { draftProblem } from './courses/draft-checks.js';
 import { missingNoteAudio } from './courses/note-audio.js';
@@ -111,6 +111,7 @@ export async function getCourse(db: Kysely<Database>, ownerId: string, id: strin
 
 export async function saveDraft(db: Kysely<Database>, ownerId: string, id: string, document: CourseDocument): Promise<void> {
   const row = await ownedCourse(db, ownerId, id);
+  notBeingWritten(row);
   const problem = draftProblem(storedDocument(row), document);
   if (problem) throw new ValidationError(problem);
   const saved = await coursesRepo.updateDraft(db, id, ownerId, document);
@@ -121,6 +122,7 @@ export async function saveDraft(db: Kysely<Database>, ownerId: string, id: strin
  * template text replace the draft's chapters and episodes. */
 export async function buildSkeletonDraft(db: Kysely<Database>, ownerId: string, id: string, buildDossier: CourseDossierBuilder): Promise<CourseResponse> {
   const row = await ownedCourse(db, ownerId, id);
+  notBeingWritten(row);
   const document = storedDocument(row);
   const tree: CourseTree = { startFen: document.startFen, nodes: document.nodes, lines: document.lines, errors: [] };
   const { dossier, lines } = await buildDossier(tree, document.learnerSide, ownerId, document.kind);
@@ -137,6 +139,13 @@ export async function ownedCourse(db: Kysely<Database>, ownerId: string, id: str
   const row = await coursesRepo.findByIdForOwner(db, id, ownerId);
   if (!row) throw new NotFoundError('Course not found');
   return row;
+}
+
+/** A run holds its own copy of the document and saves it after each
+ * episode, so nothing else writes the draft (or starts another run) meanwhile. */
+export function notBeingWritten(row: coursesRepo.CourseRow): void {
+  const status = liveGeneration(row.generation)?.status;
+  if (status === 'queued' || status === 'running') throw new ConflictError('The course is still being written');
 }
 
 export function storedDocument(row: coursesRepo.CourseRow): CourseDocument {

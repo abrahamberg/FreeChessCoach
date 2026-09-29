@@ -1,9 +1,9 @@
 import { courseVideos, type CourseDocument, type CourseResponse } from '@freechesscoach/shared';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { describeApiError } from '../../api/client.js';
 import type { BoardArrow } from '../board/CoachBoard.js';
-import { useBuildCourseSkeleton, useCourse, useSaveCourseDraft, useStartCourseGeneration } from './courseApi.js';
+import { isGenerating, useBuildCourseSkeleton, useCourse, useSaveCourseDraft, useStartCourseGeneration } from './courseApi.js';
 import { CourseDetails } from './CourseDetails.js';
 import { episodeNodeIds, updateEpisode } from './courseEdits.js';
 import { CourseBoardPanel } from './CourseBoardPanel.js';
@@ -26,8 +26,7 @@ export function CourseEditorPage(): ReactNode {
   const course = useCourse(id);
   if (course.isPending) return <p className="course-editor__status">Loading…</p>;
   if (course.isError) return <p className="course-editor__status">{describeApiError(course.error) ?? 'Could not load the course.'}</p>;
-  // Remounts with a fresh draft whenever the server's copy is replaced (a rebuilt skeleton).
-  return <CourseEditor key={course.data.updatedAt} course={course.data} />;
+  return <CourseEditor key={course.data.id} course={course.data} />;
 }
 
 function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
@@ -44,12 +43,32 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
   const [publishing, setPublishing] = useState(false);
   const [learnerPreview, setLearnerPreview] = useState(false);
   const [section, setSection] = useState<Section>('episodes');
+  const [seen, setSeen] = useState(course.updatedAt);
+  const latest = useRef(document);
+  latest.current = document;
+  // The AI writes the draft on the server; the editor follows it and waits.
+  const writing = isGenerating(course);
+
+  // The server's copy changed (an episode written, a rebuilt skeleton, a
+  // refetch): take it, unless the creator has edits it would throw away.
+  // The chosen episode and section stay.
+  if (course.updatedAt !== seen) {
+    setSeen(course.updatedAt);
+    if (!dirty) {
+      setDocument(course.document);
+      if (!course.document.episodes.some((candidate) => candidate.id === episodeId)) {
+        setEpisodeId(course.document.episodes[0]?.id ?? null);
+        setNodeId(course.document.episodes[0]?.startNodeId ?? null);
+      }
+    }
+  }
 
   const episode = document.episodes.find((candidate) => candidate.id === episodeId);
   const nodeIds = episode ? episodeNodeIds(document, episode) : document.nodes.map((node) => node.id);
   const noteArrows = episode?.plies.find((ply) => ply.nodeId === nodeId)?.arrows ?? [];
 
   function edit(next: CourseDocument): void {
+    if (writing) return;
     setDocument(next);
     setDirty(true);
   }
@@ -88,12 +107,17 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
         status={course.status}
         dirty={dirty}
         saving={save.isPending}
-        onSave={() => save.mutate(document, { onSuccess: () => setDirty(false) })}
+        onSave={() =>
+          save.mutate(document, {
+            // Edits made while it saved are still unsaved.
+            onSuccess: () => setDirty(latest.current !== document)
+          })
+        }
         onPreviewClip={previewableProducts(document).length ? () => setPreviewing(true) : undefined}
         onPreviewLearner={document.episodes.length ? () => setLearnerPreview(true) : undefined}
         onPublish={document.episodes.length ? () => setPublishing(true) : undefined}
         published={course.publishedAt !== null}
-        more={[{ label: build.isPending || start.isPending ? 'Starting over…' : 'Start over…', disabled: build.isPending || start.isPending, onSelect: () => setStartingOver(true) }]}
+        more={[{ label: build.isPending || start.isPending ? 'Starting over…' : 'Start over…', disabled: writing || build.isPending || start.isPending, onSelect: () => setStartingOver(true) }]}
       />
       {error && (
         <p className="course-intake__errors" role="alert">
@@ -133,6 +157,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
             />
           </div>
           {episode ? (
+            <fieldset className="course-editor__fields" disabled={writing}>
             <CourseEpisodePanel
               document={document}
               episode={episode}
@@ -148,6 +173,7 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
               onChange={(next) => edit(updateEpisode(document, next.id, () => next))}
               aiWriter={<CourseEpisodeAi courseId={course.id} episodeId={episode.id} generation={course.generation} dirty={dirty} />}
             />
+            </fieldset>
           ) : (
             <div className="course-panel course-editor__empty meta">
               {document.episodes.length ? 'Pick an episode from the list.' : 'No episodes yet. Write the course with AI, or start over from the ⋮ menu to build it from your PGN without AI.'}
@@ -157,12 +183,16 @@ function CourseEditor({ course }: { course: CourseResponse }): ReactNode {
       )}
       {shown === 'course' && (
         <div className="course-editor__sheet" role="tabpanel" id="studio-section-course" aria-labelledby="studio-tab-course">
-          <CourseDetails document={document} onChange={edit} />
+          <fieldset className="course-editor__fields" disabled={writing}>
+            <CourseDetails document={document} onChange={edit} />
+          </fieldset>
         </div>
       )}
       {shown === 'videos' && (
         <div className="course-editor__sheet course-editor__sheet--two" role="tabpanel" id="studio-section-videos" aria-labelledby="studio-tab-videos">
-          <CourseProducts courseId={course.id} document={document} generation={course.generation} dirty={dirty} onChange={edit} />
+          <fieldset className="course-editor__fields" disabled={writing}>
+            <CourseProducts courseId={course.id} document={document} generation={course.generation} dirty={dirty} onChange={edit} />
+          </fieldset>
         </div>
       )}
       {publishing && (

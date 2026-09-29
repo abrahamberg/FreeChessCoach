@@ -11,7 +11,7 @@ import type { Database } from '../db/schema.js';
 import { noopJobQueue } from '../jobs/queue.js';
 import { ConflictError, ValidationError } from '../lib/errors.js';
 import { runCourseGeneration, startCourseGeneration, writeCourseReel, type CourseGenerateDeps } from './course-generate.js';
-import { createCourse, GENERATION_STALE_MS, liveGeneration } from './courses.js';
+import { buildSkeletonDraft, createCourse, GENERATION_STALE_MS, liveGeneration, saveDraft } from './courses.js';
 import { courseTreeOf } from './courses/generation-inputs.js';
 
 let testDb: TestDb;
@@ -373,7 +373,7 @@ describe('runCourseGeneration', () => {
     expect(row?.generation).toMatchObject({ status: 'succeeded', finishedEpisodeIds: ['e1', 'e2', 'e3', 'e4', 'e5', 'e6'] });
   });
 
-  test('a run whose worker died (no heartbeat) reads as failed and resumes; a live one still refuses a second start', async () => {
+  test('a run whose worker died (no heartbeat) reads as failed and resumes; a live one refuses a second start, a restart and any save', async () => {
     const id = await newCourse('killed@example.com');
     const owner = (await coursesRepo.findById(db, id))!.ownerId;
     await runCourseGeneration(depsWith([step(outline()), ...cleanEpisodes()]).deps, id);
@@ -384,6 +384,11 @@ describe('runCourseGeneration', () => {
     const running = { ...finished, status: 'running' as const, step: 'Writing episode 5 of 5', finishedEpisodeIds: ['e1', 'e2', 'e3', 'e4'] };
     await coursesRepo.setGeneration(db, id, { ...running, heartbeatAt: new Date(now - 10_000).toISOString() });
     await expect(startCourseGeneration(db, noopJobQueue, owner, id, false)).rejects.toBeInstanceOf(ConflictError);
+    // The run saves its own copy after each episode: nothing else may write the draft meanwhile.
+    await expect(startCourseGeneration(db, noopJobQueue, owner, id, true)).rejects.toBeInstanceOf(ConflictError);
+    const document = (await coursesRepo.findById(db, id))!.document!;
+    await expect(saveDraft(db, owner, id, document)).rejects.toBeInstanceOf(ConflictError);
+    await expect(buildSkeletonDraft(db, owner, id, englundDossier)).rejects.toBeInstanceOf(ConflictError);
     await coursesRepo.touchGeneration(db, id, new Date(now));
     expect((await coursesRepo.findById(db, id))!.generation!.heartbeatAt).toBe(new Date(now).toISOString());
 

@@ -2312,6 +2312,43 @@ board so the fields have more space. At 1920 px the editor's left column was
 
 Commit per task; push each phase.
 
+## Phase 105 — Branch review fixes
+
+The owner (2026-09-29) asked for a review of `claude/courses` against `main`
+and for its findings to be fixed.
+
+### Task 105.1 — One writer at a time
+
+**Files:** `apps/api/src/services/courses.ts`, `course-generate.ts`,
+`CourseEditorPage.tsx`, `CourseEditor.css`, tests.
+
+- [x] A run holds its own copy of the document and saves it after each
+  episode, so while it is live (`notBeingWritten`) the server refuses a
+  second start, a restart ("Start over… → With AI" used to slip past), a
+  saved draft, a rebuilt skeleton, a regenerated episode and a reel.
+- [x] The editor is no longer rebuilt whenever `updatedAt` changes (a
+  refetch on window focus threw unsaved edits away; the run's polling reset
+  the episode, the section and open dialogs). A newer server copy is taken in
+  place, keeping the episode and section, and only when nothing is unsaved.
+- [x] While the AI writes, the editor's fields are locked and Start over is
+  off; the list and the board still browse. Edits made while a save is in
+  flight stay unsaved.
+
+### Task 105.2 — Smaller bugs
+
+- [ ] "Ask my coach": the coach's own replies no longer hit the 2000
+  character limit on the next question.
+- [ ] The clip preview: Record during playback stops the playing loop first.
+- [ ] The Courses page loads every page of public courses.
+
+### Task 105.3 — Shared helpers
+
+- [ ] One zod-issues-to-`ValidationError` helper for the course routes.
+- [ ] One "position before a move" and "6.Bc3 / 6…Bb4" label in
+  `chess-analysis`, used by the web app and the API.
+
+Commit per task; push each phase.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.
