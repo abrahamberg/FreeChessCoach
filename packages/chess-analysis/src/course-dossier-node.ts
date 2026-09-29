@@ -69,6 +69,10 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
   const evalBefore = evalsByFen.get(fenBefore);
   const side = move.mover;
   const opening = resolveOpening(input.linePositionFens.map(positionKey));
+  const after = positionWords(node.fenAfter, evalsByFen.get(node.fenAfter));
+  // Once the position is a forced mate, a sentence about winning material
+  // undersells it: the Immortal's 21.Nxg7+ "won a pawn" starts a mate in 2.
+  const mateAhead = /forced mate/.test(after);
   return {
     nodeId: node.id,
     san: node.san,
@@ -78,13 +82,13 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     quality: move.quality,
     evalAfterCp: move.evalAfterCp,
     before: positionWords(fenBefore, evalBefore),
-    after: positionWords(node.fenAfter, evalsByFen.get(node.fenAfter)),
+    after,
     inBook: isBookMoveFrom(fenBefore, node.san),
     openingName: opening?.name ?? null,
     bestInstead: bestInstead(move, node.san, fenBefore),
     board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan)],
-    tactics: tacticSentences(move, node.san, side === input.learnerSide),
-    motif: move.tacticOpportunity?.found && fitsCourseMove(move.tacticOpportunity, node.san) ? move.tacticOpportunity.type : null,
+    tactics: tacticSentences(move, node.san, side === input.learnerSide, mateAhead),
+    motif: move.tacticOpportunity?.found && fitsCourseMove(move.tacticOpportunity, node.san, mateAhead) ? move.tacticOpportunity.type : null,
     alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
     tempting: [],
     quizEligible: isQuizEligible(evalBefore, node.san, side),
@@ -112,15 +116,15 @@ const DEFENSIVE_MOTIFS = new Set<TacticMotifType>(['defendsHangingPiece', 'remov
  * helps when it is about the mate: 17.Rd8# read "You won a knight through a
  * checkmate — rook on d8 forks b8 and e8", 4.Qxf7# "moves the queen off h5,
  * out of reach". */
-function fitsCourseMove(claim: { type: TacticMotifType; gain?: { kind: string } }, san: string): boolean {
-  if (san.endsWith('#')) return claim.gain?.kind === 'mate';
+function fitsCourseMove(claim: { type: TacticMotifType; gain?: { kind: string } }, san: string, mateAhead = false): boolean {
+  if (san.endsWith('#') || (mateAhead && claim.gain?.kind === 'material')) return claim.gain?.kind === 'mate';
   return !(DEFENSIVE_MOTIFS.has(claim.type) && san.endsWith('+'));
 }
 
-function tacticSentences(move: ClassifiedMove, san: string, isUserMove: boolean): string[] {
+function tacticSentences(move: ClassifiedMove, san: string, isUserMove: boolean, mateAhead: boolean): string[] {
   const sentences: string[] = [];
-  if (move.tacticOpportunity && fitsCourseMove(move.tacticOpportunity, san)) sentences.push(tacticOpportunityReason({ ...withoutSquareFork(move.tacticOpportunity), isUserMove }, move.bestMoveSan));
-  if (move.tacticAllowed) sentences.push(tacticAllowedReason({ ...withoutSquareFork(move.tacticAllowed), isUserMove }));
+  if (move.tacticOpportunity && fitsCourseMove(move.tacticOpportunity, san, mateAhead)) sentences.push(tacticOpportunityReason({ ...withoutSquareFork(move.tacticOpportunity), isUserMove }, move.bestMoveSan));
+  if (move.tacticAllowed && !(mateAhead && move.tacticAllowed.gain?.kind === 'material')) sentences.push(tacticAllowedReason({ ...withoutSquareFork(move.tacticAllowed), isUserMove }));
   return sentences;
 }
 

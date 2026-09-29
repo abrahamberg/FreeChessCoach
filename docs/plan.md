@@ -2526,6 +2526,9 @@ fixes, again until clean.
   d4 hanging".
 - [x] A book move carries no verdict: the Najdorf's flipped "roughly equal"
   and "White is slightly better" on every move.
+- [x] Once the position after a move is a forced mate, the review's
+  material sentence goes (the Immortal's 21.Nxg7+ "won a pawn", Lasker–Thomas
+  12.Nxf6+ "won a bishop" in a mate in 7); a sentence about the mate stays.
 
 ## Verification (end of each phase)
 

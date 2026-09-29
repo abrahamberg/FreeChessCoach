@@ -47,6 +47,22 @@ describe('course tactic sentences', () => {
     expect(facts.tactics).toEqual(['You won a queen through a fork.']);
   });
 
+  test('a material sentence goes where the position is already a forced mate', () => {
+    const move = {
+      quality: 'great',
+      mover: 'white',
+      evalAfterCp: null,
+      bestMoveSan: 'Nxg7+',
+      bestLineSan: ['Nxg7+'],
+      tacticOpportunity: { type: 'freePiece', found: true, isUserMove: true, detail: 'captures the pawn on g7', confidence: 1, gain: { kind: 'material', pawns: 1, prize: 'pawn' } }
+    } as unknown as ClassifiedMove;
+    const node = { id: 'n41', parentId: 'n40', san: 'Nxg7+', fenAfter: FEN, lineId: 'l1', comment: null } as never;
+    const mate = new Map([[FEN, { ply: 0, fen: FEN, depth: 20, lines: [{ moveSan: 'Kd8', moveUci: '', cp: null, mateIn: 2 }] }]]);
+    const build = (evalsByFen: typeof mate) => buildCourseNodeFacts({ node, move, fenBefore: FEN, linePositionFens: [FEN], evalsByFen, critical: true, learnerSide: 'white' });
+    expect(build(mate).tactics).toEqual([]);
+    expect(build(new Map()).tactics).toEqual(['You won a pawn through a free piece — captures the pawn on g7.']);
+  });
+
   test('a mate through checkmate reads "forced mate", once', () => {
     expect(tacticOpportunityReason({ type: 'checkmate', found: true, isUserMove: true, gain: { kind: 'mate', pawns: 0, prize: null } }, 'Nf7+')).toBe('You forced mate.');
   });
