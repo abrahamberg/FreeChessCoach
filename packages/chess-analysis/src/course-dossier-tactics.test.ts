@@ -76,6 +76,8 @@ describe('course tactic sentences', () => {
     const build = (phase: string) => buildCourseNodeFacts({ node, move: { ...move, phase } as unknown as ClassifiedMove, fenBefore: FEN, linePositionFens: [FEN], evalsByFen: new Map(), critical: false, learnerSide: 'white' });
     expect(build('endgame').tactics).toEqual([]);
     expect(build('middlegame').tactics).toHaveLength(1);
+    const deep = { id: 'n5', parentId: 'n4', san: 'f6', fenAfter: FEN, lineId: 'l1', comment: null } as never;
+    expect(buildCourseNodeFacts({ node: deep, move: { ...move, phase: null } as unknown as ClassifiedMove, fenBefore: FEN, linePositionFens: [FEN], evalsByFen: new Map(), critical: false, learnerSide: 'white' }).tactics).toEqual([]);
   });
 
   test('a mate through checkmate reads "forced mate", once', () => {

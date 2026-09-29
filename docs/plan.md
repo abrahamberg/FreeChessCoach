@@ -2560,6 +2560,8 @@ fixes, again until clean.
 - [x] A tactics course whose examples show different ideas names each
   ("TACTICS (fork, mating net)"), not the first one's.
 - [x] "is an inaccuracy", not "a inaccuracy".
+- [x] No "space gain" on a pawn pushed to its sixth rank or past it: the
+  review does not call the square rule's position an endgame.
 
 The facts caught two of my own fixtures: a queen fork whose queen already
 saw the rook, and one where …Qh1+ wins the rook as well (kept: the

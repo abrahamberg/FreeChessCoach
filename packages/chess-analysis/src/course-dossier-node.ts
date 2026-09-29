@@ -73,9 +73,12 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
   // Once the position is a forced mate, a sentence about winning material
   // undersells it: the Immortal's 21.Nxg7+ "won a pawn" starts a mate in 2.
   const mateAhead = /forced mate/.test(after);
-  // A pawn run in an endgame is a race to promote, not space: the square
-  // rule's 5.f8=Q read "pushes a pawn to f8, taking space".
-  const claims = move.phase === 'endgame' ? withoutMotif(move, 'spaceGain') : move;
+  // A pawn run in an endgame, or to the sixth rank and past it, is a race to
+  // promote, not space: the square rule's 5.f8=Q read "pushes a pawn to f8,
+  // taking space" (the review does not call that position an endgame).
+  const rank = Number(/([1-8])(?:=[QRBN])?[+#]?$/.exec(node.san)?.[1] ?? 0);
+  const deep = side === 'white' ? rank >= 6 : rank >= 1 && rank <= 3;
+  const claims = move.phase === 'endgame' || deep ? withoutMotif(move, 'spaceGain') : move;
   return {
     nodeId: node.id,
     san: node.san,
