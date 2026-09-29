@@ -63,6 +63,21 @@ describe('course tactic sentences', () => {
     expect(build(new Map()).tactics).toEqual(['You won a pawn through a free piece — captures the pawn on g7.']);
   });
 
+  test('an endgame pawn push is no space gain', () => {
+    const move = {
+      quality: 'best',
+      mover: 'white',
+      evalAfterCp: null,
+      bestMoveSan: 'e4',
+      bestLineSan: ['e4'],
+      tacticOpportunity: { type: 'spaceGain', found: true, isUserMove: true, detail: 'pushes a pawn to e4, taking space', confidence: 1 }
+    };
+    const node = { id: 'n3', parentId: 'n2', san: 'e4', fenAfter: FEN, lineId: 'l1', comment: null } as never;
+    const build = (phase: string) => buildCourseNodeFacts({ node, move: { ...move, phase } as unknown as ClassifiedMove, fenBefore: FEN, linePositionFens: [FEN], evalsByFen: new Map(), critical: false, learnerSide: 'white' });
+    expect(build('endgame').tactics).toEqual([]);
+    expect(build('middlegame').tactics).toHaveLength(1);
+  });
+
   test('a mate through checkmate reads "forced mate", once', () => {
     expect(tacticOpportunityReason({ type: 'checkmate', found: true, isUserMove: true, gain: { kind: 'mate', pawns: 0, prize: null } }, 'Nf7+')).toBe('You forced mate.');
   });

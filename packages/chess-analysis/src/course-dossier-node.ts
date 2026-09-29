@@ -73,6 +73,9 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
   // Once the position is a forced mate, a sentence about winning material
   // undersells it: the Immortal's 21.Nxg7+ "won a pawn" starts a mate in 2.
   const mateAhead = /forced mate/.test(after);
+  // A pawn run in an endgame is a race to promote, not space: the square
+  // rule's 5.f8=Q read "pushes a pawn to f8, taking space".
+  const claims = move.phase === 'endgame' ? withoutMotif(move, 'spaceGain') : move;
   return {
     nodeId: node.id,
     san: node.san,
@@ -87,8 +90,8 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     openingName: opening?.name ?? null,
     bestInstead: bestInstead(move, node.san, fenBefore),
     board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan)],
-    tactics: tacticSentences(move, node.san, side === input.learnerSide, mateAhead),
-    motif: move.tacticOpportunity?.found && fitsCourseMove(move.tacticOpportunity, node.san, mateAhead) ? move.tacticOpportunity.type : null,
+    tactics: tacticSentences(claims, node.san, side === input.learnerSide, mateAhead),
+    motif: claims.tacticOpportunity?.found && fitsCourseMove(claims.tacticOpportunity, node.san, mateAhead) ? claims.tacticOpportunity.type : null,
     alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
     tempting: [],
     quizEligible: isQuizEligible(evalBefore, node.san, side),
@@ -126,6 +129,14 @@ function tacticSentences(move: ClassifiedMove, san: string, isUserMove: boolean,
   if (move.tacticOpportunity && fitsCourseMove(move.tacticOpportunity, san, mateAhead)) sentences.push(tacticOpportunityReason({ ...withoutSquareFork(move.tacticOpportunity), isUserMove }, move.bestMoveSan));
   if (move.tacticAllowed && !(mateAhead && move.tacticAllowed.gain?.kind === 'material')) sentences.push(tacticAllowedReason({ ...withoutSquareFork(move.tacticAllowed), isUserMove }));
   return sentences;
+}
+
+function withoutMotif(move: ClassifiedMove, type: TacticMotifType): ClassifiedMove {
+  return {
+    ...move,
+    tacticOpportunity: move.tacticOpportunity?.type === type ? undefined : move.tacticOpportunity,
+    tacticAllowed: move.tacticAllowed?.type === type ? undefined : move.tacticAllowed
+  };
 }
 
 /** The review's fork detail names squares ("knight on c6 forks b8, d8 and
