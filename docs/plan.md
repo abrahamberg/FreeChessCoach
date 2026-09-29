@@ -1969,6 +1969,40 @@ Commit: `feat(courses): the video's length is a guide, with slack`
 
 Commit: `docs: tempting moves worth discussing, the trapper's defence, video length`
 
+## Phase 97 — A hook that speaks, and no analysis words in the coach's mouth
+
+The Englund rerun after Phase 96 (2026-09-29) had no obvious tempting moves
+and a correct safety episode. Two faults were ours. The hook ended silent: the
+plan gave it a budget of 0, and the verifier told the model "the caption on n1
+has 7 words" when it had written no caption (the video falls back to the
+line's first sentence); the model moved its words into the caption and left
+the line empty. And two notes read like our notes ("in the listed line", "its
+line ends with material level"), copying the dossier's "(line: …; at its end
+…)". The reel's loop "Set the queen trap in the" is by design: it runs into
+the hook.
+
+### Task 97.1 — The hook's line, and the caption check
+
+**Files:** `course-verify.ts`, `generate-outline.ts`, tests.
+
+- [x] With no caption, a long first sentence asks for a caption of at most 6
+  words and says to keep the line.
+- [x] `withKeyMoves` raises a hook's course and video budgets to at least 1.
+
+Commit: `fix(courses): the hook keeps its line`
+
+### Task 97.2 — Best-instead in plain chess words
+
+**Files:** `course-dossier-text.ts`, `playbooks.ts`, `docs/courses.md`, tests.
+
+- [x] The dossier row reads "best instead: Qe7; after Qe7 Nc3 Nxe5 e4 Nf6,
+  material is level"; the trap's defence text reads "best play goes …, and
+  then …".
+- [x] `docs/courses.md` matches (§7 Lengths, the key-moves budgets, the
+  dossier example, `{trapperDefence}`).
+
+Commit: `fix(courses): best-instead in plain chess words`
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

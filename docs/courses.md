@@ -438,7 +438,7 @@ dossier); say so plainly." when `trapperRisk` is set, else empty.
 
 `{trapperDefence}` (`trapperDefence`, playbooks.ts) is what the trapper does
 when the victim finds the safe move: "Then the trapper's side: when the victim
-finds {safeMove}, the engine's line is {line} (at its end: {verdict}; {balance}).
+finds {safeMove}, best play goes {line}, and then {verdict}; {balance}.
 Name {trapperSide}'s best moves from it and say plainly how {trapperSide}
 stands: the aim is to lose as little as possible, not to pretend the trap still
 works." It comes from the bait's `bestInstead` (line and `balance`, the material
@@ -624,7 +624,8 @@ every video budget is 0, whatever the model answered, and each made
 budget is raised to fit the episode's **key moves**
 (`episodeKeyMoves`, chess-analysis): the quiz answer, any mate, and for a
 trap its bait, answer and last move; none for a hook or a safety episode.
-They join the plan's key moves and are stored as `budget.keyNodeIds`. The
+A hook's budgets are at least 1: a plan that gave it 0 left the video's first
+move silent. They join the plan's key moves and are stored as `budget.keyNodeIds`. The
 first run with budgets left 8…Qc1# silent: the planner gave the punish
 episode 3 of its 4 moves. A fallback outline gets default budgets from code
 (`defaultCourseBudget`).
@@ -695,7 +696,7 @@ this example does not guess them. The board facts are real.
 
 ```text
 n11 6.Bc3 (White, main) | ⟨quality⟩ | before: ⟨verdict⟩ → after: ⟨verdict⟩
-    best instead: ⟨engine move⟩ (line: ⟨engine line⟩; at its end ⟨material, e.g. "White is a pawn up"⟩)
+    best instead: ⟨engine move⟩; after ⟨engine line⟩, ⟨material, e.g. "White is a pawn up"⟩
     board: attacks the queen on b2 | leaves the bishop on c3 on the b4–e1
       diagonal with the king behind it
     flags: bait-candidate
@@ -749,7 +750,7 @@ a message the creator can read.
 | Key moves | Each of `budget.keyNodeIds` speaks in the course, and in the video when it is planned ("8…Qc1# is a key move of this episode; let it speak in the video"). |
 | Tempting | Every `tempting[].san` is one of the dossier's tempting moves at that node (code drops any other when it merges the model's answer, and takes the dossier's spelling and refutation); a `why` that pastes the dossier's line ("answered by …", "(White is …)") goes back. |
 | Node ids | No line, caption, why, quiz text or reel text says a node id ("mate at n16"). |
-| Lengths | The video line (`say`, else `text`) within the words per move, the video within the episode's words (these, the video's hook and the reel's seconds may run over by `lengthSlack`, 10%, before they count); captions at most 6 words; course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
+| Lengths | The video line (`say`, else `text`) within the words per move, the video within the episode's words (these, the video's hook and the reel's seconds may run over by `lengthSlack`, 10%, before they count); captions at most 6 words (with no caption the video shows the line's first sentence, and the model is asked to add a caption and keep the line, never told a caption it never wrote is long); course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
 | Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); the hint does not name it. |
 | Phrases | None of `BANNED_GENERIC_PHRASES`, and never the word "dossier" (the prompt's word, not the learner's). |
 | Voice | More than 2 lines in an episode starting with the same word; one line repeated in two episodes; a word that starts a sentence in 3 or more lines across the course and the reel ("Execute."), board words (White, the queen …) aside. |

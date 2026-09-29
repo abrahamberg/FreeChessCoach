@@ -98,8 +98,8 @@ function trapperDefence(context: CoursePromptContext, skeleton: Extract<CourseSk
   const verdict = bait.alternatives.find((alternative) => alternative.san === best.san)?.verdict;
   const stands = [verdict, best.balance].filter(Boolean).join('; ');
   return `
-   Then the trapper's side: when the victim finds ${best.san}, the engine's
-   line is ${best.line.join(' ')} (at its end: ${stands}). Name ${trapper}'s best
+   Then the trapper's side: when the victim finds ${best.san}, best play goes
+   ${best.line.join(' ')}, and then ${stands}. Name ${trapper}'s best
    moves from it and say plainly how ${trapper} stands: the aim is to lose as
    little as possible, not to pretend the trap still works.`;
 }

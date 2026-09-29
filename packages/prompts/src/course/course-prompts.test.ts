@@ -37,8 +37,8 @@ describe('course prompts', () => {
     const nodes = context.dossier.nodes.map((node) => (node.nodeId === 'n11' && node.bestInstead ? { ...node, bestInstead: { ...node.bestInstead, line, balance: 'White is a pawn up' } } : node));
     const system = buildCourseSystemPrompt({ ...context, dossier: { ...context.dossier, nodes } });
 
-    expect(system).toContain("Then the trapper's side: when the victim finds Nc3, the engine's\n   line is Nc3 Bb4 Rb1 Qa3 Rb3 Qa5 (at its end: ");
-    expect(system).toContain('White is a pawn up). Name Black');
+    expect(system).toContain("Then the trapper's side: when the victim finds Nc3, best play goes\n   Nc3 Bb4 Rb1 Qa3 Rb3 Qa5, and then ");
+    expect(system).toContain('White is a pawn up. Name Black');
     expect(system).toContain('not to pretend the trap still works');
   });
 

@@ -38,7 +38,7 @@ function renderNode(node: CourseNodeFacts, lineName: string, oneLine: boolean): 
     rows.push(`    ${label}: ${value}`);
   };
   if (node.inBook) detail('book', node.openingName ? `in book (${node.openingName})` : 'in book');
-  if (node.bestInstead) detail('best instead', `${node.bestInstead.san} (line: ${node.bestInstead.line.join(' ')}; at its end ${node.bestInstead.balance})`);
+  if (node.bestInstead) detail('best instead', `${node.bestInstead.san}; after ${node.bestInstead.line.join(' ')}, ${node.bestInstead.balance}`);
   if (node.bestInstead?.board.length) detail(`why ${node.bestInstead.san} is better`, node.bestInstead.board.join(' | '));
   if (node.board.length) detail('board', node.board.join(' | '));
   if (node.tactics.length) detail('tactics', node.tactics.join(' '));
