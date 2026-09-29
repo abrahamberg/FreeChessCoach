@@ -3,7 +3,7 @@ import type { CourseKind, EngineEval } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 import type { CourseDossier } from './course-dossier.js';
 import { boardFacts, lineWords } from './course-dossier-words.js';
-import { captureWords, exchangeLoss } from './course-material.js';
+import { captureWords, exchangeLoss, settledLine } from './course-material.js';
 import type { CourseTree } from './course-tree.js';
 import { toCpWhite, winPctFor } from './win-probability.js';
 
@@ -125,7 +125,9 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
     const walksIntoMate = answer.mateIn !== null && (answer.mateIn > 0) === (facts.side === 'black');
     if (drop < CONFIG.courses.temptingDrop && !walksIntoMate) continue;
     if (exchangeLoss(candidate.fenBefore, candidate.san, answer.moveSan) >= CONFIG.courses.obviousLoss) continue;
-    const refutation = (answer.pvSan?.length ? answer.pvSan : [answer.moveSan]).slice(0, MAX_REFUTATION_PLIES);
+    const pv = (answer.pvSan?.length ? answer.pvSan : [answer.moveSan]).slice(0, MAX_REFUTATION_PLIES);
+    // Never cut mid-exchange, but always keep the answer itself.
+    const refutation = [...pv.slice(0, 1), ...settledLine(candidate.fen, pv).slice(1)];
     list.push({
       san: candidate.san,
       kind: candidate.kind,

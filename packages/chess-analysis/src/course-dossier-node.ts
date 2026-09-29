@@ -2,7 +2,7 @@ import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freec
 import type { ClassifiedMove } from './classify.js';
 import { CONFIG } from './config.js';
 import { abandonedGuard, betterMoveFacts, boardFacts, lineWords, positionWords } from './course-dossier-words.js';
-import { lineBalance } from './course-material.js';
+import { lineBalance, settledLine } from './course-material.js';
 import type { CourseTemptingFacts } from './course-tempting.js';
 import type { CourseTreeNode } from './course-tree.js';
 import { isBookMoveFrom, resolveOpening } from './opening-book.js';
@@ -99,7 +99,7 @@ function bestInstead(move: ClassifiedMove, san: string, fenBefore: string): Cour
   const best = move.bestMoveSan ?? move.bestLineSan[0];
   if (!best || best === san) return null;
   const line = move.bestLinePvSan?.length ? move.bestLinePvSan : move.bestLineSan;
-  const shown = line.slice(0, BEST_LINE_PLIES);
+  const shown = settledLine(fenBefore, line.slice(0, BEST_LINE_PLIES));
   return { san: best, line: shown, board: betterMoveFacts(fenBefore, san, best), balance: lineBalance(fenBefore, shown) };
 }
 

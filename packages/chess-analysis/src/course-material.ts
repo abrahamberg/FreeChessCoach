@@ -34,6 +34,26 @@ export function lineCaptures(fen: string, sans: readonly string[]): Record<Side,
   return taken;
 }
 
+/** The line without a last capture the other side can take back on the
+ * same square: an engine line cut at 6 plies stopped after 7.Nxe5 in the
+ * Englund, before …Qxe5, and read "White is a knight up". */
+export function settledLine(fen: string, sans: readonly string[]): string[] {
+  const chess = new Chess(fen);
+  const played: string[] = [];
+  let last: { to: string; captured: boolean } | null = null;
+  for (const san of sans) {
+    try {
+      const move = chess.move(san);
+      played.push(san);
+      last = { to: move.to, captured: Boolean(move.captured) };
+    } catch {
+      break;
+    }
+  }
+  const retaken = last?.captured && chess.moves({ verbose: true }).some((reply) => reply.to === last.to && Boolean(reply.captured));
+  return retaken ? played.slice(0, -1) : played;
+}
+
 /** The material at the end of a line of SAN moves from `fen`, in
  * `materialBalance`'s words; the walk stops at the first illegal move. */
 export function lineBalance(fen: string, sans: readonly string[]): string {
