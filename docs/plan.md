@@ -2417,8 +2417,8 @@ before any model wrote a word:
 
 **Files:** `tactic-reason-text.ts`, `course-dossier-node.ts`, tests.
 
-- [ ] A mate through checkmate reads "forced mate".
-- [ ] In the course dossier, the defensive motifs (save, retreat, escape,
+- [x] A mate through checkmate reads "forced mate".
+- [x] In the course dossier, the defensive motifs (save, retreat, escape,
   block, unpin) are dropped on a move that gives check or mate.
 
 ### Task 106.4 — The dossier text

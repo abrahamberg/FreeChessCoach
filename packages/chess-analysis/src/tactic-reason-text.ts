@@ -185,6 +185,8 @@ function gainClause(
   const prize = materialPrize(claim.gain, specificity);
   const motif = motifWithHorizon(claim.type, horizon);
 
+  // "forced mate through a checkmate" says the same thing twice.
+  if (claim.gain?.kind === 'mate' && claim.type === 'checkmate') return { did: 'forced mate', toDo: 'force mate', gerundish: 'forcing mate' };
   if (claim.gain?.kind === 'mate') {
     return { did: `forced mate through ${motif}`, toDo: `force mate through ${motif}`, gerundish: `forcing mate through ${motif}` };
   }

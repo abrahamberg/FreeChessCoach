@@ -83,8 +83,8 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     openingName: opening?.name ?? null,
     bestInstead: bestInstead(move, node.san, fenBefore),
     board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan)],
-    tactics: tacticSentences(move, side === input.learnerSide),
-    motif: move.tacticOpportunity?.found ? move.tacticOpportunity.type : null,
+    tactics: tacticSentences(move, node.san, side === input.learnerSide),
+    motif: move.tacticOpportunity?.found && fitsCourseMove(move.tacticOpportunity.type, node.san) ? move.tacticOpportunity.type : null,
     alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
     tempting: [],
     quizEligible: isQuizEligible(evalBefore, node.san, side),
@@ -103,9 +103,18 @@ function bestInstead(move: ClassifiedMove, san: string, fenBefore: string): Cour
   return { san: best, line: shown, board: betterMoveFacts(fenBefore, san, best), balance: lineBalance(fenBefore, shown) };
 }
 
-function tacticSentences(move: ClassifiedMove, isUserMove: boolean): string[] {
+/** The game review's defensive motifs, which read wrong on a check or a mate:
+ * Réti's queen sacrifice 9.Qd8+ "saves the bishop on d2", and 11.Bd8# "moves
+ * the bishop off g5, out of reach". */
+const DEFENSIVE_MOTIFS = new Set<TacticMotifType>(['defendsHangingPiece', 'removesTarget', 'escapesFork', 'blocksThreat', 'breaksPin']);
+
+function fitsCourseMove(type: TacticMotifType, san: string): boolean {
+  return !(DEFENSIVE_MOTIFS.has(type) && /[+#]$/.test(san));
+}
+
+function tacticSentences(move: ClassifiedMove, san: string, isUserMove: boolean): string[] {
   const sentences: string[] = [];
-  if (move.tacticOpportunity) sentences.push(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove }, move.bestMoveSan));
+  if (move.tacticOpportunity && fitsCourseMove(move.tacticOpportunity.type, san)) sentences.push(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove }, move.bestMoveSan));
   if (move.tacticAllowed) sentences.push(tacticAllowedReason({ ...move.tacticAllowed, isUserMove }));
   return sentences;
 }
