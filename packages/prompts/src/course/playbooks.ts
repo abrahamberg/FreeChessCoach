@@ -1,6 +1,6 @@
 import { captureWords, courseNodeAncestry, lineBalance, TACTIC_MOTIF_PHRASES, type CourseSkeleton } from '@freechesscoach/chess-analysis';
 import type { CourseBudget } from './budget.js';
-import { capitalise, nodeLabel, promptVideos, type CoursePromptContext } from './context.js';
+import { capitalise, midSentence, nodeLabel, promptVideos, type CoursePromptContext } from './context.js';
 
 /** docs/courses.md §6.3, one playbook per kind, filled from the skeleton
  * (§5.5), the budget and the course. Missing facts are named as missing, so
@@ -41,9 +41,9 @@ const REEL_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
   trap: 'the bait and the punishment.',
   opening: 'the one trap or idea a player of this opening must know.',
   tactics: 'the clearest example, as a puzzle.',
-  puzzle: 'the position and the question ("White to play. Mate in 3."), then the solution.',
+  puzzle: 'the position and the question ("White to play. Mate in 3." or "White to play and win."), then the solution.',
   master_game: 'the single brilliant move, blunder or finish, never a summary of the game.',
-  endgame: 'one only move of the technique, as a puzzle ("White to play and win").'
+  endgame: 'one only move of the technique, as a puzzle ("White to play and win", "Black to play and draw").'
 };
 
 function productsPlaybook(context: CoursePromptContext): string {
@@ -74,20 +74,21 @@ function trapPlaybook(context: CoursePromptContext, budget: CourseBudget, skelet
   const trapper = capitalise(context.learnerSide);
   const safeMove = skeleton?.safeMoveSan ?? 'not found in the dossier';
   const risk = skeleton?.trapperRiskNodeIds.length ? "\nThe trapper's setup is risky against best play (see the dossier); say so plainly." : '';
+  // A trap whose answer ends it (Nd6#) has no punish episode in the plan.
+  const punish = skeleton?.punishNodeIds.length !== 0;
+  const items = [
+    `hook — at most ${budget.hookWords} words, true and specific to how the trap ends:\n   ${trapEnding(context)}`,
+    `setup — the setup moves play fast. At most two speak in the video, only\n   where the move order matters.`,
+    `bait — why the victim's move looks natural. This is the heart of the trap:\n   the viewer should think "I'd play that too".${baitFacts(context, skeleton)}`,
+    `quiz — "What does ${trapper} play here?" plus a hint at the target. The\n   video pauses ${budget.pauseSeconds}s (the app adds the pause).${answerWins(context, skeleton)}`,
+    punish ? `punish — every forcing move speaks in the video; captions carry the rhythm.${victimErrors(context, skeleton)}` : null,
+    `safety — how the victim stays safe: ${safeMove}, in one or two sentences.${trapperDefence(context, skeleton)}${risk}${safeLineOnBoard(context, skeleton)}`
+  ].filter((item) => item !== null);
   return `KIND: TRAP
 The trapper is ${trapper}. The bait is node ${skeleton?.baitNodeId ?? 'not found'}. The answer is node
 ${skeleton?.answerNodeId ?? 'not found'}. The victim's safe move at the bait is ${safeMove}.
 Use exactly these episodes, in order:
-1. hook — at most ${budget.hookWords} words, true and specific to how the trap ends:
-   ${trapEnding(context)}
-2. setup — the setup moves play fast. At most two speak in the video, only
-   where the move order matters.
-3. bait — why the victim's move looks natural. This is the heart of the trap:
-   the viewer should think "I'd play that too".${baitFacts(context, skeleton)}
-4. quiz — "What does ${trapper} play here?" plus a hint at the target. The
-   video pauses ${budget.pauseSeconds}s (the app adds the pause).${answerWins(context, skeleton)}
-5. punish — every forcing move speaks in the video; captions carry the rhythm.${victimErrors(context, skeleton)}
-6. safety — how the victim stays safe: ${safeMove}, in one or two sentences.${trapperDefence(context, skeleton)}${risk}${safeLineOnBoard(context, skeleton)}
+${items.map((item, index) => `${index + 1}. ${item}`).join('\n')}
 The end card and call to action are added by the app; don't write them.
 In the course, every move speaks. The bait and the safe move get the longest
 lines. The learner drills both sides, so the lines must teach springing the
@@ -154,7 +155,7 @@ function trapperDefence(context: CoursePromptContext, skeleton: Extract<CourseSk
   if (!bait || !best || best.line.length < 2) return '';
   const trapper = capitalise(context.learnerSide);
   const verdict = bait.alternatives.find((alternative) => alternative.san === best.san)?.verdict;
-  const stands = [verdict, best.balance].filter(Boolean).join('; ');
+  const stands = [verdict && midSentence(verdict), best.balance].filter(Boolean).join('; ');
   return `
    Then the trapper's side: when the victim finds ${best.san}, best play goes
    ${best.line.join(' ')}, and then ${stands}. Name ${trapper}'s best
@@ -200,10 +201,13 @@ function trapEnding(context: CoursePromptContext): string {
   const leaf = context.nodes.find((node) => node.id === leafId);
   if (!leafId || !leaf) return 'not found; say what the dossier shows.';
   if (leaf.san.endsWith('#')) return `checkmate, ${nodeLabel(context, leafId)}. Promise the mate, not material.`;
-  const after = context.dossier.nodes.find((node) => node.nodeId === leafId)?.after;
+  const leafFacts = context.dossier.nodes.find((node) => node.nodeId === leafId);
   const byId = new Map(context.nodes.map((node) => [node.id, node]));
   const sans = courseNodeAncestry(byId, leafId).map((node) => node.san);
-  const standing = after ? after.charAt(0).toLowerCase() + after.slice(1) : 'see the dossier';
+  const standing = leafFacts ? midSentence(leafFacts.after) : 'see the dossier';
+  // Noah's Ark ends with material level and the bishop on b3 trapped.
+  const trapped = leafFacts?.board.find((fact) => fact.includes('which is trapped'))?.replace(/^attacks /, '').replace(/, which is trapped:.*$/, '');
+  if (trapped) return `${nodeLabel(context, leafId)}, after which ${standing} and ${lineBalance(context.startFen, sans)}, but ${trapped} is trapped and will be lost. Promise that piece, nothing more.`;
   return `${nodeLabel(context, leafId)}, after which ${standing} and ${lineBalance(context.startFen, sans)}. Promise that material, nothing more.`;
 }
 
@@ -259,7 +263,9 @@ function tacticsPlaybook(context: CoursePromptContext, skeleton: Extract<CourseS
   const found = skeleton?.examples.find((example) => example.motif)?.motif;
   const motif = found ? TACTIC_MOTIF_PHRASES[found].noun : 'tactic';
   const count = tacticExampleCount(context);
-  return `KIND: TACTIC THEME (${motif}), ${count} examples, easiest first.
+  const examples = count === 1 ? '1 example' : `${count} examples, easiest first`;
+  const times = count === 1 ? 'once' : count === 2 ? 'twice' : `${count} times`;
+  return `KIND: TACTIC THEME (${motif}), ${examples}.
 1. concept — one sentence on what a ${motif} is, then the cue: what on the board
    tells you to look for one. Take the cue from the examples' board facts
    (which pieces were loose, which squares they shared), not from general
@@ -268,17 +274,20 @@ function tacticsPlaybook(context: CoursePromptContext, skeleton: Extract<CourseS
    nodes), the reveal, why it works, and this example's cue.
 3. scan — the three things to scan for in their own games.
 Each reveal names the cue again, so by the end the learner has seen the pattern
-${count} times.`;
+${times}.`;
 }
 
 /** Phase 103: a position and its technique, taught as a strong player
  * learns one: the goal, the idea, the only moves, the defender's tries. */
 function endgamePlaybook(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'endgame' }> | null): string {
   const side = capitalise(context.learnerSide);
-  const goal = skeleton ? (skeleton.goal === 'win' ? 'to play and win' : 'to play and hold the draw') : 'to play';
+  const mover = context.startFen.split(' ')[1] === 'b' ? 'Black' : 'White';
+  const aim = skeleton ? (skeleton.goal === 'win' ? 'win' : 'hold the draw') : null;
+  // The Philidor's defender is Black, but White moves first.
+  const goal = !aim ? `${mover} to move` : mover === side ? `${side} to play and ${aim}` : `${mover} to move; ${side} ${aim === 'win' ? 'wins' : 'holds the draw'}`;
   const spoil = skeleton?.goal === 'draw' ? 'the draw becomes a loss' : 'the win becomes a draw';
   const list = (ids: readonly string[]): string => ids.map((id) => nodeLabel(context, id)).join(', ') || 'none';
-  return `KIND: ENDGAME. ${side} ${goal}. Material: ${skeleton?.material ?? 'see the dossier'}.
+  return `KIND: ENDGAME. ${goal}. Material: ${skeleton?.material ?? 'see the dossier'}.
 The technique: ${list(skeleton?.learnerNodeIds ?? [])}. The only moves: ${list(skeleton?.onlyMoveNodeIds ?? [])}.
 The defender's tries: ${list(skeleton?.deviationNodeIds ?? [])}.
 Use these episodes, in order:

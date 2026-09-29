@@ -219,7 +219,7 @@ function attackedPieces(fenAfter: string, from: Square): string[] {
       if (!chess.attackers(cell.square, mover.color).includes(from)) continue;
       const target = `the ${PIECE_NAMES[cell.type]} on ${cell.square}`;
       const pin = pinOf(fenAfter, cell.square);
-      const trapped = isTrapped(fenAfter, cell.square) ? ', which is trapped: every square it can reach loses it' : '';
+      const trapped = isTrapped(fenAfter, cell.square, from) ? ', which is trapped: every square it can reach loses it' : '';
       targets.push(`attacks ${target}${pin ? `, which is pinned to ${pin}` : ''}${trapped}`);
     }
   }
@@ -255,12 +255,17 @@ function pinOf(fenAfter: string, square: Square): string | null {
  * ended on "attacks the bishop on b3" and nothing said the bishop had
  * nowhere to go. An even trade is no loss: the Englund's pinned queen can
  * still trade itself off on c3. */
-function isTrapped(fenAfter: string, square: Square): boolean {
+function isTrapped(fenAfter: string, square: Square, by: Square): boolean {
   const chess = new Chess(fenAfter);
   const piece = chess.get(square);
+  const attacker = chess.get(by);
   const passed = flipActiveColorFen(fenAfter);
-  if (!piece || !passed || piece.color !== chess.turn() || piece.type === 'k' || piece.type === 'p' || !isLostOn(passed, square)) return false;
-  return chess.moves({ square, verbose: true }).every((move) => (!move.captured || VALUES[move.captured] < VALUES[piece.type]) && isLostOn(move.after, move.to));
+  if (!piece || !attacker || !passed || piece.color !== chess.turn() || piece.type === 'k' || piece.type === 'p' || !isLostOn(passed, square)) return false;
+  // A cheaper attacker, so a defender does not help; and somewhere to go, or
+  // it is only stuck (a pinned rook, a rook in its corner before castling).
+  const moves = chess.moves({ square, verbose: true });
+  if (VALUES[attacker.type] >= VALUES[piece.type] || !moves.length) return false;
+  return moves.every((move) => (!move.captured || VALUES[move.captured] < VALUES[piece.type]) && isLostOn(move.after, move.to));
 }
 
 /** The side to move takes on the square and comes out ahead: no recapture,

@@ -104,6 +104,10 @@ describe('course dossier', () => {
     // Noah's Ark: the bishop on b3 has nowhere to go.
     const noah = after('1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 d6 5. d4 b5 6. Bb3 Nxd4 7. Nxd4 exd4 8. Qxd4 c5 9. Qd5 Be6 10. Qc6+ Bd7 11. Qd5');
     expect(boardFacts(noah, 'c4')).toContain('attacks the bishop on b3, which is trapped: every square it can reach loses it');
+    // A piece with no move at all is stuck, not trapped: the rook in its corner.
+    const corner = boardFacts('rn2k3/p7/8/8/2B5/8/8/4K3 w - - 0 1', 'Bd5');
+    expect(corner).toContain('attacks the rook on a8');
+    expect(corner.join(' | ')).not.toContain('trapped');
     // A piece that can run is not trapped.
     expect(boardFacts('4k3/8/8/2b5/8/8/1P6/4K3 w - - 0 1', 'b4').join(' | ')).not.toContain('trapped');
   });
@@ -155,6 +159,14 @@ describe('course dossier', () => {
 });
 
 describe('course skeleton', () => {
+  test('endgame: "much better" at the start is a win (no tablebase says "winning")', () => {
+    const { tree, dossier } = englund();
+    const nodes = dossier.nodes.map((node, index) => (index === 0 ? { ...node, before: 'Black is much better' } : node));
+    const skeleton = buildCourseSkeleton({ kind: 'endgame', tree, lines: courseLineGames(tree), dossier: { ...dossier, nodes } });
+
+    expect(skeleton?.kind === 'endgame' && skeleton.goal).toBe('win');
+  });
+
   test("endgame: the goal from the start's verdict, the material, the learner's moves and its only moves", () => {
     const { tree, dossier } = englund();
     const skeleton = buildCourseSkeleton({ kind: 'endgame', tree, lines: courseLineGames(tree), dossier });

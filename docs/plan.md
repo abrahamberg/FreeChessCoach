@@ -2411,7 +2411,9 @@ before any model wrote a word:
 - [x] An attacked piece pinned by any piece: to the king, or to the queen
   ("which is pinned to the queen on d8 by the bishop on g5").
 - [x] An attacked piece with no safe square is named trapped ("the bishop
-  on b3 is trapped: every square it can reach loses it").
+  on b3 is trapped: every square it can reach loses it"): attacked by a
+  cheaper piece, with at least one move, each of which loses it. A piece
+  with no move at all (pinned, or in its corner) is not called trapped.
 
 ### Task 106.3 — Tactic sentences
 
@@ -2419,7 +2421,9 @@ before any model wrote a word:
 
 - [x] A mate through checkmate reads "forced mate".
 - [x] In the course dossier, the defensive motifs (save, retreat, escape,
-  block, unpin) are dropped on a move that gives check or mate.
+  block, unpin) are dropped on a check; on a mate only a sentence whose gain
+  is the mate stays (17.Rd8# read "You won a knight through a checkmate —
+  rook on d8 forks b8 and e8").
 
 ### Task 106.4 — The dossier text
 
@@ -2433,14 +2437,18 @@ before any model wrote a word:
 **Files:** `packages/prompts/src/course/playbooks.ts`, `context.ts`,
 `course-skeleton.ts`, tests.
 
-- [ ] An endgame is won when the learner is "much better" or more; the
+- [x] An endgame is won when the learner is "much better" or more; the
   goal names who moves and who wins or holds ("White to move; Black holds
   the draw").
-- [ ] A trap with no punish moves has no punish item, and its episodes are
+- [x] A trap with no punish moves has no punish item, and its episodes are
   numbered to match.
-- [ ] A trap that ends on a trapped piece says so in the hook's fact.
-- [ ] Verdicts mid-sentence keep "White"/"Black" capitalised and lower only
+- [x] A trap that ends on a trapped piece says so in the hook's fact.
+- [x] Verdicts mid-sentence keep "White"/"Black" capitalised and lower only
   "The"; tactics count "1 example", "once".
+
+The two tempting-move tests in `course-generate.test.ts` build the
+Englund's tempting moves in full and ran just past vitest's 5 s default
+before this phase too; they get 20 s.
 
 Not fixed here, for the owner: opening courses get no reel candidate unless
 a line holds a trap, mate or brilliant move (the London, Italian and

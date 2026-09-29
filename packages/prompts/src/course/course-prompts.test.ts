@@ -2,7 +2,7 @@ import type { CourseSkeleton } from '@freechesscoach/chess-analysis';
 import type { CourseKind } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { courseBudget, episodeWordBudget } from './budget.js';
-import { buildCourseSystemPrompt } from './context.js';
+import { buildCourseSystemPrompt, midSentence } from './context.js';
 import { buildCourseVoiceBlock } from './course-voice.js';
 import { buildCourseEpisodeMessages } from './episode.js';
 import { ENGLUND_OUTLINE, ENGLUND_PLAN, englundCourseContext } from './fixtures.js';
@@ -100,10 +100,23 @@ describe('course prompts', () => {
   test('an endgame names the goal, the only moves and what a tempting move spoils', () => {
     const system = buildCourseSystemPrompt(englundCourseContext('endgame', SKELETONS.endgame));
 
-    expect(system).toContain('KIND: ENDGAME. Black to play and win. Material: Black is a rook up.');
+    // White moves first from the Englund's start: the learner's goal is named apart.
+    expect(system).toContain('KIND: ENDGAME. White to move; Black wins. Material: Black is a rook up.');
     expect(system).toContain('The only moves: n12 (6... Bb4).');
     expect(system).toContain('the win becomes a draw');
     expect(buildCourseOutlineMessages(englundCourseContext('endgame', SKELETONS.endgame)).user).toContain('goal: win; material: Black is a rook up');
+  });
+
+  test('a trap whose answer ends it has no punish item; verdicts read mid-sentence', () => {
+    const trap = SKELETONS.trap;
+    if (trap?.kind !== 'trap') throw new Error('no trap skeleton');
+    const system = buildCourseSystemPrompt(englundCourseContext('trap', { ...trap, punishNodeIds: [] }));
+
+    expect(system).not.toContain('punish —');
+    expect(system).toMatch(/\n5\. safety — /);
+    expect(buildCourseSystemPrompt(englundCourseContext('trap', trap))).toMatch(/\n5\. punish — [\s\S]*\n6\. safety — /);
+    expect(midSentence('The position is roughly equal')).toBe('the position is roughly equal');
+    expect(midSentence('Black is better')).toBe('Black is better');
   });
 
   test('the outline request carries the lines, candidates and the whole dossier', () => {

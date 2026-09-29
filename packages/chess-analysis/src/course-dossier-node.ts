@@ -84,7 +84,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     bestInstead: bestInstead(move, node.san, fenBefore),
     board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan)],
     tactics: tacticSentences(move, node.san, side === input.learnerSide),
-    motif: move.tacticOpportunity?.found && fitsCourseMove(move.tacticOpportunity.type, node.san) ? move.tacticOpportunity.type : null,
+    motif: move.tacticOpportunity?.found && fitsCourseMove(move.tacticOpportunity, node.san) ? move.tacticOpportunity.type : null,
     alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
     tempting: [],
     quizEligible: isQuizEligible(evalBefore, node.san, side),
@@ -108,13 +108,18 @@ function bestInstead(move: ClassifiedMove, san: string, fenBefore: string): Cour
  * the bishop off g5, out of reach". */
 const DEFENSIVE_MOTIFS = new Set<TacticMotifType>(['defendsHangingPiece', 'removesTarget', 'escapesFork', 'blocksThreat', 'breaksPin']);
 
-function fitsCourseMove(type: TacticMotifType, san: string): boolean {
-  return !(DEFENSIVE_MOTIFS.has(type) && /[+#]$/.test(san));
+/** A mate says why in its board facts; the review's sentence on it only
+ * helps when it is about the mate: 17.Rd8# read "You won a knight through a
+ * checkmate — rook on d8 forks b8 and e8", 4.Qxf7# "moves the queen off h5,
+ * out of reach". */
+function fitsCourseMove(claim: { type: TacticMotifType; gain?: { kind: string } }, san: string): boolean {
+  if (san.endsWith('#')) return claim.gain?.kind === 'mate';
+  return !(DEFENSIVE_MOTIFS.has(claim.type) && san.endsWith('+'));
 }
 
 function tacticSentences(move: ClassifiedMove, san: string, isUserMove: boolean): string[] {
   const sentences: string[] = [];
-  if (move.tacticOpportunity && fitsCourseMove(move.tacticOpportunity.type, san)) sentences.push(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove }, move.bestMoveSan));
+  if (move.tacticOpportunity && fitsCourseMove(move.tacticOpportunity, san)) sentences.push(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove }, move.bestMoveSan));
   if (move.tacticAllowed) sentences.push(tacticAllowedReason({ ...move.tacticAllowed, isUserMove }));
   return sentences;
 }

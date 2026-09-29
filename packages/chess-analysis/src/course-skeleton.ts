@@ -160,10 +160,12 @@ function endgameSkeleton(input: CourseSkeletonInput, lineId: string, nodes: Cour
 }
 
 /** The dossier's words for a position ("White is winning", "White has a
- * forced mate in 12") give `side` a win. */
+ * forced mate in 12") give `side` a win. Without a tablebase a won endgame
+ * reads "much better": the king-and-pawn win and the Lucena were both taught
+ * as "hold the draw". */
 function winsFor(words: string, side: 'white' | 'black'): boolean {
   const name = side === 'white' ? 'White' : 'Black';
-  return words.startsWith(name) && /winning|mate/.test(words);
+  return words.startsWith(name) && /much better|winning|mate/.test(words);
 }
 
 function puzzleSkeleton(lineId: string, nodes: CourseNodeFacts[], learnerSide: 'white' | 'black'): PuzzleSkeleton {

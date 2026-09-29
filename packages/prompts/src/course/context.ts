@@ -69,6 +69,12 @@ export function promptVideos(context: CoursePromptContext): CourseVideos {
   return context.videos ?? { video: true, reel: true };
 }
 
+/** An engine verdict inside a sentence: "and then the position is roughly
+ * equal", while "Black is better" keeps its capital. */
+export function midSentence(words: string): string {
+  return words.startsWith('The ') ? `t${words.slice(1)}` : words;
+}
+
 export function capitalise(side: string): string {
   return side.charAt(0).toUpperCase() + side.slice(1);
 }
