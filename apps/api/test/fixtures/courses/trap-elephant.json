@@ -1,0 +1,8 @@
+{
+  "kind": "trap",
+  "levelBand": "improving",
+  "coachPersona": "scholar",
+  "learnerSide": "black",
+  "direction": "The Elephant trap in the Queen's Gambit Declined: why grabbing the pinned knight's pawn loses.",
+  "pgn": "[Event \"Elephant trap\"]\n\n1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Bg5 Nbd7 5. cxd5 exd5 6. Nxd5 Nxd5 7. Bxd8 Bb4+ 8. Qd2 Bxd2+ 9. Kxd2 Kxd8 *"
+}

@@ -1,0 +1,8 @@
+{
+  "kind": "master_game",
+  "levelBand": "improving",
+  "coachPersona": "scholar",
+  "learnerSide": null,
+  "direction": "Reti vs Tartakower, Vienna 1910: a queen sacrifice and a bishop mate in eleven moves.",
+  "pgn": "[Event \"Vienna\"]\n[Date \"1910.??.??\"]\n[White \"Richard Reti\"]\n[Black \"Savielly Tartakower\"]\n[Result \"1-0\"]\n\n1. e4 c6 2. d4 d5 3. Nc3 dxe4 4. Nxe4 Nf6 5. Qd3 e5 6. dxe5 Qa5+ 7. Bd2 Qxe5 8. O-O-O Nxe4 9. Qd8+ Kxd8 10. Bg5+ Kc7 11. Bd8# 1-0"
+}

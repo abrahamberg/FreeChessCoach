@@ -2353,6 +2353,102 @@ and for its findings to be fixed.
 
 Commit per task; push each phase.
 
+## Phase 106 — More golden courses, and the facts they showed wrong
+
+The owner (2026-09-29): make more variations of courses and look for bugs
+and room to improve in what the recordings will say. Every fault so far was
+found on a position the golden set did not have. A facts-only pass (no model,
+the dev stack's engine) over 13 new courses showed the facts themselves wrong
+before any model wrote a word:
+
+- Réti–Tartakower 9.Qd8+: "You saved a hanging piece — saves the bishop on
+  d2"; 11.Bd8#: "moves the bishop off g5, out of reach". The game review's
+  defensive motifs, on a queen sacrifice and a mate.
+- "the queen on g8 forks the rook on a8 and the king on h8" (Philidor's
+  Legacy 3.Qg8+, the rook takes it); Nd6# "forks the bishop on c8".
+- "h1 is covered by ." and "b6 is covered by ;": a square covered through
+  the mated king has no attacker in chess.js until the king moves off it.
+- "You forced mate through a checkmate."
+- King and pawn, and the Lucena: "White to play and hold the draw". A won
+  endgame reads "much better", never "winning", without a tablebase. The
+  Philidor: "Black to play" when White moves first.
+- The Caro-Kann course: 1…c6 "best instead: c5"; the trap's 5.Qe2 "best
+  instead: Nf3". A book or good move gets a "better" move nobody should
+  play.
+- Noah's Ark ends on 11…c4 "attacks the bishop on b3", material level: the
+  trapped bishop is the whole trap and nothing said so.
+- The Elephant bait: nothing said the knight on f6 is pinned to the queen,
+  which is why Nxd5 looks safe.
+- Marshall's 23…Qg3, the game's point, got one line: past 40 moves only
+  notable moves get their facts, and the last move was not one of them.
+- The Caro-Kann Nd6# trap has no punish episode (the answer mates), yet the
+  playbook lists six episodes with a punish item.
+- "and then The position is roughly equal", "black is better", "1
+  examples", "seen the pattern 1 times".
+
+### Task 106.1 — Golden variations and a facts pass
+
+**Files:** `apps/api/test/fixtures/courses/*.json`, `golden-set.ts`,
+`golden-set.test.ts`, `scripts/course-golden.ts`,
+`scripts/course-golden-facts.ts` (new).
+
+- [x] Fixtures are named `<kind>-<name>.json`, several per kind (19): the
+  Elephant, Blackburne, Noah's Ark and Caro-Kann Nd6# traps; the Caro-Kann
+  and Italian openings; the Fried Liver; a knight fork and the four-move
+  smothered mate; Réti–Tartakower and Levitsky–Marshall; the Philidor and
+  king and pawn.
+- [x] `--only` takes a kind or a name; `--facts` prints, with no model, the
+  playbook, the reel candidates and each planned episode's facts.
+
+### Task 106.2 — Board facts that hold
+
+**Files:** `course-dossier-words.ts`, tests.
+
+- [ ] Mate nets read the board with the king lifted off, so a square covered
+  through the king names its piece.
+- [ ] No fork from a square where the piece is simply taken; a mating move
+  lists no attacks or forks.
+- [ ] An attacked piece pinned by any piece: to the king, or to the queen
+  ("which is pinned to the queen on d8 by the bishop on g5").
+- [ ] An attacked piece with no safe square is named trapped ("the bishop
+  on b3 is trapped: every square it can reach loses it").
+
+### Task 106.3 — Tactic sentences
+
+**Files:** `tactic-reason-text.ts`, `course-dossier-node.ts`, tests.
+
+- [ ] A mate through checkmate reads "forced mate".
+- [ ] In the course dossier, the defensive motifs (save, retreat, escape,
+  block, unpin) are dropped on a move that gives check or mate.
+
+### Task 106.4 — The dossier text
+
+**Files:** `course-dossier-text.ts`, tests.
+
+- [ ] "best instead" only on an inaccuracy, mistake, blunder or miss.
+- [ ] Each line's last move always gets its full facts.
+
+### Task 106.5 — Playbooks
+
+**Files:** `packages/prompts/src/course/playbooks.ts`, `context.ts`,
+`course-skeleton.ts`, tests.
+
+- [ ] An endgame is won when the learner is "much better" or more; the
+  goal names who moves and who wins or holds ("White to move; Black holds
+  the draw").
+- [ ] A trap with no punish moves has no punish item, and its episodes are
+  numbered to match.
+- [ ] A trap that ends on a trapped piece says so in the hook's fact.
+- [ ] Verdicts mid-sentence keep "White"/"Black" capitalised and lower only
+  "The"; tactics count "1 example", "once".
+
+Not fixed here, for the owner: opening courses get no reel candidate unless
+a line holds a trap, mate or brilliant move (the London, Italian and
+Caro-Kann make no reel); a puzzle's tempting threats that still win (Qd5 in
+the four-move smothered mate wins a rook) carry the same "?" as losing ones.
+
+Commit per task; push the phase.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

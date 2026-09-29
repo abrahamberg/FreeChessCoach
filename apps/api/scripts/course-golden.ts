@@ -12,8 +12,11 @@
  *      GOLDEN_MODEL, GOLDEN_API_KEY and optionally GOLDEN_ENDPOINT (default:
  *      the provider's public API).
  * The engine: --engine-url (default http://localhost:8081, the dev stack's).
+ * `--only` takes a kind ("trap") or one course ("trap-englund"). `--facts`
+ * needs no model: it prints the facts each episode's call would get.
  *
  *   UNLOCK_PHRASE=… npm run course:golden -w apps/api -- --email you@example.com [--only trap] [--json out.json]
+ *   npm run course:golden -w apps/api -- --facts [--only trap]
  */
 import { writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
@@ -30,8 +33,9 @@ import { draftFromIntake } from '../src/services/courses.js';
 import { writeEpisode, type WrittenEpisode } from '../src/services/courses/generate-episode.js';
 import { documentFromOutline, planOutline } from '../src/services/courses/generate-outline.js';
 import { writeReel } from '../src/services/courses/generate-reel.js';
-import { courseTreeOf, generationInputs, type CourseModelCall } from '../src/services/courses/generation-inputs.js';
+import { courseTreeOf, generationInputs, type CourseModelCall, type GenerationInputs } from '../src/services/courses/generation-inputs.js';
 import { NativeEngineBackend } from '../src/services/engine/native-engine-backend.js';
+import { printCourseFacts } from './course-golden-facts.js';
 import { printCourseRun, type CourseRun } from './course-golden-print.js';
 
 const DEFAULT_DATABASE_URL = 'postgresql://chess_coach:chess_coach@localhost:5432/chess_coach';
@@ -58,14 +62,20 @@ function envSetup(): StoredLlmSetup {
   return StoredLlmSetupSchema.parse({ protocol: GOLDEN_PROTOCOL, highModel: GOLDEN_MODEL, apiKey: GOLDEN_API_KEY, endpoint });
 }
 
-/** One golden course, start to finish, in memory. */
-async function runCourse(course: GoldenCourse, resolution: ModelResolution, engineUrl: string): Promise<CourseRun> {
-  const started = Date.now();
+/** The draft and its engine dossier, as a run starts from them. */
+async function courseInputs(course: GoldenCourse, engineUrl: string): Promise<GenerationInputs> {
   const document = draftFromIntake(course.intake);
   const { dossier } = await buildCourseDossierFromEngine(courseTreeOf(document), document.learnerSide, new NativeEngineBackend(engineUrl), document.kind).catch((error: unknown) => {
     throw new Error(`the engine at ${engineUrl} failed (${error instanceof Error ? error.message : String(error)}); is the dev stack up?`);
   });
-  const inputs = generationInputs({ document, dossier, direction: course.intake.direction, sourcePgn: course.intake.pgn });
+  return generationInputs({ document, dossier, direction: course.intake.direction, sourcePgn: course.intake.pgn });
+}
+
+/** One golden course, start to finish, in memory. */
+async function runCourse(course: GoldenCourse, resolution: ModelResolution, engineUrl: string): Promise<CourseRun> {
+  const started = Date.now();
+  const inputs = await courseInputs(course, engineUrl);
+  const { document } = inputs;
   const engineMs = Date.now() - started;
 
   const calls = { outline: 0, episodes: 0, reel: 0, repairs: 0 };
@@ -91,15 +101,20 @@ async function runCourse(course: GoldenCourse, resolution: ModelResolution, engi
 }
 
 async function main(): Promise<void> {
-  const { values } = parseArgs({ options: { email: { type: 'string' }, only: { type: 'string' }, json: { type: 'string' }, 'engine-url': { type: 'string' } } });
+  const { values } = parseArgs({ options: { email: { type: 'string' }, only: { type: 'string' }, json: { type: 'string' }, 'engine-url': { type: 'string' }, facts: { type: 'boolean' } } });
+  const engineUrl = values['engine-url'] ?? 'http://localhost:8081';
+  const courses = loadGoldenSet().filter((candidate) => !values.only || candidate.kind === values.only || candidate.name === values.only);
+  if (values.facts) {
+    for (const course of courses) printCourseFacts(course.name, await courseInputs(course, engineUrl));
+    return;
+  }
   const setup = values.email ? await ownerSetup(values.email) : envSetup();
   if (setup.protocol === 'local') throw new Error('A local model is reached through the browser; use a cloud setup for the golden set');
   const resolution = resolutionForSetup({}, setup, 'standard', 'course-golden');
-  const engineUrl = values['engine-url'] ?? 'http://localhost:8081';
   console.log(`Model: ${resolution.modelId} (${resolution.provider}), engine: ${engineUrl}\n`);
 
   const runs: CourseRun[] = [];
-  for (const course of loadGoldenSet().filter((candidate) => !values.only || candidate.name === values.only)) {
+  for (const course of courses) {
     try {
       const run = await runCourse(course, resolution, engineUrl);
       printCourseRun(run);

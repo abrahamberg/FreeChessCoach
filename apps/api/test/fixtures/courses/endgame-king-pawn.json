@@ -1,0 +1,8 @@
+{
+  "kind": "endgame",
+  "levelBand": "novice",
+  "coachPersona": "sunzi",
+  "learnerSide": "white",
+  "direction": "King and pawn against king: with your king on the sixth rank in front of the pawn, the pawn queens.",
+  "pgn": "[Event \"King and pawn\"]\n[SetUp \"1\"]\n[FEN \"4k3/8/4K3/4P3/8/8/8/8 w - - 0 1\"]\n\n1. Kf6 Kf8 (1... Kd7 2. Kf7 Kd8 3. e6 Kc7 4. e7) 2. e6 Ke8 3. e7 Kd7 4. Kf7 Kd6 5. e8=Q *"
+}

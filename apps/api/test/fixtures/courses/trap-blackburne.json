@@ -1,0 +1,8 @@
+{
+  "kind": "trap",
+  "levelBand": "novice",
+  "coachPersona": "gambler",
+  "learnerSide": "black",
+  "direction": "The Blackburne Shilling Gambit: a cheeky trap against the Italian that mates if White grabs everything.",
+  "pgn": "[Event \"Blackburne Shilling Gambit\"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Nd4 4. Nxe5 Qg5 5. Nxf7 Qxg2 6. Rf1 Qxe4+ 7. Be2 Nf3# *"
+}

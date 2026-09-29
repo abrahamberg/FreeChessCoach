@@ -1,0 +1,8 @@
+{
+  "kind": "endgame",
+  "levelBand": "club",
+  "coachPersona": "general",
+  "learnerSide": "black",
+  "direction": "The Philidor position: how the defender holds a rook endgame a pawn down, checking from behind.",
+  "pgn": "[Event \"Philidor position\"]\n[SetUp \"1\"]\n[FEN \"4k3/R7/7r/4PK2/8/8/8/8 w - - 0 1\"]\n\n1. e6 Rh1 2. Kf6 Rf1+ 3. Ke5 Re1+ 4. Kd6 Rd1+ 5. Ke5 Re1+ *"
+}
