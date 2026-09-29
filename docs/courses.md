@@ -424,7 +424,7 @@ Use exactly these episodes, in order:
 3. bait — why the victim's move looks natural. This is the heart of the trap:
    the viewer should think "I'd play that too".{baitFacts}
 4. quiz — "What does {trapperSide} play here?" plus a hint at the target. The
-   video pauses {pauseSeconds}s (the app adds the pause).
+   video pauses {pauseSeconds}s (the app adds the pause).{answerWins}
 5. punish — every forcing move speaks in the video; captions carry the rhythm.{victimErrors}
 6. safety — how the victim stays safe: {safeMove}, in one or two sentences.
    {trapperDefence}{trapperRiskLine}{safeLineOnBoard}
@@ -440,8 +440,11 @@ dossier); say so plainly." when `trapperRisk` is set, else empty.
 when the victim finds the safe move: "Then the trapper's side: when the victim
 finds {safeMove}, best play goes {line}, and then {verdict}; {balance}.
 Name {trapperSide}'s best moves from it and say plainly how {trapperSide}
-stands: the aim is to lose as little as possible, not to pretend the trap still
-works." It comes from the bait's `bestInstead` (line and `balance`, the material
+stands: {aim}" where the aim follows the verdict for the trapper: worse, "the
+aim is to lose as little as possible, not to pretend the trap still works";
+level, "the game goes on level, so name the plan, not damage control…";
+better, "the trapper keeps an edge even without the trap…" (the Elephant run
+told the trapper to do damage control in a level game). It comes from the bait's `bestInstead` (line and `balance`, the material
 at the line's end) and the safe move's verdict; empty when the line is shorter
 than two moves.
 
@@ -463,10 +466,15 @@ through those moves in order." Code copies that line onto the safety
 episode's ply on the bait as `playOut` (`trapSafeLine`, generate-episode.ts);
 the model never writes it.
 
+`{answerWins}` (`answerWins`) is what the trap wins, from the answer to the
+line's end: "From the answer to the end: {moves}; {who takes what}; at the
+end {material}." (or "it ends in checkmate"). The Elephant run promised
+"Black wins the queen" for a trap that wins a knight for a pawn.
+
 `{trapEnding}` states the line's last move: "checkmate, n16 (8... Qc1#).
-Promise the mate, not material." when it mates, else the move and the
-dossier's words for the position after it, then "Promise what that wins,
-nothing more." It is stated, never shown as an example hook: the first real
+Promise the mate, not material." when it mates, else the move, the
+dossier's words for the position after it and the material at the end, then
+"Promise that material, nothing more." It is stated, never shown as an example hook: the first real
 run (gemma-4-12b, 2026-09-28) copied the old example "Their queen is gone in
 eight moves." word for word on a trap that mates.
 
@@ -770,7 +778,8 @@ a message the creator can read.
 | Node ids | No line, caption, why, quiz text or reel text says a node id ("mate at n16"). |
 | Lengths | The video line (`say`, else `text`) within the words per move, the video within the episode's words (these, the video's hook and the reel's seconds may run over by `lengthSlack`, 10%, before they count); captions at most 6 words (with no caption the video shows the line's first sentence, and the model is asked to add a caption and keep the line, never told a caption it never wrote is long); course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
 | Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); the hint does not name it. |
-| Phrases | None of `BANNED_GENERIC_PHRASES`, and never the word "dossier" (the prompt's word, not the learner's). |
+| Phrases | None of `BANNED_GENERIC_PHRASES`, and never the word "dossier" (the prompt's word, not the learner's), nor "listed", "given line" or "the continuation" (our list's words). |
+| Pieces | "the knight on d5", "your d1 bishop": that piece stands on that square in a position the line is about: the episode's positions and the lines its moves show (the better move, the tempting moves, the safe line). A safety line is about the board before the bait and the safe line, and after the bait only where it names the bait (`course-verify-pieces.ts`). The hook is not checked. |
 | Voice | More than 2 lines in an episode starting with the same word; one line repeated in two episodes; a word that starts a sentence in 3 or more lines across the course and the reel ("Execute."), board words (White, the queen …) aside. |
 
 The video's packaging and the reel have their own checks (§13.9).
@@ -1233,10 +1242,14 @@ puzzle or tactics course:
    the model words facts instead of working them out. The dossier text names
    each side: "Nxe5? Black's Nxe5 … captures the pawn on e5. White answers
    Bxb4: … captures the queen on b4. Over the line Black takes a pawn;
-   White takes the queen (White is much better)".
+   White takes the queen; at the end White is a queen up (White is much
+   better)". A mating course move gets none outside a puzzle or tactics
+   course (two trap runs listed Nxe2? under Nf3#), and code keeps a node's
+   tempting moves only in the first episode that discusses them; a safety
+   episode keeps none.
 
 Dossier (`CourseNodeFacts.tempting`):
-`{ san, kind: 'check' | 'capture' | 'threat', does: string[], refutation: string[], after: string[], captures: string, verdict: string }[]`
+`{ san, kind: 'check' | 'capture' | 'threat', does: string[], refutation: string[], after: string[], captures: string, verdict: string, balance: string }[]`
 (`does`: the tempting move's board facts; `after`: the answer's, the first
 being its own move).
 The model may only discuss these; the verifier checks each named move.

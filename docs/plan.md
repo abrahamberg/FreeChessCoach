@@ -2059,6 +2059,118 @@ than only listed in words.
 
 Commit per task; docs with the last.
 
+## Phase 99 — What three new traps showed
+
+Runs after Phase 98 (2026-09-29) on the Englund, the Blackburne Shilling,
+Légal's mate and the Elephant trap. The bait now says why the victim walks
+in, the punish is honest about the victim's best, and the safe line plays on
+the board. The faults:
+
+- The Elephant's hook, reel and quiz say Black "wins the queen"; the trap
+  wins a knight for a pawn (the queens come off). The model had the answer's
+  move but no fact for what the line wins, and no material for a trap that
+  does not mate.
+- Two safety lines name pieces that are not there: "keeps the knight on d5
+  safe" after 6.e3 (the knight is on c3), "keeps your bishop on d1 safe" after
+  5…dxe5 (the queen is on d1).
+- The Elephant's safety line tells the trapper to do "damage control" in an
+  equal position: `trapperDefence` always says "lose as little as possible".
+- The Blackburne and Légal mates discuss tempting moves at the mating move
+  ("Nf3#. Nxe2? Ng5 hits the queen…"), and the safety and recap episodes
+  repeat the bait's tempting moves, so the video plays them twice.
+- "the listed line", "the given line", "no listed capture", "and the
+  continuation" are our words again.
+
+### Task 99.1 — What the trap wins
+
+**Files:** `playbooks.ts`, `course-prompts.test.ts`, `docs/courses.md`.
+
+- [x] The quiz item gets the line from the answer to the end, who takes what
+  over it (`captureWords`) and the material at the end (`lineBalance`):
+  "From the answer: Nxd5 Bxd8 Bb4+ Qd2 Bxd2+ Kxd2 Kxd8; Black takes a knight,
+  the queen and a bishop; White takes a pawn, the queen and a bishop; at the
+  end Black has a knight for a pawn."
+- [x] `trapEnding` for a trap that does not mate names the material at the
+  end, and says to promise that and nothing more.
+
+### Task 99.2 — The trapper's side matches the position
+
+**Files:** `playbooks.ts`, tests.
+
+- [x] `trapperDefence` says "lose as little as possible" only when the
+  trapper stands worse after the line; level: "the game goes on level: name
+  the plan"; better: "the trapper keeps an edge".
+
+### Task 99.3 — Pieces the line names are on the board
+
+**Files:** `course-verify-text.ts`, `course-verify.ts`, tests.
+
+- [x] "the knight on d5", "your bishop on d1", "White's queen on b2": the
+  piece must stand on that square in a position the line is about: before or
+  after its move, or on its tempting and safe lines. The safety episode's
+  line on the bait is about the position before the bait and the safe line,
+  not after the bait.
+
+### Task 99.4 — Tempting moves once, and never at a mate
+
+**Files:** `course-tempting.ts`, `generate-episode.ts`, tests.
+
+- [x] Outside a puzzle or tactics course, a mating course move gets no
+  tempting moves.
+- [x] A node's tempting moves are kept only in the first episode that
+  discusses them; a safety episode keeps none.
+- [x] Each tempting move carries the material at its line's end
+  ("Over the line …; at the end Black is a queen up").
+
+### Task 99.5 — No "listed line"
+
+**Files:** `course-verify-text.ts`, tests.
+
+- [x] "listed", "given line" and "the continuation" are flagged like
+  "dossier": the learner never sees our list.
+
+Commit per task; docs with the last.
+
+## Phase 100 — Puzzles: why every other check fails
+
+The owner (2026-09-29): in a puzzle, the coach must say why the other checks
+and captures are not correct. The smothered-mate run (1.Nf7+ Kg8 2.Nh6+ Kh8
+3.Qg8+ Rxg8 4.Nf7#) said "Ng6+ misses the mate-in-four target" with no
+reason (hxg6 takes the knight), because the engine's ranked moves are never
+tempting moves and the dossier gives them a verdict only. It also flagged
+every move as unsound and not quiz-eligible: a slower mate counted as a
+second answer. Quiz prompts named the answer ("Nf7+ or Ng6+?"), and the
+two-sentence limit fought the checks-captures-threats walk.
+
+### Task 100.1 — The fastest mate is the one answer
+
+**Files:** `course-dossier-node.ts`, `course-skeleton.ts`, tests.
+
+- [ ] A move is quiz-eligible when it is the engine's best and either beats
+  the second by `onlyMoveGap`, or mates and the second does not mate or mates
+  later. A puzzle's second solution is a move that mates as fast.
+
+### Task 100.2 — Every other check, with its answer
+
+**Files:** `course-tempting.ts`, `config.ts`, tests.
+
+- [ ] At a puzzle's or tactics course's learner move, the engine's ranked
+  moves are candidates too; every check is kept (no `temptingDrop`, no
+  obvious-loss filter), and a move that mates later or not at all where the
+  course move mates is kept; up to 5 a move.
+
+### Task 100.3 — The solve episode names them
+
+**Files:** `playbooks.ts`, `course-verify.ts`, tests, `docs/courses.md`.
+
+- [ ] The playbook: at each learner move, every check in the tempting list,
+  then the captures, each with why it fails (the answer and what it leaves).
+- [ ] The verifier: a solve episode's learner move discusses every tempting
+  check the dossier lists there; a quiz prompt never names the answer; a
+  solve line may have 5 sentences.
+
+Commit per task; docs with the last.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

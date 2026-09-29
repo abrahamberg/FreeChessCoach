@@ -61,13 +61,24 @@ async function newCourse(email: string, intake: Partial<CreateCourseRequest> = {
   return (await createCourse(db, user.id, CreateCourseRequestSchema.parse({ ...ENGLUND_INTAKE, videos: { video: true, reel: false }, ...intake }))).id;
 }
 
+/** The trap's dossier with a tactics course's tempting moves on the punish
+ * (every learner move gets them there): the trap's own has none left to
+ * test with once the mate has none. */
+const temptingDossier: CourseGenerateDeps['buildDossier'] = async (tree, side, owner, kind) => {
+  const trap = await englundDossier(tree, side, owner, kind);
+  const tactics = await englundDossier(tree, side, owner, 'tactics');
+  const at = tactics.dossier.nodes.find((node) => ['n13', 'n14', 'n15'].includes(node.nodeId) && node.tempting.length > 0);
+  const nodes = trap.dossier.nodes.map((node) => (node.nodeId === at?.nodeId ? { ...node, tempting: at.tempting } : node));
+  return { ...trap, dossier: { ...trap.dossier, nodes } };
+};
+
 /** The mock model, and deps whose `resolveModel` fails from call `failFrom` on. */
-function depsWith(steps: MockStep[], failFrom = Infinity) {
+function depsWith(steps: MockStep[], failFrom = Infinity, buildDossier: CourseGenerateDeps['buildDossier'] = englundDossier) {
   const model = multiStepGenerateModel(steps);
   let calls = 0;
   const deps: CourseGenerateDeps = {
     db,
-    buildDossier: englundDossier,
+    buildDossier,
     resolveModel: () => (++calls >= failFrom ? Promise.reject(new ValidationError(UNLOCK)) : Promise.resolve(mockResolution(model)))
   };
   const prompts = (): string[] => model.doGenerateCalls.map((call) => JSON.stringify(call.prompt));
@@ -183,24 +194,51 @@ describe('runCourseGeneration', () => {
     const id = await newCourse('tempting@example.com');
     const row = await coursesRepo.findById(db, id);
     const document = row!.document!;
-    const { dossier } = await englundDossier(courseTreeOf(document), document.learnerSide, row!.ownerId, document.kind);
+    const { dossier } = await temptingDossier(courseTreeOf(document), document.learnerSide, row!.ownerId, document.kind);
     const at = dossier.nodes.find((node) => ['n13', 'n14', 'n15', 'n16'].includes(node.nodeId) && node.tempting.length > 0)!;
     const fact = at.tempting[0]!;
+    const mate = { nodeId: 'n16', text: 'Mate.', say: null, caption: null, arrows: [], course: true, video: true, tempting: [] };
     // As the first real run wrote them: the dossier's "?" kept, the "+" dropped.
     const punish: EpisodeScript = {
       episodeId: 'e5',
-      plies: [{ nodeId: at.nodeId, text: 'The trap closes.', say: null, caption: null, arrows: [], course: true, video: true, tempting: [
+      // The plan lets one move speak, the mate; the tempting move's ply only carries them.
+      plies: [{ nodeId: at.nodeId, text: '', say: null, caption: null, arrows: [], course: false, video: false, tempting: [
         { san: `${fact.san.replace(/[+#]$/, '')}?`, why: 'It grabs material and lets the king breathe.' },
         { san: 'Kh1', why: 'Not a move the engine looked at.' }
-      ] }],
+      ] }, mate],
       quiz: null
     };
-    const { deps } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), step(script('e3', 'n11')), step(quizScript()), step(punish), step(script('e6', 'n11'))]);
+    const { deps } = depsWith([step(outline()), step(script('e1', 'n1')), step(script('e2', 'n2')), step(script('e3', 'n11')), step(quizScript()), step(punish), step(script('e6', 'n11'))], Infinity, temptingDossier);
 
     await runCourseGeneration(deps, id);
 
     const ply = (await coursesRepo.findById(db, id))?.document?.episodes.find((episode) => episode.id === 'e5')?.plies.find((each) => each.nodeId === at.nodeId);
     expect(ply?.tempting).toEqual([{ san: fact.san, why: 'It grabs material and lets the king breathe.', refutation: fact.refutation }]);
+  });
+
+  test('a safety episode keeps no tempting moves: they are the bait\'s and the punish\'s', async () => {
+    const id = await newCourse('tempting-once@example.com');
+    const row = await coursesRepo.findById(db, id);
+    const document = row!.document!;
+    const { dossier } = await temptingDossier(courseTreeOf(document), document.learnerSide, row!.ownerId, document.kind);
+    const at = dossier.nodes.find((node) => node.tempting.length > 0)!;
+    const withTempting = (episodeId: string): EpisodeScript => ({
+      episodeId,
+      plies: [
+        { nodeId: at.nodeId, text: '', say: null, caption: null, arrows: [], course: false, video: false, tempting: [{ san: at.tempting[0]!.san, why: 'It fails.' }] },
+        // The punish's key move, the mate.
+        ...(episodeId === 'e5' ? [{ nodeId: 'n16', text: 'Mate.', say: null, caption: null, arrows: [], course: true, video: true, tempting: [] }] : [])
+      ],
+      quiz: null
+    });
+    // The safety line is off its span, so it is repaired once, the same again.
+    const { deps } = depsWith([step(outline()), ...cleanEpisodes().slice(0, 4), step(withTempting('e5')), step(withTempting('e6')), step(withTempting('e6'))], Infinity, temptingDossier);
+
+    await runCourseGeneration(deps, id);
+
+    const episodes = (await coursesRepo.findById(db, id))?.document?.episodes ?? [];
+    const tempting = (episodeId: string) => episodes.find((episode) => episode.id === episodeId)?.plies.find((ply) => ply.nodeId === at.nodeId)?.tempting;
+    expect([tempting('e5')?.length, tempting('e6')]).toEqual([1, undefined]);
   });
 
   test("the safety episode's line on the bait carries the safe line for the video; no other line does", async () => {

@@ -80,6 +80,17 @@ function withRefutations(inputs: GenerationInputs, nodeId: string, tempting: { s
   });
 }
 
+/** Nodes whose tempting moves an episode before this one (in the outline's
+ * order) already discusses: the video would play them twice. The runs'
+ * safety and recap episodes repeated the bait's and the mate's. */
+function temptingDiscussed(inputs: GenerationInputs, outline: CourseOutline, episodeId: string): Set<string> {
+  const order = outline.chapters.flatMap((chapter) => chapter.episodes.map((episode) => episode.id));
+  const earlier = new Set(order.slice(0, order.indexOf(episodeId)));
+  return new Set(
+    inputs.document.episodes.filter((episode) => earlier.has(episode.id)).flatMap((episode) => episode.plies.filter((ply) => ply.tempting?.length).map((ply) => ply.nodeId))
+  );
+}
+
 /** A trap's safe line: the victim's best move at the bait and the engine's
  * line after it, for the video to play at the safety episode's line on the
  * bait. */
@@ -105,6 +116,7 @@ function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: 
   // The course always; the video only when the course makes one (§13.1).
   const video = courseVideos(inputs.document).video;
   const safeLine = planned.role === 'safety' ? trapSafeLine(inputs) : null;
+  const discussed = temptingDiscussed(inputs, outline, episodeId);
   return {
     id: planned.id,
     role: planned.role,
@@ -115,7 +127,7 @@ function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: 
       .map((ply) => ({ ...ply, video: video && ply.video }))
       .filter((ply) => ply.course || ply.video || ply.text.trim() || ply.arrows.length || ply.tempting.length)
       .map(({ say, caption, tempting, ...ply }) => {
-        const known = withRefutations(inputs, ply.nodeId, tempting);
+        const known = planned.role === 'safety' || discussed.has(ply.nodeId) ? [] : withRefutations(inputs, ply.nodeId, tempting);
         return {
           ...ply,
           ...(video && say?.trim() ? { say } : {}),

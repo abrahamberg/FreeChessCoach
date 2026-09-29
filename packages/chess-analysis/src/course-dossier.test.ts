@@ -101,13 +101,14 @@ describe('course dossier', () => {
       refutation: ['Bxb4', 'Nxf3+', 'exf3'],
       after: ['moves the bishop from d2 to b4', 'captures the queen on b4'],
       captures: 'Black takes a pawn and a knight; White takes the queen and a knight',
-      verdict: 'White is much better'
+      verdict: 'White is much better',
+      balance: 'White is a queen up'
     };
     const nodes = dossier.nodes.map((node) => (node.nodeId === 'n10' ? { ...node, tempting: [tempting] } : node));
     const text = renderCourseDossier({ ...dossier, nodes });
 
     expect(text).toContain(
-      "    tempting capture: Nxe5? Black's Nxe5 moves the knight from c6 to e5 | captures the pawn on e5. White answers Bxb4: moves the bishop from d2 to b4 | captures the queen on b4. Then Nxf3+ exf3. Over the line Black takes a pawn and a knight; White takes the queen and a knight (White is much better)."
+      "    tempting capture: Nxe5? Black's Nxe5 moves the knight from c6 to e5 | captures the pawn on e5. White answers Bxb4: moves the bishop from d2 to b4 | captures the queen on b4. Then Nxf3+ exf3. Over the line Black takes a pawn and a knight; White takes the queen and a knight; at the end White is a queen up (White is much better)."
     );
     expect(text).toMatch(/best instead: Nc3; after Nc3[^,]*, (material is level|White is a pawn up)/);
   });

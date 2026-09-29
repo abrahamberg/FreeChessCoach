@@ -60,7 +60,7 @@ function temptingText(node: CourseNodeFacts, tempting: CourseTemptingFacts): str
   const does = tempting.does.length ? ` ${mover}'s ${tempting.san} ${tempting.does.join(' | ')}.` : '';
   const after = answer ? ` ${other} answers ${answer}${tempting.after.length ? `: ${tempting.after.join(' | ')}` : ''}.` : '';
   const line = rest.length ? ` Then ${rest.join(' ')}.` : '';
-  return `${tempting.san}?${does}${after}${line} Over the line ${tempting.captures} (${tempting.verdict}).`;
+  return `${tempting.san}?${does}${after}${line} Over the line ${tempting.captures}; at the end ${tempting.balance} (${tempting.verdict}).`;
 }
 
 function isNotable(node: CourseNodeFacts): boolean {

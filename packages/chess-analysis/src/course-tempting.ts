@@ -3,7 +3,7 @@ import type { CourseKind, EngineEval } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 import type { CourseDossier } from './course-dossier.js';
 import { boardFacts, lineWords } from './course-dossier-words.js';
-import { captureWords, exchangeLoss, settledLine } from './course-material.js';
+import { captureWords, exchangeLoss, lineBalance, settledLine } from './course-material.js';
 import type { CourseTree } from './course-tree.js';
 import { toCpWhite, winPctFor } from './win-probability.js';
 
@@ -30,6 +30,8 @@ export interface CourseTemptingFacts {
   captures: string;
   /** The position after the tempting move, in the dossier's words. */
   verdict: string;
+  /** The material at the refutation's end ("Black is a queen up"). */
+  balance: string;
 }
 
 export interface TemptingCandidate {
@@ -47,13 +49,14 @@ export interface TemptingCandidate {
  * every learner move of a puzzle or tactics course, the checks, captures and
  * threats the side to move could play instead, except the move played and
  * the engine's ranked moves. Checks first, then captures by value taken,
- * then threats; at most 6 a position.
+ * then threats; at most 6 a position. Outside a puzzle or tactics course a
+ * mating move gets none: two trap runs listed Nxe2? and Ke7? under Nf3#.
  */
 export function temptingCandidates(tree: CourseTree, dossier: CourseDossier, kind: CourseKind | null): TemptingCandidate[] {
   const byId = new Map(tree.nodes.map((node) => [node.id, node]));
   const everyLearnerMove = kind === 'puzzle' || kind === 'tactics';
   return dossier.nodes.flatMap((facts) => {
-    const asked = facts.critical || facts.quizEligible || (everyLearnerMove && facts.side === dossier.learnerSide);
+    const asked = (facts.critical || facts.quizEligible || (everyLearnerMove && facts.side === dossier.learnerSide)) && (everyLearnerMove || !facts.san.endsWith('#'));
     const node = byId.get(facts.nodeId);
     if (!asked || !node) return [];
     const fenBefore = node.parentId ? (byId.get(node.parentId)?.fenAfter ?? tree.startFen) : tree.startFen;
@@ -135,7 +138,8 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
       refutation,
       after: boardFacts(candidate.fen, answer.moveSan),
       captures: captureWords(candidate.fenBefore, [candidate.san, ...refutation]),
-      verdict: lineWords(answer)
+      verdict: lineWords(answer),
+      balance: lineBalance(candidate.fenBefore, [candidate.san, ...refutation])
     });
     kept.set(candidate.nodeId, list);
   }

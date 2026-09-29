@@ -247,3 +247,10 @@ describe('pieces on squares (§7)', () => {
     expect(pieces(safety('Nc3, not Bc3: the bishop on c3 would be pinned. The rook on b1 guards b2.'))).toEqual([]);
   });
 });
+
+describe('our words (§7)', () => {
+  test('"listed", "the given line" and "the continuation" are ours, not the learner\'s', () => {
+    const messages = verify((episode) => (first(episode).text = 'Bc3 attacks the queen; in the listed line White is fine.')).map((problem) => problem.message);
+    expect(messages).toContain('the line on n11 says "listed": the learner never sees our list; name the moves or say what happens');
+  });
+});

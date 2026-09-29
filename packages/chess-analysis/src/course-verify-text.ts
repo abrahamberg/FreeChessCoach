@@ -146,7 +146,10 @@ export function phraseProblems(texts: EpisodeText[]): CourseVerifyProblem[] {
     }));
     // The prompt's word, not the learner's ("Qc5 is stronger in the dossier").
     const jargon = /\bdossier\b/.test(lower) ? [{ code: 'phrases' as const, nodeId, message: `${where} says "dossier": the learner never sees it; say "the engine", or just name the better move` }] : [];
-    return [...stock, ...jargon];
+    // Our list's words: "in the listed line", "no listed capture", "the given line", "and the continuation".
+    const listed = /\b(listed|given line|the continuation)\b/.exec(lower);
+    const ours = listed ? [{ code: 'phrases' as const, nodeId, message: `${where} says "${listed[0]}": the learner never sees our list; name the moves or say what happens` }] : [];
+    return [...stock, ...jargon, ...ours];
   });
 }
 

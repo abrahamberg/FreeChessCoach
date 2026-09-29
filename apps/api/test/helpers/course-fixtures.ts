@@ -12,7 +12,7 @@ export const ENGLUND_INTAKE = {
 } as const;
 
 /** A fake engine: level everywhere, except Black is winning from 6.Bc3 on. */
-export const englundDossier: CourseDossierBuilder = (tree, learnerSide) => {
+export const englundDossier: CourseDossierBuilder = (tree, learnerSide, _ownerId, kind) => {
   const lost = new Set(tree.nodes.filter((node) => Number(node.id.slice(1)) >= 11).map((node) => node.fenAfter));
   const analyzeGame = (fens: string[]): Promise<EngineEval[]> =>
     Promise.resolve(
@@ -26,5 +26,5 @@ export const englundDossier: CourseDossierBuilder = (tree, learnerSide) => {
           .map((move) => ({ moveSan: move.san, moveUci: `${move.from}${move.to}`, cp: lost.has(fen) ? -1000 : 0, mateIn: null }))
       }))
     );
-  return buildCourseDossierFromEngine(tree, learnerSide, { analyzeGame });
+  return buildCourseDossierFromEngine(tree, learnerSide, { analyzeGame }, kind);
 };
