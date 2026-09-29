@@ -2,7 +2,7 @@ import { Chess, DEFAULT_POSITION } from 'chess.js';
 import type { CourseTreeArrow } from './course-pgn-comment.js';
 import { tokenizeCoursePgn } from './course-pgn-tokens.js';
 import { buildDraftTree, type CourseTreeError, type DraftNode, type DraftRoot } from './course-tree-build.js';
-import { sideNotToMoveInCheck } from './null-move-fen.js';
+import { isLegalFen } from './is-legal-fen.js';
 import { extractFirstGame } from './pgn.js';
 
 export type { CourseTreeArrow } from './course-pgn-comment.js';
@@ -65,17 +65,11 @@ function splitHeaders(text: string): { fenHeader: string | null; movetext: strin
 
 function resolveStartFen(fenHeader: string | null, errors: CourseTreeError[]): string {
   if (!fenHeader) return DEFAULT_POSITION;
-  try {
-    const chess = new Chess(fenHeader);
-    if (sideNotToMoveInCheck(fenHeader)) {
-      errors.push({ message: `Invalid [FEN] header: the side not to move is in check: ${fenHeader}`, pgnLine: 1, san: null, moveNumber: null, side: null });
-      return DEFAULT_POSITION;
-    }
-    return chess.fen();
-  } catch {
+  if (!isLegalFen(fenHeader)) {
     errors.push({ message: `Invalid [FEN] header: ${fenHeader}`, pgnLine: 1, san: null, moveNumber: null, side: null });
     return DEFAULT_POSITION;
   }
+  return new Chess(fenHeader).fen();
 }
 
 interface Visit {

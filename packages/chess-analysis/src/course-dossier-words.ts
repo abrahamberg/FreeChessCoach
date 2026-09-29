@@ -2,8 +2,12 @@ import { Chess, type PieceSymbol, type Square } from 'chess.js';
 import type { EngineEval, EngineLine } from '@freechesscoach/shared';
 import { cpToWords, mateToWords } from './eval-words.js';
 import { inspectMoves } from './inspect-moves.js';
-import { flipActiveColorFen } from './null-move-fen.js';
 import { PIECE_NAMES } from './piece-names.js';
+import { see } from './see.js';
+import { isProfitableCaptureOn } from './tactic-board-facts.js';
+import { pins } from './tactic-pins.js';
+import { trappedPieces } from './tactic-trapped.js';
+import { PIECE_VALUES } from './tactics.js';
 
 const VALUABLE = new Set(['n', 'b', 'r', 'q']);
 
@@ -49,7 +53,7 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   if (inspected.gives !== 'checkmate') facts.push(...attackedPieces(inspected.resultFen, inspected.to as Square));
   // A capture taken back is a trade, not a piece left hanging: 3…cxd4 read
   // "leaves the pawn on d4 hanging" in every Open Sicilian.
-  const traded = (square: string): boolean => square === inspected.to && inspected.captured !== null && VALUES[inspected.captured] >= VALUES[inspected.piece];
+  const traded = (square: string): boolean => square === inspected.to && inspected.captured !== null && valueOf(inspected.captured) >= valueOf(inspected.piece);
   for (const piece of inspected.leavesHanging) {
     if (!traded(piece.square) && canBeTaken(inspected.resultFen, piece.square)) facts.push(`leaves the ${PIECE_NAMES[piece.piece]} on ${piece.square} hanging${takingStalemates(inspected.resultFen, piece.square) ? ': taking it is stalemate' : ''}`);
   }
@@ -272,21 +276,20 @@ export function abandonedGuard(fenBefore: string, san: string, replySan: string 
   return guardedBefore && !guardsAfter ? [`the ${PIECE_NAMES[moved.piece]} stops guarding ${target}, where ${replySan} follows`] : [];
 }
 
-const VALUES: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
+/** tactics.ts's values, the king above everything: it never trades, and
+ * never traps a piece. */
+const valueOf = (piece: PieceSymbol): number => (piece === 'k' ? 100 : PIECE_VALUES[piece]);
 
-/** A capture on the square that wins material: legal (a pinned attacker
- * doesn't count), and not answered by a recapture that costs the taker more
- * than it took. The first real runs read "leaves the rook on a1 hanging"
- * after 6.Bc3 in the Englund, where …Qxa1 loses the queen to Bxa1: the
- * bishop sees a1 once the queen leaves b2. */
+/** A legal capture on the square that does not lose material over the
+ * whole exchange (the shared SEE): a free piece, or one only traded off, as
+ * a forker that can be traded has forked nothing. The first real runs read
+ * "leaves the rook on a1 hanging" after 6.Bc3 in the Englund, where …Qxa1
+ * loses the queen to Bxa1. */
 function canBeTaken(fenAfter: string, square: string): boolean {
   const chess = new Chess(fenAfter);
-  return chess.moves({ verbose: true }).some((move) => {
-    if (move.to !== square || !move.captured) return false;
-    const after = new Chess(move.after);
-    const recaptured = after.moves({ verbose: true }).some((reply) => reply.to === square && Boolean(reply.captured));
-    return !recaptured || VALUES[move.captured] >= VALUES[move.piece];
-  });
+  const target = square as Square;
+  const legal = chess.attackers(target, chess.turn()).some((from) => chess.moves({ square: from, verbose: true }).some((move) => move.to === target));
+  return legal && see(fenAfter, target, chess.turn()) >= 0;
 }
 
 /** Enemy knights, bishops, rooks and queens the moved piece now hits. */
@@ -301,65 +304,44 @@ function attackedPieces(fenAfter: string, from: Square): string[] {
       if (!chess.attackers(cell.square, mover.color).includes(from)) continue;
       const target = `the ${PIECE_NAMES[cell.type]} on ${cell.square}`;
       const pin = pinOf(fenAfter, cell.square);
-      const trapped = isTrapped(fenAfter, cell.square, from) ? ', which is trapped: every square it can reach loses it' : '';
+      const boxed = !chess.moves({ square: cell.square }).length && chess.turn() === cell.color;
+      const trapped = isTrapped(fenAfter, cell.square, from) ? (boxed ? ', which is trapped: it cannot move, and no move saves it' : ', which is trapped: every square it can reach loses it') : '';
       targets.push(`attacks ${target}${pin ? `, which is pinned to ${pin}` : ''}${trapped}`);
     }
   }
   return targets;
 }
 
-/** "the king by the bishop on b5" or "the queen on d8 by the bishop on g5":
- * lifting the piece off the board opens a line from an enemy piece to its
- * king, or to its queen when the piece is worth less. The Elephant's bait
- * never said the knight on f6 was pinned, which is why Nxd5 looks safe. */
+/** "the king by the bishop on b5" or "the queen on d8 by the bishop on g5",
+ * from the shared `pins()`: pinned to the king, or to the queen by a
+ * cheaper piece. The Elephant's bait never said the knight on f6 was
+ * pinned, which is why Nxd5 looks safe. */
 function pinOf(fenAfter: string, square: Square): string | null {
   const chess = new Chess(fenAfter);
-  const piece = chess.get(square);
-  if (!piece) return null;
-  const enemy = piece.color === 'w' ? 'b' : 'w';
-  const king = chess.findPiece({ type: 'k', color: piece.color })[0];
-  const queen = piece.type === 'q' ? undefined : chess.findPiece({ type: 'q', color: piece.color })[0];
-  const before = (target: Square | undefined): Set<Square> => new Set(target ? chess.attackers(target, enemy) : []);
-  const [kingBefore, queenBefore] = [before(king), before(queen)];
-  const lifted = new Chess(fenAfter);
-  lifted.remove(square);
-  const pinner = (target: Square | undefined, already: Set<Square>): Square | undefined =>
-    target ? lifted.attackers(target, enemy).find((from) => !already.has(from)) : undefined;
-  const byKing = pinner(king, kingBefore);
-  if (byKing) return `the king by the ${PIECE_NAMES[chess.get(byKing)!.type]} on ${byKing}`;
-  const byQueen = pinner(queen, queenBefore);
-  if (queen && byQueen && VALUES[chess.get(byQueen)!.type] < VALUES.q) return `the queen on ${queen} by the ${PIECE_NAMES[chess.get(byQueen)!.type]} on ${byQueen}`;
-  return null;
+  const hits = pins(chess).filter((hit) => hit.pinned === square);
+  const name = (at: Square): string => PIECE_NAMES[chess.get(at)!.type];
+  const toKing = hits.find((hit) => hit.kind === 'absolute');
+  if (toKing) return `the king by the ${name(toKing.by)} on ${toKing.by}`;
+  const toQueen = hits.find((hit) => chess.get(hit.against)?.type === 'q' && chess.get(hit.by)?.type !== 'q');
+  return toQueen ? `the queen on ${toQueen.against} by the ${name(toQueen.by)} on ${toQueen.by}` : null;
 }
 
-/** The piece's side is to move, staying loses it, and so does every move it
- * has: it lands where it is lost without having taken as much. Noah's Ark
+/** The shared `trappedPieces` (lost where it stands and wherever it goes,
+ * over the whole exchange), for a piece the moved piece attacks: Noah's Ark
  * ended on "attacks the bishop on b3" and nothing said the bishop had
- * nowhere to go. An even trade is no loss: the Englund's pinned queen can
- * still trade itself off on c3. */
+ * nowhere to go. Two conditions on the attacker are the course's own: it is
+ * cheaper, so a defender does not help, and it cannot simply be taken (the
+ * Immortal's Nb6 on the rook, answered by …axb6). */
 function isTrapped(fenAfter: string, square: Square, by: Square): boolean {
   const chess = new Chess(fenAfter);
   const piece = chess.get(square);
   const attacker = chess.get(by);
-  const passed = flipActiveColorFen(fenAfter);
-  if (!piece || !attacker || !passed || piece.color !== chess.turn() || piece.type === 'k' || piece.type === 'p' || !isLostOn(passed, square)) return false;
-  // A cheaper attacker, so a defender does not help; and somewhere to go, or
-  // it is only stuck (a pinned rook, a rook in its corner before castling).
-  // Not in check (the Petrov's Nc6+ "trapped" the queen by checking the
-  // king), and the attacker cannot simply be taken (the Immortal's Nb6 on
-  // the rook, answered by …axb6).
-  const moves = chess.moves({ square, verbose: true });
-  if (VALUES[attacker.type] >= VALUES[piece.type] || !moves.length || chess.inCheck() || isLostOn(fenAfter, by)) return false;
-  return moves.every((move) => (!move.captured || VALUES[move.captured] < VALUES[piece.type]) && isLostOn(move.after, move.to));
+  if (!piece || !attacker || valueOf(attacker.type) >= valueOf(piece.type) || isLostOn(fenAfter, by)) return false;
+  return trappedPieces(chess, piece.color).some((hit) => hit.square === square);
 }
 
-/** The side to move takes on the square and comes out ahead: no recapture,
- * or the piece taken is worth more than the taker. */
+/** The side to move takes on the square and comes out ahead: the shared
+ * SEE's profitable capture. */
 function isLostOn(fen: string, square: string): boolean {
-  const chess = new Chess(fen);
-  return chess.moves({ verbose: true }).some((move) => {
-    if (move.to !== square || !move.captured) return false;
-    const recaptured = new Chess(move.after).moves({ verbose: true }).some((reply) => reply.to === square && Boolean(reply.captured));
-    return !recaptured || VALUES[move.captured] > VALUES[move.piece];
-  });
+  return isProfitableCaptureOn(fen, square as Square, new Chess(fen).turn());
 }

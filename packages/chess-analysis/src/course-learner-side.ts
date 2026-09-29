@@ -1,8 +1,8 @@
 import { Chess } from 'chess.js';
 import type { CourseKind } from '@freechesscoach/shared';
 import type { CourseTree } from './course-tree.js';
+import { materialBalance } from './tactic-board-facts.js';
 
-const PIECE_VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
 /**
  * docs/courses.md §3: the learner side where code can tell it. A trap is
@@ -57,9 +57,5 @@ function materialLeader(startFen: string, endFen: string): 'white' | 'black' | n
 
 /** White's material minus Black's. */
 function balance(fen: string): number {
-  let total = 0;
-  for (const row of new Chess(fen).board()) {
-    for (const cell of row) if (cell) total += (cell.color === 'w' ? 1 : -1) * (PIECE_VALUES[cell.type] ?? 0);
-  }
-  return total;
+  return materialBalance(new Chess(fen), 'w');
 }

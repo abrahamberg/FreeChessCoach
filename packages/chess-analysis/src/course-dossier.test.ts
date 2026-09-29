@@ -121,10 +121,14 @@ describe('course dossier', () => {
     expect(boardFacts('8/8/8/3k4/8/8/5P2/7K w - - 0 1', 'f4').join(' | ')).not.toContain('square');
     // The Petrov's 5.Nc6+: the queen checks, not the knight.
     expect(boardFacts(petrov, 'Nc6+')).toContain('a discovered check from the queen on e2');
-    // A piece with no move at all is stuck, not trapped: the rook in its corner.
+    // A boxed-in piece another move saves is not trapped: …Nc6 shields the
+    // rook in its corner, …Nd7 frees it.
     const corner = boardFacts('rn2k3/p7/8/8/2B5/8/8/4K3 w - - 0 1', 'Bd5');
     expect(corner).toContain('attacks the rook on a8');
     expect(corner.join(' | ')).not.toContain('trapped');
+    // Boxed in with no rescue, it is trapped (Legal's mate: Nxf7 on the rook
+    // behind its knight and pawn).
+    expect(boardFacts('rnbqkbnr/ppp2ppp/3p4/4N3/2B1P3/8/PPPP1PPP/RNBQK2R w KQkq - 0 5', 'Nxf7').join(' | ')).toContain('attacks the rook on h8, which is trapped: it cannot move, and no move saves it');
     // A piece that can run is not trapped.
     expect(boardFacts('4k3/8/8/2b5/8/8/1P6/4K3 w - - 0 1', 'b4').join(' | ')).not.toContain('trapped');
   });

@@ -1,7 +1,6 @@
 import { Chess, type PieceSymbol } from 'chess.js';
+import { PIECE_VALUES } from './tactics.js';
 
-/** Material points, the king not counted. */
-export const MATERIAL_VALUES: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 const NAMES: Record<PieceSymbol, [string, string]> = {
   p: ['pawn', 'pawns'],
   n: ['knight', 'knights'],
@@ -84,7 +83,7 @@ export function exchangeLoss(fenBefore: string, san: string, replySan: string): 
   const taken = lineCaptures(fenBefore, [san, replySan]);
   const mover: Side = new Chess(fenBefore).turn() === 'w' ? 'white' : 'black';
   const other: Side = mover === 'white' ? 'black' : 'white';
-  const points = (pieces: PieceSymbol[]): number => pieces.reduce((sum, piece) => sum + MATERIAL_VALUES[piece], 0);
+  const points = (pieces: PieceSymbol[]): number => pieces.reduce((sum, piece) => sum + PIECE_VALUES[piece], 0);
   return points(taken[other]) - points(taken[mover]);
 }
 

@@ -35,9 +35,9 @@ import { classifyTacticClaims } from '../classify-tactic-motif.js';
  * 40/40:
  *
  * 1. `trappedPieces` (`tactic-trapped.ts`) deliberately never counts a
- *    pawn — a cornered pawn is just ordinary closed-position play, not a
- *    tactic — while Lichess's own `trappedPiece` tag does credit some
- *    puzzles for exactly that.
+ *    pawn, while Lichess's own `trappedPiece` tag credits some puzzles for
+ *    exactly that; the sampled 40 happen not to need it since the exchange
+ *    rework (29 before, 40 after).
  * 2. `backRankMate` is excluded entirely by the fixture builder: it's
  *    almost always itself a forced mate, and `isCheckmate` is answered
  *    before any detector runs, so a puzzle tagged `backRankMate` can only
@@ -49,7 +49,7 @@ const MIN_PASS: Partial<Record<string, number>> = {
   skewer: 40,
   discoveredAttack: 37,
   doubleCheck: 40,
-  trappedPiece: 29,
+  trappedPiece: 40,
   hangingPiece: 29,
   capturingDefender: 15,
   mateIn1: 40

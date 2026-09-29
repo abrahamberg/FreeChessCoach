@@ -1,4 +1,4 @@
-import { Chess, type Square } from 'chess.js';
+import { Chess, type PieceSymbol, type Square } from 'chess.js';
 import type { CourseKind, EngineEval, EngineLine } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 import { moverMateIn } from './course-dossier-node.js';
@@ -6,9 +6,12 @@ import type { CourseDossier } from './course-dossier.js';
 import { boardFacts, lineWords } from './course-dossier-words.js';
 import { captureWords, exchangeLoss, lineBalance, settledLine } from './course-material.js';
 import type { CourseTree } from './course-tree.js';
+import { PIECE_VALUES } from './tactics.js';
 import { toCpWhite, winPctFor } from './win-probability.js';
 
-const PIECE_VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
+/** tactics.ts's values, with the king above everything: it is never given
+ * away, and a piece it attacks is threatened only when undefended. */
+const valueOf = (piece: string): number => (piece === 'k' ? 100 : (PIECE_VALUES[piece as PieceSymbol] ?? 0));
 /** Candidates per position sent to the engine, before the engine thins them. */
 const MAX_CANDIDATES = 6;
 const MAX_REFUTATION_PLIES = 4;
@@ -96,7 +99,7 @@ function movesWorthTrying(fen: string): WorthTrying[] {
     const after = new Chess(move.after);
     if (after.isCheckmate() || kingTakesForNothing(after, move)) return [];
     if (move.san.endsWith('+')) return [{ san: move.san, kind: 'check', fen: move.after, value: 0 }];
-    if (move.captured) return [{ san: move.san, kind: 'capture', fen: move.after, value: PIECE_VALUES[move.captured] ?? 0 }];
+    if (move.captured) return [{ san: move.san, kind: 'capture', fen: move.after, value: valueOf(move.captured) }];
     const threat = threatens(after, move.to, move.piece, move.color);
     return threat ? [{ san: move.san, kind: 'threat', fen: move.after, value: threat }] : [];
   });
@@ -108,7 +111,7 @@ function movesWorthTrying(fen: string): WorthTrying[] {
  * list was five of them a move. A minor piece stays (the Greek gift's
  * Bxh7+ Kxh7 is a real try). */
 function kingTakesForNothing(after: Chess, move: { piece: string; to: string; captured?: string }): boolean {
-  const given = (PIECE_VALUES[move.piece] ?? 0) - (move.captured ? (PIECE_VALUES[move.captured] ?? 0) : 0);
+  const given = valueOf(move.piece) - (move.captured ? valueOf(move.captured) : 0);
   if (given < 4) return false;
   return after.moves({ verbose: true }).some((reply) => reply.piece === 'k' && reply.to === move.to);
 }
@@ -122,9 +125,9 @@ function threatens(board: Chess, from: Square, piece: string, color: 'w' | 'b'):
     for (const cell of row) {
       if (!cell || cell.color !== enemy || cell.type === 'k') continue;
       if (!board.attackers(cell.square, color).includes(from)) continue;
-      const value = PIECE_VALUES[cell.type] ?? 0;
+      const value = valueOf(cell.type);
       const defended = board.attackers(cell.square, enemy).length > 0;
-      if (!defended || value > (PIECE_VALUES[piece] ?? 0)) best = Math.max(best, value);
+      if (!defended || value > valueOf(piece)) best = Math.max(best, value);
     }
   }
   return best;

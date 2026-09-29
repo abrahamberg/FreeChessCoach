@@ -2643,6 +2643,35 @@ until a restart. For a user that is one pasted FEN away.
 - [x] A move that took at least what its answer wins back lets nothing go:
   6.hxg4 takes a knight, and read "They let you win a pawn".
 
+### Task 109.5 — One copy of each chess idea, the best one
+
+**Files:** `see.ts`, `position-features.ts`, `tactic-trapped.ts`,
+`is-legal-fen.ts`, `null-move-fen.ts`, `course-dossier-words.ts`,
+`course-material.ts`, `course-learner-side.ts`, `course-tempting.ts`,
+`services/engine/src/analyze.ts`, `apps/api/scripts/golden-engine-cache.ts`.
+
+The owner's rule: chess.js first; what it lacks, shared from the analysis
+code; where two copies exist, keep the better one.
+
+- [x] Speed: SEE on one board with only the attackers' moves (identical on
+  41,852 checks, 7.6x faster); position features cached by FEN, frozen; the
+  golden script caches the engine on disk and runs courses in parallel. A
+  full facts pass: over 20 minutes, now about 80 seconds.
+- [x] En passant from chess.js's `isEnPassant()`; piece values from
+  `tactics.ts` (four copies gone); material balance from
+  `tactic-board-facts.ts`.
+- [x] `isLegalFen` rejects the side not to move in check (it claimed chess.js
+  checked king safety); the engine and the course parser both use it.
+- [x] The course's capture checks are the shared SEE (the whole exchange,
+  not one recapture); its pin is the shared `pins()`. Facts unchanged on all
+  66 courses.
+- [x] Trapped: the course's check was better, so the shared `trappedPieces`
+  took it: lost where it stands and wherever it goes over the whole
+  exchange, and a boxed-in piece only when no other move saves it. Lichess's
+  trappedPiece puzzles: 29/40 before, 40/40 after (the guard is now 40); the
+  precision corpus unchanged. The course keeps only its two attacker
+  conditions.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

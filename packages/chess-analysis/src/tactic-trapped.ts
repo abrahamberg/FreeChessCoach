@@ -1,5 +1,7 @@
 import { Chess, type Color, type PieceSymbol, type Square } from 'chess.js';
-import { buildAttackMap, occupiedSquares, opponentOf, toColorName } from './attack-map.js';
+import { occupiedSquares, opponentOf } from './attack-map.js';
+import { see } from './see.js';
+import { PIECE_VALUES } from './tactics.js';
 
 export interface TrappedHit {
   square: Square;
@@ -7,14 +9,16 @@ export interface TrappedHit {
 }
 
 /**
- * A piece of `color` that is currently attacked and has no legal move to a
- * square the opponent doesn't also attack — cornered, not just immobile
- * (an immobile piece that isn't under attack yet isn't a tactic). Uses
- * chess.js's own legal-move generation rather than the coarser
- * `PositionFeatures.controlledSquares` feature, so `chess` must already have
- * `color` to move (true whenever this is called on the position right after
- * the opponent's move, which is the only time this question makes sense to
- * ask).
+ * A piece of `color` that is lost where it stands and on every square it can
+ * move to, over the whole exchange (the shared SEE in `see.ts`), unless a
+ * move first takes as much as it is worth. The first version called a
+ * piece safe only on a square the opponent did not attack at all, and
+ * attacked on any other, defended or not: 29/40 on Lichess's trappedPiece
+ * puzzles; with the exchange played out, 40/40, the precision corpus
+ * unchanged. The course dossier's "which is trapped" is this check too.
+ * `chess` must already have `color` to move (true whenever this is called
+ * on the position right after the opponent's move, which is the only time
+ * this question makes sense to ask).
  *
  * Pawns are never candidates: a pawn backed into a corner with no square to
  * advance to is just a normal, expected feature of closed pawn play, not a
@@ -42,24 +46,33 @@ export function trappedPieces(chess: Chess, color: Color): TrappedHit[] {
   if (chess.isCheck()) return [];
 
   const opponent = opponentOf(color);
-  const opponentName = toColorName(opponent);
-  const attackMap = buildAttackMap(chess);
   const hits: TrappedHit[] = [];
 
   for (const piece of occupiedSquares(chess)) {
     if (piece.color !== color || piece.type === 'k' || piece.type === 'p') continue;
-
-    const isAttacked = (attackMap.attackersOf.get(piece.square)?.[opponentName]?.length ?? 0) > 0;
-    if (!isAttacked) continue;
+    // Lost where it stands over the whole exchange (the shared SEE), not
+    // merely attacked: a defended knight a bishop hits is not trapped.
+    if (see(chess.fen(), piece.square, opponent) <= 0) continue;
     if (isAbsolutelyPinned(chess, piece.square, color)) continue;
 
-    const destinations = chess.moves({ square: piece.square, verbose: true }).map((move) => move.to as Square);
-    const hasSafeSquare = destinations.some(
-      (square) => (attackMap.attackersOf.get(square)?.[opponentName]?.length ?? 0) === 0
+    // Every move lands where it is lost too, without first taking as much
+    // as it is worth (a trapped queen that takes a queen has traded).
+    const value = PIECE_VALUES[piece.type];
+    const own = chess.moves({ square: piece.square, verbose: true });
+    const escapes = own.some(
+      (move) => (move.captured !== undefined && PIECE_VALUES[move.captured] >= value) || see(move.after, move.to as Square, opponent) <= 0
     );
-    if (!hasSafeSquare) hits.push({ square: piece.square, piece: piece.type });
+    if (escapes || (own.length === 0 && rescued(chess, piece.square, opponent))) continue;
+    hits.push({ square: piece.square, piece: piece.type });
   }
   return hits;
+}
+
+/** A piece boxed in by its own men, saved by another move: a block, or a
+ * man stepping aside so it stands safe (a rook in its corner behind the
+ * knight on b8, which …Nc6 shields and …Nd7 frees). */
+function rescued(chess: Chess, square: Square, opponent: Color): boolean {
+  return chess.moves({ verbose: true }).some((move) => move.from !== square && see(move.after, square, opponent) <= 0);
 }
 
 /**
