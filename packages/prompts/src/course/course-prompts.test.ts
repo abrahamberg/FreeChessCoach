@@ -116,6 +116,15 @@ describe('course prompts', () => {
     expect(user).toContain('- e6 safety, on n11 (6. Bc3)\n\nYOUTUBE VIDEO (write "video")');
   });
 
+  test('every episode call of a course repeats the same head, cached; the episode follows it', () => {
+    const calls = ['e1', 'e2', 'e3'].map((episodeId) => buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId }));
+
+    expect(new Set(calls.map((call) => call.shared)).size).toBe(1);
+    expect(calls[0]?.shared).toMatch(/^COURSE\n[\s\S]*\n\nOUTLINE\n[\s\S]*\n\nOUTPUT SCHEMA\n/);
+    expect(calls[0]?.shared).not.toContain('THIS EPISODE');
+    expect(calls[2]?.user.startsWith('THIS EPISODE\ne3 bait')).toBe(true);
+  });
+
   test("an episode's dossier holds only its nodes, the one before and its quiz answer", () => {
     const { user } = buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e3', creatorRequest: 'mention the pin earlier' });
     const dossier = user.slice(user.indexOf('DOSSIER (this episode only)'), user.indexOf("CREATOR'S REQUEST"));

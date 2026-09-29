@@ -45,6 +45,10 @@ export interface CoursePromptContext {
 
 export interface CourseMessages {
   system: string;
+  /** The user message's head that every call of this kind in one course
+   * repeats byte for byte, sent before `user` and cached with the system
+   * prompt; absent when nothing is shared. */
+  shared?: string;
   user: string;
 }
 

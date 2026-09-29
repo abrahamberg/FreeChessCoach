@@ -39,18 +39,18 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
   const quizLine = episode.answerNodeId
     ? `\nQuiz: the answer is ${episode.answerNodeId}. The app shows the position before it, says quiz.prompt and pauses ${budget.pauseSeconds}s; the video's moves start at the answer and reveal it.`
     : '\nQuiz: none in this episode, so "quiz" is null.';
+  // Phase 101: what every episode call of the course repeats comes first and
+  // is cached; the episode's own blocks follow.
+  const shared = [`COURSE\nTitle: ${outline.title}\nPromise: ${outline.promise}`, `OUTLINE\n${renderOutline(outline)}`, `OUTPUT SCHEMA\n${EPISODE_SCRIPT_JSON_SCHEMA}`];
   const sections = [
-    `COURSE\nTitle: ${outline.title}\nPromise: ${outline.promise}`,
-    `OUTLINE\n${renderOutline(outline, episodeId)}`,
     `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nThe plan's key moves: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\n${ownNodesLine(context, episode)}\n${speakingLines(context, episode, words)}\nSay every line as the coach in VOICE would.${usedOpenersLine(request.usedOpeners)}`,
     `DOSSIER (this episode only)\n${renderCourseDossier(episodeDossier(context, episode))}`,
     request.creatorRequest ? `CREATOR'S REQUEST FOR THIS EPISODE\n"${request.creatorRequest}"` : '',
     request.retry
       ? `YOUR PREVIOUS ANSWER HAD THESE PROBLEMS — fix every one\n${request.retry.problems.map((problem) => `- ${problem}`).join('\n')}\n\nYour previous answer:\n${request.retry.previousOutput}`
-      : '',
-    `OUTPUT SCHEMA\n${EPISODE_SCRIPT_JSON_SCHEMA}`
+      : ''
   ];
-  return { system: buildCourseSystemPrompt(context), user: sections.filter(Boolean).join('\n\n') };
+  return { system: buildCourseSystemPrompt(context), shared: shared.join('\n\n'), user: sections.filter(Boolean).join('\n\n') };
 }
 
 /** The course-wide voice check, fed forward: without it the first real
@@ -80,13 +80,13 @@ export function episodeDossier(context: CoursePromptContext, episode: Pick<Cours
   return { ...context.dossier, nodes, lines: context.dossier.lines.filter((line) => lineIds.has(line.lineId)) };
 }
 
-function renderOutline(outline: CourseOutline, current: string): string {
+function renderOutline(outline: CourseOutline): string {
   return outline.chapters
     .flatMap((chapter, index) => [
       `Chapter ${index + 1} "${chapter.title}" (${chapter.lineId})`,
       ...chapter.episodes.map(
         (episode) =>
-          `  ${episode.id} ${episode.role}, ${episode.startNodeId}–${episode.endNodeId}: ${episode.focus}${episode.id === current ? '   <- THIS EPISODE' : ''}`
+          `  ${episode.id} ${episode.role}, ${episode.startNodeId}–${episode.endNodeId}: ${episode.focus}`
       )
     ])
     .join('\n');
