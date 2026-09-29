@@ -65,7 +65,16 @@ function splitHeaders(text: string): { fenHeader: string | null; movetext: strin
 function resolveStartFen(fenHeader: string | null, errors: CourseTreeError[]): string {
   if (!fenHeader) return DEFAULT_POSITION;
   try {
-    return new Chess(fenHeader).fen();
+    const chess = new Chess(fenHeader);
+    // chess.js accepts a position whose side not to move is in check, and
+    // the engine crashes on it (a knight on e5 already checking the king on
+    // c4, Black to move).
+    const waiting = chess.findPiece({ type: 'k', color: chess.turn() === 'w' ? 'b' : 'w' })[0];
+    if (waiting && chess.isAttacked(waiting, chess.turn())) {
+      errors.push({ message: `Invalid [FEN] header: the side not to move is in check: ${fenHeader}`, pgnLine: 1, san: null, moveNumber: null, side: null });
+      return DEFAULT_POSITION;
+    }
+    return chess.fen();
   } catch {
     errors.push({ message: `Invalid [FEN] header: ${fenHeader}`, pgnLine: 1, san: null, moveNumber: null, side: null });
     return DEFAULT_POSITION;

@@ -79,6 +79,33 @@ describe('course tactic sentences', () => {
     expect(build(new Map()).tactics).toEqual(['You won a pawn through a free piece — captures the pawn on g7.']);
   });
 
+  test('with a mate ahead a positional sentence goes too; a move that took more than it allows lets nothing go', () => {
+    const positional = {
+      quality: 'best',
+      mover: 'white',
+      evalAfterCp: null,
+      bestMoveSan: 'Qd8+',
+      bestLineSan: ['Qd8+'],
+      tacticOpportunity: { type: 'openFile', found: true, isUserMove: true, detail: 'takes the open d-file with the queen', confidence: 1 }
+    } as unknown as ClassifiedMove;
+    const node = { id: 'n17', parentId: 'n16', san: 'Qd8+', fenAfter: FEN, lineId: 'l1', comment: null } as never;
+    const mate = new Map([[FEN, { ply: 0, fen: FEN, depth: 20, lines: [{ moveSan: 'Kxd8', moveUci: '', cp: null, mateIn: 2 }] }]]);
+    expect(buildCourseNodeFacts({ node, move: positional, fenBefore: FEN, linePositionFens: [FEN], evalsByFen: mate, critical: true, learnerSide: 'white' }).tactics).toEqual([]);
+
+    // The Fishing Pole: 6.hxg4 takes the knight on g4; …hxg4 wins back a pawn.
+    const before = 'r1bqkb1r/pppp1pp1/2n5/1B2p2p/4P1n1/5N1P/PPPP1PP1/RNBQ1RK1 w kq - 0 6';
+    const bait = {
+      quality: 'blunder',
+      mover: 'white',
+      evalAfterCp: -150,
+      bestMoveSan: 'd4',
+      bestLineSan: ['d4'],
+      tacticAllowed: { type: 'freePiece', isUserMove: false, detail: 'captures the pawn on g4', confidence: 1, gain: { kind: 'material', pawns: 1, prize: 'pawn' } }
+    } as unknown as ClassifiedMove;
+    const hxg4 = { id: 'n11', parentId: 'n10', san: 'hxg4', fenAfter: before, lineId: 'l1', comment: null } as never;
+    expect(buildCourseNodeFacts({ node: hxg4, move: bait, fenBefore: before, linePositionFens: [before], evalsByFen: new Map(), critical: true, learnerSide: 'black' }).tactics).toEqual([]);
+  });
+
   test('an endgame pawn push is no space gain', () => {
     const move = {
       quality: 'best',

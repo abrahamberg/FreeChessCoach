@@ -27,6 +27,12 @@ describe('parseCourseTree', () => {
     expect(byId.get('n3')?.uci).toBe('d4e5');
   });
 
+  test('a start position whose side not to move is in check is an error: the engine crashes on it', () => {
+    const tree = parseCourseTree('[SetUp "1"]\n[FEN "8/8/1P6/4n3/2K5/8/8/7k b - - 0 1"]\n\n1... Nd7 *');
+    expect(tree.errors[0]?.message).toContain('the side not to move is in check');
+    expect(parseCourseTree('[SetUp "1"]\n[FEN "8/8/1P6/4n3/3K4/8/8/7k b - - 0 1"]\n\n1... Nd7 *').errors).toEqual([]);
+  });
+
   test('lines run root to leaf and get default names Line A, B …', () => {
     const tree = parseCourseTree(NESTED);
 

@@ -47,6 +47,19 @@ describe('analyzePosition', () => {
     expect(called).toBe(false);
   });
 
+  test('throws InvalidFenError when the side not to move is in check, which Stockfish segfaults on', async () => {
+    let called = false;
+    const pool = new EnginePool(1, () => new FakeDetailedUciEngine(() => {
+      called = true;
+      return Promise.resolve([bestLine]);
+    }));
+
+    // The knight on e5 checks the king on c4, and it is Black's move.
+    await expect(analyzePosition(pool, '8/8/1P6/4n3/2K5/8/8/7k b - - 0 1', 0)).rejects.toThrow(InvalidFenError);
+    await expect(analyzePositionDetailed(pool, '8/8/1P6/4n3/2K5/8/8/7k b - - 0 1')).rejects.toThrow(InvalidFenError);
+    expect(called).toBe(false);
+  });
+
   test('forwards depth, multiPv, and timeoutMs to the engine', async () => {
     const seen: AnalyzeOptions[] = [];
     const pool = new EnginePool(1, () => new FakeDetailedUciEngine((_fen, options) => {

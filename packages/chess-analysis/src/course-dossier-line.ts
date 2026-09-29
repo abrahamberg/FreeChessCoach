@@ -39,13 +39,17 @@ function endFeatures(fen: string): string[] {
   if (features.openFiles.length) facts.push(`open files: ${features.openFiles.join(', ')}`);
   for (const file of features.semiOpenFiles) facts.push(`the ${file.file}-file is half-open for ${file.openFor}`);
   for (const pawn of features.passedPawns) facts.push(`${pawn.color} has a passed pawn on ${pawn.square}`);
-  for (const pawn of features.isolatedPawns) facts.push(`${pawn.color} has an isolated pawn on ${pawn.square}`);
+  // A lone pawn is passed, not isolated: knight against pawn read "white has
+  // an isolated pawn on b7" and "a queenside pawn majority".
+  const pawns = { white: 0, black: 0 };
+  for (const cell of new Chess(fen).board().flat()) if (cell?.type === 'p') pawns[cell.color === 'w' ? 'white' : 'black'] += 1;
+  for (const pawn of features.isolatedPawns) if (pawns[pawn.color] > 1) facts.push(`${pawn.color} has an isolated pawn on ${pawn.square}`);
   for (const file of features.doubledPawns) facts.push(`${file.color} has doubled pawns on the ${file.file}-file`);
   facts.push(...majorities(fen), ...kingSafety(fen));
   return facts;
 }
 
-/** A side with more pawns than the other on one wing. */
+/** A side with more pawns than the other on one wing, two at least. */
 function majorities(fen: string): string[] {
   const count = { w: { queenside: 0, kingside: 0 }, b: { queenside: 0, kingside: 0 } };
   for (const row of new Chess(fen).board()) {
@@ -56,8 +60,8 @@ function majorities(fen: string): string[] {
   }
   const facts: string[] = [];
   for (const wing of ['queenside', 'kingside'] as const) {
-    if (count.w[wing] > count.b[wing]) facts.push(`white has a ${wing} pawn majority`);
-    if (count.b[wing] > count.w[wing]) facts.push(`black has a ${wing} pawn majority`);
+    if (count.w[wing] > count.b[wing] && count.w[wing] > 1) facts.push(`white has a ${wing} pawn majority`);
+    if (count.b[wing] > count.w[wing] && count.b[wing] > 1) facts.push(`black has a ${wing} pawn majority`);
   }
   return facts;
 }

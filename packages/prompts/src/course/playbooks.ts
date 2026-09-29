@@ -218,6 +218,8 @@ function trapEnding(context: CoursePromptContext): string {
   const byId = new Map(context.nodes.map((node) => [node.id, node]));
   const sans = courseNodeAncestry(byId, leafId).map((node) => node.san);
   const standing = leafFacts ? midSentence(leafFacts.after) : 'see the dossier';
+  // The Fishing Pole stops at 8…g3 with …Qh2# to come: the mate is the promise.
+  if (leafFacts && /forced mate/.test(leafFacts.after)) return `${nodeLabel(context, leafId)}, after which ${standing}. Promise the mate, not material.`;
   // Noah's Ark ends with material level and the bishop on b3 trapped.
   const trapped = leafFacts?.board.find((fact) => fact.includes('which is trapped'))?.replace(/^attacks /, '').replace(/, which is trapped:.*$/, '');
   if (trapped) return `${nodeLabel(context, leafId)}, after which ${standing} and ${lineBalance(context.startFen, sans)}, but ${trapped} is trapped and will be lost. Promise that piece, nothing more.`;
@@ -230,7 +232,7 @@ function trapEnding(context: CoursePromptContext): string {
 function openingPlaybook(context: CoursePromptContext): string {
   const lineList = context.lines.map((line) => `${line.id} "${line.name}"`).join(', ');
   return `KIND: OPENING
-The learner plays ${capitalise(context.learnerSide)}. Lines, in the creator's order: ${lineList}.
+The learner plays ${capitalise(context.learnerSide)}. Lines, main line first: ${lineList}.
 - Chapter 1 "The idea": the main line to its end. What each learner move is
   for; then the plan and the pawn structure it leads to.
 - One chapter per sideline: how to recognise the deviation, the principled

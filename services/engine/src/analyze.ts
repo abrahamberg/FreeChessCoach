@@ -1,4 +1,4 @@
-import { validateFen } from 'chess.js';
+import { Chess, validateFen } from 'chess.js';
 import { computePositionFeatures } from '@freechesscoach/chess-analysis';
 import type { EngineEval, EnginePriority, PositionAnalysis } from '@freechesscoach/shared';
 import type { EnginePool } from './engine-pool.js';
@@ -87,7 +87,17 @@ export async function analyzeGame(
   return evals;
 }
 
+/** chess.js's check, plus the side not to move in check, which it accepts
+ * and Stockfish segfaults on (a course's hand-set knight on e5 already
+ * checking the king on c4, Black to move). */
 function assertValidFen(fen: string): void {
   const { ok } = validateFen(fen);
-  if (!ok) throw new InvalidFenError(fen);
+  if (!ok || waitingKingInCheck(fen)) throw new InvalidFenError(fen);
+}
+
+function waitingKingInCheck(fen: string): boolean {
+  const chess = new Chess(fen, { skipValidation: true });
+  const waiting = chess.turn() === 'w' ? 'b' : 'w';
+  const king = chess.findPiece({ type: 'k', color: waiting })[0];
+  return king !== undefined && chess.isAttacked(king, chess.turn());
 }

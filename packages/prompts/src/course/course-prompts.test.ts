@@ -72,6 +72,18 @@ describe('course prompts', () => {
     expect(system).not.toContain('Their queen is gone');
   });
 
+  test('a trap line that stops short of its forced mate promises the mate, not material (the Fishing Pole)', () => {
+    const context = englundCourseContext();
+    const line = context.lines[0];
+    if (!line) throw new Error('no line');
+    const cut = {
+      ...context,
+      lines: [{ ...line, leafNodeId: 'n15' }],
+      dossier: { ...context.dossier, nodes: context.dossier.nodes.map((node) => (node.nodeId === 'n15' ? { ...node, after: 'Black has a forced mate in 1' } : node)) }
+    };
+    expect(buildCourseSystemPrompt(cut)).toContain('after which Black has a forced mate in 1. Promise the mate, not material.');
+  });
+
   test('the system prompt is identical across the outline and every episode call (cache-stable)', () => {
     const context = englundCourseContext();
     const systems = ['e1', 'e2', 'e3'].map((episodeId) => buildCourseEpisodeMessages({ context, outline: ENGLUND_OUTLINE, episodeId }).system);

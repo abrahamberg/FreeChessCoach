@@ -273,13 +273,15 @@ describe('puzzle', () => {
     expect(facts).toContain('the check can be answered: no block; take the checking piece with Kxd8; the king cannot move');
   });
 
-  test('a check answered by promoting names one promotion; a bare endgame has no king-safety words', () => {
+  test('a check answered by promoting names one promotion; a bare endgame has no king-safety words, and a lone pawn is passed, not isolated', () => {
     const facts = boardFacts('7K/8/8/8/8/8/3pk3/Q7 w - - 0 1', 'Qe1+').join(' | ');
     expect(facts).toContain('take the checking piece with dxe1=Q, Kxe1;');
     expect(facts).not.toContain('dxe1=N');
     const tree = parseCourseTree('[SetUp "1"]\n[FEN "7K/8/8/8/8/8/3pk3/Q7 w - - 0 1"]\n\n1. Qe5+ Kf2 *');
     const { dossier } = analyseCourse(tree, fakeEvals(tree, () => 900), 'white');
     expect(dossier.lines[0]?.endFeatures.join(' | ')).not.toMatch(/king is (still in the centre|tucked away)/);
+    expect(dossier.lines[0]?.endFeatures).toContain('black has a passed pawn on d2');
+    expect(dossier.lines[0]?.endFeatures.join(' | ')).not.toMatch(/isolated|majority/);
   });
 
   test('en passant names the pawn it takes, on its own square', () => {

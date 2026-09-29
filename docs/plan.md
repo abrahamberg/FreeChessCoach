@@ -2618,6 +2618,31 @@ three sidelines. Plus the three items Phase 108 left open.
 - [x] No tempting queen or rook the king just takes for at most a pawn (five
   a move in the perpetual); a minor piece stays (the Greek gift).
 
+### Task 109.4 — An illegal position that hung the engine
+
+**Files:** `services/engine/src/uci.ts`, `services/engine/src/analyze.ts`,
+`course-tree.ts`, `course-dossier-line.ts`, `course-dossier-node.ts`,
+`playbooks.ts`, three more courses (66), tests.
+
+My knight-against-pawn course started from a position whose side not to move
+was in check (the knight on e5 already checking the king on c4, Black to
+move). chess.js's `validateFen` accepts it; Stockfish segfaults on it; the
+engine service never noticed the dead process, and every later request hung
+until a restart. For a user that is one pasted FEN away.
+
+- [x] The engine answers 400 "Invalid FEN" for a side not to move in check.
+- [x] `UciEngine` survives a dead Stockfish: the search in flight settles
+  with its lines so far (or fails with none), and the next call respawns.
+- [x] A course's [FEN] header with the side not to move in check is a parse
+  error; the golden set's legality test now catches it.
+- [x] A lone pawn is passed, not isolated, and no one-pawn "majority".
+- [x] A trap line that stops short of its forced mate promises the mate (the
+  Fishing Pole's 8…g3).
+- [x] With a mate ahead only a sentence about the mate stays: the Fishing
+  Pole's …Qh4 read "You took the open file".
+- [x] A move that took at least what its answer wins back lets nothing go:
+  6.hxg4 takes a knight, and read "They let you win a pawn".
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

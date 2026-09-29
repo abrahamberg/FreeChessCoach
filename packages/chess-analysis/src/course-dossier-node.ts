@@ -1,4 +1,5 @@
 import type { EngineEval, EngineLine, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
+import { Chess } from 'chess.js';
 import type { ClassifiedMove } from './classify.js';
 import { CONFIG } from './config.js';
 import { abandonedGuard, betterMoveFacts, boardFacts, lineWords, positionWords } from './course-dossier-words.js';
@@ -93,7 +94,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     openingName: opening?.name ?? null,
     bestInstead: bestInstead(move, node.san, fenBefore),
     board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan), ...repetition(node.fenAfter, input.linePositionFens)],
-    tactics: tacticSentences(claims, node.san, side === input.learnerSide, mateAhead),
+    tactics: tacticSentences(claims, node.san, side === input.learnerSide, mateAhead, capturedValue(fenBefore, node.san)),
     motif: claims.tacticOpportunity?.found && fitsCourseMove(claims.tacticOpportunity, node.san, mateAhead) ? claims.tacticOpportunity.type : null,
     alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
     tempting: [],
@@ -132,15 +133,33 @@ const DEFENSIVE_MOTIFS = new Set<TacticMotifType>(['defendsHangingPiece', 'remov
  * checkmate — rook on d8 forks b8 and e8", 4.Qxf7# "moves the queen off h5,
  * out of reach". */
 function fitsCourseMove(claim: { type: TacticMotifType; gain?: { kind: string } }, san: string, mateAhead = false): boolean {
-  if (san.endsWith('#') || (mateAhead && claim.gain?.kind === 'material')) return claim.gain?.kind === 'mate';
+  // With a mate ahead only the mate is the point: the Fishing Pole's …Qh4
+  // read "You took the open file".
+  if (san.endsWith('#') || mateAhead) return claim.gain?.kind === 'mate';
   return !(DEFENSIVE_MOTIFS.has(claim.type) && san.endsWith('+'));
 }
 
-function tacticSentences(move: ClassifiedMove, san: string, isUserMove: boolean, mateAhead: boolean): string[] {
+function tacticSentences(move: ClassifiedMove, san: string, isUserMove: boolean, mateAhead: boolean, took: number): string[] {
   const sentences: string[] = [];
   if (move.tacticOpportunity && fitsCourseMove(move.tacticOpportunity, san, mateAhead)) sentences.push(tacticOpportunityReason({ ...withoutSquareFork(withoutFileDetail(move.tacticOpportunity)), isUserMove }, move.bestMoveSan));
-  if (move.tacticAllowed && !(mateAhead && move.tacticAllowed.gain?.kind === 'material')) sentences.push(tacticAllowedReason({ ...withoutSquareFork(move.tacticAllowed), isUserMove }));
+  // A move that took as much as the answer wins back lets nothing go: the
+  // Fishing Pole's 6.hxg4 takes a knight, and read "They let you win a pawn".
+  const allowedGain = move.tacticAllowed?.gain;
+  const tookMore = allowedGain?.kind === 'material' && took >= allowedGain.pawns;
+  if (move.tacticAllowed && !tookMore && !(mateAhead && allowedGain?.kind === 'material')) sentences.push(tacticAllowedReason({ ...withoutSquareFork(move.tacticAllowed), isUserMove }));
   return sentences;
+}
+
+const PIECE_PAWNS: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
+
+/** What the move itself captured, in pawns. */
+function capturedValue(fenBefore: string, san: string): number {
+  try {
+    const captured = new Chess(fenBefore).move(san).captured;
+    return captured ? (PIECE_PAWNS[captured] ?? 0) : 0;
+  } catch {
+    return 0;
+  }
 }
 
 function withoutMotif(move: ClassifiedMove, type: TacticMotifType): ClassifiedMove {
