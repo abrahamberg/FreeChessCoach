@@ -2203,6 +2203,24 @@ whole prompt every time (`llm/messages.ts`).
 
 Commit per task; push each phase.
 
+## Phase 102 — Every video move has a caption
+
+The gambit runs (2026-09-29) repaired nearly every episode for one reason:
+"n7 has no caption, so the video shows its first sentence (11 words)". The
+shared block told the model to write a caption "only when the line's first
+sentence would not do", and the verifier asks for one whenever that sentence
+is over 6 words, which it nearly always is. A repair is a whole second call.
+
+### Task 102.1 — Ask for the caption the verifier wants
+
+**Files:** `packages/prompts/src/course/shared.ts`, `episode.ts`, tests,
+`docs/courses.md`.
+
+- [x] The shared block and the episode's budget line ask for a caption of at
+  most 6 words on every move with "video": true.
+
+Commit and push.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

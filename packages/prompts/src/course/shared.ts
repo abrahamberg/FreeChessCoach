@@ -38,7 +38,7 @@ THREE PRODUCTS FROM THE SAME MOVES
   set "say" for a line made to be heard. At each important move, weigh the
   tempting moves the dossier lists and say why each fails, the way a strong
   player thinks: checks, captures, threats. "caption" is its on-screen text,
-  6 words or fewer, only when the line's first sentence would not do.
+  6 words or fewer, on every move with "video": true.
 - The reel: 30 to 45 seconds, one idea. The first words name the idea ("A
   queen sacrifice that wins in the Sicilian"); no greeting, no "today". Short
   lines, the climax slowed down, a specific call to action, and a last line
