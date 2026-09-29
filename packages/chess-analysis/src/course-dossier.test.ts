@@ -108,6 +108,19 @@ describe('course dossier', () => {
     expect(boardFacts('4k3/8/8/2b5/8/8/1P6/4K3 w - - 0 1', 'b4').join(' | ')).not.toContain('trapped');
   });
 
+  test('best instead only on an error; the last move of a long line in full', () => {
+    const { dossier } = englund();
+    const bait = dossier.nodes.find((node) => node.nodeId === 'n11')!;
+    const asBook = renderCourseDossier({ ...dossier, nodes: dossier.nodes.map((node) => (node === bait ? { ...node, quality: 'book' as const } : node)) });
+    expect(asBook).not.toContain('best instead: Nc3');
+
+    const routine = { ...bait, quality: 'good' as const, critical: false, quizEligible: false, tactics: [], creatorComment: null };
+    const nodes = Array.from({ length: 45 }, (_, index) => ({ ...routine, nodeId: `n${index + 1}` }));
+    const text = renderCourseDossier({ ...dossier, nodes });
+    expect(text).toMatch(/^n44 [^\n]*\| good$/m);
+    expect(text).toMatch(/^n45 [^\n]*\| good \| before: /m);
+  });
+
   test('the rendered dossier carries verdict words and no eval numbers', () => {
     const text = renderCourseDossier(englund().dossier);
 

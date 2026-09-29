@@ -2425,8 +2425,8 @@ before any model wrote a word:
 
 **Files:** `course-dossier-text.ts`, tests.
 
-- [ ] "best instead" only on an inaccuracy, mistake, blunder or miss.
-- [ ] Each line's last move always gets its full facts.
+- [x] "best instead" only on an inaccuracy, mistake, blunder or miss.
+- [x] Each line's last move always gets its full facts.
 
 ### Task 106.5 — Playbooks
 

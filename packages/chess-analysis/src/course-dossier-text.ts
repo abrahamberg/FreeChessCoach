@@ -5,12 +5,18 @@ import type { CourseTemptingFacts } from './course-tempting.js';
  * ones get the full block (§5.4: a long game stays compact). */
 const FULL_BLOCK_NODE_LIMIT = 40;
 const ROUTINE_QUALITIES = new Set(['book', 'best', 'excellent', 'good']);
+/** A "better" move only where the course move is an error: the Caro-Kann
+ * course read 1…c6 "best instead: c5", a move nobody teaching it would play. */
+const ERROR_QUALITIES = new Set(['inaccuracy', 'mistake', 'blunder', 'miss']);
 
 /** The dossier as prompt text. Verdict words only: no eval number ever
  * reaches the model, so it can't quote one back. */
 export function renderCourseDossier(dossier: CourseDossier): string {
   const lineNames = new Map(dossier.lines.map((line) => [line.lineId, line.name]));
   const compact = dossier.nodes.length > FULL_BLOCK_NODE_LIMIT;
+  // Each line's last move is where it lands (Marshall's 23…Qg3): never one line.
+  const lastOfLine = new Map(dossier.nodes.map((node) => [node.lineId, node.nodeId]));
+  const ends = new Set(lastOfLine.values());
   return [
     `Learner side: ${capitalise(dossier.learnerSide)}`,
     '',
@@ -18,7 +24,7 @@ export function renderCourseDossier(dossier: CourseDossier): string {
     ...dossier.lines.flatMap(renderLine),
     '',
     'Moves:',
-    ...dossier.nodes.flatMap((node) => renderNode(node, lineNames.get(node.lineId) ?? node.lineId, compact && !isNotable(node)))
+    ...dossier.nodes.flatMap((node) => renderNode(node, lineNames.get(node.lineId) ?? node.lineId, compact && !isNotable(node) && !ends.has(node.nodeId)))
   ].join('\n');
 }
 
@@ -38,8 +44,9 @@ function renderNode(node: CourseNodeFacts, lineName: string, oneLine: boolean): 
     rows.push(`    ${label}: ${value}`);
   };
   if (node.inBook) detail('book', node.openingName ? `in book (${node.openingName})` : 'in book');
-  if (node.bestInstead) detail('best instead', `${node.bestInstead.san}; after ${node.bestInstead.line.join(' ')}, ${node.bestInstead.balance}`);
-  if (node.bestInstead?.board.length) detail(`why ${node.bestInstead.san} is better`, node.bestInstead.board.join(' | '));
+  const best = ERROR_QUALITIES.has(node.quality) ? node.bestInstead : null;
+  if (best) detail('best instead', `${best.san}; after ${best.line.join(' ')}, ${best.balance}`);
+  if (best?.board.length) detail(`why ${best.san} is better`, best.board.join(' | '));
   if (node.board.length) detail('board', node.board.join(' | '));
   if (node.tactics.length) detail('tactics', node.tactics.join(' '));
   if (node.alternatives.length) detail('alternatives', node.alternatives.map((alt) => `${alt.san}: ${alt.verdict}`).join('; '));
