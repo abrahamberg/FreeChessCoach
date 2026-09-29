@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely';
 import * as courseAiCallsRepo from '../../db/repositories/course-ai-calls.js';
 import type { Database } from '../../db/schema.js';
 import type { ModelResolution } from '../../llm/gateway.js';
+import { cachedHeadUserMessage, cachedSystemMessage } from '../../llm/messages.js';
 import { generateStructured } from '../../llm/text.js';
 import type { TurnUsage } from '../../llm/usage.js';
 import type { TurnDebugSnapshot } from '../coach-agent-debug.js';
@@ -42,7 +43,9 @@ export function loggedCourseCall({ db, courseId, resolve, now = Date.now }: Logg
       snapshot: { request: request(resolution, messages), response } satisfies TurnDebugSnapshot
     });
     try {
-      const result = await generateStructured({ resolution, system: messages.system, prompt: messages.user, schema });
+      // Phase 101: every call of a run shares the system prompt, and the
+      // episode calls the head of their user message: both are cached.
+      const result = await generateStructured({ resolution, system: messages.system, prompt: messages.user, schema, cached: { head: messages.shared } });
       const answer = { role: 'assistant', content: JSON.stringify(result.object, null, 2) };
       const entry = record({ messages: [answer], finishReason: result.finishReason, usage: result.usage, providerMetadata: result.providerMetadata }, null);
       unchecked.set(key(label), { id: await courseAiCallsRepo.insert(db, courseId, entry), entry });
@@ -69,8 +72,9 @@ function request(resolution: ModelResolution, messages: CourseMessages): TurnDeb
   return {
     provider: resolution.isLocal ? 'local' : resolution.provider,
     model: resolution.modelId,
-    instructions: [{ role: 'system', content: messages.system }],
-    messages: [{ role: 'user', content: messages.user }],
+    // As sent: the cached system prompt, and the user message's cached head.
+    instructions: [cachedSystemMessage(messages.system)],
+    messages: [messages.shared ? cachedHeadUserMessage(messages.shared, messages.user) : { role: 'user', content: messages.user }],
     tools: [],
     maxSteps: 1,
     reasoning: resolution.callOptions.reasoning,

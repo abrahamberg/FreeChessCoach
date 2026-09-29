@@ -241,6 +241,21 @@ describe('runCourseGeneration', () => {
     expect([tempting('e5')?.length, tempting('e6')]).toEqual([1, undefined]);
   });
 
+  test('the system prompt and the head every episode call repeats are cached; the episode part is not', async () => {
+    const id = await newCourse('cached-head@example.com');
+    const { deps, prompts } = depsWith([step(outline()), ...cleanEpisodes()]);
+
+    await runCourseGeneration(deps, id);
+
+    const calls = prompts().map((prompt) => JSON.parse(prompt) as { role: string; content: unknown; providerOptions?: unknown }[]);
+    const [system, user] = calls[2]!;
+    expect(system?.providerOptions).toEqual({ anthropic: { cacheControl: { type: 'ephemeral' } }, openai: { promptCacheBreakpoint: { mode: 'explicit' } } });
+    const parts = user?.content as { text: string; providerOptions?: unknown }[];
+    expect(parts.map((part) => [part.text.slice(0, 7), part.providerOptions !== undefined])).toEqual([['COURSE\n', true], ['THIS EP', false]]);
+    // The outline is one call: its system prompt is cached for the episodes, nothing more.
+    expect(JSON.stringify(calls[0]![1])).not.toContain('promptCacheBreakpoint');
+  });
+
   test("the safety episode's line on the bait carries the safe line for the video; no other line does", async () => {
     const id = await newCourse('safe-line@example.com');
     const row = await coursesRepo.findById(db, id);

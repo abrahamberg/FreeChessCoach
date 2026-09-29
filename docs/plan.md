@@ -2171,6 +2171,38 @@ two-sentence limit fought the checks-captures-threats walk.
 
 Commit per task; docs with the last.
 
+## Phase 101 — Course calls cache what they share
+
+The owner (2026-09-29): the cached inputs are not used fully. The call log
+of a puzzle run on gpt-6-luna: from the second episode on, each call read
+~1,900 tokens (the system prompt) from the cache and wrote ~1,900 more (the
+user message) that no later call ever read. The user message varies from its
+first block on: the outline marks "<- THIS EPISODE", and the constant output
+schema comes last. Course calls pass the system prompt as a plain string, so
+OpenAI places one implicit breakpoint on the latest message and writes the
+whole prompt every time (`llm/messages.ts`).
+
+### Task 101.1 — A shared head, then the episode
+
+**Files:** `packages/prompts/src/course/episode.ts`,
+`context.ts`, tests.
+
+- [x] `CourseMessages` gains `shared`: the user message's head that every
+  episode call of a course repeats byte for byte: the course, the outline
+  (no "<- THIS EPISODE" marker: the episode block names it) and the output
+  schema. `user` is the rest: this episode, its dossier, a request, a retry.
+
+### Task 101.2 — Explicit breakpoints
+
+**Files:** `apps/api/src/llm/text.ts`, `services/courses/debug-log.ts`, tests.
+
+- [x] A structured call with `shared` sends the system prompt as a cached
+  system message and the user message as two parts, the breakpoint after
+  `shared`: later calls read both, and the episode part is sent fresh instead
+  of written to the cache. The debug snapshot shows both parts.
+
+Commit per task; push each phase.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

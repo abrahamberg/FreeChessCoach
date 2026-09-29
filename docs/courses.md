@@ -683,6 +683,17 @@ instruction for a regeneration. It lists the nodes the plies may use, and says
 the previous node is context only; without that line, gpt-6-luna kept writing
 notes on it.
 
+**Caching** (Phase 101): the user message is two parts. The head every
+episode call of a course repeats byte for byte (`CourseMessages.shared`: the
+course, the outline with no marker for the current episode, the output
+schema) comes first, then this episode's blocks (this episode, its dossier, a
+creator's request, a repair's problems). Every course call sends the system
+prompt as a cached system message; an episode call also puts a cache
+breakpoint after the head (`cachedHeadUserMessage`, llm/messages.ts). Without
+explicit breakpoints OpenAI placed one on the latest message and wrote each
+whole request to the cache: a puzzle run read ~1,900 tokens a call and wrote
+~1,900 more that no call ever read.
+
 Output (`EpisodeScriptSchema`):
 
 ```ts

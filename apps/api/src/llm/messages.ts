@@ -26,13 +26,28 @@ export type ResponseChatMessage = AssistantModelMessage | ToolModelMessage;
  * request starts failing at the provider.
  */
 export function cachedSystemMessage(content: string): SystemChatMessage {
+  return { role: 'system', content, providerOptions: CACHE_BREAKPOINT };
+}
+
+/** The provider options that end a cached prefix, on a message or a part. */
+export const CACHE_BREAKPOINT = {
+  anthropic: { cacheControl: { type: 'ephemeral' } },
+  openai: { promptCacheBreakpoint: { mode: 'explicit' } }
+};
+
+/**
+ * One user message in two parts, the cache breakpoint after the first: a
+ * head that later calls repeat byte for byte (the course's outline and
+ * schema), then the part that is new each call, sent fresh rather than
+ * written to a cache nothing reads.
+ */
+export function cachedHeadUserMessage(head: string, rest: string): ChatMessage {
   return {
-    role: 'system',
-    content,
-    providerOptions: {
-      anthropic: { cacheControl: { type: 'ephemeral' } },
-      openai: { promptCacheBreakpoint: { mode: 'explicit' } }
-    }
+    role: 'user',
+    content: [
+      { type: 'text', text: head, providerOptions: CACHE_BREAKPOINT },
+      { type: 'text', text: rest }
+    ]
   };
 }
 

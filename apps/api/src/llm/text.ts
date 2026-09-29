@@ -1,6 +1,7 @@
 import { generateObject, generateText } from 'ai';
 import type { z } from 'zod';
 import type { ModelResolution } from './gateway.js';
+import { cachedHeadUserMessage, cachedSystemMessage } from './messages.js';
 import { toTurnUsage, type TurnUsage } from './usage.js';
 
 export interface TextCallArgs {
@@ -27,6 +28,9 @@ export async function generateProse(args: TextCallArgs): Promise<{ text: string;
 
 export interface StructuredCallArgs<T> extends TextCallArgs {
   schema: z.ZodType<T>;
+  /** Cache the system prompt, and this head of the user message before
+   * `prompt` (`cachedHeadUserMessage`): for a run of calls that share them. */
+  cached?: { head?: string };
 }
 
 /**
@@ -40,10 +44,15 @@ export interface StructuredCallArgs<T> extends TextCallArgs {
 export async function generateStructured<T>(
   args: StructuredCallArgs<T>
 ): Promise<{ object: T; usage: TurnUsage; finishReason: string; providerMetadata: unknown }> {
+  const { cached } = args;
+  const input = !cached
+    ? { instructions: args.system, prompt: args.prompt }
+    : cached.head
+      ? { instructions: [cachedSystemMessage(args.system)], messages: [cachedHeadUserMessage(cached.head, args.prompt)] }
+      : { instructions: [cachedSystemMessage(args.system)], prompt: args.prompt };
   const result = await generateObject({
     model: args.resolution.model,
-    instructions: args.system,
-    prompt: args.prompt,
+    ...input,
     schema: args.schema,
     ...args.resolution.callOptions
   });
