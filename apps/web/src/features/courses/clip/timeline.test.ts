@@ -109,6 +109,27 @@ describe('buildVideoTimeline (§13.4)', () => {
     expect(timeline.segments.at(-2)?.moveLabel).toBe('6.Bc3');
   });
 
+  test("the trap's safe line: the board goes back before the bait and plays the line over the coach's words", () => {
+    const safety: CoursePly = { ...clip('n11', 'Nc3 holds, then Bb4 Rb1.'), playOut: ['Nc3', 'Bb4', 'Rb1'] };
+    const document = trap([episode('e1', 'punish', [clip('n16', 'Mate.')]), episode('e2', 'safety', [safety])]);
+    const timeline = buildVideoTimeline({ document, audioMs: () => 2000, timing: TIMING });
+    const from = timeline.segments.findIndex((segment) => segment.audioKey === 'clip:e2:n11');
+
+    expect(timeline.segments.slice(from, from + 4).map((segment) => [segment.moveLabel, segment.end - segment.start, segment.audioKey])).toEqual([
+      ['5…Qxb2', 503, 'clip:e2:n11'],
+      ['6.Nc3', 503, null],
+      ['6…Bb4', 503, null],
+      ['7.Rb1', 503, null]
+    ]);
+    expect(timeline.segments[from + 4]?.kind).toBe('end');
+  });
+
+  test('a line lights the squares and legal moves it names, timed from its audio', () => {
+    const document = trap([episode('e1', 'punish', [clip('n15', 'Qc1# comes: c1 is bare.')])]);
+    const beat = buildVideoTimeline({ document, audioMs: () => 2300, timing: TIMING }).segments.find((segment) => segment.kind === 'beat');
+    expect(beat?.marks).toEqual([{ atMs: 0, from: 'b2', to: 'c1' }, { atMs: 1200, from: 'c1', to: 'c1' }]);
+  });
+
   test('a card per chapter with a whoosh; the outro before the end card', () => {
     const document = trap([episode('e1', 'setup', [clip('n2', 'The gambit.')]), episode('e2', 'bait', [clip('n11', 'Bc3.')])]);
     document.chapters = [

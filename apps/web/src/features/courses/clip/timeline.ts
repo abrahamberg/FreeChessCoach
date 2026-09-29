@@ -4,6 +4,7 @@ import { moveSound } from '../../../sounds/move-sounds.js';
 import { courseMoveSound, type CourseEvals } from '../player/course-move-list.js';
 import { moveLabel } from '../courseEdits.js';
 import { clipSoundLengthMs, type ClipSound } from './clip-sounds.js';
+import { speechMarks, type ClipMark } from './speech-marks.js';
 
 /** docs/courses.md §13.1: the YouTube video is 16:9, the reel 9:16. */
 export type ClipFormat = 'vertical' | 'landscape';
@@ -61,6 +62,9 @@ export interface ClipSegment {
   /** The segment's audio starts this long after the segment: after the
    * move's sound, so they never talk over each other. */
   audioOffsetMs: number;
+  /** The squares and moves the line names, timed from its audio's start
+   * (speech-marks.ts); absent when it names none. */
+  marks?: ClipMark[];
 }
 
 export interface ClipTimeline {
@@ -92,6 +96,12 @@ export class SegmentWriter {
     this.segments.push({ sound: null, audioOffsetMs: 0, ...segment, start: this.clock, end: this.clock + length });
     this.clock += length;
   }
+}
+
+/** A segment's marks for its spoken `text` over `fen`: none when silent. */
+export function marksFor(text: string, fen: string, audioMs: number | undefined): Pick<ClipSegment, 'marks'> {
+  const marks = audioMs === undefined ? [] : speechMarks(text, fen, audioMs);
+  return marks.length ? { marks } : {};
 }
 
 /** The board after `node`, or the start. */
@@ -155,7 +165,9 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
   if (hook) {
     const climax = byId.get(document.reel?.climaxNodeId ?? document.lines[0]?.leafNodeId ?? '') ?? null;
     const spoken = spokenLength('video:hook', true);
-    out.push({ kind: 'title', ...board(climax), moveLabel: null, arrows: [], caption: document.video?.thumbnailText ?? '', audioKey: spoken.key, pauseMs: 0 }, spoken.length);
+    const shownBoard = board(climax);
+    const marks = marksFor(hook, shownBoard.fen, audioMs('video:hook'));
+    out.push({ kind: 'title', ...shownBoard, moveLabel: null, arrows: [], caption: document.video?.thumbnailText ?? '', audioKey: spoken.key, pauseMs: 0, ...marks }, spoken.length);
     cut = true;
   }
 
@@ -179,9 +191,11 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
       const played = playOut(before?.fenAfter ?? document.startFen, [tempting.san, ...(tempting.refutation ?? [])]);
       const first = played[0];
       if (!first) return;
-      const spoken = spokenLength(`tempting:${episode.id}:${ply.nodeId}:${index}`, Boolean(tempting.why.trim()));
+      const key = `tempting:${episode.id}:${ply.nodeId}:${index}`;
+      const spoken = spokenLength(key, Boolean(tempting.why.trim()));
+      const marks = marksFor(tempting.why, before?.fenAfter ?? document.startFen, spoken.key ? audioMs(key) : undefined);
       out.push(
-        { kind: 'tempting', ...board(before), arrows: [{ from: first.from, to: first.to, kind: 'threat' }], caption: `${tempting.san}?`, audioKey: spoken.key, pauseMs: 0 },
+        { kind: 'tempting', ...board(before), arrows: [{ from: first.from, to: first.to, kind: 'threat' }], caption: `${tempting.san}?`, audioKey: spoken.key, pauseMs: 0, ...marks },
         spoken.length
       );
       played.forEach((move, at) => {
@@ -190,6 +204,22 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
       });
       out.push({ kind: 'move', ...board(before), arrows: [], caption: '', audioKey: null, pauseMs: 0 }, timing.backMs);
     });
+  };
+
+  // A line off the tree (the trap's safe line): the board goes back to
+  // before the move and plays the line while the coach says it.
+  const lineOff = (episode: CourseEpisode, ply: CoursePly, node: CourseNode): void => {
+    const before = node.parentId ? (byId.get(node.parentId) ?? null) : null;
+    const played = playOut(before?.fenAfter ?? document.startFen, ply.playOut ?? []);
+    const spoken = spokenLength(`clip:${episode.id}:${ply.nodeId}`, Boolean(videoLine(ply)));
+    const step = Math.max(timing.moveMs, Math.round(spoken.length / (played.length + 1)));
+    const caption = videoCaption(ply);
+    out.push({ kind: 'beat', ...board(before), arrows: [], caption, audioKey: spoken.key, pauseMs: 0, sound: sounds ? 'whoosh' : null }, step);
+    for (const move of played) {
+      const sound = sounds ? moveSound({ san: move.san, mover: move.mover, learnerSide: document.learnerSide }) : null;
+      out.push({ kind: 'beat', fen: move.fen, lastMove: { from: move.from, to: move.to }, moveLabel: move.label, arrows: [], caption, audioKey: null, pauseMs: 0, sound }, step);
+    }
+    shown = before;
   };
 
   for (const { chapter, episode } of chapteredEpisodes(document)) {
@@ -211,17 +241,23 @@ export function buildVideoTimeline(options: TimelineOptions & { timing?: typeof 
       if (episode.quiz && index === answerAt && index > 0) quizMoment(episode);
       const node = byId.get(ply.nodeId);
       if (!node) return;
+      if (ply.playOut?.length) {
+        lineOff(episode, ply, node);
+        return;
+      }
       if (shown?.id !== node.id) {
         playTo(node);
         if (node.parentId) shown = byId.get(node.parentId) ?? shown;
         temptingMoves(episode, ply, node);
       }
-      const spoken = spokenLength(`clip:${episode.id}:${ply.nodeId}`, Boolean(videoLine(ply)));
+      const key = `clip:${episode.id}:${ply.nodeId}`;
+      const spoken = spokenLength(key, Boolean(videoLine(ply)));
       // A move shown for the first time sounds; its line waits for it.
       const sound = shown?.id === node.id ? null : soundOf(node);
       const lead = sound && spoken.key ? soundLength(sound) : 0;
       shown = node;
-      out.push({ kind: 'beat', ...board(node), arrows: ply.arrows, caption: videoCaption(ply), audioKey: spoken.key, pauseMs: 0, sound, audioOffsetMs: lead }, spoken.length + lead);
+      const marks = marksFor(videoLine(ply), node.fenAfter, spoken.key ? audioMs(key) : undefined);
+      out.push({ kind: 'beat', ...board(node), arrows: ply.arrows, caption: videoCaption(ply), audioKey: spoken.key, pauseMs: 0, sound, audioOffsetMs: lead, ...marks }, spoken.length + lead);
     });
   }
   const outro = document.video?.outro.trim();

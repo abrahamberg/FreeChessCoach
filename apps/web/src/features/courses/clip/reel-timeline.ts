@@ -1,7 +1,7 @@
 import type { CourseNode } from '@freechesscoach/shared';
 import { courseMoveSound } from '../player/course-move-list.js';
 import { clipSoundLengthMs, type ClipSound } from './clip-sounds.js';
-import { boardAt, SegmentWriter, type ClipTimeline, type TimelineOptions } from './timeline.js';
+import { boardAt, marksFor, SegmentWriter, type ClipTimeline, type TimelineOptions } from './timeline.js';
 
 /** docs/courses.md §13.3, the reel's pace, in ms. */
 export const REEL_TIMING = {
@@ -53,7 +53,8 @@ function reelPass(options: TimelineOptions & { timing?: typeof REEL_TIMING }, cl
   const board = (node: CourseNode | null) => boardAt(document, node);
 
   const hook = spoken('reel:hook', reel.hook);
-  out.push({ kind: 'beat', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: hook.key, pauseMs: 0 }, Math.max(hook.length, timing.silentBeatMs));
+  const hookMarks = marksFor(reel.hook, board(shown).fen, hook.key ? audioMs(hook.key) : undefined);
+  out.push({ kind: 'beat', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: hook.key, pauseMs: 0, ...hookMarks }, Math.max(hook.length, timing.silentBeatMs));
   if (reel.style === 'puzzle') {
     out.push({ kind: 'quiz', ...board(shown), lastMove: null, moveLabel: null, arrows: [], caption: '', audioKey: null, pauseMs: timing.countdownMs, sound: sounds ? 'riser' : null }, timing.countdownMs);
   }
@@ -65,7 +66,8 @@ function reelPass(options: TimelineOptions & { timing?: typeof REEL_TIMING }, cl
     const line = beat ? spoken(`reel:beat:${node.id}`, beat.say) : { key: null, length: 0 };
     const lead = sound && line.key ? soundLength(sound) : 0;
     const length = Math.max(timing.moveMs, line.length + lead) + (extra.holdMs ?? 0);
-    out.push({ kind: beat ? 'beat' : 'move', ...board(node), arrows: [], caption: extra.caption ?? beat?.caption ?? '', audioKey: line.key, pauseMs: 0, sound, audioOffsetMs: lead }, length);
+    const marks = beat && line.key ? marksFor(beat.say, node.fenAfter, audioMs(line.key)) : {};
+    out.push({ kind: beat ? 'beat' : 'move', ...board(node), arrows: [], caption: extra.caption ?? beat?.caption ?? '', audioKey: line.key, pauseMs: 0, sound, audioOffsetMs: lead, ...marks }, length);
     shown = node;
   };
 

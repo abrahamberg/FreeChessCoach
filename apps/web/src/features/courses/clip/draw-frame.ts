@@ -1,6 +1,7 @@
 import type { CoachPersona, CourseArrow } from '@freechesscoach/shared';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { defaultPieces } from 'react-chessboard';
+import { markAlpha } from './speech-marks.js';
 import { CLIP_SIZES, type ClipSegment, type ClipTimeline } from './timeline.js';
 
 /** Fixed colours: a clip looks the same whatever theme the creator uses.
@@ -14,6 +15,8 @@ const COLORS = {
   light: '#ede2c8',
   dark: '#8ba173',
   lastMove: 'rgba(255, 214, 10, 0.38)',
+  /** A square the coach names, lit while it is said. */
+  mark: '#ffd60a',
   arrows: { idea: '#c9762a', threat: '#c0392b', best: '#5b9c6a' } satisfies Record<CourseArrow['kind'], string>
 };
 const FONT = "'Inter Tight', Inter, -apple-system, 'Segoe UI', Roboto, sans-serif";
@@ -31,10 +34,14 @@ const AVATAR_CELL: Record<CoachPersona, [column: number, row: number]> = {
   gambler: [3, 1]
 };
 const AVATAR_TOP = [123, 538];
+/** The site's name, on the video's first slide. */
+const SITE_NAME = 'freechesscoach.org';
 
 export interface ClipAssets {
   pieces: Map<string, HTMLImageElement>;
   avatar: HTMLImageElement | null;
+  /** public/brand/logo.png, dark green on transparent. */
+  logo: HTMLImageElement | null;
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -57,8 +64,8 @@ export async function loadClipAssets(): Promise<ClipAssets> {
       pieces.set(code, await loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`));
     })
   );
-  const avatar = await loadImage('/brand/coaches.png').catch(() => null);
-  return { pieces, avatar };
+  const [avatar, logo] = await Promise.all([loadImage('/brand/coaches.png').catch(() => null), loadImage('/brand/logo.png').catch(() => null)]);
+  return { pieces, avatar, logo };
 }
 
 export interface FrameInput {
@@ -100,12 +107,16 @@ function drawReelFrame(ctx: CanvasRenderingContext2D, input: FrameInput, width: 
   drawCountdownOf(ctx, input, board.x + board.size / 2, board.y + board.size / 2);
 }
 
-/** §13.4: the board with the side panel; a card for the hook, each chapter,
- * the outro and the end. */
+/** §13.4: the board with the side panel; the start slide for the hook, a
+ * card for each chapter, the outro and the end. */
 function drawVideoFrame(ctx: CanvasRenderingContext2D, input: FrameInput, width: number, height: number): void {
   const board = { x: 60, y: 60, size: 960 };
   const { segment } = input;
   drawBoard(ctx, input, board.x, board.y, board.size);
+  if (segment.kind === 'title') {
+    drawStartPanel(ctx, input, 1080);
+    return;
+  }
   const panelX = 1080;
   // Cards carry their own text over the board.
   const caption = segment.kind === 'beat' || segment.kind === 'quiz' || segment.kind === 'tempting' || segment.kind === 'move' ? segment.caption : '';
@@ -116,11 +127,69 @@ function drawVideoFrame(ctx: CanvasRenderingContext2D, input: FrameInput, width:
   drawAvatar(ctx, input, panelX, 860, 150);
   text(ctx, input.coachName, panelX + 180, 945, `600 42px ${FONT}`, COLORS.muted);
 
-  if (segment.kind === 'title') drawCard(ctx, width, height, segment.caption || input.title, '');
   if (segment.kind === 'chapter') drawCard(ctx, width, height, segment.caption, input.title);
   if (segment.kind === 'outro') drawCard(ctx, width, height, segment.caption, `Learn it move by move: ${input.link}`);
   if (segment.kind === 'end') drawCard(ctx, width, height, input.title, `Learn it move by move: ${input.link}`);
   drawCountdownOf(ctx, input, board.x + board.size / 2, board.y + board.size / 2);
+}
+
+/** The start slide's panel beside the climax board: the logo and the site,
+ * the thumbnail text, the title and the coach, each sliding in after the
+ * one before. */
+function drawStartPanel(ctx: CanvasRenderingContext2D, input: FrameInput, x: number): void {
+  const elapsed = input.ms - input.segment.start;
+  const enter = (delay: number): number => Math.max(0, Math.min(1, (elapsed - delay) / 350));
+  const eased = (delay: number): number => 1 - (1 - enter(delay)) ** 3;
+  const slide = (delay: number, draw: () => void): void => {
+    ctx.save();
+    ctx.globalAlpha = enter(delay);
+    ctx.translate((1 - eased(delay)) * 60, 0);
+    draw();
+    ctx.restore();
+  };
+  const gradient = ctx.createLinearGradient(x - 20, 0, 1920, 1080);
+  gradient.addColorStop(0, COLORS.panel);
+  gradient.addColorStop(1, COLORS.background);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x - 20, 0, 1920 - x + 20, 1080);
+
+  slide(0, () => {
+    roundRect(ctx, x, 60, 110, 110, 24);
+    ctx.fillStyle = COLORS.light;
+    ctx.fill();
+    if (input.assets.logo) ctx.drawImage(input.assets.logo, x + 5, 65, 100, 100);
+    text(ctx, SITE_NAME, x + 140, 132, `800 50px ${FONT}`, COLORS.text);
+  });
+  slide(150, () => {
+    ctx.fillStyle = COLORS.accent;
+    ctx.fillRect(x, 250, 120, 12);
+    wrapText(ctx, input.segment.caption || input.title, { x, y: 370, maxWidth: 520, font: `900 96px ${FONT}`, color: COLORS.text, lineHeight: 104, maxLines: 4 });
+  });
+  slide(300, () => wrapText(ctx, input.title, { x, y: 850, maxWidth: 520, font: `600 40px ${FONT}`, color: COLORS.muted, lineHeight: 50, maxLines: 3 }));
+  slide(450, () => {
+    drawPortrait(ctx, input, 1620, 440, 260);
+    ctx.textAlign = 'center';
+    ctx.font = `700 36px ${FONT}`;
+    ctx.fillStyle = COLORS.accent;
+    ctx.fillText(input.coachName, 1750, 1040);
+  });
+}
+
+/** The coach's whole portrait from the sprite, standing in the corner. */
+function drawPortrait(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, y: number, width: number): void {
+  if (!input.assets.avatar) return;
+  const [column, row] = AVATAR_CELL[input.persona];
+  ctx.drawImage(input.assets.avatar, column * 256, row * 512, 256, 512, x, y, width, width * 2);
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number): void {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + width, y, x + width, y + height, radius);
+  ctx.arcTo(x + width, y + height, x, y + height, radius);
+  ctx.arcTo(x, y + height, x, y, radius);
+  ctx.arcTo(x, y, x + width, y, radius);
+  ctx.closePath();
 }
 
 function drawCountdownOf(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, y: number): void {
@@ -164,6 +233,26 @@ function drawBoard(ctx: CanvasRenderingContext2D, input: FrameInput, x: number, 
     const [tx, ty] = at(arrow.to);
     drawArrow(ctx, fx + square / 2, fy + square / 2, tx + square / 2, ty + square / 2, square, COLORS.arrows[arrow.kind]);
   }
+  // The squares and moves the coach names, while they are said.
+  const spokenMs = input.ms - input.segment.start - input.segment.audioOffsetMs;
+  for (const mark of input.segment.marks ?? []) {
+    const alpha = markAlpha(mark, spokenMs);
+    if (!alpha) continue;
+    const [fx, fy] = at(mark.from);
+    if (mark.from === mark.to) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = `${COLORS.mark}55`;
+      ctx.fillRect(fx, fy, square, square);
+      ctx.strokeStyle = COLORS.mark;
+      ctx.lineWidth = square * 0.07;
+      ctx.strokeRect(fx + ctx.lineWidth / 2, fy + ctx.lineWidth / 2, square - ctx.lineWidth, square - ctx.lineWidth);
+      ctx.restore();
+    } else {
+      const [tx, ty] = at(mark.to);
+      drawArrow(ctx, fx + square / 2, fy + square / 2, tx + square / 2, ty + square / 2, square, COLORS.arrows.idea, alpha * 0.85);
+    }
+  }
 }
 
 /** Square name → react-chessboard piece code ("wK", "bP"), from a FEN. */
@@ -185,13 +274,13 @@ export function piecesOf(fen: string): [string, string][] {
   return pieces;
 }
 
-function drawArrow(ctx: CanvasRenderingContext2D, fx: number, fy: number, tx: number, ty: number, square: number, color: string): void {
+function drawArrow(ctx: CanvasRenderingContext2D, fx: number, fy: number, tx: number, ty: number, square: number, color: string, alpha = 0.85): void {
   const angle = Math.atan2(ty - fy, tx - fx);
   const head = square * 0.45;
   const endX = tx - Math.cos(angle) * head * 0.8;
   const endY = ty - Math.sin(angle) * head * 0.8;
   ctx.save();
-  ctx.globalAlpha = 0.85;
+  ctx.globalAlpha = alpha;
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
   ctx.lineWidth = square * 0.17;

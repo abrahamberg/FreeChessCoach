@@ -67,8 +67,10 @@ export type CourseTempting = z.infer<typeof CourseTemptingSchema>;
  * `text` on this move in the course (the play-through); `video`: in the
  * YouTube video, saying `say` when it has its own line, else `text`, with
  * `caption` on screen (else one made from the line). `tempting` show under
- * the note in the course, and are played out in the video. A move with
- * neither tick is played without a word.
+ * the note in the course, and are played out in the video. `playOut`: moves
+ * off the tree from the position before this move (the trap's safe line),
+ * copied by code from the dossier, never the model: the video plays them
+ * while the line is said. A move with neither tick is played without a word.
  */
 export const CoursePlySchema = z.object({
   nodeId: NodeIdSchema,
@@ -77,6 +79,7 @@ export const CoursePlySchema = z.object({
   caption: z.string().optional(),
   arrows: z.array(CourseArrowSchema),
   tempting: z.array(CourseTemptingSchema).optional(),
+  playOut: z.array(z.string().min(1)).optional(),
   course: z.boolean(),
   video: z.boolean()
 });
@@ -317,7 +320,8 @@ export const EpisodeScriptSchema = z.object({
   episodeId: z.string().min(1),
   // Every key required, none defaulted (a strict provider refuses both): an
   // empty "tempting" is [].
-  plies: z.array(CoursePlySchema.extend({ say: z.string().nullable(), caption: z.string().nullable(), tempting: z.array(CourseTemptingSchema.pick({ san: true, why: true })) })),
+  // playOut is code's, copied from the dossier: never the model's.
+  plies: z.array(CoursePlySchema.omit({ playOut: true }).extend({ say: z.string().nullable(), caption: z.string().nullable(), tempting: z.array(CourseTemptingSchema.pick({ san: true, why: true })) })),
   quiz: CourseQuizSchema.nullable()
 });
 export type EpisodeScript = z.infer<typeof EpisodeScriptSchema>;

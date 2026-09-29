@@ -80,6 +80,16 @@ function withRefutations(inputs: GenerationInputs, nodeId: string, tempting: { s
   });
 }
 
+/** A trap's safe line: the victim's best move at the bait and the engine's
+ * line after it, for the video to play at the safety episode's line on the
+ * bait. */
+export function trapSafeLine(inputs: GenerationInputs): { nodeId: string; moves: string[] } | null {
+  const skeleton = inputs.context.skeleton;
+  if (skeleton?.kind !== 'trap') return null;
+  const line = inputs.dossier.nodes.find((node) => node.nodeId === skeleton.baitNodeId)?.bestInstead?.line;
+  return line?.length ? { nodeId: skeleton.baitNodeId, moves: line } : null;
+}
+
 function plannedEpisode(outline: CourseOutline, episodeId: string): CourseOutlineEpisode {
   const planned = outline.chapters.flatMap((chapter) => chapter.episodes).find((episode) => episode.id === episodeId);
   if (!planned) throw new Error(`Episode ${episodeId} is not in the outline`);
@@ -94,6 +104,7 @@ function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: 
   const planned = plannedEpisode(outline, episodeId);
   // The course always; the video only when the course makes one (§13.1).
   const video = courseVideos(inputs.document).video;
+  const safeLine = planned.role === 'safety' ? trapSafeLine(inputs) : null;
   return {
     id: planned.id,
     role: planned.role,
@@ -109,7 +120,8 @@ function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: 
           ...ply,
           ...(video && say?.trim() ? { say } : {}),
           ...(video && caption?.trim() ? { caption } : {}),
-          ...(known.length ? { tempting: known } : {})
+          ...(known.length ? { tempting: known } : {}),
+          ...(video && safeLine && ply.nodeId === safeLine.nodeId ? { playOut: safeLine.moves } : {})
         };
       }),
     budget: { course: planned.budgetCourse, video: planned.budgetVideo, ...(planned.keyNodeIds?.length ? { keyNodeIds: planned.keyNodeIds } : {}) },

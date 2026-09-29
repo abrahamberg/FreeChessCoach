@@ -203,6 +203,22 @@ describe('runCourseGeneration', () => {
     expect(ply?.tempting).toEqual([{ san: fact.san, why: 'It grabs material and lets the king breathe.', refutation: fact.refutation }]);
   });
 
+  test("the safety episode's line on the bait carries the safe line for the video; no other line does", async () => {
+    const id = await newCourse('safe-line@example.com');
+    const row = await coursesRepo.findById(db, id);
+    const document = row!.document!;
+    const { dossier } = await englundDossier(courseTreeOf(document), document.learnerSide, row!.ownerId, document.kind);
+    const line = dossier.nodes.find((node) => node.nodeId === 'n11')?.bestInstead?.line;
+    const { deps } = depsWith([step(outline()), ...cleanEpisodes()]);
+
+    await runCourseGeneration(deps, id);
+
+    const episodes = (await coursesRepo.findById(db, id))?.document?.episodes ?? [];
+    expect(line?.length).toBeGreaterThan(0);
+    expect(episodes.find((episode) => episode.id === 'e6')?.plies[0]?.playOut).toEqual(line);
+    expect(episodes.find((episode) => episode.id === 'e3')?.plies[0]?.playOut).toBeUndefined();
+  });
+
   test("an outline that changes code's plan is sent back with what to keep", async () => {
     const id = await newCourse('outline-plan@example.com');
     const stretched = outline();
