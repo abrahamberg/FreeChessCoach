@@ -71,8 +71,9 @@ function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: Cou
     if (!ply.text.trim() && !(ply.video && ply.say?.trim())) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `${ply.nodeId} speaks but has no words; write them or untick it` });
   }
   for (const ply of course) {
-    // A solve line walks the checks, captures and threats before the move.
-    const limit = episode.role === 'solve' ? maxSolveNoteSentences : scope.facts.get(ply.nodeId)?.critical ? maxCriticalNoteSentences : maxNoteSentences;
+    // A solve line walks the checks, captures and threats before the move;
+    // an endgame's technique line says what the move keeps and what spoils it.
+    const limit = episode.role === 'solve' || episode.role === 'technique' ? maxSolveNoteSentences : scope.facts.get(ply.nodeId)?.critical ? maxCriticalNoteSentences : maxNoteSentences;
     const sentences = sentenceCount(ply.text);
     if (sentences > limit) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The line on ${ply.nodeId} has ${sentences} sentences (at most ${limit})` });
   }

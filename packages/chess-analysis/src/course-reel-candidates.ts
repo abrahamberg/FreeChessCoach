@@ -43,6 +43,9 @@ export function reelCandidates(tree: CourseTree, dossier: CourseDossier, skeleto
   };
 
   if (skeleton?.kind === 'puzzle') add('puzzle', skeleton.learnerNodeIds[skeleton.learnerNodeIds.length - 1], 0);
+  // Phase 103: an endgame's reel is the technique's last move, the point
+  // it builds to (the Lucena's bridge, Rb4), asked as a puzzle.
+  if (skeleton?.kind === 'endgame') add('puzzle', skeleton.learnerNodeIds[skeleton.learnerNodeIds.length - 1], 0);
   for (const node of dossier.nodes) if (node.san.endsWith('#')) add('mate', node.nodeId, 1);
   if (skeleton?.kind === 'trap') add('trap', skeleton.answerNodeId, 2);
   for (const node of dossier.nodes) if (BRILLIANT.has(node.quality)) add('brilliant', node.nodeId, 3);

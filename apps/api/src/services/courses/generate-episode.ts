@@ -80,6 +80,10 @@ function withRefutations(inputs: GenerationInputs, nodeId: string, tempting: { s
   });
 }
 
+/** Episodes that talk over the line, not through it: tempting moves belong
+ * to the moves' own episodes (the Lucena's goal took the first move's). */
+const OVERVIEW_ROLES = new Set(['hook', 'safety', 'goal', 'recap']);
+
 /** Nodes whose tempting moves an episode before this one (in the outline's
  * order) already discusses: the video would play them twice. The runs'
  * safety and recap episodes repeated the bait's and the mate's. */
@@ -127,7 +131,7 @@ function toEpisode(inputs: GenerationInputs, outline: CourseOutline, episodeId: 
       .map((ply) => ({ ...ply, video: video && ply.video }))
       .filter((ply) => ply.course || ply.video || ply.text.trim() || ply.arrows.length || ply.tempting.length)
       .map(({ say, caption, tempting, ...ply }) => {
-        const known = planned.role === 'safety' || discussed.has(ply.nodeId) ? [] : withRefutations(inputs, ply.nodeId, tempting);
+        const known = OVERVIEW_ROLES.has(planned.role) || discussed.has(ply.nodeId) ? [] : withRefutations(inputs, ply.nodeId, tempting);
         return {
           ...ply,
           ...(video && say?.trim() ? { say } : {}),

@@ -24,4 +24,11 @@ describe('reel candidates (§13.3)', () => {
     const skeleton = buildCourseSkeleton({ kind: 'puzzle', tree, lines: courseLineGames(tree), dossier });
     expect(reelCandidates(tree, dossier, skeleton)[0]).toMatchObject({ reason: 'puzzle', startNodeId: 'n1', climaxNodeId: 'n3', endNodeId: 'n3' });
   });
+
+  test("an endgame: the technique's last move as a puzzle, the moves before it leading in", () => {
+    const tree = parseCourseTree('[FEN "1K6/1P1k4/8/8/8/8/r7/2R5 w - - 0 1"]\n\n1. Rd1+ Ke7 (1... Kc6 2. Kc8) 2. Rd4 Ra1 3. Kc7 Rc1+ 4. Kb6 Rb1+ 5. Kc6 Rc1+ 6. Kb5 Rb1+ 7. Rb4 *');
+    const { dossier } = analyseCourse(tree, fakeEvals(tree, () => 2000), 'white');
+    const skeleton = buildCourseSkeleton({ kind: 'endgame', tree, lines: courseLineGames(tree), dossier });
+    expect(reelCandidates(tree, dossier, skeleton)[0]).toMatchObject({ reason: 'puzzle', startNodeId: 'n7', climaxNodeId: 'n13', endNodeId: 'n13', styles: ['highlight', 'puzzle', 'promo'] });
+  });
 });

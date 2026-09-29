@@ -542,6 +542,12 @@ where the dossier's facts show it.
 ```
 Without AI (`endgameChapters`): the goal, the technique cut after each only
 move (its quiz, with the reply), a chapter per sideline, and "The rule".
+The reel's first candidate is the technique's last move (the Lucena's
+bridge, Rb4) as a puzzle; the goal and recap, like the hook and a trap's
+safety episode, keep no tempting moves; a technique line may have 5
+sentences, as a puzzle's solve line may. The first Lucena run (2026-09-29)
+had no reel, gave the first move's tempting moves to the goal episode, and
+hit the 2-sentence limit on every technique line.
 
 **tactics**
 ```text

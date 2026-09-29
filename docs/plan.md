@@ -2270,8 +2270,12 @@ web `courseKinds.ts`, `CourseIntakePage.tsx`, tests.
 
 ### Task 103.4 — A real run
 
-- [ ] A Lucena course is created and generated; its episodes are checked
-  against the engine.
+- [x] A Lucena course is created and generated; its episodes are checked
+  against the engine. The goal (a win, mate in 21), the material and the five
+  only moves were right, and the tempting moves correct ("Rd7+? Kxd7",
+  "b8=N+ only draws"). Fixed after it: the reel (the technique's last move as
+  a puzzle), tempting moves kept out of the goal and recap, and a technique
+  line may run 5 sentences.
 
 Commit per task; push each phase.
 
