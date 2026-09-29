@@ -64,14 +64,15 @@ export function verifyCourseEpisode(input: CourseVerifyInput): CourseVerifyProbl
 
 function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: CourseVerifyBudget | null): CourseVerifyProblem[] {
   const problems: CourseVerifyProblem[] = [];
-  const { maxCaptionWords, maxNoteSentences, maxCriticalNoteSentences } = CONFIG.courses;
+  const { maxCaptionWords, maxNoteSentences, maxCriticalNoteSentences, maxSolveNoteSentences } = CONFIG.courses;
   const course = episode.plies.filter((ply) => ply.course);
   const video = episode.plies.filter((ply) => ply.video);
   for (const ply of episode.plies.filter((each) => each.course || each.video)) {
     if (!ply.text.trim() && !(ply.video && ply.say?.trim())) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `${ply.nodeId} speaks but has no words; write them or untick it` });
   }
   for (const ply of course) {
-    const limit = scope.facts.get(ply.nodeId)?.critical ? maxCriticalNoteSentences : maxNoteSentences;
+    // A solve line walks the checks, captures and threats before the move.
+    const limit = episode.role === 'solve' ? maxSolveNoteSentences : scope.facts.get(ply.nodeId)?.critical ? maxCriticalNoteSentences : maxNoteSentences;
     const sentences = sentenceCount(ply.text);
     if (sentences > limit) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The line on ${ply.nodeId} has ${sentences} sentences (at most ${limit})` });
   }
@@ -107,9 +108,24 @@ function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: Cou
   return problems;
 }
 
-/** §13.5: a ply's tempting moves are the dossier's, at that move. */
+/** §13.5: a ply's tempting moves are the dossier's, at that move. A solve
+ * episode's move discusses every check the dossier lists there: the owner
+ * wants the learner told why each other check fails. */
 function temptingProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVerifyProblem[] {
-  return episode.plies.flatMap((ply) => {
+  const missingChecks =
+    episode.role !== 'solve'
+      ? []
+      : scope.path.flatMap((nodeId) => {
+          const checks = (scope.facts.get(nodeId)?.tempting ?? []).filter((each) => each.kind === 'check');
+          const said = new Set((episode.plies.find((ply) => ply.nodeId === nodeId)?.tempting ?? []).flatMap((each) => sameMove(each.san)));
+          const missing = checks.filter((each) => !sameMove(each.san).some((form) => said.has(form))).map((each) => each.san);
+          const node = scope.byId.get(nodeId);
+          const label = node ? moveLabel(scope.fenBefore(nodeId), node.san) : nodeId;
+          return missing.length
+            ? [{ code: 'tempting' as const, nodeId, message: `At ${label} the solver looks at every check: add ${missing.join(', ')} to the tempting moves there, each with why it fails` }]
+            : [];
+        });
+  return [...missingChecks, ...episode.plies.flatMap((ply) => {
     const known = new Set((scope.facts.get(ply.nodeId)?.tempting ?? []).flatMap((each) => sameMove(each.san)));
     return (ply.tempting ?? []).flatMap((each) => [
       ...(sameMove(each.san).some((form) => known.has(form)) ? [] : [{ code: 'tempting' as const, nodeId: ply.nodeId, message: `${each.san} on ${ply.nodeId} is not one of the analysis's tempting moves there` }]),
@@ -118,7 +134,7 @@ function temptingProblems(episode: CourseEpisode, scope: EpisodeScope): CourseVe
         ? [{ code: 'tempting' as const, nodeId: ply.nodeId, message: `why ${each.san} fails on ${ply.nodeId} copies the analysis: say in the coach's words what it hopes for and what goes wrong` }]
         : [])
     ]);
-  });
+  })];
 }
 
 /** Code's key moves (CourseBudget.keyNodeIds) speak in every planned version. */
@@ -148,6 +164,8 @@ function quizProblems(episode: CourseEpisode, scope: EpisodeScope, hasAnalysis: 
     problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz answer ${label} is not the one clearly best move` });
   }
   if (names(quiz.hint)) problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz hint names the answer ${label}` });
+  // A puzzle run asked "Nf7+ or Ng6+?": half the answer.
+  if (names(quiz.prompt)) problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz prompt names the answer ${label}` });
   if (!names(quiz.reveal)) problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz reveal does not name the answer ${label}` });
   else if (wordCount(quiz.reveal) < CONFIG.courses.minRevealWords) {
     problems.push({ code: 'quiz', nodeId: answer.id, message: `The quiz reveal only names ${label}; say in one sentence why it works` });

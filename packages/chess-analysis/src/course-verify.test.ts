@@ -254,3 +254,28 @@ describe('our words (§7)', () => {
     expect(messages).toContain('the line on n11 says "listed": the learner never sees our list; name the moves or say what happens');
   });
 });
+
+describe('a puzzle solve (§13.2)', () => {
+  const check = { san: 'Qxc3+', kind: 'check' as const, does: [], refutation: ['Nxc3'], after: [], captures: '', verdict: '', balance: '' };
+  const solve = (tempting: CoursePly['tempting']) => {
+    const { tree, dossier } = analyseEnglund();
+    const nodes = dossier.nodes.map((node) => (node.nodeId === 'n12' ? { ...node, tempting: [check] } : node));
+    const episode: CourseEpisode = {
+      id: 'e2', role: 'solve', focus: '', startNodeId: 'n12', endNodeId: 'n12', drillNodeIds: [],
+      plies: [ply('n12', 'Checks first. Qxc3+ loses the queen to Nxc3. Captures next. Then Bb4. It pins the bishop.', { tempting })]
+    };
+    return verifyCourseEpisode({ episode, startFen: tree.startFen, nodes: tree.nodes, dossier: { ...dossier, nodes } }).map((problem) => problem.message);
+  };
+
+  test('every check the solver looks at is discussed; a solve line may run 5 sentences', () => {
+    expect(solve(undefined)).toContain('At 6…Bb4 the solver looks at every check: add Qxc3+ to the tempting moves there, each with why it fails');
+    expect(solve([{ san: 'Qxc3+', why: 'Nxc3 takes the queen.' }]).filter((message) => /every check|sentences/.test(message))).toEqual([]);
+  });
+
+  test('a quiz prompt never names the answer', () => {
+    const messages = verify((episode) => {
+      if (episode.quiz) episode.quiz.prompt = 'Bb4 or Qxc3+: which one?';
+    }).map((problem) => problem.message);
+    expect(messages).toContain('The quiz prompt names the answer 6…Bb4');
+  });
+});

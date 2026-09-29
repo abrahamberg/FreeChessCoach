@@ -2146,7 +2146,7 @@ two-sentence limit fought the checks-captures-threats walk.
 
 **Files:** `course-dossier-node.ts`, `course-skeleton.ts`, tests.
 
-- [ ] A move is quiz-eligible when it is the engine's best and either beats
+- [x] A move is quiz-eligible when it is the engine's best and either beats
   the second by `onlyMoveGap`, or mates and the second does not mate or mates
   later. A puzzle's second solution is a move that mates as fast.
 
@@ -2154,7 +2154,7 @@ two-sentence limit fought the checks-captures-threats walk.
 
 **Files:** `course-tempting.ts`, `config.ts`, tests.
 
-- [ ] At a puzzle's or tactics course's learner move, the engine's ranked
+- [x] At a puzzle's or tactics course's learner move, the engine's ranked
   moves are candidates too; every check is kept (no `temptingDrop`, no
   obvious-loss filter), and a move that mates later or not at all where the
   course move mates is kept; up to 5 a move.
@@ -2163,9 +2163,9 @@ two-sentence limit fought the checks-captures-threats walk.
 
 **Files:** `playbooks.ts`, `course-verify.ts`, tests, `docs/courses.md`.
 
-- [ ] The playbook: at each learner move, every check in the tempting list,
+- [x] The playbook: at each learner move, every check in the tempting list,
   then the captures, each with why it fails (the answer and what it leaves).
-- [ ] The verifier: a solve episode's learner move discusses every tempting
+- [x] The verifier: a solve episode's learner move discusses every tempting
   check the dossier lists there; a quiz prompt never names the answer; a
   solve line may have 5 sentences.
 

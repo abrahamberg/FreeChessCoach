@@ -233,9 +233,12 @@ function puzzlePlaybook(context: CoursePromptContext, skeleton: Extract<CourseSk
 Use exactly these episodes, in order:
 1. question — the position and the task, in one breath ("${side} to play. ${skeleton?.mateIn ? `Mate in ${skeleton.mateIn}.` : 'Find the win.'}"), and what to look at first.
 2. solve — one per ${side} move, each a quiz: the checks, captures and threats
-   the dossier lists here, in that order; which look right and why they fail
-   (tempting moves only as the dossier gives them); then the move and why it
-   works. The defender's reply: why it is forced.
+   in that order, then the move and why it works. Every check in the
+   dossier's tempting moves at that move goes in its tempting list, and each
+   capture there too, each with why it fails in a few words: the answer and
+   what it leaves ("Ng6+? hxg6 takes the knight, and the mate is gone";
+   "mates too, but later"). Tempting moves only as the dossier gives them.
+   The defender's reply: why it is forced, or why the others lose faster.
 3. recap — the pattern, and the cue that tells you to look for it in a game.
 A strong player thinks checks, captures, threats, every move: teach that
 habit, not just this answer.${unsound}`;

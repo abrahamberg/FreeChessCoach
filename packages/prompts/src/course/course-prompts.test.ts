@@ -89,6 +89,13 @@ describe('course prompts', () => {
     }
   });
 
+  test('a puzzle explains every other check at each move, with its answer', () => {
+    const system = buildCourseSystemPrompt(englundCourseContext('puzzle', SKELETONS.puzzle));
+
+    expect(system).toContain('Every check in the\n   dossier\'s tempting moves at that move goes in its tempting list');
+    expect(system).toContain('"Ng6+? hxg6 takes the knight, and the mate is gone"');
+  });
+
   test('the outline request carries the lines, candidates and the whole dossier', () => {
     const { user } = buildCourseOutlineMessages(englundCourseContext());
 

@@ -262,7 +262,9 @@ a missing or misleading fact here, not a prompt telling the model to be careful.
 - Alternatives: the engine's other top moves and the tempting moves (captures,
   checks) with verdict words, so "why not X?" is answered from facts.
 - Flags: `quiz-eligible` (one move is clearly best: a win-percentage gap above
-  `CONFIG.courses.onlyMoveGap` to the second move), `critical` (from
+  `CONFIG.courses.onlyMoveGap` to the second move, or a mate where the second
+  mates later or not at all; a slower mate is no second answer, and a
+  puzzle's `unsoundNodeIds` are only moves that mate as fast), `critical` (from
   `critical-moments.ts`), `creator-comment` (the creator's PGN comment, verbatim).
 
 Per line: its name, where it leaves the book, and the end position's features
@@ -502,9 +504,12 @@ Use exactly these episodes, in order:
 1. question — the position and the task, in one breath ("{side} to play. Mate in N."),
    and what to look at first.
 2. solve — one per {side} move, each a quiz: the checks, captures and threats
-   the dossier lists here, in that order; which look right and why they fail
-   (tempting moves only as the dossier gives them); then the move and why it
-   works. The defender's reply: why it is forced.
+   in that order, then the move and why it works. Every check in the
+   dossier's tempting moves at that move goes in its tempting list, and each
+   capture there too, each with why it fails in a few words: the answer and
+   what it leaves ("Ng6+? hxg6 takes the knight, and the mate is gone";
+   "mates too, but later"). Tempting moves only as the dossier gives them.
+   The defender's reply: why it is forced, or why the others lose faster.
 3. recap — the pattern, and the cue that tells you to look for it in a game.
 A strong player thinks checks, captures, threats, every move: teach that
 habit, not just this answer.
@@ -777,7 +782,8 @@ a message the creator can read.
 | Tempting | Every `tempting[].san` is one of the dossier's tempting moves at that node (code drops any other when it merges the model's answer, and takes the dossier's spelling and refutation); a `why` that pastes the dossier's line ("answered by …", "(White is …)") goes back. |
 | Node ids | No line, caption, why, quiz text or reel text says a node id ("mate at n16"). |
 | Lengths | The video line (`say`, else `text`) within the words per move, the video within the episode's words (these, the video's hook and the reel's seconds may run over by `lengthSlack`, 10%, before they count); captions at most 6 words (with no caption the video shows the line's first sentence, and the model is asked to add a caption and keep the line, never told a caption it never wrote is long); course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
-| Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); the hint does not name it. |
+| Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); neither the hint nor the prompt names it (a puzzle run asked "Nf7+ or Ng6+?"). |
+| Solve | In a puzzle's solve episode, every check among the dossier's tempting moves at a move is in that ply's tempting list; a solve line may have 5 sentences (`maxSolveNoteSentences`). |
 | Phrases | None of `BANNED_GENERIC_PHRASES`, and never the word "dossier" (the prompt's word, not the learner's), nor "listed", "given line" or "the continuation" (our list's words). |
 | Pieces | "the knight on d5", "your d1 bishop": that piece stands on that square in a position the line is about: the episode's positions and the lines its moves show (the better move, the tempting moves, the safe line). A safety line is about the board before the bait and the safe line, and after the bait only where it names the bait (`course-verify-pieces.ts`). The hook is not checked. |
 | Voice | More than 2 lines in an episode starting with the same word; one line repeated in two episodes; a word that starts a sentence in 3 or more lines across the course and the reel ("Execute."), board words (White, the queen …) aside. |
@@ -1235,7 +1241,11 @@ puzzle or tactics course:
    `obviousLoss` (2) points down (a queen taking a defended piece) is seen
    at a glance, so it is dropped. A quiet answer that mates stays.
 3. Keep at most 3, ordered checks, then captures by value taken, then
-   threats.
+   threats. At a puzzle's or tactics course's learner move (the solver's
+   move) the engine's ranked moves are candidates too, every check and
+   capture is kept without the obvious-loss filter (a check that costs even
+   `solveCheckDrop`, 5 win%, counts), a move that mates later or not at all
+   where the best mates is kept anywhere, and up to 5 (`maxSolveTempting`).
 4. Each gets what it does itself (its board facts), its refutation (the
    engine's reply and line, `pvSan`, at most 4 plies, never cut mid-exchange: `settledLine`), the board facts of
    the reply, and who takes what over the line (`course-material.ts`), so
