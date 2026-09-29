@@ -119,6 +119,8 @@ describe('course dossier', () => {
     expect(boardFacts('4k3/8/8/4K3/4P3/8/8/8 b - - 0 1', 'Ke7')).toContain('takes the opposition: the kings face each other with one square between, and the other king must give way');
     expect(boardFacts('8/8/8/8/8/8/k4P2/7K w - - 0 1', 'f4')).toContain("the black king on a2 is outside the pawn's square: it cannot catch the pawn");
     expect(boardFacts('8/8/8/3k4/8/8/5P2/7K w - - 0 1', 'f4').join(' | ')).not.toContain('square');
+    // The Petrov's 5.Nc6+: the queen checks, not the knight.
+    expect(boardFacts(petrov, 'Nc6+')).toContain('a discovered check from the queen on e2');
     // A piece with no move at all is stuck, not trapped: the rook in its corner.
     const corner = boardFacts('rn2k3/p7/8/8/2B5/8/8/4K3 w - - 0 1', 'Bd5');
     expect(corner).toContain('attacks the rook on a8');

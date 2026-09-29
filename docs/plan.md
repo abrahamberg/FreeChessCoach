@@ -2536,6 +2536,9 @@ fixes, again until clean.
   opposition" after a king move with only kings and pawns, not at stalemate;
   "the black king on a2 is outside the pawn's square: it cannot catch the
   pawn".
+- [x] A check the moved piece does not give is named: "a discovered check
+  from the queen on e2" (the Petrov's 5.Nc6+), "a double check, with the
+  queen on c4" (Philidor's Legacy 2.Nh6+).
 
 ## Verification (end of each phase)
 

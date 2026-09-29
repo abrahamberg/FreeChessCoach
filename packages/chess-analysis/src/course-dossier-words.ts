@@ -36,7 +36,7 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   if (promoted) facts.push(`promotes to a ${PIECE_NAMES[promoted.toLowerCase() as PieceSymbol]}`);
   if (inspected.captured) facts.push(`captures the ${PIECE_NAMES[inspected.captured]} on ${inspected.to}`);
   facts.push(...blockedCheck(fenBefore, inspected.piece, inspected.to), ...endgameGeometry(inspected.resultFen, inspected.piece, inspected.to as Square));
-  if (inspected.gives) facts.push(`gives ${inspected.gives}`);
+  if (inspected.gives) facts.push(`gives ${inspected.gives}`, ...discovered(inspected.resultFen, inspected.to as Square));
   if (inspected.gives === 'checkmate' && isBackRankMate(inspected.resultFen, inspected.to as Square)) facts.push('a back-rank mate');
   if (inspected.gives === 'checkmate') facts.push(mateNet(inspected.resultFen));
   if (inspected.gives === 'check') facts.push(checkAnswers(inspected.resultFen));
@@ -57,6 +57,18 @@ export function boardFacts(fenBefore: string, san: string): string[] {
     if (forker && fork.square === inspected.to && targets.length >= 2) facts.push(`the ${PIECE_NAMES[fork.piece]} on ${fork.square} forks ${targets.join(' and ')}`);
   }
   return facts;
+}
+
+/** Who gives the check when the moved piece is not the only one: the
+ * Petrov's 5.Nc6+ is the queen on e2's check, which "gives check" hid. */
+function discovered(fenAfter: string, to: Square): string[] {
+  const chess = new Chess(fenAfter);
+  const king = chess.findPiece({ type: 'k', color: chess.turn() })[0];
+  if (!king) return [];
+  const checkers = chess.attackers(king, chess.turn() === 'w' ? 'b' : 'w');
+  const others = checkers.filter((square) => square !== to).map((square) => `the ${PIECE_NAMES[chess.get(square)!.type]} on ${square}`);
+  if (!others.length) return [];
+  return checkers.includes(to) ? [`a double check, with ${others.join(' and ')}`] : [`a discovered check from ${others.join(' and ')}`];
 }
 
 /** The Lucena's 7.Rb4 builds the bridge by blocking a check: the one fact
