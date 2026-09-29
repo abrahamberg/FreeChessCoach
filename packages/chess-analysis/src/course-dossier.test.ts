@@ -146,7 +146,8 @@ describe('course dossier', () => {
       after: ['moves the bishop from d2 to b4', 'captures the queen on b4'],
       captures: 'Black takes a pawn and a knight; White takes the queen and a knight',
       verdict: 'White is much better',
-      balance: 'White is a queen up'
+      balance: 'White is a queen up',
+      notTheAnswer: null
     };
     const nodes = dossier.nodes.map((node) => (node.nodeId === 'n10' ? { ...node, tempting: [tempting] } : node));
     const text = renderCourseDossier({ ...dossier, nodes });

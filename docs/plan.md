@@ -2457,6 +2457,36 @@ the four-move smothered mate wins a rook) carry the same "?" as losing ones.
 
 Commit per task; push the phase.
 
+## Phase 107 — A puzzle asks for the best move
+
+The owner (2026-09-29): a puzzle is about finding the best move, not any
+move that works. A move that still wins is shown and the coach says why it
+is not the answer: it doesn't mate, or it mates later. The facts pass had
+Qd5 in the four-move smothered mate (wins a rook) marked "?" like a move
+that loses.
+
+### Task 107.1 — "Works, but not the answer"
+
+**Files:** `course-tempting.ts`, `course-dossier-text.ts`,
+`manual-notes.ts`, `playbooks.ts`, tests.
+
+- [x] At a solving move, a tempting move after which the mover still stands
+  better carries `notTheAnswer`: "it mates too, but in 5 moves, not 4";
+  "White is still winning, but there is no mate; the answer mates in 4";
+  "…, but the answer is stronger: White is winning". Null when it fails.
+- [x] The dossier drops its "?" and adds "Works, but not the answer: …";
+  the code-written note leads with it; the puzzle playbook tells the model
+  to say it works and why it is still not the answer.
+
+Commit and push.
+
+## Phase 108 — Perfect the facts before the model
+
+The owner (2026-09-29): the bugs keep turning up in what code hands the
+model, so keep adding positions and fixing the facts, with no model, until a
+facts pass finds nothing. 26 more golden courses, then the facts pass, then
+fixes, again until clean.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

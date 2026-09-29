@@ -99,8 +99,28 @@ describe('tempting moves (§13.5)', () => {
     ]);
     const tempting = withTempting(dossier, candidates, evals).nodes.find((node) => node.nodeId === 'n12')!.tempting;
     expect(tempting.map((each) => each.san)).toEqual(['Qxb1', 'Nxe5']);
+    // Both still win: the solver hears why neither is the answer.
+    expect(tempting.map((each) => each.notTheAnswer)).toEqual(['it mates too, but in 6 moves, not 3', 'Black is still winning, but there is no mate; the answer mates in 3']);
     expect(temptingCandidates(tree, dossier, 'trap').some((candidate) => candidate.nodeId === 'n16')).toBe(false);
     expect(temptingCandidates(tree, dossier, 'puzzle').some((candidate) => candidate.nodeId === 'n16')).toBe(true);
+  });
+});
+
+describe('tempting moves that still work (Phase 107)', () => {
+  test('a puzzle move that loses is only tempting; one that keeps the edge says why it is not the answer', () => {
+    const { tree, dossier } = analyseEnglund();
+    const candidates = temptingCandidates(tree, dossier, 'puzzle').filter((candidate) => candidate.nodeId === 'n12');
+    const at = (san: string): string => candidates.find((candidate) => candidate.san === san)!.fen;
+    const before = candidates[0]!.fenBefore;
+    const evals = new Map<string, EngineEval>([
+      [before, evaluation(before, 'Bb4', -900)],
+      [at('Qxb1'), evaluation(at('Qxb1'), 'Qd2', -300)],
+      [at('Nxe5'), evaluation(at('Nxe5'), 'Qd2', 400)]
+    ]);
+    const tempting = withTempting(dossier, candidates, evals).nodes.find((node) => node.nodeId === 'n12')!.tempting;
+    const by = new Map(tempting.map((each) => [each.san, each.notTheAnswer]));
+    expect(by.get('Qxb1')).toBe('Black is still better, but the answer is stronger: Black is winning');
+    expect(by.get('Nxe5')).toBeNull();
   });
 });
 

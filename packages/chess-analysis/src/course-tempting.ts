@@ -1,5 +1,5 @@
 import { Chess, type Square } from 'chess.js';
-import type { CourseKind, EngineEval } from '@freechesscoach/shared';
+import type { CourseKind, EngineEval, EngineLine } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 import { moverMateIn } from './course-dossier-node.js';
 import type { CourseDossier } from './course-dossier.js';
@@ -33,6 +33,11 @@ export interface CourseTemptingFacts {
   verdict: string;
   /** The material at the refutation's end ("Black is a queen up"). */
   balance: string;
+  /** At a solving move, a move that still works: why it is not the answer
+   * ("it mates too, but in 5 moves, not 4"; "White is still winning, but
+   * there is no mate; the answer mates in 4"). Null when it simply fails. A
+   * puzzle asks for the best move, not any move that works. */
+  notTheAnswer: string | null;
 }
 
 export interface TemptingCandidate {
@@ -158,9 +163,26 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
       after: boardFacts(candidate.fen, answer.moveSan),
       captures: captureWords(candidate.fenBefore, [candidate.san, ...refutation]),
       verdict: lineWords(answer),
-      balance: lineBalance(candidate.fenBefore, [candidate.san, ...refutation])
+      balance: lineBalance(candidate.fenBefore, [candidate.san, ...refutation]),
+      notTheAnswer: candidate.solving ? notTheAnswer(facts.side, best, answer) : null
     });
     kept.set(candidate.nodeId, list);
   }
   return { ...dossier, nodes: dossier.nodes.map((node) => ({ ...node, tempting: kept.get(node.nodeId) ?? [] })) };
+}
+
+/** Why a move that still works is not the puzzle's answer, from the engine's
+ * lines before it (the answer) and after it; null when it does not work: the
+ * mover no longer stands better. After the candidate the other side moves,
+ * so its mate in K is K + 1 moves from the puzzle's position. */
+function notTheAnswer(side: 'white' | 'black', best: EngineLine, answer: EngineLine): string | null {
+  const name = side === 'white' ? 'White' : 'Black';
+  const verdict = lineWords(answer);
+  if (!verdict.startsWith(name)) return null;
+  const bestMate = moverMateIn(best, side);
+  const answerMate = moverMateIn(answer, side);
+  if (bestMate !== null && answerMate !== null) return `it mates too, but in ${answerMate + 1} moves, not ${bestMate}`;
+  const still = verdict.replace(/^(White|Black) (is|has) /, '$1 $2 still ');
+  if (bestMate !== null) return `${still}, but there is no mate; the answer mates in ${bestMate}`;
+  return `${still}, but the answer is stronger: ${lineWords(best)}`;
 }

@@ -91,7 +91,7 @@ export function temptingNote(facts: CourseTemptingFacts): CourseTempting {
   const effects = facts.after.length > 1 ? facts.after.slice(1) : facts.after;
   const listed = effects.length > 1 ? `${effects.slice(0, -1).join(', ')} and ${effects.at(-1)}` : (effects[0] ?? '');
   const why = answer ? `${answer} ${listed}.`.replace(/ \.$/, '.') : facts.verdict;
-  return { san: facts.san, why, refutation: facts.refutation };
+  return { san: facts.san, why: facts.notTheAnswer ? `Not the answer: ${facts.notTheAnswer}. ${why}` : why, refutation: facts.refutation };
 }
 
 /** Every learner move, and opponent moves the facts have something on. */

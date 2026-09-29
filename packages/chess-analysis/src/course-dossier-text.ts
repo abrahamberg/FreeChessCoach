@@ -67,7 +67,9 @@ function temptingText(node: CourseNodeFacts, tempting: CourseTemptingFacts): str
   const does = tempting.does.length ? ` ${mover}'s ${tempting.san} ${tempting.does.join(' | ')}.` : '';
   const after = answer ? ` ${other} answers ${answer}${tempting.after.length ? `: ${tempting.after.join(' | ')}` : ''}.` : '';
   const line = rest.length ? ` Then ${rest.join(' ')}.` : '';
-  return `${tempting.san}?${does}${after}${line} Over the line ${tempting.captures}; at the end ${tempting.balance} (${tempting.verdict}).`;
+  // A puzzle move that still works is no "?": it is not the answer, and why.
+  const verdict = tempting.notTheAnswer ? ` Works, but not the answer: ${tempting.notTheAnswer}.` : '';
+  return `${tempting.san}${tempting.notTheAnswer ? '' : '?'}${does}${after}${line} Over the line ${tempting.captures}; at the end ${tempting.balance} (${tempting.verdict}).${verdict}`;
 }
 
 function isNotable(node: CourseNodeFacts): boolean {

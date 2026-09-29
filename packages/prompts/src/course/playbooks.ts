@@ -247,8 +247,11 @@ Use exactly these episodes, in order:
    in that order, then the move and why it works. Every check in the
    dossier's tempting moves at that move goes in its tempting list, and each
    capture there too, each with why it fails in a few words: the answer and
-   what it leaves ("Ng6+? hxg6 takes the knight, and the mate is gone";
-   "mates too, but later"). Tempting moves only as the dossier gives them.
+   what it leaves ("Ng6+? hxg6 takes the knight, and the mate is gone").
+   The puzzle asks for the best move, not any move that works: where the
+   dossier says "Works, but not the answer", say it works and why it is still
+   not the answer ("Qd5 wins the rook, but it doesn't mate"; "it mates too,
+   but in five, not four"). Tempting moves only as the dossier gives them.
    The defender's reply: why it is forced, or why the others lose faster.
 3. recap — the pattern, and the cue that tells you to look for it in a game.
 A strong player thinks checks, captures, threats, every move: teach that

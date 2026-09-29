@@ -256,7 +256,7 @@ describe('our words (§7)', () => {
 });
 
 describe('a puzzle solve (§13.2)', () => {
-  const check = { san: 'Qxc3+', kind: 'check' as const, does: [], refutation: ['Nxc3'], after: [], captures: '', verdict: '', balance: '' };
+  const check = { san: 'Qxc3+', kind: 'check' as const, does: [], refutation: ['Nxc3'], after: [], captures: '', verdict: '', balance: '', notTheAnswer: null };
   const solve = (tempting: CoursePly['tempting']) => {
     const { tree, dossier } = analyseEnglund();
     const nodes = dossier.nodes.map((node) => (node.nodeId === 'n12' ? { ...node, tempting: [check] } : node));

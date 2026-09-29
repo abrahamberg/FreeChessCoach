@@ -95,6 +95,7 @@ describe('course prompts', () => {
 
     expect(system).toContain('Every check in the\n   dossier\'s tempting moves at that move goes in its tempting list');
     expect(system).toContain('"Ng6+? hxg6 takes the knight, and the mate is gone"');
+    expect(system).toContain('where the\n   dossier says "Works, but not the answer", say it works and why it is still\n   not the answer');
   });
 
   test('an endgame names the goal, the only moves and what a tempting move spoils', () => {
