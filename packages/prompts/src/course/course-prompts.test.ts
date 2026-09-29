@@ -30,6 +30,18 @@ describe('course prompts', () => {
     expect(system).toContain('The\n   video pauses 3s (the app adds the pause).');
   });
 
+  test("the trap's safety episode says what the trapper plays when the victim finds the safe move", () => {
+    const context = englundCourseContext();
+    // The fixture's engine gives no line; the real one after 6.Nc3.
+    const line = ['Nc3', 'Bb4', 'Rb1', 'Qa3', 'Rb3', 'Qa5'];
+    const nodes = context.dossier.nodes.map((node) => (node.nodeId === 'n11' && node.bestInstead ? { ...node, bestInstead: { ...node.bestInstead, line, balance: 'White is a pawn up' } } : node));
+    const system = buildCourseSystemPrompt({ ...context, dossier: { ...context.dossier, nodes } });
+
+    expect(system).toContain("Then the trapper's side: when the victim finds Nc3, the engine's\n   line is Nc3 Bb4 Rb1 Qa3 Rb3 Qa5 (at its end: ");
+    expect(system).toContain('White is a pawn up). Name Black');
+    expect(system).toContain('not to pretend the trap still works');
+  });
+
   test('the trap hook is told how the line ends, with no example hook to copy', () => {
     const system = buildCourseSystemPrompt(englundCourseContext());
 
@@ -60,7 +72,7 @@ describe('course prompts', () => {
 
     expect(user).toContain('l1 (Line A): 1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 Bxc3 8. Qxc3 Qc1#');
     expect(user).toContain('bait: n11 (6. Bc3)');
-    expect(user).toContain('Budgets: 6 episodes; the YouTube video about 5 minutes, at most 570 spoken words in total.');
+    expect(user).toContain('Budgets: 6 episodes; the YouTube video 2 to 5 minutes, at most 570 spoken words in total.\nThe length is a guide, not a target');
     expect(user).toContain('budgetCourse is how many of its moves speak in the\ncourse');
     expect(user).toContain('n16 8…Qc1#');
     expect(user).not.toContain('EPISODE PLAN');

@@ -3,6 +3,7 @@ import type { CourseKind, EngineEval } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
 import type { CourseDossier } from './course-dossier.js';
 import { boardFacts, lineWords } from './course-dossier-words.js';
+import { captureWords, exchangeLoss } from './course-material.js';
 import type { CourseTree } from './course-tree.js';
 import { toCpWhite, winPctFor } from './win-probability.js';
 
@@ -18,10 +19,15 @@ export type TemptingKind = keyof typeof KIND_ORDER;
 export interface CourseTemptingFacts {
   san: string;
   kind: TemptingKind;
+  /** What the tempting move itself does on the board, from chess.js. */
+  does: string[];
   /** The engine's answer to it, at most 4 plies. */
   refutation: string[];
   /** What the answer does on the board, from chess.js. */
   after: string[];
+  /** Who takes what over the move and its refutation ("Black takes a pawn;
+   * White takes the queen"), so the model never works it out. */
+  captures: string;
   /** The position after the tempting move, in the dossier's words. */
   verdict: string;
 }
@@ -101,8 +107,11 @@ function threatens(board: Chess, from: Square, piece: string, color: 'w' | 'b'):
 /**
  * §13.5, after the engine: a candidate is tempting when it costs the mover
  * at least `temptingDrop` points of win% against the best move, or walks
- * into mate. At most 3 a node, in the candidates' order, each with the
- * engine's answer and what it does.
+ * into mate, and the answer is not a plain capture that leaves the mover
+ * `obviousLoss` points down: a queen taking a defended piece is seen at a
+ * glance, so the course has nothing to teach there (the strong model's
+ * Englund run discussed nine of them). At most 3 a node, in the candidates'
+ * order, each with what it does, the engine's answer and what that does.
  */
 export function withTempting(dossier: CourseDossier, candidates: TemptingCandidate[], evalsByFen: ReadonlyMap<string, EngineEval>): CourseDossier {
   const kept = new Map<string, CourseTemptingFacts[]>();
@@ -115,8 +124,17 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
     const drop = winPctFor(facts.side, toCpWhite(best)) - winPctFor(facts.side, toCpWhite(answer));
     const walksIntoMate = answer.mateIn !== null && (answer.mateIn > 0) === (facts.side === 'black');
     if (drop < CONFIG.courses.temptingDrop && !walksIntoMate) continue;
+    if (exchangeLoss(candidate.fenBefore, candidate.san, answer.moveSan) >= CONFIG.courses.obviousLoss) continue;
     const refutation = (answer.pvSan?.length ? answer.pvSan : [answer.moveSan]).slice(0, MAX_REFUTATION_PLIES);
-    list.push({ san: candidate.san, kind: candidate.kind, refutation, after: boardFacts(candidate.fen, answer.moveSan), verdict: lineWords(answer) });
+    list.push({
+      san: candidate.san,
+      kind: candidate.kind,
+      does: boardFacts(candidate.fenBefore, candidate.san),
+      refutation,
+      after: boardFacts(candidate.fen, answer.moveSan),
+      captures: captureWords(candidate.fenBefore, [candidate.san, ...refutation]),
+      verdict: lineWords(answer)
+    });
     kept.set(candidate.nodeId, list);
   }
   return { ...dossier, nodes: dossier.nodes.map((node) => ({ ...node, tempting: kept.get(node.nodeId) ?? [] })) };

@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import { BANNED_GENERIC_PHRASES, type CourseEpisode } from '@freechesscoach/shared';
+import { CONFIG } from './config.js';
 import type { CourseVerifyProblem } from './course-verify.js';
 import type { EpisodeScope } from './course-verify-scope.js';
 import { BARE_SAN, MOVE_TOKEN } from './san-token.js';
@@ -147,4 +148,10 @@ export function phraseProblems(texts: EpisodeText[]): CourseVerifyProblem[] {
     const jargon = /\bdossier\b/.test(lower) ? [{ code: 'phrases' as const, nodeId, message: `${where} says "dossier": the learner never sees it; say "the engine", or just name the better move` }] : [];
     return [...stock, ...jargon];
   });
+}
+
+/** A length past its limit by more than `CONFIG.courses.lengthSlack`: a word
+ * or two over is not worth a repair call that may bend the wording. */
+export function overLength(value: number, limit: number): boolean {
+  return value > limit * (1 + CONFIG.courses.lengthSlack);
 }

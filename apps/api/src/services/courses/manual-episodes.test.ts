@@ -86,7 +86,7 @@ describe('buildManualEpisodes', () => {
 
 describe('temptingNote (§13.5)', () => {
   test('the engine answer and what it does, for the creator to write over', () => {
-    const facts = { san: 'Qxc3+', kind: 'capture' as const, refutation: ['Nxc3', 'Bb4'], after: ['moves the knight from b1 to c3', 'captures the queen on c3'], verdict: 'White is winning' };
+    const facts = { san: 'Qxc3+', kind: 'capture' as const, does: ['captures the bishop on c3'], refutation: ['Nxc3', 'Bb4'], captures: 'Black takes a bishop; White takes the queen', after: ['moves the knight from b1 to c3', 'captures the queen on c3'], verdict: 'White is winning' };
     expect(temptingNote(facts)).toEqual({ san: 'Qxc3+', why: 'Nxc3 captures the queen on c3.', refutation: ['Nxc3', 'Bb4'] });
     expect(temptingNote({ ...facts, after: [...facts.after, 'attacks the bishop on f8'] }).why).toBe('Nxc3 captures the queen on c3 and attacks the bishop on f8.');
     expect(temptingNote({ ...facts, refutation: [] }).why).toBe('White is winning');

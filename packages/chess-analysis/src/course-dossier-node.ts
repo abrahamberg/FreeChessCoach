@@ -2,6 +2,7 @@ import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freec
 import type { ClassifiedMove } from './classify.js';
 import { CONFIG } from './config.js';
 import { abandonedGuard, betterMoveFacts, boardFacts, lineWords, positionWords } from './course-dossier-words.js';
+import { lineBalance } from './course-material.js';
 import type { CourseTemptingFacts } from './course-tempting.js';
 import type { CourseTreeNode } from './course-tree.js';
 import { isBookMoveFrom, resolveOpening } from './opening-book.js';
@@ -27,9 +28,9 @@ export interface CourseNodeFacts {
   inBook: boolean;
   openingName: string | null;
   /** The engine's best move and line (at most 6 plies) when the course move
-   * is not it, with its board facts (`betterMoveFacts`); `board` is absent in
-   * dossiers stored before it existed. */
-  bestInstead: { san: string; line: string[]; board?: string[] } | null;
+   * is not it, with its board facts (`betterMoveFacts`) and the material at
+   * the line's end ("White is a pawn up"). */
+  bestInstead: { san: string; line: string[]; board: string[]; balance: string } | null;
   board: string[];
   /** Checked tactic sentences (`tactic-reason-text.ts`), learner = "you".
    * Not the review's prevention sentences ("you stopped them winning a
@@ -98,7 +99,8 @@ function bestInstead(move: ClassifiedMove, san: string, fenBefore: string): Cour
   const best = move.bestMoveSan ?? move.bestLineSan[0];
   if (!best || best === san) return null;
   const line = move.bestLinePvSan?.length ? move.bestLinePvSan : move.bestLineSan;
-  return { san: best, line: line.slice(0, BEST_LINE_PLIES), board: betterMoveFacts(fenBefore, san, best) };
+  const shown = line.slice(0, BEST_LINE_PLIES);
+  return { san: best, line: shown, board: betterMoveFacts(fenBefore, san, best), balance: lineBalance(fenBefore, shown) };
 }
 
 function tacticSentences(move: ClassifiedMove, isUserMove: boolean): string[] {

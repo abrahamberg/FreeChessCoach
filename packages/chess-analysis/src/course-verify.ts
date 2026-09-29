@@ -3,7 +3,7 @@ import { CONFIG } from './config.js';
 import type { CourseDossier } from './course-dossier.js';
 import { arrowProblems, nodeProblems } from './course-verify-board.js';
 import { episodeScope, moveLabel, type CourseVerifyNode, type EpisodeScope } from './course-verify-scope.js';
-import { episodeTexts, moveProblems, nodeIdProblems, numberProblems, phraseProblems, sameMove, sanTokens, tacticWordProblems } from './course-verify-text.js';
+import { episodeTexts, moveProblems, nodeIdProblems, numberProblems, overLength, phraseProblems, sameMove, sanTokens, tacticWordProblems } from './course-verify-text.js';
 
 export type { CourseVerifyNode } from './course-verify-scope.js';
 
@@ -77,12 +77,12 @@ function lengthProblems(episode: CourseEpisode, scope: EpisodeScope, budget: Cou
     const captionWords = wordCount(videoCaption(ply));
     if (captionWords > maxCaptionWords) problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The caption on ${ply.nodeId} has ${captionWords} words (at most ${maxCaptionWords})` });
     const sayWords = wordCount(videoLine(ply));
-    if (budget && sayWords > budget.wordsPerBeat) {
+    if (budget && overLength(sayWords, budget.wordsPerBeat)) {
       problems.push({ code: 'lengths', nodeId: ply.nodeId, message: `The video line on ${ply.nodeId} has ${sayWords} words (at most ${budget.wordsPerBeat}); give it a shorter video line` });
     }
   }
   const total = video.reduce((sum, ply) => sum + wordCount(videoLine(ply)), 0);
-  if (budget && total > budget.wordsPerEpisode) {
+  if (budget && overLength(total, budget.wordsPerEpisode)) {
     problems.push({ code: 'lengths', nodeId: null, message: `The video has ${total} words here (at most ${budget.wordsPerEpisode})` });
   }
   // The planning call's budget: how many moves may speak in each version.

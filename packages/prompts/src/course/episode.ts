@@ -103,6 +103,6 @@ function speakingLines(context: CoursePromptContext, episode: CourseOutlineEpiso
     : [`There is no YouTube video: "video" is false on every move, "say" and "caption" are null.`, `Speaking budget: at most ${episode.budgetCourse} moves with "course": true.`];
   const ticks = video ? '"course": true and "video": true' : '"course": true';
   if (keys.length) lines.push(`Must speak, ${ticks}: ${keys.map((id) => nodeLabel(context, id)).join(', ')}. These are the moves the episode is for; the budget counts them.`);
-  if (video) lines.push(`Video words: at most ${words.wordsPerEpisode} spoken in this episode's part of the video, at most ${words.wordsPerBeat} per move; captions at most 6 words.`);
+  if (video) lines.push(`Video words: at most ${words.wordsPerEpisode} spoken in this episode's part of the video, at most ${words.wordsPerBeat} per move; captions at most 6 words. Fewer is fine when there is less to say.`);
   return lines.join('\n');
 }

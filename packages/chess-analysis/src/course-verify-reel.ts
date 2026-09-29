@@ -3,7 +3,7 @@ import { CONFIG } from './config.js';
 import type { CourseDossier } from './course-dossier.js';
 import type { CourseVerifyNode, CourseVerifyProblem } from './course-verify.js';
 import { episodeScope } from './course-verify-scope.js';
-import { moveProblems, nodeIdProblems, numberProblems, phraseProblems, tacticWordProblems, type EpisodeText } from './course-verify-text.js';
+import { moveProblems, nodeIdProblems, numberProblems, overLength, phraseProblems, tacticWordProblems, type EpisodeText } from './course-verify-text.js';
 
 const MAX_HOOK_WORDS = 10;
 const MAX_BAND_WORDS = 5;
@@ -70,7 +70,7 @@ export function verifyCourseReel(input: CourseReelVerifyInput): CourseVerifyProb
     }
   }
   const seconds = reelSeconds(reel, scope.path.length);
-  if (seconds > CONFIG.courses.reelSeconds.max) problems.push({ code: 'reel', nodeId: null, message: `The reel runs about ${Math.round(seconds)} s (at most ${CONFIG.courses.reelSeconds.max}): cut words` });
+  if (overLength(seconds, CONFIG.courses.reelSeconds.max)) problems.push({ code: 'reel', nodeId: null, message: `The reel runs about ${Math.round(seconds)} s (at most ${CONFIG.courses.reelSeconds.max}): cut words` });
 
   return [
     ...problems,
@@ -113,7 +113,7 @@ export function verifyCourseFrame(document: CourseDocument): CourseVerifyProblem
   if (video) {
     if (video.title.length > MAX_VIDEO_TITLE) problems.push({ code: 'video', nodeId: null, message: `The video title has ${video.title.length} characters (at most ${MAX_VIDEO_TITLE})` });
     if (words(video.thumbnailText) > MAX_THUMBNAIL_WORDS) problems.push({ code: 'video', nodeId: null, message: `The thumbnail text has ${words(video.thumbnailText)} words (at most ${MAX_THUMBNAIL_WORDS})` });
-    if (words(video.hook) > MAX_VIDEO_HOOK_WORDS) problems.push({ code: 'video', nodeId: null, message: `The video's hook has ${words(video.hook)} words (at most ${MAX_VIDEO_HOOK_WORDS}): the first 15 seconds` });
+    if (overLength(words(video.hook), MAX_VIDEO_HOOK_WORDS)) problems.push({ code: 'video', nodeId: null, message: `The video's hook has ${words(video.hook)} words (at most ${MAX_VIDEO_HOOK_WORDS}): the first 15 seconds` });
     problems.push(...introProblems(video.hook, "the video's hook"));
     if (video.outro.trim() && !video.outro.includes('?')) problems.push({ code: 'video', nodeId: null, message: "The video's outro asks the viewer nothing: end on a question for the comments" });
   }

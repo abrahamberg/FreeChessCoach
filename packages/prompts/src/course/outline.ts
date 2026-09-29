@@ -1,7 +1,7 @@
 import { renderCourseDossier, type CourseSkeleton } from '@freechesscoach/chess-analysis';
 import { COURSE_ROLES } from '@freechesscoach/shared';
 import { CALIBRATION } from '../calibration.js';
-import { courseBudget } from './budget.js';
+import { courseBudget, type CourseBudget } from './budget.js';
 import { buildCourseSystemPrompt, capitalise, lineMovetext, nodeLabel, promptVideos, type CourseMessages, type CoursePromptContext } from './context.js';
 import { episodeRange } from './playbooks.js';
 
@@ -35,7 +35,8 @@ Kind: ${context.kind}
 Direction (from the creator): "${context.direction}"
 Learner side: ${capitalise(context.learnerSide)}
 Learner level: ${calibration.label} — ${calibration.description}
-Budgets: ${episodeRange(context)} episodes; the YouTube video about ${Math.round(budget.seconds / 60)} minutes, at most ${budget.words} spoken words in total.
+Budgets: ${episodeRange(context)} episodes; the YouTube video ${videoLength(budget)}, at most ${budget.words} spoken words in total.
+The length is a guide, not a target: speak every point the dossier supports, add nothing to fill time, and a short course makes a short video.
 ${speakingBudgets(context, budget.narratedMax)}
 Episode roles: ${COURSE_ROLES[context.kind].join(', ')}.
 
@@ -149,4 +150,10 @@ function renderCandidates(context: CoursePromptContext, skeleton: CourseSkeleton
         `moves with a second good answer: ${list(skeleton.unsoundNodeIds)}`
       ].join('\n');
   }
+}
+
+/** "2 to 5 minutes", "1.5 to 4 minutes". */
+function videoLength(budget: CourseBudget): string {
+  const minutes = (seconds: number): string => String(Math.round((seconds / 60) * 2) / 2);
+  return `${minutes(budget.minSeconds)} to ${minutes(budget.seconds)} minutes`;
 }

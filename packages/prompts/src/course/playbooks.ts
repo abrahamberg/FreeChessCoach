@@ -80,11 +80,28 @@ Use exactly these episodes, in order:
 4. quiz — "What does ${trapper} play here?" plus a hint at the target. The
    video pauses ${budget.pauseSeconds}s (the app adds the pause).
 5. punish — every forcing move speaks in the video; captions carry the rhythm.
-6. safety — how the victim stays safe: ${safeMove}, in one or two sentences.${risk}
+6. safety — how the victim stays safe: ${safeMove}, in one or two sentences.${trapperDefence(context, skeleton)}${risk}
 The end card and call to action are added by the app; don't write them.
 In the course, every move speaks. The bait and the safe move get the longest
 lines. The learner drills both sides, so the lines must teach springing the
 trap and avoiding it.`;
+}
+
+/** When the victim finds the safe move, what the trapper plays to lose as
+ * little as possible: the engine's line from the bait, how it stands and
+ * the material. The first strong-model run only called the setup "risky". */
+function trapperDefence(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'trap' }> | null): string {
+  const bait = context.dossier.nodes.find((node) => node.nodeId === skeleton?.baitNodeId);
+  const best = bait?.bestInstead;
+  if (!bait || !best || best.line.length < 2) return '';
+  const trapper = capitalise(context.learnerSide);
+  const verdict = bait.alternatives.find((alternative) => alternative.san === best.san)?.verdict;
+  const stands = [verdict, best.balance].filter(Boolean).join('; ');
+  return `
+   Then the trapper's side: when the victim finds ${best.san}, the engine's
+   line is ${best.line.join(' ')} (at its end: ${stands}). Name ${trapper}'s best
+   moves from it and say plainly how ${trapper} stands: the aim is to lose as
+   little as possible, not to pretend the trap still works.`;
 }
 
 /** The hook's one fact, stated rather than shown by example: a quoted

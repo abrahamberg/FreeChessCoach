@@ -91,6 +91,26 @@ describe('course dossier', () => {
     expect(text).toContain('    why Nc3 is better: moves the knight from b1 to c3');
     expect(text).not.toMatch(/\d\.\d|[+-]\d|\bcp\b|%|centipawn/i);
   });
+
+  test("a tempting move names whose move each fact is, and the material over the line", () => {
+    const { dossier } = englund();
+    const tempting = {
+      san: 'Nxe5',
+      kind: 'capture' as const,
+      does: ['moves the knight from c6 to e5', 'captures the pawn on e5'],
+      refutation: ['Bxb4', 'Nxf3+', 'exf3'],
+      after: ['moves the bishop from d2 to b4', 'captures the queen on b4'],
+      captures: 'Black takes a pawn and a knight; White takes the queen and a knight',
+      verdict: 'White is much better'
+    };
+    const nodes = dossier.nodes.map((node) => (node.nodeId === 'n10' ? { ...node, tempting: [tempting] } : node));
+    const text = renderCourseDossier({ ...dossier, nodes });
+
+    expect(text).toContain(
+      "    tempting capture: Nxe5? Black's Nxe5 moves the knight from c6 to e5 | captures the pawn on e5. White answers Bxb4: moves the bishop from d2 to b4 | captures the queen on b4. Then Nxf3+ exf3. Over the line Black takes a pawn and a knight; White takes the queen and a knight (White is much better)."
+    );
+    expect(text).toMatch(/best instead: Nc3 \(line: Nc3[^;]*; at its end (material is level|White is a pawn up)\)/);
+  });
 });
 
 describe('course skeleton', () => {

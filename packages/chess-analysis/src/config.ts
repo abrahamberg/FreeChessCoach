@@ -463,6 +463,9 @@ export const CONFIG = {
     /** §13.5: a tempting move costs the mover at least this much win%. */
     temptingDrop: 15,
     maxTempting: 3,
+    /** §13.5: an answer that captures at once and leaves the mover this many
+     * points down makes the move obvious, not tempting. */
+    obviousLoss: 2,
     /** §7 verifier limits: arrows per clip beat, words per caption, and
      * sentences per course note (more at a critical node). */
     maxArrowsPerBeat: 2,
@@ -475,7 +478,19 @@ export const CONFIG = {
      * speed 1, with room left for moves, tempting moves played out and the
      * cards; scaled by the coach's `PERSONA_SPEECH_SPEED`. */
     wordsPerSecond: 2,
-    videoSeconds: { trap: 300, opening: 720, tactics: 480, puzzle: 300, master_game: 720 },
+    /** A guide, not a target: a puzzle with little to say runs short, and
+     * the words cap is the top of the range. */
+    videoSeconds: {
+      trap: { min: 120, max: 300 },
+      opening: { min: 480, max: 900 },
+      tactics: { min: 300, max: 600 },
+      puzzle: { min: 90, max: 240 },
+      master_game: { min: 480, max: 900 }
+    },
+    /** Lengths (video words, the hook, the reel's seconds) may run over by
+     * this share before they count as a problem: a 41-word hook against 40
+     * is not worth a repair call that may bend the wording. */
+    lengthSlack: 0.1,
     /** §13.3 the reel's length. */
     reelSeconds: { min: 30, max: 45 },
     hookWords: 12,

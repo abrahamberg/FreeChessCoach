@@ -3,6 +3,8 @@ import { PERSONA_SPEECH_SPEED, type CoachPersona, type CourseKind, type CourseOu
 
 /** What one course's YouTube video may hold (docs/courses.md §13.4). */
 export interface CourseBudget {
+  /** The video's guide range; `words` and `narratedMax` follow the top. */
+  minSeconds: number;
   seconds: number;
   /** Spoken words in the whole video, at this coach's speaking speed. */
   words: number;
@@ -15,8 +17,9 @@ export interface CourseBudget {
 
 export function courseBudget(kind: CourseKind, persona: CoachPersona): CourseBudget {
   const { videoSeconds, wordsPerSecond, hookWords, maxWordsPerBeat, quizPauseSeconds, secondsPerNarratedMove } = CONFIG.courses;
-  const seconds = videoSeconds[kind];
+  const { min, max: seconds } = videoSeconds[kind];
   return {
+    minSeconds: min,
     seconds,
     words: Math.floor(seconds * wordsPerSecond * PERSONA_SPEECH_SPEED[persona]),
     hookWords,

@@ -99,4 +99,13 @@ describe('verifyCourseFrame (§13.9)', () => {
       '4 lines start a sentence with "execute" across the course: a catchphrase, vary it'
     ]);
   });
+
+  test('a length a word or two over is not a problem; well over is', () => {
+    const hook = (count: number): CourseDocument => {
+      const document = base();
+      return { ...document, episodes: [], video: { title: 't', thumbnailText: 't', hook: Array(count).fill('word').join(' '), outro: 'Would you fall for it?' } };
+    };
+    expect(verifyCourseFrame(hook(41))).toEqual([]);
+    expect(verifyCourseFrame(hook(45)).map((problem) => problem.message)).toEqual(["The video's hook has 45 words (at most 40): the first 15 seconds"]);
+  });
 });

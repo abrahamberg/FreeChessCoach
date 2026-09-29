@@ -29,31 +29,30 @@ describe('tempting moves (§13.5)', () => {
     expect(candidates.some((candidate) => candidate.nodeId === 'n2')).toBe(false);
   });
 
-  test('kept when the engine says they fail (15 win% or walking into mate), at most 3, with the answer', () => {
+  test('kept when the engine says they fail (15 win% or walking into mate) and it is not obvious, at most 3, with the answer', () => {
     const { tree, dossier } = analyseEnglund();
     const candidates = temptingCandidates(tree, dossier, 'trap').filter((candidate) => candidate.nodeId === 'n12');
     const at = (san: string): string => candidates.find((candidate) => candidate.san === san)!.fen;
     const before = candidates[0]!.fenBefore;
     const evals = new Map<string, EngineEval>([
       [before, evaluation(before, 'Bb4', -1000)],
-      // White is fine again after the queen takes on c3: Black gave up the win.
+      // The knight takes the queen back: seen at a glance, so not tempting.
       [at('Qxc3+'), evaluation(at('Qxc3+'), 'Nxc3', 150, null, ['Nxc3', 'Bb4', 'Bd2'])],
       // Still winning for Black: not tempting.
       [at('Qxa1'), evaluation(at('Qxa1'), 'Qd2', -900)],
       [at('Qxb1'), evaluation(at('Qxb1'), 'Qxb1', 200)],
-      [at('Nxe5'), evaluation(at('Nxe5'), 'Nxe5', null, 3)],
+      // A quiet answer that mates: the trick is deeper than a recapture.
+      [at('Nxe5'), evaluation(at('Nxe5'), 'Qd2', null, 3, ['Qd2', 'Nxf3+', 'exf3'])],
       [at('Qxc2'), evaluation(at('Qxc2'), 'Qxc2', 300)]
     ]);
 
     const tempting = withTempting(dossier, candidates, evals).nodes.find((node) => node.nodeId === 'n12')!.tempting;
 
-    expect(tempting.map((each) => [each.san, each.kind, each.refutation])).toEqual([
-      ['Qxc3+', 'check', ['Nxc3', 'Bb4', 'Bd2']],
-      ['Qxb1', 'capture', ['Qxb1']],
-      ['Nxe5', 'capture', ['Nxe5']]
-    ]);
-    expect(tempting[0]?.after.join(' ')).toContain('captures');
-    expect(tempting[2]?.verdict).toMatch(/mate/i);
+    expect(tempting.map((each) => [each.san, each.kind, each.refutation])).toEqual([['Nxe5', 'capture', ['Qd2', 'Nxf3+', 'exf3']]]);
+    const [nxe5] = tempting;
+    expect(nxe5?.does).toContain('captures the pawn on e5');
+    expect(nxe5?.captures).toBe('Black takes a knight and a pawn; White takes a knight');
+    expect(nxe5?.verdict).toMatch(/mate/i);
   });
 
   test('a puzzle looks at every learner move', () => {
