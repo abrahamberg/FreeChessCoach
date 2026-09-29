@@ -33,6 +33,20 @@ describe('course tactic sentences', () => {
     expect(facts('checkmate', 'Bd8#', { kind: 'mate', pawns: 0, prize: null }).tactics).toHaveLength(1);
   });
 
+  test('a fork by squares loses its detail, not its motif', () => {
+    const move = {
+      quality: 'great',
+      mover: 'white',
+      evalAfterCp: null,
+      bestMoveSan: 'Nc6+',
+      bestLineSan: ['Nc6+'],
+      tacticOpportunity: { type: 'fork', found: true, isUserMove: true, detail: 'knight on c6 forks b8, d8 and a7', confidence: 1, gain: { kind: 'material', pawns: 9, prize: 'queen' } }
+    } as unknown as ClassifiedMove;
+    const node = { id: 'n9', parentId: 'n8', san: 'Nc6+', fenAfter: FEN, lineId: 'l1', comment: null } as never;
+    const facts = buildCourseNodeFacts({ node, move, fenBefore: FEN, linePositionFens: [FEN], evalsByFen: new Map(), critical: true, learnerSide: 'white' });
+    expect(facts.tactics).toEqual(['You won a queen through a fork.']);
+  });
+
   test('a mate through checkmate reads "forced mate", once', () => {
     expect(tacticOpportunityReason({ type: 'checkmate', found: true, isUserMove: true, gain: { kind: 'mate', pawns: 0, prize: null } }, 'Nf7+')).toBe('You forced mate.');
   });

@@ -40,8 +40,11 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   // A mate ends the game: what else the piece hits is noise ("Nd6# forks the
   // bishop on c8").
   if (inspected.gives !== 'checkmate') facts.push(...attackedPieces(inspected.resultFen, inspected.to as Square));
+  // A capture taken back is a trade, not a piece left hanging: 3…cxd4 read
+  // "leaves the pawn on d4 hanging" in every Open Sicilian.
+  const traded = (square: string): boolean => square === inspected.to && inspected.captured !== null && VALUES[inspected.captured] >= VALUES[inspected.piece];
   for (const piece of inspected.leavesHanging) {
-    if (canBeTaken(inspected.resultFen, piece.square)) facts.push(`leaves the ${PIECE_NAMES[piece.piece]} on ${piece.square} hanging`);
+    if (!traded(piece.square) && canBeTaken(inspected.resultFen, piece.square)) facts.push(`leaves the ${PIECE_NAMES[piece.piece]} on ${piece.square} hanging`);
   }
   // A piece that is simply taken forks nothing: 3.Qg8+ in Philidor's Legacy
   // read "forks the rook on a8 and the king on h8" before …Rxg8.
@@ -263,8 +266,11 @@ function isTrapped(fenAfter: string, square: Square, by: Square): boolean {
   if (!piece || !attacker || !passed || piece.color !== chess.turn() || piece.type === 'k' || piece.type === 'p' || !isLostOn(passed, square)) return false;
   // A cheaper attacker, so a defender does not help; and somewhere to go, or
   // it is only stuck (a pinned rook, a rook in its corner before castling).
+  // Not in check (the Petrov's Nc6+ "trapped" the queen by checking the
+  // king), and the attacker cannot simply be taken (the Immortal's Nb6 on
+  // the rook, answered by …axb6).
   const moves = chess.moves({ square, verbose: true });
-  if (VALUES[attacker.type] >= VALUES[piece.type] || !moves.length) return false;
+  if (VALUES[attacker.type] >= VALUES[piece.type] || !moves.length || chess.inCheck() || isLostOn(fenAfter, by)) return false;
   return moves.every((move) => (!move.captured || VALUES[move.captured] < VALUES[piece.type]) && isLostOn(move.after, move.to));
 }
 

@@ -104,6 +104,13 @@ describe('course dossier', () => {
     // Noah's Ark: the bishop on b3 has nowhere to go.
     const noah = after('1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 d6 5. d4 b5 6. Bb3 Nxd4 7. Nxd4 exd4 8. Qxd4 c5 9. Qd5 Be6 10. Qc6+ Bd7 11. Qd5');
     expect(boardFacts(noah, 'c4')).toContain('attacks the bishop on b3, which is trapped: every square it can reach loses it');
+    // In check, or with an attacker it can take: not trapped. The Petrov's
+    // Nc6+ discovers check on the queen; a knight that walks into …axb6.
+    const petrov = after('1. e4 e5 2. Nf3 Nf6 3. Nxe5 Nxe4 4. Qe2 Nf6');
+    expect(boardFacts(petrov, 'Nc6+').join(' | ')).not.toContain('trapped');
+    expect(boardFacts('r3k3/p7/8/3N4/8/8/8/4K3 w - - 0 1', 'Nb6').join(' | ')).not.toContain('trapped');
+    // A capture taken back is a trade: 3…cxd4 leaves nothing hanging.
+    expect(boardFacts(after('1. e4 c5 2. Nf3 d6 3. d4'), 'cxd4').join(' | ')).not.toContain('hanging');
     // A piece with no move at all is stuck, not trapped: the rook in its corner.
     const corner = boardFacts('rn2k3/p7/8/8/2B5/8/8/4K3 w - - 0 1', 'Bd5');
     expect(corner).toContain('attacks the rook on a8');
@@ -117,6 +124,8 @@ describe('course dossier', () => {
     const bait = dossier.nodes.find((node) => node.nodeId === 'n11')!;
     const asBook = renderCourseDossier({ ...dossier, nodes: dossier.nodes.map((node) => (node === bait ? { ...node, quality: 'book' as const } : node)) });
     expect(asBook).not.toContain('best instead: Nc3');
+    // Nor a verdict: a book move's eval sits on a word's edge.
+    expect(asBook).toMatch(/^n11 6\.Bc3 \(White, Line A\) \| book$/m);
 
     const routine = { ...bait, quality: 'good' as const, critical: false, quizEligible: false, tactics: [], creatorComment: null };
     const nodes = Array.from({ length: 45 }, (_, index) => ({ ...routine, nodeId: `n${index + 1}` }));

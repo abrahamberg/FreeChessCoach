@@ -2512,6 +2512,21 @@ fixes, again until clean.
 - [x] A tactics course whose example mates on the back rank is the back-rank
   theme, not "what a checkmate is".
 
+### Task 108.2 — The second pass over all 45
+
+**Files:** `course-dossier-words.ts`, `course-dossier-node.ts`,
+`course-dossier-text.ts`, tests.
+
+- [x] Not trapped when the side is in check (the Petrov's Nc6+ "trapped" the
+  queen by checking the king) or can take the attacker (the Immortal's Nb6
+  on the rook, answered by …axb6).
+- [x] The review's fork detail by squares ("knight on c6 forks b8, d8 and
+  a7") is dropped; the sentence keeps its motif and gain.
+- [x] A capture taken back is a trade: 3…cxd4 no longer "leaves the pawn on
+  d4 hanging".
+- [x] A book move carries no verdict: the Najdorf's flipped "roughly equal"
+  and "White is slightly better" on every move.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

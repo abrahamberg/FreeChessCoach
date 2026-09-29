@@ -39,7 +39,9 @@ function renderLine(line: CourseLineFacts): string[] {
 function renderNode(node: CourseNodeFacts, lineName: string, oneLine: boolean): string[] {
   const head = `${node.nodeId} ${moveLabel(node)} (${capitalise(node.side)}, ${lineName}) | ${node.quality}`;
   if (oneLine) return [head];
-  const rows = [`${head} | before: ${node.before} → after: ${node.after}`];
+  // A book move's verdict is noise: the Najdorf's read "roughly equal → White
+  // is slightly better" and back on every move, the eval on a word's edge.
+  const rows = [node.quality === 'book' ? head : `${head} | before: ${node.before} → after: ${node.after}`];
   const detail = (label: string, value: string): void => {
     rows.push(`    ${label}: ${value}`);
   };

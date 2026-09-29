@@ -119,9 +119,17 @@ function fitsCourseMove(claim: { type: TacticMotifType; gain?: { kind: string } 
 
 function tacticSentences(move: ClassifiedMove, san: string, isUserMove: boolean): string[] {
   const sentences: string[] = [];
-  if (move.tacticOpportunity && fitsCourseMove(move.tacticOpportunity, san)) sentences.push(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove }, move.bestMoveSan));
-  if (move.tacticAllowed) sentences.push(tacticAllowedReason({ ...move.tacticAllowed, isUserMove }));
+  if (move.tacticOpportunity && fitsCourseMove(move.tacticOpportunity, san)) sentences.push(tacticOpportunityReason({ ...withoutSquareFork(move.tacticOpportunity), isUserMove }, move.bestMoveSan));
+  if (move.tacticAllowed) sentences.push(tacticAllowedReason({ ...withoutSquareFork(move.tacticAllowed), isUserMove }));
   return sentences;
+}
+
+/** The review's fork detail names squares ("knight on c6 forks b8, d8 and
+ * a7"), empty ones and pawns included, which a script copies word for word.
+ * The board facts name the forked pieces where it matters; the sentence keeps
+ * its motif and gain. */
+function withoutSquareFork<T extends { detail?: string | null }>(claim: T): T {
+  return claim.detail && /\bforks [a-h][1-8]\b/.test(claim.detail) ? { ...claim, detail: null } : claim;
 }
 
 /** One move is clearly best, and it is the course move. */
