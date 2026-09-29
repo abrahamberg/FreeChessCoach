@@ -45,7 +45,7 @@ export function loggedCourseCall({ db, courseId, resolve, now = Date.now }: Logg
     try {
       // Phase 101: every call of a run shares the system prompt, and the
       // episode calls the head of their user message: both are cached.
-      const result = await generateStructured({ resolution, system: messages.system, prompt: messages.user, schema, cached: { head: messages.shared } });
+      const result = await generateStructured({ resolution, system: messages.system, prompt: messages.user, schema, cached: { head: messages.shared, tail: messages.retry } });
       const answer = { role: 'assistant', content: JSON.stringify(result.object, null, 2) };
       const entry = record({ messages: [answer], finishReason: result.finishReason, usage: result.usage, providerMetadata: result.providerMetadata }, null);
       unchecked.set(key(label), { id: await courseAiCallsRepo.insert(db, courseId, entry), entry });
@@ -74,7 +74,7 @@ function request(resolution: ModelResolution, messages: CourseMessages): TurnDeb
     model: resolution.modelId,
     // As sent: the cached system prompt, and the user message's cached head.
     instructions: [cachedSystemMessage(messages.system)],
-    messages: [messages.shared ? cachedHeadUserMessage(messages.shared, messages.user) : { role: 'user', content: messages.user }],
+    messages: [messages.shared ? cachedHeadUserMessage(messages.shared, messages.user, messages.retry) : { role: 'user', content: messages.user }],
     tools: [],
     maxSteps: 1,
     reasoning: resolution.callOptions.reasoning,

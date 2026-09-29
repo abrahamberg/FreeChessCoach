@@ -36,17 +36,18 @@ export const CACHE_BREAKPOINT = {
 };
 
 /**
- * One user message in two parts, the cache breakpoint after the first: a
- * head that later calls repeat byte for byte (the course's outline and
- * schema), then the part that is new each call, sent fresh rather than
- * written to a cache nothing reads.
+ * One user message in parts, a cache breakpoint after the head: what later
+ * calls repeat byte for byte (the course's outline and schema), then the
+ * part that is new each call. With a `tail` (a repair's problems) the new
+ * part ends in a breakpoint too, so the repair after it reads it back.
  */
-export function cachedHeadUserMessage(head: string, rest: string): ChatMessage {
+export function cachedHeadUserMessage(head: string, rest: string, tail?: string): ChatMessage {
   return {
     role: 'user',
     content: [
       { type: 'text', text: head, providerOptions: CACHE_BREAKPOINT },
-      { type: 'text', text: rest }
+      tail === undefined ? { type: 'text', text: rest } : { type: 'text', text: rest, providerOptions: CACHE_BREAKPOINT },
+      ...(tail === undefined ? [] : [{ type: 'text' as const, text: tail }])
     ]
   };
 }

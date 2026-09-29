@@ -50,6 +50,9 @@ export interface CourseMessages {
    * prompt; absent when nothing is shared. */
   shared?: string;
   user: string;
+  /** A repair's problems and previous answer, after `user`: the repair
+   * reads the first call's `shared` and `user` from the cache. */
+  retry?: string;
 }
 
 /** §6: the voice, then the shared block, then the kind playbook. Depends only on

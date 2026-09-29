@@ -45,12 +45,12 @@ export function buildCourseEpisodeMessages(request: CourseEpisodeRequest): Cours
   const sections = [
     `THIS EPISODE\n${episode.id} ${episode.role}, ${episode.startNodeId} to ${episode.endNodeId}\nFocus: ${episode.focus}\nThe plan's key moves: ${episode.narratedNodeIds.join(', ') || 'none'}${quizLine}\n${ownNodesLine(context, episode)}\n${speakingLines(context, episode, words)}\nSay every line as the coach in VOICE would.${usedOpenersLine(request.usedOpeners)}`,
     `DOSSIER (this episode only)\n${renderCourseDossier(episodeDossier(context, episode))}`,
-    request.creatorRequest ? `CREATOR'S REQUEST FOR THIS EPISODE\n"${request.creatorRequest}"` : '',
-    request.retry
-      ? `YOUR PREVIOUS ANSWER HAD THESE PROBLEMS — fix every one\n${request.retry.problems.map((problem) => `- ${problem}`).join('\n')}\n\nYour previous answer:\n${request.retry.previousOutput}`
-      : ''
+    request.creatorRequest ? `CREATOR'S REQUEST FOR THIS EPISODE\n"${request.creatorRequest}"` : ''
   ];
-  return { system: buildCourseSystemPrompt(context), shared: shared.join('\n\n'), user: sections.filter(Boolean).join('\n\n') };
+  const retry = request.retry
+    ? `YOUR PREVIOUS ANSWER HAD THESE PROBLEMS — fix every one\n${request.retry.problems.map((problem) => `- ${problem}`).join('\n')}\n\nYour previous answer:\n${request.retry.previousOutput}`
+    : undefined;
+  return { system: buildCourseSystemPrompt(context), shared: shared.join('\n\n'), user: sections.filter(Boolean).join('\n\n'), ...(retry ? { retry } : {}) };
 }
 
 /** The course-wide voice check, fed forward: without it the first real

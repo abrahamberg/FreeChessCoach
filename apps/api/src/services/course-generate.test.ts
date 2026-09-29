@@ -327,6 +327,9 @@ describe('runCourseGeneration', () => {
     expect(sent[4]).toContain('YOUR PREVIOUS ANSWER HAD THESE PROBLEMS');
     expect(sent[4]).toContain('Nd5 in the line on n11 is not in the analysis');
     expect(sent.filter((prompt) => prompt.includes('YOUR PREVIOUS ANSWER'))).toHaveLength(2);
+    // The repair: the head and the first call's request each end in a breakpoint, the problems follow.
+    const parts = (JSON.parse(sent[4]!) as { content: { text: string; providerOptions?: unknown }[] }[])[1]!.content;
+    expect(parts.map((part) => [part.text.slice(0, 7), part.providerOptions !== undefined])).toEqual([['COURSE\n', true], ['THIS EP', true], ['YOUR PR', false]]);
     const row = await coursesRepo.findById(db, id);
     expect(row?.document?.episodes.find((episode) => episode.id === 'e3')?.plies[0]?.text).toBe('In e3, the words.');
     expect(row?.generation?.warnings).toEqual([{ episodeId: 'e6', code: 'moves', nodeId: 'n11', message: 'Nd5 in the line on n11 is not in the analysis' }]);

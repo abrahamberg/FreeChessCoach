@@ -172,12 +172,15 @@ describe('course prompts', () => {
     expect(user).toContain('- there is no safety episode\n\nYour previous outline:\n{"title":"x"}\n\nOUTPUT SCHEMA');
   });
 
-  test('a retry lists the verifier problems and the previous answer', () => {
+  test('a retry lists the verifier problems and the previous answer, after the first call\'s request', () => {
     const retry = { previousOutput: '{"episodeId":"e3"}', problems: ['Nd5 in the note on n11 is not in the analysis'] };
-    const { user } = buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e3', retry });
+    const first = buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e3' });
+    const repair = buildCourseEpisodeMessages({ context: englundCourseContext(), outline: ENGLUND_OUTLINE, episodeId: 'e3', retry });
 
-    expect(user).toContain('- Nd5 in the note on n11 is not in the analysis');
-    expect(user).toContain('{"episodeId":"e3"}');
+    expect(repair.retry).toContain('- Nd5 in the note on n11 is not in the analysis');
+    expect(repair.retry).toContain('{"episodeId":"e3"}');
+    // The repair reads the first call's request from the cache.
+    expect([repair.shared, repair.user]).toEqual([first.shared, first.user]);
   });
 
   test("budgets follow the video's length and the coach's speaking speed", () => {

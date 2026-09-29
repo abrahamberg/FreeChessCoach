@@ -30,7 +30,7 @@ export interface StructuredCallArgs<T> extends TextCallArgs {
   schema: z.ZodType<T>;
   /** Cache the system prompt, and this head of the user message before
    * `prompt` (`cachedHeadUserMessage`): for a run of calls that share them. */
-  cached?: { head?: string };
+  cached?: { head?: string; tail?: string };
 }
 
 /**
@@ -48,7 +48,7 @@ export async function generateStructured<T>(
   const input = !cached
     ? { instructions: args.system, prompt: args.prompt }
     : cached.head
-      ? { instructions: [cachedSystemMessage(args.system)], messages: [cachedHeadUserMessage(cached.head, args.prompt)] }
+      ? { instructions: [cachedSystemMessage(args.system)], messages: [cachedHeadUserMessage(cached.head, args.prompt, cached.tail)] }
       : { instructions: [cachedSystemMessage(args.system)], prompt: args.prompt };
   const result = await generateObject({
     model: args.resolution.model,
