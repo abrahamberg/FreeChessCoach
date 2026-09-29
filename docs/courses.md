@@ -1198,7 +1198,7 @@ puzzle or tactics course:
 3. Keep at most 3, ordered checks, then captures by value taken, then
    threats.
 4. Each gets what it does itself (its board facts), its refutation (the
-   engine's reply and line, `pvSan`, at most 4 plies), the board facts of
+   engine's reply and line, `pvSan`, at most 4 plies, never cut mid-exchange: `settledLine`), the board facts of
    the reply, and who takes what over the line (`course-material.ts`), so
    the model words facts instead of working them out. The dossier text names
    each side: "Nxe5? Black's Nxe5 … captures the pawn on e5. White answers
