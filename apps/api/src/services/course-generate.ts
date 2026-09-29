@@ -156,7 +156,7 @@ export async function writeCourseReel(deps: CourseGenerateDeps, ownerId: string,
 /** An empty reel on a candidate: a puzzle for a puzzle or tactics course
  * where it fits, a highlight otherwise. */
 function reelOnCandidate(document: CourseDocument, candidate: ReelCandidate): CourseReel {
-  const puzzle = (document.kind === 'puzzle' || document.kind === 'tactics') && candidate.styles.includes('puzzle');
+  const puzzle = (document.kind === 'puzzle' || document.kind === 'tactics' || document.kind === 'endgame') && candidate.styles.includes('puzzle');
   const { startNodeId, climaxNodeId, endNodeId } = candidate;
   return { style: puzzle ? 'puzzle' : 'highlight', startNodeId, climaxNodeId, endNodeId, hook: '', topText: '', beats: [], payoff: '', cta: '', loop: '' };
 }

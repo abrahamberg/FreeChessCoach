@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
 
 /** docs/courses.md §3. The creator picks the kind; the AI never guesses it. */
-export const COURSE_KINDS = ['trap', 'opening', 'tactics', 'puzzle', 'master_game'] as const;
+export const COURSE_KINDS = ['trap', 'opening', 'tactics', 'puzzle', 'master_game', 'endgame'] as const;
 export const CourseKindSchema = z.enum(COURSE_KINDS);
 export type CourseKind = z.infer<typeof CourseKindSchema>;
 
@@ -268,7 +268,8 @@ export const COURSE_ROLES: Record<CourseKind, readonly string[]> = {
   opening: ['line', 'deviation', 'trap', 'recap'],
   tactics: ['concept', 'example', 'scan'],
   puzzle: ['question', 'solve', 'recap'],
-  master_game: ['intro', 'moves', 'moment']
+  master_game: ['intro', 'moves', 'moment'],
+  endgame: ['goal', 'technique', 'defence', 'recap']
 };
 
 /** The outline call's answer (docs/courses.md §6.4). Fields the model may

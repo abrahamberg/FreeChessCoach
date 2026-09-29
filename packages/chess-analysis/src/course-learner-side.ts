@@ -10,14 +10,14 @@ const PIECE_VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 
  * of the line; a master game by the winner (`resultHeader`, else a mate on
  * the board). Null means the form asks: openings and tactics always do, and
  * so do a drawn game and a trap line that ends level. A puzzle is played by
- * the side to move in its position.
+ * the side to move in its position, and so is an endgame's technique.
  */
 export function inferLearnerSide(kind: CourseKind, tree: CourseTree, resultHeader: string | null): 'white' | 'black' | null {
   const leafId = tree.lines[0]?.leafNodeId;
   const leaf = tree.nodes.find((node) => node.id === leafId);
   if (!leaf) return null;
   if (kind === 'trap') return mater(leaf.fenAfter) ?? materialLeader(tree.startFen, leaf.fenAfter);
-  if (kind === 'puzzle') return new Chess(tree.startFen).turn() === 'w' ? 'white' : 'black';
+  if (kind === 'puzzle' || kind === 'endgame') return new Chess(tree.startFen).turn() === 'w' ? 'white' : 'black';
   if (kind === 'master_game') {
     if (resultHeader === '1-0') return 'white';
     if (resultHeader === '0-1') return 'black';
@@ -33,6 +33,12 @@ export function puzzleShapeProblems(tree: CourseTree): string[] {
   if (tree.startFen === new Chess().fen()) problems.push('A puzzle starts from a position: add its [FEN] header');
   if (tree.lines.length > 1) problems.push('A puzzle has one solution line: remove the sidelines');
   return problems;
+}
+
+/** Phase 103: an endgame is a position (`[FEN]`); its sidelines are the
+ * defender's tries. Empty when the PGN is one. */
+export function endgameShapeProblems(tree: CourseTree): string[] {
+  return tree.startFen === new Chess().fen() ? ['An endgame starts from a position: add its [FEN] header'] : [];
 }
 
 function mater(fen: string): 'white' | 'black' | null {

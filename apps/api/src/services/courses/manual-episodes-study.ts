@@ -1,10 +1,53 @@
-import type { CourseLineGame, MasterGameSkeleton, PuzzleSkeleton, TacticsSkeleton } from '@freechesscoach/chess-analysis';
+import type { CourseLineGame, EndgameSkeleton, MasterGameSkeleton, PuzzleSkeleton, TacticsSkeleton } from '@freechesscoach/chess-analysis';
 import type { CourseChapter, CourseQuiz } from '@freechesscoach/shared';
 import { noteworthy, type EpisodeBuilder } from './manual-notes.js';
 
 function findMoveQuiz(nodeId: string, side: 'white' | 'black' | undefined): CourseQuiz {
   const mover = side === 'black' ? 'Black' : 'White';
   return { answerNodeId: nodeId, prompt: `${mover} to move. Find the strongest move.`, hint: '', reveal: '' };
+}
+
+/** Phase 103 endgame: the goal; the technique, cut after each only move so
+ * each piece asks one (with the reply that follows); a defence episode per
+ * sideline, from where it leaves the main line; the recap. */
+export function endgameChapters(skeleton: EndgameSkeleton, lines: CourseLineGame[], builder: EpisodeBuilder): CourseChapter[] {
+  const main = lines.find((line) => line.lineId === skeleton.lineId)?.nodeIds ?? [];
+  const first = main[0];
+  if (!first) return [];
+  const goal = skeleton.goal === 'win' ? 'win' : 'hold the draw';
+  const episodeIds = [...builder.add({ role: 'goal', focus: `goal: how does this side ${goal}, and what one idea decides it?`, nodeIds: [first], noteNodeIds: [] })];
+  let from = 0;
+  const cutAfter = (index: number, quizNodeId: string | null): void => {
+    const nodeIds = main.slice(from, index + 1);
+    from = index + 1;
+    if (!nodeIds.length) return;
+    episodeIds.push(
+      ...builder.add({
+        role: 'technique',
+        focus: 'technique: what does each move keep or gain, and which move would spoil the result?',
+        nodeIds,
+        drillNodeIds: nodeIds.filter((id) => skeleton.learnerNodeIds.includes(id)),
+        ...(quizNodeId ? { quiz: findMoveQuiz(quizNodeId, builder.fact(quizNodeId)?.side) } : {})
+      })
+    );
+  };
+  for (const onlyMove of skeleton.onlyMoveNodeIds) {
+    const at = main.indexOf(onlyMove);
+    if (at >= from) cutAfter(Math.min(at + 1, main.length - 1), onlyMove);
+  }
+  cutAfter(main.length - 1, null);
+  const chapters: CourseChapter[] = [{ id: 'c1', title: 'The technique', lineId: skeleton.lineId, episodeIds }];
+  const onMain = new Set(main);
+  const learner = builder.fact(skeleton.learnerNodeIds[0] ?? '')?.side;
+  for (const line of lines.filter((each) => each.lineId !== skeleton.lineId)) {
+    const nodeIds = line.nodeIds.filter((id) => !onMain.has(id));
+    if (!nodeIds.length) continue;
+    const ids = builder.add({ role: 'defence', focus: 'defence: what does the defender try here, and what is the answer?', nodeIds, drillNodeIds: nodeIds.filter((id) => builder.fact(id)?.side === learner) });
+    chapters.push({ id: `c${chapters.length + 1}`, title: `The defender tries ${builder.fact(nodeIds[0]!)?.san ?? ''}`.trim(), lineId: line.lineId, episodeIds: ids });
+  }
+  const recap = builder.add({ role: 'recap', focus: 'recap: the rule to remember, and how to spot the position in a game', nodeIds: [main[main.length - 1]!], noteNodeIds: [] });
+  chapters.push({ id: `c${chapters.length + 1}`, title: 'The rule', lineId: skeleton.lineId, episodeIds: recap });
+  return chapters;
 }
 
 /** §13.2 puzzle: the question, one solve episode per learner move (asked,

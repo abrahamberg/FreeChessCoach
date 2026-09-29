@@ -2,7 +2,7 @@ import type { CourseDossier, CourseLineGame, CourseSkeleton, TrapSkeleton } from
 import { courseVideos, type CourseChapter, type CourseDocument, type CourseEpisode } from '@freechesscoach/shared';
 import { EpisodeBuilder } from './manual-notes.js';
 import { openingChapters } from './manual-episodes-openings.js';
-import { masterGameChapters, puzzleChapters, tacticsChapters } from './manual-episodes-study.js';
+import { endgameChapters, masterGameChapters, puzzleChapters, tacticsChapters } from './manual-episodes-study.js';
 
 export interface ManualEpisodesInput {
   document: CourseDocument;
@@ -34,6 +34,7 @@ function chaptersFor(input: ManualEpisodesInput, builder: EpisodeBuilder): Cours
   if (skeleton.kind === 'tactics') return tacticsChapters(skeleton, lines, builder);
   if (skeleton.kind === 'master_game') return masterGameChapters(skeleton, lines, learner, builder);
   if (skeleton.kind === 'puzzle') return puzzleChapters(skeleton, lines, builder);
+  if (skeleton.kind === 'endgame') return endgameChapters(skeleton, lines, builder);
   const lineNames = new Map(input.document.lines.map((line) => [line.id, line.name]));
   return openingChapters(skeleton, lines, learner, lineNames, builder);
 }

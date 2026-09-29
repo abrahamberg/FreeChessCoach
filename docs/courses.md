@@ -66,17 +66,21 @@ playbook (§6.3), its own checks (§7) and its own drill mode (§11).
 | `tactics` | Several games or positions on one motif | Concept, then examples easiest first, quiz each | both |
 | `puzzle` | A position (`[FEN]`) and its solution, e.g. mate in 3 | Every learner move is a quiz; the checks, captures and threats at each | both |
 | `master_game` | One full game | Every move explained, Logical-Chess style; guess the move at critical moments | the video |
+| `endgame` | A position (`[FEN]`) and its technique, sidelines for the defender's tries | The goal and the idea, the technique with its only moves as quizzes, each defence | both |
 
 What each kind's video and reel show: §13.2.
 
 **Learner side** is inferred by code where it can be, so the form stays short:
 trap = the side that wins material or mates at the end of the line; master game =
-the winner (a draw asks); puzzle = the side to move; openings = asked (White or
+the winner (a draw asks); puzzle and endgame = the side to move; openings = asked (White or
 Black repertoire).
 
 **A puzzle** needs a `[FEN]` and no sidelines; the form refuses it otherwise.
 Where the engine finds a second good move at a solution move
 (`unsoundNodeIds`), the checks warn, and the player accepts either.
+
+**An endgame** (Phase 103) needs a `[FEN]` too (`endgameShapeProblems`), and
+may have sidelines: the defender's tries.
 
 ---
 
@@ -125,7 +129,7 @@ Arrow = { from: Square, to: Square, kind: 'idea' | 'threat' | 'best' }
 `courseVideos(document)` reads `videos` or the kind's default
 (`defaultCourseVideos`). The video's length is a guide range per kind,
 `CONFIG.courses.videoSeconds` (trap 2–5 minutes, opening 8–15, tactics
-5–10, puzzle 1.5–4, master game 8–15; the words cap is the top); the
+5–10, puzzle 1.5–4, master game 8–15, endgame 3–8; the words cap is the top); the
 reel's `reelSeconds`. Lengths may run over by `lengthSlack` (10%) before the
 verifier counts them.
 
@@ -281,6 +285,7 @@ plans.
 | tactics | One example per game/position, ordered by difficulty (puzzle rating when the example comes from the puzzle pool, else the depth of the winning line). The motif per example from the detectors. When the opponent's move just before the move to find was a mistake, the example starts one learner move earlier, so it shows the mistake too (Legal's mate: from 5.Nxe5 Bxd1??, not just 6.Bxf7+). |
 | master_game | Critical moments (`critical-moments.ts`), quiz-eligible master moves, the phase boundaries (`phase-segmentation.ts`). |
 | puzzle | The solution's learner moves, mate in N when the engine finds it, and `unsoundNodeIds` (learner moves with a second good answer). |
+| endgame | `goal` (`win` when the dossier's words for the start give the learner a winning position or a mate, else `draw`), `material` at the start (`materialBalance`), the learner's main-line moves, `onlyMoveNodeIds` (the quiz-eligible ones) and `deviationNodeIds` (the defender's tries). Every learner move gets tempting moves, as a puzzle's do. |
 
 Besides the skeleton, code ranks the **reel candidates**
 (`course-reel-candidates.ts`): a puzzle, a mate, a trap's answer, a
@@ -517,6 +522,26 @@ habit, not just this answer.
 ```
 With `unsoundNodeIds`, a last line names those moves: the course's move is
 the one to learn, and the other is named only if the dossier lists it.
+
+**endgame**
+```text
+KIND: ENDGAME. {side} to play and {win | hold the draw}. Material: {material}.
+The technique: {learner moves}. The only moves: {only moves}.
+The defender's tries: {deviations}.
+Use these episodes, in order:
+1. goal — the position, the material and the goal, then the one idea that
+   decides it, in plain words, from the dossier's board facts.
+2. technique — the main line in one or two episodes: every {side} move
+   speaks and says what it keeps or gains. The only moves are quizzes. At
+   each, the tempting moves as the dossier gives them, and what each spoils:
+   {the win becomes a draw | the draw becomes a loss}.
+3. defence — one per sideline: what the defender tries and the answer.
+4. recap — the rule to remember, and how to recognise the position in a game.
+Name a technique (a bridge, the opposition, checking from the side) only
+where the dossier's facts show it.
+```
+Without AI (`endgameChapters`): the goal, the technique cut after each only
+move (its quiz, with the reply), a chapter per sideline, and "The rule".
 
 **tactics**
 ```text
@@ -1148,6 +1173,7 @@ A standalone reel is a **highlight** or a **puzzle** (§13.3).
 | `tactics` | 1–6 positions with their solutions, one motif | the cue, then each example, the tempting moves and why they fail | puzzle: the clearest example | both |
 | `master_game` | a full game | a storytelling recap: the players (headers only), the turning points, the tempting moves at each | highlight: the single brilliant move, blunder or finish | video |
 | `puzzle` | a position (`[FEN]`) and its solution, e.g. mate in 3 | the thinking method: at each move, the checks, captures and threats, which look right, why they fail, then the move | puzzle: "White to play. Mate in 3." | both |
+| `endgame` | a position (`[FEN]`) and its technique, sidelines for the defence | the goal and the idea, the technique move by move with the moves that spoil it, each defensive try | puzzle: one only move ("White to play and win") | both |
 
 `puzzle` checks: the PGN has a `[FEN]`; the learner is the side to move;
 the form refuses sidelines. Each learner move is a quiz (a puzzle's

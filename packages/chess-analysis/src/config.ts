@@ -491,7 +491,8 @@ export const CONFIG = {
       opening: { min: 480, max: 900 },
       tactics: { min: 300, max: 600 },
       puzzle: { min: 90, max: 240 },
-      master_game: { min: 480, max: 900 }
+      master_game: { min: 480, max: 900 },
+      endgame: { min: 180, max: 480 }
     },
     /** Lengths (video words, the hook, the reel's seconds) may run over by
      * this share before they count as a problem: a 41-word hook against 40

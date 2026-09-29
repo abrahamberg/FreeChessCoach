@@ -2221,6 +2221,60 @@ is over 6 words, which it nearly always is. A repair is a whole second call.
 
 Commit and push.
 
+## Phase 103 — Endgame courses
+
+The owner (2026-09-29): add endgames. An endgame course is a position and its
+technique: the Lucena, the Philidor, king and pawn against king. It is taught
+the way a strong player learns one: the goal, the one idea that decides it,
+then the technique move by move, where only one move keeps the result, and
+what the defender tries.
+
+### Task 103.1 — The kind
+
+**Files:** `packages/shared/src/course.ts`, migration `00NN_course_kind_endgame.ts`,
+`course-learner-side.ts`, `course-review.ts`, `config.ts`, `ask-coach.ts`,
+web `courseKinds.ts`, `CourseIntakePage.tsx`, tests.
+
+- [x] `endgame` joins `COURSE_KINDS`, the database's kind check, the intake
+  (with the other kinds' card and icon) and every per-kind table: roles
+  `goal`, `technique`, `defence`, `recap`; the video and a reel by default;
+  3 to 8 minutes; the learner's side in review.
+- [x] Like a puzzle it needs a `[FEN]` (the form says so); unlike one it may
+  have sidelines: the defender's tries. The learner is the side to move.
+
+### Task 103.2 — The skeleton
+
+**Files:** `course-skeleton.ts`, `course-tempting.ts`, `course-outline-check.ts`,
+`course-key-moves.ts`, tests.
+
+- [x] `EndgameSkeleton`: the main line, the goal (`win` when the engine gives
+  the learner a winning position at the start, else `draw`), the material
+  in words, the learner's moves, the only moves (quiz-eligible learner
+  moves), the defender's tries (sidelines' first moves).
+- [x] Every learner move gets tempting moves as a puzzle's do (a move that
+  spoils the result is the lesson); the only moves are the quiz answers.
+
+### Task 103.3 — The playbook and the manual path
+
+**Files:** `playbooks.ts`, `outline.ts`, `manual-episodes*.ts`, tests,
+`docs/courses.md`.
+
+- [x] KIND: ENDGAME: the goal and the material; 1. goal (the idea that
+  decides it, in plain words), 2. technique (every learner move speaks; the
+  only moves are quizzes; the tempting moves say what they spoil: the win
+  becomes a draw, the draw a loss), 3. defence (one per sideline: the try
+  and the answer), 4. recap (the rule, and how to spot the position in a
+  game). The video: the goal, the technique with the moves that spoil it,
+  each try. The reel: one only move as a puzzle.
+- [x] Without AI, code builds the same episodes.
+
+### Task 103.4 — A real run
+
+- [ ] A Lucena course is created and generated; its episodes are checked
+  against the engine.
+
+Commit per task; push each phase.
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.

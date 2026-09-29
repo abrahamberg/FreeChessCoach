@@ -60,7 +60,8 @@ export interface TemptingCandidate {
  */
 export function temptingCandidates(tree: CourseTree, dossier: CourseDossier, kind: CourseKind | null): TemptingCandidate[] {
   const byId = new Map(tree.nodes.map((node) => [node.id, node]));
-  const everyLearnerMove = kind === 'puzzle' || kind === 'tactics';
+  // An endgame's technique is precise: every move of it is weighed.
+  const everyLearnerMove = kind === 'puzzle' || kind === 'tactics' || kind === 'endgame';
   return dossier.nodes.flatMap((facts) => {
     const asked = (facts.critical || facts.quizEligible || (everyLearnerMove && facts.side === dossier.learnerSide)) && (everyLearnerMove || !facts.san.endsWith('#'));
     const node = byId.get(facts.nodeId);

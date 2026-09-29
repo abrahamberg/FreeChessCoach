@@ -103,7 +103,8 @@ const KIND_WORDS: Record<CourseKind, string> = {
   tactics: 'a tactics lesson',
   puzzle: 'a puzzle',
   trap: 'a trap',
-  master_game: 'a master game'
+  master_game: 'a master game',
+  endgame: 'an endgame'
 };
 
 const CHECK_MOVES_DESCRIPTION =

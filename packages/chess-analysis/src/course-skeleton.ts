@@ -1,6 +1,7 @@
 import type { CourseKind, TacticMotifType } from '@freechesscoach/shared';
 import type { CourseDossier, CourseNodeFacts } from './course-dossier.js';
 import type { CourseLineGame } from './course-line-game.js';
+import { materialBalance } from './course-material.js';
 import type { CourseTree } from './course-tree.js';
 
 const ERROR_QUALITIES = new Set(['inaccuracy', 'mistake', 'blunder', 'miss']);
@@ -54,7 +55,24 @@ export interface PuzzleSkeleton {
   unsoundNodeIds: string[];
 }
 
-export type CourseSkeleton = TrapSkeleton | OpeningSkeleton | TacticsSkeleton | MasterGameSkeleton | PuzzleSkeleton;
+/** Phase 103: a position and its technique. The goal is the learner's: to
+ * win where the engine gives them a winning position at the start, else to
+ * hold the draw. */
+export interface EndgameSkeleton {
+  kind: 'endgame';
+  lineId: string;
+  goal: 'win' | 'draw';
+  /** The material at the start, in words ("White is a rook up"). */
+  material: string;
+  /** The learner's moves on the main line. */
+  learnerNodeIds: string[];
+  /** Learner moves that are the one move keeping the result: the quizzes. */
+  onlyMoveNodeIds: string[];
+  /** The defender's tries: the first move of each sideline. */
+  deviationNodeIds: string[];
+}
+
+export type CourseSkeleton = TrapSkeleton | OpeningSkeleton | TacticsSkeleton | MasterGameSkeleton | PuzzleSkeleton | EndgameSkeleton;
 
 export interface CourseSkeletonInput {
   kind: CourseKind;
@@ -73,6 +91,10 @@ export function buildCourseSkeleton(input: CourseSkeletonInput): CourseSkeleton 
     return line ? trapSkeleton(line.lineId, lineFacts(line), input.dossier.learnerSide) : null;
   }
   if (input.kind === 'tactics') return tacticsSkeleton(input.lines, lineFacts, input.dossier.learnerSide);
+  if (input.kind === 'endgame') {
+    const line = input.lines[0];
+    return line ? endgameSkeleton(input, line.lineId, lineFacts(line)) : null;
+  }
   if (input.kind === 'master_game') return masterGameSkeleton(input.dossier);
   if (input.kind === 'puzzle') {
     const line = input.lines[0];
@@ -121,6 +143,27 @@ function openingSkeleton(input: CourseSkeletonInput, lineFacts: (line: CourseLin
     deviationNodeIds: deviations(input.tree),
     traps: [...traps].map(([blunderNodeId, answerNodeId]) => ({ blunderNodeId, answerNodeId }))
   };
+}
+
+function endgameSkeleton(input: CourseSkeletonInput, lineId: string, nodes: CourseNodeFacts[]): EndgameSkeleton {
+  const side = input.dossier.learnerSide;
+  const learner = nodes.filter((node) => node.side === side);
+  return {
+    kind: 'endgame',
+    lineId,
+    goal: winsFor(nodes[0]?.before ?? '', side) ? 'win' : 'draw',
+    material: materialBalance(input.tree.startFen),
+    learnerNodeIds: learner.map((node) => node.nodeId),
+    onlyMoveNodeIds: learner.filter((node) => node.quizEligible).map((node) => node.nodeId),
+    deviationNodeIds: deviations(input.tree)
+  };
+}
+
+/** The dossier's words for a position ("White is winning", "White has a
+ * forced mate in 12") give `side` a win. */
+function winsFor(words: string, side: 'white' | 'black'): boolean {
+  const name = side === 'white' ? 'White' : 'Black';
+  return words.startsWith(name) && /winning|mate/.test(words);
 }
 
 function puzzleSkeleton(lineId: string, nodes: CourseNodeFacts[], learnerSide: 'white' | 'black'): PuzzleSkeleton {

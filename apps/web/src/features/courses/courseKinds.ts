@@ -15,5 +15,10 @@ export const COURSE_KIND_INFO: Record<CourseKind, { label: string; summary: stri
     summary: 'A position to solve, like mate in 3.',
     example: 'Smothered mate in two. Show how to find it: checks first, even a queen sacrifice.'
   },
-  master_game: { label: 'Master game', summary: 'A famous game, move by move.', example: 'Capablanca’s endgame technique. Explain every Black move for 1200s.' }
+  master_game: { label: 'Master game', summary: 'A famous game, move by move.', example: 'Capablanca’s endgame technique. Explain every Black move for 1200s.' },
+  endgame: {
+    label: 'Endgame',
+    summary: 'A position and its technique, like the Lucena.',
+    example: 'The Lucena position: build a bridge. Show why only one move keeps the win.'
+  }
 };

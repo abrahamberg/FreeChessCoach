@@ -149,6 +149,13 @@ function renderCandidates(context: CoursePromptContext, skeleton: CourseSkeleton
         `solution, ${skeleton.mateIn ? `mate in ${skeleton.mateIn}` : 'no forced mate'}: ${list(skeleton.learnerNodeIds)}`,
         `moves with a second good answer: ${list(skeleton.unsoundNodeIds)}`
       ].join('\n');
+    case 'endgame':
+      return [
+        `goal: ${skeleton.goal === 'win' ? 'win' : 'hold the draw'}; material: ${skeleton.material}`,
+        `technique (learner moves): ${list(skeleton.learnerNodeIds)}`,
+        `only moves (the quizzes): ${list(skeleton.onlyMoveNodeIds)}`,
+        `defender's tries: ${list(skeleton.deviationNodeIds)}`
+      ].join('\n');
   }
 }
 

@@ -21,6 +21,8 @@ function kindPlaybook(context: CoursePromptContext, budget: CourseBudget): strin
       return tacticsPlaybook(context, context.skeleton?.kind === 'tactics' ? context.skeleton : null);
     case 'master_game':
       return masterGamePlaybook(context);
+    case 'endgame':
+      return endgamePlaybook(context, context.skeleton?.kind === 'endgame' ? context.skeleton : null);
   }
 }
 
@@ -31,7 +33,8 @@ const VIDEO_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
   opening: 'the plan, what each learner move is for, each sideline, each trap inside; the tempting moves where the opponent can go wrong.',
   tactics: 'the cue first, then each example with the tempting moves and why they fail.',
   puzzle: 'the thinking method: at every learner move, the checks, captures and threats in that order, which look right, why they fail, then the move.',
-  master_game: 'a storytelling recap: the players (headers only), the turning points, and at each the tempting moves and why the master avoided them.'
+  master_game: 'a storytelling recap: the players (headers only), the turning points, and at each the tempting moves and why the master avoided them.',
+  endgame: 'the goal and the one idea that decides it, then the technique move by move with the moves that spoil it, and each defensive try with its answer.'
 };
 
 const REEL_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
@@ -39,7 +42,8 @@ const REEL_PLAYBOOK: Record<CoursePromptContext['kind'], string> = {
   opening: 'the one trap or idea a player of this opening must know.',
   tactics: 'the clearest example, as a puzzle.',
   puzzle: 'the position and the question ("White to play. Mate in 3."), then the solution.',
-  master_game: 'the single brilliant move, blunder or finish, never a summary of the game.'
+  master_game: 'the single brilliant move, blunder or finish, never a summary of the game.',
+  endgame: 'one only move of the technique, as a puzzle ("White to play and win").'
 };
 
 function productsPlaybook(context: CoursePromptContext): string {
@@ -60,6 +64,9 @@ export function episodeRange(context: CoursePromptContext): string {
       return String(puzzleLearnerMoves(context).length + 2);
     case 'master_game':
       return '6 to 20';
+    case 'endgame':
+      // Goal, one or two technique, a defence per sideline, the recap.
+      return `${context.lines.length + 2} to ${context.lines.length + 3}`;
   }
 }
 
@@ -262,6 +269,29 @@ function tacticsPlaybook(context: CoursePromptContext, skeleton: Extract<CourseS
 3. scan — the three things to scan for in their own games.
 Each reveal names the cue again, so by the end the learner has seen the pattern
 ${count} times.`;
+}
+
+/** Phase 103: a position and its technique, taught as a strong player
+ * learns one: the goal, the idea, the only moves, the defender's tries. */
+function endgamePlaybook(context: CoursePromptContext, skeleton: Extract<CourseSkeleton, { kind: 'endgame' }> | null): string {
+  const side = capitalise(context.learnerSide);
+  const goal = skeleton ? (skeleton.goal === 'win' ? 'to play and win' : 'to play and hold the draw') : 'to play';
+  const spoil = skeleton?.goal === 'draw' ? 'the draw becomes a loss' : 'the win becomes a draw';
+  const list = (ids: readonly string[]): string => ids.map((id) => nodeLabel(context, id)).join(', ') || 'none';
+  return `KIND: ENDGAME. ${side} ${goal}. Material: ${skeleton?.material ?? 'see the dossier'}.
+The technique: ${list(skeleton?.learnerNodeIds ?? [])}. The only moves: ${list(skeleton?.onlyMoveNodeIds ?? [])}.
+The defender's tries: ${list(skeleton?.deviationNodeIds ?? [])}.
+Use these episodes, in order:
+1. goal — the position, the material and the goal, then the one idea that
+   decides it, in plain words, from the dossier's board facts.
+2. technique — the main line in one or two episodes: every ${side} move
+   speaks and says what it keeps or gains. The only moves are quizzes. At
+   each, the tempting moves as the dossier gives them, and what each spoils:
+   ${spoil}.
+3. defence — one per sideline: what the defender tries and the answer.
+4. recap — the rule to remember, and how to recognise the position in a game.
+Name a technique (a bridge, the opposition, checking from the side) only
+where the dossier's facts show it.`;
 }
 
 function masterGamePlaybook(context: CoursePromptContext): string {

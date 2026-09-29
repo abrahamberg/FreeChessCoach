@@ -10,7 +10,7 @@ describe('course golden set', () => {
 
     expect(golden.map((course) => course.name).sort()).toEqual([...COURSE_KINDS].sort());
     const sides = Object.fromEntries(golden.map((course) => [course.name, draftFromIntake(course.intake).learnerSide]));
-    expect(sides).toEqual({ trap: 'black', opening: 'white', tactics: 'white', puzzle: 'white', master_game: 'white' });
+    expect(sides).toEqual({ trap: 'black', opening: 'white', tactics: 'white', puzzle: 'white', master_game: 'white', endgame: 'white' });
     for (const course of golden) {
       expect(statSync(new URL(`../../../test/fixtures/courses/${course.name}.json`, import.meta.url)).size).toBeLessThan(5000);
     }

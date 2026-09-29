@@ -56,7 +56,7 @@ export function withProducts(inputs: GenerationInputs, outline: CourseOutline): 
     if (picked && outline.reel && allowed(outline.reel.style, picked.styles)) reel = outline.reel;
     else {
       const first = candidates[0]!;
-      const puzzle = (inputs.document.kind === 'puzzle' || inputs.document.kind === 'tactics') && first.styles.includes('puzzle');
+      const puzzle = (inputs.document.kind === 'puzzle' || inputs.document.kind === 'tactics' || inputs.document.kind === 'endgame') && first.styles.includes('puzzle');
       reel = { candidate: first.id, style: puzzle ? 'puzzle' : 'highlight' };
     }
   }

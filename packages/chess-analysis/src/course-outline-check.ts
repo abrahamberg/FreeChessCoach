@@ -5,7 +5,7 @@ import type { CourseSkeleton } from './course-skeleton.js';
 
 /** Roles that go back over the line (a recap, a scan, the trap's safe move
  * at the bait), so they may start before the episode before them. */
-const OVERVIEW_ROLES = new Set(['recap', 'scan', 'safety']);
+const OVERVIEW_ROLES = new Set(['recap', 'scan', 'safety', 'goal']);
 const MASTER_QUIZ_QUALITIES = new Set(['brilliant', 'great', 'best', 'excellent']);
 const NEAREST_ELIGIBLE = 2;
 const MAX_LISTED_NODES = 8;
@@ -122,6 +122,10 @@ function coverageProblems(input: CourseOutlineCheckInput, covered: ReadonlySet<s
   }
   const roles = new Set(input.outline.chapters.flatMap((chapter) => chapter.episodes.map((episode) => episode.role)));
   if (input.kind === 'trap' && !roles.has('safety')) problems.push('there is no safety episode');
+  if (input.kind === 'endgame' && skeleton?.kind === 'endgame') {
+    const uncovered = skeleton.learnerNodeIds.filter((id) => !covered.has(id));
+    if (uncovered.length) problems.push(`every move of the technique needs an episode; ${uncovered.slice(0, MAX_LISTED_NODES).join(', ')} are in none`);
+  }
   if (input.kind === 'master_game') {
     const uncovered = input.nodes.map((node) => node.id).filter((id) => !covered.has(id));
     if (uncovered.length) {

@@ -14,7 +14,8 @@ const SKELETONS: Record<CourseKind, CourseSkeleton> = {
   opening: { kind: 'opening', lines: [{ lineId: 'l1', bookExitNodeId: null, learnerNodeIds: ['n2'] }], deviationNodeIds: [], traps: [{ blunderNodeId: 'n11', answerNodeId: 'n12' }] },
   tactics: { kind: 'tactics', examples: [{ lineId: 'l1', nodeId: 'n12', startNodeId: 'n10', motif: 'pin', depth: 3 }] },
   puzzle: { kind: 'puzzle', lineId: 'l1', learnerNodeIds: ['n12', 'n14', 'n16'], mateIn: 3, unsoundNodeIds: ['n14'] },
-  master_game: { kind: 'master_game', criticalNodeIds: ['n11'], quizNodeIds: ['n12'], phaseBoundaryNodeIds: [] }
+  master_game: { kind: 'master_game', criticalNodeIds: ['n11'], quizNodeIds: ['n12'], phaseBoundaryNodeIds: [] },
+  endgame: { kind: 'endgame', lineId: 'l1', goal: 'win', material: 'Black is a rook up', learnerNodeIds: ['n12', 'n14', 'n16'], onlyMoveNodeIds: ['n12'], deviationNodeIds: [] }
 };
 
 const PLACEHOLDER = /\{[a-zA-Z]+\}|undefined|\bnull\b(?! \|)|\[object/;
@@ -94,6 +95,15 @@ describe('course prompts', () => {
 
     expect(system).toContain('Every check in the\n   dossier\'s tempting moves at that move goes in its tempting list');
     expect(system).toContain('"Ng6+? hxg6 takes the knight, and the mate is gone"');
+  });
+
+  test('an endgame names the goal, the only moves and what a tempting move spoils', () => {
+    const system = buildCourseSystemPrompt(englundCourseContext('endgame', SKELETONS.endgame));
+
+    expect(system).toContain('KIND: ENDGAME. Black to play and win. Material: Black is a rook up.');
+    expect(system).toContain('The only moves: n12 (6... Bb4).');
+    expect(system).toContain('the win becomes a draw');
+    expect(buildCourseOutlineMessages(englundCourseContext('endgame', SKELETONS.endgame)).user).toContain('goal: win; material: Black is a rook up');
   });
 
   test('the outline request carries the lines, candidates and the whole dossier', () => {

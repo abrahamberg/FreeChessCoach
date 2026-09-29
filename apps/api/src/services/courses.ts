@@ -2,6 +2,7 @@ import {
   buildCourseSkeleton,
   inferLearnerSide,
   parseCourseTree,
+  endgameShapeProblems,
   puzzleShapeProblems,
   type CourseTree
 } from '@freechesscoach/chess-analysis';
@@ -57,7 +58,7 @@ export function draftFromIntake(intake: CourseIntake, order = 1): CourseDocument
   if (tree.errors.length) throw new ValidationError(tree.errors.map((error) => error.message).join('; '));
   if (!tree.nodes.length) throw new ValidationError('The PGN has no moves');
   if (tree.nodes.length > MAX_COURSE_NODES) throw new ValidationError(`A course can have at most ${MAX_COURSE_NODES} moves`);
-  const shape = intake.kind === 'puzzle' ? puzzleShapeProblems(tree) : [];
+  const shape = intake.kind === 'puzzle' ? puzzleShapeProblems(tree) : intake.kind === 'endgame' ? endgameShapeProblems(tree) : [];
   if (shape.length) throw new ValidationError(shape.join('; '));
   const learnerSide = intake.learnerSide ?? inferLearnerSide(intake.kind, tree, resultHeader(intake.pgn));
   if (!learnerSide) throw new ValidationError('Pick the learner side: it cannot be told from this PGN');

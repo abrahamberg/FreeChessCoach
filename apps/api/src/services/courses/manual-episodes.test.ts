@@ -33,7 +33,27 @@ async function manual(pgn: string, kind: CourseKind, learnerSide: 'white' | 'bla
   return buildManualEpisodes({ document, skeleton, dossier, lines: lineGames });
 }
 
+const LUCENA = '[FEN "1K6/1P1k4/8/8/8/8/r7/2R5 w - - 0 1"]\n\n1. Rd1+ Ke7 (1... Kc6 2. Kc8 Rh2 3. b8=Q) 2. Rd4 Ra1 3. Kc7 Rc1+ 4. Kb6 Rb1+ 5. Kc6 Rc1+ 6. Kb5 Rb1+ 7. Rb4 *';
+
 describe('buildManualEpisodes', () => {
+  test('endgame: the goal, the technique, a defence per sideline, then the rule', async () => {
+    const { chapters, episodes } = await manual(LUCENA, 'endgame', 'white');
+
+    expect(chapters.map((chapter) => [chapter.title, chapter.lineId])).toEqual([
+      ['The technique', 'l1'],
+      ['The defender tries Kc6', 'l2'],
+      ['The rule', 'l1']
+    ]);
+    expect(episodes.map((episode) => [episode.role, episode.startNodeId, episode.endNodeId])).toEqual([
+      ['goal', 'n1', 'n1'],
+      ['technique', 'n1', 'n13'],
+      ['defence', 'n14', 'n17'],
+      ['recap', 'n13', 'n13']
+    ]);
+    // The learner's moves on the sideline are drilled.
+    expect(episodes[2]?.drillNodeIds).toEqual(['n15', 'n17']);
+  });
+
   test('opening course: the idea, a chapter per sideline from where it branches, then recap', async () => {
     const { chapters, episodes } = await manual('{Main} 1. e4 c6 2. d4 d5 3. e5 ({Exchange} 3. exd5 cxd5 4. Bd3 Nc6 5. c3) 3... Bf5 *', 'opening', 'black');
 

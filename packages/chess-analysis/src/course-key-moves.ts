@@ -1,7 +1,7 @@
 import type { CourseSkeleton } from './course-skeleton.js';
 
 /** Roles that speak over a card or about another move, never on their own moves. */
-const NO_KEY_ROLES = new Set(['hook', 'safety']);
+const NO_KEY_ROLES = new Set(['hook', 'safety', 'goal', 'recap']);
 
 export interface EpisodeKeyMovesInput {
   role: string;

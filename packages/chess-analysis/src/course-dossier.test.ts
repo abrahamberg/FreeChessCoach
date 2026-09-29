@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { renderCourseDossier } from './course-dossier-text.js';
 import { abandonedGuard, boardFacts } from './course-dossier-words.js';
-import { inferLearnerSide, puzzleShapeProblems } from './course-learner-side.js';
+import { endgameShapeProblems, inferLearnerSide, puzzleShapeProblems } from './course-learner-side.js';
 import { courseLineGames } from './course-line-game.js';
 import { buildCourseSkeleton } from './course-skeleton.js';
 import { analyseCourse, analyseEnglund, ENGLUND_TRAP, fakeEvals, type FakeEval } from './course-test-fixtures.js';
@@ -115,6 +115,24 @@ describe('course dossier', () => {
 });
 
 describe('course skeleton', () => {
+  test("endgame: the goal from the start's verdict, the material, the learner's moves and its only moves", () => {
+    const { tree, dossier } = englund();
+    const skeleton = buildCourseSkeleton({ kind: 'endgame', tree, lines: courseLineGames(tree), dossier });
+    const black = dossier.nodes.filter((node) => node.side === 'black');
+
+    expect(skeleton).toEqual({
+      kind: 'endgame',
+      lineId: 'l1',
+      goal: 'draw',
+      material: 'material is level',
+      learnerNodeIds: black.map((node) => node.nodeId),
+      onlyMoveNodeIds: black.filter((node) => node.quizEligible).map((node) => node.nodeId),
+      deviationNodeIds: []
+    });
+    const winning = dossier.nodes.map((node, index) => (index === 0 ? { ...node, before: 'Black is winning' } : node));
+    expect(buildCourseSkeleton({ kind: 'endgame', tree, lines: courseLineGames(tree), dossier: { ...dossier, nodes: winning } })).toMatchObject({ goal: 'win' });
+  });
+
   test('trap: bait n11, answer n12, the rest punishes, Nc3 was safe', () => {
     const { tree, dossier } = englund();
 
@@ -196,6 +214,13 @@ describe('puzzle', () => {
       'A puzzle starts from a position: add its [FEN] header',
       'A puzzle has one solution line: remove the sidelines'
     ]);
+  });
+
+  test('an endgame is learned by the side to move, needs a position, and may have the defender\'s tries', () => {
+    const lucena = '[FEN "1K6/1P1k4/8/8/8/8/r7/2R5 w - - 0 1"]\n\n1. Rd1+ Ke7 (1... Kc6 2. Kc8) 2. Rd4 *';
+    expect(inferLearnerSide('endgame', parseCourseTree(lucena), null)).toBe('white');
+    expect(endgameShapeProblems(parseCourseTree(lucena))).toEqual([]);
+    expect(endgameShapeProblems(parseCourseTree('1. e4 e5 *'))).toEqual(['An endgame starts from a position: add its [FEN] header']);
   });
 });
 
