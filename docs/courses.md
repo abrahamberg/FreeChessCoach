@@ -123,8 +123,11 @@ Arrow = { from: Square, to: Square, kind: 'idea' | 'threat' | 'best' }
 ```
 
 `courseVideos(document)` reads `videos` or the kind's default
-(`defaultCourseVideos`). The video's length is `CONFIG.courses.videoSeconds`
-per kind; the reel's `reelSeconds`.
+(`defaultCourseVideos`). The video's length is a guide range per kind,
+`CONFIG.courses.videoSeconds` (trap 2–5 minutes, opening 8–15, tactics
+5–10, puzzle 1.5–4, master game 8–15; the words cap is the top); the
+reel's `reelSeconds`. Lengths may run over by `lengthSlack` (10%) before the
+verifier counts them.
 
 - Node ids are assigned once, by code, when the PGN is parsed, and never reused.
   Editing text never changes them, so audio (§8) and learner progress (§11) stay
@@ -424,7 +427,7 @@ Use exactly these episodes, in order:
    video pauses {pauseSeconds}s (the app adds the pause).
 5. punish — every forcing move speaks in the video; captions carry the rhythm.
 6. safety — how the victim stays safe: {safeMove}, in one or two sentences.
-   {trapperRiskLine}
+   {trapperDefence}{trapperRiskLine}
 The end card and call to action are added by the app; don't write them.
 In the course, every move speaks. The bait and the safe move get the longest
 lines. The learner drills both sides, so the lines must teach springing the
@@ -432,6 +435,15 @@ trap and avoiding it.
 ```
 `{trapperRiskLine}` is "The trapper's setup is risky against best play (see the
 dossier); say so plainly." when `trapperRisk` is set, else empty.
+
+`{trapperDefence}` (`trapperDefence`, playbooks.ts) is what the trapper does
+when the victim finds the safe move: "Then the trapper's side: when the victim
+finds {safeMove}, the engine's line is {line} (at its end: {verdict}; {balance}).
+Name {trapperSide}'s best moves from it and say plainly how {trapperSide}
+stands: the aim is to lose as little as possible, not to pretend the trap still
+works." It comes from the bait's `bestInstead` (line and `balance`, the material
+at the line's end) and the safe move's verdict; empty when the line is shorter
+than two moves.
 
 `{trapEnding}` states the line's last move: "checkmate, n16 (8... Qc1#).
 Promise the mate, not material." when it mates, else the move and the
@@ -523,8 +535,10 @@ Kind: {kind}
 Direction (from the creator): "{direction}"
 Learner side: {learnerSide}
 Learner level: {CALIBRATION[band].label} — {CALIBRATION[band].description}
-Budgets: {episodeRange} episodes; the YouTube video about {minutes} minutes, at
-most {words} spoken words in total.
+Budgets: {episodeRange} episodes; the YouTube video {minMinutes} to {maxMinutes}
+minutes, at most {words} spoken words in total.
+The length is a guide, not a target: speak every point the dossier supports, add
+nothing to fill time, and a short course makes a short video.
 Make: the course and the YouTube video.
 Speaking budgets, per episode: budgetCourse is how many of its moves speak in the
 course (the moves a learner needs a word on: their key moves, and the opponent's
@@ -681,7 +695,7 @@ this example does not guess them. The board facts are real.
 
 ```text
 n11 6.Bc3 (White, main) | ⟨quality⟩ | before: ⟨verdict⟩ → after: ⟨verdict⟩
-    best instead: ⟨engine move and line⟩
+    best instead: ⟨engine move⟩ (line: ⟨engine line⟩; at its end ⟨material, e.g. "White is a pawn up"⟩)
     board: attacks the queen on b2 | leaves the bishop on c3 on the b4–e1
       diagonal with the king behind it
     flags: bait-candidate
@@ -735,7 +749,7 @@ a message the creator can read.
 | Key moves | Each of `budget.keyNodeIds` speaks in the course, and in the video when it is planned ("8…Qc1# is a key move of this episode; let it speak in the video"). |
 | Tempting | Every `tempting[].san` is one of the dossier's tempting moves at that node (code drops any other when it merges the model's answer, and takes the dossier's spelling and refutation); a `why` that pastes the dossier's line ("answered by …", "(White is …)") goes back. |
 | Node ids | No line, caption, why, quiz text or reel text says a node id ("mate at n16"). |
-| Lengths | The video line (`say`, else `text`) within the words per move, the video within the episode's words; captions at most 6 words; course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
+| Lengths | The video line (`say`, else `text`) within the words per move, the video within the episode's words (these, the video's hook and the reel's seconds may run over by `lengthSlack`, 10%, before they count); captions at most 6 words; course lines at most 2 sentences (4 at critical nodes); a ticked ply with no words is reported once ("n11 speaks but has no words; write them or untick it"). |
 | Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); the hint does not name it. |
 | Phrases | None of `BANNED_GENERIC_PHRASES`, and never the word "dossier" (the prompt's word, not the learner's). |
 | Voice | More than 2 lines in an episode starting with the same word; one line repeated in two episodes; a word that starts a sentence in 3 or more lines across the course and the reel ("Execute."), board words (White, the queen …) aside. |
@@ -1177,18 +1191,26 @@ puzzle or tactics course:
    best.
 2. Each candidate's position is analysed with the other dossier positions
    (one engine batch). A candidate is tempting when it loses at least 15
-   points of the mover's win% against the best move, or walks into mate.
+   points of the mover's win% against the best move, or walks into mate,
+   and is not obvious: an answer that captures at once and leaves the mover
+   `obviousLoss` (2) points down (a queen taking a defended piece) is seen
+   at a glance, so it is dropped. A quiet answer that mates stays.
 3. Keep at most 3, ordered checks, then captures by value taken, then
    threats.
-4. Each gets its refutation: the engine's reply and line (`pvSan`, at most
-   4 plies) and the board facts after it ("Kxf7, and the knight on g5 is
-   hanging"), in the dossier's words.
+4. Each gets what it does itself (its board facts), its refutation (the
+   engine's reply and line, `pvSan`, at most 4 plies), the board facts of
+   the reply, and who takes what over the line (`course-material.ts`), so
+   the model words facts instead of working them out. The dossier text names
+   each side: "Nxe5? Black's Nxe5 … captures the pawn on e5. White answers
+   Bxb4: … captures the queen on b4. Over the line Black takes a pawn;
+   White takes the queen (White is much better)".
 
 Dossier (`CourseNodeFacts.tempting`):
-`{ san, kind: 'check' | 'capture' | 'threat', refutation: string[], after: string[], verdict: string }[]`
-(`after`: the answer's board facts, the first being its own move).
+`{ san, kind: 'check' | 'capture' | 'threat', does: string[], refutation: string[], after: string[], captures: string, verdict: string }[]`
+(`does`: the tempting move's board facts; `after`: the answer's, the first
+being its own move).
 The model may only discuss these; the verifier checks each named move.
-Config: `CONFIG.courses.temptingDrop` (15) and `maxTempting` (3); at most 6
+Config: `CONFIG.courses.temptingDrop` (15), `obviousLoss` (2) and `maxTempting` (3); at most 6
 candidates a node go to the engine.
 
 The course shows them under the note ("Tempting: Qxf7+? Kxf7, and the

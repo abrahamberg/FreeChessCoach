@@ -1900,6 +1900,75 @@ Commit: `feat(courses): tempting moves and puzzles in the player`
 
 Commit: `docs: the course, the video and the reel`
 
+## Phase 96 — Facts the words need, and only moves worth discussing
+
+The strong model's Englund run (2026-09-29) was correct except where our
+facts were thin or the choice was ours. Most of the tempting moves were a
+queen taking something defended and being taken back, which a club player
+sees at a glance. At 8…Qc1# one "why" read "winning the knight… White's
+queen returns to b2": the dossier only described the answer (Qxb2), with no
+subject and nothing about Nxe5 itself. The safety episode only said the setup
+is "risky". It never said what the trapper does when the victim finds the
+safe move. The video was aimed at a fixed 5 minutes for traps and puzzles,
+and a one-word overshoot cost a repair call. The app supplies the facts; the
+model only words them.
+
+### Task 96.1 — Tempting moves: the move's own facts, the material, no obvious ones
+
+**Files:** `course-material.ts` (new, chess-analysis), `course-tempting.ts`,
+`course-dossier-text.ts`, `config.ts`, tests.
+
+- [x] `CourseTemptingFacts` gains `does` (the tempting move's own board
+  facts) and `captures` (who takes what over the move and its refutation:
+  "Black takes a pawn; White takes the queen").
+- [x] The dossier text names the sides: "Nxe5? Black's Nxe5 captures the pawn on e5.
+  White answers Bxb4: captures the queen on b4. Over the line Black takes a
+  pawn; White takes the queen (White is much better)".
+- [x] A candidate whose engine answer captures at once and leaves the mover
+  at least `CONFIG.courses.obviousLoss` (2) points down is obvious, not
+  tempting: dropped. A quiet reply that mates stays: the back-rank mate is
+  the classic tempting move.
+- [x] Failing test first: on the Englund at n12, Qxc3+, Qxa1 and Qxb1 are
+  dropped (each loses the queen to the recapture).
+
+Commit: `feat(courses): tempting moves say what they do, and obvious ones go`
+
+### Task 96.2 — When the victim defends: the trapper saves what they can
+
+**Files:** `course-material.ts`, `course-dossier-node.ts`,
+`course-dossier-text.ts`, `playbooks.ts`, tests.
+
+- [x] `bestInstead` gains `balance`: the material at the end of its line
+  ("White is a pawn up", "material is level").
+- [x] The trap playbook's safety episode: the safe move, then what the
+  trapper plays when the victim finds it (the engine's line after the safe
+  move), how it stands and the material. Say it plainly; don't pretend the
+  trap still works.
+
+Commit: `feat(courses): the trap's safety episode says how the trapper limits the damage`
+
+### Task 96.3 — Video length is a guide
+
+**Files:** `config.ts`, `budget.ts`, `outline.ts`, `episode.ts`,
+`course-verify.ts`, `course-verify-reel.ts`, tests.
+
+- [x] `CONFIG.courses.videoSeconds` per kind becomes a range: trap 2–5
+  min, opening 8–15, tactics 5–10, puzzle 1.5–4, master game 8–15. The
+  words cap is the top of the range.
+- [x] The outline says the range is a guide, not a target: every point the
+  dossier supports, nothing added to fill time.
+- [x] Lengths (video words per episode and per move, the video hook, the
+  reel's seconds) may run over by `CONFIG.courses.lengthSlack` (10%)
+  before they count as a problem: a 41-word hook doesn't cost a repair.
+
+Commit: `feat(courses): the video's length is a guide, with slack`
+
+### Task 96.4 — Docs
+
+- [x] `docs/courses.md` §13.4, §13.5, the trap playbook text and §7 match.
+
+Commit: `docs: tempting moves worth discussing, the trapper's defence, video length`
+
 ## Verification (end of each phase)
 
 - Targeted tests, lint and typecheck green for every package touched.
