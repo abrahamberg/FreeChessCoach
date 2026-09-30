@@ -783,9 +783,9 @@ Status: done 2026-09-30 — `board-facts/loose-pieces.ts` (`loosePieces`), `boar
 - [x] AGENTS.md "Chess facts" rule points at `board-facts/`;
   `docs/architecture.md` gets one paragraph on `board-facts/` (what it is,
   who uses it, `renderBoardFact`).
-- [~] `npm run verify`, `test:golden`, `test:corpus`; push; open a PR.
+- [x] `npm run verify`, `test:golden`, `test:corpus`; push; open a PR.
 
-Status: partial 2026-09-30 — docs done. `verify:changed`, `test:golden` (66, identical) and the chess-analysis, prompts and api course tests pass; full `npm run verify` not run (api needs Docker). `test:corpus`: the `basic` reporter in its script no longer exists in vitest 5, so it fails to start; run directly it passes with a longer test timeout (three tests hit the 5 s default under load), no ceiling or floor moved. Branch pushed, PR to be opened.
+Status: partial 2026-09-30 — docs done. `verify:changed`, `test:golden` (66, identical) and the chess-analysis, prompts and api course tests pass; full `npm run verify` passed with Docker (api against Postgres included). `test:corpus`: the `basic` reporter in its script no longer exists in vitest 5, so it fails to start; run directly it passes with a longer test timeout (three tests hit the 5 s default under load), no ceiling or floor moved. Branch pushed, PR to be opened.
 
 ---
 
