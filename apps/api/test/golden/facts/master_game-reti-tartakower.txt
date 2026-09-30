@@ -118,9 +118,7 @@ REVIEW NOTES
     n8 4…Nf6: Theory — Caro-Kann Defense: Main Line (B15)
     n10 5…e5: Leaves the pawn on e5 undefended
     n11 6.dxe5: Costs 9 squares of piece mobility
-    n12 6…Qa5+: Leaves knight on f6 attacked 2× and defended 1×
     n14 7…Qxe5: They won a knight through a fork two moves away.
-    n15 8.O-O-O: Leaves knight on e4 attacked 2× and defended 1×
-    n17 9.Qd8+: Leaves the queen on d8 undefended; You stopped them winning a knight through a free piece — captures the knight on e4.
-    n19 10.Bg5+: Leaves the bishop on g5 undefended; Allows queen fork on e5 hitting g5, b2 and h2; You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    n17 9.Qd8+: You stopped them winning a knight through a free piece — captures the knight on e4.
+    n19 10.Bg5+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
     n21 11.Bd8#: You forced mate.

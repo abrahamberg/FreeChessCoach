@@ -69,6 +69,5 @@ REVIEW NOTES
     n4 2…Nc6: Theory — Italian Game: Two Knights Defense (C55)
     n5 3.Nc3: Theory — Italian Game: Two Knights Defense (C55)
     n6 3…Nf6: Theory — Italian Game: Two Knights Defense (C55)
-    n8 4…Nxe4: Leaves the knight on e4 undefended
     n9 5.Nxe4: Recaptures the knight on e4
     n10 5…d5: You stopped them winning a knight through a free piece — captures the knight on e4.

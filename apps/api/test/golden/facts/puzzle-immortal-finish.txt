@@ -39,5 +39,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n2 22…Nxf6: Leaves the knight on f6 undefended
-    n3 23.Be7#: Leaves the pawn on e5 undefended; You forced mate.
+    n3 23.Be7#: You forced mate.

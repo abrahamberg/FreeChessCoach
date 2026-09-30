@@ -78,4 +78,4 @@ REVIEW NOTES
     n7 4.Nxe4: Theory — Caro-Kann Defense: Karpov Variation (B17)
     n8 4…Nd7: Theory — Caro-Kann Defense: Karpov Variation (B17)
     n10 5…Ngf6: They let you force mate with Nd6# — mates the king on e8, smothered by its own pieces.
-    n11 6.Nd6#: Leaves the knight on d6 undefended; You forced mate — mates the king on e8, smothered by its own pieces.
+    n11 6.Nd6#: You forced mate — mates the king on e8, smothered by its own pieces.

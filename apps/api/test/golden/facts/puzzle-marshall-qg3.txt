@@ -24,4 +24,3 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 23…Qg3: Leaves queen on g3 attacked 3× and defended 1×

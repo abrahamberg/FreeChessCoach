@@ -1,6 +1,8 @@
 import { Chess, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type FeatureDeltaDto, type MoveQuality, type PositionFeatures } from '@freechesscoach/shared';
-import { toColorName } from './attack-map.js';
+import { forks } from './board-facts/forks.js';
+import { loosePieces } from './board-facts/loose-pieces.js';
+import { PIECE_VALUES } from './tactics.js';
 import { PIECE_NAMES } from './piece-names.js';
 import { describeTrade } from './trade-description.js';
 import { see } from './see.js';
@@ -45,9 +47,8 @@ export function buildReasons(input: MoveReasonsInput): string[] {
   const reasons = [
     ...missedMateReason(input),
     ...missedCaptureReason(input),
-    ...hangingPieceReasons(input),
-    ...newForkReasons(input),
-    ...underDefendedReasons(input),
+    ...looseReasons(input),
+    ...allowedForkReasons(input),
     ...centerSwingReason(input),
     ...passedPawnReasons(input),
     // Last in CATEGORY_ORDER before mobility, so naming the exchange never
@@ -97,36 +98,51 @@ function missedCaptureReason(input: MoveReasonsInput): Reason[] {
   return [{ category: 'material', text: `Missed ${best.moveSan}, winning material on ${move.to}` }];
 }
 
-function hangingPieceReasons(input: MoveReasonsInput): Reason[] {
-  const pieces = (input.featureDelta?.newHangingPieces ?? []).filter((piece) => piece.color === input.mover);
-  return pieces.map((piece) => ({
-    category: 'material',
-    text: `Leaves the ${PIECE_NAMES[piece.piece]} on ${piece.square} undefended`
-  }));
-}
+/** Fault notes are for moves that cost something. */
+const isFault = (input: MoveReasonsInput): boolean => isImprovableQuality(input.quality);
 
-function newForkReasons(input: MoveReasonsInput): Reason[] {
-  const forks = input.featureDelta?.newForks ?? [];
-  if (forks.length === 0) return [];
-
-  const board = new Chess(input.fenAfter);
-  return forks
-    .filter((fork) => {
-      const piece = board.get(fork.square as Square);
-      return piece !== undefined && toColorName(piece.color) !== input.mover;
-    })
-    .map((fork) => ({
-      category: 'tactical',
-      text: `Allows ${PIECE_NAMES[fork.piece]} fork on ${fork.square} hitting ${formatList(fork.forkedSquares)}`
+/** Pieces the move leaves the other side able to win, from the board facts
+ * (`board-facts/loose-pieces.ts`): "undefended" for a free piece, "where it
+ * can be won" for a defended one the exchange still loses. Only what the move
+ * made loose, and never the piece that just took on a trade (an even
+ * capture taken back is an exchange, not a hung piece). */
+function looseReasons(input: MoveReasonsInput): Reason[] {
+  if (!isFault(input)) return [];
+  const owner = input.mover === 'white' ? 'w' : 'b';
+  const before = new Map(loosePieces(input.fenBefore, owner).map((piece) => [piece.square, piece.tier]));
+  const traded = tradedSquare(input);
+  return loosePieces(input.fenAfter, owner)
+    .filter((piece) => piece.square !== traded && (before.get(piece.square) === undefined || (before.get(piece.square) === 'winnable' && piece.tier === 'free')))
+    .map((piece) => ({
+      category: 'material',
+      text: `Leaves the ${PIECE_NAMES[piece.piece]} on ${piece.square} ${piece.tier === 'free' ? 'undefended' : 'where it can be won'}`
     }));
 }
 
-function underDefendedReasons(input: MoveReasonsInput): Reason[] {
-  const pieces = (input.featuresAfter?.underDefendedPieces ?? []).filter((piece) => piece.color === input.mover);
-  return pieces.map((piece) => ({
-    category: 'tactical',
-    text: `Leaves ${PIECE_NAMES[piece.piece]} on ${piece.square} attacked ${piece.attackers}× and defended ${piece.defenders}×`
-  }));
+/** The square the move captured on, when what it took was worth at least
+ * what took it. */
+function tradedSquare(input: MoveReasonsInput): string | null {
+  try {
+    const move = new Chess(input.fenBefore).move(input.moveSan);
+    return move.captured && PIECE_VALUES[move.captured] >= PIECE_VALUES[move.piece] ? move.to : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Forks the opponent now has that they did not have before the move, named
+ * by the pieces they hit (`board-facts/forks.ts`). */
+function allowedForkReasons(input: MoveReasonsInput): Reason[] {
+  if (!isFault(input)) return [];
+  const opponent = input.mover === 'white' ? 'b' : 'w';
+  const key = (fork: { piece: { piece: string; square: string } }): string => `${fork.piece.piece}${fork.piece.square}`;
+  const before = new Set(forks(input.fenBefore, opponent).map(key));
+  return forks(input.fenAfter, opponent)
+    .filter((fork) => !before.has(key(fork)))
+    .map((fork) => ({
+      category: 'tactical',
+      text: `Allows a fork: the ${PIECE_NAMES[fork.piece.piece]} on ${fork.piece.square} hits ${formatList(fork.targets.map((target) => `the ${PIECE_NAMES[target.piece]} on ${target.square}`))}`
+    }));
 }
 
 function centerSwingReason(input: MoveReasonsInput): Reason[] {

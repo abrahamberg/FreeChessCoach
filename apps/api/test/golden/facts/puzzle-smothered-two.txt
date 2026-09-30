@@ -34,5 +34,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.Qg8+: Leaves queen on g8 attacked 2× and defended 1×
     n3 2.Nf7#: You forced mate — mates the king on h8, smothered by its own pieces.

@@ -34,5 +34,5 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 16.Qb8+: Leaves the queen on b8 undefended; Leaves the pawn on a2 undefended; You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    n1 16.Qb8+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
     n3 17.Rd8#: You forced mate.

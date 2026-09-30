@@ -31,5 +31,4 @@ PLAN
 REVIEW NOTES
   l1
     n1 1.Be4+: You won a queen through a skewer two moves away — skewers the king on c6, exposing the queen on a8.
-    n2 1…Kd6: Leaves the queen on a8 undefended
     n3 2.Bxa8: You won a queen through a free piece — captures the queen on a8.

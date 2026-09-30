@@ -123,5 +123,5 @@ REVIEW NOTES
     n8 4…Rd3+: Costs 11 squares of piece mobility
     n9 5.Kc2: You won a tempo — hits the rook on d3 with a king.
     n10 5…Rd4: Their move stopped you winning a rook through a free piece — captures the rook on b4.
-    n15 6…Rc4+: Leaves the rook on c4 undefended; Their move stopped you winning a rook through a free piece — captures the rook on d2.
+    n15 6…Rc4+: Their move stopped you winning a rook through a free piece — captures the rook on d2.
     n16 7.Qxc4: You won a rook through a free piece — captures the rook on c4.

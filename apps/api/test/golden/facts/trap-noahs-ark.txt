@@ -127,12 +127,11 @@ REVIEW NOTES
     n6 3…a6: Theory — Ruy Lopez: Noah's Ark Trap (C71)
     n7 4.Ba4: Theory — Ruy Lopez: Noah's Ark Trap (C71)
     n8 4…d6: Theory — Ruy Lopez: Noah's Ark Trap (C71)
-    n12 6…Nxd4: Leaves knight on d4 attacked 2× and defended 1×; Trades the knight for the pawn on d4
+    n12 6…Nxd4: Trades the knight for the pawn on d4
     n13 7.Nxd4: Recaptures the knight on d4
-    n14 7…exd4: Leaves the pawn on d4 undefended; Recaptures the knight on d4
+    n14 7…exd4: Recaptures the knight on d4
     n15 8.Qxd4: Recaptures the pawn on d4
     n16 8…c5: You won a tempo — hits the queen on d4 with a pawn.; Won the bishop, giving back a pawn.
     n17 9.Qd5: Costs 14 squares of piece mobility
     n18 9…Be6: You stopped them winning a rook through a fork.
     n20 10…Bd7: You stopped them winning a bishop through a discovered attack — unveils the bishop on b3 against the bishop on e6.
-    n22 11…c4: Leaves pawn on c4 attacked 2× and defended 1×

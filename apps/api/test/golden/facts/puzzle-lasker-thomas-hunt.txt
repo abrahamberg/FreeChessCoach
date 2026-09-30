@@ -111,12 +111,10 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 11.Qxh7+: Leaves the queen on h7 undefended; You forced mate.; Won the bishop, giving back a queen.
+    n1 11.Qxh7+: You forced mate.; Won the bishop, giving back a queen.
     n2 11…Kxh7: Recaptures the queen on h7
-    n3 12.Nxf6+: Leaves the knight on f6 undefended; Leaves the pawn on g2 undefended; You forced mate.
-    n5 13.Neg4+: Leaves knight on f6 attacked 3× and defended 1×; You forced mate.
-    n7 14.h4+: Missed mate in 4 starting with f4+; Leaves knight on f6 attacked 4× and defended 1×; You forced mate.; Won the queen, giving back a pawn.
-    n9 15.g3+: Leaves the rook on h1 undefended; Leaves knight on f6 attacked 3× and defended 1×
-    n11 16.Be2+: Missed mate in 2 starting with O-O; Leaves knight on f6 attacked 3× and defended 1×
-    n13 17.Rh2+: Leaves knight on f6 attacked 3× and defended 1×
-    n15 18.Kd2#: Missed mate in 1 starting with O-O-O#; Leaves knight on f6 attacked 3× and defended 1×
+    n3 12.Nxf6+: You forced mate.
+    n5 13.Neg4+: You forced mate.
+    n7 14.h4+: Missed mate in 4 starting with f4+; You forced mate.; Won the queen, giving back a pawn.
+    n11 16.Be2+: Missed mate in 2 starting with O-O
+    n15 18.Kd2#: Missed mate in 1 starting with O-O-O#

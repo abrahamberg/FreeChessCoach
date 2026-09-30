@@ -133,15 +133,13 @@ REVIEW NOTES
     n4 2…d6: Theory — Philidor Defense (C41)
     n5 3.Bc4: Theory — Philidor Defense (C41)
     n8 4…g6: They let you win a pawn through a free piece with Nxe5 — captures the pawn on e5.
-    n9 5.Nxe5: Leaves the knight on e5 undefended
-    n10 5…Bxd1: Missed dxe5, winning material on e5; Leaves the bishop on d1 undefended; They let you force mate through a mating net two moves away with Bxf7+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
+    n10 5…Bxd1: Missed dxe5, winning material on e5; They let you force mate through a mating net two moves away with Bxf7+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
     n11 6.Bxf7+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
-    n12 6…Ke7: Leaves pawn on g6 attacked 2× and defended 1×
     n13 7.Nd5#: You forced mate.
   l2
     n1 1.e4: Theory — Bishop's Opening (C23)
     n2 1…e5: Theory — Bishop's Opening (C23)
     n14 2.Bc4: Theory — Bishop's Opening (C23)
     n15 2…Nc6: Theory — Bishop's Opening (C23)
-    n17 3…Nf6: Leaves pawn on f7 attacked 2× and defended 1×; They let you force mate with Qxf7#.
+    n17 3…Nf6: They let you force mate with Qxf7#.
     n18 4.Qxf7#: You forced mate.

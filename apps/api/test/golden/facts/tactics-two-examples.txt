@@ -140,7 +140,7 @@ REVIEW NOTES
     n6 3…Nxe4: Theory — Petrov's Defense: Damiano Variation (C42)
     n7 4.Qe2: Theory — Petrov's Defense: Damiano Variation (C42)
     n8 4…Nf6: They let you win a queen through a fork two moves away with Nc6+ — knight on c6 forks the knight on b8 and the queen on d8.; Won a knight, but it cost the queen.
-    n9 5.Nc6+: Leaves the knight on c6 undefended; You won a queen through a fork two moves away — knight on c6 forks the knight on b8 and the queen on d8.; Won the queen, giving back a knight.
+    n9 5.Nc6+: You won a queen through a fork two moves away — knight on c6 forks the knight on b8 and the queen on d8.; Won the queen, giving back a knight.
   l2
     n1 1.e4: Theory — Philidor Defense (C41)
     n2 1…e5: Theory — Philidor Defense (C41)
@@ -148,8 +148,6 @@ REVIEW NOTES
     n10 2…d6: Theory — Philidor Defense (C41)
     n11 3.Bc4: Theory — Philidor Defense (C41)
     n14 4…g6: They let you win a pawn through a free piece with Nxe5 — captures the pawn on e5.
-    n15 5.Nxe5: Leaves the knight on e5 undefended
-    n16 5…Bxd1: Missed dxe5, winning material on e5; Leaves the bishop on d1 undefended; They let you force mate through a mating net two moves away with Bxf7+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
+    n16 5…Bxd1: Missed dxe5, winning material on e5; They let you force mate through a mating net two moves away with Bxf7+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
     n17 6.Bxf7+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
-    n18 6…Ke7: Leaves pawn on g6 attacked 2× and defended 1×
     n19 7.Nd5#: You forced mate.

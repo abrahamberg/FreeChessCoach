@@ -69,6 +69,6 @@ REVIEW NOTES
     n3 2.c4: Theory — Queen's Gambit Accepted: Old Variation (D20)
     n4 2…dxc4: Theory — Queen's Gambit Accepted: Old Variation (D20)
     n5 3.e3: Theory — Queen's Gambit Accepted: Old Variation (D20)
-    n9 5.axb5: Leaves the pawn on b5 undefended; Trades pawns on b5
+    n9 5.axb5: Trades pawns on b5
     n10 5…cxb5: Recaptures the pawn on b5
     n11 6.Qf3: You broke the pin — the pawn on d4 is free to move again.

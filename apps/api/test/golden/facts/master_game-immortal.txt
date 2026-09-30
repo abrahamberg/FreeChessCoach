@@ -187,18 +187,13 @@ REVIEW NOTES
     n8 4…b5: Theory — King's Gambit Accepted: Bishop's Gambit, Bryan Countergambit (C33)
     n17 9.Nf5: You stopped them winning a bishop through a fork — queen on g5 forks the bishop on b5 and the knight on h4.
     n19 10.g4: Costs 10 squares of piece mobility
-    n24 12…Qg6: Leaves the pawn on f4 undefended
-    n25 13.h5: Leaves pawn on h5 attacked 2× and defended 1×
-    n27 14.Qf3: Leaves pawn on h5 attacked 2× and defended 1×; You set up an X-ray — lines up behind the pawn on e4 at the rook on a8.
-    n28 14…Ng8: Leaves pawn on f4 attacked 2× and defended 1×
-    n33 17.Nd5: Leaves the pawn on b2 undefended; Allows queen fork on f6 hitting f5 and b2
+    n27 14.Qf3: You set up an X-ray — lines up behind the pawn on e4 at the rook on a8.
+    n33 17.Nd5: Leaves the pawn on b2 undefended
     n34 17…Qxb2: Their move stopped you winning a pawn through a free piece — captures the pawn on b5.
-    n35 18.Bd6: Allows bishop fork on c5 hitting d6 and g1
-    n36 18…Bxg1: Missed Qxa1+, winning material on a1; Leaves the bishop on g1 undefended
+    n35 18.Bd6: Costs 17 squares of piece mobility
+    n36 18…Bxg1: Missed Qxa1+, winning material on a1
     n37 19.e5: Costs 19 squares of piece mobility
     n39 20.Ke2: You stopped them winning a rook through a free piece — captures the rook on a1.
     n40 20…Na6: They let you force mate with Nxg7+.
     n41 21.Nxg7+: You forced mate.
-    n42 21…Kd8: Leaves the pawn on f7 undefended
-    n44 22…Nxf6: Leaves the knight on f6 undefended
-    n45 23.Be7#: Leaves the pawn on e5 undefended; You forced mate.
+    n45 23.Be7#: You forced mate.

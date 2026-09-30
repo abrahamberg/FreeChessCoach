@@ -194,18 +194,14 @@ REVIEW NOTES
     n5 3.d4: Theory — Philidor Defense (C41)
     n6 3…Bg4: Theory — Philidor Defense (C41)
     n7 4.dxe5: Theory — Philidor Defense (C41)
-    n8 4…Bxf3: Leaves the bishop on f3 undefended; Allows queen fork on d1 hitting d6 and f3
     n9 5.Qxf3: Recaptures the bishop on f3
-    n13 7.Qb3: Leaves the pawn on e4 undefended
     n15 8.Nc3: Missed Qxb7, winning material on b7
-    n18 9…b5: Leaves pawn on b5 attacked 3× and defended 1×; They let you win a pawn through a free piece with Nxb5 — captures the pawn on b5.
-    n19 10.Nxb5: Leaves the pawn on e4 undefended
-    n20 10…cxb5: Leaves the pawn on b5 undefended; Allows bishop fork on c4 hitting f7 and b5
+    n18 9…b5: They let you win a pawn through a free piece with Nxb5 — captures the pawn on b5.
+    n20 10…cxb5: Recaptures the knight on b5
     n21 11.Bxb5+: Creates a passed pawn on c; Recaptures the pawn on b5; You stopped them winning a queen through a fork — queen on b4 forks the knight on b5, the bishop on c4, the queen on b3 and the king on e1.
-    n25 13.Rxd7: Allows knight fork on f6 hitting d7 and e4; Leaves rook on d7 attacked 4× and defended 1×
     n26 13…Rxd7: Missed Nxd7, winning material on d7; Recaptures the rook on d7
     n27 14.Rd1: You stopped them winning a rook through a free piece — captures the rook on d7.
-    n29 15.Bxd7+: Allows knight fork on f6 hitting d7 and e4; Leaves bishop on d7 attacked 3× and defended 1×
+    n29 15.Bxd7+: Costs 43 squares of piece mobility
     n30 15…Nxd7: Recaptures the bishop on d7; They let you force mate with Qb8+.; Won a bishop and a queen, but it allowed mate.
-    n31 16.Qb8+: Leaves the queen on b8 undefended; Leaves the pawn on a2 undefended; You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    n31 16.Qb8+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
     n33 17.Rd8#: You forced mate.

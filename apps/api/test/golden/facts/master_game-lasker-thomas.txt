@@ -167,20 +167,17 @@ REVIEW NOTES
   l1
     n1 1.d4: Theory — Horwitz Defense (A40)
     n2 1…e6: Theory — Horwitz Defense (A40)
-    n9 5.Bxf6: Leaves the bishop on f6 undefended
     n10 5…Bxf6: Recaptures the bishop on f6
-    n12 6…fxe4: Leaves the pawn on e4 undefended; Trades pawns on e4
+    n12 6…fxe4: Trades pawns on e4
     n13 7.Nxe4: Recaptures the pawn on e4
     n15 8.Ne5: Costs 13 squares of piece mobility
     n17 9.Bd3: Costs 22 squares of piece mobility; You let them win a knight through a free piece with Bxe5 — captures the knight on e5.
     n19 10.Qh5: Costs 20 squares of piece mobility
     n20 10…Qe7: They let you force mate with Qxh7+.; Won a queen, but it allowed mate.
-    n21 11.Qxh7+: Leaves the queen on h7 undefended; You forced mate.; Won the bishop, giving back a queen.
+    n21 11.Qxh7+: You forced mate.; Won the bishop, giving back a queen.
     n22 11…Kxh7: Recaptures the queen on h7
-    n23 12.Nxf6+: Leaves the knight on f6 undefended; Leaves the pawn on g2 undefended; You forced mate.
-    n25 13.Neg4+: Leaves knight on f6 attacked 3× and defended 1×; You forced mate.
-    n27 14.h4+: Missed mate in 4 starting with f4+; Leaves knight on f6 attacked 4× and defended 1×; You forced mate.; Won the queen, giving back a pawn.
-    n29 15.g3+: Leaves the rook on h1 undefended; Leaves knight on f6 attacked 3× and defended 1×
-    n31 16.Be2+: Missed mate in 2 starting with O-O; Leaves knight on f6 attacked 3× and defended 1×
-    n33 17.Rh2+: Leaves knight on f6 attacked 3× and defended 1×
-    n35 18.Kd2#: Missed mate in 1 starting with O-O-O#; Leaves knight on f6 attacked 3× and defended 1×
+    n23 12.Nxf6+: You forced mate.
+    n25 13.Neg4+: You forced mate.
+    n27 14.h4+: Missed mate in 4 starting with f4+; You forced mate.; Won the queen, giving back a pawn.
+    n31 16.Be2+: Missed mate in 2 starting with O-O
+    n35 18.Kd2#: Missed mate in 1 starting with O-O-O#

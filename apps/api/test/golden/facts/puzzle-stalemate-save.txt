@@ -27,4 +27,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1…Rg2+: Leaves the rook on g2 undefended; You found a brilliant sacrifice.
+    n1 1…Rg2+: You found a brilliant sacrifice.

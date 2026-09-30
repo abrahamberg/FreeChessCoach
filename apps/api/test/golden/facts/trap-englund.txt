@@ -106,8 +106,8 @@ REVIEW NOTES
     n5 3.Nf3: Theory — Englund Gambit: Main Line (A40)
     n6 3…Qe7: Theory — Englund Gambit: Main Line (A40)
     n9 5.Bd2: Concedes the centre
-    n12 6…Bb4: Allows bishop fork on c3 hitting b4 and b2; You stopped them winning a queen through a fork.
+    n12 6…Bb4: You stopped them winning a queen through a fork.
     n13 7.Qd2: They let you win a bishop through a free piece with Bxc3 — captures the bishop on c3.
-    n14 7…Bxc3: Leaves bishop on c3 attacked 2× and defended 1×; Trades bishops on c3; You saved a hanging piece — saves the queen on b2.
+    n14 7…Bxc3: Trades bishops on c3; You saved a hanging piece — saves the queen on b2.
     n15 8.Qxc3: Missed Nxc3, winning material on c3; Recaptures the bishop on c3; They let you force mate with Qc1#.; Won a bishop, but it allowed mate.
     n16 8…Qc1#: You forced mate.

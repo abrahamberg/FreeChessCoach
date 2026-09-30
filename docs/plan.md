@@ -846,24 +846,26 @@ Status: done 2026-09-30 — `test:golden` has a `REVIEW NOTES` block per course 
 **Depends on:** 115.2. **Findings:** F7. **Re-record allowed.**
 **Read:** `move-reasons.ts`, `board-facts/loose-pieces.ts`, `board-facts/forks.ts`.
 
-- [ ] Replace `hangingPieceReasons`, `underDefendedReasons` and
+- [x] Replace `hangingPieceReasons`, `underDefendedReasons` and
   `newForkReasons` with facts from `board-facts`:
   - "Leaves the knight on f3 undefended" for `free`;
   - "Leaves the knight on f3 where it can be won" for `winnable`;
   - "Allows a fork: the knight on d5 hits the queen on c7 and the rook on a8"
     from `forks()` for the opponent after the move.
-- [ ] Fault notes (the three above) only on moves of quality inaccuracy,
+- [x] Fault notes (the three above) only on moves of quality inaccuracy,
   mistake, blunder or miss, never on book, best, excellent, good or brilliant
   moves.
-- [ ] Never report as loose the piece on the square the move just captured on
+- [x] Never report as loose the piece on the square the move just captured on
   when the capture is a trade (the course's `traded` rule).
-- [ ] Read the golden diff: every changed note must be explainable. Paste 5
+- [x] Read the golden diff: every changed note must be explainable. Paste 5
   representative before/after lines in the commit body.
 
 **Keep:** invariant tests: a best move gets no fault note; a trade is not
 loose; a defended knight attacked by a pawn gets the `winnable` note.
 **Ephemeral:** none.
 **Commit:** `fix(review): loose pieces and forks from the board facts; faults only on errors`
+
+Status: done 2026-09-30 — `move-reasons.ts` builds "Leaves the X on S undefended" (`free`), "…where it can be won" (`winnable`) and "Allows a fork: the knight on d5 hits the queen on c7 and the rook on a8" from `loosePieces` and `forks`, only for inaccuracy, mistake, miss and blunder, only what the move made loose (a piece loose before is not reported again), and never the square of a capture that was an even trade. The old "attacked 2× and defended 1×" note is gone. `test:golden` re-recorded: 34 files, notes removed from good moves (138 old fault notes gone, most on best or good moves), 11 new "undefended" / "where it can be won" notes on moves that cost something; forks named by pieces; the old fork notes that named bare squares, or a fork the forker could simply be taken out of, are gone. `npm run verify` passes in 114 s. Invariant tests in `move-reasons.test.ts`: a best move gets no fault note, a trade is not loose, a defended knight attacked by a pawn gets `winnable`, a fork names pieces and only a new one.
 
 ### Task 115.4 — Why the better move was better
 

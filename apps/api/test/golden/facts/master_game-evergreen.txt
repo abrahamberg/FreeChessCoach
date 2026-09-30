@@ -185,23 +185,17 @@ REVIEW NOTES
     n12 6…exd4: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52)
     n13 7.O-O: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52)
     n14 7…d3: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52)
-    n17 9.e5: Leaves pawn on e5 attacked 2× and defended 1×
-    n22 11…b5: Leaves the pawn on b5 undefended; Allows bishop fork on c4 hitting f7, b5 and d3
+    n22 11…b5: Leaves the pawn on b5 undefended
     n23 12.Qxb5: Missed Bxb5, winning material on b5
     n25 13.Qa4: You stopped them winning a knight through a skewer — skewers the queen on b5, exposing the knight on b1.
-    n31 16.Bxd3: Leaves pawn on e5 attacked 2× and defended 1×
-    n33 17.Nf6+: Costs 48 squares of piece mobility
-    n34 17…gxf6: Leaves the pawn on f6 undefended; They saved a hanging piece — saves the queen on h5.
+    n33 17.Nf6+: Leaves the knight on f6 where it can be won
+    n34 17…gxf6: They saved a hanging piece — saves the queen on h5.
     n35 18.exf6: Recaptures the pawn on f6; You stopped them winning a knight through a free piece — captures the knight on f6.
-    n36 18…Rg8: Leaves knight on e7 attacked 3× and defended 2×
     n37 19.Rad1: Costs 13 squares of piece mobility
-    n38 19…Qxf3: Leaves the pawn on h7 undefended; Leaves the queen on f3 undefended; They won a knight through a free piece — captures the knight on f3.
-    n39 20.Rxe7+: Leaves pawn on f2 attacked 2× and defended 1×; Leaves pawn on g2 attacked 2× and defended 1×
-    n40 20…Nxe7: Leaves knight on e7 attacked 2× and defended 1×; Recaptures the rook on e7; They let you force mate with Qxd7+.; Won a rook, but it allowed mate.
-    n41 21.Qxd7+: Leaves the queen on d7 undefended; Leaves the rook on d1 undefended; You forced mate.
-    n42 21…Kxd7: Leaves knight on e7 attacked 2× and defended 1×; Recaptures the queen on d7
-    n43 22.Bf5+: Leaves the bishop on f5 undefended; Leaves the pawn on c3 undefended; You forced mate.
-    n44 22…Ke8: Leaves knight on e7 attacked 2× and defended 1×
-    n45 23.Bd7+: Leaves the pawn on f6 undefended; Leaves pawn on f2 attacked 2× and defended 1×; You forced mate through a mating net — closes the net — every answer runs into mate.
-    n46 23…Kf8: Leaves knight on e7 attacked 2× and defended 1×
-    n47 24.Bxe7#: Leaves pawn on f2 attacked 2× and defended 1×; Leaves pawn on g2 attacked 2× and defended 1×; You forced mate.
+    n38 19…Qxf3: They won a knight through a free piece — captures the knight on f3.
+    n40 20…Nxe7: Leaves the pawn on h7 undefended; Recaptures the rook on e7; They let you force mate with Qxd7+.; Won a rook, but it allowed mate.
+    n41 21.Qxd7+: You forced mate.
+    n42 21…Kxd7: Recaptures the queen on d7
+    n43 22.Bf5+: You forced mate.
+    n45 23.Bd7+: You forced mate through a mating net — closes the net — every answer runs into mate.
+    n47 24.Bxe7#: You forced mate.

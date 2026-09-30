@@ -129,24 +129,18 @@ REVIEW NOTES
     n4 2…d5: Theory — French Defense: Marshall Gambit (C10)
     n5 3.Nc3: Theory — French Defense: Marshall Gambit (C10)
     n6 3…c5: Theory — French Defense: Marshall Gambit (C10)
-    n9 5.exd5: Leaves pawn on d5 attacked 2× and defended 1×; Trades pawns on d5
+    n9 5.exd5: Trades pawns on d5
     n10 5…exd5: Recaptures the pawn on d5
-    n17 9.dxc5: Leaves the pawn on c5 undefended; Trades pawns on c5
+    n17 9.dxc5: Trades pawns on c5
     n18 9…Be6: Missed Bxc5, winning material on c5
     n19 10.Nd4: Concedes the centre
-    n21 11.Nxe6: Leaves the knight on e6 undefended
     n22 11…fxe6: Recaptures the knight on e6; You saved a hanging piece — saves the queen on d8.
+    n23 12.Bg4: Leaves the bishop on g4 where it can be won
     n24 12…Qd6: Missed Nxg4, winning material on g4
-    n29 15.Bxf6: Leaves the bishop on f6 undefended
     n30 15…Rxf6: Recaptures the bishop on f6
-    n33 17.Qe2: Leaves knight on c3 attacked 2× and defended 1×
-    n35 18.bxc3: Leaves the pawn on c3 undefended; Allows queen fork on c5 hitting c3 and f2
+    n35 18.bxc3: Recaptures the bishop on c3
     n36 18…Qxc3: Recaptures the pawn on c3
-    n37 19.Rxd5: Leaves the rook on d5 undefended
     n38 19…Nd4: Concedes the centre
-    n39 20.Qh5: Leaves the pawn on c2 undefended; Allows queen fork on c3 hitting h3 and c2
+    n39 20.Qh5: Leaves the pawn on c2 undefended
     n40 20…Ref8: You moved the target out of reach — moves the rook off e8, out of reach.; Won the rook, giving back a knight.
-    n43 22.Qg5: Leaves bishop on h3 attacked 2× and defended 1×
-    n44 22…Rxh3: Costs 11 squares of piece mobility; You stopped them winning a knight through a free piece — captures the knight on f3.
-    n45 23.Rc5: Allows queen fork on c3 hitting c5 and c2
-    n46 23…Qg3: Leaves queen on g3 attacked 3× and defended 1×
+    n44 22…Rxh3: Leaves the rook on h3 where it can be won; You stopped them winning a knight through a free piece — captures the knight on f3.
