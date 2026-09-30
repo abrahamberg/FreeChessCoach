@@ -4,7 +4,7 @@ import {
   currentMoveFacts,
   focusFacts,
   computePositionFeatures,
-  diffPositionFeatures,
+  positionDelta,
   moveRefToPly,
   parseAnnotatedPgn,
   type FeatureDelta
@@ -312,5 +312,5 @@ function computeFeatureDelta(
   const { moves, error } = applySanSequence(displayFen, [analysis.bestMove]);
   const bestMoveFen = moves[0]?.fen;
   if (error || !bestMoveFen) return undefined;
-  return diffPositionFeatures(computePositionFeatures(bestMoveFen), computePositionFeatures(postMoveFen));
+  return positionDelta(computePositionFeatures(bestMoveFen), computePositionFeatures(postMoveFen), bestMoveFen, postMoveFen);
 }

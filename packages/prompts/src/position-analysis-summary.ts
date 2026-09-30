@@ -1,6 +1,8 @@
-import type { AttackedPieceDto, ForkSchema, PositionAnalysis, PositionFeatures } from '@freechesscoach/shared';
+import { loosePieces } from '@freechesscoach/chess-analysis';
+import type { ForkSchema, PositionAnalysis, PositionFeatures } from '@freechesscoach/shared';
 import type { z } from 'zod';
 import { formatEval } from './format-eval.js';
+import { describeLoose } from './move-inspection-summary.js';
 
 type Fork = z.infer<typeof ForkSchema>;
 
@@ -26,7 +28,7 @@ export function renderEngineAnalysisSummary(analysis: PositionAnalysis): string 
     parts.push(`Other options:\n${otherText}`);
   }
 
-  const featureBullets = renderNotableFeatureBullets(features);
+  const featureBullets = renderNotableFeatureBullets(features, analysis.fen);
   if (featureBullets) parts.push(`Notable features:\n${featureBullets}`);
 
   return parts.join('\n\n');
@@ -45,17 +47,13 @@ function bestMoveLine(
   return 'No best move available.';
 }
 
-function renderNotableFeatureBullets(features: PositionFeatures): string {
+function renderNotableFeatureBullets(features: PositionFeatures, fen: string): string {
   const bullets: string[] = [
-    ...features.hangingPieces.map(hangingPieceBullet),
+    ...[...loosePieces(fen, 'w'), ...loosePieces(fen, 'b')].map((piece) => `- loose: ${describeLoose([piece])}`),
     ...features.forks.map(forkBullet),
     ...features.captureOpportunities.filter((capture) => capture.favorable).map(captureBullet)
   ];
   return bullets.join('\n');
-}
-
-function hangingPieceBullet(piece: AttackedPieceDto): string {
-  return `- ${piece.color} ${piece.piece} on ${piece.square} is hanging`;
 }
 
 function forkBullet(fork: Fork): string {

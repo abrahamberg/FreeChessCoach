@@ -124,7 +124,8 @@ function evidenceForMove(move: TacticsEvidenceMove): number {
 }
 
 function createdNewHangingPiece(move: TacticsEvidenceMove): boolean {
-  return move.featureDelta.newHangingPieces.some((piece) => piece.color === move.mover);
+  const owner = move.mover === 'white' ? 'w' : 'b';
+  return move.featureDelta.newLoosePieces.some((piece) => piece.owner === owner && piece.tier === 'free');
 }
 
 function allowedNewOpponentFork(move: TacticsEvidenceMove): boolean {

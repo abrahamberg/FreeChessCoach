@@ -17,8 +17,6 @@ const VALID_ANALYSIS = {
     mobility: { white: 0, black: 0 },
     controlledSquares: [],
     piecesUnderAttack: [],
-    hangingPieces: [],
-    underDefendedPieces: [],
     overloadedDefenders: [],
     centerControlScore: { white: 0, black: 0 },
     openFiles: [],

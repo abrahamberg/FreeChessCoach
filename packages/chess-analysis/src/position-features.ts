@@ -4,11 +4,9 @@ import { buildAttackMap, toColorName } from './attack-map.js';
 import {
   centerControlScore,
   controlledSquares,
-  hangingPieces,
   mobility,
   overloadedDefenders,
-  piecesUnderAttack,
-  underDefendedPieces
+  piecesUnderAttack
 } from './piece-safety.js';
 import { pawnStructure } from './pawn-structure.js';
 import { captureOpportunities, forks, targetsAttacked } from './tactics.js';
@@ -59,8 +57,6 @@ function computeFeatures(fen: string): PositionFeatures {
     mobility: mobility(chess, attackMap),
     controlledSquares: controlledSquares(chess, attackMap),
     piecesUnderAttack: piecesUnderAttack(chess, attackMap),
-    hangingPieces: hangingPieces(chess, attackMap),
-    underDefendedPieces: underDefendedPieces(chess, attackMap),
     overloadedDefenders: overloadedDefenders(chess, attackMap),
     centerControlScore: centerControlScore(attackMap),
     ...pawnStructure(chess),

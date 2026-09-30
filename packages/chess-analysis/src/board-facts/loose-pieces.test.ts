@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { forks } from './forks.js';
-import { loosePieces } from './loose-pieces.js';
+import { loosePieces, newLoosePieces } from './loose-pieces.js';
 
 const squares = (fen: string, owner: 'w' | 'b'): string[] => loosePieces(fen, owner).map((piece) => `${piece.square}:${piece.tier}`);
 
@@ -41,5 +41,15 @@ describe('forks', () => {
 
   test('pawns are not victims', () => {
     expect(forks('4k3/8/8/8/3p1p2/8/4N3/4K3 b - - 0 1', 'w')).toEqual([]);
+  });
+});
+
+describe('newLoosePieces', () => {
+  test('lists what a move made loose, not what already was', () => {
+    // The queen steps to d5: the e6 pawn attacks it, and it attacks the pawn.
+    const before = '4k3/8/4p3/8/8/8/8/3QK3 w - - 0 1';
+    const after = '4k3/8/4p3/3Q4/8/8/8/4K3 b - - 1 1';
+    expect(newLoosePieces(before, after).map((piece) => `${piece.owner}${piece.piece}${piece.square}`)).toEqual(['wqd5', 'bpe6']);
+    expect(newLoosePieces(after, after)).toEqual([]);
   });
 });

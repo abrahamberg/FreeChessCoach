@@ -7,6 +7,7 @@ import type {
   MoveQuality,
   PositionFeatures
 } from '@freechesscoach/shared';
+import { positionDelta } from './diff-features.js';
 import { computeMoveDrop } from './move-metrics.js';
 import { enrichPositions } from './position-enrichment.js';
 import { inBookWalk, resolveOpening, type OpeningResolution } from './opening-book.js';
@@ -113,11 +114,7 @@ export function classifyLiveMove(input: {
     moveFlags: flags,
     features: featuresAfter,
     featuresBefore,
-    featureDelta: {
-      newForks: featuresAfter.forks,
-      newHangingPieces: featuresAfter.hangingPieces,
-      mobilityDelta: featuresAfter.availableMoves.length - featuresBefore.availableMoves.length
-    },
+    featureDelta: positionDelta(featuresBefore, featuresAfter, input.fenBefore, fenAfter),
     isBookMove: input.isBookMove ?? false,
     opening: null,
     brilliantSoundness: input.brilliantSoundness,

@@ -31,8 +31,6 @@ function positionAnalysisFixture(fen: string): PositionAnalysis {
       mobility: { white: 20, black: 20 },
       controlledSquares: [],
       piecesUnderAttack: [],
-      hangingPieces: [],
-      underDefendedPieces: [],
       overloadedDefenders: [],
       centerControlScore: { white: 2, black: 2 },
       openFiles: [],

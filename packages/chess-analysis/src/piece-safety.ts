@@ -41,8 +41,7 @@ interface AttackedPieceInfo {
 }
 
 /** Every occupied square with attackers > 0, and its attacker/defender
- * counts — the shared basis for piecesUnderAttack/hangingPieces/
- * underDefendedPieces/overloadedDefenders below. */
+ * counts — the shared basis for piecesUnderAttack/overloadedDefenders below. */
 function attackedPieceInfos(chess: Chess, attackMap: AttackMap): AttackedPieceInfo[] {
   const infos: AttackedPieceInfo[] = [];
   for (const piece of occupiedSquares(chess)) {
@@ -65,17 +64,6 @@ function attackedPieceInfos(chess: Chess, attackMap: AttackMap): AttackedPieceIn
 
 export function piecesUnderAttack(chess: Chess, attackMap: AttackMap): PositionFeatures['piecesUnderAttack'] {
   return attackedPieceInfos(chess, attackMap);
-}
-
-export function hangingPieces(chess: Chess, attackMap: AttackMap): PositionFeatures['hangingPieces'] {
-  return attackedPieceInfos(chess, attackMap).filter((info) => info.defenders === 0);
-}
-
-/** Attacked more times than defended, but not fully hanging (defenders > 0)
- * — hangingPieces already owns the zero-defenders case, so the two lists
- * never overlap. */
-export function underDefendedPieces(chess: Chess, attackMap: AttackMap): PositionFeatures['underDefendedPieces'] {
-  return attackedPieceInfos(chess, attackMap).filter((info) => info.defenders > 0 && info.attackers > info.defenders);
 }
 
 /** A defender that is the SOLE defender of 2+ attacked pieces. */
