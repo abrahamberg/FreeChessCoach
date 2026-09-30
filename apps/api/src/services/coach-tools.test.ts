@@ -304,7 +304,7 @@ describe('buildCoachTools', () => {
         TOOL_OPTIONS
       );
 
-      expect(result).toContain('e4: legal (white pawn e2-e4)');
+      expect(result).toContain('e4: legal (white moves the pawn from e2 to e4)');
       expect(deps.analyzePosition).not.toHaveBeenCalled();
     });
 

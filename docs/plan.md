@@ -951,6 +951,15 @@ on the real database and paste the "before" numbers here.
 illegal move. **Ephemeral:** none.
 **Commit:** `feat(coach): check_moves and board facts count only pieces that can be won`
 
+**Status:** done. `inspectMoves` carries `leavesLoose`, `forks` and `facts`; the
+position has `loose` (both colours, with tier). The single-move replay moved
+to `inspect-move.ts` (`replayMove`) so `boardFacts` and `betterMoveFacts` use it
+without an import cycle; `inspectMoves` adds `facts` on top. `favorableCaptures`
+is unchanged. A checked move's line lists its rendered facts; the loose pieces
+are listed once, with tiers ("undefended" / "can be won"), so `leavesHanging`
+facts are left out of that line. Rule 6 is one sentence; tool descriptions say
+"loose". `docs/prompts.md` was stale, so its diff is larger than this change.
+
 ### Task 116.3 — "What the move did" in the current position
 
 **Depends on:** 116.2. **Findings:** F8.

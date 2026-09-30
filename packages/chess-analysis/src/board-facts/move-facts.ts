@@ -1,11 +1,8 @@
 import { Chess, type PieceSymbol, type Square } from 'chess.js';
-import { inspectMoves } from '../inspect-moves.js';
+import { replayMove } from '../inspect-move.js';
 import { blockedCheck, checkAnswers, discovered, isBackRankMate, mateNet } from './check-facts.js';
-import { forks } from './forks.js';
-import { loosePieces } from './loose-pieces.js';
 import { endgameGeometry } from './endgame-geometry.js';
 import { attackedPieces } from './safety.js';
-import { pieceValueOrKing } from '../tactics.js';
 import type { BoardFact } from './types.js';
 
 /** What a move does on the board, from chess.js alone: captures, checks,
@@ -13,8 +10,8 @@ import type { BoardFact } from './types.js';
  * leaves hanging, forks by the moved piece. Only facts about this move: the
  * verifier lets a script say "pin" or "fork" only where these say it. */
 export function boardFacts(fenBefore: string, san: string): BoardFact[] {
-  const inspected = inspectMoves(fenBefore, [san]).moves[0];
-  if (!inspected?.legal) return [];
+  const inspected = replayMove(fenBefore, san);
+  if (!inspected) return [];
   const to = inspected.to as Square;
   const facts: BoardFact[] = [moved(inspected.san, inspected.piece, inspected.from as Square, to)];
   const promoted = /=([QRBN])/.exec(inspected.san)?.[1];
@@ -32,20 +29,19 @@ export function boardFacts(fenBefore: string, san: string): BoardFact[] {
   // A mate ends the game: what else the piece hits is noise ("Nd6# forks the
   // bishop on c8").
   if (inspected.gives !== 'checkmate') facts.push(...attackedPieces(inspected.resultFen, to));
-  // A capture taken back is a trade, not a piece left hanging: 3…cxd4 read
-  // "leaves the pawn on d4 hanging" in every Open Sicilian.
-  const traded = (square: string): boolean => square === inspected.to && inspected.captured !== null && pieceValueOrKing(inspected.captured) >= pieceValueOrKing(inspected.piece);
+  // `leavesLoose` already leaves out a capture taken back (a trade): 3…cxd4
+  // read "leaves the pawn on d4 hanging" in every Open Sicilian.
   const mover = new Chess(fenBefore).turn();
   const owner = mover === 'w' ? 'white' : 'black';
-  for (const piece of loosePieces(inspected.resultFen, mover)) {
+  for (const piece of inspected.leavesLoose) {
     // Whose piece: the model read "exd5 leaves the pawn on g4 hanging" as
     // the learner's pawn, and it was White's.
-    if (piece.tier === 'free' && !traded(piece.square)) {
+    if (piece.tier === 'free') {
       facts.push({ kind: 'leavesHanging', piece: { piece: piece.piece, square: piece.square }, owner, stalemateIfTaken: takingStalemates(inspected.resultFen, piece.square) });
     }
   }
   // A mate ends the game: no fork either.
-  if (inspected.gives !== 'checkmate') facts.push(...forks(inspected.resultFen, mover).filter((fork) => fork.piece.square === inspected.to));
+  if (inspected.gives !== 'checkmate') facts.push(...inspected.forks.filter((fork) => fork.piece.square === inspected.to));
   return facts;
 }
 
