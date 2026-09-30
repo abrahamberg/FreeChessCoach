@@ -4,7 +4,7 @@
 
 **A personal AI chess coach. Free, forever.** [freechesscoach.org](https://freechesscoach.org)
 
-[![CI](https://github.com/abrahamberg/FreeChessCoach/actions/workflows/ci.yml/badge.svg)](https://github.com/abrahamberg/FreeChessCoach/actions/workflows/ci.yml)
+[![CI](https://github.com/abrahamberg/FreeChessCoach/actions/workflows/ci.yml/badge.svg)](https://github.com/abrahamberg/FreeChessCoach/actions/workflows/ci.yml) [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](./LICENSE)
 
 FreeChessCoach imports your games, runs them through a Stockfish + LLM analysis
 pipeline, and then walks you through what actually happened — Socratically,
@@ -119,3 +119,10 @@ conventions before sending a PR.
 
 If FreeChessCoach helped your chess, a star on this repo helps other players
 find it too.
+
+## License
+
+FreeChessCoach is source-available under the
+[PolyForm Noncommercial License 1.0.0](./LICENSE): free for personal,
+educational and other noncommercial use. Commercial use requires a separate
+license from the author.
