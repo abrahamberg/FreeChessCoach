@@ -34,9 +34,8 @@ export function renderBoardFact(fact: BoardFact): string {
     case 'checkAnswers':
       return renderCheckAnswers(fact);
     case 'attacks': {
-      const pin = fact.pinnedTo ? `, which is pinned to ${renderPinTarget(fact.pinnedTo)}` : '';
       const trapped = fact.trapped === 'boxed' ? ', which is trapped: it cannot move, and no move saves it' : fact.trapped === 'nowhere' ? ', which is trapped: every square it can reach loses it' : '';
-      return `attacks ${named(fact.piece)}${pin}${trapped}`;
+      return `attacks ${renderAttackTarget(fact)}${trapped}`;
     }
     case 'leavesHanging':
       return `leaves the ${fact.owner} ${PIECE_NAMES[fact.piece.piece]} on ${fact.piece.square} hanging${fact.stalemateIfTaken ? ': taking it is stalemate' : ''}`;
@@ -54,6 +53,11 @@ export function renderBoardFact(fact: BoardFact): string {
     case 'repetition':
       return fact.times === 3 ? 'the position has now come three times: a draw by repetition' : 'the position has now come twice: a third time is a draw';
   }
+}
+
+/** The attacked piece, with its pin: "the knight on f6, which is pinned to the king by the bishop on b5". */
+export function renderAttackTarget(fact: Extract<BoardFact, { kind: 'attacks' }>): string {
+  return `${named(fact.piece)}${fact.pinnedTo ? `, which is pinned to ${renderPinTarget(fact.pinnedTo)}` : ''}`;
 }
 
 /** "the king by the bishop on b5", or "the queen on d8 by the bishop on g5". */

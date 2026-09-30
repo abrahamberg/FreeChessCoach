@@ -1,3 +1,4 @@
+import type { BoardFact } from '../board-facts/types.js';
 import { CONFIG } from '../config.js';
 import type { CourseDossier, CourseNodeFacts } from './dossier.js';
 import type { CourseSkeleton } from './skeleton.js';
@@ -9,7 +10,7 @@ export type ReelStyle = 'highlight' | 'puzzle' | 'promo';
 export type ReelReason = 'puzzle' | 'mate' | 'brilliant' | 'swing' | 'trap' | 'idea' | 'technique';
 /** A move whose board facts make it a point to show: a fork, a pin, or a
  * check. */
-const IDEA_FACT = /forks|pinned|gives check/;
+const isIdeaFact = (fact: BoardFact): boolean => fact.kind === 'forks' || fact.kind === 'gives' || (fact.kind === 'attacks' && fact.pinnedTo !== undefined);
 
 /** One idea a reel could be about: the climax and the moves around it. */
 export interface ReelCandidate {
@@ -54,7 +55,7 @@ export function reelCandidates(tree: CourseTree, dossier: CourseDossier, skeleto
   // Last: the one clear move with a threat in it, so a book line with no
   // blunder still has a reel (the Two Knights' Fried Liver, 7.Qf3+ forking
   // king and knight).
-  for (const node of dossier.nodes) if (node.quizEligible && (node.motif || node.board.some((fact) => IDEA_FACT.test(fact)))) add('idea', node.nodeId, 5);
+  for (const node of dossier.nodes) if (node.quizEligible && (node.motif || node.board.some(isIdeaFact))) add('idea', node.nodeId, 5);
 
   const puzzleStart = skeleton?.kind === 'puzzle' ? tree.nodes.find((node) => node.parentId === null)?.id : undefined;
   return found

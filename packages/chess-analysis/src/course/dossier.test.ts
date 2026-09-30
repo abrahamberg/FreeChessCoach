@@ -8,10 +8,10 @@ describe('course dossier', () => {
   test('repetition counts positions, not moves', () => {
     const tree = parseCourseTree('[SetUp "1"]\n[FEN "7k/6p1/7p/8/3Q4/8/1pr2PPP/q4BK1 w - - 0 1"]\n\n1. Qd8+ Kh7 2. Qd3+ Kh8 3. Qd8+ Kh7 4. Qd3+ Kh8 5. Qd8+ *');
     const { dossier } = analyseCourse(tree, fakeEvals(tree, () => 0), 'white');
-    const board = (id: string): string[] => dossier.nodes.find((node) => node.nodeId === id)?.board ?? [];
-    expect(board('n1').join(' ')).not.toContain('come twice');
-    expect(board('n5').join(' ')).toContain('come twice');
-    expect(board('n9').join(' ')).toContain('three times');
+    const times = (id: string): unknown[] => (dossier.nodes.find((node) => node.nodeId === id)?.board ?? []).flatMap((fact) => (fact.kind === 'repetition' ? [fact.times] : []));
+    expect(times('n1')).toEqual([]);
+    expect(times('n5')).toEqual([2]);
+    expect(times('n9')).toEqual([3]);
   });
 
   test('the rendered dossier carries verdict words and no engine numbers', () => {

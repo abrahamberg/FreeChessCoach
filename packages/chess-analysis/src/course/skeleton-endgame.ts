@@ -37,7 +37,7 @@ function winsFor(words: string, side: 'white' | 'black', edge = /much better|win
  * the learner was losing. A knight fork that takes the rook from a level
  * start (knight against rook, then knight alone: both draws) saves nothing. */
 function savesDraw(nodes: CourseNodeFacts[], end: string, side: 'white' | 'black'): boolean {
-  if (end === 'stalemate' || nodes[nodes.length - 1]?.board.some((fact) => fact.startsWith('the position has now come'))) return true;
+  if (end === 'stalemate' || nodes[nodes.length - 1]?.board.some((fact) => fact.kind === 'repetition')) return true;
   return /^The position is roughly equal/.test(end) && winsFor(nodes[0]?.before ?? '', side === 'white' ? 'black' : 'white', /better|winning|mate/);
 }
 

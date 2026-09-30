@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import { BANNED_GENERIC_PHRASES, type CourseEpisode } from '@freechesscoach/shared';
+import { factWords } from '../board-facts/fact-words.js';
 import { CONFIG } from '../config.js';
 import type { CourseVerifyProblem } from './verify.js';
 import type { EpisodeScope } from './verify-scope.js';
@@ -99,7 +100,7 @@ export function tacticWordProblems(texts: EpisodeText[], scope: EpisodeScope): C
     .flatMap((nodeId) => {
       const facts = scope.facts.get(nodeId);
       if (!facts) return [];
-      return [facts.motif ? TACTIC_MOTIF_PHRASES[facts.motif].noun : '', ...facts.tactics, ...facts.board, ...(facts.bestInstead?.board ?? []), facts.after, facts.creatorComment ?? ''];
+      return [facts.motif ? TACTIC_MOTIF_PHRASES[facts.motif].noun : '', ...facts.tactics, ...[...facts.board, ...(facts.bestInstead?.board ?? [])].flatMap(factWords), facts.after, facts.creatorComment ?? ''];
     })
     .join('\n');
   const supported = TACTIC_WORDS.filter(({ pattern }) => new RegExp(pattern.source, 'i').test(evidence));

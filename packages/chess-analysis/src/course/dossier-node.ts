@@ -4,7 +4,6 @@ import type { ClassifiedMove } from '../classify.js';
 import { CONFIG } from '../config.js';
 import { abandonedGuard, betterMoveFacts } from '../board-facts/better-move.js';
 import { boardFacts } from '../board-facts/move-facts.js';
-import { renderBoardFact } from '../board-facts/render.js';
 import type { BoardFact } from '../board-facts/types.js';
 import { lineWords, positionWords } from '../board-facts/verdict-words.js';
 import { lineBalance, settledLine } from '../board-facts/material.js';
@@ -35,8 +34,10 @@ export interface CourseNodeFacts {
   /** The engine's best move and line (at most 6 plies) when the course move
    * is not it, with its board facts (`betterMoveFacts`) and the material at
    * the line's end ("White is a pawn up"). */
-  bestInstead: { san: string; line: string[]; board: string[]; balance: string } | null;
-  board: string[];
+  /** The engine sees a forced mate after the move: a sentence about winning material would undersell it. */
+  mateAhead: boolean;
+  bestInstead: { san: string; line: string[]; board: BoardFact[]; balance: string } | null;
+  board: BoardFact[];
   /** Checked tactic sentences (`tactic-reason-text.ts`), learner = "you".
    * Not the review's prevention sentences ("you stopped them winning a
    * bishop through a fork"): about a move nobody played, the model presented
@@ -77,7 +78,9 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
   const after = positionWords(node.fenAfter, evalsByFen.get(node.fenAfter));
   // Once the position is a forced mate, a sentence about winning material
   // undersells it: the Immortal's 21.Nxg7+ "won a pawn" starts a mate in 2.
-  const mateAhead = /forced mate/.test(after);
+  const lineAfter = evalsByFen.get(node.fenAfter)?.lines[0];
+  // Either side's mate counts: the Immortal's 21.Nxg7+ allows nothing, it starts a mate.
+  const mateAhead = (lineAfter?.mateIn ?? null) !== null;
   // A pawn run in an endgame, or to the sixth rank and past it, is a race to
   // promote, not space: the square rule's 5.f8=Q read "pushes a pawn to f8,
   // taking space" (the review does not call that position an endgame).
@@ -96,8 +99,9 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     after,
     inBook: isBookMoveFrom(fenBefore, node.san),
     openingName: opening?.name ?? null,
+    mateAhead,
     bestInstead: bestInstead(move, node.san, fenBefore),
-    board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan), ...repetition(node.fenAfter, input.linePositionFens)].map(renderBoardFact),
+    board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan), ...repetition(node.fenAfter, input.linePositionFens)],
     tactics: tacticSentences(claims, node.san, side === input.learnerSide, mateAhead, capturedValue(fenBefore, node.san)),
     motif: claims.tacticOpportunity?.found && fitsCourseMove(claims.tacticOpportunity, node.san, mateAhead) ? claims.tacticOpportunity.type : null,
     alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
@@ -124,7 +128,7 @@ function bestInstead(move: ClassifiedMove, san: string, fenBefore: string): Cour
   if (!best || best === san) return null;
   const line = move.bestLinePvSan?.length ? move.bestLinePvSan : move.bestLineSan;
   const shown = settledLine(fenBefore, line.slice(0, CONFIG.courses.bestLinePlies));
-  return { san: best, line: shown, board: betterMoveFacts(fenBefore, san, best).map(renderBoardFact), balance: lineBalance(fenBefore, shown) };
+  return { san: best, line: shown, board: betterMoveFacts(fenBefore, san, best), balance: lineBalance(fenBefore, shown) };
 }
 
 /** The game review's defensive motifs, which read wrong on a check or a mate:

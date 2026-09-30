@@ -4,7 +4,8 @@ import { CONFIG } from '../config.js';
 import { moverMateIn } from './dossier-node.js';
 import type { CourseDossier } from './dossier.js';
 import { boardFacts } from '../board-facts/move-facts.js';
-import { renderBoardFact } from '../board-facts/render.js';
+import type { BoardFact } from '../board-facts/types.js';
+import { cpBand } from '../eval-words.js';
 import { lineWords } from '../board-facts/verdict-words.js';
 import { captureWords, exchangeLoss, lineBalance, settledLine } from '../board-facts/material.js';
 import type { CourseTree } from './tree.js';
@@ -20,11 +21,11 @@ export interface CourseTemptingFacts {
   san: string;
   kind: TemptingKind;
   /** What the tempting move itself does on the board, from chess.js. */
-  does: string[];
+  does: BoardFact[];
   /** The engine's answer to it, at most 4 plies. */
   refutation: string[];
   /** What the answer does on the board, from chess.js. */
-  after: string[];
+  after: BoardFact[];
   /** Who takes what over the move and its refutation ("Black takes a pawn;
    * White takes the queen"), so the model never works it out. */
   captures: string;
@@ -167,9 +168,9 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
     list.push({
       san: candidate.san,
       kind: candidate.kind,
-      does: boardFacts(candidate.fenBefore, candidate.san).map(renderBoardFact),
+      does: boardFacts(candidate.fenBefore, candidate.san),
       refutation,
-      after: boardFacts(candidate.fen, answer.moveSan).map(renderBoardFact),
+      after: boardFacts(candidate.fen, answer.moveSan),
       captures: captureWords(candidate.fenBefore, [candidate.san, ...refutation]),
       verdict: lineWords(answer),
       balance: lineBalance(candidate.fenBefore, [candidate.san, ...refutation]),
@@ -184,14 +185,17 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
  * lines before it (the answer) and after it; null when it does not work: the
  * mover no longer stands better. After the candidate the other side moves,
  * so its mate in K is K + 1 moves from the puzzle's position. */
-function notTheAnswer(side: 'white' | 'black', best: EngineLine, answer: EngineLine): string | null {
+export function notTheAnswer(side: 'white' | 'black', best: EngineLine, answer: EngineLine): string | null {
   const name = side === 'white' ? 'White' : 'Black';
-  const verdict = lineWords(answer);
-  if (!verdict.startsWith(name)) return null;
-  const bestMate = moverMateIn(best, side);
   const answerMate = moverMateIn(answer, side);
+  const bestMate = moverMateIn(best, side);
+  const sign = side === 'white' ? 1 : -1;
+  const band = answer.mateIn === null ? cpBand(sign * (answer.cp ?? 0)) : null;
+  // Still standing better: mates, or is ahead by the band's own margin.
+  const stands = answerMate !== null || (answer.mateIn === null && sign * (answer.cp ?? 0) >= 50);
+  if (!stands) return null;
   if (bestMate !== null && answerMate !== null) return `it mates too, but in ${answerMate + 1} moves, not ${bestMate}`;
-  const still = verdict.replace(/^(White|Black) (is|has) /, '$1 $2 still ');
+  const still = answerMate !== null ? `${name} has still a forced mate in ${answerMate}` : `${name} is still ${band}`;
   if (bestMate !== null) return `${still}, but there is no mate; the answer mates in ${bestMate}`;
   return `${still}, but the answer is stronger: ${lineWords(best)}`;
 }

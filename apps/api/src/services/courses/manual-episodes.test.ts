@@ -106,9 +106,9 @@ describe('buildManualEpisodes', () => {
 
 describe('temptingNote (§13.5)', () => {
   test('the engine answer and what it does, for the creator to write over', () => {
-    const facts = { san: 'Qxc3+', kind: 'capture' as const, does: ['captures the bishop on c3'], refutation: ['Nxc3', 'Bb4'], captures: 'Black takes a bishop; White takes the queen', after: ['moves the knight from b1 to c3', 'captures the queen on c3'], verdict: 'White is winning', balance: 'White is a queen up', notTheAnswer: null };
+    const facts = { san: 'Qxc3+', kind: 'capture' as const, does: [{ kind: 'captures' as const, piece: 'b' as const, square: 'c3' as const, enPassant: false }], refutation: ['Nxc3', 'Bb4'], captures: 'Black takes a bishop; White takes the queen', after: [{ kind: 'moved' as const, piece: 'n' as const, from: 'b1' as const, to: 'c3' as const }, { kind: 'captures' as const, piece: 'q' as const, square: 'c3' as const, enPassant: false }], verdict: 'White is winning', balance: 'White is a queen up', notTheAnswer: null };
     expect(temptingNote(facts)).toEqual({ san: 'Qxc3+', why: 'Nxc3 captures the queen on c3.', refutation: ['Nxc3', 'Bb4'] });
-    expect(temptingNote({ ...facts, after: [...facts.after, 'attacks the bishop on f8'] }).why).toBe('Nxc3 captures the queen on c3 and attacks the bishop on f8.');
+    expect(temptingNote({ ...facts, after: [...facts.after, { kind: 'attacks' as const, piece: { piece: 'b' as const, square: 'f8' as const } }] }).why).toBe('Nxc3 captures the queen on c3 and attacks the bishop on f8.');
     expect(temptingNote({ ...facts, refutation: [] }).why).toBe('White is winning');
     // A puzzle move that still works: why it is not the answer comes first.
     expect(temptingNote({ ...facts, notTheAnswer: 'it mates too, but in 5 moves, not 4' }).why).toBe('Not the answer: it mates too, but in 5 moves, not 4. Nxc3 captures the queen on c3.');

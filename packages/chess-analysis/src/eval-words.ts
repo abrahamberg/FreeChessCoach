@@ -7,13 +7,19 @@
  * input passes 'w' so no flip happens. */
 export function cpToWords(cp: number, sideToMove: 'w' | 'b'): string {
   const whiteCp = sideToMove === 'w' ? cp : -cp;
-  const abs = Math.abs(whiteCp);
-  const side = whiteCp >= 0 ? 'White' : 'Black';
-  if (abs < 50) return 'The position is roughly equal';
-  if (abs < 150) return `${side} is slightly better`;
-  if (abs < 400) return `${side} is better`;
-  if (abs < 900) return `${side} is much better`;
-  return `${side} is winning`;
+  const band = cpBand(whiteCp);
+  if (band === null) return 'The position is roughly equal';
+  return `${whiteCp >= 0 ? 'White' : 'Black'} is ${band}`;
+}
+
+/** How far ahead the side with the edge is, in words; null when it is level. */
+export function cpBand(cp: number): 'slightly better' | 'better' | 'much better' | 'winning' | null {
+  const abs = Math.abs(cp);
+  if (abs < 50) return null;
+  if (abs < 150) return 'slightly better';
+  if (abs < 400) return 'better';
+  if (abs < 900) return 'much better';
+  return 'winning';
 }
 
 export function mateToWords(mateIn: number, sideToMove: 'w' | 'b'): string {

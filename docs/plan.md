@@ -694,22 +694,24 @@ Status: done 2026-09-30 — `board-facts/types.ts` (`BoardFact`, 19 kinds) and `
 **Depends on:** 114.1. **Findings:** F4.
 **Read:** the files listed in F4.
 
-- [ ] `course/dossier-node.ts`: `mateAhead` comes from the engine line
+- [x] `course/dossier-node.ts`: `mateAhead` comes from the engine line
   (`moverMateIn(evalAfter.lines[0], side) !== null`), not `/forced mate/`.
-- [ ] `course/reel-candidates.ts` `IDEA_FACT` → a check on the kinds `forks`,
+- [x] `course/reel-candidates.ts` `IDEA_FACT` → a check on the kinds `forks`,
   `attacks` with `pinnedTo`, or `gives`.
-- [ ] `course/skeleton.ts` repetition → the `repetition` kind.
-- [ ] `course/tempting.ts` `notTheAnswer` → decide from the two `EngineLine`s,
+- [x] `course/skeleton.ts` repetition → the `repetition` kind.
+- [x] `course/tempting.ts` `notTheAnswer` → decide from the two `EngineLine`s,
   not from `lineWords` text.
-- [ ] `prompts/src/course/playbooks.ts` and
+- [x] `prompts/src/course/playbooks.ts` and
   `apps/api/src/services/courses/manual-notes.ts`: filter by kind.
-- [ ] `course/verify-text.ts` tactic words: allowed words come from the kinds
+- [x] `course/verify-text.ts` tactic words: allowed words come from the kinds
   present (`forks` → fork, `attacks.pinnedTo` → pin, …).
-- [ ] `withoutFileDetail` and `withoutSquareFork` read tactic-claim details,
+- [x] `withoutFileDetail` and `withoutSquareFork` read tactic-claim details,
   not board facts. Leave them for Task 115.1.
 
 **Done when:** `grep -rnE "\.(board|after|before|does)\b.*\.(test|includes|startsWith)\(" packages apps --include=*.ts | grep -v test` shows nothing, and `test:golden` is identical.
 **Commit:** `refactor(courses): decisions from facts and engine lines, never from their words`
+
+Status: done 2026-09-30 — the listed readers now decide from kinds and engine lines (`mateAhead` is a stored field of the node facts; `factWords` in `board-facts/fact-words.ts` feeds the verifier; `notTheAnswer` reads the engine lines, with a small test). `mateAhead` is true when either side has a mate after the move, not only the mover as this task's bullet said: the mover-only version changed three golden files (an allowed-gain sentence appeared where a mate follows for the opponent). `test:golden` (66) identical; chess-analysis, prompts and api course tests pass. The `docs/prompts.md` generator output was already stale before this task and is left alone.
 
 ### Task 114.3 — The dossier stores facts as data
 
@@ -717,16 +719,18 @@ Status: done 2026-09-30 — `board-facts/types.ts` (`BoardFact`, 19 kinds) and `
 **Read:** `apps/api/scripts/course-dossier-refresh.ts`,
 `apps/api/src/db/repositories/courses.ts` (`setDossier`).
 
-- [ ] `CourseNodeFacts.board`, `bestInstead.board` and the tempting moves'
+- [x] `CourseNodeFacts.board`, `bestInstead.board` and the tempting moves'
   `does` and `after` become `BoardFact[]`. `renderCourseDossier` renders them.
   No version field, and no code that reads the old string shape.
-- [ ] Stored dossiers in the old shape are regenerated, not read:
+- [x] Stored dossiers in the old shape are regenerated, not read:
   **Owner, after deploy:** run `npx tsx apps/api/scripts/course-dossier-refresh.ts`
   once on each database that has courses (one engine pass per course).
 
 **Done when:** `test:golden` is identical.
 **Keep / Ephemeral:** none new.
 **Commit:** `feat(courses): the dossier stores board facts as data`
+
+Status: done 2026-09-30 — done together with 114.2 (the readers needed the data). `board`, `bestInstead.board`, tempting `does`/`after` are `BoardFact[]`; `renderCourseDossier` renders them. Owner, after deploy: run `npx tsx apps/api/scripts/course-dossier-refresh.ts` once per database with courses (not run here).
 
 ### Task 114.4 — One definition of loose pieces and of forks
 
