@@ -40,6 +40,8 @@ export * from './course/review-schedule.js';
 export * from './course/stages.js';
 export * from './course/tempting.js';
 export * from './board-facts/material.js';
+export * from './board-facts/render.js';
+export type * from './board-facts/types.js';
 export * from './course/skeleton.js';
 export * from './course/tree.js';
 export * from './course/verify.js';

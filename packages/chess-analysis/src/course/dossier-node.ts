@@ -4,6 +4,8 @@ import type { ClassifiedMove } from '../classify.js';
 import { CONFIG } from '../config.js';
 import { abandonedGuard, betterMoveFacts } from '../board-facts/better-move.js';
 import { boardFacts } from '../board-facts/move-facts.js';
+import { renderBoardFact } from '../board-facts/render.js';
+import type { BoardFact } from '../board-facts/types.js';
 import { lineWords, positionWords } from '../board-facts/verdict-words.js';
 import { lineBalance, settledLine } from '../board-facts/material.js';
 import type { CourseTemptingFacts } from './tempting.js';
@@ -95,7 +97,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     inBook: isBookMoveFrom(fenBefore, node.san),
     openingName: opening?.name ?? null,
     bestInstead: bestInstead(move, node.san, fenBefore),
-    board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan), ...repetition(node.fenAfter, input.linePositionFens)],
+    board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan), ...repetition(node.fenAfter, input.linePositionFens)].map(renderBoardFact),
     tactics: tacticSentences(claims, node.san, side === input.learnerSide, mateAhead, capturedValue(fenBefore, node.san)),
     motif: claims.tacticOpportunity?.found && fitsCourseMove(claims.tacticOpportunity, node.san, mateAhead) ? claims.tacticOpportunity.type : null,
     alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
@@ -110,11 +112,11 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
 
 /** A perpetual check is a position that comes back: the perpetual's
  * 6.Qe8+ is 4.Qe8+ again, which no board fact said. */
-function repetition(fenAfter: string, linePositionFens: readonly string[]): string[] {
+function repetition(fenAfter: string, linePositionFens: readonly string[]): BoardFact[] {
   const key = positionKey(fenAfter);
   const times = linePositionFens.filter((fen) => positionKey(fen) === key).length;
-  if (times >= 3) return ['the position has now come three times: a draw by repetition'];
-  return times === 2 ? ['the position has now come twice: a third time is a draw'] : [];
+  if (times >= 3) return [{ kind: 'repetition', times: 3 }];
+  return times === 2 ? [{ kind: 'repetition', times: 2 }] : [];
 }
 
 function bestInstead(move: ClassifiedMove, san: string, fenBefore: string): CourseNodeFacts['bestInstead'] {
@@ -122,7 +124,7 @@ function bestInstead(move: ClassifiedMove, san: string, fenBefore: string): Cour
   if (!best || best === san) return null;
   const line = move.bestLinePvSan?.length ? move.bestLinePvSan : move.bestLineSan;
   const shown = settledLine(fenBefore, line.slice(0, CONFIG.courses.bestLinePlies));
-  return { san: best, line: shown, board: betterMoveFacts(fenBefore, san, best), balance: lineBalance(fenBefore, shown) };
+  return { san: best, line: shown, board: betterMoveFacts(fenBefore, san, best).map(renderBoardFact), balance: lineBalance(fenBefore, shown) };
 }
 
 /** The game review's defensive motifs, which read wrong on a check or a mate:

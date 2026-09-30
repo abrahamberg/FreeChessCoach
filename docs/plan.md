@@ -651,7 +651,7 @@ Status: done 2026-09-30 — every `services/…` and `packages/…` path in arch
 **Read:** `packages/chess-analysis/src/board-facts/*.ts`,
 `packages/chess-analysis/src/course/dossier-text.ts`.
 
-- [ ] `board-facts/types.ts`: a discriminated union `BoardFact`, one `kind`
+- [x] `board-facts/types.ts`: a discriminated union `BoardFact`, one `kind`
   per sentence the builders make today:
   - `moved` {piece, from, to} and `castles` {side};
   - `promotes` {piece};
@@ -674,9 +674,9 @@ Status: done 2026-09-30 — every `services/…` and `packages/…` path in arch
   - `repetition` {times}.
 
   Squares are `Square`, pieces `PieceSymbol`, sides `'white' | 'black'`.
-- [ ] Each builder returns `BoardFact[]`. `board-facts/render.ts` has
+- [x] Each builder returns `BoardFact[]`. `board-facts/render.ts` has
   `renderBoardFact(fact): string`, which produces exactly today's sentence.
-- [ ] Callers that need strings call `facts.map(renderBoardFact)` for now.
+- [x] Callers that need strings call `facts.map(renderBoardFact)` for now.
   Nothing else changes.
 
 **Keep:** one test per `kind` checking the structured fields on a small
@@ -686,6 +686,8 @@ with the new render over the Englund and the 66 golden trees; delete it once
 `test:golden` passes.
 **Done when:** `test:golden` is byte-identical.
 **Commit:** `refactor(analysis): board facts as data, rendered at the edge`
+
+Status: done 2026-09-30 — `board-facts/types.ts` (`BoardFact`, 19 kinds) and `render.ts` (`renderBoardFact`); every builder returns `BoardFact[]`; `course/dossier-node.ts` and `course/tempting.ts` render at the edge; `test:golden` (66) passes with the snapshot unchanged (no `render.wip` test needed: the golden run is the old-vs-new comparison); chess-analysis typecheck, lint and board-facts tests pass. Naming deviations: `castles` carries `wing` (kingside/queenside), not `side`, and `gives` carries `check`. No kind is tested for `attacks.trapped` (no small position found); the mapping is one branch in `safety.ts`. Other packages' tests not re-run.
 
 ### Task 114.2 — No code reads the facts' English
 

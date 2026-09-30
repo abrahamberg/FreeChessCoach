@@ -4,6 +4,7 @@ import { CONFIG } from '../config.js';
 import { moverMateIn } from './dossier-node.js';
 import type { CourseDossier } from './dossier.js';
 import { boardFacts } from '../board-facts/move-facts.js';
+import { renderBoardFact } from '../board-facts/render.js';
 import { lineWords } from '../board-facts/verdict-words.js';
 import { captureWords, exchangeLoss, lineBalance, settledLine } from '../board-facts/material.js';
 import type { CourseTree } from './tree.js';
@@ -166,9 +167,9 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
     list.push({
       san: candidate.san,
       kind: candidate.kind,
-      does: boardFacts(candidate.fenBefore, candidate.san),
+      does: boardFacts(candidate.fenBefore, candidate.san).map(renderBoardFact),
       refutation,
-      after: boardFacts(candidate.fen, answer.moveSan),
+      after: boardFacts(candidate.fen, answer.moveSan).map(renderBoardFact),
       captures: captureWords(candidate.fenBefore, [candidate.san, ...refutation]),
       verdict: lineWords(answer),
       balance: lineBalance(candidate.fenBefore, [candidate.san, ...refutation]),
