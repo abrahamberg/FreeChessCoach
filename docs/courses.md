@@ -849,6 +849,12 @@ with the owner's configured model, prints each episode and the verifier result,
 and writes nothing to the database. Prompt changes are judged on this set before
 they ship.
 
+**Golden facts snapshot.** A change to the facts the prompts get (`board-facts/`,
+`course/dossier*`) is checked with `npm run test:golden`: 66 tests, a fixture
+engine, no network. The snapshot must stay byte-identical in a move or refactor;
+re-record it only when the change is meant to alter the facts, with
+`GOLDEN_UPDATE=1 npm run test:golden`, and review the diff.
+
 ---
 
 ## 8. Voice and videos

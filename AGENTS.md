@@ -80,7 +80,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
   - `diagnostics/` — the BV/MS/TA… diagnosis codes, opportunities and focus selection.
   - `move-verdict/` — move verdicts.
   - board facts (what a move does, loose pieces, checks, mates, material in words) — `packages/chess-analysis/src/board-facts/`.
-  - course code — flat `course-*.ts` today, `course/` after Phase 111.
+  - course code — `packages/chess-analysis/src/course/` (dossier, verify, tempting, skeletons).
 - `packages/prompts`: LLM prompt templates (course prompts in `src/course/`). `docs/prompts.md` is auto-generated.
 - `services/engine`: Stockfish/UCI HTTP microservice.
 - `deploy/helm`: K8s Helm charts.

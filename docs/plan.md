@@ -618,12 +618,14 @@ the CodeQL check on the pushed head shows 0 new alerts.
 **Read:** `docs/architecture.md` "Courses", `docs/courses.md` §5.4 and §7,
 AGENTS.md "Directory map" and "Testing".
 
-- [ ] Every path in those sections exists (`grep -o` the paths and `ls` them).
-- [ ] `docs/courses.md` §7 names the golden snapshot (`npm run test:golden`,
+- [x] Every path in those sections exists (`grep -o` the paths and `ls` them).
+- [x] `docs/courses.md` §7 names the golden snapshot (`npm run test:golden`,
   `npm run golden:record`) as the check for facts changes.
-- [ ] AGENTS.md: the directory map lists `course/` and `board-facts/`.
+- [x] AGENTS.md: the directory map lists `course/` and `board-facts/`.
 
 **Commit:** `docs: courses paths after the move; the golden snapshot`
+
+Status: done 2026-09-30 — every `services/…` and `packages/…` path in architecture.md, courses.md and AGENTS.md exists. courses.md gains a golden-snapshot paragraph (there is no `golden:record` script; the re-record is `GOLDEN_UPDATE=1 npm run test:golden`). AGENTS.md's course-code line names `course/`.
 
 ### Task 113.3 — Final checks and the merge
 
