@@ -1,53 +1,46 @@
 #!/usr/bin/env tsx
 
-import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { parseArgs } from 'node:util';
 
-const PACKAGES = [
-  { dir: 'packages/chess-analysis', name: '@freechesscoach/chess-analysis' },
-  { dir: 'packages/shared', name: '@freechesscoach/shared' },
-  { dir: 'packages/prompts', name: '@freechesscoach/prompts' },
-  { dir: 'apps/api', name: '@freechesscoach/api' },
-  { dir: 'apps/web', name: '@freechesscoach/web' },
-  { dir: 'services/engine', name: '@freechesscoach/engine' },
-];
+/**
+ * The default loop: vitest walks the import graph from every file changed
+ * since HEAD~1 (committed or not) to the tests that reach it, through the
+ * root config's projects, the way CI does for a PR. A change with no test
+ * reaching it runs nothing.
+ *
+ *   npm run test:changed                      # affected tests only
+ *   npm run test:changed -- --package api     # one package's whole suite
+ */
+const PACKAGES: Record<string, string> = {
+  'chess-analysis': '@freechesscoach/chess-analysis',
+  shared: '@freechesscoach/shared',
+  prompts: '@freechesscoach/prompts',
+  api: '@freechesscoach/api',
+  web: '@freechesscoach/web',
+  engine: '@freechesscoach/engine'
+};
 
-function getChangedPackages(): { dir: string; name: string }[] {
+const { values } = parseArgs({ options: { package: { type: 'string' } } });
+
+function run(command: string, args: string[]): void {
   try {
-    const output = execSync('git diff --name-only HEAD~1', { encoding: 'utf-8' }).trim();
-    if (!output) return PACKAGES;
-    const files = output.split('\n');
-    const changed = new Set<string>();
-    for (const file of files) {
-      for (const pkg of PACKAGES) {
-        if (file.startsWith(pkg.dir + '/')) {
-          changed.add(pkg.dir);
-        }
-      }
-    }
-    return PACKAGES.filter(p => changed.has(p.dir));
+    execFileSync(command, args, { stdio: 'inherit', cwd: process.cwd() });
   } catch {
-    return PACKAGES;
-  }
-}
-
-const changed = getChangedPackages();
-if (changed.length === 0) {
-  console.log('No packages changed, skipping tests');
-  process.exit(0);
-}
-
-console.log(`Testing changed packages: ${changed.map(p => p.name).join(', ')}`);
-
-for (const pkg of changed) {
-  if (!existsSync(`${pkg.dir}/package.json`)) continue;
-  console.log(`\n--- Testing ${pkg.name} ---`);
-  try {
-    execSync(`npm run test -w ${pkg.name}`, { stdio: 'inherit', cwd: process.cwd() });
-  } catch (e) {
-    console.error(`Tests failed for ${pkg.name}`);
+    console.error('Tests failed');
     process.exit(1);
   }
 }
 
-console.log('\nAll changed package tests passed!');
+if (values.package) {
+  const name = PACKAGES[values.package];
+  if (!name) {
+    console.error(`Unknown package "${values.package}". One of: ${Object.keys(PACKAGES).join(', ')}`);
+    process.exit(1);
+  }
+  console.log(`Testing ${name} (whole suite)`);
+  run('npm', ['run', 'test', '-w', name]);
+} else {
+  console.log('Testing what changed since HEAD~1');
+  run('npx', ['vitest', 'run', '--changed', 'HEAD~1']);
+}

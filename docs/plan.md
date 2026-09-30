@@ -1210,6 +1210,8 @@ now, alongside Lane M; they don't touch M's files.
 
 **Commit:** `chore(test): affected-only test:changed; ephemeral tests never committed`
 
+Status: done 2026-09-30 — `scripts/test-changed.ts` runs `npx vitest run --changed HEAD~1` from the root (one run took 48 s on this branch's last commit), with `--package <name>` for one package's whole suite. CI's test job fails with "ephemeral test committed" when `git ls-files '*.wip.test.ts' '*.wip.test.tsx'` prints anything. AGENTS.md's Testing bullet and the `test:changed` line say the same.
+
 ### Task 119.2 — Nightly runs the opt-in tiers
 
 **Read:** `.github/workflows/ci.yml`.

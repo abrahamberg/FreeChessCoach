@@ -55,6 +55,17 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
 
+      # Ephemeral (development-driving) tests are deleted before a task's last
+      # commit; one that reaches the repo would run in every default suite.
+      - name: No ephemeral tests committed
+        run: |
+          found=$(git ls-files '*.wip.test.ts' '*.wip.test.tsx')
+          if [ -n "$found" ]; then
+            echo "ephemeral test committed:"
+            echo "$found"
+            exit 1
+          fi
+
       # main only ever advances via a merged, already-CI-passed PR, so the
       # full run here (plus the nightly cron above) is a backstop. PRs run
       # affected-only below, except dependency and toolchain changes: a

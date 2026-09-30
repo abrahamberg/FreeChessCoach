@@ -52,7 +52,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 ## Commands
 - `npm run verify`: Full lint + typecheck + test (run before claiming a phase done).
 - `npm run verify:changed`: **Fast path** — lint/typecheck/test only what changed (run after every task).
-- `npm run test:changed` / `lint:changed` / `typecheck:changed`: the parts of `verify:changed`.
+- `npm run test:changed` / `lint:changed` / `typecheck:changed`: the parts of `verify:changed`. `test:changed` runs the tests affected by files changed since `HEAD~1` (vitest `--changed`, through the root projects); `npm run test:changed -- --package api` runs one package's whole suite.
 - `npm run test:corpus`: tactic precision ceilings and recall floors (opt-in tier).
 - `npm run test:golden`: the course facts snapshot, no engine needed (opt-in tier; added in Phase 110). `GOLDEN_UPDATE=1` re-records it — only when a task allows it.
 - `npm run course:golden -w apps/api -- --facts [--only <kind|name>]`: print the facts the course prompts get (needs the engine).
@@ -109,7 +109,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 - **Size today**: about 290 test files (2026-09-30). More tests are not better: every test must guard something that would otherwise break silently.
 - **Kept, default run** (`npm test`, `verify:changed`, PR CI): invariants of pure logic; one regression test per fixed bug in shared logic, on the smallest position that shows it; permission tests on routes; schema tests; pure web logic in `.ts` files.
 - **Kept, opt-in tiers** (nightly CI; run them yourself when you touch the area): `corpus` (`npm run test:corpus`), `golden` (`npm run test:golden`), and `db` (Postgres integration, once Phase 119.3 splits it out).
-- **Ephemeral**: tests that drive development and are then covered by the golden snapshot or the corpus. Name them `*.wip.test.ts` / `*.wip.test.tsx` and delete them before the task's last commit. They are never pushed (CI will reject them after Phase 119.1).
+- **Ephemeral**: tests that drive development and are then covered by the golden snapshot or the corpus. Name them `*.wip.test.ts` / `*.wip.test.tsx` and delete them before the task's last commit. They are never pushed: CI fails the job if `git ls-files '*.wip.test.ts' '*.wip.test.tsx'` prints anything.
 - **Don't write**: assertions on the exact English of a generated sentence (the golden snapshot covers wording); `.tsx` component tests; per-detector tactic tests (the registry and corpus cover them); snapshot tests for UI; tests of wiring that TypeScript already checks.
 - **Keep them fast**: build expensive fixtures (an analysed game or course) once per file, not per test; fake timers for anything that waits; no real engine or LLM in the default run.
 - **Mocking**: Mock LLM (`apps/api/test/helpers/mock-model.ts`) and Engine HTTP in integration tests.
