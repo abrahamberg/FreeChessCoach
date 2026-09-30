@@ -96,6 +96,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 9. **Prompt Convention**: `packages/prompts/src/` uses `buildXPrompt`/`buildXMessages`. Use `[...].filter(Boolean).join('\n\n')`.
 10. **One copy of each chess idea**: chess.js first; what it lacks comes from the shared analysis code (`see()`, `pins()`, `trappedPieces()`, `PIECE_VALUES`, the board facts); where two copies exist, keep the better one and delete the other. Never write a second "is this piece hanging" check.
 11. **Facts are data**: code decides from structured facts and engine lines, never by matching the English a fact renders to. Render words at the edge (prompts, UI). Existing violations are listed in `docs/plan.md` F4 and removed in Phase 114.
+12. **No backward compatibility**: rename, reshape and delete directly, and update every caller in the same change. No version fields, no code that reads an old shape, no `.optional()`/`.default()` added only so old rows parse, no deprecated aliases or re-exports under old names or paths. Stored data that no longer fits is regenerated (a rebuild script) or dropped — say which in the task.
 
 ## TypeScript Rules
 - `strict: true`. No `any`, no non-null `!` (except tests). No `enum`.

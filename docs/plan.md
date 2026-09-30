@@ -42,6 +42,15 @@ the branch and described in `docs/architecture.md` ("Courses") and
   the branch at the end of each phase.
 - `docs/prompts.md` is generated: after changing anything in
   `packages/prompts/src/`, run `npm run docs:prompts` and commit the result.
+- **No backward compatibility** (the owner's rule). Rename, reshape and
+  delete directly, and update every caller in the same commit. Never add:
+  - version fields, or code that reads an old shape;
+  - `.optional()` or `.default()` just so old rows parse;
+  - deprecated aliases, or re-exports under old names or paths.
+
+  When stored data no longer fits a new shape, the task says how it is
+  regenerated (a rebuild script, or clearing it); stored data may be thrown
+  away.
 
 ## Findings (verified 2026-09-30)
 
@@ -212,6 +221,7 @@ Lane B  board facts                     114 ─► merge
 Lane C  review                                   └─ 115 ─► merge
 Lane D  coach                                    └─ 116 ─► merge
 Lane E  stats                                    └─ 117 ─► merge
+        after C, D and E merge: drop the naive hanging lists (117.4)
 Lane F  courses ↔ diagnosis codes       118 ─► merge
 Lane O  owner items (F13)               any time, own small branches
 ```
@@ -224,6 +234,7 @@ Lane O  owner items (F13)               any time, own small branches
 | C | `claude/review-facts` | 115 | B merged | D, E, F, O |
 | D | `claude/coach-facts` | 116 | B merged | C, E, F, O |
 | E | `claude/stats-loose-pieces` | 117 | B merged | C, D, F, O |
+| E2 | `claude/drop-naive-hanging` | 117.4, second half | C, D and E merged | F, O |
 | F | `claude/course-diagnosis-tags` | 118 | M merged | B–E, O |
 | O | one branch per item | — | M merged | everything |
 
@@ -387,15 +398,16 @@ source. Update imports everywhere (`packages/*`, `apps/*`, `apps/api/scripts`).
 | `course-verify.ts`, `course-verify-board.ts`, `-pieces.ts`, `-reel.ts`, `-scope.ts`, `-text.ts` | `course/verify.ts`, `course/verify-board.ts`, … (same suffixes) |
 | `course-dossier.ts`, `course-dossier-node.ts`, `course-dossier-line.ts`, `course-dossier-text.ts` | `course/dossier.ts`, `course/dossier-node.ts`, `course/dossier-line.ts`, `course/dossier-text.ts` |
 | `course-tempting.ts` | `course/tempting.ts` (Phase 114 takes its general half out) |
-| `course-test-fixtures.ts` | `course/test-fixtures.ts`; keep the package export key `./course-test-fixtures`, and point it at the new path |
+| `course-test-fixtures.ts` | `course/test-fixtures.ts`; rename the package export `./course-test-fixtures` to `./course/test-fixtures` and update the prompts imports |
 | `course-material.ts` | `board-facts/material.ts`; rename its `materialBalance` to `materialWords` (F5: the name clashed with `tactic-board-facts.ts`) |
 | `course-dossier-words.ts` (359 lines) | split, by the functions each file holds, into `board-facts/verdict-words.ts` (`lineWords`, `positionWords`), `board-facts/move-facts.ts` (`boardFacts`, `moveWords`, `forkTargets`, `takingStalemates`), `board-facts/check-facts.ts` (`discovered`, `blockedCheck`, `checkAnswers`, `mateNet`, `kingNeighbours`, `isBackRankMate`), `board-facts/endgame-geometry.ts`, `board-facts/safety.ts` (`canBeTaken`, `attackedPieces`, `pinOf`, `isTrapped`, `isLostOn`), `board-facts/better-move.ts` (`betterMoveFacts`, `newDefenders`, `abandonedGuard`) |
 
 - [ ] Tests without a same-named source: `course-dossier-tactics.test.ts` →
   `course/dossier-tactics.test.ts`; `course-material.test.ts` →
   `board-facts/material.test.ts`.
-- [ ] Moves done as in the table; `src/index.ts` exports the same public names
-  as before (plus `materialWords` instead of the course's `materialBalance`).
+- [ ] Moves done as in the table; `src/index.ts` exports the new files, and
+  every importer uses the new paths and names (`materialWords` replaces the
+  course's `materialBalance`). No re-exports under old paths.
 - [ ] `board-facts/` imports nothing from `course/`. Check with `grep -rn
   "from '\.\./course/" packages/chess-analysis/src/board-facts` → no output.
 - [ ] `eval-words.ts` and `san-token.ts` stay at `src/`.
@@ -425,9 +437,9 @@ typecheck, lint, tests and `test:golden` all pass with nothing re-recorded.
 - [ ] Move into `CONFIG.courses`, with the same values: `SWING_WIN_DROP`,
   both `MAX_CANDIDATES` (as `maxReelCandidates` and `maxTemptingCandidates`),
   `BEST_LINE_PLIES`, `MAX_REFUTATION_PLIES`, `FULL_BLOCK_NODE_LIMIT`,
-  `REEL_MOVES_BEFORE`, `REEL_MOVES_AFTER`, `REEL_MATE_REACH`. Keep the reel
-  constants exported under their old names if other packages import them
-  (grep first).
+  `REEL_MOVES_BEFORE`, `REEL_MOVES_AFTER`, `REEL_MATE_REACH`. Delete the old
+  constants and update every importer (grep all packages, the web app
+  included).
 - [ ] Leave `threatens` where it is (Phase 114 decides its home).
 
 **Keep / Ephemeral:** none new.
@@ -668,24 +680,19 @@ with the new render over the Englund and the 66 golden trees; delete it once
 ### Task 114.3 — The dossier stores facts as data
 
 **Depends on:** 114.2.
-**Read:** `apps/api/src/services/courses/generation-inputs.ts`
-(`loadGenerationInputs`), `apps/api/scripts/course-dossier-refresh.ts`,
-`apps/api/src/db/repositories/courses.ts` (`setDossier`, `findPublishedBySlug`).
+**Read:** `apps/api/scripts/course-dossier-refresh.ts`,
+`apps/api/src/db/repositories/courses.ts` (`setDossier`).
 
 - [ ] `CourseNodeFacts.board`, `bestInstead.board` and the tempting moves'
   `does` and `after` become `BoardFact[]`. `renderCourseDossier` renders them.
-- [ ] `CourseDossier` gets `version: 2`. `loadGenerationInputs` treats a stored
-  dossier without `version: 2` as missing and rebuilds it (the path that
-  already exists for a missing dossier).
-- [ ] Readers that only use evals (`evalAfterCp`, the public page) keep working
-  on old dossiers; check `findPublishedBySlug`'s callers.
-- [ ] **Owner, after deploy:** run `course-dossier-refresh.ts` once (one engine
-  pass per course).
+  No version field, and no code that reads the old string shape.
+- [ ] Stored dossiers in the old shape are regenerated, not read:
+  **Owner, after deploy:** run `npx tsx apps/api/scripts/course-dossier-refresh.ts`
+  once on each database that has courses (one engine pass per course).
 
-**Done when:** `test:golden` is identical; an old-shape dossier rebuilds (add
-the kept test below).
-**Keep:** one api test: a stored dossier without `version` is rebuilt.
-**Commit:** `feat(courses): dossier v2 stores board facts as data`
+**Done when:** `test:golden` is identical.
+**Keep / Ephemeral:** none new.
+**Commit:** `feat(courses): the dossier stores board facts as data`
 
 ### Task 114.4 — One definition of loose pieces and of forks
 
@@ -967,22 +974,16 @@ vision) and §II.D (One-ply move safety) only;
 `packages/chess-analysis/src/diagnostics/README.md`;
 `apps/api/src/services/diagnostic-window.ts`.
 
-- [ ] Write in the Status line:
-  - which stored games feed the profile (the window size in
-    `diagnostic-window.ts`);
-  - whether stored analyses hold what the detectors need to run again without
-    the engine (evals per ply).
-- [ ] Using Task 114.4's table, estimate how BV-01, BV-10, BV-22 and MS-14
-  opportunity counts will move.
-- [ ] **Owner decides**, and the answer goes under this task:
-  - (a) re-analyse the games in the window (a job), or
-  - (b) accept a transition while new games replace old ones.
-
-  Do not write a migration or a job before the answer.
+- [ ] Using Task 114.4's table, estimate how the BV-01, BV-10, BV-22 and MS-14
+  opportunity counts will move. Write it in the Status line, with the window
+  size from `diagnostic-window.ts`.
+- [ ] Diagnostic entries already stored stay as they are: no recompute job, no
+  version marker. The profile's window moves on to newly analysed games by
+  itself. Say this in the PR description.
 
 ### Task 117.2 — Detectors use `loosePieces`
 
-**Depends on:** 117.1 answered.
+**Depends on:** 117.1.
 **Read:** the detector files named here.
 
 - [ ] Stop reading the naive lists; call `loosePieces(fen, color)`:
@@ -991,10 +992,8 @@ vision) and §II.D (One-ply move safety) only;
     `underDefendedPieces`);
   - `move-verdict/diagnostic-code.ts` `isHangingAt`, `candidate-moves.ts` and
     `tactics-score.ts` use `free`.
-- [ ] Don't change `PositionFeaturesSchema`: it is stored inside analyses.
-  Leave `hangingPieces` and `underDefendedPieces` there, now unused by the
-  detectors.
-- [ ] Carry out the owner's choice from 117.1.
+- [ ] The naive lists stay in `PositionFeatures` until Task 117.4, because
+  Lanes C and D are replacing their other readers in parallel.
 
 **Keep:** update each detector's existing test (`bv-01-…test.ts` etc.) and add
 one "defended by value" case to MS-14. **Ephemeral:** none.
@@ -1019,10 +1018,24 @@ stats-dashboard files (`build-stats-dashboard.ts`, `stats-entry.ts`).
 
 **Keep:** tests for the rule. **Commit:** `feat(stats): only moves found`
 
-### Task 117.4 — Merge
+### Task 117.4 — Merge, then delete the naive lists
 
-- [ ] `npm run verify`, `test:corpus`; push; PR. Say in the PR how the
-  owner's 117.1 choice is carried out.
+- [ ] `npm run verify`, `test:corpus`; push; PR; merge.
+- [ ] **After C and D are merged too**, on a new branch
+  `claude/drop-naive-hanging` from `main`:
+  - remove `hangingPieces` and `underDefendedPieces` from
+    `PositionFeaturesSchema` and `position-features.ts`;
+  - delete them from `piece-safety.ts`;
+  - replace `FeatureDelta.newHangingPieces` with `newLoosePieces` (from
+    `loosePieces`);
+  - move every remaining reader to `loosePieces`
+    (`grep -rn "hangingPieces\|underDefendedPieces" packages apps services`
+    must print nothing).
+
+  No field is kept "for old rows". If a stored row holds the old fields, it is
+  regenerated or dropped, not read.
+- [ ] `npm run verify`, `test:golden`, `test:corpus`; PR.
+  **Commit:** `refactor(analysis): one loose-piece list; the naive hanging lists are gone`
 
 ---
 
@@ -1037,14 +1050,17 @@ alongside B–E.
 **Read:** `packages/shared/src/course.ts` (the document),
 `packages/chess-analysis/src/diagnostics/motif-to-code.ts`.
 
-- [ ] `CourseDocument.diagnosisCodes: string[]` (Zod, default `[]`; jsonb, no
-  migration). Code fills it at dossier time:
+- [ ] `CourseDocument.diagnosisCodes: string[]`, required (no `.default()`;
+  jsonb, no migration). Code fills it at dossier time:
   - each learner node's `motif` through `motif-to-code.ts`;
   - for the `endgame` kind, the EG code that matches the skeleton's goal where
     one does (else none).
 - [ ] The editor's Details shows the codes and lets the creator remove or add
   one (from the catalogue).
 - [ ] The public catalogue API returns them.
+- [ ] Existing courses: `course-dossier-refresh.ts` also fills
+  `diagnosisCodes` into each stored document. **Owner:** run it once after
+  deploy. Nothing reads a document without the field.
 
 **Keep:** one test on the Englund trap: its codes are exactly what
 `motif-to-code.ts` gives for its learner nodes' motifs (look at the golden
