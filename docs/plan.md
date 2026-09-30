@@ -1117,6 +1117,8 @@ stats-dashboard files (`build-stats-dashboard.ts`, `stats-entry.ts`).
 
 **Keep:** tests for the rule. **Commit:** `feat(stats): only moves found`
 
+Status: done 2026-09-30 — `isQuizEligible` moved to `board-facts/only-move.ts` as `isOnlyMove` (same rule; the course quiz and the stat both call it; its test moved with it), plus `countOnlyMoves(moves, evals, side)`. `buildPlayerReport` fills `PlayerReport.onlyMoves {positions, found}` from `evals[ply - 1]` (the review's multiPv lines, no engine cost); found = the player's SAN is the best line's. `StatsBucket.onlyMoves` and `StatsDashboard.onlyMoves` carry it: optional in the report and the bucket so stored reports and archived weeks still parse and stay absent rather than 0 (same rule as `preventable`); the dashboard field is null with no positions. The tactics card shows "Only moves found X of Y" as a headline on the Stats page and on a game's report. Stored reports have no `onlyMoves` until the game is re-analysed; nothing backfills. The frozen `stats-dashboard-reference.ts` gained a plain-sum `referenceOnlyMoves`. A faster-mate second line is read from `mateIn` at report time, which the stored move alone (cp only) could not give, hence the computation in the report builder, not from `ClassifiedMoveDto`. `verify:changed` and `test:golden` (66) pass.
+
 ### Task 117.4 — Merge, then delete the naive lists
 
 - [ ] `npm run verify`, `test:corpus`; push; PR; merge.

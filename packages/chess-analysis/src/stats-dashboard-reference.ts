@@ -191,6 +191,13 @@ function aggregateEndgameStats(entries: StatsEntry[]): EndgameStats {
   return { overallAccuracy: mean(endgameAccuracies), byStanding, byTheme };
 }
 
+/** Added with Task 117.3, after the freeze: a plain per-game sum. */
+function referenceOnlyMoves(entries: StatsEntry[]): StatsDashboard['onlyMoves'] {
+  const reported = entries.flatMap((entry) => playerReportOf(entry).onlyMoves ?? []);
+  const positions = reported.reduce((total, row) => total + row.positions, 0);
+  return positions === 0 ? null : { positions, found: reported.reduce((total, row) => total + row.found, 0) };
+}
+
 /** Cross-game stats dashboard aggregator (Phase 28) — the pure composition
  * root for the chess.com-style Insights page. Every section is null/empty
  * (never a misleading 0) when `entries` carries no usable signal for it. */
@@ -199,6 +206,7 @@ export function referenceStatsDashboard(entries: StatsEntry[]): StatsDashboard {
     gamesAnalyzed: entries.length,
     opening: referenceOpeningStats(entries),
     tactics: aggregateTacticMotifs(entries),
+    onlyMoves: referenceOnlyMoves(entries),
     strategy: aggregateStrategyStats(entries),
     endgame: aggregateEndgameStats(entries),
     rating: referenceRatingStats(entries)

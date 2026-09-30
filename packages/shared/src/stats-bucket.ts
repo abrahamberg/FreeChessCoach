@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EndgameStandingSchema, EndgameThemeSchema, TacticMotifCountsSchema } from './game-report.js';
+import { EndgameStandingSchema, EndgameThemeSchema, OnlyMovesSchema, TacticMotifCountsSchema } from './game-report.js';
 
 /**
  * A mergeable digest of a set of analyzed games — *sufficient statistics*
@@ -49,6 +49,8 @@ export const StatsBucketSchema = z.object({
     byOpening: z.record(z.string(), OpeningBucketRowSchema)
   }),
   tactics: TacticMotifCountsSchema,
+  /** Absent until some merged game reported it (same rule as a tactic's `preventable`). */
+  onlyMoves: OnlyMovesSchema.optional(),
   strategy: z.object({
     overall: SumCountSchema,
     pawnStructure: SumCountSchema,

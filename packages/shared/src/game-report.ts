@@ -87,6 +87,12 @@ export type PhaseConfidence = z.infer<typeof PhaseConfidenceSchema>;
 const NullablePercentSchema = z.number().min(0).max(100).nullable();
 const NullableScoreSchema = z.number().nullable();
 
+/** Positions where one move was clearly best (`isOnlyMove`) and how many of
+ * them the player found. Optional wherever it is stored: a report or a
+ * bucket written before it existed stays valid, and stays absent, not 0. */
+export const OnlyMovesSchema = z.object({ positions: z.number().int().nonnegative(), found: z.number().int().nonnegative() });
+export type OnlyMoves = z.infer<typeof OnlyMovesSchema>;
+
 export const PlayerReportSchema = z.object({
   accuracy: z.number().min(0).max(100),
   phaseAccuracy: z.object({
@@ -124,7 +130,8 @@ export const PlayerReportSchema = z.object({
   counts: ClassificationCountsSchema,
   acpl: z.number().nonnegative(),
   estimatedRating: EstimatedRatingReportSchema,
-  tacticMotifs: TacticMotifCountsSchema
+  tacticMotifs: TacticMotifCountsSchema,
+  onlyMoves: OnlyMovesSchema.optional()
 });
 export type PlayerReport = z.infer<typeof PlayerReportSchema>;
 

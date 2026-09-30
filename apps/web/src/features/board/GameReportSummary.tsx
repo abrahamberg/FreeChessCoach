@@ -98,7 +98,7 @@ export function GameReportSummary({ report, userColor, tacticBaseline }: GameRep
             <CountsColumn label="White" counts={white.counts} />
             <CountsColumn label="Black" counts={black.counts} />
           </div>
-          <TacticsStatsSection motifs={report.players[userColor].tacticMotifs} />
+          <TacticsStatsSection motifs={report.players[userColor].tacticMotifs} onlyMoves={report.players[userColor].onlyMoves} />
         </div>
       )}
     </section>

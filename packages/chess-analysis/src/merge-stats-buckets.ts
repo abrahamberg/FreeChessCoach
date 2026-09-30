@@ -41,6 +41,11 @@ function mergeTactics(a: TacticMotifCounts, b: TacticMotifCounts): TacticMotifCo
   return merged as TacticMotifCounts;
 }
 
+function mergedOnlyMoves(a: StatsBucket['onlyMoves'], b: StatsBucket['onlyMoves']): Pick<StatsBucket, 'onlyMoves'> {
+  if (!a && !b) return {};
+  return { onlyMoves: { positions: (a?.positions ?? 0) + (b?.positions ?? 0), found: (a?.found ?? 0) + (b?.found ?? 0) } };
+}
+
 /** Adds two buckets — the "merge" step. Associative and commutative, with
  * `emptyStatsBucket()` as identity, so any grouping of games gives one result. */
 export function mergeStatsBuckets(a: StatsBucket, b: StatsBucket): StatsBucket {
@@ -57,6 +62,7 @@ export function mergeStatsBuckets(a: StatsBucket, b: StatsBucket): StatsBucket {
       })) as StatsBucket['opening']['byOpening']
     },
     tactics: mergeTactics(a.tactics, b.tactics),
+    ...mergedOnlyMoves(a.onlyMoves, b.onlyMoves),
     strategy: {
       overall: addSumCount(a.strategy.overall, b.strategy.overall),
       pawnStructure: addSumCount(a.strategy.pawnStructure, b.strategy.pawnStructure),

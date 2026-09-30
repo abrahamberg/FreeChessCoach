@@ -70,7 +70,7 @@ export function StatsPage(): ReactNode {
         <div className="stats-page__sections">
           <RatingStatsSection stats={statsQuery.data.rating} />
           <OpeningStatsSection stats={statsQuery.data.opening} />
-          <TacticsStatsSection motifs={statsQuery.data.tactics} />
+          <TacticsStatsSection motifs={statsQuery.data.tactics} onlyMoves={statsQuery.data.onlyMoves} />
           <StrategyStatsSection stats={statsQuery.data.strategy} />
           <EndgameStatsSection stats={statsQuery.data.endgame} />
         </div>

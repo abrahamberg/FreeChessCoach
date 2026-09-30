@@ -95,6 +95,7 @@ export function finalizeStatsDashboard(bucket: StatsBucket, ratingPoints: Rating
     gamesAnalyzed: bucket.games,
     opening: finalizeOpeningStats(bucket.opening),
     tactics: bucket.tactics,
+    onlyMoves: bucket.onlyMoves && bucket.onlyMoves.positions > 0 ? bucket.onlyMoves : null,
     strategy: finalizeStrategyStats(bucket.strategy),
     endgame: finalizeEndgameStats(bucket.endgame),
     rating: { gamesWithEstimate: bucket.rating.count, points: [...ratingPoints].sort((a, b) => a.playedAt.localeCompare(b.playedAt)) }

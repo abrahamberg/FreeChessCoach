@@ -125,6 +125,7 @@ export function toStatsBucket(entry: StatsEntry): StatsBucket {
     games: 1,
     opening: openingBucketOf(entry),
     tactics: tacticsOf(player.tacticMotifs),
+    ...(player.onlyMoves && { onlyMoves: player.onlyMoves }),
     strategy: {
       overall: sumCountOf(player.scores.strategy),
       pawnStructure: sumCountOf(player.strategySubScores.pawnStructure),
