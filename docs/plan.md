@@ -612,6 +612,8 @@ long input that used to backtrack now returns fast). **Ephemeral:** none.
 the CodeQL check on the pushed head shows 0 new alerts.
 **Commit:** `fix(security): <rule> in <file>` (one per alert)
 
+Status: partial 2026-09-30 — the owner reported five alerts, all the same message: a regex that may run slow on `, which is trapped:` repeated (`js/polynomial-redos`). The only source is `packages/prompts/src/course/playbooks.ts` (`trapEnding`): `.replace(/, which is trapped:.*$/, '')` is now `indexOf` + `slice`, same output (golden unchanged). No dedicated regression test: the input is a dossier fact, reachable only through a full prompt context. Waiting for the CodeQL re-run on the pushed head to confirm 0 alerts; if it still shows some, the owner pastes their file and line.
+
 ### Task 113.2 — Docs match the code
 
 **Branch:** M. **Depends on:** 113.1.

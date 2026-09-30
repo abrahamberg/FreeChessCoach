@@ -222,7 +222,10 @@ function trapEnding(context: CoursePromptContext): string {
   // The Fishing Pole stops at 8…g3 with …Qh2# to come: the mate is the promise.
   if (leafFacts && /forced mate/.test(leafFacts.after)) return `${nodeLabel(context, leafId)}, after which ${standing}. Promise the mate, not material.`;
   // Noah's Ark ends with material level and the bishop on b3 trapped.
-  const trapped = leafFacts?.board.find((fact) => fact.includes('which is trapped'))?.replace(/^attacks /, '').replace(/, which is trapped:.*$/, '');
+  const trappedFact = leafFacts?.board.find((fact) => fact.includes('which is trapped'));
+  // indexOf, not a `.*$` regex: a fact that repeats the marker must not backtrack (CodeQL js/polynomial-redos).
+  const marker = trappedFact?.indexOf(', which is trapped:') ?? -1;
+  const trapped = (marker < 0 ? trappedFact : trappedFact?.slice(0, marker))?.replace(/^attacks /, '');
   if (trapped) return `${nodeLabel(context, leafId)}, after which ${standing} and ${lineBalance(context.startFen, sans)}, but ${trapped} is trapped and will be lost. Promise that piece, nothing more.`;
   // The QGA's 6.Qf3 wins the rook on a8 next move: the line stops at the attack.
   const attacks = leafFacts?.board.filter((fact) => fact.startsWith('attacks ')) ?? [];
