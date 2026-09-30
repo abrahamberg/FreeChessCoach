@@ -6,6 +6,7 @@ import { AlternativesPanel, MoveNote, OpeningLabel } from './MoveNoteContent.js'
 import { MoveQualityBadge } from './MoveQualityBadge.js';
 import { TacticMotifBadge } from './TacticMotifBadge.js';
 import { GAME_START, type MoveListStart } from './moveListStart.js';
+import { pairMoves } from './pair-moves.js';
 import './MoveExplorer.css';
 
 export interface MoveExplorerProps {
@@ -29,30 +30,6 @@ export interface MoveExplorerProps {
   /** A list to read, not to step through (a course drill's moves so far):
    * no nav pills. */
   hideNav?: boolean;
-}
-
-interface MovePair {
-  moveNumber: number;
-  /** Absent on the first row when Black moves first ("1... e5"). */
-  white?: { ply: number; san: string };
-  black?: { ply: number; san: string };
-}
-
-function pairMoves(sanMoves: string[], start: MoveListStart): MovePair[] {
-  const pairs: MovePair[] = [];
-  const offset = start.blackFirst ? 1 : 0;
-  for (let half = 0; half < sanMoves.length + offset; half += 2) {
-    const whiteIndex = half - offset;
-    const whiteSan = whiteIndex >= 0 ? sanMoves[whiteIndex] : undefined;
-    const blackSan = sanMoves[whiteIndex + 1];
-    if (whiteSan === undefined && blackSan === undefined) continue;
-    pairs.push({
-      moveNumber: start.moveNumber + half / 2,
-      white: whiteSan === undefined ? undefined : { ply: whiteIndex + 1, san: whiteSan },
-      black: blackSan === undefined ? undefined : { ply: whiteIndex + 2, san: blackSan }
-    });
-  }
-  return pairs;
 }
 
 /** design.md-adjacent move explorer (not yet in design.md — Daniel requested

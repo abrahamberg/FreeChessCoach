@@ -560,12 +560,12 @@ Deleted with no invariant to guard: `course/dossier-tactics.test.ts`, `course/ou
 **Branch:** M. **Depends on:** 112.1. **Findings:** F10.
 **Read:** the files listed.
 
-- [ ] Keep every `.ts` test under `apps/web/src/features/courses/`,
+- [x] Keep every `.ts` test under `apps/web/src/features/courses/`,
   `apps/web/src/features/board/moveListStart.test.ts` and
   `apps/web/src/sounds/*.test.ts` (pure logic).
-- [ ] Keep `features/courses/player/CourseDrill.test.tsx`: it guards what a
+- [x] Keep `features/courses/player/CourseDrill.test.tsx`: it guards what a
   drill records into the review schedule (user data).
-- [ ] Delete the other `.tsx` tests this branch added:
+- [x] Delete the other `.tsx` tests this branch added:
   `components/AccountMenuSections`, `features/board/MoveExplorer`,
   `features/chat/DebugPanel`, and under `features/courses/`:
   `CourseDebugPanel`, `CourseDetails`, `CourseEditorPage`,
@@ -574,7 +574,7 @@ Deleted with no invariant to guard: `course/dossier-tactics.test.ts`, `course/ou
   `CoursesPage`, `learn/CoursesHomePage`, `player/AskCoachPanel`,
   `player/CourseBoardLayout`, `player/CoursePlayer`, `player/CourseStageBar`,
   plus `features/games/CourseContinueCard` and `features/games/StartShortcuts`.
-- [ ] Before deleting one, check whether it is the only test of a function
+- [x] Before deleting one, check whether it is the only test of a function
   with branching logic defined inside the component. If so, move that function
   to a `.ts` file next to the component and keep one small `.ts` test for it.
   List any you moved in the Status line.
@@ -582,6 +582,8 @@ Deleted with no invariant to guard: `course/dossier-tactics.test.ts`, `course/ou
 **Done when:** `apps/web` has no `.tsx` test added by this branch except
 `CourseDrill.test.tsx`; web tests pass; web wall time is in the Status line.
 **Commit:** `test(web): course logic tests stay; component tests removed per AGENTS.md`
+
+Status: done 2026-09-30 — 21 component tests deleted (28 → 7 `.tsx` tests; the 6 from `main` and `CourseDrill.test.tsx` stay). Web tests before → after: 303 → 240, wall time 39 s → 26 s. Functions with branching logic that only a deleted test covered, moved to `.ts` with a small test each: `pairMoves` → `features/board/pair-moves.ts`, `turnLabel`/`lastUserText` → `features/chat/turn-label.ts`, `callTitle`/`verdict` → `features/courses/debug-call-mark.ts`. Left in place (trivial, no branching worth a test): `initialsFor`, `videoSecondsOf`, `moveRange`, `askFor`.
 
 ---
 

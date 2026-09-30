@@ -1,11 +1,12 @@
 import type { CourseDebugCall } from '@freechesscoach/shared';
 import { useEffect, useState, type ReactNode } from 'react';
 import { describeApiError } from '../../api/client.js';
-import { DebugCallPicker, type DebugCallPickerItem } from '../chat/DebugCallPicker.js';
+import { DebugCallPicker } from '../chat/DebugCallPicker.js';
 import { DebugPanelContent } from '../chat/DebugPanelContent.js';
 import { TurnDebugSnapshotSchema, type TurnDebugSnapshot } from '../chat/useTurnDebugSnapshot.js';
 import '../chat/DebugPanel.css';
 import { useCourseDebug } from './courseApi.js';
+import { callTitle, verdict } from './debug-call-mark.js';
 import './CourseDebugPanel.css';
 
 export interface CourseDebugPanelProps {
@@ -72,17 +73,6 @@ export function CourseDebugPanel({ courseId, generating, onClose }: CourseDebugP
       </div>
     </div>
   );
-}
-
-function callTitle(call: CourseDebugCall): string {
-  const what = call.step === 'episode' ? `episode ${call.episodeId ?? ''}` : call.step;
-  return call.repair ? `${what}, repair` : what;
-}
-
-function verdict(call: CourseDebugCall): NonNullable<DebugCallPickerItem['mark']> {
-  if (call.error) return { text: '!', tone: 'bad' };
-  if (call.problems === null) return { text: '…', tone: 'pending' };
-  return call.problems.length === 0 ? { text: '✓', tone: 'ok' } : { text: `✗${call.problems.length}`, tone: 'bad' };
 }
 
 function Checks({ call }: { call: CourseDebugCall }): ReactNode {
