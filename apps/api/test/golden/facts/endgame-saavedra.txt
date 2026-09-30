@@ -68,6 +68,7 @@ n12 6…Ra4 (Black, Line A) | mistake | before: White is much better → after: 
     alternatives: Rd2+: White is much better; Rc4+: White has a forced mate in 2
 n13 7.Kb3 (White, Line A) | great | before: White has a forced mate in 7 → after: White has a forced mate in 6
     board: moves the king from c2 to b3 | attacks the rook on a4
+    tactics: You forced mate.
     alternatives: Rg8: The position is roughly equal; Rc3: The position is roughly equal
     flags: quiz-eligible, critical
 n14 6.c8=Q (White, Line B) | miss | before: White is much better → after: The position is roughly equal
@@ -102,3 +103,25 @@ PLAN
   e5 technique n11–n13 answer=n13
   e6 defence n14–n16
   e7 recap n13–n13
+
+REVIEW NOTES
+  l1
+    n1 1.c7: Creates a passed pawn on c
+    n3 2.Kb5: You tucked the king away — walks the king to b5, out of the firing line.
+    n6 3…Rd4+: Costs 11 squares of piece mobility
+    n7 4.Kb3: You missed a chance to win a tempo with Kc3 — hits the rook on d4 with a king.
+    n8 4…Rd3+: Costs 11 squares of piece mobility
+    n9 5.Kc2: You won a tempo — hits the rook on d3 with a king.
+    n10 5…Rd4: Their move stopped you winning a rook through a free piece — captures the rook on b4.
+    n12 6…Ra4: They let you force mate with Kb3.
+    n13 7.Kb3: You forced mate.
+  l2
+    n1 1.c7: Creates a passed pawn on c
+    n3 2.Kb5: You tucked the king away — walks the king to b5, out of the firing line.
+    n6 3…Rd4+: Costs 11 squares of piece mobility
+    n7 4.Kb3: You missed a chance to win a tempo with Kc3 — hits the rook on d4 with a king.
+    n8 4…Rd3+: Costs 11 squares of piece mobility
+    n9 5.Kc2: You won a tempo — hits the rook on d3 with a king.
+    n10 5…Rd4: Their move stopped you winning a rook through a free piece — captures the rook on b4.
+    n15 6…Rc4+: Their move stopped you winning a rook through a free piece — captures the rook on d2.
+    n16 7.Qxc4: You won a rook through a free piece — captures the rook on c4.

@@ -59,3 +59,8 @@ PLAN
   e4 solve n5–n6 answer=n5
   e5 solve n7–n7 answer=n7
   e6 recap n7–n7
+
+REVIEW NOTES
+  l1
+    n1 1.Nf7+: You forced mate.
+    n7 4.Nf7#: You forced mate — mates the king on h8, smothered by its own pieces.

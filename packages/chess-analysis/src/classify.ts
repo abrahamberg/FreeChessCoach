@@ -182,6 +182,8 @@ function buildClassifiedMove(input: ClassifiedMoveInput): ClassifiedMove {
     moveSan: input.position.moveSan ?? '',
     evalBefore: input.evalBefore,
     quality: result.classification,
+    isUserMove: mover === input.userColor,
+    evalAfter: input.evalAfter,
     isRecapture: input.isRecapture,
     isBookMove: input.isBookMove,
     openingName: input.opening?.name,

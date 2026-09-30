@@ -18,3 +18,7 @@ PLAN
   e1 question n1–n1
   e2 solve n1–n1 answer=n1
   e3 recap n1–n1
+
+REVIEW NOTES
+  l1
+    n1 1…Rd1#: You forced mate — rook on d1 checks the king on g1, boxed in on the back rank.

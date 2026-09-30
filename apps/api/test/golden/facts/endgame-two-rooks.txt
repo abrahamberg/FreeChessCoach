@@ -28,3 +28,7 @@ PLAN
   e1 goal n1–n1
   e2 technique n1–n3 answer=n3
   e3 recap n3–n3
+
+REVIEW NOTES
+  l1
+    n1 1.Ra7: Missed mate in 2 starting with Rb7

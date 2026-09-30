@@ -7,6 +7,7 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 21.Qxd7+ (White, Line A) | great | before: White has a forced mate in 4 → after: White has a forced mate in 3
     board: moves the queen from a4 to d7 | captures the pawn on d7 | gives check | the check can be answered: no block; take the checking piece with Kxd7; move the king with Kf8 | attacks the knight on e7 | leaves the white queen on d7 hanging
+    tactics: You forced mate.
     alternatives: Qe4: Black has a forced mate in 3; Qg4: Black has a forced mate in 3
     tempting capture: fxe7? White's fxe7 moves the pawn from f6 to e7 | captures the knight on e7. Black answers Qxg2#: moves the queen from f3 to g2 | captures the pawn on g2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on g2; f2, h2 hold its own pieces; f1 and h1 are covered by the queen on g2; the queen on g2 is guarded by the rook on g8 and the bishop on b7. Over the line White takes a knight; Black takes a pawn; at the end Black is a rook up (Black has a forced mate in 1).
     tempting capture: Bxe7? White's Bxe7 moves the bishop from a3 to e7 | captures the knight on e7. Black answers Qxg2#: moves the queen from f3 to g2 | captures the pawn on g2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on g2; f2, h2 hold its own pieces; f1 and h1 are covered by the queen on g2; the queen on g2 is guarded by the rook on g8 and the bishop on b7. Over the line White takes a knight; Black takes a pawn; at the end Black is a rook up (Black has a forced mate in 1).
@@ -19,6 +20,7 @@ n2 21…Kxd7 (Black, Line A) | best | before: White has a forced mate in 3 → a
     alternatives: Kf8: White has a forced mate in 1
 n3 22.Bf5+ (White, Line A) | great | before: White has a forced mate in 3 → after: White has a forced mate in 2
     board: moves the bishop from d3 to f5 | gives check | a double check, with the rook on d1 | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke8, Kc6
+    tactics: You forced mate.
     alternatives: Be2+: Black is winning; Bb5+: Black has a forced mate in 10
     tempting check: Bc4+? White's Bc4+ moves the bishop from d3 to c4 | gives check | a discovered check from the rook on d1 | the check can be answered: block with Bd5, Nd5, Bd4, Qd5, Qd3; take the checking piece with Qxd1+; move the king with Kc8, Ke8, Kc6 | leaves the white rook on d1 hanging. Black answers Qxd1+: moves the queen from f3 to d1 | captures the rook on d1 | gives check | the check can be answered: block with Bf1; the checking piece cannot be taken; the king cannot move. Then Bf1 Rxg2+ Kh1. Over the line Black takes a rook and a pawn; at the end White has a pawn for a queen, two rooks and a knight (Black has a forced mate in 3).
     tempting check: Bb5+? White's Bb5+ moves the bishop from d3 to b5 | gives check | a double check, with the rook on d1 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc8, Ke6. Black answers Ke6: moves the king from d7 to e6. Then Re1+ Be4. Over the line nothing is taken; at the end White has two pawns for a queen, a rook and a knight (Black is winning).
@@ -44,6 +46,7 @@ n6 23…Kf8 (Black, Line A) | best | before: White has a forced mate in 1 → af
     alternatives: Kd8: White has a forced mate in 1
 n7 24.Bxe7# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the bishop from a3 to e7 | captures the knight on e7 | gives checkmate | why it is mate: the king on f8 is checked by the bishop on e7; f7, g8 hold its own pieces; e8 is covered by the bishop on d7; g7 is covered by the pawn on f6; the bishop on e7 is guarded by the pawn on f6
+    tactics: You forced mate.
     alternatives: fxe7+: Black is better; g3: Black has a forced mate in 1
     tempting check: fxe7+? White's fxe7+ moves the pawn from f6 to e7 | captures the knight on e7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg7. Black answers Kg7: moves the king from f8 to g7. Then gxf3 Kf6+ Kf1. Over the line White takes the queen and a knight; at the end White has two pawns for a rook (Black is much better).
     tempting threat: Bg4? White's Bg4 moves the bishop from d7 to g4 | attacks the queen on f3 | leaves the white pawn on f6 hanging | leaves the white bishop on g4 hanging | leaves the white pawn on c3 hanging. Black answers Qxg2#: moves the queen from f3 to g2 | captures the pawn on g2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on g2; f2, h2 hold its own pieces; f1 and h1 are covered by the queen on g2; the queen on g2 is guarded by the bishop on b7. Over the line Black takes a pawn; at the end White has a pawn for a queen, a rook and a knight (Black has a forced mate in 1).
@@ -63,3 +66,11 @@ PLAN
   e4 solve n5–n6 answer=n5
   e5 solve n7–n7 answer=n7
   e6 recap n7–n7
+
+REVIEW NOTES
+  l1
+    n1 21.Qxd7+: You forced mate.; Won the knight, giving back a queen.
+    n2 21…Kxd7: Recaptures the queen on d7
+    n3 22.Bf5+: You forced mate.
+    n5 23.Bd7+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    n7 24.Bxe7#: You forced mate.

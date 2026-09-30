@@ -22,3 +22,7 @@ PLAN
   e1 concept n1–n1
   e2 example n1–n1 answer=n1
   e3 scan n1–n1
+
+REVIEW NOTES
+  l1
+    n1 1.Rxe8#: You forced mate — rook on e8 checks the king on g8, boxed in on the back rank.

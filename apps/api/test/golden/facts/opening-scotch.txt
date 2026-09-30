@@ -93,3 +93,30 @@ PLAN
   e1 line n1–n15
   e2 deviation n16–n21
   e3 recap n15–n15
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Scotch Game: Mieses Variation (C45)
+    n2 1…e5: Theory — Scotch Game: Mieses Variation (C45)
+    n3 2.Nf3: Theory — Scotch Game: Mieses Variation (C45)
+    n4 2…Nc6: Theory — Scotch Game: Mieses Variation (C45)
+    n5 3.d4: Theory — Scotch Game: Mieses Variation (C45)
+    n6 3…exd4: Theory — Scotch Game: Mieses Variation (C45)
+    n7 4.Nxd4: Theory — Scotch Game: Mieses Variation (C45)
+    n8 4…Nf6: Theory — Scotch Game: Mieses Variation (C45)
+    n9 5.Nxc6: Theory — Scotch Game: Mieses Variation (C45)
+    n10 5…bxc6: Theory — Scotch Game: Mieses Variation (C45)
+    n11 6.e5: Theory — Scotch Game: Mieses Variation (C45)
+  l2
+    n1 1.e4: Theory — Scotch Game: Classical Variation (C45)
+    n2 1…e5: Theory — Scotch Game: Classical Variation (C45)
+    n3 2.Nf3: Theory — Scotch Game: Classical Variation (C45)
+    n4 2…Nc6: Theory — Scotch Game: Classical Variation (C45)
+    n5 3.d4: Theory — Scotch Game: Classical Variation (C45)
+    n6 3…exd4: Theory — Scotch Game: Classical Variation (C45)
+    n7 4.Nxd4: Theory — Scotch Game: Classical Variation (C45)
+    n16 4…Bc5: Theory — Scotch Game: Classical Variation (C45)
+    n17 5.Be3: Theory — Scotch Game: Classical Variation (C45)
+    n18 5…Qf6: Theory — Scotch Game: Classical Variation (C45)
+    n19 6.c3: Theory — Scotch Game: Classical Variation (C45)
+    n20 6…Nge7: Theory — Scotch Game: Classical Variation (C45)

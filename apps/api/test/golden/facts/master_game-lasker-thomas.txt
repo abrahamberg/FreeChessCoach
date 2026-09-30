@@ -90,6 +90,7 @@ n20 10…Qe7 (Black, Line A) | blunder | before: The position is roughly equal �
     flags: critical
 n21 11.Qxh7+ (White, Line A) | great | before: White has a forced mate in 7 → after: White has a forced mate in 6
     board: moves the queen from h5 to h7 | captures the pawn on h7 | gives check | the check can be answered: no block; take the checking piece with Kxh7; the king cannot move | leaves the white queen on h7 hanging
+    tactics: You forced mate.
     alternatives: Nxf6+: White is slightly better; O-O-O: White is slightly better
     tempting threat: Nc5? White's Nc5 moves the knight from e4 to c5 | attacks the bishop on b7 | leaves the white pawn on g2 hanging. Black answers g6: moves the pawn from g7 to g6 | attacks the queen on h5 | leaves the black bishop on b7 hanging. Then Nxg6 hxg6 Qxg6+. Over the line White takes two pawns; Black takes a knight; at the end White has two pawns for a bishop (Black is slightly better).
     tempting threat: Nd6? White's Nd6 moves the knight from e4 to d6 | attacks the bishop on b7 | leaves the white knight on d6 hanging | leaves the white pawn on g2 hanging. Black answers g6: moves the pawn from g7 to g6 | attacks the queen on h5 | leaves the black bishop on b7 hanging. Then Nxg6 Qxd6. Over the line White takes a pawn; Black takes a knight; at the end White has a pawn for a bishop (Black is slightly better).
@@ -98,6 +99,7 @@ n22 11…Kxh7 (Black, Line A) | forced | before: White has a forced mate in 6 �
     board: moves the king from g8 to h7 | captures the queen on h7
 n23 12.Nxf6+ (White, Line A) | great | before: White has a forced mate in 6 → after: White has a forced mate in 5
     board: moves the knight from e4 to f6 | captures the bishop on f6 | gives check | a double check, with the bishop on d3 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kh6
+    tactics: You forced mate.
     alternatives: Nc5+: Black is much better; Nxd7: Black is much better
     tempting check: Nd6+? White's Nd6+ moves the knight from e4 to d6 | gives check | a discovered check from the bishop on d3 | the check can be answered: block with Be4, g6; the checking piece cannot be taken; move the king with Kg8, Kh8, Kh6 | attacks the bishop on b7. Black answers Kg8: moves the king from h7 to g8 | leaves the black bishop on b7 hanging. Then Nxb7 Qb4+ c3. Over the line White takes a bishop; at the end White has a knight and a pawn for a queen (Black is much better).
     tempting check: Ng5+? White's Ng5+ moves the knight from e4 to g5 | gives check | a double check, with the bishop on d3 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg8, Kh8, Kh6. Black answers Kh6: moves the king from h7 to h6 | attacks the knight on g5. Then Nh7 Bxe5. Over the line Black takes a knight; at the end White has a pawn for a queen and a bishop (Black is much better).
@@ -108,12 +110,14 @@ n24 12…Kh6 (Black, Line A) | best | before: White has a forced mate in 5 → a
     alternatives: Kh8: White has a forced mate in 1
 n25 13.Neg4+ (White, Line A) | great | before: White has a forced mate in 5 → after: White has a forced mate in 4
     board: moves the knight from e5 to g4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg5
+    tactics: You forced mate.
     alternatives: Nfg4+: White is slightly better; Ne4: Black is better
     flags: quiz-eligible, critical
 n26 13…Kg5 (Black, Line A) | forced | before: White has a forced mate in 4 → after: White has a forced mate in 4
     board: moves the king from h6 to g5 | attacks the knight on f6 | attacks the knight on g4
 n27 14.h4+ (White, Line A) | excellent | before: White has a forced mate in 4 → after: White has a forced mate in 5
     board: moves the pawn from h2 to h4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf4
+    tactics: You forced mate.
     alternatives: f4+: White has a forced mate in 4; Nh7+: Black is much better
 n28 14…Kf4 (Black, Line A) | forced | before: White has a forced mate in 5 → after: White has a forced mate in 3
     board: moves the king from g5 to f4 | attacks the knight on g4
@@ -158,3 +162,22 @@ PLAN
   e9 moment n23–n23 answer=n23
   e10 moment n25–n25 answer=n25
   e11 moment n35–n35
+
+REVIEW NOTES
+  l1
+    n1 1.d4: Theory — Horwitz Defense (A40)
+    n2 1…e6: Theory — Horwitz Defense (A40)
+    n10 5…Bxf6: Recaptures the bishop on f6
+    n12 6…fxe4: Trades pawns on e4
+    n13 7.Nxe4: Recaptures the pawn on e4
+    n15 8.Ne5: Costs 13 squares of piece mobility
+    n17 9.Bd3: Costs 22 squares of piece mobility; You let them win a knight through a free piece with Bxe5 — captures the knight on e5.
+    n19 10.Qh5: Costs 20 squares of piece mobility
+    n20 10…Qe7: They let you force mate with Qxh7+.; Won a queen, but it allowed mate.
+    n21 11.Qxh7+: You forced mate.; Won the bishop, giving back a queen.
+    n22 11…Kxh7: Recaptures the queen on h7
+    n23 12.Nxf6+: You forced mate.
+    n25 13.Neg4+: You forced mate.
+    n27 14.h4+: Missed mate in 4 starting with f4+; You forced mate.; Won the queen, giving back a pawn.
+    n31 16.Be2+: Missed mate in 2 starting with O-O
+    n35 18.Kd2#: Missed mate in 1 starting with O-O-O#

@@ -159,6 +159,7 @@ n32 16…Nxb8 (Black, Line A) | forced | before: White has a forced mate in 1 �
     board: moves the knight from d7 to b8 | captures the queen on b8
 n33 17.Rd8# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the rook from d1 to d8 | gives checkmate | a back-rank mate | why it is mate: the king on e8 is checked by the rook on d8; f7, f8 hold its own pieces; d7 is covered by the rook on d8; e7 is covered by the bishop on g5; the rook on d8 is guarded by the bishop on g5
+    tactics: You forced mate.
     alternatives: Bd2: Black is much better; Bd8: Black is much better
     flags: quiz-eligible, critical
 
@@ -183,3 +184,24 @@ PLAN
   e11 moment n29–n29
   e12 moment n31–n31 answer=n31
   e13 moment n33–n33 answer=n33
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Philidor Defense (C41)
+    n2 1…e5: Theory — Philidor Defense (C41)
+    n3 2.Nf3: Theory — Philidor Defense (C41)
+    n4 2…d6: Theory — Philidor Defense (C41)
+    n5 3.d4: Theory — Philidor Defense (C41)
+    n6 3…Bg4: Theory — Philidor Defense (C41)
+    n7 4.dxe5: Theory — Philidor Defense (C41)
+    n9 5.Qxf3: Recaptures the bishop on f3
+    n15 8.Nc3: Missed Qxb7, winning material on b7
+    n18 9…b5: They let you win a pawn through a free piece with Nxb5 — captures the pawn on b5.
+    n20 10…cxb5: Recaptures the knight on b5
+    n21 11.Bxb5+: Creates a passed pawn on c; Recaptures the pawn on b5; You stopped them winning a queen through a fork — queen on b4 forks the knight on b5, the bishop on c4, the queen on b3 and the king on e1.
+    n26 13…Rxd7: Missed Nxd7, winning material on d7; Recaptures the rook on d7
+    n27 14.Rd1: You stopped them winning a rook through a free piece — captures the rook on d7.
+    n29 15.Bxd7+: Costs 43 squares of piece mobility
+    n30 15…Nxd7: Recaptures the bishop on d7; They let you force mate with Qb8+.; Won a bishop and a queen, but it allowed mate.
+    n31 16.Qb8+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    n33 17.Rd8#: You forced mate.

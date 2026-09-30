@@ -93,3 +93,17 @@ PLAN
   e4 quiz n12–n12 answer=n12
   e5 punish n13–n16
   e6 safety n11–n11
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
+    n2 1…e5: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
+    n3 2.Nf3: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
+    n4 2…Nc6: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
+    n5 3.Bb5: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
+    n6 3…Nf6: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
+    n7 4.O-O: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
+    n8 4…Ng4: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
+    n12 6…hxg4: Recaptures the pawn on g4; You won a tempo — hits the knight on f3 with a pawn.
+    n14 7…Qh4: You took the open file — takes the open h-file with the queen.; Won the queen, giving back a bishop.
+    n15 8.f3: They let you force mate with g3.

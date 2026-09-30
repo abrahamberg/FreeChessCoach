@@ -94,3 +94,32 @@ PLAN
   e1 line n1–n14
   e2 deviation n15–n20
   e3 recap n14–n14
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n2 1…e5: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n3 2.f4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n4 2…exf4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n5 3.Nf3: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n6 3…g5: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n7 4.h4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n8 4…g4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n9 5.Ne5: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n10 5…Nf6: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n11 6.Bc4: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n12 6…d5: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n13 7.exd5: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+    n14 7…Bd6: Theory — King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense (C39)
+  l2
+    n1 1.e4: Theory — King's Gambit Accepted: Abbazia Defense (C36)
+    n2 1…e5: Theory — King's Gambit Accepted: Abbazia Defense (C36)
+    n3 2.f4: Theory — King's Gambit Accepted: Abbazia Defense (C36)
+    n4 2…exf4: Theory — King's Gambit Accepted: Abbazia Defense (C36)
+    n5 3.Nf3: Theory — King's Gambit Accepted: Abbazia Defense (C36)
+    n15 3…d5: Theory — King's Gambit Accepted: Abbazia Defense (C36)
+    n16 4.exd5: Theory — King's Gambit Accepted: Abbazia Defense (C36)
+    n17 4…Nf6: Theory — King's Gambit Accepted: Abbazia Defense (C36)
+    n18 5.Bb5+: Theory — King's Gambit Accepted: Abbazia Defense (C36)
+    n19 5…c6: Theory — King's Gambit Accepted: Abbazia Defense (C36)
+    n20 6.dxc6: Theory — King's Gambit Accepted: Abbazia Defense (C36)

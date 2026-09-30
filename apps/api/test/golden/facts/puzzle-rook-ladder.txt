@@ -29,3 +29,7 @@ PLAN
   e2 solve n1–n2 answer=n1
   e3 solve n3–n3 answer=n3
   e4 recap n3–n3
+
+REVIEW NOTES
+  l1
+    n1 1.Ra7: Missed mate in 2 starting with Rb7

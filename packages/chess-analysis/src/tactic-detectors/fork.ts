@@ -1,5 +1,5 @@
-import type { Square } from 'chess.js';
-import { enemyTargetsOf, formatSquareList, pieceNameAt, pieceValueAt } from '../tactic-board-facts.js';
+import type { Chess, Square } from 'chess.js';
+import { enemyTargetsOf, pieceNameAt, pieceTypeAt, pieceValueAt } from '../tactic-board-facts.js';
 import { PIECE_VALUES } from '../tactics.js';
 import type { TacticClaim } from '../tactic-claim.js';
 import type { TacticDetector } from './types.js';
@@ -36,11 +36,23 @@ export const forkDetector: TacticDetector = {
       expectedGain: forkGain(targets.map((square) => pieceValueAt(after, square)), PIECE_VALUES[after.get(actor)?.type ?? 'p']),
       prize: pieceNameAt(after, victim),
       evidence: { arrows: targets.map((square) => ({ from: actor, to: square })), highlights: [] },
-      detail: `${pieceNameAt(after, actor)} on ${actor} forks ${formatSquareList(targets)}`
+      detail: forkDetail(after, actor, targets)
     };
     return [claim];
   }
 };
+
+/** The pieces forked, by name, pawns left out: "forks b8, d8 and a7" named
+ * empty squares and pawns, and was copied word for word. Null when fewer
+ * than two pieces are left to name (same rule as `board-facts/forks.ts`). */
+function forkDetail(after: Chess, actor: Square, targets: readonly Square[]): string | null {
+  const named = targets.filter((square) => pieceTypeAt(after, square) !== 'p').map((square) => `the ${pieceNameAt(after, square)} on ${square}`);
+  return named.length >= 2 ? `${pieceNameAt(after, actor)} on ${actor} forks ${formatNamedList(named)}` : null;
+}
+
+function formatNamedList(names: readonly string[]): string {
+  return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
 
 function mostValuableTarget(targets: readonly Square[], valueOf: (square: Square) => number): Square | null {
   return [...targets].sort((left, right) => valueOf(right) - valueOf(left))[0] ?? null;

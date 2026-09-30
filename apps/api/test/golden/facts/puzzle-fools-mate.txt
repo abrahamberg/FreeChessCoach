@@ -19,3 +19,7 @@ PLAN
   e1 question n1–n1
   e2 solve n1–n1 answer=n1
   e3 recap n1–n1
+
+REVIEW NOTES
+  l1
+    n1 2…Qh4#: Theory — Barnes Opening: Fool's Mate (A00); You forced mate.

@@ -1,5 +1,7 @@
 import { isImprovableQuality, type ClassifiedMoveDto } from '@freechesscoach/shared';
+import { Chess } from 'chess.js';
 import { playedMoveGap } from './eval-witness.js';
+import { PIECE_VALUES } from './tactics.js';
 
 /**
  * What a move handed the opponent.
@@ -36,6 +38,9 @@ export function computeTacticAllowed(
 
   const opportunity = next?.tacticOpportunity;
   if (!opportunity || !isHardGain(opportunity.gain)) return undefined;
+  // A move that took as much as the answer wins back lets nothing go: the
+  // Fishing Pole's 6.hxg4 takes a knight, and read "They let you win a pawn".
+  if (opportunity.gain?.kind === 'material' && moveTookAtLeast(move, opportunity.gain.pawns)) return undefined;
 
   return {
     type: opportunity.type,
@@ -46,6 +51,21 @@ export function computeTacticAllowed(
     ...(opportunity.confidence === undefined ? {} : { confidence: opportunity.confidence }),
     ...(byMoveSanOf(next) ? { byMoveSan: byMoveSanOf(next) } : {})
   };
+}
+
+/** The move itself captured at least `pawns` worth: it gave nothing away. */
+export function moveTookAtLeast(move: Pick<ClassifiedMoveDto, 'fenBefore' | 'moveSan'>, pawns: number): boolean {
+  return capturedPawns(move) >= pawns;
+}
+
+function capturedPawns(move: Pick<ClassifiedMoveDto, 'fenBefore' | 'moveSan'>): number {
+  if (!move.fenBefore) return 0;
+  try {
+    const captured = new Chess(move.fenBefore).move(move.moveSan).captured;
+    return captured ? PIECE_VALUES[captured] : 0;
+  } catch {
+    return 0;
+  }
 }
 
 /**

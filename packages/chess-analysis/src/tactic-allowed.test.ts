@@ -55,6 +55,14 @@ describe('computeTacticAllowed', () => {
     });
   });
 
+  test('says nothing when the move itself took at least what the reply wins', () => {
+    const takes = move({ fenBefore: '4k3/8/8/3n4/8/8/8/3RK3 w - - 0 1', moveSan: 'Rxd5', quality: 'mistake' });
+    const pawn = reply({ tacticOpportunity: { ...reply().tacticOpportunity!, gain: { kind: 'material', pawns: 1, prize: 'pawn' } } });
+    expect(computeTacticAllowed(takes, pawn)).toBeUndefined();
+    const queen = reply();
+    expect(computeTacticAllowed(takes, queen)).toBeDefined();
+  });
+
   test('says nothing about a move that cost nothing', () => {
     // The tactic was in the position, not in the move — the opponent's own
     // card is where it belongs.

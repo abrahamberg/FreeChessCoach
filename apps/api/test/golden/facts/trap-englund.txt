@@ -79,6 +79,7 @@ n15 8.Qxc3 (White, Line A) | mistake | before: Black is much better → after: B
     alternatives: Nxc3: Black is much better; e3: Black is winning; Kd1: Black is winning
 n16 8…Qc1# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
     board: moves the queen from b2 to c1 | gives checkmate | a back-rank mate | why it is mate: the king on e1 is checked by the queen on c1; e2, f1, f2 hold its own pieces; d1 and d2 are covered by the queen on c1
+    tactics: You forced mate.
     alternatives: Qxc3+: The position is roughly equal; Qb4: The position is roughly equal
     flags: quiz-eligible, critical
 
@@ -95,3 +96,18 @@ PLAN
   e4 quiz n12–n12 answer=n12
   e5 punish n13–n16
   e6 safety n11–n11
+
+REVIEW NOTES
+  l1
+    n1 1.d4: Theory — Englund Gambit: Main Line (A40)
+    n2 1…e5: Theory — Englund Gambit: Main Line (A40)
+    n3 2.dxe5: Theory — Englund Gambit: Main Line (A40)
+    n4 2…Nc6: Theory — Englund Gambit: Main Line (A40)
+    n5 3.Nf3: Theory — Englund Gambit: Main Line (A40)
+    n6 3…Qe7: Theory — Englund Gambit: Main Line (A40)
+    n9 5.Bd2: Concedes the centre
+    n12 6…Bb4: You stopped them winning a queen through a fork.
+    n13 7.Qd2: They let you win a bishop through a free piece with Bxc3 — captures the bishop on c3.
+    n14 7…Bxc3: Trades bishops on c3; You saved a hanging piece — saves the queen on b2.
+    n15 8.Qxc3: Missed Nxc3, winning material on c3; Recaptures the bishop on c3; They let you force mate with Qc1#.; Won a bishop, but it allowed mate.
+    n16 8…Qc1#: You forced mate.

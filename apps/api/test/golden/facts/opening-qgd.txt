@@ -107,3 +107,34 @@ PLAN
   e1 line n1–n17
   e2 deviation n18–n24
   e3 recap n17–n17
+
+REVIEW NOTES
+  l1
+    n1 1.d4: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n2 1…d5: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n3 2.c4: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n4 2…e6: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n5 3.Nc3: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n6 3…Nf6: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n7 4.Bg5: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n8 4…Be7: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n9 5.e3: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n10 5…O-O: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n11 6.Nf3: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n12 6…Nbd7: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n13 7.Rc1: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n14 7…c6: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n15 8.Bd3: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n16 8…dxc4: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+    n17 9.Bxc4: Theory — Queen's Gambit Declined: Orthodox Defense, Bd3 Line (D66)
+  l2
+    n1 1.d4: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35)
+    n2 1…d5: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35)
+    n3 2.c4: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35)
+    n4 2…e6: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35)
+    n5 3.Nc3: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35)
+    n6 3…Nf6: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35)
+    n18 4.cxd5: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35)
+    n19 4…exd5: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35)
+    n20 5.Bg5: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35)
+    n21 5…c6: Theory — Queen's Gambit Declined: Exchange Variation, Positional Variation (D35)

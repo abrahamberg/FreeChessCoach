@@ -100,3 +100,29 @@ PLAN
   e1 line n1–n15
   e2 deviation n16–n23
   e3 recap n15–n15
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n2 1…e5: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n3 2.Nf3: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n4 2…Nc6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n5 3.Bc4: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n6 3…Bc5: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n7 4.c3: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n8 4…Nf6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n9 5.d3: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n10 5…d6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n11 6.O-O: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n12 6…O-O: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n13 7.Re1: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+    n14 7…a6: Theory — Italian Game: Classical Variation, Giuoco Pianissimo (C54)
+  l2
+    n1 1.e4: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
+    n2 1…e5: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
+    n3 2.Nf3: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
+    n4 2…Nc6: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
+    n5 3.Bc4: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
+    n16 3…Nf6: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
+    n17 4.d3: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
+    n18 4…Be7: Theory — Italian Game: Two Knights Defense, Modern Bishop's Opening (C55)
