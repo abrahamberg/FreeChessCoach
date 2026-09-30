@@ -6,89 +6,81 @@ Instructions for AI coding agents. Follow these exactly; when a rule here confli
 
 A personal AI chess coach: users import their games, a Stockfish+LLM pipeline
 analyzes them, and a tool-calling coach agent walks the user through the game
-Socratically while tracking their progress over time. The initial build
-(Phases 0–9) is complete and merged — read before coding:
+Socratically while tracking their progress over time. Creators also turn a PGN
+into a course (a lesson on the board, a YouTube video and a reel).
 
-- `docs/architecture.md` — how it fits together (layout, DB, agent, K8s). Always relevant.
-  It also describes the guided first-run flow ("Welcome flow", `/welcome`).
-- `docs/plan.md` — the implementation plan for whatever is being built next.
-  Currently Phases 79–95, courses and clips: a creator-only course editor
-  (moderator flag), AI course generation from a PGN and a short direction,
-  clips recorded in the browser with the course coach's voice, public course
-  pages and spaced review, then the learning stages (practice, drill, full
-  drill), saved places in the Continue rail, a Courses page replacing the
-  Play tab, the player on Game Review's board layout, and board sounds
-  (also under clip moves), a Course studio in the app's style, and one ply list for the long course and the short clip. Its spec is `docs/courses.md` (read only the
-  section a task names). Everything shipped before is described in
-  `docs/architecture.md`. Open the plan, find the one Phase/Task being worked
-  on, and read only that task's **Read:** files.
-- `docs/diagnose.md` — the spec behind the *shipped* programmatic coach
-  diagnostics (code taxonomy, opportunity/episode counting, confidence,
-  data-quality gates, focus selection). Long; never open it cold or read it
-  end-to-end — only the one section a task explicitly points you at.
-- `docs/algorith.md` — the spec behind the *shipped* Game Report (accuracy,
-  scores, classification, estimated rating, opening book). Same rule: only
-  open the one subsection a task's "Read:" line names, never cold.
-- `docs/marketing-demo.md` — the public marketing pages (`/tour`, `/guide`,
-  `/keys`, `/openai-key`), the seeded demo players, how the screenshots
-  are captured, and the offline live demo at `/demo` (`apps/web/src/demo/`, a
-  fake `fetch` over recorded fixtures with a scripted coach). Read it before
-  touching `apps/web/public/*.html`, `apps/web/src/demo/`, `seed-demo.ts`,
-  `scripts/capture-marketing-shots.mjs` or `scripts/record-demo-fixtures.mjs`;
-  irrelevant otherwise.
-- `docs/tactics-rework.md` — why Game Review's tactic sentences misfired, what
-  was measured, and the layered rebuild that shipped. Read it before touching
+## Docs — read only what your task names
+
+- `docs/plan.md` — the plan being built now: Phases 110–119. First merge the
+  courses branch (a golden facts snapshot, course code in `course/`, board
+  facts in `board-facts/`, pruned tests, the CodeQL alerts), then one set of
+  board facts for game review, the coach and stats, and test tiers for the
+  whole repo. Work one task at a time and read only that task's **Read:**
+  files. Its "How to work through this plan" section applies to every task.
+- `docs/architecture.md` — how everything shipped fits together (layout, DB,
+  agent, courses, K8s, the "Welcome flow" at `/welcome`). Always relevant.
+- `docs/courses.md` — the courses spec: the dossier (§5.4), prompts (§6),
+  verifier (§7), videos (§8), learning (§11), the course, video and reel
+  (§13). Only the section a task names.
+- `docs/diagnose.md` — the spec behind the shipped coach diagnostics (code
+  taxonomy, opportunity/episode counting, confidence, data-quality gates,
+  focus selection). Long: never open it cold, only the section a task names.
+- `docs/algorith.md` — the spec behind the shipped Game Report (accuracy,
+  scores, classification, estimated rating, opening book). Only the
+  subsection a task names.
+- `docs/tactics-rework.md` — why Game Review's tactic sentences misfired and
+  the layered rebuild that shipped. Read it before touching
   `tactic-detectors/`, `classify-tactic-motif.ts`, the `verify-tactic-*`
   files, `tactic-reason-text.ts`, `tactic-card-order.ts`,
-  `played-tactic-alternative.ts`, `tactic-allowed.ts`, or the
-  tactic-prevention path; irrelevant to everything else. §9 is the second
-  review pass (which sentence leads, what a move handed over, an equally good
-  move of the player's own, the vocabulary for a trade) and records one gate
-  that was tried and reverted — read it before re-trying that one. Its §1 cards are pinned as fixtures in
-  `packages/chess-analysis/src/tactic-review-cases.ts`,
+  `played-tactic-alternative.ts`, `tactic-allowed.ts` or the
+  tactic-prevention path. §9 is the second review pass and records one gate
+  that was tried and reverted; read it before retrying that gate. Its §1
+  cards are pinned in `packages/chess-analysis/src/tactic-review-cases.ts`,
   `tactic-precision.test.ts` holds the false-positive ceilings and
-  `tactic-detectors/lichess-puzzle-validation.test.ts` the recall floors — a
-  detector change is expected to move all three, the ceilings only go down and
-  the floors only go up. `tactic-detectors/README.md` is the how-to for adding
-  a motif and is the shorter read when that is all you need.
-
-## Key Documentation (Read only as needed)
-- `docs/architecture.md`: System layout, DB, agent, K8s. (Always relevant for high-level context).
-- `docs/plan.md`: The implementation plan for the current work. Only read the specific Phase/Task being worked on.
-- `docs/diagnose.md`: Spec for programmatic coach diagnostics. Read only the specific section requested by a task.
-- `docs/algorith.md`: Spec for the Game Report. Read only the relevant subsection requested by a task.
-- `docs/marketing-demo.md`: Public marketing pages, demo data, and capture scripts. Read before touching `apps/web/public/` or demo scripts.
-- `docs/tactics-rework.md`: Tactic detection rebuild details. Read before touching `tactic-detectors/` or related logic.
-- `docs/courses.md`: Spec for courses and clips (Phases 79–95), including the course-generation prompts. Read only the section a task names.
-- `docs/threat-model.md`: Trust boundaries, security findings, accepted risks. Read before touching auth headers, the proxy/chart config, the tunnel, outbound calls to user endpoints, or rate limits.
+  `tactic-detectors/lichess-puzzle-validation.test.ts` the recall floors: a
+  detector change moves all three, ceilings only go down, floors only go up.
+  `tactic-detectors/README.md` is the short how-to for adding a motif.
+- `docs/marketing-demo.md` — the public marketing pages (`/tour`, `/guide`,
+  `/keys`, `/openai-key`), the seeded demo players, the screenshots, and the
+  offline demo at `/demo`. Read it before touching `apps/web/public/*.html`,
+  `apps/web/src/demo/`, `seed-demo.ts`, `scripts/capture-marketing-shots.mjs`
+  or `scripts/record-demo-fixtures.mjs`.
+- `docs/threat-model.md` — trust boundaries, security findings, accepted
+  risks. Read it before touching auth headers, the proxy/chart config, the
+  tunnel, outbound calls to user endpoints, or rate limits.
 
 ## Commands
-- `npm run verify`: Full lint + typecheck + test (run before claiming any task done).
-- `npm run verify:changed`: **Fast path** — only lint/typecheck/test packages with git changes.
-- `npm run test:changed`: Only test changed packages.
-- `npm run lint:changed`: Only lint changed packages.
-- `npm run typecheck:changed`: Only typecheck changed packages.
+- `npm run verify`: Full lint + typecheck + test (run before claiming a phase done).
+- `npm run verify:changed`: **Fast path** — lint/typecheck/test only what changed (run after every task).
+- `npm run test:changed` / `lint:changed` / `typecheck:changed`: the parts of `verify:changed`.
+- `npm run test:corpus`: tactic precision ceilings and recall floors (opt-in tier).
+- `npm run test:golden`: the course facts snapshot, no engine needed (opt-in tier; added in Phase 110). `GOLDEN_UPDATE=1` re-records it — only when a task allows it.
+- `npm run course:golden -w apps/api -- --facts [--only <kind|name>]`: print the facts the course prompts get (needs the engine).
+- `npm run docs:prompts`: regenerate `docs/prompts.md` after any change in `packages/prompts/src/`.
 - `npm run dev`: Full local stack (Docker).
-- `npm run dev -w apps/api`: API only.
-- `npm run dev:worker -w apps/api`: Worker only.
+- `npm run dev -w apps/api`: API only. `npm run dev:worker -w apps/api`: Worker only.
 - `npm run dev -w apps/web`: Vite (web) only.
-- `npm run dev -w services/engine`: Stockfish HTTP service.
+- `npm run dev -w services/engine`: Stockfish HTTP service (port 8081; needs `/usr/games/stockfish`, e.g. `sudo apt-get install -y stockfish`).
 - `npm run migrate -w apps/api`: Run DB migrations.
 - `npm run build:images`: Build Docker images.
 - `npm run build-book -w @freechesscoach/chess-analysis`: Regenerate opening-book index.
 
 ## Per-package commands (use when working in a single package)
-- `npm run test -w <pkg>`: Run tests for one package.
-- `npm run lint -w <pkg>`: Lint one package.
-- `npm run typecheck -w <pkg>`: Typecheck one package.
+- `npm run test -w <pkg>`, `npm run lint -w <pkg>`, `npm run typecheck -w <pkg>`.
   - Package names: `@freechesscoach/chess-analysis`, `@freechesscoach/shared`, `@freechesscoach/prompts`, `@freechesscoach/api`, `@freechesscoach/web`, `@freechesscoach/engine`
+  - `@freechesscoach/api` tests start Postgres through Testcontainers and need Docker. Without Docker, say the api tests did not run; never claim they passed.
 
 ## Directory Map
-- `apps/api`: Fastify 5 API + worker. Routes → Services → DB Repositories. `llm/` owns LLM provider SDKs.
+- `apps/api`: Fastify 5 API + worker. Routes → Services → DB Repositories. `llm/` owns LLM provider SDKs. Course services in `services/courses/`.
 - `apps/web`: React 19 + Vite SPA. Feature-folder pattern (`features/`).
 - `packages/shared`: Zod schemas + inferred types (Single source of truth).
-- `packages/chess-analysis`: Pure chess logic (PGN parsing, etc.). No I/O.
-- `packages/prompts`: LLM prompt templates. `docs/prompts.md` is auto-generated.
+- `packages/chess-analysis`: Pure chess logic. No I/O. Inside `src/`:
+  - `tactic-detectors/` — tactic motifs for Game Review and stats.
+  - `diagnostics/` — the BV/MS/TA… diagnosis codes, opportunities and focus selection.
+  - `move-verdict/` — move verdicts.
+  - board facts (what a move does, loose pieces, checks, mates, material in words) — `course-dossier-words.ts`, `course-material.ts` today, `board-facts/` after Phase 111.
+  - course code — flat `course-*.ts` today, `course/` after Phase 111.
+- `packages/prompts`: LLM prompt templates (course prompts in `src/course/`). `docs/prompts.md` is auto-generated.
 - `services/engine`: Stockfish/UCI HTTP microservice.
 - `deploy/helm`: K8s Helm charts.
 
@@ -102,6 +94,8 @@ Socratically while tracking their progress over time. The initial build
 7. **React**: Components/hooks are small. Data fetching in hooks (TanStack Query).
 8. **Agent Runtime**: Cache-stable prompts, append-only messages, bounded context, tool budgets.
 9. **Prompt Convention**: `packages/prompts/src/` uses `buildXPrompt`/`buildXMessages`. Use `[...].filter(Boolean).join('\n\n')`.
+10. **One copy of each chess idea**: chess.js first; what it lacks comes from the shared analysis code (`see()`, `pins()`, `trappedPieces()`, `PIECE_VALUES`, the board facts); where two copies exist, keep the better one and delete the other. Never write a second "is this piece hanging" check.
+11. **Facts are data**: code decides from structured facts and engine lines, never by matching the English a fact renders to. Render words at the edge (prompts, UI). Existing violations are listed in `docs/plan.md` F4 and removed in Phase 114.
 
 ## TypeScript Rules
 - `strict: true`. No `any`, no non-null `!` (except tests). No `enum`.
@@ -109,27 +103,19 @@ Socratically while tracking their progress over time. The initial build
 - Async: No floating promises.
 - Naming: `kebab-case.ts` files, verb functions, predicate booleans.
 
-## Testing Strategy
-- **Approach**: Light TDD for critical paths only. Write tests for core logic (pure functions, domain invariants, regression cases).
-- **Scope**: ~120 test files across 6 packages (down from 1000+). Focus on:
-  - `packages/chess-analysis`: Pure chess logic, diagnostics, game report
-  - `packages/shared`: Zod schemas, diagnosis types
-  - `packages/prompts`: Prompt rendering, coach system
-  - `apps/api`: Core services (coach-agent, analysis, game-import, engine-client), DB repos, routes
-  - `apps/web`: Engine cache, coach hooks
-  - `services/engine`: UCI parser, engine pool, analyze
-- **Workflow**:
-  1. Write failing test for new critical behavior
-  2. Make it pass
-  3. Run `npm run verify:changed` before committing
-  4. Full `npm run verify` before PR/merge
+## Testing
+- **Size today**: about 290 test files (2026-09-30). More tests are not better: every test must guard something that would otherwise break silently.
+- **Kept, default run** (`npm test`, `verify:changed`, PR CI): invariants of pure logic; one regression test per fixed bug in shared logic, on the smallest position that shows it; permission tests on routes; schema tests; pure web logic in `.ts` files.
+- **Kept, opt-in tiers** (nightly CI; run them yourself when you touch the area): `corpus` (`npm run test:corpus`), `golden` (`npm run test:golden`), and `db` (Postgres integration, once Phase 119.3 splits it out).
+- **Ephemeral**: tests that drive development and are then covered by the golden snapshot or the corpus. Name them `*.wip.test.ts` / `*.wip.test.tsx` and delete them before the task's last commit. They are never pushed (CI will reject them after Phase 119.1).
+- **Don't write**: assertions on the exact English of a generated sentence (the golden snapshot covers wording); `.tsx` component tests; per-detector tactic tests (the registry and corpus cover them); snapshot tests for UI; tests of wiring that TypeScript already checks.
+- **Keep them fast**: build expensive fixtures (an analysed game or course) once per file, not per test; fake timers for anything that waits; no real engine or LLM in the default run.
 - **Mocking**: Mock LLM (`apps/api/test/helpers/mock-model.ts`) and Engine HTTP in integration tests.
-- **No**: Snapshot tests for UI, granular component tests, per-detector tactic tests (covered by registry + corpus).
-- **Philosophy**: Full TDD generated ~1000 low-value tests that slowed development. We keep TDD only for critical paths (pure logic, regressions). For UI, integrations, and glue code — write tests after or skip; rely on type safety and manual verification.
+- **Workflow**: write the failing test for a new invariant or bug, make it pass, `npm run verify:changed` before committing, full `npm run verify` before a PR.
 
 ## Git
 - Small commits, conventional messages.
-- No secrets or large fixtures (>50 KB).
+- No secrets or large fixtures (>50 KB per file).
 
 ## Never Do
 - SQL outside `db/repositories/`.

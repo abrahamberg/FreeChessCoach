@@ -1,7 +1,8 @@
 # Courses, videos and reels
 
-The spec behind Phases 79–95 (`docs/plan.md`). Read the section a task points
-at, not the whole file.
+The spec behind Phases 79–109 (their task log: `git show 033e81b:docs/plan.md`)
+and the course tasks of the current `docs/plan.md`. Read the section a task
+points at, not the whole file.
 
 A **course** is a chess lesson built from a PGN: a public board where anyone
 can play the lesson through, hear the coach, and drill it. Signed-in learners
