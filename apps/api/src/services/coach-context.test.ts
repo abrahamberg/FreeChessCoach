@@ -10,6 +10,7 @@ import * as sessionsRepo from '../db/repositories/sessions.js';
 import * as sessionMessagesRepo from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import * as analysesRepo from '../db/repositories/analyses.js';
+import * as focusAreasRepo from '../db/repositories/focus-areas.js';
 import type { Database } from '../db/schema.js';
 import {
   buildEpisodeContext,
@@ -528,6 +529,42 @@ describe('coach-context', () => {
       expect(serialized).not.toContain('Full engine analysis');
       expect(serialized).toContain('Played e5');
       expect(serialized).toContain("instead of the engine's best, c5");
+    });
+
+    test('facts for the student\'s focus areas come with the student\'s own move, and not with the opponent\'s', async () => {
+      const { session } = await seedSession();
+      await focusAreasRepo.insert(db, { userId: session.userId, category: 'hanging_piece', diagnosisCode: 'BV-01', status: 'active', note: 'leaves pieces loose' });
+      await sessionMessagesRepo.insert(db, session.id, 'user', '[session_start]', 0);
+      const historyAfterTurn = await sessionMessagesRepo.listBySession(db, session.id);
+      const analysis = {
+        fen: 'irrelevant',
+        depth: 16,
+        multiPv: 1,
+        bestMove: 'd4',
+        eval: { cp: 25, mateIn: null },
+        lines: [{ moveUci: 'd2d4', moveSan: 'd4', pvSan: ['d4'], cp: 25, mateIn: null }],
+        features: { turn: 'white', boardState: 'none', forks: [], hangingPieces: [], availableMoves: [] }
+      };
+      const build = async (currentPly: number) => {
+        const context = await buildEpisodeContext({
+          db,
+          callLightModel: vi.fn(),
+          session,
+          currentPly,
+          subjectPly: currentPly,
+          historyAfterTurn,
+          staticPart: 'STATIC',
+          dynamicPart: 'DYNAMIC',
+          studentColor: 'white',
+          analyzePosition: vi.fn().mockResolvedValue(analysis)
+        });
+        return JSON.stringify([...context.instructions, ...context.messages]);
+      };
+
+      // Ply 1 is White's e4: the student's own move.
+      expect(await build(1)).toContain('For what you two are working on:');
+      // Ply 2 is Black's reply.
+      expect(await build(2)).not.toContain('For what you two are working on:');
     });
 
     test('skips the post-move analysis fetch when the student played the engine\'s own best move — nothing downstream reads it in that branch', async () => {

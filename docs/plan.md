@@ -958,7 +958,10 @@ without an import cycle; `inspectMoves` adds `facts` on top. `favorableCaptures`
 is unchanged. A checked move's line lists its rendered facts; the loose pieces
 are listed once, with tiers ("undefended" / "can be won"), so `leavesHanging`
 facts are left out of that line. Rule 6 is one sentence; tool descriptions say
-"loose". `docs/prompts.md` was stale, so its diff is larger than this change.
+"loose". `docs/prompts.md` was stale, so its diff is larger than this change. Deviation:
+`betterMoveFacts` keeps the old attacked-and-undefended reading (own helper in
+`better-move.ts`); moving it to the loose tiers changed the golden review notes
+of six courses, and this phase does not re-record.
 
 ### Task 116.3 — "What the move did" in the current position
 
@@ -1022,6 +1025,15 @@ only), `apps/api/src/services/coach-context.ts`.
 
 **Keep:** one render test per row. **Ephemeral:** none.
 **Commit:** `feat(coach): facts for the student's focus areas, up front`
+
+**Status:** done. `focusFacts` (`board-facts/focus-facts.ts`) maps the codes in the
+table to sections and returns null for the opponent's move. All codes in the
+table exist in `families/*.ts` (EG-* by prefix). `buildEpisodeContext` reads the
+active and improving focus areas itself (one query) instead of taking the codes
+as input, because the turn does not hold the profile. `renderFocusFacts` shows
+at most 8 lines under "For what you two are working on:". "Threats" are the
+pieces the side to move could win (`loosePieces`). The EG-* row shows the
+opposition and the rule of the square for the played move only.
 
 ### Task 116.5 — Measure again and merge
 

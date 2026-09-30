@@ -2,6 +2,7 @@ import { cachedSystemMessage, systemMessage, type ChatMessage, type SystemChatMe
 import {
   applySanSequence,
   currentMoveFacts,
+  focusFacts,
   computePositionFeatures,
   diffPositionFeatures,
   moveRefToPly,
@@ -22,6 +23,7 @@ import type { CoachMovePlan, PositionAnalysis } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import * as analysesRepo from '../db/repositories/analyses.js';
 import * as gamesRepo from '../db/repositories/games.js';
+import * as focusAreasRepo from '../db/repositories/focus-areas.js';
 import type { SessionMessageRow } from '../db/repositories/session-messages.js';
 import * as sessionMoveNotesRepo from '../db/repositories/session-move-notes.js';
 import * as sessionsRepo from '../db/repositories/sessions.js';
@@ -175,13 +177,14 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
   const orphanExtendedMessages = includeOrphanedToolCall(input.historyAfterTurn, episode.messages);
   const isPlayMode = input.session.mode === 'play';
 
-  const [position, previousMovePosition, game, otherNotes, threads, gameReport] = await Promise.all([
+  const [position, previousMovePosition, game, otherNotes, threads, gameReport, focusAreas] = await Promise.all([
     getPositionAtPly(input.db, input.session.gameId, input.currentPly),
     input.currentPly > 0 ? getPositionAtPly(input.db, input.session.gameId, input.currentPly - 1) : undefined,
     gamesRepo.findById(input.db, input.session.gameId),
     sessionMoveNotesRepo.listOtherPlies(input.db, input.session.id, [input.currentPly, input.subjectPly]),
     sessionsRepo.getThreads(input.db, input.session.id),
-    isPlayMode ? undefined : analysesRepo.findGameReportByGameId(input.db, input.session.gameId)
+    isPlayMode ? undefined : analysesRepo.findGameReportByGameId(input.db, input.session.gameId),
+    focusAreasRepo.listActiveAndImproving(input.db, input.session.userId)
   ]);
   if (!position) throw new NotFoundError('Current position not found for this session');
   if (!game) throw new NotFoundError('Game not found for this session');
@@ -238,6 +241,17 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
           continuation: postMoveAnalysis?.lines[0]?.pvSan ?? []
         })
       : undefined;
+  // Only the student's own move: ply 1 is White's first move.
+  const studentMoved = input.currentPly % 2 === (input.studentColor === 'white' ? 1 : 0);
+  const studentFocusFacts =
+    playedMove !== null && studentMoved
+      ? focusFacts({
+          fenBefore: preMoveFen,
+          playedSan: playedMove,
+          student: input.studentColor,
+          codes: focusAreas.flatMap((area) => (area.diagnosisCode ? [area.diagnosisCode] : []))
+        })
+      : null;
   // final review #8: the thread-ledger heading is composed inside
   // renderCurrentMoveBlock (packages/prompts), not here — all prompt text
   // lives in packages/prompts, matching the pattern renderAnnotatedPgn/
@@ -248,7 +262,7 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
     input.studentColor,
     renderThreadsBlock(threads),
     playedMove,
-    { analysis, classifiedMove, postMoveAnalysis, featureDelta, moveFacts },
+    { analysis, classifiedMove, postMoveAnalysis, featureDelta, moveFacts, ...(studentFocusFacts ? { focusFacts: studentFocusFacts } : {}) },
     gameSoFar
   );
 

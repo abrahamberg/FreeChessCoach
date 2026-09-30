@@ -1,4 +1,4 @@
-import { inspectMoves, isSoundQuality, plyToMoveRef, renderBoardFact, type BoardFact, type ClassifiedMove, type CurrentMoveFacts, type FeatureDelta } from '@freechesscoach/chess-analysis';
+import { inspectMoves, isSoundQuality, PIECE_NAMES, plyToMoveRef, renderBoardFact, type BoardFact, type ClassifiedMove, type CurrentMoveFacts, type FeatureDelta, type FocusFacts, type MoveOptions } from '@freechesscoach/chess-analysis';
 import {
   MOVE_QUALITY_SYMBOLS,
   TACTIC_MOTIF_LABELS,
@@ -181,6 +181,37 @@ export interface CurrentMoveAnalysisContext {
   featureDelta?: FeatureDelta;
   /** What the played move did and what the best one would have done, from the board facts (`currentMoveFacts`). */
   moveFacts?: CurrentMoveFacts;
+  /** Extra facts for the student's focus areas; only for the student's own move. */
+  focusFacts?: FocusFacts;
+}
+
+const FOCUS_FACT_LINES = 8;
+
+/** Facts for what the student is working on, "to look at, not verdicts". */
+export function renderFocusFacts(facts: FocusFacts): string {
+  const say = (list: readonly BoardFact[]): string => list.map(renderBoardFact).join('; ');
+  const lines: string[] = [];
+  if (facts.loose) {
+    lines.push(`- Loose before the move: ${facts.loose.before.length ? describeLoose(facts.loose.before) : 'nothing'}.`);
+    lines.push(`- Loose after it: ${facts.loose.after.length ? describeLoose(facts.loose.after) : 'nothing'}.`);
+  }
+  if (facts.opponentNext) lines.push(`- The opponent's options after it (to look at, not verdicts): ${describeOptions(facts.opponentNext)}.`);
+  if (facts.ownBefore) lines.push(`- Your options before it (to look at, not verdicts): ${describeOptions(facts.ownBefore)}.`);
+  if (facts.newSquare) {
+    const { piece, safe } = facts.newSquare;
+    lines.push(`- The ${PIECE_NAMES[piece.piece]} on ${piece.square} ${safe ? 'cannot be won there' : 'can be won there'}.`);
+  }
+  if (facts.endgame?.length) lines.push(`- Endgame: ${say(facts.endgame)}.`);
+  return lines.length ? `For what you two are working on:\n${lines.slice(0, FOCUS_FACT_LINES).join('\n')}` : '';
+}
+
+function describeOptions({ checks, captures, threats }: MoveOptions): string {
+  const parts = [
+    checks.length ? `checks ${checks.join(', ')}` : 'no checks',
+    captures.length ? `captures ${captures.join(', ')}` : 'no captures',
+    threats.length ? `could win ${describeLoose(threats)}` : 'nothing to win'
+  ];
+  return parts.join('; ');
 }
 
 const MOVE_FACT_LINES = 10;
@@ -302,6 +333,11 @@ function renderAnalysisSection(ply: number, playedMove: string | null, ctx: Curr
   if (ctx.moveFacts && playedMove !== null) {
     const facts = renderMoveFacts(playedMove, ctx.moveFacts);
     if (facts) parts.push(facts);
+  }
+
+  if (ctx.focusFacts) {
+    const focus = renderFocusFacts(ctx.focusFacts);
+    if (focus) parts.push(focus);
   }
 
   // Each alternative gets its own PV, capped at 4 full moves — enough for

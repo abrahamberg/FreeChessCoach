@@ -146,3 +146,4 @@ export * from './eval-witness.js';
 export * from './move-verdict/index.js';
 export * from './win-probability.js';
 export * from './board-facts/current-move.js';
+export * from './board-facts/focus-facts.js';
