@@ -58,6 +58,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 - `npm run course:golden -w apps/api -- --facts [--only <kind|name>]`: print the facts the course prompts get (needs the engine).
 - `npm run docs:prompts`: regenerate `docs/prompts.md` after any change in `packages/prompts/src/`.
 - `npm run dev`: Full local stack (Docker).
+- `npm run dev:native:setup` then `npm run dev:native`: the full stack **without Docker** (sandboxes). Setup, once per box: installs Stockfish (apt), fetches Node 24 through npm if the box's Node is older than 24.15, runs `npm ci`, creates a local Postgres cluster. It needs the Postgres 16 server binaries and `redis-server` already installed. Run starts Postgres, Redis, migrations, engine, api, worker and web (`http://localhost:5173`) in the foreground with `LLM_FAKE=1` and `AUTH_MODE=dev-stub`; Ctrl-C stops all of it. State and logs live in `/tmp/fcc-native` (override with `FCC_NATIVE_DIR`). To use Node 24 in your own shell: `export PATH=/tmp/fcc-native/node/node_modules/node/bin:$PATH`. The api tests still need Docker (Testcontainers).
 - `npm run dev -w apps/api`: API only. `npm run dev:worker -w apps/api`: Worker only.
 - `npm run dev -w apps/web`: Vite (web) only.
 - `npm run dev -w services/engine`: Stockfish HTTP service (port 8081; needs `/usr/games/stockfish`, e.g. `sudo apt-get install -y stockfish`).

@@ -13,6 +13,8 @@
   "scripts": {
     "dev": "docker compose up -d --build postgres engine migrate api worker web-dev",
     "dev:down": "docker compose down",
+    "dev:native:setup": "scripts/dev-native-setup.sh",
+    "dev:native": "scripts/dev-native.sh",
     "build:images": "scripts/build-images.sh",
     "build-eval": "npm run build-lichess-eval-index -w @freechesscoach/api --",
     "find-eval": "npm run find-lichess-eval-fen -w @freechesscoach/api --",
