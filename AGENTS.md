@@ -69,7 +69,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 ## Per-package commands (use when working in a single package)
 - `npm run test -w <pkg>`, `npm run lint -w <pkg>`, `npm run typecheck -w <pkg>`.
   - Package names: `@freechesscoach/chess-analysis`, `@freechesscoach/shared`, `@freechesscoach/prompts`, `@freechesscoach/api`, `@freechesscoach/web`, `@freechesscoach/engine`
-  - `@freechesscoach/api` tests start Postgres through Testcontainers and need Docker. Without Docker, point them at a local Postgres 16 (the helpers use `TEST_DATABASE_URL` and skip Testcontainers): `initdb -D /tmp/fcc-pg/data -A trust` and `pg_ctl -D /tmp/fcc-pg/data -o '-p 5433 -k /tmp' start` as the `postgres` user (`apt-get install postgresql`), then `TEST_DATABASE_URL=postgres://postgres@localhost:5433/postgres npm test -w @freechesscoach/api`. If you can do neither, say the api tests did not run; never claim they passed.
+  - `@freechesscoach/api` `db` tests (`*.db.test.ts`) start Postgres through Testcontainers and need Docker; `npm run test:unit -w @freechesscoach/api` needs neither. Without Docker, point the db tests at a local Postgres 16 (the helpers use `TEST_DATABASE_URL` and skip Testcontainers): `initdb -D /tmp/fcc-pg/data -A trust` and `pg_ctl -D /tmp/fcc-pg/data -o '-p 5433 -k /tmp' start` as the `postgres` user (`apt-get install postgresql`), then `TEST_DATABASE_URL=postgres://postgres@localhost:5433/postgres npm test -w @freechesscoach/api`. If you can do neither, say the api tests did not run; never claim they passed.
 
 ## Directory Map
 - `apps/api`: Fastify 5 API + worker. Routes → Services → DB Repositories. `llm/` owns LLM provider SDKs. Course services in `services/courses/`.
