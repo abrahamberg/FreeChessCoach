@@ -439,6 +439,19 @@ involved; absent `preventable`/`prevented` (old reports) count as 0.
 
 A practice session walks a student through an assigned batch of positions (`puzzle_assignments`). It is **discuss-only**: the board is turned to the student's side and locked, with no hint and no Explore. The coach sees the whole stored line, asks for one move at a time in chat, and once the student has established a move calls the server tool `play_next_move` (`services/puzzle-move-commit.ts`), which plays the line's next move and the opponent's forced reply and advances `puzzle_sessions.currentPly`. The line never changes and messages stay tagged with the same item index, so it is one chat episode per position. Each position really is its own episode: a turn replays only the messages tagged with the current item (opened with a synthesized "Begin practice N of M"), and the system prompt carries just a ledger of earlier positions' results. When the line is fully played out the coach calls `advance_puzzle`, or the student uses "Next practice" (`POST /api/puzzle-sessions/:id/advance-item`). Every turn the coach's prompt carries the student's persona voice, the engine's analysis of the live position (best move, lines, features — best-effort, and the coach can call `get_engine_analysis` for more), and the rest of the known line with a checked note per move (captures, checks, forks, what it leaves hanging, from `inspectMoves`). The coach is told to run `check_moves` on any move the student proposes off the line before commenting on it, so it never calls a move wrong or illegal from memory. The header menu has "Reset session" (`POST /api/puzzle-sessions/:id/reset`: abandons the session and opens a fresh conversation on the same item) and, in dev builds, "Debug last answer" (`GET /api/puzzle-sessions/:id/debug/last-turn`, backed by `puzzle_sessions.debug_snapshot`). The UI and coach call these "practice", not "puzzles".
 
+## Board facts
+
+`packages/chess-analysis/src/board-facts/` holds what is true on the board
+after a move, as data: `BoardFact` (`types.ts`) is a discriminated union
+(`moved`, `captures`, `gives`, `forks`, `attacks`, `leavesHanging`, ...), and
+the builders (`move-facts.ts`, `check-facts.ts`, `better-move.ts`, ...) return
+`BoardFact[]`. `renderBoardFact` (`render.ts`) is the only place their English
+lives; prompts and the dossier text call it at the edge, and code that
+decides something reads `kind` and the fields. `loosePieces` (`free` /
+`winnable`) and `forks` are the one definition of a loose piece and a fork.
+Today the courses' dossier and the verifier use them; game review, the coach
+and stats follow in Phases 115-117.
+
 ## Courses
 
 A course is a chess lesson built from a PGN (spec: `docs/courses.md`),

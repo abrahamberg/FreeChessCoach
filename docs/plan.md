@@ -780,7 +780,7 @@ Status: done 2026-09-30 — `board-facts/loose-pieces.ts` (`loosePieces`), `boar
 
 ### Task 114.5 — Docs and merge
 
-- [ ] AGENTS.md "Chess facts" rule points at `board-facts/`;
+- [x] AGENTS.md "Chess facts" rule points at `board-facts/`;
   `docs/architecture.md` gets one paragraph on `board-facts/` (what it is,
   who uses it, `renderBoardFact`).
 - [ ] `npm run verify`, `test:golden`, `test:corpus`; push; open a PR.
