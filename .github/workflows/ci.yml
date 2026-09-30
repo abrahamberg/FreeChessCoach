@@ -94,6 +94,15 @@ jobs:
         if: steps.scope.outputs.full == 'true'
         run: npm test
 
+      # The opt-in tiers: the tactic corpus (no engine) and the golden course
+      # facts (fixture engine), both pure replays. Nightly and on a manual
+      # full run only; a PR reaches them by running them itself.
+      - name: Run corpus and golden tiers
+        if: github.event_name == 'schedule' || github.event.inputs.full == 'true'
+        run: |
+          npm run test:corpus
+          npm run test:golden
+
       # vitest walks the real import graph from every changed file (working
       # tree + everything committed since the base branch) to the test files
       # that could exercise it, so this isn't a hand-maintained path map —
