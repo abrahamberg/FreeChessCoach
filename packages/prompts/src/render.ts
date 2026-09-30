@@ -1,5 +1,5 @@
 import { DIAGNOSTIC_DETECTORS, plyToMoveRef } from '@freechesscoach/chess-analysis';
-import { ALL_DIAGNOSIS_CODES, MISTAKE_CATEGORIES } from '@freechesscoach/shared';
+import { ALL_DIAGNOSIS_CODES, capitalise, MISTAKE_CATEGORIES } from '@freechesscoach/shared';
 import type { CoachingPlan, DiagnosisCodeId, MistakeCategory, Thread } from '@freechesscoach/shared';
 
 export const MISTAKE_CATEGORIES_BLOCK = MISTAKE_CATEGORIES.join(', ');
@@ -145,7 +145,7 @@ export function renderRecentFindingsBlock(findings: RecentFinding[], now: Date):
  * context.ts) so they all describe a ply identically. */
 export function describeMoveRef(ply: number): string {
   const ref = plyToMoveRef(ply);
-  return ref.color === null ? 'the game start' : `${capitalize(ref.color)}'s move ${ref.moveNumber}`;
+  return ref.color === null ? 'the game start' : `${capitalise(ref.color)}'s move ${ref.moveNumber}`;
 }
 
 /**
@@ -179,10 +179,6 @@ export function renderThreadsBlock(threads: Thread[]): string {
 function renderThreadLine(thread: Thread): string {
   const hypothesis = thread.hypothesis ? ` (hypothesis: ${thread.hypothesis})` : '';
   return `- [${thread.status}] ${thread.topic}${hypothesis}`;
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 /** Derived, not hand-maintained: cuts a tool's full description (tools.ts's

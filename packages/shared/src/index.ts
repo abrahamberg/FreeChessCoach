@@ -28,6 +28,7 @@ export * from './llm.js';
 export * from './llm-providers.js';
 export * from './puzzle-session.js';
 export * from './session.js';
+export * from './text.js';
 export * from './stats-bucket.js';
 export * from './stats-dashboard.js';
 export * from './tactic-baseline.js';

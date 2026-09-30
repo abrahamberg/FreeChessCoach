@@ -3,7 +3,8 @@ import { inspectMoves } from '../inspect-moves.js';
 import { PIECE_NAMES } from '../piece-names.js';
 import { blockedCheck, checkAnswers, discovered, isBackRankMate, mateNet } from './check-facts.js';
 import { endgameGeometry } from './endgame-geometry.js';
-import { attackedPieces, canBeTaken, valueOf } from './safety.js';
+import { attackedPieces, canBeTaken } from './safety.js';
+import { pieceValueOrKing } from '../tactics.js';
 
 /** What a move does on the board, from chess.js alone: captures, checks,
  * pieces it now attacks (and whether they are pinned to their king), what it
@@ -30,7 +31,7 @@ export function boardFacts(fenBefore: string, san: string): string[] {
   if (inspected.gives !== 'checkmate') facts.push(...attackedPieces(inspected.resultFen, inspected.to as Square));
   // A capture taken back is a trade, not a piece left hanging: 3…cxd4 read
   // "leaves the pawn on d4 hanging" in every Open Sicilian.
-  const traded = (square: string): boolean => square === inspected.to && inspected.captured !== null && valueOf(inspected.captured) >= valueOf(inspected.piece);
+  const traded = (square: string): boolean => square === inspected.to && inspected.captured !== null && pieceValueOrKing(inspected.captured) >= pieceValueOrKing(inspected.piece);
   const owner = new Chess(fenBefore).turn() === 'w' ? 'white' : 'black';
   for (const piece of inspected.leavesHanging) {
     // Whose piece: the model read "exd5 leaves the pawn on g4 hanging" as

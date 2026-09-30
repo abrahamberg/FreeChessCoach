@@ -434,25 +434,27 @@ Status: done 2026-09-30 — no `course-*.ts` left in `packages/chess-analysis/sr
 **Read:** `packages/chess-analysis/src/tactics.ts` (`PIECE_VALUES`),
 `packages/chess-analysis/src/config.ts` (`CONFIG.courses`).
 
-- [ ] One `pieceValueOrKing(piece)` (king = 100, else `PIECE_VALUES`) in
+- [x] One `pieceValueOrKing(piece)` (king = 100, else `PIECE_VALUES`) in
   `tactics.ts`. Delete both `valueOf` copies (`board-facts/safety.ts`,
   `course/tempting.ts`) and use it.
-- [ ] One `capitalise(word)` in `packages/shared/src/text.ts`, exported from
+- [x] One `capitalise(word)` in `packages/shared/src/text.ts`, exported from
   shared's index. Replace the copies in `course/dossier-text.ts`,
   `board-facts/material.ts`, `prompts/src/course/context.ts` and `capitalize` in
   `prompts/src/render.ts`.
-- [ ] Move into `CONFIG.courses`, with the same values: `SWING_WIN_DROP`,
+- [x] Move into `CONFIG.courses`, with the same values: `SWING_WIN_DROP`,
   both `MAX_CANDIDATES` (as `maxReelCandidates` and `maxTemptingCandidates`),
   `BEST_LINE_PLIES`, `MAX_REFUTATION_PLIES`, `FULL_BLOCK_NODE_LIMIT`,
   `REEL_MOVES_BEFORE`, `REEL_MOVES_AFTER`, `REEL_MATE_REACH`. Delete the old
   constants and update every importer (grep all packages, the web app
   included).
-- [ ] Leave `threatens` where it is (Phase 114 decides its home).
+- [x] Leave `threatens` where it is (Phase 114 decides its home).
 
 **Keep / Ephemeral:** none new.
 **Done when:** `grep -rn "const valueOf\|function capitali" packages apps
 --include=*.ts` shows only the shared ones; golden unchanged.
 **Commit:** `refactor(analysis): one piece value with the king, one capitalise, course limits in CONFIG`
+
+Status: done 2026-09-30 — typecheck, lint, package tests (api against a local Postgres), web tests and `test:golden` (66) pass, snapshot unchanged. `valueOf`/`capitali` grep shows only the shared `capitalise`.
 
 ### Task 111.3 — Course services into `services/courses/`
 

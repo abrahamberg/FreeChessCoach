@@ -1,15 +1,8 @@
+import { CONFIG } from '../config.js';
 import type { CourseDossier, CourseNodeFacts } from './dossier.js';
 import type { CourseSkeleton } from './skeleton.js';
 import type { CourseTree } from './tree.js';
 
-/** docs/courses.md §13.3: at most this many moves before the climax, and after it. */
-export const REEL_MOVES_BEFORE = 6;
-export const REEL_MOVES_AFTER = 2;
-/** A mate this close after the climax is the payoff: the reel runs to it
- * (the first real run ended a trap's reel two moves before its mate). */
-export const REEL_MATE_REACH = 4;
-const MAX_CANDIDATES = 5;
-const SWING_WIN_DROP = 25;
 const BRILLIANT = new Set(['brilliant', 'great']);
 
 export type ReelStyle = 'highlight' | 'puzzle' | 'promo';
@@ -57,7 +50,7 @@ export function reelCandidates(tree: CourseTree, dossier: CourseDossier, skeleto
   for (const node of dossier.nodes) if (node.san.endsWith('#')) add('mate', node.nodeId, 1);
   if (skeleton?.kind === 'trap') add('trap', skeleton.answerNodeId, 2);
   for (const node of dossier.nodes) if (BRILLIANT.has(node.quality)) add('brilliant', node.nodeId, 3);
-  for (const node of [...dossier.nodes].sort((a, b) => b.winDrop - a.winDrop)) if (node.winDrop >= SWING_WIN_DROP) add('swing', node.nodeId, 4);
+  for (const node of [...dossier.nodes].sort((a, b) => b.winDrop - a.winDrop)) if (node.winDrop >= CONFIG.courses.swingWinDrop) add('swing', node.nodeId, 4);
   // Last: the one clear move with a threat in it, so a book line with no
   // blunder still has a reel (the Two Knights' Fried Liver, 7.Qf3+ forking
   // king and knight).
@@ -66,12 +59,12 @@ export function reelCandidates(tree: CourseTree, dossier: CourseDossier, skeleto
   const puzzleStart = skeleton?.kind === 'puzzle' ? tree.nodes.find((node) => node.parentId === null)?.id : undefined;
   return found
     .sort((a, b) => a.rank - b.rank)
-    .slice(0, MAX_CANDIDATES)
+    .slice(0, CONFIG.courses.maxReelCandidates)
     .map(({ reason, climax }, index) => {
-      const before = ancestors(byId, climax.nodeId).slice(-REEL_MOVES_BEFORE);
-      const reach = descendants(tree, climax.nodeId, REEL_MATE_REACH);
+      const before = ancestors(byId, climax.nodeId).slice(-CONFIG.courses.reelMovesBefore);
+      const reach = descendants(tree, climax.nodeId, CONFIG.courses.reelMateReach);
       const mate = reach.findIndex((nodeId) => byId.get(nodeId)?.san.endsWith('#'));
-      const after = mate >= 0 ? reach.slice(0, mate + 1) : reach.slice(0, REEL_MOVES_AFTER);
+      const after = mate >= 0 ? reach.slice(0, mate + 1) : reach.slice(0, CONFIG.courses.reelMovesAfter);
       const findable = reason === 'puzzle' || climax.quizEligible || climax.san.endsWith('#');
       return {
         id: `r${index + 1}`,

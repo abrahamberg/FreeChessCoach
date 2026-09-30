@@ -1,16 +1,12 @@
-import { Chess, type PieceSymbol, type Square } from 'chess.js';
+import { Chess, type Square } from 'chess.js';
 import { PIECE_NAMES } from '../piece-names.js';
 import { see } from '../see.js';
 import { isProfitableCaptureOn } from '../tactic-board-facts.js';
 import { pins } from '../tactic-pins.js';
 import { trappedPieces } from '../tactic-trapped.js';
-import { PIECE_VALUES } from '../tactics.js';
+import { pieceValueOrKing } from '../tactics.js';
 
 const VALUABLE = new Set(['n', 'b', 'r', 'q']);
-
-/** tactics.ts's values, the king above everything: it never trades, and
- * never traps a piece. */
-export const valueOf = (piece: PieceSymbol): number => (piece === 'k' ? 100 : PIECE_VALUES[piece]);
 
 /** A legal capture on the square that does not lose material over the
  * whole exchange (the shared SEE): a free piece, or one only traded off, as
@@ -68,7 +64,7 @@ function isTrapped(fenAfter: string, square: Square, by: Square): boolean {
   const chess = new Chess(fenAfter);
   const piece = chess.get(square);
   const attacker = chess.get(by);
-  if (!piece || !attacker || valueOf(attacker.type) >= valueOf(piece.type) || isLostOn(fenAfter, by)) return false;
+  if (!piece || !attacker || pieceValueOrKing(attacker.type) >= pieceValueOrKing(piece.type) || isLostOn(fenAfter, by)) return false;
   return trappedPieces(chess, piece.color).some((hit) => hit.square === square);
 }
 

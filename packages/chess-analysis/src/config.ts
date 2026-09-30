@@ -467,6 +467,9 @@ export const CONFIG = {
     /** §13.5: a tempting move costs the mover at least this much win%. */
     temptingDrop: 15,
     maxTempting: 3,
+    /** Candidates per position sent to the engine, before the engine thins them. */
+    maxTemptingCandidates: 6,
+    maxRefutationPlies: 4,
     /** At a puzzle's or tactics course's learner move: every check first. */
     maxSolveTempting: 5,
     /** There, a check that costs this much win% is explained too. */
@@ -482,6 +485,19 @@ export const CONFIG = {
     maxCriticalNoteSentences: 4,
     /** A puzzle's solve line: the checks, captures and threats, then the move. */
     maxSolveNoteSentences: 5,
+    /** docs/courses.md §13.3: at most this many moves before the reel's climax, and after it. */
+    reelMovesBefore: 6,
+    reelMovesAfter: 2,
+    /** A mate this close after the climax is the payoff: the reel runs to it
+     * (the first real run ended a trap's reel two moves before its mate). */
+    reelMateReach: 4,
+    maxReelCandidates: 5,
+    /** A node that drops the mover this much win% is a swing worth a reel. */
+    swingWinDrop: 25,
+    /** Plies of the engine's best line shown in a node's facts. */
+    bestLinePlies: 6,
+    /** A dossier with more nodes than this is printed compactly. */
+    fullBlockNodeLimit: 40,
     /** A reveal says why the answer works, not just the move (gemma wrote "6... Bb4"). */
     minRevealWords: 6,
     /** §13.4 the YouTube video's budgets. Spoken words per second at Kokoro

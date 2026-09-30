@@ -1,6 +1,7 @@
 import { captureWords, courseNodeAncestry, lineBalance, TACTIC_MOTIF_PHRASES, type CourseSkeleton } from '@freechesscoach/chess-analysis';
+import { capitalise } from '@freechesscoach/shared';
 import type { CourseBudget } from './budget.js';
-import { capitalise, midSentence, nodeLabel, promptVideos, type CoursePromptContext } from './context.js';
+import { midSentence, nodeLabel, promptVideos, type CoursePromptContext } from './context.js';
 
 /** docs/courses.md §6.3, one playbook per kind, filled from the skeleton
  * (§5.5), the budget and the course. Missing facts are named as missing, so

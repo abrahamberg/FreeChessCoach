@@ -1,8 +1,8 @@
 import { renderCourseDossier, type CourseSkeleton } from '@freechesscoach/chess-analysis';
-import { COURSE_ROLES } from '@freechesscoach/shared';
+import { capitalise, COURSE_ROLES } from '@freechesscoach/shared';
 import { CALIBRATION } from '../calibration.js';
 import { courseBudget, type CourseBudget } from './budget.js';
-import { buildCourseSystemPrompt, capitalise, lineMovetext, nodeLabel, promptVideos, type CourseMessages, type CoursePromptContext } from './context.js';
+import { buildCourseSystemPrompt, lineMovetext, nodeLabel, promptVideos, type CourseMessages, type CoursePromptContext } from './context.js';
 import { episodeRange } from './playbooks.js';
 
 export const COURSE_OUTLINE_JSON_SCHEMA = `{

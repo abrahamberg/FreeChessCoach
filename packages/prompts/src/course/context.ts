@@ -75,10 +75,6 @@ export function midSentence(words: string): string {
   return words.startsWith('The ') ? `t${words.slice(1)}` : words;
 }
 
-export function capitalise(side: string): string {
-  return side.charAt(0).toUpperCase() + side.slice(1);
-}
-
 /** "n11 (6.Bc3)", so the model sees the move beside the id. */
 export function nodeLabel(context: CoursePromptContext, nodeId: string): string {
   const byId = new Map(context.nodes.map((node) => [node.id, node]));

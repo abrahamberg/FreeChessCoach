@@ -1,9 +1,8 @@
+import { capitalise } from '@freechesscoach/shared';
+import { CONFIG } from '../config.js';
 import type { CourseDossier, CourseLineFacts, CourseNodeFacts } from './dossier.js';
 import type { CourseTemptingFacts } from './tempting.js';
 
-/** Past this many nodes, routine moves get one line and only the notable
- * ones get the full block (§5.4: a long game stays compact). */
-const FULL_BLOCK_NODE_LIMIT = 40;
 const ROUTINE_QUALITIES = new Set(['book', 'best', 'excellent', 'good']);
 /** A "better" move only where the course move is an error: the Caro-Kann
  * course read 1…c6 "best instead: c5", a move nobody teaching it would play. */
@@ -13,7 +12,9 @@ const ERROR_QUALITIES = new Set(['inaccuracy', 'mistake', 'blunder', 'miss']);
  * reaches the model, so it can't quote one back. */
 export function renderCourseDossier(dossier: CourseDossier): string {
   const lineNames = new Map(dossier.lines.map((line) => [line.lineId, line.name]));
-  const compact = dossier.nodes.length > FULL_BLOCK_NODE_LIMIT;
+  // Past the limit, routine moves get one line and only the notable ones the
+  // full block (§5.4: a long game stays compact).
+  const compact = dossier.nodes.length > CONFIG.courses.fullBlockNodeLimit;
   // Each line's last move is where it lands (Marshall's 23…Qg3): never one line.
   const lastOfLine = new Map(dossier.nodes.map((node) => [node.lineId, node.nodeId]));
   const ends = new Set(lastOfLine.values());
@@ -80,8 +81,4 @@ function isNotable(node: CourseNodeFacts): boolean {
 
 function moveLabel(node: CourseNodeFacts): string {
   return `${node.moveNumber}${node.side === 'white' ? '.' : '…'}${node.san}`;
-}
-
-function capitalise(word: string): string {
-  return word.charAt(0).toUpperCase() + word.slice(1);
 }

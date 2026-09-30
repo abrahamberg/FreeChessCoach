@@ -7,15 +7,9 @@ import { boardFacts } from '../board-facts/move-facts.js';
 import { lineWords } from '../board-facts/verdict-words.js';
 import { captureWords, exchangeLoss, lineBalance, settledLine } from '../board-facts/material.js';
 import type { CourseTree } from './tree.js';
-import { PIECE_VALUES } from '../tactics.js';
+import { pieceValueOrKing } from '../tactics.js';
 import { toCpWhite, winPctFor } from '../win-probability.js';
 
-/** tactics.ts's values, with the king above everything: it is never given
- * away, and a piece it attacks is threatened only when undefended. */
-const valueOf = (piece: string): number => (piece === 'k' ? 100 : (PIECE_VALUES[piece as PieceSymbol] ?? 0));
-/** Candidates per position sent to the engine, before the engine thins them. */
-const MAX_CANDIDATES = 6;
-const MAX_REFUTATION_PLIES = 4;
 const KIND_ORDER = { check: 0, capture: 1, threat: 2 } as const;
 
 export type TemptingKind = keyof typeof KIND_ORDER;
@@ -80,7 +74,7 @@ export function temptingCandidates(tree: CourseTree, dossier: CourseDossier, kin
     const ranked = new Set([facts.san, ...(solving ? [] : [...(facts.bestInstead ? [facts.bestInstead.san] : []), ...facts.alternatives.map((line) => line.san)])]);
     return movesWorthTrying(fenBefore)
       .filter((candidate) => !ranked.has(candidate.san))
-      .slice(0, MAX_CANDIDATES)
+      .slice(0, CONFIG.courses.maxTemptingCandidates)
       .map(({ san, kind: moveKind, fen }) => ({ nodeId: facts.nodeId, san, kind: moveKind, fenBefore, fen, solving }));
   });
 }
@@ -100,7 +94,7 @@ function movesWorthTrying(fen: string): WorthTrying[] {
     const after = new Chess(move.after);
     if (after.isCheckmate() || kingTakesForNothing(after, move)) return [];
     if (move.san.endsWith('+')) return [{ san: move.san, kind: 'check', fen: move.after, value: 0 }];
-    if (move.captured) return [{ san: move.san, kind: 'capture', fen: move.after, value: valueOf(move.captured) }];
+    if (move.captured) return [{ san: move.san, kind: 'capture', fen: move.after, value: pieceValueOrKing(move.captured) }];
     const threat = threatens(after, move.to, move.piece, move.color);
     return threat ? [{ san: move.san, kind: 'threat', fen: move.after, value: threat }] : [];
   });
@@ -111,24 +105,24 @@ function movesWorthTrying(fen: string): WorthTrying[] {
  * no one is tempted by queen against pawn's Qd1+ Kxd1, and a perpetual's
  * list was five of them a move. A minor piece stays (the Greek gift's
  * Bxh7+ Kxh7 is a real try). */
-function kingTakesForNothing(after: Chess, move: { piece: string; to: string; captured?: string }): boolean {
-  const given = valueOf(move.piece) - (move.captured ? valueOf(move.captured) : 0);
+function kingTakesForNothing(after: Chess, move: { piece: PieceSymbol; to: string; captured?: PieceSymbol }): boolean {
+  const given = pieceValueOrKing(move.piece) - (move.captured ? pieceValueOrKing(move.captured) : 0);
   if (given < 4) return false;
   return after.moves({ verbose: true }).some((reply) => reply.piece === 'k' && reply.to === move.to);
 }
 
 /** The value of the best piece the moved piece now attacks that is either
  * undefended or worth more than it; 0 when none. */
-function threatens(board: Chess, from: Square, piece: string, color: 'w' | 'b'): number {
+function threatens(board: Chess, from: Square, piece: PieceSymbol, color: 'w' | 'b'): number {
   const enemy = color === 'w' ? 'b' : 'w';
   let best = 0;
   for (const row of board.board()) {
     for (const cell of row) {
       if (!cell || cell.color !== enemy || cell.type === 'k') continue;
       if (!board.attackers(cell.square, color).includes(from)) continue;
-      const value = valueOf(cell.type);
+      const value = pieceValueOrKing(cell.type);
       const defended = board.attackers(cell.square, enemy).length > 0;
-      if (!defended || value > valueOf(piece)) best = Math.max(best, value);
+      if (!defended || value > pieceValueOrKing(piece)) best = Math.max(best, value);
     }
   }
   return best;
@@ -166,7 +160,7 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
     const worseCheck = weighed && candidate.kind === 'check' && drop >= CONFIG.courses.solveCheckDrop;
     if (drop < CONFIG.courses.temptingDrop && !walksIntoMate && !missesMate && !worseCheck) continue;
     if (!weighed && exchangeLoss(candidate.fenBefore, candidate.san, answer.moveSan) >= CONFIG.courses.obviousLoss) continue;
-    const pv = (answer.pvSan?.length ? answer.pvSan : [answer.moveSan]).slice(0, MAX_REFUTATION_PLIES);
+    const pv = (answer.pvSan?.length ? answer.pvSan : [answer.moveSan]).slice(0, CONFIG.courses.maxRefutationPlies);
     // Never cut mid-exchange, but always keep the answer itself.
     const refutation = [...pv.slice(0, 1), ...settledLine(candidate.fen, pv).slice(1)];
     list.push({

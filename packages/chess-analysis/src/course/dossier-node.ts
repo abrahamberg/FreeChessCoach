@@ -14,7 +14,6 @@ import { tacticAllowedReason, tacticOpportunityReason } from '../tactic-reason-t
 import { PIECE_VALUES } from '../tactics.js';
 import { toCpWhite, winPctFor } from '../win-probability.js';
 
-const BEST_LINE_PLIES = 6;
 
 export interface CourseNodeFacts {
   nodeId: string;
@@ -122,7 +121,7 @@ function bestInstead(move: ClassifiedMove, san: string, fenBefore: string): Cour
   const best = move.bestMoveSan ?? move.bestLineSan[0];
   if (!best || best === san) return null;
   const line = move.bestLinePvSan?.length ? move.bestLinePvSan : move.bestLineSan;
-  const shown = settledLine(fenBefore, line.slice(0, BEST_LINE_PLIES));
+  const shown = settledLine(fenBefore, line.slice(0, CONFIG.courses.bestLinePlies));
   return { san: best, line: shown, board: betterMoveFacts(fenBefore, san, best), balance: lineBalance(fenBefore, shown) };
 }
 

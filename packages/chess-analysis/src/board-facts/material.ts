@@ -1,4 +1,5 @@
 import { Chess, type PieceSymbol } from 'chess.js';
+import { capitalise } from '@freechesscoach/shared';
 import { PIECE_VALUES } from '../tactics.js';
 
 const NAMES: Record<PieceSymbol, [string, string]> = {
@@ -14,7 +15,6 @@ const COUNT_WORDS = ['', 'a', 'two', 'three', 'four', 'five', 'six', 'seven', 'e
 
 type Side = 'white' | 'black';
 const sideOf = (color: 'w' | 'b'): Side => (color === 'w' ? 'white' : 'black');
-const capitalise = (word: string): string => word.charAt(0).toUpperCase() + word.slice(1);
 
 /** The pieces each side captures over a line of SAN moves from `fen`; the
  * walk stops at the first illegal move. */
