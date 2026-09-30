@@ -1,5 +1,6 @@
 import { Chess, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type FeatureDeltaDto, type MoveQuality, type PositionFeatures } from '@freechesscoach/shared';
+import { betterMoveReasons } from './move-reason-better.js';
 import { forks } from './board-facts/forks.js';
 import { loosePieces } from './board-facts/loose-pieces.js';
 import { PIECE_VALUES } from './tactics.js';
@@ -17,6 +18,10 @@ export interface MoveReasonsInput {
   /** This move's own classification. Fault-finding reasons are for moves
    * that actually cost something — see `mobilityReason`. */
   quality?: MoveQuality;
+  /** The reader played this move (costly ones get the why-it-was-better notes). */
+  isUserMove?: boolean;
+  /** The engine's view after the move: its reply is what a stopped guard is named against. */
+  evalAfter?: EngineEval;
   /** The opponent's previous move captured on this square. */
   isRecapture?: boolean;
   isBookMove: boolean;
@@ -49,6 +54,7 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     ...missedCaptureReason(input),
     ...looseReasons(input),
     ...allowedForkReasons(input),
+    ...costlyMoveReasons(input),
     ...centerSwingReason(input),
     ...passedPawnReasons(input),
     // Last in CATEGORY_ORDER before mobility, so naming the exchange never
@@ -143,6 +149,12 @@ function allowedForkReasons(input: MoveReasonsInput): Reason[] {
       category: 'tactical',
       text: `Allows a fork: the ${PIECE_NAMES[fork.piece.piece]} on ${fork.piece.square} hits ${formatList(fork.targets.map((target) => `the ${PIECE_NAMES[target.piece]} on ${target.square}`))}`
     }));
+}
+
+/** What the move gave up, and why the engine's move was better. */
+function costlyMoveReasons(input: MoveReasonsInput): Reason[] {
+  const { stopped, better } = betterMoveReasons({ ...input, isUserMove: input.isUserMove === true });
+  return [...stopped.map((text): Reason => ({ category: 'tactical', text })), ...better.map((text): Reason => ({ category: 'material', text }))];
 }
 
 function centerSwingReason(input: MoveReasonsInput): Reason[] {

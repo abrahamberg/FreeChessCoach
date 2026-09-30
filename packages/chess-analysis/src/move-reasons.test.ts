@@ -37,3 +37,43 @@ describe('review notes from the board facts', () => {
     expect(reasons('r2r4/2q1k3/4N3/8/8/8/8/4K3 b - - 0 1', 'Kf7', 'blunder').filter((text) => text.startsWith('Allows a fork'))).toHaveLength(0);
   });
 });
+
+describe('what the move gave up and why the better one was better', () => {
+  const englund = (): string => {
+    const chess = new Chess();
+    chess.loadPgn('1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2');
+    return chess.fen();
+  };
+  const line = (moveSan: string, pvSan: string[] = [moveSan]) => ({ moveSan, moveUci: '', cp: 0, mateIn: null, pvSan });
+  const run = (fenBefore: string, moveSan: string, quality: MoveQuality, isUserMove: boolean, best: string, reply?: string): string[] => {
+    const chess = new Chess(fenBefore);
+    const mover = chess.turn() === 'w' ? 'white' : 'black';
+    chess.move(moveSan);
+    return buildReasons({
+      mover,
+      fenBefore,
+      fenAfter: chess.fen(),
+      moveSan,
+      evalBefore: { ply: 0, fen: fenBefore, depth: 0, lines: [line(best)] },
+      evalAfter: reply ? { ply: 1, fen: chess.fen(), depth: 0, lines: [line(reply)] } : undefined,
+      quality,
+      isUserMove,
+      isBookMove: false
+    });
+  };
+
+  test('the better move keeps a piece safe: on the user\'s mistakes only', () => {
+    expect(run(englund(), 'e3', 'blunder', true, 'Bc3').some((text) => text.startsWith('Bc3 keeps the rook on a1 safe; after it'))).toBe(true);
+    expect(run(englund(), 'e3', 'good', true, 'Bc3').join(' ')).not.toContain('keeps the rook');
+    expect(run(englund(), 'e3', 'blunder', false, 'Bc3').join(' ')).not.toContain('keeps the rook');
+  });
+
+  test('a stopped guard is named against the reply, on the user\'s mistakes only', () => {
+    const chess = new Chess();
+    chess.loadPgn('1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 Bxc3');
+    const fen = chess.fen();
+    expect(run(fen, 'Qxc3', 'blunder', true, 'Nxc3', 'Qc1#')).toContain('Your queen stopped guarding c1, where Qc1# followed');
+    expect(run(fen, 'Qxc3', 'inaccuracy', true, 'Nxc3', 'Qc1#').join(' ')).not.toContain('stopped guarding');
+    expect(run(fen, 'Qxc3', 'blunder', false, 'Nxc3', 'Qc1#').join(' ')).not.toContain('stopped guarding');
+  });
+});

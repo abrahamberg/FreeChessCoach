@@ -192,7 +192,7 @@ REVIEW NOTES
     n34 17…Qxb2: Their move stopped you winning a pawn through a free piece — captures the pawn on b5.
     n35 18.Bd6: Costs 17 squares of piece mobility
     n36 18…Bxg1: Missed Qxa1+, winning material on a1
-    n37 19.e5: Costs 19 squares of piece mobility
+    n37 19.e5: Qd1 keeps the pawn on c2 safe; after it Black is a rook and a bishop up
     n39 20.Ke2: You stopped them winning a rook through a free piece — captures the rook on a1.
     n40 20…Na6: They let you force mate with Nxg7+.
     n41 21.Nxg7+: You forced mate.

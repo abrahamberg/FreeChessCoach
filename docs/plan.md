@@ -875,9 +875,9 @@ Status: done 2026-09-30 — `move-reasons.ts` builds "Leaves the X on S undefend
 
 For the user's moves of quality mistake, blunder or miss only, add at most two
 notes (within `CONFIG.moveReasons.maxReasons`):
-- [ ] `stopsGuarding` against the engine's reply to the played move ("Your
+- [x] `stopsGuarding` against the engine's reply to the played move ("Your
   queen stopped guarding c1, where Qc1# followed");
-- [ ] the better move's `keepsSafe` or `takesOutOfDanger`, and the material at
+- [x] the better move's `keepsSafe` or `takesOutOfDanger`, and the material at
   the end of its settled line (`settledLine` + `materialWords`), e.g. "Nc3
   keeps the rook on a1 safe; after it material stays level".
 
@@ -887,6 +887,8 @@ lines (multiPv 5) and the position after the move.
 **Keep:** one test each for `stopsGuarding` and `keepsSafe` appearing only on
 errors. **Ephemeral:** none.
 **Commit:** `feat(review): what the move gave up, and why the better move was better`
+
+Status: done 2026-09-30 — `move-reason-better.ts`: for the user's mistake, blunder and miss (not inaccuracy, not the opponent's moves) "Your queen stopped guarding c1, where Qc1# followed" (`abandonedGuard` against the engine's reply after the move, `evalAfter` is now passed to `buildReasons`) and "Bc3 keeps the rook on a1 safe; after it material is level" (`betterMoveFacts` keepsSafe / takesOutOfDanger, material from `settledLine` + `lineBalance`). Both go through the usual `maxReasons` cut. `test:golden` re-recorded: one line changed (the course games have few user errors): `n37 19.e5: Costs 19 squares of piece mobility` → `Qd1 keeps the pawn on c2 safe; after it Black is a rook and a bishop up`. Tests in `move-reasons.test.ts` for both notes, errors only. `npm run verify` passes in 105 s.
 
 ### Task 115.5 — Merge
 
