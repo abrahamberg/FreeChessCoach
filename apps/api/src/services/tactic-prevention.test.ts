@@ -64,7 +64,7 @@ describe('createPreventionScans', () => {
     const outcome = outcomeAt(faced(ROOK_MOVED_AWAY_FEN), evals);
 
     expect(outcome?.defused).toEqual(['fork']);
-    expect(outcome?.defusedSightings[0]?.claim).toMatchObject({ detail: 'knight on d6 forks e8 and b7', verifiedGain: 5, prize: 'rook' });
+    expect(outcome?.defusedSightings[0]?.claim).toMatchObject({ detail: 'knight on d6 forks the king on e8 and the rook on b7', verifiedGain: 5, prize: 'rook' });
   });
 
   test('a threat left standing is preventable but not defused', () => {

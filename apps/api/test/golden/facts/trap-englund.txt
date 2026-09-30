@@ -79,6 +79,7 @@ n15 8.Qxc3 (White, Line A) | mistake | before: Black is much better → after: B
     alternatives: Nxc3: Black is much better; e3: Black is winning; Kd1: Black is winning
 n16 8…Qc1# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
     board: moves the queen from b2 to c1 | gives checkmate | a back-rank mate | why it is mate: the king on e1 is checked by the queen on c1; e2, f1, f2 hold its own pieces; d1 and d2 are covered by the queen on c1
+    tactics: You forced mate.
     alternatives: Qxc3+: The position is roughly equal; Qb4: The position is roughly equal
     flags: quiz-eligible, critical
 

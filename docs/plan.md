@@ -803,17 +803,17 @@ D and E.
 Move each filter to where the claim is made or verified, so
 `ClassifiedMove.tacticOpportunity` and `tacticAllowed` come out right for both
 review and courses:
-- [ ] no `spaceGain` in the endgame phase, or for a pawn reaching rank ≥ 6
+- [x] no `spaceGain` in the endgame phase, or for a pawn reaching rank ≥ 6
   (White) / ≤ 3 (Black);
-- [ ] no defensive motif (`defendsHangingPiece`, `removesTarget`,
+- [x] no defensive motif (`defendsHangingPiece`, `removesTarget`,
   `escapesFork`, `blocksThreat`, `breaksPin`) on a move that gives check;
-- [ ] on a checkmate, or with a forced mate for the mover in the engine line
+- [x] on a checkmate, or with a forced mate for the mover in the engine line
   after the move, only claims whose gain is mate;
-- [ ] no "takes the open file" detail on `brilliantSacrifice`;
-- [ ] fork details name pieces (`board-facts/forks.ts`), never bare squares;
-- [ ] no "they let you win X (material)" when the move itself captured at
+- [x] no "takes the open file" detail on `brilliantSacrifice`;
+- [x] fork details name pieces (`board-facts/forks.ts`), never bare squares;
+- [x] no "they let you win X (material)" when the move itself captured at
   least X.
-- [ ] Delete the filters from `course/dossier-node.ts`.
+- [x] Delete the filters from `course/dossier-node.ts`.
 
 **Keep:** add each fix's position to `tactic-review-cases.ts`, as that file
 already does. **Ephemeral:** none.
@@ -824,6 +824,8 @@ already does. **Ephemeral:** none.
 - the new ceilings are written into `tactic-precision.test.ts`.
 
 **Commit:** `fix(review): the course's tactic-claim fixes, for the review too`
+
+Status: done 2026-09-30 — the filters live in `tactic-claim-fit.ts` (`cardFits`, applied to the card in `classifyTacticChance`), `tactic-allowed.ts` and `move-verdict/reasons/` (`mateFollows`, `moveTookAtLeast`, also in the hung-material fallback, otherwise it re-made the card the gate dropped), `game-tactic-motifs.ts` (the open-file detail) and `tactic-detectors/fork.ts` (fork detail names the pieces, pawns left out, null under two pieces). `course/dossier-node.ts` has none left. Deviations: the gates sit on the card (headline), as the course's did, not on each claim, because dropping claims would promote a lower claim to headline and change what the corpus measures; "a mate ahead" means a mate for either side after the move (not only the mover), as the course read it, else three golden files gained wrong "allowed" sentences; `TacticClaim.detail` is `string | null`. **Re-recorded** (the owner allowed it for this task, since the snapshot could not stay identical): 19 files, 33 lines added and 5 changed, all explained. (a) 30 lines "You forced mate." / "They let you force mate with X": the card a move gets when a mate is ahead is now the mate card, where the course used to drop the non-mate card and say nothing. (b) 5 fork sentences gain "— knight on c6 forks the knight on b8 and the queen on d8" (was the fork with no detail). Nothing else changed. `test:corpus`: all three files pass with no ceiling or floor moved (the gates sit after the classification the precision test measures). `npm run verify` passes in 104 s (api with Docker; api suite 45 s, the course generation tests no longer rebuild the Englund dossier per call: `englundDossier` caches per tree). Unit tests: `tactic-claim-fit.test.ts`, one in `tactic-allowed.test.ts`; the two `build-game-report` fork sentences now name pieces. The new cases could not go in `tactic-review-cases.ts`: its harness checks the headline and detectors before the card gate.
 
 ### Task 115.2 — Review notes on the golden snapshot
 

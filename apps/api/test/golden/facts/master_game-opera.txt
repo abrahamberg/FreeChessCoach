@@ -159,6 +159,7 @@ n32 16…Nxb8 (Black, Line A) | forced | before: White has a forced mate in 1 �
     board: moves the knight from d7 to b8 | captures the queen on b8
 n33 17.Rd8# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the rook from d1 to d8 | gives checkmate | a back-rank mate | why it is mate: the king on e8 is checked by the rook on d8; f7, f8 hold its own pieces; d7 is covered by the rook on d8; e7 is covered by the bishop on g5; the rook on d8 is guarded by the bishop on g5
+    tactics: You forced mate.
     alternatives: Bd2: Black is much better; Bd8: Black is much better
     flags: quiz-eligible, critical
 

@@ -77,6 +77,7 @@ n15 8.Ke2 (White, Line A) | forced | before: Black has a forced mate in 1 → af
     board: moves the king from e1 to e2 | attacks the bishop on f2 | leaves the white bishop on d8 hanging
 n16 8…Bg4# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
     board: moves the bishop from c8 to g4 | gives checkmate | why it is mate: the king on e2 is checked by the bishop on g4; d1, d3, f1 hold its own pieces; d2 is covered by the knight on e4; e1 and e3 are covered by the bishop on f2; f3 is covered by the bishop on g4; the bishop on f2 is guarded by the knight on e4
+    tactics: You forced mate.
     alternatives: Bd4: White is better; Be6: White is much better
     flags: quiz-eligible, critical
 

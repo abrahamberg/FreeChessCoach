@@ -81,6 +81,7 @@ n17 9.Ke1 (White, Line A) | inaccuracy | before: Black is much better → after:
     best instead: Kf2; after Kf2 Bxd1 Bc3 c6 Nd2 Qb6+, White has a bishop for a queen and a knight
     why Kf2 is better: moves the king from e2 to f2 | leaves the white queen on d1 hanging
     board: moves the king from e2 to e1
+    tactics: They let you force mate with Qxd1+.
     alternatives: Kf2: Black is much better; Ke3: Black is winning
 n18 9…Bxd1 (Black, Line A) | miss | before: Black has a forced mate in 7 → after: Black is much better
     best instead: Qxd1+; after Qxd1+ Kf2 Qd4+ Kg3 Nh6 h3, White has a bishop for a queen and a knight

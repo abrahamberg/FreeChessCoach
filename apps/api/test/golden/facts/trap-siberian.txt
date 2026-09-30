@@ -97,6 +97,7 @@ n19 10.Nxd4 (White, Line A) | blunder | before: Black is better → after: Black
     alternatives: hxg4: Black is better; e5: Black is much better; Kh1: Black is much better
 n20 10…Qh2# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
     board: moves the queen from c7 to h2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on h2; f1, f2, g2 hold its own pieces; h1 is covered by the queen on h2; the queen on h2 is guarded by the knight on g4
+    tactics: You forced mate.
     alternatives: b5: White is much better; h5: White is much better
     flags: quiz-eligible, critical
 

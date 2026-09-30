@@ -68,6 +68,7 @@ n12 6…Ra4 (Black, Line A) | mistake | before: White is much better → after: 
     alternatives: Rd2+: White is much better; Rc4+: White has a forced mate in 2
 n13 7.Kb3 (White, Line A) | great | before: White has a forced mate in 7 → after: White has a forced mate in 6
     board: moves the king from c2 to b3 | attacks the rook on a4
+    tactics: You forced mate.
     alternatives: Rg8: The position is roughly equal; Rc3: The position is roughly equal
     flags: quiz-eligible, critical
 n14 6.c8=Q (White, Line B) | miss | before: White is much better → after: The position is roughly equal

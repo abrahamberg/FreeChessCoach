@@ -1,6 +1,8 @@
 import { Chess, type Move } from 'chess.js';
 import { PIECE_NAMES } from '../../piece-names.js';
+import { moveTookAtLeast } from '../../tactic-allowed.js';
 import type { VerdictContext } from '../context.js';
+import { mateFollows } from './confirmed.js';
 import { netPawns } from '../line-value.js';
 import type { MoveVerdictCard } from '../types.js';
 
@@ -20,11 +22,11 @@ import type { MoveVerdictCard } from '../types.js';
 export function hungMaterialCard(ctx: VerdictContext): MoveVerdictCard['tacticAllowed'] {
   const reply = ctx.frame.afterLine;
   const fenAfter = ctx.input.move.fenAfter;
-  if (!reply || !fenAfter) return undefined;
+  if (!reply || !fenAfter || mateFollows(ctx)) return undefined;
 
   const capture = replayed(fenAfter, reply.moveSan);
   const lost = -netPawns(ctx.playedWalk.get());
-  if (!capture?.captured || lost < 1) return undefined;
+  if (!capture?.captured || lost < 1 || moveTookAtLeast(ctx.input.move, lost)) return undefined;
 
   const prize = PIECE_NAMES[capture.captured];
   return {

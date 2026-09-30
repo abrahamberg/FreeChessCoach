@@ -171,7 +171,7 @@ describe('buildGameReport', () => {
     expect(forkMove?.tacticOpportunity).toEqual({
       type: 'fork',
       found: true,
-      detail: 'knight on d6 forks e8 and b7',
+      detail: 'knight on d6 forks the king on e8 and the rook on b7',
       visual: {
         arrows: [
           { from: 'd6', to: 'e8' },
@@ -191,7 +191,7 @@ describe('buildGameReport', () => {
       // piece, pin kind) has to replay this move.
       embodiedBySan: 'Nd6+'
     });
-    expect(forkMove?.reasons).toContain('You won a rook through a fork — knight on d6 forks e8 and b7.');
+    expect(forkMove?.reasons).toContain('You won a rook through a fork — knight on d6 forks the king on e8 and the rook on b7.');
   });
 
   test('a move that hands over a queen says so, and that is its one tactic sentence', () => {
@@ -279,7 +279,7 @@ describe('buildGameReport', () => {
 
     const fork = report.moves.find((move) => move.moveSan === 'Nd6+');
     expect(fork?.tacticPrevention).toBeUndefined();
-    expect(fork?.reasons).toContain('You won a rook through a fork — knight on d6 forks e8 and b7.');
+    expect(fork?.reasons).toContain('You won a rook through a fork — knight on d6 forks the king on e8 and the rook on b7.');
     expect(fork?.reasons).not.toContain(preventionText);
     // Counted from the verdict: one fork opportunity, found.
     expect(report.players.white.tacticMotifs.fork).toMatchObject({ opportunities: 1, found: 1 });

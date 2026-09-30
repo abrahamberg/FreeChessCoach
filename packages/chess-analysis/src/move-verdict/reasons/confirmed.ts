@@ -37,7 +37,15 @@ export function allowedCardOf(ctx: VerdictContext): MoveVerdictCard['tacticAllow
   const { move, next } = ctx.input;
   const chance = ctx.nextChance.get();
   if (!next || !chance) return undefined;
-  return computeTacticAllowed(move, { ...next, tacticOpportunity: chance });
+  const allowed = computeTacticAllowed(move, { ...next, tacticOpportunity: chance });
+  // With a mate ahead, winning material undersells it: the Immortal's
+  // 21.Nxg7+ "won a pawn" starts a mate in 2.
+  return allowed?.gain?.kind === 'material' && mateFollows(ctx) ? undefined : allowed;
+}
+
+/** The engine's line after the played move is a forced mate, for either side. */
+export function mateFollows(ctx: VerdictContext): boolean {
+  return (ctx.frame.afterLine?.mateIn ?? null) !== null;
 }
 
 const MATE_GAIN = { kind: 'mate', pawns: 0, prize: null } as const;
