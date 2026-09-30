@@ -2,6 +2,7 @@
   "name": "@freechesscoach/web",
   "version": "0.0.1",
   "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
   "scripts": {
     "predev": "node scripts/copy-stockfish-assets.mjs",
