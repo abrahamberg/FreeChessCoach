@@ -35,6 +35,8 @@ ENV NODE_ENV=production
 ENV STOCKFISH_PATH=/usr/games/stockfish
 
 COPY --from=build /usr/games/stockfish /usr/games/stockfish
+# Stockfish is GPL-3.0; ship its license text with the binary (THIRD_PARTY_NOTICES.md).
+COPY --from=build /usr/share/doc/stockfish/copyright /licenses/stockfish-copyright
 COPY --from=build /app/node_modules ./node_modules
 # The application bundle is created by scripts/build-images.sh on the runner.
 COPY services/engine/dist-bundle ./dist-bundle
