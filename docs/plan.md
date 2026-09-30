@@ -1122,6 +1122,8 @@ Status: done 2026-09-30 — `isQuizEligible` moved to `board-facts/only-move.ts`
 ### Task 117.4 — Merge, then delete the naive lists
 
 - [ ] `npm run verify`, `test:corpus`; push; PR; merge.
+Status (first bullet): done 2026-09-30 — `npm run verify` passes (Docker up, api against Postgres included); corpus files run directly pass (14 tests, after 117.2; 117.3 touched nothing under `tactic-detectors/`); `test:golden` 66 identical. Branch pushed, PR opened. The second bullet (delete the naive lists) waits for this PR to merge.
+
 - [ ] **After C and D are merged too**, on a new branch
   `claude/drop-naive-hanging` from `main`:
   - remove `hangingPieces` and `underDefendedPieces` from
