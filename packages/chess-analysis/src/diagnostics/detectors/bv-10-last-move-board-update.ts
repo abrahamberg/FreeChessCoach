@@ -2,14 +2,14 @@ import type { PlyDiagnosticContext } from '../context.js';
 import { buildEvalObservation } from '../eval-verdict.js';
 import { opponentThreatsAfter, realizedThreats, threatsOn, type Threat } from '../threat-inventory.js';
 import type { DiagnosticDetector, DiagnosticObservation } from '../types.js';
-import { ownSquares, postMoveFeatures } from './own-piece-squares.js';
+import { FREE, looseSquares } from './own-piece-squares.js';
 
 /**
  * §II.C BV-10 "Last-move board-update failure" — fails to update attacks
  * and defenses after the opponent moves.
  *
  * Opportunity: the opponent's immediately preceding move
- * (`ctx.previousMove.featureDelta.newHangingPieces`) newly hung one of the
+ * (`loosePieces`, tier `free`, before and after it) newly hung one of the
  * mover's pieces, it is still hanging after this move, and the opponent
  * can now win it outright (a dangerous capture on that square).
  * Failure: the engine's refutation actually takes it there and the eval
@@ -24,10 +24,13 @@ export const bv10LastMoveBoardUpdateFailure: DiagnosticDetector = {
   direction: 'B',
   priority: 130,
   detect(ctx: PlyDiagnosticContext): DiagnosticObservation | null {
-    const newlyHung = ownSquares(ctx.previousMove?.featureDelta?.newHangingPieces ?? [], ctx.mover);
+    const previous = ctx.previousMove;
+    if (!previous?.fenBefore || !previous.fenAfter) return null;
+    const hungBefore = new Set(looseSquares(previous.fenBefore, ctx.mover, FREE));
+    const newlyHung = looseSquares(previous.fenAfter, ctx.mover, FREE).filter((square) => !hungBefore.has(square));
     if (newlyHung.length === 0) return null;
 
-    const stillHanging = new Set(ownSquares(postMoveFeatures(ctx).hangingPieces, ctx.mover));
+    const stillHanging = new Set(looseSquares(ctx.fenAfter, ctx.mover, FREE));
     const unaddressed = newlyHung.filter((square) => stillHanging.has(square));
     const dangerous = threatsOn(opponentThreatsAfter(ctx, 'capture'), unaddressed);
     if (dangerous.length === 0) return null;

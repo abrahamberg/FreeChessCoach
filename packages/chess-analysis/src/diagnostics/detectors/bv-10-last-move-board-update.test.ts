@@ -1,16 +1,19 @@
-import type { ClassifiedMoveDto, FeatureDeltaDto } from '@freechesscoach/shared';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { bv10LastMoveBoardUpdateFailure } from './bv-10-last-move-board-update.js';
 import { detectorContext } from './test-context.js';
 
 /** Black just played ...e7-e6, attacking the white queen on d5. */
 const AFTER_E6_FEN = '4k3/8/4p3/3Q4/8/8/8/4K3 w - - 0 2';
-const HUNG_QUEEN = { square: 'd5', piece: 'q' as const, color: 'white' as const, attackers: 1, defenders: 0 };
+/** Black's last move, before it: ...e7-e6 newly attacks the queen. */
+const BEFORE_E6_FEN = '4k3/4p3/8/3Q4/8/8/8/4K3 b - - 0 1';
+/** The queen was already attacked: black only moved the king. */
+const QUEEN_ALREADY_HIT_FEN = '5k2/8/4p3/3Q4/8/8/8/4K3 b - - 0 1';
 
 const LOSS: Partial<ClassifiedMoveDto> = { quality: 'blunder', cpBefore: 900, cpAfter: 0 };
 const NO_LOSS: Partial<ClassifiedMoveDto> = { quality: 'blunder', cpBefore: 900, cpAfter: 880 };
 
-function previousMove(newHangingPieces: FeatureDeltaDto['newHangingPieces']): ClassifiedMoveDto {
+function previousMove(fenBefore: string): ClassifiedMoveDto {
   return {
     ply: 0,
     moveSan: 'e6',
@@ -21,14 +24,13 @@ function previousMove(newHangingPieces: FeatureDeltaDto['newHangingPieces']): Cl
     bestLineSan: ['e6'],
     evalAfterCp: 900,
     hangsPiece: false,
-    fenBefore: '4k3/4p3/8/3Q4/8/8/8/4K3 b - - 0 1',
-    fenAfter: AFTER_E6_FEN,
-    featureDelta: { newForks: [], newHangingPieces, mobilityDelta: 0 }
+    fenBefore,
+    fenAfter: AFTER_E6_FEN
   };
 }
 
-function contextFor(moveSan: string, overrides: Partial<ClassifiedMoveDto>, refutation?: string[], hung = [HUNG_QUEEN]) {
-  return detectorContext(AFTER_E6_FEN, moveSan, overrides, { refutation, previousMove: previousMove(hung) });
+function contextFor(moveSan: string, overrides: Partial<ClassifiedMoveDto>, refutation?: string[], previousFen = BEFORE_E6_FEN) {
+  return detectorContext(AFTER_E6_FEN, moveSan, overrides, { refutation, previousMove: previousMove(previousFen) });
 }
 
 describe('bv10LastMoveBoardUpdateFailure', () => {
@@ -57,7 +59,7 @@ describe('bv10LastMoveBoardUpdateFailure', () => {
   });
 
   test('no opportunity when the opponent\'s last move hung nothing of ours', () => {
-    expect(bv10LastMoveBoardUpdateFailure.detect(contextFor('Kd2', LOSS, undefined, []))).toBeNull();
+    expect(bv10LastMoveBoardUpdateFailure.detect(contextFor('Kd2', LOSS, undefined, QUEEN_ALREADY_HIT_FEN))).toBeNull();
   });
 
   test('no opportunity without a previousMove (unknown history)', () => {

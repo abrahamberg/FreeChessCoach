@@ -1,6 +1,7 @@
 import { Chess, type Square } from 'chess.js';
 import type { EngineEval, FeatureDeltaDto, MoveQuality, PositionFeatures } from '@freechesscoach/shared';
 import { toColorName } from './attack-map.js';
+import { loosePieces, type LoosePiece } from './board-facts/loose-pieces.js';
 import { see } from './see.js';
 import { toCpWhite, winPctFor } from './win-probability.js';
 import { CONFIG } from './config.js';
@@ -55,7 +56,11 @@ function hasLargeEvalGap(input: TacticalPositionInput): boolean {
 }
 
 function hasHangingPieces(input: TacticalPositionInput): boolean {
-  return input.features.hangingPieces.length > 0;
+  return loosePieces(input.fenBefore, 'w').some(isFree) || loosePieces(input.fenBefore, 'b').some(isFree);
+}
+
+function isFree(piece: LoosePiece): boolean {
+  return piece.tier === 'free';
 }
 
 function hasForks(input: TacticalPositionInput): boolean {

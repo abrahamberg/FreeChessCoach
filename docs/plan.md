@@ -1076,6 +1076,8 @@ vision) and §II.D (One-ply move safety) only;
   version marker. The profile's window moves on to newly analysed games by
   itself. Say this in the PR description.
 
+Status: done 2026-09-30 — estimate from 114.4's table (2740 owner views; window = 15 to 100 rated games per time control, `MIN_WINDOW_GAMES`/`MAX_WINDOW_GAMES`): BV-01 and BV-10 read `free` instead of `hangingPieces`: 1746 → 1238 pieces, so about 29% fewer opportunities (the naive list flagged x-ray recaptures, pinned takers and losing captures). BV-22 and MS-14 read `free` + `winnable` instead of `underDefendedPieces`, which never held the zero-defender pieces: 452 → 1897 pieces (`free` 1238 + `winnable` 659), about 4× more loose pieces per position, so MS-14 opportunities rise sharply and BV-22 (needs two at once) more than that, while a failure still needs an engine-confirmed loss, so the failure counts rise less. Every new opportunity that was not a failure counts as a success, so these codes' success rates will read higher than before until the window has turned over. PR description: stored entries are not recomputed; the window moves on by itself.
+
 ### Task 117.2 — Detectors use `loosePieces`
 
 **Depends on:** 117.1.
@@ -1094,6 +1096,8 @@ vision) and §II.D (One-ply move safety) only;
 one "defended by value" case to MS-14. **Ephemeral:** none.
 **Done when:** diagnostics tests and `test:corpus` pass.
 **Commit:** `fix(diagnostics): opportunities count pieces that can really be won`
+
+Status: done 2026-09-30 — BV-01, BV-10, BV-22, MS-14, `own-chance.ts` (`ownFreePieceCaptureSans`), `diagnostic-code.ts` (`isHangingAt` now reads `move.fenBefore`; the `featuresBefore` parameter is gone, so `build-diagnostics.ts` drops it too), `candidate-moves.ts` and `tactics-score.ts` (`hasHangingPieces`) call `loosePieces` through `looseSquares` in `detectors/own-piece-squares.ts`. Deviations: BV-10 no longer reads `previousMove.featureDelta.newHangingPieces`: it compares `free` pieces at the previous move's `fenBefore` and `fenAfter`, so it needs both FENs. `candidate-moves.ts` takes `createsUnderDefendedPiece` from `winnable` (free pieces are already `createsHangingPiece`) and computes the hanging flags from `free` before/after instead of `diffPositionFeatures`; forks still come from the diff. Limit: a side in check on its own turn has no `loosePieces` answer (`[]`), so a check the candidate gives leaves the opponent's loose pieces unlisted. Two tests had illegal or stale fixtures and were fixed (a king already in check in `candidate-diagnosis-proxy.test.ts`; `bv-10` test now gives the previous move's FENs). New MS-14 case: a pawn attacked by queen and rook behind it, defended once, is not loose. `verify:changed` passes; the corpus files run directly (the script's `basic` reporter is gone in vitest 5) pass, 14 tests.
 
 ### Task 117.3 — "Only moves found"
 

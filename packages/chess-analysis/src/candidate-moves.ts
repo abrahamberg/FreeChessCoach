@@ -1,6 +1,8 @@
-import type { AttackedPieceDto, EngineLine, TacticMotifType } from '@freechesscoach/shared';
+import type { Color } from 'chess.js';
+import type { EngineLine, TacticMotifType } from '@freechesscoach/shared';
 import { applySanSequence } from './apply-san-sequence.js';
 import { fenActiveColor } from './attack-map.js';
+import { loosePieces, type LoosePiece } from './board-facts/loose-pieces.js';
 import { classifyCandidateMove } from './classify-candidate-move.js';
 import { diffPositionFeatures } from './diff-features.js';
 import { computePositionFeatures } from './position-features.js';
@@ -50,12 +52,19 @@ export interface AnnotateCandidateMovesOptions {
   linesAtFenBefore?: EngineLine[];
 }
 
-/** Identity key for a piece-on-square reference — used to tell whether the
- * same piece is still present across a before/after diff (both
- * under-defended and hanging-piece tracking need this, hence the shared
- * helper). */
-function pieceKey(piece: AttackedPieceDto): string {
-  return `${piece.square}:${piece.piece}:${piece.color}`;
+/** The loose pieces of `fen` as identity keys (square:piece:colour), so a
+ * before/after comparison can tell whether the same piece is still loose.
+ * Computed once per position, each side on demand. */
+function looseKeys(fen: string) {
+  const key = (piece: LoosePiece) => `${piece.square}:${piece.piece}:${piece.owner}`;
+  const of = (owner: Color, tier: LoosePiece['tier']) => new Set(loosePieces(fen, owner).filter((piece) => piece.tier === tier).map(key));
+  const cache = new Map<string, Set<string>>();
+  const cached = (id: string, make: () => Set<string>) => cache.get(id) ?? cache.set(id, make()).get(id)!;
+  return {
+    free: (owner: Color) => cached(`free${owner}`, () => of(owner, 'free')),
+    /** Defended but losing the exchange, either colour. */
+    winnable: () => cached('winnable', () => new Set([...of('w', 'winnable'), ...of('b', 'winnable')]))
+  };
 }
 
 /**
@@ -73,14 +82,12 @@ export function annotateCandidateMoves(
   options: AnnotateCandidateMovesOptions = {}
 ): CandidateMoveAnnotation[] {
   const mover = options.mover ?? fenActiveColor(fenBefore);
+  const opponent = mover === 'white' ? 'b' : 'w';
+  const ownColor = mover === 'white' ? 'w' : 'b';
   const featuresBefore = computePositionFeatures(fenBefore);
-  const underDefendedBeforeKeys = new Set(featuresBefore.underDefendedPieces.map(pieceKey));
-  const ownHangingBeforeKeys = new Set(
-    featuresBefore.hangingPieces.filter((piece) => piece.color === mover).map(pieceKey)
-  );
-  const opponentHangingBeforeKeys = new Set(
-    featuresBefore.hangingPieces.filter((piece) => piece.color !== mover).map(pieceKey)
-  );
+  const before = looseKeys(fenBefore);
+  const ownFreeBefore = before.free(ownColor);
+  const opponentFreeBefore = before.free(opponent);
 
   const annotations: CandidateMoveAnnotation[] = [];
   for (const moveSan of candidateSanMoves) {
@@ -92,23 +99,19 @@ export function annotateCandidateMoves(
 
     const featuresAfter = computePositionFeatures(fenAfter);
     const delta = diffPositionFeatures(featuresBefore, featuresAfter);
-    const createsUnderDefendedPiece = featuresAfter.underDefendedPieces.some(
-      (piece) => !underDefendedBeforeKeys.has(pieceKey(piece))
-    );
+    const after = looseKeys(fenAfter);
+    const newOwn = [...after.free(ownColor)].some((key) => !ownFreeBefore.has(key));
+    const newOpponent = [...after.free(opponent)].some((key) => !opponentFreeBefore.has(key));
 
     annotations.push({
       moveSan,
       createsFork: delta.newForks.length > 0,
-      createsHangingPiece: delta.newHangingPieces.length > 0,
-      createsOwnHangingPiece: delta.newHangingPieces.some((piece) => piece.color === mover),
-      createsOpponentHangingPiece: delta.newHangingPieces.some((piece) => piece.color !== mover),
-      createsUnderDefendedPiece,
-      ignoresOwnHangingPiece: featuresAfter.hangingPieces.some(
-        (piece) => piece.color === mover && ownHangingBeforeKeys.has(pieceKey(piece))
-      ),
-      ignoresOpponentHangingPiece: featuresAfter.hangingPieces.some(
-        (piece) => piece.color !== mover && opponentHangingBeforeKeys.has(pieceKey(piece))
-      ),
+      createsHangingPiece: newOwn || newOpponent,
+      createsOwnHangingPiece: newOwn,
+      createsOpponentHangingPiece: newOpponent,
+      createsUnderDefendedPiece: [...after.winnable()].some((key) => !before.winnable().has(key)),
+      ignoresOwnHangingPiece: [...after.free(ownColor)].some((key) => ownFreeBefore.has(key)),
+      ignoresOpponentHangingPiece: [...after.free(opponent)].some((key) => opponentFreeBefore.has(key)),
       mobilityDelta: delta.mobilityDelta,
       motif: classifyCandidateMove(fenBefore, moveSan, mover, { linesAtFenBefore: options.linesAtFenBefore })
     });
