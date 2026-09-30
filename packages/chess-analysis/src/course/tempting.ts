@@ -1,8 +1,9 @@
-import { Chess, type PieceSymbol, type Square } from 'chess.js';
+import { Chess, type PieceSymbol } from 'chess.js';
 import type { CourseKind, EngineEval, EngineLine } from '@freechesscoach/shared';
 import { CONFIG } from '../config.js';
 import { moverMateIn } from './dossier-node.js';
 import type { CourseDossier } from './dossier.js';
+import { threatens } from '../board-facts/threats.js';
 import { boardFacts } from '../board-facts/move-facts.js';
 import type { BoardFact } from '../board-facts/types.js';
 import { cpBand } from '../eval-words.js';
@@ -111,23 +112,6 @@ function kingTakesForNothing(after: Chess, move: { piece: PieceSymbol; to: strin
   const given = pieceValueOrKing(move.piece) - (move.captured ? pieceValueOrKing(move.captured) : 0);
   if (given < 4) return false;
   return after.moves({ verbose: true }).some((reply) => reply.piece === 'k' && reply.to === move.to);
-}
-
-/** The value of the best piece the moved piece now attacks that is either
- * undefended or worth more than it; 0 when none. */
-function threatens(board: Chess, from: Square, piece: PieceSymbol, color: 'w' | 'b'): number {
-  const enemy = color === 'w' ? 'b' : 'w';
-  let best = 0;
-  for (const row of board.board()) {
-    for (const cell of row) {
-      if (!cell || cell.color !== enemy || cell.type === 'k') continue;
-      if (!board.attackers(cell.square, color).includes(from)) continue;
-      const value = pieceValueOrKing(cell.type);
-      const defended = board.attackers(cell.square, enemy).length > 0;
-      if (!defended || value > pieceValueOrKing(piece)) best = Math.max(best, value);
-    }
-  }
-  return best;
 }
 
 /**

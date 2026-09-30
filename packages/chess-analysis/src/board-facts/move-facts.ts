@@ -1,10 +1,12 @@
 import { Chess, type PieceSymbol, type Square } from 'chess.js';
 import { inspectMoves } from '../inspect-moves.js';
 import { blockedCheck, checkAnswers, discovered, isBackRankMate, mateNet } from './check-facts.js';
+import { forks } from './forks.js';
+import { loosePieces } from './loose-pieces.js';
 import { endgameGeometry } from './endgame-geometry.js';
-import { attackedPieces, canBeTaken } from './safety.js';
+import { attackedPieces } from './safety.js';
 import { pieceValueOrKing } from '../tactics.js';
-import type { BoardFact, PieceAt } from './types.js';
+import type { BoardFact } from './types.js';
 
 /** What a move does on the board, from chess.js alone: captures, checks,
  * pieces it now attacks (and whether they are pinned to their king), what it
@@ -33,21 +35,17 @@ export function boardFacts(fenBefore: string, san: string): BoardFact[] {
   // A capture taken back is a trade, not a piece left hanging: 3…cxd4 read
   // "leaves the pawn on d4 hanging" in every Open Sicilian.
   const traded = (square: string): boolean => square === inspected.to && inspected.captured !== null && pieceValueOrKing(inspected.captured) >= pieceValueOrKing(inspected.piece);
-  const owner = new Chess(fenBefore).turn() === 'w' ? 'white' : 'black';
-  for (const piece of inspected.leavesHanging) {
+  const mover = new Chess(fenBefore).turn();
+  const owner = mover === 'w' ? 'white' : 'black';
+  for (const piece of loosePieces(inspected.resultFen, mover)) {
     // Whose piece: the model read "exd5 leaves the pawn on g4 hanging" as
     // the learner's pawn, and it was White's.
-    if (!traded(piece.square) && canBeTaken(inspected.resultFen, piece.square)) {
-      facts.push({ kind: 'leavesHanging', piece: { piece: piece.piece, square: piece.square as Square }, owner, stalemateIfTaken: takingStalemates(inspected.resultFen, piece.square) });
+    if (piece.tier === 'free' && !traded(piece.square)) {
+      facts.push({ kind: 'leavesHanging', piece: { piece: piece.piece, square: piece.square }, owner, stalemateIfTaken: takingStalemates(inspected.resultFen, piece.square) });
     }
   }
-  // A piece that is simply taken forks nothing: 3.Qg8+ in Philidor's Legacy
-  // read "forks the rook on a8 and the king on h8" before …Rxg8.
-  const forker = inspected.gives !== 'checkmate' && !canBeTaken(inspected.resultFen, inspected.to);
-  for (const fork of inspected.createsForks) {
-    const targets = forkTargets(inspected.resultFen, fork.forkedSquares);
-    if (forker && fork.square === inspected.to && targets.length >= 2) facts.push({ kind: 'forks', piece: { piece: fork.piece, square: fork.square as Square }, targets });
-  }
+  // A mate ends the game: no fork either.
+  if (inspected.gives !== 'checkmate') facts.push(...forks(inspected.resultFen, mover).filter((fork) => fork.piece.square === inspected.to));
   return facts;
 }
 
@@ -70,14 +68,4 @@ function moved(san: string, piece: PieceSymbol, from: Square, to: Square): Board
   if (san.startsWith('O-O-O')) return { kind: 'castles', wing: 'queenside' };
   if (san.startsWith('O-O')) return { kind: 'castles', wing: 'kingside' };
   return { kind: 'moved', piece, from, to };
-}
-
-/** The forked pieces by name, pawns left out: "forks e5 and a2 and c2" read
- * as nonsense and was copied word for word. */
-function forkTargets(fenAfter: string, squares: string[]): PieceAt[] {
-  const chess = new Chess(fenAfter);
-  return squares.flatMap((square) => {
-    const piece = chess.get(square as Square);
-    return piece && piece.type !== 'p' ? [{ piece: piece.type, square: square as Square }] : [];
-  });
 }

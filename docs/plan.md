@@ -738,7 +738,7 @@ Status: done 2026-09-30 — done together with 114.2 (the readers needed the dat
 **Read:** `board-facts/safety.ts`, `see.ts`, `null-move-fen.ts`,
 `piece-safety.ts`, `tactic-board-facts.ts`.
 
-- [ ] `board-facts/loose-pieces.ts`: `loosePieces(fen, owner): LoosePiece[]`
+- [x] `board-facts/loose-pieces.ts`: `loosePieces(fen, owner): LoosePiece[]`
   with `{ square, piece, owner, tier: 'free' | 'winnable' }`.
   - Look from the opponent's side: if it's `owner`'s turn, use
     `flipActiveColorFen`. If the flipped position is illegal (the owner gives
@@ -748,13 +748,13 @@ Status: done 2026-09-30 — done together with 114.2 (the readers needed the dat
     opponent comes out ahead over the whole exchange, e.g. a knight attacked
     by a pawn).
   - Kings are never loose.
-- [ ] `board-facts/forks.ts`: `forks(fen, by)`: a piece of `by` attacking at
+- [x] `board-facts/forks.ts`: `forks(fen, by)`: a piece of `by` attacking at
   least two non-pawn enemy pieces (the king counts), where the forking piece
   can't be taken with `see ≥ 0`. This is the rule the course already uses;
   build it from the same code.
-- [ ] The course keeps its output: `leavesHanging` uses only `free`, and the
+- [x] The course keeps its output: `leavesHanging` uses only `free`, and the
   golden snapshot stays identical. Tier `winnable` is for Phases 115–117.
-- [ ] `threatens` (course/tempting.ts): move it to
+- [x] `threatens` (course/tempting.ts): move it to
   `board-facts/threats.ts` if nothing already in
   `checks-captures-threats.ts` does the same (compare them; if one does, use it
   and delete the copy).
@@ -768,6 +768,15 @@ pieces the naive `hangingPieces` / `underDefendedPieces` flag against
 then delete the file.
 **Done when:** `test:golden` identical; the table is in the Status line.
 **Commit:** `feat(analysis): one definition of loose pieces and forks`
+
+Status: done 2026-09-30 — `board-facts/loose-pieces.ts` (`loosePieces`), `board-facts/forks.ts` (`forks`, built on `tactics.forks` + `canBeTaken`), `board-facts/threats.ts` (`threatens` moved: `checks-captures-threats.ts` answers a different question, every newly attacked piece, so no copy was deleted). `move-facts.ts` now builds `leavesHanging` from `loosePieces(...)` `free` and forks from `forks()`; `test:golden` (66) identical. Both tiers also need `see > 0`, not only "no defender": the Englund's rook on a1 has no direct defender but sits behind the queen on b2, and taking it loses the queen; without that the golden changed. Table over the 1370 positions after each move of `tactic-review-cases.ts` and every ply of the Lichess fixture, each position seen from both owners (so 2740 owner views):
+
+| | count | `free` | `winnable` | neither |
+|---|---|---|---|---|
+| `hangingPieces` (naive) | 1746 | 1238 | 0 | 508 |
+| `underDefendedPieces` (naive) | 452 | 0 | 251 | 201 |
+
+`free` pieces missing from `hangingPieces`: 0 (of 1238). `winnable` pieces missing from `underDefendedPieces`: 408 (of 659): a defended piece attacked by a cheaper one is invisible to the naive count. So 29% of the naive "hanging" pieces are not loose (an x-ray recapture, a pinned taker, or a capture that loses material), 44% of "under-defended" ones are not, and `winnable` finds 408 the naive lists never flag. `corpus` tier not run (nothing under `tactic-detectors/` changed).
 
 ### Task 114.5 — Docs and merge
 
