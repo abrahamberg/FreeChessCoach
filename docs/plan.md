@@ -892,11 +892,13 @@ Status: done 2026-09-30 — `move-reason-better.ts`: for the user's mistake, blu
 
 ### Task 115.5 — Merge
 
-- [ ] Stored game reports keep their old notes until a game is analysed again;
+- [x] Stored game reports keep their old notes until a game is analysed again;
   no backfill. Say so in the PR description.
-- [ ] `npm run verify`, `test:golden`, `test:corpus`; push; PR.
+- [x] `npm run verify`, `test:golden`, `test:corpus`; push; PR.
 - [ ] Later, owner decision: tempting moves at the user's critical moments in
   review (up to 6 extra engine positions per moment). Not in this phase.
+
+Status: done 2026-09-30 — `verify` 105 s, `test:golden` 66, `test:corpus` 14 pass (run directly with a longer timeout: its script's `basic` reporter no longer exists). Branch pushed, PR opened.
 
 ---
 
