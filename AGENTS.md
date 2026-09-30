@@ -79,7 +79,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
   - `tactic-detectors/` — tactic motifs for Game Review and stats.
   - `diagnostics/` — the BV/MS/TA… diagnosis codes, opportunities and focus selection.
   - `move-verdict/` — move verdicts.
-  - board facts (what a move does, loose pieces, checks, mates, material in words) — `course-dossier-words.ts`, `course-material.ts` today, `board-facts/` after Phase 111.
+  - board facts (what a move does, loose pieces, checks, mates, material in words) — `packages/chess-analysis/src/board-facts/`.
   - course code — flat `course-*.ts` today, `course/` after Phase 111.
 - `packages/prompts`: LLM prompt templates (course prompts in `src/course/`). `docs/prompts.md` is auto-generated.
 - `services/engine`: Stockfish/UCI HTTP microservice.

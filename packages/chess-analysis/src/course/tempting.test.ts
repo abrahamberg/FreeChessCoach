@@ -1,0 +1,154 @@
+import type { EngineEval } from '@freechesscoach/shared';
+import { describe, expect, test } from 'vitest';
+import { analyseCourse, analyseEnglund, fakeEvals } from './test-fixtures.js';
+import { parseCourseTree } from './tree.js';
+import { isQuizEligible } from './dossier-node.js';
+import { temptingCandidates, withTempting } from './tempting.js';
+
+const evaluation = (fen: string, moveSan: string, cp: number | null, mateIn: number | null = null, pvSan?: string[]): EngineEval => ({
+  ply: 0,
+  fen,
+  depth: 20,
+  lines: [{ moveSan, moveUci: '', cp, mateIn, ...(pvSan ? { pvSan } : {}) }]
+});
+
+describe('tempting moves (§13.5)', () => {
+  test('candidates: checks, then captures by value taken, then threats; never the move played or a ranked one', () => {
+    const { tree, dossier } = analyseEnglund();
+    const candidates = temptingCandidates(tree, dossier, 'trap');
+    // 6…Bb4, the answer: Black's checks and captures, the rook before the knight.
+    expect(candidates.filter((candidate) => candidate.nodeId === 'n12').map((candidate) => [candidate.san, candidate.kind])).toEqual([
+      ['Qxc3+', 'check'],
+      ['Qxa1', 'capture'],
+      ['Qxb1', 'capture'],
+      ['Nxe5', 'capture'],
+      ['Qxc2', 'capture'],
+      ['Qxa2', 'capture']
+    ]);
+    // 6.Bc3, the bait: the engine's Nc3 is ranked, so it is not a candidate; a retreat that hits the queen is a threat.
+    expect(candidates.filter((candidate) => candidate.nodeId === 'n11').map((candidate) => candidate.san)).toEqual(['Bc1', 'Qc1', 'Ba5']);
+    // A move that is not critical or a quiz answer is not looked at (no learner-move sweep for a trap).
+    expect(candidates.some((candidate) => candidate.nodeId === 'n2')).toBe(false);
+  });
+
+  test('kept when the engine says they fail (15 win% or walking into mate) and it is not obvious, at most 3, with the answer', () => {
+    const { tree, dossier } = analyseEnglund();
+    const candidates = temptingCandidates(tree, dossier, 'trap').filter((candidate) => candidate.nodeId === 'n12');
+    const at = (san: string): string => candidates.find((candidate) => candidate.san === san)!.fen;
+    const before = candidates[0]!.fenBefore;
+    const evals = new Map<string, EngineEval>([
+      [before, evaluation(before, 'Bb4', -1000)],
+      // The knight takes the queen back: seen at a glance, so not tempting.
+      [at('Qxc3+'), evaluation(at('Qxc3+'), 'Nxc3', 150, null, ['Nxc3', 'Bb4', 'Bd2'])],
+      // Still winning for Black: not tempting.
+      [at('Qxa1'), evaluation(at('Qxa1'), 'Qd2', -900)],
+      [at('Qxb1'), evaluation(at('Qxb1'), 'Qxb1', 200)],
+      // A quiet answer that mates: the trick is deeper than a recapture.
+      [at('Nxe5'), evaluation(at('Nxe5'), 'Qd2', null, 3, ['Qd2', 'Nxf3+', 'exf3'])],
+      [at('Qxc2'), evaluation(at('Qxc2'), 'Qxc2', 300)]
+    ]);
+
+    const tempting = withTempting(dossier, candidates, evals).nodes.find((node) => node.nodeId === 'n12')!.tempting;
+
+    expect(tempting.map((each) => [each.san, each.kind, each.refutation])).toEqual([['Nxe5', 'capture', ['Qd2', 'Nxf3+', 'exf3']]]);
+    const [nxe5] = tempting;
+    expect(nxe5?.does).toContain('captures the pawn on e5');
+    expect(nxe5?.captures).toBe('Black takes a knight and a pawn; White takes a knight');
+    expect(nxe5?.verdict).toMatch(/mate/i);
+  });
+
+  test('a puzzle looks at every learner move', () => {
+    const { tree, dossier } = analyseEnglund();
+    const learnerMoves = dossier.nodes.filter((node) => node.side === 'black').map((node) => node.nodeId);
+    const asked = new Set(temptingCandidates(tree, dossier, 'puzzle').map((candidate) => candidate.nodeId));
+    expect([...asked].every((id) => learnerMoves.includes(id) || dossier.nodes.find((node) => node.nodeId === id)?.critical)).toBe(true);
+    // Beyond the trap's critical moves: an ordinary learner move is looked at too.
+    const ordinary = [...asked].filter((id) => !dossier.nodes.find((node) => node.nodeId === id)?.critical);
+    expect(ordinary.length).toBeGreaterThan(0);
+    expect(temptingCandidates(tree, dossier, 'trap').some((candidate) => ordinary.includes(candidate.nodeId))).toBe(false);
+  });
+
+  test('at a solving move every worse check and capture is kept, the obvious ones too, and the ranked moves are candidates', () => {
+    const { tree, dossier } = analyseEnglund();
+    const candidates = temptingCandidates(tree, dossier, 'puzzle').filter((candidate) => candidate.nodeId === 'n12');
+    expect(candidates.every((candidate) => candidate.solving)).toBe(true);
+    const at = (san: string): string => candidates.find((candidate) => candidate.san === san)!.fen;
+    const before = candidates[0]!.fenBefore;
+    const evals = new Map<string, EngineEval>([
+      [before, evaluation(before, 'Bb4', -1000)],
+      // Obvious for a trap; a solver still wants to hear why it fails.
+      [at('Qxc3+'), evaluation(at('Qxc3+'), 'Nxc3', 150, null, ['Nxc3', 'Bb4', 'Bd2'])],
+      // As good as the course move: no tempting move.
+      [at('Qxa1'), evaluation(at('Qxa1'), 'Qd2', -1000)],
+      [at('Qxb1'), evaluation(at('Qxb1'), 'Qxb1', 200)]
+    ]);
+    const tempting = withTempting(dossier, candidates, evals).nodes.find((node) => node.nodeId === 'n12')!.tempting;
+    expect(tempting.map((each) => each.san)).toEqual(['Qxc3+', 'Qxb1']);
+  });
+
+  test('where the course move mates, a move that mates later or not at all misses the mate; a trap asks nothing at its mate', () => {
+    const { tree, dossier } = analyseEnglund();
+    const candidates = temptingCandidates(tree, dossier, 'puzzle').filter((candidate) => candidate.nodeId === 'n12');
+    const at = (san: string): string => candidates.find((candidate) => candidate.san === san)!.fen;
+    const before = candidates[0]!.fenBefore;
+    // Black mates in 3 (White's view: negative); after a candidate, White to move.
+    const evals = new Map<string, EngineEval>([
+      [before, evaluation(before, 'Bb4', null, -3)],
+      [at('Qxa1'), evaluation(at('Qxa1'), 'Qd2', null, -2)],
+      [at('Qxb1'), evaluation(at('Qxb1'), 'Qd2', null, -5)],
+      [at('Nxe5'), evaluation(at('Nxe5'), 'Qd2', -1000)]
+    ]);
+    const tempting = withTempting(dossier, candidates, evals).nodes.find((node) => node.nodeId === 'n12')!.tempting;
+    expect(tempting.map((each) => each.san)).toEqual(['Qxb1', 'Nxe5']);
+    // Both still win: the solver hears why neither is the answer.
+    expect(tempting.map((each) => each.notTheAnswer)).toEqual(['it mates too, but in 6 moves, not 3', 'Black is still winning, but there is no mate; the answer mates in 3']);
+    expect(temptingCandidates(tree, dossier, 'trap').some((candidate) => candidate.nodeId === 'n16')).toBe(false);
+    expect(temptingCandidates(tree, dossier, 'puzzle').some((candidate) => candidate.nodeId === 'n16')).toBe(true);
+  });
+});
+
+describe('tempting moves that still work (Phase 107)', () => {
+  test('a puzzle move that loses is only tempting; one that keeps the edge says why it is not the answer', () => {
+    const { tree, dossier } = analyseEnglund();
+    const candidates = temptingCandidates(tree, dossier, 'puzzle').filter((candidate) => candidate.nodeId === 'n12');
+    const at = (san: string): string => candidates.find((candidate) => candidate.san === san)!.fen;
+    const before = candidates[0]!.fenBefore;
+    const evals = new Map<string, EngineEval>([
+      [before, evaluation(before, 'Bb4', -900)],
+      [at('Qxb1'), evaluation(at('Qxb1'), 'Qd2', -300)],
+      [at('Nxe5'), evaluation(at('Nxe5'), 'Qd2', 400)]
+    ]);
+    const tempting = withTempting(dossier, candidates, evals).nodes.find((node) => node.nodeId === 'n12')!.tempting;
+    const by = new Map(tempting.map((each) => [each.san, each.notTheAnswer]));
+    expect(by.get('Qxb1')).toBe('Black is still better, but the answer is stronger: Black is winning');
+    expect(by.get('Nxe5')).toBeNull();
+  });
+});
+
+describe('the one answer (§5.4)', () => {
+  const line = (moveSan: string, cp: number | null, mateIn: number | null = null) => ({ moveSan, moveUci: '', cp, mateIn });
+  const two = (first: ReturnType<typeof line>, second: ReturnType<typeof line>): EngineEval => ({ ply: 0, fen: '', depth: 20, lines: [first, second] });
+
+  test('the fastest mate is the one answer; a mate as fast is a second one', () => {
+    // The smothered mate: 1.Nf7+ mates in 4, 1.Ng6+ only wins.
+    expect(isQuizEligible(two(line('Nf7+', null, 4), line('Ng6+', 900)), 'Nf7+', 'white')).toBe(true);
+    expect(isQuizEligible(two(line('Nh6+', null, 3), line('Ne5+', null, 5)), 'Nh6+', 'white')).toBe(true);
+    expect(isQuizEligible(two(line('Qg8+', null, 2), line('Qf7', null, 2)), 'Qg8+', 'white')).toBe(false);
+    // Both win, but taking the rook is worth 5 pawns more: the one answer.
+    expect(isQuizEligible(two(line('Qxa1+', -1400), line('Kd7', -900)), 'Qxa1+', 'black')).toBe(true);
+    expect(isQuizEligible(two(line('Qxa1+', -1400), line('Qh1+', -1250)), 'Qxa1+', 'black')).toBe(false);
+    // Black mating is negative in White's view.
+    expect(isQuizEligible(two(line('Qc1#', null, -1), line('Qxa1', -900)), 'Qc1#', 'black')).toBe(true);
+  });
+
+  test('a queen or rook the king just takes is never tempting; a minor piece stays a try', () => {
+    const tree = parseCourseTree('[SetUp "1"]\n[FEN "7K/8/8/8/8/8/3pk3/Q7 w - - 0 1"]\n\n1. Qe5+ *');
+    const { dossier } = analyseCourse(tree, fakeEvals(tree, () => 900), 'white');
+    const sans = temptingCandidates(tree, dossier, 'endgame').map((candidate) => candidate.san);
+    expect(sans).not.toContain('Qd1+');
+    expect(sans).not.toContain('Qf1+');
+    const greek = parseCourseTree('[SetUp "1"]\n[FEN "r1bq1rk1/pppn1ppp/4p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R2QK2R w KQ - 0 1"]\n\n1. O-O *');
+    const quiet = analyseCourse(greek, fakeEvals(greek, () => 0), 'white').dossier;
+    expect(temptingCandidates(greek, quiet, 'puzzle').map((candidate) => candidate.san)).toContain('Bxh7+');
+  });
+});

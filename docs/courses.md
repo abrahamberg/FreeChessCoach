@@ -289,7 +289,7 @@ plans.
 | endgame | `goal` (`win` when the dossier's words for the start give the learner a winning position or a mate, else `draw`), `material` at the start (`materialBalance`), the learner's main-line moves, `onlyMoveNodeIds` (the quiz-eligible ones) and `deviationNodeIds` (the defender's tries). Every learner move gets tempting moves, as a puzzle's do. |
 
 Besides the skeleton, code ranks the **reel candidates**
-(`course-reel-candidates.ts`): a puzzle, a mate, a trap's answer, a
+(`course/reel-candidates.ts`): a puzzle, a mate, a trap's answer, a
 brilliant or great move, a swing (win% drop ≥ 25), each with its span and
 the styles it allows (§13.3).
 
@@ -815,7 +815,7 @@ serves the course; the video gets its own, spoken line:
 
 ## 7. The verifier (code, after every episode call)
 
-`packages/chess-analysis/src/course-verify.ts`, pure. Each problem has a code and
+`packages/chess-analysis/src/course/verify.ts`, pure. Each problem has a code and
 a message the creator can read.
 
 | Check | Rule |
@@ -833,7 +833,7 @@ a message the creator can read.
 | Quiz | `answerNodeId` eligible; the reveal names the answer move in at least 6 words (why it works, not just the move); neither the hint nor the prompt names it (a puzzle run asked "Nf7+ or Ng6+?"). |
 | Solve | In a puzzle's solve episode, every check among the dossier's tempting moves at a move is in that ply's tempting list; a solve line may have 5 sentences (`maxSolveNoteSentences`). |
 | Phrases | None of `BANNED_GENERIC_PHRASES`, and never the word "dossier" (the prompt's word, not the learner's), nor "listed", "given line" or "the continuation" (our list's words). |
-| Pieces | "the knight on d5", "your d1 bishop": that piece stands on that square in a position the line is about: the episode's positions and the lines its moves show (the better move, the tempting moves, the safe line). A safety line is about the board before the bait and the safe line, and after the bait only where it names the bait (`course-verify-pieces.ts`). The hook is not checked. |
+| Pieces | "the knight on d5", "your d1 bishop": that piece stands on that square in a position the line is about: the episode's positions and the lines its moves show (the better move, the tempting moves, the safe line). A safety line is about the board before the bait and the safe line, and after the bait only where it names the bait (`course/verify-pieces.ts`). The hook is not checked. |
 | Voice | More than 2 lines in an episode starting with the same word; one line repeated in two episodes; a word that starts a sentence in 3 or more lines across the course and the reel ("Execute."), board words (White, the queen …) aside. |
 
 The video's packaging and the reel have their own checks (§13.9).
@@ -1051,7 +1051,7 @@ overwrites (`manual-episodes.ts`):
 
 ## 11. Learning a course: four stages, review, the Courses page
 
-The stages (`COURSE_STAGES`; `packages/chess-analysis/src/course-stages.ts`):
+The stages (`COURSE_STAGES`; `packages/chess-analysis/src/course/stages.ts`):
 
 1. **Play through**: each episode on the board with arrows, the coach's notes
    and voice, and the quiz; it ends with the takeaways (Remember).
@@ -1079,7 +1079,7 @@ pawn in its side's colour. A wrong move gets free feedback with no AI (the
 quality label and the checked sentence); a move the engine rates about as
 good is accepted with no penalty.
 
-**Review schedule** per position + move (`course-review.ts`), from the drill
+**Review schedule** per position + move (`course/review-schedule.ts`), from the drill
 and full drill only: a correct first try moves it to the next step, due after
 1, 3 and 9 weeks, then mastered; a miss sends it back, due tomorrow. Days are
 the learner's own calendar day. Signed in it is the `course_progress` table
@@ -1275,7 +1275,7 @@ A YouTube lesson with a story, built on the course's episodes.
 
 ### 13.5 Tempting moves
 
-Code, not the model, finds them (`course-tempting.ts`, chess-analysis),
+Code, not the model, finds them (`course/tempting.ts`, chess-analysis),
 at every critical node, every quiz answer, and every learner move of a
 puzzle or tactics course:
 
@@ -1297,7 +1297,7 @@ puzzle or tactics course:
    where the best mates is kept anywhere, and up to 5 (`maxSolveTempting`).
 4. Each gets what it does itself (its board facts), its refutation (the
    engine's reply and line, `pvSan`, at most 4 plies, never cut mid-exchange: `settledLine`), the board facts of
-   the reply, and who takes what over the line (`course-material.ts`), so
+   the reply, and who takes what over the line (`board-facts/material.ts`), so
    the model words facts instead of working them out. The dossier text names
    each side: "Nxe5? Black's Nxe5 … captures the pawn on e5. White answers
    Bxb4: … captures the queen on b4. Over the line Black takes a pawn;

@@ -407,16 +407,16 @@ source. Update imports everywhere (`packages/*`, `apps/*`, `apps/api/scripts`).
 | `course-material.ts` | `board-facts/material.ts`; rename its `materialBalance` to `materialWords` (F5: the name clashed with `tactic-board-facts.ts`) |
 | `course-dossier-words.ts` (359 lines) | split, by the functions each file holds, into `board-facts/verdict-words.ts` (`lineWords`, `positionWords`), `board-facts/move-facts.ts` (`boardFacts`, `moveWords`, `forkTargets`, `takingStalemates`), `board-facts/check-facts.ts` (`discovered`, `blockedCheck`, `checkAnswers`, `mateNet`, `kingNeighbours`, `isBackRankMate`), `board-facts/endgame-geometry.ts`, `board-facts/safety.ts` (`canBeTaken`, `attackedPieces`, `pinOf`, `isTrapped`, `isLostOn`), `board-facts/better-move.ts` (`betterMoveFacts`, `newDefenders`, `abandonedGuard`) |
 
-- [ ] Tests without a same-named source: `course-dossier-tactics.test.ts` →
+- [x] Tests without a same-named source: `course-dossier-tactics.test.ts` →
   `course/dossier-tactics.test.ts`; `course-material.test.ts` →
   `board-facts/material.test.ts`.
-- [ ] Moves done as in the table; `src/index.ts` exports the new files, and
+- [x] Moves done as in the table; `src/index.ts` exports the new files, and
   every importer uses the new paths and names (`materialWords` replaces the
   course's `materialBalance`). No re-exports under old paths.
-- [ ] `board-facts/` imports nothing from `course/`. Check with `grep -rn
+- [x] `board-facts/` imports nothing from `course/`. Check with `grep -rn
   "from '\.\./course/" packages/chess-analysis/src/board-facts` → no output.
-- [ ] `eval-words.ts` and `san-token.ts` stay at `src/`.
-- [ ] Update file names in docs: `docs/courses.md` (lines naming
+- [x] `eval-words.ts` and `san-token.ts` stay at `src/`.
+- [x] Update file names in docs: `docs/courses.md` (lines naming
   `course-verify.ts`, `course-verify-pieces.ts`, `course-reel-candidates.ts`,
   `course-material.ts`, `course-tempting.ts`, `course-review.ts`,
   `course-stages.ts`), `docs/architecture.md` "Courses".
@@ -425,6 +425,8 @@ source. Update imports everywhere (`packages/*`, `apps/*`, `apps/api/scripts`).
 **Done when:** no `course-*.ts` is left in `packages/chess-analysis/src/`;
 typecheck, lint, tests and `test:golden` all pass with nothing re-recorded.
 **Commit:** `refactor(analysis): course code in course/, board facts in board-facts/`
+
+Status: done 2026-09-30 — no `course-*.ts` left in `packages/chess-analysis/src/`; typecheck, lint, package tests (api against a local Postgres) and `test:golden` (66) pass, snapshot unchanged.
 
 ### Task 111.2 — One copy of each helper; thresholds in CONFIG
 

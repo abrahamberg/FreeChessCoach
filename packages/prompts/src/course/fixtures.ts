@@ -1,5 +1,5 @@
 import { buildCourseSkeleton, courseLineGames, type CourseSkeleton } from '@freechesscoach/chess-analysis';
-import { analyseEnglund } from '@freechesscoach/chess-analysis/course-test-fixtures';
+import { analyseEnglund } from '@freechesscoach/chess-analysis/course/test-fixtures';
 import type { CourseKind, CourseOutline } from '@freechesscoach/shared';
 import type { CoursePlanChapter, CoursePromptContext } from './context.js';
 
