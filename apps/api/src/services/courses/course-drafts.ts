@@ -77,6 +77,7 @@ export function draftFromIntake(intake: CourseIntake, order = 1): CourseDocument
     lines: tree.lines,
     chapters: [],
     episodes: [],
+    diagnosisCodes: [],
     takeaways: [],
     hookOptions: [],
     clipLinks: {}

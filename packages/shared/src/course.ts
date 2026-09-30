@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { COACH_PERSONAS, RATING_BANDS } from './constants.js';
+import { DiagnosisCodeIdSchema } from './diagnosis/catalog-types.js';
 
 /** docs/courses.md §3. The creator picks the kind; the AI never guesses it. */
 export const COURSE_KINDS = ['trap', 'opening', 'tactics', 'puzzle', 'master_game', 'endgame'] as const;
@@ -215,6 +216,8 @@ export const CourseDocumentSchema = z.object({
   lines: z.array(CourseLineSchema),
   chapters: z.array(CourseChapterSchema),
   episodes: z.array(CourseEpisodeSchema),
+  /** Phase 118: the weaknesses this course trains (`courseDiagnosisCodes`, then the creator's edits). */
+  diagnosisCodes: z.array(DiagnosisCodeIdSchema),
   takeaways: z.array(z.string()).max(3),
   hookOptions: z.array(z.string()).max(3),
   clipLinks: CourseClipLinksSchema,

@@ -30,7 +30,7 @@ const tree = parseCourseTree(ENGLUND);
 const id = (n: number): string => tree.nodes[n - 1]!.id;
 const document: CourseDocument = {
   version: 1, kind: 'trap', title: 'Englund trap', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
-  startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], hookOptions: [], clipLinks: {}, takeaways: ['A.', 'B.', 'C.'],
+  startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], hookOptions: [], clipLinks: {}, takeaways: ['A.', 'B.', 'C.'],
   episodes: [{
     id: 'e1', role: 'setup', focus: '', startNodeId: id(1), endNodeId: id(6), drillNodeIds: [],
     plies: [{ nodeId: id(2), text: 'The Englund Gambit.', arrows: [], course: true, video: false }, { nodeId: id(6), text: 'The queen eyes b2.', arrows: [], course: true, video: false }]

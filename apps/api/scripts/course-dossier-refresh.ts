@@ -8,6 +8,7 @@
  * No slug: every course.
  */
 import { parseArgs } from 'node:util';
+import { courseDiagnosisCodes } from '@freechesscoach/chess-analysis';
 import { CourseDocumentSchema } from '@freechesscoach/shared';
 import { createDb } from '../src/db/index.js';
 import * as coursesRepo from '../src/db/repositories/courses.js';
@@ -28,10 +29,15 @@ async function main(): Promise<void> {
         console.log(`${row.slug}: no course document yet, skipped`);
         continue;
       }
-      const document = CourseDocumentSchema.parse(stored);
+      // Stored before the codes existed: they are filled in below.
+      const document = CourseDocumentSchema.parse({ ...stored, diagnosisCodes: (stored as { diagnosisCodes?: string[] }).diagnosisCodes ?? [] });
       const { dossier } = await buildCourseDossierFromEngine(courseTreeOf(document), document.learnerSide, engine, document.kind);
       await coursesRepo.setDossier(db, row.id, dossier);
-      console.log(`${row.slug}: ${dossier.nodes.length} moves`);
+      // Both copies (the draft and the frozen one, where there is one) get the codes; a creator's
+      // edit to the draft's codes is replaced, which is the point of a refresh.
+      const codes = courseDiagnosisCodes(courseTreeOf(document), dossier);
+      await coursesRepo.setDiagnosisCodes(db, row.id, codes);
+      console.log(`${row.slug}: ${dossier.nodes.length} moves, ${codes.length} codes`);
     }
   } finally {
     await db.destroy();

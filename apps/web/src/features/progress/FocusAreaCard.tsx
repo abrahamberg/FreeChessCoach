@@ -1,5 +1,7 @@
 import type { DiagnosisCodeId, FocusAreaSummary } from '@freechesscoach/shared';
 import type { ComponentType, ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { useCoursesForCode } from './useCoursesForCode.js';
 import { ArrowRightIcon, CheckIcon, type IconProps, TrendingUpIcon } from '../../components/Icon.js';
 
 export interface FocusAreaCardProps {
@@ -34,6 +36,7 @@ const TREND_BADGE_VARIANT: Record<FocusAreaSummary['status'], string> = {
 export function FocusAreaCard({ area, onViewEvidence }: FocusAreaCardProps): ReactNode {
   const TrendIcon = TREND_ICON[area.status];
   const diagnosisCode = area.diagnosisCode;
+  const courses = useCoursesForCode(diagnosisCode).data ?? [];
   return (
     <div className="focus-area-card">
       {area.isPrimary && <span className="badge badge--info focus-area-card__primary">Primary</span>}
@@ -55,6 +58,18 @@ export function FocusAreaCard({ area, onViewEvidence }: FocusAreaCardProps): Rea
           </>
         )}
       </p>
+      {courses.length > 0 && (
+        <div className="focus-area-card__courses">
+          <span className="focus-area-card__courses-label">Courses for this</span>
+          <ul>
+            {courses.map((course) => (
+              <li key={course.slug}>
+                <Link to={`/courses/${encodeURIComponent(course.slug)}`}>{course.title}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

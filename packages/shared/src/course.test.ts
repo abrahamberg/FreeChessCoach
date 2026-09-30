@@ -41,6 +41,7 @@ function minimalDocument(): CourseDocument {
       }
     ],
     takeaways: [],
+    diagnosisCodes: [],
     hookOptions: [],
     clipLinks: {}
   };

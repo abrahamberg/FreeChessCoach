@@ -8,7 +8,7 @@ const tree = parseCourseTree('1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2
 function withReel(reel: Partial<CourseReel>): CourseDocument {
   return {
     version: 1, kind: 'trap', title: 'Englund', promise: '', learnerSide: 'black', levelBand: 'novice', coachPersona: 'commander',
-    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], episodes: [], takeaways: [], hookOptions: [], clipLinks: {},
+    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes: [], takeaways: [], hookOptions: [], clipLinks: {},
     reel: {
       style: 'highlight', startNodeId: 'n13', climaxNodeId: 'n16', endNodeId: 'n16',
       hook: 'The Englund trap that mates in eight.', topText: 'Black to play', beats: [{ nodeId: 'n14', say: 'The pin pays.', caption: 'The pin' }],

@@ -30,7 +30,7 @@ async function publishCourse(slug: string, title: string): Promise<string> {
   const owner = await usersRepo.insert(db, { email: `${slug}@example.com`, displayName: 'Creator', engineMode: 'chess_api' });
   const document: CourseDocument = {
     version: 1, kind: 'trap', title, promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
-    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], hookOptions: [], clipLinks: {}, takeaways: ['A.', 'B.', 'C.'], episodes: []
+    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], hookOptions: [], clipLinks: {}, takeaways: ['A.', 'B.', 'C.'], episodes: []
   };
   const row = await coursesRepo.insert(db, { ownerId: owner.id, slug, kind: 'trap', title, sourcePgn: ENGLUND, direction: '', document });
   await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted');

@@ -64,6 +64,7 @@ export async function courseCatalogue(db: Kysely<Database>, query: CourseCatalog
   const offset = curriculum && query.cursor ? decodeOffset(query.cursor) : 0;
   const rows = await coursesRepo.listPublic(db, {
     kind: query.kind,
+    code: query.code,
     sort: query.sort,
     offset,
     before: !curriculum && query.cursor ? decodeCursor(query.cursor) : undefined,
@@ -84,7 +85,8 @@ export async function courseCatalogue(db: Kysely<Database>, query: CourseCatalog
         publishedAt: row.publishedAt.toISOString(),
         episodes: row.episodes,
         moves: row.moves,
-        level: row.level ?? null
+        level: row.level ?? null,
+        diagnosisCodes: row.diagnosisCodes
       })
     ),
     nextCursor:
