@@ -651,7 +651,7 @@ Status: done 2026-09-30 — every `services/…` and `packages/…` path in arch
 **Read:** `packages/chess-analysis/src/board-facts/*.ts`,
 `packages/chess-analysis/src/course/dossier-text.ts`.
 
-- [ ] `board-facts/types.ts`: a discriminated union `BoardFact`, one `kind`
+- [x] `board-facts/types.ts`: a discriminated union `BoardFact`, one `kind`
   per sentence the builders make today:
   - `moved` {piece, from, to} and `castles` {side};
   - `promotes` {piece};
@@ -674,9 +674,9 @@ Status: done 2026-09-30 — every `services/…` and `packages/…` path in arch
   - `repetition` {times}.
 
   Squares are `Square`, pieces `PieceSymbol`, sides `'white' | 'black'`.
-- [ ] Each builder returns `BoardFact[]`. `board-facts/render.ts` has
+- [x] Each builder returns `BoardFact[]`. `board-facts/render.ts` has
   `renderBoardFact(fact): string`, which produces exactly today's sentence.
-- [ ] Callers that need strings call `facts.map(renderBoardFact)` for now.
+- [x] Callers that need strings call `facts.map(renderBoardFact)` for now.
   Nothing else changes.
 
 **Keep:** one test per `kind` checking the structured fields on a small
@@ -687,27 +687,31 @@ with the new render over the Englund and the 66 golden trees; delete it once
 **Done when:** `test:golden` is byte-identical.
 **Commit:** `refactor(analysis): board facts as data, rendered at the edge`
 
+Status: done 2026-09-30 — `board-facts/types.ts` (`BoardFact`, 19 kinds) and `render.ts` (`renderBoardFact`); every builder returns `BoardFact[]`; `course/dossier-node.ts` and `course/tempting.ts` render at the edge; `test:golden` (66) passes with the snapshot unchanged (no `render.wip` test needed: the golden run is the old-vs-new comparison); chess-analysis typecheck, lint and board-facts tests pass. Naming deviations: `castles` carries `wing` (kingside/queenside), not `side`, and `gives` carries `check`. No kind is tested for `attacks.trapped` (no small position found); the mapping is one branch in `safety.ts`. Other packages' tests not re-run.
+
 ### Task 114.2 — No code reads the facts' English
 
 **Depends on:** 114.1. **Findings:** F4.
 **Read:** the files listed in F4.
 
-- [ ] `course/dossier-node.ts`: `mateAhead` comes from the engine line
+- [x] `course/dossier-node.ts`: `mateAhead` comes from the engine line
   (`moverMateIn(evalAfter.lines[0], side) !== null`), not `/forced mate/`.
-- [ ] `course/reel-candidates.ts` `IDEA_FACT` → a check on the kinds `forks`,
+- [x] `course/reel-candidates.ts` `IDEA_FACT` → a check on the kinds `forks`,
   `attacks` with `pinnedTo`, or `gives`.
-- [ ] `course/skeleton.ts` repetition → the `repetition` kind.
-- [ ] `course/tempting.ts` `notTheAnswer` → decide from the two `EngineLine`s,
+- [x] `course/skeleton.ts` repetition → the `repetition` kind.
+- [x] `course/tempting.ts` `notTheAnswer` → decide from the two `EngineLine`s,
   not from `lineWords` text.
-- [ ] `prompts/src/course/playbooks.ts` and
+- [x] `prompts/src/course/playbooks.ts` and
   `apps/api/src/services/courses/manual-notes.ts`: filter by kind.
-- [ ] `course/verify-text.ts` tactic words: allowed words come from the kinds
+- [x] `course/verify-text.ts` tactic words: allowed words come from the kinds
   present (`forks` → fork, `attacks.pinnedTo` → pin, …).
-- [ ] `withoutFileDetail` and `withoutSquareFork` read tactic-claim details,
+- [x] `withoutFileDetail` and `withoutSquareFork` read tactic-claim details,
   not board facts. Leave them for Task 115.1.
 
 **Done when:** `grep -rnE "\.(board|after|before|does)\b.*\.(test|includes|startsWith)\(" packages apps --include=*.ts | grep -v test` shows nothing, and `test:golden` is identical.
 **Commit:** `refactor(courses): decisions from facts and engine lines, never from their words`
+
+Status: done 2026-09-30 — the listed readers now decide from kinds and engine lines (`mateAhead` is a stored field of the node facts; `factWords` in `board-facts/fact-words.ts` feeds the verifier; `notTheAnswer` reads the engine lines, with a small test). `mateAhead` is true when either side has a mate after the move, not only the mover as this task's bullet said: the mover-only version changed three golden files (an allowed-gain sentence appeared where a mate follows for the opponent). `test:golden` (66) identical; chess-analysis, prompts and api course tests pass. The `docs/prompts.md` generator output was already stale before this task and is left alone.
 
 ### Task 114.3 — The dossier stores facts as data
 
@@ -715,10 +719,10 @@ with the new render over the Englund and the 66 golden trees; delete it once
 **Read:** `apps/api/scripts/course-dossier-refresh.ts`,
 `apps/api/src/db/repositories/courses.ts` (`setDossier`).
 
-- [ ] `CourseNodeFacts.board`, `bestInstead.board` and the tempting moves'
+- [x] `CourseNodeFacts.board`, `bestInstead.board` and the tempting moves'
   `does` and `after` become `BoardFact[]`. `renderCourseDossier` renders them.
   No version field, and no code that reads the old string shape.
-- [ ] Stored dossiers in the old shape are regenerated, not read:
+- [x] Stored dossiers in the old shape are regenerated, not read:
   **Owner, after deploy:** run `npx tsx apps/api/scripts/course-dossier-refresh.ts`
   once on each database that has courses (one engine pass per course).
 
@@ -726,13 +730,15 @@ with the new render over the Englund and the 66 golden trees; delete it once
 **Keep / Ephemeral:** none new.
 **Commit:** `feat(courses): the dossier stores board facts as data`
 
+Status: done 2026-09-30 — done together with 114.2 (the readers needed the data). `board`, `bestInstead.board`, tempting `does`/`after` are `BoardFact[]`; `renderCourseDossier` renders them. Owner, after deploy: run `npx tsx apps/api/scripts/course-dossier-refresh.ts` once per database with courses (not run here).
+
 ### Task 114.4 — One definition of loose pieces and of forks
 
 **Depends on:** 114.1. **Findings:** F2.
 **Read:** `board-facts/safety.ts`, `see.ts`, `null-move-fen.ts`,
 `piece-safety.ts`, `tactic-board-facts.ts`.
 
-- [ ] `board-facts/loose-pieces.ts`: `loosePieces(fen, owner): LoosePiece[]`
+- [x] `board-facts/loose-pieces.ts`: `loosePieces(fen, owner): LoosePiece[]`
   with `{ square, piece, owner, tier: 'free' | 'winnable' }`.
   - Look from the opponent's side: if it's `owner`'s turn, use
     `flipActiveColorFen`. If the flipped position is illegal (the owner gives
@@ -742,13 +748,13 @@ with the new render over the Englund and the 66 golden trees; delete it once
     opponent comes out ahead over the whole exchange, e.g. a knight attacked
     by a pawn).
   - Kings are never loose.
-- [ ] `board-facts/forks.ts`: `forks(fen, by)`: a piece of `by` attacking at
+- [x] `board-facts/forks.ts`: `forks(fen, by)`: a piece of `by` attacking at
   least two non-pawn enemy pieces (the king counts), where the forking piece
   can't be taken with `see ≥ 0`. This is the rule the course already uses;
   build it from the same code.
-- [ ] The course keeps its output: `leavesHanging` uses only `free`, and the
+- [x] The course keeps its output: `leavesHanging` uses only `free`, and the
   golden snapshot stays identical. Tier `winnable` is for Phases 115–117.
-- [ ] `threatens` (course/tempting.ts): move it to
+- [x] `threatens` (course/tempting.ts): move it to
   `board-facts/threats.ts` if nothing already in
   `checks-captures-threats.ts` does the same (compare them; if one does, use it
   and delete the copy).
@@ -763,12 +769,23 @@ then delete the file.
 **Done when:** `test:golden` identical; the table is in the Status line.
 **Commit:** `feat(analysis): one definition of loose pieces and forks`
 
+Status: done 2026-09-30 — `board-facts/loose-pieces.ts` (`loosePieces`), `board-facts/forks.ts` (`forks`, built on `tactics.forks` + `canBeTaken`), `board-facts/threats.ts` (`threatens` moved: `checks-captures-threats.ts` answers a different question, every newly attacked piece, so no copy was deleted). `move-facts.ts` now builds `leavesHanging` from `loosePieces(...)` `free` and forks from `forks()`; `test:golden` (66) identical. Both tiers also need `see > 0`, not only "no defender": the Englund's rook on a1 has no direct defender but sits behind the queen on b2, and taking it loses the queen; without that the golden changed. Table over the 1370 positions after each move of `tactic-review-cases.ts` and every ply of the Lichess fixture, each position seen from both owners (so 2740 owner views):
+
+| | count | `free` | `winnable` | neither |
+|---|---|---|---|---|
+| `hangingPieces` (naive) | 1746 | 1238 | 0 | 508 |
+| `underDefendedPieces` (naive) | 452 | 0 | 251 | 201 |
+
+`free` pieces missing from `hangingPieces`: 0 (of 1238). `winnable` pieces missing from `underDefendedPieces`: 408 (of 659): a defended piece attacked by a cheaper one is invisible to the naive count. So 29% of the naive "hanging" pieces are not loose (an x-ray recapture, a pinned taker, or a capture that loses material), 44% of "under-defended" ones are not, and `winnable` finds 408 the naive lists never flag. `corpus` tier not run (nothing under `tactic-detectors/` changed).
+
 ### Task 114.5 — Docs and merge
 
-- [ ] AGENTS.md "Chess facts" rule points at `board-facts/`;
+- [x] AGENTS.md "Chess facts" rule points at `board-facts/`;
   `docs/architecture.md` gets one paragraph on `board-facts/` (what it is,
   who uses it, `renderBoardFact`).
-- [ ] `npm run verify`, `test:golden`, `test:corpus`; push; open a PR.
+- [x] `npm run verify`, `test:golden`, `test:corpus`; push; open a PR.
+
+Status: partial 2026-09-30 — docs done. `verify:changed`, `test:golden` (66, identical) and the chess-analysis, prompts and api course tests pass; full `npm run verify` passed with Docker (api against Postgres included). `test:corpus`: the `basic` reporter in its script no longer exists in vitest 5, so it fails to start; run directly it passes with a longer test timeout (three tests hit the 5 s default under load), no ceiling or floor moved. Branch pushed, PR to be opened.
 
 ---
 

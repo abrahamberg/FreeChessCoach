@@ -1,4 +1,4 @@
-import { captureWords, courseNodeAncestry, lineBalance, TACTIC_MOTIF_PHRASES, type CourseSkeleton } from '@freechesscoach/chess-analysis';
+import { captureWords, courseNodeAncestry, lineBalance, renderAttackTarget, renderBoardFact, TACTIC_MOTIF_PHRASES, type CourseSkeleton } from '@freechesscoach/chess-analysis';
 import { capitalise } from '@freechesscoach/shared';
 import type { CourseBudget } from './budget.js';
 import { midSentence, nodeLabel, promptVideos, type CoursePromptContext } from './context.js';
@@ -107,13 +107,13 @@ function baitFacts(context: CoursePromptContext, skeleton: Extract<CourseSkeleto
   if (!bait || !skeleton) return '';
   const parentId = context.nodes.find((node) => node.id === bait.nodeId)?.parentId;
   const before = parentId ? facts.get(parentId) : undefined;
-  const attacks = (before?.board ?? []).filter((fact) => /\b(attacks|forks|checks)\b/.test(fact));
+  const attacks = (before?.board ?? []).filter((fact) => fact.kind === 'attacks' || fact.kind === 'forks');
   // A fork says both attacks at once.
-  const forks = attacks.filter((fact) => fact.includes('forks'));
+  const forks = attacks.filter((fact) => fact.kind === 'forks');
   const threats = forks.length ? forks : attacks;
-  const does = bait.board.filter((fact) => !fact.startsWith('moves the '));
+  const does = bait.board.filter((fact) => fact.kind !== 'moved').map(renderBoardFact);
   const rows = [
-    threats.length && parentId ? `Before it, ${nodeLabel(context, parentId)}: ${threats.join('; ')}.` : '',
+    threats.length && parentId ? `Before it, ${nodeLabel(context, parentId)}: ${threats.map(renderBoardFact).join('; ')}.` : '',
     does.length ? `${nodeLabel(context, bait.nodeId)}: ${does.join('; ')}.` : '',
     missed(context, skeleton)
   ].filter(Boolean);
@@ -220,15 +220,13 @@ function trapEnding(context: CoursePromptContext): string {
   const sans = courseNodeAncestry(byId, leafId).map((node) => node.san);
   const standing = leafFacts ? midSentence(leafFacts.after) : 'see the dossier';
   // The Fishing Pole stops at 8…g3 with …Qh2# to come: the mate is the promise.
-  if (leafFacts && /forced mate/.test(leafFacts.after)) return `${nodeLabel(context, leafId)}, after which ${standing}. Promise the mate, not material.`;
+  if (leafFacts?.mateAhead) return `${nodeLabel(context, leafId)}, after which ${standing}. Promise the mate, not material.`;
   // Noah's Ark ends with material level and the bishop on b3 trapped.
-  const trappedFact = leafFacts?.board.find((fact) => fact.includes('which is trapped'));
-  // indexOf, not a `.*$` regex: a fact that repeats the marker must not backtrack (CodeQL js/polynomial-redos).
-  const marker = trappedFact?.indexOf(', which is trapped:') ?? -1;
-  const trapped = (marker < 0 ? trappedFact : trappedFact?.slice(0, marker))?.replace(/^attacks /, '');
+  const trappedFact = leafFacts?.board.find((fact) => fact.kind === 'attacks' && fact.trapped);
+  const trapped = trappedFact?.kind === 'attacks' ? renderAttackTarget(trappedFact) : undefined;
   if (trapped) return `${nodeLabel(context, leafId)}, after which ${standing} and ${lineBalance(context.startFen, sans)}, but ${trapped} is trapped and will be lost. Promise that piece, nothing more.`;
   // The QGA's 6.Qf3 wins the rook on a8 next move: the line stops at the attack.
-  const attacks = leafFacts?.board.filter((fact) => fact.startsWith('attacks ')) ?? [];
+  const attacks = leafFacts?.board.filter((fact) => fact.kind === 'attacks').map(renderBoardFact) ?? [];
   const threat = attacks.length ? `; ${leafFacts?.san} ${attacks.join(' and ')}` : '';
   return `${nodeLabel(context, leafId)}, after which ${standing} and ${lineBalance(context.startFen, sans)}${threat}. Promise that${threat ? ' and the threat' : ' material'}, nothing more.`;
 }
@@ -309,7 +307,7 @@ function tacticsPlaybook(context: CoursePromptContext, skeleton: Extract<CourseS
   // A mate on the back rank is the back-rank theme, not "what a checkmate is".
   const themes = [...new Set((skeleton?.examples ?? []).flatMap((example) => {
     if (!example.motif) return [];
-    const backRank = example.motif === 'checkmate' && context.dossier.nodes.find((node) => node.nodeId === example.nodeId)?.board.includes('a back-rank mate');
+    const backRank = example.motif === 'checkmate' && context.dossier.nodes.find((node) => node.nodeId === example.nodeId)?.board.some((fact) => fact.kind === 'backRankMate');
     return [TACTIC_MOTIF_PHRASES[backRank ? 'weakBackRank' : example.motif].noun];
   }))];
   // Examples of different ideas share no one theme: a discovered check and

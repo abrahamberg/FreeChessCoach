@@ -79,7 +79,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
   - `tactic-detectors/` — tactic motifs for Game Review and stats.
   - `diagnostics/` — the BV/MS/TA… diagnosis codes, opportunities and focus selection.
   - `move-verdict/` — move verdicts.
-  - board facts (what a move does, loose pieces, checks, mates, material in words) — `packages/chess-analysis/src/board-facts/`.
+  - board facts — `packages/chess-analysis/src/board-facts/`: `BoardFact` data (`types.ts`) with one `renderBoardFact` (`render.ts`); what a move does, `loosePieces`, `forks`, checks, mates, material in words.
   - course code — `packages/chess-analysis/src/course/` (dossier, verify, tempting, skeletons).
 - `packages/prompts`: LLM prompt templates (course prompts in `src/course/`). `docs/prompts.md` is auto-generated.
 - `services/engine`: Stockfish/UCI HTTP microservice.
@@ -96,7 +96,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 8. **Agent Runtime**: Cache-stable prompts, append-only messages, bounded context, tool budgets.
 9. **Prompt Convention**: `packages/prompts/src/` uses `buildXPrompt`/`buildXMessages`. Use `[...].filter(Boolean).join('\n\n')`.
 10. **One copy of each chess idea**: chess.js first; what it lacks comes from the shared analysis code (`see()`, `pins()`, `trappedPieces()`, `PIECE_VALUES`, the board facts); where two copies exist, keep the better one and delete the other. Never write a second "is this piece hanging" check.
-11. **Facts are data**: code decides from structured facts and engine lines, never by matching the English a fact renders to. Render words at the edge (prompts, UI). Existing violations are listed in `docs/plan.md` F4 and removed in Phase 114.
+11. **Facts are data**: code decides from structured facts and engine lines, never by matching the English a fact renders to. Render words at the edge (prompts, UI). Course code follows this since Phase 114; the review's tactic claims still carry English (Phase 115).
 12. **No backward compatibility**: rename, reshape and delete directly, and update every caller in the same change. No version fields, no code that reads an old shape, no `.optional()`/`.default()` added only so old rows parse, no deprecated aliases or re-exports under old names or paths. Stored data that no longer fits is regenerated (a rebuild script) or dropped — say which in the task.
 
 ## TypeScript Rules

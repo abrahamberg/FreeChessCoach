@@ -1,4 +1,5 @@
 import { capitalise } from '@freechesscoach/shared';
+import { renderBoardFact } from '../board-facts/render.js';
 import { CONFIG } from '../config.js';
 import type { CourseDossier, CourseLineFacts, CourseNodeFacts } from './dossier.js';
 import type { CourseTemptingFacts } from './tempting.js';
@@ -49,8 +50,8 @@ function renderNode(node: CourseNodeFacts, lineName: string, oneLine: boolean): 
   if (node.inBook) detail('book', node.openingName ? `in book (${node.openingName})` : 'in book');
   const best = ERROR_QUALITIES.has(node.quality) ? node.bestInstead : null;
   if (best) detail('best instead', `${best.san}; after ${best.line.join(' ')}, ${best.balance}`);
-  if (best?.board.length) detail(`why ${best.san} is better`, best.board.join(' | '));
-  if (node.board.length) detail('board', node.board.join(' | '));
+  if (best?.board.length) detail(`why ${best.san} is better`, best.board.map(renderBoardFact).join(' | '));
+  if (node.board.length) detail('board', node.board.map(renderBoardFact).join(' | '));
   if (node.tactics.length) detail('tactics', node.tactics.join(' '));
   if (node.alternatives.length) detail('alternatives', node.alternatives.map((alt) => `${alt.san}: ${alt.verdict}`).join('; '));
   for (const tempting of node.tempting) detail(`tempting ${tempting.kind}`, temptingText(node, tempting));
@@ -67,8 +68,8 @@ function temptingText(node: CourseNodeFacts, tempting: CourseTemptingFacts): str
   const mover = capitalise(node.side);
   const other = node.side === 'white' ? 'Black' : 'White';
   const [answer, ...rest] = tempting.refutation;
-  const does = tempting.does.length ? ` ${mover}'s ${tempting.san} ${tempting.does.join(' | ')}.` : '';
-  const after = answer ? ` ${other} answers ${answer}${tempting.after.length ? `: ${tempting.after.join(' | ')}` : ''}.` : '';
+  const does = tempting.does.length ? ` ${mover}'s ${tempting.san} ${tempting.does.map(renderBoardFact).join(' | ')}.` : '';
+  const after = answer ? ` ${other} answers ${answer}${tempting.after.length ? `: ${tempting.after.map(renderBoardFact).join(' | ')}` : ''}.` : '';
   const line = rest.length ? ` Then ${rest.join(' ')}.` : '';
   // A puzzle move that still works is no "?": it is not the answer, and why.
   const verdict = tempting.notTheAnswer ? ` Works, but not the answer: ${tempting.notTheAnswer}.` : '';

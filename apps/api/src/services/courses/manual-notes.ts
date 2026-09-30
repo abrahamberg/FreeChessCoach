@@ -1,4 +1,4 @@
-import { episodeKeyMoves, type CourseNodeFacts, type CourseSkeleton, type CourseTemptingFacts } from '@freechesscoach/chess-analysis';
+import { episodeKeyMoves, renderBoardFact, type CourseNodeFacts, type CourseSkeleton, type CourseTemptingFacts } from '@freechesscoach/chess-analysis';
 import type { CourseArrow, CourseEpisode, CoursePly, CourseTempting, CourseVideos } from '@freechesscoach/shared';
 
 /** docs/courses.md §10: a note pre-filled from checked facts only — the
@@ -9,7 +9,7 @@ export function noteText(facts: CourseNodeFacts): string {
   if (facts.creatorComment) parts.push(facts.creatorComment);
   if (facts.inBook && facts.openingName) parts.push(`Book move in the ${facts.openingName}.`);
   // "moves the bishop from d2 to c3" is for the model; the board shows it.
-  const board = facts.board.filter((fact) => !/^(moves the |castles )/.test(fact));
+  const board = facts.board.filter((fact) => fact.kind !== 'moved' && fact.kind !== 'castles').map(renderBoardFact);
   if (board.length) parts.push(`${facts.san} ${board.join(', ')}.`);
   parts.push(...facts.tactics);
   return parts.join(' ');
@@ -88,7 +88,7 @@ export class EpisodeBuilder {
  * board fact is the answer's own move, which the SAN already says. */
 export function temptingNote(facts: CourseTemptingFacts): CourseTempting {
   const [answer] = facts.refutation;
-  const effects = facts.after.length > 1 ? facts.after.slice(1) : facts.after;
+  const effects = (facts.after.length > 1 ? facts.after.slice(1) : facts.after).map(renderBoardFact);
   const listed = effects.length > 1 ? `${effects.slice(0, -1).join(', ')} and ${effects.at(-1)}` : (effects[0] ?? '');
   const why = answer ? `${answer} ${listed}.`.replace(/ \.$/, '.') : facts.verdict;
   return { san: facts.san, why: facts.notTheAnswer ? `Not the answer: ${facts.notTheAnswer}. ${why}` : why, refutation: facts.refutation };

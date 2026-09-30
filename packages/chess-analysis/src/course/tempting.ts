@@ -1,9 +1,12 @@
-import { Chess, type PieceSymbol, type Square } from 'chess.js';
+import { Chess, type PieceSymbol } from 'chess.js';
 import type { CourseKind, EngineEval, EngineLine } from '@freechesscoach/shared';
 import { CONFIG } from '../config.js';
 import { moverMateIn } from './dossier-node.js';
 import type { CourseDossier } from './dossier.js';
+import { threatens } from '../board-facts/threats.js';
 import { boardFacts } from '../board-facts/move-facts.js';
+import type { BoardFact } from '../board-facts/types.js';
+import { cpBand } from '../eval-words.js';
 import { lineWords } from '../board-facts/verdict-words.js';
 import { captureWords, exchangeLoss, lineBalance, settledLine } from '../board-facts/material.js';
 import type { CourseTree } from './tree.js';
@@ -19,11 +22,11 @@ export interface CourseTemptingFacts {
   san: string;
   kind: TemptingKind;
   /** What the tempting move itself does on the board, from chess.js. */
-  does: string[];
+  does: BoardFact[];
   /** The engine's answer to it, at most 4 plies. */
   refutation: string[];
   /** What the answer does on the board, from chess.js. */
-  after: string[];
+  after: BoardFact[];
   /** Who takes what over the move and its refutation ("Black takes a pawn;
    * White takes the queen"), so the model never works it out. */
   captures: string;
@@ -111,23 +114,6 @@ function kingTakesForNothing(after: Chess, move: { piece: PieceSymbol; to: strin
   return after.moves({ verbose: true }).some((reply) => reply.piece === 'k' && reply.to === move.to);
 }
 
-/** The value of the best piece the moved piece now attacks that is either
- * undefended or worth more than it; 0 when none. */
-function threatens(board: Chess, from: Square, piece: PieceSymbol, color: 'w' | 'b'): number {
-  const enemy = color === 'w' ? 'b' : 'w';
-  let best = 0;
-  for (const row of board.board()) {
-    for (const cell of row) {
-      if (!cell || cell.color !== enemy || cell.type === 'k') continue;
-      if (!board.attackers(cell.square, color).includes(from)) continue;
-      const value = pieceValueOrKing(cell.type);
-      const defended = board.attackers(cell.square, enemy).length > 0;
-      if (!defended || value > pieceValueOrKing(piece)) best = Math.max(best, value);
-    }
-  }
-  return best;
-}
-
 /**
  * §13.5, after the engine: a candidate is tempting when it costs the mover
  * at least `temptingDrop` points of win% against the best move, or walks
@@ -183,14 +169,17 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
  * lines before it (the answer) and after it; null when it does not work: the
  * mover no longer stands better. After the candidate the other side moves,
  * so its mate in K is K + 1 moves from the puzzle's position. */
-function notTheAnswer(side: 'white' | 'black', best: EngineLine, answer: EngineLine): string | null {
+export function notTheAnswer(side: 'white' | 'black', best: EngineLine, answer: EngineLine): string | null {
   const name = side === 'white' ? 'White' : 'Black';
-  const verdict = lineWords(answer);
-  if (!verdict.startsWith(name)) return null;
-  const bestMate = moverMateIn(best, side);
   const answerMate = moverMateIn(answer, side);
+  const bestMate = moverMateIn(best, side);
+  const sign = side === 'white' ? 1 : -1;
+  const band = answer.mateIn === null ? cpBand(sign * (answer.cp ?? 0)) : null;
+  // Still standing better: mates, or is ahead by the band's own margin.
+  const stands = answerMate !== null || (answer.mateIn === null && sign * (answer.cp ?? 0) >= 50);
+  if (!stands) return null;
   if (bestMate !== null && answerMate !== null) return `it mates too, but in ${answerMate + 1} moves, not ${bestMate}`;
-  const still = verdict.replace(/^(White|Black) (is|has) /, '$1 $2 still ');
+  const still = answerMate !== null ? `${name} has still a forced mate in ${answerMate}` : `${name} is still ${band}`;
   if (bestMate !== null) return `${still}, but there is no mate; the answer mates in ${bestMate}`;
   return `${still}, but the answer is stronger: ${lineWords(best)}`;
 }

@@ -1,10 +1,10 @@
 import { Chess, type Square } from 'chess.js';
-import { PIECE_NAMES } from '../piece-names.js';
 import { see } from '../see.js';
 import { isProfitableCaptureOn } from '../tactic-board-facts.js';
 import { pins } from '../tactic-pins.js';
 import { trappedPieces } from '../tactic-trapped.js';
 import { pieceValueOrKing } from '../tactics.js';
+import type { BoardFact, PieceAt } from './types.js';
 
 const VALUABLE = new Set(['n', 'b', 'r', 'q']);
 
@@ -21,20 +21,23 @@ export function canBeTaken(fenAfter: string, square: string): boolean {
 }
 
 /** Enemy knights, bishops, rooks and queens the moved piece now hits. */
-export function attackedPieces(fenAfter: string, from: Square): string[] {
+export function attackedPieces(fenAfter: string, from: Square): BoardFact[] {
   const chess = new Chess(fenAfter);
   const mover = chess.get(from);
   if (!mover) return [];
-  const targets: string[] = [];
+  const targets: BoardFact[] = [];
   for (const row of chess.board()) {
     for (const cell of row) {
       if (!cell || cell.color === mover.color || !VALUABLE.has(cell.type)) continue;
       if (!chess.attackers(cell.square, mover.color).includes(from)) continue;
-      const target = `the ${PIECE_NAMES[cell.type]} on ${cell.square}`;
-      const pin = pinOf(fenAfter, cell.square);
-      const boxed = !chess.moves({ square: cell.square }).length && chess.turn() === cell.color;
-      const trapped = isTrapped(fenAfter, cell.square, from) ? (boxed ? ', which is trapped: it cannot move, and no move saves it' : ', which is trapped: every square it can reach loses it') : '';
-      targets.push(`attacks ${target}${pin ? `, which is pinned to ${pin}` : ''}${trapped}`);
+      const fact: Extract<BoardFact, { kind: 'attacks' }> = { kind: 'attacks', piece: { piece: cell.type, square: cell.square } };
+      const pinnedTo = pinOf(fenAfter, cell.square);
+      if (pinnedTo) fact.pinnedTo = pinnedTo;
+      if (isTrapped(fenAfter, cell.square, from)) {
+        const boxed = !chess.moves({ square: cell.square }).length && chess.turn() === cell.color;
+        fact.trapped = boxed ? 'boxed' : 'nowhere';
+      }
+      targets.push(fact);
     }
   }
   return targets;
@@ -44,14 +47,14 @@ export function attackedPieces(fenAfter: string, from: Square): string[] {
  * from the shared `pins()`: pinned to the king, or to the queen by a
  * cheaper piece. The Elephant's bait never said the knight on f6 was
  * pinned, which is why Nxd5 looks safe. */
-function pinOf(fenAfter: string, square: Square): string | null {
+function pinOf(fenAfter: string, square: Square): { target: PieceAt; by: PieceAt } | null {
   const chess = new Chess(fenAfter);
   const hits = pins(chess).filter((hit) => hit.pinned === square);
-  const name = (at: Square): string => PIECE_NAMES[chess.get(at)!.type];
+  const at = (place: Square): PieceAt => ({ piece: chess.get(place)!.type, square: place });
   const toKing = hits.find((hit) => hit.kind === 'absolute');
-  if (toKing) return `the king by the ${name(toKing.by)} on ${toKing.by}`;
+  if (toKing) return { target: at(toKing.against), by: at(toKing.by) };
   const toQueen = hits.find((hit) => chess.get(hit.against)?.type === 'q' && chess.get(hit.by)?.type !== 'q');
-  return toQueen ? `the queen on ${toQueen.against} by the ${name(toQueen.by)} on ${toQueen.by}` : null;
+  return toQueen ? { target: at(toQueen.against), by: at(toQueen.by) } : null;
 }
 
 /** The shared `trappedPieces` (lost where it stands and wherever it goes,

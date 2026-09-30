@@ -4,6 +4,7 @@ import type { ClassifiedMove } from '../classify.js';
 import { CONFIG } from '../config.js';
 import { abandonedGuard, betterMoveFacts } from '../board-facts/better-move.js';
 import { boardFacts } from '../board-facts/move-facts.js';
+import type { BoardFact } from '../board-facts/types.js';
 import { lineWords, positionWords } from '../board-facts/verdict-words.js';
 import { lineBalance, settledLine } from '../board-facts/material.js';
 import type { CourseTemptingFacts } from './tempting.js';
@@ -33,8 +34,10 @@ export interface CourseNodeFacts {
   /** The engine's best move and line (at most 6 plies) when the course move
    * is not it, with its board facts (`betterMoveFacts`) and the material at
    * the line's end ("White is a pawn up"). */
-  bestInstead: { san: string; line: string[]; board: string[]; balance: string } | null;
-  board: string[];
+  /** The engine sees a forced mate after the move: a sentence about winning material would undersell it. */
+  mateAhead: boolean;
+  bestInstead: { san: string; line: string[]; board: BoardFact[]; balance: string } | null;
+  board: BoardFact[];
   /** Checked tactic sentences (`tactic-reason-text.ts`), learner = "you".
    * Not the review's prevention sentences ("you stopped them winning a
    * bishop through a fork"): about a move nobody played, the model presented
@@ -75,7 +78,9 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
   const after = positionWords(node.fenAfter, evalsByFen.get(node.fenAfter));
   // Once the position is a forced mate, a sentence about winning material
   // undersells it: the Immortal's 21.Nxg7+ "won a pawn" starts a mate in 2.
-  const mateAhead = /forced mate/.test(after);
+  const lineAfter = evalsByFen.get(node.fenAfter)?.lines[0];
+  // Either side's mate counts: the Immortal's 21.Nxg7+ allows nothing, it starts a mate.
+  const mateAhead = (lineAfter?.mateIn ?? null) !== null;
   // A pawn run in an endgame, or to the sixth rank and past it, is a race to
   // promote, not space: the square rule's 5.f8=Q read "pushes a pawn to f8,
   // taking space" (the review does not call that position an endgame).
@@ -94,6 +99,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     after,
     inBook: isBookMoveFrom(fenBefore, node.san),
     openingName: opening?.name ?? null,
+    mateAhead,
     bestInstead: bestInstead(move, node.san, fenBefore),
     board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan), ...repetition(node.fenAfter, input.linePositionFens)],
     tactics: tacticSentences(claims, node.san, side === input.learnerSide, mateAhead, capturedValue(fenBefore, node.san)),
@@ -110,11 +116,11 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
 
 /** A perpetual check is a position that comes back: the perpetual's
  * 6.Qe8+ is 4.Qe8+ again, which no board fact said. */
-function repetition(fenAfter: string, linePositionFens: readonly string[]): string[] {
+function repetition(fenAfter: string, linePositionFens: readonly string[]): BoardFact[] {
   const key = positionKey(fenAfter);
   const times = linePositionFens.filter((fen) => positionKey(fen) === key).length;
-  if (times >= 3) return ['the position has now come three times: a draw by repetition'];
-  return times === 2 ? ['the position has now come twice: a third time is a draw'] : [];
+  if (times >= 3) return [{ kind: 'repetition', times: 3 }];
+  return times === 2 ? [{ kind: 'repetition', times: 2 }] : [];
 }
 
 function bestInstead(move: ClassifiedMove, san: string, fenBefore: string): CourseNodeFacts['bestInstead'] {

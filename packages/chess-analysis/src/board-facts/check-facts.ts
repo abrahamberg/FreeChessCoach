@@ -1,28 +1,30 @@
 import { Chess, type PieceSymbol, type Square } from 'chess.js';
-import { PIECE_NAMES } from '../piece-names.js';
+import type { BoardFact, PieceAt } from './types.js';
+
+const pieceAt = (chess: Chess, square: Square): PieceAt => ({ piece: chess.get(square)!.type, square });
 
 /** Who gives the check when the moved piece is not the only one: the
  * Petrov's 5.Nc6+ is the queen on e2's check, which "gives check" hid. */
-export function discovered(fenAfter: string, to: Square): string[] {
+export function discovered(fenAfter: string, to: Square): BoardFact[] {
   const chess = new Chess(fenAfter);
   const king = chess.findPiece({ type: 'k', color: chess.turn() })[0];
   if (!king) return [];
   const checkers = chess.attackers(king, chess.turn() === 'w' ? 'b' : 'w');
-  const others = checkers.filter((square) => square !== to).map((square) => `the ${PIECE_NAMES[chess.get(square)!.type]} on ${square}`);
+  const others = checkers.filter((square) => square !== to).map((square) => pieceAt(chess, square));
   if (!others.length) return [];
-  return checkers.includes(to) ? [`a double check, with ${others.join(' and ')}`] : [`a discovered check from ${others.join(' and ')}`];
+  return checkers.includes(to) ? [{ kind: 'doubleCheck', others }] : [{ kind: 'discoveredCheck', checkers: others }];
 }
 
 /** The Lucena's 7.Rb4 builds the bridge by blocking a check: the one fact
  * the course is about, and the board facts never said it. */
-export function blockedCheck(fenBefore: string, piece: PieceSymbol, to: string): string[] {
+export function blockedCheck(fenBefore: string, piece: PieceSymbol, to: string): BoardFact[] {
   const chess = new Chess(fenBefore);
   if (!chess.inCheck() || piece === 'k') return [];
   const king = chess.findPiece({ type: 'k', color: chess.turn() })[0];
   const checkers = king ? chess.attackers(king, chess.turn() === 'w' ? 'b' : 'w') : [];
   const checker = checkers.length === 1 ? checkers[0] : undefined;
   if (!checker || checker === to) return [];
-  return [`blocks the check from the ${PIECE_NAMES[chess.get(checker)!.type]} on ${checker}`];
+  return [{ kind: 'blocksCheck', checker: pieceAt(chess, checker) }];
 }
 
 /** Mate by a piece on the king's own back rank, checking along it. */
@@ -37,35 +39,32 @@ export function isBackRankMate(fenAfter: string, checker: Square): boolean {
  * own pieces, which are covered and by what, and which adjacent attackers
  * are guarded. gemma-4-12b invented "Nd5# saves your knight on e5" when the
  * dossier only said "gives checkmate". */
-export function mateNet(fenAfter: string): string {
+export function mateNet(fenAfter: string): BoardFact[] {
   const chess = new Chess(fenAfter);
   const side = chess.turn();
   const enemy = side === 'w' ? 'b' : 'w';
   const king = chess.findPiece({ type: 'k', color: side })[0];
-  if (!king) return 'checkmate';
-  const name = (square: Square): string => `the ${PIECE_NAMES[chess.get(square)!.type]} on ${square}`;
+  if (!king) return [];
   // The king's own square blocks the lines through it: with it on the board,
   // Qc1# read "h1 is covered by " (the queen sees h1 once the king steps there).
   const lifted = new Chess(fenAfter);
   lifted.remove(king);
-  const own: string[] = [];
-  const covered = new Map<string, string[]>();
-  const guarded: string[] = [];
+  const ownSquares: Square[] = [];
+  const covered = new Map<string, { squares: Square[]; by: PieceAt[] }>();
+  const guarded: { piece: PieceAt; by: PieceAt[] }[] = [];
   for (const square of kingNeighbours(king)) {
     const piece = chess.get(square);
-    const by = lifted.attackers(square, enemy).map(name);
-    if (piece?.color === side) own.push(square);
-    else if (piece) guarded.push(`${name(square)} is guarded by ${by.join(' and ')}`);
+    const by = lifted.attackers(square, enemy).map((from) => pieceAt(chess, from));
+    if (piece?.color === side) ownSquares.push(square);
+    else if (piece) guarded.push({ piece: pieceAt(chess, square), by });
     else {
-      const key = by.join(' and ');
-      covered.set(key, [...(covered.get(key) ?? []), square]);
+      const key = by.map((cover) => cover.square).join();
+      const group = covered.get(key) ?? { squares: [], by };
+      group.squares.push(square);
+      covered.set(key, group);
     }
   }
-  const parts = [`the king on ${king} is checked by ${chess.attackers(king, enemy).map(name).join(' and ')}`];
-  if (own.length) parts.push(`${own.join(', ')} ${own.length > 1 ? 'hold' : 'holds'} its own pieces`);
-  for (const [by, squares] of covered) parts.push(`${squares.join(' and ')} ${squares.length > 1 ? 'are' : 'is'} covered by ${by}`);
-  parts.push(...guarded);
-  return `why it is mate: ${parts.join('; ')}`;
+  return [{ kind: 'mateNet', king, checkers: chess.attackers(king, enemy).map((from) => pieceAt(chess, from)), ownSquares, covered: [...covered.values()], guarded }];
 }
 
 function kingNeighbours(king: Square): Square[] {
@@ -84,7 +83,7 @@ function kingNeighbours(king: Square): Square[] {
 
 /** How the checked side can answer, so a script can't say "forces the king
  * to move" when a block exists (gemma-4-12b did, on 4...Qb4+). */
-export function checkAnswers(fenAfter: string): string {
+export function checkAnswers(fenAfter: string): BoardFact[] {
   const chess = new Chess(fenAfter);
   const checker = chess.attackers(chess.findPiece({ type: 'k', color: chess.turn() })[0] as Square, chess.turn() === 'w' ? 'b' : 'w');
   // One promotion stands for all four: "dxe1=N, dxe1=B, dxe1=R, dxe1=Q".
@@ -94,10 +93,5 @@ export function checkAnswers(fenAfter: string): string {
   const kingMoves = moves.filter((move) => move.piece === 'k' && !checker.includes(move.to)).map((move) => move.san);
   const captures = moves.filter((move) => checker.includes(move.to)).map((move) => move.san);
   const blocks = moves.filter((move) => move.piece !== 'k' && !checker.includes(move.to)).map((move) => move.san);
-  const ways = [
-    blocks.length ? `block with ${blocks.join(', ')}` : 'no block',
-    captures.length ? `take the checking piece with ${captures.join(', ')}` : 'the checking piece cannot be taken',
-    kingMoves.length ? `move the king with ${kingMoves.join(', ')}` : 'the king cannot move'
-  ];
-  return `the check can be answered: ${ways.join('; ')}`;
+  return [{ kind: 'checkAnswers', blocks, captures, kingMoves }];
 }
