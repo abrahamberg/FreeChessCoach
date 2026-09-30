@@ -1,4 +1,5 @@
-import { renderBoardFact, type BoardFact, type LegalMoveInspection, type LoosePiece, type MoveInspection, type PositionInspection } from '@freechesscoach/chess-analysis';
+import { renderBoardFact, type BoardFact, type LegalMoveInspection, type MoveInspection, type PositionInspection } from '@freechesscoach/chess-analysis';
+import type { LoosePieceDto } from '@freechesscoach/shared';
 
 const PIECE_NAMES: Record<string, string> = {
   p: 'pawn',
@@ -95,7 +96,7 @@ function renderLegalMove(move: LegalMoveInspection): string {
 
 /** "the white knight on f3 (can be won)": `winnable` is defended but loses the
  * exchange, `free` has no defender at all. */
-export function describeLoose(pieces: readonly LoosePiece[]): string {
+export function describeLoose(pieces: readonly LoosePieceDto[]): string {
   return pieces
     .map((piece) => `the ${piece.owner === 'w' ? 'white' : 'black'} ${pieceName(piece.piece)} on ${piece.square} (${piece.tier === 'free' ? 'undefended' : 'can be won'})`)
     .join(', ');

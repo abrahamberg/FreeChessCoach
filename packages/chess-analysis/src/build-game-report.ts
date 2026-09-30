@@ -282,7 +282,7 @@ function toTacticsMoves(colourMoves: ClassifiedMoveDto[]): TacticsEvidenceMove[]
     mover: move.mover,
     quality: move.quality,
     fenAfter: move.fenAfter ?? '',
-    featureDelta: move.featureDelta ?? { newForks: [], newHangingPieces: [], mobilityDelta: 0 },
+    featureDelta: move.featureDelta ?? { newForks: [], newLoosePieces: [], mobilityDelta: 0 },
     isTacticalPosition: move.isTacticalPosition === true
   }));
 }

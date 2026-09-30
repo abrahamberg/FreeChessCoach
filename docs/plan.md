@@ -1124,6 +1124,8 @@ Status: done 2026-09-30 — `isQuizEligible` moved to `board-facts/only-move.ts`
 - [ ] `npm run verify`, `test:corpus`; push; PR; merge.
 Status (first bullet): done 2026-09-30 — `npm run verify` passes (Docker up, api against Postgres included); corpus files run directly pass (14 tests, after 117.2; 117.3 touched nothing under `tactic-detectors/`); `test:golden` 66 identical. Branch pushed, PR opened. The second bullet (delete the naive lists) waits for this PR to merge.
 
+Status (second bullet): done 2026-09-30 — `hangingPieces`/`underDefendedPieces` are gone from `PositionFeaturesSchema`, `position-features.ts` and `piece-safety.ts`; `FeatureDelta.newHangingPieces` is `newLoosePieces` (a true before/after diff from `loosePieces`, both tiers; new `LoosePieceSchema` in shared). `diffPositionFeatures` keeps forks and mobility; `positionDelta(before, after, fenBefore, fenAfter)` adds the loose diff for `classify`, enrichment, `pv-tactics` and the coach. Readers moved: `better-move.ts` (`leavesLoose`, `free`; golden stayed identical, no re-record needed), `tactics-score.ts`, `pv-tactics.ts`, `position-analysis-summary.ts` (from `analysis.fen`) and `episode-context.ts` (renders "Newly loose: …"). The grep prints nothing. Stored rows are not read for the old fields: a report's `featureDelta` written before this fails the schema and is re-made on re-analysis. `verify` passes, `test:golden` 66 identical, corpus files 14 pass.
+
 - [ ] **After C and D are merged too**, on a new branch
   `claude/drop-naive-hanging` from `main`:
   - remove `hangingPieces` and `underDefendedPieces` from

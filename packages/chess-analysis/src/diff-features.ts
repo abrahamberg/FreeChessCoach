@@ -1,5 +1,6 @@
-import type { AttackedPieceDto, FeatureDeltaDto, ForkSchema, PositionFeatures } from '@freechesscoach/shared';
+import type { FeatureDeltaDto, ForkSchema, PositionFeatures } from '@freechesscoach/shared';
 import type { z } from 'zod';
+import { newLoosePieces } from './board-facts/loose-pieces.js';
 
 export type Fork = z.infer<typeof ForkSchema>;
 export type FeatureDelta = FeatureDeltaDto;
@@ -8,26 +9,22 @@ function forkKey(fork: Fork): string {
   return `${fork.square}:${fork.piece}`;
 }
 
-function hangingPieceKey(piece: AttackedPieceDto): string {
-  return `${piece.square}:${piece.piece}:${piece.color}`;
+/** The part of the delta that needs only the two feature sets. */
+export function diffPositionFeatures(before: PositionFeatures, after: PositionFeatures): Pick<FeatureDelta, 'newForks' | 'mobilityDelta'> {
+  const beforeForkKeys = new Set(before.forks.map(forkKey));
+  return {
+    newForks: after.forks.filter((fork) => !beforeForkKeys.has(forkKey(fork))),
+    mobilityDelta: after.availableMoves.length - before.availableMoves.length
+  };
 }
 
 /**
- * Pure diff between two PositionFeatures — used to summarize what concretely
- * changed on the board between two hypothetical/actual resulting positions
- * (e.g. after the engine's best move vs. after the move actually played),
- * rather than dumping both full feature sets for the reader to compare by
- * hand. Deliberately narrow: only the signals a coaching callout needs
- * (new forks, new hanging pieces, mobility swing), not an exhaustive
- * field-by-field diff.
+ * What concretely changed between two positions — used to summarize what a
+ * move (or the engine's best instead) changed on the board, rather than
+ * dumping both full feature sets for the reader to compare by hand.
+ * Deliberately narrow: only the signals a coaching callout needs (new forks,
+ * newly loose pieces, mobility swing), not an exhaustive field-by-field diff.
  */
-export function diffPositionFeatures(before: PositionFeatures, after: PositionFeatures): FeatureDelta {
-  const beforeForkKeys = new Set(before.forks.map(forkKey));
-  const beforeHangingKeys = new Set(before.hangingPieces.map(hangingPieceKey));
-
-  return {
-    newForks: after.forks.filter((fork) => !beforeForkKeys.has(forkKey(fork))),
-    newHangingPieces: after.hangingPieces.filter((piece) => !beforeHangingKeys.has(hangingPieceKey(piece))),
-    mobilityDelta: after.availableMoves.length - before.availableMoves.length
-  };
+export function positionDelta(before: PositionFeatures, after: PositionFeatures, fenBefore: string, fenAfter: string): FeatureDelta {
+  return { ...diffPositionFeatures(before, after), newLoosePieces: newLoosePieces(fenBefore, fenAfter) };
 }

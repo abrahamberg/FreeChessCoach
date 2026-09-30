@@ -147,7 +147,7 @@ describe('ClassifiedMoveSchema', () => {
         capturedPieceType: null,
         legalMoveCount: 12
       },
-      featureDelta: { newForks: [], newHangingPieces: [], mobilityDelta: -2 }
+      featureDelta: { newForks: [], newLoosePieces: [], mobilityDelta: -2 }
     };
     expect(ClassifiedMoveSchema.safeParse(enriched).success).toBe(true);
   });
@@ -203,8 +203,6 @@ function validPositionFeaturesFixture() {
     mobility: { white: 20, black: 20 },
     controlledSquares: [{ square: 'g1', piece: 'n', color: 'white', squares: ['f3', 'h3'] }],
     piecesUnderAttack: [],
-    hangingPieces: [],
-    underDefendedPieces: [],
     overloadedDefenders: [],
     centerControlScore: { white: 2, black: 2 },
     openFiles: ['a', 'h'],

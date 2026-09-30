@@ -3,7 +3,7 @@ import type { PositionFeatures, TacticMotifType } from '@freechesscoach/shared';
 import { applySanSequence } from './apply-san-sequence.js';
 import { fenActiveColor } from './attack-map.js';
 import { classifyCandidateClaims } from './classify-candidate-move.js';
-import { diffPositionFeatures } from './diff-features.js';
+import { diffPositionFeatures, positionDelta } from './diff-features.js';
 import { computePositionFeatures } from './position-features.js';
 import type { PreviousMove } from './tactic-detectors/context.js';
 import type { VerifiedTacticClaim } from './verify-tactic-claims.js';
@@ -89,7 +89,7 @@ export function annotatePvTactics(
       steps.push({
         ply,
         moveSan: move.san,
-        ...featureFields(previousFeatures, features),
+        ...featureFields(previousFeatures, features, previousFen, move.fen),
         motif: classification?.headline ?? null,
         claims: classification?.claims ?? [],
         fenBefore: previousFen
@@ -111,12 +111,12 @@ type StepFeatureFields = Pick<PvTacticStep, 'createsFork' | 'createsHangingPiece
 
 /** A step's feature-diff fields; the claims-only placeholders when either
  * side of the diff was not computed. */
-function featureFields(before: PositionFeatures | null, after: PositionFeatures | null): StepFeatureFields {
+function featureFields(before: PositionFeatures | null, after: PositionFeatures | null, fenBefore: string, fenAfter: string): StepFeatureFields {
   if (!before || !after) return { createsFork: false, createsHangingPiece: false, mobilityDelta: 0 };
-  const delta = diffPositionFeatures(before, after);
+  const delta = positionDelta(before, after, fenBefore, fenAfter);
   return {
     createsFork: delta.newForks.length > 0,
-    createsHangingPiece: delta.newHangingPieces.length > 0,
+    createsHangingPiece: delta.newLoosePieces.some((piece) => piece.tier === 'free'),
     mobilityDelta: delta.mobilityDelta
   };
 }

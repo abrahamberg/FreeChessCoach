@@ -79,8 +79,6 @@ describe('coach-agent startTurn concurrency', () => {
           mobility: { white: 20, black: 20 },
           controlledSquares: [],
           piecesUnderAttack: [],
-          hangingPieces: [],
-          underDefendedPieces: [],
           overloadedDefenders: [],
           centerControlScore: { white: 0, black: 0 },
           openFiles: [],

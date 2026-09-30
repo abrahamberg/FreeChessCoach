@@ -40,3 +40,12 @@ export function loosePieces(fen: string, owner: Color): LoosePiece[] {
   }
   return loose;
 }
+
+const keyOf = (piece: LoosePiece): string => `${piece.square}:${piece.piece}:${piece.owner}`;
+
+/** Both sides' loose pieces in `fenAfter` that were not loose (same piece, same
+ * square) in `fenBefore`. */
+export function newLoosePieces(fenBefore: string, fenAfter: string): LoosePiece[] {
+  const before = new Set([...loosePieces(fenBefore, 'w'), ...loosePieces(fenBefore, 'b')].map(keyOf));
+  return [...loosePieces(fenAfter, 'w'), ...loosePieces(fenAfter, 'b')].filter((piece) => !before.has(keyOf(piece)));
+}

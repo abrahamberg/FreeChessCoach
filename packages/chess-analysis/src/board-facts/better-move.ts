@@ -1,8 +1,7 @@
 import { Chess, type Square } from 'chess.js';
-import type { AttackedPieceDto } from '@freechesscoach/shared';
-import { computePositionFeatures } from '../position-features.js';
 import { replayMove, type ReplayedMove } from '../inspect-move.js';
 import { boardFacts } from './move-facts.js';
+import type { LoosePiece } from './loose-pieces.js';
 import { canBeTaken } from './safety.js';
 import type { BoardFact, PieceAt } from './types.js';
 
@@ -29,11 +28,9 @@ export function betterMoveFacts(fenBefore: string, playedSan: string, betterSan:
   return [...boardFacts(fenBefore, betterSan), ...escapes, ...kept];
 }
 
-/** The mover's own pieces that are attacked and undefended after the move. The
- * reviews' "keeps the rook safe" notes were recorded against this reading, not
- * `leavesLoose`, so it stays until they are re-recorded on purpose. */
-function hangingAfter(move: ReplayedMove): AttackedPieceDto[] {
-  return computePositionFeatures(move.resultFen).hangingPieces.filter((piece) => piece.color === move.color);
+/** The mover's own pieces the opponent can take for free after the move. */
+function hangingAfter(move: ReplayedMove): LoosePiece[] {
+  return move.leavesLoose.filter((piece) => piece.tier === 'free');
 }
 
 /** The pieces that now defend it, so the model doesn't guess ("Nc3 blocks

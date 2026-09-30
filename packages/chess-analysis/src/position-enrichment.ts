@@ -1,5 +1,5 @@
 import type { PositionFeatures } from '@freechesscoach/shared';
-import { diffPositionFeatures, type FeatureDelta } from './diff-features.js';
+import { positionDelta, type FeatureDelta } from './diff-features.js';
 import { moveFlags, type MoveFlags } from './move-flags.js';
 import { computePositionFeatures } from './position-features.js';
 import type { ParsedPosition } from './pgn.js';
@@ -29,7 +29,7 @@ export function enrichPositions(positions: ParsedPosition[]): PositionEnrichment
       ply: position.ply,
       features: currentFeatures,
       moveFlags: moveFlags(previousPosition.fen, position.moveSan),
-      featureDelta: diffPositionFeatures(previousFeatures, currentFeatures)
+      featureDelta: positionDelta(previousFeatures, currentFeatures, previousPosition.fen, position.fen)
     };
   });
 }

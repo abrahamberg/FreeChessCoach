@@ -79,7 +79,7 @@ function fakeAnalysis(overrides: Record<string, unknown> = {}) {
     bestMove: null,
     eval: { cp: null, mateIn: null },
     lines: [],
-    features: { turn: 'white', boardState: 'none', forks: [], hangingPieces: [], availableMoves: [] },
+    features: { turn: 'white', boardState: 'none', forks: [], availableMoves: [] },
     ...overrides
   };
 }
@@ -503,7 +503,7 @@ describe('coach-context', () => {
         bestMove: 'c5',
         eval: { cp: 25, mateIn: null },
         lines: [{ moveUci: 'c7c5', moveSan: 'c5', pvSan: ['c5'], cp: 25, mateIn: null }],
-        features: { turn: 'black', boardState: 'none', forks: [], hangingPieces: [], availableMoves: [] }
+        features: { turn: 'black', boardState: 'none', forks: [], availableMoves: [] }
       };
       const analyzePosition = vi.fn().mockResolvedValue(analysis);
 
@@ -543,7 +543,7 @@ describe('coach-context', () => {
         bestMove: 'd4',
         eval: { cp: 25, mateIn: null },
         lines: [{ moveUci: 'd2d4', moveSan: 'd4', pvSan: ['d4'], cp: 25, mateIn: null }],
-        features: { turn: 'white', boardState: 'none', forks: [], hangingPieces: [], availableMoves: [] }
+        features: { turn: 'white', boardState: 'none', forks: [], availableMoves: [] }
       };
       const build = async (currentPly: number) => {
         const context = await buildEpisodeContext({
@@ -578,7 +578,7 @@ describe('coach-context', () => {
         bestMove: 'e5',
         eval: { cp: 25, mateIn: null },
         lines: [{ moveUci: 'e7e5', moveSan: 'e5', pvSan: ['e5', 'Nf3'], cp: 25, mateIn: null }],
-        features: { turn: 'black', boardState: 'none', forks: [], hangingPieces: [], availableMoves: [] }
+        features: { turn: 'black', boardState: 'none', forks: [], availableMoves: [] }
       };
       const analyzePosition = vi.fn().mockResolvedValue(analysis);
 

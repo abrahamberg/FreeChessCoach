@@ -277,8 +277,6 @@ export const PositionFeaturesSchema = z.object({
   mobility: PerColorCountSchema,
   controlledSquares: z.array(ControlledSquaresSchema),
   piecesUnderAttack: z.array(AttackedPieceSchema),
-  hangingPieces: z.array(AttackedPieceSchema),
-  underDefendedPieces: z.array(AttackedPieceSchema),
   overloadedDefenders: z.array(OverloadedDefenderSchema),
   centerControlScore: PerColorCountSchema,
   openFiles: z.array(z.string()),
@@ -292,9 +290,19 @@ export const PositionFeaturesSchema = z.object({
 });
 export type PositionFeatures = z.infer<typeof PositionFeaturesSchema>;
 
+/** A piece the other side could win (`loosePieces` in chess-analysis):
+ * `free` has no defender, `winnable` is defended but loses the exchange. */
+export const LoosePieceSchema = z.object({
+  square: z.string(),
+  piece: z.enum(['p', 'n', 'b', 'r', 'q', 'k']),
+  owner: z.enum(['w', 'b']),
+  tier: z.enum(['free', 'winnable'])
+});
+export type LoosePieceDto = z.infer<typeof LoosePieceSchema>;
+
 export const FeatureDeltaSchema = z.object({
   newForks: z.array(ForkSchema),
-  newHangingPieces: z.array(AttackedPieceSchema),
+  newLoosePieces: z.array(LoosePieceSchema),
   mobilityDelta: z.number().int()
 });
 export type FeatureDeltaDto = z.infer<typeof FeatureDeltaSchema>;

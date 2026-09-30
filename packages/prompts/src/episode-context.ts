@@ -263,8 +263,8 @@ function renderFeatureDeltaBullets(delta: FeatureDelta): string {
   for (const fork of delta.newForks) {
     bullets.push(`- New fork: ${fork.piece} on ${fork.square} forks ${fork.forkedSquares.join('/')}`);
   }
-  for (const piece of delta.newHangingPieces) {
-    bullets.push(`- ${piece.color} ${piece.piece} on ${piece.square} is hanging`);
+  for (const piece of delta.newLoosePieces) {
+    bullets.push(`- Newly loose: ${describeLoose([piece])}`);
   }
   // A small swing (+/-1) happens on nearly every move and isn't worth a
   // callout — only surface a meaningful mobility change.
