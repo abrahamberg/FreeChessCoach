@@ -1,5 +1,7 @@
 import { Chess, type Square } from 'chess.js';
-import { replayMove } from '../inspect-move.js';
+import type { AttackedPieceDto } from '@freechesscoach/shared';
+import { computePositionFeatures } from '../position-features.js';
+import { replayMove, type ReplayedMove } from '../inspect-move.js';
 import { boardFacts } from './move-facts.js';
 import { canBeTaken } from './safety.js';
 import type { BoardFact, PieceAt } from './types.js';
@@ -11,20 +13,27 @@ export function betterMoveFacts(fenBefore: string, playedSan: string, betterSan:
   const played = replayMove(fenBefore, playedSan);
   const better = replayMove(fenBefore, betterSan);
   if (!played || !better) return [];
-  const stillHanging = new Set(better.leavesLoose.filter((piece) => canBeTaken(better.resultFen, piece.square)).map((piece) => piece.square));
+  const stillHanging = new Set(hangingAfter(better).filter((piece) => canBeTaken(better.resultFen, piece.square)).map((piece) => piece.square));
   // Only a piece already standing there, which the better move leaves in
   // place: 6.hxg4's own pawn on g4 read "c3 keeps the pawn on g4 safe".
   const standing = new Chess(better.resultFen);
-  const kept = played.leavesLoose
+  const kept = hangingAfter(played)
     .filter((piece) => piece.square !== played.to && standing.get(piece.square as Square)?.type === piece.piece)
     .filter((piece) => canBeTaken(played.resultFen, piece.square) && !stillHanging.has(piece.square))
     .map((piece): BoardFact => ({ kind: 'keepsSafe', piece: { piece: piece.piece, square: piece.square as Square }, newDefenders: newDefenders(played.resultFen, better.resultFen, piece.square as Square) }));
   // The better move takes the loose piece itself away: "Ba4 keeps the
   // bishop on b5 safe" named a square the bishop had left.
-  const escapes = played.leavesLoose
+  const escapes = hangingAfter(played)
     .filter((piece) => piece.square === better.from && canBeTaken(played.resultFen, piece.square))
     .map((piece): BoardFact => ({ kind: 'takesOutOfDanger', piece: { piece: piece.piece, square: piece.square as Square } }));
   return [...boardFacts(fenBefore, betterSan), ...escapes, ...kept];
+}
+
+/** The mover's own pieces that are attacked and undefended after the move. The
+ * reviews' "keeps the rook safe" notes were recorded against this reading, not
+ * `leavesLoose`, so it stays until they are re-recorded on purpose. */
+function hangingAfter(move: ReplayedMove): AttackedPieceDto[] {
+  return computePositionFeatures(move.resultFen).hangingPieces.filter((piece) => piece.color === move.color);
 }
 
 /** The pieces that now defend it, so the model doesn't guess ("Nc3 blocks
