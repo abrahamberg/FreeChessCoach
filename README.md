@@ -125,4 +125,5 @@ find it too.
 FreeChessCoach is source-available under the
 [PolyForm Noncommercial License 1.0.0](./LICENSE): free for personal,
 educational and other noncommercial use. Commercial use requires a separate
-license from the author.
+license from the author. Third-party software, notably the GPL-3.0 Stockfish
+engine, keeps its own license; see [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
