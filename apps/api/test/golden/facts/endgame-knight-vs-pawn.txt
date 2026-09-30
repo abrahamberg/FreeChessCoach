@@ -60,3 +60,8 @@ PLAN
   e3 technique n11–n12 answer=n11
   e4 technique n13–n13 answer=n13
   e5 recap n13–n13
+
+REVIEW NOTES
+  l1
+    n2 2.b7: Creates a passed pawn on b
+    n9 5…Na6+: You stopped them winning a queen through a promotion — promotes to a queen on b8.

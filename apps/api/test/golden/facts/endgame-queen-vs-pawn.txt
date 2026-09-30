@@ -65,3 +65,7 @@ PLAN
   e1 goal n1–n1
   e2 technique n1–n15
   e3 recap n15–n15
+
+REVIEW NOTES
+  l1
+    n14 7…Kd1: They tucked the king away — walks the king to d1, out of the firing line.

@@ -42,7 +42,7 @@ export interface TacticClaim {
   /** The full clause naming the concrete pieces and squares — the
    * high-specificity rung of §3 rule 2. The narrator drops it at medium
    * confidence and shows the bare motif instead. */
-  detail: string;
+  detail: string | null;
 }
 
 /** Identity of a claim for set comparison: the same motif by the same piece

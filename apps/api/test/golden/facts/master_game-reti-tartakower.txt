@@ -88,6 +88,7 @@ n20 10…Kc7 (Black, Line A) | best | before: White has a forced mate in 1 → a
     alternatives: Ke8: White has a forced mate in 1
 n21 11.Bd8# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the bishop from g5 to d8 | gives checkmate | why it is mate: the king on c7 is checked by the bishop on d8; b7, b8, c6, c8 hold its own pieces; b6 is covered by the bishop on d8; d6 and d7 are covered by the rook on d1; the bishop on d8 is guarded by the rook on d1
+    tactics: You forced mate.
     alternatives: Nf3: Black is much better; f4: Black is much better
     flags: quiz-eligible, critical
 
@@ -104,3 +105,20 @@ PLAN
   e4 moment n17–n17
   e5 moment n19–n19 answer=n19
   e6 moment n21–n21 answer=n21
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Caro-Kann Defense: Main Line (B15)
+    n2 1…c6: Theory — Caro-Kann Defense: Main Line (B15)
+    n3 2.d4: Theory — Caro-Kann Defense: Main Line (B15)
+    n4 2…d5: Theory — Caro-Kann Defense: Main Line (B15)
+    n5 3.Nc3: Theory — Caro-Kann Defense: Main Line (B15)
+    n6 3…dxe4: Theory — Caro-Kann Defense: Main Line (B15)
+    n7 4.Nxe4: Theory — Caro-Kann Defense: Main Line (B15)
+    n8 4…Nf6: Theory — Caro-Kann Defense: Main Line (B15)
+    n10 5…e5: Leaves the pawn on e5 undefended
+    n11 6.dxe5: Costs 9 squares of piece mobility
+    n14 7…Qxe5: They won a knight through a fork two moves away.
+    n17 9.Qd8+: You stopped them winning a knight through a free piece — captures the knight on e4.
+    n19 10.Bg5+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    n21 11.Bd8#: You forced mate.

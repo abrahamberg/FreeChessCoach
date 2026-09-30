@@ -123,3 +123,34 @@ PLAN
   e1 line n1–n20
   e2 deviation n21–n28
   e3 recap n20–n20
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n2 1…c6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n3 2.d4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n4 2…d5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n5 3.Nc3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n6 3…dxe4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n7 4.Nxe4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n8 4…Bf5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n9 5.Ng3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n10 5…Bg6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n11 6.h4: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n12 6…h6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n13 7.Nf3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n14 7…Nd7: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n15 8.h5: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n16 8…Bh7: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n17 9.Bd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n18 9…Bxd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n19 10.Qxd3: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+    n20 10…e6: Theory — Caro-Kann Defense: Classical Variation, Spassky Variation (B19)
+  l2
+    n1 1.e4: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
+    n2 1…c6: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
+    n3 2.d4: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
+    n4 2…d5: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
+    n21 3.e5: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
+    n22 3…Bf5: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)
+    n23 4.Nf3: Theory — Caro-Kann Defense: Advance Variation, Short Variation (B12)

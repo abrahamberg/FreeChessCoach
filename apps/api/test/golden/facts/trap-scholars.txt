@@ -39,6 +39,7 @@ n6 3…Nf6 (Black, Line A) | blunder | before: The position is roughly equal →
     flags: critical
 n7 4.Qxf7# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the queen from h5 to f7 | captures the pawn on f7 | gives checkmate | why it is mate: the king on e8 is checked by the queen on f7; d7, d8, f8 hold its own pieces; e7 is covered by the queen on f7; the queen on f7 is guarded by the bishop on c4
+    tactics: You forced mate.
     alternatives: Qh4: Black is slightly better; Qf3: Black is better
     flags: quiz-eligible, critical
 
@@ -52,3 +53,12 @@ PLAN
   e3 bait n6–n6
   e4 quiz n7–n7 answer=n7
   e5 safety n6–n6
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Bishop's Opening (C23)
+    n2 1…e5: Theory — Bishop's Opening (C23)
+    n3 2.Bc4: Theory — Bishop's Opening (C23)
+    n4 2…Nc6: Theory — Bishop's Opening (C23)
+    n6 3…Nf6: They let you force mate with Qxf7#.
+    n7 4.Qxf7#: You forced mate.

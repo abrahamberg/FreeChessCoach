@@ -11,6 +11,7 @@ import {
 } from '@freechesscoach/shared';
 import { classifyTacticClaims, classifyTacticMotif } from './classify-tactic-motif.js';
 import { CONFIG } from './config.js';
+import { cardFits } from './tactic-claim-fit.js';
 import { classifyPlayedTacticAlternative } from './played-tactic-alternative.js';
 import type { MoveVerdict } from './move-verdict/types.js';
 import { checkmateFlag, isFalseMiss, isTacticImmaterial } from './tactic-opportunity-witness.js';
@@ -158,9 +159,13 @@ export function classifyTacticChance(
   // the case where answering "brilliant sacrifice" used to throw away the
   // discovered attack that made it brilliant — so the card can still name
   // the mechanism.
-  const headline = classification.claims.find((claim) => claim.type === motif) ?? classification.claims[0] ?? null;
+  // A sacrifice is never for an open file: the stalemate save's …Rg2+ read
+  // "a brilliant sacrifice — takes the open g-file with the rook".
+  const claim = classification.claims.find((candidate) => candidate.type === motif) ?? classification.claims[0] ?? null;
+  const headline = motif === 'brilliantSacrifice' && claim?.type === 'seizesOpenFile' ? { ...claim, detail: null } : claim;
 
-  return {
+  const embodiedBy = played ? move.moveSan : bestMoveSan;
+  const card = {
     type: motif,
     found: played !== null || (playedBest && BEST_OR_BETTER.has(move.quality)),
     detail: headline?.detail ?? null,
@@ -168,8 +173,17 @@ export function classifyTacticChance(
     ...(headline ? { gain: gainOf(headline), confidence: headline.confidence } : {}),
     ...(headline?.horizon ? { horizon: headline.horizon } : {}),
     ...(classification.claims.length > 0 ? { motifs: classification.claims.map((claim) => claim.type) } : {}),
-    embodiedBySan: played ? move.moveSan : bestMoveSan
+    embodiedBySan: embodiedBy
   };
+  const lineAfter = played ? evals[move.ply]?.lines[0] : bestLine;
+  const fits = cardFits(card, {
+    moveSan: embodiedBy,
+    mover: move.mover,
+    phase: move.phase,
+    isCheckmate: played ? (move.moveFlags?.isCheckmate ?? false) : bestIsCheckmate,
+    mateAhead: (lineAfter?.mateIn ?? null) !== null
+  });
+  return fits ? card : null;
 }
 
 function gainOf(claim: VerifiedTacticClaim): TacticGainDto {

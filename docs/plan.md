@@ -803,17 +803,17 @@ D and E.
 Move each filter to where the claim is made or verified, so
 `ClassifiedMove.tacticOpportunity` and `tacticAllowed` come out right for both
 review and courses:
-- [ ] no `spaceGain` in the endgame phase, or for a pawn reaching rank ≥ 6
+- [x] no `spaceGain` in the endgame phase, or for a pawn reaching rank ≥ 6
   (White) / ≤ 3 (Black);
-- [ ] no defensive motif (`defendsHangingPiece`, `removesTarget`,
+- [x] no defensive motif (`defendsHangingPiece`, `removesTarget`,
   `escapesFork`, `blocksThreat`, `breaksPin`) on a move that gives check;
-- [ ] on a checkmate, or with a forced mate for the mover in the engine line
+- [x] on a checkmate, or with a forced mate for the mover in the engine line
   after the move, only claims whose gain is mate;
-- [ ] no "takes the open file" detail on `brilliantSacrifice`;
-- [ ] fork details name pieces (`board-facts/forks.ts`), never bare squares;
-- [ ] no "they let you win X (material)" when the move itself captured at
+- [x] no "takes the open file" detail on `brilliantSacrifice`;
+- [x] fork details name pieces (`board-facts/forks.ts`), never bare squares;
+- [x] no "they let you win X (material)" when the move itself captured at
   least X.
-- [ ] Delete the filters from `course/dossier-node.ts`.
+- [x] Delete the filters from `course/dossier-node.ts`.
 
 **Keep:** add each fix's position to `tactic-review-cases.ts`, as that file
 already does. **Ephemeral:** none.
@@ -825,41 +825,47 @@ already does. **Ephemeral:** none.
 
 **Commit:** `fix(review): the course's tactic-claim fixes, for the review too`
 
+Status: done 2026-09-30 — the filters live in `tactic-claim-fit.ts` (`cardFits`, applied to the card in `classifyTacticChance`), `tactic-allowed.ts` and `move-verdict/reasons/` (`mateFollows`, `moveTookAtLeast`, also in the hung-material fallback, otherwise it re-made the card the gate dropped), `game-tactic-motifs.ts` (the open-file detail) and `tactic-detectors/fork.ts` (fork detail names the pieces, pawns left out, null under two pieces). `course/dossier-node.ts` has none left. Deviations: the gates sit on the card (headline), as the course's did, not on each claim, because dropping claims would promote a lower claim to headline and change what the corpus measures; "a mate ahead" means a mate for either side after the move (not only the mover), as the course read it, else three golden files gained wrong "allowed" sentences; `TacticClaim.detail` is `string | null`. **Re-recorded** (the owner allowed it for this task, since the snapshot could not stay identical): 19 files, 33 lines added and 5 changed, all explained. (a) 30 lines "You forced mate." / "They let you force mate with X": the card a move gets when a mate is ahead is now the mate card, where the course used to drop the non-mate card and say nothing. (b) 5 fork sentences gain "— knight on c6 forks the knight on b8 and the queen on d8" (was the fork with no detail). Nothing else changed. `test:corpus`: all three files pass with no ceiling or floor moved (the gates sit after the classification the precision test measures). `npm run verify` passes in 104 s (api with Docker; api suite 45 s, the course generation tests no longer rebuild the Englund dossier per call: `englundDossier` caches per tree). Unit tests: `tactic-claim-fit.test.ts`, one in `tactic-allowed.test.ts`; the two `build-game-report` fork sentences now name pieces. The new cases could not go in `tactic-review-cases.ts`: its harness checks the headline and detectors before the card gate.
+
 ### Task 115.2 — Review notes on the golden snapshot
 
 **Depends on:** 115.1. **Re-record allowed.**
 **Read:** `apps/api/test/golden/course-facts.golden.ts`, `move-reasons.ts`.
 
-- [ ] Extend the golden text with a `REVIEW NOTES` block: for every course
+- [x] Extend the golden text with a `REVIEW NOTES` block: for every course
   line, each move's `reasons` from `CourseLineAnalysis.moves`, as
   `n12 6…Bb4: <reason>; <reason>`. Record it with today's behaviour in its own
   commit, so the next task's diff shows exactly what changes.
 
 **Commit:** `test(review): review notes in the golden snapshot`
 
+Status: done 2026-09-30 — `test:golden` has a `REVIEW NOTES` block per course (`courseInputs` now also returns each line's analysis); recorded with the current behaviour, the rest of each file unchanged (only additions), all files under 50 KB, 66 tests pass.
+
 ### Task 115.3 — Review notes from the board facts
 
 **Depends on:** 115.2. **Findings:** F7. **Re-record allowed.**
 **Read:** `move-reasons.ts`, `board-facts/loose-pieces.ts`, `board-facts/forks.ts`.
 
-- [ ] Replace `hangingPieceReasons`, `underDefendedReasons` and
+- [x] Replace `hangingPieceReasons`, `underDefendedReasons` and
   `newForkReasons` with facts from `board-facts`:
   - "Leaves the knight on f3 undefended" for `free`;
   - "Leaves the knight on f3 where it can be won" for `winnable`;
   - "Allows a fork: the knight on d5 hits the queen on c7 and the rook on a8"
     from `forks()` for the opponent after the move.
-- [ ] Fault notes (the three above) only on moves of quality inaccuracy,
+- [x] Fault notes (the three above) only on moves of quality inaccuracy,
   mistake, blunder or miss, never on book, best, excellent, good or brilliant
   moves.
-- [ ] Never report as loose the piece on the square the move just captured on
+- [x] Never report as loose the piece on the square the move just captured on
   when the capture is a trade (the course's `traded` rule).
-- [ ] Read the golden diff: every changed note must be explainable. Paste 5
+- [x] Read the golden diff: every changed note must be explainable. Paste 5
   representative before/after lines in the commit body.
 
 **Keep:** invariant tests: a best move gets no fault note; a trade is not
 loose; a defended knight attacked by a pawn gets the `winnable` note.
 **Ephemeral:** none.
 **Commit:** `fix(review): loose pieces and forks from the board facts; faults only on errors`
+
+Status: done 2026-09-30 — `move-reasons.ts` builds "Leaves the X on S undefended" (`free`), "…where it can be won" (`winnable`) and "Allows a fork: the knight on d5 hits the queen on c7 and the rook on a8" from `loosePieces` and `forks`, only for inaccuracy, mistake, miss and blunder, only what the move made loose (a piece loose before is not reported again), and never the square of a capture that was an even trade. The old "attacked 2× and defended 1×" note is gone. `test:golden` re-recorded: 34 files, notes removed from good moves (138 old fault notes gone, most on best or good moves), 11 new "undefended" / "where it can be won" notes on moves that cost something; forks named by pieces; the old fork notes that named bare squares, or a fork the forker could simply be taken out of, are gone. `npm run verify` passes in 114 s. Invariant tests in `move-reasons.test.ts`: a best move gets no fault note, a trade is not loose, a defended knight attacked by a pawn gets `winnable`, a fork names pieces and only a new one.
 
 ### Task 115.4 — Why the better move was better
 
@@ -869,9 +875,9 @@ loose; a defended knight attacked by a pawn gets the `winnable` note.
 
 For the user's moves of quality mistake, blunder or miss only, add at most two
 notes (within `CONFIG.moveReasons.maxReasons`):
-- [ ] `stopsGuarding` against the engine's reply to the played move ("Your
+- [x] `stopsGuarding` against the engine's reply to the played move ("Your
   queen stopped guarding c1, where Qc1# followed");
-- [ ] the better move's `keepsSafe` or `takesOutOfDanger`, and the material at
+- [x] the better move's `keepsSafe` or `takesOutOfDanger`, and the material at
   the end of its settled line (`settledLine` + `materialWords`), e.g. "Nc3
   keeps the rook on a1 safe; after it material stays level".
 
@@ -882,13 +888,17 @@ lines (multiPv 5) and the position after the move.
 errors. **Ephemeral:** none.
 **Commit:** `feat(review): what the move gave up, and why the better move was better`
 
+Status: done 2026-09-30 — `move-reason-better.ts`: for the user's mistake, blunder and miss (not inaccuracy, not the opponent's moves) "Your queen stopped guarding c1, where Qc1# followed" (`abandonedGuard` against the engine's reply after the move, `evalAfter` is now passed to `buildReasons`) and "Bc3 keeps the rook on a1 safe; after it material is level" (`betterMoveFacts` keepsSafe / takesOutOfDanger, material from `settledLine` + `lineBalance`). Both go through the usual `maxReasons` cut. `test:golden` re-recorded: one line changed (the course games have few user errors): `n37 19.e5: Costs 19 squares of piece mobility` → `Qd1 keeps the pawn on c2 safe; after it Black is a rook and a bishop up`. Tests in `move-reasons.test.ts` for both notes, errors only. `npm run verify` passes in 105 s.
+
 ### Task 115.5 — Merge
 
-- [ ] Stored game reports keep their old notes until a game is analysed again;
+- [x] Stored game reports keep their old notes until a game is analysed again;
   no backfill. Say so in the PR description.
-- [ ] `npm run verify`, `test:golden`, `test:corpus`; push; PR.
+- [x] `npm run verify`, `test:golden`, `test:corpus`; push; PR.
 - [ ] Later, owner decision: tempting moves at the user's critical moments in
   review (up to 6 extra engine positions per moment). Not in this phase.
+
+Status: done 2026-09-30 — `verify` 105 s, `test:golden` 66, `test:corpus` 14 pass (run directly with a longer timeout: its script's `basic` reporter no longer exists). Branch pushed, PR opened.
 
 ---
 

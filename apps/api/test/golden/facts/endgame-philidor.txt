@@ -46,3 +46,7 @@ PLAN
   e2 technique n1–n9 answer=n8
   e3 technique n10–n10
   e4 recap n10–n10
+
+REVIEW NOTES
+  l1
+    n1 1.e6: Creates a passed pawn on e

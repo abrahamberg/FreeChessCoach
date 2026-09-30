@@ -90,3 +90,21 @@ PLAN
   e4 quiz n12–n12 answer=n12
   e5 punish n13–n18
   e6 safety n11–n11
+
+REVIEW NOTES
+  l1
+    n1 1.d4: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
+    n2 1…d5: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
+    n3 2.c4: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
+    n4 2…e6: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
+    n5 3.Nc3: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
+    n6 3…Nf6: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
+    n7 4.Bg5: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
+    n8 4…Nbd7: Theory — Queen's Gambit Declined: Modern Variation, Knight Defense (D51)
+    n9 5.cxd5: Trades pawns on d5
+    n10 5…exd5: Recaptures the pawn on d5
+    n11 6.Nxd5: Leaves the knight on d5 undefended; Recaptures the pawn on d5; They let you win a knight through a free piece with Nxd5 — captures the knight on d5.; Won a pawn, but it cost the bishop.
+    n12 6…Nxd5: Recaptures the knight on d5; You broke the pin — the knight on f6 is free to move again.
+    n14 7…Bb4+: You stopped them winning a queen through a trapped piece — queen on d8 is trapped.
+    n17 9.Kxd2: Recaptures the bishop on d2
+    n18 9…Kxd8: You stopped them winning a bishop through a free piece — captures the bishop on d2.

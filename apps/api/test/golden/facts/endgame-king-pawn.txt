@@ -68,3 +68,11 @@ PLAN
   e4 technique n9–n9
   e5 defence n10–n15
   e6 recap n9–n9
+
+REVIEW NOTES
+  l1
+    n3 2.e6: Creates a passed pawn on e
+    n5 3.e7: Creates a passed pawn on e
+  l2
+    n13 3.e6: Creates a passed pawn on e
+    n15 4.e7: Creates a passed pawn on e

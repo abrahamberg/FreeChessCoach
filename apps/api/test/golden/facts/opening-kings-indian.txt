@@ -106,3 +106,39 @@ PLAN
   e1 line n1–n18
   e2 deviation n19–n24
   e3 recap n18–n18
+
+REVIEW NOTES
+  l1
+    n1 1.d4: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n2 1…Nf6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n3 2.c4: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n4 2…g6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n5 3.Nc3: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n6 3…Bg7: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n7 4.e4: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n8 4…d6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n9 5.Nf3: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n10 5…O-O: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n11 6.Be2: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n12 6…e5: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n13 7.O-O: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n14 7…Nc6: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n15 8.d5: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n16 8…Ne7: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n17 9.Ne1: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+    n18 9…Nd7: Theory — King's Indian Defense: Orthodox Variation, Classical System (E98)
+  l2
+    n1 1.d4: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n2 1…Nf6: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n3 2.c4: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n4 2…g6: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n5 3.Nc3: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n6 3…Bg7: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n7 4.e4: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n8 4…d6: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n9 5.Nf3: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n10 5…O-O: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n11 6.Be2: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n12 6…e5: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n19 7.d5: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n20 7…a5: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)

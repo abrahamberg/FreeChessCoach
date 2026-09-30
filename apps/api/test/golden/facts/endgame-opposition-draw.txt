@@ -64,3 +64,9 @@ PLAN
   e6 technique n9–n10 answer=n9
   e7 technique n11–n12 answer=n11
   e8 recap n12–n12
+
+REVIEW NOTES
+  l1
+    n4 3.e5: Creates a passed pawn on e
+    n6 4.e6: Creates a passed pawn on e
+    n10 6.e7+: Creates a passed pawn on e

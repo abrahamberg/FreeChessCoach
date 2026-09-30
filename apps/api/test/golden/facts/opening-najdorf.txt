@@ -113,3 +113,38 @@ PLAN
   e1 line n1–n20
   e2 deviation n21–n26
   e3 recap n20–n20
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n2 1…c5: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n3 2.Nf3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n4 2…d6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n5 3.d4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n6 3…cxd4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n7 4.Nxd4: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n8 4…Nf6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n9 5.Nc3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n10 5…a6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n11 6.Be3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n12 6…e5: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n13 7.Nb3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n14 7…Be6: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+    n15 8.f3: Theory — Sicilian Defense: Najdorf Variation, English Attack (B90)
+  l2
+    n1 1.e4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n2 1…c5: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n3 2.Nf3: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n4 2…d6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n5 3.d4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n6 3…cxd4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n7 4.Nxd4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n8 4…Nf6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n9 5.Nc3: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n10 5…a6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n21 6.Bg5: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n22 6…e6: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n23 7.f4: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n24 7…Be7: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n25 8.Qf3: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)
+    n26 8…Qc7: Theory — Sicilian Defense: Najdorf Variation, Traditional Line (B98)

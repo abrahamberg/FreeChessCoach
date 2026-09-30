@@ -85,3 +85,17 @@ PLAN
   e4 quiz n10–n10 answer=n10
   e5 punish n11–n14
   e6 safety n9–n9
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Italian Game: Blackburne-Kostić Gambit (C50)
+    n2 1…e5: Theory — Italian Game: Blackburne-Kostić Gambit (C50)
+    n3 2.Nf3: Theory — Italian Game: Blackburne-Kostić Gambit (C50)
+    n4 2…Nc6: Theory — Italian Game: Blackburne-Kostić Gambit (C50)
+    n5 3.Bc4: Theory — Italian Game: Blackburne-Kostić Gambit (C50)
+    n6 3…Nd4: Theory — Italian Game: Blackburne-Kostić Gambit (C50)
+    n9 5.Nxf7: Missed Bxf7+, winning material on f7; They let you win a rook through an eventual fork with Qxg2.; Won a pawn, but it cost the bishop.
+    n10 5…Qxg2: You won a rook through an eventual fork.
+    n11 6.Rf1: Leaves the pawn on h2 undefended
+    n13 7.Be2: Leaves the knight on f7 undefended; Leaves the pawn on c2 where it can be won; They let you force mate with Nf3# — mates the king on e1, smothered by its own pieces.
+    n14 7…Nf3#: You forced mate — mates the king on e1, smothered by its own pieces.

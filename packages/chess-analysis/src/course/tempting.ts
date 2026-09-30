@@ -1,7 +1,7 @@
 import { Chess, type PieceSymbol } from 'chess.js';
 import type { CourseKind, EngineEval, EngineLine } from '@freechesscoach/shared';
 import { CONFIG } from '../config.js';
-import { moverMateIn } from './dossier-node.js';
+import { moverMateIn } from '../mover-mate.js';
 import type { CourseDossier } from './dossier.js';
 import { threatens } from '../board-facts/threats.js';
 import { boardFacts } from '../board-facts/move-facts.js';

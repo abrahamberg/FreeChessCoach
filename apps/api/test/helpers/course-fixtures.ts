@@ -11,8 +11,19 @@ export const ENGLUND_INTAKE = {
   coachPersona: 'commander'
 } as const;
 
-/** A fake engine: level everywhere, except Black is winning from 6.Bc3 on. */
-export const englundDossier: CourseDossierBuilder = (tree, learnerSide, _ownerId, kind) => {
+const dossiers = new Map<string, Awaited<ReturnType<CourseDossierBuilder>>>();
+
+/** A fake engine: level everywhere, except Black is winning from 6.Bc3 on.
+ * Built once per tree, side and kind in a process (the analysis is most of a
+ * test's time), and handed out as a copy. */
+export const englundDossier: CourseDossierBuilder = async (tree, learnerSide, ownerId, kind) => {
+  const key = `${kind}|${learnerSide}|${tree.nodes.map((node) => node.fenAfter).join('>')}`;
+  const built = dossiers.get(key) ?? (await buildEnglundDossier(tree, learnerSide, ownerId, kind));
+  dossiers.set(key, built);
+  return structuredClone(built);
+};
+
+const buildEnglundDossier: CourseDossierBuilder = (tree, learnerSide, _ownerId, kind) => {
   const lost = new Set(tree.nodes.filter((node) => Number(node.id.slice(1)) >= 11).map((node) => node.fenAfter));
   const analyzeGame = (fens: string[]): Promise<EngineEval[]> =>
     Promise.resolve(
