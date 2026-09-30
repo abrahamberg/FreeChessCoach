@@ -365,7 +365,7 @@ Status: done 2026-09-30 — 66 eval files (1.4 MB) and 66 facts files committed,
   per-test timeouts if the tests now pass within the default.
 - [x] Measure again the same way.
 
-Status: done 2026-09-30 — wall time before → after: `chess-analysis` 26 → 19 s, `prompts` 12 → 5 s, `apps/web` 37 → 36 s. Targets met for `prompts` only; the rest is per-file startup and import across 65 web files and does not come from the drill (its slowest test is now 2.9 s, from 20 s), so `apps/web` and `chess-analysis` miss 30 s and 15 s on this machine. `analyseEnglund()` is cached and cloned; `englundCourseContext()` already goes only through it. The two 20 s timeouts in `course-generate.test.ts` stay: they build a different dossier (`temptingDossier`), and the api tests need Docker, which this session lacks, so I could not check them. Golden snapshot passes unchanged (66 tests).
+Status: done 2026-09-30 — wall time before → after: `chess-analysis` 26 → 19 s, `prompts` 12 → 5 s, `apps/web` 37 → 36 s. Targets met for `prompts` only; the rest is per-file startup and import across 65 web files and does not come from the drill (its slowest test is now 2.9 s, from 20 s), so `apps/web` and `chess-analysis` miss 30 s and 15 s on this machine. `analyseEnglund()` is cached and cloned; `englundCourseContext()` already goes only through it. The two 20 s timeouts in `course-generate.test.ts` are removed: against a local Postgres (no Docker) the api suite passes and that file passes at the default timeout. Golden snapshot passes unchanged (66 tests).
 
 **Keep:** everything (no test removed here).
 **Ephemeral:** none.

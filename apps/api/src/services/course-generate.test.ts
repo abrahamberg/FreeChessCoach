@@ -190,7 +190,6 @@ describe('runCourseGeneration', () => {
     expect(row?.generation).toMatchObject({ status: 'succeeded', warnings: [] });
   });
 
-  // Builds the Englund's tempting moves in full: past vitest's 5 s default.
   test("tempting moves: the dossier's spelling and refutation; one it does not list at that move is dropped", async () => {
     const id = await newCourse('tempting@example.com');
     const row = await coursesRepo.findById(db, id);
@@ -215,9 +214,8 @@ describe('runCourseGeneration', () => {
 
     const ply = (await coursesRepo.findById(db, id))?.document?.episodes.find((episode) => episode.id === 'e5')?.plies.find((each) => each.nodeId === at.nodeId);
     expect(ply?.tempting).toEqual([{ san: fact.san, why: 'It grabs material and lets the king breathe.', refutation: fact.refutation }]);
-  }, 20_000);
+  });
 
-  // Builds the Englund's tempting moves in full: past vitest's 5 s default.
   test('a safety episode keeps no tempting moves: they are the bait\'s and the punish\'s', async () => {
     const id = await newCourse('tempting-once@example.com');
     const row = await coursesRepo.findById(db, id);
@@ -241,7 +239,7 @@ describe('runCourseGeneration', () => {
     const episodes = (await coursesRepo.findById(db, id))?.document?.episodes ?? [];
     const tempting = (episodeId: string) => episodes.find((episode) => episode.id === episodeId)?.plies.find((ply) => ply.nodeId === at.nodeId)?.tempting;
     expect([tempting('e5')?.length, tempting('e6')]).toEqual([1, undefined]);
-  }, 20_000);
+  });
 
   test('the system prompt and the head every episode call repeats are cached; the episode part is not', async () => {
     const id = await newCourse('cached-head@example.com');
