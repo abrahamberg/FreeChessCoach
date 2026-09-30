@@ -9,6 +9,10 @@ const LOOSE_ROOK_FEN = '4k3/8/8/3nn3/1b4b1/2R1P3/PP4P1/6K1 w - - 0 1';
 /** Nothing of White's is attacked. */
 const NOTHING_LOOSE_FEN = '4k3/8/8/8/8/8/8/3QK3 w - - 0 1';
 
+/** The c3 pawn is attacked by the queen and the rook behind it, defended once
+ * by b2: a count of attackers over defenders calls it loose, but taking it
+ * costs the queen. */
+const DEFENDED_BY_VALUE_FEN = '2r1k3/2q5/8/8/8/2P5/1P6/6K1 w - - 0 1';
 const LOSS: Partial<ClassifiedMoveDto> = { quality: 'mistake', cpBefore: 0, cpAfter: -300 };
 const NO_LOSS: Partial<ClassifiedMoveDto> = { quality: 'mistake', cpBefore: 0, cpAfter: -10 };
 
@@ -64,6 +68,10 @@ describe('ms14LoosePieceScanOmission', () => {
 
   test('no opportunity when the mover has no loose pieces', () => {
     expect(ms14LoosePieceScanOmission.detect(contextFor(NOTHING_LOOSE_FEN, 'Qd4', LOSS, 'Kd7'))).toBeNull();
+  });
+
+  test('no opportunity when the attackers outnumber the defenders but taking loses material', () => {
+    expect(ms14LoosePieceScanOmission.detect(contextFor(DEFENDED_BY_VALUE_FEN, 'Kh1', LOSS, 'Kd7'))).toBeNull();
   });
 
   test('no opportunity without the following plies (unknown future)', () => {

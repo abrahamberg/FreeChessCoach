@@ -1,10 +1,13 @@
-import { TACTIC_MOTIF_LABELS, TACTIC_MOTIF_TYPES, type TacticMotifCounts, type TacticMotifType } from '@freechesscoach/shared';
+import { TACTIC_MOTIF_LABELS, TACTIC_MOTIF_TYPES, type OnlyMoves, type TacticMotifCounts, type TacticMotifType } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { formatFraction } from './formatStat.js';
+import { HeadlineStat } from './HeadlineStat.js';
 import { TACTICS_PANEL_IDS, TACTICS_TAB_IDS, TacticsTabs, type TacticsTab } from './TacticsTabs.js';
 
 export interface TacticsStatsSectionProps {
   motifs: TacticMotifCounts;
+  /** Positions with one clearly best move, and how many were found; nothing to show without any. */
+  onlyMoves?: OnlyMoves | null;
 }
 
 const EMPTY_STATE_LABELS: Record<TacticsTab, string> = {
@@ -54,7 +57,7 @@ function pctFor(row: MotifRow, tab: TacticsTab): number {
 
 /** design.md's Tactics card (Task 30.2), split into Should-Play/Prevented
  * tabs — presentational only. */
-export function TacticsStatsSection({ motifs }: TacticsStatsSectionProps): ReactNode {
+export function TacticsStatsSection({ motifs, onlyMoves }: TacticsStatsSectionProps): ReactNode {
   const [tab, setTab] = useState<TacticsTab>('found');
   const [showAll, setShowAll] = useState(false);
 
@@ -70,6 +73,11 @@ export function TacticsStatsSection({ motifs }: TacticsStatsSectionProps): React
   return (
     <section aria-label="Tactics" className="card stats-section">
       <h2>Tactics</h2>
+      {onlyMoves && onlyMoves.positions > 0 && (
+        <div className="stats-section__headline">
+          <HeadlineStat label="Only moves found" value={`${onlyMoves.found} of ${onlyMoves.positions}`} />
+        </div>
+      )}
       <TacticsTabs tab={tab} onSelect={selectTab} />
       <div id={TACTICS_PANEL_IDS[tab]} role="tabpanel" aria-labelledby={TACTICS_TAB_IDS[tab]}>
         {rows.length === 0 ? (

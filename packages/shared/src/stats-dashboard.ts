@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EndgameStandingSchema, EndgameThemeSchema, TacticMotifCountsSchema } from './game-report.js';
+import { EndgameStandingSchema, EndgameThemeSchema, OnlyMovesSchema, TacticMotifCountsSchema } from './game-report.js';
 
 /** Historical stats dashboard (Phase 27-30) request-side filters. Only
  * `'rapid' | 'all'` for speed today per the user's stated preference — not a
@@ -87,6 +87,8 @@ export const StatsDashboardSchema = z.object({
   gamesAnalyzed: z.number().int().nonnegative(),
   opening: OpeningStatsSchema,
   tactics: TacticMotifCountsSchema,
+  /** Null when no analysed game has a position with one clearly best move. */
+  onlyMoves: OnlyMovesSchema.nullable(),
   strategy: StrategyStatsSchema,
   endgame: EndgameStatsSchema,
   rating: RatingStatsSchema

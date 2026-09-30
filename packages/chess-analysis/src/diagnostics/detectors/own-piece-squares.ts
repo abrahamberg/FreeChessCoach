@@ -1,18 +1,16 @@
-import type { PositionFeatures } from '@freechesscoach/shared';
-import { computePositionFeatures } from '../../position-features.js';
 import type { PlyDiagnosticContext } from '../context.js';
+import { loosePieces, type LoosePiece } from '../../board-facts/loose-pieces.js';
 
-type PieceEntry = PositionFeatures['hangingPieces'][number];
+export type LooseTiers = readonly LoosePiece['tier'][];
 
-/** The position features after this move: the stored `features` (computed
- * from `fenAfter` by `classify.ts`), or the same computation when a move
- * predates them. */
-export function postMoveFeatures(ctx: Pick<PlyDiagnosticContext, 'features' | 'fenAfter'>): PositionFeatures {
-  return ctx.features ?? computePositionFeatures(ctx.fenAfter);
-}
+/** `free` only: a piece the opponent can take with nothing defending it. */
+export const FREE: LooseTiers = ['free'];
+/** Everything the opponent could win: free, or defended but losing the exchange. */
+export const FREE_OR_WINNABLE: LooseTiers = ['free', 'winnable'];
 
-/** The squares of the mover's own pieces in a feature list (hanging,
- * under-defended, …). */
-export function ownSquares(pieces: readonly PieceEntry[], mover: 'white' | 'black'): string[] {
-  return pieces.filter((piece) => piece.color === mover).map((piece) => piece.square);
+/** The squares of `mover`'s own loose pieces in `fen`, by `loosePieces`. */
+export function looseSquares(fen: string, mover: PlyDiagnosticContext['mover'], tiers: LooseTiers): string[] {
+  return loosePieces(fen, mover === 'white' ? 'w' : 'b')
+    .filter((piece) => tiers.includes(piece.tier))
+    .map((piece) => piece.square);
 }

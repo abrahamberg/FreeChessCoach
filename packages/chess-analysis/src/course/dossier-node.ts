@@ -1,18 +1,17 @@
-import type { EngineEval, EngineLine, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
+import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
 import type { ClassifiedMove } from '../classify.js';
 import { CONFIG } from '../config.js';
 import { abandonedGuard, betterMoveFacts } from '../board-facts/better-move.js';
 import { boardFacts } from '../board-facts/move-facts.js';
+import { isOnlyMove } from '../board-facts/only-move.js';
 import type { BoardFact } from '../board-facts/types.js';
 import { lineWords, positionWords } from '../board-facts/verdict-words.js';
 import { lineBalance, settledLine } from '../board-facts/material.js';
-import { moverMateIn } from '../mover-mate.js';
 import type { CourseTemptingFacts } from './tempting.js';
 import type { CourseTreeNode } from './tree.js';
 import { isBookMoveFrom, resolveOpening } from '../opening-book.js';
 import { positionKey } from '../opening-book-key.js';
 import { tacticAllowedReason, tacticOpportunityReason } from '../tactic-reason-text.js';
-import { toCpWhite, winPctFor } from '../win-probability.js';
 
 
 export interface CourseNodeFacts {
@@ -94,7 +93,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     motif: move.tacticOpportunity?.found ? move.tacticOpportunity.type : null,
     alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
     tempting: [],
-    quizEligible: isQuizEligible(evalBefore, node.san, side),
+    quizEligible: isOnlyMove(evalBefore, node.san, side),
     critical: input.critical,
     creatorComment: node.comment,
     winDrop: move.drop ?? 0,
@@ -124,20 +123,4 @@ function tacticSentences(move: ClassifiedMove, isUserMove: boolean): string[] {
   if (move.tacticOpportunity) sentences.push(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove }, move.bestMoveSan));
   if (move.tacticAllowed) sentences.push(tacticAllowedReason({ ...move.tacticAllowed, isUserMove }));
   return sentences;
-}
-
-/** One move is clearly best, and it is the course move. */
-/** The engine's best, and clearly: `onlyMoveGap` ahead of the second, or a
- * mate where the second mates later or not at all. A slower mate is no
- * second answer: the smothered-mate run flagged every move of a mate in 4. */
-export function isQuizEligible(evaluation: EngineEval | undefined, san: string, side: 'white' | 'black'): boolean {
-  const [first, second] = evaluation?.lines ?? [];
-  if (!first || !second || first.moveSan !== san) return false;
-  const mates = moverMateIn(first, side);
-  if (mates !== null) {
-    const next = moverMateIn(second, side);
-    return next === null || next > mates;
-  }
-  const moverCp = (line: EngineLine): number => (side === 'white' ? 1 : -1) * toCpWhite(line);
-  return winPctFor(side, toCpWhite(first)) - winPctFor(side, toCpWhite(second)) > CONFIG.courses.onlyMoveGap || moverCp(first) - moverCp(second) >= CONFIG.courses.onlyMoveCpGap;
 }

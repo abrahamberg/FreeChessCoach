@@ -1,7 +1,6 @@
 import { Chess } from 'chess.js';
 import type { EngineEval } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { isQuizEligible } from './dossier-node.js';
 import { temptingCandidates, withTempting } from './tempting.js';
 import { analyseEnglund } from './test-fixtures.js';
 
@@ -59,18 +58,5 @@ describe('tempting moves', () => {
     const tempting = withTempting(dossier, candidates, evals).nodes.find((node) => node.nodeId === 'n12')!.tempting;
     expect(tempting.map((each) => each.san)).toContain('Qxc3+');
     expect(tempting.map((each) => each.san)).not.toContain('Qxa1');
-  });
-});
-
-describe('quiz eligibility', () => {
-  const line = (moveSan: string, cp: number | null, mateIn: number | null = null) => ({ moveSan, moveUci: '', cp, mateIn });
-  const two = (first: ReturnType<typeof line>, second: ReturnType<typeof line>): EngineEval => ({ ply: 0, fen: '', depth: 20, lines: [first, second] });
-
-  test('the best move by the gap is the one answer; a slower mate is no second answer, a mate as fast is', () => {
-    expect(isQuizEligible(two(line('Nf7+', null, 4), line('Ng6+', 900)), 'Nf7+', 'white')).toBe(true);
-    expect(isQuizEligible(two(line('Nh6+', null, 3), line('Ne5+', null, 5)), 'Nh6+', 'white')).toBe(true);
-    expect(isQuizEligible(two(line('Qg8+', null, 2), line('Qf7', null, 2)), 'Qg8+', 'white')).toBe(false);
-    expect(isQuizEligible(two(line('Qxa1+', -1400), line('Kd7', -900)), 'Qxa1+', 'black')).toBe(true);
-    expect(isQuizEligible(two(line('Qxa1+', -1400), line('Qh1+', -1250)), 'Qxa1+', 'black')).toBe(false);
   });
 });

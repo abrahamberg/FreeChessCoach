@@ -6,6 +6,7 @@ import { missedChance, realChance } from '../chance-inventory.js';
 import type { PlyDiagnosticContext } from '../context.js';
 import { buildEvalObservation } from '../eval-verdict.js';
 import type { DiagnosticObservation } from '../types.js';
+import { FREE, looseSquares } from './own-piece-squares.js';
 
 /** Every check the mover had at `fenBefore`, the played one included. */
 export function ownCheckSans(ctx: PlyDiagnosticContext): string[] {
@@ -25,11 +26,9 @@ export function ownWinningCaptureSans(ctx: PlyDiagnosticContext): string[] {
     .map((move) => move.moveSan);
 }
 
-/** The mover's captures of an enemy piece that had no defender at `fenBefore`. */
+/** The mover's captures of an enemy piece `loosePieces` calls free at `fenBefore`. */
 export function ownFreePieceCaptureSans(ctx: PlyDiagnosticContext): string[] {
-  const hangingSquares = new Set(
-    ctx.featuresBefore.hangingPieces.filter((piece) => piece.color !== ctx.mover).map((piece) => piece.square)
-  );
+  const hangingSquares = new Set(looseSquares(ctx.fenBefore, ctx.mover === 'white' ? 'black' : 'white', FREE));
   return (ctx.checksCapturesThreats?.captures.moves ?? [])
     .filter((move) => hangingSquares.has(move.to))
     .map((move) => move.moveSan);

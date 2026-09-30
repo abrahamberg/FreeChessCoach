@@ -112,7 +112,7 @@ function observeVerdict(
   ctx: PlyDiagnosticContext | null
 ): DiagnosticObservation | null {
   if (!ctx) return null;
-  const target = verdictDiagnosticCode(verdict, move, ctx.featuresBefore);
+  const target = verdictDiagnosticCode(verdict, move);
   if (!target) return null;
 
   const failed = verdict.kind === 'failure';

@@ -27,7 +27,7 @@ describe('candidateDiagnosisCodes', () => {
   });
 
   test('ignoring an already-hanging opponent piece yields BV-02 only', () => {
-    const fenBefore = '4k3/8/8/8/Q2n4/8/8/4K3 w - - 0 1';
+    const fenBefore = '7k/8/8/8/Q2n4/8/8/4K3 w - - 0 1';
     const [annotation] = annotateCandidateMoves(fenBefore, ['Kf1']);
     expect(annotation).toBeDefined();
 

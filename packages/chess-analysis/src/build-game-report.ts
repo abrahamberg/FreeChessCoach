@@ -49,6 +49,7 @@ import {
 import { computePositionFeatures } from './position-features.js';
 import { featuresBeforeOf } from './features-before.js';
 import { toCpWhite, winPctFor, winPctWhite } from './win-probability.js';
+import { countOnlyMoves } from './board-facts/only-move.js';
 import { computeTacticMotifCounts } from './game-tactic-motifs.js';
 import { computeTacticPreventionCounts, type MoveVerdict } from './move-verdict/index.js';
 import { attachTacticVerdicts, type TacticVerdictOptions } from './report-tactic-verdicts.js';
@@ -218,7 +219,8 @@ function buildPlayerReport(
       mergeMotifCounts(tactics.motifs, 'preventable', tactics.preventable ?? {}),
       'prevented',
       tactics.prevented ?? {}
-    )
+    ),
+    onlyMoves: countOnlyMoves(colourMoves, context.evals, colour)
   };
 }
 
