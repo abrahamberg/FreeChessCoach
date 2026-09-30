@@ -1,6 +1,6 @@
 import type { ColumnType, Generated } from 'kysely';
-import type { GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
-import type { BotConfig, CoachPersona, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
+import type { CourseDossier, GameSpeed, PgnMoveComment } from '@freechesscoach/chess-analysis';
+import type { BotConfig, CoachPersona, CourseDebugCall, CourseDocument, CourseEnrollmentPlace, CourseGeneration, CourseKind, CourseStage, CourseStatus, DiagnosisCodeId, Direction, EngineMode, GameReviewTier, Mechanism, MistakeCategory, RatingBand, RatingSource, Severity, SessionMode, TtsBackend } from '@freechesscoach/shared';
 
 /** jsonb columns: pg parses them to JS values on select; inserts/updates must pass a JSON string. */
 type Jsonb<T> = ColumnType<T, string, string>;
@@ -24,6 +24,8 @@ export interface UsersTable {
   onboardedAt: Date | null;
   /** 0011_chess_api_rate_limit.ts — when chess-api.com last answered HIGH_USAGE. */
   chessApiRateLimitedAt: Date | null;
+  /** 0012_course_creators.ts — set only by scripts/course-creator.ts. */
+  canCreateCourses: Generated<boolean>;
   createdAt: Generated<Date>;
 }
 
@@ -299,6 +301,80 @@ export interface BugReportsTable {
   createdAt: Generated<Date>;
 }
 
+/** 0013_courses.ts — docs/courses.md §4, §9. */
+export interface CoursesTable {
+  id: Generated<string>;
+  ownerId: string;
+  slug: string;
+  kind: CourseKind;
+  status: Generated<CourseStatus>;
+  title: string;
+  sourcePgn: string;
+  direction: Generated<string>;
+  document: Jsonb<CourseDocument> | null;
+  publishedDocument: Jsonb<CourseDocument> | null;
+  publishedAt: Date | null;
+  generation: Jsonb<CourseGeneration> | null;
+  /** 0014_course_dossier.ts: the engine pass, kept for resume and regeneration. */
+  dossier: Jsonb<CourseDossier> | null;
+  createdAt: Generated<Date>;
+  updatedAt: Generated<Date>;
+}
+
+/** 0015_course_ai_calls.ts — one AI call of a course run (Task 80.6). */
+export interface CourseAiCallsTable {
+  id: Generated<string>;
+  courseId: string;
+  entry: Jsonb<CourseDebugCall>;
+  createdAt: Generated<Date>;
+}
+
+/** 0017_course_audio.ts: a course note's audio, by the note text's hash. */
+export interface CourseAudioTable {
+  courseId: string;
+  textHash: string;
+  mimeType: string;
+  bytes: Buffer;
+  /** 0018: sha256 of `bytes` (32 hex), computed by Postgres; the public URL. */
+  contentHash: Generated<string>;
+  /** 0019: the content hash of this row's file in the R2 mirror; null when none. */
+  mirroredHash: string | null;
+  createdAt: Generated<Date>;
+}
+
+/** 0020_course_progress.ts: a learner's review schedule per position + move. */
+export interface CourseProgressTable {
+  userId: string;
+  drillKey: string;
+  san: string;
+  courseSlug: string;
+  step: number;
+  /** YYYY-MM-DD; null once mastered. */
+  dueOn: string | null;
+  updatedAt: Generated<Date>;
+}
+
+/** 0021_course_enrollments.ts: a learner's stage and place in a course. */
+export interface CourseEnrollmentsTable {
+  userId: string;
+  courseId: string;
+  stage: CourseStage;
+  place: Jsonb<CourseEnrollmentPlace>;
+  stagesDone: CourseStage[];
+  startedAt: Generated<Date>;
+  updatedAt: Generated<Date>;
+  completedAt: Date | null;
+}
+
+/** 0016_debug_turns.ts: a session's last LLM turns, for the debug picker. */
+export interface DebugTurnsTable {
+  id: Generated<string>;
+  sessionId: string | null;
+  puzzleSessionId: string | null;
+  snapshot: ColumnType<unknown, string, string>;
+  createdAt: Generated<Date>;
+}
+
 /** 0042_stats_archive_weeks.ts — a deleted game's stats, merged per (user,
  * week, speed). `weekStart` is written as a `YYYY-MM-DD` string. */
 export interface StatsArchiveWeeksTable {
@@ -315,6 +391,12 @@ export interface Database {
   games: GamesTable;
   gameImportEvents: GameImportEventsTable;
   bugReports: BugReportsTable;
+  courses: CoursesTable;
+  courseAiCalls: CourseAiCallsTable;
+  debugTurns: DebugTurnsTable;
+  courseAudio: CourseAudioTable;
+  courseProgress: CourseProgressTable;
+  courseEnrollments: CourseEnrollmentsTable;
   statsArchiveWeeks: StatsArchiveWeeksTable;
   analyses: AnalysesTable;
   sessions: SessionsTable;

@@ -37,7 +37,7 @@ function pvUciToSan(fen: string, pvUci: string[]): string[] {
 }
 
 // RawEngineLine.cp/mateIn are relative to whichever side is to move in `fen`
-// (raw UCI semantics -- see shared-engine-worker.ts and eval-words.ts's own
+// (raw UCI semantics -- see shared-engine-worker.ts and chess-analysis eval-words.ts's own
 // sideToMove conversion). Every other EngineEval/PositionAnalysis in the
 // system is white-perspective (services/engine/src/uci.ts's recordInfoLine
 // does this same conversion for the native backend), so this has to happen
@@ -50,7 +50,7 @@ function toWhitePerspective(fen: string, value: number | null): number | null {
   return sideToMove === 'b' ? -value : value;
 }
 
-function toPositionAnalysisLine(fen: string, line: RawEngineLine) {
+export function toPositionAnalysisLine(fen: string, line: RawEngineLine) {
   const pvSan = pvUciToSan(fen, line.pvUci);
   return {
     moveUci: line.moveUci,

@@ -1,0 +1,8 @@
+{
+  "kind": "opening",
+  "levelBand": "advanced",
+  "coachPersona": "sunzi",
+  "learnerSide": "black",
+  "direction": "The Najdorf for Black: the English Attack with ...e5 and ...Be6, and the sharp Bg5 line.",
+  "pgn": "[Event \"Najdorf\"]\n\n{English Attack} 1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Be3 ({Bg5} 6. Bg5 e6 7. f4 Be7 8. Qf3 Qc7) 6... e5 7. Nb3 Be6 8. f3 Be7 9. Qd2 O-O 10. O-O-O Nbd7 *"
+}

@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "novice",
+  "coachPersona": "commander",
+  "direction": "Two rooks mate in two: cut the king off, then check.",
+  "pgn": "[Event \"Rook ladder\"]\n[SetUp \"1\"]\n[FEN \"6k1/8/8/8/8/8/R7/1R4K1 w - - 0 1\"]\n\n1. Ra7 Kf8 2. Rb8# *"
+}

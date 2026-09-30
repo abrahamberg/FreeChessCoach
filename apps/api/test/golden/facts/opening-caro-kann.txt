@@ -1,0 +1,125 @@
+Learner side: Black
+
+Lines:
+l1 "Classical" | opening: Caro-Kann Defense: Classical Variation, Spassky Variation | in book throughout
+    end position: the d-file is half-open for black; the e-file is half-open for white; white has a queenside pawn majority; black has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+l2 "Line B" | opening: Caro-Kann Defense: Advance Variation, Short Variation | leaves book at n24
+    end position: the white king is tucked away on g1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Classical) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…c6 (Black, Classical) | book
+    book: in book (Caro-Kann Defense)
+    board: moves the pawn from c7 to c6
+    alternatives: e5: The position is roughly equal; c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.d4 (White, Classical) | book
+    book: in book (Caro-Kann Defense)
+    board: moves the pawn from d2 to d4
+    alternatives: c4: The position is roughly equal; Nf3: The position is roughly equal
+n4 2…d5 (Black, Classical) | book
+    book: in book (Caro-Kann Defense)
+    board: moves the pawn from d7 to d5
+    alternatives: g6: White is slightly better; d6: White is slightly better
+n5 3.Nc3 (White, Classical) | book
+    book: in book (Caro-Kann Defense)
+    board: moves the knight from b1 to c3
+    alternatives: e5: The position is roughly equal; Nd2: The position is roughly equal
+n6 3…dxe4 (Black, Classical) | book
+    book: in book (Caro-Kann Defense)
+    board: moves the pawn from d5 to e4 | captures the pawn on e4
+    alternatives: g6: White is slightly better; h6: White is slightly better
+n7 4.Nxe4 (White, Classical) | book
+    book: in book (Caro-Kann Defense: Main Line)
+    board: moves the knight from c3 to e4 | captures the pawn on e4
+    alternatives: Nge2: The position is roughly equal; g4: Black is slightly better
+n8 4…Bf5 (Black, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation)
+    board: moves the bishop from c8 to f5 | attacks the knight on e4
+    alternatives: Nf6: The position is roughly equal; Nd7: The position is roughly equal
+n9 5.Ng3 (White, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation)
+    board: moves the knight from e4 to g3 | attacks the bishop on f5
+    alternatives: Bd3: The position is roughly equal; Qf3: The position is roughly equal
+n10 5…Bg6 (Black, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation)
+    board: moves the bishop from f5 to g6
+    alternatives: Be6: White is slightly better; Bd7: White is slightly better
+n11 6.h4 (White, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation, Main Line)
+    board: moves the pawn from h2 to h4
+    alternatives: N1e2: The position is roughly equal; Nf3: The position is roughly equal; c3: The position is roughly equal
+n12 6…h6 (Black, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation, Main Line)
+    board: moves the pawn from h7 to h6
+    alternatives: h5: White is slightly better; Nf6: White is slightly better
+n13 7.Nf3 (White, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation, Main Line)
+    board: moves the knight from g1 to f3
+    alternatives: Nh3: The position is roughly equal; c3: The position is roughly equal
+n14 7…Nd7 (Black, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation)
+    board: moves the knight from b8 to d7
+    alternatives: Nf6: The position is roughly equal; e6: The position is roughly equal
+n15 8.h5 (White, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
+    board: moves the pawn from h4 to h5 | attacks the bishop on g6
+    alternatives: Bd3: The position is roughly equal; Bf4: The position is roughly equal
+n16 8…Bh7 (Black, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
+    board: moves the bishop from g6 to h7
+    alternatives: Bf5: White is better; Bxc2: White is much better
+n17 9.Bd3 (White, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
+    board: moves the bishop from f1 to d3 | attacks the bishop on h7
+    alternatives: a3: The position is roughly equal; a4: The position is roughly equal
+n18 9…Bxd3 (Black, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
+    board: moves the bishop from h7 to d3 | captures the bishop on d3
+    alternatives: Ngf6: The position is roughly equal; Ndf6: White is slightly better
+n19 10.Qxd3 (White, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
+    board: moves the queen from d1 to d3 | captures the bishop on d3
+    alternatives: cxd3: Black is slightly better; Bxh6: Black is much better
+n20 10…e6 (Black, Classical) | book
+    book: in book (Caro-Kann Defense: Classical Variation, Spassky Variation)
+    board: moves the pawn from e7 to e6
+    alternatives: Ngf6: The position is roughly equal; Qc7: The position is roughly equal
+n21 3.e5 (White, Line B) | book
+    book: in book (Caro-Kann Defense: Advance Variation)
+    board: moves the pawn from e4 to e5
+    alternatives: Nc3: The position is roughly equal; Nd2: The position is roughly equal
+    creator comment: "Advance"
+    flags: creator-comment
+n22 3…Bf5 (Black, Line B) | book
+    book: in book (Caro-Kann Defense: Advance Variation)
+    board: moves the bishop from c8 to f5
+    alternatives: c5: The position is roughly equal; a6: White is slightly better
+n23 4.Nf3 (White, Line B) | book
+    book: in book (Caro-Kann Defense: Advance Variation, Short Variation)
+    board: moves the knight from g1 to f3
+    alternatives: h4: The position is roughly equal; Nd2: The position is roughly equal; g4: The position is roughly equal
+n24 4…e6 (Black, Line B) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from e7 to e6
+    alternatives: h5: White is slightly better; Bg4: White is slightly better
+n25 5.Be2 (White, Line B) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from f1 to e2
+    alternatives: c3: The position is roughly equal; a3: The position is roughly equal
+n26 5…c5 (Black, Line B) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from c6 to c5
+    alternatives: Bg6: The position is roughly equal; h6: White is slightly better
+n27 6.O-O (White, Line B) | good | before: The position is roughly equal → after: The position is roughly equal
+    board: castles kingside
+    alternatives: Be3: The position is roughly equal; c3: The position is roughly equal
+n28 6…Nc6 (Black, Line B) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from b8 to c6
+    alternatives: Ne7: The position is roughly equal; a6: White is slightly better
+
+REEL CANDIDATES
+
+PLAN
+  e1 line n1–n20
+  e2 deviation n21–n28
+  e3 recap n20–n20

@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "club",
+  "coachPersona": "shark",
+  "direction": "Philidor's Legacy: the full smothered mate, knight checks, then the queen sacrifice.",
+  "pgn": "[Event \"Philidor's Legacy\"]\n[SetUp \"1\"]\n[FEN \"r6k/6pp/8/4N3/2Q5/8/6PP/6K1 w - - 0 1\"]\n\n1. Nf7+ Kg8 2. Nh6+ Kh8 3. Qg8+ Rxg8 4. Nf7# *"
+}

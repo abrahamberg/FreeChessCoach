@@ -1,0 +1,81 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, c, d, e, f, g, h; the b-file is half-open for black; white has a passed pawn on b7
+l2 "Line B" | leaves book at n1
+    end position: open files: a, b, c, d, e, f, g, h; the white king is tucked away on c8; the black king is tucked away on c6
+
+Moves:
+n1 1.Rd1+ (White, Line A) | excellent | before: White is much better → after: White is much better
+    board: moves the rook from c1 to d1 | gives check | the check can be answered: block with Rd2; the checking piece cannot be taken; move the king with Ke8, Ke7, Ke6, Kc6
+    alternatives: Rh1: White is much better; Rb1: White is much better
+n2 1…Ke7 (Black, Line A) | good | before: White is much better → after: White is much better
+    board: moves the king from d7 to e7
+    alternatives: Ke6: White is much better; Ke8: White is much better
+n3 2.Rd4 (White, Line A) | excellent | before: White is much better → after: White is much better
+    board: moves the rook from d1 to d4
+    alternatives: Rd5: White is much better; Kc7: White is much better
+n4 2…Ra1 (Black, Line A) | excellent | before: White is much better → after: White is much better
+    board: moves the rook from a2 to a1
+    alternatives: Rb2: White is much better; Rc2: White is much better; Ke6: White is much better
+n5 3.Kc7 (White, Line A) | best | before: White is much better → after: White is much better
+    board: moves the king from b8 to c7
+    alternatives: Kc8: White is much better; Rb4: White is much better
+n6 3…Rc1+ (Black, Line A) | best | before: White is much better → after: White is much better
+    board: moves the rook from a1 to c1 | gives check | the check can be answered: block with Rc4; the checking piece cannot be taken; move the king with Kb8, Kb6
+    alternatives: Rb1: White is much better; Rf1: White is much better
+n7 4.Kb6 (White, Line A) | best | before: White is much better → after: White is much better
+    board: moves the king from c7 to b6
+    alternatives: Kb8: White is much better; Rc4: The position is roughly equal
+n8 4…Rb1+ (Black, Line A) | best | before: White is much better → after: White is much better
+    board: moves the rook from c1 to b1 | gives check | the check can be answered: block with Rb4; the checking piece cannot be taken; move the king with Ka7, Kc7, Kc6, Kc5, Ka5, Ka6
+    alternatives: Rf1: White is much better; Re1: White is much better
+n9 5.Kc6 (White, Line A) | best | before: White is much better → after: White is much better
+    board: moves the king from b6 to c6
+    alternatives: Ka7: White is much better; Kc7: White is much better
+n10 5…Rc1+ (Black, Line A) | good | before: White is much better → after: White is much better
+    board: moves the rook from b1 to c1 | gives check | the check can be answered: block with Rc4; the checking piece cannot be taken; move the king with Kd5, Kb5, Kb6
+    alternatives: Rxb7: White is much better; Ke6: White is much better; Rb2: White is much better
+n11 6.Kb5 (White, Line A) | best | before: White is much better → after: White is much better
+    board: moves the king from c6 to b5
+    alternatives: Kb6: White is much better; Kd5: White is much better
+n12 6…Rb1+ (Black, Line A) | inaccuracy | before: White is much better → after: White is winning
+    best instead: Ke6; after Ke6 Re4+ Kd5 Rb4 Rc5+ Ka4, White is a pawn up
+    why Ke6 is better: moves the king from e7 to e6
+    board: moves the rook from c1 to b1 | gives check | the check can be answered: block with Rb4; the checking piece cannot be taken; move the king with Ka6, Kc6, Kc5, Kc4, Ka4, Ka5
+    alternatives: Ke6: White is much better; Kf6: White is winning
+n13 7.Rb4 (White, Line A) | best | before: White is winning → after: White is winning
+    board: moves the rook from d4 to b4 | blocks the check from the rook on b1 | attacks the rook on b1
+    tactics: You broke the pin — the king on b5 is free to move again.
+    alternatives: Ka6: White is much better; Kc6: White is much better
+    flags: quiz-eligible
+n14 1…Kc6 (Black, Line B) | good | before: White is much better → after: White is much better
+    board: moves the king from d7 to c6
+    alternatives: Ke6: White is much better; Ke7: White is much better; Ke8: White is much better
+n15 2.Kc8 (White, Line B) | best | before: White is much better → after: White is much better
+    board: moves the king from b8 to c8
+    alternatives: Rd3: White is much better; Rc1+: White is much better
+n16 2…Rh2 (Black, Line B) | mistake | before: White is much better → after: White is winning
+    best instead: Rb2; after Rb2 b8=Q Rxb8+ Kxb8 Kc5 Rd7, White is a rook up
+    why Rb2 is better: moves the rook from a2 to b2
+    board: moves the rook from a2 to h2
+    tactics: They missed a chance to take the open file with Rb2 — takes the half-open b-file with the rook.
+    alternatives: Rb2: White is much better; Rg2: White is winning
+n17 3.b8=Q (White, Line B) | best | before: White is winning → after: White is winning
+    board: moves the pawn from b7 to b8 | promotes to a queen | attacks the rook on h2
+    alternatives: Rd8: White is much better; Rc1+: White is much better
+    tempting check: b8=N+? White's b8=N+ moves the pawn from b7 to b8 | promotes to a knight | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc5, Kb5, Kb6. Black answers Kb5: moves the king from c6 to b5. Then Nd7 Rh8+ Kb7. Over the line nothing is taken; at the end White is a knight up (The position is roughly equal).
+    tempting check: Rc1+ White's Rc1+ moves the rook from d1 to c1 | gives check | the check can be answered: block with Rc2; the checking piece cannot be taken; move the king with Kd6, Kd5, Kb5, Kb6. Black answers Kd5: moves the king from c6 to d5. Then Rd1+ Kc5 b8=Q. Over the line nothing is taken; at the end White is a queen up (White is much better). Works, but not the answer: White is still much better, but the answer is stronger: White is winning.
+    tempting threat: b8=B? White's b8=B moves the pawn from b7 to b8 | promotes to a bishop | attacks the rook on h2. Black answers Rh8+: moves the rook from h2 to h8 | gives check | the check can be answered: block with Rd8; the checking piece cannot be taken; the king cannot move. Then Rd8 Rxd8+ Kxd8. Over the line White takes a rook; Black takes a rook; at the end White is a bishop up (The position is roughly equal).
+    tempting threat: Rd2? White's Rd2 moves the rook from d1 to d2 | attacks the rook on h2 | leaves the white rook on d2 hanging. Black answers Rh8+: moves the rook from h2 to h8 | gives check | the check can be answered: block with Rd8; the checking piece cannot be taken; the king cannot move. Then Rd8 Rxd8+ Kxd8. Over the line White takes a rook; Black takes a rook; at the end White is a pawn up (The position is roughly equal).
+    flags: quiz-eligible
+
+REEL CANDIDATES
+  r1 puzzle n7–n13, climax n13 [highlight, puzzle, promo]
+
+PLAN
+  e1 goal n1–n1
+  e2 technique n1–n13 answer=n13
+  e3 defence n14–n17
+  e4 recap n13–n13

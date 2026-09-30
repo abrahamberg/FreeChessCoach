@@ -1,0 +1,54 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | opening: Bishop's Opening | leaves book at n5
+    end position: the f-file is half-open for black; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.Bc4 (White, Line A) | book
+    book: in book (Bishop's Opening)
+    board: moves the bishop from f1 to c4
+    alternatives: Nf3: The position is roughly equal; Nc3: The position is roughly equal
+n4 2…Nc6 (Black, Line A) | book
+    book: in book (Bishop's Opening)
+    board: moves the knight from b8 to c6
+    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+n5 3.Qh5 (White, Line A) | inaccuracy | before: The position is roughly equal → after: The position is roughly equal
+    best instead: Nf3; after Nf3 d6 c3 Nf6 Ng5 d5, material is level
+    why Nf3 is better: moves the knight from g1 to f3
+    board: moves the queen from d1 to h5
+    alternatives: Nf3: The position is roughly equal; d3: The position is roughly equal; Nc3: The position is roughly equal
+    flags: critical
+n6 3…Nf6 (Black, Line A) | blunder | before: The position is roughly equal → after: White has a forced mate in 1
+    best instead: g6; after g6 Qd1 Nf6 Nc3 Na5 d3, material is level
+    why g6 is better: moves the pawn from g7 to g6 | attacks the queen on h5
+    board: moves the knight from g8 to f6 | attacks the queen on h5
+    tactics: They let you force mate with Qxf7#.
+    alternatives: g6: The position is roughly equal; Qe7: The position is roughly equal; Qf6: The position is roughly equal
+    tempting threat: Qg5? Black's Qg5 moves the queen from d8 to g5 | attacks the queen on h5 | leaves the black queen on g5 hanging. White answers Qxf7+: moves the queen from h5 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8 | attacks the bishop on f8 | attacks the knight on g8 | the queen on f7 forks the king on e8 and the bishop on f8 and the knight on g8. Then Kd8 Qxf8#. Over the line White takes a bishop and a pawn; at the end White is a bishop and a pawn up (White has a forced mate in 2).
+    tempting threat: Qh4? Black's Qh4 moves the queen from d8 to h4 | attacks the queen on h5 | leaves the black queen on h4 hanging. White answers Qxf7+: moves the queen from h5 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8 | attacks the bishop on f8 | attacks the knight on g8 | the queen on f7 forks the king on e8 and the bishop on f8 and the knight on g8. Then Kd8 Qxf8#. Over the line White takes a bishop and a pawn; at the end White is a bishop and a pawn up (White has a forced mate in 2).
+    tempting threat: b5? Black's b5 moves the pawn from b7 to b5 | attacks the bishop on c4 | leaves the black pawn on b5 hanging. White answers Qxf7#: moves the queen from h5 to f7 | captures the pawn on f7 | gives checkmate | why it is mate: the king on e8 is checked by the queen on f7; d7, d8, f8 hold its own pieces; e7 is covered by the queen on f7; the queen on f7 is guarded by the bishop on c4. Over the line White takes a pawn; at the end White is a pawn up (White has a forced mate in 1).
+    flags: critical
+n7 4.Qxf7# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
+    board: moves the queen from h5 to f7 | captures the pawn on f7 | gives checkmate | why it is mate: the king on e8 is checked by the queen on f7; d7, d8, f8 hold its own pieces; e7 is covered by the queen on f7; the queen on f7 is guarded by the bishop on c4
+    alternatives: Qh4: Black is slightly better; Qf3: Black is better
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 mate n1–n7, climax n7 [highlight, puzzle, promo]
+  r2 swing n1–n7, climax n6 [highlight, promo]
+
+PLAN
+  e1 hook n1–n1
+  e2 setup n1–n5
+  e3 bait n6–n6
+  e4 quiz n7–n7 answer=n7
+  e5 safety n6–n6

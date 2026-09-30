@@ -1,0 +1,95 @@
+Learner side: White
+
+Lines:
+l1 "Mieses" | opening: Scotch Game: Mieses Variation | leaves book at n12
+    end position: the b-file is half-open for black; the d-file is half-open for white; the e-file is half-open for black; black has an isolated pawn on a7; black has doubled pawns on the c-file; black has a queenside pawn majority; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+l2 "Classical" | opening: Scotch Game: Classical Variation | leaves book at n21
+    end position: the d-file is half-open for white; the e-file is half-open for black; black has a queenside pawn majority; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Mieses) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Mieses) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.Nf3 (White, Mieses) | book
+    book: in book (King's Knight Opening)
+    board: moves the knight from g1 to f3
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…Nc6 (Black, Mieses) | book
+    book: in book (King's Knight Opening: Normal Variation)
+    board: moves the knight from b8 to c6
+    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+n5 3.d4 (White, Mieses) | book
+    book: in book (Scotch Game)
+    board: moves the pawn from d2 to d4
+    alternatives: Bc4: The position is roughly equal; Nc3: The position is roughly equal
+n6 3…exd4 (Black, Mieses) | book
+    book: in book (Scotch Game)
+    board: moves the pawn from e5 to d4 | captures the pawn on d4
+    alternatives: Nxd4: White is slightly better; d6: White is slightly better
+n7 4.Nxd4 (White, Mieses) | book
+    book: in book (Scotch Game)
+    board: moves the knight from f3 to d4 | captures the pawn on d4 | attacks the knight on c6
+    alternatives: Bc4: The position is roughly equal; Bb5: The position is roughly equal
+n8 4…Nf6 (Black, Mieses) | book
+    book: in book (Scotch Game: Schmidt Variation)
+    board: moves the knight from g8 to f6
+    alternatives: Bc5: The position is roughly equal; Bb4+: The position is roughly equal
+n9 5.Nxc6 (White, Mieses) | book
+    book: in book (Scotch Game: Schmidt Variation)
+    board: moves the knight from d4 to c6 | captures the knight on c6 | attacks the queen on d8 | leaves the white pawn on e4 hanging
+    alternatives: Nc3: The position is roughly equal; Qd3: The position is roughly equal
+n10 5…bxc6 (Black, Mieses) | book
+    book: in book (Scotch Game: Schmidt Variation)
+    board: moves the pawn from b7 to c6 | captures the knight on c6
+    alternatives: dxc6: The position is roughly equal; Nxe4: White is much better
+n11 6.e5 (White, Mieses) | book
+    book: in book (Scotch Game: Mieses Variation)
+    board: moves the pawn from e4 to e5 | attacks the knight on f6
+    alternatives: Bd3: The position is roughly equal; Qd4: The position is roughly equal
+n12 6…Qe7 (Black, Mieses) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the queen from d8 to e7
+    alternatives: Nd5: The position is roughly equal; Ne4: White is slightly better
+n13 7.Qe2 (White, Mieses) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the queen from d1 to e2
+    alternatives: Qd4: The position is roughly equal; f4: Black is slightly better
+n14 7…Nd5 (Black, Mieses) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from f6 to d5
+    alternatives: Ng8: White is slightly better; Kd8: White is better
+n15 8.c4 (White, Mieses) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from c2 to c4 | attacks the knight on d5
+    alternatives: h4: The position is roughly equal; g3: The position is roughly equal
+n16 4…Bc5 (Black, Classical) | book
+    book: in book (Scotch Game: Classical Variation)
+    board: moves the bishop from f8 to c5 | attacks the knight on d4
+    alternatives: Nf6: The position is roughly equal; Bb4+: The position is roughly equal
+n17 5.Be3 (White, Classical) | book
+    book: in book (Scotch Game: Classical Variation)
+    board: moves the bishop from c1 to e3
+    alternatives: Nb3: The position is roughly equal; Nxc6: The position is roughly equal
+n18 5…Qf6 (Black, Classical) | book
+    book: in book (Scotch Game: Classical Variation)
+    board: moves the queen from d8 to f6 | attacks the knight on d4
+    alternatives: Nxd4: The position is roughly equal; Bxd4: White is slightly better
+n19 6.c3 (White, Classical) | book
+    book: in book (Scotch Game: Classical Variation)
+    board: moves the pawn from c2 to c3
+    alternatives: Nb5: Black is slightly better; Nxc6: Black is slightly better
+n20 6…Nge7 (Black, Classical) | book
+    book: in book (Scotch Game: Classical Variation)
+    board: moves the knight from g8 to e7
+    alternatives: Qg6: The position is roughly equal; d6: The position is roughly equal
+n21 7.Bc4 (White, Classical) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from f1 to c4
+    alternatives: Bb5: The position is roughly equal; Qd2: The position is roughly equal
+
+REEL CANDIDATES
+
+PLAN
+  e1 line n1–n15
+  e2 deviation n16–n21
+  e3 recap n15–n15

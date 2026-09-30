@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "novice",
+  "coachPersona": "general_female",
+  "direction": "Mate in one on the back rank.",
+  "pgn": "[Event \"Back rank mate\"]\n[SetUp \"1\"]\n[FEN \"6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1\"]\n\n1. Rd8# *"
+}

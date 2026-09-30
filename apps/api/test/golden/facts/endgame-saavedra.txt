@@ -1,0 +1,104 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, e, f, g, h
+l2 "Line B" | leaves book at n1
+    end position: open files: a, b, c, d, e, f, g, h
+
+Moves:
+n1 1.c7 (White, Line A) | great | before: White is better → after: White is better
+    board: moves the pawn from c6 to c7
+    alternatives: Ka7: The position is roughly equal; Kc7: The position is roughly equal
+    flags: quiz-eligible, critical
+n2 1…Rd6+ (Black, Line A) | excellent | before: White is better → after: White is better
+    board: moves the rook from d5 to d6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ka7, Kb7, Kc5, Kb5, Ka5
+    alternatives: Rd2: White is better; Kb1: White is better; Rd3: White is better
+n3 2.Kb5 (White, Line A) | great | before: White is better → after: White is better
+    board: moves the king from b6 to b5
+    tactics: You tucked the king away — walks the king to b5, out of the firing line.
+    alternatives: Kc5: The position is roughly equal; Kb7: The position is roughly equal
+    tempting threat: Kc5? White's Kc5 moves the king from b6 to c5 | attacks the rook on d6. Black answers Rd1: moves the rook from d6 to d1. Then Kb6 Rc1 Kb7. Over the line nothing is taken; at the end White has a pawn for a rook (The position is roughly equal).
+    flags: quiz-eligible, critical
+n4 2…Rd5+ (Black, Line A) | excellent | before: White is better → after: White is better
+    board: moves the rook from d6 to d5 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ka6, Kb6, Kc6, Kc4, Kb4, Ka4
+    alternatives: Rd2: White is better; Rd3: White is better
+n5 3.Kb4 (White, Line A) | best | before: White is better → after: White is better
+    board: moves the king from b5 to b4
+    alternatives: Kb6: White is better; Kc6: The position is roughly equal
+    tempting threat: Kc6? White's Kc6 moves the king from b5 to c6 | attacks the rook on d5. Black answers Rd3: moves the rook from d5 to d3. Then Kb6 Rc3 Kb7. Over the line nothing is taken; at the end White has a pawn for a rook (The position is roughly equal).
+    tempting threat: Kc4? White's Kc4 moves the king from b5 to c4 | attacks the rook on d5. Black answers Rd1: moves the rook from d5 to d1. Then Kc5 Rc1+ Kd6. Over the line nothing is taken; at the end White has a pawn for a rook (The position is roughly equal).
+n6 3…Rd4+ (Black, Line A) | inaccuracy | before: White is better → after: White is better
+    best instead: Kb2; after Kb2 c8=Q Rd4+ Kb5 Rd3 Qf5, White has a queen for a rook
+    why Kb2 is better: moves the king from a1 to b2
+    board: moves the rook from d5 to d4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ka5, Kb5, Kc5, Kc3, Kb3, Ka3
+    alternatives: Kb2: White is better; Kb1: White is better; Rd3: White is better
+n7 4.Kb3 (White, Line A) | inaccuracy | before: White is better → after: White is better
+    best instead: Kc3; after Kc3 Rd1 Kc2 Re1 c8=Q Re2+, White has a queen for a rook
+    why Kc3 is better: moves the king from b4 to c3 | attacks the rook on d4
+    board: moves the king from b4 to b3
+    tactics: You missed a chance to win a tempo with Kc3 — hits the rook on d4 with a king.
+    alternatives: Kc3: White is better; Kb5: White is better
+    tempting threat: Kc5? White's Kc5 moves the king from b4 to c5 | attacks the rook on d4. Black answers Rd1: moves the rook from d4 to d1. Then Kc6 Rc1+ Kd7. Over the line nothing is taken; at the end White has a pawn for a rook (The position is roughly equal).
+    flags: critical
+n8 4…Rd3+ (Black, Line A) | mistake | before: White is better → after: White is much better
+    best instead: Kb1; after Kb1 c8=Q Rd3+ Kb4 Rd2 Qf5+, White has a queen for a rook
+    why Kb1 is better: moves the king from a1 to b1
+    board: moves the rook from d4 to d3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ka4, Kb4, Kc4, Kc2
+    alternatives: Kb1: White is better; Rg4: White is winning
+n9 5.Kc2 (White, Line A) | great | before: White is much better → after: White is much better
+    board: moves the king from b3 to c2 | attacks the rook on d3
+    tactics: You won a tempo — hits the rook on d3 with a king.
+    alternatives: Kb4: The position is roughly equal; Kc4: The position is roughly equal
+    tempting threat: Kc4? White's Kc4 moves the king from b3 to c4 | attacks the rook on d3. Black answers Rd1: moves the rook from d3 to d1. Then Kc5 Rc1+ Kd6. Over the line nothing is taken; at the end White has a pawn for a rook (The position is roughly equal).
+    flags: quiz-eligible, critical
+n10 5…Rd4 (Black, Line A) | best | before: White is much better → after: White is much better
+    board: moves the rook from d3 to d4
+    alternatives: Rg3: White is winning; Ka2: White is winning
+    tempting threat: Rd7? Black's Rd7 moves the rook from d3 to d7. White answers c8=Q: moves the pawn from c7 to c8 | promotes to a queen | attacks the rook on d7. Then Rd2+ Kxd2 Kb2. Over the line White takes a rook; at the end White is a queen up (White has a forced mate in 5).
+    flags: quiz-eligible
+n11 6.c8=R (White, Line A) | best | before: White is much better → after: White is much better
+    board: moves the pawn from c7 to c8 | promotes to a rook
+    alternatives: Kc3: White is much better; Kb3: White is better
+n12 6…Ra4 (Black, Line A) | mistake | before: White is much better → after: White has a forced mate in 7
+    best instead: Rd2+; after Rd2+ Kxd2 Kb2 Rc4 Kb3 Kd3, White is a rook up
+    why Rd2+ is better: moves the rook from d4 to d2 | gives check | the check can be answered: no block; take the checking piece with Kxd2; move the king with Kb3, Kc3, Kc1 | leaves the black rook on d2 hanging
+    board: moves the rook from d4 to a4
+    tactics: They let you force mate with Kb3.
+    alternatives: Rd2+: White is much better; Rc4+: White has a forced mate in 2
+n13 7.Kb3 (White, Line A) | great | before: White has a forced mate in 7 → after: White has a forced mate in 6
+    board: moves the king from c2 to b3 | attacks the rook on a4
+    alternatives: Rg8: The position is roughly equal; Rc3: The position is roughly equal
+    flags: quiz-eligible, critical
+n14 6.c8=Q (White, Line B) | miss | before: White is much better → after: The position is roughly equal
+    best instead: c8=R; after c8=R Rd2+ Kxd2 Kb2 Rg8 Kb3, White is a rook up
+    why c8=R is better: moves the pawn from c7 to c8 | promotes to a rook
+    board: moves the pawn from c7 to c8 | promotes to a queen
+    alternatives: c8=R: White is much better; Kc3: White is much better; Kb3: White is better
+    flags: critical
+n15 6…Rc4+ (Black, Line B) | brilliant | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the rook from d4 to c4 | gives check | the check can be answered: no block; take the checking piece with Qxc4; move the king with Kb3, Kd3, Kd2, Kd1 | attacks the queen on c8 | leaves the black rook on c4 hanging: taking it is stalemate
+    alternatives: Rd2+: White has a forced mate in 4; Ra4: White has a forced mate in 2
+    tempting threat: Rd8? Black's Rd8 moves the rook from d4 to d8 | attacks the queen on c8 | leaves the black rook on d8 hanging. White answers Qa6#: moves the queen from c8 to a6 | gives checkmate | why it is mate: the king on a1 is checked by the queen on a6; a2 is covered by the queen on a6; b1 and b2 are covered by the king on c2. Over the line nothing is taken; at the end White has a queen for a rook (White has a forced mate in 1).
+    flags: quiz-eligible
+n16 7.Qxc4 (White, Line B) | great | before: The position is roughly equal → after: stalemate
+    board: moves the queen from c8 to c4 | captures the rook on c4
+    tactics: You won a rook through a free piece — captures the rook on c4.
+    alternatives: Kd2: Black is much better; Kb3: Black is much better
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 puzzle n7–n13, climax n13 [highlight, puzzle, promo]
+  r2 brilliant n1–n3, climax n1 [highlight, puzzle, promo]
+  r3 brilliant n1–n5, climax n3 [highlight, puzzle, promo]
+  r4 brilliant n3–n11, climax n9 [highlight, puzzle, promo]
+  r5 brilliant n6–n16, climax n15 [highlight, puzzle, promo]
+
+PLAN
+  e1 goal n1–n1
+  e2 technique n1–n2 answer=n1
+  e3 technique n3–n4 answer=n3
+  e4 technique n5–n10 answer=n9
+  e5 technique n11–n13 answer=n13
+  e6 defence n14–n16
+  e7 recap n13–n13

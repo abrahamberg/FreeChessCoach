@@ -5,7 +5,7 @@ import { NavLink } from 'react-router-dom';
 import { apiGet } from '../api/client.js';
 import { getDemoRuntime } from '../demo/demoRuntime.js';
 import { describeEngineActivity } from './EngineActivityIndicator.js';
-import { BugIcon, LogOutIcon, SettingsIcon } from './Icon.js';
+import { BugIcon, LogOutIcon, PlusIcon, SettingsIcon } from './Icon.js';
 import { TunnelStatusDots } from './TunnelStatusDots.js';
 import type { EngineActivityIndicatorState } from '../hooks/useEngineActivityIndicator.js';
 import './UserMenu.css';
@@ -61,6 +61,13 @@ export function AccountMenuSections({ engineActivity, onClose, onReportBug, chil
         </>
       )}
       <div className="user-menu__divider" />
+      {/* docs/courses.md §2: only accounts a moderator switched on. */}
+      {profileQuery.data?.canCreateCourses && !getDemoRuntime() && (
+        <NavLink to="/studio" role="menuitem" className="user-menu__item" onClick={onClose}>
+          <PlusIcon width={17} height={17} />
+          Course studio
+        </NavLink>
+      )}
       <NavLink to="/settings" role="menuitem" className="user-menu__item" onClick={onClose}>
         <SettingsIcon width={17} height={17} />
         Settings

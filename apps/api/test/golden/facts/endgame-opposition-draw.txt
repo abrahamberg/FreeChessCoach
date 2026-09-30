@@ -1,0 +1,66 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, f, g, h; the e-file is half-open for black; white has a passed pawn on e7
+
+Moves:
+n1 1…Ke7 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from e8 to e7 | takes the opposition: the kings face each other with one square between, and the other king must give way
+    alternatives: Kf7: White is winning; Kf8: White is winning
+    flags: quiz-eligible, critical
+n2 2.Kf5 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from e5 to f5
+    alternatives: Kd5: The position is roughly equal; Kf4: The position is roughly equal
+n3 2…Kf7 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from e7 to f7 | takes the opposition: the kings face each other with one square between, and the other king must give way
+    alternatives: Kf8: White is winning; Kd6: White is winning
+    flags: quiz-eligible, critical
+n4 3.e5 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from e4 to e5
+    alternatives: Kg5: The position is roughly equal; Ke5: The position is roughly equal
+n5 3…Ke7 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from f7 to e7
+    alternatives: Kg7: White is winning; Kf8: White is winning
+    flags: quiz-eligible, critical
+n6 4.e6 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from e5 to e6
+    alternatives: Kg5: The position is roughly equal; Kg4: The position is roughly equal
+n7 4…Ke8 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from e7 to e8
+    alternatives: Kd8: White is winning; Kd6: White is winning
+    flags: quiz-eligible, critical
+n8 5.Kf6 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from f5 to f6
+    alternatives: Ke5: The position is roughly equal; Kg6: The position is roughly equal; Kg4: The position is roughly equal
+n9 5…Kf8 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from e8 to f8 | takes the opposition: the kings face each other with one square between, and the other king must give way
+    alternatives: Kd8: White is winning
+    flags: quiz-eligible, critical
+n10 6.e7+ (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from e6 to e7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg8, Ke8
+    alternatives: Kf5: The position is roughly equal; Ke5: The position is roughly equal; Kg6: The position is roughly equal
+n11 6…Ke8 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from f8 to e8
+    alternatives: Kg8: White has a forced mate in 2
+    flags: quiz-eligible, critical
+n12 7.Ke6 (White, Line A) | excellent | before: The position is roughly equal → after: stalemate
+    board: moves the king from f6 to e6
+    alternatives: Kf5: The position is roughly equal; Kg6: The position is roughly equal; Ke5: The position is roughly equal
+
+REEL CANDIDATES
+  r1 puzzle n5–n12, climax n11 [highlight, puzzle, promo]
+  r2 brilliant n1–n3, climax n1 [highlight, puzzle, promo]
+  r3 brilliant n1–n5, climax n3 [highlight, puzzle, promo]
+  r4 brilliant n1–n7, climax n5 [highlight, puzzle, promo]
+  r5 brilliant n1–n9, climax n7 [highlight, puzzle, promo]
+
+PLAN
+  e1 goal n1–n1
+  e2 technique n1–n2 answer=n1
+  e3 technique n3–n4 answer=n3
+  e4 technique n5–n6 answer=n5
+  e5 technique n7–n8 answer=n7
+  e6 technique n9–n10 answer=n9
+  e7 technique n11–n12 answer=n11
+  e8 recap n12–n12

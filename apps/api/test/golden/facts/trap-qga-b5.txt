@@ -1,0 +1,63 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | opening: Queen's Gambit Accepted: Old Variation | leaves book at n6
+    end position: the a-file is half-open for white; the c-file is half-open for white; the d-file is half-open for black; white has an isolated pawn on b2; black has a queenside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.d4 (White, Line A) | book
+    book: in book (Queen's Pawn Game)
+    board: moves the pawn from d2 to d4
+    alternatives: e4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…d5 (Black, Line A) | book
+    book: in book (Queen's Pawn Game)
+    board: moves the pawn from d7 to d5
+    alternatives: Nf6: The position is roughly equal; d6: White is slightly better
+n3 2.c4 (White, Line A) | book
+    book: in book (Queen's Gambit)
+    board: moves the pawn from c2 to c4 | leaves the white pawn on c4 hanging
+    alternatives: Nf3: The position is roughly equal; e3: The position is roughly equal
+n4 2…dxc4 (Black, Line A) | book
+    book: in book (Queen's Gambit Accepted)
+    board: moves the pawn from d5 to c4 | captures the pawn on c4
+    alternatives: Nf6: The position is roughly equal; e6: The position is roughly equal; c6: The position is roughly equal
+n5 3.e3 (White, Line A) | book
+    book: in book (Queen's Gambit Accepted: Old Variation)
+    board: moves the pawn from e2 to e3
+    alternatives: e4: The position is roughly equal; Nf3: The position is roughly equal
+n6 3…b5 (Black, Line A) | inaccuracy | before: The position is roughly equal → after: White is slightly better
+    best instead: Nf6; after Nf6 Bxc4 e6 Nf3 a6 Bd3, material is level
+    why Nf6 is better: moves the knight from g8 to f6 | leaves the black pawn on c4 hanging
+    board: moves the pawn from b7 to b5
+    alternatives: Nf6: The position is roughly equal; a6: The position is roughly equal; e6: The position is roughly equal
+n7 4.a4 (White, Line A) | excellent | before: White is slightly better → after: White is slightly better
+    board: moves the pawn from a2 to a4
+    alternatives: Qf3: White is slightly better; Nf3: The position is roughly equal
+n8 4…c6 (Black, Line A) | inaccuracy | before: White is slightly better → after: White is better
+    best instead: b4; after b4 Qf3 c6 Bxc4 e6 Nh3, material is level
+    why b4 is better: moves the pawn from b5 to b4 | leaves the black pawn on c4 hanging
+    board: moves the pawn from c7 to c6
+    alternatives: b4: White is slightly better; bxa4: White is slightly better; Bb7: White is slightly better
+n9 5.axb5 (White, Line A) | best | before: White is better → after: White is better
+    board: moves the pawn from a4 to b5 | captures the pawn on b5
+    alternatives: b3: White is slightly better; Nf3: The position is roughly equal
+n10 5…cxb5 (Black, Line A) | mistake | before: White is better → after: White is better
+    best instead: a5; after a5 Bxc4 e6 Nf3 Nf6 Nc3, White is a pawn up
+    why a5 is better: moves the pawn from a7 to a5 | leaves the black pawn on c4 hanging
+    board: moves the pawn from c6 to b5 | captures the pawn on b5
+    alternatives: a5: White is better; e6: White is better; Nf6: White is better
+    flags: critical
+n11 6.Qf3 (White, Line A) | best | before: White is better → after: White is better
+    board: moves the queen from d1 to f3 | attacks the rook on a8
+    tactics: You broke the pin — the pawn on d4 is free to move again.
+    alternatives: Bxc4: White is slightly better; b3: The position is roughly equal
+
+REEL CANDIDATES
+  r1 trap n5–n11, climax n11 [highlight, promo]
+
+PLAN
+  e1 hook n1–n1
+  e2 setup n1–n9
+  e3 bait n10–n10
+  e4 quiz n11–n11
+  e5 safety n10–n10

@@ -1,0 +1,7 @@
+{
+  "kind": "endgame",
+  "levelBand": "improving",
+  "coachPersona": "commander",
+  "direction": "The Lucena position: build a bridge. Show why only one move keeps the win.",
+  "pgn": "[Event \"Lucena position\"]\n[SetUp \"1\"]\n[FEN \"1K6/1P1k4/8/8/8/8/r7/2R5 w - - 0 1\"]\n\n1. Rd1+ Ke7 (1... Kc6 2. Kc8 Rh2 3. b8=Q) 2. Rd4 Ra1 3. Kc7 Rc1+ 4. Kb6 Rb1+ 5. Kc6 Rc1+ 6. Kb5 Rb1+ 7. Rb4 *"
+}

@@ -1,0 +1,94 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | opening: Italian Game: Two Knights Defense, Fried Liver Attack | in book throughout
+    end position: the d-file is half-open for black; the e-file is half-open for white; the f-file is half-open for black; black has an isolated pawn on e5; white has a queenside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e6
+
+Moves:
+n1 1.e4 (White, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.Nf3 (White, Line A) | book
+    book: in book (King's Knight Opening)
+    board: moves the knight from g1 to f3
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…Nc6 (Black, Line A) | book
+    book: in book (King's Knight Opening: Normal Variation)
+    board: moves the knight from b8 to c6
+    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+n5 3.Bc4 (White, Line A) | book
+    book: in book (Italian Game)
+    board: moves the bishop from f1 to c4
+    alternatives: d4: The position is roughly equal; Nc3: The position is roughly equal
+    tempting capture: Nxe5? White's Nxe5 moves the knight from f3 to e5 | captures the pawn on e5 | attacks the knight on c6 | leaves the white knight on e5 hanging. Black answers Nxe5: moves the knight from c6 to e5 | captures the knight on e5. Then d4 Ng6 Bc4. Over the line White takes a pawn; Black takes a knight; at the end White has a pawn for a knight (Black is better).
+n6 3…Nf6 (Black, Line A) | book
+    book: in book (Italian Game: Two Knights Defense)
+    board: moves the knight from g8 to f6
+    alternatives: Bc5: The position is roughly equal; d6: The position is roughly equal
+n7 4.Ng5 (White, Line A) | book
+    book: in book (Italian Game: Two Knights Defense, Knight Attack)
+    board: moves the knight from f3 to g5
+    alternatives: d4: The position is roughly equal; d3: The position is roughly equal
+    tempting check: Bxf7+? White's Bxf7+ moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; take the checking piece with Kxf7; move the king with Ke7 | leaves the white bishop on f7 hanging. Black answers Kxf7: moves the king from e8 to f7 | captures the bishop on f7. Then Nc3 d5 d4. Over the line White takes a pawn; Black takes a bishop; at the end White has a pawn for a bishop (Black is better).
+    tempting capture: Nxe5? White's Nxe5 moves the knight from f3 to e5 | captures the pawn on e5 | attacks the knight on c6 | leaves the white knight on e5 hanging | leaves the white pawn on e4 hanging. Black answers Nxe5: moves the knight from c6 to e5 | captures the knight on e5 | attacks the bishop on c4. Then Bb3 c5 f4. Over the line White takes a pawn; Black takes a knight; at the end White has a pawn for a knight (Black is better).
+n8 4…d5 (Black, Line A) | book
+    book: in book (Italian Game: Two Knights Defense, Knight Attack, Normal Variation)
+    board: moves the pawn from d7 to d5 | attacks the bishop on c4
+    alternatives: Bc5: White is slightly better; Nxe4: White is slightly better
+n9 5.exd5 (White, Line A) | book
+    book: in book (Italian Game: Two Knights Defense, Knight Attack, Normal Variation)
+    board: moves the pawn from e4 to d5 | captures the pawn on d5 | attacks the knight on c6
+    alternatives: Bb3: Black is better; Be2: Black is better
+    tempting capture: Nxf7? White's Nxf7 moves the knight from g5 to f7 | captures the pawn on f7 | attacks the queen on d8 | attacks the rook on h8 | leaves the white knight on f7 hanging | leaves the white bishop on c4 hanging | leaves the white pawn on e4 hanging. Black answers Kxf7: moves the king from e8 to f7 | captures the knight on f7. Then exd5 b5 Bf1. Over the line White takes two pawns; Black takes a knight; at the end White has two pawns for a knight (Black is better).
+    tempting capture: Nxh7? White's Nxh7 moves the knight from g5 to h7 | captures the pawn on h7 | attacks the bishop on f8 | attacks the knight on f6 | leaves the white knight on h7 hanging | leaves the white bishop on c4 hanging | leaves the white pawn on e4 hanging. Black answers dxc4: moves the pawn from d5 to c4 | captures the bishop on c4. Then Nxf8 a6 O-O. Over the line White takes a bishop and a pawn; Black takes a bishop; at the end White is a pawn up (Black is much better).
+    tempting capture: Bxd5? White's Bxd5 moves the bishop from c4 to d5 | captures the pawn on d5 | attacks the knight on c6. Black answers Nxd5: moves the knight from f6 to d5 | captures the bishop on d5. Then exd5 Qxg5 O-O. Over the line White takes a knight and a pawn; Black takes a bishop and a knight; at the end White has a pawn for a bishop (Black is better).
+n10 5…Nxd5 (Black, Line A) | book
+    book: in book (Italian Game: Two Knights Defense, Knight Attack, Normal Variation)
+    board: moves the knight from f6 to d5 | captures the pawn on d5
+    tactics: They let you win a pawn through a free piece with Nxf7 — captures the pawn on f7.
+    alternatives: Na5: The position is roughly equal; Nb4: The position is roughly equal; b5: The position is roughly equal
+n11 6.Nxf7 (White, Line A) | book
+    book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
+    board: moves the knight from g5 to f7 | captures the pawn on f7 | attacks the queen on d8 | attacks the rook on h8 | leaves the white knight on f7 hanging
+    alternatives: d4: White is slightly better; O-O: The position is roughly equal
+    tempting capture: Bxd5? White's Bxd5 moves the bishop from c4 to d5 | captures the knight on d5 | attacks the knight on c6 | leaves the white knight on g5 hanging. Black answers Qxd5: moves the queen from d8 to d5 | captures the bishop on d5. Then O-O Bf5 Nc3. Over the line White takes a knight; Black takes a bishop; at the end White has a knight for a bishop (Black is better).
+    tempting capture: Nxh7? White's Nxh7 moves the knight from g5 to h7 | captures the pawn on h7 | attacks the bishop on f8 | leaves the white knight on h7 hanging. Black answers Rxh7: moves the rook from h8 to h7 | captures the knight on h7. Then d4 Rh4 c3. Over the line White takes a pawn; Black takes a knight; at the end White has a pawn for a knight (Black is much better).
+n12 6…Kxf7 (Black, Line A) | book
+    book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
+    board: moves the king from e8 to f7 | captures the knight on f7
+    alternatives: Qh4: White is better; Qd7: White is much better
+n13 7.Qf3+ (White, Line A) | book
+    book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
+    board: moves the queen from d1 to f3 | gives check | the check can be answered: block with Bf5, Qf6; the checking piece cannot be taken; move the king with Ke8, Kg8, Kg6, Ke6, Ke7 | attacks the knight on d5, which is pinned to the king by the bishop on c4 | the queen on f3 forks the king on f7 and the knight on d5
+    alternatives: Nc3: Black is better; O-O: Black is better
+    tempting check: Bxd5+? White's Bxd5+ moves the bishop from c4 to d5 | captures the knight on d5 | gives check | the check can be answered: block with Be6; take the checking piece with Qxd5; move the king with Ke8, Kg6, Kf6, Ke7 | attacks the knight on c6. Black answers Qxd5: moves the queen from d8 to d5 | captures the bishop on d5. Then O-O Kg8 Nc3. Over the line White takes a knight; Black takes a bishop; at the end White has a pawn for a bishop (Black is much better).
+    tempting check: Qh5+? White's Qh5+ moves the queen from d1 to h5 | gives check | the check can be answered: block with g6; the checking piece cannot be taken; move the king with Kg8, Kf6, Ke6, Ke7. Black answers Kg8: moves the king from f7 to g8. Then Nc3 Be6 Qf3. Over the line nothing is taken; at the end White has a pawn for a knight (Black is better).
+    flags: quiz-eligible
+n14 7…Ke6 (Black, Line A) | book
+    book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
+    board: moves the king from f7 to e6
+    alternatives: Ke7: White is slightly better; Qf6: White is better
+n15 8.Nc3 (White, Line A) | book
+    book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
+    board: moves the knight from b1 to c3 | attacks the knight on d5, which is pinned to the king by the bishop on c4
+    alternatives: a3: Black is better; O-O: Black is better
+    tempting check: Bxd5+? White's Bxd5+ moves the bishop from c4 to d5 | captures the knight on d5 | gives check | the check can be answered: no block; take the checking piece with Qxd5; move the king with Kd7, Ke7, Kd6 | attacks the knight on c6. Black answers Qxd5: moves the queen from d8 to d5 | captures the bishop on d5 | attacks the queen on f3. Then Qxd5+ Kxd5 Nc3+. Over the line White takes the queen and a knight; Black takes the queen and a bishop; at the end White has a pawn for a bishop (Black is much better).
+    tempting check: Qxd5+? White's Qxd5+ moves the queen from f3 to d5 | captures the knight on d5 | gives check | the check can be answered: no block; take the checking piece with Qxd5; move the king with Ke7, Kf6, Kf5 | attacks the queen on d8 | attacks the knight on c6. Black answers Qxd5: moves the queen from d8 to d5 | captures the queen on d5 | attacks the bishop on c4. Then Bxd5+ Kxd5 Nc3+. Over the line White takes the queen and a knight; Black takes the queen and a bishop; at the end White has a pawn for a bishop (Black is much better).
+    tempting check: Qg4+? White's Qg4+ moves the queen from f3 to g4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7, Kf7, Kf6, Kd6. Black answers Ke7: moves the king from e6 to e7. Then Qg5+ Nf6 d3. Over the line nothing is taken; at the end White has a pawn for a knight (Black is better).
+    tempting check: Qh3+? White's Qh3+ moves the queen from f3 to h3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7, Kf7, Kf6, Kd6. Black answers Ke7: moves the king from e6 to e7. Then Qf3 Nf6 Nc3. Over the line nothing is taken; at the end White has a pawn for a knight (Black is better).
+    tempting capture: Qxf8? White's Qxf8 moves the queen from f3 to f8 | captures the bishop on f8 | attacks the queen on d8 | attacks the rook on h8 | leaves the white queen on f8 hanging. Black answers Qxf8: moves the queen from d8 to f8 | captures the queen on f8. Then Nc3 Nd4 O-O. Over the line White takes a bishop; Black takes the queen; at the end White has a bishop and a pawn for a queen and a knight (Black is much better).
+    flags: quiz-eligible
+
+REEL CANDIDATES
+  r1 idea n7–n15, climax n13 [highlight, puzzle, promo]
+  r2 idea n9–n15, climax n15 [highlight, puzzle, promo]
+
+PLAN
+  e1 concept n13–n13
+  e2 example n13–n15 answer=n13
+  e3 scan n13–n13

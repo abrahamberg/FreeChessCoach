@@ -1,7 +1,8 @@
 import {
   AdvancePuzzleItemResponseSchema,
   CreatePuzzleSessionRequestSchema,
-  PostSessionMessageRequestSchema
+  PostSessionMessageRequestSchema,
+  type DebugTurnsResponse
 } from '@freechesscoach/shared';
 import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
@@ -14,6 +15,7 @@ import { advancePuzzleItem } from '../services/puzzle-item-advance.js';
 import { startPuzzleTurn, type PuzzleTurnDependencies } from '../services/puzzle-session-turn.js';
 import * as puzzleAssignmentsRepo from '../db/repositories/puzzle-assignments.js';
 import * as puzzleSessionsRepo from '../db/repositories/puzzle-sessions.js';
+import * as debugTurnsRepo from '../db/repositories/debug-turns.js';
 import { resolveEngineBackend, type ResolveEngineBackendOptions } from '../services/engine/resolve-engine-backend.js';
 import * as userProfileService from '../services/user-profile.js';
 
@@ -85,6 +87,13 @@ export function registerPuzzleSessionsRoutes(
     const snapshot = await puzzleSessionsRepo.getDebugSnapshot(db, session.id);
     if (!snapshot) throw new NotFoundError('No completed turn to debug yet');
     return snapshot;
+  });
+
+  app.get<{ Params: { id: string } }>('/api/puzzle-sessions/:id/debug/turns', async (request): Promise<DebugTurnsResponse> => {
+    const user = await userProfileService.getOrCreate(db, request.user);
+    const session = await puzzleSessionsRepo.findSessionByIdForUser(db, request.params.id, user.id);
+    if (!session) throw new NotFoundError('Puzzle session not found');
+    return { turns: await debugTurnsRepo.list(db, { puzzleSessionId: session.id }) };
   });
 
   app.post<{ Params: { id: string } }>('/api/puzzle-sessions/:id/messages', async (request, reply) => {

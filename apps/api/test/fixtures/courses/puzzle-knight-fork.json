@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "novice",
+  "coachPersona": "huntress",
+  "direction": "A knight fork: check the king and win the queen.",
+  "pgn": "[Event \"Knight fork\"]\n[SetUp \"1\"]\n[FEN \"2q3k1/5ppp/8/3N4/8/8/5PPP/6K1 w - - 0 1\"]\n\n1. Ne7+ Kf8 2. Nxc8 *"
+}

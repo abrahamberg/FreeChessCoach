@@ -82,6 +82,20 @@ export const COACH_PERSONAS = [
 ] as const;
 export type CoachPersona = (typeof COACH_PERSONAS)[number];
 
+/** Kokoro pace per persona (web `tts/persona-voices.ts`): older, calmer
+ * coaches speak slower, the young ones faster. Course clips size their word
+ * budgets with it, so a slow coach gets fewer words for the same seconds. */
+export const PERSONA_SPEECH_SPEED: Record<CoachPersona, number> = {
+  general: 1,
+  general_female: 1,
+  commander: 0.95,
+  scholar: 0.85,
+  huntress: 1.05,
+  shark: 1.1,
+  sunzi: 0.85,
+  gambler: 0.95
+};
+
 export const COACH_PERSONA_INFO: Record<
   CoachPersona,
   { label: string; avatar: string; tagline: string; explicit: boolean; voiceProfile: string }

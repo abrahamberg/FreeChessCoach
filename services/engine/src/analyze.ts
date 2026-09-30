@@ -1,5 +1,4 @@
-import { validateFen } from 'chess.js';
-import { computePositionFeatures } from '@freechesscoach/chess-analysis';
+import { computePositionFeatures, isLegalFen } from '@freechesscoach/chess-analysis';
 import type { EngineEval, EnginePriority, PositionAnalysis } from '@freechesscoach/shared';
 import type { EnginePool } from './engine-pool.js';
 import { DEFAULT_DEPTH, pvUciToSan, type AnalyzeOptions } from './uci.js';
@@ -87,7 +86,8 @@ export async function analyzeGame(
   return evals;
 }
 
+/** The shared legality check: chess.js's, plus the side not to move in
+ * check, which chess.js accepts and Stockfish segfaults on. */
 function assertValidFen(fen: string): void {
-  const { ok } = validateFen(fen);
-  if (!ok) throw new InvalidFenError(fen);
+  if (!isLegalFen(fen)) throw new InvalidFenError(fen);
 }

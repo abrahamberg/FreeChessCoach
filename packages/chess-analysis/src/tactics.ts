@@ -8,6 +8,10 @@ import { occupiedSquares, opponentOf, toColorName, type AttackMap } from './atta
  * removes-the-defender) compare on the same scale as forks/captures here. */
 export const PIECE_VALUES: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
+/** `PIECE_VALUES`, the king above everything: it is never given away or
+ * traded, and a piece it attacks is threatened only when undefended. */
+export const pieceValueOrKing = (piece: PieceSymbol): number => (piece === 'k' ? 100 : PIECE_VALUES[piece]);
+
 export function targetsAttacked(chess: Chess, attackMap: AttackMap): PositionFeatures['targetsAttacked'] {
   const mover = chess.turn();
   const opponent = opponentOf(mover);

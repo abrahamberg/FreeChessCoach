@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import { buildApp } from './app.js';
+import { audioMirrorConfigFromEnv, createR2Mirror } from './services/courses/audio-mirror.js';
 import {
   buildCoachAgentBaseDependencies,
   buildGatewayConfigFromEnv,
@@ -42,6 +43,7 @@ async function main(): Promise<void> {
   const gatewayConfig = buildGatewayConfigFromEnv(llmUnlockStore, tunnel.llmTransport);
   const coachAgentBaseDeps = buildCoachAgentBaseDependencies(db, jobQueue, gatewayConfig, puzzlePool?.all() ?? null);
   const ttsConfig = buildTtsConfigFromEnv();
+  const audioMirrorConfig = audioMirrorConfigFromEnv();
 
   const app = buildApp({
     logger: true,
@@ -55,7 +57,8 @@ async function main(): Promise<void> {
     botThinkingLog: buildBotThinkingRegistryFromEnv(),
     tunnel,
     internalToken: requireInternalToken(),
-    ttsConfig
+    ttsConfig,
+    audioMirror: audioMirrorConfig && createR2Mirror(audioMirrorConfig)
   });
   const port = Number(process.env.PORT ?? 3000);
   await app.listen({ port, host: '0.0.0.0' });

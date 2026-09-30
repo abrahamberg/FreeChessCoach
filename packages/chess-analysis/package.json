@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./lichess-eval-index-format": "./src/lichess-eval-index-format.ts",
-    "./puzzle-pool-format": "./src/puzzle-pool-format.ts"
+    "./puzzle-pool-format": "./src/puzzle-pool-format.ts",
+    "./course/test-fixtures": "./src/course/test-fixtures.ts"
   },
   "types": "./src/index.ts",
   "scripts": {

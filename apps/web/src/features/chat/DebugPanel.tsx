@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTurnDebugSnapshot, type TurnDebugSnapshot } from './useTurnDebugSnapshot.js';
+import { DebugCallPicker } from './DebugCallPicker.js';
 import { DebugPanelContent } from './DebugPanelContent.js';
+import { turnLabel } from './turn-label.js';
 import './DebugPanel.css';
 
 export interface DebugPanelProps {
@@ -11,11 +13,16 @@ export interface DebugPanelProps {
 }
 
 /** "Debug last answer" popup: the literal request sent to the LLM and the
- * literal response it returned for the most recent coach turn, rendered as a
- * readable console/network-inspector-style view instead of raw JSON. */
+ * literal response it returned, rendered as a readable console/network-
+ * inspector-style view instead of raw JSON. Opens on the newest turn; the
+ * picker (shared with the course view) steps back through the last few. */
 export function DebugPanel({ sessionId, basePath, onClose }: DebugPanelProps): ReactNode {
   const state = useTurnDebugSnapshot(sessionId, basePath);
   const [copied, setCopied] = useState(false);
+  const [picked, setPicked] = useState<number | null>(null);
+  const turns = state.status === 'ready' ? state.turns : [];
+  const index = picked ?? turns.length - 1;
+  const turn = turns[index];
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -31,6 +38,15 @@ export function DebugPanel({ sessionId, basePath, onClose }: DebugPanelProps): R
     setTimeout(() => setCopied(false), 1500);
   }
 
+  const picker = turns.length > 1 && (
+    <DebugCallPicker
+      items={turns.map((each, position) => ({ key: `${each.at ?? 'latest'}-${position}`, label: turnLabel(each) }))}
+      index={index}
+      label="Coach turns"
+      onPick={setPicked}
+    />
+  );
+
   return (
     <div className="debug-panel-backdrop" onClick={onClose}>
       <div
@@ -42,8 +58,22 @@ export function DebugPanel({ sessionId, basePath, onClose }: DebugPanelProps): R
       >
         {state.status === 'loading' && <div className="debug-panel__status">Loading…</div>}
         {state.status === 'error' && <div className="debug-panel__status">{state.message}</div>}
-        {state.status === 'ready' && (
-          <DebugPanelContent snapshot={state.snapshot} sessionId={sessionId} copied={copied} onCopy={handleCopy} onClose={onClose} />
+        {turn && !turn.snapshot && (
+          <>
+            {picker}
+            <div className="debug-panel__status">This turn was logged in an older format.</div>
+          </>
+        )}
+        {turn?.snapshot && (
+          <DebugPanelContent
+            snapshot={turn.snapshot}
+            context={`session ${sessionId.slice(0, 4)}…${sessionId.slice(-4)}${turns.length > 1 ? ` · turn ${index + 1} of ${turns.length}` : ''}`}
+            copied={copied}
+            onCopy={handleCopy}
+            onClose={onClose}
+          >
+            {picker}
+          </DebugPanelContent>
         )}
       </div>
     </div>

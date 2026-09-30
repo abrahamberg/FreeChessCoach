@@ -11,6 +11,7 @@ import { effectiveTtsBackend } from '../../tts/effective-tts-backend.js';
 import { isOpenAiVoiceAvailable } from '../../tts/openai-voice-available.js';
 import { useIsBoardSideBySide } from '../../hooks/useIsBoardSideBySide.js';
 import { CoachBoard } from '../board/CoachBoard.js';
+import { useMoveStepSounds } from '../../sounds/useMoveStepSounds.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { MoveExplorer } from '../board/MoveExplorer.js';
 import { DEFAULT_AUTOPLAY_INTERVAL_MS } from '../board/useLineAutoplay.js';
@@ -98,6 +99,15 @@ function PuzzleSessionBody({ onSessionReset }: { onSessionReset: () => void }): 
     persona,
     enabled: ttsEnabled,
     backend: ttsBackend
+  });
+  // Board sounds (docs/plan.md Phase 88): the coach plays the student's
+  // move and the reply together; a live exercise, so no bad or great.
+  useMoveStepSounds({
+    ply: viewedPly ?? currentPly,
+    sanMoves,
+    learnerSide: orientation,
+    startFen: items[currentItemIndex]?.fen,
+    maxStep: 2
   });
 
   if (createQuery.isError) return <p>Could not start this practice session.</p>;

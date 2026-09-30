@@ -14,6 +14,15 @@ export const errorMapperPlugin: FastifyPluginAsync = fp((app) => {
       return;
     }
 
+    // Fastify's own request errors (a body too large, an unsupported
+    // content type, malformed JSON) are the client's, not a server fault.
+    const status = (error as { statusCode?: unknown }).statusCode;
+    const code = (error as { code?: unknown }).code;
+    if (typeof status === 'number' && status >= 400 && status < 500 && typeof code === 'string' && code.startsWith('FST_')) {
+      reply.code(status).type('application/problem+json').send({ type: 'about:blank', title: (error as Error).message, status });
+      return;
+    }
+
     app.log.error(error);
     reply.code(500).type('application/problem+json').send({
       type: 'about:blank',

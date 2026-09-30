@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "improving",
+  "coachPersona": "sunzi",
+  "direction": "Black to play and draw: the king has no moves, so give the rook away.",
+  "pgn": "[Event \"Stalemate save\"]\n[SetUp \"1\"]\n[FEN \"7k/7p/4Q2P/8/8/6K1/r7/8 b - - 0 1\"]\n\n1... Rg2+ 2. Kxg2 *"
+}

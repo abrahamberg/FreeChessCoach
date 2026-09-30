@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "novice",
+  "coachPersona": "sunzi",
+  "direction": "The queen mates on the back rank.",
+  "pgn": "[Event \"Queen back rank\"]\n[SetUp \"1\"]\n[FEN \"7k/6pp/8/8/8/8/5Q2/6K1 w - - 0 1\"]\n\n1. Qf8# *"
+}

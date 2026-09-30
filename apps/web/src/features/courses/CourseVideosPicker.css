@@ -1,0 +1,52 @@
+/* §13.1: Reel / YouTube video / Both, as pills. */
+.course-videos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.course-videos__label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.course-videos__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.course-videos__option {
+  min-height: 36px;
+  padding: 4px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.course-videos__option:hover {
+  border-color: var(--color-primary);
+}
+
+.course-videos__option[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.course-videos__option:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .course-videos__option {
+    min-height: 44px;
+  }
+}

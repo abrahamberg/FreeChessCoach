@@ -1,0 +1,8 @@
+{
+  "kind": "trap",
+  "levelBand": "novice",
+  "coachPersona": "gambler",
+  "learnerSide": "black",
+  "direction": "The Fishing Pole against the Ruy Lopez: ...Ng4 and ...h5, and hxg4 opens the h-file.",
+  "pgn": "[Event \"Fishing Pole\"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 Nf6 4. O-O Ng4 5. h3 h5 6. hxg4 hxg4 7. Ne1 Qh4 8. f3 g3 *"
+}

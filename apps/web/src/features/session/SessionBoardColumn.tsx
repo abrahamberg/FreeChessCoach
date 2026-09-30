@@ -21,6 +21,7 @@ import { usePlayBotMoveSubmit } from './usePlayBotMoveSubmit.js';
 import type { useDivergedLine } from './useDivergedLine.js';
 import type { useSessionBoardState } from './useSessionBoardState.js';
 import { useShowLegalMoveDots } from '../../hooks/useShowLegalMoveDots.js';
+import { useMoveStepSounds } from '../../sounds/useMoveStepSounds.js';
 
 const UNDO_PILL_MS = 2000;
 
@@ -183,7 +184,18 @@ export function SessionBoardColumn({
    * as the answer" signal) preserves today's instant 2s-undo-then-send
    * path — every other answer-mode drop instead silently appends to the
    * diverged line (no send, no pill) until the student hits Send. */
+  // Board sounds (docs/plan.md Phase 88): a live game (with the coach, a
+  // bot) never plays bad or great; coaching on an analyzed game does.
+  const { soundOwnMove } = useMoveStepSounds({
+    ply: boardState.ply,
+    sanMoves,
+    learnerSide: orientation,
+    classifiedMoves: sessionMode === 'analyze' ? (classifiedMoves ?? undefined) : undefined,
+    disabled: isExploring
+  });
+
   function handleUserMove(san: string, moveFen: string, uci: string): void {
+    if (sessionMode === 'play' || sessionMode === 'play_bot') soundOwnMove(san);
     if (sessionMode === 'play') {
       // Captured now, before the move commits and the position (hence
       // hintMoves' own fen-keyed reset effect) moves on — see the "used

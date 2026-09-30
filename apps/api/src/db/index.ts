@@ -5,10 +5,12 @@ import type { Database } from './schema.js';
 export type { Database } from './schema.js';
 
 export function createDb(connectionString: string): Kysely<Database> {
+  const pool = new pg.Pool({ connectionString });
+  // An idle client that Postgres drops (restart, failover, DROP DATABASE) emits 'error' on the pool;
+  // unhandled, that crashes the process. The next query checks out a fresh client instead.
+  pool.on('error', () => undefined);
   return new Kysely<Database>({
-    dialect: new PostgresDialect({
-      pool: new pg.Pool({ connectionString })
-    }),
+    dialect: new PostgresDialect({ pool }),
     plugins: [new CamelCasePlugin()]
   });
 }

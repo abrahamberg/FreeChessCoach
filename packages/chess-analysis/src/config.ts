@@ -452,5 +452,82 @@ export const CONFIG = {
     trainabilityWithoutControlWeight: 0.6,
     measurementFeasibilitySaturation: 8,
     improvingPriorityMultiplier: 0.5
+  },
+
+  /** docs/courses.md §5.4 — a course move is `quiz-eligible` when the
+   * mover's win% after the engine's best move beats the second-best by more
+   * than this many points: one move is clearly the answer. 20 matches the
+   * `severity.mistakeMaxDrop` scale, so the wrong answer would be a mistake. */
+  courses: {
+    onlyMoveGap: 20,
+    /** In a won position win% barely moves, so a move that is this many
+     * centipawns better is the one answer too: …Qe5+ Kd1 Qxa1+ read as
+     * having a second answer at both moves. */
+    onlyMoveCpGap: 300,
+    /** §13.5: a tempting move costs the mover at least this much win%. */
+    temptingDrop: 15,
+    maxTempting: 3,
+    /** Candidates per position sent to the engine, before the engine thins them. */
+    maxTemptingCandidates: 6,
+    maxRefutationPlies: 4,
+    /** At a puzzle's or tactics course's learner move: every check first. */
+    maxSolveTempting: 5,
+    /** There, a check that costs this much win% is explained too. */
+    solveCheckDrop: 5,
+    /** §13.5: an answer that captures at once and leaves the mover this many
+     * points down makes the move obvious, not tempting. */
+    obviousLoss: 2,
+    /** §7 verifier limits: arrows per clip beat, words per caption, and
+     * sentences per course note (more at a critical node). */
+    maxArrowsPerBeat: 2,
+    maxCaptionWords: 6,
+    maxNoteSentences: 2,
+    maxCriticalNoteSentences: 4,
+    /** A puzzle's solve line: the checks, captures and threats, then the move. */
+    maxSolveNoteSentences: 5,
+    /** docs/courses.md §13.3: at most this many moves before the reel's climax, and after it. */
+    reelMovesBefore: 6,
+    reelMovesAfter: 2,
+    /** A mate this close after the climax is the payoff: the reel runs to it
+     * (the first real run ended a trap's reel two moves before its mate). */
+    reelMateReach: 4,
+    maxReelCandidates: 5,
+    /** A node that drops the mover this much win% is a swing worth a reel. */
+    swingWinDrop: 25,
+    /** Plies of the engine's best line shown in a node's facts. */
+    bestLinePlies: 6,
+    /** A dossier with more nodes than this is printed compactly. */
+    fullBlockNodeLimit: 40,
+    /** A reveal says why the answer works, not just the move (gemma wrote "6... Bb4"). */
+    minRevealWords: 6,
+    /** §13.4 the YouTube video's budgets. Spoken words per second at Kokoro
+     * speed 1, with room left for moves, tempting moves played out and the
+     * cards; scaled by the coach's `PERSONA_SPEECH_SPEED`. */
+    wordsPerSecond: 2,
+    /** A guide, not a target: a puzzle with little to say runs short, and
+     * the words cap is the top of the range. */
+    videoSeconds: {
+      trap: { min: 120, max: 300 },
+      opening: { min: 480, max: 900 },
+      tactics: { min: 300, max: 600 },
+      puzzle: { min: 90, max: 240 },
+      master_game: { min: 480, max: 900 },
+      endgame: { min: 180, max: 480 }
+    },
+    /** Lengths (video words, the hook, the reel's seconds) may run over by
+     * this share before they count as a problem: a 41-word hook against 40
+     * is not worth a repair call that may bend the wording. */
+    lengthSlack: 0.1,
+    /** §13.3 the reel's length. */
+    reelSeconds: { min: 30, max: 45 },
+    hookWords: 12,
+    maxWordsPerBeat: 30,
+    quizPauseSeconds: 3,
+    /** The video narrates at most one move per this many seconds. */
+    secondsPerNarratedMove: 12,
+    /** §8 note audio uploads: a WAV at 24 kHz mono is ~48 KB a second, so
+     * one note is at most ~30 s and a course's notes ~10 minutes. */
+    maxNoteAudioBytes: 1_500_000,
+    maxCourseAudioBytes: 30_000_000
   }
 } as const;

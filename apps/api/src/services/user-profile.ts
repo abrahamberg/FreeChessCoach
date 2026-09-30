@@ -122,6 +122,7 @@ export async function toUserProfile(
     ttsEnabled: user.ttsEnabled,
     ttsBackend: user.ttsBackend,
     chessApiPausedUntil: chessApiPausedUntil(user.chessApiRateLimitedAt)?.toISOString() ?? null,
-    onboarded: user.onboardedAt !== null
+    onboarded: user.onboardedAt !== null,
+    canCreateCourses: user.canCreateCourses
   };
 }

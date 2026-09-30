@@ -1,4 +1,4 @@
-import type { CoachPersona, TtsBackend } from '@freechesscoach/shared';
+import { PERSONA_SPEECH_SPEED, type CoachPersona, type TtsBackend } from '@freechesscoach/shared';
 import type { KokoroTTS } from 'kokoro-js';
 
 /** Kokoro-js has no named export for its voice-id union — `voices` is a
@@ -25,14 +25,14 @@ export interface KokoroPersonaVoice {
  * Board, who get the deepest, most mature British voices (bm_lewis,
  * bm_george); bm_fable reads as a young man, so it voices no one. */
 export const PERSONA_VOICES: Record<CoachPersona, KokoroPersonaVoice> = {
-  general: { voice: 'am_michael', speed: 1 },
-  general_female: { voice: 'af_heart', speed: 1 },
-  commander: { voice: 'am_onyx', speed: 0.95 },
-  scholar: { voice: 'bm_lewis', speed: 0.85 },
-  huntress: { voice: 'af_bella', speed: 1.05 },
-  shark: { voice: 'am_puck', speed: 1.1 },
-  sunzi: { voice: 'bm_george', speed: 0.85 },
-  gambler: { voice: 'am_fenrir', speed: 0.95, pitch: 0.9 }
+  general: { voice: 'am_michael', speed: PERSONA_SPEECH_SPEED.general },
+  general_female: { voice: 'af_heart', speed: PERSONA_SPEECH_SPEED.general_female },
+  commander: { voice: 'am_onyx', speed: PERSONA_SPEECH_SPEED.commander },
+  scholar: { voice: 'bm_lewis', speed: PERSONA_SPEECH_SPEED.scholar },
+  huntress: { voice: 'af_bella', speed: PERSONA_SPEECH_SPEED.huntress },
+  shark: { voice: 'am_puck', speed: PERSONA_SPEECH_SPEED.shark },
+  sunzi: { voice: 'bm_george', speed: PERSONA_SPEECH_SPEED.sunzi },
+  gambler: { voice: 'am_fenrir', speed: PERSONA_SPEECH_SPEED.gambler, pitch: 0.9 }
 };
 
 /** The speed to ask Kokoro for, compensating for `pitch` (see above). */

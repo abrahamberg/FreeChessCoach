@@ -1,0 +1,8 @@
+{
+  "kind": "opening",
+  "levelBand": "improving",
+  "coachPersona": "gambler",
+  "learnerSide": "white",
+  "direction": "The King's Gambit Accepted for White: the Kieseritzky against ...g5, and what to do against ...d5.",
+  "pgn": "[Event \"King's Gambit\"]\n\n{Kieseritzky} 1. e4 e5 2. f4 exf4 3. Nf3 g5 ({Modern} 3... d5 4. exd5 Nf6 5. Bb5+ c6 6. dxc6) 4. h4 g4 5. Ne5 Nf6 6. Bc4 d5 7. exd5 Bd6 *"
+}

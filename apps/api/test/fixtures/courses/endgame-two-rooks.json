@@ -1,0 +1,8 @@
+{
+  "kind": "endgame",
+  "levelBand": "novice",
+  "coachPersona": "commander",
+  "learnerSide": "white",
+  "direction": "Mate with two rooks: the ladder, one rook cuts the king off, the other checks.",
+  "pgn": "[Event \"Two rooks\"]\n[SetUp \"1\"]\n[FEN \"4k3/8/8/8/8/8/R7/1R2K3 w - - 0 1\"]\n\n1. Ra7 Kd8 2. Rb8# *"
+}

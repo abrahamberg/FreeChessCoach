@@ -1,0 +1,70 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, e, f, g, h
+l2 "Line B" | leaves book at n1
+    end position: open files: a, b, c, d, f, g, h; the e-file is half-open for black; white has a passed pawn on e7
+
+Moves:
+n1 1.Kf6 (White, Line A) | best | before: White is winning → after: White is winning
+    board: moves the king from e6 to f6
+    alternatives: Kd6: White is winning; Kd5: The position is roughly equal
+n2 1…Kf8 (Black, Line A) | best | before: White is winning → after: White is winning
+    board: moves the king from e8 to f8 | takes the opposition: the kings face each other with one square between, and the other king must give way
+    alternatives: Kd7: White is winning; Kd8: White is winning
+n3 2.e6 (White, Line A) | best | before: White is winning → after: White is winning
+    board: moves the pawn from e5 to e6
+    alternatives: Ke6: White is winning; Kg6: The position is roughly equal
+n4 2…Ke8 (Black, Line A) | best | before: White is winning → after: White is winning
+    board: moves the king from f8 to e8
+    alternatives: Kg8: White has a forced mate in 4
+n5 3.e7 (White, Line A) | great | before: White is winning → after: White is winning
+    board: moves the pawn from e6 to e7
+    alternatives: Kf5: The position is roughly equal; Ke5: The position is roughly equal
+    flags: quiz-eligible, critical
+n6 3…Kd7 (Black, Line A) | forced | before: White is winning → after: White is winning
+    board: moves the king from e8 to d7
+n7 4.Kf7 (White, Line A) | great | before: White is winning → after: White is winning
+    board: moves the king from f6 to f7 | takes the opposition: the kings face each other with one square between, and the other king must give way
+    alternatives: e8=R: The position is roughly equal; e8=Q+: The position is roughly equal
+    tempting check: e8=B+? White's e8=B+ moves the pawn from e7 to e8 | promotes to a bishop | gives check | the check can be answered: no block; take the checking piece with Kxe8; move the king with Kc8, Kd8, Kd6, Kc7 | leaves the white bishop on e8 hanging. Black answers Kd6: moves the king from d7 to d6. Then Bf7 Kc6 Bd5+. Over the line nothing is taken; at the end White is a bishop up (The position is roughly equal).
+    tempting check: e8=Q+? White's e8=Q+ moves the pawn from e7 to e8 | promotes to a queen | gives check | the check can be answered: no block; take the checking piece with Kxe8; move the king with Kd6, Kc7 | leaves the white queen on e8 hanging. Black answers Kxe8: moves the king from d7 to e8 | captures the queen on e8. Then Ke6 Kd8 Kd6. Over the line Black takes the queen; at the end material is level (The position is roughly equal).
+    flags: quiz-eligible, critical
+n8 4…Kd6 (Black, Line A) | best | before: White is winning → after: White is winning
+    board: moves the king from d7 to d6
+    alternatives: Kc6: White is winning; Kc7: White is winning
+n9 5.e8=Q (White, Line A) | best | before: White is winning → after: White is winning
+    board: moves the pawn from e7 to e8 | promotes to a queen
+    alternatives: Kf6: White is winning; Kf8: White is winning
+    tempting check: e8=N+? White's e8=N+ moves the pawn from e7 to e8 | promotes to a knight | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd7, Ke5, Kd5, Kc5, Kc6. Black answers Ke5: moves the king from d6 to e5. Then Nc7 Kf4 Kg7. Over the line nothing is taken; at the end White is a knight up (The position is roughly equal).
+n10 1…Kd7 (Black, Line B) | excellent | before: White is winning → after: White is winning
+    board: moves the king from e8 to d7
+    alternatives: Kf8: White is winning; Kd8: White is winning
+n11 2.Kf7 (White, Line B) | excellent | before: White is winning → after: White is winning
+    board: moves the king from f6 to f7 | takes the opposition: the kings face each other with one square between, and the other king must give way
+    alternatives: e6+: White is winning; Kf5: The position is roughly equal
+n12 2…Kd8 (Black, Line B) | excellent | before: White is winning → after: White is winning
+    board: moves the king from d7 to d8
+    alternatives: Kc6: White is winning; Kc8: White is winning
+n13 3.e6 (White, Line B) | best | before: White is winning → after: White is winning
+    board: moves the pawn from e5 to e6
+    alternatives: Ke6: White is winning; Kf6: White is winning
+n14 3…Kc7 (Black, Line B) | best | before: White is winning → after: White is winning
+    board: moves the king from d8 to c7
+    alternatives: Kc8: White is winning
+n15 4.e7 (White, Line B) | excellent | before: White is winning → after: White is winning
+    board: moves the pawn from e6 to e7 | the black king on c7 is outside the pawn's square: it cannot catch the pawn
+    alternatives: Ke8: White is winning; Ke7: White is winning
+
+REEL CANDIDATES
+  r1 puzzle n1–n9, climax n7 [highlight, puzzle, promo]
+  r2 brilliant n1–n7, climax n5 [highlight, puzzle, promo]
+
+PLAN
+  e1 goal n1–n1
+  e2 technique n1–n6 answer=n5
+  e3 technique n7–n8 answer=n7
+  e4 technique n9–n9
+  e5 defence n10–n15
+  e6 recap n9–n9

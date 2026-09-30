@@ -8,7 +8,8 @@ import { ChessApiPauseNotice } from './ChessApiPauseNotice.js';
 import { EngineActivityIndicator } from './EngineActivityIndicator.js';
 import { FullscreenPrompt } from './FullscreenPrompt.js';
 import { RateLimitNotice } from './RateLimitNotice.js';
-import { BarChartIcon, BoardIcon, PlayCircleIcon, TrendingUpIcon } from './Icon.js';
+import { BarChartIcon, BoardIcon, BookIcon, TrendingUpIcon } from './Icon.js';
+import { PageMenuProvider } from './PageMenu.js';
 import { UserMenu } from './UserMenu.js';
 import './AppShell.css';
 
@@ -16,13 +17,11 @@ export interface AppShellProps {
   children: ReactNode;
 }
 
-// Daniel's IA feedback: "Play" used to be two giant CTAs crowding GamesPage's
-// own header — it's a primary nav destination in its own right (playing
-// chess is a different job from studying it), not a button living on
-// whichever page had room.
+// Play (with the coach or a bot) starts from the Games page since
+// 2026-09-28; its nav place went to Courses (docs/courses.md §11).
 const NAV_DESTINATIONS = [
   { to: '/games', label: 'Games', Icon: BoardIcon },
-  { to: '/play', label: 'Play', Icon: PlayCircleIcon },
+  { to: '/courses', label: 'Courses', Icon: BookIcon },
   { to: '/progress', label: 'Progress', Icon: TrendingUpIcon },
   { to: '/stats', label: 'Stats', Icon: BarChartIcon }
 ];
@@ -33,7 +32,7 @@ const NAV_DESTINATIONS = [
 // tab bar on top of that would cost the board vertical space it needs more
 // than a second nav layer, and turns the brand/primary-nav links into an
 // easy accidental tap away from a live game.
-const BOARD_ROUTE_PREFIXES = ['/session/', '/bot-session/', '/practice/', '/review/'];
+const BOARD_ROUTE_PREFIXES = ['/session/', '/bot-session/', '/practice/', '/review/', '/courses/'];
 const DEMO_BOARD_ROUTE_PREFIXES = ['/demo/session/', '/demo/bot-session/', '/demo/practice/', '/demo/review/'];
 
 function isBoardRoute(pathname: string): boolean {
@@ -56,19 +55,21 @@ export function AppShell({ children }: AppShellProps): ReactNode {
   const showBottomTabBar = showGlobalNav && !isDesktop;
 
   return (
-    <div className="app-shell" data-layout={isDesktop ? 'desktop' : 'mobile'} data-bottom-bar={showBottomTabBar}>
-      {/* Fixed overlay, not gated by showGlobalNav — a board route (session/
-       * bot-session/review) hides the top bar but still wants the nudge
-       * toward full screen, arguably more than any other page. */}
-      {/* An install nudge for an app the demo visitor has not signed into would only cover the demo notice. */}
-      {!getDemoRuntime() && <FullscreenPrompt />}
-      <DemoBanner />
-      {showGlobalNav && <TopBar isDesktop={isDesktop} />}
-      <ChessApiPauseNotice />
-      <RateLimitNotice />
-      <main className="app-shell__content">{children}</main>
-      {showBottomTabBar && <BottomTabBar />}
-    </div>
+    <PageMenuProvider>
+      <div className="app-shell" data-layout={isDesktop ? 'desktop' : 'mobile'} data-bottom-bar={showBottomTabBar}>
+        {/* Fixed overlay, not gated by showGlobalNav — a board route (session/
+         * bot-session/review) hides the top bar but still wants the nudge
+         * toward full screen, arguably more than any other page. */}
+        {/* An install nudge for an app the demo visitor has not signed into would only cover the demo notice. */}
+        {!getDemoRuntime() && <FullscreenPrompt />}
+        <DemoBanner />
+        {showGlobalNav && <TopBar isDesktop={isDesktop} />}
+        <ChessApiPauseNotice />
+        <RateLimitNotice />
+        <main className="app-shell__content">{children}</main>
+        {showBottomTabBar && <BottomTabBar />}
+      </div>
+    </PageMenuProvider>
   );
 }
 

@@ -1,0 +1,96 @@
+Learner side: White
+
+Lines:
+l1 "Kieseritzky" | opening: King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense | in book throughout
+    end position: open files: e; the d-file is half-open for black; the f-file is half-open for white; white has doubled pawns on the d-file; black has doubled pawns on the f-file; white has a queenside pawn majority; black has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+l2 "Modern" | opening: King's Gambit Accepted: Abbazia Defense | in book throughout
+    end position: open files: e; the c-file is half-open for black; the d-file is half-open for black; the f-file is half-open for white; white has a passed pawn on d2; white has doubled pawns on the c-file; black has doubled pawns on the f-file; white has a queenside pawn majority; black has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Kieseritzky) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Kieseritzky) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.f4 (White, Kieseritzky) | book
+    book: in book (King's Gambit)
+    board: moves the pawn from f2 to f4 | leaves the white pawn on f4 hanging
+    alternatives: Nf3: The position is roughly equal; Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…exf4 (Black, Kieseritzky) | book
+    book: in book (King's Gambit Accepted)
+    board: moves the pawn from e5 to f4 | captures the pawn on f4
+    alternatives: d5: The position is roughly equal; Bc5: The position is roughly equal
+n5 3.Nf3 (White, Kieseritzky) | book
+    book: in book (King's Gambit Accepted: King's Knight's Gambit)
+    board: moves the knight from g1 to f3
+    alternatives: Bc4: The position is roughly equal; Nc3: The position is roughly equal
+n6 3…g5 (Black, Kieseritzky) | book
+    book: in book (King's Gambit Accepted: King's Knight's Gambit)
+    board: moves the pawn from g7 to g5
+    alternatives: Be7: The position is roughly equal; Nf6: The position is roughly equal
+n7 4.h4 (White, Kieseritzky) | book
+    book: in book (King's Gambit Accepted: King's Knight's Gambit)
+    board: moves the pawn from h2 to h4
+    alternatives: Nc3: Black is slightly better; d4: Black is slightly better
+n8 4…g4 (Black, Kieseritzky) | book
+    book: in book (King's Gambit Accepted: King's Knight's Gambit)
+    board: moves the pawn from g5 to g4 | attacks the knight on f3
+    alternatives: d5: The position is roughly equal; Bg7: White is slightly better
+n9 5.Ne5 (White, Kieseritzky) | book
+    book: in book (King's Gambit Accepted: Kieseritzky Gambit)
+    board: moves the knight from f3 to e5
+    alternatives: Ng5: Black is slightly better; Ng1: Black is slightly better
+n10 5…Nf6 (Black, Kieseritzky) | book
+    book: in book (King's Gambit Accepted: Kieseritzky Gambit, Berlin Defense)
+    board: moves the knight from g8 to f6
+    alternatives: Qe7: Black is slightly better; Bg7: The position is roughly equal
+n11 6.Bc4 (White, Kieseritzky) | book
+    book: in book (King's Gambit Accepted: Kieseritzky Gambit, Berlin Defense)
+    board: moves the bishop from f1 to c4 | leaves the white pawn on e4 hanging
+    alternatives: d4: Black is slightly better; Nxg4: Black is slightly better
+n12 6…d5 (Black, Kieseritzky) | book
+    book: in book (King's Gambit Accepted: Kieseritzky Gambit, Berlin Defense)
+    board: moves the pawn from d7 to d5 | attacks the bishop on c4
+    alternatives: Nc6: The position is roughly equal; Qe7: The position is roughly equal
+n13 7.exd5 (White, Kieseritzky) | book
+    book: in book (King's Gambit Accepted: Kieseritzky Gambit, Berlin Defense)
+    board: moves the pawn from e4 to d5 | captures the pawn on d5
+    alternatives: Bxd5: Black is better; Bb3: Black is better
+n14 7…Bd6 (Black, Kieseritzky) | book
+    book: in book (King's Gambit Accepted: Kieseritzky Gambit, Anderssen Defense)
+    board: moves the bishop from f8 to d6 | attacks the knight on e5
+    alternatives: Bg7: Black is slightly better; Nh5: The position is roughly equal
+n15 3…d5 (Black, Modern) | book
+    book: in book (King's Gambit Accepted: Modern Defense)
+    board: moves the pawn from d7 to d5
+    alternatives: g5: Black is slightly better; Be7: The position is roughly equal; Nf6: The position is roughly equal
+n16 4.exd5 (White, Modern) | book
+    book: in book (King's Gambit Accepted: Modern Defense)
+    board: moves the pawn from e4 to d5 | captures the pawn on d5
+    alternatives: d3: Black is slightly better; Nc3: Black is slightly better
+n17 4…Nf6 (Black, Modern) | book
+    book: in book (King's Gambit Accepted: Abbazia Defense)
+    board: moves the knight from g8 to f6
+    alternatives: Be7: The position is roughly equal; Bd6: The position is roughly equal
+n18 5.Bb5+ (White, Modern) | book
+    book: in book (King's Gambit Accepted: Abbazia Defense)
+    board: moves the bishop from f1 to b5 | gives check | the check can be answered: block with Nbd7, Nc6, Bd7, Qd7, c6, Nfd7; the checking piece cannot be taken; move the king with Ke7
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal; c4: The position is roughly equal
+n19 5…c6 (Black, Modern) | book
+    book: in book (King's Gambit Accepted: Abbazia Defense)
+    board: moves the pawn from c7 to c6 | blocks the check from the bishop on b5 | attacks the bishop on b5
+    alternatives: Bd7: The position is roughly equal; Nbd7: The position is roughly equal
+n20 6.dxc6 (White, Modern) | book
+    book: in book (King's Gambit Accepted: Abbazia Defense)
+    board: moves the pawn from d5 to c6 | captures the pawn on c6
+    alternatives: Ba4: Black is slightly better; Qe2+: Black is slightly better
+
+REEL CANDIDATES
+
+PLAN
+  e1 line n1–n14
+  e2 deviation n15–n20
+  e3 recap n14–n14

@@ -1,0 +1,8 @@
+{
+  "kind": "endgame",
+  "levelBand": "improving",
+  "coachPersona": "sunzi",
+  "learnerSide": "black",
+  "direction": "Knight against a pawn: the knight guards the queening square, and checks when the king chases it.",
+  "pgn": "[Event \"Knight against pawn\"]\n[SetUp \"1\"]\n[FEN \"8/8/1P6/4n3/3K4/8/8/7k b - - 0 1\"]\n\n1... Nd7 2. b7 Nb8 3. Kc5 Kg2 4. Kb6 Kf3 5. Kc7 Na6+ 6. Kb6 Nb8 7. Kc7 Na6+ *"
+}

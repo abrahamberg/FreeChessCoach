@@ -12,6 +12,18 @@ import * as userOnboarding from './migrations/0008_user_onboarding.js';
 import * as bugReports from './migrations/0009_bug_reports.js';
 import * as gameSourceFile from './migrations/0010_game_source_file.js';
 import * as chessApiRateLimit from './migrations/0011_chess_api_rate_limit.js';
+import * as courseCreators from './migrations/0012_course_creators.js';
+import * as courses from './migrations/0013_courses.js';
+import * as courseDossier from './migrations/0014_course_dossier.js';
+import * as courseAiCalls from './migrations/0015_course_ai_calls.js';
+import * as debugTurns from './migrations/0016_debug_turns.js';
+import * as courseAudio from './migrations/0017_course_audio.js';
+import * as courseAudioContentHash from './migrations/0018_course_audio_content_hash.js';
+import * as courseAudioMirrored from './migrations/0019_course_audio_mirrored.js';
+import * as courseProgress from './migrations/0020_course_progress.js';
+import * as courseEnrollments from './migrations/0021_course_enrollments.js';
+import * as courseKinds from './migrations/0022_course_kinds.js';
+import * as courseKindEndgame from './migrations/0023_course_kind_endgame.js';
 
 const provider: MigrationProvider = {
   getMigrations: () =>
@@ -27,7 +39,19 @@ const provider: MigrationProvider = {
       '0008_user_onboarding': userOnboarding,
       '0009_bug_reports': bugReports,
       '0010_game_source_file': gameSourceFile,
-      '0011_chess_api_rate_limit': chessApiRateLimit
+      '0011_chess_api_rate_limit': chessApiRateLimit,
+      '0012_course_creators': courseCreators,
+      '0013_courses': courses,
+      '0014_course_dossier': courseDossier,
+      '0015_course_ai_calls': courseAiCalls,
+      '0016_debug_turns': debugTurns,
+      '0017_course_audio': courseAudio,
+      '0018_course_audio_content_hash': courseAudioContentHash,
+      '0019_course_audio_mirrored': courseAudioMirrored,
+      '0020_course_progress': courseProgress,
+      '0021_course_enrollments': courseEnrollments,
+      '0022_course_kinds': courseKinds,
+      '0023_course_kind_endgame': courseKindEndgame
     })
 };
 

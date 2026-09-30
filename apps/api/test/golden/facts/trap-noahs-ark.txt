@@ -1,0 +1,118 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | opening: Ruy Lopez: Noah's Ark Trap | leaves book at n9
+    end position: the d-file is half-open for white; the e-file is half-open for black; black has a queenside pawn majority; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.Nf3 (White, Line A) | book
+    book: in book (King's Knight Opening)
+    board: moves the knight from g1 to f3
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…Nc6 (Black, Line A) | book
+    book: in book (King's Knight Opening: Normal Variation)
+    board: moves the knight from b8 to c6
+    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+n5 3.Bb5 (White, Line A) | book
+    book: in book (Ruy Lopez)
+    board: moves the bishop from f1 to b5 | attacks the knight on c6
+    alternatives: Bc4: The position is roughly equal; d4: The position is roughly equal; Nc3: The position is roughly equal
+n6 3…a6 (Black, Line A) | book
+    book: in book (Ruy Lopez: Morphy Defense)
+    board: moves the pawn from a7 to a6 | attacks the bishop on b5
+    alternatives: Nf6: The position is roughly equal; g6: White is slightly better
+n7 4.Ba4 (White, Line A) | book
+    book: in book (Ruy Lopez: Morphy Defense)
+    board: moves the bishop from b5 to a4 | attacks the knight on c6
+    alternatives: Bxc6: The position is roughly equal; Bc4: The position is roughly equal
+n8 4…d6 (Black, Line A) | book
+    book: in book (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
+    board: moves the pawn from d7 to d6
+    alternatives: Nf6: The position is roughly equal; Be7: The position is roughly equal; Bd6: White is slightly better
+n9 5.d4 (White, Line A) | inaccuracy | before: White is slightly better → after: The position is roughly equal
+    best instead: c3; after c3 Be7 d4 b5 Bc2, material is level
+    why c3 is better: moves the pawn from c2 to c3
+    board: moves the pawn from d2 to d4
+    alternatives: c3: White is slightly better; O-O: White is slightly better
+n10 5…b5 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from b7 to b5 | attacks the bishop on a4
+    alternatives: Bd7: White is slightly better; Bg4: White is slightly better
+n11 6.Bb3 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from a4 to b3
+    alternatives: d5: The position is roughly equal; Bg5: Black is better
+n12 6…Nxd4 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    book: in book (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
+    board: moves the knight from c6 to d4 | captures the pawn on d4 | attacks the bishop on b3 | attacks the knight on f3
+    alternatives: Nf6: The position is roughly equal; Bg4: White is slightly better
+n13 7.Nxd4 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    book: in book (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
+    board: moves the knight from f3 to d4 | captures the knight on d4
+    alternatives: Bg5: The position is roughly equal; Bd5: Black is slightly better
+n14 7…exd4 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    book: in book (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
+    board: moves the pawn from e5 to d4 | captures the knight on d4
+    alternatives: Nf6: White is better; Bb7: White is better
+    tempting threat: c5? Black's c5 moves the pawn from c7 to c5 | attacks the knight on d4. White answers Bd5: moves the bishop from b3 to d5 | attacks the rook on a8. Then Qb6 Bxa8. Over the line White takes a rook; at the end White has a rook and a knight for a pawn (White is much better).
+    tempting threat: Qh4? Black's Qh4 moves the queen from d8 to h4. White answers Bd5: moves the bishop from b3 to d5 | attacks the rook on a8. Then Rb8 Nc6 Rb7. Over the line nothing is taken; at the end White has a knight for a pawn (White is much better).
+    flags: quiz-eligible, critical
+n15 8.Qxd4 (White, Line A) | blunder | before: The position is roughly equal → after: Black is better
+    book: in book (Ruy Lopez: Morphy Defense, Modern Steinitz Defense)
+    best instead: c3; after c3 dxc3 Nxc3 Bb7 Qh5 Qe7, Black is a pawn up
+    why c3 is better: moves the pawn from c2 to c3
+    board: moves the queen from d1 to d4 | captures the pawn on d4
+    alternatives: c3: The position is roughly equal; a4: The position is roughly equal; Bd5: The position is roughly equal
+    flags: critical
+n16 8…c5 (Black, Line A) | great | before: Black is better → after: Black is better
+    book: in book (Ruy Lopez: Noah's Ark Trap)
+    board: moves the pawn from c7 to c5 | attacks the queen on d4
+    tactics: You won a tempo — hits the queen on d4 with a pawn.
+    alternatives: Nf6: The position is roughly equal; Bb7: The position is roughly equal
+    tempting threat: Qf6? Black's Qf6 moves the queen from d8 to f6 | attacks the queen on d4. White answers Qe3: moves the queen from d4 to e3. Then Qh6 Qxh6. Over the line White takes the queen; at the end White is a queen up (White is slightly better).
+    flags: quiz-eligible, critical
+n17 9.Qd5 (White, Line A) | inaccuracy | before: Black is better → after: Black is better
+    best instead: Qc3; after Qc3 c4 a4 cxb3 axb5, White has a pawn for a bishop
+    why Qc3 is better: moves the queen from d4 to c3
+    board: moves the queen from d4 to d5 | attacks the rook on a8
+    alternatives: Qc3: Black is better; Qd1: Black is better
+n18 9…Be6 (Black, Line A) | great | before: Black is better → after: Black is better
+    board: moves the bishop from c8 to e6 | attacks the queen on d5
+    alternatives: Ra7: The position is roughly equal; c4: White is better
+    tempting check: Qa5+? Black's Qa5+ moves the queen from d8 to a5 | gives check | the check can be answered: block with Qd2, c3, Nc3, Nd2, Bd2; the checking piece cannot be taken; move the king with Ke2, Kf1, Kd1. White answers Bd2: moves the bishop from c1 to d2 | blocks the check from the queen on a5 | attacks the queen on a5. Then Qc7 Qxa8 c4. Over the line White takes a rook; at the end White is a rook up (White is better).
+    tempting threat: Bb7? Black's Bb7 moves the bishop from c8 to b7 | attacks the queen on d5 | leaves the black bishop on b7 hanging. White answers Qxf7#: moves the queen from d5 to f7 | captures the pawn on f7 | gives checkmate | why it is mate: the king on e8 is checked by the queen on f7; d8, f8 hold its own pieces; d7 and e7 are covered by the queen on f7; the queen on f7 is guarded by the bishop on b3. Over the line White takes a pawn; at the end White is a pawn up (White has a forced mate in 1).
+    tempting threat: Nf6? Black's Nf6 moves the knight from g8 to f6 | attacks the queen on d5 | leaves the black rook on a8 hanging. White answers Qxf7#: moves the queen from d5 to f7 | captures the pawn on f7 | gives checkmate | why it is mate: the king on e8 is checked by the queen on f7; d8, f8 hold its own pieces; d7 and e7 are covered by the queen on f7; the queen on f7 is guarded by the bishop on b3. Over the line White takes a pawn; at the end White is a pawn up (White has a forced mate in 1).
+    flags: quiz-eligible, critical
+n19 10.Qc6+ (White, Line A) | best | before: Black is better → after: Black is better
+    board: moves the queen from d5 to c6 | gives check | the check can be answered: block with Qd7, Bd7; the checking piece cannot be taken; move the king with Ke7 | attacks the rook on a8
+    alternatives: Qb7: Black is better; Qg5: Black is better
+n20 10…Bd7 (Black, Line A) | great | before: Black is better → after: Black is better
+    board: moves the bishop from e6 to d7 | blocks the check from the queen on c6 | attacks the queen on c6
+    alternatives: Ke7: White is slightly better; Qd7: White is much better
+    flags: quiz-eligible, critical
+n21 11.Qd5 (White, Line A) | good | before: Black is better → after: Black is better
+    board: moves the queen from c6 to d5 | attacks the rook on a8
+    alternatives: Qb7: Black is better; Bxf7+: Black is better
+n22 11…c4 (Black, Line A) | best | before: Black is better → after: Black is better
+    board: moves the pawn from c5 to c4 | attacks the bishop on b3, which is trapped: every square it can reach loses it
+    alternatives: Be6: Black is better; Nh6: White is slightly better
+
+REEL CANDIDATES
+  r1 trap n10–n18, climax n16 [highlight, puzzle, promo]
+  r2 brilliant n8–n16, climax n14 [highlight, puzzle, promo]
+  r3 brilliant n12–n20, climax n18 [highlight, puzzle, promo]
+  r4 brilliant n14–n22, climax n20 [highlight, puzzle, promo]
+
+PLAN
+  e1 hook n1–n1
+  e2 setup n1–n14
+  e3 bait n15–n15
+  e4 quiz n16–n16 answer=n16
+  e5 punish n17–n22
+  e6 safety n15–n15

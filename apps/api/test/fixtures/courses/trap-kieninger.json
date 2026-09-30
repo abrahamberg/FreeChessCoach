@@ -1,0 +1,8 @@
+{
+  "kind": "trap",
+  "levelBand": "improving",
+  "coachPersona": "huntress",
+  "learnerSide": "black",
+  "direction": "The Kieninger trap in the Budapest Gambit: grab the bishop and walk into Nd3 mate.",
+  "pgn": "[Event \"Kieninger trap\"]\n\n1. d4 Nf6 2. c4 e5 3. dxe5 Ng4 4. Nf3 Nc6 5. Bf4 Bb4+ 6. Nbd2 Qe7 7. a3 Ngxe5 8. axb4 Nd3# *"
+}

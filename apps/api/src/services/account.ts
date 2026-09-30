@@ -1,5 +1,8 @@
 import type { Kysely } from 'kysely';
 import * as bugReportsRepo from '../db/repositories/bug-reports.js';
+import * as courseEnrollmentsRepo from '../db/repositories/course-enrollments.js';
+import * as courseProgressRepo from '../db/repositories/course-progress.js';
+import * as coursesRepo from '../db/repositories/courses.js';
 import * as diagnosticProfilesRepo from '../db/repositories/diagnostic-profiles.js';
 import * as findingsRepo from '../db/repositories/findings.js';
 import * as focusAreasRepo from '../db/repositories/focus-areas.js';
@@ -17,7 +20,7 @@ import { cascadeDeleteGame } from './games.js';
  * every game via the same `cascadeDeleteGame` `deleteGameForUser` uses,
  * plus the account-scoped rows no game cascade reaches — puzzle
  * assignments/sessions/messages, focus areas, diagnostic profiles, the
- * import ledger, the stats archive (a true wipe — `cascadeDeleteGame` here, not `deleteGameKeepingStats`), any finding left without a `gameId`, and the LLM setup (which also carries
+ * import ledger, the user's courses, course review progress and the courses they are learning, the stats archive (a true wipe — `cascadeDeleteGame` here, not `deleteGameKeepingStats`), any finding left without a `gameId`, and the LLM setup (which also carries
  * its own DB-level `ON DELETE CASCADE`, see 0036_passphrase_llm_setup.ts,
  * but is deleted explicitly here to match this cascade's own discipline).
  * Wrapped in one transaction so a mid-cascade failure can't leave a
@@ -41,6 +44,9 @@ export async function deleteAccount(db: Kysely<Database>, userId: string): Promi
     await diagnosticProfilesRepo.deleteByUserId(trx, userId);
     await gameImportEventsRepo.deleteByUserId(trx, userId);
     await bugReportsRepo.deleteByUserId(trx, userId);
+    await coursesRepo.deleteByOwnerId(trx, userId);
+    await courseProgressRepo.deleteByUserId(trx, userId);
+    await courseEnrollmentsRepo.deleteByUserId(trx, userId);
     await statsArchiveRepo.deleteByUserId(trx, userId);
     await llmSetupsRepo.remove(trx, userId);
 

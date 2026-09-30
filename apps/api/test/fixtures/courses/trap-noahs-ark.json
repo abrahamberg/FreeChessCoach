@@ -1,0 +1,8 @@
+{
+  "kind": "trap",
+  "levelBand": "club",
+  "coachPersona": "shark",
+  "learnerSide": "black",
+  "direction": "Noah's Ark trap in the Ruy Lopez: the bishop on b3 gets buried by Black's pawns.",
+  "pgn": "[Event \"Noah's Ark trap\"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 d6 5. d4 b5 6. Bb3 Nxd4 7. Nxd4 exd4 8. Qxd4 c5 9. Qd5 Be6 10. Qc6+ Bd7 11. Qd5 c4 *"
+}

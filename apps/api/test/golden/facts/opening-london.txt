@@ -1,0 +1,82 @@
+Learner side: White
+
+Lines:
+l1 "The setup" | opening: Queen's Pawn Game: Accelerated London System | leaves book at n4
+    end position: the white king is still in the centre on e1; the black king is tucked away on g8
+l2 "Early c5" | opening: Queen's Pawn Game: Accelerated London System | leaves book at n4
+    end position: the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.d4 (White, The setup) | book
+    book: in book (Queen's Pawn Game)
+    board: moves the pawn from d2 to d4
+    alternatives: e4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…d5 (Black, The setup) | book
+    book: in book (Queen's Pawn Game)
+    board: moves the pawn from d7 to d5
+    alternatives: Nf6: The position is roughly equal; d6: White is slightly better
+n3 2.Bf4 (White, The setup) | book
+    book: in book (Queen's Pawn Game: Accelerated London System)
+    board: moves the bishop from c1 to f4
+    alternatives: c4: The position is roughly equal; Nf3: The position is roughly equal; e3: The position is roughly equal
+n4 2…Nf6 (Black, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from g8 to f6
+    alternatives: c5: The position is roughly equal; e6: The position is roughly equal
+n5 3.e3 (White, The setup) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from e2 to e3
+    alternatives: c3: The position is roughly equal; Nf3: The position is roughly equal
+n6 3…e6 (Black, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from e7 to e6
+    alternatives: c5: The position is roughly equal; Bg4: The position is roughly equal
+n7 4.Nf3 (White, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from g1 to f3
+    alternatives: Nd2: The position is roughly equal; c3: The position is roughly equal
+n8 4…Bd6 (Black, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from f8 to d6 | attacks the bishop on f4
+    alternatives: c5: The position is roughly equal; Bd7: The position is roughly equal
+n9 5.Bg3 (White, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from f4 to g3 | attacks the bishop on d6
+    alternatives: Nbd2: The position is roughly equal; Bxd6: The position is roughly equal
+n10 5…O-O (Black, The setup) | good | before: The position is roughly equal → after: The position is roughly equal
+    board: castles kingside
+    alternatives: c5: The position is roughly equal; b6: The position is roughly equal
+n11 6.Bd3 (White, The setup) | good | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from f1 to d3
+    alternatives: c4: The position is roughly equal; a3: The position is roughly equal; Be2: The position is roughly equal
+n12 6…c5 (Black, The setup) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from c7 to c5
+    alternatives: b6: The position is roughly equal; h6: The position is roughly equal
+n13 7.c3 (White, The setup) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from c2 to c3
+    alternatives: dxc5: The position is roughly equal; a4: The position is roughly equal
+n14 7…Nc6 (Black, The setup) | good | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from b8 to c6
+    alternatives: Qc7: The position is roughly equal; b6: The position is roughly equal; Ne4: The position is roughly equal
+n15 8.Nbd2 (White, The setup) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from b1 to d2
+    alternatives: Qe2: The position is roughly equal; Ne5: The position is roughly equal
+n16 3…c5 (Black, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from c7 to c5 | leaves the black pawn on c5 hanging
+    alternatives: e6: The position is roughly equal; Bg4: The position is roughly equal
+n17 4.c3 (White, Early c5) | good | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from c2 to c3
+    alternatives: dxc5: The position is roughly equal; Nf3: The position is roughly equal
+n18 4…Nc6 (Black, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from b8 to c6 | leaves the black pawn on c5 hanging
+    alternatives: Qb6: The position is roughly equal; e6: The position is roughly equal
+n19 5.Nd2 (White, Early c5) | good | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from b1 to d2
+    alternatives: Nf3: The position is roughly equal; a4: The position is roughly equal
+n20 5…Qb6 (Black, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the queen from d8 to b6
+    alternatives: Bf5: The position is roughly equal; e6: The position is roughly equal
+n21 6.Qb3 (White, Early c5) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the queen from d1 to b3 | attacks the queen on b6
+    alternatives: Ngf3: The position is roughly equal; Qc2: The position is roughly equal
+
+REEL CANDIDATES
+
+PLAN
+  e1 line n1–n15
+  e2 deviation n16–n21
+  e3 recap n15–n15

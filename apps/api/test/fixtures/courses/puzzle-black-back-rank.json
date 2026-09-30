@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "novice",
+  "coachPersona": "huntress",
+  "direction": "Black to play: the back rank.",
+  "pgn": "[Event \"Black back rank\"]\n[SetUp \"1\"]\n[FEN \"3r2k1/5ppp/8/8/8/8/5PPP/6K1 b - - 0 1\"]\n\n1... Rd1# *"
+}

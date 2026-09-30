@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEngineActivityIndicator } from '../../hooks/useEngineActivityIndicator.js';
 import { useIsDesktop } from '../../hooks/useIsDesktop.js';
+import { useMoveStepSounds } from '../../sounds/useMoveStepSounds.js';
 import { DivergedLinePanel } from '../board/DivergedLinePanel.js';
 import { ExploreNoteCard } from '../board/ExploreNoteCard.js';
 import { GameReportSummary } from '../board/GameReportSummary.js';
@@ -84,6 +85,9 @@ export function GameReviewPage(): ReactNode {
   // out from under it (MoveExplorer/MoveNavStrip), so `fen` alone is always
   // correct once that happens.
   const displayFen = explore.divergedLine.fen ?? fen;
+  // Board sounds (docs/plan.md Phase 88): an analyzed game, so bad and great
+  // for either side; stepping one move forward only.
+  useMoveStepSounds({ ply, sanMoves, learnerSide: gameQuery.data?.userColor ?? 'white', classifiedMoves, disabled: explore.isExploring });
 
   if (gameQuery.isLoading) return <p>Loading…</p>;
   if (gameQuery.isError || !gameQuery.data) return <p>Could not load this game.</p>;

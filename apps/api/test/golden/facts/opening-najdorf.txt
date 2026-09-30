@@ -1,0 +1,115 @@
+Learner side: Black
+
+Lines:
+l1 "English Attack" | opening: Sicilian Defense: Najdorf Variation, English Attack | leaves book at n16
+    end position: the c-file is half-open for black; the d-file is half-open for white; the white king is tucked away on c1; the black king is tucked away on g8
+l2 "Bg5" | opening: Sicilian Defense: Najdorf Variation, Traditional Line | in book throughout
+    end position: the c-file is half-open for black; the d-file is half-open for white; the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, English Attack) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…c5 (Black, English Attack) | book
+    book: in book (Sicilian Defense)
+    board: moves the pawn from c7 to c5
+    alternatives: e5: The position is roughly equal; d6: The position is roughly equal
+n3 2.Nf3 (White, English Attack) | book
+    book: in book (Sicilian Defense)
+    board: moves the knight from g1 to f3
+    alternatives: c3: The position is roughly equal; Ne2: The position is roughly equal
+n4 2…d6 (Black, English Attack) | book
+    book: in book (Sicilian Defense: Modern Variations)
+    board: moves the pawn from d7 to d6
+    alternatives: Nc6: The position is roughly equal; e6: The position is roughly equal
+n5 3.d4 (White, English Attack) | book
+    book: in book (Sicilian Defense)
+    board: moves the pawn from d2 to d4
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n6 3…cxd4 (Black, English Attack) | book
+    book: in book (Sicilian Defense)
+    board: moves the pawn from c5 to d4 | captures the pawn on d4
+    alternatives: Nf6: The position is roughly equal; Nd7: White is slightly better
+n7 4.Nxd4 (White, English Attack) | book
+    book: in book (Sicilian Defense)
+    board: moves the knight from f3 to d4 | captures the pawn on d4
+    alternatives: Bc4: The position is roughly equal; Qxd4: The position is roughly equal
+n8 4…Nf6 (Black, English Attack) | book
+    book: in book (Sicilian Defense: Modern Variations, Main Line)
+    board: moves the knight from g8 to f6
+    alternatives: e5: The position is roughly equal; g6: White is slightly better
+n9 5.Nc3 (White, English Attack) | book
+    book: in book (Sicilian Defense: Modern Variations, Main Line)
+    board: moves the knight from b1 to c3
+    alternatives: Bc4: The position is roughly equal; Qd3: The position is roughly equal
+n10 5…a6 (Black, English Attack) | book
+    book: in book (Sicilian Defense: Najdorf Variation)
+    board: moves the pawn from a7 to a6
+    alternatives: e6: White is slightly better; Nc6: White is slightly better
+n11 6.Be3 (White, English Attack) | book
+    book: in book (Sicilian Defense: Najdorf Variation, English Attack)
+    board: moves the bishop from c1 to e3
+    alternatives: Bg5: White is slightly better; f3: The position is roughly equal
+n12 6…e5 (Black, English Attack) | book
+    book: in book (Sicilian Defense: Najdorf Variation, English Attack)
+    board: moves the pawn from e7 to e5 | attacks the knight on d4
+    alternatives: Ng4: The position is roughly equal; h6: White is slightly better
+n13 7.Nb3 (White, English Attack) | book
+    book: in book (Sicilian Defense: Najdorf Variation, English Attack)
+    board: moves the knight from d4 to b3
+    alternatives: Nde2: The position is roughly equal; Nf3: The position is roughly equal
+n14 7…Be6 (Black, English Attack) | book
+    book: in book (Sicilian Defense: Najdorf Variation, English Attack)
+    board: moves the bishop from c8 to e6 | attacks the knight on b3
+    alternatives: Be7: The position is roughly equal; Ng4: The position is roughly equal
+n15 8.f3 (White, English Attack) | book
+    book: in book (Sicilian Defense: Najdorf Variation, English Attack)
+    board: moves the pawn from f2 to f3
+    alternatives: h3: White is slightly better; Qd2: The position is roughly equal
+n16 8…Be7 (Black, English Attack) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from f8 to e7
+    alternatives: h5: The position is roughly equal; Nbd7: White is slightly better
+n17 9.Qd2 (White, English Attack) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the queen from d1 to d2
+    alternatives: Be2: The position is roughly equal; a3: The position is roughly equal
+n18 9…O-O (Black, English Attack) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: castles kingside
+    alternatives: Nbd7: The position is roughly equal; h5: The position is roughly equal
+n19 10.O-O-O (White, English Attack) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: castles queenside
+    alternatives: a3: The position is roughly equal; h4: The position is roughly equal
+n20 10…Nbd7 (Black, English Attack) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from b8 to d7
+    alternatives: b5: The position is roughly equal; Qc7: White is slightly better
+n21 6.Bg5 (White, Bg5) | book
+    book: in book (Sicilian Defense: Najdorf Variation)
+    board: moves the bishop from c1 to g5 | attacks the knight on f6
+    alternatives: Be3: The position is roughly equal; f3: The position is roughly equal
+n22 6…e6 (Black, Bg5) | book
+    book: in book (Sicilian Defense: Najdorf Variation)
+    board: moves the pawn from e7 to e6
+    alternatives: Nbd7: The position is roughly equal; Nc6: White is slightly better
+n23 7.f4 (White, Bg5) | book
+    book: in book (Sicilian Defense: Najdorf Variation)
+    board: moves the pawn from f2 to f4
+    alternatives: Qf3: The position is roughly equal; Qd2: The position is roughly equal
+n24 7…Be7 (Black, Bg5) | book
+    book: in book (Sicilian Defense: Najdorf Variation)
+    board: moves the bishop from f8 to e7
+    alternatives: Qb6: The position is roughly equal; h6: The position is roughly equal
+n25 8.Qf3 (White, Bg5) | book
+    book: in book (Sicilian Defense: Najdorf Variation)
+    board: moves the queen from d1 to f3
+    alternatives: Qd3: The position is roughly equal; g3: The position is roughly equal
+n26 8…Qc7 (Black, Bg5) | book
+    book: in book (Sicilian Defense: Najdorf Variation, Traditional Line)
+    board: moves the queen from d8 to c7 | attacks the knight on c3
+    alternatives: Nbd7: The position is roughly equal; Bd7: White is slightly better
+
+REEL CANDIDATES
+
+PLAN
+  e1 line n1–n20
+  e2 deviation n21–n26
+  e3 recap n20–n20

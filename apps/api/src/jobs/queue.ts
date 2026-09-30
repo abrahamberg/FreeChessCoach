@@ -17,13 +17,16 @@ export interface JobQueue {
    * historical games), through the same queue every other job uses, same
    * precedent as `enqueueBackfillGameMetadata`. */
   enqueueRebuildDiagnosticProfile(userId: string): Promise<void>;
+  /** docs/courses.md §5.2: write a course draft with the creator's AI. */
+  enqueueCourseGenerate(courseId: string): Promise<void>;
 }
 
 export const noopJobQueue: JobQueue = {
   enqueueAnalyzeGame: () => Promise.resolve(),
   enqueueSummarizeSession: () => Promise.resolve(),
   enqueueBackfillGameMetadata: () => Promise.resolve(),
-  enqueueRebuildDiagnosticProfile: () => Promise.resolve()
+  enqueueRebuildDiagnosticProfile: () => Promise.resolve(),
+  enqueueCourseGenerate: () => Promise.resolve()
 };
 
 export interface GraphileJobQueueHandle {
@@ -52,6 +55,12 @@ export async function createGraphileJobQueue(connectionString: string): Promise<
       },
       enqueueRebuildDiagnosticProfile: async (userId: string) => {
         await workerUtils.addJob('rebuild-diagnostic-profile', { userId }, rebuildDiagnosticProfileJobSpec(userId));
+      },
+      enqueueCourseGenerate: async (courseId: string) => {
+        // One attempt: a failure is recorded on the course, and the creator
+        // resumes it (finished episodes kept) rather than the queue retrying
+        // model calls they pay for.
+        await workerUtils.addJob('course-generate', { courseId }, { jobKey: `course-generate:${courseId}`, maxAttempts: 1 });
       }
     },
     close: async () => {

@@ -1,0 +1,108 @@
+Learner side: Black
+
+Lines:
+l1 "Classical" | opening: King's Indian Defense: Orthodox Variation, Classical System | in book throughout
+    end position: the white king is tucked away on g1; the black king is tucked away on g8
+l2 "Petrosian" | opening: King's Indian Defense: Petrosian Variation, Stein Defense | leaves book at n21
+    end position: the white king is still in the centre on e1; the black king is tucked away on g8
+
+Moves:
+n1 1.d4 (White, Classical) | book
+    book: in book (Queen's Pawn Game)
+    board: moves the pawn from d2 to d4
+    alternatives: e4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…Nf6 (Black, Classical) | book
+    book: in book (Indian Defense)
+    board: moves the knight from g8 to f6
+    alternatives: d5: The position is roughly equal; d6: White is slightly better
+n3 2.c4 (White, Classical) | book
+    book: in book (Indian Defense: Normal Variation)
+    board: moves the pawn from c2 to c4
+    alternatives: Nf3: The position is roughly equal; Bf4: The position is roughly equal
+n4 2…g6 (Black, Classical) | book
+    book: in book (Indian Defense: West Indian Defense)
+    board: moves the pawn from g7 to g6
+    alternatives: e6: The position is roughly equal; c6: The position is roughly equal
+n5 3.Nc3 (White, Classical) | book
+    book: in book (King's Indian Defense)
+    board: moves the knight from b1 to c3
+    alternatives: Nf3: The position is roughly equal; f3: The position is roughly equal
+n6 3…Bg7 (Black, Classical) | book
+    book: in book (King's Indian Defense)
+    board: moves the bishop from f8 to g7
+    alternatives: d5: The position is roughly equal; d6: White is slightly better
+n7 4.e4 (White, Classical) | book
+    book: in book (King's Indian Defense: Normal Variation)
+    board: moves the pawn from e2 to e4
+    alternatives: Nf3: The position is roughly equal; Bg5: The position is roughly equal
+n8 4…d6 (Black, Classical) | book
+    book: in book (King's Indian Defense: Normal Variation)
+    board: moves the pawn from d7 to d6
+    alternatives: O-O: White is slightly better; c5: White is slightly better
+n9 5.Nf3 (White, Classical) | book
+    book: in book (King's Indian Defense: Normal Variation, Rare Defenses)
+    board: moves the knight from g1 to f3
+    alternatives: Be2: White is slightly better; h3: White is slightly better
+n10 5…O-O (Black, Classical) | book
+    book: in book (King's Indian Defense: Normal Variation, Rare Defenses)
+    board: castles kingside
+    alternatives: Bg4: White is slightly better; a5: White is slightly better
+n11 6.Be2 (White, Classical) | book
+    book: in book (King's Indian Defense: Orthodox Variation)
+    board: moves the bishop from f1 to e2
+    alternatives: h3: The position is roughly equal; Bf4: The position is roughly equal
+n12 6…e5 (Black, Classical) | book
+    book: in book (King's Indian Defense: Orthodox Variation)
+    board: moves the pawn from e7 to e5
+    alternatives: a5: White is slightly better; Nbd7: White is slightly better
+n13 7.O-O (White, Classical) | book
+    book: in book (King's Indian Defense: Orthodox Variation)
+    board: castles kingside
+    alternatives: Be3: White is slightly better; d5: White is slightly better
+n14 7…Nc6 (Black, Classical) | book
+    book: in book (King's Indian Defense: Orthodox Variation, Aronin-Taimanov Defense)
+    board: moves the knight from b8 to c6
+    alternatives: exd4: The position is roughly equal; Re8: White is slightly better; b6: White is slightly better
+n15 8.d5 (White, Classical) | book
+    book: in book (King's Indian Defense: Orthodox Variation, Aronin-Taimanov Defense)
+    board: moves the pawn from d4 to d5 | attacks the knight on c6
+    alternatives: Be3: The position is roughly equal; dxe5: The position is roughly equal
+n16 8…Ne7 (Black, Classical) | book
+    book: in book (King's Indian Defense: Orthodox Variation, Aronin-Taimanov Defense)
+    board: moves the knight from c6 to e7
+    alternatives: Nb8: White is slightly better; Nd4: White is slightly better
+n17 9.Ne1 (White, Classical) | book
+    book: in book (King's Indian Defense: Orthodox Variation, Classical System)
+    board: moves the knight from f3 to e1
+    alternatives: b4: White is slightly better; Re1: White is slightly better; Be3: White is slightly better
+n18 9…Nd7 (Black, Classical) | book
+    book: in book (King's Indian Defense: Orthodox Variation, Classical System)
+    board: moves the knight from f6 to d7
+    alternatives: a5: White is slightly better; b6: White is slightly better
+n19 7.d5 (White, Petrosian) | book
+    book: in book (King's Indian Defense: Petrosian Variation)
+    board: moves the pawn from d4 to d5
+    alternatives: Be3: White is slightly better; O-O: White is slightly better
+n20 7…a5 (Black, Petrosian) | book
+    book: in book (King's Indian Defense: Petrosian Variation, Stein Defense)
+    board: moves the pawn from a7 to a5
+    alternatives: Na6: White is slightly better; Kh8: White is slightly better
+n21 8.Bg5 (White, Petrosian) | good | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the bishop from c1 to g5 | attacks the knight on f6, which is pinned to the queen on d8 by the bishop on g5
+    alternatives: h3: The position is roughly equal; Be3: The position is roughly equal
+n22 8…h6 (Black, Petrosian) | good | before: The position is roughly equal → after: White is slightly better
+    board: moves the pawn from h7 to h6 | attacks the bishop on g5
+    alternatives: Na6: The position is roughly equal; Qe8: White is slightly better
+n23 9.Bh4 (White, Petrosian) | good | before: White is slightly better → after: The position is roughly equal
+    board: moves the bishop from g5 to h4 | attacks the knight on f6, which is pinned to the queen on d8 by the bishop on h4
+    alternatives: Be3: White is slightly better; Bd2: The position is roughly equal
+n24 9…Na6 (Black, Petrosian) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from b8 to a6
+    alternatives: g5: The position is roughly equal; Nbd7: The position is roughly equal
+
+REEL CANDIDATES
+
+PLAN
+  e1 line n1–n18
+  e2 deviation n19–n24
+  e3 recap n18–n18

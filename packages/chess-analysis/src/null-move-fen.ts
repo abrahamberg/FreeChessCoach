@@ -30,3 +30,12 @@ export function flipActiveColorFen(fen: string): string | null {
     return null;
   }
 }
+
+/** The side NOT to move is in check: an illegal position that chess.js
+ * loads without complaint (see above) and Stockfish segfaults on. A course
+ * start had a knight on e5 already checking the king on c4, Black to move. */
+export function sideNotToMoveInCheck(fen: string): boolean {
+  const chess = new Chess(fen, { skipValidation: true });
+  const waiting = chess.findPiece({ type: 'k', color: chess.turn() === 'w' ? 'b' : 'w' })[0];
+  return waiting !== undefined && chess.isAttacked(waiting, chess.turn());
+}

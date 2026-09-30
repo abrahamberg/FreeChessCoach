@@ -36,6 +36,20 @@ spec:
               value: {{ .Values.api.containerPort | quote }}
             {{- include "freechesscoach.env.database" . | nindent 12 }}
             {{- include "freechesscoach.env.app" . | nindent 12 }}
+            {{- with .Values.courseAudioMirror }}
+            {{- if and .existingSecret .publicUrl }}
+            # docs/courses.md §9: published course audio copied to R2.
+            {{- range $name, $key := dict "COURSE_AUDIO_S3_ENDPOINT" "endpoint" "COURSE_AUDIO_S3_BUCKET" "bucket" "COURSE_AUDIO_S3_ACCESS_KEY_ID" "accessKeyId" "COURSE_AUDIO_S3_SECRET_ACCESS_KEY" "secretAccessKey" }}
+            - name: {{ $name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.courseAudioMirror.existingSecret }}
+                  key: {{ $key }}
+            {{- end }}
+            - name: COURSE_AUDIO_PUBLIC_URL
+              value: {{ .publicUrl | quote }}
+            {{- end }}
+            {{- end }}
           {{- with include "freechesscoach.lichessEvalIndexVolumeMount" . }}
           volumeMounts:
             {{- . | nindent 12 }}

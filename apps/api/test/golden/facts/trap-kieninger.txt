@@ -1,0 +1,79 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | opening: Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation | leaves book at n8
+    end position: the a-file is half-open for white; the d-file is half-open for white; the e-file is half-open for black; white has doubled pawns on the b-file; black has a queenside pawn majority; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.d4 (White, Line A) | book
+    book: in book (Queen's Pawn Game)
+    board: moves the pawn from d2 to d4
+    alternatives: e4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…Nf6 (Black, Line A) | book
+    book: in book (Indian Defense)
+    board: moves the knight from g8 to f6
+    alternatives: d5: The position is roughly equal; d6: White is slightly better
+n3 2.c4 (White, Line A) | book
+    book: in book (Indian Defense: Normal Variation)
+    board: moves the pawn from c2 to c4
+    alternatives: Nf3: The position is roughly equal; Bf4: The position is roughly equal
+n4 2…e5 (Black, Line A) | book
+    book: in book (Indian Defense: Budapest Gambit)
+    board: moves the pawn from e7 to e5 | leaves the black pawn on e5 hanging
+    alternatives: g6: The position is roughly equal; e6: The position is roughly equal; c6: The position is roughly equal
+n5 3.dxe5 (White, Line A) | book
+    book: in book (Indian Defense: Budapest Gambit Accepted)
+    board: moves the pawn from d4 to e5 | captures the pawn on e5 | attacks the knight on f6
+    alternatives: e3: The position is roughly equal; Nc3: The position is roughly equal
+n6 3…Ng4 (Black, Line A) | book
+    book: in book (Indian Defense: Budapest Gambit Accepted, Main Line)
+    board: moves the knight from f6 to g4
+    alternatives: Ne4: White is slightly better; Bb4+: White is better
+n7 4.Nf3 (White, Line A) | book
+    book: in book (Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation)
+    board: moves the knight from g1 to f3
+    alternatives: e4: White is slightly better; e3: White is slightly better; Bf4: White is slightly better
+n8 4…Nc6 (Black, Line A) | good | before: The position is roughly equal → after: White is slightly better
+    board: moves the knight from b8 to c6
+    alternatives: Bc5: The position is roughly equal; d6: White is slightly better
+n9 5.Bf4 (White, Line A) | best | before: White is slightly better → after: White is slightly better
+    board: moves the bishop from c1 to f4
+    alternatives: Bg5: White is slightly better; Qd5: The position is roughly equal
+n10 5…Bb4+ (Black, Line A) | best | before: White is slightly better → after: The position is roughly equal
+    board: moves the bishop from f8 to b4 | gives check | the check can be answered: block with Bd2, Nfd2, Nc3, Nbd2, Qd2; the checking piece cannot be taken; the king cannot move
+    alternatives: f6: White is slightly better; Bc5: White is slightly better
+n11 6.Nbd2 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from b1 to d2 | blocks the check from the bishop on b4
+    alternatives: Nc3: The position is roughly equal; Bd2: The position is roughly equal
+n12 6…Qe7 (Black, Line A) | best | before: The position is roughly equal → after: White is slightly better
+    board: moves the queen from d8 to e7
+    alternatives: d6: The position is roughly equal; f6: White is slightly better
+n13 7.a3 (White, Line A) | good | before: White is slightly better → after: The position is roughly equal
+    board: moves the pawn from a2 to a3 | attacks the bishop on b4
+    alternatives: Qc2: White is slightly better; e3: The position is roughly equal
+n14 7…Ngxe5 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from g4 to e5 | captures the pawn on e5 | attacks the knight on f3
+    alternatives: Ncxe5: White is slightly better; Bxd2+: White is slightly better
+n15 8.axb4 (White, Line A) | blunder | before: The position is roughly equal → after: Black has a forced mate in 1
+    best instead: Nxe5; after Nxe5 Nxe5 e3 Bxd2+ Qxd2 d6, White has a bishop for a knight
+    why Nxe5 is better: moves the knight from f3 to e5 | captures the knight on e5 | attacks the knight on c6
+    board: moves the pawn from a3 to b4 | captures the bishop on b4
+    alternatives: Nxe5: The position is roughly equal; e3: The position is roughly equal; Qc2: The position is roughly equal
+    tempting threat: Bg5? White's Bg5 moves the bishop from f4 to g5 | attacks the queen on e7. Black answers Nd3#: moves the knight from e5 to d3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on d3; d1, d2, e2, f1, f2 hold its own pieces. Over the line nothing is taken; at the end material is level (Black has a forced mate in 1).
+    tempting threat: Bh6? White's Bh6 moves the bishop from f4 to h6 | leaves the white bishop on h6 hanging. Black answers Nd3#: moves the knight from e5 to d3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on d3; d1, d2, e2, f1, f2 hold its own pieces. Over the line nothing is taken; at the end material is level (Black has a forced mate in 1).
+    flags: critical
+n16 8…Nd3# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
+    board: moves the knight from e5 to d3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on d3; d1, d2, e2, f1, f2 hold its own pieces
+    alternatives: d6: White is better; Nxf3+: White is much better
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 mate n10–n16, climax n16 [highlight, puzzle, promo]
+  r2 swing n9–n16, climax n15 [highlight, promo]
+
+PLAN
+  e1 hook n1–n1
+  e2 setup n1–n14
+  e3 bait n15–n15
+  e4 quiz n16–n16 answer=n16
+  e5 safety n15–n15

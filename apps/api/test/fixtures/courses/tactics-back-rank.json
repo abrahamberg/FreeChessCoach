@@ -1,0 +1,8 @@
+{
+  "kind": "tactics",
+  "levelBand": "novice",
+  "coachPersona": "commander",
+  "learnerSide": "white",
+  "direction": "The back rank: a king behind its own pawns with no escape square.",
+  "pgn": "[Event \"Back rank\"]\n[SetUp \"1\"]\n[FEN \"4r1k1/5ppp/8/8/8/8/5PPP/2R1R1K1 w - - 0 1\"]\n\n1. Rxe8# *"
+}

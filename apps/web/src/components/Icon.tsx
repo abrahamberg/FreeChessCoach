@@ -335,6 +335,34 @@ export function ClipboardIcon(props: IconProps): ReactNode {
   );
 }
 
+export function EditIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17v3Z" />
+      <line x1="14.5" y1="7.5" x2="17.5" y2="10.5" />
+    </svg>
+  );
+}
+
+export function ExternalLinkIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  );
+}
+
+export function BookIcon(props: IconProps): ReactNode {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M12 6.5C10.2 5 7.6 4.5 4 4.5v14c3.6 0 6.2.5 8 2 1.8-1.5 4.4-2 8-2v-14c-3.6 0-6.2.5-8 2Z" />
+      <line x1="12" y1="6.5" x2="12" y2="20.5" />
+    </svg>
+  );
+}
+
 export function PawnIcon(props: IconProps): ReactNode {
   return (
     <svg {...iconProps(props)}>

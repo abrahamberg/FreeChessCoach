@@ -1,0 +1,249 @@
+{
+ "5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23||3|2": {
+  "fen": "5rk1/pp4pp/4p3/2R3Q1/3n4/2q4r/P1P2PPP/5RK1 b - - 1 23",
+  "depth": 12,
+  "lines": [
+   {
+    "moveSan": "Qg3",
+    "moveUci": "c3g3",
+    "cp": -529,
+    "mateIn": null,
+    "pvSan": [
+     "Qg3",
+     "Qxg3",
+     "Ne2+",
+     "Kh1",
+     "Nxg3+",
+     "Kg1",
+     "Ne2+",
+     "Kh1",
+     "Rc3",
+     "Rxc3",
+     "Nxc3"
+    ]
+   },
+   {
+    "moveSan": "Qb2",
+    "moveUci": "c3b2",
+    "cp": -403,
+    "mateIn": null,
+    "pvSan": [
+     "Qb2",
+     "Qd2",
+     "Ra3",
+     "Rc4",
+     "e5",
+     "Rc7",
+     "Qb6"
+    ]
+   },
+   {
+    "moveSan": "Qb4",
+    "moveUci": "c3b4",
+    "cp": -397,
+    "mateIn": null,
+    "pvSan": [
+     "Qb4",
+     "Rc7",
+     "Ne2+",
+     "Kh1",
+     "Rxh2+",
+     "Kxh2",
+     "Qd6+",
+     "g3",
+     "Qxc7",
+     "Qe3",
+     "Nf4",
+     "gxf4",
+     "Qxf4+",
+     "Qxf4",
+     "Rxf4"
+    ]
+   }
+  ]
+ },
+ "5rk1/pp4pp/4p3/2R3Q1/3n4/6qr/P1P2PPP/5RK1 w - - 2 24||3|2": {
+  "fen": "5rk1/pp4pp/4p3/2R3Q1/3n4/6qr/P1P2PPP/5RK1 w - - 2 24",
+  "depth": 12,
+  "lines": [
+   {
+    "moveSan": "Qxg3",
+    "moveUci": "g5g3",
+    "cp": -514,
+    "mateIn": null,
+    "pvSan": [
+     "Qxg3",
+     "Ne2+",
+     "Kh1",
+     "Nxg3+",
+     "Kg1",
+     "Ne2+",
+     "Kh1",
+     "Rc3",
+     "Ra5",
+     "Rxc2",
+     "Re5"
+    ]
+   },
+   {
+    "moveSan": "Qxg7+",
+    "moveUci": "g5g7",
+    "cp": -943,
+    "mateIn": null,
+    "pvSan": [
+     "Qxg7+",
+     "Kxg7",
+     "Rg5+",
+     "Qxg5",
+     "f4",
+     "Rh6"
+    ]
+   },
+   {
+    "moveSan": "Rd1",
+    "moveUci": "f1d1",
+    "cp": null,
+    "mateIn": -2,
+    "pvSan": [
+     "Rd1",
+     "Ne2+",
+     "Kh1",
+     "Qxh2#"
+    ]
+   }
+  ]
+ },
+ "5rk1/pp4pp/4p3/2R3Q1/3n4/7r/P1q2PPP/5RK1 w - - 0 24||1|1": {
+  "fen": "5rk1/pp4pp/4p3/2R3Q1/3n4/7r/P1q2PPP/5RK1 w - - 0 24",
+  "depth": 12,
+  "lines": [
+   {
+    "moveSan": "Rxc2",
+    "moveUci": "c5c2",
+    "cp": 385,
+    "mateIn": null,
+    "pvSan": [
+     "Rxc2",
+     "Kh8",
+     "Rc7",
+     "Ne2+",
+     "Kh1"
+    ]
+   }
+  ]
+ },
+ "5rk1/pp4pp/4p3/2R3Q1/8/2q2n1r/P1P2PPP/5RK1 w - - 2 24||1|1": {
+  "fen": "5rk1/pp4pp/4p3/2R3Q1/8/2q2n1r/P1P2PPP/5RK1 w - - 2 24",
+  "depth": 12,
+  "lines": [
+   {
+    "moveSan": "gxf3",
+    "moveUci": "g2f3",
+    "cp": -46,
+    "mateIn": null,
+    "pvSan": [
+     "gxf3",
+     "Qxf3",
+     "Rc7",
+     "g6",
+     "Qe7",
+     "Rf7",
+     "Qxe6",
+     "Rh5",
+     "Qxf7+",
+     "Qxf7",
+     "Rxf7",
+     "Kxf7",
+     "Rd1"
+    ]
+   }
+  ]
+ },
+ "5rk1/pp4pp/4p3/2R3Q1/8/2q4r/P1P1nPPP/5RK1 w - - 2 24||1|1": {
+  "fen": "5rk1/pp4pp/4p3/2R3Q1/8/2q4r/P1P1nPPP/5RK1 w - - 2 24",
+  "depth": 12,
+  "lines": [
+   {
+    "moveSan": "Kh1",
+    "moveUci": "g1h1",
+    "cp": -100,
+    "mateIn": null,
+    "pvSan": [
+     "Kh1",
+     "Ng3+",
+     "Kg1",
+     "Nxf1",
+     "Rxc3",
+     "Rxc3",
+     "Kxf1",
+     "Rxc2",
+     "f3",
+     "h6",
+     "Qg6"
+    ]
+   }
+  ]
+ },
+ "5rk1/pp4pp/4p3/2R3Q1/8/2q4r/P1n2PPP/5RK1 w - - 0 24||1|1": {
+  "fen": "5rk1/pp4pp/4p3/2R3Q1/8/2q4r/P1n2PPP/5RK1 w - - 0 24",
+  "depth": 12,
+  "lines": [
+   {
+    "moveSan": "gxh3",
+    "moveUci": "g2h3",
+    "cp": 324,
+    "mateIn": null,
+    "pvSan": [
+     "gxh3",
+     "Qd3",
+     "Rc7",
+     "Rf7",
+     "Rxf7",
+     "Kxf7",
+     "Qf4+",
+     "Ke7",
+     "Qg3",
+     "Qxg3+",
+     "hxg3"
+    ]
+   }
+  ]
+ },
+ "5rk1/pp4pp/4p3/2q3Q1/3n4/7r/P1P2PPP/5RK1 w - - 0 24||1|1": {
+  "fen": "5rk1/pp4pp/4p3/2q3Q1/3n4/7r/P1P2PPP/5RK1 w - - 0 24",
+  "depth": 12,
+  "lines": [
+   {
+    "moveSan": "Qxc5",
+    "moveUci": "g5c5",
+    "cp": 0,
+    "mateIn": null,
+    "pvSan": [
+     "Qxc5",
+     "Ne2+",
+     "Kh1",
+     "Ng3+",
+     "Kg1",
+     "Ne2+"
+    ]
+   }
+  ]
+ },
+ "6k1/pp4pp/4p3/2R2rQ1/3n4/2q4r/P1P2PPP/5RK1 w - - 2 24||1|1": {
+  "fen": "6k1/pp4pp/4p3/2R2rQ1/3n4/2q4r/P1P2PPP/5RK1 w - - 2 24",
+  "depth": 12,
+  "lines": [
+   {
+    "moveSan": "Rxc3",
+    "moveUci": "c5c3",
+    "cp": 292,
+    "mateIn": null,
+    "pvSan": [
+     "Rxc3",
+     "Rxg5",
+     "Rxh3"
+    ]
+   }
+  ]
+ }
+}

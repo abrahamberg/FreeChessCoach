@@ -6,6 +6,10 @@ import type { Database } from './db/schema.js';
 import { registerAnalysesRoutes } from './routes/analyses.js';
 import { registerBugReportsRoutes } from './routes/bug-reports.js';
 import { registerChesscomRoutes } from './routes/chesscom.js';
+import { registerPublicCoursesRoutes } from './routes/public-courses.js';
+import type { AudioMirror } from './services/courses/audio-mirror.js';
+import { registerCoursesRoutes } from './routes/courses.js';
+import { registerCourseProgressRoutes } from './routes/course-progress.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerDiagnosticsRoutes } from './routes/diagnostics.js';
 import { registerEngineTunnelInternalRoutes } from './routes/engine-tunnel-internal.js';
@@ -17,6 +21,7 @@ import { registerPositionAnalysisRoutes } from './routes/positions.js';
 import { registerEnginePingRoutes } from './routes/engine-ping.js';
 import { registerPuzzleAssignmentsRoutes } from './routes/puzzle-assignments.js';
 import { registerPuzzleSessionsRoutes } from './routes/puzzle-sessions.js';
+import { registerCourseQuestionRoutes } from './routes/course-questions.js';
 import { registerSessionsRoutes } from './routes/sessions.js';
 import type { RatingEvalStore } from './services/bot/bot-rating-evals.js';
 import type { BotThinkingRegistry } from './services/bot/bot-thinking-registry.js';
@@ -35,6 +40,8 @@ import { createChesscomClient, type ChesscomClient } from './services/chesscom.j
 import { createLichessClient, type LichessClient } from './services/lichess.js';
 import type { CoachAgentBaseDependencies } from './bootstrap.js';
 import type { BrowserTunnel } from './services/engine/browser-tunnel.js';
+import { getModelForUser, type GatewayConfig, type ModelResolution } from './llm/gateway.js';
+import { courseDossierBuilderFor, type CourseDossierBuilder } from './services/courses/dossier.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
 import type { TtsConfig } from './services/tts.js';
 
@@ -52,6 +59,12 @@ export interface BuildAppOptions {
   /** Required to register /api/sessions/* routes. */
   coachAgentBaseDeps?: CoachAgentBaseDependencies;
   engineBackendOptions?: ResolveEngineBackendOptions;
+  /** The course skeleton's engine pass; defaults to one built from
+   * `engineBackendOptions` (tests inject a fake). */
+  courseDossierBuilder?: CourseDossierBuilder;
+  /** The creator's model for course writing; defaults to the gateway's
+   * standard tier (tests inject a mock). */
+  courseModelResolver?: (userId: string) => Promise<ModelResolution>;
   /** Shared (Redis) store for the light-engine evals that rate a student's live bot-game moves — must be shared across API pods. */
   botRatingEvals?: RatingEvalStore;
   /** Live Thinking log of bot moves, mirrored across API pods — see bot-thinking-registry.ts. */
@@ -71,6 +84,8 @@ export interface BuildAppOptions {
    * default so tests stay quiet; server.ts turns it on. Without it every
    * `log.error` in the app is a silent no-op. */
   logger?: boolean;
+  /** The R2 copy of published course audio (services/courses/audio-mirror.ts). */
+  audioMirror?: AudioMirror;
   /** Overrides the per-user cap on all /api routes (plugins/api-rate-limit.ts). */
   apiRateLimit?: RateLimit;
 }
@@ -110,6 +125,14 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (options.db) {
     registerUsersRoutes(app, options.db);
     registerBugReportsRoutes(app, options.db);
+    registerPublicCoursesRoutes(app, options.db, options.audioMirror);
+    registerCourseProgressRoutes(app, options.db);
+    registerCoursesRoutes(app, options.db, {
+      buildDossier: options.courseDossierBuilder ?? (options.engineBackendOptions ? courseDossierBuilderFor(options.engineBackendOptions) : undefined),
+      jobQueue: options.jobQueue ?? noopJobQueue,
+      resolveModel: options.courseModelResolver ?? courseModelResolver(options.db, options.coachAgentBaseDeps?.gatewayConfig),
+      audioMirror: options.audioMirror
+    });
     registerDashboardRoutes(app, options.db);
     registerDiagnosticsRoutes(app, options.db);
     registerPuzzleAssignmentsRoutes(app, options.db);
@@ -137,6 +160,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     // analysis and get_engine_analysis; without, it works from the line notes.
     if (options.coachAgentBaseDeps) {
       registerPuzzleSessionsRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions);
+      registerCourseQuestionRoutes(app, options.db, options.coachAgentBaseDeps, options.engineBackendOptions);
     }
     if (options.ttsConfig && options.llmUnlockStore) {
       registerTtsRoutes(app, options.db, options.llmUnlockStore, options.ttsConfig);
@@ -183,4 +207,9 @@ function defaultAuthMode(): AuthHeadersOptions['authMode'] {
 function defaultCheckReady(db: Kysely<Database> | undefined): () => Promise<boolean> {
   if (!db) return () => Promise.resolve(true);
   return () => pingDb(db);
+}
+
+/** The creator's standard-tier model, when the app has an AI gateway. */
+function courseModelResolver(db: Kysely<Database>, gatewayConfig: GatewayConfig | undefined): ((userId: string) => Promise<ModelResolution>) | undefined {
+  return gatewayConfig ? (userId) => getModelForUser(db, gatewayConfig, userId, 'standard') : undefined;
 }

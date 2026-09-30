@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "advanced",
+  "coachPersona": "huntress",
+  "direction": "The king hunt: sacrifice the queen on h7 and chase the king to g1.",
+  "pgn": "[Event \"Lasker-Thomas king hunt\"]\n[SetUp \"1\"]\n[FEN \"rn3rk1/pbppq1pp/1p2pb2/4N2Q/3PN3/3B4/PPP2PPP/R3K2R w KQ - 6 11\"]\n\n11. Qxh7+ Kxh7 12. Nxf6+ Kh6 13. Neg4+ Kg5 14. h4+ Kf4 15. g3+ Kf3 16. Be2+ Kg2 17. Rh2+ Kg1 18. Kd2# *"
+}

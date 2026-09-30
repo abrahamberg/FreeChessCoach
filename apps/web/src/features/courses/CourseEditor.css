@@ -1,0 +1,1090 @@
+.course-intake,
+.course-editor {
+  padding: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+  color: var(--color-text);
+}
+
+.course-intake {
+  max-width: 760px;
+}
+
+.course-intake__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.course-intake__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.course-intake__errors {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  list-style: none;
+}
+
+.course-intake__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.course-intake__list {
+  margin-top: 32px;
+}
+
+.course-intake__list ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.course-intake__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.course-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.course-field > span {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+/* "prompt" → "Prompt", without turning "What the coach says" into title case. */
+.course-field > span::first-letter {
+  text-transform: uppercase;
+}
+
+.course-field--grow {
+  flex: 1 1 240px;
+}
+
+.course-field--narrow {
+  max-width: 140px;
+}
+
+.course-editor__status {
+  padding: 24px 16px;
+  color: var(--color-text-secondary);
+}
+
+.course-editor__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.course-editor__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.course-outline,
+.course-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+
+.course-outline__chapter h3 {
+  margin: 12px 0 6px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.course-outline__chapter:first-child h3 {
+  margin-top: 0;
+}
+
+.course-outline ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.course-outline__item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.course-outline__item:hover {
+  background: var(--color-surface-subtle);
+}
+
+.course-outline__item--selected {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.course-outline__role,
+.course-panel__role {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.course-panel__role {
+  margin: 0 0 8px;
+}
+
+.course-outline__number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.course-outline__item--selected .course-outline__number {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.course-outline__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.course-outline__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.course-outline__quiz {
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.course-outline__focus {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.course-outline__moves {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.course-board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.course-board__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.step-buttons .btn-secondary {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  min-height: 36px;
+  padding: 0;
+}
+
+.course-board__count {
+  min-width: 96px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.course-board__moves,
+.course-arrows {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.course-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.course-chip:hover {
+  background: var(--color-surface-subtle);
+}
+
+.course-chip--selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.course-chip--best {
+  border-color: var(--tactic-good);
+}
+
+.course-chip--threat {
+  border-color: var(--tactic-bad);
+}
+
+.course-chip--idea {
+  border-color: var(--annotate-1);
+}
+
+.course-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.course-panel__section h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.course-budget {
+  margin: -4px 0 8px;
+}
+
+.course-budget--over {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+/* A move for the course and the clip: two ticks, one text. */
+.course-ply__ticks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.course-ply__tick {
+  min-height: 36px;
+  padding: 4px 14px 4px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.course-ply__tick::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+
+.course-ply__tick[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+
+.course-ply__tick[aria-pressed='true']::before {
+  background: currentColor;
+}
+
+.course-ply__tick:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.course-ply__clip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.course-ply__own {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.course-ply__own input {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+}
+
+
+.course-script {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.course-script li {
+  line-height: 1.45;
+}
+
+.course-warnings {
+  color: var(--color-warning);
+}
+
+.course-warnings ul {
+  margin: 0;
+  padding: 8px 8px 8px 24px;
+  border-radius: 6px;
+  background: var(--color-warning-soft);
+  font-size: 0.9rem;
+}
+
+.course-generation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.course-generation p {
+  margin: 0;
+}
+
+/* Task 82.1: the publish dialog (inside Modal). */
+.publish-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 16px 16px;
+}
+
+.publish-dialog__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.publish-dialog__group legend {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.publish-dialog__group input[type='text'],
+.publish-dialog__group input:not([type]) {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.publish-dialog__choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  accent-color: var(--color-primary);
+}
+
+.publish-dialog__checks {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.publish-dialog__checks p {
+  margin: 0;
+}
+
+.publish-dialog__checks ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.publish-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* --- The editor's frame (Phase 89): a header like the board views', the
+ * details card, and the right panel's tabs. --- */
+.course-editor {
+  max-width: 1600px;
+}
+
+.studio-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
+}
+
+.studio-header__back {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+}
+
+.studio-header__back:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
+.studio-header__name {
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.studio-header__title {
+  width: 100%;
+  padding: 2px 6px;
+  margin-left: -6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.studio-header__title:hover {
+  border-color: var(--color-border);
+}
+
+.studio-header__title:focus {
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  outline: none;
+}
+
+.studio-header__state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.studio-header__save {
+  color: var(--color-text-muted);
+}
+
+.studio-header__save--dirty {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.studio-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* "Preview: Clip | As learner", one pill. */
+.studio-header__preview {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.studio-header__preview-label {
+  padding: 0 10px 0 14px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.studio-header__preview button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 12px;
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.studio-header__preview button:hover:not(:disabled) {
+  background: var(--color-surface-subtle);
+  color: var(--color-primary);
+}
+
+.studio-header__preview button:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.studio-header__preview button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.course-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.course-details .course-editor__actions .btn-secondary,
+.course-details .course-editor__actions .btn-primary {
+  flex: 1 1 auto;
+}
+
+.course-outline,
+.course-panel {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.course-panel__role {
+  font-size: var(--font-size-lg);
+}
+
+.course-tabs {
+  display: flex;
+  gap: 2px;
+  margin: var(--space-2) 0 var(--space-3);
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+}
+
+.course-tabs__tab {
+  flex: 1 1 0;
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.course-tabs__tab:hover {
+  color: var(--color-text);
+}
+
+.course-tabs__tab[aria-selected='true'] {
+  background: var(--color-surface);
+  color: var(--color-primary-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.course-tabs__tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.course-tabs__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (max-width: 639px) {
+  .studio-header {
+    position: static;
+  }
+
+  .studio-header__actions {
+    width: 100%;
+  }
+
+  .studio-header__preview button,
+  .course-tabs__tab {
+    min-height: 44px;
+  }
+}
+
+/* Phase 90: the Details card's coach and level, the move chips' marks and
+ * the Start over dialog. */
+.course-details__coach {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.course-details__coach .coach-avatar-image {
+  width: 44px;
+  margin: 0;
+}
+
+.course-details__coach-name {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.course-details__change {
+  min-height: 32px;
+  padding: 4px 12px;
+}
+
+.course-details__hint {
+  margin: 0;
+  color: var(--color-warning);
+}
+
+.course-details__level {
+  display: grid;
+  grid-template-columns: minmax(96px, 1.4fr) minmax(56px, 0.8fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.course-details__code {
+  padding-bottom: 8px;
+  white-space: nowrap;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.course-chip__mark {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 5px;
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+
+.course-chip__mark--long {
+  background: var(--color-primary);
+}
+
+.course-chip__mark--short {
+  border-radius: 1px;
+  background: var(--color-warning);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.start-over {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.start-over__choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.start-over__choice:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-subtle);
+}
+
+.start-over__choice > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.start-over__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+/* §13: the YouTube video's packaging and the reel. */
+.course-products {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.course-products h3 {
+  margin: 0;
+}
+
+.course-products__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 12px;
+}
+
+.course-products__span {
+  padding-bottom: 8px;
+}
+
+.course-products__beat {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  align-items: start;
+  gap: 4px 8px;
+}
+
+.course-products__beat strong {
+  grid-column: 1 / -1;
+  font-size: var(--font-size-sm);
+}
+
+.course-tempting {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.course-tempting__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 8px;
+}
+
+.course-tempting__san {
+  padding-top: 8px;
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+/* Phase 104: the Studio's sections, and the episode workspace: the board
+ * column (the board, its moves, the episode list) beside a wide editor. */
+.studio-sections {
+  display: flex;
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 var(--space-4);
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+  overflow-x: auto;
+}
+
+.studio-sections__tab {
+  min-height: 36px;
+  padding: 4px 18px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.studio-sections__tab:hover {
+  color: var(--color-text);
+}
+
+.studio-sections__tab[aria-selected='true'] {
+  background: var(--color-surface);
+  color: var(--color-primary-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.studio-sections__tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.course-editor > .course-generation {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.course-editor > .course-generation .course-editor__actions:empty {
+  display: none;
+}
+
+.course-editor__workspace {
+  --studio-top: 104px;
+  display: grid;
+  /* The episode list; the board as big as the screen allows, its moves
+   * still in view; the editor. */
+  grid-template-columns: minmax(220px, 280px) clamp(300px, min(calc(100svh - 300px), 36vw), 560px) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* The list and the board stay in view while the editor scrolls; the list
+ * scrolls on its own. */
+.course-editor__workspace > .course-outline,
+.course-editor__stage {
+  position: sticky;
+  top: var(--studio-top);
+  max-height: calc(100svh - var(--studio-top) - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.course-editor__stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.course-editor__stage .course-board .coach-board-frame {
+  width: 100%;
+}
+
+.course-board__moves {
+  max-height: 88px;
+  overflow-y: auto;
+}
+
+.course-episode-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.course-episode-panel__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.course-episode-panel__title .course-panel__role {
+  margin: 0;
+}
+
+.course-episode-panel__step {
+  display: flex;
+  gap: 6px;
+}
+
+.course-episode-panel .course-budget {
+  margin: 4px 0 8px;
+}
+
+.course-editor__empty {
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.course-editor__sheet {
+  max-width: 1100px;
+}
+
+.course-editor__sheet--two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+  max-width: none;
+}
+
+.course-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-5);
+}
+
+.course-details__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.course-details__column h3,
+.course-products h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.course-details__coach,
+.course-details__level {
+  max-width: 420px;
+}
+
+/* A laptop screen: three columns leave the fields too little room, so the
+ * list goes under the board and the editor spans both. */
+@media (min-width: 1001px) and (max-width: 1280px) {
+  .course-editor__workspace {
+    grid-template-columns: clamp(300px, min(calc(100svh - 300px), 40vw), 480px) minmax(0, 1fr);
+    grid-template-areas:
+      'board editor'
+      'list editor';
+  }
+
+  .course-editor__stage {
+    grid-area: board;
+    position: static;
+    max-height: none;
+  }
+
+  .course-editor__workspace > .course-outline {
+    grid-area: list;
+    position: static;
+    max-height: none;
+  }
+
+  .course-editor__fields > .course-episode-panel,
+  .course-editor__workspace > .course-editor__empty {
+    grid-area: editor;
+  }
+}
+
+@media (max-width: 1000px) {
+  .course-editor__workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Stacked: the board, its moves, the editor, then the episode list. */
+  .course-editor__workspace > .course-outline,
+  .course-editor__stage {
+    position: static;
+    max-height: none;
+  }
+
+  .course-editor__workspace > .course-outline {
+    order: 1;
+  }
+
+  .course-editor__stage .course-board {
+    width: min(100%, 560px);
+    margin: 0 auto;
+  }
+
+  .course-editor__sheet--two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 639px) {
+  .studio-sections {
+    width: 100%;
+  }
+
+  .studio-sections__tab {
+    flex: 1 1 0;
+    min-height: 44px;
+  }
+}
+
+/* Locks the fields while the AI writes; takes no box of its own. */
+.course-editor__fields {
+  display: contents;
+}

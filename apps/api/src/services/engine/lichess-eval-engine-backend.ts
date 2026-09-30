@@ -1,4 +1,4 @@
-import { computePositionFeatures, pvUciToSan } from '@freechesscoach/chess-analysis';
+import { computePositionFeatures, legalSanMoves, pvUciToSan } from '@freechesscoach/chess-analysis';
 import type { EngineEval, PositionAnalysis, PositionAnalysisLine } from '@freechesscoach/shared';
 import { toLeanEval } from './engine-conversions.js';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from './engine-backend.js';
@@ -49,7 +49,10 @@ export class LichessEvalEngineBackend implements EngineBackend {
   }
 
   async analyzeGame(fens: string[], opts?: EngineBackendAnalyzeOptions): Promise<EngineEval[]> {
-    const hits = await Promise.all(fens.map((fen) => this.lookupLeanHit(fen)));
+    const hits = await Promise.all(fens.map(async (fen) => {
+      const hit = await this.lookupLeanHit(fen);
+      return hit && tooFewLines(fen, hit.lines.length, opts?.minLines) ? null : hit;
+    }));
     const missedPlies = hits.flatMap((hit, ply) => (hit ? [] : [ply]));
 
     const computed =
@@ -73,6 +76,13 @@ export class LichessEvalEngineBackend implements EngineBackend {
     if (!result) return null;
     return toLeanEval(toAnalysisCore(fen, result));
   }
+}
+
+/** `minLines` (engine-backend.ts): fewer stored lines than asked for, where
+ * the position has more legal moves than that. */
+function tooFewLines(fen: string, lines: number, minLines: number | undefined): boolean {
+  if (!minLines || lines >= minLines) return false;
+  return legalSanMoves(fen).length > lines;
 }
 
 /** Maps every stored line (up to LICHESS_EVAL_MAX_LINES, not just the best

@@ -1,0 +1,8 @@
+{
+  "kind": "trap",
+  "levelBand": "novice",
+  "coachPersona": "general",
+  "learnerSide": "white",
+  "direction": "Queen's Gambit Accepted: why holding the c4 pawn with ...b5 loses the rook on a8.",
+  "pgn": "[Event \"QGA b5 trap\"]\n\n1. d4 d5 2. c4 dxc4 3. e3 b5 4. a4 c6 5. axb5 cxb5 6. Qf3 *"
+}

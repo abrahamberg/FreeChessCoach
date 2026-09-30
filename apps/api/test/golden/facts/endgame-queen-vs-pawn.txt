@@ -1,0 +1,67 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, e, f, g, h; the d-file is half-open for white; black has a passed pawn on d2
+
+Moves:
+n1 1.Qe5+ (White, Line A) | good | before: White is much better → after: White is much better
+    board: moves the queen from a1 to e5 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd3, Kf3, Kf2, Kf1, Kd1
+    alternatives: Qa2: White is much better; Qa6+: White is much better
+n2 1…Kf2 (Black, Line A) | excellent | before: White is much better → after: White is much better
+    board: moves the king from e2 to f2
+    alternatives: Kf1: White is much better; Kd3: White is much better
+n3 2.Qd4+ (White, Line A) | good | before: White is much better → after: White is much better
+    board: moves the queen from e5 to d4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf3, Kg3, Kg2, Kf1, Ke1, Ke2
+    alternatives: Qh5: White is much better; Qf4+: White is much better; Qa1: White is much better
+n4 2…Ke2 (Black, Line A) | best | before: White is much better → after: White is much better
+    board: moves the king from f2 to e2
+    alternatives: Ke1: White is much better; Kg2: White is winning
+n5 3.Qe4+ (White, Line A) | best | before: White is much better → after: White is much better
+    board: moves the queen from d4 to e4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf2, Kf1, Kd1
+    alternatives: Qg4+: White is much better; Qc4+: White is much better
+n6 3…Kd1 (Black, Line A) | excellent | before: White is much better → after: White is much better
+    board: moves the king from e2 to d1
+    alternatives: Kf2: White is much better; Kf1: White is much better
+n7 4.Kg7 (White, Line A) | excellent | before: White is much better → after: White is much better
+    board: moves the king from h8 to g7
+    alternatives: Kg8: White is much better; Qc4: White is much better; Kh7: White is much better
+n8 4…Kc1 (Black, Line A) | forced | before: White is much better → after: White is much better
+    board: moves the king from d1 to c1
+n9 5.Qc4+ (White, Line A) | best | before: White is much better → after: White is much better
+    board: moves the queen from e4 to c4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kb2, Kd1, Kb1
+    alternatives: Qe3: White is much better; Qf4: White is much better
+    tempting check: Qh1+? White's Qh1+ moves the queen from e4 to h1 | gives check | the check can be answered: block with d1=Q; the checking piece cannot be taken; move the king with Kb2, Kc2. Black answers d1=Q: moves the pawn from d2 to d1 | promotes to a queen | blocks the check from the queen on h1 | attacks the queen on h1. Then Qh6+ Kb2 Qe6. Over the line nothing is taken; at the end material is level (The position is roughly equal).
+    tempting check: Qe1+? White's Qe1+ moves the queen from e4 to e1 | gives check | the check can be answered: block with d1=Q; take the checking piece with dxe1=Q; move the king with Kb2, Kc2 | leaves the white queen on e1 hanging. Black answers dxe1=Q: moves the pawn from d2 to e1 | promotes to a queen | captures the queen on e1. Then Kg6 Kd2 Kg5. Over the line Black takes the queen; at the end Black is a queen up (Black is winning).
+n10 5…Kb2 (Black, Line A) | best | before: White is much better → after: White is much better
+    board: moves the king from c1 to b2
+    alternatives: Kb1: White is much better; Kd1: White is much better
+n11 6.Qd3 (White, Line A) | excellent | before: White is much better → after: White is much better
+    board: moves the queen from c4 to d3
+    alternatives: Qb4+: White is much better; Qd4+: White is much better
+    tempting threat: Qf4? White's Qf4 moves the queen from c4 to f4. Black answers d1=Q: moves the pawn from d2 to d1 | promotes to a queen. Then Kf6 Qe1 Qc4. Over the line nothing is taken; at the end material is level (The position is roughly equal).
+n12 6…Kc1 (Black, Line A) | best | before: White is much better → after: White is much better
+    board: moves the king from b2 to c1 | the king stops guarding c3, where Qc3+ follows
+    alternatives: d1=Q: White is winning; Ka2: White is winning
+    flags: quiz-eligible
+n13 7.Qc3+ (White, Line A) | best | before: White is much better → after: White is much better
+    board: moves the queen from d3 to c3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd1, Kb1
+    alternatives: Qc4+: White is much better; Qa3+: White is much better
+    tempting check: Qf1+? White's Qf1+ moves the queen from d3 to f1 | gives check | the check can be answered: block with d1=Q; the checking piece cannot be taken; move the king with Kb2, Kc2. Black answers d1=Q: moves the pawn from d2 to d1 | promotes to a queen | blocks the check from the queen on f1 | attacks the queen on f1. Then Qb5 Kc2 Qc5+. Over the line nothing is taken; at the end material is level (The position is roughly equal).
+n14 7…Kd1 (Black, Line A) | best | before: White is much better → after: White is much better
+    board: moves the king from c1 to d1
+    tactics: They tucked the king away — walks the king to d1, out of the firing line.
+    alternatives: Kb1: White is winning
+    flags: quiz-eligible
+n15 8.Kf6 (White, Line A) | good | before: White is much better → after: White is much better
+    board: moves the king from g7 to f6
+    alternatives: Kg6: White is much better; Kh6: White is much better
+
+REEL CANDIDATES
+  r1 technique n9–n15, climax n15 [highlight, promo]
+  r2 idea n8–n15, climax n14 [highlight, puzzle, promo]
+
+PLAN
+  e1 goal n1–n1
+  e2 technique n1–n15
+  e3 recap n15–n15

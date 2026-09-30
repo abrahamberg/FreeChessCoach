@@ -100,6 +100,19 @@ export class UciEngine {
     const proc = spawn(this.stockfishPath);
     const lines = new EventEmitter();
     createInterface({ input: proc.stdout }).on('line', (line: string) => lines.emit('line', line));
+    // Stockfish segfaults on a position whose side not to move is in check
+    // (8/8/1P6/4n3/2K5/8/8/7k b, which chess.js's validateFen accepts): the
+    // search in flight settles, and the next call spawns a fresh process
+    // instead of writing to a dead one forever.
+    proc.stdin.on('error', () => undefined);
+    proc.on('exit', () => {
+      if (this.process === proc) {
+        this.process = undefined;
+        this.lines = undefined;
+        this.handshakeDone = undefined;
+      }
+      lines.emit('exit');
+    });
     this.process = proc;
     this.lines = lines;
 
@@ -125,8 +138,13 @@ export class UciEngine {
     proc.stdin.write(`position fen ${fen}\n`);
     proc.stdin.write(`go depth ${depth}\n`);
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const timer = setTimeout(() => proc.stdin.write('stop\n'), timeoutMs);
+      const done = () => {
+        clearTimeout(timer);
+        lines.off('line', onLine);
+        lines.off('exit', onExit);
+      };
 
       const onLine = (line: string) => {
         const info = parseInfoLine(line);
@@ -135,12 +153,19 @@ export class UciEngine {
           return;
         }
         if (parseBestMove(line) !== null) {
-          clearTimeout(timer);
-          lines.off('line', onLine);
+          done();
           resolve(sortedLines(collected));
         }
       };
+      // The process died mid-search: the lines so far, like a timeout's, or
+      // an error when there are none.
+      const onExit = () => {
+        done();
+        if (collected.size) resolve(sortedLines(collected));
+        else reject(new Error(`stockfish exited while searching ${fen}`));
+      };
       lines.on('line', onLine);
+      lines.on('exit', onExit);
     });
   }
 }
@@ -192,14 +217,20 @@ function fenMoverColor(fen: string): 'white' | 'black' {
 }
 
 function waitForLine(emitter: EventEmitter, predicate: (line: string) => boolean): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const onLine = (line: string) => {
       if (predicate(line)) {
         emitter.off('line', onLine);
+        emitter.off('exit', onExit);
         resolve();
       }
     };
+    const onExit = () => {
+      emitter.off('line', onLine);
+      reject(new Error('stockfish exited'));
+    };
     emitter.on('line', onLine);
+    emitter.once('exit', onExit);
   });
 }
 

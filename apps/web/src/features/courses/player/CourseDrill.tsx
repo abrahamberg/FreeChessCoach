@@ -1,0 +1,538 @@
+import {
+  buildCourseDrill,
+  isPracticeDone,
+  moveLabel,
+  nextPracticeState,
+  practiceArrow,
+  practiceAsks,
+  practiceProgress,
+  practiceRoundsLeft,
+  practiceShowsArrow,
+  sideToMove,
+  type CourseDrill as Drill,
+  type CourseDrillStep,
+  type CourseReviewState,
+  type CourseStage,
+  type PracticeMoveState
+} from '@freechesscoach/chess-analysis';
+import type { CourseDocument } from '@freechesscoach/shared';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ChevronRightIcon } from '../../../components/Icon.js';
+import { CoachBoard } from '../../board/CoachBoard.js';
+import { MoveExplorer } from '../../board/MoveExplorer.js';
+import { MoveStrip } from '../../board/MoveStrip.js';
+import { toBoardMarks } from '../courseArrows.js';
+import { AttemptFeedback, type Attempt, type Judgement } from './AttemptFeedback.js';
+import { playBoardSound } from '../../../sounds/board-sounds.js';
+import { moveSound } from '../../../sounds/move-sounds.js';
+import { CourseBoardLayout } from './CourseBoardLayout.js';
+import { CoursePane } from './CoursePane.js';
+import { STAGE_LABELS } from './CourseStageBar.js';
+import { courseMoveList, type CourseEvals } from './course-move-list.js';
+import { localToday, type CourseProgressStore } from './course-progress.js';
+import { isAcceptedAlternative, withoutMove } from './course-steps.js';
+import { judgeQuizMove } from './judge-quiz-move.js';
+import { MoveLog, type MoveLogEntry } from './MoveLog.js';
+
+/** The stages the learner plays themselves (§11). */
+export type PlayedStage = Exclude<CourseStage, 'play_through'>;
+
+export interface CourseDrillProps {
+  document: CourseDocument;
+  stage: PlayedStage;
+  /** Where results go; absent in the editor's preview, which saves nothing. */
+  progress?: CourseProgressStore | null;
+  courseSlug?: string;
+  /** Practice: the moves already known (drill key → state), saved from last time. */
+  knownMoves?: Readonly<Record<string, PracticeMoveState>>;
+  onKnownMoves?: (practice: Record<string, PracticeMoveState>) => void;
+  /** The stage is finished; the learner may go on to the next one. */
+  onStageDone: (stage: PlayedStage) => void;
+  /** Opens the next stage; its button is named after it ("Drill ›"). */
+  onNextStage: () => void;
+  onExit: () => void;
+  /** The board layout's desktop arrangement (CourseBoardLayout). */
+  isDesktop?: boolean;
+}
+
+/** The drills show no evaluations: they are about remembering the moves. */
+const NO_EVALS: CourseEvals = {};
+
+/** Pause before a move the learner does not play is made for them. */
+const AUTO_MOVE_MS = 600;
+
+const MODE_INTRO: Record<Drill['mode'], string> = {
+  learner_side: 'Play your side; the other side’s moves are played for you.',
+  find_move: 'Find the move in each position.',
+  guess_move: 'Guess each move of the game; your score is kept.'
+};
+
+function intro(stage: PlayedStage, drill: Drill): string {
+  if (stage === 'practice') return 'Play your moves. The arrows show them at first, then fewer each round, then none.';
+  if (stage === 'full_drill') return 'Play both sides now: every move of the line is yours.';
+  return MODE_INTRO[drill.mode];
+}
+
+interface RoundResult {
+  firstTries: Map<string, { san: string; correct: boolean }>;
+}
+
+/**
+ * docs/courses.md §11 steps 3–4: the learner plays the course's moves.
+ * Practice asks their own moves with the arrow on, then off, round after
+ * round until each is known, and saves nothing. The drill asks their side
+ * with no arrows, the full drill both sides; there the first try at each
+ * move counts for the review schedule. A different move is rated in the
+ * browser like the quiz (a move about as good is accepted, no penalty).
+ */
+export function CourseDrill({ document, stage, progress, courseSlug, knownMoves, onKnownMoves, onStageDone, onNextStage, onExit, isDesktop = false }: CourseDrillProps): ReactNode {
+  const reviewed = stage !== 'practice';
+  const sides = stage === 'full_drill' ? 'both' : 'learner';
+  const [states, setStates] = useState<Map<string, CourseReviewState> | null>(progress && reviewed ? null : new Map());
+  const [practice, setPractice] = useState<Map<string, PracticeMoveState>>(() => new Map(Object.entries(knownMoves ?? {})));
+  const practiceChanged = useRef(false);
+  useEffect(() => {
+    if (practiceChanged.current) onKnownMoves?.(Object.fromEntries(practice));
+  }, [practice]);
+  const [round, setRound] = useState(0);
+  const [finished, setFinished] = useState<RoundResult | null>(null);
+
+  useEffect(() => {
+    if (!progress || !reviewed) return;
+    const keys = buildCourseDrill(document, new Map(), '', sides).episodes.flatMap((episode) => episode.steps.map((step) => step.key));
+    let live = true;
+    void progress
+      .lookup(keys)
+      .catch(() => new Map<string, CourseReviewState>())
+      .then((found) => live && setStates(found));
+    return () => {
+      live = false;
+    };
+  }, [document, progress, reviewed, sides, round]);
+
+  const drill = useMemo(() => (states ? buildCourseDrill(document, states, localToday(), sides) : null), [document, states, sides]);
+  // Practice: a known move is played for the learner; the arrow shows until they know it.
+  // Fixed for the round, so a miss brings the arrow back next round.
+  const run = useMemo(() => {
+    if (!drill || reviewed) return drill && { drill, arrowKeys: new Set<string>(), roundLabel: null };
+    const next = practiceRound(drill, practice);
+    const keys = drill.episodes.flatMap((episode) => episode.steps.filter((step) => step.asked).map((step) => step.key));
+    return { ...next, roundLabel: `Round ${round + 1} of ${round + Math.max(1, practiceRoundsLeft(keys, practice))}` };
+  }, [drill, reviewed, round]);
+
+  // Practice is done only once every move is known, after this round's last answer landed.
+  const askedKeys = drill?.episodes.flatMap((episode) => episode.steps.filter((step) => step.asked).map((step) => step.key)) ?? [];
+  const stageDone = finished !== null && (reviewed || isPracticeDone(askedKeys, practice));
+  useEffect(() => {
+    if (stageDone) onStageDone(stage);
+  }, [stageDone]);
+
+  if (!run) return <p className="meta course-summary">Loading your progress…</p>;
+  if (!drill?.episodes.length) {
+    return (
+      <div className="course-drill course-summary">
+        <p className="meta">This course has no moves to play here.</p>
+        <button type="button" className="btn-secondary" onClick={onExit}>
+          Back to the course
+        </button>
+      </div>
+    );
+  }
+
+  const again = (): void => {
+    setFinished(null);
+    if (progress && reviewed) setStates(null);
+    setRound(round + 1);
+  };
+
+  if (finished) {
+    return (
+      <StageSummary
+        document={document}
+        stage={stage}
+        drill={drill}
+        result={finished}
+        practiceKeys={askedKeys}
+        practice={practice}
+        roundsDone={round + 1}
+        onAgain={again}
+        onNextStage={onNextStage}
+        onExit={onExit}
+      />
+    );
+  }
+
+  return (
+    <DrillRun
+      key={round}
+      document={document}
+      stage={stage}
+      drill={run.drill}
+      introText={round === 0 ? intro(stage, drill) : stage === 'practice' ? 'Again, with fewer arrows.' : null}
+      arrowKeys={run.arrowKeys}
+      roundLabel={run.roundLabel}
+      progressBar={
+        reviewed ? null : <progress className="course-drill__progress" value={practiceProgress(askedKeys, practice)} max={1} aria-label="Practice progress" />
+      }
+      isDesktop={isDesktop}
+      onResult={(result) => {
+        if (reviewed) void progress?.record([{ ...result, courseSlug: courseSlug ?? '' }]).catch(() => undefined);
+        else {
+          practiceChanged.current = true;
+          setPractice((prev) => new Map(prev).set(result.key, nextPracticeState(prev.get(result.key), result.correct)));
+        }
+      }}
+      onFinished={setFinished}
+      onExit={onExit}
+    />
+  );
+}
+
+interface StageSummaryProps {
+  document: CourseDocument;
+  stage: PlayedStage;
+  drill: Drill;
+  result: RoundResult;
+  practiceKeys: string[];
+  practice: ReadonlyMap<string, PracticeMoveState>;
+  roundsDone: number;
+  onAgain: () => void;
+  onNextStage: () => void;
+  onExit: () => void;
+}
+
+function StageSummary({ document, stage, drill, result, practiceKeys, practice, roundsDone, onAgain, onNextStage, onExit }: StageSummaryProps): ReactNode {
+  const tries = [...result.firstTries.values()];
+  const right = tries.filter((each) => each.correct).length;
+  const missed = tries.filter((each) => !each.correct).map((each) => each.san);
+
+  if (stage === 'practice') {
+    const done = isPracticeDone(practiceKeys, practice);
+    const total = roundsDone + practiceRoundsLeft(practiceKeys, practice);
+    const next = practiceRound(drill, practice);
+    const nextAsked = next.drill.episodes.flatMap((episode) => episode.steps.filter((step) => step.asked)).length;
+    const nextLine =
+      next.arrowKeys.size === 0
+        ? 'Next round: no arrows.'
+        : next.arrowKeys.size === nextAsked
+          ? 'Next round: arrows on every move.'
+          : `Next round: arrows on ${next.arrowKeys.size} of ${nextAsked} moves.`;
+    return (
+      <div className="course-drill course-summary">
+        <CoursePane persona={document.coachPersona}>
+          <p className="course-drill__score">{done ? 'You know every move.' : `Round ${roundsDone} of ${total} done.`}</p>
+          <progress className="course-drill__progress" value={practiceProgress(practiceKeys, practice)} max={1} aria-label="Practice progress" />
+          {missed.length > 0 && <p>Missed: {missed.join(', ')}. The arrow comes back for {missed.length === 1 ? 'it' : 'them'}.</p>}
+          <p>{done ? 'Now play them with no arrows at all.' : nextLine}</p>
+        </CoursePane>
+        <div className="course-player__actions">
+          <button type="button" className="btn-primary course-player__next" aria-label={done ? `Next: ${STAGE_LABELS.drill}` : undefined} onClick={done ? onNextStage : onAgain}>
+            {done ? (
+              <>
+                {STAGE_LABELS.drill}
+                <ChevronRightIcon width={16} height={16} />
+              </>
+            ) : (
+              'Next round'
+            )}
+          </button>
+          <button type="button" className="btn-secondary" onClick={onExit}>
+            Back to the course
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="course-drill course-summary">
+      <CoursePane persona={document.coachPersona}>
+        <p className="course-drill__score">
+          {drill.mode === 'guess_move' ? `Your score: ${right} of ${tries.length}.` : `${right} of ${tries.length} right first time.`}
+        </p>
+        {missed.length > 0 ? <p>To go over again tomorrow: {missed.join(', ')}.</p> : <p>Every move right. They come back for review in a week.</p>}
+        {stage === 'full_drill' && <p>That is the whole course, both sides.</p>}
+      </CoursePane>
+      <div className="course-player__actions">
+        {stage === 'drill' && (
+          <button type="button" className="btn-primary course-player__next" aria-label={`Next: ${STAGE_LABELS.full_drill}`} onClick={onNextStage}>
+            {STAGE_LABELS.full_drill}
+            <ChevronRightIcon width={16} height={16} />
+          </button>
+        )}
+        <button type="button" className={stage === 'drill' ? 'btn-secondary' : 'btn-primary'} onClick={onAgain}>
+          {stage === 'drill' ? 'Drill again' : 'Play both sides again'}
+        </button>
+        <button type="button" className="btn-secondary" onClick={onExit}>
+          Back to the course
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface DrillRunProps {
+  document: CourseDocument;
+  stage: PlayedStage;
+  drill: Drill;
+  introText: string | null;
+  /** Asked moves whose arrow shows (practice). */
+  arrowKeys: ReadonlySet<string>;
+  /** Practice: "Round 2 of 3". */
+  roundLabel: string | null;
+  /** Practice: how far the learner is, beside the status in the explorer column. */
+  progressBar: ReactNode;
+  isDesktop: boolean;
+  /** The first try at each asked move. */
+  onResult: (result: { key: string; san: string; correct: boolean }) => void;
+  onFinished: (result: RoundResult) => void;
+  onExit: () => void;
+}
+
+function DrillRun({ document, stage, drill, introText, arrowKeys, roundLabel, progressBar, isDesktop, onResult, onFinished, onExit }: DrillRunProps): ReactNode {
+  const [at, setAt] = useState({ episode: 0, step: 0 });
+  const [firstTries, setFirstTries] = useState<Map<string, { san: string; correct: boolean }>>(new Map());
+  const [attempt, setAttempt] = useState<Attempt | null>(null);
+  /** The last two moves played, across episodes (the move log). */
+  const [history, setHistory] = useState<{ step: CourseDrillStep; episodeId: string }[]>([]);
+  const [judgement, setJudgement] = useState<Judgement | null>(null);
+  const judgeRef = useRef(0);
+
+  const episode = drill.episodes[at.episode];
+  const step = episode?.steps[at.step];
+  const done = !episode;
+  const lastPlayed = episode && at.step > 0 ? episode.steps[at.step - 1] : undefined;
+  const fen = step ? step.fenBefore : (lastPlayed?.node.fenAfter ?? '');
+  const asked = drill.episodes.flatMap((each) => each.steps.filter((each) => each.asked));
+
+  const advance = (): void => {
+    judgeRef.current += 1;
+    setAttempt(null);
+    setJudgement(null);
+    if (!episode) return;
+    if (step) setHistory((prev) => [...prev.slice(-1), { step, episodeId: episode.episodeId }]);
+    if (at.step + 1 < episode.steps.length) setAt({ episode: at.episode, step: at.step + 1 });
+    else setAt({ episode: at.episode + 1, step: 0 });
+  };
+
+  // A move the learner does not play is made for them.
+  useEffect(() => {
+    if (!step || step.asked) return;
+    const timer = window.setTimeout(() => {
+      knock(step.node.san, false);
+      advance();
+    }, AUTO_MOVE_MS);
+    return () => window.clearTimeout(timer);
+  }, [at.episode, at.step, step?.asked]);
+
+  const firstTry = (correct: boolean): void => {
+    if (!step || firstTries.has(step.key)) return;
+    setFirstTries(new Map(firstTries).set(step.key, { san: step.node.san, correct }));
+    onResult({ key: step.key, san: step.node.san, correct });
+  };
+
+  const onMove = (san: string, fenAfter: string, uci: string): void => {
+    if (!step?.asked) return;
+    knock(san, true);
+    if (uci === step.node.uci) {
+      firstTry(true);
+      advance();
+      return;
+    }
+    const tried = { fenBefore: step.fenBefore, fenAfter, san };
+    const request = ++judgeRef.current;
+    setAttempt(tried);
+    setJudgement({ status: 'checking' });
+    judgeQuizMove({ ...tried, mover: step.fenBefore.split(' ')[1] === 'b' ? 'black' : 'white' })
+      .then((move) => {
+        if (request !== judgeRef.current) return;
+        setJudgement({ status: 'ready', move });
+        // The course's judgement of the try (not a live game's move).
+        if (!isAcceptedAlternative(move.quality)) playBoardSound('bad');
+      })
+      .catch(() => request === judgeRef.current && setJudgement({ status: 'error' }));
+  };
+
+  // Recorded once rated; when the engine can't rate it, the next try counts.
+  useEffect(() => {
+    if (judgement?.status !== 'ready') return;
+    firstTry(isAcceptedAlternative(judgement.move.quality));
+  }, [judgement]);
+
+  useEffect(() => {
+    if (done) onFinished({ firstTries });
+  }, [done]);
+  if (done) return null;
+
+  const waiting = step?.asked && !attempt;
+  const hinted = Boolean(step && arrowKeys.has(step.key));
+  const hint = waiting && step && hinted ? toBoardMarks([practiceArrow(step.node)]) : null;
+  // The course's line on each move: what practice says a move does.
+  const lines = document.episodes.find((each) => each.id === episode?.episodeId)?.plies ?? [];
+  const who = (fenBefore: string, learnerPlays: boolean): string =>
+    stage === 'full_drill' ? (sideToMove(fenBefore) === 'white' ? 'White' : 'Black') : learnerPlays ? 'You' : 'Opponent';
+  // One running sequence: a new episode does not start the log afresh.
+  const played: MoveLogEntry[] = history.map(({ step: each, episodeId }) => ({
+    label: moveLabel(each.fenBefore, each.node.san),
+    side: sideToMove(each.fenBefore),
+    who: who(each.fenBefore, each.asked),
+    note: document.episodes.find((one) => one.id === episodeId)?.plies.find((ply) => ply.nodeId === each.node.id)?.text.trim() || null,
+    result: each.asked ? (firstTries.get(each.key)?.correct === false ? 'shown' : 'right') : undefined
+  }));
+  const showMove = (): void => {
+    firstTry(false);
+    if (step) knock(step.node.san, true);
+    advance();
+  };
+  // The current line, from the course's start through the moves played so far.
+  const line = episode ? courseMoveList(document, episode.steps.map((each) => each.node), NO_EVALS) : null;
+  const shown = line ? line.leadIn + at.step : 0;
+  const lineMoves = line?.sanMoves.slice(0, shown) ?? [];
+  const linePositions = line?.positions.slice(0, shown + 1) ?? [];
+
+  const status = (
+    <span className="meta course-drill__status">
+      {/* In practice only the sequence matters, not which episode it is. */}
+      {roundLabel ? `${roundLabel} · ` : ''}
+      {stage !== 'practice' && drill.episodes.length > 1 ? `Line ${at.episode + 1} of ${drill.episodes.length} · ` : ''}
+      {firstTries.size} of {asked.length} moves
+    </span>
+  );
+  const stop = (
+    <button type="button" className="btn-secondary" onClick={onExit}>
+      {stage === 'practice' ? 'Stop practising' : 'Stop the drill'}
+    </button>
+  );
+  const nav = (
+    <div className="course-player__nav">
+      {status}
+      {stop}
+    </div>
+  );
+
+  const coach = (
+    <CoursePane persona={document.coachPersona}>
+      {/* The move to play first: on a phone the pane shows only a few lines. */}
+      {step && (
+        <MoveLog
+          played={played}
+          current={{
+            side: sideToMove(step.fenBefore),
+            who: who(step.fenBefore, step.asked),
+            // Practice names the move while its arrow shows; the drills never do.
+            label: !step.asked || (stage === 'practice' && hinted) ? moveLabel(step.fenBefore, step.node.san) : null,
+            yours: step.asked,
+            // Practice says what the move does; with the move hidden, its name is blanked out of the note.
+            purpose:
+              stage === 'practice' && step.asked ? withoutMove(lines.find((ply) => ply.nodeId === step.node.id)?.text.trim() || null, hinted ? null : step.node.san) : null
+          }}
+          // The arrow already shows the move; "Show the move" is for when it has gone.
+          action={
+            waiting && !hinted ? (
+              <button type="button" className="btn-secondary" onClick={showMove}>
+                Show the move
+              </button>
+            ) : undefined
+          }
+        />
+      )}
+      {step?.asked && attempt && (
+        <AttemptFeedback
+          attempt={attempt}
+          judgement={judgement}
+          answerSan={step.node.san}
+          acceptLabel="Play the course move"
+          onAccept={advance}
+          onRetry={() => {
+            judgeRef.current += 1;
+            setAttempt(null);
+            setJudgement(null);
+          }}
+          onReveal={advance}
+        />
+      )}
+      {introText && firstTries.size === 0 && !attempt && <p className="meta">{introText}</p>}
+    </CoursePane>
+  );
+
+  return (
+    <CourseBoardLayout
+      isDesktop={isDesktop}
+      explorer={
+        <>
+          <div className="course-drill__panel">
+            {status}
+            {progressBar}
+            {stop}
+          </div>
+          {line && (
+            <MoveExplorer
+              sanMoves={lineMoves}
+              classifiedMoves={[]}
+              positions={linePositions}
+              currentPly={shown}
+              onSelect={() => undefined}
+              showNotes={false}
+              start={line.start}
+              dimmedThroughPly={line.leadIn}
+              hideNav
+            />
+          )}
+        </>
+      }
+      board={
+        <>
+          <div className="session-board-row">
+            <CoachBoard
+              fen={attempt?.fenAfter ?? fen}
+              orientation={document.learnerSide}
+              mode={waiting ? 'answer' : 'peek'}
+              disabled={!waiting}
+              arrows={hint?.arrows ?? []}
+              highlights={hint?.highlights ?? []}
+              onUserMove={onMove}
+            />
+          </div>
+        </>
+      }
+      coach={coach}
+      strip={
+        line && lineMoves.length > 0 ? (
+          <div className="course-layout__strip">
+            <MoveStrip
+              sanMoves={lineMoves}
+              classifiedMoves={[]}
+              positions={linePositions}
+              currentPly={shown - 1}
+              momentPlies={[]}
+              onSelect={() => undefined}
+              start={line.start}
+              dimmedThroughPly={line.leadIn}
+            />
+          </div>
+        ) : undefined
+      }
+      bottomBar={nav}
+    />
+  );
+}
+
+/** A drill's move sound: the learner's knock or the other side's softer
+ * one, the chime on a check; no bad or great for the moves themselves. */
+function knock(san: string, own: boolean): void {
+  playBoardSound(moveSound({ san, mover: own ? 'white' : 'black', learnerSide: 'white' }));
+}
+
+/** The next practice round: the moves not yet known, and which of them show
+ * their arrow (every other one while the arrows thin out). */
+function practiceRound(drill: Drill, practice: ReadonlyMap<string, PracticeMoveState>): { drill: Drill; arrowKeys: Set<string> } {
+  const episodes = drill.episodes
+    .map((episode) => ({ ...episode, steps: episode.steps.map((step) => ({ ...step, asked: step.asked && practiceAsks(practice.get(step.key)) })) }))
+    .filter((episode) => episode.steps.some((step) => step.asked));
+  const arrowKeys = new Set(
+    episodes.flatMap((episode) =>
+      episode.steps.filter((step) => step.asked).flatMap((step, index) => (practiceShowsArrow(practice.get(step.key), index) ? [step.key] : []))
+    )
+  );
+  return { drill: { ...drill, episodes }, arrowKeys };
+}

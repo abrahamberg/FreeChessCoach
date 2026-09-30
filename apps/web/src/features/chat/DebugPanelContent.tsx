@@ -31,16 +31,22 @@ function StatTile({
 
 export function DebugPanelContent({
   snapshot,
-  sessionId,
+  title = 'Coach turn — debug',
+  context,
   copied,
   onCopy,
-  onClose
+  onClose,
+  children
 }: {
   snapshot: TurnDebugSnapshot;
-  sessionId: string;
+  title?: string;
+  /** The subtitle's last item: which session, which course call. */
+  context: string;
   copied: boolean;
   onCopy: (snapshot: TurnDebugSnapshot) => void;
   onClose: () => void;
+  /** Shown between the usage strip and the messages (the course's call list). */
+  children?: ReactNode;
 }): ReactNode {
   // The system layers travel in the model call's own `instructions` slot, but
   // the panel exists to show the request as the provider sees it — cache
@@ -53,7 +59,7 @@ export function DebugPanelContent({
     <>
       <div className="debug-panel__header">
         <div className="debug-panel__title-block">
-          <h1>Coach turn — debug</h1>
+          <h1>{title}</h1>
           <div className="debug-panel__subtitle">
             <span>{snapshot.request.provider}</span>
             <span className="debug-panel__dot">·</span>
@@ -61,9 +67,7 @@ export function DebugPanelContent({
             <span className="debug-panel__dot">·</span>
             <span>reasoning {snapshot.request.reasoning}</span>
             <span className="debug-panel__dot">·</span>
-            <span>
-              session {sessionId.slice(0, 4)}…{sessionId.slice(-4)}
-            </span>
+            <span>{context}</span>
           </div>
         </div>
         <button type="button" className="debug-panel__btn debug-panel__btn--copy" onClick={() => onCopy(snapshot)}>
@@ -81,6 +85,8 @@ export function DebugPanelContent({
         <StatTile kind="output" label="Output" value={usage.outputTokens} />
         <StatTile kind="output" label="Reasoning" value={usage.reasoningTokens} />
       </div>
+
+      {children}
 
       <div className="debug-panel__body">
         <div className="debug-panel__col">

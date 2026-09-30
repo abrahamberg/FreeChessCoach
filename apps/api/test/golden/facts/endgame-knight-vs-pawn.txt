@@ -1,0 +1,62 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, c, d, e, f, g, h; the b-file is half-open for black; white has a passed pawn on b7
+
+Moves:
+n1 1…Nd7 (Black, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from e5 to d7
+    alternatives: Nc6+: The position is roughly equal; Nf7: White is slightly better
+    tempting check: Nf3+? Black's Nf3+ moves the knight from e5 to f3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc5, Kd5, Ke4, Ke3, Kd3, Kc3, Kc4. White answers Kd5: moves the king from d4 to d5. Then Nd2 b7 Kg2. Over the line nothing is taken; at the end White has a pawn for a knight (White is much better).
+n2 2.b7 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from b6 to b7
+    alternatives: Kd5: The position is roughly equal; Ke4: The position is roughly equal
+n3 2…Nb8 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from d7 to b8
+    alternatives: Kh2: White is slightly better; Kg2: White is slightly better
+n4 3.Kc5 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from d4 to c5
+    alternatives: Ke5: The position is roughly equal; Kd5: The position is roughly equal
+n5 3…Kg2 (Black, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from h1 to g2
+    alternatives: Kh2: The position is roughly equal; Na6+: The position is roughly equal
+n6 4.Kb6 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from c5 to b6
+    alternatives: Kd6: The position is roughly equal; Kd5: The position is roughly equal
+n7 4…Kf3 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from g2 to f3
+    alternatives: Kg3: The position is roughly equal; Kf2: The position is roughly equal
+n8 5.Kc7 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from b6 to c7 | attacks the knight on b8 | the king stops guarding a6, where Na6+ follows
+    alternatives: Kc5: The position is roughly equal; Kb5: The position is roughly equal
+n9 5…Na6+ (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from b8 to a6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc8, Kd8, Kd7, Kd6, Kc6, Kb6
+    alternatives: Kg2: White is winning; Kg3: White is winning
+    flags: quiz-eligible, critical
+n10 6.Kb6 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from c7 to b6 | attacks the knight on a6
+    alternatives: Kd6: The position is roughly equal; Kd8: The position is roughly equal
+n11 6…Nb8 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from a6 to b8 | the position has now come twice: a third time is a draw
+    alternatives: Nb4: White is much better; Nc7: White is winning
+    flags: quiz-eligible, critical
+n12 7.Kc7 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from b6 to c7 | attacks the knight on b8 | the king stops guarding a6, where Na6+ follows | the position has now come twice: a third time is a draw
+    alternatives: Kb5: The position is roughly equal; Kc5: The position is roughly equal
+n13 7…Na6+ (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from b8 to a6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc8, Kd8, Kd7, Kd6, Kc6, Kb6 | the position has now come twice: a third time is a draw
+    alternatives: Nc6: White is winning; Ke2: White is winning
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 puzzle n7–n13, climax n13 [highlight, puzzle, promo]
+  r2 brilliant n3–n11, climax n9 [highlight, puzzle, promo]
+  r3 brilliant n5–n13, climax n11 [highlight, puzzle, promo]
+
+PLAN
+  e1 goal n1–n1
+  e2 technique n1–n10 answer=n9
+  e3 technique n11–n12 answer=n11
+  e4 technique n13–n13 answer=n13
+  e5 recap n13–n13

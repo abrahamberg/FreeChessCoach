@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { ChevronLeftIcon, ChevronRightIcon } from '../../components/Icon.js';
+import type { MoveListStart } from './moveListStart.js';
 import { MoveStrip, moveStripIndexToPly, plyToMoveStripIndex } from './MoveStrip.js';
 import './MoveNavStrip.css';
 
@@ -21,6 +22,8 @@ export interface MoveNavStripProps {
    * such distinction and leaves these unset. */
   onStepBack?: () => void;
   onStepForward?: () => void;
+  start?: MoveListStart;
+  dimmedThroughPly?: number;
 }
 
 /** The mobile Review layout used to stack MoveNavPills' first/prev/"N of
@@ -33,7 +36,7 @@ export interface MoveNavStripProps {
  * specific chip. The "N of M" readout and first/last skips are dropped
  * rather than folded in — the chip list already shows exactly where you are
  * and lets you jump anywhere directly. */
-export function MoveNavStrip({ sanMoves, classifiedMoves, positions, ply, onSelect, onStepBack, onStepForward }: MoveNavStripProps): ReactNode {
+export function MoveNavStrip({ sanMoves, classifiedMoves, positions, ply, onSelect, onStepBack, onStepForward, start, dimmedThroughPly }: MoveNavStripProps): ReactNode {
   const totalPlies = sanMoves.length;
 
   function goTo(next: number): void {
@@ -57,6 +60,8 @@ export function MoveNavStrip({ sanMoves, classifiedMoves, positions, ply, onSele
         positions={positions}
         currentPly={plyToMoveStripIndex(ply)}
         momentPlies={[]}
+        start={start}
+        dimmedThroughPly={dimmedThroughPly}
         onSelect={(index) => onSelect(moveStripIndexToPly(index))}
       />
       <button

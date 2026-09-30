@@ -1,0 +1,8 @@
+{
+  "kind": "trap",
+  "levelBand": "club",
+  "coachPersona": "commander",
+  "learnerSide": "black",
+  "direction": "The Siberian trap against the Smith-Morra Gambit: ...Nd4 and mate on h2.",
+  "pgn": "[Event \"Siberian trap\"]\n\n1. e4 c5 2. d4 cxd4 3. c3 dxc3 4. Nxc3 Nc6 5. Nf3 e6 6. Bc4 Qc7 7. O-O Nf6 8. Qe2 Ng4 9. h3 Nd4 10. Nxd4 Qh2# *"
+}

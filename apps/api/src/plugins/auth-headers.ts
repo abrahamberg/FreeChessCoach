@@ -31,7 +31,12 @@ const DEV_STUB_USER: AuthUser = { email: 'dev@local.test', displayName: 'dev@loc
 //   match rather than an exact path) — the worker process calls these directly, never
 //   through oauth2-proxy, and is authenticated instead by a shared-secret
 //   x-internal-token header (routes/engine-tunnel-internal.ts).
+// /api/public/* — the published course page (docs/courses.md §9), skip-auth at
+//   the proxy; its routes never read request.user. Judged by the route that
+//   matched, not the raw URL, so no path trick ("/api/public/../courses")
+//   reaches another route without identity.
 const AUTH_EXEMPT_PATHS = new Set(['/healthz', '/readyz']);
+export const PUBLIC_API_PREFIX = '/api/public/';
 
 /** Decorates `request.user` from oauth2-proxy identity headers.
  *
@@ -44,7 +49,7 @@ const AUTH_EXEMPT_PATHS = new Set(['/healthz', '/readyz']);
 export const authHeadersPlugin: FastifyPluginAsync<AuthHeadersOptions> = fp(
   (app: FastifyInstance, opts: AuthHeadersOptions) => {
     app.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {
-      if (AUTH_EXEMPT_PATHS.has(request.url) || request.url.startsWith('/internal/')) return;
+      if (AUTH_EXEMPT_PATHS.has(request.url) || request.url.startsWith('/internal/') || isPublicRoute(request)) return;
 
       const user = userFromHeaders(request);
       if (user) {
@@ -84,4 +89,8 @@ function userFromHeaders(request: FastifyRequest): AuthUser | null {
 function firstHeaderValue(value: string | string[] | undefined): string | null {
   const raw = Array.isArray(value) ? value[0] : value;
   return typeof raw === 'string' && raw.length > 0 ? raw : null;
+}
+
+function isPublicRoute(request: FastifyRequest): boolean {
+  return request.routeOptions.url?.startsWith(PUBLIC_API_PREFIX) ?? false;
 }

@@ -1,0 +1,8 @@
+{
+  "kind": "trap",
+  "levelBand": "novice",
+  "coachPersona": "general",
+  "learnerSide": "white",
+  "direction": "Scholar's mate: why it works against careless play, and how Black stops it.",
+  "pgn": "[Event \"Scholar's mate\"]\n\n1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7# *"
+}

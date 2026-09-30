@@ -17,40 +17,46 @@ const SEE_PIECE_VALUES: Record<PieceSymbol, number> = {
  */
 export function see(fen: string, targetSquare: Square, sideToMove: SeeColor): number {
   const side = toChessColor(sideToMove);
-  return evaluateCapture(withSideToMove(fen, side), targetSquare, side);
+  return evaluateCapture(new Chess(withSideToMove(fen, side)), targetSquare);
 }
 
 /**
  * Finds the worst capture the opponent can make after a move. The returned
  * score is from the mover's perspective, so a piece that is simply lost is a
- * negative value.
+ * negative value. Each target square is resolved once: the exchange on a
+ * square does not depend on which capture was listed first.
  */
 export function seeOnAllOpponentCaptures(fenAfterMove: string, movingColor: SeeColor): number {
   const mover = toChessColor(movingColor);
   const opponent = oppositeColor(mover);
   const chess = new Chess(withSideToMove(fenAfterMove, opponent));
-  const captures = chess.moves({ verbose: true }).filter(isCapture);
+  const targets = new Set(chess.moves({ verbose: true }).filter(isCapture).map((move) => move.to));
 
-  if (captures.length === 0) return 0;
+  if (targets.size === 0) return 0;
 
-  return Math.min(...captures.map((move) => -see(fenAfterMove, move.to, opponent)));
+  return Math.min(...[...targets].map((square) => -evaluateCapture(chess, square)));
 }
 
-function evaluateCapture(fen: string, targetSquare: Square, sideToMove: Color): number {
-  const chess = new Chess(withSideToMove(fen, sideToMove));
+/** The exchange on `targetSquare` for the side to move of `chess`, played
+ * and taken back on the one board (a fresh board and every legal move per
+ * step made SEE most of a course dossier's time). */
+function evaluateCapture(chess: Chess, targetSquare: Square): number {
   const capture = leastValuableCapture(chess, targetSquare);
 
   if (!capture) return 0;
 
   const capturedValue = SEE_PIECE_VALUES[capture.captured];
   chess.move({ from: capture.from, to: capture.to, promotion: capture.promotion });
-
-  const opponentGain = evaluateCapture(chess.fen(), targetSquare, oppositeColor(sideToMove));
+  const opponentGain = evaluateCapture(chess, targetSquare);
+  chess.undo();
   return capturedValue - Math.max(0, opponentGain);
 }
 
+/** Only the pieces attacking the square generate their moves. */
 function leastValuableCapture(chess: Chess, targetSquare: Square): CaptureMove | null {
-  const captures = chess.moves({ verbose: true })
+  const captures = chess
+    .attackers(targetSquare, chess.turn())
+    .flatMap((from) => chess.moves({ square: from, verbose: true }))
     .filter(isCapture)
     .filter((move) => move.to === targetSquare);
 

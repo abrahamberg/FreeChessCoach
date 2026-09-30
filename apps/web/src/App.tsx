@@ -4,12 +4,17 @@ import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-
 import { shouldRetryQuery } from './api/client.js';
 import { AppShell } from './components/AppShell.js';
 import { TunnelTakeoverGate } from './components/TunnelTakeoverGate.js';
+import { CourseEditorPage } from './features/courses/CourseEditorPage.js';
+import { CourseIntakePage } from './features/courses/CourseIntakePage.js';
+import { CoursesPage } from './features/courses/CoursesPage.js';
+import { CoursePage } from './features/courses/learn/CoursePage.js';
+import { CoursesHomePage } from './features/courses/learn/CoursesHomePage.js';
+import { LearnPage } from './features/courses/player/LearnPage.js';
 import { FindGamesPage } from './features/games/FindGamesPage.js';
 import { GamesPage } from './features/games/GamesPage.js';
 import { ImportPage } from './features/import/ImportPage.js';
 import { OnboardingPage } from './features/onboarding/OnboardingPage.js';
 import { OnboardingRedirect } from './features/onboarding/OnboardingRedirect.js';
-import { PlayPage } from './features/play/PlayPage.js';
 import { PlayStartPage } from './features/play/PlayStartPage.js';
 import { PlayBotStartPage } from './features/play-bot/PlayBotStartPage.js';
 import { PuzzleSessionPage } from './features/puzzle-session/PuzzleSessionPage.js';
@@ -62,11 +67,20 @@ function GameReviewRoute(): ReactNode {
   return <GameReviewPage key={gameId} />;
 }
 
+function StudioEditRedirect(): ReactNode {
+  const { id = '' } = useParams<{ id: string }>();
+  return <Navigate to={`/studio/${id}/edit`} replace />;
+}
+
 export function App(): ReactNode {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter basename={getDemoRuntime() ? DEMO_BASENAME : undefined}>
-        <AppRoutes />
+        <Routes>
+          {/* Public, no login (docs/courses.md §9): outside the shell, which needs a user. */}
+          {!getDemoRuntime() && <Route path="/learn/:slug" element={<LearnPage />} />}
+          <Route path="*" element={<AppRoutes />} />
+        </Routes>
       </BrowserRouter>
     </QueryClientProvider>
   );
@@ -89,7 +103,7 @@ export function AppRoutes(): ReactNode {
             <Route path="/welcome" element={<OnboardingPage />} />
             <Route path="/" element={<Navigate to="/games" replace />} />
             <Route path="/import" element={<ImportPage />} />
-            <Route path="/play" element={<PlayPage />} />
+            <Route path="/play" element={<Navigate to="/games" replace />} />
             <Route path="/play/new" element={<PlayStartPage />} />
             <Route path="/play-bot/new" element={<PlayBotStartPage />} />
             <Route path="/games" element={<GamesPage />} />
@@ -102,6 +116,14 @@ export function AppRoutes(): ReactNode {
             <Route path="/dashboard" element={<Navigate to="/progress" replace />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/courses" element={<CoursesHomePage />} />
+            <Route path="/courses/:slug" element={<CoursePage />} />
+            {/* The creator's pages were under /courses until 2026-09-28. */}
+            <Route path="/courses/new" element={<Navigate to="/studio/new" replace />} />
+            <Route path="/courses/:id/edit" element={<StudioEditRedirect />} />
+            <Route path="/studio" element={<CoursesPage />} />
+            <Route path="/studio/new" element={<CourseIntakePage />} />
+            <Route path="/studio/:id/edit" element={<CourseEditorPage />} />
             {getDemoRuntime() && <Route path="/coach" element={<DemoCoachRedirect />} />}
           </Routes>
         </OnboardingRedirect>

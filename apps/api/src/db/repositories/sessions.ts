@@ -1,6 +1,7 @@
 import type { Kysely } from 'kysely';
 import type { SessionMode, Thread } from '@freechesscoach/shared';
 import type { Database } from '../schema.js';
+import * as debugTurnsRepo from './debug-turns.js';
 
 export type SessionStatus = 'active' | 'completed' | 'abandoned';
 
@@ -257,13 +258,10 @@ export async function getThreads(db: Kysely<Database>, id: string): Promise<Thre
  * works across pods and process restarts instead of the in-memory Map it
  * replaced. `snapshot` is an opaque JSON value to this layer; the caller
  * (coach-agent.ts) owns its shape. */
-export function updateDebugSnapshot(db: Kysely<Database>, id: string, snapshot: unknown): Promise<void> {
-  return db
-    .updateTable('sessions')
-    .set({ debugSnapshot: JSON.stringify(snapshot) })
-    .where('id', '=', id)
-    .execute()
-    .then(() => undefined);
+export async function updateDebugSnapshot(db: Kysely<Database>, id: string, snapshot: unknown): Promise<void> {
+  await db.updateTable('sessions').set({ debugSnapshot: JSON.stringify(snapshot) }).where('id', '=', id).execute();
+  // The last few turns too, for the debug panel's turn picker.
+  await debugTurnsRepo.insert(db, { sessionId: id }, snapshot);
 }
 
 export async function getDebugSnapshot(db: Kysely<Database>, id: string): Promise<unknown> {

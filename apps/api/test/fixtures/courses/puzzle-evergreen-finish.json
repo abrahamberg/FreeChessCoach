@@ -1,0 +1,7 @@
+{
+  "kind": "puzzle",
+  "levelBand": "club",
+  "coachPersona": "shark",
+  "direction": "The Evergreen finish: mate in four, starting with a queen sacrifice.",
+  "pgn": "[Event \"Evergreen finish\"]\n[SetUp \"1\"]\n[FEN \"1r2k1r1/pbppnp1p/1b3P2/8/Q7/B1PB1q2/P4PPP/3R2K1 w - - 0 21\"]\n\n21. Qxd7+ Kxd7 22. Bf5+ Ke8 23. Bd7+ Kf8 24. Bxe7# *"
+}

@@ -1,0 +1,8 @@
+{
+  "kind": "opening",
+  "levelBand": "club",
+  "coachPersona": "shark",
+  "learnerSide": "black",
+  "direction": "The King's Indian for Black: the classical main line and the kingside plan, and the Petrosian d5.",
+  "pgn": "[Event \"King's Indian\"]\n\n{Classical} 1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O 6. Be2 e5 7. O-O ({Petrosian} 7. d5 a5 8. Bg5 h6 9. Bh4 Na6) 7... Nc6 8. d5 Ne7 9. Ne1 Nd7 *"
+}

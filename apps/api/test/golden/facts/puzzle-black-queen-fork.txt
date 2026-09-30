@@ -1,0 +1,32 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, e, f, g, h
+
+Moves:
+n1 1…Qe5+ (Black, Line A) | best | before: Black is winning → after: Black is winning
+    board: moves the queen from h5 to e5 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd2, Kf2, Kf1, Kd1 | attacks the rook on a1 | the queen on e5 forks the rook on a1 and the king on e1
+    alternatives: Qh1+: Black is winning; Qh4+: Black is winning
+    tempting check: Qa5+? Black's Qa5+ moves the queen from h5 to a5 | gives check | the check can be answered: no block; take the checking piece with Rxa5; move the king with Ke2, Kf2, Kf1, Kd1 | attacks the rook on a1 | leaves the black queen on a5 hanging. White answers Rxa5: moves the rook from a1 to a5 | captures the queen on a5. Then Kd7 Ra4 Kc6. Over the line White takes the queen; at the end White is a rook up (White is much better).
+    tempting threat: Qh8? Black's Qh8 moves the queen from h5 to h8 | attacks the rook on a1. White answers Ra8+: moves the rook from a1 to a8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf7, Ke7, Kd7. Then Kd7 Rxh8 Ke7. Over the line White takes the queen; at the end White is a rook up (White is much better).
+n2 2.Kd1 (White, Line A) | excellent | before: Black is winning → after: Black is winning
+    board: moves the king from e1 to d1 | leaves the white rook on a1 hanging
+    alternatives: Kd2: Black is winning; Kf2: Black is winning
+n3 2…Qxa1+ (Black, Line A) | best | before: Black is winning → after: Black is winning
+    board: moves the queen from e5 to a1 | captures the rook on a1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc2, Kd2, Ke2
+    alternatives: Qd4+: Black is winning; Qd5+: Black is better
+    tempting check: Qd6+ Black's Qd6+ moves the queen from e5 to d6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc2, Ke2, Ke1, Kc1. White answers Kc2: moves the king from d1 to c2. Then Qc5+ Kb3 Qd5+. Over the line nothing is taken; at the end White has a rook for a queen (Black is better). Works, but not the answer: Black is still better, but the answer is stronger: Black is winning.
+    tempting check: Qh5+ Black's Qh5+ moves the queen from e5 to h5 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc2, Kd2, Ke1, Kc1. White answers Kc2: moves the king from d1 to c2. Then Qc5+ Kb3 Qd5+. Over the line nothing is taken; at the end White has a rook for a queen (Black is better). Works, but not the answer: Black is still better, but the answer is stronger: Black is winning.
+    tempting check: Qd5+ Black's Qd5+ moves the queen from e5 to d5 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc2, Ke2, Ke1, Kc1. White answers Kc2: moves the king from d1 to c2. Then Qc4+ Kb2 Qd4+. Over the line nothing is taken; at the end White has a rook for a queen (Black is better). Works, but not the answer: Black is still better, but the answer is stronger: Black is winning.
+    tempting threat: Qf6 Black's Qf6 moves the queen from e5 to f6 | attacks the rook on a1. White answers Rc1: moves the rook from a1 to c1. Then Kd7 Kc2 Kd6. Over the line nothing is taken; at the end White has a rook for a queen (Black is better). Works, but not the answer: Black is still better, but the answer is stronger: Black is winning.
+    tempting threat: Qg7? Black's Qg7 moves the queen from e5 to g7 | attacks the rook on a1. White answers Ra8+: moves the rook from a1 to a8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf7, Ke7, Kd7. Then Ke7 Ra7+ Kf6. Over the line nothing is taken; at the end White has a rook for a queen (The position is roughly equal).
+
+REEL CANDIDATES
+  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
+
+PLAN
+  e1 question n1–n1
+  e2 solve n1–n2 answer=n1
+  e3 solve n3–n3 answer=n3
+  e4 recap n3–n3

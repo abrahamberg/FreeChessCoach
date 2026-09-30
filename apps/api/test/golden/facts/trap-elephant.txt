@@ -1,0 +1,92 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | opening: Queen's Gambit Declined: Modern Variation, Knight Defense | leaves book at n9
+    end position: the c-file is half-open for white; the d-file is half-open for black; the e-file is half-open for black; white has a kingside pawn majority; the white king is still in the centre on d2; the black king is still in the centre on d8
+
+Moves:
+n1 1.d4 (White, Line A) | book
+    book: in book (Queen's Pawn Game)
+    board: moves the pawn from d2 to d4
+    alternatives: e4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…d5 (Black, Line A) | book
+    book: in book (Queen's Pawn Game)
+    board: moves the pawn from d7 to d5
+    alternatives: Nf6: The position is roughly equal; d6: White is slightly better
+n3 2.c4 (White, Line A) | book
+    book: in book (Queen's Gambit)
+    board: moves the pawn from c2 to c4 | leaves the white pawn on c4 hanging
+    alternatives: Nf3: The position is roughly equal; e3: The position is roughly equal
+n4 2…e6 (Black, Line A) | book
+    book: in book (Queen's Gambit Declined)
+    board: moves the pawn from e7 to e6
+    alternatives: Nf6: The position is roughly equal; c6: The position is roughly equal
+n5 3.Nc3 (White, Line A) | book
+    book: in book (Queen's Gambit Declined: Queen's Knight Variation)
+    board: moves the knight from b1 to c3 | leaves the white pawn on c4 hanging
+    alternatives: Nf3: The position is roughly equal; cxd5: The position is roughly equal
+n6 3…Nf6 (Black, Line A) | book
+    book: in book (Queen's Gambit Declined: Normal Defense)
+    board: moves the knight from g8 to f6
+    alternatives: Be7: The position is roughly equal; c6: The position is roughly equal
+n7 4.Bg5 (White, Line A) | book
+    book: in book (Queen's Gambit Declined: Modern Variation)
+    board: moves the bishop from c1 to g5 | attacks the knight on f6, which is pinned to the queen on d8 by the bishop on g5 | leaves the white pawn on c4 hanging
+    alternatives: cxd5: The position is roughly equal; Nf3: The position is roughly equal
+n8 4…Nbd7 (Black, Line A) | book
+    book: in book (Queen's Gambit Declined: Modern Variation, Knight Defense)
+    board: moves the knight from b8 to d7
+    alternatives: dxc4: The position is roughly equal; Be7: The position is roughly equal; Bb4: The position is roughly equal
+n9 5.cxd5 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from c4 to d5 | captures the pawn on d5
+    alternatives: Nf3: The position is roughly equal; e3: The position is roughly equal
+n10 5…exd5 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from e6 to d5 | captures the pawn on d5
+    alternatives: h6: White is slightly better; e5: White is better
+n11 6.Nxd5 (White, Line A) | blunder | before: The position is roughly equal → after: Black is better
+    best instead: e3; after e3 h6 Bf4 Bb4 Bd3 O-O, material is level
+    why e3 is better: moves the pawn from e2 to e3
+    board: moves the knight from c3 to d5 | captures the pawn on d5 | attacks the knight on f6, which is pinned to the queen on d8 by the bishop on g5 | leaves the white knight on d5 hanging
+    tactics: They let you win a knight through a free piece with Nxd5 — captures the knight on d5.
+    alternatives: e3: The position is roughly equal; Qc2: The position is roughly equal; Rc1: The position is roughly equal
+    flags: critical
+n12 6…Nxd5 (Black, Line A) | great | before: Black is better → after: Black is better
+    board: moves the knight from f6 to d5 | captures the knight on d5
+    tactics: You broke the pin — the knight on f6 is free to move again.
+    alternatives: h6: White is slightly better; c6: White is slightly better
+    tempting threat: Nb6? Black's Nb6 moves the knight from d7 to b6 | attacks the knight on d5. White answers Nc3: moves the knight from d5 to c3. Then Bb4 a3. Over the line nothing is taken; at the end White is a pawn up (White is slightly better).
+    flags: quiz-eligible, critical
+n13 7.Bxd8 (White, Line A) | best | before: Black is better → after: Black is better
+    board: moves the bishop from g5 to d8 | captures the queen on d8
+    alternatives: Bd2: Black is better; Nf3: Black is much better
+n14 7…Bb4+ (Black, Line A) | great | before: Black is better → after: Black is better
+    board: moves the bishop from f8 to b4 | gives check | the check can be answered: block with Qd2; the checking piece cannot be taken; the king cannot move
+    alternatives: N7f6: White is much better; Kxd8: White is much better
+    flags: quiz-eligible, critical
+n15 8.Qd2 (White, Line A) | forced | before: Black is better → after: Black is better
+    board: moves the queen from d1 to d2 | blocks the check from the bishop on b4 | attacks the bishop on b4 | leaves the white bishop on d8 hanging
+n16 8…Bxd2+ (Black, Line A) | best | before: Black is better → after: Black is better
+    board: moves the bishop from b4 to d2 | captures the queen on d2 | gives check | the check can be answered: no block; take the checking piece with Kxd2; move the king with Kd1
+    alternatives: Kxd8: Black is better; f6: The position is roughly equal
+n17 9.Kxd2 (White, Line A) | best | before: Black is better → after: Black is better
+    board: moves the king from e1 to d2 | captures the bishop on d2 | leaves the white bishop on d8 hanging
+    alternatives: Kd1: Black is much better
+n18 9…Kxd8 (Black, Line A) | great | before: Black is better → after: Black is better
+    board: moves the king from e8 to d8 | captures the bishop on d8
+    alternatives: f6: The position is roughly equal; N7b6: White is slightly better
+    tempting threat: c5? Black's c5 moves the pawn from c7 to c5. White answers Bh4: moves the bishop from d8 to h4 | leaves the white pawn on d4 hanging. Then N7f6 Bxf6 Nxf6. Over the line Black takes a bishop; White takes a knight; at the end White is a pawn up (White is slightly better).
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 trap n6–n14, climax n12 [highlight, puzzle, promo]
+  r2 brilliant n8–n16, climax n14 [highlight, puzzle, promo]
+  r3 brilliant n12–n18, climax n18 [highlight, puzzle, promo]
+  r4 swing n5–n13, climax n11 [highlight, promo]
+
+PLAN
+  e1 hook n1–n1
+  e2 setup n1–n10
+  e3 bait n11–n11
+  e4 quiz n12–n12 answer=n12
+  e5 punish n13–n18
+  e6 safety n11–n11
