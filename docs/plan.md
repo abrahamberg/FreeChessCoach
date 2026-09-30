@@ -345,25 +345,27 @@ Status: done 2026-09-30 — 66 eval files (1.4 MB) and 66 facts files committed,
 `packages/prompts/src/course/fixtures.ts`,
 `apps/web/src/features/courses/player/CourseDrill.test.tsx`.
 
-- [ ] Before changing anything, measure. For each of
+- [x] Before changing anything, measure. For each of
   `packages/chess-analysis`, `packages/prompts` and `apps/web`, run
   `npx vitest run --reporter=json --outputFile=<scratch>/<pkg>.json` from
   inside the package and note the wall time. Write the three times in the
   Status line.
-- [ ] `analyseEnglund()`: compute once per process (module-level variable)
+- [x] `analyseEnglund()`: compute once per process (module-level variable)
   and return `structuredClone(cached)`, so a test that edits the result can't
   leak into the next. Do the same for any other fixture builder in the same
   file that runs `analyseCourse`.
-- [ ] `englundCourseContext()` in `prompts/src/course/fixtures.ts`: it already
+- [x] `englundCourseContext()` in `prompts/src/course/fixtures.ts`: it already
   goes through `analyseEnglund()`; check that it doesn't rebuild the analysis
   some other way.
-- [ ] `CourseDrill.test.tsx`: use `vi.useFakeTimers({ shouldAdvanceTime: true
+- [x] `CourseDrill.test.tsx`: use `vi.useFakeTimers({ shouldAdvanceTime: true
   })` and advance timers instead of waiting on `waitFor(..., { timeout })`.
   Keep what it asserts.
-- [ ] `apps/api/src/services/course-generate.test.ts` gave two tests a 20 s
+- [x] `apps/api/src/services/course-generate.test.ts` gave two tests a 20 s
   timeout because of the Englund build (old Phase 106). Remove those
   per-test timeouts if the tests now pass within the default.
-- [ ] Measure again the same way.
+- [x] Measure again the same way.
+
+Status: done 2026-09-30 — wall time before → after: `chess-analysis` 26 → 19 s, `prompts` 12 → 5 s, `apps/web` 37 → 36 s. Targets met for `prompts` only; the rest is per-file startup and import across 65 web files and does not come from the drill (its slowest test is now 2.9 s, from 20 s), so `apps/web` and `chess-analysis` miss 30 s and 15 s on this machine. `analyseEnglund()` is cached and cloned; `englundCourseContext()` already goes only through it. The two 20 s timeouts in `course-generate.test.ts` stay: they build a different dossier (`temptingDossier`), and the api tests need Docker, which this session lacks, so I could not check them. Golden snapshot passes unchanged (66 tests).
 
 **Keep:** everything (no test removed here).
 **Ephemeral:** none.

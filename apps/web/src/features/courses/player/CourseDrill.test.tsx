@@ -1,7 +1,7 @@
 import { courseDrillKey, parseCourseTree } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto, CourseDocument } from '@freechesscoach/shared';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { CourseDrill } from './CourseDrill.js';
 import type { CourseProgressStore } from './course-progress.js';
 import { judgeQuizMove } from './judge-quiz-move.js';
@@ -30,8 +30,10 @@ function handlers() {
 }
 
 /** The learner's move to find is up (the highlighted row of the move log). */
-const findPrompt = () =>
-  waitFor(
+const findPrompt = async () => {
+  // The opponent's auto-move waits 600 ms; step past it instead of sitting through it.
+  await act(() => vi.advanceTimersByTimeAsync(700));
+  return waitFor(
     () => {
       const row = window.document.querySelector('.move-log__row--current');
       expect(row).not.toBeNull();
@@ -39,9 +41,13 @@ const findPrompt = () =>
     },
     { timeout: 2000 }
   );
+};
 const arrowsShown = () => Number(screen.getByTestId('board').dataset.arrows);
 
 describe('CourseDrill', () => {
+  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
+  afterEach(() => vi.useRealTimers());
+
   test('plays the other side, records the first try at each move, and sums up', async () => {
     const record = vi.fn(() => Promise.resolve());
     const progress: CourseProgressStore = { signedIn: true, lookup: vi.fn(() => Promise.resolve(new Map())), record, loadEnrollment: vi.fn(() => Promise.resolve(null)), saveEnrollment: vi.fn(() => Promise.resolve()) };
@@ -157,7 +163,7 @@ describe('CourseDrill', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next: Drill' }));
     expect(props.onNextStage).toHaveBeenCalled();
     expect(record).not.toHaveBeenCalled();
-  }, 20000);
+  });
 
   test('the full drill asks both sides, White first, with the move hidden', async () => {
     render(<CourseDrill document={document} stage="full_drill" {...handlers()} />);

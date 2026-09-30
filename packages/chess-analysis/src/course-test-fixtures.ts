@@ -54,7 +54,21 @@ function engineLine(fen: string, san: string, cp: number): EngineLine {
 
 /** The Englund trap with evals where 6.Bc3 is the blunder (Nc3 was safe)
  * and 6…Bb4 is the only move; learner Black. */
-export function analyseEnglund(): { tree: CourseTree; lines: CourseLineAnalysis[]; dossier: CourseDossier } {
+export function analyseEnglund(): EnglundAnalysis {
+  // Built once per process; each caller gets its own copy to edit.
+  englundAnalysis ??= buildEnglund();
+  return structuredClone(englundAnalysis);
+}
+
+interface EnglundAnalysis {
+  tree: CourseTree;
+  lines: CourseLineAnalysis[];
+  dossier: CourseDossier;
+}
+
+let englundAnalysis: EnglundAnalysis | undefined;
+
+function buildEnglund(): EnglundAnalysis {
   const tree = parseCourseTree(ENGLUND_TRAP);
   const fenAfter = (id: string): string => tree.nodes.find((node) => node.id === id)?.fenAfter ?? '';
   const lost = new Set(['n11', 'n12', 'n13', 'n14', 'n15'].map(fenAfter));
