@@ -1243,6 +1243,8 @@ Status: done 2026-09-30 — the CI test job has a step that runs `npm run test:c
 Docker; the full suite passes with Docker.
 **Commit:** `test(api): unit tests run without Postgres`
 
+Status: done 2026-09-30 — `build-app.ts` does not touch Postgres (a test passes its own `db`), so the rule is one import: a test that imports `test/helpers/db.js` needs Postgres. 42 files renamed to `*.db.test.ts` (`git mv`, history kept); 54 files stay unit. `apps/api/vitest.config.ts` has the projects `unit` and `db` (only `db` has the Postgres `globalSetup`); the root config's projects see both (`npx vitest list` from the root shows `(unit)` and `(db)`). `npm run test:unit -w @freechesscoach/api` passes with `DOCKER_HOST` pointing nowhere; the full api suite passes with Docker. AGENTS.md describes both tiers.
+
 ---
 
 ## Lane O — the owner's items (F13)

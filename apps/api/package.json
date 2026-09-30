@@ -22,6 +22,7 @@
     "golden:record": "tsx scripts/course-golden.ts --facts --record-evals",
     "test:golden": "vitest run --config vitest.golden.config.ts",
     "test": "vitest run --reporter=../../fail-only-reporter.ts",
+    "test:unit": "vitest run --project unit --reporter=../../fail-only-reporter.ts",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"
   },
