@@ -1,8 +1,8 @@
 # FreeChessCoach — Merge the courses branch, then one set of board facts for courses, review, coach and stats (Phases 110–119)
 
-Written 2026-09-30 from an investigation of this branch
-(`claude/detectors-dossier-architecture-d252mn`, the same commit as
-`claude/courses` and draft PR #41: 175 commits, 432 files over `main` 60d52f8).
+Written 2026-09-30 from an investigation of `claude/courses` (draft PR #41:
+175 commits, 432 files over `main` 60d52f8). Lane M's work happens on
+`claude/courses` itself.
 Phases 79–109 (courses, clips, the course player, the studio) are shipped on
 the branch and described in `docs/architecture.md` ("Courses") and
 `docs/courses.md`. Their task log is in git history:
@@ -189,7 +189,7 @@ checked by reading printed output. `npm run course:golden -w apps/api --
 Stockfish; the Englund's engine data is 15.7 KB. The cache
 `apps/api/.golden-engine-cache.json` is gitignored.
 
-**F12 — PR #41.** Draft; head 033e81b, the same commit as this branch; `main`
+**F12 — PR #41** (`claude/courses` → `main`). Draft; investigated at head 033e81b; `main`
 has not moved.
 - `test`, `images`, `helm-lint` and CodeQL's own analysis jobs are green.
 - **The CodeQL check reports 5 new high-severity alerts.** The agent can't see
@@ -213,7 +213,7 @@ merge):
 
 ```
 now ───────────────────────────────────────────────────────────────────►
-Lane M  this branch   110 ─ 111 ─ 112 ─ 113 ─► merge
+Lane M  claude/courses 110 ─ 111 ─ 112 ─ 113 ─► merge
 Lane T  test tiers    119.1 ─ 119.2 ─────────────┬─ 119.3 (after M merges)
                                                  │
 after M merges:                                  ▼
@@ -228,7 +228,7 @@ Lane O  owner items (F13)               any time, own small branches
 
 | Lane | Branch | Phases | Starts when | Runs alongside |
 |---|---|---|---|---|
-| M | `claude/detectors-dossier-architecture-d252mn` (this one) | 110–113 | now | T |
+| M | `claude/courses` (PR #41) | 110–113 | now | T |
 | T | `claude/test-tiers` | 119 | now; 119.3 after M merges | everything |
 | B | `claude/board-facts` | 114 | M merged | T, F, O |
 | C | `claude/review-facts` | 115 | B merged | D, E, F, O |
@@ -601,10 +601,7 @@ AGENTS.md "Directory map" and "Testing".
 - [ ] `npm run verify` with Docker (or the owner runs it: no Docker in the
   cloud container), `npm run test:golden`, `npm run test:corpus` (ceilings and
   floors unchanged).
-- [ ] Push this branch.
-- [ ] **Owner:** decide the merge path: open a PR from this branch and close
-  #41, or move `claude/courses` to this branch's head. The agent must not push
-  to `claude/courses` without that instruction.
+- [ ] Push `claude/courses`; the owner merges PR #41.
 - [ ] After merge: F13's items become Lane O, and Lanes B, F and 119.3 can start.
 
 ---
