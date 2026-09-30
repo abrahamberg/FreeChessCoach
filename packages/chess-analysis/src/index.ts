@@ -27,6 +27,7 @@ export * from './classify-move.js';
 export * from './classify-severity.js';
 export * from './config.js';
 export * from './compare-player-baseline.js';
+export * from './course/diagnosis-codes.js';
 export * from './course/dossier.js';
 export * from './course/dossier-text.js';
 export * from './course/key-moves.js';

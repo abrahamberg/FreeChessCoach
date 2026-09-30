@@ -29,6 +29,7 @@ function trapDocument(): CourseDocument {
   return {
     version: 1, kind: 'trap', title: 'Englund trap', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
     startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], hookOptions: [], clipLinks: {},
+    diagnosisCodes: [],
     takeaways: ['One.', 'Two.', 'Three.'],
     episodes: [{
       id: 'e1', role: 'setup', focus: '', startNodeId: first!.id, endNodeId: second!.id, drillNodeIds: [],
@@ -37,9 +38,9 @@ function trapDocument(): CourseDocument {
   };
 }
 
-async function insertCourse(slug: string, status: 'draft' | 'unlisted' | 'public' | 'removed', level?: CourseDocument['level']): Promise<string> {
+async function insertCourse(slug: string, status: 'draft' | 'unlisted' | 'public' | 'removed', level?: CourseDocument['level'], diagnosisCodes: CourseDocument['diagnosisCodes'] = []): Promise<string> {
   const owner = await usersRepo.insert(db, { email: `${slug}@example.com`, displayName: 'Creator', engineMode: 'chess_api' });
-  const document = { ...trapDocument(), ...(level ? { level } : {}) };
+  const document = { ...trapDocument(), diagnosisCodes, ...(level ? { level } : {}) };
   const row = await coursesRepo.insert(db, { ownerId: owner.id, slug, kind: 'trap', title: document.title, sourcePgn: ENGLUND, direction: '', document });
   if (status !== 'draft') await coursesRepo.publish(db, row.id, owner.id, document, 'unlisted');
   if (status === 'public' || status === 'removed') await coursesRepo.setStatus(db, row.id, status);
@@ -168,7 +169,8 @@ describe('public course routes', () => {
       publishedAt: '2026-01-01T00:00:00.000Z',
       episodes: 1,
       moves: trapDocument().nodes.length,
-      level: null
+      level: null,
+      diagnosisCodes: []
     });
     expect(JSON.stringify(listed)).not.toContain('example.com');
 
@@ -193,5 +195,24 @@ describe('public course routes', () => {
       expect((await app.inject({ method: 'GET', url: `/api/public/courses${query}` })).statusCode, query).toBe(400);
     }
     await app.close();
+  });
+
+  test('the catalogue lists the codes a course trains and filters by one', async () => {
+    const app = buildTestApp({ db, authMode: 'proxy' });
+    await app.ready();
+    await insertCourse('code-loose-eeeeeeeeeeee', 'public', undefined, ['BV-22', 'TA-01']);
+    await insertCourse('code-mate-ffffffffffff', 'public', undefined, ['TA-01']);
+    await insertCourse('code-none-gggggggggggg', 'public');
+
+    const slugs = async (query: string): Promise<string[]> => {
+      const page = CourseCatalogResponseSchema.parse((await app.inject({ method: 'GET', url: `/api/public/courses${query}` })).json());
+      return page.items.map((item) => item.slug).filter((slug) => slug.startsWith('code-'));
+    };
+    expect((await slugs('?code=BV-22'))).toEqual(['code-loose-eeeeeeeeeeee']);
+    expect((await slugs('?code=TA-01')).sort()).toEqual(['code-loose-eeeeeeeeeeee', 'code-mate-ffffffffffff']);
+    expect(await slugs('?code=MS-14')).toEqual([]);
+    expect((await slugs('')).length).toBe(3);
+    const all = CourseCatalogResponseSchema.parse((await app.inject({ method: 'GET', url: '/api/public/courses' })).json());
+    expect(all.items.find((item) => item.slug === 'code-loose-eeeeeeeeeeee')?.diagnosisCodes).toEqual(['BV-22', 'TA-01']);
   });
 });

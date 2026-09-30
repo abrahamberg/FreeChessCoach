@@ -278,3 +278,23 @@
     grid-column: 2;
   }
 }
+
+.focus-area-card__courses {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.focus-area-card__courses-label {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.focus-area-card__courses ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.focus-area-card__courses a {
+  color: var(--color-primary);
+  font-weight: 600;
+}

@@ -37,7 +37,7 @@ const id = (n: number): string => tree.nodes[n - 1]!.id;
 function course(kind: CourseKind, episodes: CourseEpisode[]): CourseDocument {
   return {
     version: 1, kind, title: 'T', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
-    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], episodes, takeaways: [], hookOptions: [], clipLinks: {}
+    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes, takeaways: [], hookOptions: [], clipLinks: {}
   };
 }
 

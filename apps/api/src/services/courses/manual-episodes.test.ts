@@ -23,7 +23,7 @@ async function manual(pgn: string, kind: CourseKind, learnerSide: 'white' | 'bla
   const tree = parseCourseTree(pgn);
   const document: CourseDocument = {
     version: 1, kind, title: 't', promise: '', learnerSide, levelBand: 'improving', coachPersona: 'general', startFen: tree.startFen,
-    nodes: tree.nodes, lines: tree.lines, chapters: [], episodes: [], takeaways: [], hookOptions: [], clipLinks: {},
+    nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes: [], takeaways: [], hookOptions: [], clipLinks: {},
     ...(options.videos ? { videos: options.videos } : {})
   };
   const { dossier, lines } = options.engine ? await options.engine(tree, learnerSide, 'owner') : await buildCourseDossierFromEngine(tree, learnerSide, { analyzeGame: levelEngine });

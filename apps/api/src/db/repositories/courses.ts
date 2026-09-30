@@ -72,6 +72,7 @@ export interface CatalogRow {
   episodes: number;
   moves: number;
   level: { rating: number; order: number } | null;
+  diagnosisCodes: string[];
 }
 
 /** docs/courses.md §9: `public` courses with a published copy, newest first
@@ -81,7 +82,7 @@ export interface CatalogRow {
  * last row of the previous page. */
 export function listPublic(
   db: Kysely<Database>,
-  options: { kind?: CourseKind; before?: { cursorAt: string; id: string }; limit: number; sort?: 'curriculum' | 'newest'; offset?: number }
+  options: { kind?: CourseKind; code?: string; before?: { cursorAt: string; id: string }; limit: number; sort?: 'curriculum' | 'newest'; offset?: number }
 ): Promise<CatalogRow[]> {
   let query = db
     .selectFrom('courses')
@@ -98,12 +99,14 @@ export function listPublic(
       sql<string | null>`published_document->>'learnerSide'`.as('learnerSide'),
       sql<number>`jsonb_array_length(published_document->'episodes')`.as('episodes'),
       sql<number>`jsonb_array_length(published_document->'nodes')`.as('moves'),
-      sql<{ rating: number; order: number } | null>`published_document->'level'`.as('level')
+      sql<{ rating: number; order: number } | null>`published_document->'level'`.as('level'),
+      sql<string[]>`coalesce(published_document->'diagnosisCodes', '[]'::jsonb)`.as('diagnosisCodes')
     ])
     .where('status', '=', 'public')
     .where('publishedDocument', 'is not', null)
     .where('publishedAt', 'is not', null);
   if (options.kind) query = query.where('kind', '=', options.kind);
+  if (options.code) query = query.where(sql<boolean>`published_document->'diagnosisCodes' @> ${JSON.stringify([options.code])}::jsonb`);
   if (options.before) {
     const { cursorAt, id } = options.before;
     query = query.where(sql<boolean>`(published_at, id) < (${cursorAt}::timestamptz, ${id}::uuid)`);
@@ -155,6 +158,20 @@ export async function touchGeneration(db: Kysely<Database>, id: string, at: Date
 
 export async function setDossier(db: Kysely<Database>, id: string, dossier: CourseDossier): Promise<void> {
   await db.updateTable('courses').set({ dossier: JSON.stringify(dossier) }).where('id', '=', id).execute();
+}
+
+/** Only the codes, so a generation that holds an older copy of the document
+ * does not undo the creator's other edits. The frozen copy gets them too
+ * (`jsonb_set` on a null column stays null). */
+export async function setDiagnosisCodes(db: Kysely<Database>, id: string, codes: readonly string[]): Promise<void> {
+  await db
+    .updateTable('courses')
+    .set({
+      document: sql`jsonb_set(document, '{diagnosisCodes}', ${JSON.stringify(codes)}::jsonb)`,
+      publishedDocument: sql`jsonb_set(published_document, '{diagnosisCodes}', ${JSON.stringify(codes)}::jsonb)`
+    })
+    .where('id', '=', id)
+    .execute();
 }
 
 /** Validates the draft before it is written; the title column follows it. */
