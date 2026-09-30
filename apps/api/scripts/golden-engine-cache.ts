@@ -60,6 +60,6 @@ export class GoldenEngineCache implements EngineBackend {
   }
 }
 
-function cacheKey(fen: string, opts: EngineBackendAnalyzeOptions | undefined): string {
+export function cacheKey(fen: string, opts: EngineBackendAnalyzeOptions | undefined): string {
   return [fen, opts?.depth ?? '', opts?.multiPv ?? '', opts?.minLines ?? ''].join('|');
 }

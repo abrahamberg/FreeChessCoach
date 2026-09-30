@@ -1,0 +1,25 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, e, f, g, h
+
+Moves:
+n1 1.Nc7+ (White, Line A) | good | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from b5 to c7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf8, Kf7, Ke7, Kd7, Kd8 | attacks the rook on a8 | the knight on c7 forks the rook on a8 and the king on e8
+    alternatives: Kd2: The position is roughly equal; Ke2: The position is roughly equal; Kf2: The position is roughly equal
+n2 1…Kd7 (Black, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from e8 to d7 | attacks the knight on c7 | leaves the black rook on a8 hanging
+    alternatives: Ke7: The position is roughly equal; Kf7: The position is roughly equal
+n3 2.Nxa8 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the knight from c7 to a8 | captures the rook on a8
+    alternatives: Nb5: The position is roughly equal; Nd5: The position is roughly equal
+
+REEL CANDIDATES
+  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
+
+PLAN
+  e1 question n1–n1
+  e2 solve n1–n2 answer=n1
+  e3 solve n3–n3 answer=n3
+  e4 recap n3–n3

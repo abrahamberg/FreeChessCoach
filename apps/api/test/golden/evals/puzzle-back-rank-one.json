@@ -1,0 +1,61 @@
+{
+ "3R2k1/5ppp/8/8/8/8/5PPP/6K1 b - - 1 1||3|2": {
+  "fen": "3R2k1/5ppp/8/8/8/8/5PPP/6K1 b - - 1 1",
+  "depth": 12,
+  "lines": []
+ },
+ "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1||3|2": {
+  "fen": "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1",
+  "depth": 12,
+  "lines": [
+   {
+    "moveSan": "Rd8#",
+    "moveUci": "d1d8",
+    "cp": null,
+    "mateIn": 1,
+    "pvSan": [
+     "Rd8#"
+    ]
+   },
+   {
+    "moveSan": "Rc1",
+    "moveUci": "d1c1",
+    "cp": 490,
+    "mateIn": null,
+    "pvSan": [
+     "Rc1",
+     "f6",
+     "Rc8+",
+     "Kf7",
+     "Kh1",
+     "h6",
+     "Rc7+",
+     "Kg8",
+     "f4",
+     "g6"
+    ]
+   },
+   {
+    "moveSan": "Kh1",
+    "moveUci": "g1h1",
+    "cp": 490,
+    "mateIn": null,
+    "pvSan": [
+     "Kh1",
+     "f6",
+     "Rd8+",
+     "Kf7",
+     "Rc8",
+     "h6",
+     "Rc7+",
+     "Kg8",
+     "f4",
+     "Kf8",
+     "g4",
+     "Kg8",
+     "g5"
+    ]
+   }
+  ]
+ }
+}

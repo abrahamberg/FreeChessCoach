@@ -1,0 +1,20 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, e
+
+Moves:
+n1 1.Rd8# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
+    board: moves the rook from d1 to d8 | gives checkmate | a back-rank mate | why it is mate: the king on g8 is checked by the rook on d8; f7, g7, h7 hold its own pieces; f8 and h8 are covered by the rook on d8
+    tactics: You forced mate — rook on d8 checks the king on g8, boxed in on the back rank.
+    alternatives: Rc1: White is much better; Kh1: White is much better
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 puzzle n1–n1, climax n1 [highlight, puzzle, promo]
+
+PLAN
+  e1 question n1–n1
+  e2 solve n1–n1 answer=n1
+  e3 recap n1–n1

@@ -1,0 +1,166 @@
+Learner side: White
+
+Lines:
+l1 "Closed" | opening: Ruy Lopez: Closed | in book throughout
+    end position: the white king is tucked away on g1; the black king is tucked away on g8
+l2 "Early b5" | opening: Ruy Lopez: Morphy Defense, Norwegian Variation | leaves book at n21
+    end position: the white king is tucked away on g1; the black king is still in the centre on e8
+l3 "Berlin" | opening: Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense | in book throughout
+    end position: open files: d; the e-file is half-open for black; black has doubled pawns on the c-file; black has a queenside pawn majority; white has a kingside pawn majority; the white king is tucked away on g1; the black king is still in the centre on d8
+l4 "Steinitz" | opening: Ruy Lopez: Steinitz Defense | in book throughout
+    end position: the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Closed) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Closed) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.Nf3 (White, Closed) | book
+    book: in book (King's Knight Opening)
+    board: moves the knight from g1 to f3
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…Nc6 (Black, Closed) | book
+    book: in book (King's Knight Opening: Normal Variation)
+    board: moves the knight from b8 to c6
+    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+n5 3.Bb5 (White, Closed) | book
+    book: in book (Ruy Lopez)
+    board: moves the bishop from f1 to b5 | attacks the knight on c6
+    alternatives: Bc4: The position is roughly equal; d4: The position is roughly equal; Nc3: The position is roughly equal
+n6 3…a6 (Black, Closed) | book
+    book: in book (Ruy Lopez: Morphy Defense)
+    board: moves the pawn from a7 to a6 | attacks the bishop on b5
+    alternatives: Nf6: The position is roughly equal; g6: White is slightly better
+n7 4.Ba4 (White, Closed) | book
+    book: in book (Ruy Lopez: Morphy Defense)
+    board: moves the bishop from b5 to a4 | attacks the knight on c6
+    alternatives: Bxc6: The position is roughly equal; Bc4: The position is roughly equal
+n8 4…Nf6 (Black, Closed) | book
+    book: in book (Ruy Lopez: Morphy Defense)
+    board: moves the knight from g8 to f6
+    alternatives: Be7: The position is roughly equal; Bd6: White is slightly better
+n9 5.O-O (White, Closed) | book
+    book: in book (Ruy Lopez: Morphy Defense)
+    board: castles kingside | leaves the white pawn on e4 hanging
+    alternatives: Nc3: The position is roughly equal; d3: The position is roughly equal
+n10 5…Be7 (Black, Closed) | book
+    book: in book (Ruy Lopez: Closed)
+    board: moves the bishop from f8 to e7
+    alternatives: b5: The position is roughly equal; Nxe4: The position is roughly equal
+n11 6.Re1 (White, Closed) | book
+    book: in book (Ruy Lopez: Closed)
+    board: moves the rook from f1 to e1
+    alternatives: d4: The position is roughly equal; d3: The position is roughly equal
+n12 6…b5 (Black, Closed) | book
+    book: in book (Ruy Lopez: Closed)
+    board: moves the pawn from b7 to b5 | attacks the bishop on a4
+    alternatives: d6: White is slightly better; Bc5: White is slightly better
+n13 7.Bb3 (White, Closed) | book
+    book: in book (Ruy Lopez: Closed)
+    board: moves the bishop from a4 to b3
+    alternatives: d4: Black is better; Nxe5: Black is better
+    flags: quiz-eligible
+n14 7…d6 (Black, Closed) | book
+    book: in book (Ruy Lopez: Closed)
+    board: moves the pawn from d7 to d6
+    alternatives: O-O: White is slightly better; Rb8: White is slightly better
+n15 8.c3 (White, Closed) | book
+    book: in book (Ruy Lopez: Closed)
+    board: moves the pawn from c2 to c3
+    alternatives: a4: The position is roughly equal; a3: The position is roughly equal
+n16 8…O-O (Black, Closed) | book
+    book: in book (Ruy Lopez: Closed)
+    board: castles kingside
+    alternatives: Bg4: White is slightly better; Be6: White is slightly better
+n17 9.h3 (White, Closed) | book
+    book: in book (Ruy Lopez: Closed)
+    board: moves the pawn from h2 to h3
+    alternatives: d4: The position is roughly equal; a4: The position is roughly equal
+n18 4…b5 (Black, Early b5) | book
+    book: in book (Ruy Lopez: Morphy Defense, Caro Variation)
+    board: moves the pawn from b7 to b5 | attacks the bishop on a4
+    alternatives: Nf6: The position is roughly equal; Be7: The position is roughly equal; Bd6: White is slightly better
+n19 5.Bb3 (White, Early b5) | book
+    book: in book (Ruy Lopez: Morphy Defense, Caro Variation)
+    board: moves the bishop from a4 to b3
+    alternatives: d4: Black is better; Nxe5: Black is better
+    flags: quiz-eligible
+n20 5…Na5 (Black, Early b5) | book
+    book: in book (Ruy Lopez: Morphy Defense, Norwegian Variation)
+    board: moves the knight from c6 to a5 | attacks the bishop on b3 | leaves the black pawn on e5 hanging
+    alternatives: Nf6: The position is roughly equal; Bb7: White is slightly better
+n21 6.O-O (White, Early b5) | best | before: White is slightly better → after: White is slightly better
+    board: castles kingside
+    alternatives: Nc3: White is slightly better; d4: The position is roughly equal
+n22 3…Nf6 (Black, Berlin) | book
+    book: in book (Ruy Lopez: Berlin Defense)
+    board: moves the knight from g8 to f6
+    alternatives: a6: The position is roughly equal; g6: White is slightly better
+n23 4.O-O (White, Berlin) | book
+    book: in book (Ruy Lopez: Berlin Defense)
+    board: castles kingside | leaves the white pawn on e4 hanging
+    alternatives: d3: The position is roughly equal; Nc3: The position is roughly equal
+n24 4…Nxe4 (Black, Berlin) | book
+    book: in book (Ruy Lopez: Berlin Defense, Rio Gambit Accepted)
+    board: moves the knight from f6 to e4 | captures the pawn on e4
+    alternatives: Bc5: The position is roughly equal; d6: White is slightly better
+n25 5.d4 (White, Berlin) | book
+    book: in book (Ruy Lopez: Berlin Defense, Rio Gambit Accepted)
+    board: moves the pawn from d2 to d4
+    alternatives: Re1: The position is roughly equal; Qe1: The position is roughly equal
+n26 5…Nd6 (Black, Berlin) | book
+    book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
+    board: moves the knight from e4 to d6 | attacks the bishop on b5
+    alternatives: a6: The position is roughly equal; Be7: The position is roughly equal
+n27 6.Bxc6 (White, Berlin) | book
+    book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
+    board: moves the bishop from b5 to c6 | captures the knight on c6
+    alternatives: Ba4: The position is roughly equal; Bd3: The position is roughly equal
+n28 6…dxc6 (Black, Berlin) | book
+    book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
+    board: moves the pawn from d7 to c6 | captures the bishop on c6 | leaves the black pawn on e5 hanging
+    alternatives: bxc6: White is slightly better; e4: White is slightly better
+n29 7.dxe5 (White, Berlin) | book
+    book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
+    board: moves the pawn from d4 to e5 | captures the pawn on e5 | attacks the knight on d6
+    alternatives: Nxe5: The position is roughly equal; Bg5: The position is roughly equal
+n30 7…Nf5 (Black, Berlin) | book
+    book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
+    board: moves the knight from d6 to f5
+    alternatives: Ne4: White is slightly better; Nc4: White is slightly better
+n31 8.Qxd8+ (White, Berlin) | book
+    book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation)
+    board: moves the queen from d1 to d8 | captures the queen on d8 | gives check | the check can be answered: no block; take the checking piece with Kxd8; the king cannot move | attacks the bishop on c8
+    alternatives: Qe2: The position is roughly equal; Nbd2: The position is roughly equal
+n32 8…Kxd8 (Black, Berlin) | book
+    book: in book (Ruy Lopez: Berlin Defense, l'Hermet Variation, Berlin Wall Defense)
+    board: moves the king from e8 to d8 | captures the queen on d8
+n33 3…d6 (Black, Steinitz) | book
+    book: in book (Ruy Lopez: Steinitz Defense)
+    board: moves the pawn from d7 to d6
+    alternatives: a6: The position is roughly equal; Nf6: The position is roughly equal; g6: White is slightly better
+n34 4.d4 (White, Steinitz) | book
+    book: in book (Ruy Lopez: Steinitz Defense)
+    board: moves the pawn from d2 to d4
+    alternatives: Nc3: White is slightly better; O-O: White is slightly better
+n35 4…Bd7 (Black, Steinitz) | book
+    book: in book (Ruy Lopez: Steinitz Defense)
+    board: moves the bishop from c8 to d7
+    alternatives: exd4: White is slightly better; Ne7: White is slightly better
+n36 5.Nc3 (White, Steinitz) | book
+    book: in book (Ruy Lopez: Steinitz Defense)
+    board: moves the knight from b1 to c3
+    alternatives: Bxc6: White is slightly better; d5: White is slightly better
+
+REEL CANDIDATES
+
+PLAN
+  e1 line n1–n17
+  e2 deviation n18–n21
+  e3 deviation n22–n32
+  e4 deviation n33–n36
+  e5 recap n17–n17

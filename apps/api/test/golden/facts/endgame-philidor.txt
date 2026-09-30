@@ -1,0 +1,48 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, f, g, h; the e-file is half-open for black; white has a passed pawn on e6
+
+Moves:
+n1 1.e6 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from e5 to e6
+    alternatives: Rb7: The position is roughly equal; Ra2: The position is roughly equal
+n2 1…Rh1 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the rook from h6 to h1
+    alternatives: Rh3: The position is roughly equal; Rh5+: The position is roughly equal
+n3 2.Kf6 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from f5 to f6
+    alternatives: Ra8+: The position is roughly equal; e7: The position is roughly equal; Rb7: The position is roughly equal
+n4 2…Rf1+ (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the rook from h1 to f1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg7, Kg6, Kg5, Ke5
+    alternatives: Rh6+: The position is roughly equal; Rd1: White is winning
+    tempting threat: Rh7? Black's Rh7 moves the rook from h1 to h7 | attacks the rook on a7 | leaves the black rook on h7 hanging. White answers Ra8#: moves the rook from a7 to a8 | gives checkmate | a back-rank mate | why it is mate: the king on e8 is checked by the rook on a8; d7 is covered by the pawn on e6; d8 and f8 are covered by the rook on a8; e7 is covered by the king on f6; f7 is covered by the pawn on e6 and the king on f6. Over the line nothing is taken; at the end White is a pawn up (White has a forced mate in 1).
+n5 3.Ke5 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from f6 to e5
+    alternatives: Kg5: The position is roughly equal; Kg7: The position is roughly equal
+n6 3…Re1+ (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the rook from f1 to e1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd6, Kf6, Kf5, Kf4, Kd4, Kd5
+    alternatives: Rf3: The position is roughly equal; Kd8: The position is roughly equal
+n7 4.Kd6 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from e5 to d6
+    alternatives: Kf6: The position is roughly equal; Kf5: The position is roughly equal
+n8 4…Rd1+ (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the rook from e1 to d1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc7, Ke5, Kc5, Kc6
+    alternatives: Kf8: White is much better; Rxe6+: White is much better
+    flags: quiz-eligible, critical
+n9 5.Ke5 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from d6 to e5
+    alternatives: Kc5: The position is roughly equal; Kc6: The position is roughly equal
+n10 5…Re1+ (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the rook from d1 to e1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd6, Kf6, Kf5, Kf4, Kd4, Kd5 | the position has now come twice: a third time is a draw
+    alternatives: Rd2: The position is roughly equal; Rg1: The position is roughly equal
+
+REEL CANDIDATES
+  r1 puzzle n2–n10, climax n8 [highlight, puzzle, promo]
+
+PLAN
+  e1 goal n1–n1
+  e2 technique n1–n9 answer=n8
+  e3 technique n10–n10
+  e4 recap n10–n10

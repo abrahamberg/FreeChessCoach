@@ -1,0 +1,84 @@
+{
+ "6rk/5Npp/8/8/8/8/1Q6/6K1 b - - 1 1||3|2": {
+  "fen": "6rk/5Npp/8/8/8/8/1Q6/6K1 b - - 1 1",
+  "depth": 12,
+  "lines": []
+ },
+ "6rk/6pN/8/8/8/8/1Q6/6K1 b - - 0 1||1|1": {
+  "fen": "6rk/6pN/8/8/8/8/1Q6/6K1 b - - 0 1",
+  "depth": 12,
+  "lines": [
+   {
+    "moveSan": "Kxh7",
+    "moveUci": "h8h7",
+    "cp": 143,
+    "mateIn": null,
+    "pvSan": [
+     "Kxh7",
+     "Qc2+",
+     "Kh6",
+     "Qf5",
+     "Rd8",
+     "Qh3+",
+     "Kg6",
+     "Qg3+",
+     "Kf6",
+     "Qh4+",
+     "g5",
+     "Qh6+",
+     "Kf5",
+     "Kg2",
+     "Rd4",
+     "Qf8+",
+     "Kg6",
+     "Qg8+",
+     "Kf6"
+    ]
+   }
+  ]
+ },
+ "6rk/6pp/8/6N1/8/8/1Q6/6K1 w - - 0 1||3|2": {
+  "fen": "6rk/6pp/8/6N1/8/8/1Q6/6K1 w - - 0 1",
+  "depth": 12,
+  "lines": [
+   {
+    "moveSan": "Nf7#",
+    "moveUci": "g5f7",
+    "cp": null,
+    "mateIn": 1,
+    "pvSan": [
+     "Nf7#"
+    ]
+   },
+   {
+    "moveSan": "Qb1",
+    "moveUci": "b2b1",
+    "cp": null,
+    "mateIn": 4,
+    "pvSan": [
+     "Qb1",
+     "g6",
+     "Qa1+",
+     "Rg7",
+     "Ne6",
+     "Kg8",
+     "Qxg7#"
+    ]
+   },
+   {
+    "moveSan": "Ne6",
+    "moveUci": "g5e6",
+    "cp": 612,
+    "mateIn": null,
+    "pvSan": [
+     "Ne6",
+     "h6",
+     "Kh2",
+     "Kh7",
+     "Qb1+",
+     "g6"
+    ]
+   }
+  ]
+ }
+}

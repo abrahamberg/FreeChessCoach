@@ -28,6 +28,7 @@
     "test": "npm run test --workspaces --if-present",
     "test:changed": "tsx scripts/test-changed.ts",
     "test:corpus": "npm run test:corpus -w @freechesscoach/chess-analysis",
+    "test:golden": "npm run test:golden -w @freechesscoach/api",
     "typecheck": "tsc -b",
     "typecheck:changed": "tsx scripts/typecheck-changed.ts",
     "lint": "npm run lint --workspaces --if-present",

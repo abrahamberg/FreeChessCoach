@@ -1,0 +1,33 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, e
+
+Moves:
+n1 1.Ne7+ (White, Line A) | great | before: White is much better → after: White is much better
+    board: moves the knight from d5 to e7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kf8 | attacks the queen on c8 | the knight on e7 forks the queen on c8 and the king on g8
+    tactics: You won a queen through a fork two moves away.
+    alternatives: Nc7: Black is much better; Nf6+: Black is much better
+    tempting check: Nf6+? White's Nf6+ moves the knight from d5 to f6 | gives check | the check can be answered: no block; take the checking piece with gxf6; move the king with Kh8, Kf8 | leaves the white knight on f6 hanging. Black answers Kh8: moves the king from g8 to h8. Then g3 Qc5 h4. Over the line nothing is taken; at the end White has a knight for a queen (Black is much better).
+    tempting threat: Nb6? White's Nb6 moves the knight from d5 to b6 | attacks the queen on c8. Black answers Qc1#: moves the queen from c8 to c1 | gives checkmate | a back-rank mate | why it is mate: the king on g1 is checked by the queen on c1; f2, g2, h2 hold its own pieces; f1 and h1 are covered by the queen on c1. Over the line nothing is taken; at the end White has a knight for a queen (Black has a forced mate in 1).
+    flags: quiz-eligible, critical
+n2 1…Kf8 (Black, Line A) | best | before: White is much better → after: White is much better
+    board: moves the king from g8 to f8 | attacks the knight on e7 | leaves the black queen on c8 hanging
+    alternatives: Kh8: White is much better
+n3 2.Nxc8 (White, Line A) | great | before: White is much better → after: White is much better
+    board: moves the knight from e7 to c8 | captures the queen on c8
+    tactics: You won a queen through a free piece — captures the queen on c8.
+    alternatives: g3: Black is much better; Ng6+: Black is much better
+    tempting check: Ng6+? White's Ng6+ moves the knight from e7 to g6 | gives check | the check can be answered: no block; take the checking piece with fxg6, hxg6; move the king with Kg8, Ke8 | leaves the white knight on g6 hanging. Black answers hxg6: moves the pawn from h7 to g6 | captures the knight on g6. Then f4 Qc4 Kf2. Over the line Black takes a knight; at the end Black is a queen up (Black is much better).
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
+  r2 brilliant n1–n3, climax n1 [highlight, puzzle, promo]
+
+PLAN
+  e1 question n1–n1
+  e2 solve n1–n2 answer=n1
+  e3 solve n3–n3 answer=n3
+  e4 recap n3–n3

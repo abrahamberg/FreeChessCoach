@@ -1,0 +1,126 @@
+Learner side: Black
+
+Lines:
+l1 "Main line" | opening: Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense | in book throughout
+    end position: the b-file is half-open for black; the d-file is half-open for black; the e-file is half-open for white; black has an isolated pawn on a7; black has an isolated pawn on c6; white has a queenside pawn majority; black has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+l2 "Fried Liver" | opening: Italian Game: Two Knights Defense, Fried Liver Attack | in book throughout
+    end position: the d-file is half-open for black; the e-file is half-open for white; the f-file is half-open for black; black has an isolated pawn on e5; white has a queenside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e6
+
+Moves:
+n1 1.e4 (White, Main line) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Main line) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.Nf3 (White, Main line) | book
+    book: in book (King's Knight Opening)
+    board: moves the knight from g1 to f3
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…Nc6 (Black, Main line) | book
+    book: in book (King's Knight Opening: Normal Variation)
+    board: moves the knight from b8 to c6
+    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+n5 3.Bc4 (White, Main line) | book
+    book: in book (Italian Game)
+    board: moves the bishop from f1 to c4
+    alternatives: d4: The position is roughly equal; Nc3: The position is roughly equal
+n6 3…Nf6 (Black, Main line) | book
+    book: in book (Italian Game: Two Knights Defense)
+    board: moves the knight from g8 to f6
+    alternatives: Bc5: The position is roughly equal; d6: The position is roughly equal
+n7 4.Ng5 (White, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Knight Attack)
+    board: moves the knight from f3 to g5
+    alternatives: d4: The position is roughly equal; d3: The position is roughly equal
+n8 4…d5 (Black, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Knight Attack, Normal Variation)
+    board: moves the pawn from d7 to d5 | attacks the bishop on c4
+    alternatives: Bc5: White is slightly better; Nxe4: White is slightly better
+n9 5.exd5 (White, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Knight Attack, Normal Variation)
+    board: moves the pawn from e4 to d5 | captures the pawn on d5 | attacks the knight on c6
+    alternatives: Bb3: Black is better; Be2: Black is better
+n10 5…Na5 (Black, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Polerio Defense)
+    board: moves the knight from c6 to a5 | attacks the bishop on c4
+    alternatives: Nb4: The position is roughly equal; b5: The position is roughly equal
+n11 6.Bb5+ (White, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Polerio Defense, Bishop Check Line)
+    board: moves the bishop from c4 to b5 | gives check | the check can be answered: block with Bd7, Qd7, c6, Nd7, Nc6; the checking piece cannot be taken; move the king with Ke7
+    alternatives: b3: Black is slightly better; Be2: Black is slightly better
+n12 6…c6 (Black, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Polerio Defense, Bishop Check Line)
+    board: moves the pawn from c7 to c6 | blocks the check from the bishop on b5 | attacks the bishop on b5
+    alternatives: Bd7: White is slightly better; Nd7: White is better
+n13 7.dxc6 (White, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Polerio Defense, Bishop Check Line)
+    board: moves the pawn from d5 to c6 | captures the pawn on c6
+    alternatives: Be2: Black is slightly better; Bd3: Black is slightly better
+n14 7…bxc6 (Black, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Polerio Defense, Bishop Check Line)
+    board: moves the pawn from b7 to c6 | captures the pawn on c6 | attacks the bishop on b5
+    alternatives: Nxc6: White is slightly better; Ke7: White is better
+n15 8.Be2 (White, Main line) | book
+    book: in book (Italian Game: Two Knights Defense)
+    board: moves the bishop from b5 to e2
+    alternatives: Bd3: The position is roughly equal; Qf3: The position is roughly equal
+n16 8…h6 (Black, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense)
+    board: moves the pawn from h7 to h6 | attacks the knight on g5
+    alternatives: Bf5: White is slightly better; Nd5: White is slightly better
+n17 9.Nf3 (White, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense)
+    board: moves the knight from g5 to f3
+    alternatives: Nh3: The position is roughly equal; b4: Black is better
+n18 9…e4 (Black, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense)
+    board: moves the pawn from e5 to e4 | attacks the knight on f3
+    alternatives: Bc5: The position is roughly equal; Bd6: White is slightly better
+n19 10.Ne5 (White, Main line) | book
+    book: in book (Italian Game: Two Knights Defense, Polerio Defense, Suhle Defense)
+    board: moves the knight from f3 to e5
+    alternatives: Ng1: Black is slightly better; Nh4: Black is better
+n20 5…Nxd5 (Black, Fried Liver) | book
+    book: in book (Italian Game: Two Knights Defense, Knight Attack, Normal Variation)
+    board: moves the knight from f6 to d5 | captures the pawn on d5
+    tactics: You let them win a pawn through a free piece with Nxf7 — captures the pawn on f7.
+    alternatives: Na5: The position is roughly equal; Nb4: The position is roughly equal; b5: The position is roughly equal
+n21 6.Nxf7 (White, Fried Liver) | book
+    book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
+    board: moves the knight from g5 to f7 | captures the pawn on f7 | attacks the queen on d8 | attacks the rook on h8 | leaves the white knight on f7 hanging
+    alternatives: d4: White is slightly better; O-O: The position is roughly equal
+n22 6…Kxf7 (Black, Fried Liver) | book
+    book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
+    board: moves the king from e8 to f7 | captures the knight on f7
+    alternatives: Qh4: White is better; Qd7: White is much better
+n23 7.Qf3+ (White, Fried Liver) | book
+    book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
+    board: moves the queen from d1 to f3 | gives check | the check can be answered: block with Bf5, Qf6; the checking piece cannot be taken; move the king with Ke8, Kg8, Kg6, Ke6, Ke7 | attacks the knight on d5, which is pinned to the king by the bishop on c4 | the queen on f3 forks the king on f7 and the knight on d5
+    alternatives: Nc3: Black is better; O-O: Black is better
+    tempting check: Bxd5+? White's Bxd5+ moves the bishop from c4 to d5 | captures the knight on d5 | gives check | the check can be answered: block with Be6; take the checking piece with Qxd5; move the king with Ke8, Kg6, Kf6, Ke7 | attacks the knight on c6. Black answers Qxd5: moves the queen from d8 to d5 | captures the bishop on d5. Then O-O Kg8 Nc3. Over the line White takes a knight; Black takes a bishop; at the end White has a pawn for a bishop (Black is much better).
+    tempting check: Qh5+? White's Qh5+ moves the queen from d1 to h5 | gives check | the check can be answered: block with g6; the checking piece cannot be taken; move the king with Kg8, Kf6, Ke6, Ke7. Black answers Kg8: moves the king from f7 to g8. Then Nc3 Be6 Qf3. Over the line nothing is taken; at the end White has a pawn for a knight (Black is better).
+    flags: quiz-eligible
+n24 7…Ke6 (Black, Fried Liver) | book
+    book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
+    board: moves the king from f7 to e6
+    alternatives: Ke7: White is slightly better; Qf6: White is better
+n25 8.Nc3 (White, Fried Liver) | book
+    book: in book (Italian Game: Two Knights Defense, Fried Liver Attack)
+    board: moves the knight from b1 to c3 | attacks the knight on d5, which is pinned to the king by the bishop on c4
+    alternatives: a3: Black is better; O-O: Black is better
+    tempting check: Bxd5+? White's Bxd5+ moves the bishop from c4 to d5 | captures the knight on d5 | gives check | the check can be answered: no block; take the checking piece with Qxd5; move the king with Kd7, Ke7, Kd6 | attacks the knight on c6. Black answers Qxd5: moves the queen from d8 to d5 | captures the bishop on d5 | attacks the queen on f3. Then Qxd5+ Kxd5 Nc3+. Over the line White takes the queen and a knight; Black takes the queen and a bishop; at the end White has a pawn for a bishop (Black is much better).
+    tempting check: Qg4+? White's Qg4+ moves the queen from f3 to g4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7, Kf7, Kf6, Kd6. Black answers Ke7: moves the king from e6 to e7. Then Qg5+ Nf6 d3. Over the line nothing is taken; at the end White has a pawn for a knight (Black is better).
+    tempting check: Qh3+? White's Qh3+ moves the queen from f3 to h3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7, Kf7, Kf6, Kd6. Black answers Ke7: moves the king from e6 to e7. Then Qf3 Nf6 Nc3. Over the line nothing is taken; at the end White has a pawn for a knight (Black is better).
+    flags: quiz-eligible
+
+REEL CANDIDATES
+  r1 idea n7–n25, climax n23 [highlight, puzzle, promo]
+  r2 idea n9–n25, climax n25 [highlight, puzzle, promo]
+
+PLAN
+  e1 line n1–n19
+  e2 deviation n20–n25
+  e3 recap n19–n19

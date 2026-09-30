@@ -12,7 +12,7 @@ export function printCourseFacts(name: string, inputs: GenerationInputs): void {
   const { context, document } = inputs;
   const lines = [`=== ${name} — ${document.kind}, ${document.coachPersona}, ${document.levelBand}, learner ${document.learnerSide}`, `Direction: ${context.direction}`, ''];
   lines.push('PLAYBOOK', buildCoursePlaybook(context, courseBudget(context.kind, context.persona)), '');
-  lines.push('REEL CANDIDATES', ...(context.reelCandidates ?? []).map((candidate) => `  ${candidate.id} ${candidate.reason} ${candidate.startNodeId}–${candidate.endNodeId}, climax ${candidate.climaxNodeId} [${candidate.styles.join(', ')}]`), '');
+  lines.push('REEL CANDIDATES', ...reelCandidateLines(inputs), '');
   const outline = planOutline(inputs);
   if (!outline) {
     lines.push('NO CODE PLAN: the model plans the episodes itself.');
@@ -23,6 +23,11 @@ export function printCourseFacts(name: string, inputs: GenerationInputs): void {
     lines.push(`--- ${episode.id} ${episode.role}`, buildCourseEpisodeMessages({ context, outline, episodeId: episode.id }).user, '');
   }
   console.log(lines.join('\n'));
+}
+
+/** One line per reel candidate. */
+export function reelCandidateLines(inputs: GenerationInputs): string[] {
+  return (inputs.context.reelCandidates ?? []).map((candidate) => `  ${candidate.id} ${candidate.reason} ${candidate.startNodeId}–${candidate.endNodeId}, climax ${candidate.climaxNodeId} [${candidate.styles.join(', ')}]`);
 }
 
 /** Code's plan as the outline, the way the outline's fallback builds it. */

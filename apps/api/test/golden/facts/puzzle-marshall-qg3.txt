@@ -1,0 +1,23 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: d; the b-file is half-open for white; the c-file is half-open for black; the e-file is half-open for white; the f-file is half-open for black; white has an isolated pawn on a2; white has an isolated pawn on c2; black has an isolated pawn on e6; the white king is tucked away on g1; the black king is tucked away on g8
+
+Moves:
+n1 23…Qg3 (Black, Line A) | best | before: Black is much better → after: Black is much better
+    board: moves the queen from c3 to g3 | attacks the queen on g5
+    alternatives: Qb2: Black is much better; Qb4: Black is better
+    tempting check: Nf3+? Black's Nf3+ moves the knight from d4 to f3 | gives check | the check can be answered: no block; take the checking piece with gxf3; move the king with Kh1 | attacks the queen on g5. White answers gxf3: moves the pawn from g2 to f3 | captures the knight on f3. Then Qxf3 Rc7 g6. Over the line Black takes a pawn; White takes a knight; at the end Black is a pawn up (The position is roughly equal).
+    tempting check: Ne2+ Black's Ne2+ moves the knight from d4 to e2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh1. White answers Kh1: moves the king from g1 to h1. Then Ng3+ Kg1. Over the line nothing is taken; at the end Black is a knight up (Black is slightly better). Works, but not the answer: Black is still slightly better, but the answer is stronger: Black is much better.
+    tempting capture: Qxc5? Black's Qxc5 moves the queen from c3 to c5 | captures the rook on c5 | attacks the queen on g5 | leaves the black queen on c5 hanging | leaves the black rook on h3 hanging. White answers Qxc5: moves the queen from g5 to c5 | captures the queen on c5 | attacks the rook on f8 | attacks the knight on d4 | the queen on c5 forks the rook on f8 and the knight on d4. Then Ne2+ Kh1 Ng3+. Over the line Black takes a rook; White takes the queen; at the end White has a queen for a rook and a knight (The position is roughly equal).
+    tempting capture: Nxc2? Black's Nxc2 moves the knight from d4 to c2 | captures the pawn on c2. White answers gxh3: moves the pawn from g2 to h3 | captures the rook on h3. Then Qd3 Rc7 Rf7. Over the line Black takes a pawn; White takes a rook; at the end White has a rook for a knight and a pawn (White is better).
+    tempting capture: Qxc2? Black's Qxc2 moves the queen from c3 to c2 | captures the pawn on c2 | attacks the rook on c5 | leaves the black rook on h3 hanging. White answers Rxc2: moves the rook from c5 to c2 | captures the queen on c2. Then Kh8 Rc7 Ne2+. Over the line Black takes a pawn; White takes the queen; at the end White has a queen for a knight and a pawn (White is better).
+
+REEL CANDIDATES
+  r1 puzzle n1–n1, climax n1 [highlight, puzzle, promo]
+
+PLAN
+  e1 question n1–n1
+  e2 solve n1–n1 answer=n1
+  e3 recap n1–n1

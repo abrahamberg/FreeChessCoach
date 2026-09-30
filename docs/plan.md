@@ -283,10 +283,10 @@ engine when it runs: the engine's answers are committed.
 `apps/api/vitest.golden.config.ts`; edit `apps/api/scripts/course-golden.ts`,
 `apps/api/package.json`, root `package.json`.
 
-- [ ] Move `courseInputs()` out of `course-golden.ts` into
+- [x] Move `courseInputs()` out of `course-golden.ts` into
   `apps/api/scripts/golden-inputs.ts` (exported, same behaviour) and import it
   back in the script.
-- [ ] Add `--record-evals` to `course-golden.ts`. For each course (honouring
+- [x] Add `--record-evals` to `course-golden.ts`. For each course (honouring
   `--only`), wrap the engine backend in a small recorder with the same
   `analyzeGame` signature. It keeps every `(fen, opts) → EngineEval` the
   course asked for. After the course's inputs are built, write
@@ -296,12 +296,12 @@ engine when it runs: the engine's answers are committed.
   `cp`, `mateIn`, `pvSan`). Pretty-print with 1-space indent. Each file must
   be under 50 KB; if one isn't, cut `pvSan` to 8 plies for that course and
   name it in the Status line.
-- [ ] `test/golden/fixture-engine.ts`: `fixtureEngineFor(name)` returns an
+- [x] `test/golden/fixture-engine.ts`: `fixtureEngineFor(name)` returns an
   `EngineBackend` whose `analyzeGame(fens, opts)` answers from that course's
   JSON (same key), sets `ply` by index as `GoldenEngineCache` does, and throws
   `no golden eval for <fen> in <name>` on a miss. `analyzePosition` throws; the
   dossier never calls it.
-- [ ] `test/golden/course-facts.golden.ts`: `test.each` over
+- [x] `test/golden/course-facts.golden.ts`: `test.each` over
   `loadGoldenSet()`. For each course: `courseInputs(course,
   fixtureEngineFor(name), 'fixture')`, then this text:
   - `renderCourseDossier(inputs.dossier)`;
@@ -313,20 +313,20 @@ engine when it runs: the engine's answers are committed.
   Compare the text with `facts/<name>.txt`; when `GOLDEN_UPDATE=1`, write the
   file instead and pass. Fail with the course name and a unified diff (use
   `expect(actual).toBe(expected)`).
-- [ ] `apps/api/vitest.golden.config.ts`: `include:
+- [x] `apps/api/vitest.golden.config.ts`: `include:
   ['test/golden/**/*.golden.ts']`, no `globalSetup`, `testTimeout: 120_000`.
   The default config must not pick these files up: the default include
   pattern only matches `*.test.ts`, so check with `npx vitest list` that
   neither `course-facts.golden.ts` nor any file under `test/golden/` shows up.
-- [ ] Scripts: `apps/api/package.json` gets `"test:golden": "vitest run
+- [x] Scripts: `apps/api/package.json` gets `"test:golden": "vitest run
   --config vitest.golden.config.ts"` and `"golden:record": "tsx
   scripts/course-golden.ts --facts --record-evals"`; root `package.json`
   gets `"test:golden": "npm run test:golden -w @freechesscoach/api"`.
-- [ ] Record: start the engine (see "How to work"), `npm run golden:record -w
+- [x] Record: start the engine (see "How to work"), `npm run golden:record -w
   @freechesscoach/api`, then `GOLDEN_UPDATE=1 npm run test:golden`. Run
   `npm run test:golden` twice more: both must pass with no file changes
   (`git status` clean after the second run).
-- [ ] Record how long `npm run test:golden` takes in the Status line.
+- [x] Record how long `npm run test:golden` takes in the Status line.
 
 **Keep:** `course-facts.golden.ts` (opt-in golden tier).
 **Ephemeral:** none.
@@ -334,6 +334,9 @@ engine when it runs: the engine's answers are committed.
 KB; `npm run test:golden` passes with the engine stopped; the default
 `npm test -w @freechesscoach/api` does not run it.
 **Commit:** `test(courses): a committed golden facts snapshot, no engine needed`
+
+Status: done 2026-09-30 — 66 eval files (1.4 MB) and 66 facts files committed, all under 50 KB; `npm run test:golden` passed three times (77 s each, engine stopped afterwards), `git status` clean after the second re-run; `npx vitest list` in apps/api shows no golden file; api lint and typecheck clean. Eval files cut to fit 50 KB (pvSan kept to N plies): evergreen 0, game-of-the-century 0 and one JSON line per position, gold-coins 4, immortal 0, opera 8. The recorder tries the whole line, then 8, 4, 2, 0 plies, then the one-line layout. Facts are recorded from these files, not from the full engine data.
+
 
 ### Task 110.2 — Build expensive test fixtures once
 

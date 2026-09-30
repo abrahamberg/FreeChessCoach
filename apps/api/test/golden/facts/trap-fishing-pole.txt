@@ -1,0 +1,95 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | opening: Ruy Lopez: Berlin Defense, Fishing Pole Variation | leaves book at n9
+    end position: open files: h; black has doubled pawns on the g-file; black has a kingside pawn majority; the white king is tucked away on g1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.Nf3 (White, Line A) | book
+    book: in book (King's Knight Opening)
+    board: moves the knight from g1 to f3
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…Nc6 (Black, Line A) | book
+    book: in book (King's Knight Opening: Normal Variation)
+    board: moves the knight from b8 to c6
+    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+n5 3.Bb5 (White, Line A) | book
+    book: in book (Ruy Lopez)
+    board: moves the bishop from f1 to b5 | attacks the knight on c6
+    alternatives: Bc4: The position is roughly equal; d4: The position is roughly equal; Nc3: The position is roughly equal
+n6 3…Nf6 (Black, Line A) | book
+    book: in book (Ruy Lopez: Berlin Defense)
+    board: moves the knight from g8 to f6
+    alternatives: a6: The position is roughly equal; g6: White is slightly better
+n7 4.O-O (White, Line A) | book
+    book: in book (Ruy Lopez: Berlin Defense)
+    board: castles kingside | leaves the white pawn on e4 hanging
+    alternatives: d3: The position is roughly equal; Nc3: The position is roughly equal
+n8 4…Ng4 (Black, Line A) | book
+    book: in book (Ruy Lopez: Berlin Defense, Fishing Pole Variation)
+    board: moves the knight from f6 to g4
+    alternatives: Bc5: The position is roughly equal; Nxe4: The position is roughly equal; d6: White is slightly better
+n9 5.h3 (White, Line A) | best | before: White is better → after: White is slightly better
+    board: moves the pawn from h2 to h3 | attacks the knight on g4
+    alternatives: d4: White is slightly better; Nc3: White is slightly better
+n10 5…h5 (Black, Line A) | best | before: White is slightly better → after: White is better
+    board: moves the pawn from h7 to h5
+    alternatives: Nf6: White is better; Nh6: White is better
+n11 6.hxg4 (White, Line A) | blunder | before: White is better → after: Black is better
+    best instead: d4; after d4 exd4 c3 a6 Bxc6 dxc6, White has a knight for a bishop and a pawn
+    why d4 is better: moves the pawn from d2 to d4
+    board: moves the pawn from h3 to g4 | captures the knight on g4
+    alternatives: d4: White is better; c3: White is better; Ba4: White is better
+    flags: critical
+n12 6…hxg4 (Black, Line A) | great | before: Black is better → after: Black is better
+    board: moves the pawn from h5 to g4 | captures the pawn on g4 | attacks the knight on f3
+    tactics: You won a tempo — hits the knight on f3 with a pawn.
+    alternatives: a6: White is slightly better; g5: White is better
+    tempting threat: d5? Black's d5 moves the pawn from d7 to d5. White answers g5: moves the pawn from g4 to g5 | leaves the white pawn on e4 hanging. Then dxe4 Nxe5 Qxg5. Over the line Black takes two pawns; White takes a pawn; at the end White has a knight for a pawn (White is better).
+    tempting threat: f5? Black's f5 moves the pawn from f7 to f5 | leaves the black pawn on f5 hanging. White answers gxf5: moves the pawn from g4 to f5 | captures the pawn on f5. Then Nd4 Ba4 b5. Over the line White takes a pawn; at the end White is a knight and a pawn up (White is much better).
+    flags: quiz-eligible, critical
+n13 7.Ne1 (White, Line A) | blunder | before: Black is better → after: Black is much better
+    best instead: c3; after c3 gxf3 Qxf3 a6 Ba4 Qh4, material is level
+    why c3 is better: moves the pawn from c2 to c3
+    board: moves the knight from f3 to e1
+    alternatives: c3: Black is better; Nc3: Black is better; g3: Black is better
+n14 7…Qh4 (Black, Line A) | great | before: Black is much better → after: Black is much better
+    board: moves the queen from d8 to h4
+    tactics: You took the open file — takes the open h-file with the queen.
+    alternatives: a6: Black is better; d5: Black is better
+    tempting threat: Nd4? Black's Nd4 moves the knight from c6 to d4 | attacks the bishop on b5 | leaves the black pawn on g4 hanging. White answers Qxg4: moves the queen from d1 to g4 | captures the pawn on g4 | leaves the white bishop on b5 hanging. Then Nxb5 Qg3 Rh5. Over the line Black takes a bishop; White takes a pawn; at the end White has a knight for a bishop (Black is slightly better).
+    flags: quiz-eligible, critical
+n15 8.f3 (White, Line A) | inaccuracy | before: Black is much better → after: Black has a forced mate in 2
+    best instead: f4; after f4 Bc5+ d4 Bxd4+ Qxd4 Nxd4, White has a bishop and a knight for a queen and two pawns
+    why f4 is better: moves the pawn from f2 to f4
+    board: moves the pawn from f2 to f3
+    tactics: They let you force mate with g3.
+    alternatives: f4: Black is much better; a3: Black has a forced mate in 1
+n16 8…g3 (Black, Line A) | best | before: Black has a forced mate in 2 → after: Black has a forced mate in 1
+    board: moves the pawn from g4 to g3
+    alternatives: Bc5+: Black has a forced mate in 6; Nd4: Black is much better
+    tempting check: Qh2+? Black's Qh2+ moves the queen from h4 to h2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf2. White answers Kf2: moves the king from g1 to f2. Then Bc5+ Ke2. Over the line nothing is taken; at the end White has a knight for a pawn (Black is better).
+    tempting check: Qh1+? Black's Qh1+ moves the queen from h4 to h1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf2. White answers Kf2: moves the king from g1 to f2. Then Bc5+ d4 Qh4+. Over the line nothing is taken; at the end White has a knight for a pawn (Black is better).
+    tempting capture: gxf3? Black's gxf3 moves the pawn from g4 to f3 | captures the pawn on f3. White answers Nxf3: moves the knight from e1 to f3 | captures the pawn on f3 | attacks the queen on h4 | leaves the white pawn on e4 hanging. Then Bc5+ d4. Over the line Black takes a pawn; White takes a pawn; at the end White has a knight for a pawn (Black is slightly better).
+    flags: quiz-eligible
+
+REEL CANDIDATES
+  r1 trap n6–n14, climax n12 [highlight, puzzle, promo]
+  r2 brilliant n8–n16, climax n14 [highlight, puzzle, promo]
+  r3 swing n5–n13, climax n11 [highlight, promo]
+
+PLAN
+  e1 hook n1–n1
+  e2 setup n1–n10
+  e3 bait n11–n11
+  e4 quiz n12–n12 answer=n12
+  e5 punish n13–n16
+  e6 safety n11–n11

@@ -32,16 +32,16 @@ import * as usersRepo from '../src/db/repositories/users.js';
 import { createUserSetupVault } from '../src/llm/key-vault.js';
 import { resolutionForSetup, type ModelResolution } from '../src/llm/gateway.js';
 import { generateStructured } from '../src/llm/text.js';
-import { buildCourseDossierFromEngine } from '../src/services/course-dossier.js';
-import { draftFromIntake } from '../src/services/courses.js';
 import { writeEpisode, type WrittenEpisode } from '../src/services/courses/generate-episode.js';
 import { documentFromOutline, planOutline } from '../src/services/courses/generate-outline.js';
 import { writeReel } from '../src/services/courses/generate-reel.js';
-import { courseTreeOf, generationInputs, type CourseModelCall, type GenerationInputs } from '../src/services/courses/generation-inputs.js';
+import type { CourseModelCall, GenerationInputs } from '../src/services/courses/generation-inputs.js';
 import type { EngineBackend } from '../src/services/engine/engine-backend.js';
 import { NativeEngineBackend } from '../src/services/engine/native-engine-backend.js';
 import { printCourseFacts } from './course-golden-facts.js';
+import { courseInputs } from './golden-inputs.js';
 import { GoldenEngineCache } from './golden-engine-cache.js';
+import { EvalRecorder, evalsPathFor } from './golden-eval-recorder.js';
 import { printCourseRun, type CourseRun } from './course-golden-print.js';
 
 const DEFAULT_DATABASE_URL = 'postgresql://chess_coach:chess_coach@localhost:5432/chess_coach';
@@ -66,15 +66,6 @@ function envSetup(): StoredLlmSetup {
   if (!GOLDEN_PROTOCOL || !GOLDEN_MODEL || !GOLDEN_API_KEY) throw new Error('Pass --email, or set GOLDEN_PROTOCOL, GOLDEN_MODEL and GOLDEN_API_KEY');
   const endpoint = GOLDEN_ENDPOINT ?? (GOLDEN_PROTOCOL === 'anthropic' ? 'https://api.anthropic.com/v1' : 'https://api.openai.com/v1');
   return StoredLlmSetupSchema.parse({ protocol: GOLDEN_PROTOCOL, highModel: GOLDEN_MODEL, apiKey: GOLDEN_API_KEY, endpoint });
-}
-
-/** The draft and its engine dossier, as a run starts from them. */
-async function courseInputs(course: GoldenCourse, engine: EngineBackend, engineUrl: string): Promise<GenerationInputs> {
-  const document = draftFromIntake(course.intake);
-  const { dossier } = await buildCourseDossierFromEngine(courseTreeOf(document), document.learnerSide, engine, document.kind).catch((error: unknown) => {
-    throw new Error(`the engine at ${engineUrl} failed (${error instanceof Error ? error.message : String(error)}); is the dev stack up?`);
-  });
-  return generationInputs({ document, dossier, direction: course.intake.direction, sourcePgn: course.intake.pgn });
 }
 
 /** One golden course, start to finish, in memory. */
@@ -111,7 +102,7 @@ const ENGINE_CACHE_PATH = new URL('../.golden-engine-cache.json', import.meta.ur
 
 async function main(): Promise<void> {
   const { values } = parseArgs({
-    options: { email: { type: 'string' }, only: { type: 'string' }, json: { type: 'string' }, 'engine-url': { type: 'string' }, facts: { type: 'boolean' }, 'no-cache': { type: 'boolean' }, jobs: { type: 'string' } }
+    options: { email: { type: 'string' }, only: { type: 'string' }, json: { type: 'string' }, 'engine-url': { type: 'string' }, facts: { type: 'boolean' }, 'record-evals': { type: 'boolean' }, 'no-cache': { type: 'boolean' }, jobs: { type: 'string' } }
   });
   const engineUrl = values['engine-url'] ?? 'http://localhost:8081';
   const native = new NativeEngineBackend(engineUrl);
@@ -122,11 +113,12 @@ async function main(): Promise<void> {
     // Courses in parallel, printed in order: the engine pool searches one
     // position per process, so more jobs than its size only queue.
     const jobs = Math.max(1, Number(values.jobs ?? 2));
-    const pending = courses.map((course) => ({ course, inputs: null as Promise<GenerationInputs> | null }));
+    const pending = courses.map((course) => ({ course, recorder: null as EvalRecorder | null, inputs: null as Promise<GenerationInputs> | null }));
     const start = (index: number): void => {
       const entry = pending[index];
       if (!entry) return;
-      entry.inputs = courseInputs(entry.course, engine, engineUrl);
+      entry.recorder = values['record-evals'] ? new EvalRecorder(engine) : null;
+      entry.inputs = courseInputs(entry.course, entry.recorder ?? engine, engineUrl);
       // Awaited in order later; a failure before then is not unhandled.
       entry.inputs.catch(() => undefined);
     };
@@ -136,6 +128,8 @@ async function main(): Promise<void> {
       if (!inputs) continue;
       start(index + jobs);
       printCourseFacts(entry.course.name, inputs);
+      const kept = entry.recorder?.write(entry.course.name) ?? null;
+      if (kept !== null) console.error(`${entry.course.name}: pvSan cut to ${kept} plies to stay under 50 KB (${evalsPathFor(entry.course.name)})`);
       cache?.save();
     }
     return;

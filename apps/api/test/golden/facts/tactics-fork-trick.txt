@@ -1,0 +1,62 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | opening: Italian Game: Two Knights Defense | leaves book at n7
+    end position: the e-file is half-open for white; black has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.Nf3 (White, Line A) | book
+    book: in book (King's Knight Opening)
+    board: moves the knight from g1 to f3
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…Nc6 (Black, Line A) | book
+    book: in book (King's Knight Opening: Normal Variation)
+    board: moves the knight from b8 to c6
+    alternatives: Nf6: The position is roughly equal; d6: The position is roughly equal
+n5 3.Nc3 (White, Line A) | book
+    book: in book (Three Knights Opening)
+    board: moves the knight from b1 to c3
+    alternatives: Bc4: The position is roughly equal; d4: The position is roughly equal
+n6 3…Nf6 (Black, Line A) | book
+    book: in book (Four Knights Game)
+    board: moves the knight from g8 to f6
+    alternatives: Bc5: The position is roughly equal; Bb4: White is slightly better
+n7 4.Bc4 (White, Line A) | inaccuracy | before: The position is roughly equal → after: The position is roughly equal
+    best instead: Bb5; after Bb5 Bb4 O-O O-O Re1 d6, material is level
+    why Bb5 is better: moves the bishop from f1 to b5 | attacks the knight on c6
+    board: moves the bishop from f1 to c4
+    alternatives: Bb5: The position is roughly equal; d4: The position is roughly equal; Be2: The position is roughly equal
+n8 4…Nxe4 (Black, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    book: in book (Four Knights Game: Italian Variation)
+    board: moves the knight from f6 to e4 | captures the pawn on e4 | attacks the knight on c3 | leaves the black knight on e4 hanging
+    alternatives: Bc5: The position is roughly equal; Bb4: The position is roughly equal
+    tempting threat: b5? Black's b5 moves the pawn from b7 to b5 | attacks the bishop on c4 | leaves the black pawn on b5 hanging. White answers Bxb5: moves the bishop from c4 to b5 | captures the pawn on b5 | attacks the knight on c6. Then Bc5 O-O Qe7. Over the line White takes a pawn; at the end White is a pawn up (White is better).
+    tempting threat: d5? Black's d5 moves the pawn from d7 to d5 | attacks the bishop on c4. White answers exd5: moves the pawn from e4 to d5 | captures the pawn on d5 | attacks the knight on c6. Then Nd4 h3 Bd6. Over the line White takes a pawn; at the end White is a pawn up (White is slightly better).
+n9 5.Nxe4 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    book: in book (Four Knights Game: Italian Variation)
+    board: moves the knight from c3 to e4 | captures the knight on e4
+    alternatives: Qe2: Black is slightly better; Bd5: Black is slightly better
+n10 5…d5 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    book: in book (Italian Game: Two Knights Defense)
+    board: moves the pawn from d7 to d5 | attacks the bishop on c4 | attacks the knight on e4 | the pawn on d5 forks the bishop on c4 and the knight on e4
+    alternatives: Bb4: White is better; Be7: White is better
+    tempting threat: b5? Black's b5 moves the pawn from b7 to b5 | attacks the bishop on c4 | leaves the black pawn on b5 hanging. White answers Bd5: moves the bishop from c4 to d5 | attacks the knight on c6. Then f5 Neg5 e4. Over the line nothing is taken; at the end White has a knight for a pawn (White is much better).
+    tempting threat: f5? Black's f5 moves the pawn from f7 to f5 | attacks the knight on e4. White answers Nc3: moves the knight from e4 to c3. Then e4 Ng1 b5. Over the line nothing is taken; at the end White has a knight for a pawn (White is better).
+    tempting threat: Na5? Black's Na5 moves the knight from c6 to a5 | attacks the bishop on c4 | leaves the black pawn on e5 hanging. White answers Be2: moves the bishop from c4 to e2. Then d5 Ng3 e4. Over the line nothing is taken; at the end White has a knight for a pawn (White is better).
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 brilliant n4–n10, climax n10 [highlight, puzzle, promo]
+
+PLAN
+  e1 concept n10–n10
+  e2 example n10–n10 answer=n10
+  e3 scan n10–n10

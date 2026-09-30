@@ -1,0 +1,24 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, e
+
+Moves:
+n1 1.Rxe8# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
+    board: moves the rook from e1 to e8 | captures the rook on e8 | gives checkmate | a back-rank mate | why it is mate: the king on g8 is checked by the rook on e8; f7, g7, h7 hold its own pieces; f8 and h8 are covered by the rook on e8
+    tactics: You forced mate — rook on e8 checks the king on g8, boxed in on the back rank.
+    alternatives: Red1: White is much better; Re3: White is much better
+    tempting threat: Re2 White's Re2 moves the rook from e1 to e2 | attacks the rook on e8 | leaves the white rook on e2 hanging. Black answers Ra8: moves the rook from e8 to a8. Then Rce1 f5 f4. Over the line nothing is taken; at the end White is a rook up (White is much better). Works, but not the answer: White is still much better, but there is no mate; the answer mates in 1.
+    tempting threat: Re3 White's Re3 moves the rook from e1 to e3 | attacks the rook on e8. Black answers Kf8: moves the king from g8 to f8. Then Rg3 g6 Ra1. Over the line nothing is taken; at the end White is a rook up (White is much better). Works, but not the answer: White is still much better, but there is no mate; the answer mates in 1.
+    tempting threat: Re4 White's Re4 moves the rook from e1 to e4 | attacks the rook on e8 | leaves the white rook on e4 hanging. Black answers Kf8: moves the king from g8 to f8. Then Re3 Rxe3 fxe3. Over the line White takes a rook; Black takes a rook; at the end White is a rook up (White is much better). Works, but not the answer: White is still much better, but there is no mate; the answer mates in 1.
+    tempting threat: Re5 White's Re5 moves the rook from e1 to e5 | attacks the rook on e8 | leaves the white rook on e5 hanging. Black answers Ra8: moves the rook from e8 to a8. Then Re7 g6 f4. Over the line nothing is taken; at the end White is a rook up (White is much better). Works, but not the answer: White is still much better, but there is no mate; the answer mates in 1.
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 mate n1–n1, climax n1 [highlight, puzzle, promo]
+
+PLAN
+  e1 concept n1–n1
+  e2 example n1–n1 answer=n1
+  e3 scan n1–n1

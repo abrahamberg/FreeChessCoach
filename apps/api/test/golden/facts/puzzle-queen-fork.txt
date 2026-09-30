@@ -1,0 +1,31 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, e, f, g, h
+
+Moves:
+n1 1.Qe4+ (White, Line A) | excellent | before: White is winning → after: White is winning
+    board: moves the queen from h1 to e4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf8, Kf7, Kd7, Kd8 | attacks the rook on a8 | the queen on e4 forks the rook on a8 and the king on e8
+    alternatives: Qh8+: White is winning; Qxa8+: White is winning; Qc6+: White is winning
+    tempting threat: Qg2? White's Qg2 moves the queen from h1 to g2 | attacks the rook on a8. Black answers Ra1+: moves the rook from a8 to a1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd2, Ke2, Kf2. Then Kf2 Ra2+ Kg3. Over the line nothing is taken; at the end White has a queen for a rook (The position is roughly equal).
+    tempting threat: Qf3 White's Qf3 moves the queen from h1 to f3 | attacks the rook on a8. Black answers Ra1+: moves the rook from a8 to a1 | gives check | the check can be answered: block with Qd1; the checking piece cannot be taken; move the king with Kd2, Ke2, Kf2. Then Kd2 Ra2+ Kc1. Over the line nothing is taken; at the end White has a queen for a rook (White is better). Works, but not the answer: White is still better, but the answer is stronger: White is winning.
+n2 1…Kd7 (Black, Line A) | best | before: White is winning → after: White is winning
+    board: moves the king from e8 to d7 | leaves the black rook on a8 hanging
+    alternatives: Kf7: White is winning; Kf8: White is winning
+n3 2.Qxa8 (White, Line A) | best | before: White is winning → after: White is winning
+    board: moves the queen from e4 to a8 | captures the rook on a8
+    alternatives: Qd5+: White is winning; Qb7+: White is winning
+    tempting check: Qf5+ White's Qf5+ moves the queen from e4 to f5 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8, Ke8, Ke7, Kd6, Kc6, Kc7. Black answers Kc7: moves the king from d7 to c7. Then Qc5+ Kb7 Qd5+. Over the line nothing is taken; at the end White has a queen for a rook (White is better). Works, but not the answer: White is still better, but the answer is stronger: White is winning.
+    tempting check: Qh7+ White's Qh7+ moves the queen from e4 to h7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc8, Kd8, Ke8, Ke6, Kd6, Kc6. Black answers Kd6: moves the king from d7 to d6. Then Qg6+ Ke5 Qc6. Over the line nothing is taken; at the end White has a queen for a rook (White is better). Works, but not the answer: White is still better, but the answer is stronger: White is winning.
+    tempting check: Qg4+ White's Qg4+ moves the queen from e4 to g4 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8, Ke8, Ke7, Kd6, Kc6, Kc7. Black answers Kc7: moves the king from d7 to c7. Then Kd2 Rc8 Qh3. Over the line nothing is taken; at the end White has a queen for a rook (White is better). Works, but not the answer: White is still better, but the answer is stronger: White is winning.
+    tempting check: Qd3+ White's Qd3+ moves the queen from e4 to d3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kc8, Ke8, Ke7, Ke6, Kc6, Kc7. Black answers Kc7: moves the king from d7 to c7. Then Qg3+ Kb6 Qd6+. Over the line nothing is taken; at the end White has a queen for a rook (White is better). Works, but not the answer: White is still better, but the answer is stronger: White is winning.
+
+REEL CANDIDATES
+  r1 puzzle n1–n3, climax n3 [highlight, puzzle, promo]
+
+PLAN
+  e1 question n1–n1
+  e2 solve n1–n2 answer=n1
+  e3 solve n3–n3 answer=n3
+  e4 recap n3–n3

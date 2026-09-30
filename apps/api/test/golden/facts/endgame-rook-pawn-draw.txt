@@ -1,0 +1,30 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: b, c, d, e, f, g, h; the a-file is half-open for black; white has a passed pawn on a7
+
+Moves:
+n1 1.Kb6 (White, Line A) | best | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from a6 to b6
+    alternatives: Kb5: The position is roughly equal
+n2 1…Kb8 (Black, Line A) | forced | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from a8 to b8 | takes the opposition: the kings face each other with one square between, and the other king must give way
+n3 2.a6 (White, Line A) | excellent | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from a5 to a6
+    alternatives: Ka6: The position is roughly equal; Kc6: The position is roughly equal; Kc5: The position is roughly equal
+n4 2…Ka8 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the king from b8 to a8
+    alternatives: Kc8: White is winning
+    flags: quiz-eligible, critical
+n5 3.a7 (White, Line A) | excellent | before: The position is roughly equal → after: stalemate
+    board: moves the pawn from a6 to a7
+    alternatives: Kc6: The position is roughly equal; Kc5: The position is roughly equal; Kb5: The position is roughly equal
+
+REEL CANDIDATES
+  r1 puzzle n1–n5, climax n4 [highlight, puzzle, promo]
+
+PLAN
+  e1 goal n1–n1
+  e2 technique n1–n5 answer=n4
+  e3 recap n5–n5

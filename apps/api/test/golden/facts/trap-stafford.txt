@@ -1,0 +1,95 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | opening: Petrov's Defense: Stafford Gambit Accepted | leaves book at n11
+    end position: open files: e; the d-file is half-open for black; the f-file is half-open for white; black has doubled pawns on the c-file; black has a kingside pawn majority; the white king is still in the centre on e2; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.Nf3 (White, Line A) | book
+    book: in book (King's Knight Opening)
+    board: moves the knight from g1 to f3
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…Nf6 (Black, Line A) | book
+    book: in book (Petrov's Defense)
+    board: moves the knight from g8 to f6 | leaves the black pawn on e5 hanging
+    alternatives: Nc6: The position is roughly equal; d6: The position is roughly equal
+n5 3.Nxe5 (White, Line A) | book
+    book: in book (Petrov's Defense)
+    board: moves the knight from f3 to e5 | captures the pawn on e5 | leaves the white pawn on e4 hanging
+    alternatives: d4: The position is roughly equal; Nc3: The position is roughly equal
+n6 3…Nc6 (Black, Line A) | book
+    book: in book (Petrov's Defense: Stafford Gambit)
+    board: moves the knight from b8 to c6 | attacks the knight on e5
+    alternatives: d6: The position is roughly equal; Qe7: White is slightly better; Nxe4: White is slightly better
+n7 4.Nxc6 (White, Line A) | book
+    book: in book (Petrov's Defense: Stafford Gambit)
+    board: moves the knight from e5 to c6 | captures the knight on c6 | attacks the queen on d8 | leaves the white pawn on e4 hanging
+    alternatives: d4: White is slightly better; Nf3: The position is roughly equal
+n8 4…dxc6 (Black, Line A) | book
+    book: in book (Petrov's Defense: Stafford Gambit Accepted)
+    board: moves the pawn from d7 to c6 | captures the knight on c6
+    alternatives: bxc6: White is better; Nxe4: White is much better
+n9 5.d3 (White, Line A) | book
+    book: in book (Petrov's Defense: Stafford Gambit Accepted)
+    board: moves the pawn from d2 to d3
+    alternatives: Qe2: White is slightly better; f3: White is slightly better
+n10 5…Bc5 (Black, Line A) | book
+    book: in book (Petrov's Defense: Stafford Gambit Accepted)
+    board: moves the bishop from f8 to c5
+    alternatives: Be6: White is better; Bd6: White is better
+    flags: critical
+n11 6.Bg5 (White, Line A) | blunder | before: White is better → after: Black is better
+    best instead: Be2; after Be2 Ng4 Bxg4 Qh4 Qf3, White is a knight and a pawn up
+    why Be2 is better: moves the bishop from f1 to e2
+    board: moves the bishop from c1 to g5 | attacks the knight on f6, which is pinned to the queen on d8 by the bishop on g5
+    tactics: They let you win a bishop through a discovered attack two moves away with Nxe4 — unveils the queen on d8 against the bishop on g5.
+    alternatives: Be2: White is better; f3: White is slightly better; c3: White is slightly better
+    tempting threat: e5? White's e5 moves the pawn from e4 to e5 | attacks the knight on f6. Black answers Ng4: moves the knight from f6 to g4. Then Be3 Bxe3. Over the line Black takes a bishop; at the end White has a pawn for a bishop (Black is better).
+    tempting threat: d4? White's d4 moves the pawn from d3 to d4 | attacks the bishop on c5 | leaves the white pawn on e4 hanging. Black answers Bxd4: moves the bishop from c5 to d4 | captures the pawn on d4. Then Be2 Nxe4 O-O. Over the line Black takes two pawns; at the end Black is a pawn up (Black is better).
+    tempting threat: b4? White's b4 moves the pawn from b2 to b4 | attacks the bishop on c5 | leaves the white pawn on b4 hanging. Black answers Bxf2+: moves the bishop from c5 to f2 | captures the pawn on f2 | gives check | the check can be answered: no block; take the checking piece with Kxf2; move the king with Kd2, Ke2 | leaves the black bishop on f2 hanging. Then Kxf2 Qd4+ Ke1. Over the line White takes a bishop; Black takes a pawn; at the end White is a bishop up (Black is better).
+    flags: critical
+n12 6…Nxe4 (Black, Line A) | best | before: Black is better → after: Black is better
+    board: moves the knight from f6 to e4 | captures the pawn on e4 | attacks the bishop on g5 | leaves the black knight on e4 hanging
+    tactics: You won a bishop through a discovered attack two moves away — unveils the queen on d8 against the bishop on g5.
+    alternatives: Bxf2+: Black is better; Qd4: The position is roughly equal
+n13 7.Bxd8 (White, Line A) | blunder | before: Black is better → after: Black has a forced mate in 2
+    best instead: Qe2; after Qe2 Qxg5 f4 Bf2+ Kd1 Qxf4, Black is a bishop and a pawn up
+    why Qe2 is better: moves the queen from d1 to e2 | attacks the knight on e4, which is pinned to the king by the queen on e2 | leaves the white bishop on g5 hanging
+    board: moves the bishop from g5 to d8 | captures the queen on d8
+    tactics: They let you force mate through a mating net two moves away with Bxf2+ — closes the net — every answer runs into mate.
+    alternatives: Qe2: Black is better; Be3: Black is much better; d4: Black is much better
+n14 7…Bxf2+ (Black, Line A) | great | before: Black has a forced mate in 2 → after: Black has a forced mate in 1
+    board: moves the bishop from c5 to f2 | captures the pawn on f2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke2
+    tactics: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    alternatives: Nxf2: White is much better; Be6: White is much better
+    tempting check: Bb4+? Black's Bb4+ moves the bishop from c5 to b4 | gives check | the check can be answered: block with c3, Nc3, Nd2, Qd2; the checking piece cannot be taken; move the king with Ke2. White answers c3: moves the pawn from c2 to c3 | blocks the check from the bishop on b4 | attacks the bishop on b4 | leaves the white bishop on d8 hanging. Then Bd6 dxe4 Kxd8. Over the line Black takes a bishop; White takes a knight; at the end White has a queen and a knight for a bishop (White is much better).
+    tempting capture: Kxd8? Black's Kxd8 moves the king from e8 to d8 | captures the bishop on d8 | leaves the black knight on e4 hanging. White answers dxe4+: moves the pawn from d3 to e4 | captures the knight on e4 | gives check | a discovered check from the queen on d1 | the check can be answered: block with Bd7, Bd6, Bd4; the checking piece cannot be taken; move the king with Ke8, Ke7. Then Ke7 Nc3 Rd8. Over the line Black takes a bishop; White takes a knight; at the end White has a queen and a knight for a bishop (White is much better).
+    flags: quiz-eligible, critical
+n15 8.Ke2 (White, Line A) | forced | before: Black has a forced mate in 1 → after: Black has a forced mate in 1
+    board: moves the king from e1 to e2 | attacks the bishop on f2 | leaves the white bishop on d8 hanging
+n16 8…Bg4# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
+    board: moves the bishop from c8 to g4 | gives checkmate | why it is mate: the king on e2 is checked by the bishop on g4; d1, d3, f1 hold its own pieces; d2 is covered by the knight on e4; e1 and e3 are covered by the bishop on f2; f3 is covered by the bishop on g4; the bishop on f2 is guarded by the knight on e4
+    alternatives: Bd4: White is better; Be6: White is much better
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 mate n10–n16, climax n16 [highlight, puzzle, promo]
+  r2 trap n6–n16, climax n12 [highlight, promo]
+  r3 brilliant n8–n16, climax n14 [highlight, puzzle, promo]
+  r4 swing n5–n13, climax n11 [highlight, promo]
+
+PLAN
+  e1 hook n1–n1
+  e2 setup n1–n10
+  e3 bait n11–n11
+  e4 quiz n12–n12
+  e5 punish n13–n16
+  e6 safety n11–n11

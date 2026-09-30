@@ -1,0 +1,61 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, e, f
+
+Moves:
+n1 1.Nf7+ (White, Line A) | great | before: White has a forced mate in 4 → after: White has a forced mate in 3
+    board: moves the knight from e5 to f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg8
+    tactics: You forced mate.
+    alternatives: Qd5: White is much better; Qc6: White is better
+    tempting check: Ng6+ White's Ng6+ moves the knight from e5 to g6 | gives check | the check can be answered: no block; take the checking piece with hxg6; the king cannot move | leaves the white knight on g6 hanging. Black answers hxg6: moves the pawn from h7 to g6 | captures the knight on g6. Then Qe4 Ra1+ Kf2. Over the line Black takes a knight; at the end White has a queen for a rook (White is better). Works, but not the answer: White is still better, but there is no mate; the answer mates in 4.
+    tempting check: Qc8+? White's Qc8+ moves the queen from c4 to c8 | gives check | the check can be answered: no block; take the checking piece with Rxc8; the king cannot move | attacks the rook on a8 | leaves the white queen on c8 hanging. Black answers Rxc8: moves the rook from a8 to c8 | captures the queen on c8. Then h4 Ra8 Kh2. Over the line Black takes the queen; at the end White has a knight for a rook (Black is better).
+    tempting threat: Qc6 White's Qc6 moves the queen from c4 to c6 | attacks the rook on a8. Black answers Ra1+: moves the rook from a8 to a1 | gives check | the check can be answered: block with Qc1; the checking piece cannot be taken; move the king with Kf2. Then Kf2 Ra2+ Ke3. Over the line nothing is taken; at the end White has a queen and a knight for a rook (White is much better). Works, but not the answer: White is still much better, but there is no mate; the answer mates in 4.
+    tempting threat: Qd5 White's Qd5 moves the queen from c4 to d5 | attacks the rook on a8. Black answers Ra1+: moves the rook from a8 to a1 | gives check | the check can be answered: block with Qd1; the checking piece cannot be taken; move the king with Kf2. Then Kf2 h6 Nf7+. Over the line nothing is taken; at the end White has a queen and a knight for a rook (White is much better). Works, but not the answer: White is still much better, but there is no mate; the answer mates in 4.
+    tempting threat: Qe4 White's Qe4 moves the queen from c4 to e4 | attacks the rook on a8. Black answers Ra1+: moves the rook from a8 to a1 | gives check | the check can be answered: block with Qe1, Qb1; the checking piece cannot be taken; move the king with Kf2. Then Kf2 Ra7 Nd7. Over the line nothing is taken; at the end White has a queen and a knight for a rook (White is much better). Works, but not the answer: White is still much better, but there is no mate; the answer mates in 4.
+    flags: quiz-eligible, critical
+n2 1…Kg8 (Black, Line A) | forced | before: White has a forced mate in 3 → after: White has a forced mate in 3
+    board: moves the king from h8 to g8 | attacks the knight on f7
+n3 2.Nh6+ (White, Line A) | best | before: White has a forced mate in 3 → after: White has a forced mate in 2
+    board: moves the knight from f7 to h6 | gives check | a double check, with the queen on c4 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kf8
+    alternatives: Ne5+: White has a forced mate in 5; Ng5+: White has a forced mate in 5
+    tempting check: Nd8+ White's Nd8+ moves the knight from f7 to d8 | gives check | a discovered check from the queen on c4 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kf8. Black answers Kh8: moves the king from g8 to h8. Then Nf7+ Kg8 Nh6+. Over the line nothing is taken; at the end White has a queen and a knight for a rook (White has a forced mate in 4). Works, but not the answer: it mates too, but in 5 moves, not 3.
+    tempting check: Nh8+ White's Nh8+ moves the knight from f7 to h8 | gives check | a discovered check from the queen on c4 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kxh8, Kf8 | leaves the white knight on h8 hanging. Black answers Kxh8: moves the king from g8 to h8 | captures the knight on h8. Then h3 Re8 Qb5. Over the line Black takes a knight; at the end White has a queen for a rook (White is better). Works, but not the answer: White is still better, but there is no mate; the answer mates in 3.
+    tempting check: Ng5+ White's Ng5+ moves the knight from f7 to g5 | gives check | a discovered check from the queen on c4 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kf8. Black answers Kh8: moves the king from g8 to h8. Then Nf7+ Kg8 Nh6+. Over the line nothing is taken; at the end White has a queen and a knight for a rook (White has a forced mate in 4). Works, but not the answer: it mates too, but in 5 moves, not 3.
+    tempting check: Ne5+ White's Ne5+ moves the knight from f7 to e5 | gives check | a discovered check from the queen on c4 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kf8. Black answers Kh8: moves the king from g8 to h8. Then Nf7+ Kg8 Nh6+. Over the line nothing is taken; at the end White has a queen and a knight for a rook (White has a forced mate in 4). Works, but not the answer: it mates too, but in 5 moves, not 3.
+    tempting check: Nd6+ White's Nd6+ moves the knight from f7 to d6 | gives check | a discovered check from the queen on c4 | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kf8. Black answers Kh8: moves the king from g8 to h8. Then Nf7+ Kg8 Nh6+. Over the line nothing is taken; at the end White has a queen and a knight for a rook (White has a forced mate in 4). Works, but not the answer: it mates too, but in 5 moves, not 3.
+    flags: quiz-eligible
+n4 2…Kh8 (Black, Line A) | best | before: White has a forced mate in 2 → after: White has a forced mate in 2
+    board: moves the king from g8 to h8
+    alternatives: Kf8: White has a forced mate in 1
+n5 3.Qg8+ (White, Line A) | best | before: White has a forced mate in 2 → after: White has a forced mate in 1
+    board: moves the queen from c4 to g8 | gives check | the check can be answered: no block; take the checking piece with Rxg8; the king cannot move | attacks the rook on a8
+    alternatives: Nf7+: White has a forced mate in 4; Qd5: White is much better
+    tempting check: Nf7+ White's Nf7+ moves the knight from h6 to f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg8. Black answers Kg8: moves the king from h8 to g8 | attacks the knight on f7. Then Nh6+ Kh8 Qg8+. Over the line nothing is taken; at the end White has a queen and a knight for a rook (White has a forced mate in 3). Works, but not the answer: it mates too, but in 4 moves, not 2.
+    tempting check: Qc8+? White's Qc8+ moves the queen from c4 to c8 | gives check | the check can be answered: no block; take the checking piece with Rxc8; the king cannot move | attacks the rook on a8 | leaves the white queen on c8 hanging. Black answers Rxc8: moves the rook from a8 to c8 | captures the queen on c8. Then Nf7+ Kg8 Ne5. Over the line Black takes the queen; at the end White has a knight for a rook (Black is better).
+    tempting threat: Qc6 White's Qc6 moves the queen from c4 to c6 | attacks the rook on a8. Black answers Ra1+: moves the rook from a8 to a1 | gives check | the check can be answered: block with Qc1; the checking piece cannot be taken; move the king with Kf2. Then Kf2 Rf1+ Kxf1. Over the line White takes a rook; at the end White is a queen and a knight up (White is much better). Works, but not the answer: White is still much better, but there is no mate; the answer mates in 2.
+    tempting threat: Qd5 White's Qd5 moves the queen from c4 to d5 | attacks the rook on a8 | leaves the white knight on h6 hanging. Black answers Ra1+: moves the rook from a8 to a1 | gives check | the check can be answered: block with Qd1; the checking piece cannot be taken; move the king with Kf2. Then Kf2 gxh6 Qf7. Over the line Black takes a knight; at the end White has a queen for a rook (White is much better). Works, but not the answer: White is still much better, but there is no mate; the answer mates in 2.
+    flags: quiz-eligible
+n6 3…Rxg8 (Black, Line A) | forced | before: White has a forced mate in 1 → after: White has a forced mate in 1
+    board: moves the rook from a8 to g8 | captures the queen on g8
+n7 4.Nf7# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
+    board: moves the knight from h6 to f7 | gives checkmate | why it is mate: the king on h8 is checked by the knight on f7; g7, g8, h7 hold its own pieces
+    tactics: You forced mate — mates the king on h8, smothered by its own pieces.
+    alternatives: Nxg8: The position is roughly equal; Nf5: Black is better
+    tempting capture: Nxg8? White's Nxg8 moves the knight from h6 to g8 | captures the rook on g8. Black answers Kxg8: moves the king from h8 to g8 | captures the knight on g8. Then Kf2 Kf8 Kf3. Over the line White takes a rook; Black takes a knight; at the end material is level (The position is roughly equal).
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 puzzle n1–n7, climax n7 [highlight, puzzle, promo]
+  r2 brilliant n1–n3, climax n1 [highlight, puzzle, promo]
+  r3 idea n1–n7, climax n3 [highlight, puzzle, promo]
+  r4 idea n1–n7, climax n5 [highlight, puzzle, promo]
+
+PLAN
+  e1 question n1–n1
+  e2 solve n1–n2 answer=n1
+  e3 solve n3–n4 answer=n3
+  e4 solve n5–n6 answer=n5
+  e5 solve n7–n7 answer=n7
+  e6 recap n7–n7

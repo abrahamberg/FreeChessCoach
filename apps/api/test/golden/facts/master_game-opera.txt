@@ -1,0 +1,185 @@
+Learner side: White
+
+Lines:
+l1 "Line A" | opening: Philidor Defense | leaves book at n8
+    end position: open files: d; the b-file is half-open for black; the c-file is half-open for black; white has a passed pawn on c2; black has an isolated pawn on a7; white has a queenside pawn majority; the white king is tucked away on c1; the black king is still in the centre on e8
+
+Moves:
+n1 1.e4 (White, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e2 to e4
+    alternatives: d4: The position is roughly equal; Nf3: The position is roughly equal
+n2 1…e5 (Black, Line A) | book
+    book: in book (King's Pawn Game)
+    board: moves the pawn from e7 to e5
+    alternatives: c5: The position is roughly equal; d6: The position is roughly equal
+n3 2.Nf3 (White, Line A) | book
+    book: in book (King's Knight Opening)
+    board: moves the knight from g1 to f3
+    alternatives: Nc3: The position is roughly equal; Bc4: The position is roughly equal
+n4 2…d6 (Black, Line A) | book
+    book: in book (Philidor Defense)
+    board: moves the pawn from d7 to d6
+    alternatives: Nf6: The position is roughly equal; Nc6: The position is roughly equal
+n5 3.d4 (White, Line A) | book
+    book: in book (Philidor Defense)
+    board: moves the pawn from d2 to d4
+    alternatives: Bc4: The position is roughly equal; a4: The position is roughly equal
+n6 3…Bg4 (Black, Line A) | book
+    book: in book (Philidor Defense)
+    board: moves the bishop from c8 to g4 | attacks the knight on f3, which is pinned to the queen on d1 by the bishop on g4
+    alternatives: exd4: The position is roughly equal; Nf6: White is slightly better; Nc6: White is slightly better
+n7 4.dxe5 (White, Line A) | book
+    book: in book (Philidor Defense)
+    board: moves the pawn from d4 to e5 | captures the pawn on e5
+    alternatives: Be3: White is slightly better; Nc3: White is slightly better
+n8 4…Bxf3 (Black, Line A) | inaccuracy | before: White is slightly better → after: White is better
+    best instead: Nc6; after Nc6 Bb5 dxe5 Bxc6+ bxc6, White has a knight for a bishop
+    why Nc6 is better: moves the knight from b8 to c6
+    board: moves the bishop from g4 to f3 | captures the knight on f3 | attacks the queen on d1
+    alternatives: Nc6: White is slightly better; Nd7: White is slightly better; a6: White is slightly better
+    tempting threat: d5? Black's d5 moves the pawn from d6 to d5. White answers exd5: moves the pawn from e4 to d5 | captures the pawn on d5. Then Nd7 Bf4 Bb4+. Over the line White takes a pawn; at the end White is two pawns up (White is better).
+    flags: critical
+n9 5.Qxf3 (White, Line A) | best | before: White is better → after: White is slightly better
+    board: moves the queen from d1 to f3 | captures the bishop on f3 | leaves the white pawn on e5 hanging
+    alternatives: gxf3: White is slightly better; Qd5: Black is better
+    tempting check: Bb5+? White's Bb5+ moves the bishop from f1 to b5 | gives check | the check can be answered: block with Nd7, Nc6, Qd7, c6; the checking piece cannot be taken; move the king with Ke7. Black answers c6: moves the pawn from c7 to c6 | blocks the check from the bishop on b5 | attacks the bishop on b5 | leaves the black bishop on f3 hanging. Then Qxf3 cxb5 Nc3. Over the line White takes a bishop; Black takes a bishop; at the end White has a pawn for a knight (Black is better).
+    tempting threat: Qd3? White's Qd3 moves the queen from d1 to d3 | attacks the bishop on f3 | leaves the white pawn on e5 hanging. Black answers Bg4: moves the bishop from f3 to g4. Then Qg3 Be6 Bg5. Over the line nothing is taken; at the end White has a pawn for a knight (Black is better).
+    flags: critical
+n10 5…dxe5 (Black, Line A) | best | before: White is slightly better → after: White is better
+    board: moves the pawn from d6 to e5 | captures the pawn on e5
+    alternatives: Nd7: White is slightly better; Nc6: White is better
+    tempting threat: Qe7? Black's Qe7 moves the queen from d8 to e7. White answers exd6: moves the pawn from e5 to d6 | captures the pawn on d6 | attacks the queen on e7. Then Qxd6 Bf4 Qf6. Over the line Black takes a pawn; White takes a pawn; at the end White has a bishop and a pawn for a knight (White is better).
+    tempting threat: f6? Black's f6 moves the pawn from f7 to f6. White answers e6: moves the pawn from e5 to e6. Then Nc6 Be3 g6. Over the line nothing is taken; at the end White has a bishop and a pawn for a knight (White is better).
+    flags: critical
+n11 6.Bc4 (White, Line A) | inaccuracy | before: White is better → after: White is slightly better
+    best instead: Qb3; after Qb3 Nd7 Bc4 Qf6 Qxb7 Rb8, White has a bishop and a pawn for a knight
+    why Qb3 is better: moves the queen from f3 to b3
+    board: moves the bishop from f1 to c4
+    alternatives: Qb3: White is better; Nc3: White is slightly better
+    flags: critical
+n12 6…Nf6 (Black, Line A) | good | before: White is slightly better → after: White is better
+    board: moves the knight from g8 to f6
+    alternatives: Qf6: White is slightly better; Qd7: White is better; Qe7: White is better
+    tempting check: Bb4+? Black's Bb4+ moves the bishop from f8 to b4 | gives check | the check can be answered: block with Qc3, c3, Nc3, Nd2, Bd2; the checking piece cannot be taken; move the king with Ke2, Kf1. White answers c3: moves the pawn from c2 to c3 | blocks the check from the bishop on b4 | attacks the bishop on b4. Then Nf6 cxb4 Qd4. Over the line White takes a bishop; at the end White has two bishops for a knight (White is much better).
+    tempting threat: Qg5? Black's Qg5 moves the queen from d8 to g5 | attacks the bishop on c1 | leaves the black queen on g5 hanging. White answers Qxf7+: moves the queen from f3 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8 | attacks the bishop on f8 | attacks the knight on g8 | the queen on f7 forks the king on e8 and the bishop on f8 and the knight on g8. Then Kd8 Qxf8+ Kd7. Over the line White takes a bishop and a pawn; at the end White has two bishops and a pawn for a knight (White is winning).
+    tempting threat: Qd4? Black's Qd4 moves the queen from d8 to d4 | attacks the bishop on c4. White answers Qxf7+: moves the queen from f3 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8 | attacks the bishop on f8 | attacks the knight on g8 | the queen on f7 forks the king on e8 and the bishop on f8 and the knight on g8. Then Kd8 Qxf8+ Kd7. Over the line White takes a bishop and a pawn; at the end White has two bishops and a pawn for a knight (White is much better).
+    flags: critical
+n13 7.Qb3 (White, Line A) | best | before: White is better → after: White is better
+    board: moves the queen from f3 to b3 | leaves the white pawn on e4 hanging
+    alternatives: Bg5: White is slightly better; O-O: White is slightly better
+n14 7…Qe7 (Black, Line A) | good | before: White is better → after: White is better
+    board: moves the queen from d8 to e7 | leaves the black pawn on b7 hanging
+    alternatives: Bc5: White is better; Bd6: White is better
+n15 8.Nc3 (White, Line A) | inaccuracy | before: White is better → after: White is better
+    best instead: Qxb7; after Qxb7 Qb4+ Qxb4 Bxb4+ c3 Bc5, White has a bishop and a pawn for a knight
+    why Qxb7 is better: moves the queen from b3 to b7 | captures the pawn on b7 | attacks the rook on a8 | attacks the knight on b8 | the queen on b7 forks the rook on a8 and the knight on b8
+    board: moves the knight from b1 to c3
+    alternatives: Qxb7: White is better; O-O: White is slightly better
+    tempting check: Bb5+? White's Bb5+ moves the bishop from c4 to b5 | gives check | the check can be answered: block with Nbd7, Nc6, c6, Qd7, Nfd7; the checking piece cannot be taken; move the king with Kd8. Black answers c6: moves the pawn from c7 to c6 | blocks the check from the bishop on b5 | attacks the bishop on b5. Then Bd3 Qc7 a4. Over the line nothing is taken; at the end White has a bishop for a knight (The position is roughly equal).
+    tempting check: Qa4+? White's Qa4+ moves the queen from b3 to a4 | gives check | the check can be answered: block with Nbd7, Nc6, b5, c6, Qd7, Nfd7; the checking piece cannot be taken; move the king with Kd8. Black answers c6: moves the pawn from c7 to c6 | blocks the check from the queen on a4. Then Qb3 Nxe4 Be3. Over the line Black takes a pawn; at the end White has a bishop for a knight and a pawn (The position is roughly equal).
+    tempting check: Qb5+? White's Qb5+ moves the queen from b3 to b5 | gives check | the check can be answered: block with Nbd7, Nc6, c6, Qd7, Nfd7; the checking piece cannot be taken; move the king with Kd8. Black answers c6: moves the pawn from c7 to c6 | blocks the check from the queen on b5 | attacks the queen on b5. Then Qb3 Nxe4 Be3. Over the line Black takes a pawn; at the end White has a bishop for a knight and a pawn (The position is roughly equal).
+    flags: critical
+n16 8…c6 (Black, Line A) | best | before: White is better → after: White is better
+    board: moves the pawn from c7 to c6
+    alternatives: b6: White is better; Qb4: White is better
+n17 9.Bg5 (White, Line A) | best | before: White is better → after: White is better
+    board: moves the bishop from c1 to g5 | attacks the knight on f6, which is pinned to the queen on e7 by the bishop on g5
+    alternatives: a4: White is better; Be3: White is better
+n18 9…b5 (Black, Line A) | inaccuracy | before: White is better → after: White is better
+    best instead: a6; after a6 a4 Qc7 Bxf6 gxf6 a5, material is level
+    why a6 is better: moves the pawn from a7 to a6
+    board: moves the pawn from b7 to b5 | attacks the bishop on c4
+    tactics: They let you win a pawn through a free piece with Nxb5 — captures the pawn on b5.
+    alternatives: a6: White is better; h6: White is better; Qc7: White is better
+n19 10.Nxb5 (White, Line A) | best | before: White is better → after: White is better
+    board: moves the knight from c3 to b5 | captures the pawn on b5 | leaves the white pawn on e4 hanging
+    alternatives: Bxf6: White is slightly better; Bxb5: The position is roughly equal
+n20 10…cxb5 (Black, Line A) | inaccuracy | before: White is better → after: White is much better
+    best instead: Qb4+; after Qb4+ Qxb4 Bxb4+ c3 cxb5 Bxb5+, White has a bishop and two pawns for two knights
+    why Qb4+ is better: moves the queen from e7 to b4 | gives check | the check can be answered: block with Nc3, Bd2, Qc3, c3; take the checking piece with Qxb4; move the king with Ke2, Kf1, Kd1 | attacks the knight on b5 | attacks the bishop on c4 | attacks the queen on b3
+    board: moves the pawn from c6 to b5 | captures the knight on b5 | attacks the bishop on c4
+    alternatives: Qb4+: White is better; Na6: White is better; a6: White is better
+n21 11.Bxb5+ (White, Line A) | great | before: White is much better → after: White is much better
+    board: moves the bishop from c4 to b5 | captures the pawn on b5 | gives check | the check can be answered: block with Nbd7, Nc6, Qd7, Nfd7; the checking piece cannot be taken; move the king with Kd8
+    alternatives: Qxb5+: The position is roughly equal; Bxf6: Black is slightly better
+    tempting threat: Bd5? White's Bd5 moves the bishop from c4 to d5 | attacks the rook on a8. Black answers Qb4+: moves the queen from e7 to b4 | gives check | the check can be answered: block with Bd2, Qc3, c3; take the checking piece with Qxb4; move the king with Ke2, Kf1, Kd1 | attacks the queen on b3. Then c3 Qxb3 axb3. Over the line White takes the queen; Black takes the queen; at the end White has a bishop and a pawn for two knights (Black is better).
+    tempting threat: Bd3? White's Bd3 moves the bishop from c4 to d3. Black answers a6: moves the pawn from a7 to a6. Then a4 b4 a5. Over the line nothing is taken; at the end White has a bishop and a pawn for two knights (Black is better).
+    tempting threat: Be2? White's Be2 moves the bishop from c4 to e2 | leaves the white pawn on e4 hanging. Black answers a6: moves the pawn from a7 to a6. Then a4 b4 f4. Over the line nothing is taken; at the end White has a bishop and a pawn for two knights (Black is better).
+    flags: quiz-eligible, critical
+n22 11…Nbd7 (Black, Line A) | excellent | before: White is much better → after: White is much better
+    board: moves the knight from b8 to d7 | blocks the check from the bishop on b5
+    alternatives: Kd8: White is much better; Qd7: White is much better
+n23 12.O-O-O (White, Line A) | best | before: White is much better → after: White is much better
+    board: castles queenside | leaves the white pawn on e4 hanging
+    alternatives: Bxf6: White is better; O-O: White is slightly better
+n24 12…Rd8 (Black, Line A) | good | before: White is much better → after: White is much better
+    board: moves the rook from a8 to d8
+    alternatives: Qc5: White is much better; Rb8: White is much better
+n25 13.Rxd7 (White, Line A) | brilliant | before: White is much better → after: White is much better
+    board: moves the rook from d1 to d7 | captures the knight on d7 | attacks the rook on d8 | attacks the queen on e7 | leaves the white pawn on e4 hanging
+    alternatives: Rd5: White is better; Rd3: White is better
+    tempting check: Bxd7+? White's Bxd7+ moves the bishop from b5 to d7 | captures the knight on d7 | gives check | the check can be answered: no block; take the checking piece with Rxd7, Qxd7, Nxd7; the king cannot move. Black answers Rxd7: moves the rook from d8 to d7 | captures the bishop on d7 | attacks the rook on d1. Then Rxd7 Qxd7 Qb8+. Over the line White takes a rook and a knight; Black takes a rook and a bishop; at the end White has two pawns for a knight (White is better).
+    tempting threat: Be3? White's Be3 moves the bishop from g5 to e3 | leaves the white pawn on e4 hanging. Black answers Qb4: moves the queen from e7 to b4 | attacks the bishop on b5 | attacks the queen on b3 | leaves the black pawn on a7 hanging. Then Rd3 Qxb3 axb3. Over the line White takes the queen; Black takes the queen; at the end White has a bishop and two pawns for two knights (White is slightly better).
+    tempting threat: Qe3? White's Qe3 moves the queen from b3 to e3. Black answers a6: moves the pawn from a7 to a6 | attacks the bishop on b5 | leaves the black pawn on a6 hanging. Then Bxf6 gxf6 Ba4. Over the line White takes a knight; Black takes a bishop; at the end White has two pawns for a knight (The position is roughly equal).
+    flags: critical
+n26 13…Rxd7 (Black, Line A) | excellent | before: White is much better → after: White is much better
+    board: moves the rook from d8 to d7 | captures the rook on d7
+    alternatives: Nxd7: White is much better; Qxd7: White is much better
+n27 14.Rd1 (White, Line A) | best | before: White is much better → after: White is much better
+    board: moves the rook from h1 to d1 | attacks the rook on d7, which is pinned to the king by the bishop on b5 | leaves the white pawn on e4 hanging
+    alternatives: Qa4: White is better; Bxf6: White is better
+    tempting check: Bxd7+? White's Bxd7+ moves the bishop from b5 to d7 | captures the rook on d7 | gives check | the check can be answered: no block; take the checking piece with Kxd7, Qxd7, Nxd7; move the king with Kd8. Black answers Qxd7: moves the queen from e7 to d7 | captures the bishop on d7. Then Qb8+ Qd8 Qxe5+. Over the line White takes a rook and a pawn; Black takes a bishop; at the end White has three pawns for a knight (The position is roughly equal).
+    tempting threat: Bc6? White's Bc6 moves the bishop from b5 to c6 | attacks the rook on d7, which is pinned to the king by the bishop on c6. Black answers Qd6: moves the queen from e7 to d6 | attacks the bishop on c6. Then Qb7 Be7 Qc8+. Over the line nothing is taken; at the end White has a bishop and two pawns for a rook and a knight (The position is roughly equal).
+    tempting threat: Ba4? White's Ba4 moves the bishop from b5 to a4 | attacks the rook on d7, which is pinned to the king by the bishop on a4 | leaves the white pawn on e4 hanging. Black answers Qd6: moves the queen from e7 to d6. Then c4 Ke7. Over the line nothing is taken; at the end White has a bishop and two pawns for a rook and a knight (White is slightly better).
+    flags: quiz-eligible
+n28 14…Qe6 (Black, Line A) | good | before: White is much better → after: White is much better
+    board: moves the queen from e7 to e6 | attacks the queen on b3
+    alternatives: Qc5: White is much better; g6: White is much better; Qd6: White is much better
+n29 15.Bxd7+ (White, Line A) | miss | before: White is much better → after: White is better
+    best instead: Bxf6; after Bxf6 Bd6 Qxe6+ fxe6 Rxd6 O-O, White has two bishops and two pawns for a rook
+    why Bxf6 is better: moves the bishop from g5 to f6 | captures the knight on f6
+    board: moves the bishop from b5 to d7 | captures the rook on d7 | gives check | the check can be answered: no block; take the checking piece with Qxd7, Nxd7; move the king with Ke7, Kd8 | attacks the queen on e6
+    alternatives: Bxf6: White is much better; Qxe6+: White is much better; Qc3: White is much better
+    tempting capture: Rxd7? White's Rxd7 moves the rook from d1 to d7 | captures the rook on d7 | leaves the white pawn on e4 hanging. Black answers Nxd7: moves the knight from f6 to d7 | captures the rook on d7. Then Qc3 f6 Qc8+. Over the line White takes a rook; Black takes a rook; at the end White has a bishop and two pawns for a rook and a knight (White is slightly better).
+    flags: critical
+n30 15…Nxd7 (Black, Line A) | best | before: White is better → after: White has a forced mate in 2
+    board: moves the knight from f6 to d7 | captures the bishop on d7
+    tactics: They let you force mate with Qb8+.
+    alternatives: Qxd7: White is much better; Ke7: White has a forced mate in 4
+    flags: quiz-eligible
+n31 16.Qb8+ (White, Line A) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1
+    board: moves the queen from b3 to b8 | gives check | the check can be answered: no block; take the checking piece with Nxb8; the king cannot move | leaves the white queen on b8 hanging
+    tactics: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    alternatives: Qb7: White is better; Qc3: White is slightly better
+    tempting check: Qxe6+? White's Qxe6+ moves the queen from b3 to e6 | captures the queen on e6 | gives check | the check can be answered: block with Be7; take the checking piece with fxe6; the king cannot move | attacks the knight on d7. Black answers fxe6: moves the pawn from f7 to e6 | captures the queen on e6. Then c3 Bc5 f3. Over the line White takes the queen; Black takes the queen; at the end White has two pawns for a knight (Black is slightly better).
+    tempting threat: Qa4? White's Qa4 moves the queen from b3 to a4 | attacks the knight on d7, which is pinned to the king by the queen on a4. Black answers Bc5: moves the bishop from f8 to c5. Then Be3 Bxe3+ fxe3. Over the line White takes a bishop; Black takes a bishop; at the end White has two pawns for a knight (Black is slightly better).
+    flags: quiz-eligible, critical
+n32 16…Nxb8 (Black, Line A) | forced | before: White has a forced mate in 1 → after: White has a forced mate in 1
+    board: moves the knight from d7 to b8 | captures the queen on b8
+n33 17.Rd8# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
+    board: moves the rook from d1 to d8 | gives checkmate | a back-rank mate | why it is mate: the king on e8 is checked by the rook on d8; f7, f8 hold its own pieces; d7 is covered by the rook on d8; e7 is covered by the bishop on g5; the rook on d8 is guarded by the bishop on g5
+    alternatives: Bd2: Black is much better; Bd8: Black is much better
+    flags: quiz-eligible, critical
+
+REEL CANDIDATES
+  r1 mate n27–n33, climax n33 [highlight, puzzle, promo]
+  r2 brilliant n15–n23, climax n21 [highlight, puzzle, promo]
+  r3 brilliant n19–n27, climax n25 [highlight, promo]
+  r4 brilliant n25–n33, climax n31 [highlight, puzzle, promo]
+  r5 swing n24–n33, climax n30 [highlight, puzzle, promo]
+
+PLAN
+  e1 intro n1–n1
+  e2 moves n1–n33
+  e3 moment n8–n8
+  e4 moment n9–n9
+  e5 moment n10–n10
+  e6 moment n11–n11
+  e7 moment n12–n12
+  e8 moment n15–n15
+  e9 moment n21–n21 answer=n21
+  e10 moment n25–n25
+  e11 moment n29–n29
+  e12 moment n31–n31 answer=n31
+  e13 moment n33–n33 answer=n33

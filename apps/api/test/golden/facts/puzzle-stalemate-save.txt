@@ -1,0 +1,26 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | leaves book at n1
+    end position: open files: a, b, c, d, e, f, g
+
+Moves:
+n1 1…Rg2+ (Black, Line A) | brilliant | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the rook from a2 to g2 | gives check | the check can be answered: no block; take the checking piece with Kxg2; move the king with Kf4, Kh4, Kh3, Kf3 | leaves the black rook on g2 hanging: taking it is stalemate
+    tactics: You found a brilliant sacrifice.
+    alternatives: Ra3+: White is winning; Ra8: White has a forced mate in 2
+    tempting check: Ra3+? Black's Ra3+ moves the rook from a2 to a3 | gives check | the check can be answered: block with Qe3, Qb3; the checking piece cannot be taken; move the king with Kf4, Kg4, Kh4, Kh2, Kg2, Kf2. White answers Kh4: moves the king from g3 to h4. Then Ra4+ Kg5 Ra5+. Over the line nothing is taken; at the end White has a queen for a rook (White is much better).
+    tempting threat: Ra6? Black's Ra6 moves the rook from a2 to a6 | attacks the queen on e6 | leaves the black rook on a6 hanging. White answers Qc8#: moves the queen from e6 to c8 | gives checkmate | a back-rank mate | why it is mate: the king on h8 is checked by the queen on c8; h7 holds its own pieces; g7 is covered by the pawn on h6; g8 is covered by the queen on c8. Over the line nothing is taken; at the end White has a queen for a rook (White has a forced mate in 1).
+    tempting threat: Re2? Black's Re2 moves the rook from a2 to e2 | attacks the queen on e6 | leaves the black rook on e2 hanging. White answers Qc8+: moves the queen from e6 to c8 | gives check | the check can be answered: block with Re8; the checking piece cannot be taken; the king cannot move. Then Re8 Qxe8#. Over the line White takes a rook; at the end White is a queen up (White has a forced mate in 2).
+    flags: quiz-eligible, critical
+n2 2.Kxg2 (White, Line A) | excellent | before: The position is roughly equal → after: stalemate
+    board: moves the king from g3 to g2 | captures the rook on g2
+    alternatives: Kh4: The position is roughly equal; Kf3: The position is roughly equal; Kf4: The position is roughly equal
+
+REEL CANDIDATES
+  r1 puzzle n1–n2, climax n1 [highlight, puzzle, promo]
+
+PLAN
+  e1 question n1–n1
+  e2 solve n1–n2 answer=n1
+  e3 recap n2–n2

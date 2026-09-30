@@ -1,0 +1,122 @@
+Learner side: Black
+
+Lines:
+l1 "Line A" | opening: French Defense: Marshall Gambit | leaves book at n7
+    end position: open files: d; the b-file is half-open for white; the c-file is half-open for black; the e-file is half-open for white; the f-file is half-open for black; white has an isolated pawn on a2; white has an isolated pawn on c2; black has an isolated pawn on e6; the white king is tucked away on g1; the black king is tucked away on g8
+
+Moves:
+n1 1.d4 (White, Line A) | book
+n2 1…e6 (Black, Line A) | book
+n3 2.e4 (White, Line A) | book
+n4 2…d5 (Black, Line A) | book
+n5 3.Nc3 (White, Line A) | book
+n6 3…c5 (Black, Line A) | book
+n7 4.Nf3 (White, Line A) | inaccuracy | before: White is slightly better → after: White is slightly better
+    best instead: exd5; after exd5 exd5 dxc5 d4, White is a pawn up
+    why exd5 is better: moves the pawn from e4 to d5 | captures the pawn on d5
+    board: moves the knight from g1 to f3
+    alternatives: exd5: White is slightly better; Bb5+: White is slightly better; dxc5: White is slightly better
+n8 4…Nc6 (Black, Line A) | good
+n9 5.exd5 (White, Line A) | best
+n10 5…exd5 (Black, Line A) | best
+n11 6.Be2 (White, Line A) | inaccuracy | before: White is slightly better → after: The position is roughly equal
+    best instead: Bb5; after Bb5 Nf6 O-O Bd6, material is level
+    why Bb5 is better: moves the bishop from f1 to b5 | attacks the knight on c6, which is pinned to the king by the bishop on b5
+    board: moves the bishop from f1 to e2
+    alternatives: Bb5: White is slightly better; dxc5: White is slightly better; Be3: The position is roughly equal
+n12 6…Nf6 (Black, Line A) | good
+n13 7.O-O (White, Line A) | best
+n14 7…Be7 (Black, Line A) | excellent
+n15 8.Bg5 (White, Line A) | excellent
+n16 8…O-O (Black, Line A) | good
+n17 9.dxc5 (White, Line A) | best
+n18 9…Be6 (Black, Line A) | good
+n19 10.Nd4 (White, Line A) | inaccuracy | before: White is slightly better → after: The position is roughly equal
+    best instead: Be3; after Be3 Ng4 Bd4 Nf6, White is a pawn up
+    why Be3 is better: moves the bishop from g5 to e3 | keeps the pawn on c5 safe: the bishop on e3 now defends it
+    board: moves the knight from f3 to d4 | attacks the knight on c6 | attacks the bishop on e6 | leaves the white pawn on c5 hanging
+    alternatives: Be3: White is slightly better; Na4: White is slightly better; Qd3: The position is roughly equal
+n20 10…Bxc5 (Black, Line A) | best
+n21 11.Nxe6 (White, Line A) | excellent
+n22 11…fxe6 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from f7 to e6 | captures the knight on e6
+    tactics: You saved a hanging piece — saves the queen on d8.
+    alternatives: Bxf2+: White is better; Qd6: White is much better
+    flags: quiz-eligible, critical
+n23 12.Bg4 (White, Line A) | inaccuracy | before: The position is roughly equal → after: The position is roughly equal
+    best instead: Kh1; after Kh1 Bd4 Bd3, White has a bishop for a knight
+    why Kh1 is better: moves the king from g1 to h1
+    board: moves the bishop from e2 to g4
+    alternatives: Kh1: The position is roughly equal; a3: The position is roughly equal; Bh4: The position is roughly equal
+n24 12…Qd6 (Black, Line A) | good
+n25 13.Bh3 (White, Line A) | best
+n26 13…Rae8 (Black, Line A) | excellent
+n27 14.Qd2 (White, Line A) | excellent
+n28 14…Bb4 (Black, Line A) | good
+n29 15.Bxf6 (White, Line A) | best
+n30 15…Rxf6 (Black, Line A) | best
+n31 16.Rad1 (White, Line A) | inaccuracy | before: The position is roughly equal → after: The position is roughly equal
+    best instead: a3; after a3 Ba5 Ne4, material is level
+    why a3 is better: moves the pawn from a2 to a3 | attacks the bishop on b4
+    board: moves the rook from a1 to d1
+    alternatives: a3: The position is roughly equal; Qe2: The position is roughly equal
+n32 16…Qc5 (Black, Line A) | best
+n33 17.Qe2 (White, Line A) | best
+n34 17…Bxc3 (Black, Line A) | best
+n35 18.bxc3 (White, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
+    board: moves the pawn from b2 to c3 | captures the bishop on c3
+    alternatives: Rb1: Black is much better; Kh1: Black is much better
+    tempting threat: b4? White's b4 moves the pawn from b2 to b4 | attacks the queen on c5 | leaves the white pawn on b4 hanging. Black answers Nxb4: moves the knight from c6 to b4 | captures the pawn on b4. Then Rb1 Qe7 Qd1. Over the line Black takes a pawn; at the end Black is a knight and a pawn up (Black is much better).
+    flags: quiz-eligible
+n36 18…Qxc3 (Black, Line A) | inaccuracy | before: The position is roughly equal → after: The position is roughly equal
+    best instead: Na5; after Na5 Rd3 Nc4 Rfd1, White has a bishop for a knight
+    why Na5 is better: moves the knight from c6 to a5
+    board: moves the queen from c5 to c3 | captures the pawn on c3 | attacks the bishop on h3 | the queen stops guarding d5, where Rxd5 follows
+    alternatives: Na5: The position is roughly equal; g6: The position is roughly equal; Re7: The position is roughly equal
+    flags: critical
+n37 19.Rxd5 (White, Line A) | best
+n38 19…Nd4 (Black, Line A) | best
+n39 20.Qh5 (White, Line A) | blunder | before: The position is roughly equal → after: Black is better
+    best instead: Qe4; after Qe4 Rf4 Qe5 h6, White has a bishop for a knight
+    why Qe4 is better: moves the queen from e2 to e4 | attacks the knight on d4 | keeps the pawn on c2 safe: the queen on e4 now defends it
+    board: moves the queen from e2 to h5 | attacks the rook on e8 | leaves the white pawn on c2 hanging
+    alternatives: Qe4: The position is roughly equal; Qe5: Black is better
+    flags: critical
+n40 20…Ref8 (Black, Line A) | great | before: Black is better → after: Black is better
+    board: moves the rook from e8 to f8
+    tactics: You moved the target out of reach — moves the rook off e8, out of reach.
+    alternatives: g6: The position is roughly equal; exd5: The position is roughly equal
+    flags: quiz-eligible, critical
+n41 21.Re5 (White, Line A) | mistake | before: Black is better → after: Black is much better
+    best instead: Rxd4; after Rxd4 Qxd4 Qe2 e5, White has a bishop for a rook
+    why Rxd4 is better: moves the rook from d5 to d4 | captures the knight on d4 | leaves the white rook on d4 hanging | leaves the white pawn on c2 hanging
+    board: moves the rook from d5 to e5 | leaves the white pawn on c2 hanging
+    alternatives: Rxd4: Black is better; Rd1: Black is much better
+n42 21…Rh6 (Black, Line A) | best
+n43 22.Qg5 (White, Line A) | good
+n44 22…Rxh3 (Black, Line A) | inaccuracy | before: Black is much better → after: Black is better
+    best instead: Rg6; after Rg6 Qe3 Nf3+ Kh1, White has a bishop for a knight
+    why Rg6 is better: moves the rook from h6 to g6 | attacks the queen on g5
+    board: moves the rook from h6 to h3 | captures the bishop on h3
+    alternatives: Rg6: Black is much better; Qc7: Black is slightly better
+    tempting capture: Nxc2? Black's Nxc2 moves the knight from d4 to c2 | captures the pawn on c2. White answers Bxe6+: moves the bishop from h3 to e6 | captures the pawn on e6 | gives check | the check can be answered: block with Rf7; take the checking piece with Rxe6; move the king with Kh8. Then Kh8 Rc5 Qb4. Over the line Black takes a pawn; White takes a pawn; at the end White has a bishop for a knight (White is slightly better).
+    tempting capture: Qxc2? Black's Qxc2 moves the queen from c3 to c2 | captures the pawn on c2. White answers Bg4: moves the bishop from h3 to g4 | leaves the white pawn on a2 hanging. Then Rg6 Qh4 h6. Over the line Black takes a pawn; at the end White has a bishop for a knight and a pawn (Black is slightly better).
+    flags: critical
+n45 23.Rc5 (White, Line A) | best
+n46 23…Qg3 (Black, Line A) | best | before: Black is much better → after: Black is much better
+    board: moves the queen from c3 to g3 | attacks the queen on g5
+    alternatives: Qb2: Black is much better; Qb4: Black is better
+
+REEL CANDIDATES
+  r1 brilliant n16–n24, climax n22 [highlight, puzzle, promo]
+  r2 brilliant n29–n37, climax n35 [highlight, puzzle, promo]
+  r3 brilliant n34–n42, climax n40 [highlight, puzzle, promo]
+
+PLAN
+  e1 intro n1–n1
+  e2 moves n1–n46
+  e3 moment n22–n22 answer=n22
+  e4 moment n36–n36
+  e5 moment n39–n39
+  e6 moment n40–n40 answer=n40
+  e7 moment n44–n44
