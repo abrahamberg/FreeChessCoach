@@ -525,17 +525,35 @@ Invariants to keep (one test each, on the smallest position that shows it):
     dossier lists at a solving move reaches the solve prompt; no engine number
     reaches any course prompt.
 
-- [ ] Pruned as above; `course/tree.test.ts`, `course/stages.test.ts`,
+- [x] Pruned as above; `course/tree.test.ts`, `course/stages.test.ts`,
   `course/review-schedule.test.ts`, `course/key-moves.test.ts`,
   `course/moves.test.ts`, `course/reel-candidates.test.ts`,
   `san-token.test.ts` and `eval-words.test.ts` stay as they are (small, logic).
-- [ ] Write the before/after test counts and times in the Status line.
+- [x] Write the before/after test counts and times in the Status line.
 
 **Keep:** the invariant tests. **Ephemeral:** none.
 **Done when:** each of the 17 invariants has a test (list the test names in the
 Status line); no remaining assertion compares a whole generated sentence; the
 default suites and `test:golden` pass.
 **Commit:** `test(courses): invariants stay, wording is the golden snapshot's`
+
+Status: done 2026-09-30 — tests before → after: `chess-analysis` 852 → 789 (19.5 → 17.3 s), `prompts` 234 → 208 (4.7 → 4.5 s); `test:golden` 66, snapshot unchanged. Invariant → test (file: name):
+1–2. `board-facts/move-facts.test.ts`: "a capture that can be taken back is a trade…", "a piece hangs only if a legal capture…".
+3. same file: "a hanging piece is named with its owner's colour".
+4. same file: "a fork needs two targets…".
+5. same file: "how a check can be answered lists every block…".
+6. same file: "why it is mate covers every square…".
+7. same file: "a discovered or double check names the other checking piece".
+8. same file: "en passant names the pawn actually taken".
+9–10. `board-facts/better-move.test.ts`: ""keeps X safe" only for a piece standing there…", ""stops guarding" only a square…". (Split out of `course/dossier.test.ts`; no test in `board-facts/` imports `course/`.)
+11. `course/dossier.test.ts`: "repetition counts positions, not moves".
+12. `course/tempting.test.ts`: "the best move by the gap is the one answer…".
+13. same file: "never a mate…", "outside a solving move an obvious loss is dropped…", "at a solving move every check is weighed…".
+14. `course/dossier.test.ts`: "the learner side, per kind" (two tests).
+15. `course/tree.test.ts`, untouched.
+16. `course/verify.test.ts`: the §6.6 example, "rejects a move the analysis never mentions…", "…a piece that is not on its square", "…a tactic word the facts don't support", "…an arrow that isn't a move", "…a line over its length".
+17. `course-prompts.test.ts`: "the quiz prompt never names the answer…" (also `verify.test.ts`: "a quiz prompt never names the answer"), "every tempting move … reaches the solve prompt", "no engine number reaches any course prompt".
+Deleted with no invariant to guard: `course/dossier-tactics.test.ts`, `course/outline-check.test.ts`, `course/verify-reel.test.ts`, the skeleton tests in `course/dossier.test.ts`, and the prompt tests for budgets, cache-stable heads, retries and playbook wording. `board-facts/material.test.ts` keeps `exchangeLoss` (invariant 13) and `settledLine`.
 
 ### Task 112.2 — Web: logic tests stay, component tests go
 
