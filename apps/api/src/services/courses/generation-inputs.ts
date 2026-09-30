@@ -5,7 +5,7 @@ import type { Kysely } from 'kysely';
 import type { z } from 'zod';
 import * as coursesRepo from '../../db/repositories/courses.js';
 import type { Database } from '../../db/schema.js';
-import type { CourseDossierBuilder } from '../course-dossier.js';
+import type { CourseDossierBuilder } from './dossier.js';
 import { courseHeaders } from './intake-text.js';
 import { buildManualEpisodes } from './manual-episodes.js';
 

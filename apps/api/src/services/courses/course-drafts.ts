@@ -17,15 +17,15 @@ import {
 } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
 import type { z } from 'zod';
-import * as coursesRepo from '../db/repositories/courses.js';
-import type { Database } from '../db/schema.js';
-import { ConflictError, NotFoundError, ValidationError } from '../lib/errors.js';
-import type { CourseDossierBuilder } from './course-dossier.js';
-import { draftProblem } from './courses/draft-checks.js';
-import { missingNoteAudio } from './courses/note-audio.js';
-import { courseEvals } from './courses/public-course.js';
-import { buildManualEpisodes } from './courses/manual-episodes.js';
-import { courseSlug, courseTitle, resultHeader } from './courses/intake-text.js';
+import * as coursesRepo from '../../db/repositories/courses.js';
+import type { Database } from '../../db/schema.js';
+import { ConflictError, NotFoundError, ValidationError } from '../../lib/errors.js';
+import type { CourseDossierBuilder } from './dossier.js';
+import { draftProblem } from './draft-checks.js';
+import { missingNoteAudio } from './note-audio.js';
+import { courseEvals } from './public-course.js';
+import { buildManualEpisodes } from './manual-episodes.js';
+import { courseSlug, courseTitle, resultHeader } from './intake-text.js';
 
 /** Bounds the one engine batch the skeleton runs (a long master game with
  * a few sidelines fits; a whole repertoire does not). */

@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 import type { EngineEval } from '@freechesscoach/shared';
-import { buildCourseDossierFromEngine, type CourseDossierBuilder } from '../../src/services/course-dossier.js';
+import { buildCourseDossierFromEngine, type CourseDossierBuilder } from '../../src/services/courses/dossier.js';
 
 /** docs/courses.md §6.6. */
 export const ENGLUND = '1. d4 e5 2. dxe5 Nc6 3. Nf3 Qe7 4. Bf4 Qb4+ 5. Bd2 Qxb2 6. Bc3 Bb4 7. Qd2 Bxc3 8. Qxc3 Qc1# *';

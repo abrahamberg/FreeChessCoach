@@ -41,7 +41,7 @@ import { createLichessClient, type LichessClient } from './services/lichess.js';
 import type { CoachAgentBaseDependencies } from './bootstrap.js';
 import type { BrowserTunnel } from './services/engine/browser-tunnel.js';
 import { getModelForUser, type GatewayConfig, type ModelResolution } from './llm/gateway.js';
-import { courseDossierBuilderFor, type CourseDossierBuilder } from './services/course-dossier.js';
+import { courseDossierBuilderFor, type CourseDossierBuilder } from './services/courses/dossier.js';
 import type { ResolveEngineBackendOptions } from './services/engine/resolve-engine-backend.js';
 import type { TtsConfig } from './services/tts.js';
 

@@ -2,7 +2,7 @@ import { statSync } from 'node:fs';
 import { COURSE_KINDS } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { loadGoldenSet } from '../../../test/fixtures/courses/golden-set.js';
-import { draftFromIntake } from '../courses.js';
+import { draftFromIntake } from './course-drafts.js';
 
 describe('course golden set', () => {
   test('every kind, each file named for its kind, a legal PGN with a learner side, under 5 KB', () => {

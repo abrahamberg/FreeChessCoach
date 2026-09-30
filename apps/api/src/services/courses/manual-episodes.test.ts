@@ -3,7 +3,7 @@ import { buildCourseSkeleton, parseCourseTree } from '@freechesscoach/chess-anal
 import type { CourseDocument, CourseKind, CourseVideos, EngineEval } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { ENGLUND, englundDossier } from '../../../test/helpers/course-fixtures.js';
-import { buildCourseDossierFromEngine, type CourseDossierBuilder } from '../course-dossier.js';
+import { buildCourseDossierFromEngine, type CourseDossierBuilder } from './dossier.js';
 import { buildManualEpisodes } from './manual-episodes.js';
 import { temptingNote } from './manual-notes.js';
 

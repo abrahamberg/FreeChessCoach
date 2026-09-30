@@ -41,7 +41,7 @@ export interface EngineBackendAnalyzeOptions {
   /** A Lichess index hit with fewer lines than this (and than the legal
    * moves) counts as a miss and is searched. The index keeps one line for
    * most forced positions, which is exactly where a course quiz needs the
-   * gap to the second move (course-dossier.ts). Unset: any hit is used. */
+   * gap to the second move (services/courses/dossier.ts). Unset: any hit is used. */
   minLines?: number;
 }
 

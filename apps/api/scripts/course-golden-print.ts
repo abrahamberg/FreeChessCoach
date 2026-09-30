@@ -1,7 +1,7 @@
 import type { CourseArrow, CourseDocument, CourseOutline, CourseWarning } from '@freechesscoach/shared';
 import type { WrittenEpisode } from '../src/services/courses/generate-episode.js';
 import type { WrittenReel } from '../src/services/courses/generate-reel.js';
-import type { CourseIntake } from '../src/services/courses.js';
+import type { CourseIntake } from '../src/services/courses/course-drafts.js';
 
 export interface CourseRun {
   name: string;

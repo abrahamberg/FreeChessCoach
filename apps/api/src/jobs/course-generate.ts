@@ -2,8 +2,8 @@ import type { Task } from 'graphile-worker';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
 import { getModelForUser, type GatewayConfig } from '../llm/gateway.js';
-import { courseDossierBuilderFor } from '../services/course-dossier.js';
-import { runCourseGeneration, type CourseGenerateDeps } from '../services/course-generate.js';
+import { courseDossierBuilderFor } from '../services/courses/dossier.js';
+import { runCourseGeneration, type CourseGenerateDeps } from '../services/courses/generation.js';
 import type { ResolveEngineBackendOptions } from '../services/engine/resolve-engine-backend.js';
 
 export interface CourseGenerateJobPayload {
@@ -26,7 +26,7 @@ export function courseGenerateDepsFor(db: Kysely<Database>, gatewayConfig: Gatew
   };
 }
 
-/** graphile-worker Task around services/course-generate.ts (docs/courses.md §5.2). */
+/** graphile-worker Task around services/courses/generation.ts (docs/courses.md §5.2). */
 export function createCourseGenerateTask(options: CourseGenerateTaskOptions): Task {
   const deps = courseGenerateDepsFor(options.db, options.gatewayConfig, options.engineBackendOptions);
   return async (payload) => {

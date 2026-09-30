@@ -5,7 +5,7 @@ import * as courseAudioRepo from '../../db/repositories/course-audio.js';
 import * as coursesRepo from '../../db/repositories/courses.js';
 import type { Database } from '../../db/schema.js';
 import { ConflictError, ValidationError } from '../../lib/errors.js';
-import { ownedCourse, storedDocument, toCourseResponse } from '../courses.js';
+import { ownedCourse, storedDocument, toCourseResponse } from './course-drafts.js';
 import type { AudioMirror } from './audio-mirror.js';
 import { syncCourseAudio } from './audio-mirror-sync.js';
 import { noteHashes } from './note-audio.js';

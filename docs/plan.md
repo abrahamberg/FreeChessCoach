@@ -467,13 +467,15 @@ Status: done 2026-09-30 — typecheck, lint, package tests (api against a local 
 | `course-generate.ts` (+ `.test.ts`) | `courses/generation.ts` (+ `.test.ts`) |
 | `course-dossier.ts` (+ `.test.ts`) | `courses/dossier.ts` (+ `.test.ts`) |
 
-- [ ] `git mv`, update imports (routes, jobs, scripts,
+- [x] `git mv`, update imports (routes, jobs, scripts,
   `test/fixtures/courses/golden-set.ts`, `scripts/golden-inputs.ts`),
   and `docs/architecture.md` "Courses" paths.
 
 **Done when:** no `course*.ts` is left directly in `services/`; typecheck and
 `test:golden` pass.
 **Commit:** `refactor(api): course services under services/courses/`
+
+Status: done 2026-09-30 — no `course*.ts` left directly in `services/`; typecheck, lint, package tests (api against a local Postgres) and `test:golden` (66) pass, snapshot unchanged. One api run failed once right after the move with no output kept; four reruns passed.
 
 ---
 

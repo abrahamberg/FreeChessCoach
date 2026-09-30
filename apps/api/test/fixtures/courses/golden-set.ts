@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CreateCourseRequestSchema, type CourseKind } from '@freechesscoach/shared';
-import type { CourseIntake } from '../../../src/services/courses.js';
+import type { CourseIntake } from '../../../src/services/courses/course-drafts.js';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 

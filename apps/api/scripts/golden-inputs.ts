@@ -1,6 +1,6 @@
 import type { GoldenCourse } from '../test/fixtures/courses/golden-set.js';
-import { buildCourseDossierFromEngine } from '../src/services/course-dossier.js';
-import { draftFromIntake } from '../src/services/courses.js';
+import { buildCourseDossierFromEngine } from '../src/services/courses/dossier.js';
+import { draftFromIntake } from '../src/services/courses/course-drafts.js';
 import { courseTreeOf, generationInputs, type GenerationInputs } from '../src/services/courses/generation-inputs.js';
 import type { EngineBackend } from '../src/services/engine/engine-backend.js';
 

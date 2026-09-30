@@ -16,9 +16,9 @@ import { EngineUnavailableError, NotFoundError, ValidationError } from '../lib/e
 import { parseRequest } from '../lib/parse-request.js';
 import type { JobQueue } from '../jobs/queue.js';
 import type { ModelResolution } from '../llm/gateway.js';
-import type { CourseDossierBuilder } from '../services/course-dossier.js';
-import * as courseGenerate from '../services/course-generate.js';
-import * as coursesService from '../services/courses.js';
+import type { CourseDossierBuilder } from '../services/courses/dossier.js';
+import * as courseGenerate from '../services/courses/generation.js';
+import * as coursesService from '../services/courses/course-drafts.js';
 import { NOTE_AUDIO_TYPES, saveNoteAudio } from '../services/courses/note-audio.js';
 import type { AudioMirror } from '../services/courses/audio-mirror.js';
 import { publishCourse } from '../services/courses/publish.js';

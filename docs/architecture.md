@@ -451,7 +451,7 @@ tactics, puzzle, master game.
   is the editor. `courses` holds the draft `document` and the frozen
   `published_document` (jsonb, `CourseDocumentSchema`), `status`
   (draft/unlisted/public/removed) and the `dossier`: the engine pass over
-  every tree position (the review pipeline, `services/course-dossier.ts`),
+  every tree position (the review pipeline, `services/courses/dossier.ts`),
   plus a second small batch for the tempting moves (checks, captures and
   threats that fail, with the engine's refutation), kept for generation,
   the verifier and the player's evaluations. AI generation is a

@@ -2,8 +2,8 @@ import { describe, expect, test, vi } from 'vitest';
 import { Chess } from 'chess.js';
 import { parseCourseTree } from '@freechesscoach/chess-analysis';
 import type { EngineEval } from '@freechesscoach/shared';
-import type { EngineBackend } from './engine/engine-backend.js';
-import { buildCourseDossierFromEngine } from './course-dossier.js';
+import type { EngineBackend } from '../engine/engine-backend.js';
+import { buildCourseDossierFromEngine } from './dossier.js';
 
 /** Every position: its first two legal moves, level. */
 function fakeAnalyzeGame(fens: string[]): Promise<EngineEval[]> {

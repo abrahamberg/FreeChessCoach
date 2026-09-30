@@ -1,19 +1,19 @@
 import { verifyCourseFrame, type CourseSkeleton, type ReelCandidate } from '@freechesscoach/chess-analysis';
 import { courseVideos, REEL_WARNINGS, type CourseDebugResponse, type CourseDocument, type CourseReel, type CourseEpisode, type CourseGeneration, type CourseOutline, type CourseResponse, type CourseWarning } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
-import * as coursesRepo from '../db/repositories/courses.js';
-import type { Database } from '../db/schema.js';
-import type { JobQueue } from '../jobs/queue.js';
-import { NotFoundError, ValidationError } from '../lib/errors.js';
-import * as courseAiCallsRepo from '../db/repositories/course-ai-calls.js';
-import type { ModelResolution } from '../llm/gateway.js';
-import type { CourseDossierBuilder } from './course-dossier.js';
-import { liveGeneration, notBeingWritten, ownedCourse, storedDocument, toCourseResponse } from './courses.js';
-import { writeEpisode } from './courses/generate-episode.js';
-import { writeReel } from './courses/generate-reel.js';
-import { documentFromOutline, planOutline } from './courses/generate-outline.js';
-import { loggedCourseCall } from './courses/debug-log.js';
-import { loadGenerationInputs, type CourseModelCall } from './courses/generation-inputs.js';
+import * as coursesRepo from '../../db/repositories/courses.js';
+import type { Database } from '../../db/schema.js';
+import type { JobQueue } from '../../jobs/queue.js';
+import { NotFoundError, ValidationError } from '../../lib/errors.js';
+import * as courseAiCallsRepo from '../../db/repositories/course-ai-calls.js';
+import type { ModelResolution } from '../../llm/gateway.js';
+import type { CourseDossierBuilder } from './dossier.js';
+import { liveGeneration, notBeingWritten, ownedCourse, storedDocument, toCourseResponse } from './course-drafts.js';
+import { writeEpisode } from './generate-episode.js';
+import { writeReel } from './generate-reel.js';
+import { documentFromOutline, planOutline } from './generate-outline.js';
+import { loggedCourseCall } from './debug-log.js';
+import { loadGenerationInputs, type CourseModelCall } from './generation-inputs.js';
 
 export interface CourseGenerateDeps {
   db: Kysely<Database>;

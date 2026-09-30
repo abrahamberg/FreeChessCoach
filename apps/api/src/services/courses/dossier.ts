@@ -9,10 +9,10 @@ import {
   type CourseTree
 } from '@freechesscoach/chess-analysis';
 import type { CourseKind, EngineEval } from '@freechesscoach/shared';
-import { runAnalysisSteps } from './analysis-steps.js';
-import type { EngineBackend } from './engine/engine-backend.js';
-import { resolveReviewEngineBackend, type ResolveEngineBackendOptions } from './engine/resolve-engine-backend.js';
-import { createStepTimer } from './step-timer.js';
+import { runAnalysisSteps } from '../analysis-steps.js';
+import type { EngineBackend } from '../engine/engine-backend.js';
+import { resolveReviewEngineBackend, type ResolveEngineBackendOptions } from '../engine/resolve-engine-backend.js';
+import { createStepTimer } from '../step-timer.js';
 
 /** docs/courses.md §5.4: three engine lines per position, so a quiz can
  * see how far the best move stands above the next. */

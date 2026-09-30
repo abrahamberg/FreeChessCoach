@@ -11,7 +11,7 @@ import { parseArgs } from 'node:util';
 import { CourseDocumentSchema } from '@freechesscoach/shared';
 import { createDb } from '../src/db/index.js';
 import * as coursesRepo from '../src/db/repositories/courses.js';
-import { buildCourseDossierFromEngine } from '../src/services/course-dossier.js';
+import { buildCourseDossierFromEngine } from '../src/services/courses/dossier.js';
 import { courseTreeOf } from '../src/services/courses/generation-inputs.js';
 import { NativeEngineBackend } from '../src/services/engine/native-engine-backend.js';
 
