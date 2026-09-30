@@ -47,7 +47,7 @@ describe('inspectMoves', () => {
     const [move] = inspectMoves(fen, ['Qxd5']).moves;
 
     expect(move?.legal).toBe(true);
-    expect(move?.legal === true && move.leavesHanging.map((piece) => piece.square)).toContain('d5');
+    expect(move?.legal === true && move.leavesLoose).toContainEqual({ square: 'd5', piece: 'q', owner: 'w', tier: 'free' });
   });
 
   test('a fork the move creates is named', () => {
@@ -56,15 +56,15 @@ describe('inspectMoves', () => {
     const inspection = inspectMoves(fen, ['Nc7+']);
     const [move] = inspection.moves;
 
-    expect(move?.legal === true && move.createsForks.map((fork) => fork.square)).toContain('c7');
+    expect(move?.legal === true && move.forks.map((fork) => fork.piece.square)).toContain('c7');
   });
 
-  test('the position\'s own hanging pieces and favorable captures are listed once, not per move', () => {
+  test('the position\'s own loose pieces and favorable captures are listed once, not per move', () => {
     // Black knight on d4 is attacked by the white pawn on e3 and undefended.
     const fen = '4k3/8/8/8/3n4/4P3/8/4K3 w - - 0 1';
     const inspection = inspectMoves(fen, ['exd4']);
 
-    expect(inspection.hangingPieces.map((piece) => piece.square)).toContain('d4');
+    expect(inspection.loose).toContainEqual({ square: 'd4', piece: 'n', owner: 'b', tier: 'free' });
     expect(inspection.favorableCaptures.map((capture) => capture.moveSan)).toContain('exd4');
   });
 
@@ -85,5 +85,21 @@ describe('inspectMoves', () => {
   test('checkmate and stalemate are reported as the position\'s state', () => {
     const mate = inspectMoves('rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3', []);
     expect(mate.boardState).toBe('checkmate');
+  });
+
+  test('a capture that is taken back is a trade, not a loose piece', () => {
+    // Bxd5 exd5 loses the bishop for a pawn; cxd5 exd5 is a pawn for a pawn.
+    const fen = '4k3/8/4p3/3p4/2B5/8/8/4K3 w - - 0 1';
+    const [move] = inspectMoves(fen, ['Bxd5']).moves;
+
+    expect(move?.legal === true && move.leavesLoose).toEqual([{ square: 'd5', piece: 'b', owner: 'w', tier: 'free' }]);
+    const [trade] = inspectMoves('4k3/8/4p3/3p4/2P5/8/8/4K3 w - - 0 1', ['cxd5']).moves;
+    expect(trade?.legal === true && trade.leavesLoose).toEqual([]);
+  });
+
+  test('a legal move carries its board facts', () => {
+    const [move] = inspectMoves(START, ['e4']).moves;
+
+    expect(move?.legal === true && move.facts).toContainEqual({ kind: 'moved', piece: 'p', from: 'e2', to: 'e4' });
   });
 });

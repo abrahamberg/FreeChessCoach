@@ -24,9 +24,9 @@ describe('buildPuzzleCoachSystemPrompt', () => {
   test('annotates every remaining move of the known line with checked facts', () => {
     // Start position: moves[0] e2e4 is the setup; e7e5, g1f3, b8c6 remain.
     const { dynamicPart } = buildPuzzleCoachSystemPrompt(basePuzzleCoachInput());
-    expect(dynamicPart).toContain('Student plays: e5 — black pawn e7-e5');
-    expect(dynamicPart).toContain("Opponent's expected reply: Nf3 — white knight g1-f3");
-    expect(dynamicPart).toContain('Student plays: Nc6 — black knight b8-c6');
+    expect(dynamicPart).toContain('Student plays: e5 — black moves the pawn from e7 to e5');
+    expect(dynamicPart).toContain("Opponent's expected reply: Nf3 — white moves the knight from g1 to f3");
+    expect(dynamicPart).toContain('Student plays: Nc6 — black moves the knight from b8 to c6');
     expect(dynamicPart).toContain('Themes: fork.');
   });
 

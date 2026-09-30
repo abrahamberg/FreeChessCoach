@@ -108,7 +108,7 @@ const KIND_WORDS: Record<CourseKind, string> = {
 };
 
 const CHECK_MOVES_DESCRIPTION =
-  'Check whether specific moves are legal in a position and what they actually do: pure board reading, no engine, free. Pass up to 6 moves in SAN; leave fen out to check them in the course position your student is asking about (almost always what you want; never type a fen out yourself). For each: legal or not, what it captures, check or mate, the fen it reaches, what it leaves hanging, any fork. Use it before you judge any move that is not the course\'s next move.';
+  'Check whether specific moves are legal in a position and what they actually do: pure board reading, no engine, free. Pass up to 6 moves in SAN; leave fen out to check them in the course position your student is asking about (almost always what you want; never type a fen out yourself). For each: legal or not, what it captures, check or mate, the fen it reaches, what else it does on the board (attacks, pins, forks), which of its own pieces it leaves loose. Use it before you judge any move that is not the course\'s next move.';
 
 const courseCheckMovesParameters = checkMovesParameters.extend({
   fen: z.string().min(1).optional().describe('Leave out to check moves in the course position. Pass only a fen a tool gave you.')

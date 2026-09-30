@@ -928,6 +928,11 @@ and E.
 **Keep:** one db test for `toolCallStats`. **Ephemeral:** none.
 **Commit:** `feat(api): a script counting coach tool calls per episode`
 
+**Status:** done except the Owner step. `toolCallStats` counts `tool-call`
+parts in assistant rows (SQL in `session-messages.ts`, one db test); the
+script is `apps/api/scripts/coach-tool-stats.ts`. The owner still has to run it
+on the real database and paste the "before" numbers here.
+
 ### Task 116.2 — `check_moves` and "Board facts" from the board facts
 
 **Depends on:** 116.1. **Findings:** F2, F8.
@@ -955,6 +960,18 @@ and E.
 **Keep:** tests for the render of a loose piece, a trade (not loose), and an
 illegal move. **Ephemeral:** none.
 **Commit:** `feat(coach): check_moves and board facts count only pieces that can be won`
+
+**Status:** done. `inspectMoves` carries `leavesLoose`, `forks` and `facts`; the
+position has `loose` (both colours, with tier). The single-move replay moved
+to `inspect-move.ts` (`replayMove`) so `boardFacts` and `betterMoveFacts` use it
+without an import cycle; `inspectMoves` adds `facts` on top. `favorableCaptures`
+is unchanged. A checked move's line lists its rendered facts; the loose pieces
+are listed once, with tiers ("undefended" / "can be won"), so `leavesHanging`
+facts are left out of that line. Rule 6 is one sentence; tool descriptions say
+"loose". `docs/prompts.md` was stale, so its diff is larger than this change. Deviation:
+`betterMoveFacts` keeps the old attacked-and-undefended reading (own helper in
+`better-move.ts`); moving it to the loose tiers changed the golden review notes
+of six courses, and this phase does not re-record.
 
 ### Task 116.3 — "What the move did" in the current position
 
@@ -986,6 +1003,16 @@ illegal move. **Ephemeral:** none.
 shows no `better`; a trade shows nothing loose. **Ephemeral:** none.
 **Commit:** `feat(coach): the move's board facts in the current position`
 
+**Status:** done. `currentMoveFacts` (`board-facts/current-move.ts`, pure, no
+engine call) builds `played`, `gaveUp`, `better` (with the material at the end
+of the settled best line), `playedLine` and `looseAfter`. The mover's own loose
+pieces come from `replayMove`, so a capture taken back is a trade, not loose.
+`renderCurrentMoveBlock` shows "What the move did" and "Best instead" after the
+engine lines, cut at 10 lines. `coach-method.ts` has six rules, not eight: the
+new sentence went into rules 2 and 3. The api full run hit the 5 s timeout in
+`generation.test.ts` once under load; it passes alone (Lane C's cached
+`englundDossier` fixes that, it is not on this branch).
+
 ### Task 116.4 — Facts for the student's focus areas
 
 **Depends on:** 116.3.
@@ -1008,6 +1035,15 @@ only), `apps/api/src/services/coach-context.ts`.
 
 **Keep:** one render test per row. **Ephemeral:** none.
 **Commit:** `feat(coach): facts for the student's focus areas, up front`
+
+**Status:** done. `focusFacts` (`board-facts/focus-facts.ts`) maps the codes in the
+table to sections and returns null for the opponent's move. All codes in the
+table exist in `families/*.ts` (EG-* by prefix). `buildEpisodeContext` reads the
+active and improving focus areas itself (one query) instead of taking the codes
+as input, because the turn does not hold the profile. `renderFocusFacts` shows
+at most 8 lines under "For what you two are working on:". "Threats" are the
+pieces the side to move could win (`loosePieces`). The EG-* row shows the
+opposition and the rule of the square for the played move only.
 
 ### Task 116.5 — Measure again and merge
 

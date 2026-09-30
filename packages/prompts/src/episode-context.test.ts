@@ -1,5 +1,7 @@
+import { currentMoveFacts } from '@freechesscoach/chess-analysis';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
-import { renderAnnotatedMove, renderAnnotatedPgn, renderCurrentMoveBlock, renderGameSoFarInline, renderOtherMovesSummary, type AnnotatedMoveLike } from './episode-context.js';
+import { renderAnnotatedMove, renderAnnotatedPgn, renderCurrentMoveBlock, renderFocusFacts, renderGameSoFarInline, renderOtherMovesSummary, type AnnotatedMoveLike } from './episode-context.js';
 
 function moveLike(overrides: Partial<AnnotatedMoveLike> & { ply: number; moveSan: string }): AnnotatedMoveLike {
   return { quality: 'good', cpLoss: 0, bestLineSan: [], evalAfterCp: 0, reasons: [], ...overrides };
@@ -96,5 +98,72 @@ describe('renderCurrentMoveBlock line orientation', () => {
   test('no note at the game start, where nothing has been played', () => {
     const block = renderCurrentMoveBlock(0, 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 'white', '(empty)', null);
     expect(block).not.toContain('Which position is which');
+  });
+});
+
+describe('renderCurrentMoveBlock: what the move did', () => {
+  // White's rook on d1 guards e1; Rd2 leaves it and …Re1# follows.
+  const BEFORE = '4r1k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1';
+  const AFTER = '4r1k1/5ppp/8/8/8/8/3R1PPP/6K1 b - - 1 1';
+  const line = (moveSan: string, pvSan: string[]) => ({ moveSan, pvSan, cp: 0, mateIn: null });
+  const analysis = { fen: BEFORE, bestMove: 'h3', lines: [line('h3', ['h3', 'h6'])] } as unknown as PositionAnalysis;
+  const postMoveAnalysis = { fen: AFTER, bestMove: 'Re1#', lines: [line('Re1#', ['Re1#'])] } as unknown as PositionAnalysis;
+
+  test('a blunder shows what it gave up and the better move', () => {
+    const moveFacts = currentMoveFacts({ fenBefore: BEFORE, playedSan: 'Rd2', best: { san: 'h3', line: ['h3', 'h6'] }, continuation: ['Re1#'] });
+    const block = renderCurrentMoveBlock(1, AFTER, 'white', '(empty)', 'Rd2', { analysis, postMoveAnalysis, moveFacts });
+
+    expect(block).toContain('What the move did:');
+    expect(block).toContain('Gave up: the rook stops guarding e1, where Re1# follows.');
+    expect(block).toContain('Best instead:');
+    expect(block).toContain('- h3 moves the pawn from h2 to h3.');
+    expect(block).toContain('At the end of its line, material is level.');
+  });
+
+  test('the best move shows no "Best instead" and, when it is a trade, nothing loose', () => {
+    const moveFacts = currentMoveFacts({ fenBefore: BEFORE, playedSan: 'h3', best: { san: 'h3', line: ['h3', 'h6'] }, continuation: ['h6'] });
+    const block = renderCurrentMoveBlock(1, AFTER, 'white', '(empty)', 'h3', { analysis, moveFacts });
+
+    expect(block).toContain('What the move did:');
+    expect(block).not.toContain('Best instead');
+    expect(block).not.toContain('Loose after it');
+  });
+
+  test('stays within ten lines', () => {
+    const moveFacts = currentMoveFacts({ fenBefore: BEFORE, playedSan: 'Rd2', best: { san: 'h3', line: ['h3', 'h6'] }, continuation: ['Re1#'] });
+    const block = renderCurrentMoveBlock(1, AFTER, 'white', '(empty)', 'Rd2', { analysis, postMoveAnalysis, moveFacts });
+    const section = block.slice(block.indexOf('What the move did:'), block.indexOf('## Your thread ledger'));
+    expect(section.trim().split('\n').length).toBeLessThanOrEqual(10);
+  });
+});
+
+describe('renderFocusFacts', () => {
+  const loose = [{ square: 'c4', piece: 'b', owner: 'w', tier: 'free' }] as const;
+  const options = { checks: ['Rh8+'], captures: ['Bxd5'], threats: [] };
+
+  test('loose pieces before and after', () => {
+    expect(renderFocusFacts({ loose: { before: [], after: [...loose] } })).toBe(
+      'For what you two are working on:\n- Loose before the move: nothing.\n- Loose after it: the white bishop on c4 (undefended).'
+    );
+  });
+
+  test("the opponent's and the student's options are labelled as things to look at", () => {
+    const text = renderFocusFacts({ opponentNext: options, ownBefore: options });
+    expect(text).toContain("The opponent's options after it (to look at, not verdicts): checks Rh8+; captures Bxd5; nothing to win.");
+    expect(text).toContain('Your options before it (to look at, not verdicts): checks Rh8+; captures Bxd5; nothing to win.');
+  });
+
+  test("the moved piece's new square", () => {
+    expect(renderFocusFacts({ newSquare: { piece: { piece: 'b', square: 'd5' }, safe: false } })).toContain('The bishop on d5 can be won there.');
+  });
+
+  test('the opposition', () => {
+    expect(renderFocusFacts({ endgame: [{ kind: 'opposition' }] })).toContain('Endgame: takes the opposition');
+  });
+
+  test('nothing to say renders nothing, and never more than eight lines', () => {
+    expect(renderFocusFacts({})).toBe('');
+    const all = renderFocusFacts({ loose: { before: [], after: [] }, opponentNext: options, ownBefore: options, newSquare: { piece: { piece: 'n', square: 'f3' }, safe: true }, endgame: [{ kind: 'opposition' }] });
+    expect(all.split('\n').length - 1).toBeLessThanOrEqual(8);
   });
 });

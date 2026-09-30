@@ -1,5 +1,4 @@
-import type { LegalMoveInspection, MoveInspection, PositionInspection } from '@freechesscoach/chess-analysis';
-import type { AttackedPieceDto, PositionFeatures } from '@freechesscoach/shared';
+import { renderBoardFact, type BoardFact, type LegalMoveInspection, type LoosePiece, type MoveInspection, type PositionInspection } from '@freechesscoach/chess-analysis';
 
 const PIECE_NAMES: Record<string, string> = {
   p: 'pawn',
@@ -37,8 +36,8 @@ export function renderMoveInspection(inspection: PositionInspection): string {
 export function renderPositionFacts(inspection: PositionInspection): string {
   if (inspection.error) return `unavailable — ${inspection.error}`;
   const lines = [`${inspection.turn} to move${boardStateClause(inspection.boardState)}. ${inspection.legalMoveCount} legal moves.`];
-  if (inspection.hangingPieces.length > 0) {
-    lines.push(`Hanging right now: ${inspection.hangingPieces.map(describeAttackedPiece).join(', ')}.`);
+  if (inspection.loose.length > 0) {
+    lines.push(`Loose right now: ${describeLoose(inspection.loose)}.`);
   }
   if (inspection.favorableCaptures.length > 0) {
     lines.push(`Favorable captures available: ${inspection.favorableCaptures.map((capture) => capture.moveSan).join(', ')}.`);
@@ -60,13 +59,15 @@ function boardStateClause(boardState: PositionInspection['boardState']): string 
  */
 export function renderMoveNote(move: MoveInspection): string {
   if (!move.legal) return `${move.requested} (could not be read)`;
-  const facts = [`${move.color} ${pieceName(move.piece)} ${move.from}-${move.to}`];
-  if (move.captured) facts.push(`takes the ${pieceName(move.captured)}`);
-  if (move.gives === 'checkmate') facts.push('checkmate');
-  else if (move.gives === 'check') facts.push('check');
-  if (move.createsForks.length > 0) facts.push(`sets up: ${move.createsForks.map(describeFork).join(', ')}`);
-  if (move.leavesHanging.length > 0) facts.push(`leaves hanging: ${move.leavesHanging.map(describeAttackedPiece).join(', ')}`);
-  return `${move.san} — ${facts.join('; ')}`;
+  const facts = [...renderedFacts(move.facts)];
+  if (move.leavesLoose.length > 0) facts.push(`leaves loose: ${describeLoose(move.leavesLoose)}`);
+  return `${move.san} — ${move.color} ${facts.join('; ')}`;
+}
+
+/** The move's facts as phrases. A piece left hanging is listed with the other
+ * loose pieces, with its tier, so it is left out here. */
+function renderedFacts(facts: readonly BoardFact[]): string[] {
+  return facts.filter((fact) => fact.kind !== 'leavesHanging').map(renderBoardFact);
 }
 
 function renderMove(move: MoveInspection): string {
@@ -86,33 +87,18 @@ function renderIllegalMove(requested: string, alternatives: string[]): string {
 }
 
 function renderLegalMove(move: LegalMoveInspection): string {
-  const parts = [`${move.san}: legal (${move.color} ${pieceName(move.piece)} ${move.from}-${move.to}${captureClause(move)}${checkClause(move)}).`];
-  if (move.leavesHanging.length > 0) {
-    parts.push(`After it, ${move.color} leaves hanging: ${move.leavesHanging.map(describeAttackedPiece).join(', ')}.`);
-  }
-  if (move.createsForks.length > 0) {
-    parts.push(`It sets up: ${move.createsForks.map(describeFork).join(', ')}.`);
-  }
+  const parts = [`${move.san}: legal (${move.color} ${renderedFacts(move.facts).join('; ')}).`];
+  if (move.leavesLoose.length > 0) parts.push(`After it, ${move.color} leaves loose: ${describeLoose(move.leavesLoose)}.`);
   parts.push(`Resulting fen: ${move.resultFen}`);
   return parts.join('\n');
 }
 
-function captureClause(move: LegalMoveInspection): string {
-  return move.captured ? `, takes the ${pieceName(move.captured)}` : '';
-}
-
-function checkClause(move: LegalMoveInspection): string {
-  if (move.gives === 'checkmate') return ', checkmate';
-  if (move.gives === 'check') return ', check';
-  return '';
-}
-
-function describeAttackedPiece(piece: AttackedPieceDto): string {
-  return `${piece.color} ${pieceName(piece.piece)} on ${piece.square} (${piece.attackers} attacker(s), no defender)`;
-}
-
-function describeFork(fork: PositionFeatures['forks'][number]): string {
-  return `${pieceName(fork.piece)} on ${fork.square} attacking ${fork.forkedSquares.join(' and ')}`;
+/** "the white knight on f3 (can be won)": `winnable` is defended but loses the
+ * exchange, `free` has no defender at all. */
+export function describeLoose(pieces: readonly LoosePiece[]): string {
+  return pieces
+    .map((piece) => `the ${piece.owner === 'w' ? 'white' : 'black'} ${pieceName(piece.piece)} on ${piece.square} (${piece.tier === 'free' ? 'undefended' : 'can be won'})`)
+    .join(', ');
 }
 
 function pieceName(piece: string): string {

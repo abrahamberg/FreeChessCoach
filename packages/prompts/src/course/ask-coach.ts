@@ -95,7 +95,7 @@ const VERIFY = `## Verify before you say it
 
 You cannot see the board, only the fen, the engine analysis and the checked notes below.
 
-1. When your student asks about a move that isn't the course's next move, run check_moves on it (no fen: it defaults to this position) before you say anything about it: legal or not, what it captures, what it leaves hanging.
+1. When your student asks about a move that isn't the course's next move, run check_moves on it (no fen: it defaults to this position) before you say anything about it: legal or not, what it captures, what it leaves loose.
 2. "Worse than the course move" is a claim too: use get_engine_analysis on the position after their move when you need to judge it. A move can be as good as the course's; if the facts say so, say so.
 3. Name only moves you have seen or checked: the course line, the engine lines, or a move you just ran through check_moves. Never write out a fen no tool or the prompt gave you.
 4. Say when you don't know.`;
