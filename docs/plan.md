@@ -918,6 +918,11 @@ and E.
 **Keep:** one db test for `toolCallStats`. **Ephemeral:** none.
 **Commit:** `feat(api): a script counting coach tool calls per episode`
 
+**Status:** done except the Owner step. `toolCallStats` counts `tool-call`
+parts in assistant rows (SQL in `session-messages.ts`, one db test); the
+script is `apps/api/scripts/coach-tool-stats.ts`. The owner still has to run it
+on the real database and paste the "before" numbers here.
+
 ### Task 116.2 — `check_moves` and "Board facts" from the board facts
 
 **Depends on:** 116.1. **Findings:** F2, F8.

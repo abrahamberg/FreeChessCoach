@@ -1,4 +1,4 @@
-import type { Kysely } from 'kysely';
+import { sql, type Kysely } from 'kysely';
 import type { Database } from '../schema.js';
 
 export type SessionMessageRole = 'user' | 'assistant' | 'tool';
@@ -55,4 +55,28 @@ export function listBySessionAndPly(
     .where('ply', '=', ply)
     .orderBy('id', 'asc')
     .execute();
+}
+
+export interface ToolCallCount {
+  sessionId: string;
+  ply: number | null;
+  toolName: string;
+  calls: number;
+}
+
+/** Coach tool calls since `since`, counted per session, ply and tool. A call
+ * is a `tool-call` part inside an assistant row's content (older rows keep the
+ * same part type; see lib/tool-parts.ts). An episode is a session and a ply. */
+export async function toolCallStats(db: Kysely<Database>, since: Date): Promise<ToolCallCount[]> {
+  const { rows } = await sql<ToolCallCount>`
+    SELECT m.session_id AS "sessionId", m.ply, part->>'toolName' AS "toolName", count(*)::int AS calls
+    FROM session_messages m
+    CROSS JOIN LATERAL jsonb_array_elements(m.content) AS part
+    WHERE m.role = 'assistant'
+      AND jsonb_typeof(m.content) = 'array'
+      AND part->>'type' = 'tool-call'
+      AND m.created_at >= ${since}
+    GROUP BY m.session_id, m.ply, part->>'toolName'
+    ORDER BY m.session_id, m.ply, "toolName"`.execute(db);
+  return rows;
 }

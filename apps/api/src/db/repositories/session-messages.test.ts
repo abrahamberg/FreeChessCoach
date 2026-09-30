@@ -56,4 +56,20 @@ describe('session-messages repository', () => {
 
     expect(messages.map((m) => m.content)).toEqual(['a', 'c']);
   });
+
+  test('toolCallStats counts tool-call parts per session, ply and tool, ignoring text rows and older rows', async () => {
+    const session = await seedSession();
+    const call = (toolName: string) => ({ type: 'tool-call', toolCallId: crypto.randomUUID(), toolName, input: {} });
+    await sessionMessagesRepo.insert(db, session.id, 'assistant', [call('check_moves'), call('check_moves'), { type: 'text', text: 'hm' }], 4);
+    await sessionMessagesRepo.insert(db, session.id, 'assistant', [call('get_engine_eval')], 4);
+    await sessionMessagesRepo.insert(db, session.id, 'assistant', 'plain text', 4);
+    await sessionMessagesRepo.insert(db, session.id, 'tool', [{ type: 'tool-result', toolName: 'check_moves' }], 4);
+
+    const stats = (await sessionMessagesRepo.toolCallStats(db, new Date(Date.now() - 60_000))).filter((row) => row.sessionId === session.id);
+    expect(stats).toEqual([
+      { sessionId: session.id, ply: 4, toolName: 'check_moves', calls: 2 },
+      { sessionId: session.id, ply: 4, toolName: 'get_engine_eval', calls: 1 }
+    ]);
+    expect(await sessionMessagesRepo.toolCallStats(db, new Date(Date.now() + 60_000))).toEqual([]);
+  });
 });
