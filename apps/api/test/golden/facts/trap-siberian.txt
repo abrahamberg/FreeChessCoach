@@ -113,3 +113,21 @@ PLAN
   e4 quiz n18–n18 answer=n18
   e5 punish n19–n20
   e6 safety n17–n17
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n2 1…c5: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n3 2.d4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n4 2…cxd4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n5 3.c3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n6 3…dxc3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n7 4.Nxc3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n8 4…Nc6: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n9 5.Nf3: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n10 5…e6: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n11 6.Bc4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n12 6…Qc7: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
+    n18 9…Nd4: Leaves the knight on d4 undefended; You hit back instead of retreating — answers the threat by hitting the queen on e2.; Won the queen, giving back a knight and a knight.
+    n19 10.Nxd4: Missed hxg4, winning material on g4; They let you force mate with Qh2#.; Won a knight, but it allowed mate.
+    n20 10…Qh2#: You forced mate.

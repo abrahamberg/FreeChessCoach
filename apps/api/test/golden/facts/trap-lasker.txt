@@ -105,3 +105,23 @@ PLAN
   e4 quiz n12–n12 answer=n12
   e5 punish n13–n18
   e6 safety n11–n11
+
+REVIEW NOTES
+  l1
+    n1 1.d4: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08)
+    n2 1…d5: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08)
+    n3 2.c4: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08)
+    n4 2…e5: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08)
+    n5 3.dxe5: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08)
+    n6 3…d4: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08)
+    n7 4.e3: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08)
+    n8 4…Bb4+: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08)
+    n9 5.Bd2: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08)
+    n10 5…dxe3: Theory — Queen's Gambit Declined: Albin Countergambit, Lasker Trap (D08)
+    n11 6.Bxb4: Missed fxe3, winning material on e3
+    n12 6…exf2+: Leaves the pawn on f2 undefended; Creates a passed pawn on f; You threw in an in-between move — checks first instead of taking back on b4.
+    n14 7…fxg1=N+: Leaves the knight on g1 undefended; You won a knight through a brilliant sacrifice — promotes to a knight rather than a queen.
+    n15 8.Rxg1: Recaptures the knight on g1; Their move stopped you winning a bishop through a fork.
+    n16 8…Bg4+: You won a queen through a skewer two moves away — skewers the king on e2, exposing the queen on d1.
+    n17 9.Ke1: Leaves queen on d1 attacked 2× and defended 1×; They let you force mate with Qxd1+.
+    n18 9…Bxd1: Missed mate in 7 starting with Qxd1+; Missed Qxd1+, winning material on d1; You missed a chance to win a queen through a free piece with Qxd1+ — captures the queen on d1.

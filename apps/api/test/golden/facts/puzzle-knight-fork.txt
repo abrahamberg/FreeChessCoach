@@ -31,3 +31,8 @@ PLAN
   e2 solve n1–n2 answer=n1
   e3 solve n3–n3 answer=n3
   e4 recap n3–n3
+
+REVIEW NOTES
+  l1
+    n1 1.Ne7+: You won a queen through a fork two moves away — knight on e7 forks the queen on c8 and the king on g8.
+    n3 2.Nxc8: You won a queen through a free piece — captures the queen on c8.

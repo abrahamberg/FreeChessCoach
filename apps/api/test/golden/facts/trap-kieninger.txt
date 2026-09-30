@@ -79,3 +79,16 @@ PLAN
   e3 bait n15–n15
   e4 quiz n16–n16 answer=n16
   e5 safety n15–n15
+
+REVIEW NOTES
+  l1
+    n1 1.d4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
+    n2 1…Nf6: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
+    n3 2.c4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
+    n4 2…e5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
+    n5 3.dxe5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
+    n6 3…Ng4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
+    n7 4.Nf3: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
+    n13 7.a3: Leaves pawn on e5 attacked 3× and defended 2×
+    n15 8.axb4: Leaves the pawn on b4 undefended; They let you force mate with Nd3#.; Won a bishop, but it allowed mate.
+    n16 8…Nd3#: Leaves the pawn on c7 undefended; Leaves the knight on d3 undefended; You forced mate.

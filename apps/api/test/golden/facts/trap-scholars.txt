@@ -53,3 +53,12 @@ PLAN
   e3 bait n6–n6
   e4 quiz n7–n7 answer=n7
   e5 safety n6–n6
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Bishop's Opening (C23)
+    n2 1…e5: Theory — Bishop's Opening (C23)
+    n3 2.Bc4: Theory — Bishop's Opening (C23)
+    n4 2…Nc6: Theory — Bishop's Opening (C23)
+    n6 3…Nf6: Leaves pawn on f7 attacked 2× and defended 1×; They let you force mate with Qxf7#.
+    n7 4.Qxf7#: You forced mate.

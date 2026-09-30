@@ -36,3 +36,8 @@ PLAN
   e2 solve n1–n2 answer=n1
   e3 solve n3–n3 answer=n3
   e4 recap n3–n3
+
+REVIEW NOTES
+  l1
+    n2 22…Nxf6: Leaves the knight on f6 undefended
+    n3 23.Be7#: Leaves the pawn on e5 undefended; You forced mate.

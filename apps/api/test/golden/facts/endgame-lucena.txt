@@ -79,3 +79,11 @@ PLAN
   e2 technique n1–n13 answer=n13
   e3 defence n14–n17
   e4 recap n13–n13
+
+REVIEW NOTES
+  l1
+    n12 6…Rb1+: Costs 12 squares of piece mobility
+    n13 7.Rb4: You broke the pin — the king on b5 is free to move again.
+  l2
+    n16 2…Rh2: They missed a chance to take the open file with Rb2 — takes the half-open b-file with the rook.; Would have won the queen, giving back a rook.
+    n17 3.b8=Q: You stopped them winning a queen through a free piece — captures the queen on b8.

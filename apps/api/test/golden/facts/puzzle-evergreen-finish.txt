@@ -66,3 +66,13 @@ PLAN
   e4 solve n5–n6 answer=n5
   e5 solve n7–n7 answer=n7
   e6 recap n7–n7
+
+REVIEW NOTES
+  l1
+    n1 21.Qxd7+: Leaves the queen on d7 undefended; Leaves the rook on d1 undefended; You forced mate.; Won the knight, giving back a queen.
+    n2 21…Kxd7: Leaves knight on e7 attacked 2× and defended 1×; Recaptures the queen on d7
+    n3 22.Bf5+: Leaves the bishop on f5 undefended; Leaves the pawn on c3 undefended; You forced mate.
+    n4 22…Ke8: Leaves knight on e7 attacked 2× and defended 1×
+    n5 23.Bd7+: Leaves the pawn on f6 undefended; Leaves pawn on f2 attacked 2× and defended 1×; You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    n6 23…Kf8: Leaves knight on e7 attacked 2× and defended 1×
+    n7 24.Bxe7#: Leaves pawn on f2 attacked 2× and defended 1×; Leaves pawn on g2 attacked 2× and defended 1×; You forced mate.

@@ -64,3 +64,15 @@ PLAN
   e1 concept n9–n9
   e2 example n7–n9 answer=n9
   e3 scan n9–n9
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Petrov's Defense: Damiano Variation (C42)
+    n2 1…e5: Theory — Petrov's Defense: Damiano Variation (C42)
+    n3 2.Nf3: Theory — Petrov's Defense: Damiano Variation (C42)
+    n4 2…Nf6: Theory — Petrov's Defense: Damiano Variation (C42)
+    n5 3.Nxe5: Theory — Petrov's Defense: Damiano Variation (C42)
+    n6 3…Nxe4: Theory — Petrov's Defense: Damiano Variation (C42)
+    n7 4.Qe2: Theory — Petrov's Defense: Damiano Variation (C42)
+    n8 4…Nf6: They let you win a queen through a fork two moves away with Nc6+ — knight on c6 forks the knight on b8 and the queen on d8.; Won a knight, but it cost the queen.
+    n9 5.Nc6+: Leaves the knight on c6 undefended; You won a queen through a fork two moves away — knight on c6 forks the knight on b8 and the queen on d8.; Won the queen, giving back a knight.

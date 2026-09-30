@@ -31,3 +31,8 @@ PLAN
   e2 solve n1–n2 answer=n1
   e3 solve n3–n3 answer=n3
   e4 recap n3–n3
+
+REVIEW NOTES
+  l1
+    n1 1.Qg8+: Leaves queen on g8 attacked 2× and defended 1×
+    n3 2.Nf7#: You forced mate — mates the king on h8, smothered by its own pieces.

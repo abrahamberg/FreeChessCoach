@@ -94,3 +94,21 @@ PLAN
   e4 quiz n12–n12
   e5 punish n13–n16
   e6 safety n11–n11
+
+REVIEW NOTES
+  l1
+    n1 1.e4: Theory — Petrov's Defense: Stafford Gambit Accepted (C42)
+    n2 1…e5: Theory — Petrov's Defense: Stafford Gambit Accepted (C42)
+    n3 2.Nf3: Theory — Petrov's Defense: Stafford Gambit Accepted (C42)
+    n4 2…Nf6: Theory — Petrov's Defense: Stafford Gambit Accepted (C42)
+    n5 3.Nxe5: Theory — Petrov's Defense: Stafford Gambit Accepted (C42)
+    n6 3…Nc6: Theory — Petrov's Defense: Stafford Gambit Accepted (C42)
+    n7 4.Nxc6: Theory — Petrov's Defense: Stafford Gambit Accepted (C42)
+    n8 4…dxc6: Theory — Petrov's Defense: Stafford Gambit Accepted (C42)
+    n9 5.d3: Theory — Petrov's Defense: Stafford Gambit Accepted (C42)
+    n10 5…Bc5: Theory — Petrov's Defense: Stafford Gambit Accepted (C42)
+    n11 6.Bg5: They let you win a bishop through a discovered attack two moves away with Nxe4 — unveils the queen on d8 against the bishop on g5.
+    n12 6…Nxe4: Leaves the knight on e4 undefended; You won a bishop through a discovered attack two moves away — unveils the queen on d8 against the bishop on g5.
+    n13 7.Bxd8: Leaves the bishop on d8 undefended; Leaves pawn on f2 attacked 2× and defended 1×; They let you force mate through a mating net two moves away with Bxf2+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
+    n14 7…Bxf2+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    n16 8…Bg4#: You forced mate.

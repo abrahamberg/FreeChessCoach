@@ -52,3 +52,10 @@ PLAN
   e4 technique n7–n8 answer=n7
   e5 technique n9–n9 answer=n9
   e6 recap n9–n9
+
+REVIEW NOTES
+  l1
+    n1 1.f4: Creates a passed pawn on f
+    n3 2.f5: Creates a passed pawn on f; You gained space — pushes a pawn to f5, taking space.
+    n5 3.f6: Creates a passed pawn on f
+    n7 4.f7: Creates a passed pawn on f

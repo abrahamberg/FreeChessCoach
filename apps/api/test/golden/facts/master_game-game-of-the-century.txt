@@ -185,3 +185,39 @@ PLAN
   e8 moment n36–n36 answer=n36
   e9 moment n38–n38 answer=n38
   e10 moment n82–n82
+
+REVIEW NOTES
+  l1
+    n1 1.Nf3: Theory — English Opening: Anglo-Indian Defense, King's Indian Formation (A15)
+    n2 1…Nf6: Theory — English Opening: Anglo-Indian Defense, King's Indian Formation (A15)
+    n3 2.c4: Theory — English Opening: Anglo-Indian Defense, King's Indian Formation (A15)
+    n4 2…g6: Theory — English Opening: Anglo-Indian Defense, King's Indian Formation (A15)
+    n12 6…dxc4: Leaves the pawn on c4 undefended; Allows queen fork on b3 hitting b7 and c4
+    n13 7.Qxc4: Recaptures the pawn on c4
+    n19 10.Qc5: Costs 19 squares of piece mobility
+    n22 11…Na4: Leaves the knight on a4 undefended
+    n23 12.Qa3: Concedes the centre
+    n24 12…Nxc3: Leaves the knight on c3 undefended; Trades knights on c3; You won a pawn through a brilliant sacrifice — removes the defender on c3, leaving the pawn on e4 undefended.
+    n25 13.bxc3: Recaptures the knight on c3; They saved a hanging piece — saves the rook on d1.
+    n26 13…Nxe4: Leaves pawn on e7 attacked 2× and defended 1×; You stopped them winning a knight through a free piece — captures the knight on c3.
+    n30 15…Nxc3: Leaves the knight on c3 undefended; Allows queen fork on a3 hitting a7 and c3
+    n33 17.Kf1: Leaves the rook on d1 undefended
+    n35 18.Bxb6: Missed Qxc3, winning material on c3; Leaves the bishop on b6 undefended
+    n36 18…Bxc4+: Leaves pawn on a7 attacked 2× and defended 1×; You stopped them winning a knight through a free piece — captures the knight on c3.
+    n37 19.Kg1: Leaves pawn on a2 attacked 2× and defended 1×
+    n38 19…Ne2+: Leaves pawn on a7 attacked 2× and defended 1×
+    n40 20…Nxd4+: Leaves pawn on a7 attacked 2× and defended 1×; Leaves knight on d4 attacked 3× and defended 1×
+    n42 21…Ne2+: Leaves pawn on a7 attacked 2× and defended 1×
+    n44 22…Nc3+: Missed axb6, winning material on b6; Leaves pawn on a7 attacked 2× and defended 1×
+    n45 23.Kg1: Leaves pawn on a2 attacked 2× and defended 1×
+    n47 24.Qb4: Leaves the pawn on a2 undefended
+    n52 26…Rxa2: Creates a passed pawn on b
+    n53 27.Kh2: Leaves pawn on f2 attacked 2× and defended 1×
+    n56 28…Rxe1: Leaves the rook on e1 undefended; Trades rooks on e1
+    n57 29.Qd8+: Missed Nxe1, winning material on e1
+    n64 32…b5: Creates a passed pawn on b
+    n71 36.Kf1: They let you force mate with Ng3+.
+    n73 37.Ke1: Leaves the pawn on g2 undefended
+    n74 37…Bb4+: Missed mate in 5 starting with Bf2+
+    n76 38…Bb3+: Leaves the pawn on c6 undefended; Allows knight fork on e5 hitting f7, c6 and g6
+    n82 41…Rc2#: Missed mate in 1 starting with Ba3#

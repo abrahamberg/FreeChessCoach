@@ -80,3 +80,15 @@ PLAN
   e1 line n1–n15
   e2 deviation n16–n21
   e3 recap n15–n15
+
+REVIEW NOTES
+  l1
+    n1 1.d4: Theory — Queen's Pawn Game: Accelerated London System (D00)
+    n2 1…d5: Theory — Queen's Pawn Game: Accelerated London System (D00)
+    n3 2.Bf4: Theory — Queen's Pawn Game: Accelerated London System (D00)
+  l2
+    n1 1.d4: Theory — Queen's Pawn Game: Accelerated London System (D00)
+    n2 1…d5: Theory — Queen's Pawn Game: Accelerated London System (D00)
+    n3 2.Bf4: Theory — Queen's Pawn Game: Accelerated London System (D00)
+    n16 3…c5: Leaves the pawn on c5 undefended
+    n17 4.c3: Missed dxc5, winning material on c5

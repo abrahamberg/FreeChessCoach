@@ -832,12 +832,14 @@ Status: done 2026-09-30 — the filters live in `tactic-claim-fit.ts` (`cardFits
 **Depends on:** 115.1. **Re-record allowed.**
 **Read:** `apps/api/test/golden/course-facts.golden.ts`, `move-reasons.ts`.
 
-- [ ] Extend the golden text with a `REVIEW NOTES` block: for every course
+- [x] Extend the golden text with a `REVIEW NOTES` block: for every course
   line, each move's `reasons` from `CourseLineAnalysis.moves`, as
   `n12 6…Bb4: <reason>; <reason>`. Record it with today's behaviour in its own
   commit, so the next task's diff shows exactly what changes.
 
 **Commit:** `test(review): review notes in the golden snapshot`
+
+Status: done 2026-09-30 — `test:golden` has a `REVIEW NOTES` block per course (`courseInputs` now also returns each line's analysis); recorded with the current behaviour, the rest of each file unchanged (only additions), all files under 50 KB, 66 tests pass.
 
 ### Task 115.3 — Review notes from the board facts
 
