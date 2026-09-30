@@ -1,6 +1,7 @@
 import { cachedSystemMessage, systemMessage, type ChatMessage, type SystemChatMessage } from '../llm/messages.js';
 import {
   applySanSequence,
+  currentMoveFacts,
   computePositionFeatures,
   diffPositionFeatures,
   moveRefToPly,
@@ -227,6 +228,16 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
   const featureDelta =
     playedMove !== null && !isBestMove ? computeFeatureDelta(analysis, preMoveFen, position.fen) : undefined;
   const classifiedMove = moveQualities.find((move) => move.ply === input.currentPly);
+  const bestLine = analysis.lines.find((line) => line.moveSan === analysis.bestMove);
+  const moveFacts =
+    playedMove !== null
+      ? currentMoveFacts({
+          fenBefore: preMoveFen,
+          playedSan: playedMove,
+          ...(analysis.bestMove && bestLine ? { best: { san: analysis.bestMove, line: bestLine.pvSan } } : {}),
+          continuation: postMoveAnalysis?.lines[0]?.pvSan ?? []
+        })
+      : undefined;
   // final review #8: the thread-ledger heading is composed inside
   // renderCurrentMoveBlock (packages/prompts), not here — all prompt text
   // lives in packages/prompts, matching the pattern renderAnnotatedPgn/
@@ -237,7 +248,7 @@ export async function buildEpisodeContext(input: BuildEpisodeContextInput): Prom
     input.studentColor,
     renderThreadsBlock(threads),
     playedMove,
-    { analysis, classifiedMove, postMoveAnalysis, featureDelta },
+    { analysis, classifiedMove, postMoveAnalysis, featureDelta, moveFacts },
     gameSoFar
   );
 

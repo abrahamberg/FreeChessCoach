@@ -145,3 +145,4 @@ export * from './arrow-move-san.js';
 export * from './eval-witness.js';
 export * from './move-verdict/index.js';
 export * from './win-probability.js';
+export * from './board-facts/current-move.js';

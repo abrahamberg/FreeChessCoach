@@ -990,6 +990,16 @@ facts are left out of that line. Rule 6 is one sentence; tool descriptions say
 shows no `better`; a trade shows nothing loose. **Ephemeral:** none.
 **Commit:** `feat(coach): the move's board facts in the current position`
 
+**Status:** done. `currentMoveFacts` (`board-facts/current-move.ts`, pure, no
+engine call) builds `played`, `gaveUp`, `better` (with the material at the end
+of the settled best line), `playedLine` and `looseAfter`. The mover's own loose
+pieces come from `replayMove`, so a capture taken back is a trade, not loose.
+`renderCurrentMoveBlock` shows "What the move did" and "Best instead" after the
+engine lines, cut at 10 lines. `coach-method.ts` has six rules, not eight: the
+new sentence went into rules 2 and 3. The api full run hit the 5 s timeout in
+`generation.test.ts` once under load; it passes alone (Lane C's cached
+`englundDossier` fixes that, it is not on this branch).
+
 ### Task 116.4 — Facts for the student's focus areas
 
 **Depends on:** 116.3.

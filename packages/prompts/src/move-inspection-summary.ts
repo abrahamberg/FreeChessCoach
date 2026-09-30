@@ -95,7 +95,7 @@ function renderLegalMove(move: LegalMoveInspection): string {
 
 /** "the white knight on f3 (can be won)": `winnable` is defended but loses the
  * exchange, `free` has no defender at all. */
-function describeLoose(pieces: readonly LoosePiece[]): string {
+export function describeLoose(pieces: readonly LoosePiece[]): string {
   return pieces
     .map((piece) => `the ${piece.owner === 'w' ? 'white' : 'black'} ${pieceName(piece.piece)} on ${piece.square} (${piece.tier === 'free' ? 'undefended' : 'can be won'})`)
     .join(', ');

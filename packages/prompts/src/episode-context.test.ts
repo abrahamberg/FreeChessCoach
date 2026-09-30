@@ -1,3 +1,5 @@
+import { currentMoveFacts } from '@freechesscoach/chess-analysis';
+import type { PositionAnalysis } from '@freechesscoach/shared';
 import { describe, expect, test } from 'vitest';
 import { renderAnnotatedMove, renderAnnotatedPgn, renderCurrentMoveBlock, renderGameSoFarInline, renderOtherMovesSummary, type AnnotatedMoveLike } from './episode-context.js';
 
@@ -96,5 +98,41 @@ describe('renderCurrentMoveBlock line orientation', () => {
   test('no note at the game start, where nothing has been played', () => {
     const block = renderCurrentMoveBlock(0, 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 'white', '(empty)', null);
     expect(block).not.toContain('Which position is which');
+  });
+});
+
+describe('renderCurrentMoveBlock: what the move did', () => {
+  // White's rook on d1 guards e1; Rd2 leaves it and …Re1# follows.
+  const BEFORE = '4r1k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1';
+  const AFTER = '4r1k1/5ppp/8/8/8/8/3R1PPP/6K1 b - - 1 1';
+  const line = (moveSan: string, pvSan: string[]) => ({ moveSan, pvSan, cp: 0, mateIn: null });
+  const analysis = { fen: BEFORE, bestMove: 'h3', lines: [line('h3', ['h3', 'h6'])] } as unknown as PositionAnalysis;
+  const postMoveAnalysis = { fen: AFTER, bestMove: 'Re1#', lines: [line('Re1#', ['Re1#'])] } as unknown as PositionAnalysis;
+
+  test('a blunder shows what it gave up and the better move', () => {
+    const moveFacts = currentMoveFacts({ fenBefore: BEFORE, playedSan: 'Rd2', best: { san: 'h3', line: ['h3', 'h6'] }, continuation: ['Re1#'] });
+    const block = renderCurrentMoveBlock(1, AFTER, 'white', '(empty)', 'Rd2', { analysis, postMoveAnalysis, moveFacts });
+
+    expect(block).toContain('What the move did:');
+    expect(block).toContain('Gave up: the rook stops guarding e1, where Re1# follows.');
+    expect(block).toContain('Best instead:');
+    expect(block).toContain('- h3 moves the pawn from h2 to h3.');
+    expect(block).toContain('At the end of its line, material is level.');
+  });
+
+  test('the best move shows no "Best instead" and, when it is a trade, nothing loose', () => {
+    const moveFacts = currentMoveFacts({ fenBefore: BEFORE, playedSan: 'h3', best: { san: 'h3', line: ['h3', 'h6'] }, continuation: ['h6'] });
+    const block = renderCurrentMoveBlock(1, AFTER, 'white', '(empty)', 'h3', { analysis, moveFacts });
+
+    expect(block).toContain('What the move did:');
+    expect(block).not.toContain('Best instead');
+    expect(block).not.toContain('Loose after it');
+  });
+
+  test('stays within ten lines', () => {
+    const moveFacts = currentMoveFacts({ fenBefore: BEFORE, playedSan: 'Rd2', best: { san: 'h3', line: ['h3', 'h6'] }, continuation: ['Re1#'] });
+    const block = renderCurrentMoveBlock(1, AFTER, 'white', '(empty)', 'Rd2', { analysis, postMoveAnalysis, moveFacts });
+    const section = block.slice(block.indexOf('What the move did:'), block.indexOf('## Your thread ledger'));
+    expect(section.trim().split('\n').length).toBeLessThanOrEqual(10);
   });
 });

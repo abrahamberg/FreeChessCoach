@@ -1,4 +1,4 @@
-import { inspectMoves, isSoundQuality, plyToMoveRef, type ClassifiedMove, type FeatureDelta } from '@freechesscoach/chess-analysis';
+import { inspectMoves, isSoundQuality, plyToMoveRef, renderBoardFact, type BoardFact, type ClassifiedMove, type CurrentMoveFacts, type FeatureDelta } from '@freechesscoach/chess-analysis';
 import {
   MOVE_QUALITY_SYMBOLS,
   TACTIC_MOTIF_LABELS,
@@ -8,7 +8,7 @@ import {
   type PositionAnalysisLine,
   type TacticMotifCounts
 } from '@freechesscoach/shared';
-import { renderPositionFacts } from './move-inspection-summary.js';
+import { describeLoose, renderPositionFacts } from './move-inspection-summary.js';
 import { describeMoveRef } from './render.js';
 import { formatEval } from './format-eval.js';
 
@@ -179,6 +179,28 @@ export interface CurrentMoveAnalysisContext {
   postMoveAnalysis?: PositionAnalysis;
   /** Diff between "after the engine's best move" and "after the move actually played" — omitted when there's no best move to compare against. */
   featureDelta?: FeatureDelta;
+  /** What the played move did and what the best one would have done, from the board facts (`currentMoveFacts`). */
+  moveFacts?: CurrentMoveFacts;
+}
+
+const MOVE_FACT_LINES = 10;
+
+/** "What the move did" and "Best instead", shown after the engine lines. The
+ * block is in the uncached tail, so it stays under `MOVE_FACT_LINES` lines. */
+function renderMoveFacts(playedMove: string, facts: CurrentMoveFacts): string {
+  const did: string[] = [];
+  const say = (list: readonly BoardFact[]): string => list.map(renderBoardFact).join('; ');
+  if (facts.played.length) did.push(`- ${playedMove} ${say(facts.played)}.`);
+  if (facts.gaveUp.length) did.push(`- Gave up: ${say(facts.gaveUp)}.`);
+  if (facts.playedLine) did.push(`- Played line: ${facts.playedLine}.`);
+  if (facts.looseAfter.length) did.push(`- Loose after it: ${describeLoose(facts.looseAfter)}.`);
+  const instead: string[] = [];
+  if (facts.better) {
+    if (facts.better.facts.length) instead.push(`- ${facts.better.san} ${say(facts.better.facts)}.`);
+    instead.push(`- At the end of its line, ${facts.better.material}.`);
+  }
+  const blocks = [did.length ? `What the move did:\n${did.join('\n')}` : '', instead.length ? `Best instead:\n${instead.join('\n')}` : ''];
+  return blocks.filter(Boolean).join('\n\n').split('\n').slice(0, MOVE_FACT_LINES).join('\n');
 }
 
 
@@ -275,6 +297,11 @@ function renderAnalysisSection(ply: number, playedMove: string | null, ctx: Curr
   if (featureDelta) {
     const bullets = renderFeatureDeltaBullets(featureDelta);
     if (bullets) parts.push(`What changed vs. the best move:\n${bullets}`);
+  }
+
+  if (ctx.moveFacts && playedMove !== null) {
+    const facts = renderMoveFacts(playedMove, ctx.moveFacts);
+    if (facts) parts.push(facts);
   }
 
   // Each alternative gets its own PV, capped at 4 full moves — enough for
