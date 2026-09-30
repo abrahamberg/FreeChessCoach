@@ -9,7 +9,7 @@ const ids = tree.nodes.map((node) => node.id);
 function documentWith(episode: CourseEpisode): CourseDocument {
   return {
     version: 1, kind: 'trap', title: 'T', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
-    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], episodes: [episode], takeaways: [], hookOptions: [], clipLinks: {}
+    startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes: [episode], takeaways: [], hookOptions: [], clipLinks: {}
   };
 }
 

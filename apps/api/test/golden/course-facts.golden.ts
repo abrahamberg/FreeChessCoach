@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { renderCourseDossier, type CourseLineAnalysis } from '@freechesscoach/chess-analysis';
+import { courseDiagnosisCodes, renderCourseDossier, type CourseLineAnalysis } from '@freechesscoach/chess-analysis';
 import { describe, expect, test } from 'vitest';
 import { reelCandidateLines } from '../../scripts/course-golden-facts.js';
 import { courseInputs } from '../../scripts/golden-inputs.js';
@@ -46,5 +46,14 @@ describe('golden course facts', () => {
     }
     const expected = existsSync(file) ? readFileSync(file, 'utf8') : '';
     expect(actual, `${name}: facts changed`).toBe(expected);
+  });
+});
+
+describe('golden course diagnosis codes', () => {
+  test('the Englund trap trains what motifToCode gives its learner nodes: the mate (its saved bishop has no code)', async () => {
+    const course = loadGoldenSet().find((each) => each.name === 'trap-englund')!;
+    const { dossier, tree } = await courseInputs(course, fixtureEngineFor(course.name), 'fixture');
+    expect(dossier.nodes.filter((node) => node.side === dossier.learnerSide && node.motif).map((node) => `${node.san}:${node.motif}`)).toEqual(['Bxc3:defendsHangingPiece', 'Qc1#:checkmate']);
+    expect(courseDiagnosisCodes(tree, dossier)).toEqual(['TA-01']);
   });
 });

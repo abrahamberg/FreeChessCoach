@@ -1,4 +1,4 @@
-import { buildCourseSkeleton, courseLineGames, isQuizAnswerEligible, reelCandidates, type CourseDossier, type CourseLineGame, type CourseSkeleton, type CourseTree } from '@freechesscoach/chess-analysis';
+import { buildCourseSkeleton, courseDiagnosisCodes, courseLineGames, isQuizAnswerEligible, reelCandidates, type CourseDossier, type CourseLineGame, type CourseSkeleton, type CourseTree } from '@freechesscoach/chess-analysis';
 import type { CourseMessages, CoursePlanChapter, CoursePromptContext } from '@freechesscoach/prompts';
 import { courseVideos, type CourseDocument } from '@freechesscoach/shared';
 import type { Kysely } from 'kysely';
@@ -46,6 +46,10 @@ export async function loadGenerationInputs(
     if (!buildDossier) throw new Error('No engine is configured');
     dossier = (await buildDossier(courseTreeOf(document), document.learnerSide, row.ownerId, document.kind)).dossier;
     await coursesRepo.setDossier(db, row.id, dossier);
+    // The codes follow the dossier; the creator's later edits are kept, as
+    // the dossier is built only once.
+    document = { ...document, diagnosisCodes: courseDiagnosisCodes(courseTreeOf(document), dossier) };
+    await coursesRepo.setDiagnosisCodes(db, row.id, document.diagnosisCodes);
   }
   return generationInputs({ document, dossier, direction: row.direction, sourcePgn: row.sourcePgn });
 }

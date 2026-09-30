@@ -1,4 +1,4 @@
-import { bandForRating, COACH_PERSONA_INFO, courseVideos, levelCode, type CourseDocument } from '@freechesscoach/shared';
+import { ALL_DIAGNOSIS_CODES, bandForRating, COACH_PERSONA_INFO, courseVideos, DIAGNOSIS_CODES_BY_ID, levelCode, type CourseDocument } from '@freechesscoach/shared';
 import { useState, type ReactNode } from 'react';
 import { CoachAvatar } from '../../components/CoachAvatar.js';
 import { Modal } from '../../components/Modal.js';
@@ -7,6 +7,7 @@ import { CoachPersonaSelect } from '../settings/CoachPersonaSelect.js';
 import { CourseVideosPicker } from './CourseVideosPicker.js';
 
 const RATINGS = [800, 1000, 1200, 1400, 1600, 1800, 2000, 2200];
+const CATALOGUE = ALL_DIAGNOSIS_CODES.filter((entry) => entry.detectability !== 'unsupported');
 
 export interface CourseDetailsProps {
   document: CourseDocument;
@@ -80,6 +81,45 @@ export function CourseDetails({ document, onChange }: CourseDetailsProps): React
         <label className="course-field">
           <span>Promise</span>
           <textarea rows={3} value={document.promise} placeholder="After this you can …" onChange={(event) => onChange({ ...document, promise: event.target.value })} />
+        </label>
+      </div>
+
+      <div className="course-details__column course-details__codes">
+        <h3>Weaknesses it trains</h3>
+        <ul className="course-details__code-list">
+          {document.diagnosisCodes.map((code) => (
+            <li key={code} className="course-details__code-chip">
+              <span>
+                {code} · {DIAGNOSIS_CODES_BY_ID.get(code)?.label ?? code}
+              </span>
+              <button
+                type="button"
+                className="btn-ghost"
+                aria-label={`Remove ${code}`}
+                onClick={() => onChange({ ...document, diagnosisCodes: document.diagnosisCodes.filter((each) => each !== code) })}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+        {document.diagnosisCodes.length === 0 && <p className="meta">None found from the moves. Add one if the course trains a known weakness.</p>}
+        <label className="course-field">
+          <span>Add a weakness</span>
+          <select
+            value=""
+            onChange={(event) => {
+              const code = CATALOGUE.find((entry) => entry.id === event.target.value)?.id;
+              if (code && !document.diagnosisCodes.includes(code)) onChange({ ...document, diagnosisCodes: [...document.diagnosisCodes, code] });
+            }}
+          >
+            <option value="">Choose from the catalogue…</option>
+            {CATALOGUE.filter((entry) => !document.diagnosisCodes.includes(entry.id)).map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.id} · {entry.label}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 

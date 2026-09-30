@@ -24,6 +24,7 @@ function draft(title: string): CourseDocument {
     chapters: [],
     episodes: [],
     takeaways: [],
+    diagnosisCodes: [],
     hookOptions: [],
     clipLinks: {}
   };

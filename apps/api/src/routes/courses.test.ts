@@ -87,7 +87,7 @@ describe('course routes', () => {
     const tree = parseCourseTree(ENGLUND);
     const document = {
       version: 1 as const, kind: 'trap' as const, title: 'Theirs', promise: '', learnerSide: 'black' as const, levelBand: 'improving' as const,
-      coachPersona: 'commander' as const, startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], episodes: [],
+      coachPersona: 'commander' as const, startFen: tree.startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes: [],
       takeaways: [], hookOptions: [], clipLinks: {}
     };
     const theirs = await coursesRepo.insert(db, { ownerId: other.id, slug: 'theirs-abc', kind: 'trap', title: 'Theirs', sourcePgn: ENGLUND, direction: '', document });

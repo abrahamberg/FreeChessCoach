@@ -16,7 +16,7 @@ function course(): CourseDocument {
     startFen: 'start',
     nodes: [],
     lines: [],
-    chapters: [],
+    chapters: [], diagnosisCodes: [],
     episodes: [
       {
         id: 'e1', role: 'hook', focus: '', startNodeId: 'n1', endNodeId: 'n1', drillNodeIds: [],

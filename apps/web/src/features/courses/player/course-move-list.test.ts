@@ -9,7 +9,7 @@ const [d4, e5, dxe5, nc6] = tree.nodes;
 function documentFrom(startFen = tree.startFen): CourseDocument {
   return {
     version: 1, kind: 'trap', title: 'T', promise: '', learnerSide: 'black', levelBand: 'improving', coachPersona: 'commander',
-    startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], episodes: [], takeaways: [], hookOptions: [], clipLinks: {}
+    startFen, nodes: tree.nodes, lines: tree.lines, chapters: [], diagnosisCodes: [], episodes: [], takeaways: [], hookOptions: [], clipLinks: {}
   };
 }
 

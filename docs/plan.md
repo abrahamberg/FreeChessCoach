@@ -1171,6 +1171,8 @@ facts file for which motifs those are before writing the test).
 **Ephemeral:** none.
 **Commit:** `feat(courses): the diagnosis codes a course trains`
 
+Status: done 2026-09-30 — `CourseDocument.diagnosisCodes` (required, jsonb); `courseDiagnosisCodes(tree, dossier)` maps each learner node's motif through `motifToCode` (first appearance, no duplicates) and runs when the dossier is first built (`loadGenerationInputs`), so the creator's later edits stay; `setDiagnosisCodes` writes only that key to both copies. The endgame kind adds no code of its own: the skeleton's goal is "win"/"draw" and no EG code names either (they name techniques), so the creator picks one from the catalogue. Editor Details has a "Weaknesses it trains" column (chips with Remove, add from the catalogue minus `unsupported` codes); the public catalogue items carry `diagnosisCodes`. `course-dossier-refresh.ts` fills both stored copies and accepts documents without the field. Englund test (golden harness, fixture engine): learner nodes play `defendsHangingPiece` (Bxc3, no code) and `checkmate` (Qc1#), so the codes are exactly `['TA-01']`. **Owner:** run `npx tsx apps/api/scripts/course-dossier-refresh.ts` once after deploy; until then a stored document without the field fails `CourseDocumentSchema`. `verify` tests pass, golden 67.
+
 ### Task 118.2 — Focus areas point to courses
 
 **Depends on:** 118.1.
@@ -1184,6 +1186,8 @@ facts file for which motifs those are before writing the test).
   is not in this phase.
 
 **Keep:** a route test for the filter. **Commit:** `feat(progress): courses for each focus area`
+
+Status: done 2026-09-30 — `GET /api/public/courses?code=BV-22` filters public courses by `published_document->'diagnosisCodes'` (jsonb containment); the route test lists, filters and checks an unused code. `FocusAreaCard` shows up to 3 courses ("Courses for this", curriculum order, links to the course) through `useCoursesForCode`; a card with no code or no course shows nothing. The filter landed with 118.1's commit (same catalogue files); the card is its own commit.
 
 ---
 

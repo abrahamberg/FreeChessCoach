@@ -23,7 +23,7 @@ function trap(episodes: CourseEpisode[], kind: CourseDocument['kind'] = 'trap'):
     nodes: tree.nodes,
     lines: tree.lines,
     // No chapters: no chapter cards, unless a test adds them.
-    chapters: [],
+    chapters: [], diagnosisCodes: [],
     episodes,
     takeaways: [],
     hookOptions: [],
