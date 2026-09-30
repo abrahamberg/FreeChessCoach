@@ -1214,6 +1214,8 @@ now, alongside Lane M; they don't touch M's files.
 
 **Commit:** `chore(test): affected-only test:changed; ephemeral tests never committed`
 
+Status: done 2026-09-30 — `scripts/test-changed.ts` runs `npx vitest run --changed HEAD~1` from the root (one run took 48 s on this branch's last commit), with `--package <name>` for one package's whole suite. CI's test job fails with "ephemeral test committed" when `git ls-files '*.wip.test.ts' '*.wip.test.tsx'` prints anything. AGENTS.md's Testing bullet and the `test:changed` line say the same.
+
 ### Task 119.2 — Nightly runs the opt-in tiers
 
 **Read:** `.github/workflows/ci.yml`.
@@ -1223,6 +1225,8 @@ now, alongside Lane M; they don't touch M's files.
 - [ ] Record the nightly run's duration in the Status line.
 
 **Commit:** `ci: nightly corpus and golden tiers`
+
+Status: done 2026-09-30 — the CI test job has a step that runs `npm run test:corpus` and `npm run test:golden` when the event is `schedule` or a manual run with `full`. `test:corpus` was broken (vitest 5 has no `basic` reporter, and three tests hit the 5 s default under load): it now uses `--reporter=dot --testTimeout=120000`. Local durations: corpus 59 s, golden about 90 s, so the step adds about 2.5 minutes to the nightly job. The nightly run's own duration is not recorded yet: it has not run; read it from the first scheduled run and paste it here.
 
 ### Task 119.3 — api tests without Postgres don't start it
 
@@ -1242,6 +1246,8 @@ now, alongside Lane M; they don't touch M's files.
 **Done when:** `npm run test:unit -w @freechesscoach/api` passes without
 Docker; the full suite passes with Docker.
 **Commit:** `test(api): unit tests run without Postgres`
+
+Status: done 2026-09-30 — `build-app.ts` does not touch Postgres (a test passes its own `db`), so the rule is one import: a test that imports `test/helpers/db.js` needs Postgres. 42 files renamed to `*.db.test.ts` (`git mv`, history kept); 54 files stay unit. `apps/api/vitest.config.ts` has the projects `unit` and `db` (only `db` has the Postgres `globalSetup`); the root config's projects see both (`npx vitest list` from the root shows `(unit)` and `(db)`). `npm run test:unit -w @freechesscoach/api` passes with `DOCKER_HOST` pointing nowhere; the full api suite passes with Docker. AGENTS.md describes both tiers.
 
 ---
 

@@ -55,6 +55,17 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
 
+      # Ephemeral (development-driving) tests are deleted before a task's last
+      # commit; one that reaches the repo would run in every default suite.
+      - name: No ephemeral tests committed
+        run: |
+          found=$(git ls-files '*.wip.test.ts' '*.wip.test.tsx')
+          if [ -n "$found" ]; then
+            echo "ephemeral test committed:"
+            echo "$found"
+            exit 1
+          fi
+
       # main only ever advances via a merged, already-CI-passed PR, so the
       # full run here (plus the nightly cron above) is a backstop. PRs run
       # affected-only below, except dependency and toolchain changes: a
@@ -82,6 +93,15 @@ jobs:
       - name: Run full test suite
         if: steps.scope.outputs.full == 'true'
         run: npm test
+
+      # The opt-in tiers: the tactic corpus (no engine) and the golden course
+      # facts (fixture engine), both pure replays. Nightly and on a manual
+      # full run only; a PR reaches them by running them itself.
+      - name: Run corpus and golden tiers
+        if: github.event_name == 'schedule' || github.event.inputs.full == 'true'
+        run: |
+          npm run test:corpus
+          npm run test:golden
 
       # vitest walks the real import graph from every changed file (working
       # tree + everything committed since the base branch) to the test files
