@@ -186,7 +186,10 @@ function introProblems(text: string, where: string): CourseVerifyProblem[] {
 }
 
 function normalised(text: string): string {
-  return text.toLowerCase().replace(/’/g, "'").replace(/[.!?,;:]+$/g, '').trim();
+  const lower = text.toLowerCase().replace(/’/g, "'").trim();
+  let end = lower.length;
+  while (end > 0 && '.!?,;:'.includes(lower[end - 1]!)) end--;
+  return lower.slice(0, end).trim();
 }
 
 function words(text: string): number {

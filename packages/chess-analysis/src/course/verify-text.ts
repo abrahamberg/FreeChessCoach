@@ -40,7 +40,9 @@ export function sanTokens(text: string): string[] {
 /** The same move written with or without check marks or disambiguation. */
 export function sameMove(san: string): string[] {
   // "Qxc3+?" as the dossier writes a tempting move is Qxc3.
-  const plain = san.replace(/[+#?!]+$/, '');
+  let end = san.length;
+  while (end > 0 && '+#?!'.includes(san[end - 1]!)) end--;
+  const plain = san.slice(0, end);
   return [plain, plain.replace(/^([KQRBN])[a-h]?[1-8]?(x?[a-h][1-8])/, '$1$2')];
 }
 
@@ -115,8 +117,8 @@ export function tacticWordProblems(texts: EpisodeText[], scope: EpisodeScope): C
   );
 }
 
-const EVAL_NUMBER = /(?<![\w.])[+\-−]\d+(?:[.,]\d+)?(?!\w)|(?<![\w.])\d+\.\d+(?![\w.])|\bcentipawns?\b|\bevals?\b|\bcp\b/gi;
-const PERCENT = /(\d+(?:\.\d+)?)\s?(?:%|percent\b)/gi;
+const EVAL_NUMBER = /(?<![\w.])[+\-−]\d{1,15}(?:[.,]\d{1,15})?(?!\w)|(?<![\w.])\d{1,15}\.\d{1,15}(?![\w.])|\bcentipawns?\b|\bevals?\b|\bcp\b/gi;
+const PERCENT = /(?<![\d.])(\d{1,15}(?:\.\d{1,15})?)\s?(?:%|percent\b)/gi;
 
 /** No engine numbers; a percentage only when the creator's direction gives it. */
 export function numberProblems(texts: EpisodeText[], direction: string): CourseVerifyProblem[] {
