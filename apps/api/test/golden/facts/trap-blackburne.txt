@@ -2,7 +2,6 @@ Learner side: Black
 
 Lines:
 l1 "Line A" | opening: Italian Game: Blackburne-Kostić Gambit | leaves book at n7
-    end position: open files: e; the f-file is half-open for black; the g-file is half-open for white; white has an isolated pawn on f2; white has an isolated pawn on h2; the white king is still in the centre on e1; the black king is still in the centre on e8
 
 Moves:
 n1 1.e4 (White, Line A) | book
@@ -70,7 +69,6 @@ n13 7.Be2 (White, Line A) | inaccuracy | before: Black is much better → after:
 n14 7…Nf3# (Black, Line A) | best | before: Black has a forced mate in 1 → after: checkmate
     board: moves the knight from d4 to f3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on f3; d1, d2, e2, f1, f2 hold its own pieces
     tactics: You forced mate — mates the king on e1, smothered by its own pieces.
-    alternatives: Kxf7: Black is much better; d5: Black is much better
     flags: quiz-eligible, critical
 
 REEL CANDIDATES

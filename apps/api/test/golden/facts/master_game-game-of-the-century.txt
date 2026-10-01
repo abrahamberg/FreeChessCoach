@@ -2,7 +2,6 @@ Learner side: Black
 
 Lines:
 l1 "Line A" | opening: English Opening: Anglo-Indian Defense, King's Indian Formation | leaves book at n5
-    end position: open files: a, d, e; the b-file is half-open for white; the c-file is half-open for white; the f-file is half-open for white; black has a passed pawn on b5; black has a passed pawn on c6; black has a queenside pawn majority; black has a kingside pawn majority; the white king is tucked away on c1; the black king is tucked away on g7
 
 Moves:
 n1 1.Nf3 (White, Line A) | book
@@ -164,7 +163,6 @@ n81 41.Kc1 (White, Line A) | forced | before: Black has a forced mate in 1 → a
     board: moves the king from b1 to c1 | leaves the white pawn on g2 hanging
 n82 41…Rc2# (Black, Line A) | excellent | before: Black has a forced mate in 1 → after: checkmate
     board: moves the rook from a2 to c2 | gives checkmate | why it is mate: the king on c1 is checked by the rook on c2; b1 and d1 are covered by the knight on c3; b2 and d2 are covered by the rook on c2; the rook on c2 is guarded by the bishop on b3
-    alternatives: Ba3#: Black has a forced mate in 1; Ne2+: Black has a forced mate in 3
     flags: critical
 
 REEL CANDIDATES

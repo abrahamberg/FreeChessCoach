@@ -2,7 +2,6 @@ Learner side: Black
 
 Lines:
 l1 "Line A" | opening: Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation | leaves book at n8
-    end position: the a-file is half-open for white; the d-file is half-open for white; the e-file is half-open for black; white has doubled pawns on the b-file; black has a queenside pawn majority; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
 
 Moves:
 n1 1.d4 (White, Line A) | book
@@ -66,7 +65,6 @@ n15 8.axb4 (White, Line A) | blunder | before: The position is roughly equal →
 n16 8…Nd3# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
     board: moves the knight from e5 to d3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on d3; d1, d2, e2, f1, f2 hold its own pieces
     tactics: You forced mate.
-    alternatives: d6: White is better; Nxf3+: White is much better
     flags: quiz-eligible, critical
 
 REEL CANDIDATES

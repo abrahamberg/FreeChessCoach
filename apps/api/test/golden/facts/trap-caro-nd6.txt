@@ -2,7 +2,6 @@ Learner side: White
 
 Lines:
 l1 "Line A" | opening: Caro-Kann Defense: Karpov Variation | leaves book at n9
-    end position: the d-file is half-open for black; the e-file is half-open for white; white has a queenside pawn majority; black has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
 
 Moves:
 n1 1.e4 (White, Line A) | book
@@ -53,7 +52,6 @@ n10 5…Ngf6 (Black, Line A) | blunder | before: The position is roughly equal �
 n11 6.Nd6# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the knight from e4 to d6 | gives checkmate | why it is mate: the king on e8 is checked by the knight on d6; d7, d8, e7, f7, f8 hold its own pieces
     tactics: You forced mate — mates the king on e8, smothered by its own pieces.
-    alternatives: Nf3: The position is roughly equal; c3: The position is roughly equal
     flags: quiz-eligible, critical
 
 REEL CANDIDATES

@@ -2,7 +2,6 @@ Learner side: Black
 
 Lines:
 l1 "Line A" | opening: Ruy Lopez: Berlin Defense, Fishing Pole Variation | leaves book at n9
-    end position: open files: h; black has doubled pawns on the g-file; black has a kingside pawn majority; the white king is tucked away on g1; the black king is still in the centre on e8
 
 Moves:
 n1 1.e4 (White, Line A) | book

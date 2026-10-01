@@ -2,7 +2,6 @@ Learner side: Black
 
 Lines:
 l1 "Line A" | opening: Queen's Gambit Declined: Albin Countergambit, Lasker Trap | leaves book at n11
-    end position: open files: d; the e-file is half-open for black; the f-file is half-open for white; white has an isolated pawn on e5; the white king is still in the centre on e1; the black king is still in the centre on e8
 
 Moves:
 n1 1.d4 (White, Line A) | book

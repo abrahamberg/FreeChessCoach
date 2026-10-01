@@ -2,13 +2,11 @@ Learner side: White
 
 Lines:
 l1 "Line A" | leaves book at n1
-    end position: open files: a, b, c, d, e; the f-file is half-open for black; the g-file is half-open for black; the h-file is half-open for white; white has a passed pawn on f3; white has a passed pawn on g6; black has a passed pawn on h6; white has a kingside pawn majority; the white king is tucked away on g3; the black king is tucked away on h5
 
 Moves:
 n1 1.fxg6# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the pawn from f5 to g6 | captures the pawn on g5 en passant | gives checkmate | a discovered check from the rook on a5 | why it is mate: the king on h5 is checked by the rook on a5; h6 holds its own pieces; g4 is covered by the pawn on f3 and the king on g3; g5 is covered by the rook on a5; h4 is covered by the king on g3; the pawn on g6 is guarded by the bishop on d3
     tactics: You forced mate.
-    alternatives: Ra4: Black is much better; Ra6: Black is much better
     tempting threat: Ra8? White's Ra8 moves the rook from a5 to a8 | attacks the rook on h8 | leaves the white rook on a8 hanging. Black answers Qg1+: moves the queen from h1 to g1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh3. Then Kh3 Rxa8 Bc4. Over the line Black takes a rook; at the end White has a bishop for a queen and a rook (Black is winning).
     flags: quiz-eligible, critical
 

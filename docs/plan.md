@@ -494,11 +494,19 @@ exactly that. `calibrate` now prints every sentence of the move.
 **Findings:** items 7, 9, 10. **Read:** `course/dossier-line.ts` (the end
 position's rows), where the dossier lists `alternative` moves.
 
-- [ ] A move that is checkmate gets no `alternative` rows and its end
-  position no structure rows (dev: 146 and 581 sentences).
-- [ ] A decided end position (a forced mate, or five pawns up on the
-  engine's line) keeps only the winning side's passed pawns (dev: 764).
-  The golden endgame courses must keep "white has a passed pawn on e7".
+- [x] A move that is checkmate gets no `alternative` rows and its end
+  position no structure rows (dev `nothing-after-mate`: 146 and 581
+  sentences, now 0 and 0). `dossier-node.ts` (`alternatives`),
+  `dossier-line.ts` (`endFeatures`); the mate facts stay.
+- [x] A decided end position (a forced mate, or five pawns up on the
+  engine's line: `CONFIG.courses.decidedCp`) keeps only the winning side's
+  passed pawns (dev `decided-trivia`: 764, now 0; `dossier:line-end` went
+  from 1766 rows to 418). The golden endgame courses keep "white has a
+  passed pawn on e7" (king and pawn) and "on b7" (Lucena). The builder
+  reads the dossier's own eval of the end position (multiPv 3); the audit
+  checks the row against the review's eval when the review has the same
+  position, and the two can straddle 500 (one dev position: two-examples'
+  5.Nc6+, +472 against +516, three rows gone that the check had passed).
 - [ ] Not coded, judged: a feature that plays no part in a balanced
   position (item 7, a passed h-pawn at -0.9). Once judges have labelled 100
   `dossier:line-end` rows under the new rule, decide from the share marked

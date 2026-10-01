@@ -498,6 +498,10 @@ export const CONFIG = {
     bestLinePlies: 6,
     /** A dossier with more nodes than this is printed compactly. */
     fullBlockNodeLimit: 40,
+    /** A line's end position is decided when the engine's best line is a
+     * forced mate or this many centipawns for one side: its rows are then
+     * only the winner's passed pawns (the owner's calibration, 2026-10-01). */
+    decidedCp: 500,
     /** A reveal says why the answer works, not just the move (gemma wrote "6... Bb4"). */
     minRevealWords: 6,
     /** §13.4 the YouTube video's budgets. Spoken words per second at Kokoro

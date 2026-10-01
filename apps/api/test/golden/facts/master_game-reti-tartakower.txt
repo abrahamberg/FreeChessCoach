@@ -2,7 +2,6 @@ Learner side: White
 
 Lines:
 l1 "Line A" | opening: Caro-Kann Defense: Main Line | leaves book at n9
-    end position: open files: d, e; the white king is tucked away on c1; the black king is tucked away on c7
 
 Moves:
 n1 1.e4 (White, Line A) | book
@@ -89,7 +88,6 @@ n20 10…Kc7 (Black, Line A) | best | before: White has a forced mate in 1 → a
 n21 11.Bd8# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the bishop from g5 to d8 | gives checkmate | why it is mate: the king on c7 is checked by the bishop on d8; b7, b8, c6, c8 hold its own pieces; b6 is covered by the bishop on d8; d6 and d7 are covered by the rook on d1; the bishop on d8 is guarded by the rook on d1
     tactics: You forced mate.
-    alternatives: Nf3: Black is much better; f4: Black is much better
     flags: quiz-eligible, critical
 
 REEL CANDIDATES

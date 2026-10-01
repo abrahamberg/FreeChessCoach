@@ -55,7 +55,7 @@ export function buildCourseDossier(input: CourseDossierInput): CourseDossier {
   const lines = input.tree.lines.map((line) => {
     const analysis = byLine.get(line.id);
     if (!analysis) throw new Error(`No analysis for course line ${line.id}`);
-    return buildCourseLineFacts(line, analysis.line);
+    return buildCourseLineFacts(line, analysis.line, input.evalsByFen.get(analysis.line.game.positions.at(-1)?.fen ?? ''));
   });
   return { learnerSide: input.learnerSide, nodes, lines };
 }

@@ -1,4 +1,6 @@
 import { Chess, type Color } from 'chess.js';
+import type { EngineEval, PositionFeatures } from '@freechesscoach/shared';
+import { CONFIG } from '../config.js';
 import type { CourseLineGame } from './line-game.js';
 import type { CourseTreeLine } from './tree.js';
 import { isBookMoveFrom, resolveOpening } from '../opening-book.js';
@@ -13,11 +15,14 @@ export interface CourseLineFacts {
   openingName: string | null;
   /** The first move of the line that is not in the opening book. */
   bookExitNodeId: string | null;
-  /** The end position's structure in words, to ground talk of plans. */
+  /** The end position's structure in words, to ground talk of plans. None
+   * after a checkmate; in a decided position only the winner's passed pawns. */
   endFeatures: string[];
 }
 
-export function buildCourseLineFacts(line: CourseTreeLine, game: CourseLineGame): CourseLineFacts {
+/** `endEval` is the engine's evaluation of the line's last position, the
+ * one its last node's verdict words come from. */
+export function buildCourseLineFacts(line: CourseTreeLine, game: CourseLineGame, endEval: EngineEval | undefined): CourseLineFacts {
   const positions = game.game.positions;
   const exitIndex = positions.slice(1).findIndex((position, index) => {
     const before = positions[index];
@@ -29,16 +34,42 @@ export function buildCourseLineFacts(line: CourseTreeLine, game: CourseLineGame)
     name: line.name,
     openingName: resolveOpening(positions.map((position) => positionKey(position.fen)))?.name ?? null,
     bookExitNodeId: exitIndex >= 0 ? (game.nodeIds[exitIndex] ?? null) : null,
-    endFeatures: endFen ? endFeatures(endFen) : []
+    endFeatures: endFen ? endFeatures(endFen, endEval) : []
   };
 }
 
-function endFeatures(fen: string): string[] {
+/** The owner's calibration (2026-10-01): after 38…Rc1# the mate is the whole
+ * description, and at -7.7 with passed pawns rolling "the a-file is
+ * half-open for white" is clutter; king and queen against king read "open
+ * files: a, b, c, d, e, f, g, h". */
+function endFeatures(fen: string, evaluation: EngineEval | undefined): string[] {
   const features = computePositionFeatures(fen);
+  if (features.boardState === 'checkmate') return [];
+  const winner = decidedFor(evaluation);
+  if (winner) return passedPawns(features, winner);
+  return structure(fen, features);
+}
+
+/** Who has a decided game on the engine's best line (a forced mate, or
+ * `decidedCp` ahead), or `null`. Scores are White-perspective. */
+function decidedFor(evaluation: EngineEval | undefined): 'white' | 'black' | null {
+  const best = evaluation?.lines[0];
+  if (!best) return null;
+  if (best.mateIn !== null) return best.mateIn > 0 ? 'white' : 'black';
+  const cp = best.cp ?? 0;
+  if (Math.abs(cp) < CONFIG.courses.decidedCp) return null;
+  return cp > 0 ? 'white' : 'black';
+}
+
+function passedPawns(features: PositionFeatures, only?: 'white' | 'black'): string[] {
+  return features.passedPawns.filter((pawn) => !only || pawn.color === only).map((pawn) => `${pawn.color} has a passed pawn on ${pawn.square}`);
+}
+
+function structure(fen: string, features: PositionFeatures): string[] {
   const facts: string[] = [];
   if (features.openFiles.length) facts.push(`open files: ${features.openFiles.join(', ')}`);
   for (const file of features.semiOpenFiles) facts.push(`the ${file.file}-file is half-open for ${file.openFor}`);
-  for (const pawn of features.passedPawns) facts.push(`${pawn.color} has a passed pawn on ${pawn.square}`);
+  facts.push(...passedPawns(features));
   // A lone pawn is passed, not isolated: knight against pawn read "white has
   // an isolated pawn on b7" and "a queenside pawn majority".
   const pawns = { white: 0, black: 0 };

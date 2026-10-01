@@ -2,7 +2,6 @@ Learner side: White
 
 Lines:
 l1 "Line A" | opening: Horwitz Defense | leaves book at n3
-    end position: the e-file is half-open for white; the f-file is half-open for black; the h-file is half-open for black; black has an isolated pawn on g7; white has a kingside pawn majority; the white king is still in the centre on d2; the black king is tucked away on g1
 
 Moves:
 n1 1.d4 (White, Line A) | book
@@ -140,7 +139,6 @@ n34 17…Kg1 (Black, Line A) | forced | before: White has a forced mate in 1 →
     board: moves the king from g2 to g1 | attacks the rook on h2
 n35 18.Kd2# (White, Line A) | excellent | before: White has a forced mate in 1 → after: checkmate
     board: moves the king from e1 to d2 | gives checkmate | a discovered check from the rook on a1 | why it is mate: the king on g1 is checked by the rook on a1; f1 is covered by the bishop on e2 and the rook on a1; g2 is covered by the rook on h2; h1 is covered by the rook on h2 and the rook on a1; the pawn on f2 is guarded by the knight on g4 and the rook on h2; the rook on h2 is guarded by the knight on g4
-    alternatives: O-O-O#: White has a forced mate in 1; Rh1+: White has a forced mate in 4
     flags: critical
 
 REEL CANDIDATES

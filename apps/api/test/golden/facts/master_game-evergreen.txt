@@ -2,7 +2,6 @@ Learner side: White
 
 Lines:
 l1 "Line A" | opening: Italian Game: Evans Gambit, Dufresne Defense | leaves book at n15
-    end position: open files: b, d, e; the g-file is half-open for black; white has an isolated pawn on a2; black has an isolated pawn on a7; white has an isolated pawn on c3; black has an isolated pawn on c7; black has an isolated pawn on f7; black has an isolated pawn on h7; white has doubled pawns on the f-file; white has a kingside pawn majority; the white king is tucked away on g1; the black king is still in the centre on f8
 
 Moves:
 n1 1.e4 (White, Line A) | book
@@ -142,7 +141,6 @@ n46 23…Kf8 (Black, Line A) | best
 n47 24.Bxe7# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the bishop from a3 to e7 | captures the knight on e7 | gives checkmate | why it is mate: the king on f8 is checked by the bishop on e7; f7, g8 hold its own pieces; e8 is covered by the bishop on d7; g7 is covered by the pawn on f6; the bishop on e7 is guarded by the pawn on f6
     tactics: You forced mate.
-    alternatives: fxe7+: Black is better; g3: Black has a forced mate in 1
     flags: quiz-eligible, critical
 
 REEL CANDIDATES

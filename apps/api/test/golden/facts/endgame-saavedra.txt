@@ -2,7 +2,6 @@ Learner side: White
 
 Lines:
 l1 "Line A" | leaves book at n1
-    end position: open files: a, b, c, d, e, f, g, h
 l2 "Line B" | leaves book at n1
     end position: open files: a, b, c, d, e, f, g, h
 

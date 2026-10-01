@@ -2,9 +2,8 @@ Learner side: White
 
 Lines:
 l1 "Line A" | leaves book at n1
-    end position: open files: a, c, d, e, f, g, h; the b-file is half-open for black; white has a passed pawn on b7
+    end position: white has a passed pawn on b7
 l2 "Line B" | leaves book at n1
-    end position: open files: a, b, c, d, e, f, g, h; the white king is tucked away on c8; the black king is tucked away on c6
 
 Moves:
 n1 1.Rd1+ (White, Line A) | excellent | before: White is much better → after: White is much better

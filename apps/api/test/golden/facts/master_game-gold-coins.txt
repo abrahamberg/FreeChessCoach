@@ -2,7 +2,6 @@ Learner side: Black
 
 Lines:
 l1 "Line A" | opening: French Defense: Marshall Gambit | leaves book at n7
-    end position: open files: d; the b-file is half-open for white; the c-file is half-open for black; the e-file is half-open for white; the f-file is half-open for black; white has an isolated pawn on a2; white has an isolated pawn on c2; black has an isolated pawn on e6; the white king is tucked away on g1; the black king is tucked away on g8
 
 Moves:
 n1 1.d4 (White, Line A) | book
