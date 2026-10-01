@@ -9,12 +9,17 @@ export const MIN_JUDGED = 300;
 
 export type Outcome = 'correct' | 'wrong' | 'unclear' | null;
 
-/** A judge's label wins; without one a failed code check is wrong and a
- * settled description is correct; anything else is still unjudged (null). */
+/** A judge's label decides, with one exception: a `correct` label on a
+ * sentence that fails a check stands only when the judge said the check is
+ * wrong (`audit-bug` in the note). Otherwise the check is a rule that came
+ * after the label (the owner's calibration rules did) and the sentence is
+ * wrong. Without a label a failed check is wrong and a settled description
+ * is correct; anything else is still unjudged (null). */
 export function outcomeOf(item: AuditItem, labels: Map<string, Label>): Outcome {
   const label = labels.get(item.key);
-  if (label) return label.verdict === 'correct' ? 'correct' : label.verdict === 'unclear' ? 'unclear' : 'wrong';
-  if (item.checks.some((check) => !check.ok)) return 'wrong';
+  const failed = item.checks.some((check) => !check.ok);
+  if (label && !(failed && label.verdict === 'correct' && !label.note.includes('audit-bug'))) return label.verdict === 'correct' ? 'correct' : label.verdict === 'unclear' ? 'unclear' : 'wrong';
+  if (failed) return 'wrong';
   return item.settled ? 'correct' : null;
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { checkAnswerSets, exchangeGain, hasPassedPawnOn, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
+import { checkAnswerSets, decidedFor, exchangeGain, hasPassedPawnOn, mateWithoutCount, prizeWon, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
 
 /** The audit's own board checks. A wrong check invents errors (or hides
  * them) across the whole corpus, so each one that misfired once stays here
@@ -66,6 +66,31 @@ describe('review audit oracle', () => {
     expect(hasPassedPawnOn('3r2k1/2p3pp/8/PpBr1p2/8/2PN4/P4PPP/R2R2K1 w - - 0 19', 'a', 'w')).toBe(true);
     // One move earlier the a-pawn stood on a2 behind Black's a5: not passed until bxa5.
     expect(hasPassedPawnOn('3r2k1/2p2ppp/8/ppBr4/1P6/2PN4/P4PPP/R2R2K1 w - - 0 18', 'a', 'w')).toBe(false);
+  });
+
+  test('a prize is won when the line nets more than half of it (a judge\'s audit-bug: the Petrov\'s Nc6+ wins the queen for a knight)', () => {
+    expect(prizeWon(9, 6)).toBe(true);
+    // A rook for a knight is the exchange, not a rook.
+    expect(prizeWon(5, 2)).toBe(false);
+    expect(prizeWon(3, 2)).toBe(true);
+    expect(prizeWon(1, 0)).toBe(false);
+  });
+
+  test('a forced mate is said with its number of moves (owner calibration: 24…Qxh3 "They forced mate.")', () => {
+    expect(mateWithoutCount('They forced mate.', 'Qxh3')).toBe(true);
+    expect(mateWithoutCount('You let them force mate with Qg2+', 'h3')).toBe(true);
+    expect(mateWithoutCount('Missed mate in 8 starting with Rxf3+', 'Qc3')).toBe(false);
+    // The move is the mate: nothing to count.
+    expect(mateWithoutCount('You forced mate.', 'Rc1#')).toBe(false);
+    expect(mateWithoutCount('You let them force mate with Qh7#', 'h3')).toBe(false);
+  });
+
+  test('a game is decided at a forced mate or five pawns (owner calibration: 35…d2 at -7.7)', () => {
+    expect(decidedFor([{ cp: -769, mate: null }])).toBe('b');
+    expect(decidedFor([{ cp: null, mate: 5 }])).toBe('w');
+    // 47.Qe4 at -0.88 is still a game.
+    expect(decidedFor([{ cp: -88, mate: null }])).toBeNull();
+    expect(decidedFor([])).toBeNull();
   });
 
   test('the king taking the checker is a capture, not a king move (8.Qxd8+ in the Berlin)', () => {

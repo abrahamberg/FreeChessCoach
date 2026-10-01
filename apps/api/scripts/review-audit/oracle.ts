@@ -95,6 +95,34 @@ export function moveIsSound(lines: readonly { san: string; cp: number | null; ma
   return score(named) >= score(best) - 200 || score(named) >= 100;
 }
 
+/** Whether a line that nets `won` delivers a card's prize worth `claimed`:
+ * more than half of it. "Wins the queen" is fair when a knight is given for
+ * it (the Petrov's Nc6+, net 6); "wins a rook" is not when a knight is
+ * given for it (net 2: that is the exchange). */
+export function prizeWon(claimed: number, won: number): boolean {
+  return won >= 1 && won * 2 > claimed;
+}
+
+/** Who has a decided game on the engine's best line (a forced mate, or five
+ * pawns up), or `null`. The owner's calibration rule: in a decided game
+ * small positional notes are clutter. */
+export function decidedFor(lines: readonly { cp: number | null; mate: number | null }[]): Color | null {
+  const best = lines[0];
+  if (!best) return null;
+  if (best.mate !== null) return best.mate > 0 ? 'w' : 'b';
+  if (Math.abs(best.cp ?? 0) < 500) return null;
+  return (best.cp ?? 0) > 0 ? 'w' : 'b';
+}
+
+/** A sentence that says a mate is forced without saying in how many moves
+ * ("They forced mate."), unless the move it is about is the mate itself.
+ * The owner's calibration rule: say "mate in 5". */
+export function mateWithoutCount(text: string, san: string): boolean {
+  if (!/\bforc(e|ed|ing) mate\b/.test(text) || /\bmate in \d+\b/.test(text)) return false;
+  const named = /\bwith (\S+?)[.,]?(?: |$)/.exec(text)?.[1];
+  return !(named ?? san).endsWith('#');
+}
+
 /** The legal answers to a check, sorted the way the dossier's fact sorts
  * them: taking the checker is a capture whoever takes (the king too, and a
  * pawn en passant); a king move is one that takes no checker; the rest

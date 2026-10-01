@@ -79,10 +79,12 @@ Then `report` again. Keep judging on later days until each split/surface has
 at least 300 judged sentences; after that, judge only what changed (a fix
 changes a sentence's text, which needs a new label) plus new games.
 
-**Calibration (the owner, weekly):** pick 10 random labels from
-`labels.jsonl` and show them to the owner with `show <game> --where <p..>`.
-If the owner disagrees with more than one, fix `judge-instructions.md`
-before trusting the numbers again.
+**Calibration (the owner, weekly):** `calibrate` writes
+`calibration-<date>.md`: 10 random labels, each with every sentence of its
+move. Send the file to the owner. If the owner disagrees with more than one,
+fix `judge-instructions.md` before trusting the numbers again; a rule the
+owner states that code can test becomes a check (with its `oracle.test.ts`
+case), and `recheck` applies it to every stored sentence.
 
 ## 5. Fix the biggest cluster
 

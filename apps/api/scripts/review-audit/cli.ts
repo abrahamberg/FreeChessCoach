@@ -11,6 +11,7 @@
  *   npm run review:audit -w apps/api -- failures [--source <prefix>] [--check <name>] [--limit 20]
  *   npm run review:audit -w apps/api -- batch [--split dev|holdout] [--positions 12] [--count 1]
  *   npm run review:audit -w apps/api -- ingest <labels.jsonl>...
+ *   npm run review:audit -w apps/api -- calibrate [--count 10]            (labels for the owner to check)
  *   npm run review:audit -w apps/api -- probe --fen <fen> [--moves "Nxe5 Rxd3"] [--depth 18]
  *   npm run review:audit -w apps/api -- show <gameId-part> [--where p25]
  *   npm run review:audit -w apps/api -- seed --game <db game id> --note "<what the owner saw>"
@@ -20,6 +21,7 @@
  */
 import { parseArgs } from 'node:util';
 import { writeBatches } from './batch.js';
+import { writeCalibration } from './calibrate.js';
 import { buildCorpus } from './corpus.js';
 import { ingestLabels } from './labels.js';
 import { printFailures } from './failures.js';
@@ -95,6 +97,9 @@ async function main(): Promise<void> {
     case 'ingest':
       console.log(ingestLabels(rest));
       return;
+    case 'calibrate':
+      console.log(writeCalibration(number(values.count, 10)));
+      return;
     case 'probe':
       if (!values.fen) throw new Error('probe needs --fen');
       console.log(await probe({ engineUrl, fen: values.fen, moves: values.moves?.split(/\s+/).filter(Boolean) ?? [], depth: number(values.depth, 18) }));
@@ -107,7 +112,7 @@ async function main(): Promise<void> {
       console.log(await addSeed(values.game, values.note));
       return;
     default:
-      throw new Error('commands: corpus, run, recheck, report, failures, batch, ingest, probe, show, seed');
+      throw new Error('commands: corpus, run, recheck, report, failures, batch, ingest, calibrate, probe, show, seed');
   }
 }
 

@@ -1,7 +1,7 @@
 import type { BoardFact, PieceAt } from '@freechesscoach/chess-analysis';
 import { Chess, type Square } from 'chess.js';
 import { result } from './check-result.js';
-import { attackersOf, balance, checkAnswerSets, colorOf, exchangeGain, inCheck, isCheckmate, kingSquare, legalCapturesOf, other, pieceAt, play, playLine, turnOf } from './oracle.js';
+import { attackersOf, balance, checkAnswerSets, colorOf, decidedFor, exchangeGain, inCheck, isCheckmate, kingSquare, legalCapturesOf, other, pieceAt, play, playLine, turnOf } from './oracle.js';
 import type { AuditItem, AuditPosition, CheckResult } from './types.js';
 
 /** Checks for the dossier's rows. Board facts are data, so these read the
@@ -11,7 +11,26 @@ export function checkDossierFact(item: AuditItem, position: AuditPosition): Chec
   if (item.source.startsWith('dossier:why-better:')) return betterFactChecks(item.data as BoardFact, position);
   if (item.source === 'dossier:best-instead') return bestInsteadChecks(item.data as { san: string; line: string[]; balance: string }, position);
   if (item.source.startsWith('dossier:tempting:')) return temptingChecks(item.data as { san: string; refutation: string[]; balance: string }, position);
+  if (item.source === 'dossier:alternative') return [afterMate(position)];
+  if (item.source === 'dossier:line-end') return [afterMate(position), decidedTrivia(item.text, position)];
   return [];
+}
+
+/** The owner's calibration (2026-10-01): when the move played is checkmate,
+ * the mate is the whole description; other moves and the pawn structure of
+ * the final position are noise. */
+function afterMate(position: AuditPosition): CheckResult {
+  return result('nothing-after-mate', !isCheckmate(position.fenAfter), `${position.san} is checkmate: nothing else is worth saying`);
+}
+
+/** The owner's calibration (2026-10-01): in a decided end position (a forced
+ * mate, or five pawns up) half-open files, isolated pawns, majorities and
+ * king placement are clutter; the winning side's passed pawns are the story. */
+function decidedTrivia(text: string, position: AuditPosition): CheckResult {
+  const winner = decidedFor(position.linesAfter);
+  const passed = /^end position: (white|black) has a passed pawn on /.exec(text)?.[1];
+  const ok = winner === null || (passed !== undefined && colorOf(passed as 'white' | 'black') === winner);
+  return result('decided-trivia', ok, `the game is decided for ${winner === 'w' ? 'White' : 'Black'}: this is clutter`);
 }
 
 function boardFactChecks(fact: BoardFact, position: AuditPosition): CheckResult[] {

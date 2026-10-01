@@ -204,12 +204,12 @@ re-runs the checks alone.
   needs the week-2 corpus or a higher sample rate there (owner's call).
 - [ ] Calibration: 20 random labels shown to the owner (`show`), their
   verdicts compared. More than 2 disagreements: rewrite the unclear part of
-  `judge-instructions.md` and re-judge that tag. The first 10 are in
-  `apps/api/.review-audit/calibration-2026-10-01.md`.
-- [ ] Every `audit-bug:` note from a judge becomes a check fix with a test.
-  Open: `material-in-line` fails "wins the queen" when the line gives a
-  knight for it (net 6, claimed 9); the claim is the prize taken, not the
-  net.
+  `judge-instructions.md` and re-judge that tag. The first 10 were read on
+  2026-10-01: see Phase 125. Ten more with `calibrate`, after 125.1–125.2.
+- [x] Every `audit-bug:` note from a judge becomes a check fix with a test.
+  One so far: `material-in-line` failed "wins the queen" when the line
+  gives a knight for it (net 6, claimed 9). `prizeWon`: more than half the
+  prize.
 - [x] `report --log`: this is the first real accuracy number. Write it here.
 
 **First numbers (2026-10-01, after the three fixes of Phase 121 and the
@@ -472,6 +472,75 @@ card).
   fails a code check. Every owner report stays fixed.
 - [ ] Drop to weekly: 50 fresh games, judged sample, report. A drop under
   98% reopens the daily loop.
+
+## Phase 125 — Useful, not only true (the owner's calibration, 2026-10-01)
+
+The owner read ten random labels. The judges' facts held (one eval band
+aside), but six of the ten sentences were marked down for being clutter or
+for not being the point of the move. "Correct" now means true **and** worth
+saying. The rules are in `judge-instructions.md` ("Useful, not only true");
+three are code checks (`nothing-after-mate`, `decided-trivia`,
+`mate-count`), and a `correct` label no longer outvotes a failing check
+unless the judge wrote `audit-bug`. With them, on the same labels: dev
+dossier 87.3% (was 92.5%), dev review 69.6%.
+
+The first calibration file showed one sentence per move, so three of the
+owner's remarks ("the real story is the missed dxe6", "the queen hangs on
+f6", "state the exchange") were about moves whose other sentences said
+exactly that. `calibrate` now prints every sentence of the move.
+
+### Task 125.1 — Nothing after mate, no clutter in a decided game
+
+**Findings:** items 7, 9, 10. **Read:** `course/dossier-line.ts` (the end
+position's rows), where the dossier lists `alternative` moves.
+
+- [ ] A move that is checkmate gets no `alternative` rows and its end
+  position no structure rows (dev: 146 and 581 sentences).
+- [ ] A decided end position (a forced mate, or five pawns up on the
+  engine's line) keeps only the winning side's passed pawns (dev: 764).
+  The golden endgame courses must keep "white has a passed pawn on e7".
+- [ ] Not coded, judged: a feature that plays no part in a balanced
+  position (item 7, a passed h-pawn at -0.9). Once judges have labelled 100
+  `dossier:line-end` rows under the new rule, decide from the share marked
+  `irrelevant` whether the rows need a relevance gate or go.
+
+### Task 125.2 — A forced mate says in how many moves
+
+**Findings:** item 4. **Read:** `tactic-reason-text.ts` (`gainClause`).
+
+- [ ] "They forced mate." becomes "They forced mate in 5" from the engine
+  line the card was verified on; a move that is itself mate says
+  "checkmate". Dev: 197 review cards, 208 `dossier:tactics` rows.
+
+### Task 125.3 — No "excellent" for a move that gives up a forced mate
+
+**Findings:** item 2 (22…Qc3: mate in 8 given up, still -13.9, badge
+"excellent"). `docs/algorith.md` line 103 already says a slow or missed
+mate is flagged "via the `Miss` label instead (§5.8)", but §5.8 only
+re-labels an inaccuracy, mistake or blunder, and this move loses no
+accuracy, so nothing flags it.
+
+- [ ] `classify-miss.ts`: a move from a position with a forced mate for the
+  mover to one without is a `miss` (underlying severity kept for the
+  accuracy math, as §5.8 has it). A slower mate stays as it is.
+- [ ] The badge as a sentence in the audit (`review:quality:*`, Task
+  122.4), with a check for this rule.
+- [ ] `test:corpus`, the report's counts (`miss` rises), §5.8 updated.
+
+### Task 125.4 — A mistake's note says what is lost
+
+**Findings:** item 6 (14…Nb5: "win a knight" / "can be won" when b5 is
+attacked three times and defended twice and a pawn goes). With cluster 2
+of Task 120.2.
+
+- [ ] A `winnable` piece whose exchange nets less than the piece says what
+  goes and the count: "b5 is attacked three times and defended twice: a
+  pawn goes". The free-piece card is not used for a defended piece.
+
+### Task 125.5 — The only winning move (with 121.3)
+
+**Findings:** item 5 (29.axb6: dxe6 was the one winning move, +3.7 against
++0.8 for the next). Task 121.3's reason, for a missed only move too.
 
 ## Left open from Phases 110–119
 

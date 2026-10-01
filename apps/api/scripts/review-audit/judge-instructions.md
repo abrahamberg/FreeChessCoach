@@ -71,6 +71,46 @@ after Nc3 Nf6 Bg5, material is level" must be legal and the material right
 at that line's end). "tempting" rows claim a move looks good and fails:
 check that the refutation really refutes it.
 
+## Useful, not only true (the owner's calibration, 2026-10-01)
+
+The owner read ten labels and marked true sentences down for being clutter
+or for missing the point. A true sentence is `misleading` when:
+
+- **The move played is checkmate** and the sentence is about anything else:
+  another move ("Rxd2+: Black is much better"), the pawn structure, files.
+  The mate is the whole description. Tag `irrelevant`.
+- **The game is decided** (a forced mate, or five pawns up) and the sentence
+  is a small positional note: a half-open file, an isolated pawn, a pawn
+  majority, where a king stands. Only the winning side's passed pawns are
+  worth a row. Tag `irrelevant`.
+- **The feature plays no part in what happens next**, in a balanced game
+  too: "black has a passed pawn on h6" with queens and minor pieces deciding
+  the game. Keep `correct` only for a feature a coach would mention when
+  explaining this position. Tag `irrelevant`.
+- **A mate is "forced" with no number**: "They forced mate." where the probe
+  shows mate in 5. Tag `imprecise`. (A move that is itself mate needs none.)
+- **A mistake or blunder note does not say what is lost.** It has to name
+  the piece that hangs or the exchange with its count ("b5 is attacked three
+  times and defended twice: a pawn goes"). "Win a knight" or "can be won"
+  when the exchange nets a pawn stays `wrong`, `not-winnable`.
+
+Judge the note of a move as a whole as well. The packet lists every sentence
+of the move. If the biggest fact about the move (the only winning move was
+missed, a queen was left hanging, a forced mate was given up) is in none of
+its `[review]` sentences, label the first `[review]` sentence `misleading`,
+`missing-point`, and say what is unsaid. If another sentence of the same
+move says it, this one is not at fault.
+
+The packet shows the move's quality badge. Excellent, best or great on a
+move that gives up a forced mate is the wrong badge, even if the game stays
+won: put `badge: <what it should not be, why>` in the note of that move's
+missed-mate sentence (the badge is not a sentence yet).
+
+A `CODE CHECK FAILED` for `nothing-after-mate`, `decided-trivia` or
+`mate-count` is one of these rules applied by code; it is only an
+`audit-bug` when the rule's condition is false (the move is not mate, the
+game is not decided, the sentence does give the number).
+
 ## Examples from the owner's own game (all wrong)
 
 - 12.Bxc5 "You stopped them forcing mate through a back-rank tactic — rook on
