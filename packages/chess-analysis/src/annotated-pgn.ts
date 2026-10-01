@@ -2,7 +2,7 @@ import { Chess } from 'chess.js';
 import type { ClassifiedMoveDto, DiagnosisCodeId } from '@freechesscoach/shared';
 import { plyToMoveRef } from './move-ref.js';
 import { commentTextByPlyOf } from './pgn-move-comments.js';
-import { parsePgn } from './pgn.js';
+import { loadFirstGame, parsePgn } from './pgn.js';
 import { buildMoveCommentParts, tryMove, type AppendMoveOptions, type AppendedMove } from './pgn-mutation.js';
 
 /**
@@ -156,8 +156,10 @@ export function replaceLastMoveAnnotation(
  * only matters for a hypothetical partial-map caller.
  */
 export function buildAnnotatedPgn(pgn: string, movesData: ReadonlyMap<number, AnnotatedMoveData>): string {
-  const source = new Chess();
-  source.loadPgn(pgn);
+  // Through `pgn.ts`'s loader, not `loadPgn`: chess.js rejects two comments
+  // after one move, which Lichess writes (`{ White offers draw } { [%clk …] }`),
+  // and the import had already accepted the game.
+  const source = loadFirstGame(pgn);
   const headers = source.getHeaders();
   const verboseMoves = source.history({ verbose: true });
 

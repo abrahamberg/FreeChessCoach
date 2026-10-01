@@ -73,8 +73,9 @@ function matchesAnyUsername(headerValue: string | undefined, candidates: string[
   return candidates.includes(headerValue.toLowerCase());
 }
 
-/** Loads the first game of a (possibly multi-game) PGN string into a Chess instance. */
-function loadFirstGame(pgn: string): Chess {
+/** Loads the first game of a (possibly multi-game) PGN string into a Chess
+ * instance: headers and mainline only, comments and variations dropped. */
+export function loadFirstGame(pgn: string): Chess {
   const firstGamePgn = stripMoveAnnotations(stripAnnotations(extractFirstGame(pgn)));
   const chess = new Chess();
   try {

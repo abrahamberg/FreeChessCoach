@@ -161,6 +161,12 @@ describe('buildAnnotatedPgn', () => {
     expect(moves[1]?.cpLoss).toBe(15);
   });
 
+  test('reads a source PGN with two comments after one move (a Lichess draw offer beside the clock)', () => {
+    const plain = `${HEADERS}1. e4 { White offers draw } { [%clk 0:03:00] } 1... e5 { [%clk 0:03:00] } 2. Nf3 *`;
+    const annotated = buildAnnotatedPgn(plain, new Map([[3, SAMPLE_DATA]]));
+    expect(parseAnnotatedPgn(annotated, 'white').map((move) => move.moveSan)).toEqual(['Nf3']);
+  });
+
   test('round-trips a custom starting position ([FEN]/[SetUp] headers)', () => {
     const fen = 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3';
     const plain = `[Event "Test"]\n[White "Alice"]\n[Black "Bob"]\n[Result "*"]\n[FEN "${fen}"]\n[SetUp "1"]\n\n3. Bb5 *`;
