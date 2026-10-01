@@ -161,14 +161,34 @@ puzzle, so each has a tactic. Quiet games (the notes "Concedes the centre",
   Puzzle games are never rated under 1400, so `--stream` alone left two
   bands empty; `--dump` (the head of the monthly dump) fills them, and gives
   the quiet games of Task 122.5. If a band stays short, raise `--dump`.
-- [ ] `run --jobs 2` (the first run searches: expect minutes per game on the
-  dev engine's pool of 2), then `report --log`.
-- [ ] Read the code-check failures table. For the five sources with the
+- [x] `run` (the first run searches: about 48 seconds a game on the dev
+  engine's pool of 2, 90 minutes for the 267), then `report --log`.
+- [x] Read the code-check failures table. For the five sources with the
   most failures, open 5 each with `failures --source <s> --limit 5` and the
   probe: is the check right? A check that misfires is fixed now, with its
   position added to `oracle.test.ts`, before any number is trusted.
-- [ ] Write the baseline under this task: sentences per surface, the share
+- [x] Write the baseline under this task: sentences per surface, the share
   failing a check, the top five sources.
+
+**Baseline (2026-10-01, 267 games: 220 dev, 47 holdout).** 65,625
+sentences: 10,293 Game Review, 55,332 dossier. 588 failed a check as first
+written (530 review, 58 dossier); on dev 489 of 53,854. The top five dev
+sources and what reading them showed:
+
+| source | failing | verdict on the check |
+|---|---|---|
+| `review:reason:missed-capture` (`material-in-line`) | 126 of 503 | right on even trades, wrong when the engine line's last ply gives a pawn back or a pawn queens anyway: now `settledGain`, 50 left |
+| `review:tactic-prevention:stopped:freePiece` (`named-pieces`) | 62 of 104 | right: "captures the queen on c3" with no queens on the board (F1) |
+| `dossier:board:checkAnswers` (`check-answers`) | 50 of 488 | wrong: the fact counts the king taking the checker as a capture, on purpose; 0 left |
+| `review:tactic-prevention:stopped:fork` (`named-pieces`) | 38 of 120 | right (F1) |
+| `review:tactic-allowed:freePiece` (`material-in-line`) | 30 of 259 | half horizon (a queen trade cut at the line's last ply): `settledGain`; a named move the engine would not play is now `named-move-sound` |
+
+After the checks were corrected: 303 dev failures. Found on the way: two
+of the 200 Lichess games failed the app's analysis (two comments after one
+move; fixed in `annotated-pgn.ts`), a re-run with every engine answer
+cached costs 15 seconds of CPU a game (`loosePieces` → `see` is 43% of it;
+the worker pays this too), so `run` uses six processes and `recheck`
+re-runs the checks alone.
 
 **Commit:** `chore(audit): first run; checks corrected against the corpus`
 
@@ -178,12 +198,52 @@ puzzle, so each has a tactic. Quiet games (the notes "Concedes the centre",
 
 - [ ] Batches until dev has at least 300 judged sentences per surface, then
   the same for holdout (12 positions per batch, 4–6 `review-judge` agents
-  at a time).
+  at a time). 2026-10-01, two rounds (12 batches, 901 labels): dev dossier
+  523 judged; dev review 110, holdout dossier 246, holdout review 39.
+  Holdout review has only about 150 sampled sentences in 47 games: the gate
+  needs the week-2 corpus or a higher sample rate there (owner's call).
 - [ ] Calibration: 20 random labels shown to the owner (`show`), their
   verdicts compared. More than 2 disagreements: rewrite the unclear part of
-  `judge-instructions.md` and re-judge that tag.
+  `judge-instructions.md` and re-judge that tag. The first 10 are in
+  `apps/api/.review-audit/calibration-2026-10-01.md`.
 - [ ] Every `audit-bug:` note from a judge becomes a check fix with a test.
-- [ ] `report --log`: this is the first real accuracy number. Write it here.
+  Open: `material-in-line` fails "wins the queen" when the line gives a
+  knight for it (net 6, claimed 9); the claim is the prize taken, not the
+  net.
+- [x] `report --log`: this is the first real accuracy number. Write it here.
+
+**First numbers (2026-10-01, after the three fixes of Phase 121 and the
+passed-pawn fix; an estimate while under 300 judged).** dev review 71.0%
+(n=110), dev dossier 92.5% (n=523), holdout review 57.6% (n=39), holdout
+dossier 91.9% (n=246). Dev code-check failures 134 of 54,131 (489 at the
+first run). The estimate weighs check-failing and check-passing sentences
+by their share of the sample (`report.ts` `estimate`).
+
+**Clusters seen, biggest first (dev), for the next days:**
+1. `review:reason:missed-capture`, `material-in-line`: 50 code failures,
+   7 of 16 judged wrong ("Missed Bxd5, winning material on d5" on an even
+   trade). Likely `missedCaptureReason` reading `see > 0` (see 121.2).
+2. Tactic cards whose engine line does not win the prize
+   (`review:tactic-allowed:*`, `tactic-opportunity:*`,
+   `material-in-line`): about 75 code failures; `dossier:tactics` 8 of 22
+   judged wrong (the same cards in the dossier).
+3. `review:reason:other` ("Won the queen, giving back a rook"): 7 of 11
+   judged wrong, tag `hypothetical-line`: the material is from an engine
+   line, not from what was played.
+4. `dossier:*:leavesHanging` / `review:reason:loose-free`: 15 of 41 judged
+   wrong, tag `not-winnable`: "hanging" when taking it loses to a tactic.
+   No code check yet (needs the engine's reply to the capture).
+5. `dossier:tempting:check`: 4 of 4 wrong, the mate count is from the
+   wrong ply. `dossier:verdict` / `alternative`: 9 of 243, eval words one
+   band off at depth 20+ (Task 122.1).
+6. `review:reason:mobility` ("Costs 9 squares of piece mobility"): judges
+   say it compares one side's moves before with the other's after. Two
+   seen, both wrong; no check yet.
+7. Left by today's fixers: "Trades pawns on g6" on a mating en passant
+   (`describeTrade`); the `pawnBreakthrough` detector compares passed pawns
+   by square as `passedPawnReasons` did; a found back-rank mate card paid
+   in material (`verify-tactic-line.ts`); "winning a rook" for rook against
+   knight (`materialPrize`).
 
 **Commit:** `chore(audit): judge instructions calibrated with the owner`
 
