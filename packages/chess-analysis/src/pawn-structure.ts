@@ -1,4 +1,4 @@
-import type { Chess, Square } from 'chess.js';
+import type { Chess, Move, Square } from 'chess.js';
 import type { PositionFeatures } from '@freechesscoach/shared';
 import { occupiedSquares, toColorName } from './attack-map.js';
 
@@ -32,11 +32,37 @@ export function pawnStructure(chess: Chess): PawnStructureResult {
   };
 }
 
-function fileOf(square: Square): string {
+/**
+ * The squares of the mover's pawns that the move made passed, given the
+ * passed pawns before and after it. A pawn is followed through the move, so
+ * one that was passed already and only advanced (or took and changed file)
+ * is not created; nor is a pawn on a file where the mover had a passed pawn
+ * already (the doubled pawn behind it). At most one per file: the front one.
+ */
+export function createdPassedPawns(
+  before: PositionFeatures['passedPawns'],
+  after: PositionFeatures['passedPawns'],
+  move: Pick<Move, 'color' | 'piece' | 'from' | 'to'>
+): string[] {
+  const mover = toColorName(move.color);
+  const had = new Set(before.filter((pawn) => pawn.color === mover).map((pawn) => pawn.square));
+  const hadOnFile = new Set([...had].map(fileOf));
+  const cameFrom = (square: string): string => (move.piece === 'p' && square === move.to ? move.from : square);
+  const gained = after
+    .filter((pawn) => pawn.color === mover && !had.has(cameFrom(pawn.square)) && !hadOnFile.has(fileOf(pawn.square)))
+    .map((pawn) => pawn.square);
+  return gained.filter((square) => !gained.some((other) => fileOf(other) === fileOf(square) && isAhead(other, square, mover)));
+}
+
+function isAhead(square: string, of: string, color: 'white' | 'black'): boolean {
+  return color === 'white' ? rankOf(square) > rankOf(of) : rankOf(square) < rankOf(of);
+}
+
+function fileOf(square: string): string {
   return square[0] ?? '';
 }
 
-function rankOf(square: Square): number {
+function rankOf(square: string): number {
   return Number(square[1]);
 }
 

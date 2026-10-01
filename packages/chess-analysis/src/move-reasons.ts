@@ -1,4 +1,4 @@
-import { Chess, type Square } from 'chess.js';
+import { Chess, type Move, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type FeatureDeltaDto, type MoveQuality, type PositionFeatures } from '@freechesscoach/shared';
 import { betterMoveReasons } from './move-reason-better.js';
 import { forks } from './board-facts/forks.js';
@@ -7,6 +7,7 @@ import { PIECE_VALUES } from './tactics.js';
 import { PIECE_NAMES } from './piece-names.js';
 import { describeTrade } from './trade-description.js';
 import { see } from './see.js';
+import { createdPassedPawns } from './pawn-structure.js';
 import { CONFIG } from './config.js';
 
 export interface MoveReasonsInput {
@@ -128,12 +129,8 @@ function looseReasons(input: MoveReasonsInput): Reason[] {
 /** The square the move captured on, when what it took was worth at least
  * what took it. */
 function tradedSquare(input: MoveReasonsInput): string | null {
-  try {
-    const move = new Chess(input.fenBefore).move(input.moveSan);
-    return move.captured && PIECE_VALUES[move.captured] >= PIECE_VALUES[move.piece] ? move.to : null;
-  } catch {
-    return null;
-  }
+  const move = playedMove(input);
+  return move?.captured && PIECE_VALUES[move.captured] >= PIECE_VALUES[move.piece] ? move.to : null;
 }
 
 /** Forks the opponent now has that they did not have before the move, named
@@ -168,15 +165,24 @@ function centerSwingReason(input: MoveReasonsInput): Reason[] {
   return [{ category: 'structural', text: 'Concedes the centre' }];
 }
 
+/** Only a pawn the move made passed: one that was passed already and is
+ * pushed creates nothing (`createdPassedPawns`). */
 function passedPawnReasons(input: MoveReasonsInput): Reason[] {
-  const before = new Set(
-    (input.featuresBefore?.passedPawns ?? []).filter((pawn) => pawn.color === input.mover).map((pawn) => pawn.square)
-  );
-  const after = (input.featuresAfter?.passedPawns ?? []).filter((pawn) => pawn.color === input.mover);
+  if (!input.featuresBefore || !input.featuresAfter) return [];
+  const move = playedMove(input);
+  if (!move) return [];
+  return createdPassedPawns(input.featuresBefore.passedPawns, input.featuresAfter.passedPawns, move).map((square) => ({
+    category: 'structural',
+    text: `Creates a passed pawn on ${square[0]}`
+  }));
+}
 
-  return after
-    .filter((pawn) => !before.has(pawn.square))
-    .map((pawn) => ({ category: 'structural', text: `Creates a passed pawn on ${pawn.square[0]}` }));
+function playedMove(input: MoveReasonsInput): Move | null {
+  try {
+    return new Chess(input.fenBefore).move(input.moveSan);
+  } catch {
+    return null;
+  }
 }
 
 /**

@@ -71,8 +71,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n3 2.e6: Creates a passed pawn on e
-    n5 3.e7: Creates a passed pawn on e
   l2
-    n13 3.e6: Creates a passed pawn on e
-    n15 4.e7: Creates a passed pawn on e

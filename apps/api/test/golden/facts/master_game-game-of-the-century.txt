@@ -205,7 +205,6 @@ REVIEW NOTES
     n52 26…Rxa2: Creates a passed pawn on b
     n56 28…Rxe1: Trades rooks on e1
     n57 29.Qd8+: Missed Nxe1, winning material on e1
-    n64 32…b5: Creates a passed pawn on b
     n71 36.Kf1: They let you force mate with Ng3+.
     n74 37…Bb4+: Missed mate in 5 starting with Bf2+
     n82 41…Rc2#: Missed mate in 1 starting with Ba3#

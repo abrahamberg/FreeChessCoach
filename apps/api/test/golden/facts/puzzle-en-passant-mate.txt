@@ -22,4 +22,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.fxg6#: Creates a passed pawn on f; Creates a passed pawn on g; You forced mate.
+    n1 1.fxg6#: Trades pawns on g6; You forced mate.

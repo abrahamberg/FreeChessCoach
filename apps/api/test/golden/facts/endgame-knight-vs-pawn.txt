@@ -63,4 +63,3 @@ PLAN
 
 REVIEW NOTES
   l1
-    n2 2.b7: Creates a passed pawn on b
