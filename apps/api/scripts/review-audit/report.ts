@@ -46,11 +46,27 @@ function wilsonLow(correct: number, n: number): number {
 
 const pct = (value: number): string => `${(value * 100).toFixed(1)}%`;
 
-function accuracyLine(name: string, counts: Tally): string {
-  const judged = counts.correct + counts.wrong;
-  const accuracy = judged ? counts.correct / judged : 0;
-  const status = judged < MIN_JUDGED ? `needs ${MIN_JUDGED - judged} more judged` : accuracy >= TARGET ? 'MEETS 98%' : 'below 98%';
-  return `| ${name} | ${judged} | ${counts.wrong} | ${judged ? pct(accuracy) : '-'} | ${judged ? pct(wilsonLow(counts.correct, judged)) : '-'} | ${counts.unjudged} | ${status} |`;
+/** The sample's accuracy while judging is still under way. Sentences that
+ * fail a check count as wrong without a judge, so they are all "judged" from
+ * the first run, and the rest only as judges reach them: dividing correct by
+ * judged read 48% for Game Review when a tenth of the passing sentences had a
+ * label. The two groups are weighed by their size in the sample instead:
+ * each group's wrong share among its judged sentences, applied to the whole
+ * group. With every sentence judged this is correct / judged again. */
+function estimate(items: AuditItem[], labels: Map<string, Label>): { judged: number; wrong: number; unjudged: number; accuracy: number | null } {
+  const groups = [items.filter((item) => item.checks.some((check) => !check.ok)), items.filter((item) => item.checks.every((check) => check.ok))];
+  const counts = groups.map((group) => tally(group, labels));
+  const judged = counts.reduce((sum, each) => sum + each.correct + each.wrong, 0);
+  const sized = counts.filter((each) => each.total > 0);
+  const measured = sized.length > 0 && sized.every((each) => each.correct + each.wrong > 0);
+  const wrongShare = sized.reduce((sum, each) => sum + (each.total * each.wrong) / Math.max(1, each.correct + each.wrong), 0) / Math.max(1, items.length);
+  return { judged, wrong: counts.reduce((sum, each) => sum + each.wrong, 0), unjudged: counts.reduce((sum, each) => sum + each.unjudged, 0), accuracy: measured ? 1 - wrongShare : null };
+}
+
+function accuracyLine(name: string, items: AuditItem[], labels: Map<string, Label>): string {
+  const { judged, wrong, unjudged, accuracy } = estimate(items, labels);
+  const status = judged < MIN_JUDGED ? `needs ${MIN_JUDGED - judged} more judged` : (accuracy ?? 0) >= TARGET ? 'MEETS 98%' : 'below 98%';
+  return `| ${name} | ${judged} | ${wrong} | ${accuracy === null ? '-' : pct(accuracy)} | ${accuracy === null ? '-' : pct(wilsonLow(accuracy * judged, judged))} | ${unjudged} | ${status} |`;
 }
 
 /** The accuracy table (scored sample only), the per-source breakdown, and
@@ -62,9 +78,9 @@ export function writeReport(onlySplit: 'dev' | 'holdout' | null): string {
   const splits = onlySplit ? [onlySplit] : (['dev', 'holdout'] as const);
   const surfaces: Surface[] = ['review', 'dossier'];
   const rows = ['# Review audit', '', `${items.length} sentences from ${new Set(items.map((item) => item.gameId)).size} games; ${labels.size} labels in the ledger.`, ''];
-  rows.push('## Accuracy of the scored sample (sentences code cannot settle alone)', '', '| split / surface | judged | wrong | accuracy | 95% low | unjudged | status |', '|---|---|---|---|---|---|---|');
+  rows.push('## Accuracy of the scored sample (sentences code cannot settle alone)', '', '| split / surface | judged | wrong | accuracy (est.) | 95% low | unjudged | status |', '|---|---|---|---|---|---|---|');
   for (const split of splits) {
-    for (const surface of surfaces) rows.push(accuracyLine(`${split} ${surface}`, tally(items.filter((item) => item.split === split && item.surface === surface && item.sampled), labels)));
+    for (const surface of surfaces) rows.push(accuracyLine(`${split} ${surface}`, items.filter((item) => item.split === split && item.surface === surface && item.sampled), labels));
   }
   rows.push('', '## Code-check failures over every sentence (dev)', '', '| source | sentences | fail a check | top check |', '|---|---|---|---|');
   const dev = items.filter((item) => item.split === 'dev');
@@ -110,9 +126,8 @@ export function logHistory(): string {
   const labels = loadLabels();
   const cells = (['dev', 'holdout'] as const).flatMap((split) =>
     (['review', 'dossier'] as const).map((surface) => {
-      const counts = tally(items.filter((item) => item.split === split && item.surface === surface && item.sampled), labels);
-      const judged = counts.correct + counts.wrong;
-      return `${split} ${surface} ${judged ? pct(counts.correct / judged) : '-'} (n=${judged})`;
+      const { judged, accuracy } = estimate(items.filter((item) => item.split === split && item.surface === surface && item.sampled), labels);
+      return `${split} ${surface} ${accuracy === null ? '-' : pct(accuracy)} (n=${judged})`;
     })
   );
   const failing = items.filter((item) => item.split === 'dev' && item.checks.some((check) => !check.ok)).length;
