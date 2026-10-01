@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { checkAnswerSets, exchangeGain, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
+import { checkAnswerSets, exchangeGain, hasPassedPawnOn, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
 
 /** The audit's own board checks. A wrong check invents errors (or hides
  * them) across the whole corpus, so each one that misfired once stays here
@@ -60,6 +60,12 @@ describe('review audit oracle', () => {
     expect(moveIsSound(lines, 'Rc2+', 'b')).toBe(true);
     // Second best but still winning: sound.
     expect(moveIsSound([{ san: 'Qxa1+', cp: -900, mate: null }, { san: 'Bxg1', cp: -400, mate: null }], 'Bxg1', 'b')).toBe(true);
+  });
+
+  test('a pawn with an enemy pawn beside it, none ahead, is already passed (the owner game, 19.a6 "Creates a passed pawn")', () => {
+    expect(hasPassedPawnOn('3r2k1/2p3pp/8/PpBr1p2/8/2PN4/P4PPP/R2R2K1 w - - 0 19', 'a', 'w')).toBe(true);
+    // One move earlier the a-pawn stood on a2 behind Black's a5: not passed until bxa5.
+    expect(hasPassedPawnOn('3r2k1/2p2ppp/8/ppBr4/1P6/2PN4/P4PPP/R2R2K1 w - - 0 18', 'a', 'w')).toBe(false);
   });
 
   test('the king taking the checker is a capture, not a king move (8.Qxd8+ in the Berlin)', () => {

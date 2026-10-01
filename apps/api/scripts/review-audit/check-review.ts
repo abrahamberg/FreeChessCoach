@@ -1,7 +1,7 @@
 import type { TacticGainDto } from '@freechesscoach/shared';
 import type { Color } from 'chess.js';
 import { result } from './check-result.js';
-import { attackersOf, colorOf, exchangeGain, legalCapturesOf, moveIsSound, other, PIECE_BY_NAME, pieceAt, play, playLine, POINTS, settledGain, threatFen } from './oracle.js';
+import { attackersOf, colorOf, exchangeGain, hasPassedPawnOn, legalCapturesOf, moveIsSound, other, PIECE_BY_NAME, pieceAt, play, playLine, POINTS, settledGain, threatFen } from './oracle.js';
 import type { AuditItem, AuditPosition, CheckResult, LineView } from './types.js';
 
 type Check = (item: AuditItem, position: AuditPosition) => CheckResult[];
@@ -133,23 +133,10 @@ const REASON_CHECKS: Record<string, Check> = {
   },
   'passed-pawn': (item, position) => {
     const file = /passed pawn on ([a-h])/.exec(item.text)?.[1] ?? '';
-    return [result('passed-pawn', hasPassedPawnOn(position.fenAfter, file, colorOf(position.mover)), `no ${position.mover} passed pawn on the ${file}-file`)];
+    const side = colorOf(position.mover);
+    return [
+      result('passed-pawn', hasPassedPawnOn(position.fenAfter, file, side), `no ${position.mover} passed pawn on the ${file}-file`),
+      result('passed-pawn-new', !hasPassedPawnOn(position.fenBefore, file, side), `the ${file}-pawn was already passed before the move`)
+    ];
   }
 };
-
-function hasPassedPawnOn(fen: string, file: string, side: Color): boolean {
-  const ranks = [1, 2, 3, 4, 5, 6, 7, 8];
-  const files = 'abcdefgh';
-  const at = files.indexOf(file);
-  return ranks.some((rank) => {
-    const piece = pieceAt(fen, `${file}${rank}`);
-    if (piece?.type !== 'p' || piece.color !== side) return false;
-    const ahead = ranks.filter((each) => (side === 'w' ? each > rank : each < rank));
-    return [at - 1, at, at + 1]
-      .filter((index) => index >= 0 && index < 8)
-      .every((index) => ahead.every((each) => {
-        const blocker = pieceAt(fen, `${files[index] ?? ''}${each}`);
-        return !(blocker?.type === 'p' && blocker.color !== side);
-      }));
-  });
-}

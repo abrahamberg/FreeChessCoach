@@ -213,3 +213,21 @@ function capturesOn(fen: string, square: string): { value: number; fen: string }
       return { value: POINTS[move.captured ?? 'p'] + (move.promotion ? POINTS[move.promotion] - 1 : 0), fen: next.fen() };
     });
 }
+
+/** A pawn of `side` on the file with no enemy pawn ahead of it on its own or a neighbouring file. */
+export function hasPassedPawnOn(fen: string, file: string, side: Color): boolean {
+  const ranks = [1, 2, 3, 4, 5, 6, 7, 8];
+  const files = 'abcdefgh';
+  const at = files.indexOf(file);
+  return ranks.some((rank) => {
+    const piece = pieceAt(fen, `${file}${rank}`);
+    if (piece?.type !== 'p' || piece.color !== side) return false;
+    const ahead = ranks.filter((each) => (side === 'w' ? each > rank : each < rank));
+    return [at - 1, at, at + 1]
+      .filter((index) => index >= 0 && index < 8)
+      .every((index) => ahead.every((each) => {
+        const blocker = pieceAt(fen, `${files[index] ?? ''}${each}`);
+        return !(blocker?.type === 'p' && blocker.color !== side);
+      }));
+  });
+}
