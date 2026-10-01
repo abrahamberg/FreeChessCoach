@@ -1,7 +1,7 @@
 import { renderBoardFact, reviewMoveTexts, type BoardFact, type CourseNodeFacts } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto, EngineEval } from '@freechesscoach/shared';
 import type { AnalysedGame } from './analyze.js';
-import { play, playLine } from './oracle.js';
+import { play, playLine, threatFen } from './oracle.js';
 import { reviewSource } from './sources.js';
 import { hashOf } from './store.js';
 import type { AuditItem, AuditPosition, LineView } from './types.js';
@@ -81,6 +81,7 @@ function reviewDrafts(move: ClassifiedMoveDto, position: AuditPosition): Draft[]
     const data = kind === 'allowed' ? move.tacticAllowed : kind === 'prevention' ? move.tacticPrevention : kind === 'opportunity' ? move.tacticOpportunity : null;
     const context = [fenBefore, fenAfter];
     if (kind === 'allowed' && reply) context.push(...compact([play(fenAfter, reply)]));
+    if (kind === 'prevention' && move.tacticPrevention?.threatSan) context.push(...compact([threatFen(fenBefore, move.tacticPrevention.threatSan)]));
     if (kind === 'opportunity' && (move.tacticOpportunity?.embodiedBySan ?? best)) context.push(...compact([play(fenBefore, move.tacticOpportunity?.embodiedBySan ?? best ?? '')]));
     if (kind === 'reason' || kind === 'betterWas') context.push(...namedMoveFens(text, fenBefore, fenAfter));
     return { surface: 'review' as const, source, text, data: data ?? null, contextFens: unique(context) };

@@ -828,3 +828,47 @@ Per-code diagnostic opportunities/failures moved with the new counting rule
 because `allowedTactic` now reaches them — BV-15 B 7/5, BV-02 O 5/2, TA-10 D
 4/2 — for 38 total observations, 22 failed. `docs/plan.md` Task 77.5 has the
 full per-code table and a 10-verdict hand spot-check.
+
+---
+
+## 12. A stopped threat is read off the reader's board (Task 121.1)
+
+The prevention scans (`available-motifs-scan.ts`) see the opponent's
+threats from other boards than the one under review: the position before
+the opponent's *previous* move, and up to seven plies down its engine lines.
+Their claims are checked on the board only (the walk passes no line to the
+classifier), and `defused-threat.ts` printed the strongest one's detail as
+it stood. On the owner's game that gave "rook on d1 checks the king on g1"
+with the rook on d8 (and …Rxd1+ answered by Rxd1), "rook on d5 forks the
+bishop on c5 and the knight on e5" for a move the opponent had passed over,
+and "unveils the rook on d1 against the queen on d6" from ply 7 of a line.
+On the review audit's first run 170 of 438 prevention sentences (220 dev
+games) named a piece that was on no board the reader sees, and every one of
+the 17 a judge read was wrong.
+
+A card is now written only when the threat
+
+1. **stands on the board before the move** (`standing-threat.ts`): its move
+   is legal for the opponent with the turn passed (`flipActiveColorFen`) and
+   the registry, run on that board, finds the same threat (`threatKey`) with
+   something to win. The card's detail, prize and arrows come from that
+   claim, and it carries the move as `threatSan`. This drops a threat the
+   opponent already played (17…gxf6 18.exf6 "stopped them winning a knight …
+   captures the knight on f6"), one their own previous move ended, one that
+   exists only after a reply the engine guessed, and every threat on a move
+   that answers a check (there is no pass to ask about);
+2. **is real**: the engine's own line after the threat move, which each
+   sighting now carries (`lineSan`), mates for a mate claim and for material
+   nets at least the claimed gain within `equalPrizeTolerancePawns`.
+
+The sentence names the move like the allowed card does, and the detail is
+printed only behind it: "You stopped them winning a rook through a free
+piece with Qxe8+ — captures the rook on e8." A report stored before
+`threatSan` existed prints no detail.
+
+Dev split after: 20 prevention sentences, none failing a check. Where the
+false prevention card was the move's verdict, the next confirmed reason now
+shows instead, mostly the defensive vocabulary ("You saved a hanging piece —
+saves the queen on b2"); the per-game *prevented* count falls with the
+cards.
+

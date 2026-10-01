@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { AvailableMotifScan } from '../available-motifs-scan.js';
-import type { VerifiedTacticClaim } from '../verify-tactic-claims.js';
+import { scanRealisticThreats } from '../realistic-threats.js';
 import { countingVerdictDeps, decideMoveVerdict, walkLineValue, type PreventionScans, type VerdictReason } from './index.js';
 import { netPawns } from './line-value.js';
 import { materialAgrees } from './reasons/confirmed.js';
@@ -10,32 +10,13 @@ import {
   QUEEN_FOR_KNIGHT_FEN,
   ROOK_FORK_FEN,
   START_FEN,
+  line,
   scenario
 } from './verdict-test-fixtures.js';
 
 /** Black's Re1# threat, as the prevention scan reports it before h3. */
-const BACK_RANK_MATE: VerifiedTacticClaim = {
-  type: 'weakBackRank',
-  actor: 'e8',
-  targets: ['e1'],
-  victim: null,
-  gainKind: 'mate',
-  expectedGain: 0,
-  prize: null,
-  evidence: { arrows: [{ from: 'e8', to: 'e1' }], highlights: ['g1'] },
-  detail: 'the back rank has no escape square',
-  confidence: 0.9,
-  verifiedGain: 0,
-  horizon: 'immediate',
-  verifiedBy: 'static'
-};
-
-const THREAT_BEFORE: AvailableMotifScan = {
-  motifs: new Set(['weakBackRank']),
-  sightings: [
-    { rank: 0, ply: 1, moveSan: 'Re1#', motif: 'weakBackRank', fenBefore: BACK_RANK_FEN.replace(' w ', ' b '), claim: BACK_RANK_MATE }
-  ]
-};
+const BACK_RANK_BLACK_TO_MOVE = BACK_RANK_FEN.replace(' w ', ' b ');
+const THREAT_BEFORE = scanRealisticThreats(BACK_RANK_BLACK_TO_MOVE, [line(BACK_RANK_BLACK_TO_MOVE, ['Re1#'], { mate: -1 })]);
 const NOTHING: AvailableMotifScan = { motifs: new Set(), sightings: [] };
 
 function decide(input: Parameters<typeof decideMoveVerdict>[0]) {
@@ -83,7 +64,7 @@ describe('decideMoveVerdict — credits', () => {
     expect(verdict).toMatchObject({
       kind: 'credit',
       reason: 'defusedThreat',
-      card: { tacticPrevention: { type: 'weakBackRank', prevented: true, gain: { kind: 'mate' } } }
+      card: { tacticPrevention: { type: 'weakBackRank', prevented: true, threatSan: 'Re1#', gain: { kind: 'mate' } } }
     });
     // h3's line wins nothing, so a find could only be positional (tier 2):
     // the threat (tier 1) is checked first, and that settles it.

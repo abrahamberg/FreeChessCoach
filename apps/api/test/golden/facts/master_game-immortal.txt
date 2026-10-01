@@ -91,7 +91,10 @@ n33 17.Nd5 (White, Line A) | inaccuracy | before: White is much better → after
     alternatives: d4: White is much better; Nxb5: White is better; Re1: White is better
     tempting capture: Bxb8? White's Bxb8 moves the bishop from f4 to b8 | captures the knight on b8. Black answers Rxb8: moves the rook from a8 to b8 | captures the bishop on b8. Over the line White takes a knight; Black takes a bishop; at the end White has a knight and a pawn for two bishops (Black is slightly better).
     flags: critical
-n34 17…Qxb2 (Black, Line A) | best
+n34 17…Qxb2 (Black, Line A) | best | before: White is better → after: White is better
+    board: moves the queen from f6 to b2 | captures the pawn on b2 | attacks the rook on a1
+    tactics: They won a rook through a fork.
+    alternatives: Qc6: White is much better; d6: White is much better
 n35 18.Bd6 (White, Line A) | miss | before: White is better → after: Black is better
     best instead: d4; after d4, Black is a bishop up
     why d4 is better: moves the pawn from d3 to d4 | attacks the bishop on c5 | leaves the white pawn on c2 hanging | leaves the white rook on a1 hanging
@@ -185,15 +188,13 @@ REVIEW NOTES
     n6 3…Qh4+: Theory — King's Gambit Accepted: Bishop's Gambit, Bryan Countergambit (C33)
     n7 4.Kf1: Theory — King's Gambit Accepted: Bishop's Gambit, Bryan Countergambit (C33)
     n8 4…b5: Theory — King's Gambit Accepted: Bishop's Gambit, Bryan Countergambit (C33)
-    n17 9.Nf5: You stopped them winning a bishop through a fork — queen on g5 forks the bishop on b5 and the knight on h4.
     n19 10.g4: Costs 10 squares of piece mobility
     n27 14.Qf3: You set up an X-ray — lines up behind the pawn on e4 at the rook on a8.
     n33 17.Nd5: Leaves the pawn on b2 undefended
-    n34 17…Qxb2: Their move stopped you winning a pawn through a free piece — captures the pawn on b5.
+    n34 17…Qxb2: They won a rook through a fork.
     n35 18.Bd6: Costs 17 squares of piece mobility
     n36 18…Bxg1: Missed Qxa1+, winning material on a1
     n37 19.e5: Qd1 keeps the pawn on c2 safe; after it Black is a rook and a bishop up
-    n39 20.Ke2: You stopped them winning a rook through a free piece — captures the rook on a1.
     n40 20…Na6: They let you force mate with Nxg7+.
     n41 21.Nxg7+: You forced mate.
     n45 23.Be7#: You forced mate.

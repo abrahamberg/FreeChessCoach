@@ -119,6 +119,5 @@ REVIEW NOTES
     n10 5…e5: Leaves the pawn on e5 undefended
     n11 6.dxe5: Costs 9 squares of piece mobility
     n14 7…Qxe5: They won a knight through a fork two moves away.
-    n17 9.Qd8+: You stopped them winning a knight through a free piece — captures the knight on e4.
     n19 10.Bg5+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
     n21 11.Bd8#: You forced mate.

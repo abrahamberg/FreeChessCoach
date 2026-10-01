@@ -1,4 +1,5 @@
 import { classifyTacticChance } from '../game-tactic-motifs.js';
+import { standingThreat } from '../standing-threat.js';
 import { combineThreatOutcome } from '../tactic-prevention-check.js';
 import { firstLineWithOtherHeadline } from '../tactic-opportunity-witness.js';
 import { walkLineValue } from './line-value.js';
@@ -16,6 +17,8 @@ export interface MoveVerdictDeps {
   firstLineWithOtherHeadline: typeof firstLineWithOtherHeadline;
   walkLineValue: typeof walkLineValue;
   combineThreatOutcome: typeof combineThreatOutcome;
+  /** A defused sighting, classified again on the board before the move. */
+  standingThreat: typeof standingThreat;
   /** Called once per reason actually checked, in check order. */
   onCheck: (reason: VerdictReason) => void;
 }
@@ -25,6 +28,7 @@ export const DEFAULT_VERDICT_DEPS: MoveVerdictDeps = {
   firstLineWithOtherHeadline,
   walkLineValue,
   combineThreatOutcome,
+  standingThreat,
   onCheck: () => undefined
 };
 

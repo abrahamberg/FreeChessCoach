@@ -1,7 +1,7 @@
 import type { TacticGainDto } from '@freechesscoach/shared';
 import type { Color } from 'chess.js';
 import { result } from './check-result.js';
-import { attackersOf, colorOf, exchangeGain, legalCapturesOf, moveIsSound, other, PIECE_BY_NAME, pieceAt, play, playLine, POINTS, settledGain } from './oracle.js';
+import { attackersOf, colorOf, exchangeGain, legalCapturesOf, moveIsSound, other, PIECE_BY_NAME, pieceAt, play, playLine, POINTS, settledGain, threatFen } from './oracle.js';
 import type { AuditItem, AuditPosition, CheckResult, LineView } from './types.js';
 
 type Check = (item: AuditItem, position: AuditPosition) => CheckResult[];
@@ -18,6 +18,7 @@ interface CardData {
   type: string;
   gain?: TacticGainDto;
   byMoveSan?: string;
+  threatSan?: string;
   embodiedBySan?: string;
   found?: boolean;
 }
@@ -29,6 +30,14 @@ const FAMILY_CHECKS: Record<string, Check> = {
     if (!san) return [result('named-move', false, 'the card names no reply')];
     const taker = other(colorOf(position.mover));
     return [result('named-move', play(position.fenAfter, san) !== null, `${san} is not legal after the move`), ...gainChecks(card.gain, position.fenAfter, position.linesAfter, san, taker)];
+  },
+  // The threat a prevention card names is the opponent's move on the board
+  // before this one: a card that names none, or one that is not legal
+  // there, describes a board the reader cannot reach.
+  'review:tactic-prevention': (item, position) => {
+    const san = (item.data as CardData).threatSan;
+    if (!san) return [result('named-move', false, 'the card names no threat move')];
+    return [result('named-move', threatFen(position.fenBefore, san) !== null, `${san} is not the opponent's legal move before this one`)];
   },
   'review:tactic-opportunity': (item, position) => {
     const card = item.data as CardData;

@@ -58,6 +58,7 @@ n11 6.Bc3 (White, Line A) | blunder | before: White is better → after: Black i
     flags: critical
 n12 6…Bb4 (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the bishop from f8 to b4 | attacks the bishop on c3, which is pinned to the king by the bishop on b4
+    tactics: You saved a hanging piece — saves the queen on b2.
     alternatives: Qb6: White is slightly better; Qb5: White is slightly better
     flags: quiz-eligible, critical
 n13 7.Qd2 (White, Line A) | mistake | before: Black is better → after: Black is much better
@@ -106,7 +107,7 @@ REVIEW NOTES
     n5 3.Nf3: Theory — Englund Gambit: Main Line (A40)
     n6 3…Qe7: Theory — Englund Gambit: Main Line (A40)
     n9 5.Bd2: Concedes the centre
-    n12 6…Bb4: You stopped them winning a queen through a fork.
+    n12 6…Bb4: You saved a hanging piece — saves the queen on b2.; Won the rook, giving back a bishop.
     n13 7.Qd2: They let you win a bishop through a free piece with Bxc3 — captures the bishop on c3.
     n14 7…Bxc3: Trades bishops on c3; You saved a hanging piece — saves the queen on b2.
     n15 8.Qxc3: Missed Nxc3, winning material on c3; Recaptures the bishop on c3; They let you force mate with Qc1#.; Won a bishop, but it allowed mate.

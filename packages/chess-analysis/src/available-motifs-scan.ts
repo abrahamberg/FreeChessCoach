@@ -11,6 +11,13 @@ export interface PvMotifSighting {
   /** The position `moveSan` was played from — lets a caller replay this
    * exact sighting. */
   fenBefore: string;
+  /** The engine's line from `moveSan` on (`moveSan` first), from
+   * `fenBefore`: what the engine expects to follow the motif. The claim is
+   * checked on the board only (the walk passes no line to the classifier),
+   * so this is what a caller verifies its payoff on. */
+  lineSan: string[];
+  /** The engine line's own `mateIn` (White's side), `null` for a cp score. */
+  lineMateIn: number | null;
   /** The claim itself: which piece does it, what it hits, what it expects to
    * win, and the arrows to draw. Carrying it means the prevention path can
    * compare *threats* rather than type names, and the card can be written
@@ -75,7 +82,16 @@ export function scanAvailableMotifs(
     for (const step of steps) {
       if (step.ply % 2 === 0) continue;
       for (const claim of step.claims) {
-        sightings.push({ rank, ply: step.ply, moveSan: step.moveSan, motif: claim.type, fenBefore: step.fenBefore, claim });
+        sightings.push({
+          rank,
+          ply: step.ply,
+          moveSan: step.moveSan,
+          motif: claim.type,
+          fenBefore: step.fenBefore,
+          lineSan: pv.slice(step.ply - 1),
+          lineMateIn: line.mateIn,
+          claim
+        });
       }
     }
   });

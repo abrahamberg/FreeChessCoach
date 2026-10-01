@@ -200,20 +200,52 @@ failure counts in the Status line.
 (`tacticPreventionReason`), `available-motifs-scan.ts` (`PvMotifSighting`).
 **Files:** those, `packages/shared/src/analysis.ts` (`tacticPrevention`).
 
-- [ ] Test (in `tactic-reason-text` or `defused-threat` tests): for the
+- [x] Test (in `tactic-reason-text` or `defused-threat` tests): for the
   seed's plies 23, 29 and 49 with the stored evals, every piece the
   prevention sentence names stands on its square before the move, after it,
   or after the one threat move the sentence names.
-- [ ] Carry the threat's move on the card (`threatSan`), and write the
-  sentence around it: "You stopped …Rd5, which would fork the bishop on c5
-  and the knight on e5." When the threat move is not the opponent's legal
-  next move in the position before this move, print no detail.
-- [ ] The threat must be real: drop the card when the engine's line after
+  (`move-verdict/reasons/defused-threat.test.ts`, the stored lines in
+  `move-verdict/owner-seed-fixture.ts`.)
+- [x] Carry the threat's move on the card (`threatSan`), and write the
+  sentence around it: "You stopped them winning a rook through a free piece
+  with Qxe8+ — captures the rook on e8." When the threat move is not the
+  opponent's legal next move in the position before this move, there is no
+  card at all: the threat is classified again on that board
+  (`standing-threat.ts`) and the card's detail, prize and arrows come from
+  there. A stored card with no `threatSan` prints no detail.
+- [x] The threat must be real: drop the card when the engine's line after
   the threat move (from the prevention scan) does not win what the card
-  says. 12.Bxc5 (…Rd1+ Rxd1) must produce no card.
-- [ ] `test:corpus` (the card gate sits after the measured classification;
-  confirm no ceiling or floor moved), `test:golden` (the dossier does not
-  print prevention sentences: expect no diff).
+  says. 12.Bxc5 (…Rd1+ Rxd1) must produce no card. The cause of the false
+  mate: the scan's claims were never checked on a line (the comment in
+  `defused-threat.ts` said they were); each sighting now carries the line
+  (`lineSan`) and the check walks it.
+- [x] `test:corpus`: passes, no detector or classification changed.
+  `test:golden`: **there is a diff**, re-recorded. The snapshot's REVIEW
+  NOTES print every review reason, prevention sentences included: 34
+  prevention lines are gone and one names its move (Game of the Century
+  18…Bxc4+, "with Qxc3"). On 8 moves the verdict falls through to the next
+  confirmed reason, which the dossier prints as a `tactics:` row: Saavedra
+  6…Rc4+ (brilliant sacrifice), Immortal 17…Qxb2 (fork; the node is now
+  shown in full), Opera 14.Rd1 (counterattack), fork trick 5…d5 (the fork),
+  Elephant 7…Bb4+ (in-between move) and 9…Kxd8 (free piece), Englund 6…Bb4
+  and Noah's Ark 9…Be6 (saved a hanging piece). The Englund diagnosis-code
+  test lists `Bb4:defendsHangingPiece` too; its codes are unchanged.
+
+Status: done 2026-10-01 — dev split (220 games): prevention sentences 438 →
+20, failing `named-pieces` 170 → 0; all dev code-check failures 303 → 134.
+One other source rose by one: `review:tactic-opportunity:found:weakBackRank`
+0 → 1 (`mate-in-line`, x2KnTpLY 17.Qxb8+ "You forced mate through a
+back-rank tactic two moves away"), a found card the false prevention card
+used to outrank; it is the same fault as the two `weakBackRank`
+`mate-in-line` failures already on the allowed and missed cards (a mate
+claim that `verify-tactic-line.ts` accepts on material). About 130
+positional found cards (saved a hanging piece, moved the target, blocked the
+threat) and 144 `dossier:tactics` rows now show on moves the prevention card
+held; none fails a check, none has been judged. Stored game reports keep
+their prevention cards until analysed again, printed without the detail.
+`verify:changed` passes with the api db tests (their defused-fork fixture
+now gives the fork an engine line: a threat with no line behind it is no
+card).
 
 **Commit:** `fix(review): a stopped threat names its move, and only when it was real`
 

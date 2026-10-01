@@ -53,7 +53,7 @@ describe('golden course diagnosis codes', () => {
   test('the Englund trap trains what motifToCode gives its learner nodes: the mate (its saved bishop has no code)', async () => {
     const course = loadGoldenSet().find((each) => each.name === 'trap-englund')!;
     const { dossier, tree } = await courseInputs(course, fixtureEngineFor(course.name), 'fixture');
-    expect(dossier.nodes.filter((node) => node.side === dossier.learnerSide && node.motif).map((node) => `${node.san}:${node.motif}`)).toEqual(['Bxc3:defendsHangingPiece', 'Qc1#:checkmate']);
+    expect(dossier.nodes.filter((node) => node.side === dossier.learnerSide && node.motif).map((node) => `${node.san}:${node.motif}`)).toEqual(['Bb4:defendsHangingPiece', 'Bxc3:defendsHangingPiece', 'Qc1#:checkmate']);
     expect(courseDiagnosisCodes(tree, dossier)).toEqual(['TA-01']);
   });
 });

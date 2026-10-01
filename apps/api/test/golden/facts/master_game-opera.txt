@@ -128,6 +128,7 @@ n26 13…Rxd7 (Black, Line A) | excellent | before: White is much better → aft
     alternatives: Nxd7: White is much better; Qxd7: White is much better
 n27 14.Rd1 (White, Line A) | best | before: White is much better → after: White is much better
     board: moves the rook from h1 to d1 | attacks the rook on d7, which is pinned to the king by the bishop on b5 | leaves the white pawn on e4 hanging
+    tactics: You hit back instead of retreating — answers the threat by hitting the rook on d7.
     alternatives: Qa4: White is better; Bxf6: White is better
     tempting check: Bxd7+? White's Bxd7+ moves the bishop from b5 to d7 | captures the rook on d7 | gives check | the check can be answered: no block; take the checking piece with Kxd7, Qxd7, Nxd7; move the king with Kd8. Black answers Qxd7: moves the queen from e7 to d7 | captures the bishop on d7. Then Qb8+ Qd8 Qxe5+. Over the line White takes a rook and a pawn; Black takes a bishop; at the end White has three pawns for a knight (The position is roughly equal).
     tempting threat: Bc6? White's Bc6 moves the bishop from b5 to c6 | attacks the rook on d7, which is pinned to the king by the bishop on c6. Black answers Qd6: moves the queen from e7 to d6 | attacks the bishop on c6. Then Qb7 Be7 Qc8+. Over the line nothing is taken; at the end White has a bishop and two pawns for a rook and a knight (The position is roughly equal).
@@ -198,9 +199,9 @@ REVIEW NOTES
     n15 8.Nc3: Missed Qxb7, winning material on b7
     n18 9…b5: They let you win a pawn through a free piece with Nxb5 — captures the pawn on b5.
     n20 10…cxb5: Recaptures the knight on b5
-    n21 11.Bxb5+: Creates a passed pawn on c; Recaptures the pawn on b5; You stopped them winning a queen through a fork — queen on b4 forks the knight on b5, the bishop on c4, the queen on b3 and the king on e1.
+    n21 11.Bxb5+: Creates a passed pawn on c; Recaptures the pawn on b5
     n26 13…Rxd7: Missed Nxd7, winning material on d7; Recaptures the rook on d7
-    n27 14.Rd1: You stopped them winning a rook through a free piece — captures the rook on d7.
+    n27 14.Rd1: You hit back instead of retreating — answers the threat by hitting the rook on d7.
     n29 15.Bxd7+: Costs 43 squares of piece mobility
     n30 15…Nxd7: Recaptures the bishop on d7; They let you force mate with Qb8+.; Won a bishop and a queen, but it allowed mate.
     n31 16.Qb8+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.

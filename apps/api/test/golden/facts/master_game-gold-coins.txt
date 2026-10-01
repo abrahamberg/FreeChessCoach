@@ -142,4 +142,4 @@ REVIEW NOTES
     n38 19…Nd4: Concedes the centre
     n39 20.Qh5: Leaves the pawn on c2 undefended
     n40 20…Ref8: You moved the target out of reach — moves the rook off e8, out of reach.; Won the rook, giving back a knight.
-    n44 22…Rxh3: Leaves the rook on h3 where it can be won; You stopped them winning a knight through a free piece — captures the knight on f3.
+    n44 22…Rxh3: Leaves the rook on h3 where it can be won

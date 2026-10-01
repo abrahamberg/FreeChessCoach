@@ -125,6 +125,13 @@ export function withTurn(fen: string, turn: Color): string {
   return parts.join(' ');
 }
 
+/** The board after a threat: `san` played by the side not to move, had the
+ * mover passed. Null when the mover is in check (no pass exists) or the
+ * move is not legal there. */
+export function threatFen(fen: string, san: string): string | null {
+  return inCheck(fen) ? null : play(withTurn(fen, other(turnOf(fen))), san);
+}
+
 /** Legal captures of `square` by `by`, from a position where `by` is to move. */
 export function legalCapturesOf(fen: string, square: string, by: Color): string[] {
   try {

@@ -187,10 +187,9 @@ REVIEW NOTES
     n14 7…d3: Theory — Italian Game: Evans Gambit, Dufresne Defense (C52)
     n22 11…b5: Leaves the pawn on b5 undefended
     n23 12.Qxb5: Missed Bxb5, winning material on b5
-    n25 13.Qa4: You stopped them winning a knight through a skewer — skewers the queen on b5, exposing the knight on b1.
     n33 17.Nf6+: Leaves the knight on f6 where it can be won
     n34 17…gxf6: They saved a hanging piece — saves the queen on h5.
-    n35 18.exf6: Recaptures the pawn on f6; You stopped them winning a knight through a free piece — captures the knight on f6.
+    n35 18.exf6: Recaptures the pawn on f6
     n37 19.Rad1: Costs 13 squares of piece mobility
     n38 19…Qxf3: They won a knight through a free piece — captures the knight on f3.
     n40 20…Nxe7: Leaves the pawn on h7 undefended; Recaptures the rook on e7; They let you force mate with Qxd7+.; Won a rook, but it allowed mate.

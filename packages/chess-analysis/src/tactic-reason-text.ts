@@ -108,6 +108,8 @@ export function tacticAllowedReason(allowed: TacticAllowedLike): string {
 export interface TacticPreventionLike {
   type: TacticMotifType;
   prevented: boolean;
+  /** The threat's move: the opponent's, from the board before this move. */
+  threatSan?: string;
   detail?: string | null;
   gain?: TacticGainDto;
   /** Whose move defused (or failed to defuse) the threat — see
@@ -123,26 +125,39 @@ export interface TacticPreventionLike {
  * move stopped you winning a rook through a fork" is the same computation
  * told to the person reading it. The threat always belongs to whoever did
  * *not* make this move, which is what makes the two voices mirror images.
+ * Like the allowed card it names the move (`threatClause`).
  */
 export function tacticPreventionReason(prevention: TacticPreventionLike): string {
   const clause = gainClause(prevention, 'medium', undefined);
-  const detail = prevention.detail ? ` — ${prevention.detail}` : '';
+  const threat = threatClause(prevention);
 
-  if (prevention.isUserMove === undefined) return legacyPreventionReason(prevention, detail);
-  if (prevention.prevented && prevention.isUserMove) return `You stopped them ${clause.gerundish}${detail}.`;
-  if (prevention.prevented) return `Their move stopped you ${clause.gerundish}${detail}.`;
+  if (prevention.isUserMove === undefined) return legacyPreventionReason(prevention, threat);
+  if (prevention.prevented && prevention.isUserMove) return `You stopped them ${clause.gerundish}${threat}.`;
+  if (prevention.prevented) return `Their move stopped you ${clause.gerundish}${threat}.`;
   // Nothing was defused, so the threat still belongs to whoever did not
   // just move — the mirror image of the two lines above.
   const owner = prevention.isUserMove ? 'They' : 'You';
-  return `${owner} can still ${clause.toDo}${detail}.`;
+  return `${owner} can still ${clause.toDo}${threat}.`;
+}
+
+/**
+ * " with Qxe8+ — captures the rook on e8". The detail describes the board
+ * after the threat's move, so it is printed only behind that move: without
+ * it, "rook on d5 forks …" read as the board in front of the reader, whose
+ * rook stood on d8. A card stored before it named the move gets neither.
+ */
+function threatClause(prevention: TacticPreventionLike): string {
+  if (!prevention.threatSan) return '';
+  const detail = prevention.detail ? ` — ${prevention.detail}` : '';
+  return ` with ${prevention.threatSan}${detail}`;
 }
 
 /** Same reason as `legacyOpportunityReason`: no `isUserMove`, no pronoun. */
-function legacyPreventionReason(prevention: TacticPreventionLike, detail: string): string {
+function legacyPreventionReason(prevention: TacticPreventionLike, threat: string): string {
   const noun = TACTIC_MOTIF_PHRASES[prevention.type].noun;
   return prevention.prevented
-    ? `Defused the opponent's ${noun}${detail}.`
-    : `Left the opponent's ${noun} in play${detail}.`;
+    ? `Defused the opponent's ${noun}${threat}.`
+    : `Left the opponent's ${noun} in play${threat}.`;
 }
 
 type Specificity = 'high' | 'medium' | 'low';
