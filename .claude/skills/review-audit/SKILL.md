@@ -52,12 +52,15 @@ raise `--dump`. New games are hashed into dev (80%) or holdout
 
 ## 3. Run and report
 
-    npm run review:audit -w apps/api -- run --jobs 2
+    npm run review:audit -w apps/api -- run
     npm run review:audit -w apps/api -- report --log
 
-The first run of new games searches with Stockfish (minutes per game on the
-dev engine); later runs answer from the engine cache and take seconds per
-game. `report` prints the accuracy table, the code-check failures over every
+The first run of new games searches with Stockfish (under a minute a game
+on the dev engine); later runs answer from the engine cache, and then the
+app's own analysis is the cost: about 15 seconds of CPU a game, dealt to
+six processes (`--procs`), so the dev split re-runs in about ten minutes.
+After a change to a check only (nothing in the app's code),
+`recheck` runs the checks again over the stored sentences in seconds. `report` prints the accuracy table, the code-check failures over every
 sentence, and the judged errors by tag; `--log` adds today's line to
 `history.md`.
 

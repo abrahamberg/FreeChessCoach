@@ -1,7 +1,7 @@
 import type { BoardFact, PieceAt } from '@freechesscoach/chess-analysis';
 import { Chess, type Square } from 'chess.js';
 import { result } from './check-result.js';
-import { attackersOf, balance, colorOf, exchangeGain, inCheck, isCheckmate, kingSquare, legalCapturesOf, other, pieceAt, play, playLine, turnOf } from './oracle.js';
+import { attackersOf, balance, checkAnswerSets, colorOf, exchangeGain, inCheck, isCheckmate, kingSquare, legalCapturesOf, other, pieceAt, play, playLine, turnOf } from './oracle.js';
 import type { AuditItem, AuditPosition, CheckResult } from './types.js';
 
 /** Checks for the dossier's rows. Board facts are data, so these read the
@@ -80,12 +80,8 @@ function checkersCheck(fact: Extract<BoardFact, { kind: 'discoveredCheck' | 'dou
 }
 
 function checkAnswersCheck(fact: Extract<BoardFact, { kind: 'checkAnswers' }>, fen: string): CheckResult {
-  const moves = new Chess(fen).moves({ verbose: true });
-  const kingMoves = moves.filter((move) => move.piece === 'k').map((move) => move.san);
-  const captures = moves.filter((move) => move.piece !== 'k' && move.captured).map((move) => move.san);
-  const blocks = moves.filter((move) => move.piece !== 'k' && !move.captured).map((move) => move.san);
+  const { blocks, captures, kingMoves } = checkAnswerSets(fen);
   const same = (a: string[], b: string[]): boolean => a.length === b.length && a.every((each) => b.includes(each));
-  // A king that takes the checker counts as a king move here and in the fact.
   const ok = same(fact.blocks, blocks) && same(fact.captures, captures) && same(fact.kingMoves, kingMoves);
   return result('check-answers', ok, `legal answers: blocks ${blocks.join(' ') || '-'}; captures ${captures.join(' ') || '-'}; king ${kingMoves.join(' ') || '-'}`);
 }

@@ -5,7 +5,8 @@
  * `.claude/skills/review-audit/SKILL.md` is the loop that uses it.
  *
  *   npm run review:audit -w apps/api -- corpus [--per-band 40] [--stream 100000] [--dump 400000]
- *   npm run review:audit -w apps/api -- run [--only <id>] [--split dev|holdout] [--limit n] [--jobs 2] [--sample-rate 0.1]
+ *   npm run review:audit -w apps/api -- run [--only <id>] [--split dev|holdout] [--limit n] [--jobs 2] [--procs 6] [--sample-rate 0.1]
+ *   npm run review:audit -w apps/api -- recheck [--sample-rate 0.1]      (the checks again, no analysis)
  *   npm run review:audit -w apps/api -- report [--split dev|holdout] [--log]
  *   npm run review:audit -w apps/api -- failures [--source <prefix>] [--check <name>] [--limit 20]
  *   npm run review:audit -w apps/api -- batch [--split dev|holdout] [--positions 12] [--count 1]
@@ -24,7 +25,7 @@ import { ingestLabels } from './labels.js';
 import { printFailures } from './failures.js';
 import { probe } from './probe.js';
 import { logHistory, writeReport } from './report.js';
-import { runAudit } from './run.js';
+import { recheckItems, runAudit } from './run.js';
 import { addSeed } from './seed.js';
 import { showGame } from './show.js';
 
@@ -38,6 +39,8 @@ const { positionals, values } = parseArgs({
     split: { type: 'string' },
     limit: { type: 'string' },
     jobs: { type: 'string' },
+    procs: { type: 'string' },
+    shard: { type: 'string' },
     'sample-rate': { type: 'string' },
     'engine-url': { type: 'string' },
     positions: { type: 'string' },
@@ -67,8 +70,15 @@ async function main(): Promise<void> {
       return;
     }
     case 'run': {
-      const { items } = await runAudit({ engineUrl, only: values.only ?? null, split, limit: values.limit ? Number(values.limit) : null, jobs: number(values.jobs, 2), sampleRate: number(values['sample-rate'], 0.1) });
+      const { items } = await runAudit({ engineUrl, only: values.only ?? null, split, limit: values.limit ? Number(values.limit) : null, jobs: number(values.jobs, 2), procs: number(values.procs, 6), sampleRate: number(values['sample-rate'], 0.1), shard: values.shard ?? null });
+      if (values.shard) return;
       console.log(`${items.length} sentences checked; ${items.filter((item) => item.checks.some((check) => !check.ok)).length} fail a check; ${items.filter((item) => item.sampled).length} in the scored sample`);
+      console.log(writeReport(split));
+      return;
+    }
+    case 'recheck': {
+      const items = recheckItems(number(values['sample-rate'], 0.1));
+      console.log(`${items.length} sentences checked again; ${items.filter((item) => item.checks.some((check) => !check.ok)).length} fail a check`);
       console.log(writeReport(split));
       return;
     }
@@ -97,7 +107,7 @@ async function main(): Promise<void> {
       console.log(await addSeed(values.game, values.note));
       return;
     default:
-      throw new Error('commands: corpus, run, report, failures, batch, ingest, probe, show, seed');
+      throw new Error('commands: corpus, run, recheck, report, failures, batch, ingest, probe, show, seed');
   }
 }
 

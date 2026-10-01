@@ -55,6 +55,63 @@ export function lineGain(fen: string, sans: readonly string[], side: Color): num
   return side === 'w' ? change : -change;
 }
 
+/** The side's gain where the line first goes quiet (the next move takes
+ * nothing and its mover is not in check), or at the line's end, whichever is
+ * more. The end alone misreads a true "wins the knight": the Opera game's
+ * 8.Qxb7 wins a pawn and the engine's line gives one back twelve plies on;
+ * the owner game's 18…Rxd3 wins a knight and the line ends with a8=Q, which
+ * comes with or without it. */
+export function settledGain(fen: string, sans: readonly string[], side: Color): number {
+  const chess = new Chess(fen);
+  let quiet = fen;
+  for (const [index, san] of sans.entries()) {
+    const inCheck = chess.inCheck();
+    let captured: boolean;
+    try {
+      captured = Boolean(chess.move(san).captured);
+    } catch {
+      break;
+    }
+    if (index > 0 && !inCheck && !captured) break;
+    quiet = chess.fen();
+  }
+  const change = balance(quiet) - balance(fen);
+  return Math.max(side === 'w' ? change : -change, lineGain(fen, sans, side));
+}
+
+/** Whether a move a sentence recommends (or names as the punishment) is one
+ * the engine would play: within two pawns of its best line, or still better
+ * than a pawn up for its side. `lines` are the engine's, best first, scores
+ * from White's side. 39.Kc3 "let them win a rook with dxc6": Black's best
+ * was …Rc2+ (-5.9) and dxc6 lets the d-pawn queen (+1.6). */
+export function moveIsSound(lines: readonly { san: string; cp: number | null; mate: number | null }[], san: string, side: Color): boolean {
+  const score = (line: { cp: number | null; mate: number | null }): number => {
+    const white = line.mate !== null ? Math.sign(line.mate) * (100_000 - Math.abs(line.mate)) : (line.cp ?? 0);
+    return side === 'w' ? white : -white;
+  };
+  const named = lines.find((line) => line.san === san);
+  const best = lines[0];
+  if (!named || !best) return true;
+  return score(named) >= score(best) - 200 || score(named) >= 100;
+}
+
+/** The legal answers to a check, sorted the way the dossier's fact sorts
+ * them: taking the checker is a capture whoever takes (the king too, and a
+ * pawn en passant); a king move is one that takes no checker; the rest
+ * block. One promotion (the queen) stands for all four. */
+export function checkAnswerSets(fen: string): { blocks: string[]; captures: string[]; kingMoves: string[] } {
+  const chess = new Chess(fen);
+  const king = kingSquare(fen, chess.turn()) ?? '';
+  const checkers = attackersOf(fen, king, other(chess.turn()));
+  const moves = chess.moves({ verbose: true }).filter((move) => !move.promotion || move.promotion === 'q');
+  const takesChecker = (move: (typeof moves)[number]): boolean => checkers.includes(move.to) || (move.isEnPassant() && checkers.includes(`${move.to[0]}${move.from[1]}` as Square));
+  return {
+    blocks: moves.filter((move) => move.piece !== 'k' && !takesChecker(move)).map((move) => move.san),
+    captures: moves.filter(takesChecker).map((move) => move.san),
+    kingMoves: moves.filter((move) => move.piece === 'k' && !takesChecker(move)).map((move) => move.san)
+  };
+}
+
 /** Squares of `by`'s pieces that attack `square` (pseudo-legal, pins ignored). */
 export function attackersOf(fen: string, square: string, by: Color): Square[] {
   return new Chess(fen).attackers(square as Square, by);

@@ -1,7 +1,7 @@
 import type { TacticGainDto } from '@freechesscoach/shared';
 import type { Color } from 'chess.js';
 import { result } from './check-result.js';
-import { attackersOf, colorOf, exchangeGain, legalCapturesOf, lineGain, other, PIECE_BY_NAME, pieceAt, play, playLine, POINTS } from './oracle.js';
+import { attackersOf, colorOf, exchangeGain, legalCapturesOf, moveIsSound, other, PIECE_BY_NAME, pieceAt, play, playLine, POINTS, settledGain } from './oracle.js';
 import type { AuditItem, AuditPosition, CheckResult, LineView } from './types.js';
 
 type Check = (item: AuditItem, position: AuditPosition) => CheckResult[];
@@ -55,8 +55,17 @@ function gainChecks(gain: TacticGainDto | undefined, fen: string, lines: LineVie
   }
   const prize = gain.prize ? (POINTS[PIECE_BY_NAME[gain.prize] ?? 'p'] ?? 0) : 0;
   const claimed = Math.max(1, Math.min(gain.pawns, prize || gain.pawns));
-  const won = lineGain(fen, line.pv, side);
-  return [result('material-in-line', won >= claimed - 1, `claims ${gain.prize ?? `${gain.pawns} pawns`}; the engine line ${line.pv.join(' ')} wins ${won}`)];
+  const won = settledGain(fen, line.pv, side);
+  return [result('material-in-line', won >= claimed - 1, `claims ${gain.prize ?? `${gain.pawns} pawns`}; the engine line ${line.pv.join(' ')} wins ${won}`), soundMove(lines, san, side)];
+}
+
+function soundMove(lines: LineView[], san: string, side: Color): CheckResult {
+  return result('named-move-sound', moveIsSound(lines, san, side), `${san} is not a move the engine would play: its line is ${evalWords(lines.find((line) => line.san === san))}, the best (${lines[0]?.san}) ${evalWords(lines[0])}`);
+}
+
+function evalWords(line: LineView | undefined): string {
+  if (!line) return '?';
+  return line.mate !== null ? `mate ${line.mate}` : ((line.cp ?? 0) / 100).toFixed(2);
 }
 
 const SQUARE = /\bon ([a-h][1-8])\b/;
@@ -94,8 +103,8 @@ const REASON_CHECKS: Record<string, Check> = {
   'missed-capture': (item, position) => {
     const san = /^Missed (\S+),/.exec(item.text)?.[1] ?? '';
     const line = position.linesBefore.find((each) => each.san === san);
-    const won = line ? lineGain(position.fenBefore, line.pv, colorOf(position.mover)) : 0;
-    return [result('material-in-line', won >= 1, `the engine line ${line?.pv.join(' ') ?? '(none)'} wins ${won}`)];
+    const won = line ? settledGain(position.fenBefore, line.pv, colorOf(position.mover)) : 0;
+    return [result('material-in-line', won >= 1, `the engine line ${line?.pv.join(' ') ?? '(none)'} wins ${won}`), soundMove(position.linesBefore, san, colorOf(position.mover))];
   },
   'missed-mate': (item, position) => {
     const san = /starting with (\S+)$/.exec(item.text)?.[1] ?? '';
