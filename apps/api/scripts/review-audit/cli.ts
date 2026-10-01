@@ -4,7 +4,7 @@
  * rest to judges (Claude Code agents) in batches, and reports accuracy.
  * `.claude/skills/review-audit/SKILL.md` is the loop that uses it.
  *
- *   npm run review:audit -w apps/api -- corpus [--per-band 40] [--stream 100000]
+ *   npm run review:audit -w apps/api -- corpus [--per-band 40] [--stream 100000] [--dump 400000]
  *   npm run review:audit -w apps/api -- run [--only <id>] [--split dev|holdout] [--limit n] [--jobs 2] [--sample-rate 0.1]
  *   npm run review:audit -w apps/api -- report [--split dev|holdout] [--log]
  *   npm run review:audit -w apps/api -- failures [--source <prefix>] [--check <name>] [--limit 20]
@@ -33,6 +33,7 @@ const { positionals, values } = parseArgs({
   options: {
     'per-band': { type: 'string' },
     stream: { type: 'string' },
+    dump: { type: 'string' },
     only: { type: 'string' },
     split: { type: 'string' },
     limit: { type: 'string' },
@@ -61,7 +62,7 @@ const number = (value: string | undefined, fallback: number): number => (value =
 async function main(): Promise<void> {
   switch (command) {
     case 'corpus': {
-      const games = await buildCorpus({ perBand: number(values['per-band'], 40), stream: number(values.stream, 0) });
+      const games = await buildCorpus({ perBand: number(values['per-band'], 40), stream: number(values.stream, 0), dump: number(values.dump, 0) });
       console.log(`${games.length} games in the corpus`);
       return;
     }

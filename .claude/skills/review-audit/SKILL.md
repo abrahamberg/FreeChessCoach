@@ -40,10 +40,14 @@ reported sentence, a check is missing — adding it is today's first fix
 
 ## 2. Grow the corpus (once a week, or when the corpus is under the plan's target)
 
-    npm run review:audit -w apps/api -- corpus --per-band <n> --stream 300000
+    npm run review:audit -w apps/api -- corpus --per-band <n> --stream 300000 --dump 400000
 
 `--per-band` is games per rating band (`<1000` … `2200+`); raise it week by
-week (the plan says to what). New games are hashed into dev (80%) or holdout
+week (the plan says to what). `--stream` is rows of the Lichess puzzle DB
+(games with a tactic, none rated under 1400); `--dump` is PGN lines of the
+newest Lichess monthly dump (any game, every band, about 20 lines a game).
+With both, puzzle games fill at most half a band. If a band stays short,
+raise `--dump`. New games are hashed into dev (80%) or holdout
 (20%) by id, so the split never changes for a game.
 
 ## 3. Run and report

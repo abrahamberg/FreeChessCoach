@@ -52,7 +52,8 @@ the loop better, in order.
   (`apps/api/scripts/review-audit/cli.ts`, commands listed at its top):
   - `corpus` (`corpus.ts`): real Lichess games found through the puzzle
     database (`packages/chess-analysis/data/lichess-puzzle-motifs.csv`, or
-    `--stream N` rows of the full puzzle DB), bucketed by the players'
+    `--stream N` rows of the full puzzle DB) and, with `--dump N`, the head
+    of the newest monthly dump (any game), bucketed by the players'
     average rating into five bands; the 66 golden courses
     (`apps/api/test/fixtures/courses/`); the owner's seeds (`seeds.json`).
     Each game is hashed into `dev` (80%) or `holdout` (20%) by id.
@@ -155,8 +156,11 @@ puzzle, so each has a tactic. Quiet games (the notes "Concedes the centre",
 **Depends on:** nothing. **Read:** the skill; `cli.ts`'s header.
 **Files:** none (workspace only).
 
-- [ ] `corpus --per-band 40 --stream 150000` (about 200 Lichess games, plus
-  the golden courses and the seed). If a band stays short, raise `--stream`.
+- [x] `corpus --per-band 40 --stream 150000 --dump 400000` (200 Lichess
+  games, plus the golden courses and the seed). Done 2026-10-01: 267 games.
+  Puzzle games are never rated under 1400, so `--stream` alone left two
+  bands empty; `--dump` (the head of the monthly dump) fills them, and gives
+  the quiet games of Task 122.5. If a band stays short, raise `--dump`.
 - [ ] `run --jobs 2` (the first run searches: expect minutes per game on the
   dev engine's pool of 2), then `report --log`.
 - [ ] Read the code-check failures table. For the five sources with the
@@ -303,9 +307,11 @@ failure counts in the Status line.
 
 ### Task 122.5 — Quiet games
 
-- [ ] `corpus --users <n>`: games of random players per band through
-  `lichess.org/api/games/user/<name>` (names from the puzzle games'
-  headers), not tied to a puzzle. Half of each band from here.
+- [x] Games not tied to a puzzle, half of each band: `corpus --dump <lines>`
+  (2026-10-01, `corpus.ts` `dumpGames`) reads the head of the newest Lichess
+  monthly dump instead of the user API: one stream, every band, no bullet.
+- [ ] The report splits accuracy by puzzle game / dump game (`focusPly`
+  null or not), to show whether quiet games read worse.
 
 **Commit (each):** `feat(audit): check <what>`
 
