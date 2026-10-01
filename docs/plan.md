@@ -222,14 +222,41 @@ failure counts in the Status line.
 **Findings:** F2. **Read:** `board-facts/loose-pieces.ts`, `see.ts`,
 `move-reasons.ts` (`looseReasons`), `null-move-fen.ts`.
 
-- [ ] Reproduce first: a wip test calling `loosePieces` on the seed's
+- [x] Reproduce first: a wip test calling `loosePieces` on the seed's
   position after 13…Bd3 (`r2r2k1/p1p2ppp/2n5/1pB1N3/8/2Pb1N2/PP3PPP/R4RK1 w - - 1 14`).
   Find which step says the bishop is winnable, and write the cause here.
-- [ ] Fix it at that step; keep one regression test on the smallest
+  **Cause (2026-10-01):** neither the seat nor the "new since before"
+  filter. It is White's turn, so `flipActiveColorFen` is not called; the
+  bishop was on f5 before, so the filter has nothing to remove. `see`
+  counts the exchange correctly (Nxd3 Rxd3) but its table has the bishop at
+  330 and the knight at 320 (`docs/algorith.md` line 79), so the answer is
+  +10, and `loosePieces` kept anything with `see > 0`. A knight taking a
+  defended bishop was always "winnable"; a bishop taking a defended knight
+  (-10) never was.
+- [x] Fix it at that step; keep one regression test on the smallest
   position (a bishop attacked once by a knight, defended once by a rook).
-- [ ] `test:golden`: the dossier's `leavesHanging` uses the same list, so
+  `loosePieces` now needs the exchange to win a pawn
+  (`CONFIG.evalWitness.minThreatSeeCp`, the bar the diagnostics already use
+  for "statically winnable"). `see`'s table is the Game Report's spec and
+  is not changed. The same second example in the first run, 8.Bg3 in
+  `bXetM8S2` (…Nxg3 hxg3), has the same cause.
+- [x] `test:golden`: the dossier's `leavesHanging` uses the same list, so
   lines may drop; explain each. Stats (`diagnostics/`, Phase 117) read
-  `loosePieces` too: say in the PR that counts can fall.
+  `loosePieces` too: say in the PR that counts can fall. One line drops, in
+  `master_game-gold-coins`: "n23 12.Bg4: Leaves the bishop on g4 where it
+  can be won" (…Nxg4 Qxg4 is a knight for a bishop; Black's 12…Qd6, not
+  taking, is graded good). No `leavesHanging` line moves: the dossier
+  prints the `free` tier only. The stats that count the `winnable` tier are
+  BV-22 and MS-14; theirs can fall. Re-recorded with that one line.
+- **Left over:** other code reads `see > 0`, `>= 0` or `=== 0` as won,
+  safe or even, and gets the same 10 centipawns: `missedCaptureReason`
+  (`move-reasons.ts`, "Missed Nxd3, winning material on d3"),
+  `isEvenExchange` (`trade-description.ts`: a bishop for a knight is never
+  "Trades the bishop for the knight"), `board-facts/safety.ts`, and the
+  tactic gates (`isProfitableCaptureOn`, `verify-tactic-claims.ts`,
+  `tactic-trapped.ts`, `tactic-detectors/`). Each is its own cluster with
+  its own measured change (`test:corpus` for the tactic gates); none is
+  touched here.
 
 **Commit:** `fix(analysis): a piece defended through an even trade is not loose`
 

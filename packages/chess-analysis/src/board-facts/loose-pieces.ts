@@ -1,7 +1,13 @@
 import { Chess, type Color, type PieceSymbol, type Square } from 'chess.js';
 import { opponentOf } from '../attack-map.js';
+import { CONFIG } from '../config.js';
 import { flipActiveColorFen } from '../null-move-fen.js';
 import { see } from '../see.js';
+
+/** One pawn on `see`'s scale: the least an exchange has to win. `see` prices
+ * a bishop 10 centipawns above a knight, so a knight taking a defended bishop
+ * comes out at +10, and that is an even trade, not a won piece. */
+const { minThreatSeeCp: MIN_WON_SEE_CP } = CONFIG.evalWitness;
 
 export interface LoosePiece {
   square: Square;
@@ -9,7 +15,7 @@ export interface LoosePiece {
   owner: Color;
   /** `free`: it can be taken and nothing defends it. `winnable`: defended,
    * but the whole exchange still comes out ahead for the taker (a knight
-   * attacked by a pawn). Both need `see > 0`. */
+   * attacked by a pawn). Both need `see` to win at least a pawn. */
   tier: 'free' | 'winnable';
 }
 
@@ -30,10 +36,9 @@ export function loosePieces(fen: string, owner: Color): LoosePiece[] {
   for (const row of chess.board()) {
     for (const cell of row) {
       if (!cell || cell.color !== owner || cell.type === 'k' || !capturable.has(cell.square)) continue;
-      const gain = see(seat, cell.square, opponent);
       // `see` also counts recaptures through the piece taken (the Englund's
       // rook on a1 sits behind the queen on b2: taking it loses the queen).
-      if (gain <= 0) continue;
+      if (see(seat, cell.square, opponent) < MIN_WON_SEE_CP) continue;
       const tier = chess.attackers(cell.square, owner).length === 0 ? 'free' : 'winnable';
       loose.push({ square: cell.square, piece: cell.type, owner, tier });
     }

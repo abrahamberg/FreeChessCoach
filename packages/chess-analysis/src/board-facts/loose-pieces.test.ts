@@ -17,6 +17,12 @@ describe('loose pieces', () => {
     expect(squares('4k3/8/2p5/3n4/8/2N5/8/4K3 w - - 0 1', 'b')).toEqual([]);
   });
 
+  test('a bishop a knight attacks and a rook defends is not loose: knight for bishop is an even trade', () => {
+    // `see` prices the bishop 10 centipawns above the knight, so Nxd3 Rxd3
+    // comes out at +10: more than nothing, less than anything won.
+    expect(squares('3r2k1/8/8/4N3/8/3b4/8/6K1 w - - 0 1', 'b')).toEqual([]);
+  });
+
   test("a pinned attacker can't take", () => {
     expect(squares('3rk3/8/8/8/8/n2R4/8/3K4 w - - 0 1', 'b')).toEqual([]);
   });
