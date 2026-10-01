@@ -1,11 +1,5 @@
 import type { ReactNode } from 'react';
-import {
-  orderTacticCards,
-  tacticAllowedReason,
-  tacticOpportunityReason,
-  tacticPreventionReason,
-  type TacticCardKind
-} from '@freechesscoach/chess-analysis';
+import { orderTacticCards, tacticCardTexts, type TacticCardKind } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { tacticVisualCount, type TacticSelectionKey } from './tacticSelection.js';
 import { CloseIcon } from '../../components/Icon.js';
@@ -59,16 +53,7 @@ function TacticReasonItem({ text, good, clickable, active, onClick }: ReasonItem
  * more than one to show. Renders nothing for a move with neither field
  * set (most plies aren't tactical). */
 export function TacticReasonList({ move, selection, onToggle }: TacticReasonListProps): ReactNode {
-  // `isUserMove` decides "You" vs "They" and lives on the move rather than
-  // on either card, so a report stored before the voice rewrite renders in
-  // the right voice too.
-  const allowedText = move.tacticAllowed ? tacticAllowedReason({ ...move.tacticAllowed, isUserMove: move.isUserMove }) : null;
-  const preventionText = move.tacticPrevention
-    ? tacticPreventionReason({ ...move.tacticPrevention, isUserMove: move.isUserMove })
-    : null;
-  const opportunityText = move.tacticOpportunity
-    ? tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove: move.isUserMove }, move.bestMoveSan)
-    : null;
+  const { allowed: allowedText, prevention: preventionText, opportunity: opportunityText } = tacticCardTexts(move);
   if (!allowedText && !preventionText && !opportunityText) return null;
 
   // A report built since Task 77.5 carries at most one of these (the move's
@@ -126,18 +111,4 @@ export function TacticReasonList({ move, selection, onToggle }: TacticReasonList
       )}
     </div>
   );
-}
-
-/** Which of `move.reasons` are just the baked-in copies of the two tactic
- * sentences above — MoveNoteContent's plain-text list filters these out
- * (via reference equality with the same pure builders) so the interactive
- * items above are the only place they're shown, not duplicated below them. */
-export function tacticReasonTexts(move: ClassifiedMoveDto): Set<string> {
-  const texts = new Set<string>();
-  if (move.tacticAllowed) texts.add(tacticAllowedReason({ ...move.tacticAllowed, isUserMove: move.isUserMove }));
-  if (move.tacticPrevention) texts.add(tacticPreventionReason({ ...move.tacticPrevention, isUserMove: move.isUserMove }));
-  if (move.tacticOpportunity) {
-    texts.add(tacticOpportunityReason({ ...move.tacticOpportunity, isUserMove: move.isUserMove }, move.bestMoveSan));
-  }
-  return texts;
 }
