@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { EngineEval, PositionAnalysis } from '@freechesscoach/shared';
 import type { EngineBackend, EngineBackendAnalyzeOptions } from '../src/services/engine/engine-backend.js';
@@ -17,10 +17,15 @@ export class GoldenEngineCache implements EngineBackend {
     private readonly inner: EngineBackend,
     private readonly path: string
   ) {
-    if (!existsSync(path)) return;
-    const stored = JSON.parse(readFileSync(path, 'utf8')) as { games?: [string, EngineEval][]; positions?: [string, PositionAnalysis][] };
-    for (const [key, value] of stored.games ?? []) this.games.set(key, value);
-    for (const [key, value] of stored.positions ?? []) this.positions.set(key, value);
+    this.merge();
+  }
+
+  /** Takes in what the file has and this cache has not. */
+  private merge(): void {
+    if (!existsSync(this.path)) return;
+    const stored = JSON.parse(readFileSync(this.path, 'utf8')) as { games?: [string, EngineEval][]; positions?: [string, PositionAnalysis][] };
+    for (const [key, value] of stored.games ?? []) if (!this.games.has(key)) this.games.set(key, value);
+    for (const [key, value] of stored.positions ?? []) if (!this.positions.has(key)) this.positions.set(key, value);
   }
 
   async analyzePosition(fen: string, opts?: EngineBackendAnalyzeOptions): Promise<PositionAnalysis> {
@@ -52,10 +57,16 @@ export class GoldenEngineCache implements EngineBackend {
     });
   }
 
+  /** Two processes may share the file (an audit run and a fixer's re-run):
+   * what the other one saved is merged in first, and the file is swapped in
+   * whole, so neither loses searches nor reads half a file. */
   save(): void {
     if (!this.dirty) return;
     mkdirSync(dirname(this.path), { recursive: true });
-    writeFileSync(this.path, JSON.stringify({ games: [...this.games], positions: [...this.positions] }));
+    this.merge();
+    const partial = `${this.path}.${process.pid}.tmp`;
+    writeFileSync(partial, JSON.stringify({ games: [...this.games], positions: [...this.positions] }));
+    renameSync(partial, this.path);
     this.dirty = false;
   }
 }
