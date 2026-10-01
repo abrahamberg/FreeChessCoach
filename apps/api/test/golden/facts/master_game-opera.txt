@@ -145,12 +145,12 @@ n29 15.Bxd7+ (White, Line A) | miss | before: White is much better → after: Wh
     flags: critical
 n30 15…Nxd7 (Black, Line A) | best | before: White is better → after: White has a forced mate in 2
     board: moves the knight from f6 to d7 | captures the bishop on d7
-    tactics: They let you force mate with Qb8+.
+    tactics: They let you force mate in 2 with Qb8+.
     alternatives: Qxd7: White is much better; Ke7: White has a forced mate in 4
     flags: quiz-eligible
 n31 16.Qb8+ (White, Line A) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the queen from b3 to b8 | gives check | the check can be answered: no block; take the checking piece with Nxb8; the king cannot move | leaves the white queen on b8 hanging
-    tactics: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    tactics: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     alternatives: Qb7: White is better; Qc3: White is slightly better
     tempting check: Qxe6+? White's Qxe6+ moves the queen from b3 to e6 | captures the queen on e6 | gives check | the check can be answered: block with Be7; take the checking piece with fxe6; the king cannot move | attacks the knight on d7. Black answers fxe6: moves the pawn from f7 to e6 | captures the queen on e6. Then c3 Bc5 f3. Over the line White takes the queen; Black takes the queen; at the end White has two pawns for a knight (Black is slightly better).
     tempting threat: Qa4? White's Qa4 moves the queen from b3 to a4 | attacks the knight on d7, which is pinned to the king by the queen on a4. Black answers Bc5: moves the bishop from f8 to c5. Then Be3 Bxe3+ fxe3. Over the line White takes a bishop; Black takes a bishop; at the end White has two pawns for a knight (Black is slightly better).
@@ -159,7 +159,7 @@ n32 16…Nxb8 (Black, Line A) | forced | before: White has a forced mate in 1 �
     board: moves the knight from d7 to b8 | captures the queen on b8
 n33 17.Rd8# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the rook from d1 to d8 | gives checkmate | a back-rank mate | why it is mate: the king on e8 is checked by the rook on d8; f7, f8 hold its own pieces; d7 is covered by the rook on d8; e7 is covered by the bishop on g5; the rook on d8 is guarded by the bishop on g5
-    tactics: You forced mate.
+    tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
@@ -201,6 +201,6 @@ REVIEW NOTES
     n26 13…Rxd7: Missed Nxd7, winning material on d7; Recaptures the rook on d7
     n27 14.Rd1: You hit back instead of retreating — answers the threat by hitting the rook on d7.
     n29 15.Bxd7+: Costs 43 squares of piece mobility
-    n30 15…Nxd7: Recaptures the bishop on d7; They let you force mate with Qb8+.; Won a bishop and a queen, but it allowed mate.
-    n31 16.Qb8+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
-    n33 17.Rd8#: You forced mate.
+    n30 15…Nxd7: Recaptures the bishop on d7; They let you force mate in 2 with Qb8+.; Won a bishop and a queen, but it allowed mate.
+    n31 16.Qb8+: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
+    n33 17.Rd8#: You delivered checkmate.

@@ -75,11 +75,11 @@ n15 8.Qxc3 (White, Line A) | mistake | before: Black is much better → after: B
     best instead: Nxc3; after Nxc3 Qxa1+ Nd1 Qxa2 e4 Nge7, Black is a rook and a pawn up
     why Nxc3 is better: moves the knight from b1 to c3 | captures the bishop on c3 | leaves the white rook on a1 hanging
     board: moves the queen from d2 to c3 | captures the bishop on c3 | attacks the knight on c6 | attacks the queen on b2 | the queen stops guarding c1, where Qc1# follows
-    tactics: They let you force mate with Qc1#.
+    tactics: They let you deliver checkmate with Qc1#.
     alternatives: Nxc3: Black is much better; e3: Black is winning; Kd1: Black is winning
 n16 8…Qc1# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
     board: moves the queen from b2 to c1 | gives checkmate | a back-rank mate | why it is mate: the king on e1 is checked by the queen on c1; e2, f1, f2 hold its own pieces; d1 and d2 are covered by the queen on c1
-    tactics: You forced mate.
+    tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
@@ -108,5 +108,5 @@ REVIEW NOTES
     n12 6…Bb4: You saved a hanging piece — saves the queen on b2.; Won the rook, giving back a bishop.
     n13 7.Qd2: They let you win a bishop through a free piece with Bxc3 — captures the bishop on c3.
     n14 7…Bxc3: Trades bishops on c3; You saved a hanging piece — saves the queen on b2.
-    n15 8.Qxc3: Missed Nxc3, winning material on c3; Recaptures the bishop on c3; They let you force mate with Qc1#.; Won a bishop, but it allowed mate.
-    n16 8…Qc1#: You forced mate.
+    n15 8.Qxc3: Missed Nxc3, winning material on c3; Recaptures the bishop on c3; They let you deliver checkmate with Qc1#.; Won a bishop, but it allowed mate.
+    n16 8…Qc1#: You delivered checkmate.

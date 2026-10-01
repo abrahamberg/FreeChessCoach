@@ -7,7 +7,7 @@ Moves:
 n1 2…Qh4# (Black, Line A) | book
     book: in book (Barnes Opening: Fool's Mate)
     board: moves the queen from d8 to h4 | gives checkmate | why it is mate: the king on e1 is checked by the queen on h4; d1, d2, e2, f1 hold its own pieces; f2 is covered by the queen on h4
-    tactics: You forced mate.
+    tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
@@ -20,4 +20,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 2…Qh4#: Theory — Barnes Opening: Fool's Mate (A00); You forced mate.
+    n1 2…Qh4#: Theory — Barnes Opening: Fool's Mate (A00); You delivered checkmate.

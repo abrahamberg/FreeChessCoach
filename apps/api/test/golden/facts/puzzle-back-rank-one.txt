@@ -6,7 +6,7 @@ l1 "Line A" | leaves book at n1
 Moves:
 n1 1.Rd8# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the rook from d1 to d8 | gives checkmate | a back-rank mate | why it is mate: the king on g8 is checked by the rook on d8; f7, g7, h7 hold its own pieces; f8 and h8 are covered by the rook on d8
-    tactics: You forced mate — rook on d8 checks the king on g8, boxed in on the back rank.
+    tactics: You delivered checkmate — rook on d8 checks the king on g8, boxed in on the back rank.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
@@ -19,4 +19,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.Rd8#: You forced mate — rook on d8 checks the king on g8, boxed in on the back rank.
+    n1 1.Rd8#: You delivered checkmate — rook on d8 checks the king on g8, boxed in on the back rank.

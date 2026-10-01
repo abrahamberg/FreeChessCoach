@@ -64,11 +64,11 @@ n13 7.Be2 (White, Line A) | inaccuracy | before: Black is much better → after:
     best instead: Qe2; after Qe2 Nxe2 Bd3 Qe7 Bxe2 Qxf7, Black is a queen up
     why Qe2 is better: moves the queen from d1 to e2 | blocks the check from the queen on e4 | attacks the queen on e4, which is pinned to the king by the queen on e2 | leaves the white pawn on c2 hanging | keeps the knight on f7 safe: the bishop on c4 now defends it
     board: moves the bishop from c4 to e2 | blocks the check from the queen on e4 | leaves the white knight on f7 hanging
-    tactics: They let you force mate with Nf3# — mates the king on e1, smothered by its own pieces.
+    tactics: They let you deliver checkmate with Nf3# — mates the king on e1, smothered by its own pieces.
     alternatives: Qe2: Black is much better
 n14 7…Nf3# (Black, Line A) | best | before: Black has a forced mate in 1 → after: checkmate
     board: moves the knight from d4 to f3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on f3; d1, d2, e2, f1, f2 hold its own pieces
-    tactics: You forced mate — mates the king on e1, smothered by its own pieces.
+    tactics: You delivered checkmate — mates the king on e1, smothered by its own pieces.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
@@ -95,5 +95,5 @@ REVIEW NOTES
     n9 5.Nxf7: Missed Bxf7+, winning material on f7; They let you win a rook through an eventual fork with Qxg2.; Won a pawn, but it cost the bishop.
     n10 5…Qxg2: You won a rook through an eventual fork.
     n11 6.Rf1: Leaves the pawn on h2 undefended
-    n13 7.Be2: Leaves the knight on f7 undefended; Leaves the pawn on c2 where it can be won; They let you force mate with Nf3# — mates the king on e1, smothered by its own pieces.
-    n14 7…Nf3#: You forced mate — mates the king on e1, smothered by its own pieces.
+    n13 7.Be2: Leaves the knight on f7 undefended; Leaves the pawn on c2 where it can be won; They let you deliver checkmate with Nf3# — mates the king on e1, smothered by its own pieces.
+    n14 7…Nf3#: You delivered checkmate — mates the king on e1, smothered by its own pieces.

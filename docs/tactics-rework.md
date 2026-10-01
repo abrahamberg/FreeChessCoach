@@ -872,3 +872,28 @@ shows instead, mostly the defensive vocabulary ("You saved a hanging piece —
 saves the queen on b2"); the per-game *prevented* count falls with the
 cards.
 
+
+## 13. A mate says in how many moves (Task 125.2)
+
+"They forced mate." was true and said less than the engine knew: on the
+owner's 24…Qxh3 it had mate in 6 before the move and mate in 5 after it. A
+mate gain now has a size, as a material gain has its pawns: `gain.mateIn`
+(`packages/shared/src/tactic-motif.ts`), the engine's mate distance counting
+the card's own move as the first. `move-verdict/mate-distance.ts` sets it on
+the verdict's one card, from the engine line for that card's move, and
+`tactic-gain-clause.ts` (the gain half of `tactic-reason-text.ts`, split
+off) says it:
+
+| card | line read | sentence |
+| --- | --- | --- |
+| found | the engine's answer to the played move, one move further on | "They forced mate in 5." (the distance after the move) |
+| missed | the named move's line, before the move | "You missed a chance to force mate in 4 with Rxf7+." |
+| allowed | the named reply's line, after the move | "You let them force mate in 2 with Rb1+." |
+| any, the move is the mate (`mateIn` 1) | | "delivered checkmate" / "deliver checkmate with Qh7#" |
+
+The number replaces the horizon words ("a mating net two moves away"): it
+says the same thing exactly. A card whose line has no mate score for its
+side keeps "forced mate" with no number rather than a guessed one, and so
+does a report stored before the field existed. The prevention card is left
+as it was: its line is the scan's, from another board than the reader's
+(§12), so its distance is not the reader's either.

@@ -43,7 +43,7 @@ n10 5…Ngf6 (Black, Line A) | blunder | before: The position is roughly equal �
     best instead: Ndf6; after Ndf6 c3 Nxe4 Qxe4 Nf6 Qe5, material is level
     why Ndf6 is better: moves the knight from d7 to f6 | attacks the knight on e4
     board: moves the knight from g8 to f6 | attacks the knight on e4
-    tactics: They let you force mate with Nd6# — mates the king on e8, smothered by its own pieces.
+    tactics: They let you deliver checkmate with Nd6# — mates the king on e8, smothered by its own pieces.
     alternatives: Ndf6: The position is roughly equal; Qc7: The position is roughly equal; e6: White is slightly better
     tempting threat: f5? Black's f5 moves the pawn from f7 to f5 | attacks the knight on e4. White answers Nd6#: moves the knight from e4 to d6 | gives checkmate | why it is mate: the king on e8 is checked by the knight on d6; d7, d8, e7, f8 hold its own pieces; f7 is covered by the knight on d6. Over the line nothing is taken; at the end material is level (White has a forced mate in 1).
     tempting threat: Qb6? Black's Qb6 moves the queen from d8 to b6. White answers Nd6+: moves the knight from e4 to d6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8 | attacks the bishop on c8 | the knight on d6 forks the bishop on c8 and the king on e8. Then Kd8 Nxf7+ Ke8. Over the line White takes a pawn; at the end White is a pawn up (White is much better).
@@ -51,7 +51,7 @@ n10 5…Ngf6 (Black, Line A) | blunder | before: The position is roughly equal �
     flags: critical
 n11 6.Nd6# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the knight from e4 to d6 | gives checkmate | why it is mate: the king on e8 is checked by the knight on d6; d7, d8, e7, f7, f8 hold its own pieces
-    tactics: You forced mate — mates the king on e8, smothered by its own pieces.
+    tactics: You delivered checkmate — mates the king on e8, smothered by its own pieces.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
@@ -75,5 +75,5 @@ REVIEW NOTES
     n6 3…dxe4: Theory — Caro-Kann Defense: Karpov Variation (B17)
     n7 4.Nxe4: Theory — Caro-Kann Defense: Karpov Variation (B17)
     n8 4…Nd7: Theory — Caro-Kann Defense: Karpov Variation (B17)
-    n10 5…Ngf6: They let you force mate with Nd6# — mates the king on e8, smothered by its own pieces.
-    n11 6.Nd6#: You forced mate — mates the king on e8, smothered by its own pieces.
+    n10 5…Ngf6: They let you deliver checkmate with Nd6# — mates the king on e8, smothered by its own pieces.
+    n11 6.Nd6#: You delivered checkmate — mates the king on e8, smothered by its own pieces.

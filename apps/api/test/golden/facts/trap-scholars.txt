@@ -30,7 +30,7 @@ n6 3…Nf6 (Black, Line A) | blunder | before: The position is roughly equal →
     best instead: g6; after g6 Qd1 Nf6 Nc3 Na5 d3, material is level
     why g6 is better: moves the pawn from g7 to g6 | attacks the queen on h5
     board: moves the knight from g8 to f6 | attacks the queen on h5
-    tactics: They let you force mate with Qxf7#.
+    tactics: They let you deliver checkmate with Qxf7#.
     alternatives: g6: The position is roughly equal; Qe7: The position is roughly equal; Qf6: The position is roughly equal
     tempting threat: Qg5? Black's Qg5 moves the queen from d8 to g5 | attacks the queen on h5 | leaves the black queen on g5 hanging. White answers Qxf7+: moves the queen from h5 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8 | attacks the bishop on f8 | attacks the knight on g8 | the queen on f7 forks the king on e8 and the bishop on f8 and the knight on g8. Then Kd8 Qxf8#. Over the line White takes a bishop and a pawn; at the end White is a bishop and a pawn up (White has a forced mate in 2).
     tempting threat: Qh4? Black's Qh4 moves the queen from d8 to h4 | attacks the queen on h5 | leaves the black queen on h4 hanging. White answers Qxf7+: moves the queen from h5 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8 | attacks the bishop on f8 | attacks the knight on g8 | the queen on f7 forks the king on e8 and the bishop on f8 and the knight on g8. Then Kd8 Qxf8#. Over the line White takes a bishop and a pawn; at the end White is a bishop and a pawn up (White has a forced mate in 2).
@@ -38,7 +38,7 @@ n6 3…Nf6 (Black, Line A) | blunder | before: The position is roughly equal →
     flags: critical
 n7 4.Qxf7# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the queen from h5 to f7 | captures the pawn on f7 | gives checkmate | why it is mate: the king on e8 is checked by the queen on f7; d7, d8, f8 hold its own pieces; e7 is covered by the queen on f7; the queen on f7 is guarded by the bishop on c4
-    tactics: You forced mate.
+    tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
@@ -58,5 +58,5 @@ REVIEW NOTES
     n2 1…e5: Theory — Bishop's Opening (C23)
     n3 2.Bc4: Theory — Bishop's Opening (C23)
     n4 2…Nc6: Theory — Bishop's Opening (C23)
-    n6 3…Nf6: They let you force mate with Qxf7#.
-    n7 4.Qxf7#: You forced mate.
+    n6 3…Nf6: They let you deliver checkmate with Qxf7#.
+    n7 4.Qxf7#: You delivered checkmate.

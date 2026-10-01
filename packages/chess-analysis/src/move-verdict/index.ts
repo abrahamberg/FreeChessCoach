@@ -5,6 +5,7 @@ import { verdictDetail } from './detail.js';
 import { valueOf } from './eval-pair.js';
 import { frameVerdict } from './gate.js';
 import { netPawns } from './line-value.js';
+import { withMateDistance } from './mate-distance.js';
 import { checkAllowedMate } from './reasons/allowed-mate.js';
 import { checkAllowedTactic } from './reasons/allowed-tactic.js';
 import type { ConfirmedReason, ReasonCheck } from './reasons/confirmed.js';
@@ -111,7 +112,7 @@ function toVerdict(ctx: VerdictContext, confirmed: ConfirmedReason): MoveVerdict
     explainedCpWhite: forWhite ? value : -value,
     gainedPawns: confirmed.line.gainedPawns,
     lostPawns: confirmed.line.lostPawns,
-    card: { ...confirmed.card, detail: verdictDetail(confirmed.reason, confirmed.line) },
+    card: { ...withMateDistance(ctx, confirmed.card), detail: verdictDetail(confirmed.reason, confirmed.line) },
     ...(confirmed.threat ? { threat: confirmed.threat } : {})
   };
 }

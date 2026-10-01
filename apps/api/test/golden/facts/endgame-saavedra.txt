@@ -63,11 +63,11 @@ n12 6…Ra4 (Black, Line A) | mistake | before: White is much better → after: 
     best instead: Rd2+; after Rd2+ Kxd2 Kb2 Rc4 Kb3 Kd3, White is a rook up
     why Rd2+ is better: moves the rook from d4 to d2 | gives check | the check can be answered: no block; take the checking piece with Kxd2; move the king with Kb3, Kc3, Kc1 | leaves the black rook on d2 hanging
     board: moves the rook from d4 to a4
-    tactics: They let you force mate with Kb3.
+    tactics: They let you force mate in 7 with Kb3.
     alternatives: Rd2+: White is much better; Rc4+: White has a forced mate in 2
 n13 7.Kb3 (White, Line A) | great | before: White has a forced mate in 7 → after: White has a forced mate in 6
     board: moves the king from c2 to b3 | attacks the rook on a4
-    tactics: You forced mate.
+    tactics: You forced mate in 6.
     alternatives: Rg8: The position is roughly equal; Rc3: The position is roughly equal
     flags: quiz-eligible, critical
 n14 6.c8=Q (White, Line B) | miss | before: White is much better → after: The position is roughly equal
@@ -111,8 +111,8 @@ REVIEW NOTES
     n7 4.Kb3: You missed a chance to win a tempo with Kc3 — hits the rook on d4 with a king.
     n8 4…Rd3+: Costs 11 squares of piece mobility
     n9 5.Kc2: You won a tempo — hits the rook on d3 with a king.
-    n12 6…Ra4: They let you force mate with Kb3.
-    n13 7.Kb3: You forced mate.
+    n12 6…Ra4: They let you force mate in 7 with Kb3.
+    n13 7.Kb3: You forced mate in 6.
   l2
     n3 2.Kb5: You tucked the king away — walks the king to b5, out of the firing line.
     n6 3…Rd4+: Costs 11 squares of piece mobility

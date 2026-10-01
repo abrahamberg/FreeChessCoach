@@ -1,6 +1,7 @@
 import type { TacticGainDto, TacticHorizon, TacticMotifType } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
-import { TACTIC_MOTIF_PHRASES, articleFor, motifWithArticle } from './tactic-motif-phrases.js';
+import { gainClause, type Specificity } from './tactic-gain-clause.js';
+import { TACTIC_MOTIF_PHRASES, articleFor } from './tactic-motif-phrases.js';
 
 /**
  * Layer 4 of `docs/tactics-rework.md` §5: one template, four voices, three
@@ -160,8 +161,6 @@ function legacyPreventionReason(prevention: TacticPreventionLike, threat: string
     : `Left the opponent's ${noun} in play${threat}.`;
 }
 
-type Specificity = 'high' | 'medium' | 'low';
-
 /**
  * Absent confidence means the card predates verification, and those cards
  * always printed their geometry — degrading them to the bare motif now would
@@ -173,76 +172,4 @@ function specificityOf(confidence: number | undefined): Specificity {
   if (confidence >= CONFIG.tacticVerification.highConfidence) return 'high';
   if (confidence >= CONFIG.tacticVerification.mediumConfidence) return 'medium';
   return 'low';
-}
-
-interface GainClause {
-  /** Past tense: "won a rook through a fork". */
-  did: string;
-  /** Infinitive: "win a rook through a fork". */
-  toDo: string;
-  /** After "stopped you …": "winning a rook through a fork". */
-  gerundish: string;
-}
-
-/**
- * The heart of the template. A material or mate payoff leads — "won a rook
- * through a fork" — because that is the half the reader can act on. A motif
- * with no material to name falls back to its own action phrase, which is how
- * a pin that binds and a move that breaks a pin both still get a sentence
- * without either of them inventing a prize.
- */
-function gainClause(
-  claim: { type: TacticMotifType; gain?: TacticGainDto },
-  specificity: Specificity,
-  horizon: TacticHorizon | undefined
-): GainClause {
-  const phrases = TACTIC_MOTIF_PHRASES[claim.type];
-  const prize = materialPrize(claim.gain, specificity);
-  const motif = motifWithHorizon(claim.type, horizon);
-
-  // "forced mate through a checkmate" says the same thing twice.
-  if (claim.gain?.kind === 'mate' && claim.type === 'checkmate') return { did: 'forced mate', toDo: 'force mate', gerundish: 'forcing mate' };
-  if (claim.gain?.kind === 'mate') {
-    return { did: `forced mate through ${motif}`, toDo: `force mate through ${motif}`, gerundish: `forcing mate through ${motif}` };
-  }
-  if (prize) {
-    return {
-      did: `won ${prize} through ${motif}`,
-      toDo: `win ${prize} through ${motif}`,
-      gerundish: `winning ${prize} through ${motif}`
-    };
-  }
-  return { did: phrases.did, toDo: phrases.toDo, gerundish: gerundOf(phrases.toDo) };
-}
-
-/**
- * "a fork" / "a fork two moves away" / "an eventual fork".
- *
- * §3 rule 5: a horizon qualifier is what makes a deep tactic honest instead
- * of confusing. `annotatePvTactics` has computed how far off the payoff is
- * since long before this, and nothing narrated it.
- */
-function motifWithHorizon(type: TacticMotifType, horizon: TacticHorizon | undefined): string {
-  const noun = TACTIC_MOTIF_PHRASES[type].noun;
-  if (horizon === 'inTwo') return `${motifWithArticle(type)} two moves away`;
-  if (horizon === 'eventual') return `an eventual ${noun}`;
-  return motifWithArticle(type);
-}
-
-/** "a rook" at high confidence, "material" when the verifier proved a swing
- * but not which piece, and nothing at all when it proved neither. */
-function materialPrize(gain: TacticGainDto | undefined, specificity: Specificity): string | null {
-  if (!gain || gain.kind !== 'material' || gain.pawns <= 0) return null;
-  if (gain.prize && specificity !== 'low') return `${articleFor(gain.prize)} ${gain.prize}`;
-  return 'material';
-}
-
-/** "break the pin" -> "breaking the pin". Only ever applied to this file's
- * own `toDo` phrases, whose first word is a bare infinitive by
- * construction — never to arbitrary text. */
-function gerundOf(infinitive: string): string {
-  const [verb, ...rest] = infinitive.split(' ');
-  if (!verb) return infinitive;
-  const stem = verb.endsWith('e') && !verb.endsWith('ee') ? verb.slice(0, -1) : verb;
-  return [`${stem}ing`, ...rest].join(' ');
 }

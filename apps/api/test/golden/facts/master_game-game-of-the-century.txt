@@ -122,7 +122,7 @@ n69 35.Kg1 (White, Line A) | good
 n70 35…Bc5+ (Black, Line A) | excellent
 n71 36.Kf1 (White, Line A) | good | before: Black is winning → after: Black has a forced mate in 6
     board: moves the king from g1 to f1
-    tactics: They let you force mate with Ng3+.
+    tactics: They let you force mate in 6 with Ng3+.
     alternatives: Kh2: Black is winning; Kh1: Black has a forced mate in 3
 n72 36…Ng3+ (Black, Line A) | best | before: Black has a forced mate in 6 → after: Black has a forced mate in 5
     board: moves the knight from e4 to g3 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke1
@@ -203,6 +203,6 @@ REVIEW NOTES
     n52 26…Rxa2: Creates a passed pawn on b
     n56 28…Rxe1: Trades rooks on e1
     n57 29.Qd8+: Missed Nxe1, winning material on e1
-    n71 36.Kf1: They let you force mate with Ng3+.
+    n71 36.Kf1: They let you force mate in 6 with Ng3+.
     n74 37…Bb4+: Missed mate in 5 starting with Bf2+
     n82 41…Rc2#: Missed mate in 1 starting with Ba3#

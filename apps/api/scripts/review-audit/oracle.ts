@@ -123,6 +123,16 @@ export function mateWithoutCount(text: string, san: string): boolean {
   return !(named ?? san).endsWith('#');
 }
 
+/** Whether a mate card's count (`gain.mateIn`, which counts the card's own
+ * move as the first) is the engine's. A move still to be played mates in as
+ * many on its own line; a move that was played leaves one fewer on the line
+ * that answers it; a move that is the mate counts 1. */
+export function mateCountAgrees(mateIn: number, san: string, line: { mate: number | null } | undefined, played: boolean): boolean {
+  if (san.endsWith('#')) return mateIn === 1;
+  if (!line || line.mate === null) return false;
+  return Math.abs(line.mate) + (played ? 1 : 0) === mateIn;
+}
+
 /** The legal answers to a check, sorted the way the dossier's fact sorts
  * them: taking the checker is a capture whoever takes (the king too, and a
  * pawn en passant); a king move is one that takes no checker; the rest

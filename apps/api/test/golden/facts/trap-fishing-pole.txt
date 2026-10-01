@@ -70,7 +70,7 @@ n15 8.f3 (White, Line A) | inaccuracy | before: Black is much better → after: 
     best instead: f4; after f4 Bc5+ d4 Bxd4+ Qxd4 Nxd4, White has a bishop and a knight for a queen and two pawns
     why f4 is better: moves the pawn from f2 to f4
     board: moves the pawn from f2 to f3
-    tactics: They let you force mate with g3.
+    tactics: They let you force mate in 2 with g3.
     alternatives: f4: Black is much better; a3: Black has a forced mate in 1
 n16 8…g3 (Black, Line A) | best | before: Black has a forced mate in 2 → after: Black has a forced mate in 1
     board: moves the pawn from g4 to g3
@@ -105,4 +105,4 @@ REVIEW NOTES
     n8 4…Ng4: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
     n12 6…hxg4: Recaptures the pawn on g4; You won a tempo — hits the knight on f3 with a pawn.
     n14 7…Qh4: You took the open file — takes the open h-file with the queen.; Won the queen, giving back a bishop.
-    n15 8.f3: They let you force mate with g3.
+    n15 8.f3: They let you force mate in 2 with g3.

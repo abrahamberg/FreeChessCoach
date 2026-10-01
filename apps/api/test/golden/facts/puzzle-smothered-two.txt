@@ -16,7 +16,7 @@ n2 1…Rxg8 (Black, Line A) | forced | before: White has a forced mate in 1 → 
     board: moves the rook from a8 to g8 | captures the queen on g8
 n3 2.Nf7# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the knight from h6 to f7 | gives checkmate | why it is mate: the king on h8 is checked by the knight on f7; g7, g8, h7 hold its own pieces
-    tactics: You forced mate — mates the king on h8, smothered by its own pieces.
+    tactics: You delivered checkmate — mates the king on h8, smothered by its own pieces.
     tempting capture: Nxg8? White's Nxg8 moves the knight from h6 to g8 | captures the rook on g8. Black answers Kxg8: moves the king from h8 to g8 | captures the knight on g8. Then Kf2 Kf7 Kf3. Over the line White takes a rook; Black takes a knight; at the end material is level (The position is roughly equal).
     flags: quiz-eligible, critical
 
@@ -32,4 +32,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n3 2.Nf7#: You forced mate — mates the king on h8, smothered by its own pieces.
+    n3 2.Nf7#: You delivered checkmate — mates the king on h8, smothered by its own pieces.

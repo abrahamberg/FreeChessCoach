@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { checkAnswerSets, decidedFor, exchangeGain, hasPassedPawnOn, mateWithoutCount, prizeWon, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
+import { checkAnswerSets, decidedFor, exchangeGain, hasPassedPawnOn, mateCountAgrees, mateWithoutCount, prizeWon, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
 
 /** The audit's own board checks. A wrong check invents errors (or hides
  * them) across the whole corpus, so each one that misfired once stays here
@@ -83,6 +83,19 @@ describe('review audit oracle', () => {
     // The move is the mate: nothing to count.
     expect(mateWithoutCount('You forced mate.', 'Rc1#')).toBe(false);
     expect(mateWithoutCount('You let them force mate with Qh7#', 'h3')).toBe(false);
+  });
+
+  test('a mate card\'s count is the engine\'s, from the card\'s own move (24…Qxh3: mate in 6 before, 5 after)', () => {
+    // Played: the card counts 6 from Qxh3, the line that answers it has 5.
+    expect(mateCountAgrees(6, 'Qxh3', { mate: -5 }, true)).toBe(true);
+    expect(mateCountAgrees(5, 'Qxh3', { mate: -5 }, true)).toBe(false);
+    // Missed or allowed: the named move's own line.
+    expect(mateCountAgrees(8, 'Rxf3+', { mate: -8 }, false)).toBe(true);
+    expect(mateCountAgrees(8, 'Rxf3+', { mate: -7 }, false)).toBe(false);
+    expect(mateCountAgrees(2, 'Rxf3+', { mate: null }, false)).toBe(false);
+    // The move is the mate: 1, whatever line is held.
+    expect(mateCountAgrees(1, 'Rc1#', undefined, true)).toBe(true);
+    expect(mateCountAgrees(2, 'Qh7#', { mate: 1 }, false)).toBe(false);
   });
 
   test('a game is decided at a forced mate or five pawns (owner calibration: 35…d2 at -7.7)', () => {

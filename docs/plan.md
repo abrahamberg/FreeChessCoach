@@ -74,7 +74,8 @@ the loop better, in order.
     `oracle.ts`): `named-pieces` (every "the rook on d1" stands there before
     the move, after it, or along a move the sentence names); `named-move` /
     `named-line` (legal); `material-in-line` and `mate-in-line` (the
-    engine's own line for the named move delivers what a card promises);
+    engine's own line for the named move delivers what a card promises,
+    and a mate in as many moves as the card counts);
     `can-be-taken`, `undefended`, `can-be-won` (an exchange search over real
     legal captures, `exchangeGain`); `fork-geometry`, `pin-geometry`,
     `guard-lost`, `passed-pawn`, `balance`; and per `BoardFact` kind: moved,
@@ -516,9 +517,31 @@ position's rows), where the dossier lists `alternative` moves.
 
 **Findings:** item 4. **Read:** `tactic-reason-text.ts` (`gainClause`).
 
-- [ ] "They forced mate." becomes "They forced mate in 5" from the engine
+- [x] "They forced mate." becomes "They forced mate in 5" from the engine
   line the card was verified on; a move that is itself mate says
   "checkmate". Dev: 197 review cards, 208 `dossier:tactics` rows.
+  Done 2026-10-01: `gain.mateIn` (the mate distance counting the card's own
+  move as the first), set on the verdict's card by
+  `move-verdict/mate-distance.ts` and said by `tactic-gain-clause.ts`
+  (`gainClause`, split off `tactic-reason-text.ts`;
+  `docs/tactics-rework.md` §13). Dev `mate-count`: review cards 197 → 3,
+  `dossier:tactics` 208 → 2; no other check moved. The five left are the
+  three `weakBackRank` cards of Task 121.1's status (x2KnTpLY 17.Qxb8+,
+  T0xu4W75 25…Rxe4 and 26.Rxe4, the last two in the dossier too): their
+  engine line has no mate at all, so there is no number to give and
+  `mate-in-line` fails them as before. `mate-in-line` now compares the
+  card's count with the line (`mateCountAgrees`): 0 of 194 numbered review
+  cards differ.
+- [ ] Open, the audit not the sentence: a main-line position holds the
+  review's engine lines, and the dossier searches the same position again
+  (multiPv 3). On dev 59 of 206 numbered `dossier:tactics` rows give
+  another distance than the lines the packet prints for the judge
+  (Lasker–Thomas 11.Qxh7+: "forced mate in 6" in the dossier, mate in 7 in
+  the review's line), while agreeing with the dossier's own line (36 of 36
+  in the six games with the most differences). Either the position keeps
+  the dossier's lines for dossier rows, or judges are told which search a
+  row came from. The prevention card keeps "forcing mate" with no number
+  (none on dev): its line is the scan's, from another board.
 
 ### Task 125.3 — No "excellent" for a move that gives up a forced mate
 

@@ -113,11 +113,11 @@ n40 20…Nxe7 (Black, Line A) | blunder | before: White is better → after: Whi
     best instead: Kd8; after Kd8, White has a pawn for a knight
     why Kd8 is better: moves the king from e8 to d8 | attacks the rook on e7 | leaves the black pawn on f7 hanging | leaves the black pawn on h7 hanging
     board: moves the knight from c6 to e7 | captures the rook on e7 | leaves the black pawn on h7 hanging
-    tactics: They let you force mate with Qxd7+.
+    tactics: They let you force mate in 4 with Qxd7+.
     alternatives: Kd8: White is better; Kf8: White is much better
 n41 21.Qxd7+ (White, Line A) | great | before: White has a forced mate in 4 → after: White has a forced mate in 3
     board: moves the queen from a4 to d7 | captures the pawn on d7 | gives check | the check can be answered: no block; take the checking piece with Kxd7; move the king with Kf8 | attacks the knight on e7 | leaves the white queen on d7 hanging
-    tactics: You forced mate.
+    tactics: You forced mate in 3.
     alternatives: Qe4: Black has a forced mate in 3; Qg4: Black has a forced mate in 3
     tempting capture: fxe7? White's fxe7 moves the pawn from f6 to e7 | captures the knight on e7. Black answers Qxg2#: moves the queen from f3 to g2 | captures the pawn on g2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on g2; f2, h2 hold its own pieces; f1 and h1 are covered by the queen on g2; the queen on g2 is guarded by the rook on g8 and the bishop on b7. Over the line White takes a knight; Black takes a pawn; at the end Black is a rook up (Black has a forced mate in 1).
     tempting capture: Bxe7? White's Bxe7 moves the bishop from a3 to e7 | captures the knight on e7. Black answers Qxg2#: moves the queen from f3 to g2 | captures the pawn on g2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on g2; f2, h2 hold its own pieces; f1 and h1 are covered by the queen on g2; the queen on g2 is guarded by the rook on g8 and the bishop on b7. Over the line White takes a knight; Black takes a pawn; at the end Black is a rook up (Black has a forced mate in 1).
@@ -126,13 +126,13 @@ n41 21.Qxd7+ (White, Line A) | great | before: White has a forced mate in 4 → 
 n42 21…Kxd7 (Black, Line A) | best
 n43 22.Bf5+ (White, Line A) | great | before: White has a forced mate in 3 → after: White has a forced mate in 2
     board: moves the bishop from d3 to f5 | gives check | a double check, with the rook on d1 | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke8, Kc6
-    tactics: You forced mate.
+    tactics: You forced mate in 2.
     alternatives: Be2+: Black is winning; Bb5+: Black has a forced mate in 10
     flags: quiz-eligible, critical
 n44 22…Ke8 (Black, Line A) | best
 n45 23.Bd7+ (White, Line A) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the bishop from f5 to d7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf8, Kd8
-    tactics: You forced mate through a mating net — closes the net — every answer runs into mate.
+    tactics: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     alternatives: Rd8+: Black has a forced mate in 3; g3: Black has a forced mate in 1
     tempting threat: Bg4? White's Bg4 moves the bishop from f5 to g4 | attacks the queen on f3 | leaves the white pawn on f6 hanging | leaves the white bishop on g4 hanging | leaves the white pawn on c3 hanging. Black answers Qxg2#: moves the queen from f3 to g2 | captures the pawn on g2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on g2; f2, h2 hold its own pieces; f1 and h1 are covered by the queen on g2; the queen on g2 is guarded by the bishop on b7. Over the line Black takes a pawn; at the end White has a pawn for a queen, a rook and a knight (Black has a forced mate in 1).
     tempting threat: Rd3? White's Rd3 moves the rook from d1 to d3 | attacks the queen on f3 | leaves the white bishop on f5 hanging. Black answers Qxg2#: moves the queen from f3 to g2 | captures the pawn on g2 | gives checkmate | why it is mate: the king on g1 is checked by the queen on g2; f2, h2 hold its own pieces; f1 and h1 are covered by the queen on g2; the queen on g2 is guarded by the rook on g8 and the bishop on b7. Over the line Black takes a pawn; at the end White has a pawn for a queen, a rook and a knight (Black has a forced mate in 1).
@@ -140,7 +140,7 @@ n45 23.Bd7+ (White, Line A) | great | before: White has a forced mate in 2 → a
 n46 23…Kf8 (Black, Line A) | best
 n47 24.Bxe7# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the bishop from a3 to e7 | captures the knight on e7 | gives checkmate | why it is mate: the king on f8 is checked by the bishop on e7; f7, g8 hold its own pieces; e8 is covered by the bishop on d7; g7 is covered by the pawn on f6; the bishop on e7 is guarded by the pawn on f6
-    tactics: You forced mate.
+    tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
@@ -190,9 +190,9 @@ REVIEW NOTES
     n35 18.exf6: Recaptures the pawn on f6
     n37 19.Rad1: Costs 13 squares of piece mobility
     n38 19…Qxf3: They won a knight through a free piece — captures the knight on f3.
-    n40 20…Nxe7: Leaves the pawn on h7 undefended; Recaptures the rook on e7; They let you force mate with Qxd7+.; Won a rook, but it allowed mate.
-    n41 21.Qxd7+: You forced mate.
+    n40 20…Nxe7: Leaves the pawn on h7 undefended; Recaptures the rook on e7; They let you force mate in 4 with Qxd7+.; Won a rook, but it allowed mate.
+    n41 21.Qxd7+: You forced mate in 3.
     n42 21…Kxd7: Recaptures the queen on d7
-    n43 22.Bf5+: You forced mate.
-    n45 23.Bd7+: You forced mate through a mating net — closes the net — every answer runs into mate.
-    n47 24.Bxe7#: You forced mate.
+    n43 22.Bf5+: You forced mate in 2.
+    n45 23.Bd7+: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
+    n47 24.Bxe7#: You delivered checkmate.

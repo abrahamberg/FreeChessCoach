@@ -1,7 +1,7 @@
 import type { TacticGainDto } from '@freechesscoach/shared';
 import type { Color } from 'chess.js';
 import { result } from './check-result.js';
-import { attackersOf, colorOf, exchangeGain, hasPassedPawnOn, legalCapturesOf, moveIsSound, other, PIECE_BY_NAME, pieceAt, play, playLine, POINTS, prizeWon, settledGain, threatFen } from './oracle.js';
+import { attackersOf, colorOf, exchangeGain, hasPassedPawnOn, legalCapturesOf, mateCountAgrees, moveIsSound, other, PIECE_BY_NAME, pieceAt, play, playLine, POINTS, prizeWon, settledGain, threatFen } from './oracle.js';
 import type { AuditItem, AuditPosition, CheckResult, LineView } from './types.js';
 
 type Check = (item: AuditItem, position: AuditPosition) => CheckResult[];
@@ -43,7 +43,9 @@ const FAMILY_CHECKS: Record<string, Check> = {
     const card = item.data as CardData;
     const san = card.embodiedBySan ?? position.linesBefore[0]?.san;
     if (!san) return [];
-    return [result('named-move', play(position.fenBefore, san) !== null, `${san} is not legal before the move`), ...gainChecks(card.gain, position.fenBefore, position.linesBefore, san, colorOf(position.mover))];
+    // A found card's move was played: its mate count is read off the line that answers it.
+    const answer = card.found ? { line: position.linesAfter[0] } : undefined;
+    return [result('named-move', play(position.fenBefore, san) !== null, `${san} is not legal before the move`), ...gainChecks(card.gain, position.fenBefore, position.linesBefore, san, colorOf(position.mover), answer)];
   },
   'review:better-was': (item, position) => {
     const line = item.text.replace(/^.*better was /, '').split(' ');
@@ -54,13 +56,15 @@ const FAMILY_CHECKS: Record<string, Check> = {
 /** A card that promises material or mate: the engine's own line for the
  * named move has to deliver it. A line that ends before the prize falls is
  * the "tactic that happens later, in a line nobody showed" failure. */
-function gainChecks(gain: TacticGainDto | undefined, fen: string, lines: LineView[], san: string, side: Color): CheckResult[] {
+function gainChecks(gain: TacticGainDto | undefined, fen: string, lines: LineView[], san: string, side: Color, answer?: { line: LineView | undefined }): CheckResult[] {
   if (!gain || (gain.kind !== 'material' && gain.kind !== 'mate')) return [];
   const line = lines.find((each) => each.san === san);
   if (!line) return [result('engine-line', false, `${san} is not among the engine's ${lines.length} lines`)];
   if (gain.kind === 'mate') {
     const mates = line.mate !== null && (side === 'w' ? line.mate > 0 : line.mate < 0);
-    return [result('mate-in-line', mates, `the engine's line for ${san} is ${line.mate === null ? `cp ${line.cp ?? '?'}` : `mate ${line.mate}`}, not a mate for this side`)];
+    if (!mates || gain.mateIn === undefined) return [result('mate-in-line', mates, `the engine's line for ${san} is ${line.mate === null ? `cp ${line.cp ?? '?'}` : `mate ${line.mate}`}, not a mate for this side`)];
+    const counted = answer ? answer.line : line;
+    return [result('mate-in-line', mateCountAgrees(gain.mateIn, san, counted, answer !== undefined), `the card counts mate in ${gain.mateIn} from ${san}; the engine's line ${answer ? 'after it' : 'for it'} is ${counted?.mate === null || !counted ? 'no mate' : `mate ${counted.mate}`}`)];
   }
   const prize = gain.prize ? (POINTS[PIECE_BY_NAME[gain.prize] ?? 'p'] ?? 0) : 0;
   const claimed = Math.max(1, Math.min(gain.pawns, prize || gain.pawns));
