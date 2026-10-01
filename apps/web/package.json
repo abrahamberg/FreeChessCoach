@@ -16,8 +16,8 @@
   "dependencies": {
     "@freechesscoach/chess-analysis": "0.0.1",
     "@freechesscoach/shared": "0.0.1",
-    "@tanstack/react-query": "^5.103.2",
-    "ai": "^7.0.114",
+    "@tanstack/react-query": "^5.104.0",
+    "ai": "^7.0.118",
     "chess.js": "^1.4.0",
     "kokoro-js": "^1.2.1",
     "react": "^19.3.0",
