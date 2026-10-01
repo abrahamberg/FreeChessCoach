@@ -32,7 +32,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 - `docs/tactics-rework.md` — why Game Review's tactic sentences misfired and
   the layered rebuild that shipped. Read it before touching
   `tactic-detectors/`, `classify-tactic-motif.ts`, the `verify-tactic-*`
-  files, `tactic-reason-text.ts`, `tactic-card-order.ts`,
+  files, `tactic-reason-text.ts`, `tactic-gain-clause.ts`, `tactic-card-order.ts`,
   `played-tactic-alternative.ts`, `tactic-allowed.ts` or the
   tactic-prevention path. §9 is the second review pass and records one gate
   that was tried and reverted; read it before retrying that gate. Its §1

@@ -543,6 +543,22 @@ position's rows), where the dossier lists `alternative` moves.
   row came from. The prevention card keeps "forcing mate" with no number
   (none on dev): its line is the scan's, from another board.
 
+### Task 125.6 — The mate count is the real one
+
+**Finding (2026-10-01, after 125.2):** the number is the engine's at the
+depth the game was analysed with (12), and a shallow search reports a
+longer mate than there is. The owner's own example, 24…Qxh3, now reads
+"They forced mate in 10" in Game Review; the dossier's search and a depth
+20 probe both say mate in 5. On dev 59 of 206 dossier mate rows differ
+from the review's line for the same move.
+
+- [ ] Owner's call: when the engine reports a mate for a move's line, the
+  worker searches that one position again deeper (mates are few, so the
+  cost is small), or the card says the number only when a second search
+  agrees. Until then a judge will mark a too-long count `wrong`.
+- [ ] The audit: for a sampled card with a mate count, compare it with a
+  deeper cached search (`mate-count-exact`), so this is measured by code.
+
 ### Task 125.3 — No "excellent" for a move that gives up a forced mate
 
 **Findings:** item 2 (22…Qc3: mate in 8 given up, still -13.9, badge
