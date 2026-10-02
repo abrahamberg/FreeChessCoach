@@ -3,13 +3,7 @@
     "id": "seed:chesscom-184514899210",
     "readerSide": "white",
     "note": "Owner reports 2026-10-01, all wrong sentences in this one game: 12.Bxc5 \"You stopped them forcing mate through a back-rank tactic — rook on d1 checks the king on g1, boxed in on the back rank\" (the rook is on d8; Rd1+ is met by Rxd1, no mate); 13…Bd3 \"Leaves the bishop on d3 where it can be won\" (the rook on d8 defends it: Nxd3 Rxd3 is an even trade); 15.Nxe5 \"You stopped them winning a bishop through a fork — rook on d5 forks the bishop on c5 and the knight on e5\" (the rook is on d8; the card describes a hypothetical …Rd5); 25.Qxc7 \"You stopped them winning a queen through a discovered attack — unveils the rook on d1 against the queen on d6\" (neither piece exists; Qxc7 was the only move, the others lose the queen). Common cause for three of them: prevention cards name pieces on the board after a threat move the sentence never shows.",
-    "pgn": "[Event \"Live Chess\"]\n[Site \"Chess.com\"]\n[Date \"2026.09.28\"]\n[Round \"-\"]\n[White \"Dany_Abr\"]\n[Black \"pyramidsofteeth\"]\n[Result \"1-0\"]\n[ECO \"C53\"]\n[WhiteElo \"491\"]\n[BlackElo \"472\"]\n[TimeControl \"600\"]\n[Termination \"Dany_Abr won by checkmate\"]\n[Link \"https://www.chess.com/game/live/184514899210\"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. O-O O-O 6. d4 d5 7. dxc5 dxc4 8. Qxd8 Rxd8 9. Be3 Nxe4 10. Nbd2 Bf5 11. Nxc4 Nxc5 12. Bxc5 b5 13. Ncxe5 Bd3 14. Rfd1 Nxe5 15. Nxe5 Rd5 16. Nxd3 Rad8 17. b4 a5 18. bxa5 f5 19. a6 f4 20. a7 Rxd3 21. Rxd3 Rxd3 22. a8=Q+ Kf7 23. Qf8+ Ke6 24. Qe7+ Kd5 25. Qxc7 f3 26. h4 Rxc3 27. Rd1+ Kc4 28. Rd4# 1-0",
-    "expect": [
-      {
-        "ply": 49,
-        "says": "only move"
-      }
-    ]
+    "pgn": "[Event \"Live Chess\"]\n[Site \"Chess.com\"]\n[Date \"2026.09.28\"]\n[Round \"-\"]\n[White \"Dany_Abr\"]\n[Black \"pyramidsofteeth\"]\n[Result \"1-0\"]\n[ECO \"C53\"]\n[WhiteElo \"491\"]\n[BlackElo \"472\"]\n[TimeControl \"600\"]\n[Termination \"Dany_Abr won by checkmate\"]\n[Link \"https://www.chess.com/game/live/184514899210\"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. O-O O-O 6. d4 d5 7. dxc5 dxc4 8. Qxd8 Rxd8 9. Be3 Nxe4 10. Nbd2 Bf5 11. Nxc4 Nxc5 12. Bxc5 b5 13. Ncxe5 Bd3 14. Rfd1 Nxe5 15. Nxe5 Rd5 16. Nxd3 Rad8 17. b4 a5 18. bxa5 f5 19. a6 f4 20. a7 Rxd3 21. Rxd3 Rxd3 22. a8=Q+ Kf7 23. Qf8+ Ke6 24. Qe7+ Kd5 25. Qxc7 f3 26. h4 Rxc3 27. Rd1+ Kc4 28. Rd4# 1-0"
   },
   {
     "id": "seed:d9716668",

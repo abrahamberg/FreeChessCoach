@@ -984,9 +984,11 @@ tests beside each.
   pins the knight on f6" and "Trades the bishop for the knight on f6,
   giving up White's only developed piece; Black can take back with the
   queen, bringing it out".
-- [x] The first seed gets its expectation too: "only move" on 25.Qxc7
-  (ply 49). It is unmet, and stays a counted failure until Task 121.3 /
-  125.5 is built.
+- [x] The first seed gets no expectation. "only move" on 25.Qxc7 (ply
+  49) was added and taken out again the same day: the seed replays its
+  stored evals, and in those Bb4 is best (+39.9) with Qxc7 second
+  (+36.7), so no "only move" sentence is owed on that board (finding
+  F4). Task 121.3 tests its reason on a position searched fresh.
 
 **Commit:** `feat(audit): a seed's expected sentences are checked`
 
