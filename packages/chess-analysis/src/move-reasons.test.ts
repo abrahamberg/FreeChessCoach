@@ -138,10 +138,11 @@ describe('the pin a move makes (Task 126.2)', () => {
 
   test('is said on a quiet move', () => {
     expect(reasons(BEFORE_BG5, 'Bg5', 'good')).toContain('Pins the knight on f6 to the queen');
-    expect(reasons(BEFORE_BG5, 'Bg5', 'inaccuracy')).toContain('Pins the knight on f6 to the queen');
+    expect(reasons(BEFORE_BG5, 'Bg5', 'best')).toContain('Pins the knight on f6 to the queen');
   });
 
-  test('is not said on a mistake or worse: the fault is the story', () => {
+  test('is not said on a move that cost something: the fault is the story', () => {
+    expect(reasons(BEFORE_BG5, 'Bg5', 'inaccuracy').join(' ')).not.toContain('Pins');
     expect(reasons(BEFORE_BG5, 'Bg5', 'mistake').join(' ')).not.toContain('Pins');
     expect(reasons(BEFORE_BG5, 'Bg5', 'blunder').join(' ')).not.toContain('Pins');
   });
@@ -151,8 +152,9 @@ describe('the piece a pawn kicks (Task 126.3)', () => {
   const AFTER_BG5 = 'rnbqkb1r/ppp2ppp/5n2/3pp1B1/4P3/3P1P2/PPP3PP/RN1QKBNR b KQkq - 1 4';
   const KICK = 'Attacks the bishop on g5, which pins the knight on f6';
 
-  test('is said on a quiet move, not on a mistake or worse', () => {
+  test('is said on a quiet move, not on one that cost something', () => {
     expect(reasons(AFTER_BG5, 'h6', 'best')).toContain(KICK);
+    expect(reasons(AFTER_BG5, 'h6', 'inaccuracy')).not.toContain(KICK);
     expect(reasons(AFTER_BG5, 'h6', 'blunder')).not.toContain(KICK);
   });
 });

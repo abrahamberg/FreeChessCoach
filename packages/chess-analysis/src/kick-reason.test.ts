@@ -22,6 +22,10 @@ describe('a pawn that kicks a piece (Task 126.3)', () => {
     expect(kickReason('4k3/7p/8/6B1/8/8/8/4K3 b - - 0 1', 'h6')).toBeNull();
   });
 
+  test('silent when the pawn is won through the piece behind (the owner\'s game, 10.c3 Bxc3+ Nxc3 Qxc3+)', () => {
+    expect(kickReason('r1b1k2r/pppn1pp1/5q1p/3P4/1P1bP3/P4P2/2P3PP/RN1QKBNR w KQkq - 1 10', 'c3')).toBeNull();
+  });
+
   test('silent when a pawn already attacked the piece', () => {
     // The pawn on f6 already hits the bishop; …h6 adds nothing new.
     expect(kickReason('4k3/7p/5p2/6B1/8/8/8/4K3 b - - 0 1', 'h6')).toBeNull();

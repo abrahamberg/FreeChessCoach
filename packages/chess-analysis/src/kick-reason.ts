@@ -1,13 +1,10 @@
 import { Chess, type Move } from 'chess.js';
 import { occupiedSquares, opponentOf } from './attack-map.js';
-import { CONFIG } from './config.js';
 import { flipActiveColorFen } from './null-move-fen.js';
 import { PIECE_NAMES } from './piece-names.js';
-import { see } from './see.js';
+import { BISHOP_KNIGHT_GAP_CP, see } from './see.js';
 import { pins } from './tactic-pins.js';
 import { PIECE_VALUES } from './tactics.js';
-
-const { minThreatSeeCp: MIN_THREAT_SEE_CP } = CONFIG.evalWitness;
 
 /**
  * A pawn move that attacks a piece, said on the move itself: "Attacks the
@@ -39,7 +36,8 @@ export function kickReason(fenBefore: string, moveSan: string): string | null {
   if (move.piece !== 'p' || move.promotion || move.captured) return null;
 
   const enemy = opponentOf(move.color);
-  if (see(after.fen(), move.to, enemy) >= MIN_THREAT_SEE_CP) return null;
+  // Won for a bishop and a knight's difference is still won: 10.c3 Bxc3+ Nxc3 Qxc3+ nets a pawn at 90 on `see.ts`'s scale.
+  if (see(after.fen(), move.to, enemy) > BISHOP_KNIGHT_GAP_CP) return null;
 
   const mayTake = pawnCaptures(after.fen(), move);
   const [target] = occupiedSquares(after)
