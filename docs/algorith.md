@@ -760,9 +760,10 @@ The stated priority is presentation, not the numbers. The per-move `reasons: str
 | `piecesUnderAttack` where attackers > defenders, unresolved | "Leaves {piece} on {square} attacked {a}× and defended {d}×" |
 | `centerControlScore` swing ≥ 3 against mover | "Concedes the centre" |
 | new `passedPawns` for mover | "Creates a passed pawn on {file}" |
+| the engine's first move is far ahead of its second (`isOnlyMove`), the game is not decided either way, no mate, not a recapture | "The only winning move" / "The only move that holds" / "The only good move", with ": the next best, {move}, loses {piece}" or ", gets mated" when the second line shows it; on the move that missed it, "Missed the only winning move, {bestMove}" |
 | move is `book` | "Theory — {openingName} ({eco})" |
 
-Ordering rule for the UI: show at most **two** reasons per move, prioritising `mate > material > tactical motif > structural > mobility`. More than two reads as noise.
+Ordering rule for the UI: show at most **two** reasons per move, prioritising `mate > material > tactical motif > structural > mobility`. More than two reads as noise. The only-move, pin and kick notes are one family: at most one a move, in that order, and only in a free slot, because a tactic card for the same thing replaces the note later.
 
 For the alternatives panel, the existing MultiPV-3 output is already the right shape: show `bestMoveSan` with its PV, plus the two runners-up with their win% (not raw centipawns — win% is what the accuracy number is built on, and it is far more intuitive for club players).
 

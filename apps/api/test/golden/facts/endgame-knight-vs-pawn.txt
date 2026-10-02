@@ -63,3 +63,6 @@ PLAN
 
 REVIEW NOTES
   l1
+    n9 5…Na6+: The only move that holds: the next best, Kg2, loses a knight
+    n11 6…Nb8: The only move that holds
+    n13 7…Na6+: The only move that holds: the next best, Nc6, loses a knight

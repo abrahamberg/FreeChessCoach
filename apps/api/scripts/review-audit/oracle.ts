@@ -103,6 +103,14 @@ export function settledGain(fen: string, sans: readonly string[], side: Color): 
   return Math.max(side === 'w' ? change : -change, lineGain(fen, sans, side));
 }
 
+/** The side's chance of winning from an engine line, in percent (the usual
+ * logistic over centipawns; a mate is all or nothing). */
+export function winChance(line: { cp: number | null; mate: number | null }, side: Color): number {
+  if (line.mate !== null) return line.mate > 0 === (side === 'w') ? 100 : 0;
+  const white = 100 / (1 + Math.exp(-0.00368208 * (line.cp ?? 0)));
+  return side === 'w' ? white : 100 - white;
+}
+
 /** Whether a move a sentence recommends (or names as the punishment) is one
  * the engine would play: within two pawns of its best line, or still better
  * than a pawn up for its side. `lines` are the engine's, best first, scores

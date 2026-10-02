@@ -196,8 +196,10 @@ REVIEW NOTES
     n23 12.Qa3: Concedes the centre
     n24 12…Nxc3: Trades knights on c3; You won a pawn through a brilliant sacrifice — removes the defender on c3, leaving the pawn on e4 undefended.
     n25 13.bxc3: Recaptures the knight on c3; They saved a hanging piece — saves the rook on d1.
+    n34 17…Be6: The only good move
     n35 18.Bxb6: Missed Qxc3, winning material on c3
-    n36 18…Bxc4+: You stopped them winning a knight through a free piece with Qxc3 — captures the knight on c3.
+    n36 18…Bxc4+: The only winning move; You stopped them winning a knight through a free piece with Qxc3 — captures the knight on c3.
+    n38 19…Ne2+: The only winning move
     n40 20…Nxd4+: Creates a passed pawn on c
     n44 22…Nc3+: Missed axb6, winning material on b6
     n52 26…Rxa2: Creates a passed pawn on b

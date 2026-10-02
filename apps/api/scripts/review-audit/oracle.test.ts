@@ -219,6 +219,22 @@ describe('review audit oracle', () => {
     expect(failing('review:reason:trade', 'Trades pawns on g6', 'white', '7r/8/7p/R4Ppk/8/3B1PK1/8/7q w - g6 0 1', 'fxg6#')).toEqual(['can-take-back']);
   });
 
+  test('the only-move note is checked against the engine\'s first two lines', () => {
+    const fenBefore = '4k3/8/8/8/q7/8/5PPP/R5K1 b - - 0 1';
+    const check = (text: string, san: string, lines: { san: string; cp: number | null; mate: number | null; pv: string[] }[]): string[] =>
+      checkReviewItem({ source: 'review:reason:only-move', text, data: null } as AuditItem, { mover: 'black', san, fenBefore, fenAfter: play(fenBefore, san) ?? '', linesBefore: lines, linesAfter: [] } as unknown as AuditPosition)
+        .filter((each) => !each.ok)
+        .map((each) => each.check);
+    const lines = [{ san: 'Qd4', cp: -600, mate: null, pv: ['Qd4', 'h3'] }, { san: 'Kd7', cp: 500, mate: null, pv: ['Kd7', 'Rxa4', 'Kc6'] }];
+    expect(check('The only winning move: the next best, Kd7, loses the queen', 'Qd4', lines)).toEqual([]);
+    expect(check('Missed the only winning move, Qd4', 'Kd7', lines)).toEqual([]);
+    expect(check('The only winning move: the next best, Kd7, loses the queen', 'Kd7', lines)).toEqual(['only-move-first']);
+    expect(check('The only move that holds', 'Qd4', lines)).toEqual(['only-move-words']);
+    // The second line is close: no only move, and it loses nothing.
+    const close = [{ san: 'Qd4', cp: -600, mate: null, pv: ['Qd4', 'h3'] }, { san: 'Qb4', cp: -550, mate: null, pv: ['Qb4', 'h3'] }];
+    expect(check('The only winning move: the next best, Qb4, loses the queen', 'Qd4', close)).toEqual(['only-move-gap', 'only-move-words', 'next-best-cost']);
+  });
+
   test('a seed says what the owner expected to read: an unmet expectation is a failing item', () => {
     const move = (ply: number, reasons: string[]): ClassifiedMoveDto => ({ ply, quality: 'good', reasons, bestLineSan: [] }) as unknown as ClassifiedMoveDto;
     const moves = [move(7, ['Pins the knight on f6 to the queen']), move(8, []), move(9, ['Concedes the centre'])];

@@ -70,4 +70,6 @@ PLAN
 
 REVIEW NOTES
   l1
+    n5 3.e7: The only winning move
+    n7 4.Kf7: The only winning move
   l2

@@ -68,3 +68,6 @@ PLAN
 
 REVIEW NOTES
   l1
+    n1 1.Qd8+: The only move that holds
+    n3 2.Qd3+: The only move that holds
+    n5 3.Qd7+: The only move that holds

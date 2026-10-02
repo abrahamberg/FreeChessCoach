@@ -2,6 +2,7 @@ import { Chess, type Move, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type FeatureDeltaDto, type MoveQuality, type PositionFeatures } from '@freechesscoach/shared';
 import { betterMoveReasons } from './move-reason-better.js';
 import { kickReason } from './kick-reason.js';
+import { onlyMoveReason } from './only-move-reason.js';
 import { pinReason } from './pin-reason.js';
 import { saidMateIn } from './mate-count.js';
 import { moverMateIn } from './mover-mate.js';
@@ -61,7 +62,6 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     ...missedCaptureReason(input),
     ...looseReasons(input),
     ...allowedForkReasons(input),
-    ...quietMoveReasons(input),
     ...costlyMoveReasons(input),
     ...centerSwingReason(input),
     ...passedPawnReasons(input),
@@ -70,15 +70,31 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     // no fault to report, which is most of them.
     ...tradeReason(input)
   ];
+  const note = cardReplaceableNote(input, reasons);
   // Mobility is the weakest signal here (a bad move usually has a sharper
   // reason than "fewer squares") — it only earns a mention when nothing
   // better already explains the move, never alongside one.
-  if (reasons.length === 0) reasons.push(...mobilityReason(input));
+  if (reasons.length === 0 && !note) reasons.push(...mobilityReason(input));
 
-  return reasons
+  const kept = reasons
     .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category))
     .slice(0, MAX_REASONS)
     .map((reason) => reason.text);
+  return note && kept.length < MAX_REASONS ? [...kept, note] : kept;
+}
+
+/**
+ * The one note a tactic card may replace later: the only move
+ * (`only-move-reason.ts`), else the pin the move made (`pin-reason.ts`),
+ * else the piece its pawn attacks (`kick-reason.ts`).
+ *
+ * The cards are decided after the reasons (`report-tactic-verdicts.ts`),
+ * and a card for the same thing drops the note. So the note only ever fills
+ * a free slot: had it pushed another reason out first, that reason would be
+ * gone for nothing (6…exf2+ lost "Trades pawns on f2" that way).
+ */
+function cardReplaceableNote(input: MoveReasonsInput, others: readonly Reason[]): string | null {
+  return onlyMoveNote(input, others) ?? quietMoveNote(input);
 }
 
 function bookReason(input: MoveReasonsInput): string {
@@ -160,15 +176,24 @@ function allowedForkReasons(input: MoveReasonsInput): Reason[] {
     }));
 }
 
-/** What a quiet move does to the other side's pieces: the pin it made
- * (`pin-reason.ts`), or the piece its pawn attacks (`kick-reason.ts`). One
- * of them, the pin first. Not on a move that cost something: there the fault
- * is the story, and on an inaccuracy with nothing else to say the note is
- * "better was …", which a pin or a kick would push out. */
-function quietMoveReasons(input: MoveReasonsInput): Reason[] {
-  if (isFault(input)) return [];
-  const text = pinReason(input.fenBefore, input.moveSan, input.mover) ?? kickReason(input.fenBefore, input.moveSan);
-  return text ? [{ category: 'tactical', text }] : [];
+/** The one move that works, played or missed. Not on a recapture (taking
+ * back is the only move by definition), and not when a sharper note already
+ * names the move that was missed. */
+function onlyMoveNote(input: MoveReasonsInput, others: readonly Reason[]): string | null {
+  if (input.isRecapture) return null;
+  const text = onlyMoveReason(input);
+  const best = input.evalBefore.lines[0]?.moveSan;
+  const named = best !== undefined && best !== input.moveSan && others.some((reason) => reason.text.includes(best));
+  return named ? null : text;
+}
+
+/** What a quiet move does to the other side's pieces: the pin first, else
+ * the kick. Not on a move that cost something: there the fault is the
+ * story, and on an inaccuracy with nothing else to say the note is "better
+ * was …", which a pin or a kick would push out. */
+function quietMoveNote(input: MoveReasonsInput): string | null {
+  if (isFault(input)) return null;
+  return pinReason(input.fenBefore, input.moveSan, input.mover) ?? kickReason(input.fenBefore, input.moveSan);
 }
 
 /** What the move gave up, and why the engine's move was better. */

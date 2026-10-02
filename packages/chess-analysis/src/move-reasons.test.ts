@@ -158,3 +158,46 @@ describe('the piece a pawn kicks (Task 126.3)', () => {
     expect(reasons(AFTER_BG5, 'h6', 'blunder')).not.toContain(KICK);
   });
 });
+
+describe('the one move that works (Tasks 121.3 and 125.5)', () => {
+  const QUEEN_ATTACKED = '4k3/8/8/8/q7/8/5PPP/R5K1 b - - 0 1';
+  const lines = [
+    { moveSan: 'Qd4', moveUci: '', cp: -600, mateIn: null, pvSan: ['Qd4', 'h3'] },
+    { moveSan: 'Kd7', moveUci: '', cp: 500, mateIn: null, pvSan: ['Kd7', 'Rxa4', 'Kc6'] }
+  ];
+  const notes = (moveSan: string, quality: MoveQuality, isRecapture = false): string[] => {
+    const chess = new Chess(QUEEN_ATTACKED);
+    chess.move(moveSan);
+    return buildReasons({ mover: 'black', fenBefore: QUEEN_ATTACKED, fenAfter: chess.fen(), moveSan, evalBefore: { ply: 0, fen: QUEEN_ATTACKED, depth: 12, lines }, quality, isRecapture, isBookMove: false });
+  };
+
+  test('is said on the move that found it and on the move that missed it', () => {
+    expect(notes('Qd4', 'best')).toContain('The only winning move: the next best, Kd7, loses the queen');
+    expect(notes('Kd7', 'blunder')).toContain('Missed the only winning move, Qd4');
+  });
+
+  test('is not said on a recapture', () => {
+    expect(notes('Qd4', 'best', true).join(' ')).not.toContain('only');
+  });
+});
+
+describe('a note a tactic card may replace only fills a free slot', () => {
+  const fen = '4k3/8/8/8/q7/8/5PPP/R5K1 b - - 0 1';
+  const lines = [
+    { moveSan: 'Qd4', moveUci: '', cp: -600, mateIn: null, pvSan: ['Qd4', 'h3'] },
+    { moveSan: 'Kd7', moveUci: '', cp: 500, mateIn: null, pvSan: ['Kd7', 'Rxa4', 'Kc6'] }
+  ];
+  const notes = (moveSan: string, quality: MoveQuality): string[] => {
+    const chess = new Chess(fen);
+    chess.move(moveSan);
+    return buildReasons({ mover: 'black', fenBefore: fen, fenAfter: chess.fen(), moveSan, evalBefore: { ply: 0, fen, depth: 12, lines }, quality, isBookMove: false });
+  };
+
+  test('with no other reason it is the note', () => {
+    expect(notes('Qd4', 'best')).toEqual(['The only winning move: the next best, Kd7, loses the queen']);
+  });
+
+  test('on the move that missed it, it stands in for the mobility note', () => {
+    expect(notes('Kd7', 'blunder')).toEqual(['Missed the only winning move, Qd4']);
+  });
+});

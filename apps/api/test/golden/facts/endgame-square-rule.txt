@@ -55,3 +55,5 @@ PLAN
 REVIEW NOTES
   l1
     n3 2.f5: You gained space — pushes a pawn to f5, taking space.
+    n5 3.f6: The only winning move
+    n7 4.f7: The only winning move

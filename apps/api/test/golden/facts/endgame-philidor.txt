@@ -49,3 +49,4 @@ PLAN
 
 REVIEW NOTES
   l1
+    n8 4…Rd1+: The only move that holds

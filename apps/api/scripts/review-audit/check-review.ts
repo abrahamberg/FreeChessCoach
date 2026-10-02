@@ -1,7 +1,7 @@
 import type { TacticGainDto } from '@freechesscoach/shared';
 import type { Color } from 'chess.js';
 import { result } from './check-result.js';
-import { attackersOf, capturersOf, colorOf, developedMinors, exchangeGain, hasPassedPawnOn, legalCapturesOf, mateCountAgrees, moveIsSound, moveOf, other, PIECE_BY_NAME, pieceAt, pinnersThrough, play, playLine, POINTS, prizeWon, settledGain, squaresOf, threatFen } from './oracle.js';
+import { attackersOf, capturersOf, colorOf, developedMinors, exchangeGain, hasPassedPawnOn, legalCapturesOf, mateCountAgrees, moveIsSound, moveOf, other, PIECE_BY_NAME, pieceAt, pinnersThrough, play, playLine, POINTS, prizeWon, settledGain, squaresOf, threatFen, winChance } from './oracle.js';
 import type { AuditItem, AuditPosition, CheckResult, LineView } from './types.js';
 
 type Check = (item: AuditItem, position: AuditPosition) => CheckResult[];
@@ -139,6 +139,35 @@ const REASON_CHECKS: Record<string, Check> = {
     const guardedAfter = attackersOf(position.fenAfter, square, own).length;
     const lands = play(position.fenAfter, reply) !== null && reply.replace(/[+#=QRBN]+$/, '').endsWith(square);
     return [result('guard-lost', guardedAfter < guardedBefore, `${square} is guarded ${guardedBefore}× before and ${guardedAfter}× after`), result('reply-lands', lands, `${reply} does not land on ${square}`)];
+  },
+  // "The only winning move: the next best, Kd7, loses the queen" / "Missed
+  // the only winning move, Qd4": the engine's first move is the one named,
+  // its second is far behind (20 points of winning chance, or three pawns),
+  // the words fit where the two lines stand, and the cost named is in the
+  // second line.
+  'only-move': (item, position) => {
+    const side = colorOf(position.mover);
+    const [first, second] = position.linesBefore;
+    const missed = /^Missed the only .+, (\S+)$/.exec(item.text)?.[1];
+    const named = missed ?? position.san;
+    if (!first || !second) return [result('only-move-gap', false, 'the engine gave fewer than two lines')];
+    const [best, next] = [winChance(first, side), winChance(second, side)];
+    const cpGap = first.mate === null && second.mate === null ? ((first.cp ?? 0) - (second.cp ?? 0)) * (side === 'w' ? 1 : -1) : 0;
+    const winning = best >= 75 && next < 75;
+    const holding = !winning && best > 25 && next <= 25;
+    const band = /only winning move/.test(item.text) ? winning : /only move that holds/.test(item.text) ? holding : !winning && !holding;
+    const checks = [
+      result('only-move-first', first.san === named, `the engine's first move is ${first.san}, not ${named}`),
+      result('only-move-gap', best - next > 20 || cpGap >= 300, `the first two lines stand at ${best.toFixed(0)}% and ${next.toFixed(0)}% for the mover`),
+      result('only-move-words', band, `the first two lines stand at ${best.toFixed(0)}% and ${next.toFixed(0)}% for the mover`)
+    ];
+    const cost = /the next best, (\S+), (gets mated|loses (?:the|a) (\w+))$/.exec(item.text);
+    if (cost) {
+      const taken = settledGain(position.fenBefore, second.pv, other(side));
+      const ok = cost[2] === 'gets mated' ? second.mate !== null && second.mate > 0 !== (side === 'w') : prizeWon(POINTS[PIECE_BY_NAME[cost[3] ?? ''] ?? 'p'], taken);
+      checks.push(result('next-best-named', second.san === cost[1], `the engine's second move is ${second.san}, not ${cost[1]}`), result('next-best-cost', ok, `the line ${second.pv.join(' ')} gives the other side ${taken}`));
+    }
+    return checks;
   },
   // "Pins the knight on f6 to the queen": the knight is theirs, one of the
   // mover's line pieces looks through it at that queen, it did not before

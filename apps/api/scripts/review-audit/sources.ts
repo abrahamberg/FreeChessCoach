@@ -10,6 +10,7 @@ const REASON_TEMPLATES: [RegExp, string][] = [
   [/^Missed \S+, winning material on /, 'missed-capture'],
   [/^Leaves the \w+ on [a-h][1-8] undefended$/, 'loose-free'],
   [/^Leaves the \w+ on [a-h][1-8] where it can be won$/, 'loose-winnable'],
+  [/^(The only (winning move|move that holds|good move)\b|Missed the only )/, 'only-move'],
   [/^Allows a fork: /, 'allowed-fork'],
   [/^Pins the \w+ on [a-h][1-8] to the (king|queen)$/, 'pin'],
   [/^Attacks the \w+ on [a-h][1-8](, which pins the \w+ on [a-h][1-8])?$/, 'kick'],

@@ -105,6 +105,7 @@ REVIEW NOTES
     n5 3.Nf3: Theory — Englund Gambit: Main Line (A40)
     n6 3…Qe7: Theory — Englund Gambit: Main Line (A40)
     n9 5.Bd2: Concedes the centre
+    n11 6.Bc3: Missed the only good move, Nc3
     n12 6…Bb4: You saved a hanging piece — saves the queen on b2.; Won the rook, giving back a bishop.
     n13 7.Qd2: They let you win a bishop through a free piece with Bxc3 — captures the bishop on c3.
     n14 7…Bxc3: Trades bishops on c3; You saved a hanging piece — saves the queen on b2.

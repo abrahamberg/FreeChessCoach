@@ -365,13 +365,54 @@ card).
 `board-facts/material.ts` (`settledLine`, `lineBalance`),
 `move-verdict/` (how one card is chosen).
 
-- [ ] A review reason for a played only move: "The only move: anything else
-  loses the queen" (what the second line loses, from its settled line's
-  material), for best and great moves of either side.
-- [ ] When that reason fires, a card that explains less of the eval gap
-  ("won a pawn through an eventual fork") is not shown beside it.
-- [ ] Tests: fires on the seed's ply 49 with fresh evals; never on a move
-  with a second line within `CONFIG.courses.onlyMoveGap`.
+- [x] A review reason for a played only move (`only-move-reason.ts`, on
+  `isOnlyMove`, the test the course quiz and the "only moves found" stat
+  use): "The only winning move", "The only move that holds" or "The only
+  good move", by where the engine's first two lines stand for the mover
+  (winning against not; holding against losing; far apart in between).
+  When the board shows what the second line costs: "…: the next best,
+  Kd7, loses the queen" (a piece the other side takes for nothing before
+  the line goes quiet) or "…, gets mated". The plan's "anything else
+  loses the queen" is not said: only the second line is known.
+- [x] The move that missed it (Task 125.5): "Missed the only winning
+  move, dxe6", unless a sharper note already names that move.
+- [x] Silent when the game is decided either way (the second move still
+  wins, or the first already loses), on a mate (the mate notes say it),
+  and on a recapture. The first version said "The only good move" for
+  9.0 against 5.0: a slower win is not a bad move.
+- [x] Beside a tactic card for the chance the move took or missed, the
+  note is dropped (`withoutCardedOnlyMove`): the card names the same move
+  with what it wins. The plan's "a card that explains less is not shown
+  beside it" is not built; it needs the card's share of the eval gap.
+- [x] **A note a card may replace only fills a free slot.** The only
+  move, the pin and the kick are one family (`cardReplaceableNote`, one
+  a move, in that order), added after the two reasons that stay whatever
+  the card says. Found on the golden files: placed among the reasons, the
+  note pushed "Trades pawns on f2" out of 6…exf2+ and was then dropped
+  beside the card, so the trade was lost for nothing.
+- [x] Tests: the three wordings, the two costs, the missed move, the
+  silences. Not the seed's ply 49: with its stored evals Qxc7 is the
+  engine's second move (finding F4).
+- [x] The audit checks the sentence against the engine's first two lines
+  (`only-move`: the move named is the first, the gap, the wording's band,
+  the cost named).
+- [x] Golden, 27 new lines in 12 courses, nearly all endgame drills and
+  studies where it is the lesson: King and pawn 3.e7 and 4.Kf7, the
+  opposition draw's six king moves, Philidor 4…Rd1+, the knight against
+  the pawn, the square rule, the perpetual's three checks; in master
+  games 17…Be6, 18…Bxc4+ and 19…Ne2+ of the Game of the Century and
+  12…Qg6 and 19…Qxa1+ of the Immortal Game; Englund 6.Bc3 "Missed the
+  only good move, Nc3".
+- [x] Dev re-run: **189 notes in 96 of 220 games (0.9 a game)**: 77 "the
+  only move that holds", 38 "winning", 27 "good", 47 missed; 31 name a
+  cost. Among the Lichess games, 40 have one, 24 two, 12 three; one has
+  eleven (`tod9P6y4`: nine king moves in a row in a drawn ending, each
+  "The only move that holds", each already badged `great`). 188 of 189
+  passed the check; the one that failed was wrong, 34.Qd1 "the next best,
+  f6, loses the queen", where the queen goes for a rook and a pawn. A
+  piece is now named only when it goes for next to nothing.
+- [ ] 30 judged. Watch the run of identical notes in one ending: if
+  judges mark them `irrelevant`, say it once per run of only moves.
 
 **Commit:** `feat(review): the only move, and what the others lose`
 
@@ -632,8 +673,9 @@ accuracy, so nothing flags it.
 - [ ] The badge as a sentence in the audit (`review:quality:*`, Task
   122.4), with a check for this rule. Not built: the audit does not carry
   badges yet.
-- [x] `test:corpus`, `test:golden`, §5.8 updated. The count of `miss` on
-  dev before and after is in the day's log below.
+- [x] `test:corpus`, `test:golden` (no line changes), §5.8 updated. On
+  dev 8 moves change badge: 7 from `excellent` and 1 from `good` to
+  `miss` (277 → 285 of the moves that have a note).
 
 **Commit:** `fix(review): a move that gives up a short forced mate is a miss`
 
@@ -651,6 +693,8 @@ of Task 120.2.
 
 **Findings:** item 5 (29.axb6: dxe6 was the one winning move, +3.7 against
 +0.8 for the next). Task 121.3's reason, for a missed only move too.
+
+- [x] Built with Task 121.3: "Missed the only winning move, dxe6".
 
 ## Phase 126 — What a quiet move does: the pin, the kick, the trade (owner's report, 2026-10-02)
 
