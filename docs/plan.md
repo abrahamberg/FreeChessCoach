@@ -768,7 +768,16 @@ the queen.
 - [x] Golden, five lines: four new, each a bishop for a knight or the
   reverse (Gold Coins 11.Nxe6 and 15.Bxf6, Lasker–Thomas 5.Bxf6, Opera
   4…Bxf3); one gone (Noah's Ark 6…Nxd4, above).
-- [ ] Dev re-run: count of `review:reason:trade` before/after.
+- [x] Dev re-run: `review:reason:trade` 1,417 → 1,544 sentences (130
+  new, each a bishop for a knight or the reverse; 3 gone). Four failed the
+  new `trade` check, all en passant. Three were the check's fault (the
+  pawn taken does not stand on the square; it now reads what was taken
+  from chess.js). One was the app's: 1.fxg6# in the en passant mating
+  puzzle read "Trades pawns on g6", because the exchange on an empty
+  square is zero. `isEvenEnPassant` reads the exchange after the move:
+  a trade only when the pawn can be taken back. One golden line goes
+  (that 1.fxg6#). Own commit: `fix(review): en passant that cannot be
+  taken back is not a trade`.
 
 **Commit:** `fix(review): a bishop for a knight is a trade`
 
@@ -912,7 +921,10 @@ tests beside each.
   5…Bxd1 in two courses (dxe5 Qxg4: a knight for a bishop), Englund
   8.Qxc3 (Nxc3 Qxa1+: a rook goes), Siberian 10.Nxd4 (hxg4 Nxe2+: the
   queen goes).
-- [ ] Dev re-run: `missed-capture` sentences and failures before/after.
+- [x] Dev re-run: `missed-capture` 516 → 451 sentences, `material-in-line`
+  failures 51 → 0. Dev code-check failures over every sentence 114 → 64
+  (63 after the en passant fix). 23 of the moves that lost the note now
+  read "mistake: better was X" instead, which is what they had to say.
 
 **Commit:** `fix(review): a missed capture has to win material in the engine's line`
 

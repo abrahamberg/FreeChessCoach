@@ -1,6 +1,10 @@
-import { Chess, type Color, type PieceSymbol, type Square } from 'chess.js';
+import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
+import { CONFIG } from './config.js';
 import { PIECE_NAMES } from './piece-names.js';
 import { BISHOP_KNIGHT_GAP_CP, see } from './see.js';
+
+/** One pawn on `see.ts`'s scale. */
+const { minThreatSeeCp: PAWN_CP } = CONFIG.evalWitness;
 
 /**
  * What an ordinary exchange is, said plainly.
@@ -35,7 +39,7 @@ export function describeTrade(input: TradeDescriptionInput): string | null {
 
   // Nobody can take back, so nothing was traded — the move won a piece, lost
   // one, or picked up a loose pawn, and each of those has its own note.
-  if (!isEvenExchange(input.fenBefore, square, move.color)) return null;
+  if (!(isEnPassant(move) ? isEvenEnPassant(board.fen(), move) : isEvenExchange(input.fenBefore, square, move.color))) return null;
   if (move.piece === move.captured) return `Trades ${plural(move.piece)} on ${square}`;
   // A bishop and a knight are the one even pair of unlike pieces. Any other
   // pair that comes out level did so over a longer exchange, and the first
@@ -53,6 +57,17 @@ const isMinor = (piece: PieceSymbol): boolean => piece === 'b' || piece === 'n';
  * lost one is somebody else's sentence. */
 function isEvenExchange(fenBefore: string, square: Square, capturer: Color): boolean {
   return Math.abs(see(fenBefore, square, capturer)) <= BISHOP_KNIGHT_GAP_CP;
+}
+
+const isEnPassant = (move: Move): boolean => move.flags.includes('e');
+
+/** En passant takes a pawn that does not stand on the square it lands on, so
+ * the exchange is read after the move: level when the pawn that took can be
+ * taken back for nothing more. 1.fxg6# in a mating puzzle was "Trades pawns
+ * on g6". */
+function isEvenEnPassant(fenAfter: string, move: Move): boolean {
+  const takenBack = see(fenAfter, move.to, move.color === 'w' ? 'b' : 'w');
+  return Math.abs(PAWN_CP - takenBack) <= BISHOP_KNIGHT_GAP_CP;
 }
 
 function tryMove(board: Chess, moveSan: string): ReturnType<Chess['move']> | null {

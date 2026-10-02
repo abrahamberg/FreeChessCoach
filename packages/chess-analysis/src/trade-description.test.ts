@@ -53,6 +53,13 @@ describe('describeTrade', () => {
     expect(describeTrade({ fenBefore: opera, moveSan: 'Rxd7', isRecapture: false })).toBeNull();
   });
 
+  test('en passant is a trade only when the pawn can be taken back', () => {
+    // 10.exd6 with …Bxd6 or …cxd6 to follow.
+    expect(describeTrade({ fenBefore: 'r1bqkb1r/ppp2p1p/6np/3pP3/2BP4/2N2Q2/PPP2PPP/R3K2R w KQkq d6 0 10', moveSan: 'exd6', isRecapture: false })).toBe('Trades pawns on d6');
+    // 1.fxg6# takes a pawn and mates: nothing is traded.
+    expect(describeTrade({ fenBefore: '7r/8/7p/R4Ppk/8/3B1PK1/8/7q w - g6 0 1', moveSan: 'fxg6#', isRecapture: false })).toBeNull();
+  });
+
   test('says nothing about a capture that simply wins the piece', () => {
     // Winning material is the tactic detectors' sentence, not a trade note.
     expect(describeTrade({ fenBefore: LOOSE_KNIGHT, moveSan: 'Nxd4', isRecapture: false })).toBeNull();

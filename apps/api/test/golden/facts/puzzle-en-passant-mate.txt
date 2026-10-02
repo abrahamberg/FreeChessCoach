@@ -20,4 +20,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.fxg6#: Trades pawns on g6; You delivered checkmate.
+    n1 1.fxg6#: You delivered checkmate.
