@@ -747,7 +747,7 @@ The stated priority is presentation, not the numbers. The per-move `reasons: str
 | `delta.newForks` for opponent | "Allows {piece} fork on {square} hitting {targets}" |
 | `delta.mobilityDelta <= -8` | "Costs {n} squares of piece mobility" |
 | best move was a capture that wins a pawn's worth on its square (SEE ≥ 100) and leaves the mover ahead where the engine's own line first goes quiet, not played | "Missed {bestMove}, winning material on {square}" |
-| a capture that comes out level (SEE within a bishop against a knight) | "Trades {pieces} on {square}" / "Trades the bishop for the knight on {square}"; "Recaptures the {piece} on {square}" when it takes back |
+| a capture that comes out level (SEE within a bishop against a knight) | "Trades {pieces} on {square}" / "Trades the bishop for the knight on {square}"; "Recaptures the {piece} on {square}" when it takes back. A trade of the mover's one developed minor piece adds ", giving up {Side}'s only developed piece", and, when the engine's reply takes back with a queen or minor piece from its first rank, "; {Other} can take back with the {piece}, bringing it out / developing it" |
 | the move pins a knight to the king or the queen with a bishop (the pin detector's verified claim; not on a mistake or worse) | "Pins the knight on {square} to the {king\|queen}" |
 | a quiet pawn move attacks a knight, bishop, rook or queen that no pawn attacked before; the pawn can legally take it and is not simply won (not on a mistake or worse, not beside a card for what the move did or allowed; the pin note comes first) | "Attacks the {piece} on {square}[, which pins the {piece} on {square}]" |
 | `lines[0].mateIn != null`, not played | "Missed mate in {n} starting with {bestMove}" |

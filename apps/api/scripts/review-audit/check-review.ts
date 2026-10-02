@@ -1,7 +1,7 @@
 import type { TacticGainDto } from '@freechesscoach/shared';
 import type { Color } from 'chess.js';
 import { result } from './check-result.js';
-import { attackersOf, colorOf, exchangeGain, hasPassedPawnOn, legalCapturesOf, mateCountAgrees, moveIsSound, moveOf, other, PIECE_BY_NAME, pieceAt, pinnersThrough, play, playLine, POINTS, prizeWon, settledGain, squaresOf, threatFen } from './oracle.js';
+import { attackersOf, capturersOf, colorOf, developedMinors, exchangeGain, hasPassedPawnOn, legalCapturesOf, mateCountAgrees, moveIsSound, moveOf, other, PIECE_BY_NAME, pieceAt, pinnersThrough, play, playLine, POINTS, prizeWon, settledGain, squaresOf, threatFen } from './oracle.js';
 import type { AuditItem, AuditPosition, CheckResult, LineView } from './types.js';
 
 type Check = (item: AuditItem, position: AuditPosition) => CheckResult[];
@@ -205,7 +205,20 @@ const REASON_CHECKS: Record<string, Check> = {
       result('took-with', takerName === undefined || taker?.type === PIECE_BY_NAME[takerName], `the piece that took on ${square} is not a ${takerName}`)
     ];
     if (item.text.startsWith('Recaptures')) return checks;
-    return [...checks, result('can-take-back', legalCapturesOf(position.fenAfter, square, other(own)).length > 0, `nothing can take back on ${square}`)];
+    checks.push(result('can-take-back', legalCapturesOf(position.fenAfter, square, other(own)).length > 0, `nothing can take back on ${square}`));
+    // "…, giving up White's only developed piece; Black can take back with the queen, bringing it out"
+    if (item.text.includes('only developed piece')) {
+      const out = developedMinors(position.fenBefore, own);
+      const from = moveOf(position.fenBefore, position.san)?.from;
+      checks.push(result('only-developed', out.length === 1 && out[0] === from, `${position.mover}'s knights and bishops off their first squares before the move: ${out.join(', ') || 'none'}`));
+    }
+    const back = /can take back with the (\w+), (?:bringing it out|developing it)$/.exec(item.text);
+    if (back) {
+      const homeRank = own === 'w' ? '8' : '1';
+      const fromHome = capturersOf(position.fenAfter, square).some((taker) => taker.piece === PIECE_BY_NAME[back[1] ?? ''] && taker.from[1] === homeRank);
+      checks.push(result('takes-back-from-home', fromHome, `no ${back[1]} on its first rank can take on ${square}`));
+    }
+    return checks;
   },
   'passed-pawn': (item, position) => {
     const file = /passed pawn on ([a-h])/.exec(item.text)?.[1] ?? '';

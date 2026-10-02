@@ -227,7 +227,8 @@ function tradeReason(input: MoveReasonsInput): Reason[] {
   const text = describeTrade({
     fenBefore: input.fenBefore,
     moveSan: input.moveSan,
-    isRecapture: input.isRecapture === true
+    isRecapture: input.isRecapture === true,
+    replySan: input.evalAfter?.lines[0]?.moveSan
   });
   return text ? [{ category: 'trade', text }] : [];
 }

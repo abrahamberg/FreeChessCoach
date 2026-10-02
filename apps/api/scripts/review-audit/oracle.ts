@@ -40,6 +40,20 @@ export function moveOf(fen: string, san: string): { from: Square; to: Square; pi
   }
 }
 
+/** A side's knights and bishops that stand off the squares they start on. */
+export function developedMinors(fen: string, color: Color): Square[] {
+  const home = color === 'w' ? ['b1', 'g1', 'c1', 'f1'] : ['b8', 'g8', 'c8', 'f8'];
+  return [...squaresOf(fen, 'n', color), ...squaresOf(fen, 'b', color)].filter((square) => !home.includes(square));
+}
+
+/** The pieces that can legally take on `square`, for the side to move. */
+export function capturersOf(fen: string, square: string): { from: Square; piece: PieceSymbol }[] {
+  return new Chess(fen)
+    .moves({ verbose: true })
+    .filter((move) => move.to === square && move.captured !== undefined)
+    .map((move) => ({ from: move.from, piece: move.piece }));
+}
+
 /** Every fen along a line; stops at the first illegal move. `legal` says whether it got to the end. */
 export function playLine(fen: string, sans: readonly string[]): { fens: string[]; legal: boolean } {
   const fens = [fen];

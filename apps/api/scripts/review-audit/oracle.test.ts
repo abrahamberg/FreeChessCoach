@@ -204,6 +204,11 @@ describe('review audit oracle', () => {
     expect(failing('review:reason:trade', 'Trades the bishop for the knight on f6', 'white', before, 'Bxf6')).toEqual([]);
     expect(failing('review:reason:trade', 'Trades the knight for the bishop on f6', 'white', before, 'Bxf6')).toEqual(['took-piece', 'took-with']);
     expect(failing('review:reason:trade', 'Recaptures the knight on f6', 'white', before, 'Bxf6')).toEqual([]);
+    expect(failing('review:reason:trade', "Trades the bishop for the knight on f6, giving up White's only developed piece; Black can take back with the queen, bringing it out", 'white', before, 'Bxf6')).toEqual([]);
+    // The knight on b8 cannot reach f6.
+    expect(failing('review:reason:trade', "Trades the bishop for the knight on f6, giving up White's only developed piece; Black can take back with the knight, developing it", 'white', before, 'Bxf6')).toEqual(['takes-back-from-home']);
+    // With the knight on f3 out as well, the bishop is not the only one.
+    expect(failing('review:reason:trade', "Trades the bishop for the knight on f6, giving up White's only developed piece", 'white', 'rnbqkb1r/ppp2pp1/5n1p/3pp1B1/4P3/3P1N2/PPP2PPP/RN1QKB1R w KQkq - 0 5', 'Bxf6')).toEqual(['only-developed']);
     // A knight nobody defends is won, not traded.
     expect(failing('review:reason:trade', 'Trades knights on d4', 'black', '4k3/8/2n5/8/3N4/8/8/4K3 b - - 0 1', 'Nxd4')).toEqual(['can-take-back']);
     // En passant takes a pawn that does not stand on the square (10.exd6 in `L7CCk08Y`).

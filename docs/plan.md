@@ -907,16 +907,28 @@ before with Be3 first and Bxf6 the second line at −1.18; −1.08 after), but
 a poor trade for a plain reason: the bishop was White's only developed piece, and
 Black recaptures with the queen, which develops it.
 
-- [ ] The trade reason gains a clause when it is true on the board:
-  "…giving up White's only developed piece" (the mover has no other minor
-  piece off its home square), and/or "Black takes back with the queen,
-  bringing it out" (the recapture in the engine's line is by a piece
-  leaving its home square). Both from chess.js and the stored line; no
-  eval claim.
-- [ ] The dossier says the same on a course node whose move is such a
-  trade (`course/dossier-node.ts`), one row, through the same function.
-- [ ] Tests first on 5.Bxf6; silent on a trade of two developed pieces
-  with others developed.
+- [x] The trade reason gains a clause when it is true on the board
+  (`trade-description.ts` `tradeCost`): "…, giving up White's only
+  developed piece" (a knight or bishop that was the mover's one minor
+  piece off its first square, with at least three minor pieces still on
+  the board), and then, when the engine's reply takes back with a queen
+  or a minor piece leaving its first rank, "; Black can take back with
+  the queen, bringing it out" / "…with the knight, developing it". Board
+  facts and the stored reply; no eval claim.
+- [x] **Measured, and narrowed.** With the recapture clause said on its
+  own, 89 trades on dev carried a clause (0.41 a game), "White can take
+  back with the bishop, developing it" at move 27 among them. Said only
+  with "the only developed piece" it is 21 (0.10 a game, at most 2), all
+  in the opening: 9 with the queen, 1 with a minor piece.
+- [x] The dossier gets the same sentence: its REVIEW NOTES rows are the
+  review's reasons (golden: Opera 4…Bxf3 now reads "…, giving up Black's
+  only developed piece; White can take back with the queen, bringing it
+  out"). No second function.
+- [x] Tests first on 5.Bxf6 of the seed, the Scotch's 4…Nxd4, a pawn
+  taking back, a knight taking back from b1; silent in an endgame and
+  when the mover has other pieces out.
+- [x] The audit's `trade` check covers both clauses (`only-developed`,
+  `takes-back-from-home`).
 
 **Commit:** `feat(review): a trade says what it gives up`
 

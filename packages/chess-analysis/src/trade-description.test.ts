@@ -13,6 +13,8 @@ const LOOSE_KNIGHT = '4k3/8/2n5/8/3N4/8/8/4K3 b - - 0 1';
 /** The owner's game d9716668 after 4.Bg5 h6: the bishop takes the knight on
  * f6 and the queen takes back. */
 const BISHOP_FOR_KNIGHT = 'rnbqkb1r/ppp2pp1/5n1p/3pp1B1/4P3/3P1P2/PPP3PP/RN1QKBNR w KQkq - 0 5';
+/** An Italian after 4.d3 d6 5.Bg5 Be7: both sides have other pieces out. */
+const BOTH_DEVELOPED = 'r1bqk2r/ppp1bppp/2np1n2/4p1B1/2B1P3/3P1N2/PPP2PPP/RN1QK2R w KQkq - 2 6';
 /** A pawn on e5 held by a pawn: the knight that takes it is lost for it. */
 const DEFENDED_PAWN = '4k3/8/3p4/4p3/8/5N2/8/4K3 w - - 0 1';
 /** A pawn on e5 nobody holds. */
@@ -26,17 +28,51 @@ describe('describeTrade', () => {
   });
 
   test('names an even trade of like pieces', () => {
-    expect(describeTrade({ fenBefore: SCOTCH_AFTER_NXD4, moveSan: 'Nxd4', isRecapture: false })).toBe(
-      'Trades knights on d4'
-    );
+    expect(describeTrade({ fenBefore: '4k3/8/2p5/3n4/8/2N5/8/4K3 w - - 0 1', moveSan: 'Nxd5', isRecapture: false, replySan: 'cxd5' })).toBe('Trades knights on d5');
+  });
+
+  describe('what the trade gives up (Task 126.4)', () => {
+    test('the only developed piece, and a queen that comes out by taking back (the owner\'s game, 5.Bxf6)', () => {
+      expect(describeTrade({ fenBefore: BISHOP_FOR_KNIGHT, moveSan: 'Bxf6', isRecapture: false, replySan: 'Qxf6' })).toBe(
+        "Trades the bishop for the knight on f6, giving up White's only developed piece; Black can take back with the queen, bringing it out"
+      );
+    });
+
+    test('a pawn taking back develops nothing', () => {
+      expect(describeTrade({ fenBefore: BISHOP_FOR_KNIGHT, moveSan: 'Bxf6', isRecapture: false, replySan: 'gxf6' })).toBe(
+        "Trades the bishop for the knight on f6, giving up White's only developed piece"
+      );
+    });
+
+    test('the Scotch, 4…Nxd4: Black\'s one knight for a queen in the centre', () => {
+      expect(describeTrade({ fenBefore: SCOTCH_AFTER_NXD4, moveSan: 'Nxd4', isRecapture: false, replySan: 'Qxd4' })).toBe(
+        "Trades knights on d4, giving up Black's only developed piece; White can take back with the queen, bringing it out"
+      );
+    });
+
+    test('a minor piece taking back from its home square is developed', () => {
+      // …Bxc3 is answered by the knight from b1.
+      const fen = 'rnbqk1nr/pppp1ppp/8/4p3/1b2P3/2B5/PPPP1PPP/RN1QKBNR b KQkq - 0 1';
+      expect(describeTrade({ fenBefore: fen, moveSan: 'Bxc3', isRecapture: false, replySan: 'Nxc3' })).toBe(
+        "Trades bishops on c3, giving up Black's only developed piece; White can take back with the knight, developing it"
+      );
+    });
+
+    test('not in an endgame: a lone bishop is not "the only developed piece", and nothing is added', () => {
+      expect(describeTrade({ fenBefore: '3qk3/8/5n2/6B1/8/8/8/4K3 w - - 0 1', moveSan: 'Bxf6', isRecapture: false, replySan: 'Qxf6' })).toBe('Trades the bishop for the knight on f6');
+    });
+
+    test('not when the mover has other pieces out: the recapture alone is no point', () => {
+      // The same Italian without …Be7: the queen takes back, and White's bishop on c4 and knight on f3 are out as well.
+      const queenTakesBack = 'r1bqkb1r/ppp2ppp/2np1n2/4p1B1/2B1P3/3P1N2/PPP2PPP/RN1QK2R w KQkq - 2 6';
+      expect(describeTrade({ fenBefore: queenTakesBack, moveSan: 'Bxf6', isRecapture: false, replySan: 'Qxf6' })).toBe('Trades the bishop for the knight on f6');
+    });
   });
 
   // A bishop is 330 and a knight 320 on `see.ts`'s scale, so the exchange
   // comes out ten points off level, which is still level.
   test('names a bishop given for a knight', () => {
-    expect(describeTrade({ fenBefore: BISHOP_FOR_KNIGHT, moveSan: 'Bxf6', isRecapture: false })).toBe(
-      'Trades the bishop for the knight on f6'
-    );
+    expect(describeTrade({ fenBefore: BOTH_DEVELOPED, moveSan: 'Bxf6', isRecapture: false, replySan: 'Bxf6' })).toBe('Trades the bishop for the knight on f6');
   });
 
   test('says nothing about a capture that loses a piece for a pawn', () => {
