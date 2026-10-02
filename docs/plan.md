@@ -676,6 +676,72 @@ The gate stays as it is for cards ("Found the pin" is praise, and praise
 for a move that changed nothing was the spam). What is missing is a plain
 description in the move's reasons, with its own budget.
 
+### Task 126.0 — An exchange offered is not a pin
+
+**Finding (2026-10-02):** of 211 verified pins on the dev games, 39 had a
+"pinned" piece that could take its pinner: a rook facing a rook, a bishop
+facing a bishop, a queen offered to a queen. Four were priced as winning
+the piece (30.Qc3 in `xs9VDfEW`: a queen trade offered, "wins a queen
+through a pin"). The dossier's board facts had the same flaw ("attacks the
+bishop on e7, which is pinned to the queen on d8 by the bishop on f6"
+after 5.Bxf6 in Lasker–Thomas: the bishop on e7 simply takes back).
+
+**The rule (the owner's, 2026-10-02), in `tactic-pins.ts` `pins()`, so the
+cards, `breaksPin`, the diagnostics and the board facts all get it:** a
+front piece that attacks its pinner and is worth no more than it is an
+exchange offered, unless it had something else to do
+(`pinnedPieceTask`):
+
+- `capture`: it attacks another enemy piece worth more than it (a pawn one
+  step from promoting counts), one nothing defends, or one of its own
+  value that is itself attacking something;
+- `guard`: it is the only defender of a man of its own that is attacked;
+- `block`: it stands in front of a second line as well.
+
+A queen pinned by a bishop or a rook is untouched: taking the pinner costs
+the queen.
+
+- [x] Tests first (`tactic-pins.test.ts`, eleven positions): the classic
+  4.Bg5 and a queen pinned to the king stay; rook against rook, bishop
+  against bishop and queen against queen go; the Englund's 6…Bb4 stays
+  (the bishop on c3 can take on b4, but it wants the queen on b2), with
+  one position for each other task.
+- [x] Measured on dev, every new pin shape whose front piece can take the
+  pinner (65, before `verifyPin`): 55 are exchange offers, 10 stay pins
+  (5 capture, 3 guard, 2 block). Two looser versions were measured and
+  dropped: "a second attacker hits the front piece" kept four plain
+  recaptures; "guards any attacked man" kept ten.
+- [x] `test:corpus`: the Lichess pin puzzles stay at 27 of 40. The first
+  version lost two rook endings (CObOW: the rook holds a pawn on its
+  seventh rank; OpBrr: the rook could take a free pawn), which is where
+  the promotion and the undefended-man clauses come from.
+- [x] Golden: one line. Lasker–Thomas 5.Bxf6 loses ", which is pinned to
+  the queen on d8 by the bishop on f6". The Englund's rows are unchanged.
+- [x] Dev re-run (220 games, 64,790 sentences): 53 sentences changed, no
+  check count moved (114 code-check failures before and after).
+  - 51 dossier facts lose the clause ", which is pinned to the king by
+    …": 27 `board:attacks`, 11 `why-better:attacks`, 13 inside a
+    tempting-move row. Every one is a rook facing a rook, a queen facing
+    a queen or a bishop facing a bishop.
+  - 2 review cards go, with their 2 dossier copies: "They pinned a piece —
+    the queen on e3 is stuck in front of the king" (a queen offered to a
+    queen on c5) and "You missed a chance to pin a piece with Rc3" (a rook
+    offered to a rook).
+  - The re-run also showed two cards that should not have appeared: "You
+    tucked the king away" on 12.Kc2 (`x2KnTpLY`) and 38.Kc3 (`lHChXcbH`).
+    Cause: `PIECE_VALUES` prices the king at nothing, so a king in check
+    with a piece behind it counted as "can take the pinner"; that shape
+    used to give a `breaksPin` claim, which outranks `kingSafety` and gets
+    no card. `canTakePinner` now leaves a king in front alone (one test);
+    both moves are back to what they had. Checked on the two positions,
+    not by a second re-run; the next dev run confirms it.
+- **Left over:** a king in check is not a pin, and a king stepping out of
+  check does not "break a pin". The shape stays in `pinShapes()` only
+  because taking it out moves cards (`kingSafety` on forced king moves);
+  that is its own task with its own judged sample.
+
+**Commit:** `fix(analysis): an exchange offered is not a pin`
+
 ### Task 126.1 — A bishop for a knight is a trade
 
 **Files:** `packages/chess-analysis/src/trade-description.ts` (+ test).

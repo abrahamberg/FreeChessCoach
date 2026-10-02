@@ -981,3 +981,51 @@ count that is said with the audit's own search of that board at depth 40
 after`; measurement only, the app never sees it). It fails a sentence only
 when that search mates faster along the same line, or the other side mates
 there: a slower mate in the probe proves nothing against the sentence.
+
+## 14. An exchange offered is not a pin (Task 126.0)
+
+`pins()` was ray geometry: a slider, an enemy piece, a more valuable enemy
+piece behind it. That also describes a rook facing a rook with the king
+behind, a bishop facing a bishop, and a queen offered to a queen, where the
+front piece simply takes the pinner. On the audit's 220 dev games
+(2026-10-02) 39 of the 211 verified pins were of this kind, and four were
+priced as winning the piece: 30.Qc3 offering a queen trade read as "wins a
+queen through a pin". The dossier's board facts had it too.
+
+The rule is the owner's, and it lives in `pins()` so every reader gets it
+(the pin and breaks-pin detectors, `motif-to-code.ts`, `board-facts/
+safety.ts`). `pinShapes()` is the geometry as before. A shape whose front
+piece attacks the pinner and is worth no more than it (`canTakePinner`) is
+dropped unless the front piece had something else to do
+(`pinnedPieceTask`):
+
+| Task | The front piece… | The position it came from |
+|---|---|---|
+| `capture` | attacks another enemy piece worth more than it (a pawn one step from promoting counts), one nothing defends, or one of its own value that is attacking something | Englund 6…Bb4: the bishop on c3 can take on b4, but it wants the queen on b2 |
+| `guard` | is the only defender of a man of its own that is attacked | 6…Bxc3+: Bxc3 would drop the knight on g5 |
+| `block` | stands in front of a second line as well | 22.Bh6: the bishop on g7 is pinned to the king by the queen on g3 |
+
+A queen pinned by a bishop or a rook never enters this: taking the pinner
+costs the queen.
+
+Measured on the 65 new shapes on dev whose front piece can take its pinner:
+55 exchange offers, 10 pins. Two looser tests were tried first and
+dropped. "A second attacker hits the front piece" kept four plain
+recaptures (9.Bxf6 Bxf6). "Guards any attacked man" kept ten, most of them
+a rook taking back a rook while also defending a pawn that a second piece
+defends. The Lichess pin puzzles hold at 27 of 40; the promotion clause
+and the undefended-man clause each come from one of them (CObOW, OpBrr).
+
+A king in front is left alone. `PIECE_VALUES` prices the king at nothing,
+so the first version read a king in check with a piece behind it as "can
+take the pinner" and dropped the shape. That shape is no pin (`verifyPin`
+rejects it), but `breaksPin` proposes a claim from it on a king move out
+of check, and that claim outranks `kingSafety`: with it gone, 12.Kc2 and
+38.Kc3 on dev each picked up "You tucked the king away". Taking the shape
+out of `pinShapes()` is right in the end and is its own task.
+
+On the dev re-run 53 sentences changed and no check count moved: 51
+dossier facts lost ", which is pinned to the king by …" (every one a rook
+facing a rook, a queen a queen or a bishop a bishop) and two review cards
+went (a queen offered to a queen, a rook offered to a rook).
+

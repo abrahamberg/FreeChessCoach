@@ -31,7 +31,7 @@ n8 4…Be7 (Black, Line A) | good | before: The position is roughly equal → af
     board: moves the bishop from f8 to e7
     alternatives: Bb4: The position is roughly equal; d5: The position is roughly equal
 n9 5.Bxf6 (White, Line A) | best | before: White is slightly better → after: White is slightly better
-    board: moves the bishop from g5 to f6 | captures the knight on f6 | attacks the bishop on e7, which is pinned to the queen on d8 by the bishop on f6
+    board: moves the bishop from g5 to f6 | captures the knight on f6 | attacks the bishop on e7
     alternatives: e3: The position is roughly equal; a3: The position is roughly equal
 n10 5…Bxf6 (Black, Line A) | best | before: White is slightly better → after: White is slightly better
     board: moves the bishop from e7 to f6 | captures the bishop on f6
