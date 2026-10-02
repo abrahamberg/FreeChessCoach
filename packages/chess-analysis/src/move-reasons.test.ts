@@ -132,3 +132,17 @@ describe('a missed capture (Task 126.6: only when the engine\'s own line keeps t
     expect(missed(LOOSE_KNIGHT, 'Kf2', ['Rxd5', 'Ke7', 'Rd1', 'Ke6', 'Kf2'])).toEqual(['Missed Rxd5, winning material on d5']);
   });
 });
+
+describe('the pin a move makes (Task 126.2)', () => {
+  const BEFORE_BG5 = 'rnbqkb1r/ppp2ppp/5n2/3pp3/4P3/3P1P2/PPP3PP/RNBQKBNR w KQkq - 0 4';
+
+  test('is said on a quiet move', () => {
+    expect(reasons(BEFORE_BG5, 'Bg5', 'good')).toContain('Pins the knight on f6 to the queen');
+    expect(reasons(BEFORE_BG5, 'Bg5', 'inaccuracy')).toContain('Pins the knight on f6 to the queen');
+  });
+
+  test('is not said on a mistake or worse: the fault is the story', () => {
+    expect(reasons(BEFORE_BG5, 'Bg5', 'mistake').join(' ')).not.toContain('Pins');
+    expect(reasons(BEFORE_BG5, 'Bg5', 'blunder').join(' ')).not.toContain('Pins');
+  });
+});

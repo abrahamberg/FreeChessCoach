@@ -16,12 +16,15 @@ export interface BetterMoveInput {
 
 const COSTLY = new Set<MoveQuality>(['mistake', 'blunder', 'miss']);
 
+/** A mistake, a blunder or a miss. */
+export const isCostlyQuality = (quality: MoveQuality | undefined): boolean => quality !== undefined && COSTLY.has(quality);
+
 /** What a costly move gave up, and why the engine's move was better, from the
  * board facts (`board-facts/better-move.ts`). Only the user's own mistakes,
  * blunders and misses: the same sentence on an opponent's move would explain
  * their error to the wrong reader. */
 export function betterMoveReasons(input: BetterMoveInput): { stopped: string[]; better: string[] } {
-  if (!input.isUserMove || !input.quality || !COSTLY.has(input.quality)) return { stopped: [], better: [] };
+  if (!input.isUserMove || !isCostlyQuality(input.quality)) return { stopped: [], better: [] };
   return { stopped: stoppedGuarding(input), better: whyBetter(input) };
 }
 

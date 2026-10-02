@@ -780,12 +780,12 @@ the queen.
 `docs/tactics-rework.md` (TR-01, TR-05, TR-10: the three pins the rework
 was judged on).
 
-- [ ] A reason in `buildReasons`, not a card: "Pins the knight on f6 to
+- [x] A reason in `buildReasons`, not a card: "Pins the knight on f6 to
   the queen" ("…to the king" for an absolute pin). Built from the pin
   detector's verified claim for the move (the pin is new with this move
   and the pinner is not lost on its square: both already in the detector
   and `verifyPin`).
-- [ ] **Measured 2026-10-02** on the 220 dev games (12,301 moves), every
+- [x] **Measured 2026-10-02** on the 220 dev games (12,301 moves), every
   move run through `proposeTacticClaims` + `verifyTacticClaims`, pinned
   pawns left out:
 
@@ -806,9 +806,22 @@ was judged on).
   on a d2 knight, 9.Bg5 on an e7 knight). The 39 where the pinned piece
   can take the pinner (rook against rook, bishop against bishop, a queen
   offered) are not pins anyone names.
-- [ ] Never said when the pinned piece attacks the pinner.
-- [ ] Step one, ships on its own: a knight pinned by a bishop to the king
-  or the queen, on any square (75 on dev, at most two a game).
+- [x] Never said when the pinned piece attacks the pinner: Task 126.0, in
+  `pins()` itself.
+- [x] Step one, ships on its own (`pin-reason.ts`): a knight pinned by a
+  bishop to the king or the queen, on any square. The claim is the pin
+  detector's, through `verifyTacticClaims`.
+  **On the dev run: 63 notes in 52 of 220 games, at most two in a game**
+  (39 to the queen, 24 to the king; 74 over every move, less the book
+  moves and the mistakes).
+- [x] The audit checks the sentence on the board (`pin`: the piece, the
+  line, new with the move, the pinner not lost where it stands), with
+  chess.js's attack test and no ray walk. 63 of 63 pass. One failed the
+  first version of `pin-new` and the sentence was right: 11.Bg5 in
+  `CAGz80hT` steps in front of a queen on h4 that already looked through
+  f6 at the queen, and the bishop's pin is the one that wins something.
+  `pin-new` now asks for a piece that did not pin before; a pinner
+  sliding along its own line still fails it.
 - [ ] Step two, only after judges agree: the other pins (rook and queen
   pins on files, a piece pinned to a rook) when the pinned piece had
   something to do: it guards a piece or pawn of its own that the mover
@@ -817,16 +830,21 @@ was judged on).
   than once. 67 on dev. 30 judged, at least 27 `correct` (a judge marks
   an insignificant pin `irrelevant`); if under, tighten this test or
   leave step two out.
-- [ ] Budget: at most one such reason on a move; never beside a tactic
-  card that already names the pin, never on a move that is a mistake or
-  worse for another stated reason (the fault is the story).
+- [x] Budget: at most one such reason on a move; never beside a tactic
+  card that already names the pin (`withoutCardedPin`, in
+  `report-tactic-verdicts.ts`), never on a mistake or worse (the fault is
+  the story).
 - [ ] The answer to a pin: when a move ends a pin on the mover's own
   piece by attacking the pinner, the kick's sentence (126.3) names it;
   `breaks-pin.ts` stays the card's business.
-- [ ] Tests first: fires on 4.Bg5 of the seed and on TR-01 and TR-10;
-  silent on TR-05 (pawn on g7 "pinned" to h8), on a rook "pinned" by a
-  rook it can take, and (step two) on a pin whose pinned piece does
-  nothing.
+- [x] Tests first: fires on 4.Bg5 of the seed, on TR-01 (4.Bb5) and on a
+  knight off the four classic squares; silent on TR-10 (a rook pin: step
+  two), on a bishop that is simply taken, and on a pin that stood before
+  the move.
+- [x] Golden, six new lines, each a bishop pinning a knight to the queen
+  or king: Gold Coins 14…Bb4, Lasker–Thomas 4.Bg5, Opera 9.Bg5, King's
+  Indian 8.Bg5, Legal's mate 3…Bg4 in two courses.
+- [ ] 30 of the 63 judged (`review:reason:pin` is in the scored sample).
 
 **Commit:** `feat(review): a quiet move that pins something says so`
 

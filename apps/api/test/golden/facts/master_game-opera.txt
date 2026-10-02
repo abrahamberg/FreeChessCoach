@@ -196,6 +196,7 @@ REVIEW NOTES
     n8 4…Bxf3: Trades the bishop for the knight on f3
     n9 5.Qxf3: Recaptures the bishop on f3
     n15 8.Nc3: Missed Qxb7, winning material on b7
+    n17 9.Bg5: Pins the knight on f6 to the queen
     n18 9…b5: They let you win a pawn through a free piece with Nxb5 — captures the pawn on b5.
     n20 10…cxb5: Recaptures the knight on b5
     n21 11.Bxb5+: Creates a passed pawn on c; Recaptures the pawn on b5

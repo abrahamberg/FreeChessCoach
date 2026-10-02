@@ -11,6 +11,7 @@ const REASON_TEMPLATES: [RegExp, string][] = [
   [/^Leaves the \w+ on [a-h][1-8] undefended$/, 'loose-free'],
   [/^Leaves the \w+ on [a-h][1-8] where it can be won$/, 'loose-winnable'],
   [/^Allows a fork: /, 'allowed-fork'],
+  [/^Pins the \w+ on [a-h][1-8] to the (king|queen)$/, 'pin'],
   [/stopped guarding [a-h][1-8], where /, 'stopped-guard'],
   [/^\S+ (keeps the \w+ on [a-h][1-8] safe|takes the \w+ out of danger on [a-h][1-8]); after it /, 'better-move'],
   [/^Concedes the centre$/, 'centre'],

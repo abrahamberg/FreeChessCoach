@@ -30,6 +30,16 @@ export function play(fen: string, san: string): string | null {
   }
 }
 
+/** What `san` does from `fen`: the squares, the piece and what it took. Null when it is not legal there. */
+export function moveOf(fen: string, san: string): { from: Square; to: Square; piece: PieceSymbol; captured: PieceSymbol | null } | null {
+  try {
+    const move = new Chess(fen).move(san);
+    return { from: move.from, to: move.to, piece: move.piece, captured: move.captured ?? null };
+  } catch {
+    return null;
+  }
+}
+
 /** Every fen along a line; stops at the first illegal move. `legal` says whether it got to the end. */
 export function playLine(fen: string, sans: readonly string[]): { fens: string[]; legal: boolean } {
   const fens = [fen];
@@ -144,6 +154,26 @@ export function checkAnswerSets(fen: string): { blocks: string[]; captures: stri
 /** Squares of `by`'s pieces that attack `square` (pseudo-legal, pins ignored). */
 export function attackersOf(fen: string, square: string, by: Color): Square[] {
   return new Chess(fen).attackers(square as Square, by);
+}
+
+/** Squares of `by`'s bishops, rooks and queens that look at `square` and,
+ * with the piece on it lifted off the board, at the square behind it: the
+ * pin's line, found with chess.js's own attack test and no ray walk. */
+export function pinnersThrough(fen: string, square: string, behind: string, by: Color): Square[] {
+  const chess = new Chess(fen);
+  const onFront = chess.attackers(square as Square, by).filter((from) => ['b', 'r', 'q'].includes(chess.get(from)?.type ?? ''));
+  const already = new Set(chess.attackers(behind as Square, by));
+  chess.remove(square as Square);
+  const onBehind = new Set(chess.attackers(behind as Square, by));
+  return onFront.filter((from) => onBehind.has(from) && !already.has(from));
+}
+
+/** The squares of a side's pieces of one type. */
+export function squaresOf(fen: string, type: PieceSymbol, color: Color): Square[] {
+  return new Chess(fen)
+    .board()
+    .flat()
+    .flatMap((cell) => (cell && cell.type === type && cell.color === color ? [cell.square] : []));
 }
 
 /** The same position with the other side to move (en passant cleared). */

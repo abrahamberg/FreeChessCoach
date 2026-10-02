@@ -746,7 +746,9 @@ The stated priority is presentation, not the numbers. The per-move `reasons: str
 | `delta.newHangingPieces` non-empty | "Leaves the {piece} on {square} undefended" |
 | `delta.newForks` for opponent | "Allows {piece} fork on {square} hitting {targets}" |
 | `delta.mobilityDelta <= -8` | "Costs {n} squares of piece mobility" |
-| best move was a capture with SEE > 0, not played | "Missed {bestMove}, winning material on {square}" |
+| best move was a capture that wins a pawn's worth on its square (SEE ≥ 100) and leaves the mover ahead where the engine's own line first goes quiet, not played | "Missed {bestMove}, winning material on {square}" |
+| a capture that comes out level (SEE within a bishop against a knight) | "Trades {pieces} on {square}" / "Trades the bishop for the knight on {square}"; "Recaptures the {piece} on {square}" when it takes back |
+| the move pins a knight to the king or the queen with a bishop (the pin detector's verified claim; not on a mistake or worse) | "Pins the knight on {square} to the {king\|queen}" |
 | `lines[0].mateIn != null`, not played | "Missed mate in {n} starting with {bestMove}" |
 | `piecesUnderAttack` where attackers > defenders, unresolved | "Leaves {piece} on {square} attacked {a}× and defended {d}×" |
 | `centerControlScore` swing ≥ 3 against mover | "Concedes the centre" |

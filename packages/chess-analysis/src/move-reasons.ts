@@ -1,6 +1,7 @@
 import { Chess, type Move, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type FeatureDeltaDto, type MoveQuality, type PositionFeatures } from '@freechesscoach/shared';
-import { betterMoveReasons } from './move-reason-better.js';
+import { betterMoveReasons, isCostlyQuality } from './move-reason-better.js';
+import { pinReason } from './pin-reason.js';
 import { saidMateIn } from './mate-count.js';
 import { moverMateIn } from './mover-mate.js';
 import { forks } from './board-facts/forks.js';
@@ -59,6 +60,7 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     ...missedCaptureReason(input),
     ...looseReasons(input),
     ...allowedForkReasons(input),
+    ...pinReasons(input),
     ...costlyMoveReasons(input),
     ...centerSwingReason(input),
     ...passedPawnReasons(input),
@@ -155,6 +157,14 @@ function allowedForkReasons(input: MoveReasonsInput): Reason[] {
       category: 'tactical',
       text: `Allows a fork: the ${PIECE_NAMES[fork.piece.piece]} on ${fork.piece.square} hits ${formatList(fork.targets.map((target) => `the ${PIECE_NAMES[target.piece]} on ${target.square}`))}`
     }));
+}
+
+/** The pin the move made (`pin-reason.ts`). Not on a mistake or worse: there
+ * the fault is the story, and a pin that cost a piece is no credit. */
+function pinReasons(input: MoveReasonsInput): Reason[] {
+  if (isCostlyQuality(input.quality)) return [];
+  const text = pinReason(input.fenBefore, input.moveSan, input.mover);
+  return text ? [{ category: 'tactical', text }] : [];
 }
 
 /** What the move gave up, and why the engine's move was better. */

@@ -1,7 +1,7 @@
 import type { TacticGainDto } from '@freechesscoach/shared';
 import type { Color } from 'chess.js';
 import { result } from './check-result.js';
-import { attackersOf, colorOf, exchangeGain, hasPassedPawnOn, legalCapturesOf, mateCountAgrees, moveIsSound, other, PIECE_BY_NAME, pieceAt, play, playLine, POINTS, prizeWon, settledGain, threatFen } from './oracle.js';
+import { attackersOf, colorOf, exchangeGain, hasPassedPawnOn, legalCapturesOf, mateCountAgrees, moveIsSound, moveOf, other, PIECE_BY_NAME, pieceAt, pinnersThrough, play, playLine, POINTS, prizeWon, settledGain, squaresOf, threatFen } from './oracle.js';
 import type { AuditItem, AuditPosition, CheckResult, LineView } from './types.js';
 
 type Check = (item: AuditItem, position: AuditPosition) => CheckResult[];
@@ -137,19 +137,45 @@ const REASON_CHECKS: Record<string, Check> = {
     const lands = play(position.fenAfter, reply) !== null && reply.replace(/[+#=QRBN]+$/, '').endsWith(square);
     return [result('guard-lost', guardedAfter < guardedBefore, `${square} is guarded ${guardedBefore}× before and ${guardedAfter}× after`), result('reply-lands', lands, `${reply} does not land on ${square}`)];
   },
+  // "Pins the knight on f6 to the queen": the knight is theirs, one of the
+  // mover's line pieces looks through it at that queen, it did not before
+  // the move, and the pinning piece is not simply lost where it stands.
+  pin: (item, position) => {
+    const match = /^Pins the (\w+) on ([a-h][1-8]) to the (king|queen)$/.exec(item.text);
+    const [name, square, behindName] = [match?.[1] ?? '', match?.[2] ?? '', match?.[3] ?? ''];
+    const own = colorOf(position.mover);
+    const them = other(own);
+    const front = pieceAt(position.fenAfter, square);
+    const through = (fen: string): string[] => squaresOf(fen, PIECE_BY_NAME[behindName] ?? 'k', them).flatMap((behind) => pinnersThrough(fen, square, behind, own));
+    const pinners = through(position.fenAfter);
+    // New means a piece that did not pin before: 11.Bg5 steps in front of a
+    // queen on h4 that already looked through f6 at the queen, and the
+    // bishop's pin is the one that wins something. A pinner sliding along
+    // its own line is the same pin.
+    const was = through(position.fenBefore);
+    const from = moveOf(position.fenBefore, position.san)?.from;
+    const lost = pinners.filter((by) => exchangeGain(position.fenAfter, by, them) > 0);
+    return [
+      result('pinned-piece', front?.color === them && front.type === PIECE_BY_NAME[name], `no ${them === 'w' ? 'white' : 'black'} ${name} on ${square}`),
+      result('pin-line', pinners.length > 0, `no ${position.mover} piece looks through ${square} at the ${behindName}`),
+      result('pin-new', pinners.some((by) => !was.includes(by)) && !(from !== undefined && was.includes(from)), `the ${name} on ${square} was pinned to the ${behindName} by the same piece before the move`),
+      result('pinner-safe', pinners.length === 0 || lost.length < pinners.length, `the pinning piece on ${lost.join(', ')} can be won`)
+    ];
+  },
   // "Trades the bishop for the knight on f6" / "Trades knights on d4" /
   // "Recaptures the knight on d4": the move took that piece there, with that
   // piece, and a trade can be taken back.
   trade: (item, position) => {
     const square = SQUARE.exec(item.text)?.[1] ?? '';
-    const taken = pieceAt(position.fenBefore, square);
+    // What the move took, from chess.js: en passant takes a pawn that does not stand on the square.
+    const taken = moveOf(position.fenBefore, position.san)?.captured ?? null;
     const taker = pieceAt(position.fenAfter, square);
     const words = /^(?:Recaptures the (\w+)|Trades the (\w+) for the (\w+)|Trades (\w+)s) on /.exec(item.text);
     const takenName = words?.[1] ?? words?.[3] ?? words?.[4] ?? '';
     const takerName = words?.[2] ?? words?.[4];
     const own = colorOf(position.mover);
     const checks = [
-      result('took-piece', taken?.color === other(own) && taken.type === PIECE_BY_NAME[takenName] && taker?.color === own, `the move did not take a ${takenName} on ${square}`),
+      result('took-piece', taken !== null && taken === PIECE_BY_NAME[takenName] && taker?.color === own, `the move did not take a ${takenName} on ${square}`),
       result('took-with', takerName === undefined || taker?.type === PIECE_BY_NAME[takerName], `the piece that took on ${square} is not a ${takerName}`)
     ];
     if (item.text.startsWith('Recaptures')) return checks;

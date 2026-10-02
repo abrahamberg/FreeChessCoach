@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { mateClaims, mateCountExact, mateCountOwed } from './check-mate-count.js';
 import { checkReviewItem } from './check-review.js';
-import { checkAnswerSets, decidedFor, exchangeGain, hasPassedPawnOn, mateCountAgrees, prizeWon, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
+import { checkAnswerSets, decidedFor, exchangeGain, hasPassedPawnOn, mateCountAgrees, pinnersThrough, play, prizeWon, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
 import type { AuditItem, AuditPosition } from './types.js';
 
 /** The audit's own board checks. A wrong check invents errors (or hides
@@ -157,19 +157,47 @@ describe('review audit oracle', () => {
     expect(checkAnswerSets('1r2k1r1/pbpQnp1p/1b3P2/8/8/B1PB1q2/P4PPP/3R2K1 b - - 0 21')).toEqual({ blocks: [], captures: ['Kxd7'], kingMoves: ['Kf8'] });
   });
 
+  test('a pin is a line piece looking through one piece at another', () => {
+    // The owner's game after 4.Bg5: the knight on f6 stands between the bishop and the queen.
+    const afterBg5 = 'rnbqkb1r/ppp2ppp/5n2/3pp1B1/4P3/3P1P2/PPP3PP/RN1QKBNR b KQkq - 1 4';
+    expect(pinnersThrough(afterBg5, 'f6', 'd8', 'w')).toEqual(['g5']);
+    // Not to the king: e7 is not on that line's far side of f6.
+    expect(pinnersThrough(afterBg5, 'f6', 'e8', 'w')).toEqual([]);
+    // With …Be7 played the bishop stands between: the knight is not pinned to the queen.
+    expect(pinnersThrough('rnbqk2r/ppp1bppp/5n2/3pp1B1/4P3/3P1P2/PPP3PP/RN1QKBNR w KQkq - 2 5', 'f6', 'd8', 'w')).toEqual([]);
+  });
+
   /** The failing checks of one review reason on one move. */
-  const failing = (source: string, text: string, mover: 'white' | 'black', fenBefore: string, fenAfter: string): string[] =>
-    checkReviewItem({ source, text, data: null } as AuditItem, { mover, fenBefore, fenAfter, linesBefore: [], linesAfter: [] } as unknown as AuditPosition)
+  const failing = (source: string, text: string, mover: 'white' | 'black', fenBefore: string, san: string): string[] =>
+    checkReviewItem({ source, text, data: null } as AuditItem, { mover, san, fenBefore, fenAfter: play(fenBefore, san) ?? '', linesBefore: [], linesAfter: [] } as unknown as AuditPosition)
       .filter((check) => !check.ok)
       .map((check) => check.check);
 
+  test('the pin note is checked on the board: the piece, the line, new with the move, the pinner not lost', () => {
+    const before = 'rnbqkb1r/ppp2ppp/5n2/3pp3/4P3/3P1P2/PPP3PP/RNBQKBNR w KQkq - 0 4';
+    expect(failing('review:reason:pin', 'Pins the knight on f6 to the queen', 'white', before, 'Bg5')).toEqual([]);
+    expect(failing('review:reason:pin', 'Pins the knight on f6 to the king', 'white', before, 'Bg5')).toEqual(['pin-line', 'pin-new']);
+    expect(failing('review:reason:pin', 'Pins the bishop on f6 to the queen', 'white', before, 'Bg5')).toEqual(['pinned-piece']);
+    // The pin stood already: a3 did not make it, and neither does the bishop sliding along its line.
+    const pinned = 'rnbqkb1r/ppp2ppp/5n2/3pp1B1/4P3/3P1P2/PPP3PP/RN1QKBNR w KQkq - 0 4';
+    expect(failing('review:reason:pin', 'Pins the knight on f6 to the queen', 'white', pinned, 'a3')).toEqual(['pin-new']);
+    expect(failing('review:reason:pin', 'Pins the knight on f6 to the queen', 'white', pinned, 'Bh4')).toEqual(['pin-new']);
+    // …h6 is on the board: the bishop is taken.
+    expect(failing('review:reason:pin', 'Pins the knight on f6 to the queen', 'white', 'rnbqkb1r/ppp2pp1/5n1p/3pp3/4P3/3P1P2/PPP3PP/RNBQKBNR w KQkq - 0 5', 'Bg5')).toEqual(['pinner-safe']);
+    // 11.Bg5 in `CAGz80hT`: the queen on h4 already looked through f6 at the queen. The bishop is a new pinner.
+    expect(failing('review:reason:pin', 'Pins the knight on f6 to the queen', 'white', 'r2q1rk1/pbpn1ppp/1p1bpn2/8/3P3Q/2NBBP2/PPP1N1PP/R4RK1 w - - 4 11', 'Bg5')).toEqual([]);
+  });
+
   test('the trade note is checked on the board: what was taken, with what, and that it can be taken back', () => {
     const before = 'rnbqkb1r/ppp2pp1/5n1p/3pp1B1/4P3/3P1P2/PPP3PP/RN1QKBNR w KQkq - 0 5';
-    const after = 'rnbqkb1r/ppp2pp1/5B1p/3pp3/4P3/3P1P2/PPP3PP/RN1QKBNR b KQkq - 0 5';
-    expect(failing('review:reason:trade', 'Trades the bishop for the knight on f6', 'white', before, after)).toEqual([]);
-    expect(failing('review:reason:trade', 'Trades the knight for the bishop on f6', 'white', before, after)).toEqual(['took-piece', 'took-with']);
-    expect(failing('review:reason:trade', 'Recaptures the knight on f6', 'white', before, after)).toEqual([]);
+    expect(failing('review:reason:trade', 'Trades the bishop for the knight on f6', 'white', before, 'Bxf6')).toEqual([]);
+    expect(failing('review:reason:trade', 'Trades the knight for the bishop on f6', 'white', before, 'Bxf6')).toEqual(['took-piece', 'took-with']);
+    expect(failing('review:reason:trade', 'Recaptures the knight on f6', 'white', before, 'Bxf6')).toEqual([]);
     // A knight nobody defends is won, not traded.
-    expect(failing('review:reason:trade', 'Trades knights on d4', 'black', '4k3/8/2n5/8/3N4/8/8/4K3 b - - 0 1', '4k3/8/8/8/3n4/8/8/4K3 w - - 0 2')).toEqual(['can-take-back']);
+    expect(failing('review:reason:trade', 'Trades knights on d4', 'black', '4k3/8/2n5/8/3N4/8/8/4K3 b - - 0 1', 'Nxd4')).toEqual(['can-take-back']);
+    // En passant takes a pawn that does not stand on the square (10.exd6 in `L7CCk08Y`).
+    expect(failing('review:reason:trade', 'Trades pawns on d6', 'white', 'r1bqkb1r/ppp2p1p/6np/3pP3/2BP4/2N2Q2/PPP2PPP/R3K2R w KQkq d6 0 10', 'exd6')).toEqual([]);
+    // …and one that mates is no trade: nothing takes back.
+    expect(failing('review:reason:trade', 'Trades pawns on g6', 'white', '7r/8/7p/R4Ppk/8/3B1PK1/8/7q w - g6 0 1', 'fxg6#')).toEqual(['can-take-back']);
   });
 });
