@@ -22,8 +22,10 @@ export function cpBand(cp: number): 'slightly better' | 'better' | 'much better'
   return 'winning';
 }
 
-export function mateToWords(mateIn: number, sideToMove: 'w' | 'b'): string {
+/** `counted` false leaves the number out: the caller's search cannot stand
+ * behind it (`mate-count.ts`). */
+export function mateToWords(mateIn: number, sideToMove: 'w' | 'b', counted = true): string {
   const whiteMateIn = sideToMove === 'w' ? mateIn : -mateIn;
   const side = whiteMateIn > 0 ? 'White' : 'Black';
-  return `${side} has a forced mate in ${Math.abs(whiteMateIn)}`;
+  return `${side} has a forced mate${counted ? ` in ${Math.abs(whiteMateIn)}` : ''}`;
 }

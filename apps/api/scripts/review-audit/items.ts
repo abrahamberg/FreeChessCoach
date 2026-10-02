@@ -4,7 +4,7 @@ import type { AnalysedGame } from './analyze.js';
 import { play, playLine, threatFen } from './oracle.js';
 import { reviewSource } from './sources.js';
 import { hashOf } from './store.js';
-import type { AuditItem, AuditPosition, LineView } from './types.js';
+import type { AuditItem, AuditPosition, LineView, SearchView } from './types.js';
 
 export interface Extracted {
   positions: AuditPosition[];
@@ -20,7 +20,12 @@ export function extractItems(analysed: AnalysedGame): Extracted {
   const add = (position: AuditPosition, draft: Draft): void => {
     const known = positions.get(position.key);
     if (!known) positions.set(position.key, position);
-    else if (!known.linesBefore.length) known.linesBefore = position.linesBefore;
+    else {
+      if (!known.linesBefore.length) known.linesBefore = position.linesBefore;
+      // A move both surfaces have: each keeps its own search.
+      known.review ??= position.review;
+      known.dossier ??= position.dossier;
+    }
     const key = hashOf([draft.surface, position.fenBefore, position.san, draft.text].join('|'));
     items.push({ ...draft, key, positionKey: position.key, gameId: position.gameId, split: position.split, checks: [], settled: false, sampled: false });
   };
@@ -38,6 +43,10 @@ function positionKeyOf(gameId: string, fenBefore: string, san: string): string {
 
 export function lineViews(evaluation: EngineEval | undefined): LineView[] {
   return (evaluation?.lines ?? []).map((line) => ({ san: line.moveSan, cp: line.cp, mate: line.mateIn, pv: (line.pvSan ?? [line.moveSan]).slice(0, 12) }));
+}
+
+function searchView(evaluation: EngineEval | undefined): SearchView {
+  return { depth: evaluation?.depth ?? 0, lines: lineViews(evaluation) };
 }
 
 function basePosition(analysed: AnalysedGame, where: string, san: string, mover: 'white' | 'black', fenBefore: string, fenAfter: string, evals: Map<string, EngineEval>): AuditPosition {
@@ -66,8 +75,9 @@ function basePosition(analysed: AnalysedGame, where: string, san: string, mover:
 
 function reviewPosition(analysed: AnalysedGame, move: ClassifiedMoveDto): AuditPosition | null {
   if (!move.fenBefore || !move.fenAfter) return null;
-  const position = basePosition(analysed, `p${move.ply}`, move.moveSan, move.mover, move.fenBefore, move.fenAfter, analysed.evalsByFen);
-  return { ...position, quality: move.quality };
+  const { evalsByFen } = analysed;
+  const position = basePosition(analysed, `p${move.ply}`, move.moveSan, move.mover, move.fenBefore, move.fenAfter, evalsByFen);
+  return { ...position, quality: move.quality, review: { before: searchView(evalsByFen.get(move.fenBefore)), after: searchView(evalsByFen.get(move.fenAfter)) } };
 }
 
 /** The positions a review sentence may speak about: the board before and
@@ -115,7 +125,8 @@ function dossierDrafts(analysed: AnalysedGame): NodeDrafts[] {
     const shown = rows.get(node.nodeId);
     if (!treeNode) return [];
     const fenBefore = treeNode.parentId ? (treeNodes.get(treeNode.parentId)?.fenAfter ?? tree.startFen) : tree.startFen;
-    const position = basePosition(analysed, node.nodeId, node.san, node.side, fenBefore, treeNode.fenAfter, dossierEvals);
+    const searches = { before: searchView(dossierEvals.get(fenBefore)), after: searchView(dossierEvals.get(treeNode.fenAfter)) };
+    const position = { ...basePosition(analysed, node.nodeId, node.san, node.side, fenBefore, treeNode.fenAfter, dossierEvals), dossier: searches };
     const drafts = shown ? nodeDrafts(node, shown, position) : [];
     const lineId = leafNodeIds.get(node.nodeId);
     const line = lineId ? dossier.lines.find((each) => each.lineId === lineId) : undefined;

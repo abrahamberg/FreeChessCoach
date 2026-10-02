@@ -107,7 +107,8 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
  * calibration, 2026-10-01). */
 function alternatives(evalBefore: EngineEval | undefined, node: CourseTreeNode): CourseNodeFacts['alternatives'] {
   if (new Chess(node.fenAfter).isCheckmate()) return [];
-  return (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) }));
+  if (!evalBefore) return [];
+  return evalBefore.lines.filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line, evalBefore) }));
 }
 
 /** A perpetual check is a position that comes back: the perpetual's

@@ -8,6 +8,7 @@ import { analyseGame } from './analyze.js';
 import { checkItem } from './checks.js';
 import type { CorpusGame } from './corpus.js';
 import { extractItems } from './items.js';
+import { withMateProbes } from './mate-probe.js';
 import { StoredEvalsEngine } from './stored-engine.js';
 import { paths, readJsonl, unitHash, writeJsonl } from './store.js';
 import type { AuditItem, AuditPosition } from './types.js';
@@ -65,14 +66,9 @@ async function analyseGames(games: CorpusGame[], options: RunOptions): Promise<A
   const worker = async (): Promise<void> => {
     for (let game = queue.shift(); game; game = queue.shift()) {
       try {
-        const engine = game.evalsFile ? new StoredEvalsEngine(game.evalsFile, cache) : cache;
-        const extracted = extractItems(await analyseGame(game, engine));
-        const byKey = new Map(extracted.positions.map((position) => [position.key, position]));
-        for (const item of extracted.items) {
-          const position = byKey.get(item.positionKey);
-          if (position) items.push(checked(item, position, options.sampleRate));
-        }
-        positions.push(...extracted.positions);
+        const audited = await auditGame(game, cache, options.sampleRate).catch(() => auditGame(game, cache, options.sampleRate));
+        positions.push(...audited.positions);
+        items.push(...audited.items);
       } catch (error) {
         console.error(`${game.id}: ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -85,6 +81,22 @@ async function analyseGames(games: CorpusGame[], options: RunOptions): Promise<A
   };
   await Promise.all(Array.from({ length: options.jobs }, worker));
   cache.save();
+  return { positions, items };
+}
+
+/** One game through the app's code, its mate boards probed, its sentences
+ * checked. The caller tries twice: an engine request can fail in passing
+ * (a connection the engine closed while this process was busy analysing),
+ * and what the first try fetched is in the cache. */
+async function auditGame(game: CorpusGame, cache: GoldenEngineCache, sampleRate: number): Promise<Analysed> {
+  const engine = game.evalsFile ? new StoredEvalsEngine(game.evalsFile, cache) : cache;
+  const extracted = extractItems(await analyseGame(game, engine));
+  const positions = await withMateProbes(extracted.positions, extracted.items, cache);
+  const byKey = new Map(positions.map((position) => [position.key, position]));
+  const items = extracted.items.flatMap((item) => {
+    const position = byKey.get(item.positionKey);
+    return position ? [checked(item, position, sampleRate)] : [];
+  });
   return { positions, items };
 }
 

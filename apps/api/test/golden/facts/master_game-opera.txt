@@ -146,7 +146,7 @@ n29 15.Bxd7+ (White, Line A) | miss | before: White is much better → after: Wh
 n30 15…Nxd7 (Black, Line A) | best | before: White is better → after: White has a forced mate in 2
     board: moves the knight from f6 to d7 | captures the bishop on d7
     tactics: They let you force mate in 2 with Qb8+.
-    alternatives: Qxd7: White is much better; Ke7: White has a forced mate in 4
+    alternatives: Qxd7: White is much better; Ke7: White has a forced mate
     flags: quiz-eligible
 n31 16.Qb8+ (White, Line A) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the queen from b3 to b8 | gives check | the check can be answered: no block; take the checking piece with Nxb8; the king cannot move | leaves the white queen on b8 hanging

@@ -1,6 +1,7 @@
 import { Chess, type Move, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type FeatureDeltaDto, type MoveQuality, type PositionFeatures } from '@freechesscoach/shared';
 import { betterMoveReasons } from './move-reason-better.js';
+import { saidMateIn } from './mate-count.js';
 import { moverMateIn } from './mover-mate.js';
 import { forks } from './board-facts/forks.js';
 import { loosePieces } from './board-facts/loose-pieces.js';
@@ -83,9 +84,9 @@ function bookReason(input: MoveReasonsInput): string {
 function missedMateReason(input: MoveReasonsInput): Reason[] {
   const best = input.evalBefore.lines[0];
   if (!best || best.moveSan === input.moveSan) return [];
-  const mateIn = moverMateIn(best, input.mover);
-  if (mateIn === null) return [];
-  return [{ category: 'mate', text: `Missed mate in ${mateIn} starting with ${best.moveSan}` }];
+  if (moverMateIn(best, input.mover) === null) return [];
+  const mateIn = saidMateIn(best, input.evalBefore);
+  return [{ category: 'mate', text: `Missed ${mateIn === null ? 'a forced mate' : `mate in ${mateIn}`} starting with ${best.moveSan}` }];
 }
 
 function missedCaptureReason(input: MoveReasonsInput): Reason[] {

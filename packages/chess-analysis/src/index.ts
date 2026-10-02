@@ -60,6 +60,7 @@ export * from './game-tactic-motifs.js';
 export * from './inspect-moves.js';
 export { loosePieces, newLoosePieces, type LoosePiece } from './board-facts/loose-pieces.js';
 export * from './is-legal-fen.js';
+export * from './mate-count.js';
 export * from './move-ref.js';
 export * from './move-metrics.js';
 export * from './checks-captures-threats.js';

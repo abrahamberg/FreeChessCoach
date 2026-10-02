@@ -105,7 +105,7 @@ n36 18…Bxg1 (Black, Line A) | miss | before: Black is better → after: White 
     why Qxa1+ is better: moves the queen from b2 to a1 | captures the rook on a1 | gives check | the check can be answered: block with Qd1; the checking piece cannot be taken; move the king with Ke2, Kg2
     board: moves the bishop from c5 to g1 | captures the rook on g1
     alternatives: Qxa1+: Black is better; Kd8: White is better
-    tempting capture: Bxd6? Black's Bxd6 moves the bishop from c5 to d6 | captures the bishop on d6. White answers Nxd6+: moves the knight from f5 to d6 | captures the bishop on d6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf8, Kd8 | attacks the bishop on c8 | the knight on d6 forks the bishop on c8 and the king on e8. Over the line Black takes a bishop; White takes a bishop; at the end Black is a bishop up (White has a forced mate in 4).
+    tempting capture: Bxd6? Black's Bxd6 moves the bishop from c5 to d6 | captures the bishop on d6. White answers Nxd6+: moves the knight from f5 to d6 | captures the bishop on d6 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf8, Kd8 | attacks the bishop on c8 | the knight on d6 forks the bishop on c8 and the king on e8. Over the line Black takes a bishop; White takes a bishop; at the end Black is a bishop up (White has a forced mate).
     tempting capture: Qxc2? Black's Qxc2 moves the queen from b2 to c2 | captures the pawn on c2 | leaves the black pawn on g7 hanging. White answers Nxg7+: moves the knight from f5 to g7 | captures the pawn on g7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8. Over the line Black takes a pawn; White takes a pawn; at the end Black is a bishop up (White has a forced mate in 2).
     tempting capture: Qxa2? Black's Qxa2 moves the queen from b2 to a2 | captures the pawn on a2 | attacks the knight on d5 | attacks the rook on a1 | leaves the black pawn on g7 hanging | leaves the black bishop on c5 hanging | leaves the black queen on a2 hanging. White answers Nxg7+: moves the knight from f5 to g7 | captures the pawn on g7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8. Over the line Black takes a pawn; White takes a pawn; at the end Black is a bishop up (White has a forced mate in 2).
     flags: critical
@@ -124,17 +124,17 @@ n38 19…Qxa1+ (Black, Line A) | great | before: Black is better → after: Blac
     tempting capture: Qxa2? Black's Qxa2 moves the queen from b2 to a2 | captures the pawn on a2 | attacks the knight on d5 | attacks the rook on a1 | leaves the black pawn on g7 hanging | leaves the black queen on a2 hanging | leaves the black bishop on g1 hanging. White answers Nxg7+: moves the knight from f5 to g7 | captures the pawn on g7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8. Over the line Black takes a pawn; White takes a pawn; at the end Black is a rook and a bishop up (White has a forced mate in 2).
     flags: quiz-eligible, critical
 n39 20.Ke2 (White, Line A) | good
-n40 20…Na6 (Black, Line A) | blunder | before: Black is slightly better → after: White has a forced mate in 5
+n40 20…Na6 (Black, Line A) | blunder | before: Black is slightly better → after: White has a forced mate
     best instead: Bb6; after Bb6, Black is two rooks and a bishop up
     why Bb6 is better: moves the bishop from g1 to b6 | leaves the black pawn on g7 hanging
     board: moves the knight from b8 to a6 | leaves the black pawn on g7 hanging
-    tactics: They let you force mate in 5 with Nxg7+.
+    tactics: They let you force mate with Nxg7+.
     alternatives: Bb6: Black is slightly better; Bb7: The position is roughly equal; Ba6: The position is roughly equal
     tempting capture: Qxa2? Black's Qxa2 moves the queen from a1 to a2 | captures the pawn on a2 | attacks the knight on d5 | leaves the black pawn on g7 hanging. White answers Nxg7+: moves the knight from f5 to g7 | captures the pawn on g7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8. Over the line Black takes a pawn; White takes a pawn; at the end Black is two rooks and a bishop up (White has a forced mate in 2).
     tempting threat: g6? Black's g6 moves the pawn from g7 to g6 | attacks the knight on f5. White answers Ng7+: moves the knight from f5 to g7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8. Over the line nothing is taken; at the end Black is two rooks and a bishop up (White has a forced mate in 2).
     tempting threat: Qb2? Black's Qb2 moves the queen from a1 to b2 | leaves the black pawn on g7 hanging. White answers Nxg7+: moves the knight from f5 to g7 | captures the pawn on g7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8. Over the line White takes a pawn; at the end White has a pawn for two rooks and a bishop (White has a forced mate in 2).
     flags: critical
-n41 21.Nxg7+ (White, Line A) | great | before: White has a forced mate in 5 → after: White has a forced mate in 2
+n41 21.Nxg7+ (White, Line A) | great | before: White has a forced mate → after: White has a forced mate in 2
     board: moves the knight from f5 to g7 | captures the pawn on g7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kd8
     tactics: You forced mate in 2.
     alternatives: a3: Black is slightly better; Nb4: Black is much better
@@ -143,7 +143,7 @@ n42 21…Kd8 (Black, Line A) | forced | before: White has a forced mate in 2 →
     board: moves the king from e8 to d8 | leaves the black pawn on f7 hanging
 n43 22.Qf6+ (White, Line A) | best | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the queen from f3 to f6 | gives check | the check can be answered: block with Ne7; take the checking piece with Nxf6; the king cannot move
-    alternatives: Qxf7: White has a forced mate in 4; a3: White is much better
+    alternatives: Qxf7: White has a forced mate; a3: White is much better
     tempting threat: Nc7? White's Nc7 moves the knight from d5 to c7 | attacks the rook on a8 | attacks the knight on a6 | leaves the white pawn on a2 hanging. Black answers Qxa2: moves the queen from a1 to a2 | captures the pawn on a2 | leaves the black rook on a8 hanging | leaves the black pawn on b5 hanging. Over the line Black takes a pawn; at the end Black is two rooks and a bishop up (Black is much better).
     flags: quiz-eligible
 n44 22…Nxf6 (Black, Line A) | best
@@ -193,6 +193,6 @@ REVIEW NOTES
     n35 18.Bd6: Costs 17 squares of piece mobility
     n36 18…Bxg1: Missed Qxa1+, winning material on a1
     n37 19.e5: Qd1 keeps the pawn on c2 safe; after it Black is a rook and a bishop up
-    n40 20…Na6: They let you force mate in 5 with Nxg7+.
+    n40 20…Na6: They let you force mate with Nxg7+.
     n41 21.Nxg7+: You forced mate in 2.
     n45 23.Be7#: You delivered checkmate.

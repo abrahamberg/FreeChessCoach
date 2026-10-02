@@ -40,7 +40,14 @@ Black), the FENs, the engine's lines before and after the move (evaluations
 from White's view: +1.00 is White a pawn better, #3 White mates in 3, #-3
 Black mates in 3), and each sentence with what the code checks found. "You"
 is the reader, the player whose review it is; the packet says whether the
-reader or the opponent made the move.
+reader or the opponent made the move. The engine lines carry the depth they
+were searched at. Where the dossier searched the position itself (it asks
+for three lines, the review for five) the packet also shows `dossier's
+before` / `dossier's after`: a dossier row was read off those. A position
+with a mate on it also shows `deeper before` / `deeper after`: the audit's
+own, much deeper search of the same boards, which the app never sees. A mate
+the engine found is a proof, so of two counts for the same move the shorter
+is the true one.
 
 A `CODE CHECK FAILED` line is evidence, not a verdict. Confirm it with the
 probe; if the check is wrong (the sentence is in fact true), label the
@@ -87,8 +94,18 @@ or for missing the point. A true sentence is `misleading` when:
   too: "black has a passed pawn on h6" with queens and minor pieces deciding
   the game. Keep `correct` only for a feature a coach would mention when
   explaining this position. Tag `irrelevant`.
-- **A mate is "forced" with no number**: "They forced mate." where the probe
-  shows mate in 5. Tag `imprecise`. (A move that is itself mate needs none.)
+- **A mate's number of moves** (the owner's rule, 2026-10-02). The app says
+  the number only when the mate is short and its own search covers it: at
+  most five plies from the searched board at depth 12 or 18 (the side to
+  move mates in 3 or less, or is mated in 2 or less), any mate of up to 7
+  moves at depth 34 or more. So "They forced mate." with mate in 5 on the
+  board is `correct` when the app's search was a depth-12 one: no number is
+  owed. It is `imprecise` only when the mate is that short and covered and
+  the sentence still gives no number. A mate longer than 7 needs no number,
+  whatever the depth. (A move that is itself mate needs none.)
+- **A mate count that is too long**: "They forced mate in 10" where the
+  deeper lines or the probe show mate in 5. `wrong`, tag `mate-count`. A
+  count shorter than the probe's is not wrong: the probe found less.
 - **A mistake or blunder note does not say what is lost.** It has to name
   the piece that hangs or the exchange with its count ("b5 is attacked three
   times and defended twice: a pawn goes"). "Win a knight" or "can be won"
@@ -106,10 +123,11 @@ move that gives up a forced mate is the wrong badge, even if the game stays
 won: put `badge: <what it should not be, why>` in the note of that move's
 missed-mate sentence (the badge is not a sentence yet).
 
-A `CODE CHECK FAILED` for `nothing-after-mate`, `decided-trivia` or
-`mate-count` is one of these rules applied by code; it is only an
-`audit-bug` when the rule's condition is false (the move is not mate, the
-game is not decided, the sentence does give the number).
+A `CODE CHECK FAILED` for `nothing-after-mate`, `decided-trivia`,
+`mate-count` or `mate-count-exact` is one of these rules applied by code; it
+is only an `audit-bug` when the rule's condition is false (the move is not
+mate, the game is not decided, the number is owed and given or not owed and
+not given, no faster mate is there).
 
 ## Examples from the owner's own game (all wrong)
 

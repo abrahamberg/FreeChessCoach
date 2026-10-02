@@ -121,9 +121,11 @@ const REASON_CHECKS: Record<string, Check> = {
   },
   'missed-mate': (item, position) => {
     const san = /starting with (\S+)$/.exec(item.text)?.[1] ?? '';
-    const moves = Number(/mate in (\d+)/.exec(item.text)?.[1]);
+    const said = /mate in (\d+)/.exec(item.text)?.[1];
     const line = position.linesBefore.find((each) => each.san === san);
-    return [result('mate-in-line', line?.mate !== null && Math.abs(line?.mate ?? 0) === moves, `the engine line for ${san} is ${line?.mate ?? 'no mate'}`)];
+    const mates = line !== undefined && line.mate !== null && line.mate > 0 === (position.mover === 'white');
+    // With no number said (`mate-count` rules on that) the line has only to mate.
+    return [result('mate-in-line', mates && (said === undefined || Math.abs(line.mate ?? 0) === Number(said)), `the engine line for ${san} is ${line?.mate ?? 'no mate'}`)];
   },
   'stopped-guard': (item, position) => {
     const match = /stopped guarding ([a-h][1-8]), where (\S+) followed/.exec(item.text);

@@ -33,8 +33,9 @@ into a course (a lesson on the board, a YouTube video and a reel).
   the layered rebuild that shipped. Read it before touching
   `tactic-detectors/`, `classify-tactic-motif.ts`, the `verify-tactic-*`
   files, `tactic-reason-text.ts`, `tactic-gain-clause.ts`, `tactic-card-order.ts`,
-  `played-tactic-alternative.ts`, `tactic-allowed.ts` or the
-  tactic-prevention path. §9 is the second review pass and records one gate
+  `played-tactic-alternative.ts`, `tactic-allowed.ts`, `mate-count.ts` (§13:
+  which mate counts are said) or the tactic-prevention path. §9 is the
+  second review pass and records one gate
   that was tried and reverted; read it before retrying that gate. Its §1
   cards are pinned in `packages/chess-analysis/src/tactic-review-cases.ts`,
   `tactic-precision.test.ts` holds the false-positive ceilings and

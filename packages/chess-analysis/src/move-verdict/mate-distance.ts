@@ -1,4 +1,5 @@
-import type { EngineLine, TacticGainDto } from '@freechesscoach/shared';
+import type { EngineEval, EngineLine, TacticGainDto } from '@freechesscoach/shared';
+import { saidMateIn } from '../mate-count.js';
 import { moverMateIn } from '../mover-mate.js';
 import type { PlayerColor } from '../win-probability.js';
 import type { VerdictContext } from './context.js';
@@ -19,9 +20,11 @@ type Allowed = NonNullable<MoveVerdictCard['tacticAllowed']>;
  * - missed: the line of the move the card names, before the move;
  * - allowed: the line of the reply the card names, after the move.
  *
- * A card whose line has no mate score for its side keeps a gain without a
- * distance. The prevention card is left alone: its line is the scan's, from
- * another board than the reader's.
+ * Only a count the search can stand behind is set (`saidMateIn`, Task
+ * 125.6: the same 24…Qxh3 then read "mate in 10" off a depth-12 search). A
+ * card whose line has no mate score for its side, or a count that is not
+ * said, keeps a gain without a distance. The prevention card is left alone:
+ * its line is the scan's, from another board than the reader's.
  */
 export function withMateDistance(ctx: VerdictContext, card: Card): Card {
   const { tacticOpportunity, tacticAllowed } = card;
@@ -37,30 +40,34 @@ function counted<T extends { gain?: TacticGainDto }>(card: T, mateIn: number | n
 function opportunityMateIn(ctx: VerdictContext, card: Opportunity): number | null {
   const { mover, bestLine } = ctx.frame;
   if (card.found) return playedMateIn(ctx);
-  return namedMateIn(linesAt(ctx, 0), card.embodiedBySan ?? bestLine.moveSan, mover);
+  return namedMateIn(evalAt(ctx, 0), card.embodiedBySan ?? bestLine.moveSan, mover);
 }
 
 function allowedMateIn(ctx: VerdictContext, card: Allowed): number | null {
   const opponent = ctx.frame.mover === 'white' ? 'black' : 'white';
-  return namedMateIn(linesAt(ctx, 1), card.byMoveSan, opponent);
+  return namedMateIn(evalAt(ctx, 1), card.byMoveSan, opponent);
 }
 
 /** From the move that was played: itself the mate, or one more than the
  * engine needs after it. */
 function playedMateIn(ctx: VerdictContext): number | null {
-  const { mover, afterLine, playedMates } = ctx.frame;
-  if (playedMates) return 1;
-  const after = afterLine ? moverMateIn(afterLine, mover) : null;
+  if (ctx.frame.playedMates) return 1;
+  const searched = evalAt(ctx, 1);
+  const after = searched ? sideMateIn(searched.lines[0], searched, ctx.frame.mover) : null;
   return after === null ? null : after + 1;
 }
 
-/** The engine's lines before the move (`pliesOn` 0) or after it (1). */
-function linesAt(ctx: VerdictContext, pliesOn: 0 | 1): readonly EngineLine[] {
+/** The engine's eval before the move (`pliesOn` 0) or after it (1). */
+function evalAt(ctx: VerdictContext, pliesOn: 0 | 1): EngineEval | undefined {
   const { move, evals } = ctx.input;
-  return evals[move.ply - 1 + pliesOn]?.lines ?? [];
+  return evals[move.ply - 1 + pliesOn];
 }
 
-function namedMateIn(lines: readonly EngineLine[], san: string | undefined, side: PlayerColor): number | null {
-  const line = lines.find((each) => each.moveSan === san);
-  return line ? moverMateIn(line, side) : null;
+function namedMateIn(searched: EngineEval | undefined, san: string | undefined, side: PlayerColor): number | null {
+  return searched ? sideMateIn(searched.lines.find((each) => each.moveSan === san), searched, side) : null;
+}
+
+/** The count to say for `side` mating along the line, or null. */
+function sideMateIn(line: EngineLine | undefined, searched: EngineEval, side: PlayerColor): number | null {
+  return line && moverMateIn(line, side) !== null ? saidMateIn(line, searched) : null;
 }

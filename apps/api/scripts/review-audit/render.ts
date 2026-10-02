@@ -13,8 +13,10 @@ export function renderPosition(position: AuditPosition, items: AuditItem[], labe
     ...sideBySide(boardRows(position.fenBefore, `before (${turnName(position.fenBefore)} to move)`), boardRows(position.fenAfter, `after ${position.san}`)),
     `before: ${position.fenBefore}`,
     `after:  ${position.fenAfter}`,
-    `engine before: ${linesText(position.linesBefore)}`,
-    `engine after:  ${linesText(position.linesAfter)}`,
+    `engine before${depthNote(position, 'before')}: ${linesText(position.linesBefore)}`,
+    `engine after${depthNote(position, 'after')}:  ${linesText(position.linesAfter)}`,
+    ...dossierRows(position),
+    ...(position.mateProbe ? [`deeper before: ${linesText(position.mateProbe.before)}`, `deeper after:  ${linesText(position.mateProbe.after)}`] : []),
     '```',
     ''
   ];
@@ -25,6 +27,20 @@ export function renderPosition(position: AuditPosition, items: AuditItem[], labe
     rows.push(`- \`${item.key.slice(0, 10)}\` [${item.surface}] ${item.source}: "${item.text}"${checks}${label ? ` — LABEL ${label.verdict}: ${label.note}` : ''}`);
   }
   return rows.join('\n');
+}
+
+/** The depth of the search the engine lines are from. */
+function depthNote(position: AuditPosition, at: 'before' | 'after'): string {
+  const search = (position.review ?? position.dossier)?.[at];
+  return search?.depth ? ` (depth ${search.depth})` : '';
+}
+
+/** The dossier's own search, where the lines above are the review's: a
+ * dossier row was read off this one. */
+function dossierRows(position: AuditPosition): string[] {
+  const { review, dossier } = position;
+  if (!review || !dossier) return [];
+  return [`dossier's before (depth ${dossier.before.depth}): ${linesText(dossier.before.lines)}`, `dossier's after (depth ${dossier.after.depth}):  ${linesText(dossier.after.lines)}`];
 }
 
 function turnName(fen: string): string {

@@ -1,6 +1,7 @@
 import { Chess, type PieceSymbol } from 'chess.js';
-import type { CourseKind, EngineEval, EngineLine } from '@freechesscoach/shared';
+import type { CourseKind, EngineEval } from '@freechesscoach/shared';
 import { CONFIG } from '../config.js';
+import { saidMateIn } from '../mate-count.js';
 import { moverMateIn } from '../mover-mate.js';
 import type { CourseDossier } from './dossier.js';
 import { threatens } from '../board-facts/threats.js';
@@ -127,11 +128,13 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
   const kept = new Map<string, CourseTemptingFacts[]>();
   for (const candidate of candidates) {
     const facts = dossier.nodes.find((node) => node.nodeId === candidate.nodeId);
-    const best = evalsByFen.get(candidate.fenBefore)?.lines[0];
-    const answer = evalsByFen.get(candidate.fen)?.lines[0];
+    const evalBefore = evalsByFen.get(candidate.fenBefore);
+    const evalAfter = evalsByFen.get(candidate.fen);
+    const best = evalBefore?.lines[0];
+    const answer = evalAfter?.lines[0];
     const list = kept.get(candidate.nodeId) ?? [];
     const limit = candidate.solving ? CONFIG.courses.maxSolveTempting : CONFIG.courses.maxTempting;
-    if (!facts || !best || !answer || list.length >= limit) continue;
+    if (!facts || !evalBefore || !evalAfter || !best || !answer || list.length >= limit) continue;
     const drop = winPctFor(facts.side, toCpWhite(best)) - winPctFor(facts.side, toCpWhite(answer));
     const walksIntoMate = answer.mateIn !== null && (answer.mateIn > 0) === (facts.side === 'black');
     // The best mates in N; after this candidate, with the other side to
@@ -156,9 +159,9 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
       refutation,
       after: boardFacts(candidate.fen, answer.moveSan),
       captures: captureWords(candidate.fenBefore, [candidate.san, ...refutation]),
-      verdict: lineWords(answer),
+      verdict: lineWords(answer, evalAfter),
       balance: lineBalance(candidate.fenBefore, [candidate.san, ...refutation]),
-      notTheAnswer: candidate.solving ? notTheAnswer(facts.side, best, answer) : null
+      notTheAnswer: candidate.solving ? notTheAnswer(facts.side, evalBefore, evalAfter) : null
     });
     kept.set(candidate.nodeId, list);
   }
@@ -166,20 +169,25 @@ export function withTempting(dossier: CourseDossier, candidates: TemptingCandida
 }
 
 /** Why a move that still works is not the puzzle's answer, from the engine's
- * lines before it (the answer) and after it; null when it does not work: the
- * mover no longer stands better. After the candidate the other side moves,
- * so its mate in K is K + 1 moves from the puzzle's position. */
-export function notTheAnswer(side: 'white' | 'black', best: EngineLine, answer: EngineLine): string | null {
+ * best lines before it (the answer) and after it; null when it does not
+ * work: the mover no longer stands better. After the candidate the other
+ * side moves, so its mate in K is K + 1 moves from the puzzle's position. A
+ * count the search cannot stand behind is left out (`saidMateIn`). */
+export function notTheAnswer(side: 'white' | 'black', evalBefore: EngineEval, evalAfter: EngineEval): string | null {
+  const [best, answer] = [evalBefore.lines[0], evalAfter.lines[0]];
+  if (!best || !answer) return null;
   const name = side === 'white' ? 'White' : 'Black';
-  const answerMate = moverMateIn(answer, side);
-  const bestMate = moverMateIn(best, side);
+  const mates = moverMateIn(answer, side) !== null;
+  const bestMates = moverMateIn(best, side) !== null;
   const sign = side === 'white' ? 1 : -1;
   const band = answer.mateIn === null ? cpBand(sign * (answer.cp ?? 0)) : null;
   // Still standing better: mates, or is ahead by the band's own margin.
-  const stands = answerMate !== null || (answer.mateIn === null && sign * (answer.cp ?? 0) >= 50);
+  const stands = mates || (answer.mateIn === null && sign * (answer.cp ?? 0) >= 50);
   if (!stands) return null;
-  if (bestMate !== null && answerMate !== null) return `it mates too, but in ${answerMate + 1} moves, not ${bestMate}`;
-  const still = answerMate !== null ? `${name} has still a forced mate in ${answerMate}` : `${name} is still ${band}`;
-  if (bestMate !== null) return `${still}, but there is no mate; the answer mates in ${bestMate}`;
-  return `${still}, but the answer is stronger: ${lineWords(best)}`;
+  const answerMate = saidMateIn(answer, evalAfter);
+  const bestMate = saidMateIn(best, evalBefore);
+  if (bestMates && mates) return answerMate !== null && bestMate !== null ? `it mates too, but in ${answerMate + 1} moves, not ${bestMate}` : 'it mates too, but later';
+  const still = mates ? `${name} has still a forced mate${answerMate === null ? '' : ` in ${answerMate}`}` : `${name} is still ${band}`;
+  if (bestMates) return `${still}, but there is no mate; the answer mates${bestMate === null ? '' : ` in ${bestMate}`}`;
+  return `${still}, but the answer is stronger: ${lineWords(best, evalBefore)}`;
 }

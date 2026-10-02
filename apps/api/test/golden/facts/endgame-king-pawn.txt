@@ -17,7 +17,7 @@ n3 2.e6 (White, Line A) | best | before: White is winning → after: White is wi
     alternatives: Ke6: White is winning; Kg6: The position is roughly equal
 n4 2…Ke8 (Black, Line A) | best | before: White is winning → after: White is winning
     board: moves the king from f8 to e8
-    alternatives: Kg8: White has a forced mate in 4
+    alternatives: Kg8: White has a forced mate
 n5 3.e7 (White, Line A) | great | before: White is winning → after: White is winning
     board: moves the pawn from e6 to e7
     alternatives: Kf5: The position is roughly equal; Ke5: The position is roughly equal

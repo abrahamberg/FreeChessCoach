@@ -897,3 +897,87 @@ side keeps "forced mate" with no number rather than a guessed one, and so
 does a report stored before the field existed. The prevention card is left
 as it was: its line is the scan's, from another board than the reader's
 (§12), so its distance is not the reader's either.
+
+### A count only when the search can stand behind it (Task 125.6)
+
+The number above was the engine's at the depth the game was analysed at, and
+a search proves a mate long before it finds the shortest one. The owner's
+24…Qxh3 read "They forced mate in 10" in Game Review: mate in 10 at depth 12
+with five lines, mate in 5 on the board, and mate in 5 in the dossier's own
+search of the same position (three lines). The same engine at the same depth
+gives either answer, depending on what its hash table holds from the
+positions searched before.
+
+Searching such a position again, deeper, was built first and dropped (the
+owner, 2026-10-02): the app does not want an engine deeper than 12, the
+external engines would not give one anyway, and a mate longer than about
+seven moves is not worth a number to the reader. Instead a count is said
+only when the search it was read off can stand behind it, and one place
+decides that for every sentence: `saidMateIn`
+(`packages/chess-analysis/src/mate-count.ts`, constants in
+`CONFIG.mateCount`).
+
+Measured on the 869 dev positions of the review audit with a mate line
+(Stockfish 15.1, five lines, at depth 12 the dossier's three-line searches
+too). "Exact" means no search of the same move at depth 34 or 40 mates
+faster; the length is in plies from the searched position, so the side to
+move mating in N is 2N - 1 and being mated in N is 2N. Best line / every
+mate line:
+
+| plies | who | depth 12 | depth 18 | depth 34 (5 s limit) |
+| --- | --- | --- | --- | --- |
+| 1-5 | mates in 1-3, or is mated in 1-2 | 100% / 100% (584, 1410 lines) | 100% / 100% (311, 903) | 100% / 100% |
+| 6 | is mated in 3 | 72% / 88% | 90% / 96% | 100% / 100% |
+| 7 | mates in 4 | 88% / 80% | 94% / 94% | 100% / 100% |
+| 8 | is mated in 4 | 51% / 63% | 68% / 78% | 99% / 99% |
+| 9 | mates in 5 | 61% / 53% | 81% / 71% | 99% / 100% |
+| 10 | is mated in 5 | 19% / 45% | 38% / 61% | 94% / 98% |
+| 11 | mates in 6 | 29% / 31% | 61% / 35% | 95% / 97% |
+| 12 | is mated in 6 | 3% / 12% | 10% / 29% | 96% / 96% |
+| 13 | mates in 7 | 6% / 5% | 21% / 17% | 89% / 96% |
+| 14 | is mated in 7 | 0% / 9% | 14% / 19% | 96% / 96% |
+| 15+ | | 1% / 2% | 3% / 7% | 68% / 75% |
+
+(The depth-34 column is against the depth-40 search alone, both with the
+engine's five-second limit: a weaker reference.) Two things the table
+settles. "A mate in N is exact once the depth reaches its 2N - 1 plies" does
+not hold: at depth 12 a mate in 5 is right 6 times in 10 and a mate in 6 3
+in 10. And the side to move being mated is worse than its length suggests:
+its best line is the slowest mate the search lists, so the longest
+over-count wins.
+
+The rule: a count is said for a mate of at most `maxMoves` (7, the owner's
+cap) when it is at most `provenPlies` (5) plies from the searched position,
+at any depth, or the eval is at least `deepDepth` (34) deep, which only a
+Lichess index hit is. Nothing between depth 18 and 34 was measured, so
+nothing between earns more than five plies. At the app's depths that is: a
+missed or an allowed mate in 1 to 3 keeps its number ("You missed a chance
+to force mate in 3 with Rxf7+"), and a played one when the reply is mated in
+1 or 2 ("They forced mate in 2"); anything longer is said without ("They
+forced mate.", "Missed a forced mate starting with Qh5", "Black has a forced
+mate"). 24…Qxh3 reads "They forced mate." again, which the measurement says
+is all a depth-12 search knows there.
+
+Who asks `saidMateIn`: the cards (`move-verdict/mate-distance.ts` sets
+`gain.mateIn` only for a said count, and `tactic-gain-clause.ts` prints
+what is set), "Missed mate in N" (`move-reasons.ts`), the dossier's verdict
+words and alternatives (`board-facts/verdict-words.ts`, `lineWords` now
+takes the eval the line is from) and its tempting moves
+(`course/tempting.ts`: "it mates too, but in 3 moves, not 2" needs both
+counts said, else "it mates too, but later"). The prevention card gives no
+count, as before. The eval bar shows none (it plots `evalAfterCp`).
+`eval-words.ts` `mateToWords` still counts for the Explore panel and the
+bot hint, which show a live search; the coach's prompt facts
+(`packages/prompts/src/format-eval.ts`) are not touched either.
+
+The audit checks both halves. `mate-count`
+(`apps/api/scripts/review-audit/check-mate-count.ts`, with the audit's own
+copy of the rule) fails a sentence that gives a count the rule does not
+allow, or none where a short, covered mate owes one; it reads the search
+the sentence came from, so a position now carries the review's and the
+dossier's own lines with their depths. `mate-count-exact` compares every
+count that is said with the audit's own search of that board at depth 40
+(`mate-probe.ts`, cached, shown to judges as `deeper before` / `deeper
+after`; measurement only, the app never sees it). It fails a sentence only
+when that search mates faster along the same line, or the other side mates
+there: a slower mate in the probe proves nothing against the sentence.

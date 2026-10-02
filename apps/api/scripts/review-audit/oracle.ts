@@ -114,15 +114,6 @@ export function decidedFor(lines: readonly { cp: number | null; mate: number | n
   return (best.cp ?? 0) > 0 ? 'w' : 'b';
 }
 
-/** A sentence that says a mate is forced without saying in how many moves
- * ("They forced mate."), unless the move it is about is the mate itself.
- * The owner's calibration rule: say "mate in 5". */
-export function mateWithoutCount(text: string, san: string): boolean {
-  if (!/\bforc(e|ed|ing) mate\b/.test(text) || /\bmate in \d+\b/.test(text)) return false;
-  const named = /\bwith (\S+?)[.,]?(?: |$)/.exec(text)?.[1];
-  return !(named ?? san).endsWith('#');
-}
-
 /** Whether a mate card's count (`gain.mateIn`, which counts the card's own
  * move as the first) is the engine's. A move still to be played mates in as
  * many on its own line; a move that was played leaves one fewer on the line

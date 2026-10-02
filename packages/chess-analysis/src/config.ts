@@ -284,6 +284,47 @@ export const CONFIG = {
     mediumConfidence: 0.4
   },
 
+  /** Which mate counts are said (`mate-count.ts`, Task 125.6,
+   * docs/tactics-rework.md §13). A search proves a mate long before it
+   * finds the shortest one, so a count is said only when the search behind
+   * it can stand behind it. Measured on the 869 dev positions of the review
+   * audit with a mate line (Stockfish 15.1, five lines, at depth 12 the
+   * dossier's three-line searches too; "exact" means no search of the same
+   * move at depth 34 or 40 mates faster), by the mate's length in plies
+   * from the searched position, best line / every line:
+   *
+   *   plies  who                   depth 12     depth 18     depth 34 (5 s)
+   *   1-5    mates in 1-3, or      100% / 100%  100% / 100%  100% / 100%
+   *          is mated in 1-2       (584, 1410)  (311, 903)
+   *   6      is mated in 3          72% /  88%   90% /  96%  100% / 100%
+   *   7      mates in 4             88% /  80%   94% /  94%  100% / 100%
+   *   8      is mated in 4          51% /  63%   68% /  78%   99% /  99%
+   *   9      mates in 5             61% /  53%   81% /  71%   99% / 100%
+   *   10     is mated in 5          19% /  45%   38% /  61%   94% /  98%
+   *   11     mates in 6             29% /  31%   61% /  35%   95% /  97%
+   *   12     is mated in 6           3% /  12%   10% /  29%   96% /  96%
+   *   13     mates in 7              6% /   5%   21% /  17%   89% /  96%
+   *   14     is mated in 7           0% /   9%   14% /  19%   96% /  96%
+   *   15+                            1% /   2%    3% /   7%   68% /  75%
+   *
+   * (Depth 34 is against the depth-40 search only, with the engine's
+   * five-second limit: a weaker reference.) So at the depths the app
+   * analyses at, 12 and 18 alike, a count is exact up to five plies and
+   * not beyond: "mate in 2N-1 plies needs depth 2N-1" does not hold, a
+   * depth-12 mate in 5 is right 6 times in 10 and a mate in 6 3 in 10.
+   *
+   * - `provenPlies`: a mate this short is said at any depth.
+   * - `deepDepth`: an eval at least this deep (a Lichess index hit) is
+   *   trusted for any count up to `maxMoves`. Nothing between 18 and 34
+   *   was measured, so nothing between earns more than `provenPlies`.
+   * - `maxMoves`: the owner's cap (2026-10-02): a longer mate is not worth a
+   *   number to the reader, however sure the engine is. */
+  mateCount: {
+    provenPlies: 5,
+    deepDepth: 34,
+    maxMoves: 7
+  },
+
   /** §5 layer 5 of docs/tactics-rework.md — the game-level note measured
    * against this player's own history. `minBaselineGames`/`minBaselineChances`
    * are the floor below which there is no history worth comparing to, so no

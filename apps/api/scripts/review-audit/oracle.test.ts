@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { checkAnswerSets, decidedFor, exchangeGain, hasPassedPawnOn, mateCountAgrees, mateWithoutCount, prizeWon, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
+import { mateClaims, mateCountExact, mateCountOwed } from './check-mate-count.js';
+import { checkAnswerSets, decidedFor, exchangeGain, hasPassedPawnOn, mateCountAgrees, prizeWon, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
 
 /** The audit's own board checks. A wrong check invents errors (or hides
  * them) across the whole corpus, so each one that misfired once stays here
@@ -76,13 +77,22 @@ describe('review audit oracle', () => {
     expect(prizeWon(1, 0)).toBe(false);
   });
 
-  test('a forced mate is said with its number of moves (owner calibration: 24…Qxh3 "They forced mate.")', () => {
-    expect(mateWithoutCount('They forced mate.', 'Qxh3')).toBe(true);
-    expect(mateWithoutCount('You let them force mate with Qg2+', 'h3')).toBe(true);
-    expect(mateWithoutCount('Missed mate in 8 starting with Rxf3+', 'Qc3')).toBe(false);
-    // The move is the mate: nothing to count.
-    expect(mateWithoutCount('You forced mate.', 'Rc1#')).toBe(false);
-    expect(mateWithoutCount('You let them force mate with Qh7#', 'h3')).toBe(false);
+  test('a mate count is owed when the mate is short and the search covers it (the owner\'s rule, 2026-10-02; 24…Qxh3 at depth 12)', () => {
+    // After 24…Qxh3 White is to move and mated: in 10 by the depth-12 search, in 5 on the board. Neither is a count that search can stand behind.
+    expect(mateCountOwed(-10, 'b', 'w', 12)).toBe(false);
+    expect(mateCountOwed(-5, 'b', 'w', 12)).toBe(false);
+    // Five plies from the searched board: the side to move mates in 3, or is mated in 2.
+    expect(mateCountOwed(3, 'w', 'w', 12)).toBe(true);
+    expect(mateCountOwed(-2, 'b', 'w', 12)).toBe(true);
+    expect(mateCountOwed(-3, 'b', 'w', 18)).toBe(false);
+    expect(mateCountOwed(4, 'w', 'w', 18)).toBe(false);
+    // A deep search covers it, up to seven moves.
+    expect(mateCountOwed(-5, 'b', 'w', 34)).toBe(true);
+    expect(mateCountOwed(7, 'w', 'w', 40)).toBe(true);
+    expect(mateCountOwed(8, 'w', 'w', 60)).toBe(false);
+    // No mate on the line, or the other side's: nothing owed.
+    expect(mateCountOwed(null, 'w', 'w', 12)).toBe(false);
+    expect(mateCountOwed(-2, 'w', 'w', 12)).toBe(false);
   });
 
   test('a mate card\'s count is the engine\'s, from the card\'s own move (24…Qxh3: mate in 6 before, 5 after)', () => {
@@ -96,6 +106,39 @@ describe('review audit oracle', () => {
     // The move is the mate: 1, whatever line is held.
     expect(mateCountAgrees(1, 'Rc1#', undefined, true)).toBe(true);
     expect(mateCountAgrees(2, 'Qh7#', { mate: 1 }, false)).toBe(false);
+  });
+
+  test('a mate count is not longer than a deeper search finds (24…Qxh3: "They forced mate in 10", mate in 5 on the board)', () => {
+    // 1k4r1/ppp3r1/2n4p/2P5/5p2/P2P1P1q/1P3QP1/R4RK1 w: the deeper search's best defence, Qg3, is mated in 5.
+    const afterQxh3 = { mate: -5 };
+    expect(mateCountExact(10, 'b', afterQxh3)).toBe(false);
+    expect(mateCountExact(5, 'b', afterQxh3)).toBe(true);
+    // A mate found is a proof: a deeper search that only finds a slower
+    // one, or none, or does not list the move, shows nothing against it.
+    expect(mateCountExact(5, 'b', { mate: -6 })).toBe(true);
+    expect(mateCountExact(5, 'b', { mate: null })).toBe(true);
+    expect(mateCountExact(5, 'b', undefined)).toBe(true);
+    // The other side mating on that line contradicts the sentence.
+    expect(mateCountExact(5, 'b', { mate: 3 })).toBe(false);
+  });
+
+  test('a sentence\'s forced mate belongs to one line of one board, with its count or without', () => {
+    // Played: the board after the move.
+    expect(mateClaims('review:tactic-opportunity:found:checkmate', 'They forced mate in 2.', 'black')).toEqual([{ said: 2, side: 'b', at: 'after', san: null }]);
+    expect(mateClaims('review:tactic-opportunity:found:checkmate', 'They forced mate.', 'black')).toEqual([{ said: null, side: 'b', at: 'after', san: null }]);
+    // Named: the named move's own line, before the move for a missed one, after it for an allowed one.
+    expect(mateClaims('dossier:tactics', 'You missed a chance to force mate in 3 through a mating net with Rxf7+ — closes the net.', 'white')).toEqual([{ said: 3, side: 'w', at: 'before', san: 'Rxf7+' }]);
+    expect(mateClaims('review:tactic-allowed:checkmate', 'You let them force mate with Rb1+.', 'white')).toEqual([{ said: null, side: 'b', at: 'after', san: 'Rb1+' }]);
+    expect(mateClaims('review:reason:missed-mate', 'Missed mate in 3 starting with Rxf3+', 'black')).toEqual([{ said: 3, side: 'b', at: 'before', san: 'Rxf3+' }]);
+    expect(mateClaims('review:reason:missed-mate', 'Missed a forced mate starting with Rxf3+', 'black')).toEqual([{ said: null, side: 'b', at: 'before', san: 'Rxf3+' }]);
+    expect(mateClaims('dossier:verdict', 'before: Black has a forced mate → after: Black has a forced mate in 2', 'black')).toEqual([
+      { said: null, side: 'b', at: 'before', san: null },
+      { said: 2, side: 'b', at: 'after', san: null }
+    ]);
+    expect(mateClaims('dossier:alternative', 'Rg3: Black has a forced mate', 'black')).toEqual([{ said: null, side: 'b', at: 'before', san: 'Rg3' }]);
+    // A checkmate on the board is no forced mate to count.
+    expect(mateClaims('review:tactic-opportunity:found:checkmate', 'You delivered checkmate.', 'white')).toEqual([]);
+    expect(mateClaims('dossier:verdict', 'before: White is winning → after: checkmate', 'white')).toEqual([]);
   });
 
   test('a game is decided at a forced mate or five pawns (owner calibration: 35…d2 at -7.7)', () => {

@@ -19,6 +19,22 @@ export interface AuditPosition {
   url: string | null;
   /** The ply a Lichess puzzle starts at (a tactic is here). */
   focus: boolean;
+  /** The review's own search of both boards, with its depth; absent on a
+   * move only the dossier has. */
+  review?: { before: SearchView; after: SearchView };
+  /** The dossier's own search of both boards (it searches a position again,
+   * three lines): what a dossier row was read off. Absent on a move the
+   * dossier does not show. */
+  dossier?: { before: SearchView; after: SearchView };
+  /** The audit's own deeper search of both boards (`mate-probe.ts`), on a
+   * position with a mate among its lines or a mate count in a sentence. */
+  mateProbe?: { before: LineView[]; after: LineView[] };
+}
+
+/** One search of one board. */
+export interface SearchView {
+  depth: number;
+  lines: LineView[];
 }
 
 export interface LineView {

@@ -38,6 +38,30 @@ describe('review notes from the board facts', () => {
   });
 });
 
+describe('a missed mate (Task 125.6: a count only when the search can stand behind it)', () => {
+  /** Ra7 Kg8 Rb8# is mate in 2; Kf2 is played instead. */
+  const LADDER_FEN = '7k/8/8/8/8/8/R7/1R4K1 w - - 0 1';
+  const missed = (mateIn: number): string[] => {
+    const chess = new Chess(LADDER_FEN);
+    chess.move('Kf2');
+    const evalBefore: EngineEval = { ply: 0, fen: LADDER_FEN, depth: 12, lines: [{ moveSan: 'Ra7', moveUci: 'a2a7', cp: null, mateIn }] };
+    return buildReasons({ mover: 'white', fenBefore: LADDER_FEN, fenAfter: chess.fen(), moveSan: 'Kf2', evalBefore, quality: 'miss', isBookMove: false });
+  };
+
+  test('a short one says in how many moves', () => {
+    const [note] = missed(2);
+    expect(note).toContain('Ra7');
+    expect(note?.replace('Ra7', '')).toMatch(/\b2\b/);
+  });
+
+  test('a long one names the move and no number', () => {
+    const [note] = missed(9);
+    expect(note).toContain('Ra7');
+    expect(note).toMatch(/mate/);
+    expect(note?.replace('Ra7', '')).not.toMatch(/\d/);
+  });
+});
+
 describe('what the move gave up and why the better one was better', () => {
   const englund = (): string => {
     const chess = new Chess();

@@ -63,7 +63,10 @@ the loop better, in order.
     course. Engine answers are cached in the workspace
     (`GoldenEngineCache`), so a re-run after a code change needs no engine.
     A game with an `evalsFile` is replayed from those evals
-    (`stored-engine.ts`).
+    (`stored-engine.ts`). A game whose analysis fails is tried once more.
+    The dev engine restarts when a file under `packages/` or
+    `services/engine/` changes (`tsx watch`): do not edit those during a
+    run, the requests in flight fail and their games drop out of the run.
   - Sentences (`items.ts`): for the review, exactly what the note card
     shows, from `reviewMoveTexts` (`packages/chess-analysis/src/review-move-texts.ts`,
     which `apps/web/src/features/board/TacticReasonList.tsx` and
@@ -75,7 +78,10 @@ the loop better, in order.
     the move, after it, or along a move the sentence names); `named-move` /
     `named-line` (legal); `material-in-line` and `mate-in-line` (the
     engine's own line for the named move delivers what a card promises,
-    and a mate in as many moves as the card counts);
+    and a mate in as many moves as the card counts); `mate-count` (a
+    forced mate gives its number of moves exactly when it is short and the
+    search covers it) and `mate-count-exact` (no count said is longer than
+    the audit's own depth-40 search of that board finds, `mate-probe.ts`);
     `can-be-taken`, `undefended`, `can-be-won` (an exchange search over real
     legal captures, `exchangeGain`); `fork-geometry`, `pin-geometry`,
     `guard-lost`, `passed-pawn`, `balance`; and per `BoardFact` kind: moved,
@@ -532,7 +538,10 @@ position's rows), where the dossier lists `alternative` moves.
   `mate-in-line` fails them as before. `mate-in-line` now compares the
   card's count with the line (`mateCountAgrees`): 0 of 194 numbered review
   cards differ.
-- [ ] Open, the audit not the sentence: a main-line position holds the
+- [x] Was open, the audit not the sentence (closed with 125.6, 2026-10-02:
+  a position now carries the review's and the dossier's own search, each
+  with its depth; a dossier row is checked against the dossier's, and the
+  packet prints both): a main-line position holds the
   review's engine lines, and the dossier searches the same position again
   (multiPv 3). On dev 59 of 206 numbered `dossier:tactics` rows give
   another distance than the lines the packet prints for the judge
@@ -552,12 +561,55 @@ longer mate than there is. The owner's own example, 24…Qxh3, now reads
 20 probe both say mate in 5. On dev 59 of 206 dossier mate rows differ
 from the review's line for the same move.
 
-- [ ] Owner's call: when the engine reports a mate for a move's line, the
-  worker searches that one position again deeper (mates are few, so the
-  cost is small), or the card says the number only when a second search
-  agrees. Until then a judge will mark a too-long count `wrong`.
-- [ ] The audit: for a sampled card with a mate count, compare it with a
-  deeper cached search (`mate-count-exact`), so this is measured by code.
+- [x] Owner's call (2026-10-02): **no deeper search; the number only when
+  the mate is short and the search covers it.** The app does not want an
+  engine deeper than 12 (the external engines return 12 whatever is asked),
+  and a mate longer than about 7 is not worth a number. One place decides
+  for every sentence: `saidMateIn` (`packages/chess-analysis/src/mate-count.ts`,
+  `CONFIG.mateCount`), asked by the cards (`mate-distance.ts`), "Missed mate
+  in N" (`move-reasons.ts`), the dossier's verdict words and alternatives
+  (`verdict-words.ts`) and its tempting rows (`tempting.ts`). Without a
+  number the sentence still says the mate: "They forced mate.", "Missed a
+  forced mate starting with Qh5", "Black has a forced mate".
+- [x] The rule, from the measurement (`docs/tactics-rework.md` §13 has the
+  whole table; 869 dev positions with a mate line, each count against the
+  depth-34 and depth-40 searches of the same move). By the depth-12 count,
+  best line, exact / lines: 1: 300/300, 2: 199/199, 3: 123/138 (89%),
+  4: 94/128 (73%), 5: 36/89 (40%), 6: 15/85 (18%), 7: 2/55 (4%), 8+: 2/248.
+  "Exact when the depth reaches the mate's 2N - 1 plies" does not hold. By
+  length in plies from the searched position it does split cleanly: up to
+  five plies (the side to move mates in 1 to 3, or is mated in 1 or 2) 584
+  of 584 at depth 12 and 311 of 311 at depth 18; six plies 72% and 90%,
+  seven 88% and 94%. At depth 34 every length up to 14 plies is 89% or
+  better against depth 40. So: said when the mate is at most 7 moves
+  (`maxMoves`) and at most 5 plies from the searched position
+  (`provenPlies`), or the eval is at least depth 34 (`deepDepth`, a Lichess
+  index hit).
+- [x] The audit: `mate-count` now rules both ways with its own copy of the
+  rule (a number that is not owed, or none where a short covered mate owes
+  one), on the search the sentence came from; `mate-count-exact` compares
+  every count said with the audit's own depth-40 search
+  (`check-mate-count.ts`, `mate-probe.ts`; measurement only).
+
+Status: done 2026-10-02 — dev split (220 games with the new seed, 53,206
+sentences), the old behaviour (every count said) against the rule, both
+under the new checks: sentences failing a check 950 → 114; `mate-count`
+836 → 0; `mate-count-exact` 393 of 1,387 → 0 of 624; `mate-in-line` 3 → 3
+(the weakBackRank cards of Task 121.1); every other check 114 → 114. Of
+1,665 forced mates the sentences speak of, 1,660 gave a number before and
+730 do now (review 162 of 411, dossier 568 of 1,254); 935 say the mate
+without one. 24…Qxh3 reads "They forced mate." Golden facts re-recorded:
+135 lines, every one a dropped number. Targeted vitest, `test:golden`,
+`test:corpus`, typecheck and lint pass; api db tests not run.
+
+Tried first and dropped on the owner's decision: searching a position with
+a mate line again at depth 34 (4.3 extra searches a game on dev, 2.7 s each
+against 0.08 s for the usual one, so more than double the engine time of an
+average game). It took `mate-count-exact` from 393 to 79 on dev; merging
+the two searches by move (a faster mating move the first search had not
+listed, a defence the deeper one left out) took the twelve games with the
+most failures from 50 to 8, and was not run on the whole split. Searching
+in reverse game order did not help.
 
 ### Task 125.3 — No "excellent" for a move that gives up a forced mate
 
@@ -588,6 +640,166 @@ of Task 120.2.
 
 **Findings:** item 5 (29.axb6: dxe6 was the one winning move, +3.7 against
 +0.8 for the next). Task 121.3's reason, for a missed only move too.
+
+## Phase 126 — What a quiet move does: the pin, the kick, the trade (owner's report, 2026-10-02)
+
+**The report** (seed `seed:d9716668`, the owner as Black; `show
+seed:d9716668 --where p10`): 1.e4 e5 2.f3 Nf6 3.d3 d5 **4.Bg5 h6 5.Bxf6
+Qxf6**. Game Review says nothing on 4.Bg5 (pins the knight to the queen),
+nothing on 4…h6 (kicks the bishop), nothing on 5.Bxf6 (gives up White's
+only developed piece; Black takes back with a developing move). The owner:
+pins used to be over-reported (insignificant ones), now none appear; bring
+back the ones that matter, judged by what stands behind the pinned piece
+and whether the pinned piece had something to do, "without making pins
+spammers". The dossier should be able to say the same.
+
+**Verified in code, 2026-10-02:**
+
+- The pin and the kick are both detected and never asked.
+  `move-verdict/gate.ts` `frameVerdict` returns `null`, and no detector
+  runs, unless the played move lost eval meaningfully or the second line
+  is meaningfully worse than the first. A quiet pin (4.Bg5: −0.92 before,
+  −1.14 after) and its answer (4…h6, the engine's first line) pass
+  neither. `tactic-detectors/pin.ts` + `verifyPin` accept 4.Bg5
+  (relative, queen behind, gap 6: confidence 0.45, positional);
+  `tactic-detectors/gains-tempo.ts` is written for exactly a pawn hitting
+  a piece. `boardFacts` (`board-facts/move-facts.ts`) already says
+  "attacks the knight on f6, which is pinned to the queen on d8 by the
+  bishop on g5" and "attacks the bishop on g5"; `buildReasons`
+  (`move-reasons.ts`) does not read board facts.
+- 5.Bxf6 has no trade note because `trade-description.ts` `isEvenExchange`
+  asks `see(...) === 0`, and a bishop (330) for a knight (320) is −10.
+  Every bishop-for-knight trade is silent, either way round. Same family
+  as the "can be won" bug (Task 121.2, `MIN_WON_SEE_CP`).
+
+The gate stays as it is for cards ("Found the pin" is praise, and praise
+for a move that changed nothing was the spam). What is missing is a plain
+description in the move's reasons, with its own budget.
+
+### Task 126.1 — A bishop for a knight is a trade
+
+**Files:** `packages/chess-analysis/src/trade-description.ts` (+ test).
+
+- [ ] `isEvenExchange`: even when |SEE| is under
+  `CONFIG.evalWitness.minThreatSeeCp` (the constant `loose-pieces.ts`
+  uses), not only at exactly zero.
+- [ ] Test first: 5.Bxf6 in the seed reads "Trades the bishop for the
+  knight on f6"; a capture that wins or loses a pawn's worth stays
+  silent here.
+- [ ] Dev re-run: count of `review:reason:trade` before/after; golden
+  changes explained.
+
+**Commit:** `fix(review): a bishop for a knight is a trade`
+
+### Task 126.2 — A pin that matters is said on a quiet move
+
+**Read:** `tactic-detectors/pin.ts`, `tactic-pins.ts`,
+`verify-tactic-claims.ts` (`verifyPin`, `winsThePieceBehind`,
+`pawnPinDeniesSomething`), `move-verdict/gate.ts`, `move-reasons.ts`,
+`docs/tactics-rework.md` (TR-01, TR-05, TR-10: the three pins the rework
+was judged on).
+
+- [ ] A reason in `buildReasons`, not a card: "Pins the knight on f6 to
+  the queen" ("…to the king" for an absolute pin). Built from the pin
+  detector's verified claim for the move (the pin is new with this move
+  and the pinner is not lost on its square: both already in the detector
+  and `verifyPin`).
+- [ ] **Measured 2026-10-02** on the 220 dev games (12,301 moves), every
+  move run through `proposeTacticClaims` + `verifyTacticClaims`, pinned
+  pawns left out:
+
+  | Rule | Pins | Per game | Most in one game |
+  |---|---|---|---|
+  | every verified pin | 211 | 0.96 | 5 |
+  | the pinned piece can take the pinner (a trade offer, not a pin) | 39 | 0.18 | 2 |
+  | classic: a knight on c3/c6/f3/f6 pinned by a bishop to king or queen (the owner's rule) | 65 | 0.30 | 2 |
+  | a knight pinned by a bishop to king or queen, any square | 75 | 0.34 | 2 |
+  | "had a job" (guards an attacked man, could take something, or is pressed) | 114 | 0.52 | 4 |
+  | job or knight-by-bishop | 142 | 0.65 | 5 |
+
+  What it shows: `verifyPin` already keeps pins under one a game, so the
+  old spam (pawns, phantom rays) is gone at that layer. The "job" test
+  alone misses 23 of the 65 classic pins, 4.Bg5 of Lasker–Thomas and
+  several 3…Bg4 among them, so the owner's rule is needed. The ten
+  knight pins off the four squares are as textbook as the rest (9…Bb4
+  on a d2 knight, 9.Bg5 on an e7 knight). The 39 where the pinned piece
+  can take the pinner (rook against rook, bishop against bishop, a queen
+  offered) are not pins anyone names.
+- [ ] Never said when the pinned piece attacks the pinner.
+- [ ] Step one, ships on its own: a knight pinned by a bishop to the king
+  or the queen, on any square (75 on dev, at most two a game).
+- [ ] Step two, only after judges agree: the other pins (rook and queen
+  pins on files, a piece pinned to a rook) when the pinned piece had
+  something to do: it guards a piece or pawn of its own that the mover
+  attacks, or it could take something other than the pinner without
+  loss, or it is attacked at least as often as it is defended and more
+  than once. 67 on dev. 30 judged, at least 27 `correct` (a judge marks
+  an insignificant pin `irrelevant`); if under, tighten this test or
+  leave step two out.
+- [ ] Budget: at most one such reason on a move; never beside a tactic
+  card that already names the pin, never on a move that is a mistake or
+  worse for another stated reason (the fault is the story).
+- [ ] The answer to a pin: when a move ends a pin on the mover's own
+  piece by attacking the pinner, the kick's sentence (126.3) names it;
+  `breaks-pin.ts` stays the card's business.
+- [ ] Tests first: fires on 4.Bg5 of the seed and on TR-01 and TR-10;
+  silent on TR-05 (pawn on g7 "pinned" to h8), on a rook "pinned" by a
+  rook it can take, and (step two) on a pin whose pinned piece does
+  nothing.
+
+**Commit:** `feat(review): a quiet move that pins something says so`
+
+### Task 126.3 — The kick
+
+**Read:** `tactic-detectors/gains-tempo.ts`, `board-facts/move-facts.ts`
+(`attacks`).
+
+- [ ] A reason for a pawn move that attacks a piece worth more than a
+  pawn, which was not attacked by a pawn before and cannot simply take
+  the pawn for free: "Attacks the bishop on g5: it has to move or take".
+  When that piece was pinning one of the mover's own: "…the bishop that
+  pins the knight".
+- [ ] Same budget as 126.2 (one positional reason a move, pin first when
+  a move does both), and the same measurement (per game, 30 judged).
+- [ ] Tests first: 4…h6 of the seed; silent when the attacked piece just
+  takes the pawn and wins it.
+
+**Commit:** `feat(review): a pawn that kicks a piece says so`
+
+### Task 126.4 — What a trade gives up
+
+**Finding:** the owner's reading of 5.Bxf6: not a mistake by the engine (−1.14
+before with Be3 first and Bxf6 the second line at −1.18; −1.08 after), but
+a poor trade for a plain reason: the bishop was White's only developed piece, and
+Black recaptures with the queen, which develops it.
+
+- [ ] The trade reason gains a clause when it is true on the board:
+  "…giving up White's only developed piece" (the mover has no other minor
+  piece off its home square), and/or "Black takes back with the queen,
+  bringing it out" (the recapture in the engine's line is by a piece
+  leaving its home square). Both from chess.js and the stored line; no
+  eval claim.
+- [ ] The dossier says the same on a course node whose move is such a
+  trade (`course/dossier-node.ts`), one row, through the same function.
+- [ ] Tests first on 5.Bxf6; silent on a trade of two developed pieces
+  with others developed.
+
+**Commit:** `feat(review): a trade says what it gives up`
+
+### Task 126.5 — A seed says what the owner expected to read
+
+**Files:** `apps/api/scripts/review-audit/seeds.json`, `seed.ts`,
+`checks.ts`, `oracle.test.ts`.
+
+- [ ] A seed may carry `expect: [{ ply, says }]` (a word or phrase that
+  some sentence of that move must contain: `pin` at ply 7, `attacks the
+  bishop` at ply 8, `Trades the bishop` at ply 9). A move with an
+  unmet expectation is a failing item (`expected-point`), so a missing
+  sentence is counted by code, the way a wrong one is.
+- [ ] The first seed gets its expectations too (25.Qxc7 the only move,
+  Task 121.3).
+
+**Commit:** `feat(audit): a seed's expected sentences are checked`
 
 ## Left open from Phases 110–119
 

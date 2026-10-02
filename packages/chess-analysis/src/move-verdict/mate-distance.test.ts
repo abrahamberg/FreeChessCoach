@@ -90,6 +90,35 @@ describe('a mate card carries the engine line\'s mate distance', () => {
     for (const { text } of [missed, allowed]) expect(text).not.toMatch(/\b\d+\b/);
   });
 
+  test('24…Qxh3, mate in 10 off the depth-12 search with mate in 5 on the board: the card carries no number', () => {
+    const { card, text } = carded(scenario({
+      fen: '1k4r1/ppp3r1/2n4p/2P5/5p1q/P2P1P1B/1P3QP1/R4RK1 b - - 2 24',
+      moveSan: 'Qxh3',
+      quality: 'great',
+      before: [[['Qxh3', 'Qg3', 'Rxg3', 'Kf2', 'Qxg2+', 'Ke1', 'Qxf1+', 'Kd2'], { mate: -11 }], [['Rg3', 'Be6'], -470], [['Qd8', 'Rfe1'], -201]],
+      after: [[['Qg3', 'Rxg3', 'Kf2', 'Qxg2+', 'Ke1', 'Qxf1+', 'Kd2', 'Rg2+'], { mate: -10 }], [['Rfb1', 'Rxg2+', 'Kf1', 'Qh1+'], { mate: -4 }]]
+    }));
+
+    expect(card.tacticOpportunity).toMatchObject({ found: true, gain: { kind: 'mate' } });
+    expect(card.tacticOpportunity?.gain?.mateIn).toBeUndefined();
+    expect(text).toMatch(/mate/);
+    expect(text).not.toMatch(/\d/);
+  });
+
+  test('a missed or an allowed mate too long for its search: the move is named, the count is not', () => {
+    const missed = carded(scenario({
+      fen: LADDER_FEN,
+      moveSan: 'Kf2',
+      quality: 'miss',
+      before: [[['Ra7', 'Kg8', 'Rb8#'], { mate: 6 }], [['Kf2', 'Kg8'], 900]],
+      after: [[['Kg8', 'Ra7'], 900]]
+    }));
+    expect(missed.card.tacticOpportunity?.gain).toMatchObject({ kind: 'mate' });
+    expect(missed.card.tacticOpportunity?.gain?.mateIn).toBeUndefined();
+    expect(missed.text).toContain('Ra7');
+    expect(missed.text.replace('Ra7', '')).not.toMatch(/\d/);
+  });
+
   test('no mate distance on the engine line: the sentence keeps no number', () => {
     const texts = tacticCardTexts({
       ply: 1, moveSan: 'Ra7', mover: 'white', isUserMove: true, cpLoss: 0, quality: 'best', bestLineSan: [], evalAfterCp: 0, hangsPiece: false,

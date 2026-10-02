@@ -6,7 +6,7 @@ import type { ClassifiedMoveDto } from '@freechesscoach/shared';
  * app code never reads it. A reason no template knows is `review:reason:other`
  * and shows up in the report, which is the cue to add its template here. */
 const REASON_TEMPLATES: [RegExp, string][] = [
-  [/^Missed mate in \d+ starting with /, 'missed-mate'],
+  [/^Missed (mate in \d+|a forced mate) starting with /, 'missed-mate'],
   [/^Missed \S+, winning material on /, 'missed-capture'],
   [/^Leaves the \w+ on [a-h][1-8] undefended$/, 'loose-free'],
   [/^Leaves the \w+ on [a-h][1-8] where it can be won$/, 'loose-winnable'],

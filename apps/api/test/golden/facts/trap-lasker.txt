@@ -76,18 +76,18 @@ n16 8…Bg4+ (Black, Line A) | best | before: Black is much better → after: Bl
     alternatives: Qh4: Black is better; Qg5: Black is better
     tempting check: Qxd1+? Black's Qxd1+ moves the queen from d8 to d1 | captures the queen on d1 | gives check | the check can be answered: no block; take the checking piece with Kxd1; move the king with Ke3, Kf2 | attacks the knight on b1 | attacks the bishop on f1. White answers Kxd1: moves the king from e2 to d1 | captures the queen on d1. Then Nc6 Bc3 Bf5. Over the line Black takes the queen; White takes the queen; at the end White has a bishop for a knight (Black is slightly better).
     flags: quiz-eligible
-n17 9.Ke1 (White, Line A) | inaccuracy | before: Black is much better → after: Black has a forced mate in 7
+n17 9.Ke1 (White, Line A) | inaccuracy | before: Black is much better → after: Black has a forced mate
     best instead: Kf2; after Kf2 Bxd1 Bc3 c6 Nd2 Qb6+, White has a bishop for a queen and a knight
     why Kf2 is better: moves the king from e2 to f2 | leaves the white queen on d1 hanging
     board: moves the king from e2 to e1
-    tactics: They let you force mate in 7 with Qxd1+.
+    tactics: They let you force mate with Qxd1+.
     alternatives: Kf2: Black is much better; Ke3: Black is winning
-n18 9…Bxd1 (Black, Line A) | miss | before: Black has a forced mate in 7 → after: Black is much better
+n18 9…Bxd1 (Black, Line A) | miss | before: Black has a forced mate → after: Black is much better
     best instead: Qxd1+; after Qxd1+ Kf2 Qd4+ Kg3 Nh6 h3, White has a bishop for a queen and a knight
     why Qxd1+ is better: moves the queen from d8 to d1 | captures the queen on d1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf2 | attacks the knight on b1
     board: moves the bishop from g4 to d1 | captures the queen on d1
     tactics: You missed a chance to win a queen through a free piece with Qxd1+ — captures the queen on d1.
-    alternatives: Qxd1+: Black has a forced mate in 7; Qg5: Black is better
+    alternatives: Qxd1+: Black has a forced mate; Qg5: Black is better
     tempting check: Qh4+? Black's Qh4+ moves the queen from d8 to h4 | gives check | the check can be answered: block with g3; the checking piece cannot be taken; move the king with Kd2. White answers g3: moves the pawn from g2 to g3 | blocks the check from the queen on h4 | attacks the queen on h4 | leaves the white pawn on h2 hanging. Then Qh5 Qd3 Nc6. Over the line nothing is taken; at the end White has a bishop for a knight (Black is better).
     flags: critical
 
@@ -122,5 +122,5 @@ REVIEW NOTES
     n14 7…fxg1=N+: You won a knight through a brilliant sacrifice — promotes to a knight rather than a queen.
     n15 8.Rxg1: Recaptures the knight on g1
     n16 8…Bg4+: You won a queen through a skewer two moves away — skewers the king on e2, exposing the queen on d1.
-    n17 9.Ke1: Leaves the queen on d1 where it can be won; They let you force mate in 7 with Qxd1+.
-    n18 9…Bxd1: Missed mate in 7 starting with Qxd1+; Missed Qxd1+, winning material on d1; You missed a chance to win a queen through a free piece with Qxd1+ — captures the queen on d1.
+    n17 9.Ke1: Leaves the queen on d1 where it can be won; They let you force mate with Qxd1+.
+    n18 9…Bxd1: Missed a forced mate starting with Qxd1+; Missed Qxd1+, winning material on d1; You missed a chance to win a queen through a free piece with Qxd1+ — captures the queen on d1.

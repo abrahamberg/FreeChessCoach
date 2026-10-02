@@ -240,7 +240,10 @@ Per node:
 - The move, side, line, and move number.
 - **Verdict words**, never numbers: the move-quality label (`classify-move.ts`)
   and the position before/after in words (the wording `eval-words.ts` uses:
-  "about equal", "White is better", "Black is winning", "mate in 3 for White").
+  "about equal", "White is better", "Black is winning", "White has a forced
+  mate in 3"; a mate's number of moves only when it is short and the search
+  covers it, else "White has a forced mate": `mate-count.ts`,
+  `docs/tactics-rework.md` §13).
 - Book: in book or not, the opening name where the book names it
   (`opening-book.ts`).
 - Engine best move and its line (SAN, at most 6 plies) when the course move is

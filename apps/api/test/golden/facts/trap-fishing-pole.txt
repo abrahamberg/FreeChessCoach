@@ -74,7 +74,7 @@ n15 8.f3 (White, Line A) | inaccuracy | before: Black is much better → after: 
     alternatives: f4: Black is much better; a3: Black has a forced mate in 1
 n16 8…g3 (Black, Line A) | best | before: Black has a forced mate in 2 → after: Black has a forced mate in 1
     board: moves the pawn from g4 to g3
-    alternatives: Bc5+: Black has a forced mate in 6; Nd4: Black is much better
+    alternatives: Bc5+: Black has a forced mate; Nd4: Black is much better
     tempting check: Qh2+? Black's Qh2+ moves the queen from h4 to h2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf2. White answers Kf2: moves the king from g1 to f2. Then Bc5+ Ke2. Over the line nothing is taken; at the end White has a knight for a pawn (Black is better).
     tempting check: Qh1+? Black's Qh1+ moves the queen from h4 to h1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf2. White answers Kf2: moves the king from g1 to f2. Then Bc5+ d4 Qh4+. Over the line nothing is taken; at the end White has a knight for a pawn (Black is better).
     tempting capture: gxf3? Black's gxf3 moves the pawn from g4 to f3 | captures the pawn on f3. White answers Nxf3: moves the knight from e1 to f3 | captures the pawn on f3 | attacks the queen on h4 | leaves the white pawn on e4 hanging. Then Bc5+ d4. Over the line Black takes a pawn; White takes a pawn; at the end White has a knight for a pawn (Black is slightly better).
