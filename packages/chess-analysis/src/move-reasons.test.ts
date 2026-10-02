@@ -101,3 +101,34 @@ describe('what the move gave up and why the better one was better', () => {
     expect(run(fen, 'Qxc3', 'blunder', false, 'Nxc3', 'Qc1#').join(' ')).not.toContain('stopped guarding');
   });
 });
+
+describe('a missed capture (Task 126.6: only when the engine\'s own line keeps the material)', () => {
+  const missed = (fenBefore: string, moveSan: string, pvSan: string[] | undefined): string[] => {
+    const chess = new Chess(fenBefore);
+    const mover = chess.turn() === 'w' ? 'white' : 'black';
+    chess.move(moveSan);
+    const evalBefore: EngineEval = { ply: 0, fen: fenBefore, depth: 12, lines: [{ moveSan: pvSan?.[0] ?? '', moveUci: '', cp: 0, mateIn: null, pvSan }] };
+    return buildReasons({ mover, fenBefore, fenAfter: chess.fen(), moveSan, evalBefore, quality: 'good', isBookMove: false }).filter((text) => text.startsWith('Missed'));
+  };
+  /** A knight on d5 nobody defends, with the rook on d1 looking at it. */
+  const LOOSE_KNIGHT = '4k3/8/8/3n4/8/8/8/3RK3 w - - 0 1';
+
+  test('a piece left to be taken for nothing is named', () => {
+    expect(missed(LOOSE_KNIGHT, 'Kf2', ['Rxd5', 'Ke7'])).toEqual(['Missed Rxd5, winning material on d5']);
+  });
+
+  test('a knight for a bishop wins nothing', () => {
+    // Nxd5 cxd5: ten points up on `see.ts`'s scale, an even trade on the board.
+    expect(missed('4k3/8/2p5/3b4/8/2N5/8/4K3 w - - 0 1', 'Kf2', ['Nxd5', 'cxd5', 'Ke2'])).toEqual([]);
+  });
+
+  test('a capture the engine\'s own line gives back wins nothing (the Opera game, 13…Rxd7)', () => {
+    // …Nxd7 takes a rook, and Bxe7 takes the queen: Black comes out a point down.
+    const opera = '3rkb1r/p2Rqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/2K4R b k - 0 13';
+    expect(missed(opera, 'Rxd7', ['Nxd7', 'Bxe7', 'Bxe7', 'Bxd7+', 'Rxd7', 'Qb8+', 'Bd8', 'Qxe5+'])).toEqual([]);
+  });
+
+  test('a pawn given back many moves later does not undo it', () => {
+    expect(missed(LOOSE_KNIGHT, 'Kf2', ['Rxd5', 'Ke7', 'Rd1', 'Ke6', 'Kf2'])).toEqual(['Missed Rxd5, winning material on d5']);
+  });
+});

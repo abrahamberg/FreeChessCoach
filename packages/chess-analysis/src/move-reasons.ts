@@ -5,6 +5,7 @@ import { saidMateIn } from './mate-count.js';
 import { moverMateIn } from './mover-mate.js';
 import { forks } from './board-facts/forks.js';
 import { loosePieces } from './board-facts/loose-pieces.js';
+import { quietLineGain } from './board-facts/material.js';
 import { PIECE_VALUES } from './tactics.js';
 import { PIECE_NAMES } from './piece-names.js';
 import { describeTrade } from './trade-description.js';
@@ -46,6 +47,7 @@ const {
   centerSwingThreshold: CENTER_SWING_THRESHOLD,
   mobilityDropThreshold: MOBILITY_DROP_THRESHOLD
 } = CONFIG.moveReasons;
+const { minThreatSeeCp: MIN_THREAT_SEE_CP } = CONFIG.evalWitness;
 const CATEGORY_ORDER: ReasonCategory[] = ['mate', 'material', 'tactical', 'structural', 'trade', 'mobility'];
 
 /** §11's deterministic per-move coaching reasons — no LLM at render time. */
@@ -89,6 +91,10 @@ function missedMateReason(input: MoveReasonsInput): Reason[] {
   return [{ category: 'mate', text: `Missed ${mateIn === null ? 'a forced mate' : `mate in ${mateIn}`} starting with ${best.moveSan}` }];
 }
 
+/** The engine's first move took something and came out ahead: by a pawn's
+ * worth on the square (a knight for a bishop is ten points on `see.ts`'s
+ * scale and wins nothing), and still ahead where its own line goes quiet
+ * (…Nxd7 in the Opera game takes a rook and Bxe7 takes the queen). */
 function missedCaptureReason(input: MoveReasonsInput): Reason[] {
   const best = input.evalBefore.lines[0];
   if (!best || best.moveSan === input.moveSan) return [];
@@ -103,7 +109,8 @@ function missedCaptureReason(input: MoveReasonsInput): Reason[] {
   if (!move.captured) return [];
 
   const side = input.mover === 'white' ? 'w' : 'b';
-  if (see(input.fenBefore, move.to as Square, side) <= 0) return [];
+  if (see(input.fenBefore, move.to as Square, side) < MIN_THREAT_SEE_CP) return [];
+  if (best.pvSan?.length && quietLineGain(input.fenBefore, best.pvSan) <= 0) return [];
   return [{ category: 'material', text: `Missed ${best.moveSan}, winning material on ${move.to}` }];
 }
 

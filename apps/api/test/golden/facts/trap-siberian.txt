@@ -127,5 +127,5 @@ REVIEW NOTES
     n11 6.Bc4: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
     n12 6…Qc7: Theory — Sicilian Defense: Smith-Morra Gambit Accepted, Siberian Variation, Siberian Trap (B21)
     n18 9…Nd4: You hit back instead of retreating — answers the threat by hitting the queen on e2.; Won the queen, giving back a knight and a knight.
-    n19 10.Nxd4: Missed hxg4, winning material on g4; They let you deliver checkmate with Qh2#.; Won a knight, but it allowed mate.
+    n19 10.Nxd4: They let you deliver checkmate with Qh2#.; Won a knight, but it allowed mate.
     n20 10…Qh2#: You delivered checkmate.

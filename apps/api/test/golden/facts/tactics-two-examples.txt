@@ -145,6 +145,6 @@ REVIEW NOTES
     n10 2…d6: Theory — Philidor Defense (C41)
     n11 3.Bc4: Theory — Philidor Defense (C41)
     n14 4…g6: They let you win a pawn through a free piece with Nxe5 — captures the pawn on e5.
-    n16 5…Bxd1: Missed dxe5, winning material on e5; They let you force mate in 2 through a mating net with Bxf7+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
+    n16 5…Bxd1: They let you force mate in 2 through a mating net with Bxf7+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
     n17 6.Bxf7+: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     n19 7.Nd5#: You delivered checkmate.

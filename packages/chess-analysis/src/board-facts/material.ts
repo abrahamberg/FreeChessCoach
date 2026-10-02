@@ -1,5 +1,6 @@
 import { Chess, type PieceSymbol } from 'chess.js';
 import { capitalise } from '@freechesscoach/shared';
+import { materialBalance } from '../tactic-board-facts.js';
 import { PIECE_VALUES } from '../tactics.js';
 
 const NAMES: Record<PieceSymbol, [string, string]> = {
@@ -51,6 +52,29 @@ export function settledLine(fen: string, sans: readonly string[]): string[] {
   }
   const retaken = last?.captured && chess.moves({ verbose: true }).some((reply) => reply.to === last.to && Boolean(reply.captured));
   return retaken ? played.slice(0, -1) : played;
+}
+
+/** The points the side to move has won where a line first goes quiet: the
+ * next move takes nothing and its mover is not in check. Read to its end, an
+ * engine line counts a pawn given back twelve plies on against the capture
+ * that began it. */
+export function quietLineGain(fen: string, sans: readonly string[]): number {
+  const chess = new Chess(fen);
+  const side = chess.turn();
+  const before = materialBalance(chess, side);
+  let quiet = before;
+  for (const [index, san] of sans.entries()) {
+    const inCheck = chess.inCheck();
+    let captured: boolean;
+    try {
+      captured = Boolean(chess.move(san).captured);
+    } catch {
+      break;
+    }
+    if (index > 0 && !inCheck && !captured) break;
+    quiet = materialBalance(chess, side);
+  }
+  return quiet - before;
 }
 
 /** The material at the end of a line of SAN moves from `fen`, in

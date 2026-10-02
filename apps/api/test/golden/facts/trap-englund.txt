@@ -108,5 +108,5 @@ REVIEW NOTES
     n12 6…Bb4: You saved a hanging piece — saves the queen on b2.; Won the rook, giving back a bishop.
     n13 7.Qd2: They let you win a bishop through a free piece with Bxc3 — captures the bishop on c3.
     n14 7…Bxc3: Trades bishops on c3; You saved a hanging piece — saves the queen on b2.
-    n15 8.Qxc3: Missed Nxc3, winning material on c3; Recaptures the bishop on c3; They let you deliver checkmate with Qc1#.; Won a bishop, but it allowed mate.
+    n15 8.Qxc3: Recaptures the bishop on c3; They let you deliver checkmate with Qc1#.; Won a bishop, but it allowed mate.
     n16 8…Qc1#: You delivered checkmate.

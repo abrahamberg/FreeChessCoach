@@ -867,6 +867,37 @@ Black recaptures with the queen, which develops it.
 
 **Commit:** `feat(review): a trade says what it gives up`
 
+### Task 126.6 — A missed capture wins material in the engine's own line
+
+**Finding:** cluster 1 of the first baseline (`review:reason:missed-capture`,
+51 of 516 dev sentences fail `material-in-line`, 8 of 17 judged wrong).
+`missedCaptureReason` asked only `see > 0` on the capture's square. Two
+causes: a knight for a bishop is +10 on `see.ts`'s scale ("Missed Nxg4,
+winning material on g4" for …Nxg4 Qxg4), and the exchange on one square
+says nothing of what the opponent takes elsewhere (13…Nxd7 in the Opera
+game takes a rook and Bxe7 takes the queen).
+
+**Files:** `move-reasons.ts`, `board-facts/material.ts` (`quietLineGain`),
+tests beside each.
+
+- [x] The capture has to win a pawn's worth on its square
+  (`CONFIG.evalWitness.minThreatSeeCp`), and the mover has to be ahead
+  where the engine's own line first goes quiet (`quietLineGain`: the next
+  move takes nothing and its mover is not in check). An eval stored
+  without its line keeps the square test alone.
+- [x] Tests first: a loose knight is still named; a knight for a bishop
+  and the Opera line are not; a pawn given back many moves later does not
+  undo a won piece.
+- [x] Golden, seven lines, each a "Missed X, winning material" that the
+  line gives back: Gold Coins 9…Be6 (Bxc5 Bxf6 Qxf6 Qxd5: level) and
+  12…Qd6 (Nxg4 Qxg4: a knight for a bishop), Opera 13…Rxd7, Legal's mate
+  5…Bxd1 in two courses (dxe5 Qxg4: a knight for a bishop), Englund
+  8.Qxc3 (Nxc3 Qxa1+: a rook goes), Siberian 10.Nxd4 (hxg4 Nxe2+: the
+  queen goes).
+- [ ] Dev re-run: `missed-capture` sentences and failures before/after.
+
+**Commit:** `fix(review): a missed capture has to win material in the engine's line`
+
 ### Task 126.5 — A seed says what the owner expected to read
 
 **Files:** `apps/api/scripts/review-audit/seeds.json`, `seed.ts`,
