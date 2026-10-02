@@ -619,12 +619,23 @@ mate is flagged "via the `Miss` label instead (§5.8)", but §5.8 only
 re-labels an inaccuracy, mistake or blunder, and this move loses no
 accuracy, so nothing flags it.
 
-- [ ] `classify-miss.ts`: a move from a position with a forced mate for the
-  mover to one without is a `miss` (underlying severity kept for the
-  accuracy math, as §5.8 has it). A slower mate stays as it is.
+- [x] `classify-miss.ts` (`gaveUpShortMate`, rule M0 in
+  `docs/algorith.md` §5.8): a move from a position with a forced mate for
+  the mover to one without is a `miss`, whatever its tier (the underlying
+  severity is kept for the accuracy math). A slower mate stays as it is;
+  a played checkmate is never a miss; a position after that was not
+  searched claims nothing.
+- [x] **Only a mate the review would put a number on** (the owner,
+  2026-10-02): `saidMateIn`, the rule of Task 125.6, so at most 7 moves
+  and within what the search can stand behind (5 plies at depth 12). A
+  depth-12 "mate in 9" given up is not held against the move.
 - [ ] The badge as a sentence in the audit (`review:quality:*`, Task
-  122.4), with a check for this rule.
-- [ ] `test:corpus`, the report's counts (`miss` rises), §5.8 updated.
+  122.4), with a check for this rule. Not built: the audit does not carry
+  badges yet.
+- [x] `test:corpus`, `test:golden`, §5.8 updated. The count of `miss` on
+  dev before and after is in the day's log below.
+
+**Commit:** `fix(review): a move that gives up a short forced mate is a miss`
 
 ### Task 125.4 — A mistake's note says what is lost
 
@@ -841,8 +852,9 @@ was judged on).
   leave step two out.
 - [x] Budget: at most one such reason on a move; never beside a tactic
   card that already names the pin (`withoutCardedPin`, in
-  `report-tactic-verdicts.ts`), never on a mistake or worse (the fault is
-  the story).
+  `report-tactic-verdicts.ts`), never on a move that cost something
+  (inaccuracy or worse: the fault is the story, and on an inaccuracy with
+  nothing else to say the note is "better was …").
 - [ ] The answer to a pin: when a move ends a pin on the mover's own
   piece by attacking the pinner, the kick's sentence (126.3) names it;
   `breaks-pin.ts` stays the card's business.
@@ -895,8 +907,19 @@ was judged on).
   said when there is no other), 12.h4 and 13.h5; King's Indian 8…h6;
   Scotch 8.c4; Fishing Pole 5.h3; Kieninger 7.a3; Noah's Ark 5…b5 and
   11…c4.
-- [ ] Dev re-run: notes per game as shipped; 30 judged. If judges mark
-  the plain kicks `irrelevant`, keep only the ones that name a pin (29).
+- [x] Dev re-run, as first shipped: **324 notes in 138 of 220 games (1.5
+  a game), at most 6 in one**; 322 of 324 pass the check. What it showed:
+  - 53 inaccuracies lost "inaccuracy: better was X" to a kick note (that
+    line is only said when the move has no reason). The pin and kick
+    notes are now off every move that cost something (inaccuracy and
+    worse), not only mistakes: the fault is the story.
+  - The two that failed `pawn-safe` were right to fail: 10.c3 in the
+    owner's game "attacks the bishop on d4", and Bxc3+ Nxc3 Qxc3+ wins the
+    pawn. The exchange comes out at 90 on `see.ts`'s scale (a bishop for
+    a knight and a pawn), under the one-pawn bar. The gate is now "wins
+    more than a bishop against a knight" (`BISHOP_KNIGHT_GAP_CP`).
+- [ ] 30 judged. If judges mark the plain kicks `irrelevant`, keep only
+  the ones that name a pin (29).
 
 **Commit:** `feat(review): a pawn that attacks a piece says so`
 

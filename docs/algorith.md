@@ -254,7 +254,7 @@ Thresholds are 🟡 for the severity tiers, 🔴 for Brilliant/Great/Miss (popul
 4. great       → §5.6
 5. best        → playedMoveSan === analysis[i].bestMove
 6. severity tier by drop (§5.2, §5.3)
-7. miss re-label (§5.8) — can override inaccuracy/mistake/blunder
+7. miss re-label (§5.8) — can override inaccuracy/mistake/blunder, and any tier when a short forced mate was given up (M0)
 ```
 
 Brilliant and Great are checked **before** Best because a brilliant move is almost always also the engine's top move.
@@ -375,6 +375,12 @@ G4  MATERIALITY: at least one of
 A `Miss` is not a separate severity — it is a **re-label** of an `inaccuracy`/`mistake`/`blunder` that specifically means *"you failed to punish"*. Applied last:
 
 ```
+M0  any severity: the mover had a forced mate the review would put a number on
+      (`saidMateIn`: at most 7 moves, and within what the search can stand
+      behind: 5 plies at depth 12) and the position after the move has no mate
+      for them. Every mate is past 99.9% win probability (§2.1), so such a move
+      loses no accuracy and would be "excellent". A slower mate is not a miss;
+      a played checkmate never is. The underlying severity is kept.
 M1  current severity is inaccuracy, mistake, or blunder
 M2  an opportunity existed before the move:
       bestWin = winPctFor(mover, toCpWhite(lines[0]))
@@ -748,8 +754,8 @@ The stated priority is presentation, not the numbers. The per-move `reasons: str
 | `delta.mobilityDelta <= -8` | "Costs {n} squares of piece mobility" |
 | best move was a capture that wins a pawn's worth on its square (SEE ≥ 100) and leaves the mover ahead where the engine's own line first goes quiet, not played | "Missed {bestMove}, winning material on {square}" |
 | a capture that comes out level (SEE within a bishop against a knight) | "Trades {pieces} on {square}" / "Trades the bishop for the knight on {square}"; "Recaptures the {piece} on {square}" when it takes back. A trade of the mover's one developed minor piece adds ", giving up {Side}'s only developed piece", and, when the engine's reply takes back with a queen or minor piece from its first rank, "; {Other} can take back with the {piece}, bringing it out / developing it" |
-| the move pins a knight to the king or the queen with a bishop (the pin detector's verified claim; not on a mistake or worse) | "Pins the knight on {square} to the {king\|queen}" |
-| a quiet pawn move attacks a knight, bishop, rook or queen that no pawn attacked before; the pawn can legally take it and is not simply won (not on a mistake or worse, not beside a card for what the move did or allowed; the pin note comes first) | "Attacks the {piece} on {square}[, which pins the {piece} on {square}]" |
+| the move pins a knight to the king or the queen with a bishop (the pin detector's verified claim; not on an inaccuracy or worse) | "Pins the knight on {square} to the {king\|queen}" |
+| a quiet pawn move attacks a knight, bishop, rook or queen that no pawn attacked before; the pawn can legally take it and is not simply won (not on an inaccuracy or worse, not beside a card for what the move did or allowed; the pin note comes first) | "Attacks the {piece} on {square}[, which pins the {piece} on {square}]" |
 | `lines[0].mateIn != null`, not played | "Missed mate in {n} starting with {bestMove}" |
 | `piecesUnderAttack` where attackers > defenders, unresolved | "Leaves {piece} on {square} attacked {a}× and defended {d}×" |
 | `centerControlScore` swing ≥ 3 against mover | "Concedes the centre" |
