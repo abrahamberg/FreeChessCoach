@@ -188,6 +188,17 @@ describe('review audit oracle', () => {
     expect(failing('review:reason:pin', 'Pins the knight on f6 to the queen', 'white', 'r2q1rk1/pbpn1ppp/1p1bpn2/8/3P3Q/2NBBP2/PPP1N1PP/R4RK1 w - - 4 11', 'Bg5')).toEqual([]);
   });
 
+  test('the kick note is checked on the board: a quiet pawn move, a new attack, a safe pawn, and the pin it names', () => {
+    const before = 'rnbqkb1r/ppp2ppp/5n2/3pp1B1/4P3/3P1P2/PPP3PP/RN1QKBNR b KQkq - 1 4';
+    expect(failing('review:reason:kick', 'Attacks the bishop on g5, which pins the knight on f6', 'black', before, 'h6')).toEqual([]);
+    expect(failing('review:reason:kick', 'Attacks the knight on g5', 'black', before, 'h6')).toEqual(['attacked-piece']);
+    expect(failing('review:reason:kick', 'Attacks the bishop on g5, which pins the pawn on e5', 'black', before, 'h6')).toEqual(['pins-piece']);
+    // No g-pawn behind it: the bishop takes the pawn for nothing.
+    expect(failing('review:reason:kick', 'Attacks the bishop on g5', 'black', '4k3/7p/8/6B1/8/8/8/4K3 b - - 0 1', 'h6')).toEqual(['pawn-safe']);
+    // The pawn on f6 already hit the bishop.
+    expect(failing('review:reason:kick', 'Attacks the bishop on g5', 'black', '4k3/6pp/5p2/6B1/8/8/8/4K3 b - - 0 1', 'h6')).toEqual(['attack-new']);
+  });
+
   test('the trade note is checked on the board: what was taken, with what, and that it can be taken back', () => {
     const before = 'rnbqkb1r/ppp2pp1/5n1p/3pp1B1/4P3/3P1P2/PPP3PP/RN1QKBNR w KQkq - 0 5';
     expect(failing('review:reason:trade', 'Trades the bishop for the knight on f6', 'white', before, 'Bxf6')).toEqual([]);

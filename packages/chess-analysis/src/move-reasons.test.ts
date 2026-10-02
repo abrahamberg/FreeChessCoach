@@ -146,3 +146,13 @@ describe('the pin a move makes (Task 126.2)', () => {
     expect(reasons(BEFORE_BG5, 'Bg5', 'blunder').join(' ')).not.toContain('Pins');
   });
 });
+
+describe('the piece a pawn kicks (Task 126.3)', () => {
+  const AFTER_BG5 = 'rnbqkb1r/ppp2ppp/5n2/3pp1B1/4P3/3P1P2/PPP3PP/RN1QKBNR b KQkq - 1 4';
+  const KICK = 'Attacks the bishop on g5, which pins the knight on f6';
+
+  test('is said on a quiet move, not on a mistake or worse', () => {
+    expect(reasons(AFTER_BG5, 'h6', 'best')).toContain(KICK);
+    expect(reasons(AFTER_BG5, 'h6', 'blunder')).not.toContain(KICK);
+  });
+});

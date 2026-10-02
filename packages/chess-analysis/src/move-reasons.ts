@@ -1,6 +1,7 @@
 import { Chess, type Move, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type FeatureDeltaDto, type MoveQuality, type PositionFeatures } from '@freechesscoach/shared';
 import { betterMoveReasons, isCostlyQuality } from './move-reason-better.js';
+import { kickReason } from './kick-reason.js';
 import { pinReason } from './pin-reason.js';
 import { saidMateIn } from './mate-count.js';
 import { moverMateIn } from './mover-mate.js';
@@ -60,7 +61,7 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     ...missedCaptureReason(input),
     ...looseReasons(input),
     ...allowedForkReasons(input),
-    ...pinReasons(input),
+    ...quietMoveReasons(input),
     ...costlyMoveReasons(input),
     ...centerSwingReason(input),
     ...passedPawnReasons(input),
@@ -159,11 +160,13 @@ function allowedForkReasons(input: MoveReasonsInput): Reason[] {
     }));
 }
 
-/** The pin the move made (`pin-reason.ts`). Not on a mistake or worse: there
- * the fault is the story, and a pin that cost a piece is no credit. */
-function pinReasons(input: MoveReasonsInput): Reason[] {
+/** What a quiet move does to the other side's pieces: the pin it made
+ * (`pin-reason.ts`), or the piece its pawn kicks (`kick-reason.ts`). One of
+ * them, the pin first. Not on a mistake or worse: there the fault is the
+ * story, and a pin that cost a piece is no credit. */
+function quietMoveReasons(input: MoveReasonsInput): Reason[] {
   if (isCostlyQuality(input.quality)) return [];
-  const text = pinReason(input.fenBefore, input.moveSan, input.mover);
+  const text = pinReason(input.fenBefore, input.moveSan, input.mover) ?? kickReason(input.fenBefore, input.moveSan);
   return text ? [{ category: 'tactical', text }] : [];
 }
 

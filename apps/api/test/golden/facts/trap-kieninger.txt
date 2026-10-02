@@ -87,5 +87,6 @@ REVIEW NOTES
     n5 3.dxe5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
     n6 3…Ng4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
     n7 4.Nf3: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
+    n13 7.a3: Attacks the bishop on b4, which pins the knight on d2
     n15 8.axb4: They let you deliver checkmate with Nd3#.; Won a bishop, but it allowed mate.
     n16 8…Nd3#: You delivered checkmate.

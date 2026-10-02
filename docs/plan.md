@@ -862,17 +862,43 @@ was judged on).
 **Read:** `tactic-detectors/gains-tempo.ts`, `board-facts/move-facts.ts`
 (`attacks`).
 
-- [ ] A reason for a pawn move that attacks a piece worth more than a
-  pawn, which was not attacked by a pawn before and cannot simply take
-  the pawn for free: "Attacks the bishop on g5: it has to move or take".
-  When that piece was pinning one of the mover's own: "…the bishop that
-  pins the knight".
-- [ ] Same budget as 126.2 (one positional reason a move, pin first when
-  a move does both), and the same measurement (per game, 30 judged).
-- [ ] Tests first: 4…h6 of the seed; silent when the attacked piece just
-  takes the pawn and wins it.
+- [x] A reason for a quiet pawn move that attacks a knight, bishop, rook
+  or queen (`kick-reason.ts`): "Attacks the bishop on g5, which pins the
+  knight on f6"; without a pin, "Attacks the bishop on a4". Only when no
+  pawn attacked the piece before, the pawn can legally take it (a pawn
+  pinned to its king attacks nothing), and the pawn is not simply won
+  where it stands. A pawn that takes is a capture first and gets no kick
+  note. The pin clause names a piece, never a pinned pawn.
+- [x] **The sentence says what the pawn does, not what the piece must
+  do.** The plan's wording ("it has to move or take") was built and
+  dropped: three golden courses turn on its being false. The Fishing
+  Pole's knight stays on g4 after 5.h3 (…h5), the Kieninger trap answers
+  7.a3 with …Nd3#, and the bishop in Noah's Ark has nowhere to go after
+  11…c4.
+- [x] Budget: one such reason a move, the pin (126.2) first; not on a
+  mistake or worse; not beside a tactic card for what the move itself did
+  (a pawn fork already names the piece) or for what it allowed (9…b5
+  "attacks the bishop on c4" in a golden course, and Nxb5 wins the pawn):
+  `withoutCardedKick`.
+- [x] **Measured on every move of the 219 dev games that parse (12,226
+  moves): 415 kicks, 1.9 a game, none in 60 games, at most 6 in one.**
+  With pawn captures counted it was 458. 29 of the 415 name a pin. This
+  is five times the pin note; the per-game number after the book, fault
+  and card filters comes from the dev re-run.
+- [x] Tests first: 4…h6 of the seed; the Fishing Pole's 5.h3; silent when
+  the piece simply takes the pawn, when a pawn already attacked it, on a
+  pawn that takes, and on a pawn pinned to its king.
+- [x] The audit checks the sentence on the board (`kick`: a quiet pawn
+  move, the piece, a new attack, the pawn not won, the pin it names).
+- [x] Golden, ten new lines and one gone: the Immortal Game 9…c6, 10.g4
+  (which loses "Costs 10 squares of piece mobility": that note is only
+  said when there is no other), 12.h4 and 13.h5; King's Indian 8…h6;
+  Scotch 8.c4; Fishing Pole 5.h3; Kieninger 7.a3; Noah's Ark 5…b5 and
+  11…c4.
+- [ ] Dev re-run: notes per game as shipped; 30 judged. If judges mark
+  the plain kicks `irrelevant`, keep only the ones that name a pin (29).
 
-**Commit:** `feat(review): a pawn that kicks a piece says so`
+**Commit:** `feat(review): a pawn that attacks a piece says so`
 
 ### Task 126.4 — What a trade gives up
 

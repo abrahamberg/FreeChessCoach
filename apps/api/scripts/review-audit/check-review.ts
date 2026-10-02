@@ -162,6 +162,32 @@ const REASON_CHECKS: Record<string, Check> = {
       result('pinner-safe', pinners.length === 0 || lost.length < pinners.length, `the pinning piece on ${lost.join(', ')} can be won`)
     ];
   },
+  // "Attacks the bishop on g5, which pins the knight on f6": a quiet pawn
+  // move, the pawn hits that piece and no pawn did before, and the pawn is
+  // not simply won where it stands.
+  kick: (item, position) => {
+    const match = /^Attacks the (\w+) on ([a-h][1-8])(?:, which pins the (\w+) on ([a-h][1-8]))?$/.exec(item.text);
+    const [name, square, pinnedName, pinnedSquare] = [match?.[1] ?? '', match?.[2] ?? '', match?.[3], match?.[4]];
+    const own = colorOf(position.mover);
+    const them = other(own);
+    const pawn = moveOf(position.fenBefore, position.san);
+    const target = pieceAt(position.fenAfter, square);
+    const pawnsOn = (fen: string): string[] => attackersOf(fen, square, own).filter((from) => pieceAt(fen, from)?.type === 'p');
+    const checks = [
+      result('pawn-move', pawn?.piece === 'p' && pawn.captured === null, `${position.san} is not a quiet pawn move`),
+      result('attacked-piece', target?.color === them && target.type === PIECE_BY_NAME[name], `no ${name} of the other side on ${square}`),
+      result('pawn-attacks', pawn !== null && pawnsOn(position.fenAfter).includes(pawn.to), `the pawn on ${pawn?.to ?? '?'} does not attack ${square}`),
+      result('attack-new', pawnsOn(position.fenBefore).length === 0, `a pawn already attacked ${square} before the move`),
+      result('pawn-safe', pawn === null || exchangeGain(position.fenAfter, pawn.to, them) <= 0, `the pawn on ${pawn?.to ?? '?'} can be won`)
+    ];
+    if (pinnedName && pinnedSquare) {
+      const front = pieceAt(position.fenAfter, pinnedSquare);
+      const behind = (['k', 'q', 'r', 'b', 'n'] as const).flatMap((type) => squaresOf(position.fenAfter, type, own));
+      const pins = front?.color === own && front.type === PIECE_BY_NAME[pinnedName] && behind.some((back) => pinnersThrough(position.fenAfter, pinnedSquare, back, them).includes(square as never));
+      checks.push(result('pins-piece', pins, `the ${name} on ${square} does not look through a ${pinnedName} on ${pinnedSquare} at a piece behind it`));
+    }
+    return checks;
+  },
   // "Trades the bishop for the knight on f6" / "Trades knights on d4" /
   // "Recaptures the knight on d4": the move took that piece there, with that
   // piece, and a trade can be taken back.

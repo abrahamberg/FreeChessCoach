@@ -107,6 +107,7 @@ REVIEW NOTES
     n9 5.Nxc6: Theory — Scotch Game: Mieses Variation (C45)
     n10 5…bxc6: Theory — Scotch Game: Mieses Variation (C45)
     n11 6.e5: Theory — Scotch Game: Mieses Variation (C45)
+    n15 8.c4: Attacks the knight on d5
   l2
     n1 1.e4: Theory — Scotch Game: Classical Variation (C45)
     n2 1…e5: Theory — Scotch Game: Classical Variation (C45)
