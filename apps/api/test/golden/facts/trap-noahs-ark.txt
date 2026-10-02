@@ -128,7 +128,6 @@ REVIEW NOTES
     n6 3…a6: Theory — Ruy Lopez: Noah's Ark Trap (C71)
     n7 4.Ba4: Theory — Ruy Lopez: Noah's Ark Trap (C71)
     n8 4…d6: Theory — Ruy Lopez: Noah's Ark Trap (C71)
-    n12 6…Nxd4: Trades the knight for the pawn on d4
     n13 7.Nxd4: Recaptures the knight on d4
     n14 7…exd4: Recaptures the knight on d4
     n15 8.Qxd4: Recaptures the pawn on d4

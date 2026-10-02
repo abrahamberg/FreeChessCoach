@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { mateClaims, mateCountExact, mateCountOwed } from './check-mate-count.js';
+import { checkReviewItem } from './check-review.js';
 import { checkAnswerSets, decidedFor, exchangeGain, hasPassedPawnOn, mateCountAgrees, prizeWon, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
+import type { AuditItem, AuditPosition } from './types.js';
 
 /** The audit's own board checks. A wrong check invents errors (or hides
  * them) across the whole corpus, so each one that misfired once stays here
@@ -153,5 +155,21 @@ describe('review audit oracle', () => {
     expect(checkAnswerSets('r1bQkb1r/ppp2ppp/2p5/4Pn2/8/5N2/PPP2PPP/RNB2RK1 b kq - 0 8')).toEqual({ blocks: [], captures: ['Kxd8'], kingMoves: [] });
     // The Evergreen, 21.Qxd7+: the king can take or step aside.
     expect(checkAnswerSets('1r2k1r1/pbpQnp1p/1b3P2/8/8/B1PB1q2/P4PPP/3R2K1 b - - 0 21')).toEqual({ blocks: [], captures: ['Kxd7'], kingMoves: ['Kf8'] });
+  });
+
+  /** The failing checks of one review reason on one move. */
+  const failing = (source: string, text: string, mover: 'white' | 'black', fenBefore: string, fenAfter: string): string[] =>
+    checkReviewItem({ source, text, data: null } as AuditItem, { mover, fenBefore, fenAfter, linesBefore: [], linesAfter: [] } as unknown as AuditPosition)
+      .filter((check) => !check.ok)
+      .map((check) => check.check);
+
+  test('the trade note is checked on the board: what was taken, with what, and that it can be taken back', () => {
+    const before = 'rnbqkb1r/ppp2pp1/5n1p/3pp1B1/4P3/3P1P2/PPP3PP/RN1QKBNR w KQkq - 0 5';
+    const after = 'rnbqkb1r/ppp2pp1/5B1p/3pp3/4P3/3P1P2/PPP3PP/RN1QKBNR b KQkq - 0 5';
+    expect(failing('review:reason:trade', 'Trades the bishop for the knight on f6', 'white', before, after)).toEqual([]);
+    expect(failing('review:reason:trade', 'Trades the knight for the bishop on f6', 'white', before, after)).toEqual(['took-piece', 'took-with']);
+    expect(failing('review:reason:trade', 'Recaptures the knight on f6', 'white', before, after)).toEqual([]);
+    // A knight nobody defends is won, not traded.
+    expect(failing('review:reason:trade', 'Trades knights on d4', 'black', '4k3/8/2n5/8/3N4/8/8/4K3 b - - 0 1', '4k3/8/8/8/3n4/8/8/4K3 w - - 0 2')).toEqual(['can-take-back']);
   });
 });

@@ -165,6 +165,7 @@ REVIEW NOTES
   l1
     n1 1.d4: Theory — Horwitz Defense (A40)
     n2 1…e6: Theory — Horwitz Defense (A40)
+    n9 5.Bxf6: Trades the bishop for the knight on f6
     n10 5…Bxf6: Recaptures the bishop on f6
     n12 6…fxe4: Trades pawns on e4
     n13 7.Nxe4: Recaptures the pawn on e4

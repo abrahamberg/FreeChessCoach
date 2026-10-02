@@ -133,8 +133,10 @@ REVIEW NOTES
     n17 9.dxc5: Trades pawns on c5
     n18 9…Be6: Missed Bxc5, winning material on c5
     n19 10.Nd4: Concedes the centre
+    n21 11.Nxe6: Trades the knight for the bishop on e6
     n22 11…fxe6: Recaptures the knight on e6; You saved a hanging piece — saves the queen on d8.
     n24 12…Qd6: Missed Nxg4, winning material on g4
+    n29 15.Bxf6: Trades the bishop for the knight on f6
     n30 15…Rxf6: Recaptures the bishop on f6
     n35 18.bxc3: Recaptures the bishop on c3
     n36 18…Qxc3: Recaptures the pawn on c3

@@ -137,6 +137,24 @@ const REASON_CHECKS: Record<string, Check> = {
     const lands = play(position.fenAfter, reply) !== null && reply.replace(/[+#=QRBN]+$/, '').endsWith(square);
     return [result('guard-lost', guardedAfter < guardedBefore, `${square} is guarded ${guardedBefore}× before and ${guardedAfter}× after`), result('reply-lands', lands, `${reply} does not land on ${square}`)];
   },
+  // "Trades the bishop for the knight on f6" / "Trades knights on d4" /
+  // "Recaptures the knight on d4": the move took that piece there, with that
+  // piece, and a trade can be taken back.
+  trade: (item, position) => {
+    const square = SQUARE.exec(item.text)?.[1] ?? '';
+    const taken = pieceAt(position.fenBefore, square);
+    const taker = pieceAt(position.fenAfter, square);
+    const words = /^(?:Recaptures the (\w+)|Trades the (\w+) for the (\w+)|Trades (\w+)s) on /.exec(item.text);
+    const takenName = words?.[1] ?? words?.[3] ?? words?.[4] ?? '';
+    const takerName = words?.[2] ?? words?.[4];
+    const own = colorOf(position.mover);
+    const checks = [
+      result('took-piece', taken?.color === other(own) && taken.type === PIECE_BY_NAME[takenName] && taker?.color === own, `the move did not take a ${takenName} on ${square}`),
+      result('took-with', takerName === undefined || taker?.type === PIECE_BY_NAME[takerName], `the piece that took on ${square} is not a ${takerName}`)
+    ];
+    if (item.text.startsWith('Recaptures')) return checks;
+    return [...checks, result('can-take-back', legalCapturesOf(position.fenAfter, square, other(own)).length > 0, `nothing can take back on ${square}`)];
+  },
   'passed-pawn': (item, position) => {
     const file = /passed pawn on ([a-h])/.exec(item.text)?.[1] ?? '';
     const side = colorOf(position.mover);

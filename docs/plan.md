@@ -744,16 +744,31 @@ the queen.
 
 ### Task 126.1 — A bishop for a knight is a trade
 
-**Files:** `packages/chess-analysis/src/trade-description.ts` (+ test).
+**Files:** `packages/chess-analysis/src/trade-description.ts` (+ test),
+`see.ts` (`BISHOP_KNIGHT_GAP_CP`), the audit's `check-review.ts` (`trade`).
 
-- [ ] `isEvenExchange`: even when |SEE| is under
-  `CONFIG.evalWitness.minThreatSeeCp` (the constant `loose-pieces.ts`
-  uses), not only at exactly zero.
-- [ ] Test first: 5.Bxf6 in the seed reads "Trades the bishop for the
-  knight on f6"; a capture that wins or loses a pawn's worth stays
-  silent here.
-- [ ] Dev re-run: count of `review:reason:trade` before/after; golden
-  changes explained.
+- [x] `isEvenExchange`: level is zero give or take a bishop against a
+  knight (`BISHOP_KNIGHT_GAP_CP`, ten points on `see.ts`'s scale), not
+  only exactly zero.
+- [x] Not a pawn's worth, as first planned
+  (`CONFIG.evalWitness.minThreatSeeCp`): the golden files showed that
+  calls a rook given for a bishop and a pawn a trade (22…Rxh3 in Gold
+  Coins), and 13.Rxd7 in the Opera game "Trades the rook for the knight".
+- [x] Unlike pieces are named only when they are a bishop and a knight.
+  Any other pair that comes out level did so over a longer exchange and
+  the first capture is not what was traded: this also ends "Trades the
+  knight for the pawn on d4" (Noah's Ark 6…Nxd4) and "Trades the rook for
+  the pawn on b3" on dev, both at exactly zero before.
+- [x] Tests first: 5.Bxf6 in the seed reads "Trades the bishop for the
+  knight on f6"; a capture that wins or loses a pawn's worth, and
+  13.Rxd7, stay silent.
+- [x] The audit checks the sentence on the board (`trade`: the piece
+  taken, the piece that took, and that a trade can be taken back); it had
+  no check.
+- [x] Golden, five lines: four new, each a bishop for a knight or the
+  reverse (Gold Coins 11.Nxe6 and 15.Bxf6, Lasker–Thomas 5.Bxf6, Opera
+  4…Bxf3); one gone (Noah's Ark 6…Nxd4, above).
+- [ ] Dev re-run: count of `review:reason:trade` before/after.
 
 **Commit:** `fix(review): a bishop for a knight is a trade`
 

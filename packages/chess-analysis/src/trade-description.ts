@@ -1,6 +1,6 @@
 import { Chess, type Color, type PieceSymbol, type Square } from 'chess.js';
 import { PIECE_NAMES } from './piece-names.js';
-import { see } from './see.js';
+import { BISHOP_KNIGHT_GAP_CP, see } from './see.js';
 
 /**
  * What an ordinary exchange is, said plainly.
@@ -37,14 +37,22 @@ export function describeTrade(input: TradeDescriptionInput): string | null {
   // one, or picked up a loose pawn, and each of those has its own note.
   if (!isEvenExchange(input.fenBefore, square, move.color)) return null;
   if (move.piece === move.captured) return `Trades ${plural(move.piece)} on ${square}`;
+  // A bishop and a knight are the one even pair of unlike pieces. Any other
+  // pair that comes out level did so over a longer exchange, and the first
+  // capture is not what was traded: 13.Rxd7 in the Opera game is no "rook
+  // for the knight".
+  if (!isMinor(move.piece) || !isMinor(move.captured)) return null;
   return `Trades the ${PIECE_NAMES[move.piece]} for the ${taken} on ${square}`;
 }
 
-/** SEE is already from the capturer's point of view, so an exchange that
- * comes out level is exactly zero — a won or lost one is somebody else's
- * sentence. */
+const isMinor = (piece: PieceSymbol): boolean => piece === 'b' || piece === 'n';
+
+/** SEE is from the capturer's point of view, and level is zero, give or take
+ * a bishop against a knight: `see.ts` prices them ten points apart, so a
+ * bishop given for a knight came out at -10 and had no sentence. A won or
+ * lost one is somebody else's sentence. */
 function isEvenExchange(fenBefore: string, square: Square, capturer: Color): boolean {
-  return see(fenBefore, square, capturer) === 0;
+  return Math.abs(see(fenBefore, square, capturer)) <= BISHOP_KNIGHT_GAP_CP;
 }
 
 function tryMove(board: Chess, moveSan: string): ReturnType<Chess['move']> | null {

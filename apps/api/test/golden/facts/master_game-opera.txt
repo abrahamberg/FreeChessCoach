@@ -193,6 +193,7 @@ REVIEW NOTES
     n5 3.d4: Theory — Philidor Defense (C41)
     n6 3…Bg4: Theory — Philidor Defense (C41)
     n7 4.dxe5: Theory — Philidor Defense (C41)
+    n8 4…Bxf3: Trades the bishop for the knight on f3
     n9 5.Qxf3: Recaptures the bishop on f3
     n15 8.Nc3: Missed Qxb7, winning material on b7
     n18 9…b5: They let you win a pawn through a free piece with Nxb5 — captures the pawn on b5.
