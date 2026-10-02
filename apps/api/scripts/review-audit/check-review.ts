@@ -47,6 +47,9 @@ const FAMILY_CHECKS: Record<string, Check> = {
     const answer = card.found ? { line: position.linesAfter[0] } : undefined;
     return [result('named-move', play(position.fenBefore, san) !== null, `${san} is not legal before the move`), ...gainChecks(card.gain, position.fenBefore, position.linesBefore, san, colorOf(position.mover), answer)];
   },
+  // Not a sentence: a seed's expectation that no sentence of the move met
+  // (`items.ts` `unmetExpectations`). It fails until the review says it.
+  'review:expected': (item) => [result('expected-point', false, `the owner expected a sentence here saying "${(item.data as { says?: string } | null)?.says ?? '?'}"`)],
   'review:better-was': (item, position) => {
     const line = item.text.replace(/^.*better was /, '').split(' ');
     return [result('named-line', playLine(position.fenBefore, line).legal, `${line.join(' ')} is not legal from the position`)];

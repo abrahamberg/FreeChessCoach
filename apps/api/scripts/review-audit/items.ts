@@ -1,6 +1,7 @@
 import { renderBoardFact, reviewMoveTexts, type BoardFact, type CourseNodeFacts } from '@freechesscoach/chess-analysis';
 import type { ClassifiedMoveDto, EngineEval } from '@freechesscoach/shared';
 import type { AnalysedGame } from './analyze.js';
+import type { SeedExpectation } from './corpus.js';
 import { play, playLine, threatFen } from './oracle.js';
 import { reviewSource } from './sources.js';
 import { hashOf } from './store.js';
@@ -34,7 +35,23 @@ export function extractItems(analysed: AnalysedGame): Extracted {
     if (position) for (const draft of reviewDrafts(move, position)) add(position, draft);
   }
   for (const { position, drafts } of dossierDrafts(analysed)) for (const draft of drafts) add(position, draft);
+  for (const { move, says } of unmetExpectations(analysed.game.expect ?? [], analysed.reviewMoves)) {
+    const position = reviewPosition(analysed, move);
+    if (position) add(position, { surface: 'review', source: 'review:expected', text: `nothing on this move says "${says}"`, data: { says }, contextFens: [position.fenBefore, position.fenAfter] });
+  }
   return { positions: [...positions.values()], items };
+}
+
+/** A seed's expectations that no sentence of the move meets. A sentence the
+ * owner missed is counted the way a wrong one is: each becomes an item that
+ * fails `expected-point` until the review says it. */
+export function unmetExpectations(expect: readonly SeedExpectation[], moves: readonly ClassifiedMoveDto[]): { move: ClassifiedMoveDto; says: string }[] {
+  return expect.flatMap(({ ply, says }) => {
+    const move = moves.find((each) => each.ply === ply);
+    if (!move) return [];
+    const said = reviewMoveTexts(move).some(({ text }) => text.toLowerCase().includes(says.toLowerCase()));
+    return said ? [] : [{ move, says }];
+  });
 }
 
 function positionKeyOf(gameId: string, fenBefore: string, san: string): string {

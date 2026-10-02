@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { mateClaims, mateCountExact, mateCountOwed } from './check-mate-count.js';
+import type { ClassifiedMoveDto } from '@freechesscoach/shared';
 import { checkReviewItem } from './check-review.js';
+import { unmetExpectations } from './items.js';
 import { checkAnswerSets, decidedFor, exchangeGain, hasPassedPawnOn, mateCountAgrees, pinnersThrough, play, prizeWon, lineGain, mentionOn, mentions, moveIsSound, settledGain } from './oracle.js';
 import type { AuditItem, AuditPosition } from './types.js';
 
@@ -215,5 +217,14 @@ describe('review audit oracle', () => {
     expect(failing('review:reason:trade', 'Trades pawns on d6', 'white', 'r1bqkb1r/ppp2p1p/6np/3pP3/2BP4/2N2Q2/PPP2PPP/R3K2R w KQkq d6 0 10', 'exd6')).toEqual([]);
     // …and one that mates is no trade: nothing takes back.
     expect(failing('review:reason:trade', 'Trades pawns on g6', 'white', '7r/8/7p/R4Ppk/8/3B1PK1/8/7q w - g6 0 1', 'fxg6#')).toEqual(['can-take-back']);
+  });
+
+  test('a seed says what the owner expected to read: an unmet expectation is a failing item', () => {
+    const move = (ply: number, reasons: string[]): ClassifiedMoveDto => ({ ply, quality: 'good', reasons, bestLineSan: [] }) as unknown as ClassifiedMoveDto;
+    const moves = [move(7, ['Pins the knight on f6 to the queen']), move(8, []), move(9, ['Concedes the centre'])];
+    const expected = [{ ply: 7, says: 'pins the knight' }, { ply: 8, says: 'Attacks the bishop on g5' }, { ply: 9, says: 'Trades the bishop' }, { ply: 40, says: 'anything' }];
+    expect(unmetExpectations(expected, moves).map(({ move: each, says }) => `${each.ply}:${says}`)).toEqual(['8:Attacks the bishop on g5', '9:Trades the bishop']);
+    const before = 'rnbqkb1r/ppp2pp1/5n1p/3pp1B1/4P3/3P1P2/PPP3PP/RN1QKBNR w KQkq - 0 5';
+    expect(failing('review:expected', 'nothing on this move says "Trades the bishop"', 'white', before, 'Bxf6')).toEqual(['expected-point']);
   });
 });

@@ -22,6 +22,14 @@ export interface CorpusGame {
    * with the engine answers it was made from. */
   evalsFile: string | null;
   note?: string;
+  /** What the owner expected to read on a move of a seed: some sentence of
+   * the review's move at `ply` has to contain `says`. */
+  expect?: SeedExpectation[];
+}
+
+export interface SeedExpectation {
+  ply: number;
+  says: string;
 }
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -167,7 +175,7 @@ export function splitOf(id: string): 'dev' | 'holdout' {
 /** Games the owner reported, always in dev: each one showed a wrong
  * sentence. `seeds/<id>.evals.json`, when there, holds the evals the report was made from. */
 function seedGames(): CorpusGame[] {
-  const seeds = JSON.parse(readFileSync(path.join(here, 'seeds.json'), 'utf8')) as { id: string; readerSide: 'white' | 'black'; pgn: string; note: string }[];
+  const seeds = JSON.parse(readFileSync(path.join(here, 'seeds.json'), 'utf8')) as { id: string; readerSide: 'white' | 'black'; pgn: string; note: string; expect?: SeedExpectation[] }[];
   return seeds.map((seed) => {
     const evalsFile = path.join(here, 'seeds', `${seed.id.replace(/^seed:/, '')}.evals.json`);
     return { ...seed, source: 'seed', band: 'seed', split: 'dev', focusPly: null, evalsFile: existsSync(evalsFile) ? evalsFile : null };

@@ -971,13 +971,22 @@ tests beside each.
 **Files:** `apps/api/scripts/review-audit/seeds.json`, `seed.ts`,
 `checks.ts`, `oracle.test.ts`.
 
-- [ ] A seed may carry `expect: [{ ply, says }]` (a word or phrase that
-  some sentence of that move must contain: `pin` at ply 7, `attacks the
-  bishop` at ply 8, `Trades the bishop` at ply 9). A move with an
-  unmet expectation is a failing item (`expected-point`), so a missing
-  sentence is counted by code, the way a wrong one is.
-- [ ] The first seed gets its expectations too (25.Qxc7 the only move,
-  Task 121.3).
+- [x] A seed may carry `expect: [{ ply, says }]`: some sentence of the
+  review's move at that ply has to contain `says`. An unmet expectation
+  becomes an item of source `review:expected` ("nothing on this move says
+  …") that fails `expected-point` until the review says it, so a missing
+  sentence is counted by code, the way a wrong one is (`items.ts`
+  `unmetExpectations`, one test).
+- [x] `seed:d9716668`: "Pins the knight on f6" at ply 7, "Attacks the
+  bishop on g5" at ply 8, "Trades the bishop for the knight" and "only
+  developed piece" at ply 9. All four are met: the three moves read
+  "Pins the knight on f6 to the queen", "Attacks the bishop on g5, which
+  pins the knight on f6" and "Trades the bishop for the knight on f6,
+  giving up White's only developed piece; Black can take back with the
+  queen, bringing it out".
+- [x] The first seed gets its expectation too: "only move" on 25.Qxc7
+  (ply 49). It is unmet, and stays a counted failure until Task 121.3 /
+  125.5 is built.
 
 **Commit:** `feat(audit): a seed's expected sentences are checked`
 
