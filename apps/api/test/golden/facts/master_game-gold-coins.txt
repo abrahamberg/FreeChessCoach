@@ -2,7 +2,6 @@ Learner side: Black
 
 Lines:
 l1 "Line A" | opening: French Defense: Marshall Gambit | leaves book at n7
-    end position: open files: d; the b-file is half-open for white; the c-file is half-open for black; the e-file is half-open for white; the f-file is half-open for black; white has an isolated pawn on a2; white has an isolated pawn on c2; black has an isolated pawn on e6; the white king is tucked away on g1; the black king is tucked away on g8
 
 Moves:
 n1 1.d4 (White, Line A) | book
@@ -132,15 +131,15 @@ REVIEW NOTES
     n9 5.exd5: Trades pawns on d5
     n10 5…exd5: Recaptures the pawn on d5
     n17 9.dxc5: Trades pawns on c5
-    n18 9…Be6: Missed Bxc5, winning material on c5
     n19 10.Nd4: Concedes the centre
+    n21 11.Nxe6: Trades the knight for the bishop on e6
     n22 11…fxe6: Recaptures the knight on e6; You saved a hanging piece — saves the queen on d8.
-    n23 12.Bg4: Leaves the bishop on g4 where it can be won
-    n24 12…Qd6: Missed Nxg4, winning material on g4
+    n28 14…Bb4: Pins the knight on c3 to the queen
+    n29 15.Bxf6: Trades the bishop for the knight on f6
     n30 15…Rxf6: Recaptures the bishop on f6
     n35 18.bxc3: Recaptures the bishop on c3
     n36 18…Qxc3: Recaptures the pawn on c3
     n38 19…Nd4: Concedes the centre
     n39 20.Qh5: Leaves the pawn on c2 undefended
     n40 20…Ref8: You moved the target out of reach — moves the rook off e8, out of reach.; Won the rook, giving back a knight.
-    n44 22…Rxh3: Leaves the rook on h3 where it can be won; You stopped them winning a knight through a free piece — captures the knight on f3.
+    n44 22…Rxh3: Leaves the rook on h3 where it can be won

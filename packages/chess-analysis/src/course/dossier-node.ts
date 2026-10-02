@@ -1,3 +1,4 @@
+import { Chess } from 'chess.js';
 import type { EngineEval, MovePhase, MoveQuality, TacticMotifType } from '@freechesscoach/shared';
 import type { ClassifiedMove } from '../classify.js';
 import { CONFIG } from '../config.js';
@@ -43,7 +44,7 @@ export interface CourseNodeFacts {
   tactics: string[];
   /** The motif the move plays, when the detectors found one. */
   motif: TacticMotifType | null;
-  /** The engine's other top moves, in words. */
+  /** The engine's other top moves, in words. None for a move that is checkmate. */
   alternatives: { san: string; verdict: string }[];
   /** §13.5: checks, captures and threats that look right here and fail,
    * with the engine's answer (`withTempting`, after a second engine batch);
@@ -91,7 +92,7 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     board: [...boardFacts(fenBefore, node.san), ...abandonedGuard(fenBefore, node.san, evalsByFen.get(node.fenAfter)?.lines[0]?.moveSan), ...repetition(node.fenAfter, input.linePositionFens)],
     tactics: tacticSentences(move, side === input.learnerSide),
     motif: move.tacticOpportunity?.found ? move.tacticOpportunity.type : null,
-    alternatives: (evalBefore?.lines ?? []).filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line) })),
+    alternatives: alternatives(evalBefore, node),
     tempting: [],
     quizEligible: isOnlyMove(evalBefore, node.san, side),
     critical: input.critical,
@@ -99,6 +100,15 @@ export function buildCourseNodeFacts(input: CourseNodeFactsInput): CourseNodeFac
     winDrop: move.drop ?? 0,
     phase: move.phase ?? null
   };
+}
+
+/** After a checkmate the mate is the whole description: 38…Rc1# listed
+ * "Rxd2+: Black is much better" and "Ra2: Black is much better" (the owner's
+ * calibration, 2026-10-01). */
+function alternatives(evalBefore: EngineEval | undefined, node: CourseTreeNode): CourseNodeFacts['alternatives'] {
+  if (new Chess(node.fenAfter).isCheckmate()) return [];
+  if (!evalBefore) return [];
+  return evalBefore.lines.filter((line) => line.moveSan !== node.san).map((line) => ({ san: line.moveSan, verdict: lineWords(line, evalBefore) }));
 }
 
 /** A perpetual check is a position that comes back: the perpetual's

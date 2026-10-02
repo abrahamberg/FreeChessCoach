@@ -2,22 +2,20 @@ Learner side: White
 
 Lines:
 l1 "Line A" | leaves book at n1
-    end position: open files: a, b, c, d, e, f, g, h
 
 Moves:
 n1 1.Ra7 (White, Line A) | excellent | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the rook from a2 to a7
     alternatives: Rb7: White has a forced mate in 2; Rb6: White has a forced mate in 3
-    tempting check: Ra8+ White's Ra8+ moves the rook from a2 to a8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh7, Kg7, Kf7. Black answers Kh7: moves the king from g8 to h7. Then Rb6 Kg7 Ra7+. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate in 3). Works, but not the answer: it mates too, but in 4 moves, not 2.
-    tempting check: Rg2+ White's Rg2+ moves the rook from a2 to g2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kh7, Kf7, Kf8. Black answers Kf7: moves the king from g8 to f7. Then Rb6 Ke8 Rg8+. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate in 5). Works, but not the answer: it mates too, but in 6 moves, not 2.
-    tempting check: Rb8+ White's Rb8+ moves the rook from b1 to b8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh7, Kg7, Kf7. Black answers Kg7: moves the king from g8 to g7. Then Rb6 Kh8 Ra7. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate in 3). Works, but not the answer: it mates too, but in 4 moves, not 2.
+    tempting check: Ra8+ White's Ra8+ moves the rook from a2 to a8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh7, Kg7, Kf7. Black answers Kh7: moves the king from g8 to h7. Then Rb6 Kg7 Ra7+. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate). Works, but not the answer: it mates too, but later.
+    tempting check: Rg2+ White's Rg2+ moves the rook from a2 to g2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh8, Kh7, Kf7, Kf8. Black answers Kf7: moves the king from g8 to f7. Then Rb6 Ke8 Rg8+. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate). Works, but not the answer: it mates too, but later.
+    tempting check: Rb8+ White's Rb8+ moves the rook from b1 to b8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kh7, Kg7, Kf7. Black answers Kg7: moves the king from g8 to g7. Then Rb6 Kh8 Ra7. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate). Works, but not the answer: it mates too, but later.
 n2 1…Kf8 (Black, Line A) | excellent | before: White has a forced mate in 1 → after: White has a forced mate in 1
     board: moves the king from g8 to f8
     alternatives: Kh8: White has a forced mate in 1
 n3 2.Rb8# (White, Line A) | best | before: White has a forced mate in 1 → after: checkmate
     board: moves the rook from b1 to b8 | gives checkmate | a back-rank mate | why it is mate: the king on f8 is checked by the rook on b8; e7 and f7 and g7 are covered by the rook on a7; e8 and g8 are covered by the rook on b8
-    alternatives: Rb6: White has a forced mate in 2; Rbb7: White has a forced mate in 2
-    tempting check: Ra8+ White's Ra8+ moves the rook from a7 to a8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg7, Kf7, Ke7. Black answers Ke7: moves the king from f8 to e7. Then Rb6 Kd7 Ra7+. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate in 4). Works, but not the answer: it mates too, but in 5 moves, not 1.
+    tempting check: Ra8+ White's Ra8+ moves the rook from a7 to a8 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg7, Kf7, Ke7. Black answers Ke7: moves the king from f8 to e7. Then Rb6 Kd7 Ra7+. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate). Works, but not the answer: it mates too, but later.
     tempting check: Rf1+ White's Rf1+ moves the rook from b1 to f1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kg8, Ke8. Black answers Kg8: moves the king from f8 to g8. Then Rf5 Kh8 Rf8#. Over the line nothing is taken; at the end White is two rooks up (White has a forced mate in 2). Works, but not the answer: it mates too, but in 3 moves, not 1.
     flags: quiz-eligible, critical
 
@@ -32,4 +30,3 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.Ra7: Missed mate in 2 starting with Rb7

@@ -61,6 +61,7 @@ n13 7.Bxd8 (White, Line A) | best | before: Black is better → after: Black is 
     alternatives: Bd2: Black is better; Nf3: Black is much better
 n14 7…Bb4+ (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the bishop from f8 to b4 | gives check | the check can be answered: block with Qd2; the checking piece cannot be taken; the king cannot move
+    tactics: You threw in an in-between move — checks first instead of taking back on d8.
     alternatives: N7f6: White is much better; Kxd8: White is much better
     flags: quiz-eligible, critical
 n15 8.Qd2 (White, Line A) | forced | before: Black is better → after: Black is better
@@ -73,6 +74,7 @@ n17 9.Kxd2 (White, Line A) | best | before: Black is better → after: Black is 
     alternatives: Kd1: Black is much better
 n18 9…Kxd8 (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the king from e8 to d8 | captures the bishop on d8
+    tactics: You won a bishop through a free piece — captures the bishop on d8.
     alternatives: f6: The position is roughly equal; N7b6: White is slightly better
     tempting threat: c5? Black's c5 moves the pawn from c7 to c5. White answers Bh4: moves the bishop from d8 to h4 | leaves the white pawn on d4 hanging. Then N7f6 Bxf6 Nxf6. Over the line Black takes a bishop; White takes a knight; at the end White is a pawn up (White is slightly better).
     flags: quiz-eligible, critical
@@ -105,6 +107,6 @@ REVIEW NOTES
     n10 5…exd5: Recaptures the pawn on d5
     n11 6.Nxd5: Leaves the knight on d5 undefended; Recaptures the pawn on d5; They let you win a knight through a free piece with Nxd5 — captures the knight on d5.; Won a pawn, but it cost the bishop.
     n12 6…Nxd5: Recaptures the knight on d5; You broke the pin — the knight on f6 is free to move again.
-    n14 7…Bb4+: You stopped them winning a queen through a trapped piece — queen on d8 is trapped.
+    n14 7…Bb4+: You threw in an in-between move — checks first instead of taking back on d8.
     n17 9.Kxd2: Recaptures the bishop on d2
-    n18 9…Kxd8: You stopped them winning a bishop through a free piece — captures the bishop on d2.
+    n18 9…Kxd8: You won a bishop through a free piece — captures the bishop on d8.

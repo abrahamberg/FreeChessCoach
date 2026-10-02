@@ -2,7 +2,6 @@ Learner side: White
 
 Lines:
 l1 "Line A" | leaves book at n1
-    end position: open files: a, b, c, d, e, f, g, h
 l2 "Line B" | leaves book at n1
     end position: open files: a, b, c, d, e, f, g, h
 
@@ -55,18 +54,18 @@ n9 5.Kc2 (White, Line A) | great | before: White is much better → after: White
 n10 5…Rd4 (Black, Line A) | best | before: White is much better → after: White is much better
     board: moves the rook from d3 to d4
     alternatives: Rg3: White is winning; Ka2: White is winning
-    tempting threat: Rd7? Black's Rd7 moves the rook from d3 to d7. White answers c8=Q: moves the pawn from c7 to c8 | promotes to a queen | attacks the rook on d7. Then Rd2+ Kxd2 Kb2. Over the line White takes a rook; at the end White is a queen up (White has a forced mate in 5).
+    tempting threat: Rd7? Black's Rd7 moves the rook from d3 to d7. White answers c8=Q: moves the pawn from c7 to c8 | promotes to a queen | attacks the rook on d7. Then Rd2+ Kxd2 Kb2. Over the line White takes a rook; at the end White is a queen up (White has a forced mate).
     flags: quiz-eligible
 n11 6.c8=R (White, Line A) | best | before: White is much better → after: White is much better
     board: moves the pawn from c7 to c8 | promotes to a rook
     alternatives: Kc3: White is much better; Kb3: White is better
-n12 6…Ra4 (Black, Line A) | mistake | before: White is much better → after: White has a forced mate in 7
+n12 6…Ra4 (Black, Line A) | mistake | before: White is much better → after: White has a forced mate
     best instead: Rd2+; after Rd2+ Kxd2 Kb2 Rc4 Kb3 Kd3, White is a rook up
     why Rd2+ is better: moves the rook from d4 to d2 | gives check | the check can be answered: no block; take the checking piece with Kxd2; move the king with Kb3, Kc3, Kc1 | leaves the black rook on d2 hanging
     board: moves the rook from d4 to a4
     tactics: They let you force mate with Kb3.
     alternatives: Rd2+: White is much better; Rc4+: White has a forced mate in 2
-n13 7.Kb3 (White, Line A) | great | before: White has a forced mate in 7 → after: White has a forced mate in 6
+n13 7.Kb3 (White, Line A) | great | before: White has a forced mate → after: White has a forced mate
     board: moves the king from c2 to b3 | attacks the rook on a4
     tactics: You forced mate.
     alternatives: Rg8: The position is roughly equal; Rc3: The position is roughly equal
@@ -79,7 +78,8 @@ n14 6.c8=Q (White, Line B) | miss | before: White is much better → after: The 
     flags: critical
 n15 6…Rc4+ (Black, Line B) | brilliant | before: The position is roughly equal → after: The position is roughly equal
     board: moves the rook from d4 to c4 | gives check | the check can be answered: no block; take the checking piece with Qxc4; move the king with Kb3, Kd3, Kd2, Kd1 | attacks the queen on c8 | leaves the black rook on c4 hanging: taking it is stalemate
-    alternatives: Rd2+: White has a forced mate in 4; Ra4: White has a forced mate in 2
+    tactics: They found a brilliant sacrifice.
+    alternatives: Rd2+: White has a forced mate; Ra4: White has a forced mate in 2
     tempting threat: Rd8? Black's Rd8 moves the rook from d4 to d8 | attacks the queen on c8 | leaves the black rook on d8 hanging. White answers Qa6#: moves the queen from c8 to a6 | gives checkmate | why it is mate: the king on a1 is checked by the queen on a6; a2 is covered by the queen on a6; b1 and b2 are covered by the king on c2. Over the line nothing is taken; at the end White has a queen for a rook (White has a forced mate in 1).
     flags: quiz-eligible
 n16 7.Qxc4 (White, Line B) | great | before: The position is roughly equal → after: stalemate
@@ -106,22 +106,16 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.c7: Creates a passed pawn on c
+    n1 1.c7: The only good move
     n3 2.Kb5: You tucked the king away — walks the king to b5, out of the firing line.
-    n6 3…Rd4+: Costs 11 squares of piece mobility
     n7 4.Kb3: You missed a chance to win a tempo with Kc3 — hits the rook on d4 with a king.
-    n8 4…Rd3+: Costs 11 squares of piece mobility
     n9 5.Kc2: You won a tempo — hits the rook on d3 with a king.
-    n10 5…Rd4: Their move stopped you winning a rook through a free piece — captures the rook on b4.
     n12 6…Ra4: They let you force mate with Kb3.
     n13 7.Kb3: You forced mate.
   l2
-    n1 1.c7: Creates a passed pawn on c
+    n1 1.c7: The only good move
     n3 2.Kb5: You tucked the king away — walks the king to b5, out of the firing line.
-    n6 3…Rd4+: Costs 11 squares of piece mobility
     n7 4.Kb3: You missed a chance to win a tempo with Kc3 — hits the rook on d4 with a king.
-    n8 4…Rd3+: Costs 11 squares of piece mobility
     n9 5.Kc2: You won a tempo — hits the rook on d3 with a king.
-    n10 5…Rd4: Their move stopped you winning a rook through a free piece — captures the rook on b4.
-    n15 6…Rc4+: Their move stopped you winning a rook through a free piece — captures the rook on d2.
+    n15 6…Rc4+: They found a brilliant sacrifice.
     n16 7.Qxc4: You won a rook through a free piece — captures the rook on c4.

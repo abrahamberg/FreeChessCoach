@@ -1,13 +1,21 @@
-import { Chess, type Square } from 'chess.js';
+import { Chess, type Move, type Square } from 'chess.js';
 import { isImprovableQuality, type EngineEval, type FeatureDeltaDto, type MoveQuality, type PositionFeatures } from '@freechesscoach/shared';
 import { betterMoveReasons } from './move-reason-better.js';
+import { kickReason } from './kick-reason.js';
+import { onlyMoveReason } from './only-move-reason.js';
+import { pinReason } from './pin-reason.js';
+import { saidMateIn } from './mate-count.js';
+import { moverMateIn } from './mover-mate.js';
 import { forks } from './board-facts/forks.js';
 import { loosePieces } from './board-facts/loose-pieces.js';
+import { quietLineGain } from './board-facts/material.js';
 import { PIECE_VALUES } from './tactics.js';
 import { PIECE_NAMES } from './piece-names.js';
 import { describeTrade } from './trade-description.js';
 import { see } from './see.js';
+import { createdPassedPawns } from './pawn-structure.js';
 import { CONFIG } from './config.js';
+import { flipActiveColorFen } from './null-move-fen.js';
 
 export interface MoveReasonsInput {
   mover: 'white' | 'black';
@@ -43,6 +51,7 @@ const {
   centerSwingThreshold: CENTER_SWING_THRESHOLD,
   mobilityDropThreshold: MOBILITY_DROP_THRESHOLD
 } = CONFIG.moveReasons;
+const { minThreatSeeCp: MIN_THREAT_SEE_CP } = CONFIG.evalWitness;
 const CATEGORY_ORDER: ReasonCategory[] = ['mate', 'material', 'tactical', 'structural', 'trade', 'mobility'];
 
 /** §11's deterministic per-move coaching reasons — no LLM at render time. */
@@ -62,15 +71,31 @@ export function buildReasons(input: MoveReasonsInput): string[] {
     // no fault to report, which is most of them.
     ...tradeReason(input)
   ];
+  const note = cardReplaceableNote(input, reasons);
   // Mobility is the weakest signal here (a bad move usually has a sharper
   // reason than "fewer squares") — it only earns a mention when nothing
   // better already explains the move, never alongside one.
-  if (reasons.length === 0) reasons.push(...mobilityReason(input));
+  if (reasons.length === 0 && !note) reasons.push(...mobilityReason(input));
 
-  return reasons
+  const kept = reasons
     .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category))
     .slice(0, MAX_REASONS)
     .map((reason) => reason.text);
+  return note && kept.length < MAX_REASONS ? [...kept, note] : kept;
+}
+
+/**
+ * The one note a tactic card may replace later: the only move
+ * (`only-move-reason.ts`), else the pin the move made (`pin-reason.ts`),
+ * else the piece its pawn attacks (`kick-reason.ts`).
+ *
+ * The cards are decided after the reasons (`report-tactic-verdicts.ts`),
+ * and a card for the same thing drops the note. So the note only ever fills
+ * a free slot: had it pushed another reason out first, that reason would be
+ * gone for nothing (6…exf2+ lost "Trades pawns on f2" that way).
+ */
+function cardReplaceableNote(input: MoveReasonsInput, others: readonly Reason[]): string | null {
+  return onlyMoveNote(input, others) ?? quietMoveNote(input);
 }
 
 function bookReason(input: MoveReasonsInput): string {
@@ -80,12 +105,20 @@ function bookReason(input: MoveReasonsInput): string {
 
 function missedMateReason(input: MoveReasonsInput): Reason[] {
   const best = input.evalBefore.lines[0];
-  if (!best || best.mateIn === null || best.moveSan === input.moveSan) return [];
-  const mateFavoursMover = input.mover === 'white' ? best.mateIn > 0 : best.mateIn < 0;
-  if (!mateFavoursMover) return [];
-  return [{ category: 'mate', text: `Missed mate in ${Math.abs(best.mateIn)} starting with ${best.moveSan}` }];
+  if (!best || best.moveSan === input.moveSan) return [];
+  if (moverMateIn(best, input.mover) === null) return [];
+  // A slower mate is still the win: "Missed a forced mate" on Rd1+, which
+  // mates in 5 where Qd6+ mates in 4, hides that nothing was lost.
+  const after = input.evalAfter?.lines[0];
+  if (after && moverMateIn(after, input.mover) !== null) return [];
+  const mateIn = saidMateIn(best, input.evalBefore);
+  return [{ category: 'mate', text: `Missed ${mateIn === null ? 'a forced mate' : `mate in ${mateIn}`} starting with ${best.moveSan}` }];
 }
 
+/** The engine's first move took something and came out ahead: by a pawn's
+ * worth on the square (a knight for a bishop is ten points on `see.ts`'s
+ * scale and wins nothing), and still ahead where its own line goes quiet
+ * (…Nxd7 in the Opera game takes a rook and Bxe7 takes the queen). */
 function missedCaptureReason(input: MoveReasonsInput): Reason[] {
   const best = input.evalBefore.lines[0];
   if (!best || best.moveSan === input.moveSan) return [];
@@ -100,7 +133,8 @@ function missedCaptureReason(input: MoveReasonsInput): Reason[] {
   if (!move.captured) return [];
 
   const side = input.mover === 'white' ? 'w' : 'b';
-  if (see(input.fenBefore, move.to as Square, side) <= 0) return [];
+  if (see(input.fenBefore, move.to as Square, side) < MIN_THREAT_SEE_CP) return [];
+  if (best.pvSan?.length && quietLineGain(input.fenBefore, best.pvSan) <= 0) return [];
   return [{ category: 'material', text: `Missed ${best.moveSan}, winning material on ${move.to}` }];
 }
 
@@ -128,12 +162,8 @@ function looseReasons(input: MoveReasonsInput): Reason[] {
 /** The square the move captured on, when what it took was worth at least
  * what took it. */
 function tradedSquare(input: MoveReasonsInput): string | null {
-  try {
-    const move = new Chess(input.fenBefore).move(input.moveSan);
-    return move.captured && PIECE_VALUES[move.captured] >= PIECE_VALUES[move.piece] ? move.to : null;
-  } catch {
-    return null;
-  }
+  const move = playedMove(input);
+  return move?.captured && PIECE_VALUES[move.captured] >= PIECE_VALUES[move.piece] ? move.to : null;
 }
 
 /** Forks the opponent now has that they did not have before the move, named
@@ -149,6 +179,26 @@ function allowedForkReasons(input: MoveReasonsInput): Reason[] {
       category: 'tactical',
       text: `Allows a fork: the ${PIECE_NAMES[fork.piece.piece]} on ${fork.piece.square} hits ${formatList(fork.targets.map((target) => `the ${PIECE_NAMES[target.piece]} on ${target.square}`))}`
     }));
+}
+
+/** The one move that works, played or missed. Not on a recapture (taking
+ * back is the only move by definition), and not when a sharper note already
+ * names the move that was missed. */
+function onlyMoveNote(input: MoveReasonsInput, others: readonly Reason[]): string | null {
+  if (input.isRecapture) return null;
+  const text = onlyMoveReason(input);
+  const best = input.evalBefore.lines[0]?.moveSan;
+  const named = best !== undefined && best !== input.moveSan && others.some((reason) => reason.text.includes(best));
+  return named ? null : text;
+}
+
+/** What a quiet move does to the other side's pieces: the pin first, else
+ * the kick. Not on a move that cost something: there the fault is the
+ * story, and on an inaccuracy with nothing else to say the note is "better
+ * was …", which a pin or a kick would push out. */
+function quietMoveNote(input: MoveReasonsInput): string | null {
+  if (isFault(input)) return null;
+  return pinReason(input.fenBefore, input.moveSan, input.mover) ?? kickReason(input.fenBefore, input.moveSan);
 }
 
 /** What the move gave up, and why the engine's move was better. */
@@ -168,15 +218,24 @@ function centerSwingReason(input: MoveReasonsInput): Reason[] {
   return [{ category: 'structural', text: 'Concedes the centre' }];
 }
 
+/** Only a pawn the move made passed: one that was passed already and is
+ * pushed creates nothing (`createdPassedPawns`). */
 function passedPawnReasons(input: MoveReasonsInput): Reason[] {
-  const before = new Set(
-    (input.featuresBefore?.passedPawns ?? []).filter((pawn) => pawn.color === input.mover).map((pawn) => pawn.square)
-  );
-  const after = (input.featuresAfter?.passedPawns ?? []).filter((pawn) => pawn.color === input.mover);
+  if (!input.featuresBefore || !input.featuresAfter) return [];
+  const move = playedMove(input);
+  if (!move) return [];
+  return createdPassedPawns(input.featuresBefore.passedPawns, input.featuresAfter.passedPawns, move).map((square) => ({
+    category: 'structural',
+    text: `Creates a passed pawn on ${square[0]}`
+  }));
+}
 
-  return after
-    .filter((pawn) => !before.has(pawn.square))
-    .map((pawn) => ({ category: 'structural', text: `Creates a passed pawn on ${pawn.square[0]}` }));
+function playedMove(input: MoveReasonsInput): Move | null {
+  try {
+    return new Chess(input.fenBefore).move(input.moveSan);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -188,9 +247,24 @@ function passedPawnReasons(input: MoveReasonsInput): Reason[] {
  */
 function mobilityReason(input: MoveReasonsInput): Reason[] {
   if (!isImprovableQuality(input.quality)) return [];
-  const delta = input.featureDelta?.mobilityDelta;
-  if (delta === undefined || delta > MOBILITY_DROP_THRESHOLD) return [];
+  const delta = moverMobilityDelta(input);
+  if (delta === null || delta > MOBILITY_DROP_THRESHOLD) return [];
   return [{ category: 'mobility', text: `Costs ${Math.abs(delta)} squares of piece mobility` }];
+}
+
+/** The mover's legal moves after the move (were it to move again) less its
+ * legal moves before. `featureDelta.mobilityDelta` is not this: it takes the
+ * mover's moves before from the opponent's moves after, and "Costs 22
+ * squares" was 51 Black moves against 29 White ones while Black's own went
+ * from 51 to 47. Null when the move gives check: there is no "again". */
+function moverMobilityDelta(input: MoveReasonsInput): number | null {
+  const again = flipActiveColorFen(input.fenAfter);
+  if (!again) return null;
+  try {
+    return new Chess(again).moves().length - new Chess(input.fenBefore).moves().length;
+  } catch {
+    return null;
+  }
 }
 
 /** "Recaptures the knight on d4" / "Trades bishops on c6" — see
@@ -199,7 +273,8 @@ function tradeReason(input: MoveReasonsInput): Reason[] {
   const text = describeTrade({
     fenBefore: input.fenBefore,
     moveSan: input.moveSan,
-    isRecapture: input.isRecapture === true
+    isRecapture: input.isRecapture === true,
+    replySan: input.evalAfter?.lines[0]?.moveSan
   });
   return text ? [{ category: 'trade', text }] : [];
 }

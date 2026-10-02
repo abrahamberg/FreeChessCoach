@@ -2,24 +2,22 @@ Learner side: White
 
 Lines:
 l1 "Line A" | leaves book at n1
-    end position: the b-file is half-open for white; the c-file is half-open for black; the e-file is half-open for black; the f-file is half-open for white; the g-file is half-open for black; white has an isolated pawn on a2; black has an isolated pawn on d7; black has an isolated pawn on f7; black has an isolated pawn on h7; white has a kingside pawn majority; the white king is still in the centre on e2; the black king is still in the centre on d8
 
 Moves:
 n1 22.Qf6+ (White, Line A) | best | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the queen from f3 to f6 | gives check | the check can be answered: block with Ne7; take the checking piece with Nxf6; the king cannot move
-    alternatives: Qxf7: White has a forced mate in 4; a3: White is much better
+    alternatives: Qxf7: White has a forced mate; a3: White is much better
     tempting check: Ne6+? White's Ne6+ moves the knight from g7 to e6 | gives check | the check can be answered: no block; take the checking piece with dxe6, fxe6; move the king with Ke8 | leaves the white knight on e6 hanging. Black answers dxe6: moves the pawn from d7 to e6 | captures the knight on e6 | attacks the knight on d5 | leaves the black pawn on f7 hanging. Then Ne3 Qc1 Nf1. Over the line Black takes a knight; at the end White has a pawn for two rooks, a bishop and a knight (Black is winning).
     tempting check: Bc7+? White's Bc7+ moves the bishop from d6 to c7 | gives check | the check can be answered: no block; take the checking piece with Nxc7; the king cannot move. Black answers Nxc7: moves the knight from a6 to c7 | captures the bishop on c7 | attacks the knight on d5 | leaves the black pawn on f7 hanging. Then Nxc7 Kxc7 Ne8+. Over the line White takes a knight; Black takes a bishop and a knight; at the end White has a pawn for two rooks and two bishops (Black is winning).
     tempting check: Be7+? White's Be7+ moves the bishop from d6 to e7 | gives check | the check can be answered: no block; take the checking piece with Nxe7; the king cannot move. Black answers Nxe7: moves the knight from g8 to e7 | captures the bishop on e7 | attacks the knight on d5 | leaves the black pawn on f7 hanging. Then Qf6 Bb7 Nf5. Over the line Black takes a bishop; at the end White has a pawn for two rooks and two bishops (Black is winning).
-    tempting capture: Qxf7 White's Qxf7 moves the queen from f3 to f7 | captures the pawn on f7 | attacks the knight on g8 | leaves the white pawn on a2 hanging. Black answers Qe1+: moves the queen from a1 to e1 | gives check | the check can be answered: no block; take the checking piece with Kxe1; move the king with Kf3 | leaves the black queen on e1 hanging. Then Kxe1 Bf2+ Qxf2. Over the line White takes the queen, a bishop and a pawn; at the end White has a queen and two pawns for two rooks (White has a forced mate in 3). Works, but not the answer: it mates too, but in 4 moves, not 2.
+    tempting capture: Qxf7 White's Qxf7 moves the queen from f3 to f7 | captures the pawn on f7 | attacks the knight on g8 | leaves the white pawn on a2 hanging. Black answers Qe1+: moves the queen from a1 to e1 | gives check | the check can be answered: no block; take the checking piece with Kxe1; move the king with Kf3 | leaves the black queen on e1 hanging. Then Kxe1 Bf2+ Qxf2. Over the line White takes the queen, a bishop and a pawn; at the end White has a queen and two pawns for two rooks (White has a forced mate). Works, but not the answer: it mates too, but later.
     flags: quiz-eligible
 n2 22…Nxf6 (Black, Line A) | best | before: White has a forced mate in 1 → after: White has a forced mate in 1
     board: moves the knight from g8 to f6 | captures the queen on f6 | attacks the knight on d5 | the knight stops guarding e7, where Be7# follows
     alternatives: Ne7: White has a forced mate in 1
 n3 23.Be7# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the bishop from d6 to e7 | gives checkmate | why it is mate: the king on d8 is checked by the bishop on e7; c8, d7 hold its own pieces; c7 is covered by the knight on d5; e8 is covered by the knight on g7; the bishop on e7 is guarded by the knight on d5
-    tactics: You forced mate.
-    alternatives: exf6: Black is winning; Nxf6: Black is winning
+    tactics: You delivered checkmate.
     tempting check: Ne6+? White's Ne6+ moves the knight from g7 to e6 | gives check | the check can be answered: no block; take the checking piece with dxe6, fxe6; move the king with Ke8 | leaves the white knight on e6 hanging. Black answers fxe6: moves the pawn from f7 to e6 | captures the knight on e6 | attacks the knight on d5 | leaves the black knight on f6 hanging. Then Be7+ Ke8 Bxf6. Over the line White takes a knight; Black takes a knight; at the end White has a pawn for a queen, two rooks and a bishop (Black is winning).
     tempting check: Bc7+? White's Bc7+ moves the bishop from d6 to c7 | gives check | the check can be answered: no block; take the checking piece with Nxc7; the king cannot move. Black answers Nxc7: moves the knight from a6 to c7 | captures the bishop on c7 | attacks the knight on d5 | leaves the black knight on f6 hanging. Then Nxf6 Qxe5+ Ne4. Over the line White takes a knight; Black takes a bishop and a pawn; at the end White has a knight for a queen, two rooks and two bishops (Black is winning).
     tempting capture: Nxf6? White's Nxf6 moves the knight from d5 to f6 | captures the knight on f6 | leaves the white pawn on a2 hanging. Black answers Qc1: moves the queen from a1 to c1. Then Nf5 Qxc2+ Ke1. Over the line White takes a knight; Black takes a pawn; at the end White has a knight for a queen, two rooks and a bishop (Black is winning).
@@ -39,4 +37,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n3 23.Be7#: You forced mate.
+    n3 23.Be7#: You delivered checkmate.

@@ -47,6 +47,7 @@ n9 5.Nxe4 (White, Line A) | best | before: The position is roughly equal → aft
 n10 5…d5 (Black, Line A) | great | before: The position is roughly equal → after: The position is roughly equal
     book: in book (Italian Game: Two Knights Defense)
     board: moves the pawn from d7 to d5 | attacks the bishop on c4 | attacks the knight on e4 | the pawn on d5 forks the bishop on c4 and the knight on e4
+    tactics: You won a bishop through a fork two moves away — pawn on d5 forks the bishop on c4 and the knight on e4.
     alternatives: Bb4: White is better; Be7: White is better
     tempting threat: b5? Black's b5 moves the pawn from b7 to b5 | attacks the bishop on c4 | leaves the black pawn on b5 hanging. White answers Bd5: moves the bishop from c4 to d5 | attacks the knight on c6. Then f5 Neg5 e4. Over the line nothing is taken; at the end White has a knight for a pawn (White is much better).
     tempting threat: f5? Black's f5 moves the pawn from f7 to f5 | attacks the knight on e4. White answers Nc3: moves the knight from e4 to c3. Then e4 Ng1 b5. Over the line nothing is taken; at the end White has a knight for a pawn (White is better).
@@ -70,4 +71,4 @@ REVIEW NOTES
     n5 3.Nc3: Theory — Italian Game: Two Knights Defense (C55)
     n6 3…Nf6: Theory — Italian Game: Two Knights Defense (C55)
     n9 5.Nxe4: Recaptures the knight on e4
-    n10 5…d5: You stopped them winning a knight through a free piece — captures the knight on e4.
+    n10 5…d5: You won a bishop through a fork two moves away — pawn on d5 forks the bishop on c4 and the knight on e4.; Won the knight, giving back a pawn.

@@ -31,5 +31,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n3 2.a6: Creates a passed pawn on a
-    n5 3.a7: Creates a passed pawn on a
+    n4 2…Ka8: The only move that holds

@@ -77,7 +77,16 @@ function fullModeScan(fen: string, lines: readonly EngineLine[]): AvailableMotif
     for (const step of annotatePvTactics(fen, pv, scanDepthForRank(rank)).steps) {
       if (step.ply % 2 === 0) continue;
       for (const claim of step.claims) {
-        sightings.push({ rank, ply: step.ply, moveSan: step.moveSan, motif: claim.type, fenBefore: step.fenBefore, claim });
+        sightings.push({
+          rank,
+          ply: step.ply,
+          moveSan: step.moveSan,
+          motif: claim.type,
+          fenBefore: step.fenBefore,
+          lineSan: pv.slice(step.ply - 1),
+          lineMateIn: engineLine.mateIn,
+          claim
+        });
       }
     }
   });

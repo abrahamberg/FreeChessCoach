@@ -44,8 +44,9 @@ export interface MoveVerdict {
   gainedPawns: number;
   lostPawns: number;
   card: MoveVerdictCard;
-  /** `defusedThreat` only: the threat's own move and the position it was
-   * seen from, so its diagnostic code can replay it like an allowed one. */
+  /** `defusedThreat` only: the threat's own move and the position it stood
+   * in (the board before this move, with the turn passed), so its
+   * diagnostic code can replay it like an allowed one. */
   threat?: ThreatMove;
 }
 

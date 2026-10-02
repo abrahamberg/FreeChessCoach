@@ -24,7 +24,8 @@ export function classifyMove(input: MoveClassificationInput): MoveClassification
     mover: input.mover,
     evalBefore: input.evalBefore,
     evalAfter: input.evalAfter,
-    features: input.features
+    features: input.features,
+    isCheckmate: input.moveFlags.isCheckmate
   });
 }
 

@@ -432,17 +432,21 @@ export const ClassifiedMoveSchema = z.object({
       byMoveSan: z.string().optional()
     })
     .optional(),
-  /** The opponent had this tactic reachable right before this move — did the
-   * player's move defuse it (see computeTacticMotifPrevented). When the scan
-   * finds more than one reachable motif type, this names only the
-   * highest-priority one (registry.ts's precedence order) — the per-game
-   * `tacticMotifs.preventable`/`.prevented` counts remain the source of
-   * truth for "how many", this is only "what to show on this one move".
-   * `detail` follows the same convention as `tacticOpportunity.detail`. */
+  /** The threat the opponent had on the board before this move, which the
+   * move ended (`move-verdict/reasons/defused-threat.ts`). When more than one
+   * was ended, this is the strongest: mate, then the biggest gain, then the
+   * registry's precedence. The per-game `tacticMotifs.preventable` /
+   * `.prevented` counts remain the source of truth for "how many". */
   tacticPrevention: z
     .object({
       type: TacticMotifTypeSchema,
       prevented: z.boolean(),
+      /** The threat's move: the opponent's legal next move in the position
+       * before this one, had the mover passed. `detail` and `visual`
+       * describe the board after it, so they are shown only with it. Absent
+       * on a report stored before the card named its move, whose `detail`
+       * describes a board the reader cannot reach and is not printed. */
+      threatSan: z.string().optional(),
       detail: z.string().nullable().optional(),
       visual: TacticVisualSchema.nullable().optional(),
       /** What the threat would have won — the half that turns "defused the

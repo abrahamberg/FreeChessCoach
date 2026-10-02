@@ -221,10 +221,18 @@ export type TacticHorizon = z.infer<typeof TacticHorizonSchema>;
 /** The verified payoff behind a card's headline claim. `pawns` is the
  * material swing the verifier could actually show (0 for a bind or a
  * tempo); `prize` names the piece for the "win a <piece>" slot and is null
- * whenever the gain isn't a specific piece. */
+ * whenever the gain isn't a specific piece.
+ *
+ * `mateIn` is a `mate` gain's size: the engine's mate distance in moves,
+ * counting the card's own move as the first (the move played on a found
+ * card, the move the card names on a missed or an allowed one), so 1 means
+ * that move is checkmate. Absent when the engine line the card was verified
+ * on gives no distance, and on a report stored before the field existed:
+ * the sentence then says "force mate" with no number. */
 export const TacticGainSchema = z.object({
   kind: TacticGainKindSchema,
   pawns: z.number(),
-  prize: z.string().nullable()
+  prize: z.string().nullable(),
+  mateIn: z.number().int().positive().optional()
 });
 export type TacticGainDto = z.infer<typeof TacticGainSchema>;

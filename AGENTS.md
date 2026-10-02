@@ -11,12 +11,13 @@ into a course (a lesson on the board, a YouTube video and a reel).
 
 ## Docs — read only what your task names
 
-- `docs/plan.md` — the plan being built now: Phases 110–119. First merge the
-  courses branch (a golden facts snapshot, course code in `course/`, board
-  facts in `board-facts/`, pruned tests, the CodeQL alerts), then one set of
-  board facts for game review, the coach and stats, and test tiers for the
-  whole repo. Work one task at a time and read only that task's **Read:**
-  files. Its "How to work through this plan" section applies to every task.
+- `docs/plan.md` — the plan being built now: Phases 120–124, the review
+  audit. Game Review's move notes and the course dossier are checked
+  sentence by sentence on real games until 98% are correct on held-out
+  games. Work one task at a time and read only that task's **Read:** files.
+  Its "How to work through this plan" section applies to every task. The
+  daily loop itself is the skill `.claude/skills/review-audit/SKILL.md`
+  (agents `review-judge` and `review-fixer` in `.claude/agents/`).
 - `docs/architecture.md` — how everything shipped fits together (layout, DB,
   agent, courses, K8s, the "Welcome flow" at `/welcome`). Always relevant.
 - `docs/courses.md` — the courses spec: the dossier (§5.4), prompts (§6),
@@ -31,9 +32,10 @@ into a course (a lesson on the board, a YouTube video and a reel).
 - `docs/tactics-rework.md` — why Game Review's tactic sentences misfired and
   the layered rebuild that shipped. Read it before touching
   `tactic-detectors/`, `classify-tactic-motif.ts`, the `verify-tactic-*`
-  files, `tactic-reason-text.ts`, `tactic-card-order.ts`,
-  `played-tactic-alternative.ts`, `tactic-allowed.ts` or the
-  tactic-prevention path. §9 is the second review pass and records one gate
+  files, `tactic-reason-text.ts`, `tactic-gain-clause.ts`, `tactic-card-order.ts`,
+  `played-tactic-alternative.ts`, `tactic-allowed.ts`, `mate-count.ts` (§13:
+  which mate counts are said) or the tactic-prevention path. §9 is the
+  second review pass and records one gate
   that was tried and reverted; read it before retrying that gate. Its §1
   cards are pinned in `packages/chess-analysis/src/tactic-review-cases.ts`,
   `tactic-precision.test.ts` holds the false-positive ceilings and
@@ -56,6 +58,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 - `npm run test:corpus`: tactic precision ceilings and recall floors (opt-in tier).
 - `npm run test:golden`: the course facts snapshot, no engine needed (opt-in tier; added in Phase 110). `GOLDEN_UPDATE=1` re-records it — only when a task allows it.
 - `npm run course:golden -w apps/api -- --facts [--only <kind|name>]`: print the facts the course prompts get (needs the engine).
+- `npm run review:audit -w apps/api -- <command>`: the review audit (`apps/api/scripts/review-audit/cli.ts` lists the commands: `corpus`, `run`, `recheck`, `report`, `failures`, `batch`, `ingest`, `calibrate`, `probe`, `show`, `seed`). Needs the engine; its workspace `apps/api/.review-audit/` is not in git.
 - `npm run docs:prompts`: regenerate `docs/prompts.md` after any change in `packages/prompts/src/`.
 - `npm run dev`: Full local stack (Docker).
 - `npm run dev:native:setup` then `npm run dev:native`: the full stack **without Docker** (sandboxes). Setup, once per box: installs Stockfish (apt), fetches Node 24 through npm if the box's Node is older than 24.15, runs `npm ci`, creates a local Postgres cluster. It needs the Postgres 16 server binaries and `redis-server` already installed. Run starts Postgres, Redis, migrations, engine, api, worker and web (`http://localhost:5173`) in the foreground with `LLM_FAKE=1` and `AUTH_MODE=dev-stub`; Ctrl-C stops all of it. State and logs live in `/tmp/fcc-native` (override with `FCC_NATIVE_DIR`). To use Node 24 in your own shell: `export PATH=/tmp/fcc-native/node/node_modules/node/bin:$PATH`. The api tests do not need the native stack; see the api test note under Testing.
@@ -108,7 +111,7 @@ into a course (a lesson on the board, a YouTube video and a reel).
 ## Testing
 - **Size today**: about 290 test files (2026-09-30). More tests are not better: every test must guard something that would otherwise break silently.
 - **Kept, default run** (`npm test`, `verify:changed`, PR CI): invariants of pure logic; one regression test per fixed bug in shared logic, on the smallest position that shows it; permission tests on routes; schema tests; pure web logic in `.ts` files.
-- **Kept, opt-in tiers** (nightly CI; run them yourself when you touch the area): `corpus` (`npm run test:corpus`), `golden` (`npm run test:golden`), and `db` (Postgres integration, below).
+- **Kept, opt-in tiers** (CI runs them only on a manual run with `full` ticked, the nightly run is off; run them yourself when you touch the area): `corpus` (`npm run test:corpus`), `golden` (`npm run test:golden`), and `db` (Postgres integration, below).
 - **api tiers**: `apps/api` has two vitest projects. `unit` (`*.test.ts`) needs nothing running: `npm run test:unit -w @freechesscoach/api`, the fast loop, works without Docker. `db` (`*.db.test.ts`) uses Postgres (Testcontainers, or `TEST_DATABASE_URL`): a test that imports `test/helpers/db.js` must be named `*.db.test.ts`. `npm test` runs both.
 - **Ephemeral**: tests that drive development and are then covered by the golden snapshot or the corpus. Name them `*.wip.test.ts` / `*.wip.test.tsx` and delete them before the task's last commit. They are never pushed: CI fails the job if `git ls-files '*.wip.test.ts' '*.wip.test.tsx'` prints anything.
 - **Don't write**: assertions on the exact English of a generated sentence (the golden snapshot covers wording); `.tsx` component tests; per-detector tactic tests (the registry and corpus cover them); snapshot tests for UI; tests of wiring that TypeScript already checks.

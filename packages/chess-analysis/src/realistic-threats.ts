@@ -1,7 +1,8 @@
 import { ENGINE_MULTI_PV, type EngineLine } from '@freechesscoach/shared';
-import { scanAvailableMotifs, type AvailableMotifScan, type PvMotifSighting } from './available-motifs-scan.js';
+import { scanAvailableMotifs, type AvailableMotifScan } from './available-motifs-scan.js';
 import { CONFIG } from './config.js';
 import { evalGap } from './eval-witness.js';
+import type { VerifiedTacticClaim } from './verify-tactic-claims.js';
 import { toCpWhite, type PlayerColor } from './win-probability.js';
 
 const { minStaticGainPawns: MIN_STATIC_GAIN_PAWNS } = CONFIG.tacticVerification;
@@ -26,7 +27,7 @@ const { minStaticGainPawns: MIN_STATIC_GAIN_PAWNS } = CONFIG.tacticVerification;
 export function realisticThreatScan(scan: AvailableMotifScan, lines: readonly EngineLine[], fen: string): AvailableMotifScan {
   const sideToMove = sideToMoveOf(fen);
   const sightings = scan.sightings.filter(
-    (sighting) => winsSomething(sighting) && isPlayableLine(lines, sighting.rank, sideToMove)
+    (sighting) => claimWinsSomething(sighting.claim) && isPlayableLine(lines, sighting.rank, sideToMove)
   );
   return { motifs: new Set(sightings.map((sighting) => sighting.motif)), sightings };
 }
@@ -43,7 +44,8 @@ export function scanRealisticThreats(fen: string, lines: readonly EngineLine[]):
   return realisticThreatScan(scan, lines, fen);
 }
 
-function winsSomething({ claim }: PvMotifSighting): boolean {
+/** Mate, or material worth at least a pawn: a threat someone has to answer. */
+export function claimWinsSomething(claim: Pick<VerifiedTacticClaim, 'gainKind' | 'verifiedGain'>): boolean {
   if (claim.gainKind === 'mate') return true;
   return claim.gainKind === 'material' && claim.verifiedGain >= MIN_STATIC_GAIN_PAWNS;
 }

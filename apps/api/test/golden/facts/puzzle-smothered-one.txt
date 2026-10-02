@@ -2,12 +2,10 @@ Learner side: White
 
 Lines:
 l1 "Line A" | leaves book at n1
-    end position: open files: a, b, c, d, e, f; the g-file is half-open for white; the h-file is half-open for white; black has a passed pawn on g7; black has a passed pawn on h7; black has a kingside pawn majority; the white king is tucked away on g1; the black king is tucked away on h8
 
 Moves:
 n1 1.Nf7# (White, Line A) | best | before: White has a forced mate in 1 → after: checkmate
     board: moves the knight from g5 to f7 | gives checkmate | why it is mate: the king on h8 is checked by the knight on f7; g7, g8, h7 hold its own pieces
-    alternatives: Qb1: White has a forced mate in 4; Ne6: White is much better
     tempting capture: Nxh7 White's Nxh7 moves the knight from g5 to h7 | captures the pawn on h7 | leaves the white knight on h7 hanging. Black answers Kxh7: moves the king from h8 to h7 | captures the knight on h7. Then Qc2+ Kh6 Qf5. Over the line White takes a pawn; Black takes a knight; at the end White has a queen for a rook and a pawn (White is slightly better). Works, but not the answer: White is still slightly better, but there is no mate; the answer mates in 1.
     flags: quiz-eligible, critical
 

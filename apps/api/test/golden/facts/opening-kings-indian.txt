@@ -142,3 +142,5 @@ REVIEW NOTES
     n12 6…e5: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
     n19 7.d5: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
     n20 7…a5: Theory — King's Indian Defense: Petrosian Variation, Stein Defense (E92)
+    n21 8.Bg5: Pins the knight on f6 to the queen
+    n22 8…h6: Attacks the bishop on g5, which pins the knight on f6

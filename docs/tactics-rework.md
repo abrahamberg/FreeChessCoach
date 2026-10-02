@@ -828,3 +828,204 @@ Per-code diagnostic opportunities/failures moved with the new counting rule
 because `allowedTactic` now reaches them — BV-15 B 7/5, BV-02 O 5/2, TA-10 D
 4/2 — for 38 total observations, 22 failed. `docs/plan.md` Task 77.5 has the
 full per-code table and a 10-verdict hand spot-check.
+
+---
+
+## 12. A stopped threat is read off the reader's board (Task 121.1)
+
+The prevention scans (`available-motifs-scan.ts`) see the opponent's
+threats from other boards than the one under review: the position before
+the opponent's *previous* move, and up to seven plies down its engine lines.
+Their claims are checked on the board only (the walk passes no line to the
+classifier), and `defused-threat.ts` printed the strongest one's detail as
+it stood. On the owner's game that gave "rook on d1 checks the king on g1"
+with the rook on d8 (and …Rxd1+ answered by Rxd1), "rook on d5 forks the
+bishop on c5 and the knight on e5" for a move the opponent had passed over,
+and "unveils the rook on d1 against the queen on d6" from ply 7 of a line.
+On the review audit's first run 170 of 438 prevention sentences (220 dev
+games) named a piece that was on no board the reader sees, and every one of
+the 17 a judge read was wrong.
+
+A card is now written only when the threat
+
+1. **stands on the board before the move** (`standing-threat.ts`): its move
+   is legal for the opponent with the turn passed (`flipActiveColorFen`) and
+   the registry, run on that board, finds the same threat (`threatKey`) with
+   something to win. The card's detail, prize and arrows come from that
+   claim, and it carries the move as `threatSan`. This drops a threat the
+   opponent already played (17…gxf6 18.exf6 "stopped them winning a knight …
+   captures the knight on f6"), one their own previous move ended, one that
+   exists only after a reply the engine guessed, and every threat on a move
+   that answers a check (there is no pass to ask about);
+2. **is real**: the engine's own line after the threat move, which each
+   sighting now carries (`lineSan`), mates for a mate claim and for material
+   nets at least the claimed gain within `equalPrizeTolerancePawns`.
+
+The sentence names the move like the allowed card does, and the detail is
+printed only behind it: "You stopped them winning a rook through a free
+piece with Qxe8+ — captures the rook on e8." A report stored before
+`threatSan` existed prints no detail.
+
+Dev split after: 20 prevention sentences, none failing a check. Where the
+false prevention card was the move's verdict, the next confirmed reason now
+shows instead, mostly the defensive vocabulary ("You saved a hanging piece —
+saves the queen on b2"); the per-game *prevented* count falls with the
+cards.
+
+
+## 13. A mate says in how many moves (Task 125.2)
+
+"They forced mate." was true and said less than the engine knew: on the
+owner's 24…Qxh3 it had mate in 6 before the move and mate in 5 after it. A
+mate gain now has a size, as a material gain has its pawns: `gain.mateIn`
+(`packages/shared/src/tactic-motif.ts`), the engine's mate distance counting
+the card's own move as the first. `move-verdict/mate-distance.ts` sets it on
+the verdict's one card, from the engine line for that card's move, and
+`tactic-gain-clause.ts` (the gain half of `tactic-reason-text.ts`, split
+off) says it:
+
+| card | line read | sentence |
+| --- | --- | --- |
+| found | the engine's answer to the played move, one move further on | "They forced mate in 5." (the distance after the move) |
+| missed | the named move's line, before the move | "You missed a chance to force mate in 4 with Rxf7+." |
+| allowed | the named reply's line, after the move | "You let them force mate in 2 with Rb1+." |
+| any, the move is the mate (`mateIn` 1) | | "delivered checkmate" / "deliver checkmate with Qh7#" |
+
+The number replaces the horizon words ("a mating net two moves away"): it
+says the same thing exactly. A card whose line has no mate score for its
+side keeps "forced mate" with no number rather than a guessed one, and so
+does a report stored before the field existed. The prevention card is left
+as it was: its line is the scan's, from another board than the reader's
+(§12), so its distance is not the reader's either.
+
+### A count only when the search can stand behind it (Task 125.6)
+
+The number above was the engine's at the depth the game was analysed at, and
+a search proves a mate long before it finds the shortest one. The owner's
+24…Qxh3 read "They forced mate in 10" in Game Review: mate in 10 at depth 12
+with five lines, mate in 5 on the board, and mate in 5 in the dossier's own
+search of the same position (three lines). The same engine at the same depth
+gives either answer, depending on what its hash table holds from the
+positions searched before.
+
+Searching such a position again, deeper, was built first and dropped (the
+owner, 2026-10-02): the app does not want an engine deeper than 12, the
+external engines would not give one anyway, and a mate longer than about
+seven moves is not worth a number to the reader. Instead a count is said
+only when the search it was read off can stand behind it, and one place
+decides that for every sentence: `saidMateIn`
+(`packages/chess-analysis/src/mate-count.ts`, constants in
+`CONFIG.mateCount`).
+
+Measured on the 869 dev positions of the review audit with a mate line
+(Stockfish 15.1, five lines, at depth 12 the dossier's three-line searches
+too). "Exact" means no search of the same move at depth 34 or 40 mates
+faster; the length is in plies from the searched position, so the side to
+move mating in N is 2N - 1 and being mated in N is 2N. Best line / every
+mate line:
+
+| plies | who | depth 12 | depth 18 | depth 34 (5 s limit) |
+| --- | --- | --- | --- | --- |
+| 1-5 | mates in 1-3, or is mated in 1-2 | 100% / 100% (584, 1410 lines) | 100% / 100% (311, 903) | 100% / 100% |
+| 6 | is mated in 3 | 72% / 88% | 90% / 96% | 100% / 100% |
+| 7 | mates in 4 | 88% / 80% | 94% / 94% | 100% / 100% |
+| 8 | is mated in 4 | 51% / 63% | 68% / 78% | 99% / 99% |
+| 9 | mates in 5 | 61% / 53% | 81% / 71% | 99% / 100% |
+| 10 | is mated in 5 | 19% / 45% | 38% / 61% | 94% / 98% |
+| 11 | mates in 6 | 29% / 31% | 61% / 35% | 95% / 97% |
+| 12 | is mated in 6 | 3% / 12% | 10% / 29% | 96% / 96% |
+| 13 | mates in 7 | 6% / 5% | 21% / 17% | 89% / 96% |
+| 14 | is mated in 7 | 0% / 9% | 14% / 19% | 96% / 96% |
+| 15+ | | 1% / 2% | 3% / 7% | 68% / 75% |
+
+(The depth-34 column is against the depth-40 search alone, both with the
+engine's five-second limit: a weaker reference.) Two things the table
+settles. "A mate in N is exact once the depth reaches its 2N - 1 plies" does
+not hold: at depth 12 a mate in 5 is right 6 times in 10 and a mate in 6 3
+in 10. And the side to move being mated is worse than its length suggests:
+its best line is the slowest mate the search lists, so the longest
+over-count wins.
+
+The rule: a count is said for a mate of at most `maxMoves` (7, the owner's
+cap) when it is at most `provenPlies` (5) plies from the searched position,
+at any depth, or the eval is at least `deepDepth` (34) deep, which only a
+Lichess index hit is. Nothing between depth 18 and 34 was measured, so
+nothing between earns more than five plies. At the app's depths that is: a
+missed or an allowed mate in 1 to 3 keeps its number ("You missed a chance
+to force mate in 3 with Rxf7+"), and a played one when the reply is mated in
+1 or 2 ("They forced mate in 2"); anything longer is said without ("They
+forced mate.", "Missed a forced mate starting with Qh5", "Black has a forced
+mate"). 24…Qxh3 reads "They forced mate." again, which the measurement says
+is all a depth-12 search knows there.
+
+Who asks `saidMateIn`: the cards (`move-verdict/mate-distance.ts` sets
+`gain.mateIn` only for a said count, and `tactic-gain-clause.ts` prints
+what is set), "Missed mate in N" (`move-reasons.ts`), the dossier's verdict
+words and alternatives (`board-facts/verdict-words.ts`, `lineWords` now
+takes the eval the line is from) and its tempting moves
+(`course/tempting.ts`: "it mates too, but in 3 moves, not 2" needs both
+counts said, else "it mates too, but later"). The prevention card gives no
+count, as before. The eval bar shows none (it plots `evalAfterCp`).
+`eval-words.ts` `mateToWords` still counts for the Explore panel and the
+bot hint, which show a live search; the coach's prompt facts
+(`packages/prompts/src/format-eval.ts`) are not touched either.
+
+The audit checks both halves. `mate-count`
+(`apps/api/scripts/review-audit/check-mate-count.ts`, with the audit's own
+copy of the rule) fails a sentence that gives a count the rule does not
+allow, or none where a short, covered mate owes one; it reads the search
+the sentence came from, so a position now carries the review's and the
+dossier's own lines with their depths. `mate-count-exact` compares every
+count that is said with the audit's own search of that board at depth 40
+(`mate-probe.ts`, cached, shown to judges as `deeper before` / `deeper
+after`; measurement only, the app never sees it). It fails a sentence only
+when that search mates faster along the same line, or the other side mates
+there: a slower mate in the probe proves nothing against the sentence.
+
+## 14. An exchange offered is not a pin (Task 126.0)
+
+`pins()` was ray geometry: a slider, an enemy piece, a more valuable enemy
+piece behind it. That also describes a rook facing a rook with the king
+behind, a bishop facing a bishop, and a queen offered to a queen, where the
+front piece simply takes the pinner. On the audit's 220 dev games
+(2026-10-02) 39 of the 211 verified pins were of this kind, and four were
+priced as winning the piece: 30.Qc3 offering a queen trade read as "wins a
+queen through a pin". The dossier's board facts had it too.
+
+The rule is the owner's, and it lives in `pins()` so every reader gets it
+(the pin and breaks-pin detectors, `motif-to-code.ts`, `board-facts/
+safety.ts`). `pinShapes()` is the geometry as before. A shape whose front
+piece attacks the pinner and is worth no more than it (`canTakePinner`) is
+dropped unless the front piece had something else to do
+(`pinnedPieceTask`):
+
+| Task | The front piece… | The position it came from |
+|---|---|---|
+| `capture` | attacks another enemy piece worth more than it (a pawn one step from promoting counts), one nothing defends, or one of its own value that is attacking something | Englund 6…Bb4: the bishop on c3 can take on b4, but it wants the queen on b2 |
+| `guard` | is the only defender of a man of its own that is attacked | 6…Bxc3+: Bxc3 would drop the knight on g5 |
+| `block` | stands in front of a second line as well | 22.Bh6: the bishop on g7 is pinned to the king by the queen on g3 |
+
+A queen pinned by a bishop or a rook never enters this: taking the pinner
+costs the queen.
+
+Measured on the 65 new shapes on dev whose front piece can take its pinner:
+55 exchange offers, 10 pins. Two looser tests were tried first and
+dropped. "A second attacker hits the front piece" kept four plain
+recaptures (9.Bxf6 Bxf6). "Guards any attacked man" kept ten, most of them
+a rook taking back a rook while also defending a pawn that a second piece
+defends. The Lichess pin puzzles hold at 27 of 40; the promotion clause
+and the undefended-man clause each come from one of them (CObOW, OpBrr).
+
+A king in front is left alone. `PIECE_VALUES` prices the king at nothing,
+so the first version read a king in check with a piece behind it as "can
+take the pinner" and dropped the shape. That shape is no pin (`verifyPin`
+rejects it), but `breaksPin` proposes a claim from it on a king move out
+of check, and that claim outranks `kingSafety`: with it gone, 12.Kc2 and
+38.Kc3 on dev each picked up "You tucked the king away". Taking the shape
+out of `pinShapes()` is right in the end and is its own task.
+
+On the dev re-run 53 sentences changed and no check count moved: 51
+dossier facts lost ", which is pinned to the king by …" (every one a rook
+facing a rook, a queen a queen or a bishop a bishop) and two review cards
+went (a queen offered to a queen, a rook offered to a rook).
+

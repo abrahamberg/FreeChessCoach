@@ -10,6 +10,10 @@ const SEE_PIECE_VALUES: Record<PieceSymbol, number> = {
   k: 20_000
 };
 
+/** A bishop against a knight on this scale: the one difference between two
+ * pieces that is no material at all. */
+export const BISHOP_KNIGHT_GAP_CP = SEE_PIECE_VALUES.b - SEE_PIECE_VALUES.n;
+
 /**
  * Evaluates the exchange on a square from the first side's perspective.
  * Captures are selected by least valuable attacker, while every replying side

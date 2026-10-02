@@ -6,12 +6,14 @@ on:
     # would run every PR (including Dependabot's) twice.
     branches: [main]
   pull_request:
-  schedule:
-    # Full-suite safety net: --changed only sees files a test statically
-    # imports, so a regenerated fixture (e.g. data/*.csv, data/*.tsv) or any
-    # other change with no import edge to its test could slip past the
-    # affected-only run below. This catches that drift daily.
-    - cron: '17 3 * * *'
+  # The daily run is off since 2026-10-01 to save Actions minutes. It was the
+  # full-suite safety net: --changed only sees files a test statically
+  # imports, so a regenerated fixture (e.g. data/*.csv, data/*.tsv) or any
+  # other change with no import edge to its test could slip past the
+  # affected-only run below. Until it is back, start a manual run with `full`
+  # ticked now and then. To turn it back on:
+  #   schedule:
+  #     - cron: '17 3 * * *'
   workflow_dispatch:
     inputs:
       full:
@@ -67,7 +69,7 @@ jobs:
           fi
 
       # main only ever advances via a merged, already-CI-passed PR, so the
-      # full run here (plus the nightly cron above) is a backstop. PRs run
+      # full run here (plus a manual full run; the nightly cron above is off) is a backstop. PRs run
       # affected-only below, except dependency and toolchain changes: a
       # lockfile bump has no import edge to any test, so `--changed` would run
       # nothing for it, and Dependabot PRs are auto-merged on this result.
@@ -95,7 +97,7 @@ jobs:
         run: npm test
 
       # The opt-in tiers: the tactic corpus (no engine) and the golden course
-      # facts (fixture engine), both pure replays. Nightly and on a manual
+      # facts (fixture engine), both pure replays. On a manual
       # full run only; a PR reaches them by running them itself.
       - name: Run corpus and golden tiers
         if: github.event_name == 'schedule' || github.event.inputs.full == 'true'

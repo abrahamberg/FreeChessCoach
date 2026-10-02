@@ -2,7 +2,6 @@ Learner side: White
 
 Lines:
 l1 "Line A" | leaves book at n1
-    end position: open files: a, b, c, e, f, g, h; the d-file is half-open for white; black has a passed pawn on d2
 
 Moves:
 n1 1.Qe5+ (White, Line A) | good | before: White is much better → after: White is much better

@@ -29,7 +29,7 @@ export function TacticMotifBadge({ move }: TacticMotifBadgeProps): ReactNode {
       {tacticPrevention && (
         <span
           className={`tactic-motif-badge__icon tactic-motif-badge__icon--${tacticPrevention.prevented ? 'hit' : 'miss'}`}
-          title={`Opponent's ${TACTIC_MOTIF_LABELS[tacticPrevention.type]}: ${tacticPrevention.prevented ? 'defused' : 'not defused'}${detailSuffix(tacticPrevention.detail)}`}
+          title={`Opponent's ${TACTIC_MOTIF_LABELS[tacticPrevention.type]}: ${tacticPrevention.prevented ? 'defused' : 'not defused'}${threatSuffix(tacticPrevention)}`}
         >
           🛡
         </span>
@@ -43,4 +43,12 @@ export function TacticMotifBadge({ move }: TacticMotifBadgeProps): ReactNode {
  * above still reads fine on its own. */
 function detailSuffix(detail: string | null | undefined): string {
   return detail ? ` — ${detail}` : '';
+}
+
+/** A threat's detail describes the board after the threat's move, so it is
+ * shown only behind that move; a report stored before the card named its
+ * move shows neither. */
+function threatSuffix(prevention: NonNullable<ClassifiedMoveDto['tacticPrevention']>): string {
+  if (!prevention.threatSan) return '';
+  return ` — ${prevention.threatSan}${prevention.detail ? `: ${prevention.detail}` : ''}`;
 }

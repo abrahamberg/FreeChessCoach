@@ -1,0 +1,32 @@
+[
+  {
+    "id": "seed:chesscom-184514899210",
+    "readerSide": "white",
+    "note": "Owner reports 2026-10-01, all wrong sentences in this one game: 12.Bxc5 \"You stopped them forcing mate through a back-rank tactic — rook on d1 checks the king on g1, boxed in on the back rank\" (the rook is on d8; Rd1+ is met by Rxd1, no mate); 13…Bd3 \"Leaves the bishop on d3 where it can be won\" (the rook on d8 defends it: Nxd3 Rxd3 is an even trade); 15.Nxe5 \"You stopped them winning a bishop through a fork — rook on d5 forks the bishop on c5 and the knight on e5\" (the rook is on d8; the card describes a hypothetical …Rd5); 25.Qxc7 \"You stopped them winning a queen through a discovered attack — unveils the rook on d1 against the queen on d6\" (neither piece exists; Qxc7 was the only move, the others lose the queen). Common cause for three of them: prevention cards name pieces on the board after a threat move the sentence never shows.",
+    "pgn": "[Event \"Live Chess\"]\n[Site \"Chess.com\"]\n[Date \"2026.09.28\"]\n[Round \"-\"]\n[White \"Dany_Abr\"]\n[Black \"pyramidsofteeth\"]\n[Result \"1-0\"]\n[ECO \"C53\"]\n[WhiteElo \"491\"]\n[BlackElo \"472\"]\n[TimeControl \"600\"]\n[Termination \"Dany_Abr won by checkmate\"]\n[Link \"https://www.chess.com/game/live/184514899210\"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. O-O O-O 6. d4 d5 7. dxc5 dxc4 8. Qxd8 Rxd8 9. Be3 Nxe4 10. Nbd2 Bf5 11. Nxc4 Nxc5 12. Bxc5 b5 13. Ncxe5 Bd3 14. Rfd1 Nxe5 15. Nxe5 Rd5 16. Nxd3 Rad8 17. b4 a5 18. bxa5 f5 19. a6 f4 20. a7 Rxd3 21. Rxd3 Rxd3 22. a8=Q+ Kf7 23. Qf8+ Ke6 24. Qe7+ Kd5 25. Qxc7 f3 26. h4 Rxc3 27. Rd1+ Kc4 28. Rd4# 1-0"
+  },
+  {
+    "id": "seed:d9716668",
+    "readerSide": "black",
+    "note": "Owner 2026-10-02: 4.Bg5 pins the f6 knight to the queen and 4...h6 kicks the bishop: neither is said. 5.Bxf6 gives up a developed bishop for a knight and lets Black recapture with a developing move (Qxf6); the eval drops slightly for White and nothing says why. Before, pins were over-reported (insignificant ones); now none appear.",
+    "pgn": "[Event \"Live Chess\"]\n[Site \"Chess.com\"]\n[Date \"2026.10.01\"]\n[Round \"-\"]\n[White \"pawkret\"]\n[Black \"Dany_Abr\"]\n[Result \"1-0\"]\n[CurrentPosition \"R7/8/1p5p/1k2q3/8/5P2/3N1KPP/2Q5 b - - 4 45\"]\n[Timezone \"UTC\"]\n[ECO \"C20\"]\n[ECOUrl \"https://www.chess.com/openings/Kings-Pawn-Opening-1...e5\"]\n[UTCDate \"2026.10.01\"]\n[UTCTime \"22:27:54\"]\n[WhiteElo \"523\"]\n[BlackElo \"500\"]\n[TimeControl \"600\"]\n[Termination \"pawkret won on time\"]\n[StartTime \"22:27:54\"]\n[EndDate \"2026.10.01\"]\n[EndTime \"22:47:45\"]\n[Link \"https://www.chess.com/game/live/184677445140\"]\n\n1. e4 e5 2. f3 Nf6 3. d3 d5 4. Bg5 h6 5. Bxf6 Qxf6 6. exd5 Bc5 7. a3 e4 8. dxe4 Nd7 9. b4 Bd4 10. c3 Bxc3+ 11. Nxc3 Qxc3+ 12. Ke2 Ne5 13. Rc1 Qb2+ 14. Rc2 Qxa3 15. Kf2 b6 16. Bb5+ Bd7 17. Bxd7+ Nxd7 18. Rxc7 Qxb4 19. d6 a5 20. Ne2 a4 21. Nc3 a3 22. Nd5 Qxd6 23. Qd4 a2 24. e5 Nxe5 25. Re7+ Kf8 26. Rxe5 Re8 27. Rxe8+ Kxe8 28. Qxg7 Rf8 29. Re1+ Kd7 30. Nf6+ Kc7 31. Rc1+ Kb7 32. Ne4 Qb4 33. Ra1 Ra8 34. Qxf7+ Kc6 35. Qf6+ Kb5 36. Qf5+ Kc4 37. Qf7+ Kd3 38. Qd7+ Kc2 39. Qc7+ Kb2 40. Qc1+ Kb3 41. Nd2+ Ka4 42. Rxa2+ Kb5 43. Rxa8 Qd4+ 44. Kg3 Qe5+ 45. Kf2 1-0\n",
+    "expect": [
+      {
+        "ply": 7,
+        "says": "Pins the knight on f6"
+      },
+      {
+        "ply": 8,
+        "says": "Attacks the bishop on g5"
+      },
+      {
+        "ply": 9,
+        "says": "Trades the bishop for the knight"
+      },
+      {
+        "ply": 9,
+        "says": "only developed piece"
+      }
+    ]
+  }
+]

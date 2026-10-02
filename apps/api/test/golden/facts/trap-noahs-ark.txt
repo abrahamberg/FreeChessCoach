@@ -84,6 +84,7 @@ n17 9.Qd5 (White, Line A) | inaccuracy | before: Black is better → after: Blac
     alternatives: Qc3: Black is better; Qd1: Black is better
 n18 9…Be6 (Black, Line A) | great | before: Black is better → after: Black is better
     board: moves the bishop from c8 to e6 | attacks the queen on d5
+    tactics: You saved a hanging piece — saves the rook on a8.
     alternatives: Ra7: The position is roughly equal; c4: White is better
     tempting check: Qa5+? Black's Qa5+ moves the queen from d8 to a5 | gives check | the check can be answered: block with Qd2, c3, Nc3, Nd2, Bd2; the checking piece cannot be taken; move the king with Ke2, Kf1, Kd1. White answers Bd2: moves the bishop from c1 to d2 | blocks the check from the queen on a5 | attacks the queen on a5. Then Qc7 Qxa8 c4. Over the line White takes a rook; at the end White is a rook up (White is better).
     tempting threat: Bb7? Black's Bb7 moves the bishop from c8 to b7 | attacks the queen on d5 | leaves the black bishop on b7 hanging. White answers Qxf7#: moves the queen from d5 to f7 | captures the pawn on f7 | gives checkmate | why it is mate: the king on e8 is checked by the queen on f7; d8, f8 hold its own pieces; d7 and e7 are covered by the queen on f7; the queen on f7 is guarded by the bishop on b3. Over the line White takes a pawn; at the end White is a pawn up (White has a forced mate in 1).
@@ -127,11 +128,11 @@ REVIEW NOTES
     n6 3…a6: Theory — Ruy Lopez: Noah's Ark Trap (C71)
     n7 4.Ba4: Theory — Ruy Lopez: Noah's Ark Trap (C71)
     n8 4…d6: Theory — Ruy Lopez: Noah's Ark Trap (C71)
-    n12 6…Nxd4: Trades the knight for the pawn on d4
+    n10 5…b5: Attacks the bishop on a4
     n13 7.Nxd4: Recaptures the knight on d4
     n14 7…exd4: Recaptures the knight on d4
     n15 8.Qxd4: Recaptures the pawn on d4
     n16 8…c5: You won a tempo — hits the queen on d4 with a pawn.; Won the bishop, giving back a pawn.
-    n17 9.Qd5: Costs 14 squares of piece mobility
-    n18 9…Be6: You stopped them winning a rook through a fork.
-    n20 10…Bd7: You stopped them winning a bishop through a discovered attack — unveils the bishop on b3 against the bishop on e6.
+    n18 9…Be6: You saved a hanging piece — saves the rook on a8.; Won the bishop, giving back a pawn.
+    n20 10…Bd7: The only good move
+    n22 11…c4: Attacks the bishop on b3

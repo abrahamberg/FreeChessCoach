@@ -23,3 +23,6 @@ apps/web/src/engine/stockfish/
 apps/api/data/*
 !apps/api/data/README.md
 apps/api/.golden-engine-cache.json
+
+# The review audit workspace (scripts/review-audit): corpus, engine cache, runs, labels.
+apps/api/.review-audit/

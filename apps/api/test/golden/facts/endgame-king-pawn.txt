@@ -2,9 +2,8 @@ Learner side: White
 
 Lines:
 l1 "Line A" | leaves book at n1
-    end position: open files: a, b, c, d, e, f, g, h
 l2 "Line B" | leaves book at n1
-    end position: open files: a, b, c, d, f, g, h; the e-file is half-open for black; white has a passed pawn on e7
+    end position: white has a passed pawn on e7
 
 Moves:
 n1 1.Kf6 (White, Line A) | best | before: White is winning → after: White is winning
@@ -18,7 +17,7 @@ n3 2.e6 (White, Line A) | best | before: White is winning → after: White is wi
     alternatives: Ke6: White is winning; Kg6: The position is roughly equal
 n4 2…Ke8 (Black, Line A) | best | before: White is winning → after: White is winning
     board: moves the king from f8 to e8
-    alternatives: Kg8: White has a forced mate in 4
+    alternatives: Kg8: White has a forced mate
 n5 3.e7 (White, Line A) | great | before: White is winning → after: White is winning
     board: moves the pawn from e6 to e7
     alternatives: Kf5: The position is roughly equal; Ke5: The position is roughly equal
@@ -71,8 +70,6 @@ PLAN
 
 REVIEW NOTES
   l1
-    n3 2.e6: Creates a passed pawn on e
-    n5 3.e7: Creates a passed pawn on e
+    n5 3.e7: The only winning move
+    n7 4.Kf7: The only winning move
   l2
-    n13 3.e6: Creates a passed pawn on e
-    n15 4.e7: Creates a passed pawn on e

@@ -1,11 +1,14 @@
 import { Chess } from 'chess.js';
 import type { EngineEval, EngineLine } from '@freechesscoach/shared';
 import { cpToWords, mateToWords } from '../eval-words.js';
+import { saidMateIn } from '../mate-count.js';
 
-/** One engine line in words, never a number ("White is better",
- * "Black has a forced mate in 3"). Scores are White-perspective. */
-export function lineWords(line: Pick<EngineLine, 'cp' | 'mateIn'>): string {
-  if (line.mateIn !== null) return mateToWords(line.mateIn, 'w');
+/** One engine line in words, never a score ("White is better", "Black has
+ * a forced mate in 3"; "Black has a forced mate" when the search the line
+ * is from, `searched`, cannot stand behind the count). Scores are
+ * White-perspective. */
+export function lineWords(line: Pick<EngineLine, 'cp' | 'mateIn'>, searched: Pick<EngineEval, 'fen' | 'depth'>): string {
+  if (line.mateIn !== null) return mateToWords(line.mateIn, 'w', saidMateIn(line, searched) !== null);
   return cpToWords(line.cp ?? 0, 'w');
 }
 
@@ -16,5 +19,5 @@ export function positionWords(fen: string, evaluation: EngineEval | undefined): 
   if (chess.isCheckmate()) return 'checkmate';
   if (chess.isStalemate()) return 'stalemate';
   const top = evaluation?.lines[0];
-  return top ? lineWords(top) : 'no engine verdict';
+  return top && evaluation ? lineWords(top, evaluation) : 'no engine verdict';
 }

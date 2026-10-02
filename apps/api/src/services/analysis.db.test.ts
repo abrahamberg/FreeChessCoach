@@ -241,13 +241,15 @@ describe('runAnalyzeGameJob', () => {
   // eval) already lists the fork among its lines, so the prevention scan
   // catches it from the stored evals alone. Task 77.5: Black's Rb8 is
   // credited only because it mattered — the other line (Kd8) leaves the fork
-  // on — and the scan runs lazily, for that verdict.
+  // on — and the scan runs lazily, for that verdict. Task 121.1: the fork
+  // still stands after 1.Ka2 (White can play it if Black passes), and its
+  // engine line takes the rook: a threat with no line behind it is no card.
   test('tactics prevented: a defused opponent fork is credited from the stored evals', async () => {
     const { gameId, analysisId } = await setupGame(FORK_PREVENTED_PGN);
     const analyzeGamePositions = vi.fn(async (fens: string[]) =>
       fens.map((fen): EngineEval => {
         if (fen === FORK_PREVENTED_FEN) {
-          return { ply: 0, fen, depth: 10, lines: [{ moveUci: 'c4d6', moveSan: 'Nd6+', cp: 500, mateIn: null }] };
+          return { ply: 0, fen, depth: 10, lines: [{ moveUci: 'c4d6', moveSan: 'Nd6+', pvSan: ['Nd6+', 'Kd7', 'Nxb7'], cp: 500, mateIn: null }] };
         }
         if (fen.split(' ')[1] === 'b') {
           return {

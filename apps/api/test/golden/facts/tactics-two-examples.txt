@@ -2,9 +2,7 @@ Learner side: White
 
 Lines:
 l1 "Discovered check" | opening: Petrov's Defense: Damiano Variation | leaves book at n8
-    end position: open files: e; the white king is still in the centre on e1; the black king is still in the centre on e8
 l2 "Legal's mate" | opening: Philidor Defense | leaves book at n12
-    end position: the e-file is half-open for black; the f-file is half-open for black; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e7
 
 Moves:
 n1 1.e4 (White, Discovered check) | book
@@ -92,11 +90,11 @@ n16 5…Bxd1 (Black, Legal's mate) | blunder | before: White is better → after
     best instead: dxe5; after dxe5 Qxg4 Nc6 Bb5, White has a bishop and a pawn for a knight
     why dxe5 is better: moves the pawn from d6 to e5 | captures the knight on e5 | leaves the black bishop on g4 hanging
     board: moves the bishop from g4 to d1 | captures the queen on d1
-    tactics: They let you force mate through a mating net two moves away with Bxf7+ — closes the net — every answer runs into mate.
+    tactics: They let you force mate in 2 through a mating net with Bxf7+ — closes the net — every answer runs into mate.
     alternatives: dxe5: White is better; Be6: White is better; d5: White is better
 n17 6.Bxf7+ (White, Legal's mate) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the bishop from c4 to f7 | captures the pawn on f7 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke7 | attacks the knight on g8
-    tactics: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    tactics: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     alternatives: Nxf7: Black is better; O-O: Black is much better
     tempting check: Bb5+? White's Bb5+ moves the bishop from c4 to b5 | gives check | the check can be answered: block with Nd7, Nc6, Qd7, c6; the checking piece cannot be taken; move the king with Ke7. Black answers c6: moves the pawn from c7 to c6 | blocks the check from the bishop on b5 | attacks the bishop on b5 | leaves the black bishop on d1 hanging. Then Bc4 dxe5 Nxd1. Over the line White takes a bishop; Black takes a knight; at the end White has a bishop and a pawn for a queen and a knight (Black is much better).
     tempting capture: Nxd1? White's Nxd1 moves the knight from c3 to d1 | captures the bishop on d1 | leaves the white knight on e5 hanging. Black answers dxe5: moves the pawn from d6 to e5 | captures the knight on e5. Then d3 Nc6 Bb5. Over the line White takes a bishop; Black takes a knight; at the end White has a bishop and a pawn for a queen and a knight (Black is much better).
@@ -108,8 +106,7 @@ n18 6…Ke7 (Black, Legal's mate) | forced | before: White has a forced mate in 
     board: moves the king from e8 to e7 | attacks the bishop on f7 | leaves the black bishop on d1 hanging
 n19 7.Nd5# (White, Legal's mate) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the knight from c3 to d5 | gives checkmate | why it is mate: the king on e7 is checked by the knight on d5; d6, d8, f8 hold its own pieces; d7 is covered by the knight on e5; e6 and e8 are covered by the bishop on f7; f6 is covered by the knight on d5; the bishop on f7 is guarded by the knight on e5
-    tactics: You forced mate.
-    alternatives: d4: Black is much better; Nxd1: Black is much better
+    tactics: You delivered checkmate.
     tempting check: Nc6+? White's Nc6+ moves the knight from e5 to c6 | gives check | the check can be answered: no block; take the checking piece with Nxc6, bxc6; move the king with Kxf7, Kf6, Kd7 | attacks the knight on b8 | attacks the queen on d8 | leaves the white bishop on f7 hanging | leaves the white knight on c6 hanging. Black answers Nxc6: moves the knight from b8 to c6 | captures the knight on c6 | leaves the black bishop on d1 hanging. Then Bxg8 Bh5 d3. Over the line White takes a knight; Black takes a knight; at the end White has two pawns for a queen (Black is much better).
     tempting check: Nxg6+? White's Nxg6+ moves the knight from e5 to g6 | captures the pawn on g6 | gives check | the check can be answered: no block; take the checking piece with hxg6; move the king with Kxf7, Kf6, Kd7 | attacks the bishop on f8 | attacks the rook on h8 | leaves the white bishop on f7 hanging. Black answers hxg6: moves the pawn from h7 to g6 | captures the knight on g6 | leaves the black bishop on d1 hanging. Then Bxg8 Rxg8 Kxd1. Over the line White takes a bishop, a knight and a pawn; Black takes a bishop and a knight; at the end White has three pawns for a queen (Black is much better).
     tempting capture: Bxg8? White's Bxg8 moves the bishop from f7 to g8 | captures the knight on g8 | leaves the white knight on e5 hanging | leaves the white pawn on c2 hanging. Black answers Rxg8: moves the rook from h8 to g8 | captures the bishop on g8 | leaves the black bishop on d1 hanging. Then d3 Ke8 Kxd1. Over the line White takes a bishop and a knight; Black takes a bishop; at the end White has a knight and two pawns for a queen (Black is much better).
@@ -139,7 +136,7 @@ REVIEW NOTES
     n5 3.Nxe5: Theory — Petrov's Defense: Damiano Variation (C42)
     n6 3…Nxe4: Theory — Petrov's Defense: Damiano Variation (C42)
     n7 4.Qe2: Theory — Petrov's Defense: Damiano Variation (C42)
-    n8 4…Nf6: They let you win a queen through a fork two moves away with Nc6+ — knight on c6 forks the knight on b8 and the queen on d8.; Won a knight, but it cost the queen.
+    n8 4…Nf6: Costs 8 squares of piece mobility; They let you win a queen through a fork two moves away with Nc6+ — knight on c6 forks the knight on b8 and the queen on d8.; Won a knight, but it cost the queen.
     n9 5.Nc6+: You won a queen through a fork two moves away — knight on c6 forks the knight on b8 and the queen on d8.; Won the queen, giving back a knight.
   l2
     n1 1.e4: Theory — Philidor Defense (C41)
@@ -147,7 +144,8 @@ REVIEW NOTES
     n3 2.Nf3: Theory — Philidor Defense (C41)
     n10 2…d6: Theory — Philidor Defense (C41)
     n11 3.Bc4: Theory — Philidor Defense (C41)
+    n12 3…Bg4: Pins the knight on f3 to the queen
     n14 4…g6: They let you win a pawn through a free piece with Nxe5 — captures the pawn on e5.
-    n16 5…Bxd1: Missed dxe5, winning material on e5; They let you force mate through a mating net two moves away with Bxf7+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
-    n17 6.Bxf7+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
-    n19 7.Nd5#: You forced mate.
+    n16 5…Bxd1: They let you force mate in 2 through a mating net with Bxf7+ — closes the net — every answer runs into mate.; Won a queen, but it allowed mate.
+    n17 6.Bxf7+: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
+    n19 7.Nd5#: You delivered checkmate.

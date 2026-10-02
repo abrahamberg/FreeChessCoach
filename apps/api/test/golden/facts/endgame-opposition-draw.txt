@@ -67,6 +67,9 @@ PLAN
 
 REVIEW NOTES
   l1
-    n4 3.e5: Creates a passed pawn on e
-    n6 4.e6: Creates a passed pawn on e
-    n10 6.e7+: Creates a passed pawn on e
+    n1 1…Ke7: The only move that holds
+    n3 2…Kf7: The only move that holds
+    n5 3…Ke7: The only move that holds
+    n7 4…Ke8: The only move that holds
+    n9 5…Kf8: The only move that holds
+    n11 6…Ke8: The only move that holds: the next best, Kg8, gets mated

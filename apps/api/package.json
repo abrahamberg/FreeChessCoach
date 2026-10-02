@@ -19,6 +19,7 @@
     "select-puzzles": "tsx scripts/select-puzzles.mjs",
     "bench:analysis": "tsx scripts/bench-analysis.ts",
     "course:golden": "tsx scripts/course-golden.ts",
+    "review:audit": "tsx scripts/review-audit/cli.ts",
     "golden:record": "tsx scripts/course-golden.ts --facts --record-evals",
     "test:golden": "vitest run --config vitest.golden.config.ts",
     "test": "vitest run --reporter=../../fail-only-reporter.ts",

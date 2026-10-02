@@ -2,7 +2,6 @@ Learner side: White
 
 Lines:
 l1 "Line A" | opening: Caro-Kann Defense: Main Line | leaves book at n9
-    end position: open files: d, e; the white king is tucked away on c1; the black king is tucked away on c7
 
 Moves:
 n1 1.e4 (White, Line A) | book
@@ -77,7 +76,7 @@ n18 9…Kxd8 (Black, Line A) | forced | before: White has a forced mate in 2 →
     board: moves the king from e8 to d8 | captures the queen on d8
 n19 10.Bg5+ (White, Line A) | great | before: White has a forced mate in 2 → after: White has a forced mate in 1
     board: moves the bishop from d2 to g5 | gives check | a double check, with the rook on d1 | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke8, Kc7
-    tactics: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
+    tactics: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     alternatives: Bf4+: Black is much better; Bc3+: Black is much better
     tempting check: Bb4+? White's Bb4+ moves the bishop from d2 to b4 | gives check | a discovered check from the rook on d1 | the check can be answered: block with Nd7, Bd7, Bd6, Qd6, Qd4, Qd5, Nd6, Nd2; the checking piece cannot be taken; move the king with Ke8, Kc7 | attacks the bishop on f8. Black answers Kc7: moves the king from d8 to c7. Then Bxf8 Rxf8 Nh3. Over the line White takes a bishop; Black takes a bishop; at the end Black is a queen and a knight up (Black is winning).
     tempting check: Ba5+? White's Ba5+ moves the bishop from d2 to a5 | gives check | a double check, with the rook on d1 | the check can be answered: no block; the checking piece cannot be taken; move the king with Ke8, Ke7. Black answers Ke8: moves the king from d8 to e8. Then Re1 Be6 Nf3. Over the line nothing is taken; at the end Black is a queen and a knight up (Black is winning).
@@ -88,8 +87,7 @@ n20 10…Kc7 (Black, Line A) | best | before: White has a forced mate in 1 → a
     alternatives: Ke8: White has a forced mate in 1
 n21 11.Bd8# (White, Line A) | great | before: White has a forced mate in 1 → after: checkmate
     board: moves the bishop from g5 to d8 | gives checkmate | why it is mate: the king on c7 is checked by the bishop on d8; b7, b8, c6, c8 hold its own pieces; b6 is covered by the bishop on d8; d6 and d7 are covered by the rook on d1; the bishop on d8 is guarded by the rook on d1
-    tactics: You forced mate.
-    alternatives: Nf3: Black is much better; f4: Black is much better
+    tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
@@ -117,8 +115,6 @@ REVIEW NOTES
     n7 4.Nxe4: Theory — Caro-Kann Defense: Main Line (B15)
     n8 4…Nf6: Theory — Caro-Kann Defense: Main Line (B15)
     n10 5…e5: Leaves the pawn on e5 undefended
-    n11 6.dxe5: Costs 9 squares of piece mobility
     n14 7…Qxe5: They won a knight through a fork two moves away.
-    n17 9.Qd8+: You stopped them winning a knight through a free piece — captures the knight on e4.
-    n19 10.Bg5+: You forced mate through a mating net two moves away — closes the net — every answer runs into mate.
-    n21 11.Bd8#: You forced mate.
+    n19 10.Bg5+: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
+    n21 11.Bd8#: You delivered checkmate.

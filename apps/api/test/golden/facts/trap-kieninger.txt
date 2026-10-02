@@ -2,7 +2,6 @@ Learner side: Black
 
 Lines:
 l1 "Line A" | opening: Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation | leaves book at n8
-    end position: the a-file is half-open for white; the d-file is half-open for white; the e-file is half-open for black; white has doubled pawns on the b-file; black has a queenside pawn majority; white has a kingside pawn majority; the white king is still in the centre on e1; the black king is still in the centre on e8
 
 Moves:
 n1 1.d4 (White, Line A) | book
@@ -58,15 +57,14 @@ n15 8.axb4 (White, Line A) | blunder | before: The position is roughly equal →
     best instead: Nxe5; after Nxe5 Nxe5 e3 Bxd2+ Qxd2 d6, White has a bishop for a knight
     why Nxe5 is better: moves the knight from f3 to e5 | captures the knight on e5 | attacks the knight on c6
     board: moves the pawn from a3 to b4 | captures the bishop on b4
-    tactics: They let you force mate with Nd3#.
+    tactics: They let you deliver checkmate with Nd3#.
     alternatives: Nxe5: The position is roughly equal; e3: The position is roughly equal; Qc2: The position is roughly equal
     tempting threat: Bg5? White's Bg5 moves the bishop from f4 to g5 | attacks the queen on e7. Black answers Nd3#: moves the knight from e5 to d3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on d3; d1, d2, e2, f1, f2 hold its own pieces. Over the line nothing is taken; at the end material is level (Black has a forced mate in 1).
     tempting threat: Bh6? White's Bh6 moves the bishop from f4 to h6 | leaves the white bishop on h6 hanging. Black answers Nd3#: moves the knight from e5 to d3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on d3; d1, d2, e2, f1, f2 hold its own pieces. Over the line nothing is taken; at the end material is level (Black has a forced mate in 1).
     flags: critical
 n16 8…Nd3# (Black, Line A) | great | before: Black has a forced mate in 1 → after: checkmate
     board: moves the knight from e5 to d3 | gives checkmate | why it is mate: the king on e1 is checked by the knight on d3; d1, d2, e2, f1, f2 hold its own pieces
-    tactics: You forced mate.
-    alternatives: d6: White is better; Nxf3+: White is much better
+    tactics: You delivered checkmate.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
@@ -89,5 +87,6 @@ REVIEW NOTES
     n5 3.dxe5: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
     n6 3…Ng4: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
     n7 4.Nf3: Theory — Indian Defense: Budapest Gambit Accepted, Main Line, Adler Variation (A52)
-    n15 8.axb4: They let you force mate with Nd3#.; Won a bishop, but it allowed mate.
-    n16 8…Nd3#: You forced mate.
+    n13 7.a3: Attacks the bishop on b4, which pins the knight on d2
+    n15 8.axb4: They let you deliver checkmate with Nd3#.; Won a bishop, but it allowed mate.
+    n16 8…Nd3#: You delivered checkmate.

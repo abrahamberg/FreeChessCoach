@@ -1,6 +1,7 @@
 import type { TacticGainDto, TacticHorizon, TacticMotifType } from '@freechesscoach/shared';
 import { CONFIG } from './config.js';
-import { TACTIC_MOTIF_PHRASES, articleFor, motifWithArticle } from './tactic-motif-phrases.js';
+import { gainClause, type Specificity } from './tactic-gain-clause.js';
+import { TACTIC_MOTIF_PHRASES, articleFor } from './tactic-motif-phrases.js';
 
 /**
  * Layer 4 of `docs/tactics-rework.md` §5: one template, four voices, three
@@ -108,6 +109,8 @@ export function tacticAllowedReason(allowed: TacticAllowedLike): string {
 export interface TacticPreventionLike {
   type: TacticMotifType;
   prevented: boolean;
+  /** The threat's move: the opponent's, from the board before this move. */
+  threatSan?: string;
   detail?: string | null;
   gain?: TacticGainDto;
   /** Whose move defused (or failed to defuse) the threat — see
@@ -123,29 +126,40 @@ export interface TacticPreventionLike {
  * move stopped you winning a rook through a fork" is the same computation
  * told to the person reading it. The threat always belongs to whoever did
  * *not* make this move, which is what makes the two voices mirror images.
+ * Like the allowed card it names the move (`threatClause`).
  */
 export function tacticPreventionReason(prevention: TacticPreventionLike): string {
   const clause = gainClause(prevention, 'medium', undefined);
-  const detail = prevention.detail ? ` — ${prevention.detail}` : '';
+  const threat = threatClause(prevention);
 
-  if (prevention.isUserMove === undefined) return legacyPreventionReason(prevention, detail);
-  if (prevention.prevented && prevention.isUserMove) return `You stopped them ${clause.gerundish}${detail}.`;
-  if (prevention.prevented) return `Their move stopped you ${clause.gerundish}${detail}.`;
+  if (prevention.isUserMove === undefined) return legacyPreventionReason(prevention, threat);
+  if (prevention.prevented && prevention.isUserMove) return `You stopped them ${clause.gerundish}${threat}.`;
+  if (prevention.prevented) return `Their move stopped you ${clause.gerundish}${threat}.`;
   // Nothing was defused, so the threat still belongs to whoever did not
   // just move — the mirror image of the two lines above.
   const owner = prevention.isUserMove ? 'They' : 'You';
-  return `${owner} can still ${clause.toDo}${detail}.`;
+  return `${owner} can still ${clause.toDo}${threat}.`;
+}
+
+/**
+ * " with Qxe8+ — captures the rook on e8". The detail describes the board
+ * after the threat's move, so it is printed only behind that move: without
+ * it, "rook on d5 forks …" read as the board in front of the reader, whose
+ * rook stood on d8. A card stored before it named the move gets neither.
+ */
+function threatClause(prevention: TacticPreventionLike): string {
+  if (!prevention.threatSan) return '';
+  const detail = prevention.detail ? ` — ${prevention.detail}` : '';
+  return ` with ${prevention.threatSan}${detail}`;
 }
 
 /** Same reason as `legacyOpportunityReason`: no `isUserMove`, no pronoun. */
-function legacyPreventionReason(prevention: TacticPreventionLike, detail: string): string {
+function legacyPreventionReason(prevention: TacticPreventionLike, threat: string): string {
   const noun = TACTIC_MOTIF_PHRASES[prevention.type].noun;
   return prevention.prevented
-    ? `Defused the opponent's ${noun}${detail}.`
-    : `Left the opponent's ${noun} in play${detail}.`;
+    ? `Defused the opponent's ${noun}${threat}.`
+    : `Left the opponent's ${noun} in play${threat}.`;
 }
-
-type Specificity = 'high' | 'medium' | 'low';
 
 /**
  * Absent confidence means the card predates verification, and those cards
@@ -158,76 +172,4 @@ function specificityOf(confidence: number | undefined): Specificity {
   if (confidence >= CONFIG.tacticVerification.highConfidence) return 'high';
   if (confidence >= CONFIG.tacticVerification.mediumConfidence) return 'medium';
   return 'low';
-}
-
-interface GainClause {
-  /** Past tense: "won a rook through a fork". */
-  did: string;
-  /** Infinitive: "win a rook through a fork". */
-  toDo: string;
-  /** After "stopped you …": "winning a rook through a fork". */
-  gerundish: string;
-}
-
-/**
- * The heart of the template. A material or mate payoff leads — "won a rook
- * through a fork" — because that is the half the reader can act on. A motif
- * with no material to name falls back to its own action phrase, which is how
- * a pin that binds and a move that breaks a pin both still get a sentence
- * without either of them inventing a prize.
- */
-function gainClause(
-  claim: { type: TacticMotifType; gain?: TacticGainDto },
-  specificity: Specificity,
-  horizon: TacticHorizon | undefined
-): GainClause {
-  const phrases = TACTIC_MOTIF_PHRASES[claim.type];
-  const prize = materialPrize(claim.gain, specificity);
-  const motif = motifWithHorizon(claim.type, horizon);
-
-  // "forced mate through a checkmate" says the same thing twice.
-  if (claim.gain?.kind === 'mate' && claim.type === 'checkmate') return { did: 'forced mate', toDo: 'force mate', gerundish: 'forcing mate' };
-  if (claim.gain?.kind === 'mate') {
-    return { did: `forced mate through ${motif}`, toDo: `force mate through ${motif}`, gerundish: `forcing mate through ${motif}` };
-  }
-  if (prize) {
-    return {
-      did: `won ${prize} through ${motif}`,
-      toDo: `win ${prize} through ${motif}`,
-      gerundish: `winning ${prize} through ${motif}`
-    };
-  }
-  return { did: phrases.did, toDo: phrases.toDo, gerundish: gerundOf(phrases.toDo) };
-}
-
-/**
- * "a fork" / "a fork two moves away" / "an eventual fork".
- *
- * §3 rule 5: a horizon qualifier is what makes a deep tactic honest instead
- * of confusing. `annotatePvTactics` has computed how far off the payoff is
- * since long before this, and nothing narrated it.
- */
-function motifWithHorizon(type: TacticMotifType, horizon: TacticHorizon | undefined): string {
-  const noun = TACTIC_MOTIF_PHRASES[type].noun;
-  if (horizon === 'inTwo') return `${motifWithArticle(type)} two moves away`;
-  if (horizon === 'eventual') return `an eventual ${noun}`;
-  return motifWithArticle(type);
-}
-
-/** "a rook" at high confidence, "material" when the verifier proved a swing
- * but not which piece, and nothing at all when it proved neither. */
-function materialPrize(gain: TacticGainDto | undefined, specificity: Specificity): string | null {
-  if (!gain || gain.kind !== 'material' || gain.pawns <= 0) return null;
-  if (gain.prize && specificity !== 'low') return `${articleFor(gain.prize)} ${gain.prize}`;
-  return 'material';
-}
-
-/** "break the pin" -> "breaking the pin". Only ever applied to this file's
- * own `toDo` phrases, whose first word is a bare infinitive by
- * construction — never to arbitrary text. */
-function gerundOf(infinitive: string): string {
-  const [verb, ...rest] = infinitive.split(' ');
-  if (!verb) return infinitive;
-  const stem = verb.endsWith('e') && !verb.endsWith('ee') ? verb.slice(0, -1) : verb;
-  return [`${stem}ing`, ...rest].join(' ');
 }

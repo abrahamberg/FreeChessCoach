@@ -2,13 +2,11 @@ Learner side: White
 
 Lines:
 l1 "Line A" | leaves book at n1
-    end position: open files: a, b, c, d, e, f; the g-file is half-open for white; the h-file is half-open for white; black has a passed pawn on g7; black has a passed pawn on h7; black has a kingside pawn majority
 
 Moves:
 n1 1.Qf8# (White, Line A) | best | before: White has a forced mate in 1 → after: checkmate
     board: moves the queen from f2 to f8 | gives checkmate | a back-rank mate | why it is mate: the king on h8 is checked by the queen on f8; g7, h7 hold its own pieces; g8 is covered by the queen on f8
-    tactics: You forced mate — queen on f8 checks the king on h8, boxed in on the back rank.
-    alternatives: Qf7: White is much better; Qe1: White is much better
+    tactics: You delivered checkmate — queen on f8 checks the king on h8, boxed in on the back rank.
     flags: quiz-eligible, critical
 
 REEL CANDIDATES
@@ -21,4 +19,4 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.Qf8#: You forced mate — queen on f8 checks the king on h8, boxed in on the back rank.
+    n1 1.Qf8#: You delivered checkmate — queen on f8 checks the king on h8, boxed in on the back rank.

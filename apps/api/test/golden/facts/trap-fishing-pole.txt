@@ -2,7 +2,6 @@ Learner side: Black
 
 Lines:
 l1 "Line A" | opening: Ruy Lopez: Berlin Defense, Fishing Pole Variation | leaves book at n9
-    end position: open files: h; black has doubled pawns on the g-file; black has a kingside pawn majority; the white king is tucked away on g1; the black king is still in the centre on e8
 
 Moves:
 n1 1.e4 (White, Line A) | book
@@ -71,11 +70,11 @@ n15 8.f3 (White, Line A) | inaccuracy | before: Black is much better → after: 
     best instead: f4; after f4 Bc5+ d4 Bxd4+ Qxd4 Nxd4, White has a bishop and a knight for a queen and two pawns
     why f4 is better: moves the pawn from f2 to f4
     board: moves the pawn from f2 to f3
-    tactics: They let you force mate with g3.
+    tactics: They let you force mate in 2 with g3.
     alternatives: f4: Black is much better; a3: Black has a forced mate in 1
 n16 8…g3 (Black, Line A) | best | before: Black has a forced mate in 2 → after: Black has a forced mate in 1
     board: moves the pawn from g4 to g3
-    alternatives: Bc5+: Black has a forced mate in 6; Nd4: Black is much better
+    alternatives: Bc5+: Black has a forced mate; Nd4: Black is much better
     tempting check: Qh2+? Black's Qh2+ moves the queen from h4 to h2 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf2. White answers Kf2: moves the king from g1 to f2. Then Bc5+ Ke2. Over the line nothing is taken; at the end White has a knight for a pawn (Black is better).
     tempting check: Qh1+? Black's Qh1+ moves the queen from h4 to h1 | gives check | the check can be answered: no block; the checking piece cannot be taken; move the king with Kf2. White answers Kf2: moves the king from g1 to f2. Then Bc5+ d4 Qh4+. Over the line nothing is taken; at the end White has a knight for a pawn (Black is better).
     tempting capture: gxf3? Black's gxf3 moves the pawn from g4 to f3 | captures the pawn on f3. White answers Nxf3: moves the knight from e1 to f3 | captures the pawn on f3 | attacks the queen on h4 | leaves the white pawn on e4 hanging. Then Bc5+ d4. Over the line Black takes a pawn; White takes a pawn; at the end White has a knight for a pawn (Black is slightly better).
@@ -104,6 +103,7 @@ REVIEW NOTES
     n6 3…Nf6: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
     n7 4.O-O: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
     n8 4…Ng4: Theory — Ruy Lopez: Berlin Defense, Fishing Pole Variation (C65)
+    n9 5.h3: Attacks the knight on g4
     n12 6…hxg4: Recaptures the pawn on g4; You won a tempo — hits the knight on f3 with a pawn.
     n14 7…Qh4: You took the open file — takes the open h-file with the queen.; Won the queen, giving back a bishop.
-    n15 8.f3: They let you force mate with g3.
+    n15 8.f3: They let you force mate in 2 with g3.

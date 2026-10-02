@@ -102,11 +102,11 @@ REVIEW NOTES
     n5 3.Bc4: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57)
     n6 3…Nf6: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57)
     n7 4.Ng5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57)
-    n8 4…d5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); Their move stopped you winning a knight through a pin — the knight on e4 is stuck in front of the king.
-    n9 5.exd5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); You stopped them winning a bishop through a fork.
+    n8 4…d5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57)
+    n9 5.exd5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57)
     n10 5…Nxd5: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); They let you win a pawn through a free piece with Nxf7 — captures the pawn on f7.
     n11 6.Nxf7: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57)
     n12 6…Kxf7: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57)
-    n13 7.Qf3+: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); You stopped them winning a knight through a free piece — captures the knight on f7.
+    n13 7.Qf3+: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57)
     n14 7…Ke6: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57)
-    n15 8.Nc3: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57); You stopped them winning a bishop through a defender-removing tactic — removes the defender on d5, leaving the bishop on c4 undefended.
+    n15 8.Nc3: Theory — Italian Game: Two Knights Defense, Fried Liver Attack (C57)

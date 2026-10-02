@@ -240,7 +240,10 @@ Per node:
 - The move, side, line, and move number.
 - **Verdict words**, never numbers: the move-quality label (`classify-move.ts`)
   and the position before/after in words (the wording `eval-words.ts` uses:
-  "about equal", "White is better", "Black is winning", "mate in 3 for White").
+  "about equal", "White is better", "Black is winning", "White has a forced
+  mate in 3"; a mate's number of moves only when it is short and the search
+  covers it, else "White has a forced mate": `mate-count.ts`,
+  `docs/tactics-rework.md` §13).
 - Book: in book or not, the opening name where the book names it
   (`opening-book.ts`).
 - Engine best move and its line (SAN, at most 6 plies) when the course move is
@@ -265,7 +268,9 @@ The principle: the app supplies every chess fact; the model only puts the
 facts it is given into words. When a script states something wrong, the fix is
 a missing or misleading fact here, not a prompt telling the model to be careful.
 - Alternatives: the engine's other top moves and the tempting moves (captures,
-  checks) with verdict words, so "why not X?" is answered from facts.
+  checks) with verdict words, so "why not X?" is answered from facts. A move
+  that is checkmate lists no other top moves: the mate is the whole
+  description.
 - Flags: `quiz-eligible` (one move is clearly best: a win-percentage gap above
   `CONFIG.courses.onlyMoveGap` to the second move, or a mate where the second
   mates later or not at all; a slower mate is no second answer, and a
@@ -273,9 +278,12 @@ a missing or misleading fact here, not a prompt telling the model to be careful.
   `critical-moments.ts`), `creator-comment` (the creator's PGN comment, verbatim).
 
 Per line: its name, where it leaves the book, and the end position's features
-(`pawn-structure.ts`, `position-features.ts`, `positional-squares.ts`: open
-files, weak squares, pawn majorities, king safety), which ground any talk of
-plans.
+(`dossier-line.ts`, from `position-features.ts`: open and half-open files,
+passed, isolated and doubled pawns, pawn majorities, where the kings stand),
+which ground any talk of plans. Only where there is a plan to talk about: a
+line that ends in checkmate has no such rows, and a decided end position (the
+engine's best line there is a forced mate, or `CONFIG.courses.decidedCp` for
+one side) lists only the winning side's passed pawns.
 
 ### 5.5 Skeleton: candidates per kind (code)
 
