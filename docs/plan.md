@@ -1048,16 +1048,17 @@ move that still mates.
   Black moves against 29 White ones while Black's own went from 51 to 47.
   The note now counts the mover's own legal moves before and after
   (`moverMobilityDelta`, the turn passed back with `flipActiveColorFen`;
-  nothing on a move that gives check). Golden: 13 such lines go (the
+  nothing on a move that gives check). Golden: 15 such lines go (the
   Opera game's "Costs 43 squares" on 15.Bxd7+ among them) and 2 appear
   (Petrov 4…Nf6, 8 squares, in two courses).
 - [x] **A slower mate is not a missed one.** "Missed a forced mate
   starting with Qd6+" on Rd1+, which mates a move later, hides that the
   win was kept; Lasker–Thomas 14.h4+ read "Missed a forced mate starting
   with f4+; You forced mate." `missedMateReason` is silent when the
-  engine's line after the move is still a mate for the mover. Golden: 6
+  engine's line after the move is still a mate for the mover. Golden: 7
   lines go (Lasker–Thomas 14.h4+ and 16.Be2+ in two courses, the rook
-  ladder's 1.Ra7 in two, Game of the Century 37…Bb4+).
+  ladder's 1.Ra7 in two, Game of the Century 37…Bb4+). The commit
+  message says 13 and 6; 15 and 7 are the counts.
 - **Left over:** `mobilityDelta` itself is still the two-sided number. It
   feeds `quietMoveMobilityDeltas` in the game report and the candidate
   and PV step fields; fixing it there changes stored stats and is its own
