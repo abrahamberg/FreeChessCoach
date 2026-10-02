@@ -15,7 +15,10 @@ The tool is `npm run review:audit -w apps/api -- <command>` (code in
 `apps/api/scripts/review-audit/`, how it works at the top of `cli.ts`). Its
 workspace is `apps/api/.review-audit/` (git ignores it; `labels.jsonl` is the
 valuable part — it holds every judge's verdict). The plan behind it, and
-the known gaps, is `docs/plan.md` (Phase 120 onward).
+the known gaps, is `docs/plan.md` (Phase 120 onward). **Read its section
+"Where it stands, and what the next session does" first**: it has the last
+numbers, the next clusters in order, what waits on the owner, and what
+cost time before. Update that section at the end of every day.
 
 ## Before starting
 
@@ -114,6 +117,8 @@ position that exposed it, then the check.
   history line.
 - Tell the owner: today's accuracy per split/surface, the clusters fixed,
   what is next, and anything that needs their decision.
+- Rewrite "Where it stands, and what the next session does" in
+  `docs/plan.md` so a session that starts cold knows what to do.
 
 ## Done means
 
@@ -129,3 +134,6 @@ catch regressions.
 - Never make a sentence pass by editing the check to fit it, unless a judge
   and the probe both show the check was wrong.
 - Never re-record the golden snapshot without explaining each changed line.
+- Never edit `packages/` while a `run`, a judge or a fixer is going: the
+  dev engine restarts on the change and their requests fail. Write the next
+  fix in a git worktree meanwhile.

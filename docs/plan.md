@@ -1,4 +1,4 @@
-# FreeChessCoach — Review text you can trust: the review audit (Phases 120–124)
+# FreeChessCoach — Review text you can trust: the review audit (Phases 120–127)
 
 Written 2026-10-01, after the owner reported four wrong sentences in one
 reviewed game. The code of Phases 110–119 (the courses merge, board facts
@@ -13,6 +13,171 @@ facts the course dossier hands a model, are correct, measured on held-out
 games. This is a long-running process, not one fix: the daily loop is
 `.claude/skills/review-audit/SKILL.md`; this plan is the work that makes
 the loop better, in order.
+
+## Where it stands, and what the next session does (written 2026-10-02)
+
+**Start here.** Two days of the loop are on `main` (PR #50). Run the skill
+`.claude/skills/review-audit/SKILL.md` on a new branch from `main`; this
+section is its "what is next".
+
+**Numbers at the end of 2026-10-02** (268 games: 220 dev, 48 holdout;
+1,343 labels in `apps/api/.review-audit/labels.jsonl`):
+
+| split / surface | judged | accuracy | to do |
+|---|---|---|---|
+| dev review | 150 | 71.7% | 150 more judged |
+| dev dossier | 774 | 93.8% | below 98% |
+| holdout review | 58 | 64.3% | 242 more judged; only about 170 sampled sentences exist, so the corpus must grow (Task 123.1) |
+| holdout dossier | 303 | 93.1% | below 98% |
+
+Dev code-check failures: 63 of 53,639 sentences, all in Phase 127's first
+task.
+
+**Next, in this order:**
+
+1. **Phase 127** below (three clusters, biggest first). One `review-fixer`
+   at a time.
+2. **Judge rounds** until dev review and holdout review have 300: `batch`
+   (4 dev + 2 holdout), six `review-judge` agents, `ingest`, `report --log`.
+   The new notes (`review:reason:pin`, `kick`, `only-move`, the trade's
+   "only developed piece") have one or two labels each; Tasks 126.2, 126.3
+   and 121.3 each say what to do if judges mark them `irrelevant`.
+3. **Grow the corpus** (Task 123.1) so holdout review can reach 300, then
+   the long engine run in the background.
+4. **A second calibration** for the owner (`calibrate`), a week after the
+   first (2026-10-01).
+5. Open boxes left in Phases 121–126: 126.2 step two (other pins, after a
+   judged sample), 125.4 (a mistake's note says what is lost), 122.x (the
+   audit's blind spots), `mobilityDelta` itself (Task 126.7, left over),
+   the king-in-check shape in `pinShapes()` (Task 126.0, left over).
+
+**Waiting on the owner** (do not build before they answer):
+
+- Kick notes are 1.2 a game on dev. Keep all, or only the 29 that name a
+  pin?
+- One dev game has nine "The only move that holds" in a row. Say it once
+  per run of only moves?
+- The `dev@local.test` course-creation grant (revoke with `npx tsx
+  apps/api/scripts/course-creator.ts revoke dev@local.test`); the
+  queen-against-pawn course rule; `seeds/d9716668.evals.json` is 56.7 KB,
+  over the 50 KB rule in AGENTS.md.
+- Standing decisions (2026-10-02): no engine search deeper than depth 12
+  in the app, and no mate count past 7 moves.
+
+**What cost time, so the next session does not pay again:**
+
+- The dev engine container runs `tsx watch` and restarts on any edit under
+  `packages/`. A `run`, a judge's `probe` or a fixer's test in flight then
+  fails; `run` retries a game once and after that drops it without an
+  error. Do not edit `packages/` while a run or the judges are going.
+  Write and test the next fix in a git worktree meanwhile (package tests
+  with relative imports work there; `test:golden` and the audit do not,
+  they resolve `@freechesscoach/*` to the main checkout).
+- A dev `run` takes 20 to 40 minutes of CPU even with every engine answer
+  cached. One run can measure several fixes when their sources differ.
+- After a check-only change, `recheck` (seconds). After editing
+  `seeds.json`, `corpus --per-band 0` before `run --only seed:`.
+- New wording is tested against the golden courses before anything else:
+  they vetoed "it has to move" (three trap courses), a one-pawn tolerance
+  for "trade" (a rook for a bishop and a pawn), and "the only good move"
+  for a slower win.
+- A note that a tactic card may replace goes through
+  `cardReplaceableNote` in `move-reasons.ts` (a free slot only), with its
+  `withoutCarded…` filter in `report-tactic-verdicts.ts`, its template in
+  the audit's `sources.ts` and its check in `check-review.ts`.
+
+## Phase 127 — The three clusters left after 2026-10-02
+
+### Task 127.1 — A tactic card names a prize the line really nets
+
+**Findings (2026-10-02, dev):** all 63 code-check failures are tactic
+cards failing `material-in-line` (59) or `mate-in-line` (3), plus one
+`engine-line`. By card: allowed `freePiece` 17, found `fork` 9, allowed
+`fork` 9, found `freePiece` 7, found/allowed `brilliantSacrifice` 5,
+`skewer` 7, missed `fork`/`freePiece` 4, `weakBackRank` 3 (those three are
+Task 121.1's). Two shapes, read off the failures:
+
+- **The prize is taken, but not for free.** "You won a queen through a
+  fork two moves away" (13.Nxe6+ in `pt1Hetf0`): Nxe6+ Kg8 Nxd8 Rxe4+, a
+  queen for a knight and more, net 4. "win a rook through a skewer" where
+  Bd3 Qf2 Bxf1 Qxf1 is a rook for a bishop, net 2. The card's `prize` is
+  the claim's piece (`game-tactic-motifs.ts:190`, `reasons/
+  defused-threat.ts:48`), while `materialAgrees`
+  (`move-verdict/reasons/confirmed.ts`) only asks the walked line for net
+  ≥ 1.
+- **Nothing is won at all.** "You let them win a pawn through a free piece
+  with exd4" (15…Nb4 in `kOZf0MOz`): exd4 Qxd4 is a pawn trade, net 0. The
+  allowed card is read off the reply's pre-gate chance
+  (`tactic-allowed.ts` `computeTacticAllowed`, `allowedCardOf`) and is
+  **not verified to walk a line** in what was read; reproduce first.
+
+**Read:** `move-verdict/reasons/confirmed.ts`, `move-verdict/line-value.ts`
+(`walkLineValue`, `netPawns`), `tactic-allowed.ts`, `tactic-gain-clause.ts`
+(`materialPrize`), `game-tactic-motifs.ts` around line 190, the audit's
+`gainChecks` in `apps/api/scripts/review-audit/check-review.ts` and
+`settledGain` / `prizeWon` in `oracle.ts`.
+
+- [ ] `failures --source review:tactic-allowed:freePiece --check
+  material-in-line` (dev): sort the 62 into the two shapes above and any
+  third; write the counts here.
+- [ ] A card keeps its `prize` only when the line nets that piece, give or
+  take a pawn (the audit's `prizeWon` is the same idea; the app must not
+  import it). Otherwise the gain is worded from the net: "won material"
+  today (`materialPrize` with no prize), or a new wording the owner
+  approves ("won the queen for a rook").
+- [ ] An allowed card whose reply nets nothing on its own line is not
+  shown.
+- [ ] `test:corpus` (floors must hold), `test:golden` with each line
+  explained, dev re-run: the 63 fall, nothing else rises.
+
+**Commit:** `fix(review): a tactic card names only what the line nets`
+
+### Task 127.2 — "Hanging" means it can be taken and kept
+
+**Findings:** the largest judged tag on dev is `not-winnable` (24).
+`dossier:why-better:leavesHanging` 11 wrong of 19 judged,
+`dossier:board:leavesHanging` 9 of 43, `review:reason:loose-free` 6 of 15,
+`review:reason:loose-winnable` 2 of 4. The judges' notes: the piece is
+attacked, but taking it loses to a tactic or only trades ("Bc5 is attacked
+by d4 but dxc5 dxc4 just trades bishops"; "after Qd4, Qxh2 runs into Nf6+
+and mate"). The code checks pass, because the exchange on the square is
+won statically. Not yet reproduced in code.
+
+**Read:** `board-facts/loose-pieces.ts`, `board-facts/move-facts.ts`
+(where the `leavesHanging` fact is built), `move-reasons.ts`
+(`looseReasons`), the audit's `oracle.ts` (`exchangeGain`,
+`moveIsSound`).
+
+- [ ] Reproduce three judged examples (`failures --source
+  dossier:why-better:leavesHanging`, dev).
+- [ ] A piece is said to hang only when taking it is a move the engine
+  would play (`evalAfter`'s lines hold it: the capture is among them and
+  within a pawn of the best). No engine line for the capture: the row is
+  not said. A check for it in the audit (`named-move-sound` exists).
+- [ ] Golden, dev re-run, the four sources judged again.
+
+**Commit:** `fix(analysis): a piece hangs only when taking it is a real move`
+
+### Task 127.3 — "Won the queen, giving back a rook" from a line nobody played
+
+**Findings:** `review:reason:other` is 11 wrong of 15 judged, tag
+`hypothetical-line`: the card's detail line ("Won the queen, giving back a
+rook.", "Won a knight, but it allowed mate.") is read off the engine's
+line, not off what was played ("34…Kc6 captures nothing"). The sentence is
+built by `verdictDetail` (`move-verdict/detail.ts`) from the verdict's
+`LineValue` and printed by `report-tactic-verdicts.ts`.
+
+**Read:** `move-verdict/detail.ts`, `move-verdict/index.ts` (line 115,
+where it is attached), `move-verdict/line-value.ts`,
+`report-tactic-verdicts.ts`.
+
+- [ ] Give the sentence its own source in the audit's `sources.ts` (it is
+  `other` today) and a check: every piece it names was captured by the
+  move itself or its named reply.
+- [ ] Say it only of material that changed hands on the board the reader
+  sees, or name the line it comes from.
+
+**Commit:** `fix(review): a card's detail speaks of the moves on the board`
 
 ## How to work through this plan
 
