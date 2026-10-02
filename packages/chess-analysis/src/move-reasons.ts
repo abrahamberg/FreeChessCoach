@@ -15,6 +15,7 @@ import { describeTrade } from './trade-description.js';
 import { see } from './see.js';
 import { createdPassedPawns } from './pawn-structure.js';
 import { CONFIG } from './config.js';
+import { flipActiveColorFen } from './null-move-fen.js';
 
 export interface MoveReasonsInput {
   mover: 'white' | 'black';
@@ -106,6 +107,10 @@ function missedMateReason(input: MoveReasonsInput): Reason[] {
   const best = input.evalBefore.lines[0];
   if (!best || best.moveSan === input.moveSan) return [];
   if (moverMateIn(best, input.mover) === null) return [];
+  // A slower mate is still the win: "Missed a forced mate" on Rd1+, which
+  // mates in 5 where Qd6+ mates in 4, hides that nothing was lost.
+  const after = input.evalAfter?.lines[0];
+  if (after && moverMateIn(after, input.mover) !== null) return [];
   const mateIn = saidMateIn(best, input.evalBefore);
   return [{ category: 'mate', text: `Missed ${mateIn === null ? 'a forced mate' : `mate in ${mateIn}`} starting with ${best.moveSan}` }];
 }
@@ -242,9 +247,24 @@ function playedMove(input: MoveReasonsInput): Move | null {
  */
 function mobilityReason(input: MoveReasonsInput): Reason[] {
   if (!isImprovableQuality(input.quality)) return [];
-  const delta = input.featureDelta?.mobilityDelta;
-  if (delta === undefined || delta > MOBILITY_DROP_THRESHOLD) return [];
+  const delta = moverMobilityDelta(input);
+  if (delta === null || delta > MOBILITY_DROP_THRESHOLD) return [];
   return [{ category: 'mobility', text: `Costs ${Math.abs(delta)} squares of piece mobility` }];
+}
+
+/** The mover's legal moves after the move (were it to move again) less its
+ * legal moves before. `featureDelta.mobilityDelta` is not this: it takes the
+ * mover's moves before from the opponent's moves after, and "Costs 22
+ * squares" was 51 Black moves against 29 White ones while Black's own went
+ * from 51 to 47. Null when the move gives check: there is no "again". */
+function moverMobilityDelta(input: MoveReasonsInput): number | null {
+  const again = flipActiveColorFen(input.fenAfter);
+  if (!again) return null;
+  try {
+    return new Chess(again).moves().length - new Chess(input.fenBefore).moves().length;
+  } catch {
+    return null;
+  }
 }
 
 /** "Recaptures the knight on d4" / "Trades bishops on c6" — see

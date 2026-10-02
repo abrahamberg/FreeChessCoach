@@ -962,6 +962,9 @@ was judged on).
     pawn. The exchange comes out at 90 on `see.ts`'s scale (a bishop for
     a knight and a pawn), under the one-pawn bar. The gate is now "wins
     more than a bishop against a knight" (`BISHOP_KNIGHT_GAP_CP`).
+- [x] As it stands after those two changes: **257 kick notes in 128 of
+  220 dev games (1.2 a game, at most 6)** and **49 pin notes in 43 games
+  (at most 2)**.
 - [ ] 30 judged. If judges mark the plain kicks `irrelevant`, keep only
   the ones that name a pin (29).
 
@@ -1032,6 +1035,35 @@ tests beside each.
   read "mistake: better was X" instead, which is what they had to say.
 
 **Commit:** `fix(review): a missed capture has to win material in the engine's line`
+
+### Task 126.7 — Two notes the judges marked wrong (2026-10-02 round)
+
+**Findings:** the day's judge round (442 labels). `review:reason:mobility`
+was wrong 6 of 6 times; "Missed a forced mate" was marked misleading on a
+move that still mates.
+
+- [x] **"Costs N squares of piece mobility" counted two different
+  sides.** `featureDelta.mobilityDelta` is the opponent's legal moves
+  after the move less the mover's before it: "Costs 22 squares" was 51
+  Black moves against 29 White ones while Black's own went from 51 to 47.
+  The note now counts the mover's own legal moves before and after
+  (`moverMobilityDelta`, the turn passed back with `flipActiveColorFen`;
+  nothing on a move that gives check). Golden: 13 such lines go (the
+  Opera game's "Costs 43 squares" on 15.Bxd7+ among them) and 2 appear
+  (Petrov 4…Nf6, 8 squares, in two courses).
+- [x] **A slower mate is not a missed one.** "Missed a forced mate
+  starting with Qd6+" on Rd1+, which mates a move later, hides that the
+  win was kept; Lasker–Thomas 14.h4+ read "Missed a forced mate starting
+  with f4+; You forced mate." `missedMateReason` is silent when the
+  engine's line after the move is still a mate for the mover. Golden: 6
+  lines go (Lasker–Thomas 14.h4+ and 16.Be2+ in two courses, the rook
+  ladder's 1.Ra7 in two, Game of the Century 37…Bb4+).
+- **Left over:** `mobilityDelta` itself is still the two-sided number. It
+  feeds `quietMoveMobilityDeltas` in the game report and the candidate
+  and PV step fields; fixing it there changes stored stats and is its own
+  task.
+
+**Commit:** `fix(review): the mobility note counts the mover's own moves; a slower mate is not missed`
 
 ### Task 126.5 — A seed says what the owner expected to read
 

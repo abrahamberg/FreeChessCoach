@@ -192,7 +192,6 @@ REVIEW NOTES
     n4 2…g6: Theory — English Opening: Anglo-Indian Defense, King's Indian Formation (A15)
     n12 6…dxc4: Trades pawns on c4
     n13 7.Qxc4: Recaptures the pawn on c4
-    n19 10.Qc5: Costs 19 squares of piece mobility
     n23 12.Qa3: Concedes the centre
     n24 12…Nxc3: Trades knights on c3; You won a pawn through a brilliant sacrifice — removes the defender on c3, leaving the pawn on e4 undefended.
     n25 13.bxc3: Recaptures the knight on c3; They saved a hanging piece — saves the rook on d1.
@@ -206,5 +205,4 @@ REVIEW NOTES
     n56 28…Rxe1: Trades rooks on e1
     n57 29.Qd8+: Missed Nxe1, winning material on e1
     n71 36.Kf1: They let you force mate with Ng3+.
-    n74 37…Bb4+: Missed a forced mate starting with Bf2+
     n82 41…Rc2#: Missed mate in 1 starting with Ba3#

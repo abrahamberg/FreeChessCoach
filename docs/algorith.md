@@ -751,12 +751,12 @@ The stated priority is presentation, not the numbers. The per-move `reasons: str
 |---|---|
 | `delta.newHangingPieces` non-empty | "Leaves the {piece} on {square} undefended" |
 | `delta.newForks` for opponent | "Allows {piece} fork on {square} hitting {targets}" |
-| `delta.mobilityDelta <= -8` | "Costs {n} squares of piece mobility" |
+| the mover's own legal moves fall by 8 or more over the move (counted with the turn passed back; not `delta.mobilityDelta`, which compares the two sides), on a fault with no other reason | "Costs {n} squares of piece mobility" |
 | best move was a capture that wins a pawn's worth on its square (SEE ≥ 100) and leaves the mover ahead where the engine's own line first goes quiet, not played | "Missed {bestMove}, winning material on {square}" |
 | a capture that comes out level (SEE within a bishop against a knight) | "Trades {pieces} on {square}" / "Trades the bishop for the knight on {square}"; "Recaptures the {piece} on {square}" when it takes back. A trade of the mover's one developed minor piece adds ", giving up {Side}'s only developed piece", and, when the engine's reply takes back with a queen or minor piece from its first rank, "; {Other} can take back with the {piece}, bringing it out / developing it" |
 | the move pins a knight to the king or the queen with a bishop (the pin detector's verified claim; not on an inaccuracy or worse) | "Pins the knight on {square} to the {king\|queen}" |
 | a quiet pawn move attacks a knight, bishop, rook or queen that no pawn attacked before; the pawn can legally take it and is not simply won (not on an inaccuracy or worse, not beside a card for what the move did or allowed; the pin note comes first) | "Attacks the {piece} on {square}[, which pins the {piece} on {square}]" |
-| `lines[0].mateIn != null`, not played | "Missed mate in {n} starting with {bestMove}" |
+| `lines[0].mateIn != null`, not played, and the line after the move is no mate for the mover (a slower mate is not missed) | "Missed mate in {n} starting with {bestMove}", or "Missed a forced mate starting with {bestMove}" when the count is not one the search can stand behind |
 | `piecesUnderAttack` where attackers > defenders, unresolved | "Leaves {piece} on {square} attacked {a}× and defended {d}×" |
 | `centerControlScore` swing ≥ 3 against mover | "Concedes the centre" |
 | new `passedPawns` for mover | "Creates a passed pawn on {file}" |

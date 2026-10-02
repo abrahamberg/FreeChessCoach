@@ -187,14 +187,12 @@ REVIEW NOTES
     n7 4.Kf1: Theory — King's Gambit Accepted: Bishop's Gambit, Bryan Countergambit (C33)
     n8 4…b5: Theory — King's Gambit Accepted: Bishop's Gambit, Bryan Countergambit (C33)
     n18 9…c6: Attacks the bishop on b5
-    n19 10.g4: Costs 10 squares of piece mobility
     n23 12.h4: Attacks the queen on g5
     n24 12…Qg6: The only move that holds
     n25 13.h5: Attacks the queen on g6
     n27 14.Qf3: You set up an X-ray — lines up behind the pawn on e4 at the rook on a8.
     n33 17.Nd5: Leaves the pawn on b2 undefended
     n34 17…Qxb2: They won a rook through a fork.
-    n35 18.Bd6: Costs 17 squares of piece mobility
     n36 18…Bxg1: Missed Qxa1+, winning material on a1
     n37 19.e5: Qd1 keeps the pawn on c2 safe; after it Black is a rook and a bishop up
     n38 19…Qxa1+: The only winning move

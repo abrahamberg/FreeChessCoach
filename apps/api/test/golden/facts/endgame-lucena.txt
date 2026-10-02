@@ -81,7 +81,6 @@ PLAN
 
 REVIEW NOTES
   l1
-    n12 6…Rb1+: Costs 12 squares of piece mobility
     n13 7.Rb4: You broke the pin — the king on b5 is free to move again.
   l2
     n16 2…Rh2: They missed a chance to take the open file with Rb2 — takes the half-open b-file with the rook.; Would have won the queen, giving back a rook.

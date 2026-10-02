@@ -113,6 +113,5 @@ REVIEW NOTES
     n2 11…Kxh7: Recaptures the queen on h7
     n3 12.Nxf6+: You forced mate.
     n5 13.Neg4+: You forced mate.
-    n7 14.h4+: Missed a forced mate starting with f4+; You forced mate.; Won the queen, giving back a pawn.
-    n11 16.Be2+: Missed mate in 2 starting with O-O
+    n7 14.h4+: You forced mate.; Won the queen, giving back a pawn.
     n15 18.Kd2#: Missed mate in 1 starting with O-O-O#

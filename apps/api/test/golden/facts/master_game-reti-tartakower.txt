@@ -115,7 +115,6 @@ REVIEW NOTES
     n7 4.Nxe4: Theory — Caro-Kann Defense: Main Line (B15)
     n8 4…Nf6: Theory — Caro-Kann Defense: Main Line (B15)
     n10 5…e5: Leaves the pawn on e5 undefended
-    n11 6.dxe5: Costs 9 squares of piece mobility
     n14 7…Qxe5: They won a knight through a fork two moves away.
     n19 10.Bg5+: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     n21 11.Bd8#: You delivered checkmate.

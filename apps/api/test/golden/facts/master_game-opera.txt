@@ -202,7 +202,6 @@ REVIEW NOTES
     n21 11.Bxb5+: Creates a passed pawn on c; Recaptures the pawn on b5
     n26 13…Rxd7: Recaptures the rook on d7
     n27 14.Rd1: You hit back instead of retreating — answers the threat by hitting the rook on d7.
-    n29 15.Bxd7+: Costs 43 squares of piece mobility
     n30 15…Nxd7: Recaptures the bishop on d7; They let you force mate in 2 with Qb8+.; Won a bishop and a queen, but it allowed mate.
     n31 16.Qb8+: You forced mate in 1 through a mating net — closes the net — every answer runs into mate.
     n33 17.Rd8#: You delivered checkmate.

@@ -108,18 +108,14 @@ REVIEW NOTES
   l1
     n1 1.c7: The only good move
     n3 2.Kb5: You tucked the king away — walks the king to b5, out of the firing line.
-    n6 3…Rd4+: Costs 11 squares of piece mobility
     n7 4.Kb3: You missed a chance to win a tempo with Kc3 — hits the rook on d4 with a king.
-    n8 4…Rd3+: Costs 11 squares of piece mobility
     n9 5.Kc2: You won a tempo — hits the rook on d3 with a king.
     n12 6…Ra4: They let you force mate with Kb3.
     n13 7.Kb3: You forced mate.
   l2
     n1 1.c7: The only good move
     n3 2.Kb5: You tucked the king away — walks the king to b5, out of the firing line.
-    n6 3…Rd4+: Costs 11 squares of piece mobility
     n7 4.Kb3: You missed a chance to win a tempo with Kc3 — hits the rook on d4 with a king.
-    n8 4…Rd3+: Costs 11 squares of piece mobility
     n9 5.Kc2: You won a tempo — hits the rook on d3 with a king.
     n15 6…Rc4+: They found a brilliant sacrifice.
     n16 7.Qxc4: You won a rook through a free piece — captures the rook on c4.

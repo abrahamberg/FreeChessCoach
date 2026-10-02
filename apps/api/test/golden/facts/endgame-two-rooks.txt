@@ -29,4 +29,3 @@ PLAN
 
 REVIEW NOTES
   l1
-    n1 1.Ra7: Missed mate in 2 starting with Rb7

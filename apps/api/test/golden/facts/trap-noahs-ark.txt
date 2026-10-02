@@ -133,7 +133,6 @@ REVIEW NOTES
     n14 7…exd4: Recaptures the knight on d4
     n15 8.Qxd4: Recaptures the pawn on d4
     n16 8…c5: You won a tempo — hits the queen on d4 with a pawn.; Won the bishop, giving back a pawn.
-    n17 9.Qd5: Costs 14 squares of piece mobility
     n18 9…Be6: You saved a hanging piece — saves the rook on a8.; Won the bishop, giving back a pawn.
     n20 10…Bd7: The only good move
     n22 11…c4: Attacks the bishop on b3

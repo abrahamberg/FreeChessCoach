@@ -201,3 +201,46 @@ describe('a note a tactic card may replace only fills a free slot', () => {
     expect(notes('Kd7', 'blunder')).toEqual(['Missed the only winning move, Qd4']);
   });
 });
+
+describe('the mobility note counts the mover\'s own moves (judges, 2026-10-02)', () => {
+  // The feature delta is the mover's legal moves before minus the opponent's
+  // after: "Costs 22 squares" was 51 Black moves against 29 White ones.
+  const mobility = (fenBefore: string, moveSan: string, delta: number): string[] => {
+    const chess = new Chess(fenBefore);
+    const mover = chess.turn() === 'w' ? 'white' : 'black';
+    chess.move(moveSan);
+    return buildReasons({ mover, fenBefore, fenAfter: chess.fen(), moveSan, evalBefore: { ply: 0, fen: fenBefore, depth: 0, lines: [] }, quality: 'inaccuracy', isBookMove: false, featureDelta: { newForks: [], newLoosePieces: [], mobilityDelta: delta } });
+  };
+
+  /** White has 25 legal moves with the queen on d1. */
+  const OPEN = '4k3/8/8/8/8/8/PP6/3QK3 w - - 0 1';
+
+  test('a move that shuts its own pieces in says by how much', () => {
+    // On a1, behind its own pawns, the queen leaves White 12.
+    expect(mobility(OPEN, 'Qa1', -30)).toEqual(['Costs 13 squares of piece mobility']);
+  });
+
+  test('silent when the mover lost nothing, whatever the stored delta says', () => {
+    // Qd4 opens the queen up; the stored delta compared White's moves with Black's five king moves.
+    expect(mobility(OPEN, 'Qd4', -20)).toEqual([]);
+  });
+});
+
+describe('a missed mate is not held against a move that still mates (judges, 2026-10-02)', () => {
+  const LADDER_FEN = '7k/8/8/8/8/8/R7/1R4K1 w - - 0 1';
+  const missed = (afterMateIn: number | null): string[] => {
+    const chess = new Chess(LADDER_FEN);
+    chess.move('Kf2');
+    const evalBefore: EngineEval = { ply: 0, fen: LADDER_FEN, depth: 12, lines: [{ moveSan: 'Ra7', moveUci: 'a2a7', cp: null, mateIn: 2 }] };
+    const evalAfter: EngineEval = { ply: 1, fen: chess.fen(), depth: 12, lines: [{ moveSan: 'Kg8', moveUci: 'h8g8', cp: afterMateIn === null ? 900 : null, mateIn: afterMateIn }] };
+    return buildReasons({ mover: 'white', fenBefore: LADDER_FEN, fenAfter: chess.fen(), moveSan: 'Kf2', evalBefore, evalAfter, quality: 'good', isBookMove: false }).filter((text) => text.startsWith('Missed'));
+  };
+
+  test('a slower mate is still the win: nothing was missed', () => {
+    expect(missed(3)).toEqual([]);
+  });
+
+  test('no mate after the move: the mate was missed', () => {
+    expect(missed(null)).toEqual(['Missed mate in 2 starting with Ra7']);
+  });
+});
