@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiGet, apiPost } from '../../api/client.js';
 import type { CoachToolCall } from '../../hooks/useCoachChat.js';
-import { useUnlockLlmSetup } from '../../hooks/useUnlockLlmSetup.js';
+import { useUnlockPrompt } from '../../hooks/useUnlockPrompt.js';
 import { useAnnotationLayer, type AnnotationState } from '../board/AnnotationLayer.js';
 import { useDivergedLine } from '../session/useDivergedLine.js';
 import { toPuzzleCoachMessages } from './puzzleSessionMessages.js';
@@ -182,13 +182,7 @@ export function usePuzzleSessionPageData(assignmentId: string, onSessionReset: (
   // all, so a student with no AI configured got a permanently blank coach
   // bubble and no way to know why (see usePuzzleCoachChat.ts).
   const navigate = useNavigate();
-  const unlock = useUnlockLlmSetup();
-  const [showUnlockModal, setShowUnlockModal] = useState(false);
-  const pendingRetryRef = useRef<(() => Promise<void>) | null>(null);
-  const handleUnlockRequired = useCallback((retry: () => Promise<void>) => {
-    pendingRetryRef.current = retry;
-    setShowUnlockModal(true);
-  }, []);
+  const { handleUnlockRequired, modal: unlockModal } = useUnlockPrompt();
 
   const [showSetupRequiredModal, setShowSetupRequiredModal] = useState(false);
   const handleSetupRequired = useCallback(() => {
@@ -214,25 +208,6 @@ export function usePuzzleSessionPageData(assignmentId: string, onSessionReset: (
     onSetupRequired: handleSetupRequired,
     initialMessages
   });
-
-  const unlockModal = {
-    isOpen: showUnlockModal,
-    isPending: unlock.isPending,
-    isSuccess: unlock.isSuccess,
-    errorMessage: unlock.errorMessage,
-    onUnlock: unlock.unlock,
-    onClose: () => {
-      setShowUnlockModal(false);
-      unlock.reset();
-    },
-    onUnlocked: () => {
-      setShowUnlockModal(false);
-      unlock.reset();
-      const retry = pendingRetryRef.current;
-      pendingRetryRef.current = null;
-      void retry?.();
-    }
-  };
 
   function selectHistoryPly(ply: number): void {
     setViewedPly(ply === (data?.currentPly ?? 0) ? null : ply);

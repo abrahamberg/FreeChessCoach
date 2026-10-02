@@ -138,7 +138,12 @@ export function usePuzzleCoachChat(sessionId: string, options: UsePuzzleCoachCha
         } else if (response.status === 400 && /unlock your ai setup/i.test(reason)) {
           options.onUnlockRequired?.(async () => {
             setMessages((prev) => prev.filter((message) => message.id !== assistantId));
-            await postTurn(body);
+            setIsStreaming(true);
+            try {
+              await postTurn(body);
+            } finally {
+              setIsStreaming(false);
+            }
           });
         }
         return;

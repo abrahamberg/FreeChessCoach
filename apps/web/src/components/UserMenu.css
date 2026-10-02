@@ -100,8 +100,13 @@
   background: var(--color-surface-subtle);
 }
 
-.user-menu__item--muted {
+.user-menu__item--muted,
+.user-menu__item--status {
   color: var(--color-text-secondary);
+}
+
+.user-menu__item--status {
+  cursor: default;
 }
 
 .user-menu__item .tunnel-status-dots {

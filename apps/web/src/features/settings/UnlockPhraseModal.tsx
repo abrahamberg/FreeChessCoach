@@ -50,7 +50,7 @@ export function UnlockPhraseModal({
   }
 
   return (
-    <Modal title="Unlock your AI setup" onClose={onClose}>
+    <Modal title="Unlock your AI setup" onClose={onClose} closeOnBackdrop={false}>
       <div className="unlock-phrase-modal">
         <p className="unlock-phrase-modal__description">
           {description ?? 'Enter your unlock phrase to use your saved AI setup.'}

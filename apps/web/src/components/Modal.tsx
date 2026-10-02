@@ -6,13 +6,16 @@ import './Modal.css';
 export interface ModalProps {
   title: string;
   onClose: () => void;
+  /** False keeps the modal open when the backdrop is clicked (Escape and the
+   * close button still close it) — for prompts a stray click must not lose. */
+  closeOnBackdrop?: boolean;
   children: ReactNode;
 }
 
 /** Generic portal-based modal: closes on Escape or backdrop click. No
  * dialog/portal library exists in this app yet — this is the first, meant
  * to be reused by future features rather than rebuilt per-caller. */
-export function Modal({ title, onClose, children }: ModalProps): ReactNode {
+export function Modal({ title, onClose, closeOnBackdrop = true, children }: ModalProps): ReactNode {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === 'Escape') onClose();
@@ -22,7 +25,7 @@ export function Modal({ title, onClose, children }: ModalProps): ReactNode {
   }, [onClose]);
 
   return createPortal(
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={closeOnBackdrop ? onClose : undefined}>
       <div
         className="modal"
         role="dialog"

@@ -157,7 +157,7 @@ function buildDynamicPart(input: CoachPromptInput): string {
 function diagnosisCodesForThisStudent(rating: number): string {
   return `## Diagnosis codes for this student
 
-When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. Look here first rather than defaulting to skipping it: a real, specific match is worth more than a vague finding. Genuinely nothing here fitting is a normal, correct answer too — leave diagnosisCode unset rather than force or invent one.
+When you set \`record_finding\`'s diagnosisCode or address a focus area with \`propose_focus_area_update\`, use ONLY a code from this list — it's already scoped to this student's level and to what's actually detectable. A code is a claim about THIS student, so it needs evidence from this session: before you use one, state to yourself the exact thing the student said or did that shows it, then read the entries below and pick the one whose description that evidence matches precisely. The codes are close neighbours — a missed fork, a missed pin and a hung piece look alike but are different problems — so compare the nearest two or three entries and choose the one the evidence fits, never the one you expected from their profile or focus areas. Their existing focus areas are not evidence: a mistake that merely resembles a known weakness may have a different cause. If the evidence fits no entry exactly, leave diagnosisCode unset rather than force, stretch or invent one.
 ${renderScopedDiagnosisCodes(rating, ACTIVE_DIAGNOSIS_CODES)}`;
 }
 

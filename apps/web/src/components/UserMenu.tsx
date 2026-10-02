@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { apiGet } from '../api/client.js';
 import { BugReportModal } from '../features/bug-report/BugReportModal.js';
 import { AccountMenuSections, initialsFor } from './AccountMenuSections.js';
+import { MenuUnlockModal } from './MenuUnlockModal.js';
 import { BoardMenuItem } from './BoardMenu.js';
 import { ChevronDownIcon } from './Icon.js';
 import { usePageMenu } from './PageMenu.js';
@@ -25,6 +26,7 @@ export interface UserMenuProps {
 export function UserMenu({ engineActivity }: UserMenuProps): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const pageItems = usePageMenu();
 
@@ -71,6 +73,7 @@ export function UserMenu({ engineActivity }: UserMenuProps): ReactNode {
             engineActivity={engineActivity}
             onClose={() => setIsOpen(false)}
             onReportBug={() => setIsReporting(true)}
+            onUnlock={() => setIsUnlocking(true)}
           >
             {pageItems.map((item) => (
               <BoardMenuItem key={item.label} item={item} onClose={() => setIsOpen(false)} />
@@ -78,6 +81,7 @@ export function UserMenu({ engineActivity }: UserMenuProps): ReactNode {
           </AccountMenuSections>
         </div>
       )}
+      {isUnlocking && <MenuUnlockModal onClose={() => setIsUnlocking(false)} />}
       {isReporting && <BugReportModal onClose={() => setIsReporting(false)} />}
     </div>
   );

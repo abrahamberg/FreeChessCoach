@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { BugReportModal } from '../features/bug-report/BugReportModal.js';
 import { getDemoRuntime } from '../demo/demoRuntime.js';
 import { AccountMenuSections } from './AccountMenuSections.js';
+import { MenuUnlockModal } from './MenuUnlockModal.js';
 import { OverflowMenu, type OverflowMenuItem } from './OverflowMenu.js';
 import type { EngineActivityIndicatorState } from '../hooks/useEngineActivityIndicator.js';
 
@@ -17,6 +18,7 @@ export interface BoardMenuProps {
  * page's own actions grouped under the identity header. */
 export function BoardMenu({ label, items, engineActivity }: BoardMenuProps): ReactNode {
   const [isReporting, setIsReporting] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
   // The demo has no engine, and a red "Engine" dot would only look like a fault.
   const showEngineStatus = getDemoRuntime() === null;
 
@@ -30,11 +32,13 @@ export function BoardMenu({ label, items, engineActivity }: BoardMenuProps): Rea
             engineActivity={showEngineStatus ? engineActivity : undefined}
             onClose={close}
             onReportBug={() => setIsReporting(true)}
+            onUnlock={() => setIsUnlocking(true)}
           >
             {items.length > 0 && items.map((item) => <BoardMenuItem key={item.label} item={item} onClose={close} />)}
           </AccountMenuSections>
         )}
       />
+      {isUnlocking && <MenuUnlockModal onClose={() => setIsUnlocking(false)} />}
       {isReporting && <BugReportModal onClose={() => setIsReporting(false)} />}
     </>
   );

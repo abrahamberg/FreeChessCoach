@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { apiGet } from '../api/client.js';
 import { getDemoRuntime } from '../demo/demoRuntime.js';
+import { AiLockMenuRow } from './AiLockMenuRow.js';
 import { describeEngineActivity } from './EngineActivityIndicator.js';
 import { BugIcon, LogOutIcon, PlusIcon, SettingsIcon } from './Icon.js';
 import { TunnelStatusDots } from './TunnelStatusDots.js';
@@ -17,6 +18,8 @@ export interface AccountMenuSectionsProps {
   onClose: () => void;
   /** The caller owns the BugReportModal: it must outlive the closed menu. */
   onReportBug: () => void;
+  /** The caller owns the unlock popup, for the same reason. */
+  onUnlock: () => void;
   /** A page's own rows (the board views' session actions), grouped right
    * under the identity header. */
   children?: ReactNode;
@@ -31,7 +34,7 @@ export function initialsFor(displayName: string | undefined): string {
  * bug, Sign out — shared by the topbar UserMenu and the board views' session
  * menu, so both read as the same menu. Fetches the same ['profile'] query
  * SettingsPage uses, so it never costs a second round trip. */
-export function AccountMenuSections({ engineActivity, onClose, onReportBug, children }: AccountMenuSectionsProps): ReactNode {
+export function AccountMenuSections({ engineActivity, onClose, onReportBug, onUnlock, children }: AccountMenuSectionsProps): ReactNode {
   const profileQuery = useQuery({
     queryKey: ['profile'],
     queryFn: ({ signal }) => apiGet('/api/users/me', UserProfileSchema, signal)
@@ -61,6 +64,12 @@ export function AccountMenuSections({ engineActivity, onClose, onReportBug, chil
         </>
       )}
       <div className="user-menu__divider" />
+      <AiLockMenuRow
+        onUnlock={() => {
+          onClose();
+          onUnlock();
+        }}
+      />
       {/* docs/courses.md §2: only accounts a moderator switched on. */}
       {profileQuery.data?.canCreateCourses && !getDemoRuntime() && (
         <NavLink to="/studio" role="menuitem" className="user-menu__item" onClick={onClose}>
