@@ -52,7 +52,14 @@ const MIN_PASS: Partial<Record<string, number>> = {
   trappedPiece: 40,
   hangingPiece: 29,
   capturingDefender: 15,
-  mateIn1: 40
+  mateIn1: 40,
+  anastasiaMate: 40,
+  hookMate: 40,
+  arabianMate: 40,
+  bodenMate: 40,
+  doubleBishopMate: 37, // the other 3 are tagged on a lone bishop check, see data/README.md
+  dovetailMate: 40,
+  smotheredMate: 40
 };
 
 interface FixtureRow {

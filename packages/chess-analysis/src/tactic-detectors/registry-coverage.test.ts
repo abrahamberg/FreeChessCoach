@@ -17,17 +17,14 @@ import { proposeTacticClaims, TACTIC_DETECTORS } from './registry.js';
  * for the grinder to capture *and* uncover the same check twice in two plies,
  * which never happens, and is now the cycle it actually is.
  *
- * The motifs below are the ones a 360-puzzle sample genuinely doesn't
+ * The motifs below are the ones the puzzle sample genuinely doesn't
  * contain. Each has a hand-built fixture in its own test file, named here so
  * this list can't quietly become a place to park a broken detector — and the
  * second test below fails if one of them turns out not to be rare after all,
  * which is how `windmill` came off it.
  */
 const RARE_IN_PUZZLES = new Set([
-  'smotheredMate', // mating-patterns.test.ts
-  'matingNet', // mating-patterns.test.ts
   'underPromotion', // promotion.test.ts
-  'decoy', // decoy.test.ts
   'stalemateResource', // draw-resources.test.ts
   'simplifiesToDraw' // draw-resources.test.ts
 ]);

@@ -19,6 +19,7 @@ import { freePieceDetector } from './free-piece.js';
 import { gainsTempoDetector } from './gains-tempo.js';
 import { interferenceDetector } from './interference.js';
 import { kingSafetyDetector } from './king-safety.js';
+import { MATE_SHAPE_DETECTORS } from './mate-shapes.js';
 import { matingNetDetector, smotheredMateDetector } from './mating-patterns.js';
 import { outpostDetector, seizesOpenFileDetector } from './positional-squares.js';
 import { overloadedDefenderDetector } from './overloaded-defender.js';
@@ -49,6 +50,7 @@ import type { TacticDetector } from './types.js';
 export const TACTIC_DETECTORS: TacticDetector[] = [
   // Offensive — something done to the opponent.
   smotheredMateDetector,
+  ...MATE_SHAPE_DETECTORS,
   matingNetDetector,
   doubleCheckDetector,
   discoveredCheckDetector,

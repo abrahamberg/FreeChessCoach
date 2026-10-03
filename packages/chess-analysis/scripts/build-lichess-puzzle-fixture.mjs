@@ -16,8 +16,8 @@
 // Usage:
 //   curl -o /tmp/lichess_db_puzzle.csv.zst https://database.lichess.org/lichess_db_puzzle.csv.zst
 //   unzstd /tmp/lichess_db_puzzle.csv.zst
-//   npx tsx scripts/build-lichess-puzzle-fixture.mjs /tmp/lichess_db_puzzle.csv
-import { createReadStream } from 'node:fs';
+//   npx tsx scripts/build-lichess-puzzle-fixture.mjs /tmp/lichess_db_puzzle.csv [--only=theme,theme]
+import { createReadStream, readFileSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import readline from 'node:readline';
 import path from 'node:path';
@@ -44,8 +44,23 @@ const THEME_TO_MOTIF = {
   trappedPiece: 'trappedPiece',
   hangingPiece: 'freePiece',
   capturingDefender: 'removesDefender',
-  mateIn1: 'checkmate'
+  mateIn1: 'checkmate',
+  // Named mating patterns. Unlike the themes above these are mates by
+  // definition, so they are sampled from mate puzzles (see `isMatePattern`).
+  anastasiaMate: 'anastasiaMate',
+  hookMate: 'hookMate',
+  arabianMate: 'arabianMate',
+  bodenMate: 'bodenMate',
+  doubleBishopMate: 'doubleBishopMate',
+  dovetailMate: 'dovetailMate',
+  smotheredMate: 'smotheredMate'
 };
+const MATE_PATTERN_THEMES = new Set(['anastasiaMate', 'hookMate', 'arabianMate', 'bodenMate', 'doubleBishopMate', 'dovetailMate', 'smotheredMate']);
+
+// `--only=a,b` re-samples just those themes and keeps every other row of the
+// existing fixture as it is, so adding a theme does not reshuffle the rest.
+const onlyArgument = process.argv.find((argument) => argument.startsWith('--only='));
+const onlyThemes = onlyArgument ? new Set(onlyArgument.slice('--only='.length).split(',')) : null;
 
 const RATING_MIN = 1000;
 const RATING_MAX = 2200;
@@ -53,7 +68,7 @@ const POPULARITY_MIN = 70;
 const PLAYS_MIN = 500;
 const SAMPLE_SIZE = 40;
 
-const inputPath = process.argv[2];
+const inputPath = process.argv.slice(2).find((argument) => !argument.startsWith('--'));
 if (!inputPath) {
   console.error('usage: build-lichess-puzzle-fixture.mjs <path-to-lichess_db_puzzle.csv>');
   process.exit(1);
@@ -85,6 +100,13 @@ for await (const line of rl) {
   let target = null;
   for (const theme of Object.keys(THEME_TO_MOTIF)) {
     if (theme === 'mateIn1') continue; // checked last, deliberately not excluded by isMate
+    if (MATE_PATTERN_THEMES.has(theme)) {
+      if (themes.includes(` ${theme} `)) {
+        target = theme;
+        break;
+      }
+      continue;
+    }
     if (!isMate && themes.includes(` ${theme} `)) {
       target = theme;
       break;
@@ -96,8 +118,11 @@ for await (const line of rl) {
   pools[target].push(line);
 }
 
-const rows = ['target,motif,PuzzleId,FEN,Moves,Rating,Popularity,NbPlays,Themes'];
+const header = 'target,motif,PuzzleId,FEN,Moves,Rating,Popularity,NbPlays,Themes';
+const kept = onlyThemes ? readFileSync(outputPath, 'utf8').trim().split('\n').slice(1).filter((row) => !onlyThemes.has(row.split(',')[0])) : [];
+const rows = [header, ...kept];
 for (const [theme, motif] of Object.entries(THEME_TO_MOTIF)) {
+  if (onlyThemes && !onlyThemes.has(theme)) continue;
   const pool = pools[theme];
   const stride = Math.max(1, Math.floor(pool.length / SAMPLE_SIZE));
   let sampled = 0;

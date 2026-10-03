@@ -11,7 +11,7 @@ commit SHA here alongside the refresh date.
 
 # Lichess puzzle motif fixture
 
-`lichess-puzzle-motifs.csv` is a small (360-row), deterministic sample of
+`lichess-puzzle-motifs.csv` is a small (640-row), deterministic sample of
 real puzzles from [Lichess's open puzzle
 database](https://database.lichess.org/#puzzles), used by
 `../src/tactic-detectors/lichess-puzzle-validation.test.ts` as independent
@@ -38,3 +38,18 @@ Version pin: sampled 2026-09-03 from the dataset dated 2026-08-02 (source
 download will select a different (but similarly-sized) sample — re-run
 `lichess-puzzle-validation.test.ts` afterward and update its `MIN_PASS`
 thresholds to match, rather than assuming they still hold.
+
+## Mating-pattern rows
+
+The seven mate-pattern targets (`anastasiaMate`, `hookMate`, `arabianMate`,
+`bodenMate`, `doubleBishopMate`, `dovetailMate`, `smotheredMate`) were added on
+2026-10-03 with `--only=...` from the dataset downloaded that day, so the
+other 320 rows are unchanged. Measured on the full dataset (3,000 tagged
+puzzles per pattern, 38,000 other mates): recall 100% for anastasia, hook,
+arabian and smothered, 83% Boden, 91% double-bishop, 99.9% dovetail, and not
+one detector fired on a mate Lichess had not tagged with that pattern. The
+misses on Boden and double-bishop are Lichess's tag being loose: its rule
+passes a king block that nothing attacks, so a single bishop check with a
+second bishop elsewhere on the board is tagged. Ours needs two bishops that
+actually cover the king's squares, so the 37/40 floor for `doubleBishopMate`
+is the detector being stricter, not missing.
